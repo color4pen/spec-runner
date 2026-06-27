@@ -174,7 +174,7 @@ describe("TC-NJW-002: LocalRuntime.setupWorkspace() writes slug store, not .spec
 
 // TC-NJW-003: cancelSingleJob() for local job does not write to .specrunner/jobs/
 describe("TC-NJW-003: cancelSingleJob() for local job does not create .specrunner/jobs/ entry", () => {
-  it("persists to canonical slug store and leaves .specrunner/jobs/ untouched", async () => {
+  it("evacuates to canceled/ dir and leaves .specrunner/jobs/ untouched", async () => {
     const slug = "cancel-test-slug";
     const jobId = "f1234567-abcd-0000-0000-000000000001";
 
@@ -210,10 +210,15 @@ describe("TC-NJW-003: cancelSingleJob() for local job does not create .specrunne
     // jobs-dir must NOT have been touched by cancel
     expect(await jobsDirAbsent(jobId)).toBe(true);
 
-    // The canonical slug state should be updated to "canceled"
-    const stateRaw = await fs.readFile(path.join(canonDir, "state.json"), "utf-8");
+    // State is evacuated to canceled/<slug>-<jobId8>/ (move semantics)
+    const jobId8 = jobId.slice(0, 8);
+    const canceledDirAbs = path.join(tempDir, "specrunner", "changes", "canceled", `${slug}-${jobId8}`);
+    const stateRaw = await fs.readFile(path.join(canceledDirAbs, "state.json"), "utf-8");
     const state = JSON.parse(stateRaw) as { status: string };
     expect(state.status).toBe("canceled");
+
+    // Canonical dir should be gone (moved to canceled/)
+    await expect(fs.access(path.join(canonDir, "state.json"))).rejects.toThrow();
   });
 });
 

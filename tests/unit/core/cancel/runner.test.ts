@@ -6,13 +6,18 @@
  * - awaiting-merge + --force なし → reject
  * - awaiting-merge + --force あり → 成功
  * - archived → reject
- * - canceled → idempotent (state 未変更)
+ * - canceled → idempotent (evacuated to canceled/, state preserved)
  * - --purge で sidecar 物理削除
  * - running + pid kill 成功 / 失敗
  * - running + state.pid が null → warning + 続行
  * - worktree cleanup の best-effort (失敗時 warning)
  * - branch 削除の best-effort (失敗時 warning)
  * - cancel 後の state file に status: canceled, error.code: USER_CANCELED, canceledAt が記録
+ * - change-folder が canceled/<slug>-<jobId8>/ に退避される
+ * - worktree-only state での記録残存（回帰防止）
+ * - 同名 slug の複数 cancel で衝突しない
+ * - --no-worktree move 保証（changes/<slug>/ が消える）
+ * - request.md が canceled/ に保全される
  *
  * cancelAllTerminated:
  * - failed / terminated / canceled のみ対象
@@ -53,18 +58,21 @@ afterEach(async () => {
  *  2. Liveness sidecar at .specrunner/local/<slug>/liveness.json (for loadStateByJobId)
  *
  * cancelSingleJob loads via loadStateByJobId → liveness sidecar → slug canonical dir.
- * cancelSingleJob persists via resolveStateStoreByJobId → liveness sidecar → slug canonical dir.
+ * After cancel, cancelSingleJob evacuates to canceled/<slug>-<jobId8>/ and removes canonical.
+ *
+ * @param slugOverride - Optional slug override (default: `cancel-<jobId8>`).
  */
 async function makeJob(
   status: JobStatus = "failed",
   extras: Partial<{ pid: number | null | undefined; branch: string; worktreePath: string }> = {},
+  slugOverride?: string,
 ): Promise<{ jobId: string; slug: string }> {
   const state = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test", type: "new-feature" },
     repository: { owner: "user", name: "repo" },
   });
   const jobId = state.jobId;
-  const slug = `cancel-${jobId.slice(0, 8)}`;
+  const slug = slugOverride ?? `cancel-${jobId.slice(0, 8)}`;
 
   const pid = "pid" in extras ? (extras.pid ?? null) : null;
 
@@ -107,6 +115,66 @@ async function makeJob(
   return { jobId, slug };
 }
 
+/**
+ * Create a job in worktree-only mode: state.json written ONLY to the worktree,
+ * NOT to the canonical specrunner/changes/<slug>/ dir.
+ * Liveness sidecar points to the real worktree path.
+ * This reproduces the bug where the original implementation lost cancel records
+ * because the worktree was deleted before persist could write to the canonical dir.
+ */
+async function makeJobWorktreeOnly(
+  status: JobStatus = "failed",
+  extras: Partial<{ pid: number | null | undefined; branch: string }> = {},
+): Promise<{ jobId: string; slug: string; worktreePath: string }> {
+  const state = buildInitialJobState({
+    request: { path: "/test/request.md", title: "Test", type: "new-feature" },
+    repository: { owner: "user", name: "repo" },
+  });
+  const jobId = state.jobId;
+  const slug = `cancel-${jobId.slice(0, 8)}`;
+  const worktreePath = path.join(tempDir, "worktrees", jobId.slice(0, 8));
+
+  const pid = "pid" in extras ? (extras.pid ?? null) : null;
+
+  // Write state ONLY in the worktree (NOT in canonical specrunner/changes/<slug>/)
+  const wtSlugDir = path.join(worktreePath, "specrunner", "changes", slug);
+  await nodefs.mkdir(wtSlugDir, { recursive: true });
+  await nodefs.writeFile(
+    path.join(wtSlugDir, "state.json"),
+    JSON.stringify({
+      version: 1,
+      jobId,
+      createdAt: state.createdAt,
+      updatedAt: state.updatedAt,
+      request: { path: "/test/request.md", title: "Test", type: "new-feature", slug },
+      repository: state.repository,
+      session: null,
+      step: "init",
+      status,
+      pid: pid ?? null,
+      branch: extras.branch ?? null,
+      error: null,
+      history: [],
+      _journal: { historyCount: 0, stepCounts: {} },
+    }),
+  );
+  await nodefs.writeFile(path.join(wtSlugDir, "events.jsonl"), "");
+
+  // Write liveness sidecar pointing to the real worktree path
+  const livenessDir = path.join(tempDir, ".specrunner", "local", slug);
+  await nodefs.mkdir(livenessDir, { recursive: true });
+  await nodefs.writeFile(
+    path.join(livenessDir, "liveness.json"),
+    JSON.stringify({
+      jobId,
+      worktreePath,
+      pid,
+    }),
+  );
+
+  return { jobId, slug, worktreePath };
+}
+
 /** Build a minimal CancelDeps mock. */
 function makeDeps(overrides: Partial<CancelDeps> = {}): CancelDeps {
   const spawnOk: (cmd: string, args: string[]) => Promise<SpawnResult> = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
@@ -127,9 +195,15 @@ function makeDeps(overrides: Partial<CancelDeps> = {}): CancelDeps {
   };
 }
 
-/** Load the latest state for a job via its slug canonical store. */
-async function loadState(jobId: string, slug: string): Promise<JobState> {
-  const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
+/**
+ * Load state from the evacuated canceled/<slug>-<jobId8>/ directory.
+ * After cancelSingleJob, the change folder is moved here.
+ */
+async function loadCanceledState(jobId: string, slug: string): Promise<JobState> {
+  const jobId8 = jobId.slice(0, 8);
+  const canceledDirName = `${slug}-${jobId8}`;
+  const canceledDirAbs = path.join(tempDir, "specrunner", "changes", "canceled", canceledDirName);
+  const store = new JobStateStore(jobId, tempDir, { changeDir: canceledDirAbs });
   return (await store.load()) as JobState;
 }
 
@@ -182,7 +256,7 @@ describe("cancelSingleJob — awaiting-merge status", () => {
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
   });
 });
@@ -199,7 +273,7 @@ describe("cancelSingleJob — running status", () => {
     expect(result.exitCode).toBe(0);
     expect(kill).toHaveBeenCalledWith(1234, "SIGTERM");
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
   });
 
@@ -238,7 +312,7 @@ describe("cancelSingleJob — awaiting-resume status", () => {
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
   });
 });
@@ -250,7 +324,7 @@ describe("cancelSingleJob — failed status", () => {
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
   });
 });
@@ -262,27 +336,25 @@ describe("cancelSingleJob — terminated status", () => {
 
     expect(result.exitCode).toBe(0);
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
   });
 });
 
 describe("cancelSingleJob — canceled status (idempotent)", () => {
-  it("succeeds without changing state", async () => {
+  it("evacuates to canceled/ and remains canceled (idempotent)", async () => {
     const { jobId, slug } = await makeJob("canceled");
-
-    // Record the state before
-    const stateBefore = await loadState(jobId, slug);
-
     const result = await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
 
     expect(result.exitCode).toBe(0);
 
-    // Status should still be canceled (not modified)
-    const stateAfter = await loadState(jobId, slug);
+    // State is now in canceled/ dir with status still canceled
+    const stateAfter = await loadCanceledState(jobId, slug);
     expect(stateAfter.status).toBe("canceled");
-    // updatedAt should NOT change (no write happened)
-    expect(stateAfter.updatedAt).toBe(stateBefore.updatedAt);
+
+    // Canonical dir should be gone (evacuated)
+    const canonDir = path.join(tempDir, "specrunner", "changes", slug);
+    await expect(nodefs.access(path.join(canonDir, "state.json"))).rejects.toThrow();
   });
 
   it("deletes sidecar with --purge even for idempotent case", async () => {
@@ -304,13 +376,132 @@ describe("cancelSingleJob — state file content", () => {
 
     await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
 
-    const state = await loadState(jobId, slug);
+    const state = await loadCanceledState(jobId, slug);
     expect(state.status).toBe("canceled");
     expect(state.error?.code).toBe("USER_CANCELED");
     expect(state.canceledAt).toBeDefined();
 
     const canceledAt = new Date(state.canceledAt!);
     expect(canceledAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+  });
+});
+
+// ---------------------------------------------------------------------------
+// cancelSingleJob — evacuation (new behavior)
+// ---------------------------------------------------------------------------
+
+describe("cancelSingleJob — change folder evacuation", () => {
+  it("worktree-only: cancel persists USER_CANCELED record in canceled/ (regression prevention)", async () => {
+    // This test reproduces the bug: worktree-only state was lost because the original
+    // implementation deleted the worktree BEFORE persisting cancel state.
+    const { jobId, slug, worktreePath } = await makeJobWorktreeOnly("failed");
+
+    const result = await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
+
+    expect(result.exitCode).toBe(0);
+
+    // Record must exist in canceled/ even though the worktree is "removed"
+    const state = await loadCanceledState(jobId, slug);
+    expect(state.status).toBe("canceled");
+    expect(state.error?.code).toBe("USER_CANCELED");
+    expect(state.canceledAt).toBeDefined();
+
+    // Worktree's change folder has been moved (state.json no longer there)
+    const wtSlugStateJson = path.join(worktreePath, "specrunner", "changes", slug, "state.json");
+    await expect(nodefs.access(wtSlugStateJson)).rejects.toThrow();
+  });
+
+  it("same-slug multiple cancel: no collision in canceled/", async () => {
+    // slug 同一・jobId 異なる 2 job を順次 cancel しても canceled/ で衝突しない
+    const slug = "fixed-slug-collision-test";
+
+    // Job A: create and cancel
+    const { jobId: jobId1 } = await makeJob("failed", {}, slug);
+    await cancelSingleJob({ jobId: jobId1, force: false, purge: false, deps: makeDeps() });
+
+    // Job B: same slug, new job (canonical is fresh since A was evacuated)
+    const { jobId: jobId2 } = await makeJob("failed", {}, slug);
+    await cancelSingleJob({ jobId: jobId2, force: false, purge: false, deps: makeDeps() });
+
+    // Both dirs must exist independently (no overwrites)
+    const dir1 = path.join(
+      tempDir, "specrunner", "changes", "canceled", `${slug}-${jobId1.slice(0, 8)}`,
+    );
+    const dir2 = path.join(
+      tempDir, "specrunner", "changes", "canceled", `${slug}-${jobId2.slice(0, 8)}`,
+    );
+    // Verify both dirs exist independently (access throws if absent)
+    await nodefs.access(path.join(dir1, "state.json"));
+    await nodefs.access(path.join(dir2, "state.json"));
+  });
+
+  it("--no-worktree: original changes/<slug>/ removed, state only in canceled/", async () => {
+    // No worktreePath in liveness sidecar → no-worktree mode
+    const { jobId, slug } = await makeJob("failed"); // worktreePath: null
+
+    // Verify canonical exists before cancel (access throws if absent)
+    const canonDir = path.join(tempDir, "specrunner", "changes", slug);
+    await nodefs.access(path.join(canonDir, "state.json"));
+
+    await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
+
+    // (1) Canonical dir is gone
+    await expect(nodefs.access(canonDir)).rejects.toThrow();
+
+    // (2) State is in canceled/ only
+    const state = await loadCanceledState(jobId, slug);
+    expect(state.status).toBe("canceled");
+
+    // (3) list() does not show it as active
+    const allStates = await JobStateStore.list(tempDir);
+    const found = allStates.find((s) => s.jobId === jobId);
+    expect(found).toBeUndefined();
+  });
+
+  it("request.md is preserved in canceled/ after cancel", async () => {
+    const { jobId, slug } = await makeJob("failed");
+
+    // Write request.md in the canonical change folder
+    const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+    await nodefs.writeFile(path.join(slugDir, "request.md"), "# My Request\n");
+
+    await cancelSingleJob({ jobId, force: false, purge: false, deps: makeDeps() });
+
+    const jobId8 = jobId.slice(0, 8);
+    const canceledRequestMd = path.join(
+      tempDir, "specrunner", "changes", "canceled", `${slug}-${jobId8}`, "request.md",
+    );
+    const content = await nodefs.readFile(canceledRequestMd, "utf-8");
+    expect(content).toBe("# My Request\n");
+  });
+
+  it("cleanup: worktree remove and branch delete performed after cancel", async () => {
+    const { jobId } = await makeJob("failed", { branch: "change/my-branch-abc123" });
+    const worktreeManager: WorktreeManager = {
+      create: vi.fn(),
+      remove: vi.fn().mockResolvedValue(undefined),
+      prune: vi.fn().mockResolvedValue(undefined),
+    };
+    const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
+    const deps = makeDeps({ worktreeManager, spawn: spawnFn });
+
+    const result = await cancelSingleJob({ jobId, force: false, purge: false, deps });
+
+    expect(result.exitCode).toBe(0);
+    // Worktree remove was called
+    expect(worktreeManager.remove).toHaveBeenCalled();
+    // Local branch delete was called
+    expect(spawnFn).toHaveBeenCalledWith(
+      "git",
+      expect.arrayContaining(["branch", "-D", "change/my-branch-abc123"]),
+      expect.anything(),
+    );
+    // Remote branch delete was called
+    expect(spawnFn).toHaveBeenCalledWith(
+      "git",
+      expect.arrayContaining(["push", "origin", "--delete", "change/my-branch-abc123"]),
+      expect.anything(),
+    );
   });
 });
 
@@ -339,6 +530,16 @@ describe("cancelSingleJob — --purge flag", () => {
       expect.arrayContaining(["branch", "-D", "change/my-branch-abc123"]),
       expect.anything(),
     );
+  });
+
+  it("tombstone is created in canceled/ even with --purge", async () => {
+    const { jobId, slug } = await makeJob("failed");
+    await cancelSingleJob({ jobId, force: false, purge: true, deps: makeDeps() });
+
+    // Tombstone must exist despite purge (D9: purge only removes sidecar)
+    const state = await loadCanceledState(jobId, slug);
+    expect(state.status).toBe("canceled");
+    expect(await sidecarAbsent(slug)).toBe(true);
   });
 });
 
