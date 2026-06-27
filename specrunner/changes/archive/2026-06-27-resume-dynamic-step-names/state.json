@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a297dae1-60d4-4d15-b58b-6a73031d2674",
   "createdAt": "2026-06-27T00:24:18.127Z",
-  "updatedAt": "2026-06-27T00:50:08.944Z",
+  "updatedAt": "2026-06-27T00:54:34.329Z",
   "request": {
     "title": "resume の再開 step 検証を実 descriptor 由来にし、reviewer 段の hard-crash 回復不能を解消する",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/resume-dynamic-step-names-a297dae1",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,7 @@
     "createdAt": "2026-06-27T00:50:08.928Z"
   },
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
