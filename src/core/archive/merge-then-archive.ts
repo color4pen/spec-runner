@@ -2,19 +2,23 @@
  * Merge-then-archive orchestrator for `job archive --with-merge`.
  *
  * Flow:
- * 1. Load job state → resolve PR number
- * 2. getPullRequest to check PR status
- * 3. Already MERGED → call archive orchestrator directly
- * 4. Wait loop: poll check status until terminal (success/failure) or timeout
- *    - DIRTY / CONFLICTING → conflict escalation (no merge)
- *    - BLOCKED → branch protection escalation (no merge)
- *    - check failure → escalation (no merge)
+ * 1. Load job state → resolve PR number + branch/worktree info
+ * 2. Run archive recording on feature branch (runArchiveOrchestrator — idempotent)
+ *    → capture archiveSha for CI-wait headSha tracking
+ * 3. getPullRequest to check PR status
+ *    - Already MERGED → skip CI wait / merge; run cleanup → done
+ * 4. Protected-paths guard (checked before CI wait)
+ * 5. Wait loop: poll check status until terminal (success/failure) or timeout
+ *    - Wait for PR headSha to match archiveSha before trusting CI rollup
+ *    - DIRTY / CONFLICTING → conflict escalation (no merge, no cleanup)
+ *    - BLOCKED → branch protection escalation (no merge, no cleanup)
+ *    - check failure → escalation (no merge, no cleanup)
  *    - check success → proceed to merge
  *    - check none → grace wait (NONE_CHECK_GRACE_MS); if exhausted → proceed to merge
  *    - check pending → wait (sleepFn), check deadline, repeat
- *    - timeout → escalation (no merge)
- * 5. checkMergeableForMerge + squash merge
- * 6. merge success → call archive orchestrator
+ *    - timeout → escalation (no merge, no cleanup)
+ * 6. checkMergeableForMerge + squash merge
+ * 7. merge success → runPostMergeCleanup → done
  */
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";
@@ -24,6 +28,7 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import { runArchiveOrchestrator } from "./orchestrator.js";
 import type { ArchiveResult } from "./orchestrator.js";
+import { runPostMergeCleanup } from "./post-merge-cleanup.js";
 import { checkMergeableForMerge } from "../finish/pr-status.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { logResult } from "../../logger/stdout.js";
@@ -78,7 +83,8 @@ export type MergeThenArchiveResult = ArchiveResult;
 
 /**
  * Run merge-then-archive for `job archive --with-merge`.
- * Merges the feature PR (if not already merged) then runs archive.
+ * Records archive on feature branch first, then waits for CI green and merges PR,
+ * then runs post-merge cleanup.
  */
 export async function runMergeThenArchive(
   input: MergeThenArchiveInput,
@@ -104,11 +110,16 @@ export async function runMergeThenArchive(
 
   // Resolve effective timeout: undefined → default, null → unlimited, number → as-is
   const effectiveTimeoutMs = waitTimeoutMs === undefined ? DEFAULT_MERGE_WAIT_TIMEOUT_MS : waitTimeoutMs;
+  const resolvedBaseBranch = baseBranch ?? "main";
 
   // ---------------------------------------------------------------------------
-  // Step 1: Load job state → resolve PR number
+  // Step 1: Load job state → resolve PR number + branch/worktree info
   // ---------------------------------------------------------------------------
   let prNumber: number;
+  let branch: string | null;
+  let worktreePath: string | null;
+  let noWorktree = false;
+  let jobStatus: string;
 
   try {
     const allStates = await JobStateStore.list(cwd);
@@ -129,13 +140,24 @@ export async function runMergeThenArchive(
     }
 
     prNumber = state.pullRequest.number;
+    branch = state.branch;
+    worktreePath = state.worktreePath ?? null;
+    noWorktree = state.noWorktree === true;
+    jobStatus = state.status;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return { exitCode: 2, message };
   }
 
   // ---------------------------------------------------------------------------
-  // Step 2: Initial PR status check
+  // Step 2: Initial PR status check (BEFORE recording).
+  // When --with-merge is set, the merge state must be confirmed first. The
+  // handling of an already-merged PR depends on whether the archive was recorded:
+  //   - status === "archived": archive rode the PR before it merged; this is a
+  //     resume (e.g. crash after merge, before cleanup) → run post-merge cleanup.
+  //   - otherwise: the PR was merged BEFORE the archive was recorded, so the
+  //     change folder is stuck at its active location on the base branch and
+  //     cannot be relocated without a direct base commit → escalate (order error).
   // ---------------------------------------------------------------------------
   let prData: { state: string; mergeStateStatus?: string; mergeable?: string; headSha?: string };
   try {
@@ -153,13 +175,44 @@ export async function runMergeThenArchive(
     };
   }
 
-  // ---------------------------------------------------------------------------
-  // Step 3: Already MERGED → skip to archive
-  // ---------------------------------------------------------------------------
   if (prData.state === "MERGED") {
-    stdoutWrite(`PR #${prNumber} already merged. Running archive directly.`);
-    return runArchiveOrchestrator({ slug, cwd, spawn, fs, baseBranch, worktreeManagerFn, githubToken }, stdoutWrite);
+    if (jobStatus === "archived") {
+      // Archive was recorded before the merge → finish the (interrupted) cleanup.
+      stdoutWrite(`PR #${prNumber} already merged and archive recorded. Running post-merge cleanup...`);
+      await runPostMergeCleanup(
+        { slug, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
+        stdoutWrite,
+      );
+      return { exitCode: 0 };
+    }
+    // Merged before archiving: the change folder cannot ride the (already merged) PR.
+    return {
+      exitCode: 1,
+      escalation: formatEscalation({
+        failedStep: "merge gate (PR merged before archive)",
+        detectedState: `PR #${prNumber} is already merged but the archive was not recorded first (status=${jobStatus}). The archive folder move rides the PR, so archiving must happen before the PR is merged.`,
+        recommendedAction: `Archive before merging. The change folder for '${slug}' remains at its active location on ${resolvedBaseBranch} and can only be relocated by a direct ${resolvedBaseBranch} commit (which job archive does not perform).`,
+        resumeCommand: `specrunner job archive --with-merge ${slug}`,
+      }),
+    };
   }
+
+  // ---------------------------------------------------------------------------
+  // Step 3: Record archive on feature branch (idempotent) — only when not merged.
+  // ---------------------------------------------------------------------------
+  stdoutWrite(`Recording archive on feature branch...`);
+
+  const archiveRecordResult = await runArchiveOrchestrator(
+    { slug, cwd, spawn, fs, baseBranch: resolvedBaseBranch, githubToken },
+    stdoutWrite,
+  );
+
+  if (archiveRecordResult.exitCode !== 0) {
+    return archiveRecordResult;
+  }
+
+  // Capture the archive commit SHA for CI-wait headSha matching
+  const archiveSha = archiveRecordResult.headSha;
 
   // ---------------------------------------------------------------------------
   // Step 3.5: Protected-path merge guard
@@ -251,10 +304,14 @@ export async function runMergeThenArchive(
       };
     }
 
-    // Already merged (e.g. merged by another process)
+    // Already merged (e.g. merged by another process during wait)
     if (prData.state === "MERGED") {
-      stdoutWrite(`PR #${prNumber} already merged. Running archive directly.`);
-      return runArchiveOrchestrator({ slug, cwd, spawn, fs, baseBranch, worktreeManagerFn, githubToken }, stdoutWrite);
+      stdoutWrite(`PR #${prNumber} merged during wait. Running post-merge cleanup...`);
+      await runPostMergeCleanup(
+        { slug, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
+        stdoutWrite,
+      );
+      return { exitCode: 0 };
     }
 
     // Conflict check
@@ -265,7 +322,7 @@ export async function runMergeThenArchive(
         escalation: formatEscalation({
           failedStep: "merge gate (conflict)",
           detectedState: "PR has merge conflicts (mergeStateStatus DIRTY or mergeable CONFLICTING)",
-          recommendedAction: `Rebase the feature branch onto ${baseBranch ?? "main"} and re-run:\n  git rebase ${baseBranch ?? "main"}\n  git push --force-with-lease\n  specrunner job archive --with-merge ${slug}`,
+          recommendedAction: `Rebase the feature branch onto ${resolvedBaseBranch} and re-run:\n  git rebase ${resolvedBaseBranch}\n  git push --force-with-lease\n  specrunner job archive --with-merge ${slug}`,
           resumeCommand: `specrunner job archive --with-merge ${slug}`,
         }),
       };
@@ -296,6 +353,32 @@ export async function runMergeThenArchive(
           resumeCommand: `specrunner job archive --with-merge ${slug}`,
         }),
       };
+    }
+
+    // Wait until the PR's headSha reflects the archive commit before trusting CI rollup.
+    // This prevents checking CI on the pre-archive commit immediately after push.
+    // If archiveSha is undefined (e.g. terminal-status short-circuit), skip this check.
+    if (archiveSha !== undefined && headSha !== archiveSha) {
+      // Bound this wait by the same deadline as the CI-pending wait. Without it, a PR
+      // head that never reflects the archive commit (e.g. an external force-push moved
+      // the branch) would loop forever, since this branch `continue`s past the
+      // pending-branch deadline check below.
+      if (effectiveTimeoutMs !== null && nowFn() - start >= effectiveTimeoutMs) {
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "check status (timeout — PR head did not reflect archive commit)",
+            detectedState: `Timed out after ${Math.round((nowFn() - start) / 1000)}s waiting for PR #${prNumber} head to reflect archive commit ${archiveSha.slice(0, 7)} (current head: ${headSha.slice(0, 7)}).`,
+            recommendedAction: `Ensure the feature branch head matches the archive commit (no out-of-band push), then re-run: specrunner job archive --with-merge ${slug}`,
+            resumeCommand: `specrunner job archive --with-merge ${slug}`,
+          }),
+        };
+      }
+      stdoutWrite(
+        `Waiting for PR to reflect archive commit (${archiveSha.slice(0, 7)})... current: ${headSha.slice(0, 7)}`,
+      );
+      await sleepFn(pollIntervalMs);
+      continue;
     }
 
     // Poll check status
@@ -388,7 +471,7 @@ export async function runMergeThenArchive(
     owner,
     repo,
     slug,
-    baseBranch: baseBranch ?? "main",
+    baseBranch: resolvedBaseBranch,
     sleepFn,
   });
 
@@ -429,9 +512,14 @@ export async function runMergeThenArchive(
   stdoutWrite(`PR #${prNumber} merged successfully.`);
 
   // ---------------------------------------------------------------------------
-  // Step 6: merge success → run archive orchestrator
+  // Step 6: Post-merge cleanup (worktree teardown + branch delete)
   // ---------------------------------------------------------------------------
-  return runArchiveOrchestrator({ slug, cwd, spawn, fs, baseBranch, worktreeManagerFn, githubToken }, stdoutWrite);
+  await runPostMergeCleanup(
+    { slug, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
+    stdoutWrite,
+  );
+
+  return { exitCode: 0 };
 }
 
 function defaultSleep(ms: number): Promise<void> {
