@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4e1331d8-1f86-44d9-afcb-ea7eeb7dcfc5",
   "createdAt": "2026-06-28T02:24:21.654Z",
-  "updatedAt": "2026-06-28T07:34:15.713Z",
+  "updatedAt": "2026-06-28T07:37:38.131Z",
   "request": {
     "title": "archive をブランチ上で先に実行し、base への直接影響を merge のみに限定する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/archive-on-branch-first-4e1331d8",
   "error": null,
   "pipelineId": "standard",
@@ -74,8 +74,13 @@
     }
   ],
   "resumePoint": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/723",
+    "number": 723,
+    "createdAt": "2026-06-28T07:37:38.127Z"
+  },
   "_journal": {
-    "historyCount": 58,
+    "historyCount": 63,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -90,7 +95,8 @@
       "custom-reviewers": 1,
       "regression-gate": 1,
       "conformance": 1,
-      "adr-gen": 1
+      "adr-gen": 2,
+      "pr-create": 1
     }
   }
 }
