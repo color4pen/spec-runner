@@ -1,9 +1,14 @@
 /**
- * Tests for archive orchestrator Phase 2 marker / sidecar cleanup.
+ * Tests for archive orchestrator — side-effect boundaries after archive-on-branch-first.
  *
- * T-01: managed marker (marker.json) is deleted after archive
- * T-02: liveness sidecar (liveness.json) is deleted after archive
- * T-03: unlink failure does not fail archive (best-effort)
+ * Orchestrator records on the feature branch only; cleanup is post-merge.
+ *
+ * T-01: drafts/<slug> directory is still removed by orchestrator (pre-commit cleanup)
+ * T-02: liveness.json is NOT unlinked by orchestrator (moved to runPostMergeCleanup)
+ * T-03: managed marker.json is NOT unlinked by orchestrator (moved to runPostMergeCleanup)
+ * T-04: localSidecarDir is NOT removed by orchestrator (moved to runPostMergeCleanup)
+ * T-05: branch deletion (branch -D / push --delete) NOT called by orchestrator
+ * T-06: draft rm failure does not fail archive (best-effort)
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { FinishFs } from "../../finish/types.js";
@@ -42,6 +47,12 @@ vi.mock("../../finish/commit-archive.js", () => ({
 vi.mock("../../../logger/stdout.js", () => ({
   logResult: vi.fn(),
   stderrWrite: vi.fn(),
+}));
+
+vi.mock("../../../git/transport-auth.js", () => ({
+  createTransportAuth: vi.fn().mockReturnValue({
+    wrapSpawn: (spawn: SpawnFn) => spawn,
+  }),
 }));
 
 // Import after mocks are set up
@@ -88,8 +99,8 @@ function makeSpawn(): SpawnFn {
   return vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
 }
 
-/** FinishFs mock with configurable unlink behavior. */
-function makeFs(unlinkImpl?: (path: string) => Promise<void>): FinishFs & { unlink: ReturnType<typeof vi.fn> } {
+/** FinishFs mock with configurable rm behavior. */
+function makeFs(): FinishFs & { unlink: ReturnType<typeof vi.fn>; rm: ReturnType<typeof vi.fn> } {
   return {
     exists: vi.fn().mockResolvedValue(true),
     readdir: vi.fn().mockResolvedValue([]),
@@ -97,17 +108,8 @@ function makeFs(unlinkImpl?: (path: string) => Promise<void>): FinishFs & { unli
     mkdir: vi.fn().mockResolvedValue(undefined),
     writeFile: vi.fn().mockResolvedValue(undefined),
     readFile: vi.fn().mockResolvedValue("{}"),
-    unlink: unlinkImpl ? vi.fn(unlinkImpl) : vi.fn().mockResolvedValue(undefined),
+    unlink: vi.fn().mockResolvedValue(undefined),
     rm: vi.fn().mockResolvedValue(undefined),
-  };
-}
-
-/** Worktree manager mock (no-op remove/prune). */
-function makeWorktreeManager() {
-  return {
-    create: vi.fn().mockResolvedValue(FAKE_WORKTREE),
-    remove: vi.fn().mockResolvedValue(undefined),
-    prune: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -115,299 +117,141 @@ function makeWorktreeManager() {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe("archive orchestrator — Phase 2 marker / sidecar cleanup", () => {
+describe("archive orchestrator — side-effect boundaries (archive-on-branch-first)", () => {
   beforeEach(() => {
     vi.mocked(JobStateStore.list).mockResolvedValue([makeState()]);
   });
 
-  it("T-01: managed marker.json is unlinked after successful archive", async () => {
+  it("T-01: drafts/<slug> directory is still removed by orchestrator (pre-commit cleanup)", async () => {
     const mockFs = makeFs();
-    const worktreeManager = makeWorktreeManager();
 
     const result = await runArchiveOrchestrator({
       slug: FAKE_SLUG,
       cwd: FAKE_CWD,
       spawn: makeSpawn(),
       fs: mockFs,
-      worktreeManagerFn: () => worktreeManager,
     });
 
     expect(result.exitCode).toBe(0);
 
-    const expectedMarkerPath = nodePath.join(FAKE_CWD, managedMarkerPath(FAKE_SLUG));
-    const unlinkCalls = vi.mocked(mockFs.unlink).mock.calls.map(([p]) => p as string);
-    expect(unlinkCalls).toContain(expectedMarkerPath);
-  });
-
-  it("T-02: liveness.json is unlinked after successful archive", async () => {
-    const mockFs = makeFs();
-    const worktreeManager = makeWorktreeManager();
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn: makeSpawn(),
-      fs: mockFs,
-      worktreeManagerFn: () => worktreeManager,
-    });
-
-    expect(result.exitCode).toBe(0);
-
-    const expectedLivenessPath = nodePath.join(FAKE_CWD, livenessJsonPath(FAKE_SLUG));
-    const unlinkCalls = vi.mocked(mockFs.unlink).mock.calls.map(([p]) => p as string);
-    expect(unlinkCalls).toContain(expectedLivenessPath);
-  });
-
-  it("T-03a: marker.json unlink failure (ENOENT) does not fail archive", async () => {
-    // marker.json throws, liveness.json succeeds
-    const mockFs = makeFs((p) => {
-      if (p.endsWith("marker.json")) return Promise.reject(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
-      return Promise.resolve();
-    });
-    const worktreeManager = makeWorktreeManager();
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn: makeSpawn(),
-      fs: mockFs,
-      worktreeManagerFn: () => worktreeManager,
-    });
-
-    expect(result.exitCode).toBe(0);
-  });
-
-  it("T-03b: liveness.json unlink failure (ENOENT) does not fail archive", async () => {
-    // liveness.json throws, marker.json succeeds
-    const mockFs = makeFs((p) => {
-      if (p.endsWith("liveness.json")) return Promise.reject(Object.assign(new Error("ENOENT"), { code: "ENOENT" }));
-      return Promise.resolve();
-    });
-    const worktreeManager = makeWorktreeManager();
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn: makeSpawn(),
-      fs: mockFs,
-      worktreeManagerFn: () => worktreeManager,
-    });
-
-    expect(result.exitCode).toBe(0);
-  });
-
-  it("T-03c: both unlinks fail → archive still exits 0", async () => {
-    const mockFs = makeFs(() => Promise.reject(Object.assign(new Error("ENOENT"), { code: "ENOENT" })));
-    const worktreeManager = makeWorktreeManager();
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn: makeSpawn(),
-      fs: mockFs,
-      worktreeManagerFn: () => worktreeManager,
-    });
-
-    expect(result.exitCode).toBe(0);
-  });
-
-  it("T-04: liveness.json unlink failure (EACCES) emits stderrWrite warning", async () => {
-    vi.mocked(stderrWrite).mockClear();
-    const mockFs = makeFs((p) => {
-      if (p.endsWith("liveness.json")) return Promise.reject(Object.assign(new Error("EACCES"), { code: "EACCES" }));
-      return Promise.resolve();
-    });
-    const worktreeManager = makeWorktreeManager();
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn: makeSpawn(),
-      fs: mockFs,
-      worktreeManagerFn: () => worktreeManager,
-    });
-
-    expect(result.exitCode).toBe(0);
-    const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
-    expect(calls.some((m) => m.includes("Warning") && m.includes("liveness"))).toBe(true);
-  });
-
-  it("T-05: marker.json unlink failure (EACCES) emits stderrWrite warning", async () => {
-    vi.mocked(stderrWrite).mockClear();
-    const mockFs = makeFs((p) => {
-      if (p.endsWith("marker.json")) return Promise.reject(Object.assign(new Error("EACCES"), { code: "EACCES" }));
-      return Promise.resolve();
-    });
-    const worktreeManager = makeWorktreeManager();
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn: makeSpawn(),
-      fs: mockFs,
-      worktreeManagerFn: () => worktreeManager,
-    });
-
-    expect(result.exitCode).toBe(0);
-    const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
-    expect(calls.some((m) => m.includes("Warning") && m.includes("marker"))).toBe(true);
-  });
-
-  it("T-sidecar-01: fs.rm is called with localSidecarDir path after successful archive", async () => {
-    const mockFs = makeFs();
-    const worktreeManager = makeWorktreeManager();
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn: makeSpawn(),
-      fs: mockFs,
-      worktreeManagerFn: () => worktreeManager,
-    });
-
-    expect(result.exitCode).toBe(0);
-
-    const expectedSidecarPath = nodePath.join(FAKE_CWD, localSidecarDir(FAKE_SLUG));
-    expect(vi.mocked(mockFs.rm)).toHaveBeenCalledWith(
-      expectedSidecarPath,
-      { recursive: true, force: true },
-    );
-  });
-
-  it("T-sidecar-02: fs.rm throwing for sidecar dir does not affect exitCode (best-effort)", async () => {
-    const mockFs: FinishFs & { unlink: ReturnType<typeof vi.fn>; rm: ReturnType<typeof vi.fn> } = {
-      ...makeFs(),
-      rm: vi.fn((p: string) => {
-        if (p === nodePath.join(FAKE_CWD, localSidecarDir(FAKE_SLUG))) {
-          return Promise.reject(new Error("EPERM"));
-        }
-        return Promise.resolve();
-      }),
-    };
-    const worktreeManager = makeWorktreeManager();
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn: makeSpawn(),
-      fs: mockFs,
-      worktreeManagerFn: () => worktreeManager,
-    });
-
-    expect(result.exitCode).toBe(0);
-  });
-
-  it("T-sidecar-03: fs.rm EACCES for sidecar dir emits a Warning via stderrWrite", async () => {
-    vi.mocked(stderrWrite).mockClear();
-    const mockFs: FinishFs & { unlink: ReturnType<typeof vi.fn>; rm: ReturnType<typeof vi.fn> } = {
-      ...makeFs(),
-      rm: vi.fn((p: string) => {
-        if (p === nodePath.join(FAKE_CWD, localSidecarDir(FAKE_SLUG))) {
-          return Promise.reject(Object.assign(new Error("EACCES"), { code: "EACCES" }));
-        }
-        return Promise.resolve();
-      }),
-    };
-    const worktreeManager = makeWorktreeManager();
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn: makeSpawn(),
-      fs: mockFs,
-      worktreeManagerFn: () => worktreeManager,
-    });
-
-    expect(result.exitCode).toBe(0);
-    const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
-    expect(calls.some((m) => m.includes("Warning") && m.includes(FAKE_SLUG))).toBe(true);
-  });
-
-  it("TC-014: drafts/<slug> directory is removed via fs.rm during archive", async () => {
-    const mockFs = makeFs();
-    const worktreeManager = makeWorktreeManager();
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn: makeSpawn(),
-      fs: mockFs,
-      worktreeManagerFn: () => worktreeManager,
-    });
-
-    expect(result.exitCode).toBe(0);
-
-    const expectedDraftPath = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG);
+    // Draft removal stays in orchestrator so the deletion is committed with the archive
+    const expectedDraftPath = nodePath.join(FAKE_WORKTREE, draftsDir(), FAKE_SLUG);
     expect(vi.mocked(mockFs.rm)).toHaveBeenCalledWith(
       expectedDraftPath,
       { recursive: true, force: true },
     );
   });
-});
 
-describe("archive orchestrator — remote branch deletion idempotency", () => {
-  beforeEach(() => {
-    vi.mocked(JobStateStore.list).mockResolvedValue([makeState()]);
-    vi.mocked(stderrWrite).mockClear();
-  });
+  it("T-02: liveness.json is NOT unlinked by orchestrator (moved to runPostMergeCleanup)", async () => {
+    const mockFs = makeFs();
 
-  it("T-branch-01: does not warn when the remote branch is already absent", async () => {
-    const spawn = vi.fn().mockImplementation((_cmd: string, args: string[]) => {
-      if (args[0] === "push" && args[1] === "origin" && args[2] === "--delete") {
-        return Promise.resolve({
-          exitCode: 1,
-          stdout: "",
-          stderr: "error: unable to delete 'refs/heads/fix/test': remote ref does not exist",
-        });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-    }) as SpawnFn;
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn,
-      fs: makeFs(),
-      worktreeManagerFn: () => makeWorktreeManager(),
-    });
-
-    expect(result.exitCode).toBe(0);
-    const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
-    expect(calls.some((m) => m.includes("failed to delete remote branch"))).toBe(false);
-  });
-
-  it("T-branch-02: warns when remote branch deletion fails for another reason", async () => {
-    const spawn = vi.fn().mockImplementation((_cmd: string, args: string[]) => {
-      if (args[0] === "push" && args[1] === "origin" && args[2] === "--delete") {
-        return Promise.resolve({ exitCode: 128, stdout: "", stderr: "remote: Repository not found." });
-      }
-      return Promise.resolve({ exitCode: 0, stdout: "", stderr: "" });
-    }) as SpawnFn;
-
-    const result = await runArchiveOrchestrator({
-      slug: FAKE_SLUG,
-      cwd: FAKE_CWD,
-      spawn,
-      fs: makeFs(),
-      worktreeManagerFn: () => makeWorktreeManager(),
-    });
-
-    expect(result.exitCode).toBe(0);
-    const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
-    expect(calls.some((m) => m.includes("failed to delete remote branch"))).toBe(true);
-  });
-
-  it("T-branch-03: does not warn when remote branch deletion succeeds", async () => {
     const result = await runArchiveOrchestrator({
       slug: FAKE_SLUG,
       cwd: FAKE_CWD,
       spawn: makeSpawn(),
+      fs: mockFs,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    const livenessPath = nodePath.join(FAKE_CWD, livenessJsonPath(FAKE_SLUG));
+    const unlinkCalls = vi.mocked(mockFs.unlink).mock.calls.map(([p]) => p as string);
+    expect(unlinkCalls).not.toContain(livenessPath);
+  });
+
+  it("T-03: managed marker.json is NOT unlinked by orchestrator (moved to runPostMergeCleanup)", async () => {
+    const mockFs = makeFs();
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: mockFs,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    const markerPath = nodePath.join(FAKE_CWD, managedMarkerPath(FAKE_SLUG));
+    const unlinkCalls = vi.mocked(mockFs.unlink).mock.calls.map(([p]) => p as string);
+    expect(unlinkCalls).not.toContain(markerPath);
+  });
+
+  it("T-04: localSidecarDir is NOT removed by orchestrator (moved to runPostMergeCleanup)", async () => {
+    const mockFs = makeFs();
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: mockFs,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    const sidecarPath = nodePath.join(FAKE_CWD, localSidecarDir(FAKE_SLUG));
+    const rmCalls = vi.mocked(mockFs.rm).mock.calls.map(([p]) => p as string);
+    expect(rmCalls).not.toContain(sidecarPath);
+  });
+
+  it("T-05: branch deletion (branch -D / push --delete) NOT called by orchestrator", async () => {
+    const spawnMock = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: spawnMock as unknown as SpawnFn,
       fs: makeFs(),
-      worktreeManagerFn: () => makeWorktreeManager(),
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    const branchDeleteCall = spawnMock.mock.calls.find(
+      (c: unknown[]) => c[0] === "git" && (c[1] as string[])[0] === "branch" && (c[1] as string[])[1] === "-D",
+    );
+    expect(branchDeleteCall).toBeUndefined();
+
+    const remoteDeleteCall = spawnMock.mock.calls.find(
+      (c: unknown[]) =>
+        c[0] === "git" &&
+        (c[1] as string[])[0] === "push" &&
+        (c[1] as string[])[1] === "origin" &&
+        (c[1] as string[])[2] === "--delete",
+    );
+    expect(remoteDeleteCall).toBeUndefined();
+  });
+
+  it("T-06: draft rm failure does not fail archive (best-effort)", async () => {
+    const mockFs: FinishFs & { rm: ReturnType<typeof vi.fn> } = {
+      ...makeFs(),
+      rm: vi.fn(() => Promise.reject(new Error("EPERM"))),
+    };
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: mockFs,
+    });
+
+    expect(result.exitCode).toBe(0);
+  });
+
+  it("T-07: draft rm EACCES emits a Warning via stderrWrite (best-effort)", async () => {
+    vi.mocked(stderrWrite).mockClear();
+    const mockFs: FinishFs & { rm: ReturnType<typeof vi.fn> } = {
+      ...makeFs(),
+      rm: vi.fn(() => Promise.reject(Object.assign(new Error("EACCES"), { code: "EACCES" }))),
+    };
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: mockFs,
     });
 
     expect(result.exitCode).toBe(0);
     const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
-    expect(calls.some((m) => m.includes("failed to delete remote branch"))).toBe(false);
+    expect(calls.some((m) => m.includes("Warning") && m.includes("draft"))).toBe(true);
   });
 });

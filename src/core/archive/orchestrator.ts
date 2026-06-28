@@ -1,12 +1,17 @@
 /**
- * Archive orchestrator — client-closed final cleanup.
+ * Archive orchestrator — records archive commit on feature branch.
  *
  * Design invariant: does NOT import GitHubClient — no GitHub API calls.
+ * Design invariant: does NOT checkout / commit / push to base branch.
+ * Records the archive commit on the feature branch and pushes to remote feature branch.
+ * Post-merge cleanup (worktree teardown + branch delete) is handled separately by
+ * runPostMergeCleanup, which runs only after a successful PR merge.
  *
  * Phase 0: pre-flight (job state load + finishable gate + terminal status check)
- * Phase 1: git checkout main → derive usage → archiveChangeFolder (mv/skip) →
- *          markJobArchived (slug, cwd) → git add specrunner/changes/ → commitArchive → git push origin main
- * Phase 2: worktree remove + feature branch delete (best-effort)
+ * Phase 1: resolve recordDir → checkout feature branch (no-worktree only) →
+ *          derive usage → archiveChangeFolder (mv/skip) →
+ *          markJobArchived → draft deletion → git add → commitArchive →
+ *          git push origin <feature-branch> → capture headSha
  */
 import * as fs from "node:fs/promises";
 import * as nodePath from "node:path";
@@ -21,13 +26,12 @@ import { assertJobFinishable, markJobArchived } from "../finish/job-state-update
 import { deriveAndWriteUsage } from "../finish/derive-usage.js";
 import { archiveChangeFolder } from "../finish/archive-change-folder.js";
 import { commitArchive } from "../finish/commit-archive.js";
-import { buildWorktreePath, createWorktreeManager } from "../worktree/manager.js";
+import { buildWorktreePath } from "../worktree/manager.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { logResult, stderrWrite } from "../../logger/stdout.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
-import { livenessJsonPath, managedMarkerPath, draftsDir, localSidecarDir } from "../../util/paths.js";
-import { isRemoteRefNotFound } from "../../util/git-push.js";
+import { livenessJsonPath, draftsDir } from "../../util/paths.js";
 
 export interface ArchiveInput {
   /** Slug of the job to archive. */
@@ -36,24 +40,22 @@ export interface ArchiveInput {
   cwd: string;
   spawn: SpawnFn;
   fs: FinishFs;
-  /** Base branch name (default: "main"). */
+  /** Base branch name (default: "main"). Kept for interface compatibility; not used for push. */
   baseBranch?: string;
-  /** Injectable WorktreeManager for testing. */
-  worktreeManagerFn?: () => WorktreeManager;
   /** Resolved GitHub token for authenticating git push/fetch operations. Optional. */
   githubToken?: string;
 }
 
 export type ArchiveResult =
-  | { exitCode: 0 }
+  | { exitCode: 0; headSha?: string }
   | { exitCode: 1; escalation: string }
   | { exitCode: 2; message: string };
 
 /**
- * Resolve worktree path for archive Phase 2 cleanup.
+ * Resolve worktree path for recording on the feature branch.
  * Falls back from state.worktreePath → liveness sidecar → buildWorktreePath convention.
  */
-async function resolveWorktreePathForArchive(
+export async function resolveWorktreePathForArchive(
   state: import("../../state/schema.js").JobState,
   cwd: string,
 ): Promise<string | null> {
@@ -75,22 +77,24 @@ async function resolveWorktreePathForArchive(
     // No sidecar — fall through
   }
 
-  // 3. Convention-derived path (best-effort; remove() is already wrapped in try-catch)
+  // 3. Convention-derived path (best-effort)
   return buildWorktreePath(cwd, slug, state.jobId);
 }
 
 /**
- * Run the archive orchestration.
+ * Run the archive orchestration: record archive commit on feature branch.
  * Returns exit code to caller (CLI entry does process.exit()).
+ *
+ * This function does NOT perform worktree teardown or branch deletion.
+ * Post-merge cleanup is handled by runPostMergeCleanup (called by --with-merge path).
  */
 export async function runArchiveOrchestrator(
   input: ArchiveInput,
   stdoutWrite: (msg: string) => void = logResult,
 ): Promise<ArchiveResult> {
-  const { slug, cwd, fs, worktreeManagerFn } = input;
-  const baseBranch = input.baseBranch ?? "main";
+  const { slug, cwd, fs } = input;
 
-  // Wrap spawn with transport auth for git push operations (C8, C9).
+  // Wrap spawn with transport auth for git push operations.
   // If githubToken is absent, auth args resolve to [] and spawn behaves as plain git.
   const transportAuth = createTransportAuth({ token: input.githubToken, cwd });
   const spawn = transportAuth.wrapSpawn(input.spawn);
@@ -121,7 +125,7 @@ export async function runArchiveOrchestrator(
     branch = state.branch;
     noWorktree = state.noWorktree === true;
 
-    // Terminal status → no-op
+    // Terminal status → no-op (short-circuit before touching worktree)
     if (TERMINAL_STATUSES.has(state.status)) {
       stdoutWrite(`Already finished (${state.status}).`);
       return { exitCode: 0 };
@@ -156,37 +160,66 @@ export async function runArchiveOrchestrator(
 
   try {
     // -------------------------------------------------------------------------
-    // Phase 1: main checkout → derive usage → archive change folder → commit → push
+    // Phase 1: determine recordDir → record archive commit on feature branch
     // -------------------------------------------------------------------------
-    stdoutWrite(`Phase 1: archiving on ${baseBranch}...`);
 
-    // git checkout main
-    const checkoutResult = await spawn("git", ["checkout", baseBranch], { cwd });
-    if (checkoutResult.exitCode !== 0) {
-      return {
-        exitCode: 1,
-        escalation: formatEscalation({
-          failedStep: "Phase 1 (git checkout)",
-          detectedState: `git checkout ${baseBranch} failed (exit ${checkoutResult.exitCode}): ${checkoutResult.stderr.trim()}`,
-          recommendedAction: `Ensure you are on the ${baseBranch} branch and resolve any local changes, then re-run: specrunner job archive ${slug}`,
-          resumeCommand: `specrunner job archive ${slug}`,
-        }),
-      };
+    // Determine the recording directory (where git operations will run).
+    // - Worktree mode: the worktree is already checked out to the feature branch.
+    // - No-worktree mode: the main repo; we checkout the feature branch first.
+    let recordDir: string;
+
+    if (noWorktree) {
+      // No-worktree mode: use main repo, ensure we're on the feature branch (not base)
+      if (!branch) {
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "Phase 1 (branch resolution)",
+            detectedState: `Feature branch not found in state for ${slug}.`,
+            recommendedAction: `Check job state with 'specrunner ps', then re-run: specrunner job archive ${slug}`,
+            resumeCommand: `specrunner job archive ${slug}`,
+          }),
+        };
+      }
+      recordDir = cwd;
+      stdoutWrite(`Phase 1: checking out feature branch ${branch}...`);
+      const checkoutResult = await spawn("git", ["checkout", branch], { cwd });
+      if (checkoutResult.exitCode !== 0) {
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "Phase 1 (git checkout feature branch)",
+            detectedState: `git checkout ${branch} failed (exit ${checkoutResult.exitCode}): ${checkoutResult.stderr.trim()}`,
+            recommendedAction: `Resolve any local changes and ensure the feature branch exists, then re-run: specrunner job archive ${slug}`,
+            resumeCommand: `specrunner job archive ${slug}`,
+          }),
+        };
+      }
+    } else {
+      // Worktree mode: recordDir = worktree path (already on feature branch)
+      if (!worktreePath) {
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "Phase 1 (worktree resolution)",
+            detectedState: `Worktree not found for ${slug}. The worktree may have been removed while the job is not yet archived.`,
+            recommendedAction: `Check worktree state with 'git worktree list'. If the worktree was removed, re-create it and re-run: specrunner job archive ${slug}`,
+            resumeCommand: `specrunner job archive ${slug}`,
+          }),
+        };
+      }
+      recordDir = worktreePath;
     }
 
-    // git pull --ff-only (best-effort to get merged changes)
-    const pullResult = await spawn("git", ["pull", "--ff-only"], { cwd });
-    if (pullResult.exitCode !== 0) {
-      stderrWrite(`Warning: git pull --ff-only failed. Continuing with local state.`);
-    }
+    stdoutWrite(`Phase 1: recording archive on feature branch${branch ? ` ${branch}` : ""}...`);
 
     // Derive pipeline usage into changes/<slug>/usage.json (before archive moves it)
     try {
       const usageResult = await deriveAndWriteUsage({
         jobId,
         slug,
-        cwd,
-        repoRoot: cwd,
+        cwd: recordDir,
+        repoRoot: recordDir,
         spawn,
         fs,
       });
@@ -196,7 +229,7 @@ export async function runArchiveOrchestrator(
     }
 
     // Archive change folder (git mv; skips if already moved)
-    const archiveResult = await archiveChangeFolder({ slug, cwd, spawn, fs });
+    const archiveResult = await archiveChangeFolder({ slug, cwd: recordDir, spawn, fs });
     if (!archiveResult.ok) {
       return { exitCode: 1, escalation: archiveResult.escalation };
     }
@@ -204,7 +237,7 @@ export async function runArchiveOrchestrator(
 
     // Mark job archived (D1/D2/D3): resolve slug canonical state dir and transition to archived
     try {
-      await markJobArchived(slug, cwd);
+      await markJobArchived(slug, recordDir);
       stdoutWrite(`Job ${slug} marked as archived.`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -221,99 +254,69 @@ export async function runArchiveOrchestrator(
 
     // Delete draft folder for this slug (best-effort; archive continues even if this fails)
     try {
-      await fs.rm(nodePath.join(cwd, draftsDir(), slug), { recursive: true, force: true });
+      await fs.rm(nodePath.join(recordDir, draftsDir(), slug), { recursive: true, force: true });
     } catch {
       stderrWrite(`Warning: failed to delete draft folder for ${slug}. Remove manually if needed.`);
     }
 
     // Stage the draft deletion (no-op if draft was untracked or absent)
-    const draftAddResult = await spawn("git", ["add", draftsDir()], { cwd });
+    const draftAddResult = await spawn("git", ["add", draftsDir()], { cwd: recordDir });
     if (draftAddResult.exitCode !== 0) {
       stderrWrite(`Warning: git add ${draftsDir()}/ failed: ${draftAddResult.stderr.trim()}. Continuing.`);
     }
 
     // Stage mv + archived status change together so they land in one commit
-    const addResult = await spawn("git", ["add", "specrunner/changes/"], { cwd });
+    const addResult = await spawn("git", ["add", "specrunner/changes/"], { cwd: recordDir });
     if (addResult.exitCode !== 0) {
       stderrWrite(`Warning: git add specrunner/changes/ failed: ${addResult.stderr.trim()}. Continuing.`);
     }
 
     // Commit staged changes
-    const commitResult = await commitArchive({ slug, cwd, spawn });
+    const commitResult = await commitArchive({ slug, cwd: recordDir, spawn });
     if (!commitResult.ok) {
       return { exitCode: 1, escalation: commitResult.escalation };
     }
     if (!commitResult.skipped) stdoutWrite(commitResult.message);
 
-    // Push to main
-    const pushResult = await spawn("git", ["push", "origin", baseBranch], { cwd });
+    // Push archive commit to remote feature branch (not base)
+    if (!branch) {
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "Phase 1 (git push feature branch)",
+          detectedState: `Feature branch not found in state for ${slug}. Cannot push archive commit.`,
+          recommendedAction: `Check job state with 'specrunner ps', then re-run: specrunner job archive ${slug}`,
+          resumeCommand: `specrunner job archive ${slug}`,
+        }),
+      };
+    }
+
+    const pushResult = await spawn("git", ["push", "origin", branch], { cwd: recordDir });
     if (pushResult.exitCode !== 0) {
       return {
         exitCode: 1,
         escalation: formatEscalation({
-          failedStep: "Phase 1 (git push origin main)",
-          detectedState: `git push origin ${baseBranch} failed (exit ${pushResult.exitCode}): ${pushResult.stderr.trim()}`,
+          failedStep: "Phase 1 (git push origin <feature-branch>)",
+          detectedState: `git push origin ${branch} failed (exit ${pushResult.exitCode}): ${pushResult.stderr.trim()}`,
           recommendedAction: `Check network/auth and re-run: specrunner job archive ${slug}`,
           resumeCommand: `specrunner job archive ${slug}`,
         }),
       };
     }
-    stdoutWrite(`Pushed ${baseBranch} to origin.`);
+    stdoutWrite(`Pushed archive commit to origin/${branch}.`);
 
-    // -------------------------------------------------------------------------
-    // Phase 2: worktree teardown + feature branch delete (best-effort)
-    // -------------------------------------------------------------------------
-    stdoutWrite(noWorktree ? "Phase 2: cleaning up branches..." : "Phase 2: cleaning up worktree...");
-
-    if (worktreePath && !noWorktree) {
-      const manager = worktreeManagerFn ? worktreeManagerFn() : createWorktreeManager();
-      try {
-        await manager.remove(worktreePath, cwd);
-        await manager.prune(cwd);
-      } catch {
-        stderrWrite(`Warning: failed to remove worktree at ${worktreePath}. Run 'git worktree prune' manually.`);
-      }
+    // Capture HEAD SHA so the --with-merge path can wait for CI on the correct commit
+    let headSha: string | undefined;
+    const headShaResult = await spawn("git", ["rev-parse", "HEAD"], { cwd: recordDir });
+    if (headShaResult.exitCode === 0) {
+      headSha = headShaResult.stdout.trim() || undefined;
     }
 
-    // Delete liveness.json sidecar (best-effort)
-    try {
-      await fs.unlink(nodePath.join(cwd, livenessJsonPath(slug)));
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
-        stderrWrite(`Warning: failed to delete liveness sidecar for ${slug}.`);
-      }
-    }
-
-    // Delete managed marker (best-effort)
-    try {
-      await fs.unlink(nodePath.join(cwd, managedMarkerPath(slug)));
-    } catch (err) {
-      if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
-        stderrWrite(`Warning: failed to delete managed marker for ${slug}.`);
-      }
-    }
-
-    // Delete sidecar directory (best-effort)
-    try {
-      await fs.rm(nodePath.join(cwd, localSidecarDir(slug)), { recursive: true, force: true });
-    } catch {
-      stderrWrite(`Warning: failed to remove sidecar directory for ${slug}.`);
-    }
-
-    // Delete feature branch (best-effort)
-    if (branch) {
-      const localDelResult = await spawn("git", ["branch", "-D", branch], { cwd });
-      if (localDelResult.exitCode !== 0) {
-        stderrWrite(`Warning: failed to delete local branch ${branch}.`);
-      }
-      const remoteDelResult = await spawn("git", ["push", "origin", "--delete", branch], { cwd });
-      if (remoteDelResult.exitCode !== 0 && !isRemoteRefNotFound(remoteDelResult.stderr)) {
-        stderrWrite(`Warning: failed to delete remote branch ${branch}.`);
-      }
-    }
-
-    return { exitCode: 0 };
+    return { exitCode: 0, headSha };
   } finally {
     keepAlive.release();
   }
 }
+
+// Re-export WorktreeManager type for consumers that need it alongside this module
+export type { WorktreeManager };
