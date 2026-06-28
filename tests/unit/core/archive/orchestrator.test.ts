@@ -15,7 +15,7 @@
  * TC-AO-HEADSHA: push 後に headSha を返す
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import * as nodePath from "node:path";
+import * as _nodePath from "node:path";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import type { FinishFs } from "../../../../src/core/finish/types.js";
 
