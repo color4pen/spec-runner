@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.4](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.3...specrunner-v0.3.4) (2026-06-28)
+
+
+### Features
+
+* archive をブランチ上で先に実行し、base への直接影響を merge のみに限定する ([#723](https://github.com/color4pen/spec-runner/issues/723)) ([15a7580](https://github.com/color4pen/spec-runner/commit/15a758043c97099bf238b6460a0b6b6b91a9fe64))
+* cancel 時にジョブを canceled/&lt;slug&gt;-<jobId8>/ へ退避し、キャンセル記録・request の消失を解消する ([#722](https://github.com/color4pen/spec-runner/issues/722)) ([fd8b6a9](https://github.com/color4pen/spec-runner/commit/fd8b6a9fa0e5ef48401d7bc36891e43825f0eff5))
+* init で provider を選択し、provider に応じたデフォルトモデルを scaffold に書く + model registry 更新 ([#712](https://github.com/color4pen/spec-runner/issues/712)) ([410d526](https://github.com/color4pen/spec-runner/commit/410d526246754d0739f25a54e927c313197084a5))
+* reviewer 活性化ゲートの「変更ファイル導出不能時の無言 skip」を fail-closed に揃える ([#720](https://github.com/color4pen/spec-runner/issues/720)) ([fb7c13e](https://github.com/color4pen/spec-runner/commit/fb7c13edfe0f7fbd87f1b113bd3343a6026d5432))
+* カスタムレビュワーの並列実行 + per-reviewer status tracking + invalidation ([#710](https://github.com/color4pen/spec-runner/issues/710)) ([19672c2](https://github.com/color4pen/spec-runner/commit/19672c2988e1b61ee23f13cbb027563aaffec998))
+* 全 subprocess spawn を stripSecrets seam に集約し、env 省略による credential 継承を構造的に塞ぐ ([#717](https://github.com/color4pen/spec-runner/issues/717)) ([cf00809](https://github.com/color4pen/spec-runner/commit/cf00809c994089d8f4b76b8a9676f7443480c6c5))
+
+
+### Bug Fixes
+
+* config 書き込み経路がグローバル config を不必要に書き換える + stale strip が GHES host 設定を消す ([#704](https://github.com/color4pen/spec-runner/issues/704)) ([640b634](https://github.com/color4pen/spec-runner/commit/640b63439a1625bf675a22b059dc1da612cace40))
+* GitHub adapter の merge/finish ゲートの fail-open を塞ぐ（非冪等リトライ・チェック取りこぼし・Retry-After） ([#718](https://github.com/color4pen/spec-runner/issues/718)) ([c59c7e9](https://github.com/color4pen/spec-runner/commit/c59c7e9719b666938b3d48badb4e8ba160d3d454))
+* hard-crash 後の resume を進捗(state.step)から再構築し、「再開位置が不明」での詰まりを解消する ([#716](https://github.com/color4pen/spec-runner/issues/716)) ([ae756a9](https://github.com/color4pen/spec-runner/commit/ae756a90083269a79efe9dea3cd7e2867370afde))
+* judge の findings/scores パース健全性を回復し、verdict 導出の取りこぼし・誤りをなくす ([#713](https://github.com/color4pen/spec-runner/issues/713)) ([6736957](https://github.com/color4pen/spec-runner/commit/6736957525875a097cfc5b19ac4865bd19aadbc8))
+* resume の再開 step 検証を実 descriptor 由来にし、reviewer 段の hard-crash 回復不能を解消する ([#719](https://github.com/color4pen/spec-runner/issues/719)) ([f391560](https://github.com/color4pen/spec-runner/commit/f3915601d66dfc59a782fad7da47937a408429c6))
+* subprocess / SDK spawn と log から credential を漏らさない（B-6 / B-7 封じ込めの実適用） ([#714](https://github.com/color4pen/spec-runner/issues/714)) ([65c2d7c](https://github.com/color4pen/spec-runner/commit/65c2d7c3ec3f3fe65e2002569dbb3a03b5a5da53))
+
 ## [0.3.3](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.2...specrunner-v0.3.3) (2026-06-15)
 
 
