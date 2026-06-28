@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4e1331d8-1f86-44d9-afcb-ea7eeb7dcfc5",
   "createdAt": "2026-06-28T02:24:21.654Z",
-  "updatedAt": "2026-06-28T02:24:24.046Z",
+  "updatedAt": "2026-06-28T02:28:33.256Z",
   "request": {
     "title": "archive をブランチ上で先に実行し、base への直接影響を merge のみに限定する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/archive-on-branch-first-4e1331d8",
   "error": null,
@@ -48,7 +48,9 @@
     }
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
