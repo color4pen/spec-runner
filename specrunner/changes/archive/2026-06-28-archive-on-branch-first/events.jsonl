@@ -91,3 +91,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/archive-on-branch-first/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-28T07:37:36.566Z","endedAt":"2026-06-28T07:37:38.127Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-28T07:37:38.127Z","outputs":[{"path":"specrunner/changes/archive-on-branch-first/pr-create-result.md","hash":"sha256:cb656932b86a942ae658dde2a0e62789e43cd302f403931ae2dca00886760a41"}],"inputs":[{"path":"change/archive-on-branch-first-4e1331d8","hash":null}]}
 {"type":"transition","ts":"2026-06-28T07:37:38.131Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-28T09:13:29.216Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

@@ -1,21 +1,27 @@
 {
   "version": 2,
-  "jobId": "4e1331d8-1f86-44d9-afcb-ea7eeb7dcfc5",
-  "createdAt": "2026-06-28T02:24:21.654Z",
-  "updatedAt": "2026-06-28T07:37:38.131Z",
+  "jobId": "666635be-7f04-4a80-b803-8db6bf974f9a",
+  "createdAt": "2026-06-27T23:50:47.147Z",
+  "updatedAt": "2026-06-28T02:22:06.776Z",
   "request": {
     "title": "archive をブランチ上で先に実行し、base への直接影響を merge のみに限定する",
     "type": "spec-change",
-    "baseBranch": "main"
+    "baseBranch": "main",
+    "slug": "archive-on-branch-first",
+    "path": "/Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/archive-on-branch-first-666635be/specrunner/changes/archive-on-branch-first/request.md"
   },
   "repository": {
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
-  "branch": "change/archive-on-branch-first-4e1331d8",
-  "error": null,
+  "step": "regression-gate",
+  "status": "canceled",
+  "branch": "change/archive-on-branch-first-666635be",
+  "error": {
+    "code": "USER_CANCELED",
+    "message": "Canceled by user",
+    "hint": ""
+  },
   "pipelineId": "standard",
   "reviewers": [
     {
@@ -50,8 +56,8 @@
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "skipped",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "21d4896bde35fa6cf0031462f300cf4aa21ded93",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -73,30 +79,29 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": null,
-  "pullRequest": {
-    "url": "https://github.com/color4pen/spec-runner/pull/723",
-    "number": 723,
-    "createdAt": "2026-06-28T07:37:38.127Z"
+  "resumePoint": {
+    "step": "regression-gate",
+    "reason": "regression-gate escalated",
+    "iterationsExhausted": 1
   },
+  "canceledAt": "2026-06-28T02:22:06.776Z",
+  "worktreePath": null,
   "_journal": {
-    "historyCount": 63,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1,
+      "spec-review": 2,
+      "spec-fixer": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 2,
-      "build-fixer": 1,
+      "verification": 1,
       "code-review": 1,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 1,
       "scale-tolerance": 1,
+      "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1,
-      "conformance": 1,
-      "adr-gen": 2,
-      "pr-create": 1
+      "regression-gate": 1
     }
   }
 }
