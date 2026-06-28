@@ -124,13 +124,13 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-014: PR が既に MERGED → archive は記帳のみ（status=archived なら terminal short-circuit）、cleanup のみ実行
+// TC-014: PR が既に MERGED + status=archived → 記帳済みの resume として cleanup のみ実行
 // ---------------------------------------------------------------------------
 
-describe("TC-014: PR が既に MERGED の場合は merge をスキップして cleanup を実行", () => {
-  it("mergePullRequest を呼ばず、runPostMergeCleanup を呼ぶ", async () => {
+describe("TC-014: PR が既に MERGED かつ status=archived は cleanup のみ実行（記帳済み resume）", () => {
+  it("記帳(runArchiveOrchestrator)と mergePullRequest を呼ばず、runPostMergeCleanup を呼ぶ", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    // Status is archived (terminal) so archive recording is a no-op
+    // status=archived: archive rode the PR before it merged; this is a cleanup-only resume.
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42, { status: "archived" })]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
@@ -163,8 +163,58 @@ describe("TC-014: PR が既に MERGED の場合は merge をスキップして c
     });
 
     expect(result).toMatchObject({ exitCode: 0 });
+    expect(runArchiveOrchestrator).not.toHaveBeenCalled();
     expect(client.mergePullRequest).not.toHaveBeenCalled();
     expect(runPostMergeCleanup).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-MERGED-NOT-ARCHIVED: PR merged but status != archived → エラー（順序ミス）
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-MERGED-NOT-ARCHIVED: マージ済みだが未 archive はエラーで返す", () => {
+  it("status=awaiting-archive + PR merged → exitCode 1、記帳も cleanup も merge も呼ばない", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    // Merged before archiving: archive never recorded (status still awaiting-archive).
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42, { status: "awaiting-archive" })]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: undefined });
+
+    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "MERGED",
+        mergeStateStatus: "UNKNOWN",
+        mergeable: "MERGEABLE",
+        headSha: "abc123",
+      }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toContain("PR merged before archive");
+    }
+    // No recording, no merge, no cleanup — order error, nothing to salvage automatically.
+    expect(runArchiveOrchestrator).not.toHaveBeenCalled();
+    expect(client.mergePullRequest).not.toHaveBeenCalled();
+    expect(runPostMergeCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -937,6 +987,56 @@ describe("TC-MTA-ARCHIVE-SHA: archiveSha tracking in wait loop", () => {
     // sleep called once (while waiting for PR to reflect archive sha)
     expect(sleepFn).toHaveBeenCalledTimes(1);
   });
+
+  it("PR headSha が archiveSha に恒久的に一致しないと deadline で timeout escalation する（無限ループしない）", async () => {
+    const ARCHIVE_SHA = "archive-sha-new-002";
+    const OLD_HEAD_SHA = "head-that-never-reflects-archive";
+
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: ARCHIVE_SHA });
+
+    // PR head never advances to the archive commit (e.g. external force-push moved it).
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        mergeable: "MERGEABLE",
+        headSha: OLD_HEAD_SHA,
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+    });
+
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    // First nowFn() call is `start` (0); every later call is past the 60s deadline.
+    let nowCalls = 0;
+    const nowFn = () => (nowCalls++ === 0 ? 0 : 100_000);
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      sleepFn,
+      waitTimeoutMs: 60_000,
+      pollIntervalMs: 5_000,
+      nowFn,
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toContain("PR head did not reflect archive commit");
+    }
+    // Never trusted CI on the stale head, and did not hang.
+    expect(client.getCheckStatus).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -1359,12 +1459,13 @@ describe("TC-MTA-E01: JobStateStore.list throws → exitCode 2", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-MTA-E02: Step 3 — initial getPullRequest throws → exitCode 1 (escalation)
-// Note: archive recording (Step 2) happens before getPullRequest (Step 3)
+// TC-MTA-E02: Step 2 — initial getPullRequest throws → exitCode 1 (escalation)
+// Note: the PR status check (Step 2) happens BEFORE archive recording (Step 3),
+// so a failed PR check must short-circuit without recording on the branch.
 // ---------------------------------------------------------------------------
 
 describe("TC-MTA-E02: initial getPullRequest throws → exitCode 1 escalation", () => {
-  it("getPullRequest throws after archive recording → exitCode 1, failedStep contains 'PR status check'", async () => {
+  it("getPullRequest throws before recording → exitCode 1, 'PR status check', recording NOT called", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
 
@@ -1392,8 +1493,8 @@ describe("TC-MTA-E02: initial getPullRequest throws → exitCode 1 escalation", 
     if (result.exitCode === 1) {
       expect(result.escalation).toContain("PR status check (getPullRequest)");
     }
-    // archive recording was called before the PR check
-    expect(runArchiveOrchestrator).toHaveBeenCalled();
+    // PR check happens before recording: a failed check must NOT record on the branch
+    expect(runArchiveOrchestrator).not.toHaveBeenCalled();
   });
 });
 
