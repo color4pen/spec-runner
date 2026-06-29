@@ -37,7 +37,6 @@ const owner = "user";
 const repo = "repo";
 const prNumber = 42;
 const slug = "my-slug";
-const baseBranch = "main";
 
 beforeEach(() => {
   vi.spyOn(process.stderr, "write").mockReturnValue(true);
