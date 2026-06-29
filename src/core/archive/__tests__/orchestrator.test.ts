@@ -59,6 +59,8 @@ vi.mock("../../../git/transport-auth.js", () => ({
 import { runArchiveOrchestrator } from "../orchestrator.js";
 import { JobStateStore } from "../../../store/job-state-store.js";
 import { stderrWrite } from "../../../logger/stdout.js";
+import { commitArchive } from "../../finish/commit-archive.js";
+import { archiveChangeFolder } from "../../finish/archive-change-folder.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -253,5 +255,28 @@ describe("archive orchestrator — side-effect boundaries (archive-on-branch-fir
     expect(result.exitCode).toBe(0);
     const calls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
     expect(calls.some((m) => m.includes("Warning") && m.includes("draft"))).toBe(true);
+  });
+
+  it("T-07: archived job resolves via includeArchived and returns Already finished", async () => {
+    vi.mocked(JobStateStore.list).mockResolvedValue([makeState({ status: "archived" })]);
+    vi.mocked(commitArchive).mockClear();
+    vi.mocked(archiveChangeFolder).mockClear();
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: makeFs(),
+    });
+
+    // Should return exitCode 0 via terminal-status short-circuit
+    expect(result.exitCode).toBe(0);
+
+    // list() must have been called with includeArchived: true
+    expect(vi.mocked(JobStateStore.list)).toHaveBeenCalledWith(FAKE_CWD, { includeArchived: true });
+
+    // No archive side-effects should have been executed
+    expect(vi.mocked(commitArchive)).not.toHaveBeenCalled();
+    expect(vi.mocked(archiveChangeFolder)).not.toHaveBeenCalled();
   });
 });
