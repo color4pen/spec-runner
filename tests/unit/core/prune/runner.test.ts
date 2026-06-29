@@ -274,7 +274,8 @@ describe("pruneOrphanWorktrees", () => {
   });
 
   it("continues with warning when worktreeManager.prune fails", async () => {
-    mockScan.mockResolvedValue([]);
+    mockScan.mockResolvedValue([makeOrphan()]);
+    mockInspect.mockResolvedValue({ hasWork: false, reasons: [] });
     manager.prune.mockRejectedValue(new Error("prune failed"));
 
     const result = await pruneOrphanWorktrees({
@@ -282,7 +283,9 @@ describe("pruneOrphanWorktrees", () => {
       deps: { repoRoot: REPO_ROOT, spawn, worktreeManager: manager },
     });
 
-    // No orphans → early return before prune is called
     expect(result.exitCode).toBe(0);
+    expect(result.warnings).toEqual(
+      expect.arrayContaining([expect.stringContaining("git worktree prune failed")]),
+    );
   });
 });
