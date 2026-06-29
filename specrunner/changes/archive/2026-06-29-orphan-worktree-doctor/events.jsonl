@@ -110,3 +110,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/orphan-worktree-doctor/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-29T04:37:31.850Z","endedAt":"2026-06-29T04:37:33.453Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-29T04:37:33.453Z","outputs":[{"path":"specrunner/changes/orphan-worktree-doctor/pr-create-result.md","hash":"sha256:89149da8cc095057caf8db544db254f037292bea737b7050ec0e7d5689c2c577"}],"inputs":[{"path":"feat/orphan-worktree-doctor-a7d960d6","hash":null}]}
 {"type":"transition","ts":"2026-06-29T04:37:33.465Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-29T04:40:02.635Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
