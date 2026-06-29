@@ -155,8 +155,10 @@ export async function pruneOrphanWorktrees(opts: PruneOpts): Promise<PruneResult
   let removed = 0;
   for (const orphan of deletable) {
     // Remove worktree (best-effort)
+    let worktreeRemoved = false;
     try {
       await worktreeManager.remove(orphan.worktreePath, repoRoot);
+      worktreeRemoved = true;
     } catch (err: unknown) {
       warnings.push(
         `Warning: failed to remove worktree at ${orphan.worktreePath}: ${err instanceof Error ? err.message : String(err)}`,
@@ -174,8 +176,10 @@ export async function pruneOrphanWorktrees(opts: PruneOpts): Promise<PruneResult
       }
     }
 
-    info.push(`Removed: ${orphan.worktreePath}${orphan.branch ? ` (branch: ${orphan.branch})` : ""}`);
-    removed++;
+    if (worktreeRemoved) {
+      info.push(`Removed: ${orphan.worktreePath}${orphan.branch ? ` (branch: ${orphan.branch})` : ""}`);
+      removed++;
+    }
   }
 
   return {
