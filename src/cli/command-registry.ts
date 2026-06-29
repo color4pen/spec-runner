@@ -14,6 +14,7 @@ import { runPs } from "./ps.js";
 import { runDoctor } from "./doctor.js";
 import { runArchive } from "./archive.js";
 import { runCancel } from "./cancel.js";
+import { runPrune } from "./prune.js";
 import { runResume } from "./resume.js";
 import { runJobShow } from "./job-show.js";
 import { runInboxRun } from "./inbox.js";
@@ -75,6 +76,7 @@ Job commands:
   job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)
   job resume <slug>               halted job を再開
   job archive <slug>              change folder 移動・worktree 撤去・status 更新
+  job prune [--force]             orphan worktree を列挙（--force で削除）
 
 Rules commands:
   rules new <step> <slug>         step 用の rules ファイルを scaffold
@@ -224,6 +226,21 @@ Claude Code:
   Run 'claude setup-token', then run 'specrunner login --provider claude'
   and paste the generated OAuth token. After 'specrunner doctor' reports
   source: credentials.json, remove CLAUDE_CODE_OAUTH_TOKEN from crontab.
+`;
+
+export const PRUNE_USAGE = `Usage: specrunner job prune [options]
+
+Remove orphan worktrees under .git/specrunner-worktrees/ that have no associated
+non-terminal job state. This cleans up worktrees left behind when a process died
+before the job state was persisted.
+
+By default runs as a dry-run (lists orphans without deleting). Use --force to delete.
+
+Worktrees with uncommitted or unpushed changes are always skipped (even with --force).
+
+Options:
+  --force     Delete orphan worktrees and their local branches (default: dry-run)
+  --help, -h  Show this help message
 `;
 
 export const ARCHIVE_USAGE = `Usage: specrunner job archive <slug> [options]
@@ -379,7 +396,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   job: {
-    guardedSubcommands: new Set(["start", "resume", "archive"]),
+    guardedSubcommands: new Set(["start", "resume", "archive", "prune"]),
     subcommands: {
       start: {
         flags: {
@@ -579,6 +596,29 @@ export const COMMANDS: Record<string, CommandEntry> = {
                 dryRun: !!parsed.flags["dry-run"],
                 cwd: process.cwd(),
                 mergeWaitMs,
+              }),
+            );
+          } catch (err: unknown) {
+            if (err instanceof SpecRunnerError) {
+              stderrWrite(`Error: ${err.message}`);
+              stderrWrite(`Hint: ${err.hint}`);
+              process.exit(err.exitCode);
+            }
+            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
+            process.exit(1);
+          }
+        },
+      },
+      prune: {
+        flags: {
+          force: { type: "boolean" },
+        },
+        usage: PRUNE_USAGE,
+        handler: async (parsed) => {
+          try {
+            process.exit(
+              await runPrune({
+                force: !!parsed.flags["force"],
               }),
             );
           } catch (err: unknown) {
