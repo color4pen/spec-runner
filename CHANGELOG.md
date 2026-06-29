@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.5](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.4...specrunner-v0.3.5) (2026-06-29)
+
+
+### Features
+
+* archive→merge ゲートを堅牢化する（merge API 委譲＋transient BLOCKED の待機） ([#727](https://github.com/color4pen/spec-runner/issues/727)) ([acff650](https://github.com/color4pen/spec-runner/commit/acff650da493d3780b534576cceeebeddc226f11))
+* orphan worktree（state 無し）の検出と掃除をツールで可能にする ([#728](https://github.com/color4pen/spec-runner/issues/728)) ([f433d0e](https://github.com/color4pen/spec-runner/commit/f433d0ecf0b44ba616c6b7560b34b78efda3c0ab))
+
+
+### Bug Fixes
+
+* archived だが未マージの job を resume 可能にする ([#726](https://github.com/color4pen/spec-runner/issues/726)) ([160a1c6](https://github.com/color4pen/spec-runner/commit/160a1c6518a4fd3def6dd49cc7649bbd0ff8cf8c))
+* zod を dist にバンドルして実行時の外部解決依存を断つ ([#724](https://github.com/color4pen/spec-runner/issues/724)) ([e5a5ea7](https://github.com/color4pen/spec-runner/commit/e5a5ea73b2026adadf99e64649df7ed9fd275055))
+
 ## [0.3.4](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.3...specrunner-v0.3.4) (2026-06-28)
 
 
