@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-06-29T03:58:22.655Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-29T03:58:22.655Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-06-29T03:58:22.657Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-06-29T04:00:19.474Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"2eec37a7-8c12-4cc1-81a0-a12cb667fcd3","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-29T03:58:22.673Z","endedAt":"2026-06-29T04:00:17.950Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-06-29T04:00:17.950Z","outputs":[{"path":"specrunner/changes/orphan-worktree-doctor/test-cases.md","hash":"sha256:27c02235787c3832c8e8c54b2923d6c7f2295992244704bd6c1b62f190deeffa"}],"inputs":[{"path":"specrunner/changes/orphan-worktree-doctor/design.md","hash":"sha256:f8c5ca3b711130487f5a04bda25b2ac3d18a00120bd218caf76e6bdd292eb94a"},{"path":"specrunner/changes/orphan-worktree-doctor/tasks.md","hash":"sha256:cadde67ae8c987b764a4767b49b6246d3cff038c909e1454221aeb25ba8d2b57"}]}
+{"type":"transition","ts":"2026-06-29T04:00:19.479Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-06-29T04:00:19.481Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
