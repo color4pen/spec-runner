@@ -109,7 +109,7 @@ export async function runArchiveOrchestrator(
   let noWorktree = false;
 
   try {
-    const allStates = await JobStateStore.list(cwd);
+    const allStates = await JobStateStore.list(cwd, { includeArchived: true });
     const matching = allStates.filter((s) => getJobSlug(s) === slug);
 
     if (matching.length === 0) {
