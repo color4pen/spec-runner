@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a7d960d6-ff61-4a3f-a937-d3e3f544b12a",
   "createdAt": "2026-06-29T03:41:24.283Z",
-  "updatedAt": "2026-06-29T03:46:50.037Z",
+  "updatedAt": "2026-06-29T03:54:44.537Z",
   "request": {
     "title": "orphan worktree（state 無し）の検出と掃除をツールで可能にする",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/orphan-worktree-doctor-a7d960d6",
   "error": null,
@@ -48,9 +48,10 @@
     }
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
