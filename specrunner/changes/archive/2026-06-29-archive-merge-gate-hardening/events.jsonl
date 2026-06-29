@@ -86,3 +86,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/archive-merge-gate-hardening/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-29T02:58:32.557Z","endedAt":"2026-06-29T02:58:34.463Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-29T02:58:34.463Z","outputs":[{"path":"specrunner/changes/archive-merge-gate-hardening/pr-create-result.md","hash":"sha256:2996065f81ebf30a62809bfe1380c6dcf5d20f3d5a869c164aed2af95e47c1d7"}],"inputs":[{"path":"change/archive-merge-gate-hardening-2b132c84","hash":null}]}
 {"type":"transition","ts":"2026-06-29T02:58:34.473Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-29T03:01:56.734Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
