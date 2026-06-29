@@ -34,3 +34,16 @@
 {"type":"transition","ts":"2026-06-29T02:43:32.819Z","step":"verification","status":"warning","message":"verification iteration 1 completed with verdict: failed"}
 {"type":"transition","ts":"2026-06-29T02:43:32.819Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
 {"type":"transition","ts":"2026-06-29T02:43:32.821Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-06-29T02:44:14.560Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"356b844f-721c-4236-a929-dc7e7d3fc416","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-29T02:43:32.833Z","endedAt":"2026-06-29T02:44:13.254Z"}
+{"type":"lineage","step":"build-fixer","ts":"2026-06-29T02:44:13.254Z","outputs":[{"path":"specrunner/changes/archive-merge-gate-hardening","hash":null}],"inputs":[{"path":"specrunner/changes/archive-merge-gate-hardening/verification-result.md","hash":"sha256:332abf0ab8d45a89fec2332873c79c94410f2d0140fc8fd6008a3d9ec57b0dbd"}]}
+{"type":"transition","ts":"2026-06-29T02:44:14.566Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-06-29T02:44:14.568Z","step":"verification","status":"started","message":"verification iteration 2 started"}
+{"type":"transition","ts":"2026-06-29T02:44:14.570Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-06-29T02:44:40.814Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/archive-merge-gate-hardening/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-29T02:44:14.571Z","endedAt":"2026-06-29T02:44:40.813Z"}
+{"type":"lineage","step":"verification","ts":"2026-06-29T02:44:40.813Z","outputs":[{"path":"specrunner/changes/archive-merge-gate-hardening/verification-result.md","hash":"sha256:c954beeea5ec522a2b60ead90003f16399255b4df6ea6a9309e5bc54c6816d2e"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-06-29T02:44:40.820Z","step":"verification","status":"ok","message":"verification iteration 2 completed with verdict: passed"}
+{"type":"transition","ts":"2026-06-29T02:44:40.820Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-06-29T02:44:40.821Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-06-29T02:44:40.823Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
