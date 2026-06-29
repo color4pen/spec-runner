@@ -8,4 +8,5 @@ export default defineConfig({
   clean: true,
   splitting: false,
   external: ['@anthropic-ai/sdk', '@anthropic-ai/claude-agent-sdk', '@openai/codex-sdk'],
+  noExternal: ['zod'],
 })

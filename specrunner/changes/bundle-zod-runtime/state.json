@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6e12d81b-d1c7-43c3-bc71-311f534c16e3",
   "createdAt": "2026-06-29T01:26:40.139Z",
-  "updatedAt": "2026-06-29T01:42:17.670Z",
+  "updatedAt": "2026-06-29T01:43:45.749Z",
   "request": {
     "title": "zod を dist にバンドルして実行時の外部解決依存を断つ",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "fix/bundle-zod-runtime-6e12d81b",
   "error": null,
@@ -48,11 +48,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }

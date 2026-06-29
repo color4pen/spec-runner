@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-06-29T01:42:17.668Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-29T01:42:17.668Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-06-29T01:42:17.670Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-06-29T01:43:45.739Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"5805909d-3aa0-48be-8edf-276c6df077fe","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-29T01:42:17.680Z","endedAt":"2026-06-29T01:43:44.389Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-06-29T01:43:44.389Z","outputs":[{"path":"specrunner/changes/bundle-zod-runtime/test-cases.md","hash":"sha256:52aa2d8deed8d6bd9061d87247027e4b7bbab4ff01260f6e113b32d4e06f7e9a"}],"inputs":[{"path":"specrunner/changes/bundle-zod-runtime/design.md","hash":"sha256:2dfc9d735c89c21d7f7606fa05e1c343a45c48ca570575355eb2276edeba19f3"},{"path":"specrunner/changes/bundle-zod-runtime/tasks.md","hash":"sha256:35cdec3f236c0524dadb4dbbb0a6444ef3c3a4b989a237278bd43a48571106d8"}]}
+{"type":"transition","ts":"2026-06-29T01:43:45.745Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-06-29T01:43:45.749Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
