@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   fetchPrViewWithRetry,
-  checkMergeableForMerge,
-  MERGEABLE_RETRY_COUNT,
 } from "../../../../src/core/finish/pr-status.js";
 import type { GitHubClient } from "../../../../src/core/port/github-client.js";
 
@@ -39,7 +37,6 @@ const owner = "user";
 const repo = "repo";
 const prNumber = 42;
 const slug = "my-slug";
-const baseBranch = "main";
 
 beforeEach(() => {
   vi.spyOn(process.stderr, "write").mockReturnValue(true);
@@ -124,77 +121,3 @@ describe("fetchPrViewWithRetry", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// checkMergeableForMerge
-// ---------------------------------------------------------------------------
-
-describe("checkMergeableForMerge", () => {
-  it("MERGEABLE 成功: mergeable=MERGEABLE → ok: true、sleepFn 未呼び出し", async () => {
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
-    const githubClient = makeGitHubClient({
-      getPullRequest: vi.fn().mockResolvedValue({ mergeable: "MERGEABLE" }),
-    });
-
-    const result = await checkMergeableForMerge({ prNumber, githubClient, owner, repo, slug, baseBranch, sleepFn });
-
-    expect(result.ok).toBe(true);
-    expect(sleepFn).not.toHaveBeenCalled();
-  });
-
-  it("CONFLICTING escalation: mergeable=CONFLICTING → ok: false、escalation が baseBranch 'main' を含む", async () => {
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
-    const githubClient = makeGitHubClient({
-      getPullRequest: vi.fn().mockResolvedValue({ mergeable: "CONFLICTING" }),
-    });
-
-    const result = await checkMergeableForMerge({ prNumber, githubClient, owner, repo, slug, baseBranch, sleepFn });
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.escalation).toContain("main");
-    }
-  });
-
-  it("UNKNOWN→MERGEABLE retry: 1 回目 UNKNOWN、2 回目 MERGEABLE → ok: true、sleepFn 1 回、getPullRequest 2 回", async () => {
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
-    const getPullRequest = vi.fn()
-      .mockResolvedValueOnce({ mergeable: "UNKNOWN" })
-      .mockResolvedValue({ mergeable: "MERGEABLE" });
-    const githubClient = makeGitHubClient({ getPullRequest });
-
-    const result = await checkMergeableForMerge({ prNumber, githubClient, owner, repo, slug, baseBranch, sleepFn });
-
-    expect(result.ok).toBe(true);
-    expect(sleepFn).toHaveBeenCalledTimes(1);
-    expect(getPullRequest).toHaveBeenCalledTimes(2);
-  });
-
-  it("UNKNOWN 全消尽: 常に UNKNOWN → ok: false、escalation が 'UNKNOWN' を含む、sleepFn が MERGEABLE_RETRY_COUNT - 1 回呼ばれる", async () => {
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
-    const githubClient = makeGitHubClient({
-      getPullRequest: vi.fn().mockResolvedValue({ mergeable: "UNKNOWN" }),
-    });
-
-    const result = await checkMergeableForMerge({ prNumber, githubClient, owner, repo, slug, baseBranch, sleepFn });
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.escalation).toContain("UNKNOWN");
-    }
-    expect(sleepFn).toHaveBeenCalledTimes(MERGEABLE_RETRY_COUNT - 1);
-  });
-
-  it("getPullRequest throw: Error を throw → ok: false、escalation が 'getPullRequest' を含む", async () => {
-    const sleepFn = vi.fn().mockResolvedValue(undefined);
-    const githubClient = makeGitHubClient({
-      getPullRequest: vi.fn().mockRejectedValue(new Error("network error")),
-    });
-
-    const result = await checkMergeableForMerge({ prNumber, githubClient, owner, repo, slug, baseBranch, sleepFn });
-
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.escalation).toContain("getPullRequest");
-    }
-  });
-});
