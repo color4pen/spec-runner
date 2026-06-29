@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "11f6ad62-d9f7-403c-be87-ca253d34f376",
   "createdAt": "2026-06-29T01:26:39.022Z",
-  "updatedAt": "2026-06-29T01:50:54.726Z",
+  "updatedAt": "2026-06-29T01:57:09.621Z",
   "request": {
     "title": "archived だが未マージの job を resume 可能にする",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "fix/archive-resume-when-unmerged-11f6ad62",
   "error": null,
@@ -48,12 +48,14 @@
     }
   ],
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 25,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
