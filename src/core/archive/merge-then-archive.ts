@@ -11,13 +11,14 @@
  * 5. Wait loop: poll check status until terminal (success/failure) or timeout
  *    - Wait for PR headSha to match archiveSha before trusting CI rollup
  *    - DIRTY / CONFLICTING → conflict escalation (no merge, no cleanup)
- *    - BLOCKED → branch protection escalation (no merge, no cleanup)
+ *    - BLOCKED + pending checks → keep waiting (transient; CI not yet resolved)
+ *    - BLOCKED + success/none checks → branch-protection escalation (non-check requirement unmet)
  *    - check failure → escalation (no merge, no cleanup)
- *    - check success → proceed to merge
- *    - check none → grace wait (NONE_CHECK_GRACE_MS); if exhausted → proceed to merge
+ *    - check success → proceed to merge (if not still BLOCKED)
+ *    - check none → grace wait (NONE_CHECK_GRACE_MS); if exhausted → proceed to merge (if not still BLOCKED)
  *    - check pending → wait (sleepFn), check deadline, repeat
  *    - timeout → escalation (no merge, no cleanup)
- * 6. checkMergeableForMerge + squash merge
+ * 6. squash merge via mergePullRequest (final mergeability decided by merge endpoint)
  * 7. merge success → runPostMergeCleanup → done
  */
 import type { SpawnFn } from "../../util/spawn.js";
@@ -29,7 +30,6 @@ import { getJobSlug } from "../../state/job-slug.js";
 import { runArchiveOrchestrator } from "./orchestrator.js";
 import type { ArchiveResult } from "./orchestrator.js";
 import { runPostMergeCleanup } from "./post-merge-cleanup.js";
-import { checkMergeableForMerge } from "../finish/pr-status.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { logResult } from "../../logger/stdout.js";
 import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS } from "../../config/schema.js";
@@ -328,18 +328,9 @@ export async function runMergeThenArchive(
       };
     }
 
-    // Branch protection not met
-    if (mergeStateStatus === "BLOCKED") {
-      return {
-        exitCode: 1,
-        escalation: formatEscalation({
-          failedStep: "merge gate (branch protection)",
-          detectedState: "branch protection requirements not met (mergeStateStatus BLOCKED)",
-          recommendedAction: `Satisfy branch protection requirements, then re-run: specrunner job archive --with-merge ${slug}`,
-          resumeCommand: `specrunner job archive --with-merge ${slug}`,
-        }),
-      };
-    }
+    // BLOCKED is tracked but not immediately escalated — it may be transient (CI not yet resolved).
+    // Final branch-protection escalation is deferred to the check-result evaluation below.
+    const isBlocked = mergeStateStatus === "BLOCKED";
 
     // headSha required for check status
     const headSha = prData.headSha;
@@ -412,6 +403,10 @@ export async function runMergeThenArchive(
     }
 
     if (rollup.state === "success") {
+      if (isBlocked) {
+        // Checks resolved but PR is still BLOCKED — a non-check branch-protection requirement is unmet.
+        return blockedAfterChecksEscalation(slug, "success");
+      }
       // Checks are green — proceed to merge
       stdoutWrite(`PR #${prNumber} checks passed. Proceeding to merge...`);
       break;
@@ -426,6 +421,10 @@ export async function runMergeThenArchive(
       }
       const elapsed = now - noneGraceStart;
       if (elapsed >= NONE_CHECK_GRACE_MS) {
+        if (isBlocked) {
+          // No checks appeared and PR is still BLOCKED — a non-check branch-protection requirement is unmet.
+          return blockedAfterChecksEscalation(slug, "no checks");
+        }
         // Grace period exhausted: no CI on this repo — proceed to merge.
         stdoutWrite(
           `PR #${prNumber} no checks appeared after ${NONE_CHECK_GRACE_MS / 1000}s. Assuming CI-less repo; proceeding to merge...`,
@@ -463,22 +462,8 @@ export async function runMergeThenArchive(
   }
 
   // ---------------------------------------------------------------------------
-  // Step 5: checkMergeableForMerge + squash merge
+  // Step 5: squash merge — final mergeability decided by the merge endpoint
   // ---------------------------------------------------------------------------
-  const mergeableResult = await checkMergeableForMerge({
-    prNumber,
-    githubClient,
-    owner,
-    repo,
-    slug,
-    baseBranch: resolvedBaseBranch,
-    sleepFn,
-  });
-
-  if (!mergeableResult.ok) {
-    return { exitCode: 1, escalation: mergeableResult.escalation };
-  }
-
   stdoutWrite(`Merging PR #${prNumber}...`);
 
   let mergeResult: { merged: boolean; message: string };
@@ -498,6 +483,29 @@ export async function runMergeThenArchive(
   }
 
   if (!mergeResult.merged) {
+    const cause = classifyMergeFailure(mergeResult.message);
+    if (cause === "conflict") {
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "squash merge (conflict)",
+          detectedState: `Merge endpoint reported a conflict: ${mergeResult.message}`,
+          recommendedAction: `Rebase the feature branch onto ${resolvedBaseBranch} and re-run:\n  git rebase ${resolvedBaseBranch}\n  git push --force-with-lease\n  specrunner job archive --with-merge ${slug}`,
+          resumeCommand: `specrunner job archive --with-merge ${slug}`,
+        }),
+      };
+    }
+    if (cause === "checks-failed") {
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "squash merge (required checks failed)",
+          detectedState: `A required status check has failed: ${mergeResult.message}`,
+          recommendedAction: `Fix failing checks, then re-run: specrunner job archive --with-merge ${slug}`,
+          resumeCommand: `specrunner job archive --with-merge ${slug}`,
+        }),
+      };
+    }
     return {
       exitCode: 1,
       escalation: formatEscalation({
@@ -524,4 +532,34 @@ export async function runMergeThenArchive(
 
 function defaultSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Classify a merge-endpoint failure message to produce a cause-specific escalation.
+ */
+function classifyMergeFailure(message: string): "conflict" | "checks-failed" | "other" {
+  const lower = message.toLowerCase();
+  if (lower.includes("conflict")) {
+    return "conflict";
+  }
+  if (lower.includes("required status check") && lower.includes("has failed")) {
+    return "checks-failed";
+  }
+  return "other";
+}
+
+/**
+ * Return a branch-protection escalation for when checks resolved but the PR is still BLOCKED.
+ * This indicates a non-check branch-protection requirement (e.g. a required review) is unmet.
+ */
+function blockedAfterChecksEscalation(slug: string, checkOutcome: "success" | "no checks"): MergeThenArchiveResult {
+  return {
+    exitCode: 1,
+    escalation: formatEscalation({
+      failedStep: "merge gate (branch protection)",
+      detectedState: `Checks resolved (${checkOutcome}) but PR is still BLOCKED. A non-check branch-protection requirement (e.g. a required review) is unmet.`,
+      recommendedAction: `Satisfy branch protection requirements, then re-run: specrunner job archive --with-merge ${slug}`,
+      resumeCommand: `specrunner job archive --with-merge ${slug}`,
+    }),
+  };
 }

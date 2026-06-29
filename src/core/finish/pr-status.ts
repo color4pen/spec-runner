@@ -4,7 +4,6 @@
  *
  * Responsibilities:
  *   - fetchPrViewWithRetry: Check 3+4 (getPullRequest + UNKNOWN retry)
- *   - checkMergeableForMerge: Phase 3 guard (MERGEABLE check)
  */
 import type { GitHubClient } from "../../core/port/github-client.js";
 import type { PrViewData } from "./types.js";
@@ -17,15 +16,8 @@ export type PrViewFetchResult =
   | { ok: true; data: PrViewData }
   | { ok: false; escalation: string };
 
-export type CheckMergeableResult =
-  | { ok: true }
-  | { ok: false; escalation: string };
-
 const UNKNOWN_RETRY_COUNT = 3;
 const UNKNOWN_RETRY_DELAY_MS = 3000;
-
-export const MERGEABLE_RETRY_COUNT = 3;
-export const MERGEABLE_RETRY_DELAY_MS = 5000;
 
 
 /**
@@ -101,90 +93,6 @@ export async function fetchPrViewWithRetry(params: {
     escalation: formatEscalation({
       failedStep: "Phase 0 check 4 (mergeStateStatus UNKNOWN)",
       detectedState: `mergeStateStatus is UNKNOWN after ${UNKNOWN_RETRY_COUNT} retries`,
-      recommendedAction: `Wait a moment and re-run: specrunner job archive --with-merge ${slug}`,
-      resumeCommand: `specrunner job archive --with-merge ${slug}`,
-    }),
-  };
-}
-
-/**
- * Check PR mergeable status before Phase 3 merge.
- * Implements the Phase 3 guard: MERGEABLE → ok, CONFLICTING → escalation, UNKNOWN → retry.
- */
-export async function checkMergeableForMerge(params: {
-  prNumber: number;
-  githubClient: GitHubClient;
-  owner: string;
-  repo: string;
-  slug: string;
-  baseBranch: string;
-  sleepFn?: (ms: number) => Promise<void>;
-}): Promise<CheckMergeableResult> {
-  const { prNumber, githubClient, owner, repo, slug, baseBranch } = params;
-  const sleepImpl = params.sleepFn ?? sleep;
-
-  for (let attempt = 1; attempt <= MERGEABLE_RETRY_COUNT; attempt++) {
-    let parsed: { mergeable?: string };
-    try {
-      parsed = await githubClient.getPullRequest(owner, repo, prNumber);
-    } catch (err) {
-      const detail = err instanceof Error ? err.message : String(err);
-      return {
-        ok: false,
-        escalation: formatEscalation({
-          failedStep: "Phase 3 guard (getPullRequest for mergeable)",
-          detectedState: `getPullRequest #${prNumber} failed: ${detail}`,
-          recommendedAction: `Check GitHub token: specrunner login. Error: ${detail}`,
-          resumeCommand: `specrunner job archive --with-merge ${slug}`,
-        }),
-      };
-    }
-
-    const mergeable = (parsed.mergeable ?? "").toUpperCase();
-
-    if (mergeable === "MERGEABLE") {
-      return { ok: true };
-    }
-
-    if (mergeable === "CONFLICTING") {
-      return {
-        ok: false,
-        escalation: formatEscalation({
-          failedStep: "Phase 3 guard (mergeable CONFLICTING)",
-          detectedState: `mergeable is CONFLICTING (PR has merge conflicts)`,
-          recommendedAction: `Rebase the feature branch onto ${baseBranch} and re-run:\n  git rebase ${baseBranch}\n  git push --force-with-lease\n  specrunner job archive --with-merge ${slug}`,
-          resumeCommand: `specrunner job archive --with-merge ${slug}`,
-        }),
-      };
-    }
-
-    // UNKNOWN: retry with delay
-    if (attempt < MERGEABLE_RETRY_COUNT) {
-      stderrWrite(
-        `Retrying Phase 3 mergeable check: UNKNOWN (attempt ${attempt}/${MERGEABLE_RETRY_COUNT})...`,
-      );
-      await sleepImpl(MERGEABLE_RETRY_DELAY_MS);
-      continue;
-    }
-
-    // All retries exhausted
-    return {
-      ok: false,
-      escalation: formatEscalation({
-        failedStep: "Phase 3 guard (mergeable UNKNOWN)",
-        detectedState: `mergeable is UNKNOWN after ${MERGEABLE_RETRY_COUNT} retries`,
-        recommendedAction: `GitHub's merge state is still computing. Wait a moment and re-run:\n  specrunner job archive --with-merge ${slug}`,
-        resumeCommand: `specrunner job archive --with-merge ${slug}`,
-      }),
-    };
-  }
-
-  // Unreachable — TypeScript needs a return here
-  return {
-    ok: false,
-    escalation: formatEscalation({
-      failedStep: "Phase 3 guard (mergeable UNKNOWN)",
-      detectedState: `mergeable is UNKNOWN after ${MERGEABLE_RETRY_COUNT} retries`,
       recommendedAction: `Wait a moment and re-run: specrunner job archive --with-merge ${slug}`,
       resumeCommand: `specrunner job archive --with-merge ${slug}`,
     }),

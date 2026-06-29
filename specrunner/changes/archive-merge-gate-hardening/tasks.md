@@ -14,28 +14,28 @@ stop escalating immediately on `mergeStateStatus === "BLOCKED"`. Defer the merge
 decision to the existing check-status polling, and evaluate `BLOCKED` persistence only at the
 points where the loop would otherwise break to merge.
 
-- [ ] Remove the early branch-protection escalation block that fires on
+- [x] Remove the early branch-protection escalation block that fires on
       `mergeStateStatus === "BLOCKED"` (currently the block immediately after the
       DIRTY/CONFLICTING conflict check, before the headSha / archiveSha-match guard).
-- [ ] In the same iteration, after computing `const mergeStateStatus = (prData.mergeStateStatus ?? "").toUpperCase()`,
+- [x] In the same iteration, after computing `const mergeStateStatus = (prData.mergeStateStatus ?? "").toUpperCase()`,
       capture whether this poll is blocked: `const isBlocked = mergeStateStatus === "BLOCKED"`.
       Keep the DIRTY / `mergeable === "CONFLICTING"` conflict escalation exactly as-is and
       ordered before this (conflict still wins over BLOCKED).
-- [ ] Leave the headSha-missing guard and the `archiveSha !== headSha` wait/continue guard
+- [x] Leave the headSha-missing guard and the `archiveSha !== headSha` wait/continue guard
       unchanged — a BLOCKED poll must still wait for the head to reflect the archive commit
       before its checks are trusted.
-- [ ] Leave the `rollup.state === "failure"` check-failure escalation unchanged — a BLOCKED
+- [x] Leave the `rollup.state === "failure"` check-failure escalation unchanged — a BLOCKED
       PR whose checks failed must stop here (covers "BLOCKED because CI failed").
-- [ ] At the `rollup.state === "success"` break point: if `isBlocked`, return a
+- [x] At the `rollup.state === "success"` break point: if `isBlocked`, return a
       branch-protection escalation instead of breaking to merge; otherwise break to merge as
       today.
-- [ ] At the `rollup.state === "none"` grace-exhausted break point (where the loop currently
+- [x] At the `rollup.state === "none"` grace-exhausted break point (where the loop currently
       breaks to merge after `NONE_CHECK_GRACE_MS`): if `isBlocked`, return a branch-protection
       escalation instead of breaking; otherwise break to merge as today. The grace-still-running
       wait/continue path is unchanged.
-- [ ] Leave the `rollup.state === "pending"` deadline + wait/continue path unchanged — a BLOCKED
+- [x] Leave the `rollup.state === "pending"` deadline + wait/continue path unchanged — a BLOCKED
       poll with pending checks keeps waiting (no escalation).
-- [ ] Use the existing `formatEscalation` for the branch-protection escalation with
+- [x] Use the existing `formatEscalation` for the branch-protection escalation with
       `failedStep: "merge gate (branch protection)"`, a `detectedState` that explains checks
       resolved (success / no checks) but the PR is still `BLOCKED` (a non-check branch-protection
       requirement such as a required review is unmet), the existing recommended action
@@ -60,13 +60,13 @@ points where the loop would otherwise break to merge.
 In `runMergeThenArchive`, drop the `checkMergeableForMerge` gate so a green-checks break goes
 straight to `mergePullRequest`.
 
-- [ ] Delete the `checkMergeableForMerge({ ... })` call and its `if (!mergeableResult.ok)`
+- [x] Delete the `checkMergeableForMerge({ ... })` call and its `if (!mergeableResult.ok)`
       escalation (the Step 5 block between the wait loop's break and the `mergePullRequest`
       call).
-- [ ] Remove the `import { checkMergeableForMerge } from "../finish/pr-status.js";` import.
-- [ ] Keep the `mergePullRequest` call, its surrounding `try/catch` (thrown-error escalation),
+- [x] Remove the `import { checkMergeableForMerge } from "../finish/pr-status.js";` import.
+- [x] Keep the `mergePullRequest` call, its surrounding `try/catch` (thrown-error escalation),
       and the `!mergeResult.merged` handling (modified in T-03).
-- [ ] Update the file's top-of-module flow docstring: replace the Step 5
+- [x] Update the file's top-of-module flow docstring: replace the Step 5
       "checkMergeableForMerge + squash merge" and the Step 4 "BLOCKED → branch protection
       escalation" descriptions to match the new behavior (BLOCKED waits for checks; merge goes
       directly after green checks; final mergeability is decided by the merge endpoint).
@@ -85,13 +85,13 @@ straight to `mergePullRequest`.
 When `mergePullRequest` returns `{ merged: false }`, escalate with a cause-distinguished
 message.
 
-- [ ] Add a local (module-private) classifier in `merge-then-archive.ts`, e.g.
+- [x] Add a local (module-private) classifier in `merge-then-archive.ts`, e.g.
       `classifyMergeFailure(message: string): "conflict" | "checks-failed" | "other"`:
   - lowercase the message;
   - `"conflict"` substring → `"conflict"`;
   - else `"required status check"` AND `"has failed"` substrings → `"checks-failed"`;
   - else → `"other"`.
-- [ ] In the `if (!mergeResult.merged)` block, switch on the classifier:
+- [x] In the `if (!mergeResult.merged)` block, switch on the classifier:
   - `conflict` → `formatEscalation` with `failedStep: "squash merge (conflict)"`, a
     detectedState noting the merge endpoint reported a conflict, and a recommended action that
     mirrors the wait-loop conflict guidance (rebase onto `resolvedBaseBranch`,
@@ -102,8 +102,8 @@ message.
   - `other` → keep the existing generic branch-protection escalation wording.
   - All three keep `resumeCommand: specrunner job archive --with-merge <slug>` and include
     `mergeResult.message` in the detectedState.
-- [ ] Leave the `try/catch` thrown-error escalation around `mergePullRequest` unchanged.
-- [ ] Do not call post-merge cleanup on any `!merged` path (unchanged).
+- [x] Leave the `try/catch` thrown-error escalation around `mergePullRequest` unchanged.
+- [x] Do not call post-merge cleanup on any `!merged` path (unchanged).
 
 **Acceptance Criteria**:
 - `{ merged: false }` with a conflict message → exitCode 1, conflict escalation, cleanup not called.
@@ -119,14 +119,14 @@ message.
 After T-02, `checkMergeableForMerge` has no production caller. Remove it and its dedicated
 exports without touching `fetchPrViewWithRetry`.
 
-- [ ] Delete the `checkMergeableForMerge` function from `src/core/finish/pr-status.ts`.
-- [ ] Delete the `MERGEABLE_RETRY_COUNT` and `MERGEABLE_RETRY_DELAY_MS` exports and the
+- [x] Delete the `checkMergeableForMerge` function from `src/core/finish/pr-status.ts`.
+- [x] Delete the `MERGEABLE_RETRY_COUNT` and `MERGEABLE_RETRY_DELAY_MS` exports and the
       `CheckMergeableResult` type (used only by `checkMergeableForMerge`).
-- [ ] Keep `fetchPrViewWithRetry`, its `UNKNOWN_RETRY_COUNT` / `UNKNOWN_RETRY_DELAY_MS`
+- [x] Keep `fetchPrViewWithRetry`, its `UNKNOWN_RETRY_COUNT` / `UNKNOWN_RETRY_DELAY_MS`
       constants, the `PrViewData` / `PrViewFetchResult` types, and the `sleep` helper
       (still used by `fetchPrViewWithRetry`).
-- [ ] Update the module's top docstring to drop the `checkMergeableForMerge` responsibility line.
-- [ ] Confirm via grep that no production code (`src/`) references `checkMergeableForMerge`,
+- [x] Update the module's top docstring to drop the `checkMergeableForMerge` responsibility line.
+- [x] Confirm via grep that no production code (`src/`) references `checkMergeableForMerge`,
       `MERGEABLE_RETRY_COUNT`, `MERGEABLE_RETRY_DELAY_MS`, or `CheckMergeableResult` after removal.
 
 **Acceptance Criteria**:
@@ -140,40 +140,40 @@ exports without touching `fetchPrViewWithRetry`.
 
 ### T-05a: `tests/unit/core/archive/merge-then-archive.test.ts`
 
-- [ ] Add a test: BLOCKED + `pending` rollup on poll 1, then `CLEAN` + `success` on poll 2 →
+- [x] Add a test: BLOCKED + `pending` rollup on poll 1, then `CLEAN` + `success` on poll 2 →
       no escalation during pending, then `mergePullRequest` is called and post-merge cleanup
       runs (drive with injected `sleepFn` / `nowFn` and a sequenced `getPullRequest` /
       `getCheckStatus`).
-- [ ] Update/replace TC-MTA-008 so it pins the new semantics: persistent `mergeStateStatus
+- [x] Update/replace TC-MTA-008 so it pins the new semantics: persistent `mergeStateStatus
       === "BLOCKED"` with a `success` rollup → branch-protection escalation, `mergePullRequest`
       and cleanup not called. (The escalation now fires after check polling rather than
       immediately.)
-- [ ] Add a test: persistent `BLOCKED` with a `none` rollup until grace is exhausted →
+- [x] Add a test: persistent `BLOCKED` with a `none` rollup until grace is exhausted →
       branch-protection escalation; `mergePullRequest` not called. (Use injected `nowFn` to
       cross `NONE_CHECK_GRACE_MS`.)
-- [ ] Add a test: `mergeable === "UNKNOWN"` with `mergeStateStatus` CLEAN and a `success`
+- [x] Add a test: `mergeable === "UNKNOWN"` with `mergeStateStatus` CLEAN and a `success`
       rollup → `mergePullRequest` is called (no mergeable-gate escalation).
-- [ ] Add a test: `mergePullRequest` returns `{ merged: false, message: <conflict> }` →
+- [x] Add a test: `mergePullRequest` returns `{ merged: false, message: <conflict> }` →
       exitCode 1 conflict escalation, cleanup not called.
-- [ ] Add a test: `mergePullRequest` returns `{ merged: false, message: 'required status
+- [x] Add a test: `mergePullRequest` returns `{ merged: false, message: 'required status
       check "ci/build" has failed' }` → exitCode 1 checks-failed escalation.
-- [ ] Add a test: `mergePullRequest` returns `{ merged: false, message: <other> }` → exitCode
+- [x] Add a test: `mergePullRequest` returns `{ merged: false, message: <other> }` → exitCode
       1 generic branch-protection escalation.
-- [ ] Confirm TC-MTA-006 (DIRTY) and TC-MTA-007 (mergeable CONFLICTING) remain green unchanged.
-- [ ] Fix the TC-MTA-ARCHIVE-SHA test: remove the now-stale 4th `getPullRequest`
+- [x] Confirm TC-MTA-006 (DIRTY) and TC-MTA-007 (mergeable CONFLICTING) remain green unchanged.
+- [x] Fix the TC-MTA-ARCHIVE-SHA test: remove the now-stale 4th `getPullRequest`
       `.mockResolvedValueOnce` and its `// checkMergeableForMerge (Step 5)` comment (Step 5 is
       gone, so only 3 `getPullRequest` calls occur). The test's assertions
       (`mergePullRequest` called, cleanup called, `getCheckStatus` once, `sleep` once) stay.
 
 ### T-05b: `tests/unit/core/finish/pr-status.test.ts`
 
-- [ ] Remove the entire `describe("checkMergeableForMerge", ...)` block and the
+- [x] Remove the entire `describe("checkMergeableForMerge", ...)` block and the
       `checkMergeableForMerge` / `MERGEABLE_RETRY_COUNT` imports.
-- [ ] Keep the `fetchPrViewWithRetry` describe block and its tests unchanged.
+- [x] Keep the `fetchPrViewWithRetry` describe block and its tests unchanged.
 
 ### T-05c: GitHub adapter regression confirmation (no edits expected)
 
-- [ ] Confirm the existing `tests/unit/adapter/github/github-client-pr.test.ts` cases that pin
+- [x] Confirm the existing `tests/unit/adapter/github/github-client-pr.test.ts` cases that pin
       transient retry → success (TC-PM-016 "not mergeable", TC-PM-018 / TC-PM-021 "is
       expected") and permanent → `{ merged: false }` (TC-PM-015 409 conflict, TC-PM-020
       "has failed") remain green without modification — they are the lower-level guarantee
@@ -188,9 +188,9 @@ exports without touching `fetchPrViewWithRetry`.
 
 ## T-06: Verification
 
-- [ ] `bun run typecheck` is green (no dangling `checkMergeableForMerge` references).
-- [ ] `bun test` is green (all unchanged tests pass alongside the new/updated ones).
-- [ ] `bun run build` succeeds.
+- [x] `bun run typecheck` is green (no dangling `checkMergeableForMerge` references).
+- [x] `bun test` is green (all unchanged tests pass alongside the new/updated ones).
+- [x] `bun run build` succeeds.
 
 **Acceptance Criteria**:
 - `typecheck`, `test`, and `build` all succeed.

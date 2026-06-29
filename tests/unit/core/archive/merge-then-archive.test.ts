@@ -581,11 +581,12 @@ describe("TC-MTA-007: mergeable CONFLICTING → escalation", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-MTA-008: BLOCKED → branch protection escalation
+// TC-MTA-008: persistent BLOCKED + success rollup → branch-protection escalation
+// (escalation fires after check polling, not immediately on BLOCKED observation)
 // ---------------------------------------------------------------------------
 
-describe("TC-MTA-008: BLOCKED → branch protection escalation", () => {
-  it("mergeStateStatus BLOCKED → exitCode 1, merge/cleanup not called", async () => {
+describe("TC-MTA-008: persistent BLOCKED + success rollup → branch-protection escalation", () => {
+  it("mergeStateStatus BLOCKED + success rollup → exitCode 1 branch-protection escalation, merge/cleanup not called", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
 
@@ -603,6 +604,7 @@ describe("TC-MTA-008: BLOCKED → branch protection escalation", () => {
         mergeable: "MERGEABLE",
         headSha: "archive-sha-001",
       }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
     });
 
     const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
@@ -622,7 +624,335 @@ describe("TC-MTA-008: BLOCKED → branch protection escalation", () => {
     if (result.exitCode === 1) {
       expect(result.escalation).toMatch(/branch protection/i);
     }
+    // Escalation fires after check polling (getCheckStatus must have been called)
+    expect(client.getCheckStatus).toHaveBeenCalled();
     expect(client.mergePullRequest).not.toHaveBeenCalled();
+    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-BLOCKED-PENDING-THEN-MERGE: BLOCKED + pending → wait, then CLEAN + success → merge
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-BLOCKED-PENDING-THEN-MERGE: BLOCKED+pending does not escalate; merges after checks pass", () => {
+  it("poll 1 BLOCKED+pending → sleep; poll 2 CLEAN+success → mergePullRequest called, cleanup runs", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
+
+    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn()
+        // Initial check (Step 2)
+        .mockResolvedValueOnce({
+          state: "OPEN",
+          mergeStateStatus: "CLEAN",
+          headRefName: "change/my-slug",
+          mergeable: "MERGEABLE",
+          headSha: "archive-sha-001",
+        })
+        // Wait loop poll 1: BLOCKED with pending checks
+        .mockResolvedValueOnce({
+          state: "OPEN",
+          mergeStateStatus: "BLOCKED",
+          headRefName: "change/my-slug",
+          mergeable: "MERGEABLE",
+          headSha: "archive-sha-001",
+        })
+        // Wait loop poll 2: CLEAN, checks now pass
+        .mockResolvedValueOnce({
+          state: "OPEN",
+          mergeStateStatus: "CLEAN",
+          headRefName: "change/my-slug",
+          mergeable: "MERGEABLE",
+          headSha: "archive-sha-001",
+        }),
+      getCheckStatus: vi.fn()
+        .mockResolvedValueOnce(PENDING_ROLLUP)
+        .mockResolvedValueOnce(SUCCESS_ROLLUP),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
+    });
+
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      sleepFn,
+      nowFn: () => 0,
+      waitTimeoutMs: 120_000,
+      pollIntervalMs: 5_000,
+    });
+
+    expect(result).toMatchObject({ exitCode: 0 });
+    // No escalation during pending poll
+    expect(sleepFn).toHaveBeenCalledTimes(1);
+    expect(client.mergePullRequest).toHaveBeenCalledWith("user", "repo", 42, { mergeMethod: "squash" });
+    expect(runPostMergeCleanup).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-BLOCKED-NONE-EXHAUSTED: persistent BLOCKED + none grace exhausted → branch-protection escalation
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-BLOCKED-NONE-EXHAUSTED: persistent BLOCKED + no checks after grace → branch-protection escalation", () => {
+  it("BLOCKED + none rollup until grace exhausted → exitCode 1 branch-protection escalation, merge not called", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
+
+    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "BLOCKED",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "archive-sha-001",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(NONE_ROLLUP),
+    });
+
+    // nowFn: start=0, none check 1 (elapsed=0, grace starts), none check 2 (elapsed=70000, grace exhausted)
+    const times = [0, 0, 70_000];
+    let timeIdx = 0;
+    const nowFn = () => times[timeIdx++] ?? 70_000;
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      sleepFn,
+      nowFn,
+      waitTimeoutMs: 120_000,
+      pollIntervalMs: 5_000,
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toMatch(/branch protection/i);
+    }
+    expect(client.mergePullRequest).not.toHaveBeenCalled();
+    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-UNKNOWN-REACHES-MERGE: mergeable UNKNOWN + CLEAN + success → mergePullRequest called
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-UNKNOWN-REACHES-MERGE: mergeable UNKNOWN with green checks proceeds to mergePullRequest", () => {
+  it("mergeable UNKNOWN + mergeStateStatus CLEAN + success rollup → mergePullRequest called without mergeable-gate escalation", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
+
+    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "UNKNOWN",   // GitHub computing state — must not block merge path
+        headSha: "archive-sha-001",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+    });
+
+    expect(result).toMatchObject({ exitCode: 0 });
+    expect(client.mergePullRequest).toHaveBeenCalled();
+    expect(runPostMergeCleanup).toHaveBeenCalled();
+    // No extra getPullRequest call for a mergeable gate (Step 5 gone)
+    // Initial (Step 2) + wait loop iter 1 = 2 calls
+    expect(client.getPullRequest).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-MERGE-FAIL-CONFLICT: mergePullRequest returns conflict → conflict escalation
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-MERGE-FAIL-CONFLICT: mergePullRequest conflict message → squash merge (conflict) escalation", () => {
+  it("{ merged: false, message: 'Merge conflict detected' } → exitCode 1 conflict escalation, cleanup not called", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
+
+    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        mergeable: "MERGEABLE",
+        headSha: "archive-sha-001",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: false, message: "Merge conflict detected" }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toContain("squash merge (conflict)");
+    }
+    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-MERGE-FAIL-CHECKS: mergePullRequest checks-failed → checks-failed escalation
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-MERGE-FAIL-CHECKS: mergePullRequest checks-failed message → squash merge (required checks failed) escalation", () => {
+  it('{ merged: false, message: \'required status check "ci/build" has failed\' } → exitCode 1 checks-failed escalation', async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
+
+    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        mergeable: "MERGEABLE",
+        headSha: "archive-sha-001",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+      mergePullRequest: vi.fn().mockResolvedValue({
+        merged: false,
+        message: 'required status check "ci/build" has failed',
+      }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toContain("squash merge (required checks failed)");
+    }
+    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-MERGE-FAIL-OTHER: mergePullRequest unclassified → generic branch-protection escalation
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-MERGE-FAIL-OTHER: mergePullRequest unclassified message → generic squash merge (REST API) escalation", () => {
+  it("{ merged: false, message: 'repository rule violations found' } → exitCode 1 generic escalation with resume command", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
+
+    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        mergeable: "MERGEABLE",
+        headSha: "archive-sha-001",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+      mergePullRequest: vi.fn().mockResolvedValue({
+        merged: false,
+        message: "repository rule violations found",
+      }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+    });
+
+    expect(result.exitCode).toBe(1);
+    if (result.exitCode === 1) {
+      expect(result.escalation).toContain("squash merge (REST API)");
+      expect(result.escalation).toContain(`specrunner job archive --with-merge ${SLUG}`);
+    }
     expect(runPostMergeCleanup).not.toHaveBeenCalled();
   });
 });
@@ -922,13 +1252,12 @@ describe("TC-MTA-ARCHIVE-SHA: archiveSha tracking in wait loop", () => {
     (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     // getPullRequest responses:
-    //   1: initial check (Step 3) → OPEN, old sha
+    //   1: initial check (Step 2) → OPEN, old sha
     //   2: wait loop iter 1 → old sha → skip CI, sleep
-    //   3: wait loop iter 2 → archive sha → CI check passes → break
-    //   4: checkMergeableForMerge (Step 5) → MERGEABLE
+    //   3: wait loop iter 2 → archive sha → CI check passes → break → merge
     const client = makeGitHubClient({
       getPullRequest: vi.fn()
-        // Initial check (Step 3): not MERGED, headSha not yet updated
+        // Initial check (Step 2): not MERGED, headSha not yet updated
         .mockResolvedValueOnce({
           state: "OPEN",
           mergeStateStatus: "CLEAN",
@@ -943,13 +1272,6 @@ describe("TC-MTA-ARCHIVE-SHA: archiveSha tracking in wait loop", () => {
           headSha: OLD_HEAD_SHA,
         })
         // Wait loop iteration 2: headSha updated to archive sha → check CI
-        .mockResolvedValueOnce({
-          state: "OPEN",
-          mergeStateStatus: "CLEAN",
-          mergeable: "MERGEABLE",
-          headSha: ARCHIVE_SHA,
-        })
-        // checkMergeableForMerge (Step 5)
         .mockResolvedValueOnce({
           state: "OPEN",
           mergeStateStatus: "CLEAN",
@@ -1148,14 +1470,8 @@ describe("TC-MTA-STATUS-NO-WRITE: post-merge cleanup は job status を書き換
     // (not via merge-then-archive but directly)
     const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
 
-    // Call the real cleanup function with stubs
-    const markJobArchivedSpy = vi.fn();
-    vi.doMock("../../../../src/core/finish/job-state-update.js", () => ({
-      markJobArchived: markJobArchivedSpy,
-    }));
-
-    // The cleanup function does NOT import markJobArchived, so this just confirms the interface
-    // We verify by checking that runPostMergeCleanup runs without writing status
+    // The cleanup function does NOT import markJobArchived (no status writes).
+    // We verify by checking that writeFile was not called.
     const mockSpawn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }) as unknown as import("../../../../src/util/spawn.js").SpawnFn;
     const mockFs = {
       exists: vi.fn().mockResolvedValue(false),
