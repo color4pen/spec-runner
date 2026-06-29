@@ -121,7 +121,7 @@ describe("createOrphanWorktreesCheck", () => {
   it("does NOT call git worktree remove or git branch -D (read-only)", async () => {
     // The scan fn receives a spawn arg — we verify it's never called with destructive args
     const spawnSpy = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
-    const scanFn: ScanFn = vi.fn().mockImplementation(async ({ spawn }) => {
+    const scanFn: ScanFn = vi.fn().mockImplementation(async ({ spawn: _spawn }) => {
       // Simulate that the real scan would call spawn, but we don't
       // The check itself should never call spawn for deletions
       return [{ worktreePath: "/repo/.git/specrunner-worktrees/x-00000000", dirName: "x-00000000", branch: "feat/x" }];
