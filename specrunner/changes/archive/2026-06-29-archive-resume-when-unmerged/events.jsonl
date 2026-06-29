@@ -73,3 +73,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/archive-resume-when-unmerged/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-06-29T02:03:06.639Z","endedAt":"2026-06-29T02:03:08.128Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-06-29T02:03:08.128Z","outputs":[{"path":"specrunner/changes/archive-resume-when-unmerged/pr-create-result.md","hash":"sha256:1d688b4738c29c1ef7d126442ca4585330ec18adb578e689c22149ade774075e"}],"inputs":[{"path":"fix/archive-resume-when-unmerged-11f6ad62","hash":null}]}
 {"type":"transition","ts":"2026-06-29T02:03:08.135Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-06-29T02:06:19.949Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
