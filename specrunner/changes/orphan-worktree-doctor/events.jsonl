@@ -53,3 +53,19 @@
 {"type":"transition","ts":"2026-06-29T04:21:02.997Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-06-29T04:21:02.998Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-06-29T04:21:03.000Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-06-29T04:21:51.162Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"42daf72d-f86a-4b0f-87e5-42a646f87b47","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-06-29T04:21:03.017Z","endedAt":"2026-06-29T04:21:49.820Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-06-29T04:21:49.820Z","outputs":[{"path":"specrunner/changes/orphan-worktree-doctor","hash":null}],"inputs":[{"path":"specrunner/changes/orphan-worktree-doctor/review-feedback-001.md","hash":"sha256:79d9bf1fa9ae6b4ed84b39c7bde24d1a209da8d04a0174bfa5086a0b7e4c3f6a"}]}
+{"type":"transition","ts":"2026-06-29T04:21:51.168Z","step":"step-transition","status":"ok","message":"code-fixer → custom-reviewers"}
+{"type":"transition","ts":"2026-06-29T04:21:51.170Z","step":"custom-reviewers","status":"started","message":"custom-reviewers iteration 1 started"}
+{"type":"transition","ts":"2026-06-29T04:21:51.170Z","step":"custom-reviewers","status":"started","message":"custom-reviewers iteration 1 started"}
+{"type":"transition","ts":"2026-06-29T04:21:51.212Z","step":"scale-tolerance-skipped","status":"warning","message":"scale-tolerance skipped: no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"}
+{"type":"transition","ts":"2026-06-29T04:21:51.213Z","step":"cross-boundary-invariants-skipped","status":"warning","message":"cross-boundary-invariants skipped: no changed files matched paths [src/core/pipeline/**, src/core/step/**, src/state/**, src/store/**]"}
+{"type":"step-attempt","step":"scale-tolerance","sessionId":null,"outcome":{"verdict":"skipped","findingsPath":null,"error":null,"skipReason":"no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"},"startedAt":"2026-06-29T04:21:51.212Z","endedAt":"2026-06-29T04:21:51.212Z"}
+{"type":"step-attempt","step":"cross-boundary-invariants","sessionId":null,"outcome":{"verdict":"skipped","findingsPath":null,"error":null,"skipReason":"no changed files matched paths [src/core/pipeline/**, src/core/step/**, src/state/**, src/store/**]"},"startedAt":"2026-06-29T04:21:51.213Z","endedAt":"2026-06-29T04:21:51.213Z"}
+{"type":"transition","ts":"2026-06-29T04:21:51.212Z","step":"scale-tolerance-skipped","status":"warning","message":"scale-tolerance skipped: no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"}
+{"type":"step-attempt","step":"custom-reviewers","sessionId":null,"outcome":{"verdict":"approved","findingsPath":null,"error":null},"startedAt":"2026-06-29T04:21:51.185Z","endedAt":"2026-06-29T04:21:51.226Z"}
+{"type":"transition","ts":"2026-06-29T04:21:51.227Z","step":"custom-reviewers","status":"ok","message":"custom-reviewers iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-06-29T04:21:51.227Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
+{"type":"transition","ts":"2026-06-29T04:21:51.228Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
+{"type":"transition","ts":"2026-06-29T04:21:51.229Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
