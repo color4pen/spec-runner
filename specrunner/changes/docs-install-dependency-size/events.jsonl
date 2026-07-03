@@ -23,3 +23,8 @@
 {"type":"transition","ts":"2026-07-03T14:03:53.521Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-03T14:03:53.521Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-07-03T14:03:53.522Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-07-03T14:05:22.568Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"008b087d-23c5-4bfd-8d67-7a8792ffda6b","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-03T14:03:53.535Z","endedAt":"2026-07-03T14:05:21.212Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-07-03T14:05:21.212Z","outputs":[{"path":"specrunner/changes/docs-install-dependency-size/test-cases.md","hash":"sha256:6a36001e107d4bf238393884909e4ba650fdf14319260e8c9b027d9f58c99955"}],"inputs":[{"path":"specrunner/changes/docs-install-dependency-size/design.md","hash":"sha256:7c79391445ddf5d3ceb1ca9048bccbdfbdd836ad8550cbcf1a1f3436f992eb86"},{"path":"specrunner/changes/docs-install-dependency-size/tasks.md","hash":"sha256:7a59da9a6a4e0aa75c1c8cf5079ecfa2f101f6fc83d7977f7f4671a4130edc4a"}]}
+{"type":"transition","ts":"2026-07-03T14:05:22.575Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-07-03T14:05:22.577Z","step":"implementer-started","status":"started","message":"Starting implementer step"}

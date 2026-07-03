@@ -52,7 +52,7 @@ npm install -D @color4pen/specrunner
 npm install -g @color4pen/specrunner
 ```
 
-Provider SDKs (`@anthropic-ai/claude-agent-sdk` for local runtime, `@openai/codex-sdk` for Codex) ship as optional dependencies and install by default. To slim the install:
+Provider SDKs (`@anthropic-ai/claude-agent-sdk` for local runtime, `@openai/codex-sdk` for Codex) ship as optional dependencies and install by default. Their platform binaries add approximately 510 MB to `node_modules` (claude-agent-sdk ~265 MB, codex-sdk ~245 MB as of v0.3.199 / v0.142.5). Most users need only one runtime. To reduce install size by ~245–265 MB, install with `--omit=optional` and add only the SDK you use:
 
 ```bash
 npm install -D --omit=optional @color4pen/specrunner
