@@ -70,19 +70,16 @@ describe("TC-HOOK-002: enabled + exit 0 → marked, git add -A called", () => {
   });
 });
 
-describe("TC-HOOK-003: enabled + exit 1 → unknown-slug, warning logged", () => {
-  it("returns status:unknown-slug and logs a warning", async () => {
+describe("TC-HOOK-003: enabled + exit 1 → unknown-slug (orchestrator handles warning)", () => {
+  it("returns status:unknown-slug without emitting any warning (caller decides)", async () => {
     const spawn = makeSpawnSeries([{ exitCode: 1 }]);
-    const stderrWrite = vi.fn();
     const result = await runDesignLayerMarkHook({
       slug: "my-feature",
       designLayer: makeDesignLayer(),
       cwd: "/repo",
       spawn,
-      stderrWrite,
     });
     expect(result).toEqual({ status: "unknown-slug" });
-    expect(stderrWrite).toHaveBeenCalledWith(expect.stringContaining("my-feature"));
   });
 });
 

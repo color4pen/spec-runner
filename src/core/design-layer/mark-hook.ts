@@ -9,7 +9,6 @@
  *   "error"        → fail archive (config misuse or spawn failure)
  */
 import type { SpawnFn } from "../../util/spawn.js";
-import { stderrWrite as defaultStderrWrite } from "../../logger/stdout.js";
 import { formatEscalation } from "../finish/escalation.js";
 import type { ResolvedDesignLayer } from "../../config/schema.js";
 
@@ -26,7 +25,6 @@ export interface MarkHookParams {
   /** recordDir: the worktree (or main repo cwd in no-worktree mode) where aozu should run. */
   cwd: string;
   spawn: SpawnFn;
-  stderrWrite?: (s: string) => void;
 }
 
 /**
@@ -46,7 +44,6 @@ export async function runDesignLayerMarkHook(
     designLayer,
     cwd,
     spawn,
-    stderrWrite = defaultStderrWrite,
   } = params;
 
   if (designLayer.enabled !== true) {
@@ -78,10 +75,7 @@ export async function runDesignLayerMarkHook(
   }
 
   if (result.exitCode === 1) {
-    // Unknown slug — request not managed by aozu. Warn and continue.
-    stderrWrite(
-      `Warning: design-layer mark implemented: slug '${slug}' is not managed by aozu. Skipping state transition.`,
-    );
+    // Unknown slug — request not managed by aozu. Caller (orchestrator) handles the warning.
     return { status: "unknown-slug" };
   }
 
