@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e3c40085-c3bb-4e7f-9627-828e83849146",
   "createdAt": "2026-07-03T06:54:17.266Z",
-  "updatedAt": "2026-07-03T07:58:33.752Z",
+  "updatedAt": "2026-07-03T08:05:05.965Z",
   "request": {
     "title": "設計レイヤ CLI（aozu）の受け口を結線する — request 引用の入口ゲートと取り込み完了の出口 hook",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/aozu-integration-gates-e3c40085",
   "error": null,
@@ -74,20 +74,21 @@
     }
   ],
   "_journal": {
-    "historyCount": 53,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 2,
       "code-fixer": 2,
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
