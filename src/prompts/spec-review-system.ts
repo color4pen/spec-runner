@@ -2,6 +2,7 @@ import { changesDirRel, specReviewResultPath } from "../util/paths.js";
 import { PIPELINE_RULES, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION } from "./judge-rules.js";
+import { SPEC_EXEMPT_MARKER } from "../templates/step-output-templates.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
 const _changesDir = changesDirRel();
@@ -60,9 +61,24 @@ When the request type (stated in the initial message as "Request type: <type>") 
 
 When the request type is \`bug-fix\`, \`refactoring\`, or any other type, this check does not apply — skip it.
 
+## Spec-Exempt Detection
+
+Before reviewing spec.md semantically, check whether it is spec-exempt:
+
+If \`spec.md\` contains the marker \`${SPEC_EXEMPT_MARKER}\`, this change is **spec-exempt**:
+the request type (e.g. \`chore\`) is not subject to behavior specification.
+There are no Requirements or Scenarios to review.
+
+**When spec-exempt**:
+- Treat \`spec.md\` as **vacuously satisfied** (conforms).
+- Do **NOT** flag the absence of Requirements or Scenarios as a finding.
+- Do **NOT** report \`spec.md\` missing Requirement coverage as a HIGH / MEDIUM finding.
+- Set \`findings: []\` for the spec.md portion of your review.
+- Proceed to review \`design.md\` and \`tasks.md\` normally.
+
 ## Semantic Review of spec.md
 
-When \`spec.md\` is present, review each definition segment for semantic quality:
+When \`spec.md\` is present **and is NOT spec-exempt** (does not contain \`${SPEC_EXEMPT_MARKER}\`), review each definition segment for semantic quality:
 
 1. **Requirement correctness**: Does each \`### Requirement:\` accurately describe a behavior this change achieves? Is the description unambiguous?
 2. **Scenario coverage**: Does each Requirement have at least one \`#### Scenario:\` in Given/When/Then format? Do the scenarios describe the actual behavior (not just implementation steps)?

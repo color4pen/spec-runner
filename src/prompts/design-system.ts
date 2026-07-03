@@ -3,6 +3,7 @@ import type { DynamicContext } from "../git/dynamic-context.js";
 import { buildSystemPrompt } from "./builder.js";
 import { buildRequestConstraintsBlock } from "../parser/extract-section.js";
 import { COMPLETION_DIRECTIVE } from "./fragments.js";
+import { SPEC_EXEMPT_MARKER } from "../templates/step-output-templates.js";
 
 // Build dynamically so path references stay in sync with path utility functions.
 const _changesDir = changesDirRel();
@@ -193,6 +194,12 @@ The boundary is by **path**, not by file type. \`README.md\` is forbidden becaus
 - [ ] 各 \`### Requirement:\` に少なくとも 1 つの \`#### Scenario:\` が存在する
 
 If any item is ✗, do NOT finish — fix the issue and re-check.
+
+### type: chore（= spec 対象外）の場合
+
+- [ ] \`design.md\` を \`${_changesDir}/<slug>/\` に作成した
+- [ ] \`tasks.md\` を \`${_changesDir}/<slug>/\` に作成した
+- [ ] \`spec.md\` は CLI が **${SPEC_EXEMPT_MARKER}** 免除ノートを事前配置済み — **そのまま残すこと**。Requirement を捏造しないこと。spec.md を編集しないこと。
 
 ### type: bug-fix / refactoring 等の場合（= spec.md 不要）
 

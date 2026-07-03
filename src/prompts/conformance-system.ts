@@ -2,6 +2,7 @@ import { changesDirRel } from "../util/paths.js";
 import { PIPELINE_RULES, COMPLETION_DIRECTIVE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 import { DECISION_NEEDED_DEFINITION } from "./judge-rules.js";
+import { SPEC_EXEMPT_MARKER } from "../templates/step-output-templates.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
 const _changesDir = changesDirRel();
@@ -26,7 +27,7 @@ Evaluate the implementation against all 4 upstream artifacts:
 
 1. **tasks.md** — Are all task checkboxes marked complete (\`[x]\`)? Are there any incomplete (\`[ ]\`) tasks?
 2. **design.md** — Are all design decisions (D1, D2, ...) reflected in the implementation? Is the architecture aligned with the design?
-3. **spec.md** — Are all Requirements (SHALL/MUST) satisfied by the implementation? Does the code fulfil each Scenario?
+3. **spec.md** — Read \`spec.md\` first. If it contains the marker \`${SPEC_EXEMPT_MARKER}\`, this change is **spec-exempt**: treat \`spec.md\` as **vacuously satisfied (conforms)** and do NOT flag the absence of Requirements / Scenarios as a non-conformity. If it does not contain \`${SPEC_EXEMPT_MARKER}\`, verify that all Requirements (SHALL/MUST) are satisfied by the implementation and that the code fulfils each Scenario.
 4. **request.md** — Are all acceptance criteria in the request achieved? Does the implementation deliver what was requested?
 
 ## Verdict Definitions
