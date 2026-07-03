@@ -4,7 +4,7 @@
  */
 
 import { loadConfig } from "../config/store.js";
-import { checkConfigComplete } from "../config/schema.js";
+import { checkConfigComplete, resolveDesignLayerConfig } from "../config/schema.js";
 import { getOriginInfo } from "../git/remote.js";
 import { parseRequestMd } from "../parser/request-md.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
@@ -12,6 +12,7 @@ import { resolveGitHubHost } from "../config/github-host.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { logInfo } from "../logger/stdout.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
+import { runDesignLayerCheckGate } from "./design-layer/check-gate.js";
 import type { RuntimePrereqChecker, RuntimeCredentialsResolver, RuntimeCredentials } from "./port/runtime-prereqs.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import type { OriginInfo } from "../git/remote.js";
@@ -98,6 +99,22 @@ export async function runPreflight(
 
   // Step 5: request.md parseable
   const request = await parseRequestMd(requestMdPath);
+
+  // Step 6: Design-layer check gate (opt-in; no-op when disabled)
+  const designLayer = resolveDesignLayerConfig(config);
+  const gateResult = await runDesignLayerCheckGate({
+    requestMdPath,
+    requestType: request.type,
+    designLayer,
+    cwd,
+  });
+  if (!gateResult.passed) {
+    throw new SpecRunnerError(
+      ERROR_CODES.DESIGN_LAYER_CHECK_FAILED,
+      "aozu の診断を確認し、request.md の [[id]] 引用を修正してください。",
+      "設計要素引用の検証に失敗しました。",
+    );
+  }
 
   return { config, repo, request, githubToken, githubTokenSource, specRunnerApiKey, specRunnerApiKeySource };
 }

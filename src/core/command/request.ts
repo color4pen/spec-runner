@@ -9,6 +9,12 @@ import * as fs from "node:fs/promises";
 import { parseRequestMdContent } from "../../parser/request-md.js";
 import { SpecRunnerError } from "../../errors.js";
 import { stdoutWrite, logError, stderrWrite } from "../../logger/stdout.js";
+import { resolveDesignLayerConfig } from "../../config/schema.js";
+import { runDesignLayerCheckGate } from "../design-layer/check-gate.js";
+import { loadConfig } from "../../config/store.js";
+import { resolveRepoRoot } from "../../util/repo-root.js";
+import type { SpawnFn } from "../../util/spawn.js";
+import type { SpecRunnerConfig } from "../../config/schema.js";
 
 /**
  * Build a scaffold template for request.md.
@@ -42,6 +48,14 @@ export function buildScaffoldTemplate(params: {
      コツ: 書く直前に grep で再検証する。記憶や過去メモの前提は merge で腐っていることがある。 -->
 
 - <file:line を伴う現状コードの断定（任意）>
+
+## 設計要素引用
+
+<!-- 設計レイヤ（aozu）を導入しているプロジェクトで、この request が実装する設計要素の [[id]] をここに列挙してください。
+     aozu は request 本文全体から [[id]] 形式の引用を抽出して検証します。
+     設計レイヤを使用していないプロジェクトではこのセクションを省略できます。 -->
+
+<!-- 例: [[mod-intake]], [[ent-order]] -->
 
 ## 要件
 
@@ -87,12 +101,27 @@ export function executeTemplate(type: string): number {
   return 0;
 }
 
+export interface ValidateOpts {
+  /** Working directory for config resolution and gate spawn. */
+  cwd?: string;
+  /** Pre-resolved config (skips best-effort load when provided). */
+  config?: SpecRunnerConfig;
+  /** Injectable spawn for testing. */
+  spawn?: SpawnFn;
+}
+
 /**
  * Execute `request validate` subcommand.
  * Reads the file at filePath, parses it with parseRequestMdContent().
+ * When design-layer integration is enabled, also runs the aozu check gate.
  * Returns 0 on success, 1 on error.
+ *
+ * Accepts an optional second argument `opts` for cwd/config/spawn injection.
+ * When omitted, cwd defaults to process.cwd() and config is best-effort loaded; the
+ * gate then runs when design-layer integration is enabled in that config and no-ops
+ * when it is disabled (the default), so behaviour is unchanged for projects without it.
  */
-export async function executeValidate(filePath: string): Promise<number> {
+export async function executeValidate(filePath: string, opts?: ValidateOpts): Promise<number> {
   let content: string;
   try {
     content = await fs.readFile(filePath, "utf-8");
@@ -102,9 +131,9 @@ export async function executeValidate(filePath: string): Promise<number> {
     return 1;
   }
 
+  let parsed;
   try {
-    parseRequestMdContent(content, filePath);
-    return 0;
+    parsed = parseRequestMdContent(content, filePath);
   } catch (err) {
     if (err instanceof SpecRunnerError) {
       logError(err.message);
@@ -114,4 +143,33 @@ export async function executeValidate(filePath: string): Promise<number> {
     }
     return 1;
   }
+
+  // Design-layer gate (opt-in; no-op when disabled or opts absent)
+  const cwd = opts?.cwd ?? process.cwd();
+  let resolvedConfig = opts?.config;
+  if (!resolvedConfig) {
+    // Best-effort config load; failure treated as disabled
+    try {
+      const repoRoot = await resolveRepoRoot(cwd);
+      resolvedConfig = await loadConfig(repoRoot ?? undefined);
+    } catch {
+      // Config unavailable → designLayer defaults to disabled → gate no-ops
+    }
+  }
+
+  if (resolvedConfig) {
+    const designLayer = resolveDesignLayerConfig(resolvedConfig);
+    const gateResult = await runDesignLayerCheckGate({
+      requestMdPath: filePath,
+      requestType: parsed.type,
+      designLayer,
+      cwd,
+      spawn: opts?.spawn,
+    });
+    if (!gateResult.passed) {
+      return 1;
+    }
+  }
+
+  return 0;
 }

@@ -332,3 +332,68 @@ describe("TC-REQ-006: executeValidate() returns 1 for non-existent file", () => 
     expect(written).toContain("Error:");
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-004: executeValidate() + gate failure → return 1
+// ---------------------------------------------------------------------------
+//
+// Verifies that the `if (!gateResult.passed) return 1` branch in executeValidate
+// is reachable and exercised. opts.config enables the design-layer; opts.spawn
+// returns aozu exit 1 (引用解決失敗) so the gate returns passed:false.
+// ---------------------------------------------------------------------------
+
+describe("TC-004: executeValidate() + design-layer gate failure → return 1", () => {
+  it("returns 1 when the design-layer gate is enabled and aozu exits 1", async () => {
+    const filePath = path.join(tempDir, "request.md");
+    await fs.writeFile(filePath, buildValidRequestMd({ type: "new-feature" }), "utf-8");
+
+    // Minimal config that enables the design-layer gate
+    const gateEnabledConfig = {
+      version: 1 as const,
+      agents: {},
+      designLayer: { enabled: true, command: "fake-aozu", requireCitationTypes: [] },
+    };
+
+    // Fake spawn: aozu check --request exits 1 (citation unresolved)
+    const fakeSpawn = vi.fn().mockResolvedValue({
+      exitCode: 1,
+      stdout: "",
+      stderr: "ERROR UNRESOLVED [[mod-foo]] not found in design/\n",
+    });
+
+    const result = await executeValidate(filePath, {
+      cwd: tempDir,
+      config: gateEnabledConfig,
+      spawn: fakeSpawn,
+    });
+
+    expect(result).toBe(1);
+    // Spawn was called with the aozu check command
+    expect(fakeSpawn).toHaveBeenCalledWith(
+      "fake-aozu",
+      expect.arrayContaining(["check", "--request"]),
+      expect.any(Object),
+    );
+  });
+
+  it("returns 0 when the design-layer gate is enabled and aozu exits 0", async () => {
+    const filePath = path.join(tempDir, "request.md");
+    await fs.writeFile(filePath, buildValidRequestMd({ type: "new-feature" }), "utf-8");
+
+    const gateEnabledConfig = {
+      version: 1 as const,
+      agents: {},
+      designLayer: { enabled: true, command: "fake-aozu", requireCitationTypes: [] },
+    };
+
+    const fakeSpawn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
+
+    const result = await executeValidate(filePath, {
+      cwd: tempDir,
+      config: gateEnabledConfig,
+      spawn: fakeSpawn,
+    });
+
+    expect(result).toBe(0);
+  });
+});

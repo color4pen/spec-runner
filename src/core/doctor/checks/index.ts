@@ -14,6 +14,7 @@ import { nodeVersionCheck } from "./runtime/node.js";
 import { packageManagerCheck } from "./runtime/package-manager.js";
 import { gitVersionCheck } from "./runtime/git.js";
 import { codexCliCheck } from "./runtime/codex-cli.js";
+import { aozuCliCheck } from "./runtime/aozu-cli.js";
 
 // Config
 import { configFileExistsCheck } from "./config/file-exists.js";
@@ -48,10 +49,11 @@ import { orphanSidecarsCheck } from "./storage/orphan-sidecars.js";
 import { orphanWorktreesCheck } from "./storage/orphan-worktrees.js";
 
 export const commonChecks: DoctorCheck[] = [
-  // Runtime (3 — gh CLI check removed: no longer required)
+  // Runtime (4 — gh CLI check removed: no longer required)
   nodeVersionCheck,
   packageManagerCheck,
   gitVersionCheck,
+  aozuCliCheck,
   // Config
   configFileExistsCheck,
   githubTokenPresentCheck,
@@ -98,6 +100,7 @@ export {
   packageManagerCheck,
   gitVersionCheck,
   codexCliCheck,
+  aozuCliCheck,
   configFileExistsCheck,
   managedKeyPresentCheck,
   githubTokenPresentCheck,

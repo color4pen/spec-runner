@@ -4,6 +4,22 @@ request.md は pipeline への唯一の入力であり、その解像度が pipe
 
 雛形は `specrunner request template`、構文検査は `specrunner request validate <file>` で得られる。
 
+## 設計要素引用 — 設計レイヤとの紐付け（任意）
+
+設計レイヤ CLI（aozu）を導入しているプロジェクトでは、`## 設計要素引用` セクションに、この request が実装する設計要素の `[[id]]` を列挙できる。
+
+```markdown
+## 設計要素引用
+
+<!-- この request が実装する設計要素の [[id]] を列挙してください -->
+
+[[mod-intake]], [[ent-order]]
+```
+
+aozu は request 本文全体から `[[id]]` 形式の引用を抽出して実在解決・状態検証を行う。セクション名や位置は緩く、本文のどこに書いても認識される。
+
+このセクションは**任意**である。設計レイヤを使用していないプロジェクトは省略してよい。設計レイヤが有効なプロジェクトで引用が必要な場合、`request validate` と `run` の preflight で `aozu check` が自動実行される（`.specrunner/config.json` の `designLayer.enabled` が `true` のとき）。
+
 ## 現状コードの前提 — 書く直前に検証する
 
 「今のコードはこうなっている」という断定は、必ず file:line を伴って書く。そして**書く直前に grep / Read で実コードと突き合わせる**。過去の調査メモや記憶から書いた前提は、その後の merge で腐っていることがある。腐った前提は design / request-review の照合で escalation になり、往復が一回無駄になる。

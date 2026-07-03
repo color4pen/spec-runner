@@ -32,6 +32,8 @@ import { formatEscalation } from "../finish/escalation.js";
 import { logResult, stderrWrite } from "../../logger/stdout.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
 import { livenessJsonPath, draftsDir } from "../../util/paths.js";
+import { runDesignLayerMarkHook } from "../design-layer/mark-hook.js";
+import type { ResolvedDesignLayer } from "../../config/schema.js";
 
 export interface ArchiveInput {
   /** Slug of the job to archive. */
@@ -44,6 +46,11 @@ export interface ArchiveInput {
   baseBranch?: string;
   /** Resolved GitHub token for authenticating git push/fetch operations. Optional. */
   githubToken?: string;
+  /**
+   * Resolved design-layer config for the mark-implemented hook.
+   * When absent or disabled, the hook is a no-op.
+   */
+  designLayer?: ResolvedDesignLayer;
 }
 
 export type ArchiveResult =
@@ -107,6 +114,7 @@ export async function runArchiveOrchestrator(
   let worktreePath: string | null;
   let branch: string | null;
   let noWorktree = false;
+  let prNumber: number | undefined;
 
   try {
     const allStates = await JobStateStore.list(cwd, { includeArchived: true });
@@ -124,6 +132,7 @@ export async function runArchiveOrchestrator(
     worktreePath = await resolveWorktreePathForArchive(state, cwd);
     branch = state.branch;
     noWorktree = state.noWorktree === true;
+    prNumber = state.pullRequest?.number ?? undefined;
 
     // Terminal status → no-op (short-circuit before touching worktree)
     if (TERMINAL_STATUSES.has(state.status)) {
@@ -269,6 +278,23 @@ export async function runArchiveOrchestrator(
     const addResult = await spawn("git", ["add", "specrunner/changes/"], { cwd: recordDir });
     if (addResult.exitCode !== 0) {
       stderrWrite(`Warning: git add specrunner/changes/ failed: ${addResult.stderr.trim()}. Continuing.`);
+    }
+
+    // Design-layer exit hook: mark implemented in aozu and stage any state changes.
+    // Runs after the scoped git add so aozu's writes are captured by the archive commit.
+    const noopDesignLayer: ResolvedDesignLayer = { enabled: false, command: "aozu", requireCitationTypes: [] };
+    const markResult = await runDesignLayerMarkHook({
+      slug,
+      prNumber,
+      designLayer: input.designLayer ?? noopDesignLayer,
+      cwd: recordDir,
+      spawn,
+    });
+    if (markResult.status === "error") {
+      return { exitCode: 1, escalation: markResult.escalation };
+    }
+    if (markResult.status === "unknown-slug") {
+      stderrWrite(`Warning: design-layer mark implemented: slug '${slug}' is not managed by aozu. Skipping state transition.`);
     }
 
     // Commit staged changes
