@@ -73,3 +73,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/post-merge-worktree-cleanup/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-03T13:04:28.562Z","endedAt":"2026-07-03T13:04:30.179Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-03T13:04:30.179Z","outputs":[{"path":"specrunner/changes/post-merge-worktree-cleanup/pr-create-result.md","hash":"sha256:a3e853f8e64acce9c5e995346821177df4078cca6cc631ef3aafa8878465ed9c"}],"inputs":[{"path":"fix/post-merge-worktree-cleanup-e50d5436","hash":null}]}
 {"type":"transition","ts":"2026-07-03T13:04:30.189Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-03T13:08:38.665Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

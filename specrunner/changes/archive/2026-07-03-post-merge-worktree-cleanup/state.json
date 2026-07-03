@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e50d5436-da65-41d9-b552-07e451529476",
   "createdAt": "2026-07-03T12:35:35.039Z",
-  "updatedAt": "2026-07-03T13:04:30.189Z",
+  "updatedAt": "2026-07-03T13:08:38.665Z",
   "request": {
     "title": "archive --with-merge の後片づけで worktree が削除されない（local 実行で worktreePath が常に null）",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/post-merge-worktree-cleanup-e50d5436",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,7 @@
     "createdAt": "2026-07-03T13:04:30.178Z"
   },
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
