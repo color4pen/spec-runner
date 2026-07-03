@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c20c5428-6b17-48a6-bf94-a2c5be331836",
   "createdAt": "2026-07-03T12:36:27.255Z",
-  "updatedAt": "2026-07-03T14:10:26.522Z",
+  "updatedAt": "2026-07-03T14:10:56.797Z",
   "request": {
     "title": "docs: Installation セクションに依存サイズ（optional SDK binary）の説明を追加する",
     "type": "chore",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "chore/docs-install-dependency-size-c20c5428",
   "error": null,
@@ -75,7 +75,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
@@ -86,7 +86,8 @@
       "code-review": 1,
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
