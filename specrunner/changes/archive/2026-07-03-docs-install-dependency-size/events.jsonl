@@ -79,3 +79,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/docs-install-dependency-size/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-03T14:13:06.735Z","endedAt":"2026-07-03T14:13:08.121Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-03T14:13:08.121Z","outputs":[{"path":"specrunner/changes/docs-install-dependency-size/pr-create-result.md","hash":"sha256:b42945ef82b27d57d7e4515e3690c27a305977bbba6d1de0a70e83db06361646"}],"inputs":[{"path":"chore/docs-install-dependency-size-c20c5428","hash":null}]}
 {"type":"transition","ts":"2026-07-03T14:13:08.136Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-03T14:17:53.028Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
