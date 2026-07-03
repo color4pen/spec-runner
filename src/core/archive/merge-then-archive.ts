@@ -28,7 +28,7 @@ import type { WorktreeManager } from "../worktree/manager.js";
 import type { ResolvedDesignLayer } from "../../config/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { getJobSlug } from "../../state/job-slug.js";
-import { runArchiveOrchestrator } from "./orchestrator.js";
+import { runArchiveOrchestrator, resolveWorktreePathForArchive } from "./orchestrator.js";
 import type { ArchiveResult } from "./orchestrator.js";
 import { runPostMergeCleanup } from "./post-merge-cleanup.js";
 import { formatEscalation } from "../finish/escalation.js";
@@ -148,7 +148,7 @@ export async function runMergeThenArchive(
 
     prNumber = state.pullRequest.number;
     branch = state.branch;
-    worktreePath = state.worktreePath ?? null;
+    worktreePath = await resolveWorktreePathForArchive(state, cwd);
     noWorktree = state.noWorktree === true;
     jobStatus = state.status;
   } catch (err: unknown) {

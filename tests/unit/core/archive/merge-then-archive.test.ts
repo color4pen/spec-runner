@@ -37,6 +37,7 @@ vi.mock("../../../../src/store/job-state-store.js", () => ({
 
 vi.mock("../../../../src/core/archive/orchestrator.js", () => ({
   runArchiveOrchestrator: vi.fn().mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" }),
+  resolveWorktreePathForArchive: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("../../../../src/core/archive/post-merge-cleanup.js", () => ({
@@ -1956,5 +1957,61 @@ describe("TC-PPG-005: already-MERGED PR → protected-path guard skipped", () =>
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.listPullRequestFiles).not.toHaveBeenCalled();
     expect(runPostMergeCleanup).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MTA-WORKTREE-FALLBACK: state.worktreePath=null でも sidecar 解決済みパスが cleanup に渡る
+// ---------------------------------------------------------------------------
+
+describe("TC-MTA-WORKTREE-FALLBACK: resolveWorktreePathForArchive フォールバックが cleanup に伝播する", () => {
+  it("state.worktreePath=null でも resolveWorktreePathForArchive が解決したパスが runPostMergeCleanup に渡る", async () => {
+    const RESOLVED_PATH = "/resolved/path/my-slug-abc12345";
+
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    // worktreePath is absent from state (local job — not written to state)
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42, { worktreePath: null })]);
+
+    const { runArchiveOrchestrator, resolveWorktreePathForArchive } = await import(
+      "../../../../src/core/archive/orchestrator.js"
+    );
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
+    // Simulate sidecar / convention-path fallback returning a resolved path
+    (resolveWorktreePathForArchive as ReturnType<typeof vi.fn>).mockResolvedValue(RESOLVED_PATH);
+
+    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const client = makeGitHubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        headRefName: "change/my-slug",
+        mergeable: "MERGEABLE",
+        headSha: "archive-sha-001",
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "merged" }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    const result = await runMergeThenArchive({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+    });
+
+    expect(result).toMatchObject({ exitCode: 0 });
+    // resolveWorktreePathForArchive フォールバック解決の結果が cleanup に渡ること
+    expect(runPostMergeCleanup).toHaveBeenCalledWith(
+      expect.objectContaining({ worktreePath: RESOLVED_PATH }),
+      expect.any(Function),
+    );
   });
 });

@@ -4,11 +4,11 @@
 
 `src/core/archive/merge-then-archive.ts` の Step 1（state load ブロック）を修正する。
 
-- [ ] `orchestrator.ts` から `resolveWorktreePathForArchive` を named import に追加する
+- [x] `orchestrator.ts` から `resolveWorktreePathForArchive` を named import に追加する
   （既存の `runArchiveOrchestrator` と同じ import 文に追記）
-- [ ] Step 1 の `worktreePath = state.worktreePath ?? null;`（現 151 行目付近）を
+- [x] Step 1 の `worktreePath = state.worktreePath ?? null;`（現 151 行目付近）を
   `worktreePath = await resolveWorktreePathForArchive(state, cwd);` に置き換える
-- [ ] `worktreePath` の型が `string | null` のままであることを確認する（`resolveWorktreePathForArchive` の戻り値と一致）
+- [x] `worktreePath` の型が `string | null` のままであることを確認する（`resolveWorktreePathForArchive` の戻り値と一致）
 
 **Acceptance Criteria**:
 - `state.worktreePath` が null / undefined の local ジョブで `job archive --with-merge` を実行したとき、
@@ -21,15 +21,15 @@
 
 `src/core/archive/post-merge-cleanup.ts` の worktree 削除ブロックを修正する。
 
-- [ ] `if (worktreePath && !noWorktree)` ブロックの `else` 節を追加する。
+- [x] `if (worktreePath && !noWorktree)` ブロックの `else` 節を追加する。
   条件：`!noWorktree`（worktree モード）かつ `!worktreePath`（解決失敗）のとき
-- [ ] `else` 節で `stderrWrite` を使い以下のメッセージを出力する：
+- [x] `else` 節で `stderrWrite` を使い以下のメッセージを出力する：
   ```
   Warning: worktree path could not be resolved for <slug>. Worktree may remain on disk.
   Run 'git worktree list' to check and 'git worktree prune' to clean up if needed.
   ```
   `<slug>` は `input.slug` の実値に置き換える
-- [ ] `--no-worktree` モード（`noWorktree === true`）では警告を出さない
+- [x] `--no-worktree` モード（`noWorktree === true`）では警告を出さない
 
 **Acceptance Criteria**:
 - `worktreePath: null`, `noWorktree: false` で `runPostMergeCleanup` を呼ぶと警告が stderr に出る
@@ -41,11 +41,11 @@
 
 `tests/unit/core/archive/post-merge-cleanup.test.ts` を新規作成する。
 
-- [ ] `runPostMergeCleanup` を直接 import して単体テストを書く（モジュールモックなし）
-- [ ] `WorktreeManager` は injectable な `worktreeManagerFn` 経由で差し替える（`vi.fn()` ファクトリ）
-- [ ] `spawn` は `vi.fn()` で全コマンド `exitCode: 0` を返すモックを使う
-- [ ] `fs` は `unlink` / `rm` が `vi.fn()` のモックオブジェクトを使う
-- [ ] `process.stderr.write` を `vi.spyOn` してモックし、警告メッセージの検証に使う
+- [x] `runPostMergeCleanup` を直接 import して単体テストを書く（モジュールモックなし）
+- [x] `WorktreeManager` は injectable な `worktreeManagerFn` 経由で差し替える（`vi.fn()` ファクトリ）
+- [x] `spawn` は `vi.fn()` で全コマンド `exitCode: 0` を返すモックを使う
+- [x] `fs` は `unlink` / `rm` が `vi.fn()` のモックオブジェクトを使う
+- [x] `process.stderr.write` を `vi.spyOn` してモックし、警告メッセージの検証に使う
 
 実装するテストケース：
 
@@ -77,9 +77,9 @@
 
 既存の `tests/unit/core/archive/merge-then-archive.test.ts` を修正する。
 
-- [ ] `vi.mock("...orchestrator.js", () => ({...}))` の factory に `resolveWorktreePathForArchive: vi.fn()` を追加する
+- [x] `vi.mock("...orchestrator.js", () => ({...}))` の factory に `resolveWorktreePathForArchive: vi.fn()` を追加する
   デフォルト戻り値は `Promise.resolve(null)` とする（既存テストのデフォルト `worktreePath: null` 相当を維持）
-- [ ] 既存テストで `state.worktreePath` が null でも `runPostMergeCleanup` への引数として `null` が来ることを
+- [x] 既存テストで `state.worktreePath` が null でも `runPostMergeCleanup` への引数として `null` が来ることを
   想定しているケースは、`resolveWorktreePathForArchive` が `null` を返すよう各テスト内でセットする
   （`beforeEach` で `resolveWorktreePathForArchive` のデフォルト戻り値を `null` にしておけば無変更で済む）
 

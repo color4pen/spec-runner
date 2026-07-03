@@ -22,6 +22,7 @@ vi.mock("../../../store/job-state-store.js", () => ({
 
 vi.mock("../orchestrator.js", () => ({
   runArchiveOrchestrator: vi.fn(),
+  resolveWorktreePathForArchive: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock("../post-merge-cleanup.js", () => ({
