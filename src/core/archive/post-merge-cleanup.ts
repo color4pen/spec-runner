@@ -61,6 +61,11 @@ export async function runPostMergeCleanup(
     } catch {
       stderrWrite(`Warning: failed to remove worktree at ${worktreePath}. Run 'git worktree prune' manually.`);
     }
+  } else if (!noWorktree && !worktreePath) {
+    stderrWrite(
+      `Warning: worktree path could not be resolved for ${slug}. Worktree may remain on disk.\n` +
+        `Run 'git worktree list' to check and 'git worktree prune' to clean up if needed.`,
+    );
   }
 
   // Delete liveness.json sidecar (best-effort)
