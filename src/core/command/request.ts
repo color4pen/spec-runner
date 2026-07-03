@@ -117,7 +117,9 @@ export interface ValidateOpts {
  * Returns 0 on success, 1 on error.
  *
  * Accepts an optional second argument `opts` for cwd/config/spawn injection.
- * When omitted, existing 1-argument callers are fully backward-compatible (no-op for gate).
+ * When omitted, cwd defaults to process.cwd() and config is best-effort loaded; the
+ * gate then runs when design-layer integration is enabled in that config and no-ops
+ * when it is disabled (the default), so behaviour is unchanged for projects without it.
  */
 export async function executeValidate(filePath: string, opts?: ValidateOpts): Promise<number> {
   let content: string;

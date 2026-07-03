@@ -51,7 +51,7 @@ describe("TC-HOOK-002: enabled + exit 0 → marked, git add -A called", () => {
   it("returns status:marked and calls git add -A after exit 0", async () => {
     const spawn = makeSpawnSeries([
       { exitCode: 0 }, // aozu mark implemented
-      { exitCode: 0 }, // git add -A
+      { exitCode: 0 }, // git add -A -- design
     ]);
     const result = await runDesignLayerMarkHook({
       slug: "my-feature",
@@ -64,9 +64,9 @@ describe("TC-HOOK-002: enabled + exit 0 → marked, git add -A called", () => {
     // First call: aozu mark implemented
     expect((spawn as ReturnType<typeof vi.fn>).mock.calls[0]![0]).toBe("fake-aozu");
     expect((spawn as ReturnType<typeof vi.fn>).mock.calls[0]![1]).toContain("mark");
-    // Second call: git add -A
+    // Second call: git add -A -- design (scoped to aozu's design dir)
     expect((spawn as ReturnType<typeof vi.fn>).mock.calls[1]![0]).toBe("git");
-    expect((spawn as ReturnType<typeof vi.fn>).mock.calls[1]![1]).toEqual(["add", "-A"]);
+    expect((spawn as ReturnType<typeof vi.fn>).mock.calls[1]![1]).toEqual(["add", "-A", "--", "design"]);
   });
 });
 

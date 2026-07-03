@@ -31,7 +31,7 @@ export interface MarkHookParams {
  * Run the design-layer mark-implemented hook.
  *
  * When disabled → {status:"skipped"} without spawning anything.
- * On exit 0 → stages all aozu-written files with `git add -A`, returns {status:"marked"}.
+ * On exit 0 → stages aozu's design-dir writes with `git add -A -- design`, returns {status:"marked"}.
  * On exit 1 → logs a warning, returns {status:"unknown-slug"} (archive continues).
  * On exit 2 / null → returns {status:"error", escalation} (archive fails).
  */
@@ -58,14 +58,17 @@ export async function runDesignLayerMarkHook(
   const result = await spawn(designLayer.command, args, { cwd });
 
   if (result.exitCode === 0) {
-    // Stage any files written by aozu (design/ state changes, etc.)
-    const addResult = await spawn("git", ["add", "-A"], { cwd });
+    // Stage aozu's writes, scoped to the design directory so the archive commit
+    // stays as tight as the orchestrator's other scoped adds (specrunner/changes/,
+    // drafts/). aozu writes only under its --dir (default ./design, which this hook
+    // relies on by not passing --dir); -A captures additions, edits and removals there.
+    const addResult = await spawn("git", ["add", "-A", "--", "design"], { cwd });
     if (addResult.exitCode !== 0) {
       return {
         status: "error",
         escalation: formatEscalation({
-          failedStep: "design-layer mark-hook (git add -A)",
-          detectedState: `git add -A failed (exit ${addResult.exitCode}): ${addResult.stderr.trim()}`,
+          failedStep: "design-layer mark-hook (git add -- design)",
+          detectedState: `git add -- design failed (exit ${addResult.exitCode}): ${addResult.stderr.trim()}`,
           recommendedAction: `Re-run: specrunner job archive ${slug}`,
           resumeCommand: `specrunner job archive ${slug}`,
         }),
