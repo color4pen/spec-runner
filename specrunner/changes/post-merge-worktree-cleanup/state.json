@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e50d5436-da65-41d9-b552-07e451529476",
   "createdAt": "2026-07-03T12:35:35.039Z",
-  "updatedAt": "2026-07-03T12:42:44.454Z",
+  "updatedAt": "2026-07-03T12:45:07.855Z",
   "request": {
     "title": "archive --with-merge の後片づけで worktree が削除されない（local 実行で worktreePath が常に null）",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "fix/post-merge-worktree-cleanup-e50d5436",
   "error": null,
@@ -48,10 +48,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
