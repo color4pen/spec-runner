@@ -42,6 +42,8 @@ vi.mock("../../src/core/credentials/requirements.js", () => ({
 import { runPreflight } from "../../src/core/preflight.js";
 import { resolveGitHubToken } from "../../src/core/credentials/github.js";
 import { logInfo } from "../../src/logger/stdout.js";
+import { runDesignLayerCheckGate } from "../../src/core/design-layer/check-gate.js";
+import { SpecRunnerError } from "../../src/errors.js";
 
 describe("runPreflight — githubTokenSource propagation", () => {
   beforeEach(() => {
@@ -104,5 +106,56 @@ describe("runPreflight — githubTokenSource propagation", () => {
       credentialsResolver: { resolve: vi.fn().mockResolvedValue({}) },
     });
     expect(vi.mocked(logInfo)).toHaveBeenCalledWith("GitHub token source: env");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-005: runPreflight + design-layer gate failure → throw SpecRunnerError
+// ---------------------------------------------------------------------------
+//
+// Verifies the `if (!gateResult.passed) throw new SpecRunnerError(...)` branch
+// in preflight.ts. The module-level mock for runDesignLayerCheckGate is overridden
+// per-test to return passed:false.
+// ---------------------------------------------------------------------------
+
+describe("TC-005: runPreflight — design-layer gate failure → throws SpecRunnerError", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(resolveGitHubToken).mockResolvedValue({ token: "ghp_test", source: "credentials" });
+  });
+
+  it("throws SpecRunnerError with DESIGN_LAYER_CHECK_FAILED when gate returns passed:false", async () => {
+    vi.mocked(runDesignLayerCheckGate).mockResolvedValueOnce({
+      passed: false,
+      exitCode: 1,
+      diagnostics: "ERROR UNRESOLVED [[mod-foo]] not found in design/",
+    });
+
+    await expect(
+      runPreflight("/fake/request.md", "/fake/cwd", {}, {
+        prereqChecker: { check: vi.fn().mockResolvedValue(null) },
+        credentialsResolver: { resolve: vi.fn().mockResolvedValue({}) },
+      }),
+    ).rejects.toThrow(SpecRunnerError);
+  });
+
+  it("thrown error has DESIGN_LAYER_CHECK_FAILED code", async () => {
+    vi.mocked(runDesignLayerCheckGate).mockResolvedValueOnce({
+      passed: false,
+      exitCode: 1,
+      diagnostics: "ERROR UNRESOLVED [[mod-foo]] not found in design/",
+    });
+
+    let caughtError: unknown;
+    try {
+      await runPreflight("/fake/request.md", "/fake/cwd", {}, {
+        prereqChecker: { check: vi.fn().mockResolvedValue(null) },
+        credentialsResolver: { resolve: vi.fn().mockResolvedValue({}) },
+      });
+    } catch (err) {
+      caughtError = err;
+    }
+    expect(caughtError).toBeInstanceOf(SpecRunnerError);
+    expect((caughtError as SpecRunnerError).code).toBe("DESIGN_LAYER_CHECK_FAILED");
   });
 });

@@ -49,7 +49,7 @@ import { orphanSidecarsCheck } from "./storage/orphan-sidecars.js";
 import { orphanWorktreesCheck } from "./storage/orphan-worktrees.js";
 
 export const commonChecks: DoctorCheck[] = [
-  // Runtime (3 — gh CLI check removed: no longer required)
+  // Runtime (4 — gh CLI check removed: no longer required)
   nodeVersionCheck,
   packageManagerCheck,
   gitVersionCheck,
