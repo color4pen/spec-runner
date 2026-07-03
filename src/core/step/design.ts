@@ -4,7 +4,7 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { buildInitialMessage, DESIGN_SYSTEM_PROMPT } from "../../prompts/design-system.js";
-import { getBranchPrefix } from "../../config/type-config.js";
+import { getBranchPrefix, isSpecRequired } from "../../config/type-config.js";
 import { requestMdPath, changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
@@ -85,7 +85,9 @@ export const DesignStep: AgentStep = {
     return [
       { path: `${folder}/design.md` },
       { path: `${folder}/tasks.md` },
-      { path: `${folder}/spec.md` },
+      // verify: false for spec-exempt types — the contract gate must not halt
+      // because the agent legitimately leaves spec.md as the exemption note.
+      { path: `${folder}/spec.md`, verify: isSpecRequired(deps.request.type) },
     ];
   },
 

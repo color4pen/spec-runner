@@ -21,6 +21,7 @@ import {
   conformanceResultPath,
 } from "../util/paths.js";
 import { VERDICT_BLOCKING_RULES } from "../prompts/judge-rules.js";
+import { isSpecRequired } from "../config/type-config.js";
 
 // ---------------------------------------------------------------------------
 // Template constants
@@ -336,6 +337,47 @@ agent runs, so the agent has a pre-structured output destination.
 `;
 
 /**
+ * Machine-recognizable marker string for spec-exempt changes.
+ *
+ * Appears in SPEC_EXEMPT_NOTE and is imported by downstream prompt modules
+ * (spec-review-system, conformance-system, design-system) so the agent can
+ * recognize a spec-exempt spec.md and treat it as vacuously satisfied.
+ *
+ * Single source of truth — do NOT hardcode this string elsewhere.
+ */
+export const SPEC_EXEMPT_MARKER = "SPEC-EXEMPT";
+
+/**
+ * Content written to spec.md for spec-exempt request types (e.g. "chore").
+ *
+ * Requirements:
+ *   (a) Non-empty and self-contained — not a scaffold placeholder.
+ *   (b) Contains SPEC_EXEMPT_MARKER so downstream agents can detect exemption.
+ *   (c) Clearly states that no behavior spec exists and explains why (type-driven,
+ *       not an oversight).
+ *   (d) Does NOT include an empty ## Requirements scaffold.
+ *   (e) Instructs downstream reviewers (spec-review, conformance) not to flag
+ *       the absence of Requirements / Scenarios as a finding.
+ */
+export const SPEC_EXEMPT_NOTE = `# Spec: (${SPEC_EXEMPT_MARKER})
+
+<!-- ${SPEC_EXEMPT_MARKER}
+この変更は request 型（chore）が spec 対象外のため、振る舞い spec（Requirement / Scenario）を持たない。
+型による宣言的な免除であり、記述漏れではない。
+
+Downstream reviewers (spec-review, conformance):
+- このファイルを vacuously satisfied（conforms）として扱うこと。
+- Requirement / Scenario の欠如を finding（non-conformity）にしないこと。
+-->
+
+この変更は **spec-exempt** です。request 型 (\`chore\`) は振る舞い spec の対象外のため、
+Requirement および Scenario は存在しません。これは記述漏れではなく、型による宣言的な免除です。
+
+下流レビュー（spec-review / conformance）へ: このファイルを vacuously satisfied として扱ってください。
+Requirement / Scenario の欠如を finding にしないでください。
+`;
+
+/**
  * Template for conformance-result-NNN.md (A-group).
  *
  * Placed in the change folder before the conformance step runs. The agent
@@ -418,6 +460,10 @@ export function getOutputTemplates(
     }
 
     case "design": {
+      // For spec-exempt types (e.g. chore), place the exemption note instead of
+      // the normal spec scaffold. The design agent will leave it unchanged, and
+      // the output contract gate skips spec.md for exempt types (verify: false).
+      const specContent = isSpecRequired(state.request.type) ? SPEC_TEMPLATE : SPEC_EXEMPT_NOTE;
       return [
         {
           path: `${changeFolder}/design.md`,
@@ -429,7 +475,7 @@ export function getOutputTemplates(
         },
         {
           path: `${changeFolder}/spec.md`,
-          content: SPEC_TEMPLATE,
+          content: specContent,
         },
       ];
     }

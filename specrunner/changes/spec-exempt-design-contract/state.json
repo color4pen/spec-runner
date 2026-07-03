@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0bbce03e-7ec7-4009-8961-121cadb655ab",
   "createdAt": "2026-07-03T12:53:24.550Z",
-  "updatedAt": "2026-07-03T13:15:57.638Z",
+  "updatedAt": "2026-07-03T13:17:47.626Z",
   "request": {
     "title": "chore（spec 対象外の変更）が design step を通過できるようにする — spec.md output contract を型の spec 免除に整合させる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "change/spec-exempt-design-contract-0bbce03e",
   "error": null,
@@ -48,11 +48,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }
