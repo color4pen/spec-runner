@@ -11,6 +11,10 @@ vi.mock("../../src/config/store.js", () => ({
 }));
 vi.mock("../../src/config/schema.js", () => ({
   checkConfigComplete: vi.fn().mockReturnValue(null),
+  resolveDesignLayerConfig: vi.fn().mockReturnValue({ enabled: false, command: "aozu", requireCitationTypes: [] }),
+}));
+vi.mock("../../src/core/design-layer/check-gate.js", () => ({
+  runDesignLayerCheckGate: vi.fn().mockResolvedValue({ passed: true, skipped: true }),
 }));
 vi.mock("../../src/git/remote.js", () => ({
   getOriginInfo: vi.fn().mockResolvedValue({ owner: "test-owner", repo: "test-repo" }),

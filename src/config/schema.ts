@@ -23,6 +23,7 @@ import {
   gte,
   lte,
   minLength,
+  boolean,
 } from "zod/v4-mini";
 import { BUILTIN_MODEL_REGISTRY } from "./model-registry.js";
 import type { AgentStepName } from "../state/schema.js";
@@ -325,6 +326,29 @@ export function resolveTransientRetryConfig(config: SpecRunnerConfig): Required<
   };
 }
 
+/**
+ * Design-layer CLI (aozu) integration configuration.
+ * Controls opt-in wiring of the design layer check gate and mark-implemented hook.
+ */
+export interface DesignLayerConfig {
+  /**
+   * Enable design layer integration.
+   * When false / absent, aozu is never spawned and existing behaviour is fully preserved.
+   * Default: false.
+   */
+  enabled?: boolean;
+  /**
+   * Command name to spawn. Default: "aozu".
+   * Allows injecting a custom binary or absolute path for testing.
+   */
+  command?: string;
+  /**
+   * Request types for which `--require-citation` is passed to `aozu check`.
+   * Default: [] (no types require a citation).
+   */
+  requireCitationTypes?: string[];
+}
+
 export interface SpecRunnerConfig {
   version: 1;
   /**
@@ -410,6 +434,11 @@ export interface SpecRunnerConfig {
    * When absent, the implementer follows the existing test placement pattern in the project.
    */
   tests?: TestsConfig;
+  /**
+   * Design-layer CLI (aozu) integration.
+   * When absent or enabled===false, aozu is never spawned and existing behaviour is fully preserved.
+   */
+  designLayer?: DesignLayerConfig;
 }
 
 /**
@@ -451,6 +480,8 @@ export interface RawConfig {
   transientRetry?: Partial<Record<string, unknown>>;
   /** Tests configuration — passed through as-is. Validated in validateConfig(). */
   tests?: unknown;
+  /** Design-layer configuration — passed through as-is. Validated in validateConfig(). */
+  designLayer?: Partial<Record<string, unknown>>;
 }
 
 // ---------------------------------------------------------------------------
@@ -787,6 +818,27 @@ export const configSchema = object({
       "must be an object.",
     ),
   ),
+  designLayer: optional(
+    object(
+      {
+        enabled: optional(boolean("must be a boolean.")),
+        command: optional(
+          string("must be a non-empty string.").check(
+            minLength(1, "must be a non-empty string."),
+          ),
+        ),
+        requireCitationTypes: optional(
+          array(
+            string("must be a non-empty string.").check(
+              minLength(1, "must be a non-empty string."),
+            ),
+            "must be an array.",
+          ),
+        ),
+      },
+      "must be an object.",
+    ),
+  ),
 });
 
 // ---------------------------------------------------------------------------
@@ -979,6 +1031,33 @@ function checkByRequestTypeSemantics(raw: Record<string, unknown>): void {
 function runSemanticChecks(raw: Record<string, unknown>): void {
   checkModelRegistry(raw);
   checkByRequestTypeSemantics(raw);
+}
+
+// ---------------------------------------------------------------------------
+// Design-layer config resolution
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolved design-layer config with all fields present.
+ * Use this type to interact with the design-layer integration throughout the codebase.
+ */
+export interface ResolvedDesignLayer {
+  enabled: boolean;
+  command: string;
+  requireCitationTypes: string[];
+}
+
+/**
+ * Resolve DesignLayerConfig with defaults applied.
+ * Returns a fully-resolved config with all fields present.
+ * Follows the same pattern as resolveInboxConfig / resolveTransientRetryConfig.
+ */
+export function resolveDesignLayerConfig(config: SpecRunnerConfig): ResolvedDesignLayer {
+  return {
+    enabled: config.designLayer?.enabled === true,
+    command: config.designLayer?.command ?? "aozu",
+    requireCitationTypes: config.designLayer?.requireCitationTypes ?? [],
+  };
 }
 
 // ---------------------------------------------------------------------------

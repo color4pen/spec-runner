@@ -25,6 +25,7 @@ import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";
 import type { GitHubClient } from "../port/github-client.js";
 import type { WorktreeManager } from "../worktree/manager.js";
+import type { ResolvedDesignLayer } from "../../config/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import { runArchiveOrchestrator } from "./orchestrator.js";
@@ -77,6 +78,11 @@ export interface MergeThenArchiveInput {
    * Empty or absent → guard skipped entirely (no listPullRequestFiles call).
    */
   protectedPaths?: string[];
+  /**
+   * Resolved design-layer config for the mark-implemented hook.
+   * When absent or disabled, the hook is a no-op.
+   */
+  designLayer?: ResolvedDesignLayer;
 }
 
 export type MergeThenArchiveResult = ArchiveResult;
@@ -106,6 +112,7 @@ export async function runMergeThenArchive(
     pollIntervalMs = DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS,
     nowFn = Date.now,
     protectedPaths,
+    designLayer,
   } = input;
 
   // Resolve effective timeout: undefined → default, null → unlimited, number → as-is
@@ -203,7 +210,7 @@ export async function runMergeThenArchive(
   stdoutWrite(`Recording archive on feature branch...`);
 
   const archiveRecordResult = await runArchiveOrchestrator(
-    { slug, cwd, spawn, fs, baseBranch: resolvedBaseBranch, githubToken },
+    { slug, cwd, spawn, fs, baseBranch: resolvedBaseBranch, githubToken, designLayer },
     stdoutWrite,
   );
 

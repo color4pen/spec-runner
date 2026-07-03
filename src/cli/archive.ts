@@ -21,7 +21,8 @@ import { getOriginInfo } from "../git/remote.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { loadConfig } from "../config/store.js";
-import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS } from "../config/schema.js";
+import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS, resolveDesignLayerConfig } from "../config/schema.js";
+import type { ResolvedDesignLayer } from "../config/schema.js";
 import { SpecRunnerError } from "../errors.js";
 import { registerExitGuard } from "../core/lifecycle/exit-guard.js";
 import { logResult, logError, stderrWrite } from "../logger/stdout.js";
@@ -134,6 +135,8 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
     }
   }
 
+  const disabledDesignLayer: ResolvedDesignLayer = { enabled: false, command: "aozu", requireCitationTypes: [] };
+
   let archiveResult;
   try {
     if (opts.withMerge) {
@@ -143,6 +146,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
       let waitTimeoutMs: number | null | undefined = undefined;
       let pollIntervalMs: number | undefined = undefined;
       let protectedPaths: string[] | undefined = undefined;
+      let designLayerWithMerge: ResolvedDesignLayer = disabledDesignLayer;
       try {
         const config = await loadConfig();
         githubHost = resolveGitHubHost(config.github);
@@ -157,6 +161,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
         }
         pollIntervalMs = config.archive?.mergeWaitPollIntervalMs ?? DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS;
         protectedPaths = config.archive?.protectedPaths;
+        designLayerWithMerge = resolveDesignLayerConfig(config);
       } catch {
         // Config not available — use defaults (no guard applied)
         if (opts.mergeWaitMs !== undefined) {
@@ -214,19 +219,22 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           waitTimeoutMs,
           pollIntervalMs,
           protectedPaths,
+          designLayer: designLayerWithMerge,
         },
         logResult,
       );
     } else {
       // No --with-merge: optionally resolve token for authenticated git push
       let archiveToken: string | undefined;
+      let designLayerNoMerge: ResolvedDesignLayer = disabledDesignLayer;
       try {
         let githubHost = "github.com";
         try {
           const config = await loadConfig();
           githubHost = resolveGitHubHost(config.github);
+          designLayerNoMerge = resolveDesignLayerConfig(config);
         } catch {
-          // Config not available — use default host
+          // Config not available — use default host / disabled design layer
         }
         const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
         archiveToken = resolved.token;
@@ -243,6 +251,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           fs: buildRealFs(),
           baseBranch,
           githubToken: archiveToken,
+          designLayer: designLayerNoMerge,
         },
         logResult,
       );

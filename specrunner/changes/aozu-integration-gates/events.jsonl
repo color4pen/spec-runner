@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-07-03T07:15:01.000Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-03T07:15:01.000Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-07-03T07:15:01.002Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-07-03T07:17:39.937Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"6691ceda-9241-4a75-9d08-59199537bfc5","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-03T07:15:01.013Z","endedAt":"2026-07-03T07:17:38.541Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-07-03T07:17:38.541Z","outputs":[{"path":"specrunner/changes/aozu-integration-gates/test-cases.md","hash":"sha256:dc44678c23679b104bfdceb45d8d316c2873c998f25ae893d58bae00da7aee4d"}],"inputs":[{"path":"specrunner/changes/aozu-integration-gates/design.md","hash":"sha256:2424c5a66321eda3f202d9f3fb64413c54bd407fc8e9e2f8b0275cceb229d383"},{"path":"specrunner/changes/aozu-integration-gates/tasks.md","hash":"sha256:86f5ca9f54d8d53820c4495a7c3326a4c693b5ec6905936f4aa57fb9b338e5aa"}]}
+{"type":"transition","ts":"2026-07-03T07:17:39.944Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-07-03T07:17:39.946Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
