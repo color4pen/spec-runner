@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c20c5428-6b17-48a6-bf94-a2c5be331836",
   "createdAt": "2026-07-03T12:36:27.255Z",
-  "updatedAt": "2026-07-03T14:12:43.743Z",
+  "updatedAt": "2026-07-03T14:13:08.136Z",
   "request": {
     "title": "docs: Installation セクションに依存サイズ（optional SDK binary）の説明を追加する",
     "type": "chore",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "chore/docs-install-dependency-size-c20c5428",
   "error": null,
   "pipelineId": "standard",
@@ -74,8 +74,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/735",
+    "number": 735,
+    "createdAt": "2026-07-03T14:13:08.120Z"
+  },
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
@@ -88,7 +93,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }

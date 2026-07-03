@@ -71,3 +71,11 @@
 {"type":"transition","ts":"2026-07-03T14:12:43.741Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-03T14:12:43.741Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
 {"type":"transition","ts":"2026-07-03T14:12:43.743Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-03T14:13:06.726Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"f5633ed0-4a40-4fa7-920c-3f01d8c8b1c0","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-03T14:12:43.753Z","endedAt":"2026-07-03T14:13:05.409Z"}
+{"type":"transition","ts":"2026-07-03T14:13:06.732Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-03T14:13:06.734Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-03T14:13:08.124Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/docs-install-dependency-size/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-03T14:13:06.735Z","endedAt":"2026-07-03T14:13:08.121Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-03T14:13:08.121Z","outputs":[{"path":"specrunner/changes/docs-install-dependency-size/pr-create-result.md","hash":"sha256:b42945ef82b27d57d7e4515e3690c27a305977bbba6d1de0a70e83db06361646"}],"inputs":[{"path":"chore/docs-install-dependency-size-c20c5428","hash":null}]}
+{"type":"transition","ts":"2026-07-03T14:13:08.136Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
