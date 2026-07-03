@@ -98,3 +98,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/verdict-fidelity-and-fixer-noop/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-03T13:59:31.274Z","endedAt":"2026-07-03T13:59:32.816Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-03T13:59:32.816Z","outputs":[{"path":"specrunner/changes/verdict-fidelity-and-fixer-noop/pr-create-result.md","hash":"sha256:257ad5a8934e3df01b08da571fc393f6861d26eab3046dc9c86c4a4544d7c3e2"}],"inputs":[{"path":"fix/verdict-fidelity-and-fixer-noop-2fd73e79","hash":null}]}
 {"type":"transition","ts":"2026-07-03T13:59:32.826Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-03T14:10:09.863Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
