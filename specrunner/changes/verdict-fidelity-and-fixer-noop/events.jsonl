@@ -90,3 +90,11 @@
 {"type":"transition","ts":"2026-07-03T13:59:08.667Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
 {"type":"transition","ts":"2026-07-03T13:59:08.667Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
 {"type":"transition","ts":"2026-07-03T13:59:08.671Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-03T13:59:31.265Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"53420b36-fa61-4ce4-97f7-c873b14f19f9","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-03T13:59:08.685Z","endedAt":"2026-07-03T13:59:29.953Z"}
+{"type":"transition","ts":"2026-07-03T13:59:31.271Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-03T13:59:31.273Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-03T13:59:32.818Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/verdict-fidelity-and-fixer-noop/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-03T13:59:31.274Z","endedAt":"2026-07-03T13:59:32.816Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-03T13:59:32.816Z","outputs":[{"path":"specrunner/changes/verdict-fidelity-and-fixer-noop/pr-create-result.md","hash":"sha256:257ad5a8934e3df01b08da571fc393f6861d26eab3046dc9c86c4a4544d7c3e2"}],"inputs":[{"path":"fix/verdict-fidelity-and-fixer-noop-2fd73e79","hash":null}]}
+{"type":"transition","ts":"2026-07-03T13:59:32.826Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}

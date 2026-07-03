@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2fd73e79-e415-439a-a4cf-13d213947c00",
   "createdAt": "2026-07-03T12:34:43.638Z",
-  "updatedAt": "2026-07-03T13:59:08.671Z",
+  "updatedAt": "2026-07-03T13:59:32.827Z",
   "request": {
     "title": "パイプラインの verdict 忠実性を直す（表示/導出と記録の食い違い・code-fixer の no-op 空振り）",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/verdict-fidelity-and-fixer-noop-2fd73e79",
   "error": null,
   "pipelineId": "standard",
@@ -73,8 +73,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/734",
+    "number": 734,
+    "createdAt": "2026-07-03T13:59:32.815Z"
+  },
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +93,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
