@@ -98,3 +98,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/aozu-integration-gates/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-03T08:09:36.457Z","endedAt":"2026-07-03T08:09:38.005Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-03T08:09:38.005Z","outputs":[{"path":"specrunner/changes/aozu-integration-gates/pr-create-result.md","hash":"sha256:a605142211dd6c032420fd822050fac98c7c1e7d236b87860cee26315e1bb45d"}],"inputs":[{"path":"feat/aozu-integration-gates-e3c40085","hash":null}]}
 {"type":"transition","ts":"2026-07-03T08:09:38.014Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-03T10:06:16.415Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
