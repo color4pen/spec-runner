@@ -245,11 +245,14 @@ describe("parseRequestReviewReportInput — findings validation", () => {
     expect(result.value.findings).toEqual([]);
   });
 
-  it("{ok:true} without findings → ok:false, missingFields:['findings']", () => {
+  it("{ok:true} without findings → ok:true, findings undefined (T-02: findings now optional for request-review)", () => {
+    // T-02 fix: request-review agents sometimes omit findings when there are no issues.
+    // Parse succeeds and findings is undefined (treated as empty array for verdict derivation).
     const result = parseRequestReviewReportInput({ ok: true });
-    expect(result.ok).toBe(false);
-    if (result.ok) throw new Error("unreachable");
-    expect(result.missingFields).toContain("findings");
+    expect(result.ok).toBe(true);
+    if (!result.ok) throw new Error("unreachable");
+    expect(result.value.ok).toBe(true);
+    expect(result.value.findings).toBeUndefined();
   });
 
   it("{ok:false} → ok:true (findings not required)", () => {

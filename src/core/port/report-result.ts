@@ -384,7 +384,19 @@ export function parseConformanceReportInput(
 
 /**
  * Parse RequestReviewReportResult from unknown tool input.
- * When ok=true, findings are REQUIRED and must be a valid findings array.
+ *
+ * When ok=true, findings are OPTIONAL:
+ * - If findings is present and valid → captured in result.findings.
+ * - If findings is present but invalid → parse fails (returns ok: false).
+ * - If findings is absent/undefined → parse succeeds, result.findings remains undefined
+ *   (treated as empty array for verdict derivation).
+ *
+ * Rationale: request-review agents sometimes call report_result with { ok: true, verdict: "approve" }
+ * (no findings field) when there are no issues to report. This is a valid agent response and
+ * must not cause a parse failure that triggers escalation.
+ *
+ * Contrast with parseJudgeReportInput: judge steps require findings when ok=true.
+ *
  * When ok=false, findings are not required.
  * observations are always optional (best-effort silent-ignore on invalid input).
  */
@@ -401,13 +413,19 @@ export function parseRequestReviewReportInput(
     result.verdict = obj["verdict"];
   }
 
-  // When ok=true, findings are required and must be valid (strict: decision-needed requires options)
+  // When ok=true, findings are OPTIONAL:
+  // - Present and valid → captured.
+  // - Present but invalid → parse fails.
+  // - Absent or undefined → result.findings stays undefined (= empty array for verdict derivation).
   if (result.ok) {
-    const parsed = parseFindings(obj["findings"], true);
-    if (!parsed.ok) {
-      return { ok: false, missingFields: ["findings"], rawInput: raw };
+    if ("findings" in obj && obj["findings"] !== undefined) {
+      const parsed = parseFindings(obj["findings"], true);
+      if (!parsed.ok) {
+        return { ok: false, missingFields: ["findings"], rawInput: raw };
+      }
+      result.findings = parsed.value;
     }
-    result.findings = parsed.value;
+    // findings absent: result.findings remains undefined — treated as empty array downstream
   }
 
   // observations: best-effort silent-ignore — absence or invalid input leaves field unset

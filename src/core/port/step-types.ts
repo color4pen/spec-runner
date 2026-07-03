@@ -242,6 +242,27 @@ export interface AgentStep {
    * Design D5 (reviewer-activation-conditions): CLI-side deterministic gate.
    */
   activation?: ReviewerActivation;
+
+  /**
+   * Custom verdict derivation for judge steps.
+   * When set, executor uses this instead of deriveJudgeVerdict.
+   * Only applies when isJudgeStep is true (step uses JUDGE_REPORT_TOOL or CODE_REVIEW_REPORT_TOOL).
+   *
+   * Use case: regression-gate needs needs-fix for ANY fixable finding (even low/medium severity),
+   * unlike the standard deriveJudgeVerdict which only triggers needs-fix for critical/high severity.
+   */
+  judgeVerdictFn?: (findings: import("../../kernel/report-result.js").Finding[], ok: boolean) => "approved" | "needs-fix" | "escalation";
+
+  /**
+   * When true, executor detects no-op completions: if no source files changed
+   * since headBeforeStep (excluding pipeline artifacts), verdict is overridden
+   * from "approved"/"success" to "needs-fix".
+   * Only effective when runtimeStrategy is available and headBeforeStep is non-null.
+   *
+   * Use case: code-fixer must produce source changes; completing without changes
+   * indicates the fixer did nothing useful (fail-closed).
+   */
+  noOpDetect?: boolean;
 }
 
 /**

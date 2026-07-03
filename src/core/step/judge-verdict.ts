@@ -103,6 +103,29 @@ export function collectFixableFindings(findings: Finding[]): Finding[] {
 }
 
 /**
+ * Derive the verdict for regression-gate steps.
+ *
+ * Unlike deriveJudgeVerdict, ANY fixable finding (regardless of severity) triggers needs-fix.
+ * Rationale: the regression-gate ledger exclusively contains previously-fixed findings that
+ * regressed; any regression (even low/medium severity) must be re-fixed.
+ *
+ * Priority order:
+ * 1. ok=false → escalation
+ * 2. decision-needed ≥ 1 → escalation
+ * 3. fixable ≥ 1 → needs-fix (any severity, including medium/low)
+ * 4. else → approved
+ */
+export function deriveRegressionGateVerdict(
+  findings: Finding[],
+  ok: boolean,
+): "approved" | "needs-fix" | "escalation" {
+  if (!ok) return "escalation";
+  if (findings.some((f) => f.resolution === "decision-needed")) return "escalation";
+  if (findings.some((f) => f.resolution === "fixable")) return "needs-fix";
+  return "approved";
+}
+
+/**
  * Derive the request-review verdict from findings and ok flag.
  *
  * Blocking finding: severity critical/high OR resolution decision-needed.

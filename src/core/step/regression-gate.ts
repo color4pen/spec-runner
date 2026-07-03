@@ -26,6 +26,7 @@ import { nextIteration } from "./io-iteration.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { collectFindingsLedger } from "../pipeline/findings-ledger.js";
 import { deriveImplReviewerChain } from "../pipeline/reviewer-chain.js";
+import { deriveRegressionGateVerdict } from "./judge-verdict.js";
 import { buildFindingsBlock } from "./fixer-helpers.js";
 import type { Finding } from "../../kernel/report-result.js";
 
@@ -90,6 +91,10 @@ export function createRegressionGateStep(): AgentStep {
     needsProjectContext: true,
     // Use JUDGE_REPORT_TOOL singleton — executor isJudgeStep identity check (=== JUDGE_REPORT_TOOL)
     reportTool: JUDGE_REPORT_TOOL,
+
+    // Custom verdict derivation: any fixable finding (even low/medium severity) triggers needs-fix.
+    // Standard deriveJudgeVerdict only triggers needs-fix for critical/high severity.
+    judgeVerdictFn: deriveRegressionGateVerdict,
 
     // maxTurns: ledger-based verification; no open-ended review. 20 matches custom-reviewer default.
     maxTurns: 20,

@@ -283,7 +283,9 @@ export class Pipeline {
         loopIters.set(currentStep, newIter);
 
         const loopIter = newIter;
-        this.events.emit("pipeline:iteration:start", { step: currentStep, iteration: loopIter, maxIterations: this.maxIterations });
+        // T-04: use resolveMaxIterations(currentStep) so step-specific overrides are reflected
+        // in the displayed /M value (fixes iter N/M showing global max instead of step max).
+        this.events.emit("pipeline:iteration:start", { step: currentStep, iteration: loopIter, maxIterations: this.resolveMaxIterations(currentStep) });
 
         // Append history: loop iteration started
         state = appendHistoryEntry(state, {

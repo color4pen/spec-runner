@@ -115,6 +115,9 @@ export const CodeFixerStep: AgentStep = {
   completionVerdict: "approved",
   reportTool: PRODUCER_REPORT_TOOL,
 
+  // T-03: detect no-op completions — if no source files changed, override verdict to needs-fix.
+  noOpDetect: true,
+
   // maxTurns: code-fixer applies review findings; 30 covers multi-finding fixes.
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 30,
