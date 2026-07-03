@@ -65,3 +65,11 @@
 {"type":"transition","ts":"2026-07-03T13:04:07.103Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-03T13:04:07.103Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
 {"type":"transition","ts":"2026-07-03T13:04:07.105Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-03T13:04:28.553Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"79c6f1ba-c081-4230-b184-af9e9993f8c1","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-03T13:04:07.120Z","endedAt":"2026-07-03T13:04:27.079Z"}
+{"type":"transition","ts":"2026-07-03T13:04:28.558Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-03T13:04:28.560Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-03T13:04:30.180Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/post-merge-worktree-cleanup/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-03T13:04:28.562Z","endedAt":"2026-07-03T13:04:30.179Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-03T13:04:30.179Z","outputs":[{"path":"specrunner/changes/post-merge-worktree-cleanup/pr-create-result.md","hash":"sha256:a3e853f8e64acce9c5e995346821177df4078cca6cc631ef3aafa8878465ed9c"}],"inputs":[{"path":"fix/post-merge-worktree-cleanup-e50d5436","hash":null}]}
+{"type":"transition","ts":"2026-07-03T13:04:30.189Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}

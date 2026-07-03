@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e50d5436-da65-41d9-b552-07e451529476",
   "createdAt": "2026-07-03T12:35:35.039Z",
-  "updatedAt": "2026-07-03T13:04:07.105Z",
+  "updatedAt": "2026-07-03T13:04:30.189Z",
   "request": {
     "title": "archive --with-merge の後片づけで worktree が削除されない（local 実行で worktreePath が常に null）",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/post-merge-worktree-cleanup-e50d5436",
   "error": null,
   "pipelineId": "standard",
@@ -73,8 +73,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/732",
+    "number": 732,
+    "createdAt": "2026-07-03T13:04:30.178Z"
+  },
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -87,7 +92,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
