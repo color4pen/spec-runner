@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2fd73e79-e415-439a-a4cf-13d213947c00",
   "createdAt": "2026-07-03T12:34:43.638Z",
-  "updatedAt": "2026-07-03T13:53:02.503Z",
+  "updatedAt": "2026-07-03T13:54:06.955Z",
   "request": {
     "title": "パイプラインの verdict 忠実性を直す（表示/導出と記録の食い違い・code-fixer の no-op 空振り）",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "fix/verdict-fidelity-and-fixer-noop-2fd73e79",
   "error": null,
@@ -74,7 +74,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 53,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -87,7 +87,7 @@
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
