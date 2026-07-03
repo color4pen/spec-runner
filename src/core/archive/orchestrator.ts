@@ -268,10 +268,16 @@ export async function runArchiveOrchestrator(
       stderrWrite(`Warning: failed to delete draft folder for ${slug}. Remove manually if needed.`);
     }
 
-    // Stage the draft deletion (no-op if draft was untracked or absent)
-    const draftAddResult = await spawn("git", ["add", draftsDir()], { cwd: recordDir });
-    if (draftAddResult.exitCode !== 0) {
-      stderrWrite(`Warning: git add ${draftsDir()}/ failed: ${draftAddResult.stderr.trim()}. Continuing.`);
+    // Stage the draft deletion only if the drafts directory exists in the worktree.
+    // Skipping when absent avoids `fatal: pathspec 'specrunner/drafts' did not match any files`
+    // warnings in repos that have never created a draft (T-05: symptom 4).
+    const draftsAbsPath = nodePath.join(recordDir, draftsDir());
+    const draftsPresent = await fs.exists(draftsAbsPath);
+    if (draftsPresent) {
+      const draftAddResult = await spawn("git", ["add", draftsDir()], { cwd: recordDir });
+      if (draftAddResult.exitCode !== 0) {
+        stderrWrite(`Warning: git add ${draftsDir()}/ failed: ${draftAddResult.stderr.trim()}. Continuing.`);
+      }
     }
 
     // Stage mv + archived status change together so they land in one commit

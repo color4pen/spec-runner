@@ -37,6 +37,7 @@ import { resolveStepRules } from "./rules-resolve.js";
 import { buildRulesFollowUpPrompts } from "./rules-followup-prompts.js";
 import { defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
+import { detectNoOp } from "./no-op-detect.js";
 import type { CommitPushInfra } from "./commit-push.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../../core/port/report-result.js";
@@ -544,6 +545,19 @@ export class StepExecutor {
       }
     }
 
+    // T-03 (no-op detection): delegate to sibling no-op-detect.ts (executor-bloat guard).
+    // Returns "needs-fix" when step.noOpDetect is true and no source files changed;
+    // undefined otherwise (no override).
+    const noOpVerdictOverride: Verdict | undefined =
+      deps.runtimeStrategy && headBeforeStep !== null
+        ? await detectNoOp(step, deps.runtimeStrategy, {
+            headBeforeStep,
+            cwd,
+            branch: state.branch ?? null,
+            completionReason: runResult.completionReason,
+          })
+        : undefined;
+
     return this.finalizeStep(step, state, deps, runResult.resultContent, completedAt, startedAt, {
       sessionId: runResult.sessionId,
       agentBranch: runResult.agentBranch,
@@ -552,6 +566,7 @@ export class StepExecutor {
       followUpAttempts: runResult.followUpAttempts,
       transientRetryAttempts: runResult.transientRetryAttempts,
       completionReportDiagnostics: runResult.completionReportDiagnostics,
+      verdictOverride: noOpVerdictOverride,
     });
   }
 
@@ -692,6 +707,12 @@ export class StepExecutor {
       followUpAttempts?: number;
       transientRetryAttempts?: number;
       completionReportDiagnostics?: import("../port/agent-runner.js").CompletionReportDiagnostic[];
+      /**
+       * T-03 (no-op detection): when set, overrides the derived verdict after all
+       * normal computation completes. Used by runAgentStep to inject "needs-fix"
+       * when code-fixer produced no source changes.
+       */
+      verdictOverride?: Verdict;
     },
   ): Promise<JobState> {
     const store = this.getStore(state.jobId);
@@ -747,7 +768,12 @@ export class StepExecutor {
           const tr = toolResult as JudgeReportResult;
           const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];
           const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
-          verdict = deriveJudgeVerdict(undecidedFindings, tr.ok);
+          // T-01: use step-specific judgeVerdictFn if available (e.g. regression-gate),
+          // otherwise fall back to the standard deriveJudgeVerdict.
+          const verdictFn = ("judgeVerdictFn" in step && step.judgeVerdictFn)
+            ? step.judgeVerdictFn
+            : deriveJudgeVerdict;
+          verdict = verdictFn(undecidedFindings, tr.ok);
         } else {
           // producer: status "error" → "error", else completionVerdict (fallback "success")
           const completionVerdict =
@@ -822,6 +848,11 @@ export class StepExecutor {
       stderrWrite(`Warning: Could not parse verdict from ${step.kind} step '${step.name}'. Treating as escalation.`);
     }
     verdict = verdict ?? "escalation";
+
+    // T-03 (no-op detection): override verdict when runAgentStep detected no source changes.
+    if (agentResult?.verdictOverride !== undefined) {
+      verdict = agentResult.verdictOverride;
+    }
     logVerbose("step", "verdict parsed", { step: step.name, verdict });
     this.events.emit("verdict:parsed", {
       step: step.name,

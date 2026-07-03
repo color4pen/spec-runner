@@ -3,7 +3,7 @@
  * Covers line: null normalization and symmetry between the two parsers.
  */
 import { describe, it, expect } from "vitest";
-import { parseFindings, parseObservations } from "../../port/report-result.js";
+import { parseFindings, parseObservations, parseRequestReviewReportInput, parseJudgeReportInput } from "../../port/report-result.js";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
@@ -155,4 +155,82 @@ describe("symmetry: parseFindings vs parseObservations", () => {
       expect(observationResult.ok).toBe(expectOk);
     });
   }
+});
+
+// ---------------------------------------------------------------------------
+// T-02: parseRequestReviewReportInput — findings optional when ok=true
+// ---------------------------------------------------------------------------
+
+describe("parseRequestReviewReportInput — findings optional when ok=true (T-02)", () => {
+  it("{ ok: true } (no findings field) → parse succeeds, findings undefined", () => {
+    const result = parseRequestReviewReportInput({ ok: true });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.ok).toBe(true);
+    expect(result.value.findings).toBeUndefined();
+  });
+
+  it("{ ok: true, verdict: 'approve' } (no findings field) → parse succeeds, findings undefined", () => {
+    const result = parseRequestReviewReportInput({ ok: true, verdict: "approve" });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.ok).toBe(true);
+    expect(result.value.verdict).toBe("approve");
+    expect(result.value.findings).toBeUndefined();
+  });
+
+  it("{ ok: true, findings: [] } → parse succeeds, findings is empty array", () => {
+    const result = parseRequestReviewReportInput({ ok: true, findings: [] });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.findings).toEqual([]);
+  });
+
+  it("{ ok: true, findings: [invalid] } → parse fails (findings present but invalid)", () => {
+    const result = parseRequestReviewReportInput({
+      ok: true,
+      findings: [{ severity: "invalid", resolution: "fixable", file: "a.ts", title: "T", rationale: "R" }],
+    });
+    expect(result.ok).toBe(false);
+  });
+
+  it("{ ok: false } → parse succeeds (findings not required when ok=false)", () => {
+    const result = parseRequestReviewReportInput({ ok: false });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.value.ok).toBe(false);
+  });
+
+  it("parseJudgeReportInput { ok: true } (no findings) → parse FAILS (findings required for judge steps)", () => {
+    const result = parseJudgeReportInput({ ok: true });
+    expect(result.ok).toBe(false);
+  });
+});
+
+describe("parseRequestReviewReportInput — findings routing (T-02 symptom 2)", () => {
+  it("MEDIUM+LOW findings only → deriveRequestReviewVerdict produces 'approve'", async () => {
+    const { deriveRequestReviewVerdict } = await import("../../step/judge-verdict.js");
+    const raw = {
+      ok: true,
+      verdict: "approve",
+      findings: [
+        { severity: "medium", resolution: "fixable", file: "a.ts", title: "T1", rationale: "R1" },
+        { severity: "low", resolution: "fixable", file: "b.ts", title: "T2", rationale: "R2" },
+      ],
+    };
+    const parsed = parseRequestReviewReportInput(raw);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    const verdict = deriveRequestReviewVerdict(parsed.value.findings ?? [], parsed.value.ok);
+    expect(verdict).toBe("approve");
+  });
+
+  it("no findings (undefined) → deriveRequestReviewVerdict produces 'approve'", async () => {
+    const { deriveRequestReviewVerdict } = await import("../../step/judge-verdict.js");
+    const parsed = parseRequestReviewReportInput({ ok: true });
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    const verdict = deriveRequestReviewVerdict(parsed.value.findings ?? [], parsed.value.ok);
+    expect(verdict).toBe("approve");
+  });
 });

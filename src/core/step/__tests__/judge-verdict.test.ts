@@ -10,6 +10,7 @@
 import { describe, it, expect } from "vitest";
 import {
   deriveJudgeVerdict,
+  deriveRegressionGateVerdict,
   deriveRequestReviewVerdict,
   collectVerdictAffectingFindings,
   collectFixableFindings,
@@ -148,6 +149,64 @@ describe("collectFixableFindings", () => {
 
   it("returns empty array when no fixable findings", () => {
     expect(collectFixableFindings([finding("high", "decision-needed")])).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// deriveRegressionGateVerdict (T-01)
+// ---------------------------------------------------------------------------
+
+describe("deriveRegressionGateVerdict", () => {
+  it("returns approved when findings is empty and ok=true", () => {
+    expect(deriveRegressionGateVerdict([], true)).toBe("approved");
+  });
+
+  it("returns escalation when ok=false regardless of findings", () => {
+    expect(deriveRegressionGateVerdict([], false)).toBe("escalation");
+    expect(deriveRegressionGateVerdict([finding("high", "fixable")], false)).toBe("escalation");
+  });
+
+  it("returns escalation when any finding has decision-needed resolution", () => {
+    expect(deriveRegressionGateVerdict([finding("low", "decision-needed")], true)).toBe("escalation");
+    expect(deriveRegressionGateVerdict([finding("medium", "decision-needed")], true)).toBe("escalation");
+  });
+
+  it("returns needs-fix for HIGH fixable finding (like standard judge)", () => {
+    expect(deriveRegressionGateVerdict([finding("high", "fixable")], true)).toBe("needs-fix");
+  });
+
+  it("returns needs-fix for MEDIUM fixable finding (unlike standard judge which returns approved)", () => {
+    expect(deriveRegressionGateVerdict([finding("medium", "fixable")], true)).toBe("needs-fix");
+  });
+
+  it("returns needs-fix for LOW fixable finding (unlike standard judge which returns approved)", () => {
+    expect(deriveRegressionGateVerdict([finding("low", "fixable")], true)).toBe("needs-fix");
+  });
+
+  it("decision-needed takes priority over fixable (escalation wins)", () => {
+    const findings = [
+      finding("high", "fixable"),
+      finding("low", "decision-needed"),
+    ];
+    expect(deriveRegressionGateVerdict(findings, true)).toBe("escalation");
+  });
+});
+
+describe("deriveJudgeVerdict unchanged — medium/low fixable still returns approved", () => {
+  it("medium fixable → approved (standard judge, unchanged from pre-T-01)", () => {
+    expect(deriveJudgeVerdict([finding("medium", "fixable")], true)).toBe("approved");
+  });
+
+  it("low fixable → approved (standard judge, unchanged from pre-T-01)", () => {
+    expect(deriveJudgeVerdict([finding("low", "fixable")], true)).toBe("approved");
+  });
+});
+
+describe("createRegressionGateStep().judgeVerdictFn === deriveRegressionGateVerdict", () => {
+  it("regression-gate step carries judgeVerdictFn reference", async () => {
+    const { createRegressionGateStep } = await import("../regression-gate.js");
+    const step = createRegressionGateStep();
+    expect(step.judgeVerdictFn).toBe(deriveRegressionGateVerdict);
   });
 });
 
