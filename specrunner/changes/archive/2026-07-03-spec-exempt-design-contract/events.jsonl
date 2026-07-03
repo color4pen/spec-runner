@@ -75,3 +75,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/spec-exempt-design-contract/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-03T13:54:20.673Z","endedAt":"2026-07-03T13:54:22.299Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-03T13:54:22.299Z","outputs":[{"path":"specrunner/changes/spec-exempt-design-contract/pr-create-result.md","hash":"sha256:da6ec23b6c530714980fb10329426a587adebab372d38f0a1dbda885a38d5d2a"}],"inputs":[{"path":"change/spec-exempt-design-contract-0bbce03e","hash":null}]}
 {"type":"transition","ts":"2026-07-03T13:54:22.308Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-03T13:56:56.169Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
