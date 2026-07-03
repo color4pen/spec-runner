@@ -850,7 +850,8 @@ export class StepExecutor {
     verdict = verdict ?? "escalation";
 
     // T-03 (no-op detection): override verdict when runAgentStep detected no source changes.
-    if (agentResult?.verdictOverride !== undefined) {
+    // Guard: do not override a producer status:error verdict — error takes precedence over no-op.
+    if (agentResult?.verdictOverride !== undefined && verdict !== "error") {
       verdict = agentResult.verdictOverride;
     }
     logVerbose("step", "verdict parsed", { step: step.name, verdict });
