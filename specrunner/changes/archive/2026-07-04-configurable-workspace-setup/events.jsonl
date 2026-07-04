@@ -93,3 +93,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/configurable-workspace-setup/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-04T13:32:48.545Z","endedAt":"2026-07-04T13:32:49.983Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-04T13:32:49.983Z","outputs":[{"path":"specrunner/changes/configurable-workspace-setup/pr-create-result.md","hash":"sha256:c1321cbaeac6c6d47f7fe0d0405e330376d2e0ed6e9322b51803c1b6a9112346"}],"inputs":[{"path":"feat/configurable-workspace-setup-f1aea8ee","hash":null}]}
 {"type":"transition","ts":"2026-07-04T13:32:49.992Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-04T13:37:51.376Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

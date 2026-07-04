@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f1aea8ee-4c17-4799-a442-3a18352ce37e",
   "createdAt": "2026-07-04T12:28:54.629Z",
-  "updatedAt": "2026-07-04T13:32:49.992Z",
+  "updatedAt": "2026-07-04T13:37:51.376Z",
   "request": {
     "title": "workspace セットアップを config 化して言語非依存にする",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/configurable-workspace-setup-f1aea8ee",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,7 @@
     "createdAt": "2026-07-04T13:32:49.982Z"
   },
   "_journal": {
-    "historyCount": 64,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
