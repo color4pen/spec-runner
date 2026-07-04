@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "02889a16-729c-44a1-b896-a4b008e26be5",
   "createdAt": "2026-07-04T12:32:57.810Z",
-  "updatedAt": "2026-07-04T14:14:31.058Z",
+  "updatedAt": "2026-07-04T14:16:30.798Z",
   "request": {
     "title": "同一 slug の live job があるとき2回目の run を拒否する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/reject-duplicate-slug-run-02889a16",
   "error": null,
@@ -48,8 +48,34 @@
     }
   ],
   "resumePoint": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 44,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -58,7 +84,10 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "code-fixer": 1
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }

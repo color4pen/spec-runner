@@ -139,6 +139,20 @@
       },
       "jobId": "02889a16-729c-44a1-b896-a4b008e26be5",
       "stepName": "code-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-07-04T14:16:29.385Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 20,
+          "outputTokens": 5735,
+          "cacheReadInputTokens": 552855,
+          "cacheCreationInputTokens": 30954
+        }
+      },
+      "jobId": "02889a16-729c-44a1-b896-a4b008e26be5",
+      "stepName": "code-fixer"
     }
   ]
 }
