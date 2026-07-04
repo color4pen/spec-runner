@@ -118,6 +118,11 @@ export class PipelineRunCommand extends CommandRunner {
       );
     }
 
+    // Reject a second run while a live job already holds this slug. Placed before
+    // bootstrapJob so a rejected run creates no job state. Optional on the port
+    // (test fakes may omit it); real runtimes always implement it.
+    await this.runtime.assertNoDuplicateLiveJob?.(cwd, slug);
+
     // Bootstrap job state (no I/O; persistence is deferred to setupWorkspace)
     const jobState = await this.runtime.bootstrapJob(cwd, {
       request: {

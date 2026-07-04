@@ -400,6 +400,17 @@ export interface RuntimeStrategy {
    * listChangedFiles contract (return type, Never-throws, [] on error) is unaffected.
    */
   canDeriveChangedFiles?(): boolean;
+
+  /**
+   * Reject a second run while a live job already holds this slug (local runtime only).
+   * Called by PipelineRunCommand.prepare() immediately before bootstrapJob so a rejected
+   * run creates no job state.
+   * - local:   read liveness sidecar; if pid is alive → throw DUPLICATE_LIVE_JOB.
+   * - managed: no-op (out of scope for this change).
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it; RealRuntimeStrategy
+   * requires it (mirrors canDeriveChangedFiles).
+   */
+  assertNoDuplicateLiveJob?(repoRoot: string, slug: string): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -418,4 +429,7 @@ export interface RuntimeStrategy {
  * Port interface (RuntimeStrategy) keeps predicate optional for test-fake convenience.
  * Composition-root implementations use RealRuntimeStrategy to close the optional hole.
  */
-export type RealRuntimeStrategy = RuntimeStrategy & { canDeriveChangedFiles(): boolean };
+export type RealRuntimeStrategy = RuntimeStrategy & {
+  canDeriveChangedFiles(): boolean;
+  assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>;
+};

@@ -43,6 +43,7 @@ import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels } from "../step/output-verify.js";
 import { SpecRunnerError, ERROR_CODES, worktreeDirtyError } from "../../errors.js";
+import { checkDuplicateLiveJob } from "./duplicate-slug-guard.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { stripSecrets } from "../../util/env-filter.js";
@@ -698,6 +699,14 @@ export class LocalRuntime implements RealRuntimeStrategy {
    */
   canDeriveChangedFiles(): boolean {
     return true;
+  }
+
+  /**
+   * Reject a second run while a live job already holds this slug.
+   * Delegates to checkDuplicateLiveJob using real fs and isProcessAlive.
+   */
+  async assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void> {
+    await checkDuplicateLiveJob(repoRoot, slug);
   }
 
   /**
