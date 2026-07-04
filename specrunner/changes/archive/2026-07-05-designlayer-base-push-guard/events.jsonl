@@ -97,3 +97,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/designlayer-base-push-guard/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-04T23:42:23.464Z","endedAt":"2026-07-04T23:42:24.825Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-04T23:42:24.825Z","outputs":[{"path":"specrunner/changes/designlayer-base-push-guard/pr-create-result.md","hash":"sha256:c92b7b91459324c625a7a25542d017239e13af55af4503c5a5f2a856c70a5e26"}],"inputs":[{"path":"feat/designlayer-base-push-guard-7576384c","hash":null}]}
 {"type":"transition","ts":"2026-07-04T23:42:24.835Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-04T23:48:17.229Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

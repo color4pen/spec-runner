@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7576384c-338b-41f8-98bb-7df82b8d4d80",
   "createdAt": "2026-07-04T14:58:36.562Z",
-  "updatedAt": "2026-07-04T23:42:24.835Z",
+  "updatedAt": "2026-07-04T23:48:17.229Z",
   "request": {
     "title": "designLayer 有効時に未 push の設計コミットを run 前に警告する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/designlayer-base-push-guard-7576384c",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,7 @@
     "createdAt": "2026-07-04T23:42:24.824Z"
   },
   "_journal": {
-    "historyCount": 67,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
