@@ -20,6 +20,7 @@ import {
   conformanceFixInProgress,
   regressionGateActive,
   codeReviewLoopActive,
+  codeReviewFindingsRoutingActive,
 } from "../reviewer-chain.js";
 import { STEP_NAMES } from "../../step/step-names.js";
 import { REGRESSION_GATE_STEP_NAME } from "../../step/regression-gate.js";
@@ -579,6 +580,168 @@ describe("buildParallelReviewerTransitions — TC-031: code-fixer routing priori
       (t) => t.step === STEP_NAMES.CODE_FIXER && t.on === "error" && t.to === "escalate",
     );
     expect(errorRow).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// codeReviewFindingsRoutingActive
+// ---------------------------------------------------------------------------
+
+describe("codeReviewFindingsRoutingActive", () => {
+  /** Helper: build a state with a code-review run that has the given verdict + findings. */
+  function makeStateWithCodeReview(verdict: string, findings: Array<{ severity: string; resolution: string }> = []): JobState {
+    return {
+      ...makeState(),
+      steps: {
+        [STEP_NAMES.CODE_REVIEW]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:01:00Z",
+            endedAt: "2026-01-01T00:01:30Z",
+            outcome: {
+              verdict,
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: findings.map((f) => ({
+                  severity: f.severity as import("../../../kernel/report-result.js").FindingSeverity,
+                  resolution: f.resolution as import("../../../kernel/report-result.js").FindingResolution,
+                  file: "src/foo.ts",
+                  title: "T",
+                  rationale: "R",
+                })),
+              },
+            },
+          },
+        ],
+      } as unknown as JobState["steps"],
+    };
+  }
+
+  it("approved + fixable(low) findings + no other reviewer → true", () => {
+    const state = makeStateWithCodeReview("approved", [
+      { severity: "low", resolution: "fixable" },
+    ]);
+    expect(codeReviewFindingsRoutingActive(state)).toBe(true);
+  });
+
+  it("approved + fixable(medium) findings + no other reviewer → true", () => {
+    const state = makeStateWithCodeReview("approved", [
+      { severity: "medium", resolution: "fixable" },
+    ]);
+    expect(codeReviewFindingsRoutingActive(state)).toBe(true);
+  });
+
+  it("approved + no fixable findings (empty) → false", () => {
+    const state = makeStateWithCodeReview("approved", []);
+    expect(codeReviewFindingsRoutingActive(state)).toBe(false);
+  });
+
+  it("approved + only decision-needed findings → false", () => {
+    const state = makeStateWithCodeReview("approved", [
+      { severity: "high", resolution: "decision-needed" },
+    ]);
+    expect(codeReviewFindingsRoutingActive(state)).toBe(false);
+  });
+
+  it("needs-fix (no fixable findings path) → false", () => {
+    const state = makeStateWithCodeReview("needs-fix", [
+      { severity: "high", resolution: "fixable" },
+    ]);
+    expect(codeReviewFindingsRoutingActive(state)).toBe(false);
+  });
+
+  it("no code-review runs → false", () => {
+    expect(codeReviewFindingsRoutingActive(makeState())).toBe(false);
+  });
+
+  it("conformance latest needs-fix:code-fixer (more recent than code-review) → false (conformance is the trigger)", () => {
+    const state: JobState = {
+      ...makeState(),
+      steps: {
+        [STEP_NAMES.CODE_REVIEW]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:01:00Z",
+            endedAt: "2026-01-01T00:01:30Z",
+            outcome: {
+              verdict: "approved",
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: [{ severity: "low", resolution: "fixable", file: "src/foo.ts", title: "T", rationale: "R" }],
+              },
+            },
+          },
+        ],
+        [STEP_NAMES.CONFORMANCE]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:05:00Z",
+            endedAt: "2026-01-01T00:05:30Z",
+            outcome: {
+              verdict: "needs-fix:code-fixer",
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: [{ severity: "high", resolution: "fixable", file: "src/bar.ts", title: "T", rationale: "R" }],
+              },
+            },
+          },
+        ],
+      } as unknown as JobState["steps"],
+    };
+    expect(codeReviewFindingsRoutingActive(state)).toBe(false);
+  });
+
+  it("regression-gate ran after code-review (regression-gate is now active) → false", () => {
+    // regression-gate only appears in the fixer chain when state.reviewers is non-empty.
+    // Include a custom reviewer snapshot so deriveImplFixerChain adds regression-gate.
+    const state: JobState = {
+      ...makeState(),
+      reviewers: [makeSnapshot("security")],
+      steps: {
+        [STEP_NAMES.CODE_REVIEW]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:01:00Z",
+            endedAt: "2026-01-01T00:01:30Z",
+            outcome: {
+              verdict: "approved",
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: [{ severity: "low", resolution: "fixable", file: "src/foo.ts", title: "T", rationale: "R" }],
+              },
+            },
+          },
+        ],
+        [REGRESSION_GATE_STEP_NAME]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:04:00Z",
+            endedAt: "2026-01-01T00:04:30Z",
+            outcome: {
+              verdict: "needs-fix",
+              findingsPath: null,
+              error: null,
+              toolResult: null,
+            },
+          },
+        ],
+      } as unknown as JobState["steps"],
+    };
+    // regression-gate has a later startedAt → it is the active reviewer, not code-review
+    expect(codeReviewFindingsRoutingActive(state)).toBe(false);
   });
 });
 

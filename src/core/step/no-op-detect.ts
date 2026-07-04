@@ -39,6 +39,13 @@ export async function detectNoOp(
     cwd: string;
     branch: string | null;
     completionReason: string;
+    /**
+     * When true, a source-unchanged run is a legitimate no-op (approved
+     * findings-routing path — no mandatory findings exist) and must NOT be
+     * escalated. Caller computes this via codeReviewFindingsRoutingActive.
+     * Omitting or passing false preserves the #734 escalation behaviour.
+     */
+    findingsRoutingApproved?: boolean;
   },
 ): Promise<Verdict | undefined> {
   if (!step.noOpDetect) return undefined;
@@ -56,6 +63,10 @@ export async function detectNoOp(
   );
 
   if (sourceFiles.length === 0) {
+    if (params.findingsRoutingApproved === true) {
+      stderrWrite(`[${step.name}] no-op in approved findings-routing path — no mandatory findings, not escalating`);
+      return undefined;
+    }
     stderrWrite(`[${step.name}] no-op detected: no source files changed — overriding verdict to needs-fix`);
     return "needs-fix";
   }
