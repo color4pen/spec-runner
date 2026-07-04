@@ -87,3 +87,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/approved-fixer-noop-proceeds/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-04T14:07:02.917Z","endedAt":"2026-07-04T14:07:04.855Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-04T14:07:04.855Z","outputs":[{"path":"specrunner/changes/approved-fixer-noop-proceeds/pr-create-result.md","hash":"sha256:c6cb2882f85431eb315e4358fb6b3680dd23cfc01dd17f8a199de32ab4677385"}],"inputs":[{"path":"change/approved-fixer-noop-proceeds-4490bd0c","hash":null}]}
 {"type":"transition","ts":"2026-07-04T14:07:04.865Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-04T14:09:58.091Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

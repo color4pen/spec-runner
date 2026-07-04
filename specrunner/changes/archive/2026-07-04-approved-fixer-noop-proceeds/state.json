@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4490bd0c-be25-430f-9ac6-bb431432aaae",
   "createdAt": "2026-07-04T13:16:43.049Z",
-  "updatedAt": "2026-07-04T14:07:04.865Z",
+  "updatedAt": "2026-07-04T14:09:58.091Z",
   "request": {
     "title": "code-review が approved のとき code-fixer の no-op を escalate しない",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/approved-fixer-noop-proceeds-4490bd0c",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,7 @@
     "createdAt": "2026-07-04T14:07:04.854Z"
   },
   "_journal": {
-    "historyCount": 59,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
