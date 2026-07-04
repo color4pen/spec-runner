@@ -265,6 +265,47 @@ export function regressionGateActive(state: JobState): boolean {
 }
 
 /**
+ * True when the currently running code-fixer was triggered by the findings-routing
+ * (approved + fixable findings) path of code-review, and there are no mandatory
+ * findings that require escalation on no-op.
+ *
+ * Consumer: executor's no-op override suppression — when this returns true, a
+ * source-unchanged code-fixer run is a legitimate no-op (e.g. all fixable findings
+ * are LOW severity which the prompt intentionally ignores) and must NOT be escalated.
+ *
+ * Three conditions must ALL hold (AND):
+ *
+ * 1. `getConformanceFixContext(state, CODE_FIXER) === null` — code-fixer was NOT
+ *    triggered by conformance. Conformance no-ops are genuine failures; exclude them.
+ * 2. code-review's latest run has `verdict === "approved"` AND has ≥1 fixable finding.
+ *    This identifies the findings-routing path (approved + fixable → code-fixer).
+ * 3. `resolveActiveReviewer(state, deriveImplFixerChain(state)) === CODE_REVIEW` —
+ *    no later reviewer (custom reviewer, regression-gate) has become the active fixer
+ *    source. This prevents false-positives when a coordinator or regression-gate is
+ *    the true trigger.
+ */
+export function codeReviewFindingsRoutingActive(state: JobState): boolean {
+  // Condition 1: conformance is not the trigger
+  if (getConformanceFixContext(state, STEP_NAMES.CODE_FIXER) !== null) return false;
+
+  // Condition 2: code-review latest verdict is "approved" with fixable findings
+  const codeReviewRuns = state.steps?.[STEP_NAMES.CODE_REVIEW] ?? [];
+  if (codeReviewRuns.length === 0) return false;
+  const lastCodeReview = codeReviewRuns[codeReviewRuns.length - 1];
+  if (!lastCodeReview) return false;
+  if (lastCodeReview.outcome.verdict !== "approved") return false;
+  const toolResult = lastCodeReview.outcome.toolResult as { findings?: import("../../kernel/report-result.js").Finding[] } | null | undefined;
+  const findings = toolResult?.findings ?? [];
+  if (collectFixableFindings(findings).length === 0) return false;
+
+  // Condition 3: code-review is the active reviewer (no later reviewer has taken over)
+  const chain = deriveImplFixerChain(state);
+  if (resolveActiveReviewer(state, chain) !== STEP_NAMES.CODE_REVIEW) return false;
+
+  return true;
+}
+
+/**
  * True when code-review (the standard built-in reviewer) is still in its convergence loop.
  *
  * Design D7 (reviewer-parallel-execution): priority 3 after regression-gate.

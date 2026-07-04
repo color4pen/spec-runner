@@ -9,6 +9,12 @@
  * - listChangedFiles returns only pipeline artifacts (or nothing)
  *
  * And does NOT override when source files were changed.
+ *
+ * Also verifies requirements 1-4 from approved-fixer-noop-proceeds:
+ * - Req 1: approved findings-routing path no-op is NOT escalated
+ * - Req 2: needs-fix path no-op IS escalated (#734 regression guard)
+ * - Req 3: approved path with source changes loops back (approved)
+ * - Req 4: conformance-triggered no-op IS escalated (conformance is not findings-routing)
  */
 import { describe, it, expect, vi } from "vitest";
 import { EventBus } from "../../event/event-bus.js";
@@ -262,5 +268,192 @@ describe("StepExecutor — T-03: no-op detection", () => {
     const lastRun = stepRuns[stepRuns.length - 1];
     // Without runtimeStrategy, headBeforeStep is null → no-op detection skipped → approved
     expect(lastRun?.outcome.verdict).toBe("approved");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Requirements 1-4: approved-fixer-noop-proceeds
+// ---------------------------------------------------------------------------
+
+import { STEP_NAMES } from "../step-names.js";
+
+/** Build a state that has a code-review run with the given verdict + findings. */
+function makeStateWithCodeReview(
+  verdict: string,
+  findings: Array<{ severity: string; resolution: string }> = [],
+): JobState {
+  return {
+    ...makeState(),
+    steps: {
+      [STEP_NAMES.CODE_REVIEW]: [
+        {
+          attempt: 1,
+          sessionId: null,
+          startedAt: "2026-01-01T00:01:00Z",
+          endedAt: "2026-01-01T00:01:30Z",
+          outcome: {
+            verdict,
+            findingsPath: null,
+            error: null,
+            toolResult: {
+              ok: true,
+              findings: findings.map((f) => ({
+                severity: f.severity,
+                resolution: f.resolution,
+                file: "src/foo.ts",
+                title: "T",
+                rationale: "R",
+              })),
+            },
+          },
+        },
+      ],
+    } as unknown as JobState["steps"],
+  };
+}
+
+describe("StepExecutor — approved-fixer-noop-proceeds requirements", () => {
+  // ---------------------------------------------------------------------------
+  // Requirement 1: approved findings-routing no-op does NOT escalate
+  // ---------------------------------------------------------------------------
+  it("Req 1: code-review approved + low fixable findings, no source changes → verdict stays 'approved' (not escalated)", async () => {
+    const runner = makeRunner();
+    const runtimeStrategy = makeRuntimeStrategy([
+      "specrunner/changes/example/state.json",  // only artifact files
+    ]);
+    const store = makeStore();
+    const storeFactory = () => store as never;
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+
+    const step = makeStep(true);  // noOpDetect: true
+    // State: code-review approved + low fixable finding → findings-routing path
+    const state = makeStateWithCodeReview("approved", [
+      { severity: "low", resolution: "fixable" },
+    ]);
+    const deps = makeDeps(runtimeStrategy);
+    deps.storeFactory = storeFactory;
+
+    const resultState = await executor.execute(step, state, deps);
+
+    const stepRuns = resultState.steps?.["code-fixer"] ?? [];
+    const lastRun = stepRuns[stepRuns.length - 1];
+    // No mandatory findings → no-op is legitimate → verdict must stay "approved", not escalated
+    expect(lastRun?.outcome.verdict).toBe("approved");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Requirement 2: needs-fix path no-op IS escalated (#734 regression guard)
+  // ---------------------------------------------------------------------------
+  it("Req 2: code-review needs-fix, no source changes → verdict overridden to 'needs-fix' (escalated)", async () => {
+    const runner = makeRunner();
+    const runtimeStrategy = makeRuntimeStrategy([]);  // no changed files
+    const store = makeStore();
+    const storeFactory = () => store as never;
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+
+    const step = makeStep(true);  // noOpDetect: true
+    // State: code-review needs-fix → fixer must work, no-op is a genuine failure
+    const state = makeStateWithCodeReview("needs-fix", [
+      { severity: "high", resolution: "fixable" },
+    ]);
+    const deps = makeDeps(runtimeStrategy);
+    deps.storeFactory = storeFactory;
+
+    const resultState = await executor.execute(step, state, deps);
+
+    const stepRuns = resultState.steps?.["code-fixer"] ?? [];
+    const lastRun = stepRuns[stepRuns.length - 1];
+    // needs-fix path → no-op must be escalated
+    expect(lastRun?.outcome.verdict).toBe("needs-fix");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Requirement 3: approved path with source changes → approved (re-review loop)
+  // ---------------------------------------------------------------------------
+  it("Req 3: code-review approved + fixable findings, source files changed → verdict 'approved' (re-review)", async () => {
+    const runner = makeRunner();
+    const runtimeStrategy = makeRuntimeStrategy([
+      "src/foo.ts",  // real source file changed
+    ]);
+    const store = makeStore();
+    const storeFactory = () => store as never;
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+
+    const step = makeStep(true);  // noOpDetect: true
+    const state = makeStateWithCodeReview("approved", [
+      { severity: "low", resolution: "fixable" },
+    ]);
+    const deps = makeDeps(runtimeStrategy);
+    deps.storeFactory = storeFactory;
+
+    const resultState = await executor.execute(step, state, deps);
+
+    const stepRuns = resultState.steps?.["code-fixer"] ?? [];
+    const lastRun = stepRuns[stepRuns.length - 1];
+    // Source changed → no no-op → verdict stays "approved" (triggers re-review)
+    expect(lastRun?.outcome.verdict).toBe("approved");
+  });
+
+  // ---------------------------------------------------------------------------
+  // Requirement 4: conformance-triggered no-op IS escalated (not findings-routing)
+  // ---------------------------------------------------------------------------
+  it("Req 4: conformance needs-fix:code-fixer (after code-review approved+fixable), no source changes → escalated", async () => {
+    const runner = makeRunner();
+    const runtimeStrategy = makeRuntimeStrategy([]);  // no source changes
+    const store = makeStore();
+    const storeFactory = () => store as never;
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+
+    const step = makeStep(true);  // noOpDetect: true
+    // State: code-review approved + fixable, BUT conformance ran later with needs-fix:code-fixer
+    // → conformance is the trigger, not findings-routing → must escalate
+    const state: JobState = {
+      ...makeStateWithCodeReview("approved", [{ severity: "low", resolution: "fixable" }]),
+      steps: {
+        [STEP_NAMES.CODE_REVIEW]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:01:00Z",
+            endedAt: "2026-01-01T00:01:30Z",
+            outcome: {
+              verdict: "approved",
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: [{ severity: "low", resolution: "fixable", file: "src/foo.ts", title: "T", rationale: "R" }],
+              },
+            },
+          },
+        ],
+        [STEP_NAMES.CONFORMANCE]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            startedAt: "2026-01-01T00:05:00Z",
+            endedAt: "2026-01-01T00:05:30Z",
+            outcome: {
+              verdict: "needs-fix:code-fixer",
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: [{ severity: "high", resolution: "fixable", file: "src/bar.ts", title: "T", rationale: "R" }],
+              },
+            },
+          },
+        ],
+      } as unknown as JobState["steps"],
+    };
+    const deps = makeDeps(runtimeStrategy);
+    deps.storeFactory = storeFactory;
+
+    const resultState = await executor.execute(step, state, deps);
+
+    const stepRuns = resultState.steps?.["code-fixer"] ?? [];
+    const lastRun = stepRuns[stepRuns.length - 1];
+    // conformance triggered this → codeReviewFindingsRoutingActive = false → escalate
+    expect(lastRun?.outcome.verdict).toBe("needs-fix");
   });
 });

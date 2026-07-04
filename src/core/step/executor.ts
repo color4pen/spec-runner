@@ -38,6 +38,7 @@ import { buildRulesFollowUpPrompts } from "./rules-followup-prompts.js";
 import { defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
 import { detectNoOp } from "./no-op-detect.js";
+import { codeReviewFindingsRoutingActive } from "../pipeline/reviewer-chain.js";
 import type { CommitPushInfra } from "./commit-push.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../../core/port/report-result.js";
@@ -548,6 +549,10 @@ export class StepExecutor {
     // T-03 (no-op detection): delegate to sibling no-op-detect.ts (executor-bloat guard).
     // Returns "needs-fix" when step.noOpDetect is true and no source files changed;
     // undefined otherwise (no override).
+    // findingsRoutingApproved: true suppresses escalation for approved findings-routing
+    // path no-ops (e.g. all fixable findings are LOW — prompt intentionally ignores them).
+    // Guard with step.noOpDetect === true so we only compute reviewer-chain state for
+    // code-fixer; non-noOpDetect steps pass false and skip the reviewer-chain logic.
     const noOpVerdictOverride: Verdict | undefined =
       deps.runtimeStrategy && headBeforeStep !== null
         ? await detectNoOp(step, deps.runtimeStrategy, {
@@ -555,6 +560,7 @@ export class StepExecutor {
             cwd,
             branch: state.branch ?? null,
             completionReason: runResult.completionReason,
+            findingsRoutingApproved: step.noOpDetect === true ? codeReviewFindingsRoutingActive(state) : false,
           })
         : undefined;
 
