@@ -15,6 +15,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { LocalRuntime } from "../../../../src/core/runtime/local.js";
+import { ManagedRuntime } from "../../../../src/core/runtime/managed.js";
 import { SpecRunnerError } from "../../../../src/errors.js";
 import { livenessJsonPath } from "../../../../src/util/paths.js";
 
@@ -122,6 +123,60 @@ describe("TC-LR-02: liveness.json absent → allowed (resolves)", () => {
     const runtime = makeLocalRuntime(tempDir);
 
     // No sidecar file written → assertNoDuplicateLiveJob should not throw
+    await expect(runtime.assertNoDuplicateLiveJob(tempDir, SLUG)).resolves.toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-015: managed runtime no-op – assertNoDuplicateLiveJob never throws
+// ---------------------------------------------------------------------------
+
+function buildMockSessionClient() {
+  return {
+    createSession: vi.fn(),
+    sendUserMessage: vi.fn(),
+    pollUntilComplete: vi.fn(),
+    streamEvents: vi.fn(),
+    getSessionUsage: vi.fn().mockResolvedValue(undefined),
+    listEvents: vi.fn().mockResolvedValue([]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+describe("TC-015: ManagedRuntime.assertNoDuplicateLiveJob is a no-op (never throws)", () => {
+  it("resolves without throwing even when a liveness.json with live pid exists", async () => {
+    // Write a liveness.json that would cause LocalRuntime to throw
+    const sidecarPath = path.join(tempDir, livenessJsonPath(SLUG));
+    await fs.mkdir(path.dirname(sidecarPath), { recursive: true });
+    await fs.writeFile(
+      sidecarPath,
+      JSON.stringify({ pid: process.pid, jobId: "job-A", worktreePath: "/wt", session: null }),
+      "utf-8",
+    );
+
+    const runtime = new ManagedRuntime(
+      tempDir,
+      buildMockSessionClient() as never,
+      buildMockGitHubClient() as never,
+      { owner: "testowner", name: "testrepo" },
+      undefined,
+      "ghp_test",
+    );
+
+    // ManagedRuntime ignores liveness sidecar entirely
+    await expect(runtime.assertNoDuplicateLiveJob(tempDir, SLUG)).resolves.toBeUndefined();
+  });
+
+  it("resolves without throwing when sidecar is absent", async () => {
+    const runtime = new ManagedRuntime(
+      tempDir,
+      buildMockSessionClient() as never,
+      buildMockGitHubClient() as never,
+      { owner: "testowner", name: "testrepo" },
+      undefined,
+      "ghp_test",
+    );
+
     await expect(runtime.assertNoDuplicateLiveJob(tempDir, SLUG)).resolves.toBeUndefined();
   });
 });

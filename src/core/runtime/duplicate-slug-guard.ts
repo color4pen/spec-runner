@@ -55,10 +55,14 @@ export async function checkDuplicateLiveJob(
     return;
   }
 
-  // Step 2: parse JSON; corrupted → allow
+  // Step 2: parse JSON; corrupted or non-object → allow
   let data: Record<string, unknown>;
   try {
-    data = JSON.parse(raw) as Record<string, unknown>;
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return;
+    }
+    data = parsed as Record<string, unknown>;
   } catch {
     return;
   }
