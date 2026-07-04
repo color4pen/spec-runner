@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f1aea8ee-4c17-4799-a442-3a18352ce37e",
   "createdAt": "2026-07-04T12:28:54.629Z",
-  "updatedAt": "2026-07-04T13:22:28.925Z",
+  "updatedAt": "2026-07-04T13:23:27.890Z",
   "request": {
     "title": "workspace セットアップを config 化して言語非依存にする",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/configurable-workspace-setup-f1aea8ee",
   "error": null,
@@ -74,7 +74,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 45,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -86,7 +86,8 @@
       "code-fixer": 1,
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
