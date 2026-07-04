@@ -2,15 +2,15 @@
 
 ## T-01: Add the skip-detection helper
 
-- [ ] Create `src/core/verification/skip-detect.ts`.
-- [ ] Export `detectSkippedTests(output: string): number`.
-- [ ] Scan `output` with a framework-agnostic, case-insensitive, global regex:
+- [x] Create `src/core/verification/skip-detect.ts`.
+- [x] Export `detectSkippedTests(output: string): number`.
+- [x] Scan `output` with a framework-agnostic, case-insensitive, global regex:
       `/(\d+)\s+(skipped|pending|todo)\b/gi`.
-- [ ] Sum the first capture group (the number) across all matches and return the
+- [x] Sum the first capture group (the number) across all matches and return the
       total. Return `0` when there are no matches.
-- [ ] Pure function: no I/O, no `bun:*` / `Bun.*`, `node:*` only if anything is
+- [x] Pure function: no I/O, no `bun:*` / `Bun.*`, `node:*` only if anything is
       needed (nothing should be).
-- [ ] File-level doc comment: this is a best-effort, non-blocking detector whose
+- [x] File-level doc comment: this is a best-effort, non-blocking detector whose
       result never affects the verification verdict.
 
 **Acceptance Criteria**:
@@ -26,12 +26,12 @@
 
 ## T-02: Add `skippedCount` to `PhaseResult`
 
-- [ ] In `src/core/verification/runner.ts`, add an optional field to the
+- [x] In `src/core/verification/runner.ts`, add an optional field to the
       `PhaseResult` interface: `skippedCount?: number`.
-- [ ] Doc-comment it as: best-effort count of skipped tests detected in this
+- [x] Doc-comment it as: best-effort count of skipped tests detected in this
       phase's output; present only for the `test` phase in the phase fallback
       path; absent/omitted when not applicable. Never affects the verdict.
-- [ ] Do not change any other `PhaseResult` field. The field is optional so all
+- [x] Do not change any other `PhaseResult` field. The field is optional so all
       existing `PhaseResult` constructions and consumers remain valid unchanged.
 
 **Acceptance Criteria**:
@@ -42,18 +42,18 @@
 
 ## T-03: Populate `skippedCount` for the test phase in the phase fallback path
 
-- [ ] In `runVerificationPhases` (`src/core/verification/runner.ts`), after a
+- [x] In `runVerificationPhases` (`src/core/verification/runner.ts`), after a
       script phase has run and its `status` computed, when `phaseName === "test"`
       compute the skip count from the phase's combined output
       (`[stdout, stderr].filter(Boolean).join("\n")`) using
       `detectSkippedTests`, and set `skippedCount` on that phase's `PhaseResult`
       when the count is `> 0`.
-- [ ] Detection MUST run regardless of the test phase's pass/fail status, but
+- [x] Detection MUST run regardless of the test phase's pass/fail status, but
       MUST NOT run for a skipped test phase (no script) — a skipped phase has no
       output and stays as-is.
-- [ ] Do NOT modify the verdict computation (`allSkipped` / `anyFailed` /
+- [x] Do NOT modify the verdict computation (`allSkipped` / `anyFailed` /
       `errorCode`). It stays byte-for-byte identical.
-- [ ] Do NOT add detection to `runVerificationCommands` (commands path is out of
+- [x] Do NOT add detection to `runVerificationCommands` (commands path is out of
       scope) or to any phase other than `test`.
 
 **Acceptance Criteria**:
@@ -67,24 +67,24 @@
 
 ## T-04: Surface the skip annotation in `verification-result.md`
 
-- [ ] In `writeVerificationResult` (`src/core/verification/runner.ts`), after the
+- [x] In `writeVerificationResult` (`src/core/verification/runner.ts`), after the
       `## Verdict: <verdict>` heading and its trailing blank line (and before the
       existing `errorCode` block), when **the verdict is `passed`** AND the `test`
       phase has `skippedCount > 0`, emit a single blockquote annotation line
       (plain text, no emoji), e.g.:
       `> Note — passed with skips: N test(s) reported skipped/pending in the \`test\` phase output (best-effort detection). A "passed" verdict does not attest that skipped tests were exercised. See \`## Phase: test\`.`
       followed by a blank line. Use the actual detected count for `N`.
-- [ ] Gate the annotation on a `passed` verdict. The annotation's purpose is to
+- [x] Gate the annotation on a `passed` verdict. The annotation's purpose is to
       qualify a *passed* result (a false green). When the verdict is `failed`, the
       failure is already surfaced directly, so no annotation is written even if
       `skippedCount > 0`. This is display gating (verdict → annotation), which does
       not couple the verdict to the skip count (D6 is unaffected: skip count still
       never influences the verdict). Matches spec.md's annotation scenario, which
       is scoped to "the verdict is passed".
-- [ ] When the verdict is `passed` and no `test` phase `skippedCount > 0` exists,
+- [x] When the verdict is `passed` and no `test` phase `skippedCount > 0` exists,
       write nothing extra — the output stays byte-identical to today's clean-pass
       output.
-- [ ] Do NOT change the `## Verdict:` heading line itself, the Phase Results
+- [x] Do NOT change the `## Verdict:` heading line itself, the Phase Results
       table header (`| # | Phase | Status | Duration | Exit Code |`), the table
       columns, or the per-phase `## Phase:` section structure. The annotation is
       an added line only.
@@ -102,11 +102,11 @@
 
 ## T-05: Unit tests for the skip detector
 
-- [ ] Create `tests/unit/core/verification/skip-detect.test.ts`.
-- [ ] Cover every case listed in T-01's Acceptance Criteria (vitest, jest, mocha,
+- [x] Create `tests/unit/core/verification/skip-detect.test.ts`.
+- [x] Cover every case listed in T-01's Acceptance Criteria (vitest, jest, mocha,
       pytest-style summaries; multi-category summing; case-insensitivity;
       `0 skipped`; no-keyword; empty string).
-- [ ] Give each test a TC ID in its name/comment (e.g. `it("TC-01: ...")`) so the
+- [x] Give each test a TC ID in its name/comment (e.g. `it("TC-01: ...")`) so the
       verification test-coverage phase can grep it.
 
 **Acceptance Criteria**:
@@ -114,10 +114,10 @@
 
 ## T-06: Unit tests for runner integration and surfacing
 
-- [ ] Extend `tests/unit/core/verification/runner.test.ts` (or add a sibling test
+- [x] Extend `tests/unit/core/verification/runner.test.ts` (or add a sibling test
       file) following its existing mock conventions (`vi.mock("node:child_process")`,
       `makeMockChild`, `runTestCoveragePhase` mock).
-- [ ] Add cases mapped to the acceptance criteria:
+- [x] Add cases mapped to the acceptance criteria:
   - Test phase exit 0 with `2 skipped` in stdout → verdict `passed`, `test`
     phase `skippedCount === 2`, and `verification-result.md` contains the
     passed-with-skips annotation with `2`.
@@ -130,7 +130,7 @@
     is gated on a passed verdict).
   - Skip appearing in `stderr` (not stdout) is detected (locks the combined
     stdout+stderr decision, D2).
-- [ ] Do NOT modify existing test cases (TC-005..TC-042). They must stay green
+- [x] Do NOT modify existing test cases (TC-005..TC-042). They must stay green
       unchanged.
 
 **Acceptance Criteria**:
@@ -139,10 +139,10 @@
 
 ## T-07: Guard the commands path and no-runnable-phases invariants
 
-- [ ] Add/confirm a test asserting the commands path result carries no
+- [x] Add/confirm a test asserting the commands path result carries no
       `skippedCount` and `verification-result.md` from the commands path has no
       skip annotation (may extend `tests/unit/verification/runner-commands.test.ts`).
-- [ ] Confirm the existing `VERIFICATION_NO_RUNNABLE_PHASES` test (all phases
+- [x] Confirm the existing `VERIFICATION_NO_RUNNABLE_PHASES` test (all phases
       skipped → failed) still passes unchanged and produces no skip annotation.
 
 **Acceptance Criteria**:

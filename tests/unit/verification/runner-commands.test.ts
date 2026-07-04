@@ -147,3 +147,48 @@ describe("TC-VR-E02: failure output contains \"Step '<command>' failed\" when na
     expect(content).toContain("Step 'false' failed");
   });
 });
+
+// TC-VR-SK-G1: commands path ignores skip keyword in output — no skippedCount, no annotation
+describe("TC-VR-SK-G1: commands path — output with skip keyword → no skippedCount, no annotation", () => {
+  it("command outputs '2 skipped' and exits 0 → phases carry no skippedCount, result.md has no skip annotation", async () => {
+    const result = await runVerification(TEST_SLUG, tmpDir, {
+      commands: ['echo "2 skipped"'],
+    });
+
+    expect(result.verdict).toBe("passed");
+    for (const phase of result.phases) {
+      expect((phase as { skippedCount?: number }).skippedCount).toBeUndefined();
+    }
+
+    const resultPath = path.join(
+      tmpDir,
+      "specrunner",
+      "changes",
+      TEST_SLUG,
+      "verification-result.md",
+    );
+    const content = await fs.readFile(resultPath, "utf-8");
+    expect(content).not.toContain("passed with skips");
+  });
+});
+
+// TC-VR-SK-G2: VERIFICATION_NO_RUNNABLE_PHASES → verdict failed, no skip annotation
+describe("TC-VR-SK-G2: VERIFICATION_NO_RUNNABLE_PHASES → verdict failed, no skip annotation in result.md", () => {
+  it("empty commands array → VERIFICATION_NO_RUNNABLE_PHASES, no skip annotation written", async () => {
+    const result = await runVerification(TEST_SLUG, tmpDir, { commands: [] });
+
+    expect(result.verdict).toBe("failed");
+    expect(result.errorCode).toBe("VERIFICATION_NO_RUNNABLE_PHASES");
+
+    const resultPath = path.join(
+      tmpDir,
+      "specrunner",
+      "changes",
+      TEST_SLUG,
+      "verification-result.md",
+    );
+    const content = await fs.readFile(resultPath, "utf-8");
+    expect(content).not.toContain("passed with skips");
+    expect(content).toMatch(/^## Verdict: failed$/m);
+  });
+});

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d97cb933-fc32-430a-af86-7e9748500d61",
   "createdAt": "2026-07-04T14:58:54.391Z",
-  "updatedAt": "2026-07-04T23:17:48.909Z",
+  "updatedAt": "2026-07-04T23:19:54.509Z",
   "request": {
     "title": "verification が silent-skip されたテストを surface する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "change/verification-surface-skipped-tests-d97cb933",
   "error": null,
@@ -48,11 +48,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }
