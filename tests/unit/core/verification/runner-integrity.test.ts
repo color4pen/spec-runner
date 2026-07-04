@@ -356,3 +356,131 @@ describe("TC-INT-09: current package.json missing → skip check, phases run nor
     expect(result.phases.some((p) => p.phase === "package-json-integrity")).toBe(false);
   });
 });
+
+// TC-INT-11: addition to non-empty baseline → not tampered
+describe("TC-INT-11: addition of new key to non-empty baseline → not tampered", () => {
+  it("baseline { build: 'tsc' }, current { build: 'tsc', test: 'vitest' } → tampered=false, phases proceed", async () => {
+    const baselineScripts = { build: "tsc" };
+    const currentScripts = { build: "tsc", test: "vitest" };
+
+    await writeCurrentPackageJson(currentScripts);
+
+    const spawnMock = vi.mocked(childProcess.spawn);
+    spawnMock.mockImplementation((cmd: string, args: readonly string[]) => {
+      if (cmd === "git" && args[0] === "show") {
+        return makeMockChild(0, makeBaselinePackageJson(baselineScripts)) as ReturnType<typeof childProcess.spawn>;
+      }
+      return makeMockChild(0, "ok") as ReturnType<typeof childProcess.spawn>;
+    });
+
+    const { runVerification } = await import("../../../../src/core/verification/runner.js");
+    const result = await runVerification("my-change", tempDir, undefined, "main");
+
+    expect(result.errorCode).not.toBe("PACKAGE_JSON_SCRIPTS_TAMPERED");
+    expect(result.phases.some((p) => p.phase === "package-json-integrity")).toBe(false);
+  });
+});
+
+// TC-INT-12: addition to empty baseline (no scripts field) → not tampered
+describe("TC-INT-12: addition of new keys to empty baseline (no scripts field) → not tampered", () => {
+  it("baseline has no scripts, current adds build and test → tampered=false, phases proceed", async () => {
+    const currentScripts = { build: "tsc", test: "vitest" };
+    await writeCurrentPackageJson(currentScripts);
+
+    const spawnMock = vi.mocked(childProcess.spawn);
+    spawnMock.mockImplementation((cmd: string, args: readonly string[]) => {
+      if (cmd === "git" && args[0] === "show") {
+        // Baseline package.json has no scripts field at all
+        return makeMockChild(0, JSON.stringify({ name: "test-pkg" })) as ReturnType<typeof childProcess.spawn>;
+      }
+      return makeMockChild(0, "ok") as ReturnType<typeof childProcess.spawn>;
+    });
+
+    const { runVerification } = await import("../../../../src/core/verification/runner.js");
+    const result = await runVerification("my-change", tempDir, undefined, "main");
+
+    expect(result.errorCode).not.toBe("PACKAGE_JSON_SCRIPTS_TAMPERED");
+    expect(result.phases.some((p) => p.phase === "package-json-integrity")).toBe(false);
+  });
+});
+
+// TC-INT-13: existing key value changed → tampered
+describe("TC-INT-13: existing baseline key value changed → tampered", () => {
+  it("baseline { build: 'tsc', test: 'vitest' }, current changes test to 'exit 0' → verdict=failed, errorCode=PACKAGE_JSON_SCRIPTS_TAMPERED", async () => {
+    const baselineScripts = { build: "tsc", test: "vitest" };
+    const currentScripts = { build: "tsc", test: "exit 0" };
+
+    await writeCurrentPackageJson(currentScripts);
+
+    const spawnMock = vi.mocked(childProcess.spawn);
+    spawnMock.mockImplementation((cmd: string, args: readonly string[]) => {
+      if (cmd === "git" && args[0] === "show") {
+        return makeMockChild(0, makeBaselinePackageJson(baselineScripts)) as ReturnType<typeof childProcess.spawn>;
+      }
+      throw new Error(`Unexpected spawn: ${cmd} ${args.join(" ")}`);
+    });
+
+    const { runVerification } = await import("../../../../src/core/verification/runner.js");
+    const result = await runVerification("my-change", tempDir, undefined, "main");
+
+    expect(result.verdict).toBe("failed");
+    expect(result.errorCode).toBe("PACKAGE_JSON_SCRIPTS_TAMPERED");
+    expect(result.phases).toHaveLength(1);
+    expect(result.phases[0]?.phase).toBe("package-json-integrity");
+    expect(result.phases[0]?.status).toBe("failed");
+  });
+});
+
+// TC-INT-14: existing key deleted → tampered
+describe("TC-INT-14: existing baseline key deleted → tampered", () => {
+  it("baseline { build: 'tsc', test: 'vitest' }, current removes test → errorCode=PACKAGE_JSON_SCRIPTS_TAMPERED", async () => {
+    const baselineScripts = { build: "tsc", test: "vitest" };
+    const currentScripts = { build: "tsc" }; // test key deleted
+
+    await writeCurrentPackageJson(currentScripts);
+
+    const spawnMock = vi.mocked(childProcess.spawn);
+    spawnMock.mockImplementation((cmd: string, args: readonly string[]) => {
+      if (cmd === "git" && args[0] === "show") {
+        return makeMockChild(0, makeBaselinePackageJson(baselineScripts)) as ReturnType<typeof childProcess.spawn>;
+      }
+      throw new Error(`Unexpected spawn: ${cmd} ${args.join(" ")}`);
+    });
+
+    const { runVerification } = await import("../../../../src/core/verification/runner.js");
+    const result = await runVerification("my-change", tempDir, undefined, "main");
+
+    expect(result.verdict).toBe("failed");
+    expect(result.errorCode).toBe("PACKAGE_JSON_SCRIPTS_TAMPERED");
+  });
+});
+
+// TC-INT-15: addition + modification mixed → tampered, diff shows only modified key
+describe("TC-INT-15: addition + modification mixed → tampered, diff shows only the modified baseline key", () => {
+  it("baseline { test: 'vitest' }, current changes test to 'exit 0' and adds lint → diff contains 'test' but not 'lint'", async () => {
+    const baselineScripts = { test: "vitest" };
+    const currentScripts = { test: "exit 0", lint: "eslint" };
+
+    await writeCurrentPackageJson(currentScripts);
+
+    const spawnMock = vi.mocked(childProcess.spawn);
+    spawnMock.mockImplementation((cmd: string, args: readonly string[]) => {
+      if (cmd === "git" && args[0] === "show") {
+        return makeMockChild(0, makeBaselinePackageJson(baselineScripts)) as ReturnType<typeof childProcess.spawn>;
+      }
+      throw new Error(`Unexpected spawn: ${cmd} ${args.join(" ")}`);
+    });
+
+    const { runVerification } = await import("../../../../src/core/verification/runner.js");
+    await runVerification("my-change", tempDir, undefined, "main");
+
+    const resultFilePath = path.join(tempDir, verificationResultPath("my-change"));
+    const content = await fs.readFile(resultFilePath, "utf-8");
+
+    expect(content).toContain("PACKAGE_JSON_SCRIPTS_TAMPERED");
+    // Diff must surface the offending key (test) …
+    expect(content).toContain('"test"');
+    // … but must NOT list the added-only key (lint) as tampered.
+    expect(content).not.toContain('"lint"');
+  });
+});

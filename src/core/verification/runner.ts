@@ -170,8 +170,11 @@ async function writeVerificationResult(
 }
 
 /**
- * Check if the worktree's package.json scripts section differs from the baseline (origin/<baseBranch>).
- * Returns { tampered: true, diff } if scripts differ, { tampered: false } otherwise.
+ * Check if the worktree's package.json scripts section has been tampered relative to the baseline (origin/<baseBranch>).
+ * Tampering is defined as changing the value of, or deleting, a key that exists in the baseline.
+ * Adding new script keys that do not exist in the baseline is NOT considered tampering
+ * (greenfield implementations legitimately add scripts absent from the base branch).
+ * Returns { tampered: true, diff } listing only the offending baseline keys, { tampered: false } otherwise.
  * Skips check (returns { tampered: false }) if baseline cannot be retrieved or JSON is malformed.
  */
 async function checkPackageJsonScriptsIntegrity(
@@ -225,15 +228,34 @@ async function checkPackageJsonScriptsIntegrity(
     const baselineScripts: Record<string, string> = baselinePkg.scripts ?? {};
     const currentScripts: Record<string, string> = currentPkg.scripts ?? {};
 
-    const normalize = (s: Record<string, string>) =>
-      JSON.stringify(Object.fromEntries(Object.entries(s).sort()));
+    // Collect offending entries: baseline keys whose value was changed or that were deleted.
+    // Keys present only in currentScripts (new additions) are intentionally excluded —
+    // adding scripts is a legitimate greenfield operation and does not subvert existing checks.
+    const offendingEntries: Array<[string, string]> = [];
+    for (const [key, baselineValue] of Object.entries(baselineScripts)) {
+      if (
+        !Object.prototype.hasOwnProperty.call(currentScripts, key) ||
+        currentScripts[key] !== baselineValue
+      ) {
+        offendingEntries.push([key, baselineValue]);
+      }
+    }
 
-    if (normalize(baselineScripts) !== normalize(currentScripts)) {
+    if (offendingEntries.length > 0) {
+      const baselineDiff: Record<string, string> = {};
+      const currentDiff: Record<string, string> = {};
+      for (const [key, baselineValue] of offendingEntries) {
+        baselineDiff[key] = baselineValue;
+        // Deleted keys are absent from current; only include key when it still exists (value changed).
+        if (Object.prototype.hasOwnProperty.call(currentScripts, key)) {
+          currentDiff[key] = currentScripts[key] as string;
+        }
+      }
       const diff =
         "Baseline scripts:\n" +
-        JSON.stringify(baselineScripts, null, 2) +
+        JSON.stringify(baselineDiff, null, 2) +
         "\n\nCurrent scripts:\n" +
-        JSON.stringify(currentScripts, null, 2);
+        JSON.stringify(currentDiff, null, 2);
       return { tampered: true, diff };
     }
 
