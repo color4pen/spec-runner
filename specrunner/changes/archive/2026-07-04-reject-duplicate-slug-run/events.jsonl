@@ -92,3 +92,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/reject-duplicate-slug-run/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-04T14:23:56.356Z","endedAt":"2026-07-04T14:23:57.709Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-04T14:23:57.709Z","outputs":[{"path":"specrunner/changes/reject-duplicate-slug-run/pr-create-result.md","hash":"sha256:c61e82cb37ef1010214f65bbfeebe00cdf673a5169e0f91e0733ade3e136decf"}],"inputs":[{"path":"change/reject-duplicate-slug-run-02889a16","hash":null}]}
 {"type":"transition","ts":"2026-07-04T14:23:57.719Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-04T14:26:22.407Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

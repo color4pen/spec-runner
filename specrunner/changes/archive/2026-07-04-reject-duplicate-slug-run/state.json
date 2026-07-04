@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "02889a16-729c-44a1-b896-a4b008e26be5",
   "createdAt": "2026-07-04T12:32:57.810Z",
-  "updatedAt": "2026-07-04T14:23:57.719Z",
+  "updatedAt": "2026-07-04T14:26:22.407Z",
   "request": {
     "title": "同一 slug の live job があるとき2回目の run を拒否する",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/reject-duplicate-slug-run-02889a16",
   "error": null,
   "pipelineId": "standard",
@@ -80,7 +80,7 @@
     "createdAt": "2026-07-04T14:23:57.708Z"
   },
   "_journal": {
-    "historyCount": 63,
+    "historyCount": 64,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
