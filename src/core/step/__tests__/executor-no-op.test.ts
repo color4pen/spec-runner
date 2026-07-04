@@ -276,7 +276,6 @@ describe("StepExecutor — T-03: no-op detection", () => {
 // ---------------------------------------------------------------------------
 
 import { STEP_NAMES } from "../step-names.js";
-import { REGRESSION_GATE_STEP_NAME } from "../regression-gate.js";
 
 /** Build a state that has a code-review run with the given verdict + findings. */
 function makeStateWithCodeReview(
