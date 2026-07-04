@@ -26,6 +26,7 @@ const EXIT_CODE_MAP: Record<string, ExitCode> = {
   WORKTREE_GUARD: EXIT_CODE.ARG_ERROR,
   SYMLINK_REJECTED: EXIT_CODE.ARG_ERROR,
   DESIGN_LAYER_CHECK_FAILED: EXIT_CODE.ARG_ERROR,
+  DUPLICATE_LIVE_JOB: EXIT_CODE.ARG_ERROR,
 };
 
 /**
@@ -97,6 +98,7 @@ export const ERROR_CODES = {
   WORKTREE_DIRTY: "WORKTREE_DIRTY",
   ENVIRONMENT_NOT_SET: "ENVIRONMENT_NOT_SET",
   DESIGN_LAYER_CHECK_FAILED: "DESIGN_LAYER_CHECK_FAILED",
+  DUPLICATE_LIVE_JOB: "DUPLICATE_LIVE_JOB",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -338,5 +340,20 @@ export function authoritySpecEditViolationError(
     ERROR_CODES.AUTHORITY_SPEC_EDIT_VIOLATION,
     `Authority spec files must not be edited directly. Use specrunner/changes/<slug>/spec.md to describe spec changes.\nViolating paths:\n${pathList}`,
     `Agent step '${stepName}' attempted to edit authority spec files directly.`,
+  );
+}
+
+export function duplicateLiveJobError(slug: string, priorJobId: string | null): SpecRunnerError {
+  if (priorJobId !== null) {
+    return new SpecRunnerError(
+      ERROR_CODES.DUPLICATE_LIVE_JOB,
+      `A live job (${priorJobId}) is already running for slug '${slug}'. Cancel it with 'specrunner job cancel ${priorJobId}', or wait for it to finish before re-running.`,
+      `Refusing to start a duplicate run: slug '${slug}' already has a live job (${priorJobId}).`,
+    );
+  }
+  return new SpecRunnerError(
+    ERROR_CODES.DUPLICATE_LIVE_JOB,
+    `A live job is already running for slug '${slug}'. Cancel it with 'specrunner job cancel <jobId>' (see 'specrunner job list'), or wait for it to finish before re-running.`,
+    `Refusing to start a duplicate run: slug '${slug}' already has a live job.`,
   );
 }

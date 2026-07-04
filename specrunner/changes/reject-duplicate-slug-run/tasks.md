@@ -4,10 +4,10 @@
 
 `src/errors.ts` を修正する。
 
-- [ ] `ERROR_CODES` に `DUPLICATE_LIVE_JOB: "DUPLICATE_LIVE_JOB"` を追加する
-- [ ] `EXIT_CODE_MAP` に `DUPLICATE_LIVE_JOB: EXIT_CODE.ARG_ERROR` を追加する
+- [x] `ERROR_CODES` に `DUPLICATE_LIVE_JOB: "DUPLICATE_LIVE_JOB"` を追加する
+- [x] `EXIT_CODE_MAP` に `DUPLICATE_LIVE_JOB: EXIT_CODE.ARG_ERROR` を追加する
   （ユーザーが先行 job を解消してから再実行すべき前提エラー。既存 `WORKTREE_GUARD` と同じ扱い）
-- [ ] factory 関数 `duplicateLiveJobError(slug: string, priorJobId: string | null): SpecRunnerError` を追加する:
+- [x] factory 関数 `duplicateLiveJobError(slug: string, priorJobId: string | null): SpecRunnerError` を追加する:
   - `priorJobId` が非 null のとき:
     - `hint`: `A live job (<priorJobId>) is already running for slug '<slug>'. Cancel it with 'specrunner job cancel <priorJobId>', or wait for it to finish before re-running.`
     - `message`: `Refusing to start a duplicate run: slug '<slug>' already has a live job (<priorJobId>).`
@@ -27,7 +27,7 @@
 
 `src/core/runtime/duplicate-slug-guard.ts` を新規作成する。
 
-- [ ] 次のシグネチャの関数を実装する:
+- [x] 次のシグネチャの関数を実装する:
   ```
   export interface DuplicateLiveJobDeps {
     readFile?: (absPath: string) => Promise<string>;
@@ -39,19 +39,19 @@
     deps?: DuplicateLiveJobDeps,
   ): Promise<void>
   ```
-- [ ] 既定 deps: `readFile` は `fs.readFile(p, "utf-8")`（`node:fs/promises`）、`isAlive` は
+- [x] 既定 deps: `readFile` は `fs.readFile(p, "utf-8")`（`node:fs/promises`）、`isAlive` は
   `isProcessAlive`（`src/core/resume/safety.ts` から import）
-- [ ] sidecar パスは `path.join(repoRoot, livenessJsonPath(slug))`（`livenessJsonPath` は `src/util/paths.ts`）
-- [ ] 判定ロジック（D4）:
+- [x] sidecar パスは `path.join(repoRoot, livenessJsonPath(slug))`（`livenessJsonPath` は `src/util/paths.ts`）
+- [x] 判定ロジック（D4）:
   1. `readFile` が throw（不在 / 読み取り不能） → `return`（許容）
   2. `JSON.parse` が throw（破損） → `return`（許容）
   3. `pid` が `typeof === "number"` でない → `return`（許容）
   4. `isAlive(pid)` が偽（stale） → `return`（許容）
   5. `isAlive(pid)` が真（live） → `jobId`（`typeof === "string"` なら採用、なければ null）を取り、
      `throw duplicateLiveJobError(slug, jobId)`
-- [ ] `src/store/local-job-index.ts` / `src/core/command/resume.ts:230` と同じ sidecar スキーマ
+- [x] `src/store/local-job-index.ts` / `src/core/command/resume.ts:230` と同じ sidecar スキーマ
   （`{ pid, session, worktreePath, jobId }`）を前提に、`data` は `Record<string, unknown>` で読む
-- [ ] 本ファイルの import は `node:fs/promises` / `node:path` / `src/util/paths.ts` /
+- [x] 本ファイルの import は `node:fs/promises` / `node:path` / `src/util/paths.ts` /
   `src/core/resume/safety.ts` / `src/errors.ts` に限定する（新規 pid 判定ロジックを書かない = 要件 3）
 
 **Acceptance Criteria**:
@@ -64,7 +64,7 @@
 
 `src/core/port/runtime-strategy.ts` を修正する。
 
-- [ ] `RuntimeStrategy` インターフェースに **optional** メソッドを追加する:
+- [x] `RuntimeStrategy` インターフェースに **optional** メソッドを追加する:
   ```
   /**
    * Reject a second run while a live job already holds this slug (local runtime only).
@@ -77,7 +77,7 @@
    */
   assertNoDuplicateLiveJob?(repoRoot: string, slug: string): Promise<void>;
   ```
-- [ ] `RealRuntimeStrategy` 交差型を更新し、本メソッドを **required** にする
+- [x] `RealRuntimeStrategy` 交差型を更新し、本メソッドを **required** にする
   （既存 `canDeriveChangedFiles(): boolean` と同じ形で `& { assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void> }` を追加、
   または交差の右辺に列挙）
 
@@ -92,8 +92,8 @@
 
 `src/core/runtime/local.ts` を修正する。
 
-- [ ] `duplicate-slug-guard.ts` から `checkDuplicateLiveJob` を import する
-- [ ] メソッドを追加する（`canDeriveChangedFiles` 付近に配置）:
+- [x] `duplicate-slug-guard.ts` から `checkDuplicateLiveJob` を import する
+- [x] メソッドを追加する（`canDeriveChangedFiles` 付近に配置）:
   ```
   async assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void> {
     await checkDuplicateLiveJob(repoRoot, slug);
@@ -111,7 +111,7 @@
 
 `src/core/runtime/managed.ts` を修正する。
 
-- [ ] メソッドを追加する（`canDeriveChangedFiles` 付近に配置）:
+- [x] メソッドを追加する（`canDeriveChangedFiles` 付近に配置）:
   ```
   /** Out of scope for the duplicate-live-job guard (managed uses marker.json). No-op. */
   async assertNoDuplicateLiveJob(_repoRoot: string, _slug: string): Promise<void> {
@@ -130,7 +130,7 @@
 
 `src/core/command/pipeline-run.ts` を修正する。
 
-- [ ] `bootstrapJob`（現 122 行目の `await this.runtime.bootstrapJob(...)`）の**直前**に、
+- [x] `bootstrapJob`（現 122 行目の `await this.runtime.bootstrapJob(...)`）の**直前**に、
   optional-call でガードを差し込む:
   ```
   // Reject a second run while a live job already holds this slug. Placed before
@@ -140,7 +140,7 @@
   ```
   - `cwd` は既存の `const cwd = this.options.cwd ?? process.cwd();`（現 79 行目）を使う
   - `slug` は既存の `const slug = request.slug;`（現 66 行目）を使う（sidecar / workspace と同じ slug）
-- [ ] ガードが throw した場合、`bootstrapJob` 以降に到達しないこと（state 未生成）を担保する
+- [x] ガードが throw した場合、`bootstrapJob` 以降に到達しないこと（state 未生成）を担保する
   （単に `bootstrapJob` の前に置くだけで満たされる）
 
 **Acceptance Criteria**:
@@ -154,7 +154,7 @@
 
 `tests/unit/core/runtime/duplicate-slug-guard.test.ts` を新規作成する。
 
-- [ ] `checkDuplicateLiveJob` を直接 import し、`deps` に `readFile` / `isAlive` を注入して決定的にテストする
+- [x] `checkDuplicateLiveJob` を直接 import し、`deps` に `readFile` / `isAlive` を注入して決定的にテストする
   （実 fs / 実プロセスに依存しない）
 
 実装するテストケース:
@@ -199,9 +199,9 @@
 `tests/unit/core/command/pipeline-run-duplicate-guard.test.ts` を新規作成する
 （既存 `pipeline-run-gate.test.ts` の fake runtime / `TestablePipelineRunCommand` パターンを踏襲）。
 
-- [ ] `loadReviewerDefinitions` を `vi.mock` で `[]` に固定する（gate test と同じ）
-- [ ] fake runtime に `assertNoDuplicateLiveJob` を含め、テストごとに throw / resolve を切り替える
-- [ ] `bootstrapJob` を spy にして呼び出し有無を検証する
+- [x] `loadReviewerDefinitions` を `vi.mock` で `[]` に固定する（gate test と同じ）
+- [x] fake runtime に `assertNoDuplicateLiveJob` を含め、テストごとに throw / resolve を切り替える
+- [x] `bootstrapJob` を spy にして呼び出し有無を検証する
 
 実装するテストケース:
 
@@ -234,8 +234,8 @@
 
 `tests/unit/core/runtime/local-duplicate-guard.test.ts` を新規作成する（実 fs 経由の配線確認）。
 
-- [ ] temp dir を `repoRoot` として使い、`.specrunner/local/<slug>/liveness.json` を実ファイルで用意する
-- [ ] `LocalRuntime.assertNoDuplicateLiveJob(repoRoot, slug)` を直接呼ぶ
+- [x] temp dir を `repoRoot` として使い、`.specrunner/local/<slug>/liveness.json` を実ファイルで用意する
+- [x] `LocalRuntime.assertNoDuplicateLiveJob(repoRoot, slug)` を直接呼ぶ
 
 実装するテストケース:
 
@@ -260,10 +260,10 @@
 
 ## T-10: 回帰確認（既存挙動の不変）
 
-- [ ] `RealRuntimeStrategy` の実 implementer が `LocalRuntime` / `ManagedRuntime` の 2 つのみであることを
+- [x] `RealRuntimeStrategy` の実 implementer が `LocalRuntime` / `ManagedRuntime` の 2 つのみであることを
   確認し（`grep -rn "implements RealRuntimeStrategy" src/`）、両方に seam が実装されていることを担保する
-- [ ] 既存の cancel / resume / inbox 関連テストが無変更で green であることを確認する
-- [ ] `bun run typecheck && bun run test` が green であることを確認する
+- [x] 既存の cancel / resume / inbox 関連テストが無変更で green であることを確認する
+- [x] `bun run typecheck && bun run test` が green であることを確認する
 
 **Acceptance Criteria**:
 - 既存 cancel / resume / inbox の挙動が不変（該当既存テストが無変更で green）

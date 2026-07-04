@@ -536,6 +536,11 @@ export class ManagedRuntime implements RealRuntimeStrategy {
     return false;
   }
 
+  /** Out of scope for the duplicate-live-job guard (managed uses marker.json). No-op. */
+  async assertNoDuplicateLiveJob(_repoRoot: string, _slug: string): Promise<void> {
+    // no-op
+  }
+
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
     const slug = this.currentSlug;
 
