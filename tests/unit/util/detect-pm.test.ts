@@ -25,7 +25,7 @@
  * TC-017: packageManager フィールドは cwd の package.json のみ参照する
  */
 import { describe, it, expect } from "vitest";
-import { detectPackageManager, installCommand, runCommand } from "../../../src/util/detect-pm.js";
+import { detectPackageManager, installCommand, runCommand, hasJsDependencyTraces } from "../../../src/util/detect-pm.js";
 import type { DetectPmFs } from "../../../src/util/detect-pm.js";
 
 /** Build a DetectPmFs mock from a set of existing files and optional package.json content. */
@@ -354,5 +354,92 @@ describe("TC-017: packageManager フィールドは cwd の package.json のみ�
     // git root stops upward search; git root's package.json is not read for packageManager
     expect(result.pm).toBe("npm");
     expect(result.root).toBe(cwd);
+  });
+});
+
+// ─── hasJsDependencyTraces tests ──────────────────────────────────────────────
+
+// TC-JDT-001: pnpm-lock.yaml → true
+describe("TC-JDT-001: hasJsDependencyTraces — pnpm-lock.yaml present → true", () => {
+  it("returns true when pnpm-lock.yaml exists in repoRoot", () => {
+    const root = "/repo";
+    const result = hasJsDependencyTraces(root, {
+      existsSync: (p) => p === `${root}/pnpm-lock.yaml`,
+    });
+    expect(result).toBe(true);
+  });
+});
+
+// TC-JDT-002: bun.lockb → true
+describe("TC-JDT-002: hasJsDependencyTraces — bun.lockb present → true", () => {
+  it("returns true when bun.lockb exists in repoRoot", () => {
+    const root = "/repo";
+    const result = hasJsDependencyTraces(root, {
+      existsSync: (p) => p === `${root}/bun.lockb`,
+    });
+    expect(result).toBe(true);
+  });
+});
+
+// TC-JDT-003: bun.lock → true
+describe("TC-JDT-003: hasJsDependencyTraces — bun.lock present → true", () => {
+  it("returns true when bun.lock exists in repoRoot", () => {
+    const root = "/repo";
+    const result = hasJsDependencyTraces(root, {
+      existsSync: (p) => p === `${root}/bun.lock`,
+    });
+    expect(result).toBe(true);
+  });
+});
+
+// TC-JDT-004: yarn.lock → true
+describe("TC-JDT-004: hasJsDependencyTraces — yarn.lock present → true", () => {
+  it("returns true when yarn.lock exists in repoRoot", () => {
+    const root = "/repo";
+    const result = hasJsDependencyTraces(root, {
+      existsSync: (p) => p === `${root}/yarn.lock`,
+    });
+    expect(result).toBe(true);
+  });
+});
+
+// TC-JDT-005: package-lock.json → true
+describe("TC-JDT-005: hasJsDependencyTraces — package-lock.json present → true", () => {
+  it("returns true when package-lock.json exists in repoRoot", () => {
+    const root = "/repo";
+    const result = hasJsDependencyTraces(root, {
+      existsSync: (p) => p === `${root}/package-lock.json`,
+    });
+    expect(result).toBe(true);
+  });
+});
+
+// TC-JDT-006: package.json only (no lockfile) → true
+describe("TC-JDT-006: hasJsDependencyTraces — package.json only → true", () => {
+  it("returns true when only package.json exists (no lockfile)", () => {
+    const root = "/repo";
+    const result = hasJsDependencyTraces(root, {
+      existsSync: (p) => p === `${root}/package.json`,
+    });
+    expect(result).toBe(true);
+  });
+});
+
+// TC-JDT-007: no lockfile and no package.json → false
+describe("TC-JDT-007: hasJsDependencyTraces — no lockfile, no package.json → false", () => {
+  it("returns false when no lockfile and no package.json exist", () => {
+    const result = hasJsDependencyTraces("/repo", { existsSync: () => false });
+    expect(result).toBe(false);
+  });
+});
+
+// TC-JDT-008: only files in subdirectories do not count
+describe("TC-JDT-008: hasJsDependencyTraces — lockfile in subdirectory does not count", () => {
+  it("returns false when lockfile is in a subdirectory, not repoRoot", () => {
+    const root = "/repo";
+    const result = hasJsDependencyTraces(root, {
+      existsSync: (p) => p === `${root}/subdir/package-lock.json`,
+    });
+    expect(result).toBe(false);
   });
 });

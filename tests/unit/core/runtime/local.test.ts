@@ -848,6 +848,61 @@ describe("TC-LR-016: setupWorkspace reuse path updates liveness sidecar pid", ()
   });
 });
 
+// TC-025: workspaceSetup injected → commands plan is passed to manager.create
+describe("TC-025: workspaceSetup 注入時に manager.create の末尾引数が commands plan になる", () => {
+  it("passes { kind: 'commands' } plan as last arg to manager.create when workspaceSetup is set", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn();
+    const githubClient = buildMockGitHubClient();
+
+    // LocalRuntime with workspaceSetup injected
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient,
+      manager,
+      spawnFn,
+      workspaceSetup: [{ run: "uv sync" }],
+    });
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, { bootstrapState: jobState });
+
+    const createMock = manager.create as ReturnType<typeof vi.fn>;
+    const createCall = createMock.mock.calls[0];
+    // The 6th argument (index 5) is the plan
+    expect(createCall?.[5]).toEqual({ kind: "commands", commands: [{ run: "uv sync" }] });
+  });
+});
+
+// TC-026: workspaceSetup not injected + JS traces present → detect-install plan
+describe("TC-026: workspaceSetup 未注入かつ JS 痕跡ありで detect-install plan が manager.create に渡る", () => {
+  it("passes { kind: 'detect-install' } plan when no workspaceSetup and bun.lock exists in cwd", async () => {
+    // Create a bun.lock file in tempDir to simulate JS traces
+    await fs.writeFile(path.join(tempDir, "bun.lock"), "", "utf-8");
+
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn();
+    const githubClient = buildMockGitHubClient();
+
+    // LocalRuntime WITHOUT workspaceSetup
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient,
+      manager,
+      spawnFn,
+      // workspaceSetup intentionally not set
+    });
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, { bootstrapState: jobState });
+
+    const createMock = manager.create as ReturnType<typeof vi.fn>;
+    const createCall = createMock.mock.calls[0];
+    // The 6th argument (index 5) is the plan
+    expect(createCall?.[5]).toEqual({ kind: "detect-install" });
+  });
+});
+
 // TC-LR-013: query() passthrough of session fields
 describe("TC-LR-013: query() passthroughs sessionId/continue/resume/includePartialMessages to SDK", () => {
   it("passes sessionId, continue, resume, includePartialMessages to queryFn options", async () => {

@@ -114,3 +114,33 @@ export function installCommand(pm: PackageManager): [string, ...string[]] {
 export function runCommand(pm: PackageManager): (script: string) => [string, ...string[]] {
   return (script: string) => [pm, "run", script];
 }
+
+/**
+ * Check whether a directory contains JS dependency management traces.
+ *
+ * Returns `true` if any lockfile from LOCKFILE_MAP exists directly under `repoRoot`,
+ * or if `package.json` exists directly under `repoRoot`. Returns `false` otherwise.
+ *
+ * Used to decide whether to run the default detectPm + install when `workspace.setup`
+ * is not configured. Non-JS / greenfield projects (no lockfile, no package.json) return
+ * `false` → worktree setup skips install automatically.
+ *
+ * @param repoRoot - The directory to check (typically the git repository root).
+ * @param fsLike - Optional fs abstraction for testing; defaults to node:fs.existsSync.
+ */
+export function hasJsDependencyTraces(
+  repoRoot: string,
+  fsLike?: { existsSync(path: string): boolean },
+): boolean {
+  const fs = fsLike ?? { existsSync: nodeFs.existsSync };
+
+  // Check for any lockfile in LOCKFILE_MAP
+  for (const [lockfile] of LOCKFILE_MAP) {
+    if (fs.existsSync(path.join(repoRoot, lockfile))) {
+      return true;
+    }
+  }
+
+  // Check for package.json
+  return fs.existsSync(path.join(repoRoot, "package.json"));
+}

@@ -18,16 +18,23 @@ import { spawnCommand } from "../../util/spawn.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { detectPackageManager, installCommand } from "../../util/detect-pm.js";
 import type { PackageManager } from "../../util/detect-pm.js";
+import type { WorkspaceSetupPlan } from "./setup.js";
 
 export interface WorktreeManager {
   /**
    * Create a worktree at .git/specrunner-worktrees/<slug>-<jobId-short>/.
    * When branchName is provided, uses -b <branchName> so the worktree starts on that branch.
    * Otherwise uses --detach <baseRef> so the worktree starts from the specified ref.
-   * Detects the package manager from repoRoot and runs the appropriate install command.
+   *
+   * After `git worktree add` succeeds, the `plan` argument determines how setup is performed:
+   *   - `{ kind: "detect-install" }` (default): detect package manager from repoRoot and run install.
+   *   - `{ kind: "commands", commands }`: run the given command list via `sh -c` in the worktree.
+   *   - `{ kind: "skip" }`: skip all install/setup (non-JS / greenfield projects).
+   *
+   * On setup failure, the worktree is cleaned up (git worktree remove --force + rm -rf) and an error is thrown.
    * Returns the worktree path.
    */
-  create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string): Promise<string>;
+  create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string, plan?: WorkspaceSetupPlan): Promise<string>;
 
   /**
    * Remove a worktree: git worktree remove --force + rm -rf.
@@ -76,8 +83,17 @@ export function createWorktreeManager(
   const sleep = sleepFn ?? defaultSleep;
   const detectPm = detectPmFn ?? (async (c: string): Promise<PackageManager> => (await detectPackageManager(c)).pm);
 
+  /**
+   * Shared cleanup helper: remove worktree via git and rm -rf.
+   * Called by both "detect-install" and "commands" failure paths.
+   */
+  async function cleanupWorktree(worktreePath: string, repoRoot: string): Promise<void> {
+    await spawn("git", ["worktree", "remove", "--force", worktreePath], { cwd: repoRoot });
+    await rm(worktreePath, { recursive: true, force: true });
+  }
+
   return {
-    async create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string): Promise<string> {
+    async create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string, plan: WorkspaceSetupPlan = { kind: "detect-install" }): Promise<string> {
       const worktreePath = buildWorktreePath(repoRoot, slug, jobId);
       const ref = baseRef ?? "HEAD";
 
@@ -121,18 +137,33 @@ export function createWorktreeManager(
         await sleep(delayMs);
       }
 
-      // Detect package manager from repoRoot and run install in worktreePath
-      const pm = await detectPm(repoRoot);
-      const [installCmd, ...installArgs] = installCommand(pm);
-      const installResult = await spawn(installCmd, installArgs, { cwd: worktreePath });
-      if (installResult.exitCode !== 0) {
-        // Cleanup worktree before throwing
-        await spawn("git", ["worktree", "remove", "--force", worktreePath], { cwd: repoRoot });
-        await rm(worktreePath, { recursive: true, force: true });
-        throw new Error(
-          `${installCmd} install failed (exit ${installResult.exitCode}): ${installResult.stderr.trim()}`,
-        );
+      // Execute setup according to the resolved plan
+      if (plan.kind === "detect-install") {
+        // Default: detect package manager from repoRoot and run install in worktreePath
+        const pm = await detectPm(repoRoot);
+        const [installCmd, ...installArgs] = installCommand(pm);
+        const installResult = await spawn(installCmd, installArgs, { cwd: worktreePath });
+        if (installResult.exitCode !== 0) {
+          await cleanupWorktree(worktreePath, repoRoot);
+          throw new Error(
+            `${installCmd} install failed (exit ${installResult.exitCode}): ${installResult.stderr.trim()}`,
+          );
+        }
+      } else if (plan.kind === "commands") {
+        // Config-driven: run user-specified commands via sh -c
+        for (const cmd of plan.commands) {
+          const result = await spawn("sh", ["-c", cmd.run], { cwd: worktreePath });
+          if (result.exitCode !== 0) {
+            const label = cmd.name ?? cmd.run;
+            await cleanupWorktree(worktreePath, repoRoot);
+            throw new Error(
+              `Setup command '${label}' failed (exit ${result.exitCode}): ${result.stderr.trim()}`,
+            );
+          }
+        }
+        // Empty array: nothing to run, fall through to return worktreePath
       }
+      // plan.kind === "skip": do nothing
 
       return worktreePath;
     },

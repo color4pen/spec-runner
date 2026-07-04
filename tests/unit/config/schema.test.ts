@@ -234,3 +234,109 @@ describe("validateConfig: archive section", () => {
     expect(err!.code).toBe("CONFIG_INVALID");
   });
 });
+
+// ---------------------------------------------------------------------------
+// workspace.setup section validation (T-01 / T-08)
+// ---------------------------------------------------------------------------
+describe("validateConfig: workspace.setup section", () => {
+  it("TC-WS-01: workspace section absent → validation passes", () => {
+    expect(() => validateConfig(baseConfig)).not.toThrow();
+    const result = validateConfig(baseConfig);
+    expect(result.workspace).toBeUndefined();
+  });
+
+  it("TC-WS-02: workspace.setup absent → validation passes", () => {
+    const raw = { ...baseConfig, workspace: {} };
+    expect(() => validateConfig(raw)).not.toThrow();
+    const result = validateConfig(raw);
+    expect(result.workspace?.setup).toBeUndefined();
+  });
+
+  it("TC-WS-03: workspace.setup with string commands → valid", () => {
+    const raw = {
+      ...baseConfig,
+      workspace: { setup: ["uv sync", "go mod download"] },
+    };
+    expect(() => validateConfig(raw)).not.toThrow();
+    const result = validateConfig(raw);
+    expect(result.workspace?.setup).toEqual(["uv sync", "go mod download"]);
+  });
+
+  it("TC-WS-04: workspace.setup with object commands → valid", () => {
+    const raw = {
+      ...baseConfig,
+      workspace: { setup: [{ name: "deps", run: "go mod download" }] },
+    };
+    expect(() => validateConfig(raw)).not.toThrow();
+    const result = validateConfig(raw);
+    expect(result.workspace?.setup).toEqual([{ name: "deps", run: "go mod download" }]);
+  });
+
+  it("TC-WS-05: workspace.setup with object without name → valid", () => {
+    const raw = {
+      ...baseConfig,
+      workspace: { setup: [{ run: "uv sync" }] },
+    };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("TC-WS-06: workspace.setup mixed string and object → valid", () => {
+    const raw = {
+      ...baseConfig,
+      workspace: {
+        setup: [
+          "uv sync",
+          { run: "pytest -v" },
+          { name: "type", run: "mypy" },
+        ],
+      },
+    };
+    expect(() => validateConfig(raw)).not.toThrow();
+  });
+
+  it("TC-WS-07: workspace.setup empty array → valid (explicit skip)", () => {
+    const raw = { ...baseConfig, workspace: { setup: [] } };
+    expect(() => validateConfig(raw)).not.toThrow();
+    const result = validateConfig(raw);
+    expect(result.workspace?.setup).toEqual([]);
+  });
+
+  it("TC-WS-08: workspace.setup not an array → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, workspace: { setup: "uv sync" } };
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID.*workspace\.setup/);
+  });
+
+  it("TC-WS-09: workspace.setup element is empty string → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, workspace: { setup: [""] } };
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID.*workspace\.setup\[0\]/);
+  });
+
+  it("TC-WS-10: workspace.setup element missing run field → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, workspace: { setup: [{ name: "test" }] } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+    expect(err!.message).toContain("workspace.setup");
+  });
+
+  it("TC-WS-11: workspace.setup element run is empty string → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, workspace: { setup: [{ run: "" }] } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.message).toContain("workspace.setup[0].run");
+  });
+
+  it("TC-WS-12: workspace.setup element is number → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, workspace: { setup: [42] } };
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID/);
+  });
+
+  it("TC-WS-13: workspace is not an object → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, workspace: "invalid" };
+    expect(() => validateConfig(raw)).toThrow(/CONFIG_INVALID.*workspace/);
+  });
+});

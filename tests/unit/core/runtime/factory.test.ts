@@ -92,3 +92,27 @@ describe("TC-RT-003: createRuntime defaults to ManagedRuntime when runtime is un
     expect(runtime).toBeInstanceOf(ManagedRuntime);
   });
 });
+
+// TC-028: config.workspace.setup is wired to LocalRuntime.workspaceSetup
+describe("TC-028: createRuntime wires config.workspace.setup to LocalRuntime.workspaceSetup", () => {
+  it("LocalRuntime.workspaceSetup is set to config.workspace.setup value", async () => {
+    const { createRuntime } = await import("../../../../src/core/runtime/factory.js");
+    const githubClient = buildMockGithubClient();
+    const config = {
+      ...buildLocalConfig(),
+      workspace: { setup: ["uv sync"] },
+    };
+    const runtime = createRuntime(config, "/repo", githubClient, repo, undefined, "");
+    expect(runtime).toBeInstanceOf(LocalRuntime);
+    // Access TypeScript-private field at runtime to verify factory wiring
+    expect((runtime as unknown as { workspaceSetup: unknown }).workspaceSetup).toEqual(["uv sync"]);
+  });
+
+  it("LocalRuntime.workspaceSetup is undefined when workspace.setup is not configured", async () => {
+    const { createRuntime } = await import("../../../../src/core/runtime/factory.js");
+    const githubClient = buildMockGithubClient();
+    const runtime = createRuntime(buildLocalConfig(), "/repo", githubClient, repo, undefined, "");
+    expect(runtime).toBeInstanceOf(LocalRuntime);
+    expect((runtime as unknown as { workspaceSetup: unknown }).workspaceSetup).toBeUndefined();
+  });
+});
