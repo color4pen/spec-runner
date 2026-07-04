@@ -103,14 +103,22 @@ export interface ProgressConfig {
 export type SpecFixerConfig = Record<string, never>;
 
 /**
- * A single verification command entry.
+ * A single shell command entry.
  * Can be a plain string (shorthand) or an object with optional name and required run.
  *
  * - string: `"ruff check"` → executed as `sh -c "ruff check"`
  * - object with name: `{ name: "lint", run: "eslint ./src" }` → label displayed on failure
  * - object without name: `{ run: "pytest" }` → command string displayed on failure
+ *
+ * Used by both `verification.commands` and `workspace.setup`.
  */
-export type VerificationCommand = string | { name?: string; run: string };
+export type ShellCommand = string | { name?: string; run: string };
+
+/**
+ * Alias for backward compatibility.
+ * @deprecated Use ShellCommand directly.
+ */
+export type VerificationCommand = ShellCommand;
 
 /**
  * Verification step configuration.
@@ -124,7 +132,40 @@ export interface VerificationConfig {
    * fail-fast: first non-zero exit code stops the sequence; remaining entries are skipped.
    * When absent, falls back to package.json script detection (build/typecheck/test/lint/security).
    */
-  commands?: VerificationCommand[];
+  commands?: ShellCommand[];
+}
+
+/**
+ * Workspace (worktree) setup configuration.
+ * Controls commands executed in the worktree after `git worktree add` and before verification.
+ *
+ * When `setup` is defined, the specified commands are executed instead of the default
+ * package-manager install (detectPm + installCommand).
+ *
+ * When `setup` is undefined (not set), the default behaviour applies:
+ * - If JS dependency traces (lockfile or package.json) exist in repoRoot → detectPm + install (existing behaviour).
+ * - If no JS dependency traces exist → install is skipped (non-JS / greenfield projects pass by default).
+ *
+ * An empty array `[]` is a valid value and means "explicitly skip install" (distinct from undefined).
+ */
+export interface WorkspaceConfig {
+  /**
+   * Ordered list of commands to execute in the worktree after `git worktree add`.
+   * Executed via `sh -c <command>` (POSIX shell, Windows not supported).
+   * fail-fast: first non-zero exit code stops the sequence; remaining entries are skipped.
+   * On failure, the worktree is cleaned up (git worktree remove --force + rm -rf) and an error is thrown.
+   *
+   * When absent, falls back to JS dependency trace detection:
+   * - Traces found → detectPm + install (lockfile-based package manager install).
+   * - No traces → skip install (non-JS / greenfield project).
+   *
+   * Examples:
+   *   ["uv sync"]
+   *   ["go mod download"]
+   *   [{ "name": "deps", "run": "pip install -r requirements.txt" }]
+   *   []  (empty array = explicit install skip even for JS projects)
+   */
+  setup?: ShellCommand[];
 }
 
 /** Pipeline-level settings */
@@ -400,6 +441,13 @@ export interface SpecRunnerConfig {
    */
   verification?: VerificationConfig;
   /**
+   * Workspace (worktree) setup configuration.
+   * When workspace.setup is defined, the specified commands are executed after `git worktree add`
+   * instead of the default package-manager install.
+   * When absent, JS dependency traces (lockfile or package.json) determine whether install runs.
+   */
+  workspace?: WorkspaceConfig;
+  /**
    * Log retention settings.
    * Controls how many job logs are kept in .specrunner/logs/.
    * When absent, defaults to 20 jobs retained.
@@ -470,6 +518,8 @@ export interface RawConfig {
   progress?: Partial<Record<string, unknown>>;
   /** Verification configuration — passed through as-is. Validated in validateConfig(). */
   verification?: unknown;
+  /** Workspace setup configuration — passed through as-is. Validated in validateConfig(). */
+  workspace?: unknown;
   /** GitHub host configuration — passed through as-is. Validated in validateConfig(). */
   github?: Partial<Record<string, unknown>>;
   /** Archive configuration — passed through as-is. Validated in validateConfig(). */
@@ -607,8 +657,8 @@ const testPlacementSchema = union(
   'must have style "sibling" or "mirror" with required fields.',
 );
 
-/** Verification command: non-empty string or object with required run field. */
-const verificationCommandSchema = union(
+/** Shell command: non-empty string or object with required run field. Shared by verification.commands and workspace.setup. */
+const shellCommandSchema = union(
   [
     string("must be a non-empty string.").check(
       minLength(1, "must be a non-empty string."),
@@ -699,8 +749,16 @@ export const configSchema = object({
     object(
       {
         commands: optional(
-          array(verificationCommandSchema, "must be an array."),
+          array(shellCommandSchema, "must be an array."),
         ),
+      },
+      "must be an object.",
+    ),
+  ),
+  workspace: optional(
+    object(
+      {
+        setup: optional(array(shellCommandSchema, "must be an array.")),
       },
       "must be an object.",
     ),

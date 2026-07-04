@@ -18,6 +18,7 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { createWorktreeManager, buildWorktreePath } from "../../../src/core/worktree/manager.js";
 import type { SpawnFn, SpawnResult } from "../../../src/util/spawn.js";
 import type { PackageManager } from "../../../src/util/detect-pm.js";
+import type { WorkspaceSetupPlan } from "../../../src/core/worktree/setup.js";
 
 afterEach(() => {
   vi.clearAllMocks();
@@ -546,5 +547,194 @@ describe("TC-WTM-007: JobState worktreePath backward compat", () => {
 
     const state = validateJobState(raw);
     expect(state.worktreePath).toBe("/repo/.git/specrunner-worktrees/my-slug-abcdef12");
+  });
+});
+
+// ─── Plan-based setup tests (T-04) ────────────────────────────────────────────
+
+// TC-WTM-020: commands plan — sh -c execution, no install
+describe("TC-WTM-020: create — { kind: 'commands' } executes sh -c and skips install", () => {
+  it("runs sh -c for each command in order, does not call detectPm or install", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 }, // git worktree add
+      { exitCode: 0 }, // sh -c uv sync
+    ]);
+    const rm = makeRmFn();
+
+    // Track whether detectPm was called
+    let detectPmCallCount = 0;
+    const trackingDetectPm = async (_cwd: string): Promise<PackageManager> => {
+      detectPmCallCount++;
+      return "bun";
+    };
+
+    const plan: WorkspaceSetupPlan = { kind: "commands", commands: [{ run: "uv sync" }] };
+    const manager = createWorktreeManager(spawn, rm, undefined, trackingDetectPm);
+    const result = await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", undefined, plan);
+
+    expect(result).toBe("/repo/.git/specrunner-worktrees/my-slug-abcdef12");
+
+    // detectPm should NOT be called (we used commands plan)
+    expect(detectPmCallCount).toBe(0);
+
+    // Exactly 2 calls: git worktree add + sh -c
+    expect(spawn.calls.length).toBe(2);
+    expect(spawn.calls[0]!.cmd).toBe("git");
+    expect(spawn.calls[0]!.args).toContain("add");
+    expect(spawn.calls[1]!.cmd).toBe("sh");
+    expect(spawn.calls[1]!.args).toEqual(["-c", "uv sync"]);
+  });
+
+  it("runs sh -c commands with worktreePath as cwd", async () => {
+    const capturedCwds: string[] = [];
+    const spawnWithTracking: SpawnFn & { calls: Array<{ cmd: string; args: string[] }> } = (() => {
+      const calls: Array<{ cmd: string; args: string[] }> = [];
+      const fn = vi.fn(async (cmd: string, args: string[], opts: { cwd: string }) => {
+        calls.push({ cmd, args });
+        capturedCwds.push(opts.cwd);
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }) as unknown as SpawnFn & { calls: typeof calls };
+      Object.assign(fn, { calls });
+      return fn;
+    })();
+
+    const plan: WorkspaceSetupPlan = { kind: "commands", commands: [{ run: "uv sync" }] };
+    const manager = createWorktreeManager(spawnWithTracking, makeRmFn(), undefined, makePmStub("bun"));
+    await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", undefined, plan);
+
+    // sh -c should be called with worktreePath as cwd
+    const worktreePath = "/repo/.git/specrunner-worktrees/my-slug-abcdef12";
+    expect(capturedCwds[1]).toBe(worktreePath);
+  });
+});
+
+// TC-WTM-021: commands plan — failure triggers cleanup
+describe("TC-WTM-021: create — commands plan failure cleans up worktree", () => {
+  it("calls git worktree remove + rm when a command exits non-zero", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 },                                    // git worktree add
+      { exitCode: 1, stderr: "command not found: uv" },  // sh -c uv sync (fail)
+      { exitCode: 0 },                                    // git worktree remove (cleanup)
+    ]);
+    const rm = makeRmFn();
+
+    const plan: WorkspaceSetupPlan = { kind: "commands", commands: [{ run: "uv sync" }] };
+    const manager = createWorktreeManager(spawn, rm, undefined, makePmStub("bun"));
+
+    await expect(
+      manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", undefined, plan),
+    ).rejects.toThrow("Setup command 'uv sync' failed (exit 1)");
+
+    // Cleanup: git worktree remove was called
+    const removeCall = spawn.calls.find(
+      (c) => c.cmd === "git" && c.args.includes("remove"),
+    );
+    expect(removeCall).toBeDefined();
+    expect(rm).toHaveBeenCalled();
+  });
+
+  it("uses cmd.name as label in error message when name is set", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 },
+      { exitCode: 2, stderr: "deps failed" },
+      { exitCode: 0 },
+    ]);
+    const rm = makeRmFn();
+
+    const plan: WorkspaceSetupPlan = {
+      kind: "commands",
+      commands: [{ name: "install-deps", run: "pip install -r requirements.txt" }],
+    };
+    const manager = createWorktreeManager(spawn, rm, undefined, makePmStub("bun"));
+
+    await expect(
+      manager.create("/repo", "my-slug", "abcdef1234567890", undefined, undefined, plan),
+    ).rejects.toThrow("Setup command 'install-deps' failed (exit 2)");
+  });
+
+  it("uses cmd.run as label when name is absent", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 },
+      { exitCode: 1, stderr: "error" },
+      { exitCode: 0 },
+    ]);
+    const rm = makeRmFn();
+
+    const plan: WorkspaceSetupPlan = {
+      kind: "commands",
+      commands: [{ run: "go mod download" }],
+    };
+    const manager = createWorktreeManager(spawn, rm, undefined, makePmStub("bun"));
+
+    await expect(
+      manager.create("/repo", "my-slug", "abcdef1234567890", undefined, undefined, plan),
+    ).rejects.toThrow("Setup command 'go mod download' failed (exit 1)");
+  });
+});
+
+// TC-WTM-022: skip plan — no install, no commands
+describe("TC-WTM-022: create — { kind: 'skip' } skips all setup", () => {
+  it("does not call install or any setup command, returns worktreePath", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 }, // git worktree add only
+    ]);
+    const rm = makeRmFn();
+
+    // Track whether detectPm was called
+    let detectPmCallCount = 0;
+    const trackingDetectPm = async (_cwd: string): Promise<PackageManager> => {
+      detectPmCallCount++;
+      return "bun";
+    };
+
+    const plan: WorkspaceSetupPlan = { kind: "skip" };
+    const manager = createWorktreeManager(spawn, rm, undefined, trackingDetectPm);
+    const result = await manager.create("/repo", "my-slug", "abcdef1234567890", undefined, undefined, plan);
+
+    expect(result).toBe("/repo/.git/specrunner-worktrees/my-slug-abcdef12");
+    // Only git worktree add was called
+    expect(spawn.calls.length).toBe(1);
+    expect(spawn.calls[0]!.cmd).toBe("git");
+    expect(spawn.calls[0]!.args).toContain("add");
+    // detectPm should NOT be called
+    expect(detectPmCallCount).toBe(0);
+    // rm should NOT be called
+    expect(rm).not.toHaveBeenCalled();
+  });
+});
+
+// TC-WTM-023: commands plan with empty array — no commands run
+describe("TC-WTM-023: create — commands plan with empty array runs nothing", () => {
+  it("empty commands array does not call any setup commands", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 }, // git worktree add only
+    ]);
+
+    const plan: WorkspaceSetupPlan = { kind: "commands", commands: [] };
+    const manager = createWorktreeManager(spawn, undefined, undefined, makePmStub("bun"));
+    const result = await manager.create("/repo", "my-slug", "abcdef1234567890", undefined, undefined, plan);
+
+    expect(result).toBe("/repo/.git/specrunner-worktrees/my-slug-abcdef12");
+    // Only git worktree add was called
+    expect(spawn.calls.length).toBe(1);
+  });
+});
+
+// TC-WTM-024: no plan argument → detect-install (backward compat)
+describe("TC-WTM-024: create — no plan argument uses detect-install (backward compat)", () => {
+  it("runs bun install when no plan is passed (existing behavior preserved)", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 }, // git worktree add
+      { exitCode: 0 }, // bun install
+    ]);
+
+    const manager = createWorktreeManager(spawn, undefined, undefined, makePmStub("bun"));
+    // No plan argument → default detect-install
+    const result = await manager.create("/repo", "my-slug", "abcdef1234567890");
+
+    expect(result).toBe("/repo/.git/specrunner-worktrees/my-slug-abcdef12");
+    expect(spawn.calls.length).toBe(2);
+    expect(spawn.calls[1]!.cmd).toBe("bun");
+    expect(spawn.calls[1]!.args).toContain("install");
   });
 });

@@ -205,6 +205,7 @@ SpecRunner is **0.x**. State and config file formats may receive breaking change
 ## Assumptions
 
 - **Trust model**: `request.md` is trusted input. Designed for solo use where the author also reviews and merges the PR.
+- **Workspace setup**: Worktree dependency install is language-agnostic. When no lockfile or `package.json` is found, install is skipped automatically. For non-JS projects (Python, Go, Rust, etc.) or explicit control, set `workspace.setup` in config (e.g. `["uv sync"]`, `["go mod download"]`). See [docs/configuration.md](docs/configuration.md#workspace-setup).
 - **Verification**: Default verification detects Node.js/Bun `package.json` scripts. For other languages, set `verification.commands` in config. See [docs/configuration.md](docs/configuration.md#verification).
 - **Commit history trust**: `git log` / `git diff` output is included in agent prompts. Running on repositories with untrusted commit history is not recommended.
 

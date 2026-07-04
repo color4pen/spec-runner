@@ -10,7 +10,7 @@ import * as crypto from "node:crypto";
 import type { GitHubClient } from "../port/github-client.js";
 import type { AgentRunner } from "../port/agent-runner.js";
 import type { PipelineDeps } from "../types.js";
-import type { SpecRunnerConfig } from "../../config/schema.js";
+import type { SpecRunnerConfig, ShellCommand } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import type { JobState } from "../../state/schema.js";
 import { toStepName } from "../step/step-names.js";
@@ -46,6 +46,9 @@ import { SpecRunnerError, ERROR_CODES, worktreeDirtyError } from "../../errors.j
 import { stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { stripSecrets } from "../../util/env-filter.js";
+import { resolveWorkspaceSetupPlan } from "../worktree/setup.js";
+import type { WorkspaceSetupPlan } from "../worktree/setup.js";
+import { hasJsDependencyTraces } from "../../util/detect-pm.js";
 
 // Internal structure stored inside CleanupHandle
 interface LocalCleanupInternals {
@@ -76,6 +79,12 @@ export interface LocalRuntimeOptions {
   manager?: ReturnType<typeof createWorktreeManager>;
   spawnFn?: SpawnFn;
   queryFn?: QueryFn;
+  /**
+   * Workspace setup commands from config.workspace.setup.
+   * When set, these commands are run after git worktree add instead of the default detectPm + install.
+   * When absent, JS dependency trace detection determines whether install runs.
+   */
+  workspaceSetup?: ShellCommand[];
 }
 
 export class LocalRuntime implements RealRuntimeStrategy {
@@ -90,6 +99,8 @@ export class LocalRuntime implements RealRuntimeStrategy {
   private readonly transportAuth: ReturnType<typeof createTransportAuth>;
   /** util/spawn.ts SpawnFn wrapped with transport auth injection. */
   private readonly wrappedSpawnFn: SpawnFn;
+  /** Workspace setup commands from config.workspace.setup. undefined = use default detectPm logic. */
+  private readonly workspaceSetup: ShellCommand[] | undefined;
 
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
@@ -107,6 +118,15 @@ export class LocalRuntime implements RealRuntimeStrategy {
     this.queryFn = opts.queryFn ?? defaultQueryFn;
     this.transportAuth = createTransportAuth({ token: this.githubToken, cwd: opts.cwd });
     this.wrappedSpawnFn = this.transportAuth.wrapSpawn(this.spawnFn);
+    this.workspaceSetup = opts.workspaceSetup;
+  }
+
+  /**
+   * Resolve the workspace setup plan from config and JS dependency traces in the repo root.
+   * Called once before each worktree creation.
+   */
+  private resolveSetupPlan(): WorkspaceSetupPlan {
+    return resolveWorkspaceSetupPlan(this.workspaceSetup, hasJsDependencyTraces(this.cwd));
   }
 
   /**
@@ -399,7 +419,8 @@ export class LocalRuntime implements RealRuntimeStrategy {
         return workspace;
       } else {
         // Worktree was deleted — create a new one (resume path: fetch already ran during original run)
-        const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef);
+        const plan = this.resolveSetupPlan();
+        const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef, undefined, plan);
         const workspace: WorkspaceContext = {
           cwd: newWorktreePath,
           worktreePath: newWorktreePath,
@@ -420,7 +441,8 @@ export class LocalRuntime implements RealRuntimeStrategy {
 
     if (existingWorktreePath === null) {
       // Resume: no worktree recorded — create new one (fetch already ran during original run)
-      const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef);
+      const plan = this.resolveSetupPlan();
+      const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef, undefined, plan);
       const workspace: WorkspaceContext = {
         cwd: newWorktreePath,
         worktreePath: newWorktreePath,
@@ -463,7 +485,8 @@ export class LocalRuntime implements RealRuntimeStrategy {
 
     // Pass branchName so manager creates the branch in the worktree (D1)
     const branchName = opts?.branchName;
-    const worktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef, branchName);
+    const plan = this.resolveSetupPlan();
+    const worktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef, branchName, plan);
 
     // workspace must be set before updateJobState so slugStoreOpts() works
     const workspaceCtx: WorkspaceContext = {

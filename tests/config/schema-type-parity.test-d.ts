@@ -10,6 +10,8 @@ import type {
   ProgressConfig,
   VerificationConfig,
   VerificationCommand,
+  ShellCommand,
+  WorkspaceConfig,
   LogsConfig,
   ArchiveConfig,
   GitHubHostConfig,
@@ -71,3 +73,11 @@ type _VerCmd = Expect<
 type _Logs = Expect<Equal<NonNullable<I["logs"]>, LogsConfig>>;
 type _Archive = Expect<Equal<NonNullable<I["archive"]>, ArchiveConfig>>;
 type _Github = Expect<Equal<NonNullable<I["github"]>, GitHubHostConfig>>;
+
+// ---------------------------------------------------------------------------
+// workspace type assertions (T-07)
+// ---------------------------------------------------------------------------
+type _Workspace = Expect<Equal<NonNullable<I["workspace"]>, WorkspaceConfig>>;
+type _SetupCmd = Expect<Equal<NonNullable<NonNullable<I["workspace"]>["setup"]>[number], ShellCommand>>;
+// VerificationCommand is an alias for ShellCommand — existing assertion remains green
+type _VerCmdIsShellCmd = Expect<Equal<VerificationCommand, ShellCommand>>;
