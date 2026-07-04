@@ -71,6 +71,8 @@ function buildMockSpawnFn(opts: {
   fetchStderr?: string;
   behindCount?: number;
   behindExitCode?: number;
+  aheadCount?: number;
+  aheadExitCode?: number;
   commitExitCode?: number;
   commitStderr?: string;
 } = {}) {
@@ -79,6 +81,8 @@ function buildMockSpawnFn(opts: {
     fetchStderr = "",
     behindCount = 0,
     behindExitCode = 0,
+    aheadCount = 0,
+    aheadExitCode = 0,
     commitExitCode = 0,
     commitStderr = "",
   } = opts;
@@ -91,9 +95,19 @@ function buildMockSpawnFn(opts: {
     if (cmd === "git" && args[0] === "fetch") {
       return { exitCode: fetchExitCode, stdout: "", stderr: fetchStderr };
     }
-    // git rev-list HEAD..origin/main --count
+    // git rev-list dispatch: behind = HEAD..<remote>, ahead = <remote>..<local>
     if (cmd === "git" && args[0] === "rev-list") {
-      return { exitCode: behindExitCode, stdout: `${behindCount}\n`, stderr: "" };
+      const range = args[1] ?? "";
+      if (range.startsWith("HEAD..")) {
+        // behind: HEAD..origin/<base>
+        return { exitCode: behindExitCode, stdout: `${behindCount}\n`, stderr: "" };
+      }
+      if (range.startsWith("origin/")) {
+        // ahead: origin/<base>..<base>
+        return { exitCode: aheadExitCode, stdout: `${aheadCount}\n`, stderr: "" };
+      }
+      // fallback
+      return { exitCode: 0, stdout: "0\n", stderr: "" };
     }
     // git add (request file staging)
     if (cmd === "git" && args[0] === "add") {
@@ -900,6 +914,157 @@ describe("TC-026: workspaceSetup 未注入かつ JS 痕跡ありで detect-insta
     const createCall = createMock.mock.calls[0];
     // The 6th argument (index 5) is the plan
     expect(createCall?.[5]).toEqual({ kind: "detect-install" });
+  });
+});
+
+// TC-LR-017: setupWorkspace(run) ahead-warning when designLayer enabled
+describe("TC-LR-017: setupWorkspace ahead-warning when designLayerEnabled and local is ahead of origin", () => {
+  it("emits ahead warning to stderr when designLayerEnabled=true and aheadCount > 0", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn({ aheadCount: 2 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      bootstrapState: jobState,
+      designLayerEnabled: true,
+    });
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const warningCalls = stderrMock.mock.calls as [string][];
+    const hasWarning = warningCalls.some(([msg]) =>
+      typeof msg === "string" && msg.includes("ahead of origin/main"),
+    );
+    expect(hasWarning).toBe(true);
+  });
+
+  it("warning includes push instruction when designLayerEnabled=true and aheadCount > 0", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn({ aheadCount: 1 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      bootstrapState: jobState,
+      designLayerEnabled: true,
+    });
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const warningCalls = stderrMock.mock.calls as [string][];
+    const allText = warningCalls.map(([msg]) => (typeof msg === "string" ? msg : "")).join("\n");
+    expect(allText).toContain("git push origin main");
+  });
+
+  it("does NOT emit ahead warning when designLayerEnabled is not provided (undefined)", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn, calls } = buildMockSpawnFn({ aheadCount: 5 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, { bootstrapState: jobState });
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const warningCalls = stderrMock.mock.calls as [string][];
+    const hasAheadWarning = warningCalls.some(([msg]) =>
+      typeof msg === "string" && msg.includes("ahead of origin/main"),
+    );
+    expect(hasAheadWarning).toBe(false);
+
+    // ahead rev-list should not have been spawned
+    const aheadRevList = calls.filter(
+      (c) => c.cmd === "git" && c.args[0] === "rev-list" && (c.args[1] ?? "").startsWith("origin/"),
+    );
+    expect(aheadRevList).toHaveLength(0);
+  });
+
+  it("does NOT emit ahead warning when designLayerEnabled=false", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn, calls } = buildMockSpawnFn({ aheadCount: 3 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      bootstrapState: jobState,
+      designLayerEnabled: false,
+    });
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const warningCalls = stderrMock.mock.calls as [string][];
+    const hasAheadWarning = warningCalls.some(([msg]) =>
+      typeof msg === "string" && msg.includes("ahead of origin/main"),
+    );
+    expect(hasAheadWarning).toBe(false);
+
+    // ahead rev-list should not have been spawned
+    const aheadRevList = calls.filter(
+      (c) => c.cmd === "git" && c.args[0] === "rev-list" && (c.args[1] ?? "").startsWith("origin/"),
+    );
+    expect(aheadRevList).toHaveLength(0);
+  });
+
+  it("does NOT emit ahead warning when designLayerEnabled=true but aheadCount=0", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn({ aheadCount: 0 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      bootstrapState: jobState,
+      designLayerEnabled: true,
+    });
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const warningCalls = stderrMock.mock.calls as [string][];
+    const hasAheadWarning = warningCalls.some(([msg]) =>
+      typeof msg === "string" && msg.includes("ahead of origin/main"),
+    );
+    expect(hasAheadWarning).toBe(false);
+  });
+
+  it("does NOT emit ahead warning when designLayerEnabled=true but ahead rev-list exits non-zero", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn({ aheadCount: 5, aheadExitCode: 1 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      bootstrapState: jobState,
+      designLayerEnabled: true,
+    });
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const warningCalls = stderrMock.mock.calls as [string][];
+    const hasAheadWarning = warningCalls.some(([msg]) =>
+      typeof msg === "string" && msg.includes("ahead of origin/main"),
+    );
+    expect(hasAheadWarning).toBe(false);
+  });
+
+  it("TC-008: emits BOTH behind-warning and ahead-warning when diverged (behindCount > 0 and aheadCount > 0)", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn({ behindCount: 1, aheadCount: 2 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      bootstrapState: jobState,
+      designLayerEnabled: true,
+    });
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const warningCalls = stderrMock.mock.calls as [string][];
+    const allText = warningCalls.map(([msg]) => (typeof msg === "string" ? msg : "")).join("\n");
+
+    // Both warnings must appear independently in the diverged scenario.
+    expect(allText).toContain("behind origin/main");
+    expect(allText).toContain("ahead of origin/main");
   });
 });
 
