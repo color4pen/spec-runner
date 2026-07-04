@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7576384c-338b-41f8-98bb-7df82b8d4d80",
   "createdAt": "2026-07-04T14:58:36.562Z",
-  "updatedAt": "2026-07-04T14:58:39.122Z",
+  "updatedAt": "2026-07-04T15:01:41.600Z",
   "request": {
     "title": "designLayer 有効時に未 push の設計コミットを run 前に警告する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/designlayer-base-push-guard-7576384c",
   "error": null,
@@ -48,7 +48,9 @@
     }
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
