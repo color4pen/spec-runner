@@ -608,6 +608,37 @@ describe("TC-WTM-020: create — { kind: 'commands' } executes sh -c and skips i
   });
 });
 
+// TC-002: fail-fast — multiple commands, cmd1 fails → cmd2 not spawned
+describe("TC-002: commands plan fail-fast — cmd1 失敗で cmd2 は spawn されない", () => {
+  it("does not execute second command when first command exits non-zero", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 0 },                                    // git worktree add
+      { exitCode: 1, stderr: "command not found: uv" },  // sh -c cmd1 (fail)
+      { exitCode: 0 },                                    // git worktree remove (cleanup)
+      // cmd2 must never be reached
+    ]);
+    const rm = makeRmFn();
+
+    const plan: WorkspaceSetupPlan = {
+      kind: "commands",
+      commands: [
+        { run: "uv sync" },
+        { run: "pip install -r requirements.txt" },
+      ],
+    };
+    const manager = createWorktreeManager(spawn, rm, undefined, makePmStub("bun"));
+
+    await expect(
+      manager.create("/repo", "my-slug", "abcdef1234567890", undefined, undefined, plan),
+    ).rejects.toThrow("Setup command 'uv sync' failed (exit 1)");
+
+    // Only cmd1 (uv sync) should have been spawned via sh -c; cmd2 must be absent
+    const shCalls = spawn.calls.filter((c) => c.cmd === "sh" && c.args[0] === "-c");
+    expect(shCalls).toHaveLength(1);
+    expect(shCalls[0]!.args[1]).toBe("uv sync");
+  });
+});
+
 // TC-WTM-021: commands plan — failure triggers cleanup
 describe("TC-WTM-021: create — commands plan failure cleans up worktree", () => {
   it("calls git worktree remove + rm when a command exits non-zero", async () => {
