@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d97cb933-fc32-430a-af86-7e9748500d61",
   "createdAt": "2026-07-04T14:58:54.391Z",
-  "updatedAt": "2026-07-04T23:37:25.563Z",
+  "updatedAt": "2026-07-04T23:45:41.266Z",
   "request": {
     "title": "verification が silent-skip されたテストを surface する",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/verification-surface-skipped-tests-d97cb933",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,7 @@
     "createdAt": "2026-07-04T23:37:25.556Z"
   },
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
