@@ -14,6 +14,7 @@ import * as path from "node:path";
 import { PHASE_NAMES, PHASE_SCRIPTS } from "./phases.js";
 import type { PhaseName, ScriptPhaseName } from "./phases.js";
 import { runTestCoveragePhase } from "./test-coverage.js";
+import { detectSkippedTests } from "./skip-detect.js";
 import { verificationResultPath } from "../../util/paths.js";
 import { normalizeCommands, spawnCommand } from "./commands.js";
 import type { VerificationConfig } from "../../config/schema.js";
@@ -28,6 +29,13 @@ export interface PhaseResult {
   stderr: string;
   exitCode: number | null;
   durationMs: number;
+  /**
+   * Best-effort count of skipped/pending/todo tests detected in this phase's
+   * output. Present only for the `test` phase in the phase fallback path when
+   * at least one skip was detected. Absent/omitted otherwise. Never affects
+   * the verdict.
+   */
+  skippedCount?: number;
 }
 
 /** Aggregate result of the full verification run. */
@@ -123,6 +131,20 @@ async function writeVerificationResult(
   lines.push("");
   lines.push(`## Verdict: ${result.verdict}`);
   lines.push("");
+
+  // Skip annotation: qualify a passed verdict when the test phase detected skips.
+  // Purpose is to distinguish a clean pass from a "passed with skips" result.
+  // When the verdict is failed, the failure is already surfaced directly — no annotation needed.
+  if (result.verdict === "passed") {
+    const testPhase = result.phases.find((p) => p.phase === "test");
+    if (testPhase?.skippedCount !== undefined && testPhase.skippedCount > 0) {
+      const n = testPhase.skippedCount;
+      lines.push(
+        `> Note — passed with skips: ${n} test(s) reported skipped/pending in the \`test\` phase output (best-effort detection). A "passed" verdict does not attest that skipped tests were exercised. See \`## Phase: test\`.`,
+      );
+      lines.push("");
+    }
+  }
 
   if (result.errorCode) {
     lines.push(`errorCode: ${result.errorCode}`);
@@ -482,7 +504,19 @@ async function runVerificationPhases(
     const durationMs = Date.now() - startMs;
 
     const status = exitCode === 0 ? "passed" : "failed";
-    phases.push({ phase: phaseName, status, stdout, stderr, exitCode, durationMs });
+    const phaseResult: PhaseResult = { phase: phaseName, status, stdout, stderr, exitCode, durationMs };
+
+    // Detect skipped tests for the test phase (best-effort, non-blocking, phase fallback path only).
+    // Runs regardless of pass/fail; never runs for a skipped phase (no script → no output).
+    if (phaseName === "test") {
+      const combined = [stdout, stderr].filter(Boolean).join("\n");
+      const skippedCount = detectSkippedTests(combined);
+      if (skippedCount > 0) {
+        phaseResult.skippedCount = skippedCount;
+      }
+    }
+
+    phases.push(phaseResult);
 
     if (status === "failed") {
       failed = true;
