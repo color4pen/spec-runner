@@ -76,3 +76,24 @@ describe("TC-SD-09: empty string → 0", () => {
     expect(detectSkippedTests("")).toBe(0);
   });
 });
+
+// TC-SD-10: per-file skip lines + summary line for the same category → not double-counted
+describe("TC-SD-10: per-file skips + summary line (same category) → max, not sum", () => {
+  it("returns 16 (summary max), not 32 (per-file 6+7+3 plus summary 16)", () => {
+    const output = [
+      "↓ src/test/integration/auth.test.ts (6 skipped)",
+      "↓ src/test/integration/post.test.ts (7 skipped)",
+      "↓ src/test/integration/user.test.ts (3 skipped)",
+      "Tests  4 passed | 16 skipped (20)",
+    ].join("\n");
+    expect(detectSkippedTests(output)).toBe(16);
+  });
+});
+
+// TC-SD-11: distinct categories still summed while each is de-duplicated to its max
+describe("TC-SD-11: distinct categories summed, each category de-duplicated to its max", () => {
+  it("'5 skipped ... 5 skipped' + '2 todo' → 5 + 2 = 7", () => {
+    const output = "file-a: 5 skipped\nfile-b: 5 skipped\nSummary: 5 skipped | 2 todo";
+    expect(detectSkippedTests(output)).toBe(7);
+  });
+});
