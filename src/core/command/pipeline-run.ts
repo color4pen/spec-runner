@@ -11,6 +11,7 @@ import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 import { getBranchPrefix } from "../../config/type-config.js";
+import { resolveDesignLayerConfig } from "../../config/schema.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import { STANDARD_PIPELINE_ID } from "../../kernel/pipeline-ids.js";
 import { getPipelineDescriptor } from "../pipeline/registry.js";
@@ -174,6 +175,7 @@ export class PipelineRunCommand extends CommandRunner {
         baseBranch: request.baseBranch,
         bootstrapState: jobState,
         noWorktree: this.options.noWorktree,
+        designLayerEnabled: resolveDesignLayerConfig(config).enabled,
       },
       json: this.options.json ?? false,
     };

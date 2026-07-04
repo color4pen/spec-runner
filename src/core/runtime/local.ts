@@ -484,6 +484,29 @@ export class LocalRuntime implements RealRuntimeStrategy {
       }
     }
 
+    // Warn if local base branch is ahead of remote and designLayer is enabled.
+    // The job worktree is created from origin/<baseBranch>, so unpushed commits on
+    // local <baseBranch> will be absent in the worktree. When designLayer is enabled,
+    // request-review resolves design element references ([[id]] / ADR) inside the
+    // worktree, and those references may not resolve if the design commits are unpushed.
+    if (opts?.designLayerEnabled === true) {
+      const aheadResult = await this.spawnFn(
+        "git",
+        ["rev-list", `${remoteBaseRef}..${baseBranch}`, "--count"],
+        { cwd: this.cwd },
+      );
+      if (aheadResult.exitCode === 0) {
+        const ahead = parseInt(aheadResult.stdout.trim(), 10);
+        if (!isNaN(ahead) && ahead > 0) {
+          stderrWrite(
+            `Warning: designLayer is enabled and local ${baseBranch} is ${ahead} commit(s) ahead of ${remoteBaseRef} (unpushed commits).\n` +
+            `The job worktree is created from ${remoteBaseRef}, so design elements ([[id]] / ADR) referenced in the request may be missing in the worktree.\n` +
+            `Push your design commits before running: git push origin ${baseBranch}`,
+          );
+        }
+      }
+    }
+
     // Pass branchName so manager creates the branch in the worktree (D1)
     const branchName = opts?.branchName;
     const plan = this.resolveSetupPlan();

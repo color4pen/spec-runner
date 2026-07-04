@@ -95,6 +95,12 @@ export interface WorkspaceOptions {
    * Intended for CI environments where a feature branch is already checked out.
    */
   noWorktree?: boolean;
+  /**
+   * Run path only. When true, setupWorkspace checks whether local baseBranch is
+   * ahead of origin/<baseBranch> (unpushed commits) and emits a warning if so.
+   * resume path must not set this field (ahead detection is run-only).
+   */
+  designLayerEnabled?: boolean;
 }
 
 /**
