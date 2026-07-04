@@ -1045,6 +1045,27 @@ describe("TC-LR-017: setupWorkspace ahead-warning when designLayerEnabled and lo
     );
     expect(hasAheadWarning).toBe(false);
   });
+
+  it("TC-008: emits BOTH behind-warning and ahead-warning when diverged (behindCount > 0 and aheadCount > 0)", async () => {
+    const { manager } = buildMockManager();
+    const { spawnFn } = buildMockSpawnFn({ behindCount: 1, aheadCount: 2 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const jobState = await makeJobState();
+    await runtime.setupWorkspace("test-slug", jobState.jobId, {
+      bootstrapState: jobState,
+      designLayerEnabled: true,
+    });
+
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const warningCalls = stderrMock.mock.calls as [string][];
+    const allText = warningCalls.map(([msg]) => (typeof msg === "string" ? msg : "")).join("\n");
+
+    // Both warnings must appear independently in the diverged scenario.
+    expect(allText).toContain("behind origin/main");
+    expect(allText).toContain("ahead of origin/main");
+  });
 });
 
 // TC-LR-013: query() passthrough of session fields
