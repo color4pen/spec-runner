@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4490bd0c-be25-430f-9ac6-bb431432aaae",
   "createdAt": "2026-07-04T13:16:43.049Z",
-  "updatedAt": "2026-07-04T13:35:06.070Z",
+  "updatedAt": "2026-07-04T13:38:43.791Z",
   "request": {
     "title": "code-review が approved のとき code-fixer の no-op を escalate しない",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/approved-fixer-noop-proceeds-4490bd0c",
   "error": null,
@@ -48,10 +48,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
