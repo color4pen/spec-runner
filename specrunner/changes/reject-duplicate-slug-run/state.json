@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "02889a16-729c-44a1-b896-a4b008e26be5",
   "createdAt": "2026-07-04T12:32:57.810Z",
-  "updatedAt": "2026-07-04T14:21:45.618Z",
+  "updatedAt": "2026-07-04T14:23:57.719Z",
   "request": {
     "title": "同一 slug の live job があるとき2回目の run を拒否する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/reject-duplicate-slug-run-02889a16",
   "error": null,
   "pipelineId": "standard",
@@ -74,8 +74,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/740",
+    "number": 740,
+    "createdAt": "2026-07-04T14:23:57.708Z"
+  },
   "_journal": {
-    "historyCount": 58,
+    "historyCount": 63,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -89,7 +94,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
