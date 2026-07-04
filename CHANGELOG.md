@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.7](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.6...specrunner-v0.3.7) (2026-07-04)
+
+
+### Features
+
+* code-review が approved のとき code-fixer の no-op を escalate しない ([#738](https://github.com/color4pen/spec-runner/issues/738)) ([e49e0e6](https://github.com/color4pen/spec-runner/commit/e49e0e6291f50fd560d9fd0af409e2a86c30facd))
+* designLayer 有効時に未 push の設計コミットを run 前に警告する ([#743](https://github.com/color4pen/spec-runner/issues/743)) ([b50c31b](https://github.com/color4pen/spec-runner/commit/b50c31bfe04208d135f03f628f21ba7d012ac09f))
+* package.json scripts integrity — 新規 script の追加を tampering としない ([#741](https://github.com/color4pen/spec-runner/issues/741)) ([08878cb](https://github.com/color4pen/spec-runner/commit/08878cb17245532068c5f7bb5220ab0b9656c26d))
+* verification が silent-skip されたテストを surface する ([#742](https://github.com/color4pen/spec-runner/issues/742)) ([ec69882](https://github.com/color4pen/spec-runner/commit/ec69882b8ff86355210121da87f5502c29bc5e88))
+* workspace セットアップを config 化して言語非依存にする ([#736](https://github.com/color4pen/spec-runner/issues/736)) ([8e38894](https://github.com/color4pen/spec-runner/commit/8e38894b23c980e4b9cabc02db9b1f1a9a788b0a))
+* 同一 slug の live job があるとき2回目の run を拒否する ([#740](https://github.com/color4pen/spec-runner/issues/740)) ([37743be](https://github.com/color4pen/spec-runner/commit/37743becec8cda6eef8eb311597f605d33cce4a0))
+
 ## [0.3.6](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.5...specrunner-v0.3.6) (2026-07-03)
 
 
