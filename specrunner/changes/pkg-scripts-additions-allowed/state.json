@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b31ce36d-1d34-4564-8815-e2593b8c04e8",
   "createdAt": "2026-07-04T14:22:24.435Z",
-  "updatedAt": "2026-07-04T14:29:08.167Z",
+  "updatedAt": "2026-07-04T14:31:35.640Z",
   "request": {
     "title": "package.json scripts integrity — 新規 script の追加を tampering としない",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/pkg-scripts-additions-allowed-b31ce36d",
   "error": null,
@@ -48,10 +48,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
