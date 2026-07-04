@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.3.6](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.5...specrunner-v0.3.6) (2026-07-03)
+
+
+### Features
+
+* chore（spec 対象外の変更）が design step を通過できるようにする — spec.md output contract を型の spec 免除に整合させる ([#733](https://github.com/color4pen/spec-runner/issues/733)) ([7ccb8fc](https://github.com/color4pen/spec-runner/commit/7ccb8fca2a07d8132bf59412cdb6e769892ce466))
+* 設計レイヤ CLI（aozu）の受け口を結線する — request 引用の入口ゲートと取り込み完了の出口 hook ([#730](https://github.com/color4pen/spec-runner/issues/730)) ([6290647](https://github.com/color4pen/spec-runner/commit/62906475059d9038a9eb29be14526b8ea3488f5b))
+
+
+### Bug Fixes
+
+* archive --with-merge の後片づけで worktree が削除されない（local 実行で worktreePath が常に null） ([#732](https://github.com/color4pen/spec-runner/issues/732)) ([a0a9108](https://github.com/color4pen/spec-runner/commit/a0a91081c2a9de600b36aab590e661c7ce4e60c4))
+* パイプラインの verdict 忠実性を直す（表示/導出と記録の食い違い・code-fixer の no-op 空振り） ([#734](https://github.com/color4pen/spec-runner/issues/734)) ([c19c945](https://github.com/color4pen/spec-runner/commit/c19c945e307ad15b1a95e410733bb6c0b4d7d802))
+
 ## [0.3.5](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.4...specrunner-v0.3.5) (2026-06-29)
 
 
