@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "02889a16-729c-44a1-b896-a4b008e26be5",
   "createdAt": "2026-07-04T12:32:57.810Z",
-  "updatedAt": "2026-07-04T14:17:26.668Z",
+  "updatedAt": "2026-07-04T14:21:45.618Z",
   "request": {
     "title": "同一 slug の live job があるとき2回目の run を拒否する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/reject-duplicate-slug-run-02889a16",
   "error": null,
@@ -75,20 +75,21 @@
     }
   ],
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 58,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
