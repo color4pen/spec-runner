@@ -89,3 +89,11 @@
 {"type":"transition","ts":"2026-07-04T23:42:06.171Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
 {"type":"transition","ts":"2026-07-04T23:42:06.171Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
 {"type":"transition","ts":"2026-07-04T23:42:06.173Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-04T23:42:23.455Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"5a8fb9cf-7fe7-4481-99b6-22f623b86009","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-04T23:42:06.187Z","endedAt":"2026-07-04T23:42:22.263Z"}
+{"type":"transition","ts":"2026-07-04T23:42:23.460Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-04T23:42:23.463Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-04T23:42:24.826Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/designlayer-base-push-guard/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-04T23:42:23.464Z","endedAt":"2026-07-04T23:42:24.825Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-04T23:42:24.825Z","outputs":[{"path":"specrunner/changes/designlayer-base-push-guard/pr-create-result.md","hash":"sha256:c92b7b91459324c625a7a25542d017239e13af55af4503c5a5f2a856c70a5e26"}],"inputs":[{"path":"feat/designlayer-base-push-guard-7576384c","hash":null}]}
+{"type":"transition","ts":"2026-07-04T23:42:24.835Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}

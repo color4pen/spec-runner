@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7576384c-338b-41f8-98bb-7df82b8d4d80",
   "createdAt": "2026-07-04T14:58:36.562Z",
-  "updatedAt": "2026-07-04T23:42:06.173Z",
+  "updatedAt": "2026-07-04T23:42:24.835Z",
   "request": {
     "title": "designLayer 有効時に未 push の設計コミットを run 前に警告する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/designlayer-base-push-guard-7576384c",
   "error": null,
   "pipelineId": "standard",
@@ -73,8 +73,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/743",
+    "number": 743,
+    "createdAt": "2026-07-04T23:42:24.824Z"
+  },
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +93,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
