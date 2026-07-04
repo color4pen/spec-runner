@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b31ce36d-1d34-4564-8815-e2593b8c04e8",
   "createdAt": "2026-07-04T14:22:24.435Z",
-  "updatedAt": "2026-07-04T14:48:12.239Z",
+  "updatedAt": "2026-07-04T14:49:35.813Z",
   "request": {
     "title": "package.json scripts integrity — 新規 script の追加を tampering としない",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/pkg-scripts-additions-allowed-b31ce36d",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,7 @@
     "createdAt": "2026-07-04T14:48:12.225Z"
   },
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
