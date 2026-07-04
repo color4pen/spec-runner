@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4490bd0c-be25-430f-9ac6-bb431432aaae",
   "createdAt": "2026-07-04T13:16:43.049Z",
-  "updatedAt": "2026-07-04T13:53:48.161Z",
+  "updatedAt": "2026-07-04T14:00:43.301Z",
   "request": {
     "title": "code-review が approved のとき code-fixer の no-op を escalate しない",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "scale-tolerance",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/approved-fixer-noop-proceeds-4490bd0c",
   "error": null,
@@ -47,8 +47,34 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "f2850848e213eff23a34d92547fa609025820bfc",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -58,7 +84,9 @@
       "verification": 2,
       "build-fixer": 1,
       "code-review": 1,
-      "scale-tolerance": 1
+      "scale-tolerance": 1,
+      "cross-boundary-invariants": 1,
+      "custom-reviewers": 1
     }
   }
 }
