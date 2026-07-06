@@ -13,5 +13,14 @@
   },
   "archive": {
     "mergeWaitTimeoutMs": null
+  },
+  "pipeline": {
+    "fast": {
+      "forbiddenSurfaces": [
+        { "id": "public-types",      "paths": ["src/core/port/**"] },
+        { "id": "persisted-format",  "paths": ["src/state/schema.ts"] },
+        { "id": "state-transitions", "paths": ["src/state/lifecycle.ts"] }
+      ]
+    }
   }
 }

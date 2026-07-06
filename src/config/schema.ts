@@ -168,6 +168,33 @@ export interface WorkspaceConfig {
   setup?: ShellCommand[];
 }
 
+/**
+ * A single forbidden surface entry for the fast pipeline's permissionScope.
+ * Structurally compatible with core's ForbiddenSurface — no cross-layer import needed.
+ */
+export interface ForbiddenSurfaceConfig {
+  /** Stable identifier for this surface (e.g. "public-types"). */
+  id: string;
+  /** Glob patterns matched against base…HEAD changed-file paths. */
+  paths: string[];
+}
+
+/**
+ * Fast-pipeline-specific configuration.
+ * Currently holds the per-repo forbidden surfaces list.
+ */
+export interface FastPipelineConfig {
+  /**
+   * Forbidden surface declarations for the fast pipeline's conformance checkpoint.
+   * When absent or empty, no breach is detected (gate mechanism is still active).
+   * Each entry is matched against changed files at the conformance step.
+   *
+   * Example:
+   *   [{ "id": "public-types", "paths": ["src/core/port/**"] }]
+   */
+  forbiddenSurfaces?: ForbiddenSurfaceConfig[];
+}
+
 /** Pipeline-level settings */
 export interface PipelineConfig {
   /**
@@ -175,6 +202,11 @@ export interface PipelineConfig {
    * Default: 2. Valid range: 1-10.
    */
   maxRetries?: number;
+  /**
+   * Fast pipeline profile settings.
+   * Absent = fast pipeline has no forbidden surfaces (no breach detection).
+   */
+  fast?: FastPipelineConfig;
 }
 
 /**
@@ -722,6 +754,32 @@ export const configSchema = object({
             lte(10, "must be between 1 and 10."),
           ),
         ),
+        fast: optional(
+          object(
+            {
+              forbiddenSurfaces: optional(
+                array(
+                  object(
+                    {
+                      id: string("must be a non-empty string.").check(
+                        minLength(1, "must be a non-empty string."),
+                      ),
+                      paths: array(
+                        string("must be a non-empty string.").check(
+                          minLength(1, "must be a non-empty string."),
+                        ),
+                        "must be an array.",
+                      ),
+                    },
+                    "must be an object.",
+                  ),
+                  "must be an array.",
+                ),
+              ),
+            },
+            "must be an object.",
+          ),
+        ),
       },
       "must be an object.",
     ),
@@ -1116,6 +1174,29 @@ export function resolveDesignLayerConfig(config: SpecRunnerConfig): ResolvedDesi
     command: config.designLayer?.command ?? "aozu",
     requireCitationTypes: config.designLayer?.requireCitationTypes ?? [],
   };
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline forbidden-surfaces resolver
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve the forbidden surfaces for a given pipeline id from config.
+ *
+ * Returns the declared surfaces when pipelineId === "fast" and config has them.
+ * Returns [] for all other pipeline ids and when the fast section is absent.
+ *
+ * This is the single source of truth for config.pipeline.fast.forbiddenSurfaces access.
+ * All consumers must call this resolver — do not read config.pipeline.fast directly elsewhere.
+ */
+export function resolvePipelineForbiddenSurfaces(
+  config: SpecRunnerConfig,
+  pipelineId: string,
+): ForbiddenSurfaceConfig[] {
+  if (pipelineId === "fast") {
+    return config.pipeline?.fast?.forbiddenSurfaces ?? [];
+  }
+  return [];
 }
 
 // ---------------------------------------------------------------------------

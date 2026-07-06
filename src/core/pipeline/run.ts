@@ -13,6 +13,7 @@ import {
   getPipelineDescriptor,
 } from "./registry.js";
 import { composeReviewerDescriptor } from "./compose-reviewers.js";
+import { applyScopeConfig } from "./resolve-scope.js";
 
 /**
  * Loop step names used by the standard pipeline.
@@ -90,7 +91,8 @@ export function buildPipelineForJob(
   events?: EventBus,
 ): Pipeline {
   const base = getPipelineDescriptor(getPipelineId(jobState));
-  const descriptor = composeReviewerDescriptor(base, jobState.reviewers);
+  const scoped = applyScopeConfig(base, deps.config);
+  const descriptor = composeReviewerDescriptor(scoped, jobState.reviewers);
   return buildPipeline(descriptor, deps, events);
 }
 
@@ -129,7 +131,8 @@ export async function runPipeline(
 ): Promise<JobState> {
   const bus = events ?? new EventBus();
   const base = getPipelineDescriptor(getPipelineId(jobState));
-  const descriptor = composeReviewerDescriptor(base, jobState.reviewers);
+  const scoped = applyScopeConfig(base, deps.config);
+  const descriptor = composeReviewerDescriptor(scoped, jobState.reviewers);
   const pipeline = buildPipeline(descriptor, deps, bus);
   return pipeline.run(descriptor.startStep, jobState, deps);
 }

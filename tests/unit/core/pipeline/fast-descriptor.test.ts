@@ -4,7 +4,8 @@
  * - steps: spec-review / spec-fixer / test-case-gen / adr-gen を含まず、9 step を含む
  * - startStep === "request-review"
  * - checkpoint === "conformance"（judge step であること）
- * - permissionScope.forbidden の 3 surfaces（id + glob 突合）
+ * - permissionScope presence あり・checkpoint === "conformance"・forbidden は空配列
+ *   （3 surfaces はリポジトリの config から applyScopeConfig() で解決される）
  * - slim design 構造: spec-review 無し、test-case-gen 無し、implementer 在り、adr-gen 無し
  */
 import { describe, it, expect } from "vitest";
@@ -16,7 +17,6 @@ import {
 } from "../../../../src/core/pipeline/registry.js";
 import { PIPELINE_IDS } from "../../../../src/kernel/pipeline-ids.js";
 import { CONFORMANCE_REPORT_TOOL } from "../../../../src/core/step/report-tool.js";
-import { matchGlob } from "../../../../src/core/reviewers/glob-match.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
 import { ConformanceStep } from "../../../../src/core/step/conformance.js";
 
@@ -154,89 +154,26 @@ describe("T-04-4: permissionScope.checkpoint === 'conformance'", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T-04-5: 3 surfaces (id + glob matching)
+// T-04-5: registry 定数の forbidden は空（3 surfaces は config から解決される）
 // ---------------------------------------------------------------------------
 
-describe("T-04-5: permissionScope.forbidden — 3 surfaces with correct globs", () => {
-  const forbidden = FAST_DESCRIPTOR.permissionScope!.forbidden;
+describe("T-04-5: FAST_DESCRIPTOR.permissionScope — presence あり・forbidden 空・checkpoint 不変", () => {
+  const { permissionScope } = FAST_DESCRIPTOR;
 
-  it("has exactly 3 forbidden surfaces", () => {
-    expect(forbidden).toHaveLength(3);
+  it("permissionScope is defined (presence maintained)", () => {
+    expect(permissionScope).toBeDefined();
   });
 
-  it("contains surface id 'public-types'", () => {
-    const ids = forbidden.map((s) => s.id);
-    expect(ids).toContain("public-types");
+  it("checkpoint is 'conformance' (unchanged)", () => {
+    expect(permissionScope?.checkpoint).toBe("conformance");
   });
 
-  it("contains surface id 'persisted-format'", () => {
-    const ids = forbidden.map((s) => s.id);
-    expect(ids).toContain("persisted-format");
+  it("forbidden is an empty array (surfaces are resolved from config at runtime)", () => {
+    expect(permissionScope?.forbidden).toEqual([]);
   });
 
-  it("contains surface id 'state-transitions'", () => {
-    const ids = forbidden.map((s) => s.id);
-    expect(ids).toContain("state-transitions");
-  });
-
-  // public-types glob: src/core/port/**
-  describe("public-types surface glob", () => {
-    const surface = forbidden.find((s) => s.id === "public-types")!;
-
-    it("glob matches src/core/port/runtime-strategy.ts (port file)", () => {
-      const matches = surface.paths.some((p) => matchGlob(p, "src/core/port/runtime-strategy.ts"));
-      expect(matches).toBe(true);
-    });
-
-    it("glob matches src/core/port/agent-runner.ts (another port file)", () => {
-      const matches = surface.paths.some((p) => matchGlob(p, "src/core/port/agent-runner.ts"));
-      expect(matches).toBe(true);
-    });
-
-    it("glob does NOT match src/core/pipeline/types.ts (outside port/)", () => {
-      const matches = surface.paths.some((p) => matchGlob(p, "src/core/pipeline/types.ts"));
-      expect(matches).toBe(false);
-    });
-
-    it("glob does NOT match src/state/schema.ts (different directory)", () => {
-      const matches = surface.paths.some((p) => matchGlob(p, "src/state/schema.ts"));
-      expect(matches).toBe(false);
-    });
-  });
-
-  // persisted-format glob: src/state/schema.ts (exact file)
-  describe("persisted-format surface glob", () => {
-    const surface = forbidden.find((s) => s.id === "persisted-format")!;
-
-    it("glob matches src/state/schema.ts", () => {
-      const matches = surface.paths.some((p) => matchGlob(p, "src/state/schema.ts"));
-      expect(matches).toBe(true);
-    });
-
-    it("glob does NOT match src/state/pipeline-id.ts (different file in same dir)", () => {
-      const matches = surface.paths.some((p) => matchGlob(p, "src/state/pipeline-id.ts"));
-      expect(matches).toBe(false);
-    });
-
-    it("glob does NOT match src/state/lifecycle.ts (another file in same dir)", () => {
-      const matches = surface.paths.some((p) => matchGlob(p, "src/state/lifecycle.ts"));
-      expect(matches).toBe(false);
-    });
-  });
-
-  // state-transitions glob: src/state/lifecycle.ts (exact file)
-  describe("state-transitions surface glob", () => {
-    const surface = forbidden.find((s) => s.id === "state-transitions")!;
-
-    it("glob matches src/state/lifecycle.ts", () => {
-      const matches = surface.paths.some((p) => matchGlob(p, "src/state/lifecycle.ts"));
-      expect(matches).toBe(true);
-    });
-
-    it("glob does NOT match src/state/schema.ts (different file)", () => {
-      const matches = surface.paths.some((p) => matchGlob(p, "src/state/schema.ts"));
-      expect(matches).toBe(false);
-    });
+  it("forbidden has length 0 (no hardcoded spec-runner paths)", () => {
+    expect(permissionScope?.forbidden).toHaveLength(0);
   });
 });
 
