@@ -17,6 +17,7 @@ import { runCancel } from "./cancel.js";
 import { runPrune } from "./prune.js";
 import { runResume } from "./resume.js";
 import { runJobShow } from "./job-show.js";
+import { runJobStats } from "../core/command/job-stats.js";
 import { runInboxRun } from "./inbox.js";
 import { runConfigEffective } from "./config-effective.js";
 import { executeTemplate, executeValidate } from "../core/command/request.js";
@@ -77,6 +78,7 @@ Job commands:
   job resume <slug>               halted job を再開
   job archive <slug>              change folder 移動・worktree 撤去・status 更新
   job prune [--force]             orphan worktree を列挙（--force で削除）
+  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計
 
 Rules commands:
   rules new <step> <slug>         step 用の rules ファイルを scaffold
@@ -633,6 +635,14 @@ export const COMMANDS: Record<string, CommandEntry> = {
             stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
             process.exit(1);
           }
+        },
+      },
+      stats: {
+        flags: {
+          json: { type: "boolean" },
+        },
+        handler: async (parsed) => {
+          process.exit(await runJobStats({ cwd: process.cwd(), json: !!parsed.flags["json"] }));
         },
       },
     },
