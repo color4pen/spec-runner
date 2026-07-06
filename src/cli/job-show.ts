@@ -27,7 +27,7 @@ import type { LineageRecord } from "../store/event-journal.js";
 import { readUsageFile } from "../core/usage/store.js";
 import { computeCostUsd, formatUsd } from "../core/usage/pricing.js";
 import type { ModelUsage } from "../state/schema.js";
-import { archivedChangesDirRel, parseArchiveDirName } from "../util/paths.js";
+import { resolveChangeDir } from "../core/job-access/resolve-change-dir.js";
 
 const UUID_REGEX = /^[a-f0-9-]{36}$/;
 
@@ -145,53 +145,6 @@ export async function printJobState(state: JobState, repoRoot: string = process.
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Resolve the absolute path to the change folder for the given slug.
- * Returns null if not found in active changes or archive.
- * Resolution order: active → archive (most recent by date).
- */
-async function resolveChangeDir(slug: string, repoRoot: string): Promise<string | null> {
-  // 1. Active change
-  const activeDir = path.join(repoRoot, "specrunner", "changes", slug);
-  try {
-    await fsPromises.access(activeDir);
-    return activeDir;
-  } catch {
-    // Not found in active
-  }
-
-  // 2. Archive — find newest date matching slug
-  const archiveBaseDir = path.join(repoRoot, archivedChangesDirRel());
-  let entries: string[];
-  try {
-    entries = await fsPromises.readdir(archiveBaseDir);
-  } catch {
-    return null;
-  }
-
-  let bestDate: string | null = null;
-  let bestDir: string | null = null;
-
-  for (const entry of entries) {
-    const parsed = parseArchiveDirName(entry);
-    if (parsed.slug === slug) {
-      if (parsed.date !== null) {
-        if (bestDate === null || parsed.date > bestDate) {
-          bestDate = parsed.date;
-          bestDir = entry;
-        }
-      } else if (bestDate === null && bestDir === null) {
-        bestDir = entry;
-      }
-    }
-  }
-
-  if (bestDir) {
-    return path.join(archiveBaseDir, bestDir);
-  }
-  return null;
-}
 
 /**
  * Read lineage records from events.jsonl in the given change dir.
