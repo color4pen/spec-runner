@@ -87,3 +87,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/fast-scope-config/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-06T03:17:24.850Z","endedAt":"2026-07-06T03:17:26.338Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-06T03:17:26.338Z","outputs":[{"path":"specrunner/changes/fast-scope-config/pr-create-result.md","hash":"sha256:fee29cde46ce2b7262b50e18b6198dca0253b0ab0cc6c9f59a39689860b04a7b"}],"inputs":[{"path":"change/fast-scope-config-8edc9de0","hash":null}]}
 {"type":"transition","ts":"2026-07-06T03:17:26.349Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-06T11:42:42.279Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
