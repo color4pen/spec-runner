@@ -13,7 +13,7 @@ import { runChecks } from "../core/doctor/runner.js";
 import { commonChecks, managedChecks, localChecks } from "../core/doctor/checks/index.js";
 import { formatHuman, formatJson } from "../core/doctor/formatter.js";
 import type { DoctorContext, DoctorFs, DoctorConfig, DoctorGitHubClient, ExecFileFunction } from "../core/doctor/types.js";
-import { loadConfig } from "../config/store.js";
+import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
 import { stripSecrets } from "../util/env-filter.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
@@ -96,7 +96,7 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
   let rawConfig: SpecRunnerConfig | null = null;
   let configLoadError: string | undefined;
   try {
-    rawConfig = await loadConfig();
+    rawConfig = await loadConfigWithOverlay();
   } catch (err: unknown) {
     // Config not available — propagate reason so config-file-exists can distinguish
     // malformed JSON from ENOENT
