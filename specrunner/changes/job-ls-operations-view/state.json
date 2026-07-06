@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e467b801-5e84-4721-9e33-d683ba973502",
   "createdAt": "2026-07-06T02:21:16.311Z",
-  "updatedAt": "2026-07-06T02:56:26.686Z",
+  "updatedAt": "2026-07-06T03:00:00.089Z",
   "request": {
     "title": "job ls を運用一覧にする — 区分表示・escalation の可視化・次アクションの提示",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/job-ls-operations-view-e467b801",
   "error": null,
@@ -74,7 +74,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 40,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -86,7 +86,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
