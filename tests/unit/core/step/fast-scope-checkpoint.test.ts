@@ -7,8 +7,10 @@
  * - checkpoint 単一性: 非 checkpoint step (code-review) を同 permissionScope で実行しても
  *   scope 合成が走らない (listChangedFiles 未呼び出し)
  *
- * executor 駆動パターン: StepExecutor に FAST_DESCRIPTOR.permissionScope を渡し、
+ * executor 駆動パターン: StepExecutor に applyScopeConfig で得た permissionScope を渡し、
  * ConformanceStep (checkpoint=conformance) を canDeriveChangedFiles()===true の runtime fake で実行する。
+ * breach テストは config fixture で forbidden surfaces を宣言し applyScopeConfig でスコープを組み立てる。
+ * no-breach テスト（空 forbidden）は registry 定数のまま動作することを確認する。
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -16,6 +18,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 
 import { FAST_DESCRIPTOR } from "../../../../src/core/pipeline/registry.js";
+import { applyScopeConfig } from "../../../../src/core/pipeline/resolve-scope.js";
 import { StepExecutor } from "../../../../src/core/step/executor.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
@@ -204,10 +207,40 @@ function makeCodeReviewStep(): AgentStep {
 }
 
 // ---------------------------------------------------------------------------
-// The FAST permissionScope (from the production descriptor)
+// Config fixture with the 3 dogfooding surfaces (mirrors .specrunner/config.json)
 // ---------------------------------------------------------------------------
 
-const FAST_SCOPE = FAST_DESCRIPTOR.permissionScope!;
+function makeFastConfig(): SpecRunnerConfig {
+  return {
+    version: 1,
+    runtime: "managed",
+    agents: {},
+    pipeline: {
+      fast: {
+        forbiddenSurfaces: [
+          { id: "public-types",      paths: ["src/core/port/**"] },
+          { id: "persisted-format",  paths: ["src/state/schema.ts"] },
+          { id: "state-transitions", paths: ["src/state/lifecycle.ts"] },
+        ],
+      },
+    },
+  };
+}
+
+/**
+ * Resolve the permissionScope for breach tests by applying the config fixture.
+ * applyScopeConfig merges forbidden surfaces from config into the descriptor.
+ */
+function makeFastScopeFromConfig(): NonNullable<typeof FAST_DESCRIPTOR.permissionScope> {
+  const descriptor = applyScopeConfig(FAST_DESCRIPTOR, makeFastConfig());
+  return descriptor.permissionScope!;
+}
+
+// ---------------------------------------------------------------------------
+// The FAST permissionScope with empty forbidden (registry default — no config)
+// ---------------------------------------------------------------------------
+
+const FAST_SCOPE_EMPTY = FAST_DESCRIPTOR.permissionScope!;
 
 // ---------------------------------------------------------------------------
 // T-05-1: breach — a file in src/core/port/** → scope finding + escalation
@@ -222,7 +255,7 @@ describe("T-05-1: breach at conformance checkpoint → scope finding + escalatio
     const executor = new StepExecutor(
       new EventBus(), runner, makeStoreFactory(tempDir),
       undefined, undefined,
-      FAST_SCOPE,
+      makeFastScopeFromConfig(),
     );
 
     const step = makeConformanceStep();
@@ -240,7 +273,7 @@ describe("T-05-1: breach at conformance checkpoint → scope finding + escalatio
     const executor = new StepExecutor(
       new EventBus(), runner, makeStoreFactory(tempDir),
       undefined, undefined,
-      FAST_SCOPE,
+      makeFastScopeFromConfig(),
     );
 
     const step = makeConformanceStep();
@@ -258,7 +291,7 @@ describe("T-05-1: breach at conformance checkpoint → scope finding + escalatio
     const executor = new StepExecutor(
       new EventBus(), runner, makeStoreFactory(tempDir),
       undefined, undefined,
-      FAST_SCOPE,
+      makeFastScopeFromConfig(),
     );
 
     const step = makeConformanceStep();
@@ -276,7 +309,7 @@ describe("T-05-1: breach at conformance checkpoint → scope finding + escalatio
     const executor = new StepExecutor(
       new EventBus(), runner, makeStoreFactory(tempDir),
       undefined, undefined,
-      FAST_SCOPE,
+      makeFastScopeFromConfig(),
     );
 
     const step = makeConformanceStep();
@@ -297,7 +330,7 @@ describe("T-05-1: breach at conformance checkpoint → scope finding + escalatio
     const executor = new StepExecutor(
       new EventBus(), runner, makeStoreFactory(tempDir),
       undefined, undefined,
-      FAST_SCOPE,
+      makeFastScopeFromConfig(),
     );
 
     const step = makeConformanceStep();
@@ -317,7 +350,7 @@ describe("T-05-1: breach at conformance checkpoint → scope finding + escalatio
     const executor = new StepExecutor(
       new EventBus(), runner, makeStoreFactory(tempDir),
       undefined, undefined,
-      FAST_SCOPE,
+      makeFastScopeFromConfig(),
     );
 
     const step = makeConformanceStep();
@@ -335,7 +368,10 @@ describe("T-05-1: breach at conformance checkpoint → scope finding + escalatio
 // ---------------------------------------------------------------------------
 
 describe("T-05-2: no breach → scope finding NOT synthesized, verdict unaffected (approved)", () => {
-  it("src/core/pipeline/types.ts (not in forbidden surfaces) → no scope finding", async () => {
+  // These tests use FAST_SCOPE_EMPTY (registry constant with forbidden=[]) to verify
+  // that when no surfaces are declared, no breach occurs regardless of changed files.
+
+  it("src/core/pipeline/types.ts with empty forbidden → no scope finding", async () => {
     const jobState = await createRunningJobState();
     const strategy = makeEvaluableStrategy(["src/core/pipeline/types.ts"]);
 
@@ -343,7 +379,7 @@ describe("T-05-2: no breach → scope finding NOT synthesized, verdict unaffecte
     const executor = new StepExecutor(
       new EventBus(), runner, makeStoreFactory(tempDir),
       undefined, undefined,
-      FAST_SCOPE,
+      FAST_SCOPE_EMPTY,
     );
 
     const step = makeConformanceStep();
@@ -356,15 +392,16 @@ describe("T-05-2: no breach → scope finding NOT synthesized, verdict unaffecte
     expect(scopeFindings).toHaveLength(0);
   });
 
-  it("tests/unit/core/pipeline/fast-descriptor.test.ts (test file) → no scope finding", async () => {
+  it("src/core/port/runtime-strategy.ts with empty forbidden → no scope finding", async () => {
+    // Even a file that would breach with config surfaces produces no finding when forbidden=[]
     const jobState = await createRunningJobState();
-    const strategy = makeEvaluableStrategy(["tests/unit/core/pipeline/fast-descriptor.test.ts"]);
+    const strategy = makeEvaluableStrategy(["src/core/port/runtime-strategy.ts"]);
 
     const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
     const executor = new StepExecutor(
       new EventBus(), runner, makeStoreFactory(tempDir),
       undefined, undefined,
-      FAST_SCOPE,
+      FAST_SCOPE_EMPTY,
     );
 
     const step = makeConformanceStep();
@@ -372,6 +409,9 @@ describe("T-05-2: no breach → scope finding NOT synthesized, verdict unaffecte
 
     const outcome = getLastOutcome(finalState, "conformance");
     expect(outcome?.verdict).toBe("approved");
+    const tr = outcome?.toolResult as { findings?: Finding[] } | null;
+    const scopeFindings = (tr?.findings ?? []).filter((f) => f.origin === "scope");
+    expect(scopeFindings).toHaveLength(0);
   });
 
   it("empty changed files → no scope finding", async () => {
@@ -382,7 +422,7 @@ describe("T-05-2: no breach → scope finding NOT synthesized, verdict unaffecte
     const executor = new StepExecutor(
       new EventBus(), runner, makeStoreFactory(tempDir),
       undefined, undefined,
-      FAST_SCOPE,
+      FAST_SCOPE_EMPTY,
     );
 
     const step = makeConformanceStep();
@@ -401,7 +441,7 @@ describe("T-05-2: no breach → scope finding NOT synthesized, verdict unaffecte
 // ---------------------------------------------------------------------------
 
 describe("T-05-3: non-checkpoint step (code-review) → no scope synthesis", () => {
-  it("code-review step with FAST_SCOPE and forbidden file → listChangedFiles NOT called", async () => {
+  it("code-review step with FAST_SCOPE_EMPTY and forbidden file → listChangedFiles NOT called", async () => {
     const jobState = await createRunningJobState();
     const strategy = makeEvaluableStrategyWithSpy(["src/core/port/runtime-strategy.ts"]);
 
@@ -409,7 +449,7 @@ describe("T-05-3: non-checkpoint step (code-review) → no scope synthesis", () 
     const executor = new StepExecutor(
       new EventBus(), runner, makeStoreFactory(tempDir),
       undefined, undefined,
-      FAST_SCOPE,
+      FAST_SCOPE_EMPTY,
     );
 
     // Running code-review — NOT the checkpoint (checkpoint is "conformance")
@@ -435,7 +475,7 @@ describe("T-05-3: non-checkpoint step (code-review) → no scope synthesis", () 
     const executor = new StepExecutor(
       new EventBus(), runner, makeStoreFactory(tempDir),
       undefined, undefined,
-      FAST_SCOPE,
+      FAST_SCOPE_EMPTY,
     );
 
     const step = makeConformanceStep();

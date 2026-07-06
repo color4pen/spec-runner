@@ -252,6 +252,42 @@ When `sourceRoot` is omitted, the full source path is preserved under `testsRoot
 |---|---|---|
 | `pipeline.maxRetries` | `2` | Max spec-review → spec-fixer loop iterations (does not affect code-review or verification loops). Range: 1-10 |
 
+### Fast pipeline — forbidden surfaces
+
+The `fast` pipeline profile runs a 9-step slim pipeline (no spec-review, no adr-gen) and declares a `permissionScope` at the `conformance` checkpoint. The scope has two parts:
+
+- **checkpoint** (`"conformance"`) — fixed in code; cannot be configured.
+- **forbiddenSurfaces** — per-repo list of path globs that the fast profile must not touch. Declared in project config.
+
+When a changed file matches a forbidden surface, the conformance step synthesizes a `scope-breach` finding (`origin: "scope"`, `resolution: "decision-needed"`) and escalates to the human.
+
+**Capability gate**: the fast pipeline always requires a runtime that can derive changed files (`canDeriveChangedFiles`). This applies regardless of whether `forbiddenSurfaces` is configured — the gate is controlled by `permissionScope` presence, not by the surface list.
+
+**No surfaces declared** (`forbiddenSurfaces` absent or `[]`): no breach detection occurs, but the capability gate still applies.
+
+```jsonc
+// .specrunner/config.json
+{
+  "pipeline": {
+    "fast": {
+      "forbiddenSurfaces": [
+        { "id": "public-types",      "paths": ["src/core/port/**"] },
+        { "id": "persisted-format",  "paths": ["src/state/schema.ts"] },
+        { "id": "state-transitions", "paths": ["src/state/lifecycle.ts"] }
+      ]
+    }
+  }
+}
+```
+
+| Key | Default | Description |
+|---|---|---|
+| `pipeline.fast.forbiddenSurfaces` | `[]` | Forbidden surface declarations for the fast pipeline's conformance checkpoint. Each entry has `id` (non-empty string) and `paths` (array of glob patterns). |
+| `pipeline.fast.forbiddenSurfaces[].id` | — | Stable identifier for the surface (e.g. `"public-types"`). Used in escalation rationale. |
+| `pipeline.fast.forbiddenSurfaces[].paths` | — | Glob patterns matched against `base…HEAD` changed-file paths. |
+
+**Array replacement on deep-merge**: when both user global (`~/.config/specrunner/config.json`) and project local (`.specrunner/config.json`) declare `forbiddenSurfaces`, the project local array **replaces** the user global array entirely (deep-merge replaces arrays, not concatenates).
+
 ## Logs
 
 ```jsonc

@@ -105,15 +105,15 @@ export const DESIGN_ONLY_DESCRIPTOR: PipelineDescriptor = {
  *
  * Removes spec-review / spec-fixer / test-case-gen / adr-gen from the standard pipeline.
  * design goes directly to implementer; conformance goes directly to pr-create (no adr-gen).
- * permissionScope (checkpoint=conformance, 3 forbidden surfaces) is declared so that:
- *   - #689 scope breach detection fires at the conformance checkpoint.
+ * permissionScope (checkpoint=conformance) is declared so that:
+ *   - #689 scope breach detection fires at the conformance checkpoint when forbidden
+ *     surfaces are declared in repo config (pipeline.fast.forbiddenSurfaces).
  *   - #693 capability gate rejects this profile before bootstrapJob when the runtime
  *     cannot derive changed files (inherited automatically via permissionScope presence).
  *
- * The 3 forbidden surfaces:
- *   public-types      — src/core/port/** (Ports & Adapters public interfaces)
- *   persisted-format  — src/state/schema.ts (JobState schema)
- *   state-transitions — src/state/lifecycle.ts (state-transition table)
+ * forbidden is resolved from repo config via applyScopeConfig() at runtime.
+ * Empty forbidden = no protected surfaces declared for this repo = no breach detection.
+ * checkpoint remains "conformance" and is not config-driven (shape is code).
  */
 export const FAST_DESCRIPTOR: PipelineDescriptor = {
   id: PIPELINE_IDS.FAST,
@@ -154,11 +154,10 @@ export const FAST_DESCRIPTOR: PipelineDescriptor = {
   summaryStep: STEP_NAMES.CODE_REVIEW,
   permissionScope: {
     checkpoint: STEP_NAMES.CONFORMANCE,
-    forbidden: [
-      { id: "public-types",      paths: ["src/core/port/**"] },
-      { id: "persisted-format",  paths: ["src/state/schema.ts"] },
-      { id: "state-transitions", paths: ["src/state/lifecycle.ts"] },
-    ],
+    // forbidden is intentionally empty here; it is populated at runtime by applyScopeConfig()
+    // which reads pipeline.fast.forbiddenSurfaces from repo config.
+    // Empty = no protected surfaces declared for this repo = no breach detection.
+    forbidden: [],
   },
 };
 
