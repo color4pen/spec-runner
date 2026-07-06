@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3b6395c5-f647-4ef3-8c49-20ea69d2f014",
   "createdAt": "2026-07-06T11:09:16.571Z",
-  "updatedAt": "2026-07-06T11:32:29.206Z",
+  "updatedAt": "2026-07-06T11:35:37.505Z",
   "request": {
     "title": "doctor が project-local 設定を読まず designLayer / runtime チェックを誤診断する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "fix/doctor-reads-project-config-3b6395c5",
   "error": null,
@@ -75,7 +75,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
@@ -87,7 +87,8 @@
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
