@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8edc9de0-fe16-4f2f-a0d8-900b0971f467",
   "createdAt": "2026-07-06T02:21:20.741Z",
-  "updatedAt": "2026-07-06T02:25:19.929Z",
+  "updatedAt": "2026-07-06T02:34:22.575Z",
   "request": {
     "title": "fast pipeline の forbidden surfaces を repo config に外出しする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/fast-scope-config-8edc9de0",
   "error": null,
@@ -48,9 +48,10 @@
     }
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
