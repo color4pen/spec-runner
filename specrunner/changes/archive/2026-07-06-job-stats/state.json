@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8b61259f-35bf-481d-9ce1-4a12e0ddd708",
   "createdAt": "2026-07-06T02:21:12.048Z",
-  "updatedAt": "2026-07-06T03:03:20.354Z",
+  "updatedAt": "2026-07-06T11:50:10.132Z",
   "request": {
     "title": "run 単位の統計（コスト・収束回数・所要時間）を集計する job stats コマンド",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/job-stats-8b61259f",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,7 @@
     "createdAt": "2026-07-06T03:03:20.347Z"
   },
   "_journal": {
-    "historyCount": 59,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
