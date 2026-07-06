@@ -11,7 +11,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { runPs, formatJobRow } from "../src/cli/ps.js";
+import { runPs } from "../src/cli/ps.js";
+import {
+  buildOperationsView,
+  formatOperationsViewHuman,
+} from "../src/core/job-list/operations-view.js";
+import type { ViewEntry } from "../src/core/job-list/operations-view.js";
 import type { JobState } from "../src/state/schema.js";
 
 let tempDir: string;
@@ -177,13 +182,18 @@ describe("TC-034: ps --active excludes archived", () => {
   });
 });
 
-// TC-054: TypeScript exhaustive-switch — runtime check that archived is handled in formatJobRow
-describe("TC-054: formatJobRow handles archived status", () => {
+// TC-054: archived status is handled without errors in operations view
+describe("TC-054: archived status is handled in operations view", () => {
   it("does not throw or produce undefined for archived status", () => {
     const state = makeBaseState({ status: "archived" });
-    const row = formatJobRow(state, false);
-    expect(row).toBeTruthy();
-    expect(row).toContain("archived");
+    const entry: ViewEntry = { job: state, isStale: false, prMerged: null };
+    const view = buildOperationsView([entry]);
+    // archived lands in "terminal" category
+    expect(view.categories).toHaveLength(1);
+    expect(view.categories[0]!.category).toBe("terminal");
+    const output = formatOperationsViewHuman(view, { isTty: false });
+    expect(output).toBeTruthy();
+    expect(output).toContain("archived");
   });
 });
 
@@ -244,24 +254,24 @@ describe("TC-NEW-07: ps --active includes awaiting-resume", () => {
   });
 });
 
-// TC-NEW-08: ps stale detection — formatJobRow が isStale 引数を参照する
-describe("TC-NEW-08: ps stale detection via isStale argument", () => {
+// TC-NEW-08: ps stale detection — formatOperationsViewHuman が isStale を参照する
+describe("TC-NEW-08: ps stale detection via formatOperationsViewHuman", () => {
+  function makeRunningView(isStale: boolean) {
+    const state = makeBaseState({ status: "running" });
+    const entry: ViewEntry = { job: state, isStale, prMerged: null };
+    return buildOperationsView([entry]);
+  }
+
   it("adds (stale?) when isStale=true is passed", () => {
-    const state = makeBaseState({ status: "running" });
-    const row = formatJobRow(state, false, Date.now(), undefined, true);
-    expect(row).toContain("stale?");
+    const view = makeRunningView(true);
+    const output = formatOperationsViewHuman(view, { isTty: false });
+    expect(output).toContain("stale?");
   });
 
-  it("does NOT add (stale?) when isStale=false (default)", () => {
-    const state = makeBaseState({ status: "running" });
-    const row = formatJobRow(state, false, Date.now(), undefined, false);
-    expect(row).not.toContain("stale?");
-  });
-
-  it("does NOT add (stale?) when isStale is omitted", () => {
-    const state = makeBaseState({ status: "running" });
-    const row = formatJobRow(state, false, Date.now());
-    expect(row).not.toContain("stale?");
+  it("does NOT add (stale?) when isStale=false", () => {
+    const view = makeRunningView(false);
+    const output = formatOperationsViewHuman(view, { isTty: false });
+    expect(output).not.toContain("stale?");
   });
 
   it("does NOT add (stale?) to awaiting-resume jobs when isStale=false", () => {
@@ -270,36 +280,38 @@ describe("TC-NEW-08: ps stale detection via isStale argument", () => {
       status: "awaiting-resume" as JobState["status"],
       updatedAt: oldUpdatedAt,
     });
-    const row = formatJobRow(state, false, Date.now(), undefined, false);
-    expect(row).not.toContain("stale?");
+    const entry: ViewEntry = { job: state, isStale: false, prMerged: null };
+    const view = buildOperationsView([entry]);
+    const output = formatOperationsViewHuman(view, { isTty: false });
+    expect(output).not.toContain("stale?");
   });
 });
 
 // TC-143: non-TTY TAB-separated output has SLUG as second column
 describe("TC-143: non-TTY TAB-separated output — SLUG is second column", () => {
-  it("header row second tab-delimited field is SLUG", async () => {
-    await writeStateFile(makeBaseState({
-      jobId: "aaaaaaaa-0000-0000-0000-000000000099",
-      status: "awaiting-archive",
-      branch: "feat/test-slug",
-      request: { path: "specrunner/drafts/test-slug.md", title: "T", type: "new-feature", slug: "test-slug" },
-    }));
-
-    // formatJobRow non-TTY (isTty=false) — validate header fields
+  it("formatOperationsViewHuman non-TTY data row has SLUG at second position", () => {
     const state = makeBaseState({
       jobId: "aaaaaaaa-0000-0000-0000-000000000099",
       status: "awaiting-archive",
       branch: "feat/test-slug",
       request: { path: "specrunner/drafts/test-slug.md", title: "T", type: "new-feature", slug: "test-slug" },
     });
-    const row = formatJobRow(state, false);
-    const fields = row.split("\t");
+    const entry: ViewEntry = { job: state, isStale: false, prMerged: null };
+    const view = buildOperationsView([entry]);
+    const output = formatOperationsViewHuman(view, { isTty: false });
 
-    // Non-TTY format: JOB_ID, SLUG, STEP, STATUS, BRANCH, AGE
+    // Find a data row (not a header or label line)
+    const dataLines = output
+      .split("\n")
+      .filter((l) => l.includes("\t") && !l.startsWith("JOB_ID") && !l.startsWith("["));
+    expect(dataLines.length).toBeGreaterThan(0);
+
+    const fields = dataLines[0]!.split("\t");
+    // Non-TTY format: JOB_ID, SLUG, STEP, STATUS, NEXT, AGE
     expect(fields).toHaveLength(6);
-    expect(fields[0]).toBe("aaaaaaaa");  // JOB_ID 8 chars
-    expect(fields[1]).toBe("test-slug"); // SLUG is second column
-    expect(fields[3]).toBe("awaiting-archive");   // STATUS is fourth column
+    expect(fields[0]).toBe("aaaaaaaa");      // JOB_ID 8 chars
+    expect(fields[1]).toBe("test-slug");     // SLUG is second column
+    expect(fields[3]).toContain("awaiting-archive"); // STATUS is fourth column
   });
 
   it("ps output header TAB-separated second field is SLUG", async () => {
@@ -314,10 +326,10 @@ describe("TC-143: non-TTY TAB-separated output — SLUG is second column", () =>
       .map((c: unknown[]) => String(c[0]))
       .join("");
 
-    // First line is the header
-    const lines = allOutput.split("\n").filter((l) => l.trim().length > 0);
-    const headerLine = lines[0] ?? "";
-    const headerFields = headerLine.split("\t");
+    // Find the header line (TAB-separated, starts with JOB_ID)
+    const headerLine = allOutput.split("\n").find((l) => l.startsWith("JOB_ID"));
+    expect(headerLine).toBeDefined();
+    const headerFields = (headerLine ?? "").split("\t");
     expect(headerFields[1]).toBe("SLUG");
   });
 });

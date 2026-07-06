@@ -1,22 +1,27 @@
 /**
- * Tests for ps PR hint display (Phase 3).
+ * Tests for ps PR hint display.
  *
- * TC-23: formatJobRow に prMerged: true を渡すと "(PR merged, run archive)" が含まれる
- * TC-24: prMerged が false の場合は通常表示
- * TC-25: prMerged が undefined の場合は通常表示
+ * TC-23: prMerged: true → "(PR merged)" in STATUS and "job archive <slug>" in NEXT
+ * TC-24: prMerged: false → normal display
+ * TC-25: prMerged: undefined/null → normal display
  */
 
 import { describe, it, expect } from "vitest";
-import { formatJobRow } from "../../../src/cli/ps.js";
+import {
+  buildOperationsView,
+  formatOperationsViewHuman,
+  formatOperationsViewJson,
+} from "../../../src/core/job-list/operations-view.js";
+import type { ViewEntry } from "../../../src/core/job-list/operations-view.js";
 import type { JobState } from "../../../src/state/schema.js";
 
 // ---------------------------------------------------------------------------
 // Test fixture
 // ---------------------------------------------------------------------------
 
-function makeAwaitingArchiveJob(overrides: Partial<JobState> = {}): JobState {
+function makeAwaitingArchiveState(overrides: Partial<JobState> = {}): JobState {
   return {
-    version: 1,
+    version: 2,
     jobId: "abcd1234efgh5678",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
@@ -34,64 +39,96 @@ function makeAwaitingArchiveJob(overrides: Partial<JobState> = {}): JobState {
   };
 }
 
+function buildView(prMerged: boolean | null) {
+  const state = makeAwaitingArchiveState();
+  const entry: ViewEntry = { job: state, isStale: false, prMerged };
+  return buildOperationsView([entry]);
+}
+
 // ---------------------------------------------------------------------------
-// TC-23: prMerged: true → hint 表示
+// TC-23: prMerged: true → PR merged hint in STATUS and archive in NEXT
 // ---------------------------------------------------------------------------
 
-describe("TC-23: formatJobRow with prMerged=true", () => {
-  it("includes (PR merged, run archive) in output (TTY mode)", () => {
-    const job = makeAwaitingArchiveJob();
-    const row = formatJobRow(job, true, Date.now(), true);
-    expect(row).toContain("(PR merged, run archive)");
+describe("TC-23: prMerged=true → (PR merged) in STATUS and job archive in NEXT", () => {
+  it("includes (PR merged) in STATUS column (TTY mode)", () => {
+    const view = buildView(true);
+    const output = formatOperationsViewHuman(view, { isTty: true });
+    expect(output).toContain("(PR merged)");
   });
 
-  it("includes (PR merged, run archive) in output (non-TTY mode)", () => {
-    const job = makeAwaitingArchiveJob();
-    const row = formatJobRow(job, false, Date.now(), true);
-    expect(row).toContain("(PR merged, run archive)");
+  it("includes (PR merged) in STATUS column (non-TTY mode)", () => {
+    const view = buildView(true);
+    const output = formatOperationsViewHuman(view, { isTty: false });
+    expect(output).toContain("(PR merged)");
   });
 
-  it("status column is awaiting-archive (PR merged, run archive)", () => {
-    const job = makeAwaitingArchiveJob();
-    const row = formatJobRow(job, false, Date.now(), true);
-    expect(row).toContain("awaiting-archive (PR merged, run archive)");
+  it("status cell is 'awaiting-archive (PR merged)'", () => {
+    const view = buildView(true);
+    const output = formatOperationsViewHuman(view, { isTty: false });
+    expect(output).toContain("awaiting-archive (PR merged)");
+  });
+
+  it("NEXT column shows 'job archive test-slug'", () => {
+    const view = buildView(true);
+    const output = formatOperationsViewHuman(view, { isTty: false });
+    expect(output).toContain("job archive test-slug");
+  });
+
+  it("JSON output shows escalationStep null and nextAction 'job archive test-slug'", () => {
+    const view = buildView(true);
+    const parsed = JSON.parse(formatOperationsViewJson(view)) as {
+      categories: Array<{ jobs: Array<Record<string, unknown>> }>;
+    };
+    const job = parsed.categories[0]!.jobs[0]!;
+    expect(job["nextAction"]).toBe("job archive test-slug");
+    expect(job["prMerged"]).toBe(true);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-24: prMerged: false → 通常表示
+// TC-24: prMerged: false → normal display, no PR merged hint
 // ---------------------------------------------------------------------------
 
-describe("TC-24: formatJobRow with prMerged=false", () => {
-  it("does not include (PR merged, run archive) in output", () => {
-    const job = makeAwaitingArchiveJob();
-    const row = formatJobRow(job, true, Date.now(), false);
-    expect(row).not.toContain("(PR merged, run archive)");
+describe("TC-24: prMerged=false → normal display without PR merged hint", () => {
+  it("does not include (PR merged) in output", () => {
+    const view = buildView(false);
+    const output = formatOperationsViewHuman(view, { isTty: true });
+    expect(output).not.toContain("(PR merged)");
   });
 
-  it("shows normal awaiting-archive status", () => {
-    const job = makeAwaitingArchiveJob();
-    const row = formatJobRow(job, false, Date.now(), false);
-    expect(row).toContain("awaiting-archive");
-    expect(row).not.toContain("(PR merged, run archive)");
+  it("shows awaiting-archive without hint", () => {
+    const view = buildView(false);
+    const output = formatOperationsViewHuman(view, { isTty: false });
+    expect(output).toContain("awaiting-archive");
+    expect(output).not.toContain("(PR merged)");
+  });
+
+  it("NEXT is '-' when PR not merged", () => {
+    const view = buildView(false);
+    const output = formatOperationsViewHuman(view, { isTty: false });
+    // In non-TTY: JOB_ID\tSLUG\tSTEP\tSTATUS\tNEXT\tAGE
+    const dataLine = output.split("\n").find((l) => l.includes("\t") && !l.startsWith("JOB_ID") && !l.startsWith("["));
+    expect(dataLine).toBeDefined();
+    const fields = (dataLine ?? "").split("\t");
+    expect(fields[4]).toBe("-"); // NEXT column
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-25: prMerged: undefined → 通常表示
+// TC-25: prMerged: null → normal display without hint
 // ---------------------------------------------------------------------------
 
-describe("TC-25: formatJobRow with prMerged=undefined", () => {
-  it("does not include (PR merged, run archive) when prMerged is not passed", () => {
-    const job = makeAwaitingArchiveJob();
-    const row = formatJobRow(job, true, Date.now());
-    expect(row).not.toContain("(PR merged, run archive)");
+describe("TC-25: prMerged=null → normal display without PR merged hint", () => {
+  it("does not include (PR merged) when prMerged is null", () => {
+    const view = buildView(null);
+    const output = formatOperationsViewHuman(view, { isTty: true });
+    expect(output).not.toContain("(PR merged)");
   });
 
-  it("shows normal awaiting-archive status without the hint", () => {
-    const job = makeAwaitingArchiveJob();
-    const row = formatJobRow(job, false, Date.now());
-    expect(row).toContain("awaiting-archive");
-    expect(row).not.toContain("(PR merged, run archive)");
+  it("shows normal awaiting-archive status without hint", () => {
+    const view = buildView(null);
+    const output = formatOperationsViewHuman(view, { isTty: false });
+    expect(output).toContain("awaiting-archive");
+    expect(output).not.toContain("(PR merged)");
   });
 });

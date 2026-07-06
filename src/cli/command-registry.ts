@@ -71,7 +71,7 @@ Request commands:
 Job commands:
   job start <request-slug|file>   pipeline 開始、jobId 発行
   job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)
-  job ls                          全 job 一覧
+  job ls [--json]                 全 job 一覧（区分付き運用ビュー）
   job show <jobId|slug>           job state 詳細
   job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)
   job resume <slug>               halted job を再開
@@ -432,7 +432,9 @@ export const COMMANDS: Record<string, CommandEntry> = {
           active: { type: "boolean" },
           all: { type: "boolean" },
           status: { type: "string", values: ["running", "awaiting-resume", "awaiting-archive", "failed", "terminated", "archived", "canceled"] as const },
+          json: { type: "boolean" },
         },
+        usage: "job ls [--active] [--all] [--status <status>] [--json]  全 job 一覧（区分付き運用ビュー）",
         handler: async (parsed) => {
           let githubClient = null;
           try {
@@ -455,6 +457,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
               active: !!parsed.flags["active"],
               all: !!parsed.flags["all"],
               status: parsed.flags["status"] as string | undefined,
+              json: !!parsed.flags["json"],
             },
             githubClient,
           ));

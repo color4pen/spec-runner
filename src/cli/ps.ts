@@ -1,7 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { JobStateStore } from "../store/job-state-store.js";
-import type { JobState } from "../state/schema.js";
 import { getJobSlug } from "../state/job-slug.js";
 import { ACTIVE_STATUSES, isTerminal } from "../state/lifecycle.js";
 import type { GitHubClient } from "../core/port/github-client.js";
@@ -9,6 +8,12 @@ import { resolveRepoRoot } from "../util/repo-root.js";
 import { stdoutWrite } from "../logger/stdout.js";
 import { isStaleRunning } from "../core/resume/safety.js";
 import { livenessJsonPath } from "../util/paths.js";
+import {
+  buildOperationsView,
+  formatOperationsViewHuman,
+  formatOperationsViewJson,
+} from "../core/job-list/operations-view.js";
+import type { ViewEntry } from "../core/job-list/operations-view.js";
 
 /**
  * Format a job age in human-readable form.
@@ -36,55 +41,6 @@ export function truncate(str: string, maxLength: number): string {
   return str.slice(0, maxLength - 3) + "...";
 }
 
-/** Width of the STATUS column in TTY mode — wide enough for the PR hint suffix. */
-const STATUS_COLUMN_WIDTH = 40;
-
-/**
- * Format a single job as a row.
- * 6 columns: JOB_ID, SLUG, STEP, STATUS, BRANCH, AGE
- *
- * TC-110: SLUG column present
- * TC-143: non-TTY TAB-separated SLUG column at index 1
- */
-export function formatJobRow(
-  job: JobState,
-  isTty: boolean,
-  nowMs?: number,
-  prMerged?: boolean,
-  isStale = false,
-): string {
-  const jobIdShort = job.jobId.slice(0, 8);
-  const slug = getJobSlug(job);
-  const step = job.step;
-
-  let status: string;
-  if (prMerged) {
-    status = "awaiting-archive (PR merged, run archive)";
-  } else if (isStale) {
-    status = "running (stale?)";
-  } else {
-    status = job.status;
-  }
-
-  const branch = truncate(job.branch ?? "-", 40);
-  const age = formatAge(job.createdAt, nowMs);
-
-  if (isTty) {
-    // Fixed-width columns for TTY
-    return [
-      jobIdShort.padEnd(8),
-      slug.padEnd(30),
-      step.padEnd(25),
-      status.padEnd(STATUS_COLUMN_WIDTH),
-      branch.padEnd(40),
-      age.padEnd(8),
-    ].join("  ");
-  } else {
-    // TAB-separated for non-TTY (pipes, scripts)
-    return [jobIdShort, slug, step, status, branch, age].join("\t");
-  }
-}
-
 /**
  * Check if the PR for a given job has been merged.
  *
@@ -96,7 +52,7 @@ export function formatJobRow(
  *
  * Silently returns null when no GitHub client is provided (TC-27).
  */
-export async function checkPrMerged(job: JobState, githubClient: GitHubClient | null): Promise<boolean | null> {
+export async function checkPrMerged(job: import("../state/schema.js").JobState, githubClient: GitHubClient | null): Promise<boolean | null> {
   if (!job.pullRequest) return null;
   if (!githubClient) return null;
 
@@ -117,11 +73,12 @@ export async function checkPrMerged(job: JobState, githubClient: GitHubClient | 
  * @param opts.active - When true, only show jobs with active (running) status
  * @param opts.all - When true, include archived jobs (default: archived hidden)
  * @param opts.status - When set, filter by exact status (overrides active/all)
+ * @param opts.json - When true, output machine-readable JSON
  * @param opts.repoRoot - Optional override for the git repo root (useful in tests)
  * @param githubClient - Optional GitHub REST API client for PR merge status checks
  */
 export async function runPs(
-  opts: { active?: boolean; all?: boolean; status?: string; repoRoot?: string } = {},
+  opts: { active?: boolean; all?: boolean; status?: string; json?: boolean; repoRoot?: string } = {},
   githubClient: GitHubClient | null = null,
 ): Promise<number> {
   // Read-only command — fallback to cwd if git unavailable
@@ -136,7 +93,7 @@ export async function runPs(
   } else if (opts.active) {
     jobs = allJobs.filter((j) => ACTIVE_STATUSES.has(j.status));
   } else if (opts.all) {
-    // TC-110: --all includes archived
+    // --all includes archived
     jobs = allJobs;
   } else {
     // default — active のみ（非終端）。archived / canceled は --all で含める
@@ -144,7 +101,11 @@ export async function runPs(
   }
 
   if (jobs.length === 0) {
-    stdoutWrite("No jobs found.\n");
+    if (opts.json) {
+      stdoutWrite('{\n  "categories": []\n}\n');
+    } else {
+      stdoutWrite("No jobs found.\n");
+    }
     return 0;
   }
 
@@ -154,41 +115,38 @@ export async function runPs(
   );
 
   // Check PR status for awaiting-archive jobs only (rate limit: typically 0-2 such jobs)
-  const prMergedMap = new Map<string, boolean>();
+  const prMergedMap = new Map<string, boolean | null>();
   for (const job of sorted) {
     if (job.status === "awaiting-archive") {
       const merged = await checkPrMerged(job, githubClient);
-      if (merged === true) {
-        prMergedMap.set(job.jobId, true);
-      }
+      prMergedMap.set(job.jobId, merged);
     }
   }
 
+  const nowMs = Date.now();
   const isTty = process.stdout.isTTY ?? false;
 
-  // Header — 6 columns: JOB_ID, SLUG, STEP, STATUS, BRANCH, AGE
-  if (isTty) {
-    const header = [
-      "JOB_ID".padEnd(8),
-      "SLUG".padEnd(30),
-      "STEP".padEnd(25),
-      "STATUS".padEnd(STATUS_COLUMN_WIDTH),
-      "BRANCH".padEnd(40),
-      "AGE".padEnd(8),
-    ].join("  ");
-    stdoutWrite(header + "\n");
-    stdoutWrite("-".repeat(header.length) + "\n");
-  } else {
-    stdoutWrite(["JOB_ID", "SLUG", "STEP", "STATUS", "BRANCH", "AGE"].join("\t") + "\n");
-  }
-
-  const nowMs = Date.now();
-  for (const job of sorted) {
-    const prMerged = prMergedMap.get(job.jobId);
+  // Build ViewEntry[] for each job
+  const entries: ViewEntry[] = sorted.map((job) => {
     const sidecarCandidate = path.join(repoRoot, livenessJsonPath(getJobSlug(job)));
     const sidecarPath = fs.existsSync(sidecarCandidate) ? sidecarCandidate : undefined;
     const isStale = isStaleRunning(job, sidecarPath);
-    stdoutWrite(formatJobRow(job, isTty, nowMs, prMerged, isStale) + "\n");
+    const prMerged = prMergedMap.has(job.jobId) ? (prMergedMap.get(job.jobId) ?? null) : null;
+    return { job, isStale, prMerged };
+  });
+
+  const view = buildOperationsView(entries);
+
+  if (opts.json) {
+    stdoutWrite(formatOperationsViewJson(view));
+  } else {
+    const output = formatOperationsViewHuman(view, { isTty, nowMs });
+    if (output) {
+      stdoutWrite(output);
+    } else {
+      stdoutWrite("No jobs found.\n");
+    }
   }
+
   return 0;
 }
