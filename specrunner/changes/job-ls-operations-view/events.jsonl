@@ -77,3 +77,11 @@
 {"type":"transition","ts":"2026-07-06T03:03:26.375Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
 {"type":"transition","ts":"2026-07-06T03:03:26.375Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
 {"type":"transition","ts":"2026-07-06T03:03:26.378Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-06T03:03:47.016Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"29134a89-62f6-41ac-aade-b136db399a42","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-06T03:03:26.390Z","endedAt":"2026-07-06T03:03:45.774Z"}
+{"type":"transition","ts":"2026-07-06T03:03:47.021Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-06T03:03:47.023Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-06T03:03:48.927Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/job-ls-operations-view/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-06T03:03:47.024Z","endedAt":"2026-07-06T03:03:48.926Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-06T03:03:48.926Z","outputs":[{"path":"specrunner/changes/job-ls-operations-view/pr-create-result.md","hash":"sha256:09e712079513f87244674c33dcf008d90bfaa50a2074c4b6b608840d94c4c6df"}],"inputs":[{"path":"feat/job-ls-operations-view-e467b801","hash":null}]}
+{"type":"transition","ts":"2026-07-06T03:03:48.933Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
