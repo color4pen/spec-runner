@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8b61259f-35bf-481d-9ce1-4a12e0ddd708",
   "createdAt": "2026-07-06T02:21:12.048Z",
-  "updatedAt": "2026-07-06T02:59:05.246Z",
+  "updatedAt": "2026-07-06T02:59:31.821Z",
   "request": {
     "title": "run 単位の統計（コスト・収束回数・所要時間）を集計する job stats コマンド",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/job-stats-8b61259f",
   "error": null,
@@ -74,7 +74,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 45,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -86,7 +86,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
