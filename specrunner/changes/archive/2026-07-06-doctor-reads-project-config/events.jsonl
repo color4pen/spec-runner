@@ -79,3 +79,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/doctor-reads-project-config/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-06T11:35:59.565Z","endedAt":"2026-07-06T11:36:01.050Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-06T11:36:01.050Z","outputs":[{"path":"specrunner/changes/doctor-reads-project-config/pr-create-result.md","hash":"sha256:f1b85cf4e465392e0e7648fd326236a52c0c4a8d990bffcef970d48ffc8fea95"}],"inputs":[{"path":"fix/doctor-reads-project-config-3b6395c5","hash":null}]}
 {"type":"transition","ts":"2026-07-06T11:36:01.059Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-06T11:40:09.177Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

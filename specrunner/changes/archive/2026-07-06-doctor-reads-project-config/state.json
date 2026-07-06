@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3b6395c5-f647-4ef3-8c49-20ea69d2f014",
   "createdAt": "2026-07-06T11:09:16.571Z",
-  "updatedAt": "2026-07-06T11:36:01.059Z",
+  "updatedAt": "2026-07-06T11:40:09.177Z",
   "request": {
     "title": "doctor が project-local 設定を読まず designLayer / runtime チェックを誤診断する",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/doctor-reads-project-config-3b6395c5",
   "error": null,
   "pipelineId": "standard",
@@ -80,7 +80,7 @@
     "createdAt": "2026-07-06T11:36:01.049Z"
   },
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
