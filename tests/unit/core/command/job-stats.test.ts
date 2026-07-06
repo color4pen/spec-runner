@@ -64,7 +64,7 @@ function makeState(overrides: Partial<NormalizedJobState> = {}): NormalizedJobSt
   };
 }
 
-function makeUsageFile(overrides: Partial<UsageFile> = {}): UsageFile {
+function _makeUsageFile(overrides: Partial<UsageFile> = {}): UsageFile {
   return {
     commandInvocations: [],
     ...overrides,
