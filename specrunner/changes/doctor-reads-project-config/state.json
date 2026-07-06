@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3b6395c5-f647-4ef3-8c49-20ea69d2f014",
   "createdAt": "2026-07-06T11:09:16.571Z",
-  "updatedAt": "2026-07-06T11:35:37.505Z",
+  "updatedAt": "2026-07-06T11:36:01.059Z",
   "request": {
     "title": "doctor が project-local 設定を読まず designLayer / runtime チェックを誤診断する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/doctor-reads-project-config-3b6395c5",
   "error": null,
   "pipelineId": "standard",
@@ -74,8 +74,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/747",
+    "number": 747,
+    "createdAt": "2026-07-06T11:36:01.049Z"
+  },
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
@@ -88,7 +93,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
