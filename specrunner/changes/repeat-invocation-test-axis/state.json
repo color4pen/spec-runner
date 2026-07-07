@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bedd3590-7a16-44ce-a110-0fc0d8eab471",
   "createdAt": "2026-07-07T02:39:49.212Z",
-  "updatedAt": "2026-07-07T02:39:51.565Z",
+  "updatedAt": "2026-07-07T02:42:38.119Z",
   "request": {
     "title": "test-case-gen に繰り返し実行・冪等性の導出軸を追加する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/repeat-invocation-test-axis-bedd3590",
   "error": null,
@@ -48,7 +48,9 @@
     }
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
