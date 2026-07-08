@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71e45bd7-b17c-429f-aa59-a77ae92e0a22",
   "createdAt": "2026-07-08T17:42:07.686Z",
-  "updatedAt": "2026-07-08T18:42:01.858Z",
+  "updatedAt": "2026-07-08T18:45:23.799Z",
   "request": {
     "title": "fast pipeline のガード構成データを自己保護する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/guard-config-self-protection-71e45bd7",
   "error": null,
   "pipelineId": "standard",
@@ -74,8 +74,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/756",
+    "number": 756,
+    "createdAt": "2026-07-08T18:45:23.787Z"
+  },
   "_journal": {
-    "historyCount": 66,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -89,7 +94,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }

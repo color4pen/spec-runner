@@ -213,6 +213,26 @@
       },
       "jobId": "71e45bd7-b17c-429f-aa59-a77ae92e0a22",
       "stepName": "conformance"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-07-08T18:45:20.601Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 2463,
+          "outputTokens": 15,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 15,
+          "outputTokens": 8193,
+          "cacheReadInputTokens": 353145,
+          "cacheCreationInputTokens": 44043
+        }
+      },
+      "jobId": "71e45bd7-b17c-429f-aa59-a77ae92e0a22",
+      "stepName": "adr-gen"
     }
   ]
 }
