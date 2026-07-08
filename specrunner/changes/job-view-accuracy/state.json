@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ab654936-9adf-4ab4-a776-0099d7da4ad2",
   "createdAt": "2026-07-08T17:42:46.918Z",
-  "updatedAt": "2026-07-08T18:40:53.991Z",
+  "updatedAt": "2026-07-08T18:41:26.168Z",
   "request": {
     "title": "job ls / job stats の表示・集計を事実に一致させる",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/job-view-accuracy-ab654936",
   "error": null,
   "pipelineId": "standard",
@@ -74,8 +74,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/755",
+    "number": 755,
+    "createdAt": "2026-07-08T18:41:26.162Z"
+  },
   "_journal": {
-    "historyCount": 81,
+    "historyCount": 86,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -90,7 +95,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
