@@ -7,14 +7,17 @@
 
 import type * as nodeFsSync from "node:fs";
 
-export type DoctorCategory =
-  | "runtime"
-  | "config"
-  | "env"
-  | "auth"
-  | "repo"
-  | "agents"
-  | "storage";
+export const DOCTOR_CATEGORIES = [
+  "runtime",
+  "config",
+  "env",
+  "auth",
+  "repo",
+  "agents",
+  "storage",
+] as const;
+
+export type DoctorCategory = (typeof DOCTOR_CATEGORIES)[number];
 
 export interface DoctorResult {
   /** Display name of the check */

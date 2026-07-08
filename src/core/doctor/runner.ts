@@ -4,6 +4,7 @@
  * Individual check throws are caught and converted to fail results (T-9.2).
  */
 import type { DoctorCheck, DoctorContext, DoctorResult } from "./types.js";
+export { DOCTOR_CATEGORIES } from "./types.js";
 
 /**
  * Run all checks sequentially against the provided context.
