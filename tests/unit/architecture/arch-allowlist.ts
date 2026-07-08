@@ -204,6 +204,17 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "Composition-root; needs execFile timeout + AbortSignal not offered by the git-exec seam (D4). " +
       "Strips secrets via stripSecrets at the call site in buildExecFile (T-04).",
   },
+  {
+    file: "src/core/verification/changed-lines.ts",
+    pattern: "node:child_process",
+    invariant: "B-12",
+    tracking: "B12-changed-lines-seam",
+    comment:
+      "Changed-line derivation for the lcov coverage gate. " +
+      "Strips secrets via stripSecrets(process.env) inside spawnGit. " +
+      "spawn is injected as an argument (SpawnFn) to enable test isolation. " +
+      "Pinned by changed-lines.test.ts.",
+  },
 
   // ── DSM: §3 全層 closure whitelist 違反 ────────────────────────────────────
   //
