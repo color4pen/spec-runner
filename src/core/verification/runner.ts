@@ -400,6 +400,7 @@ async function runVerificationCommands(
         cwd,
         coverage,
         baseBranch,
+        root,
       });
       phases.push(gateResult);
       if (gateResult.status === "failed") {
@@ -484,7 +485,7 @@ async function runVerificationPhases(
   }
 
   // Detect package manager from cwd to determine the run command for script phases
-  const { pm: detectedPm } = await detectPackageManager(cwd);
+  const { pm: detectedPm, root } = await detectPackageManager(cwd);
   const toRunCmd = runCommand(detectedPm);
 
   const phases: PhaseResult[] = [];
@@ -600,6 +601,7 @@ async function runVerificationPhases(
         cwd,
         coverage,
         baseBranch,
+        root,
       });
       phases.push(gateResult);
       if (gateResult.status === "failed") {

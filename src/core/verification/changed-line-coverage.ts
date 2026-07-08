@@ -27,12 +27,14 @@ import type { SpawnFn } from "./changed-lines.js";
 // ---------------------------------------------------------------------------
 
 /** Reason a file failed the coverage gate. */
-export type FailReason = "not-loaded" | "unexecuted";
+export type FailReason = "not-loaded" | "unexecuted" | "below-threshold";
 
 /** Per-file failure record. */
 export interface FailedFile {
   file: string;
   reason: FailReason;
+  /** Execution ratio (executedLines / changedDaLines). Present only for "below-threshold". */
+  ratio?: number;
 }
 
 /** Input to the pure evaluator. */
@@ -120,7 +122,7 @@ export function evaluateChangedLineCoverage(input: EvaluateInput): EvaluateResul
       // Explicit threshold: executed / total changedDA >= threshold.
       const ratio = executedLines.length / changedDaLines.length;
       if (ratio < minChangedLineCoverage) {
-        failedFiles.push({ file, reason: "unexecuted" });
+        failedFiles.push({ file, reason: "below-threshold", ratio });
       }
     } else {
       // Default: at least 1 executed line.
@@ -142,9 +144,16 @@ export function evaluateChangedLineCoverage(input: EvaluateInput): EvaluateResul
     lines.push(
       `changed-line-coverage: failed — ${failedFiles.length} file(s) did not meet coverage requirements`,
     );
-    for (const { file, reason } of failedFiles) {
+    for (const { file, reason, ratio } of failedFiles) {
       if (reason === "not-loaded") {
         lines.push(`  - ${file}: not loaded by test suite (absent from lcov)`);
+      } else if (reason === "below-threshold") {
+        // ratio and minChangedLineCoverage are both defined when reason is "below-threshold"
+        const executedPct = Math.round((ratio ?? 0) * 100);
+        const thresholdPct = Math.round(minChangedLineCoverage! * 100);
+        lines.push(
+          `  - ${file}: ${executedPct}% coverage of changed DA lines (threshold ${thresholdPct}%)`,
+        );
       } else {
         lines.push(`  - ${file}: changed DA lines were not executed`);
       }
@@ -179,6 +188,12 @@ export interface RunGateOptions {
   baseBranch?: string;
   /** Spawn function for dependency injection in tests. */
   spawn?: SpawnFn;
+  /**
+   * Lockfile root directory (monorepo root). When provided and different from `cwd`,
+   * its `node_modules/.bin` is added to PATH so coverage commands can resolve
+   * hoisted binaries — same behavior as `verification.commands` path.
+   */
+  root?: string;
 }
 
 /** Phase name for the changed-line coverage gate. */
@@ -199,7 +214,7 @@ export const CHANGED_LINE_COVERAGE_PHASE = "changed-line-coverage" as const;
 export async function runChangedLineCoverageGate(
   options: RunGateOptions,
 ): Promise<PhaseResult> {
-  const { cwd, coverage, baseBranch = "main", spawn } = options;
+  const { cwd, coverage, baseBranch = "main", spawn, root } = options;
   const start = Date.now();
 
   // Step 1: Run coverage command.
@@ -211,6 +226,7 @@ export async function runChangedLineCoverageGate(
     commandStr,
     cwd,
     env,
+    root,
   );
 
   if (exitCode !== 0) {

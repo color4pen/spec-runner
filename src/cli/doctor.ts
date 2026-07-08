@@ -6,6 +6,7 @@
 import * as nodeFsSync from "node:fs";
 import * as nodeFsPromises from "node:fs/promises";
 import * as os from "node:os";
+import * as path from "node:path";
 import * as childProcess from "node:child_process";
 import { promisify } from "node:util";
 
@@ -14,6 +15,8 @@ import { commonChecks, managedChecks, localChecks } from "../core/doctor/checks/
 import { formatHuman, formatJson } from "../core/doctor/formatter.js";
 import type { DoctorContext, DoctorFs, DoctorConfig, DoctorGitHubClient, ExecFileFunction } from "../core/doctor/types.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
+import { getConfigPath } from "../util/xdg.js";
+import { resolveRepoRoot } from "../util/repo-root.js";
 import { stripSecrets } from "../util/env-filter.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
@@ -42,11 +45,13 @@ function buildRealFs(): DoctorFs {
 /**
  * Build a DoctorConfig from an already-loaded SpecRunnerConfig (or null if load failed).
  * Pass loadError when the config file exists but failed to parse.
+ * Pass loadErrorPath to indicate which file caused the error (for doctor hint generation).
  */
-function buildDoctorConfig(rawConfig: SpecRunnerConfig | null, loadError?: string): DoctorConfig {
+function buildDoctorConfig(rawConfig: SpecRunnerConfig | null, loadError?: string, loadErrorPath?: string): DoctorConfig {
   return {
     loaded: rawConfig !== null,
     loadError,
+    loadErrorPath,
     get(dotPath: string): unknown {
       if (!rawConfig) return undefined;
       const parts = dotPath.split(".");
@@ -95,12 +100,24 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
   // Load config (best-effort — checks will report failure if unavailable)
   let rawConfig: SpecRunnerConfig | null = null;
   let configLoadError: string | undefined;
+  let configLoadErrorPath: string | undefined;
   try {
     rawConfig = await loadConfigWithOverlay();
   } catch (err: unknown) {
     // Config not available — propagate reason so config-file-exists can distinguish
-    // malformed JSON from ENOENT
+    // malformed JSON from ENOENT.
     configLoadError = err instanceof Error ? err.message : String(err);
+    // Determine which file failed so doctor can point to the right path in its hint.
+    // loadConfig labels errors with "project local config" or "user global config".
+    // The project-local config lives at the repo root, not necessarily cwd.
+    if (configLoadError.includes("project local config")) {
+      const repoRoot = await resolveRepoRoot(process.cwd()).catch(() => null);
+      if (repoRoot) {
+        configLoadErrorPath = path.join(repoRoot, ".specrunner", "config.json");
+      }
+    } else if (configLoadError.includes("user global config")) {
+      configLoadErrorPath = getConfigPath();
+    }
   }
 
   const githubHost = resolveGitHubHost(rawConfig?.github);
@@ -160,7 +177,7 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     fetch: globalThis.fetch,
     fs: buildRealFs(),
     execFile: buildExecFile(),
-    config: buildDoctorConfig(rawConfig, configLoadError),
+    config: buildDoctorConfig(rawConfig, configLoadError, configLoadErrorPath),
     githubClient,
     homeDir: os.homedir(),
     processVersion: process.version,
