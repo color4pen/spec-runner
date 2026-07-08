@@ -16,6 +16,7 @@ import { formatHuman, formatJson } from "../core/doctor/formatter.js";
 import type { DoctorContext, DoctorFs, DoctorConfig, DoctorGitHubClient, ExecFileFunction } from "../core/doctor/types.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
 import { getConfigPath } from "../util/xdg.js";
+import { resolveRepoRoot } from "../util/repo-root.js";
 import { stripSecrets } from "../util/env-filter.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
@@ -108,9 +109,13 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     configLoadError = err instanceof Error ? err.message : String(err);
     // Determine which file failed so doctor can point to the right path in its hint.
     // loadConfig labels errors with "project local config" or "user global config".
+    // The project-local config lives at the repo root, not necessarily cwd.
     if (configLoadError.includes("project local config")) {
-      configLoadErrorPath = path.join(process.cwd(), ".specrunner", "config.json");
-    } else {
+      const repoRoot = await resolveRepoRoot(process.cwd()).catch(() => null);
+      if (repoRoot) {
+        configLoadErrorPath = path.join(repoRoot, ".specrunner", "config.json");
+      }
+    } else if (configLoadError.includes("user global config")) {
       configLoadErrorPath = getConfigPath();
     }
   }

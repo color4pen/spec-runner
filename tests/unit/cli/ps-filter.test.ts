@@ -360,5 +360,6 @@ describe("TC-031: runPs --json with 0 jobs → { 'categories': [] }", () => {
 // because runPs holds a reference to the original module-internal binding, not the re-exported
 // symbol. Rewriting to verify this behavior would require dependency-injecting checkPrMerged
 // as a parameter to runPs, which is out of scope.
-// The filtering behavior (awaiting-archive only) is implicitly covered by TC-027 and the
-// integration-level output assertions in the surrounding describe blocks.
+// checkPrMerged itself is unit-tested in tests/unit/cli/ps-check-pr-merged.test.ts.
+// The call-site filter (checkPrMerged invoked for awaiting-archive jobs only) is currently
+// not pinned by any test; pinning it requires the dependency injection described above.
