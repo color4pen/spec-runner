@@ -340,6 +340,70 @@ async function makeAwaitingResumeState(slug: string, dir: string): Promise<JobSt
   return awaitingState;
 }
 
+// ---------------------------------------------------------------------------
+// TC-WORKTREE-GUARD: worktree 内 cwd からの resume は exit 2 で拒否される
+// ---------------------------------------------------------------------------
+
+describe("TC-WORKTREE-GUARD: worktree 内 cwd からの resume は exit 2 で拒否される", () => {
+  it("worktree 内 cwd で resume を起動すると exit 2 で中断する", async () => {
+    // Create a real directory that looks like a specrunner worktree path
+    const worktreeDir = path.join(tempDir, ".git", "specrunner-worktrees", "test-slug-abc12345");
+    await fs.mkdir(worktreeDir, { recursive: true });
+
+    const runtime = buildResumeTestRuntime();
+    const command = new ResumeCommand(
+      runtime,
+      new EventBus(),
+      "test-slug",
+      { cwd: worktreeDir },
+    );
+
+    const exitCode = await command.execute();
+
+    expect(exitCode).toBe(2);
+  });
+
+  it("stderr に worktree 拒否メッセージと main checkout 案内が含まれる", async () => {
+    const worktreeDir = path.join(tempDir, ".git", "specrunner-worktrees", "test-slug-abc12345");
+    await fs.mkdir(worktreeDir, { recursive: true });
+
+    const stderrSpy = vi.spyOn(process.stderr, "write");
+
+    const runtime = buildResumeTestRuntime();
+    const command = new ResumeCommand(
+      runtime,
+      new EventBus(),
+      "test-slug",
+      { cwd: worktreeDir },
+    );
+
+    await command.execute();
+
+    const allOutput = stderrSpy.mock.calls.map((c) => String(c[0])).join("");
+    expect(allOutput).toMatch(/cannot be run from inside a.*worktree/i);
+    expect(allOutput).toMatch(/Run from the main worktree/i);
+  });
+
+  it("worktree 内 cwd での resume は job state 解決前に停止する（exit 2 で確認）", async () => {
+    // Guard fires before resolveJobStateBySlug — no state directory exists, yet exit 2 not exit 1
+    const worktreeDir = path.join(tempDir, ".git", "specrunner-worktrees", "another-slug-deadbeef");
+    await fs.mkdir(worktreeDir, { recursive: true });
+
+    const runtime = buildResumeTestRuntime();
+    const command = new ResumeCommand(
+      runtime,
+      new EventBus(),
+      "nonexistent-slug",
+      { cwd: worktreeDir },
+    );
+
+    // If guard did NOT fire first, the command would fail with exit 1 (job not found).
+    // Guard exit code is 2, so exit 2 proves the guard fired before job resolution.
+    const exitCode = await command.execute();
+    expect(exitCode).toBe(2);
+  });
+});
+
 describe("TC-011: ResumeCommand.prepare() の workspaceOpts.designLayerEnabled は undefined", () => {
   it("workspaceOpts.designLayerEnabled が undefined である（resume path は ahead 検出しない）", async () => {
     const slug = "resume-test-slug";

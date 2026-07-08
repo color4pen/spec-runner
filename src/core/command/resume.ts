@@ -12,7 +12,7 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { loadStateByJobId } from "../job-access/load-by-job-id.js";
 import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
 import { logInfo, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
-import { SpecRunnerError } from "../../errors.js";
+import { SpecRunnerError, worktreeGuardError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
 import { toStepName } from "../step/step-names.js";
 import { parseRequestMd } from "../../parser/request-md.js";
@@ -26,6 +26,7 @@ import { canTransition, transitionJob } from "../../state/lifecycle.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
+import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 
 export interface ResumeOptions {
   from?: string;
@@ -78,6 +79,19 @@ export class ResumeCommand extends CommandRunner {
     const logLevel = this.options.logLevel ?? "default";
     setLogLevel(logLevel);
     const cwd = this.options.cwd ?? process.cwd();
+
+    // Worktree guard: reject resume from inside a specrunner job worktree.
+    // agent-edited config inside a worktree must not influence guard evaluation.
+    {
+      const wtResult = await detectSpecrunnerWorktree(cwd);
+      if (wtResult.isSpecrunnerWorktree) {
+        const mainPath = wtResult.mainCheckoutPath ?? "<main checkout>";
+        const guardErr = worktreeGuardError("job resume", mainPath);
+        logError(guardErr.message);
+        stderrWrite(`Hint: ${guardErr.hint}`);
+        throw new PrepareError(2, "Cannot resume from inside a worktree");
+      }
+    }
 
     // Resolve job state by slug, with short Job ID fallback
     let state: JobState;
