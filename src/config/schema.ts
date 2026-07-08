@@ -20,6 +20,7 @@ import {
   record,
   safeParse as zodSafeParse,
   int,
+  gt,
   gte,
   lte,
   minLength,
@@ -121,6 +122,44 @@ export type ShellCommand = string | { name?: string; run: string };
 export type VerificationCommand = ShellCommand;
 
 /**
+ * Changed-line coverage gate configuration.
+ * When declared, verification runs a coverage command, parses the lcov output,
+ * and asserts that changed lines (base…HEAD diff) were executed by the test suite.
+ */
+export interface CoverageConfig {
+  /**
+   * Shell command that runs the test suite with coverage output enabled.
+   * Must produce an lcov file at `lcovPath` when successful.
+   * Executed via `sh -c <command>` (POSIX shell, Windows not supported).
+   */
+  command: ShellCommand;
+  /**
+   * cwd-relative path to the lcov output file (e.g. "coverage/lcov.info").
+   * Must be a non-empty string.
+   */
+  lcovPath: string;
+  /**
+   * Glob patterns of files to include in coverage verification (required, non-empty).
+   * Only changed files matching at least one pattern are checked.
+   * Example: ["src/**"]
+   */
+  include: string[];
+  /**
+   * Glob patterns of files to exclude from coverage verification (optional).
+   * Changed files matching any pattern are skipped (not treated as failures).
+   * Example: ["src/generated/**"]
+   */
+  exclude?: string[];
+  /**
+   * Minimum ratio of changed executable lines (DA records) that must be executed.
+   * Range: greater than 0, at most 1 (0 is rejected — it would be weaker than the default).
+   * When absent, the default threshold is "at least 1 changed line executed".
+   * Example: 0.8 = 80% of changed DA lines must have count > 0.
+   */
+  minChangedLineCoverage?: number;
+}
+
+/**
  * Verification step configuration.
  * When commands is defined, runVerification() executes them in order (fail-fast).
  * When commands is undefined, the existing phase-detection fallback is used.
@@ -133,6 +172,14 @@ export interface VerificationConfig {
    * When absent, falls back to package.json script detection (build/typecheck/test/lint/security).
    */
   commands?: ShellCommand[];
+  /**
+   * Changed-line coverage gate configuration.
+   * When declared, verification runs a coverage command after main verification,
+   * parses the lcov output, and asserts that changed lines were executed.
+   * Works in both commands path and phases path.
+   * When absent, the gate is skipped (existing behaviour preserved).
+   */
+  coverage?: CoverageConfig;
 }
 
 /**
@@ -819,6 +866,31 @@ export const configSchema = object({
       {
         commands: optional(
           array(shellCommandSchema, "must be an array."),
+        ),
+        coverage: optional(
+          object(
+            {
+              command: shellCommandSchema,
+              lcovPath: nonEmptyString("must be a non-empty string."),
+              include: array(
+                nonEmptyString("must be a non-empty string."),
+                "must be an array.",
+              ).check(minLength(1, "must be a non-empty array.")),
+              exclude: optional(
+                array(
+                  nonEmptyString("must be a non-empty string."),
+                  "must be an array.",
+                ),
+              ),
+              minChangedLineCoverage: optional(
+                number("must be a number greater than 0 and at most 1.").check(
+                  gt(0, "must be a number greater than 0 and at most 1."),
+                  lte(1, "must be a number greater than 0 and at most 1."),
+                ),
+              ),
+            },
+            "must be an object.",
+          ),
         ),
       },
       "must be an object.",

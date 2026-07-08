@@ -200,12 +200,31 @@ export async function runTestCoveragePhase(
     }
   }
 
-  // Step 5: Check each must TC ID against all file contents
+  // Step 5: Check each must TC ID against all file contents using boundary-exact matching.
+  // Boundary rule: TC-1 must NOT match TC-10 (trailing digit) or TC-1-2 (trailing -digit).
+  // A match is valid only when:
+  //   - The preceding character is not alphanumeric (or it's the start of the string).
+  //   - The following character is not a digit and not "-" followed by a digit.
   const foundTcIds: string[] = [];
   const missingTcIds: string[] = [];
 
+  /**
+   * Build a RegExp that matches tcId at ID boundaries.
+   * Ensures:
+   *   - Lookbehind: not preceded by [A-Za-z0-9]
+   *   - Lookahead: not followed by [0-9] or -[0-9]
+   */
+  function tcIdBoundaryRe(tcId: string): RegExp {
+    // Escape regex special chars in tcId (e.g. TC-1 → TC\-1)
+    const escaped = tcId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    // (?<![A-Za-z0-9]): not preceded by alphanumeric
+    // (?![0-9]|-[0-9]): not followed by digit or "-digit"
+    return new RegExp(`(?<![A-Za-z0-9])${escaped}(?![0-9]|-[0-9])`);
+  }
+
   for (const tcId of mustTcIds) {
-    const found = fileContents.some((text) => text.includes(tcId));
+    const re = tcIdBoundaryRe(tcId);
+    const found = fileContents.some((text) => re.test(text));
     if (found) {
       foundTcIds.push(tcId);
     } else {
@@ -219,7 +238,8 @@ export async function runTestCoveragePhase(
   const assertionlessTcIds: string[] = [];
 
   for (const tcId of foundTcIds) {
-    const filesWithTc = fileContents.filter((text) => text.includes(tcId));
+    const re = tcIdBoundaryRe(tcId);
+    const filesWithTc = fileContents.filter((text) => re.test(text));
     const hasAssertion = filesWithTc.some((text) => ASSERTION_RE.test(text));
     if (!hasAssertion) {
       assertionlessTcIds.push(tcId);

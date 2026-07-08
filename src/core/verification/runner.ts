@@ -19,6 +19,7 @@ import { verificationResultPath } from "../../util/paths.js";
 import { normalizeCommands, spawnCommand } from "./commands.js";
 import type { VerificationConfig } from "../../config/schema.js";
 import { detectPackageManager, runCommand } from "../../util/detect-pm.js";
+import { runChangedLineCoverageGate, CHANGED_LINE_COVERAGE_PHASE } from "./changed-line-coverage.js";
 
 /** Result for a single verification phase. */
 export interface PhaseResult {
@@ -118,11 +119,19 @@ function spawnScript(
  * Write the verification result markdown to the change folder.
  * Absolute paths in the output are normalized before writing:
  * paths under cwd become repo-relative; other $HOME paths become ~/…
+ *
+ * @param result - Verification result to write.
+ * @param outputPath - Absolute path to write the markdown file.
+ * @param cwd - Working directory for path normalization.
+ * @param coverageSkipNote - When truthy, appended as a note after the verdict block.
+ *   Used when coverage is not declared (gate skipped) to make it visible in the output.
+ *   When coverage is declared (gate ran or was fail-fast skipped), pass undefined.
  */
 async function writeVerificationResult(
   result: VerificationResult,
   outputPath: string,
   cwd: string,
+  coverageSkipNote?: string,
 ): Promise<void> {
   const iterNum = 1; // iteration number placeholder; caller provides full path
   const lines: string[] = [];
@@ -144,6 +153,13 @@ async function writeVerificationResult(
       );
       lines.push("");
     }
+  }
+
+  // Coverage gate skip note: emitted when verification.coverage is not declared.
+  // Visible in the verdict area so reviewers know the gate was not active.
+  if (coverageSkipNote) {
+    lines.push(`> Note — ${coverageSkipNote}`);
+    lines.push("");
   }
 
   if (result.errorCode) {
@@ -310,23 +326,28 @@ export async function runVerification(
   verificationConfig?: VerificationConfig,
   baseBranch?: string,
 ): Promise<VerificationResult> {
+  const coverage = verificationConfig?.coverage;
+
   // Dispatch to commands path if verification.commands is defined
   if (verificationConfig?.commands !== undefined) {
-    return runVerificationCommands(slug, cwd, verificationConfig.commands);
+    return runVerificationCommands(slug, cwd, verificationConfig.commands, coverage, baseBranch);
   }
 
   // Fallback: phase detection path (existing behavior)
-  return runVerificationPhases(slug, cwd, baseBranch);
+  return runVerificationPhases(slug, cwd, baseBranch, coverage);
 }
 
 /**
  * Commands path: execute user-defined commands in order (fail-fast).
  * Each command is run via `sh -c <command>`.
+ * After all commands, runs the changed-line coverage gate if coverage is declared.
  */
 async function runVerificationCommands(
   slug: string,
   cwd: string,
   rawCommands: import("../../config/schema.js").VerificationCommand[],
+  coverage?: import("../../config/schema.js").CoverageConfig,
+  baseBranch?: string,
 ): Promise<VerificationResult> {
   const normalized = normalizeCommands(rawCommands);
   const { root } = await detectPackageManager(cwd);
@@ -360,6 +381,36 @@ async function runVerificationCommands(
     }
   }
 
+  // Run changed-line coverage gate after all commands.
+  let coverageSkipNote: string | undefined;
+  if (coverage !== undefined) {
+    if (failed) {
+      // Fail-fast: prior commands failed — skip the gate.
+      phases.push({
+        phase: CHANGED_LINE_COVERAGE_PHASE,
+        status: "skipped",
+        stdout: "_(skipped — previous command failed)_",
+        stderr: "",
+        exitCode: null,
+        durationMs: 0,
+      });
+    } else {
+      const gateResult = await runChangedLineCoverageGate({
+        slug,
+        cwd,
+        coverage,
+        baseBranch,
+      });
+      phases.push(gateResult);
+      if (gateResult.status === "failed") {
+        failed = true;
+      }
+    }
+  } else {
+    coverageSkipNote =
+      "changed-line coverage gate: skipped (`verification.coverage` 未設定)";
+  }
+
   const nonSkipped = phases.filter((p) => p.status !== "skipped");
   const anyFailed = phases.some((p) => p.status === "failed");
   const allSkipped = nonSkipped.length === 0;
@@ -384,7 +435,7 @@ async function runVerificationCommands(
   };
 
   const outputPath = path.join(cwd, verificationResultPath(slug));
-  await writeVerificationResult(result, outputPath, cwd);
+  await writeVerificationResult(result, outputPath, cwd, coverageSkipNote);
 
   return result;
 }
@@ -395,11 +446,14 @@ async function runVerificationCommands(
  *
  * When baseBranch is provided, checks package.json scripts integrity before running phases.
  * If scripts differ from origin/<baseBranch>, returns a failed result immediately.
+ *
+ * After all phases, runs the changed-line coverage gate if coverage is declared.
  */
 async function runVerificationPhases(
   slug: string,
   cwd: string,
   baseBranch?: string,
+  coverage?: import("../../config/schema.js").CoverageConfig,
 ): Promise<VerificationResult> {
   // Integrity check: detect package.json scripts tampering before running any phases
   if (baseBranch) {
@@ -420,7 +474,11 @@ async function runVerificationPhases(
         errorCode: "PACKAGE_JSON_SCRIPTS_TAMPERED",
       };
       const outputPath = path.join(cwd, verificationResultPath(slug));
-      await writeVerificationResult(result, outputPath, cwd);
+      const tamperedCoverageSkipNote =
+        coverage === undefined
+          ? "changed-line coverage gate: skipped (`verification.coverage` 未設定)"
+          : undefined;
+      await writeVerificationResult(result, outputPath, cwd, tamperedCoverageSkipNote);
       return result;
     }
   }
@@ -523,6 +581,36 @@ async function runVerificationPhases(
     }
   }
 
+  // Run changed-line coverage gate after all phases.
+  let coverageSkipNote: string | undefined;
+  if (coverage !== undefined) {
+    if (failed) {
+      // Fail-fast: prior phases failed — skip the gate.
+      phases.push({
+        phase: CHANGED_LINE_COVERAGE_PHASE,
+        status: "skipped",
+        stdout: "_(skipped — previous phase failed)_",
+        stderr: "",
+        exitCode: null,
+        durationMs: 0,
+      });
+    } else {
+      const gateResult = await runChangedLineCoverageGate({
+        slug,
+        cwd,
+        coverage,
+        baseBranch,
+      });
+      phases.push(gateResult);
+      if (gateResult.status === "failed") {
+        failed = true;
+      }
+    }
+  } else {
+    coverageSkipNote =
+      "changed-line coverage gate: skipped (`verification.coverage` 未設定)";
+  }
+
   // Determine verdict: passed only if at least one phase ran and passed, or all non-skipped passed
   const nonSkipped = phases.filter((p) => p.status !== "skipped");
   const anyFailed = phases.some((p) => p.status === "failed");
@@ -549,7 +637,7 @@ async function runVerificationPhases(
 
   // Write result file
   const outputPath = path.join(cwd, verificationResultPath(slug));
-  await writeVerificationResult(result, outputPath, cwd);
+  await writeVerificationResult(result, outputPath, cwd, coverageSkipNote);
 
   return result;
 }

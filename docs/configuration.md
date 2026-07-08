@@ -166,6 +166,51 @@ For other languages, set `verification.commands`:
 
 Commands are executed in order via `sh -c`. First non-zero exit code stops the sequence (fail-fast). Each entry can be a plain string or an object with `run` (required) and `name` (optional label).
 
+### verification.coverage — changed-line coverage gate
+
+Declare `verification.coverage` to assert that changed lines (base…HEAD diff) were actually executed by the test suite. The gate is language-agnostic: it runs your own coverage command and reads the standard `lcov` format.
+
+```jsonc
+{
+  "verification": {
+    "commands": ["bun run typecheck", "bun run test"],
+    "coverage": {
+      "command": "bun run test --coverage",
+      "lcovPath": "coverage/lcov.info",
+      "include": ["src/**"],
+      "exclude": ["src/generated/**"],
+      "minChangedLineCoverage": 0.8
+    }
+  }
+}
+```
+
+| Field | Required | Description |
+|---|---|---|
+| `command` | ✅ | Shell command that runs tests with coverage output enabled (produces the lcov file). |
+| `lcovPath` | ✅ | cwd-relative path to the lcov output file (e.g. `coverage/lcov.info`). |
+| `include` | ✅ (non-empty) | Glob patterns of source files to check. Only changed files matching a pattern are verified. |
+| `exclude` | optional | Glob patterns of files to skip. Matching files are excluded even if they match `include`. |
+| `minChangedLineCoverage` | optional | Minimum ratio (>0, ≤1) of changed executable lines that must be executed. `0` is rejected (weaker than the default). Default: at least 1 line executed. |
+
+**Decision table** (applied per changed file in `include − exclude`):
+
+| Condition | Result |
+|---|---|
+| File absent from lcov (not loaded by test suite) | **fail** (fail-closed) |
+| Changed lines have no DA records (type defs, comments) | pass |
+| Changed DA lines exist, 0 lines executed (default threshold) | **fail** |
+| Changed DA lines exist, ≥ 1 line executed (default threshold) | pass |
+| `minChangedLineCoverage` set: executed / changedDA < threshold | **fail** |
+| `minChangedLineCoverage` set: executed / changedDA ≥ threshold | pass |
+| File matches `exclude` or does not match `include` | skipped |
+
+**Notes:**
+- The gate runs in **both** `commands` path and `phases` path (package.json fallback). When `verification.commands` is defined, the gate appends after all commands; otherwise it appends after the standard phases.
+- When `verification.coverage` is **not declared**, the gate is skipped and a note appears in `verification-result.md`. Existing behaviour is fully preserved.
+- Coverage command failure or missing/empty lcov file → **fail** (declared guarantees are not silently dropped).
+- Files that are legitimately untestable (generated code, fixtures, etc.) should be listed in `exclude`. Remaining genuine exceptions escalate through the normal escalation → human judgment → resume flow.
+
 ## Test placement
 
 By default, the implementer follows the existing test placement pattern in the project. Set `tests.placement` to declare the convention explicitly:
