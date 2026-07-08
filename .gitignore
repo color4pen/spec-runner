@@ -37,3 +37,4 @@ specrunner/changes/test-slug/
 # Machine-generated specrunner state (jobs, verbose logs); config.json is team-shared
 .specrunner/*
 !.specrunner/config.json
+coverage/

@@ -7,5 +7,10 @@ export default defineConfig({
     pool: "forks",
     maxWorkers: 4,
     globalSetup: "./tests/global-setup.ts",
+    coverage: {
+      provider: "v8",
+      reporter: ["lcov"],
+      reportsDirectory: "coverage",
+    },
   },
 });
