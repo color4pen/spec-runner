@@ -10,7 +10,8 @@
     "coverage": {
       "command": "bun run test --coverage",
       "lcovPath": "coverage/lcov.info",
-      "include": ["src/**"]
+      "include": ["src/**"],
+      "exclude": ["src/**/__tests__/**"]
     }
   },
   "steps": {

@@ -37,9 +37,9 @@ import {
   buildOperationsView,
   formatOperationsViewHuman,
   formatOperationsViewJson,
-} from "../operations-view.js";
-import type { JobState, StepRun } from "../../../state/schema.js";
-import type { ViewEntry, OperationsView, JobViewRow } from "../operations-view.js";
+} from "../../../../src/core/job-list/operations-view.js";
+import type { JobState, StepRun } from "../../../../src/state/schema.js";
+import type { ViewEntry, OperationsView, JobViewRow } from "../../../../src/core/job-list/operations-view.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -193,6 +193,109 @@ describe("TC-018: deriveEscalationSourceStep returns null for empty/undefined st
     const state = makeJobState({
       steps: {
         "code-review": [makeStepRun({ verdict: "approved" })],
+      },
+    });
+    expect(deriveEscalationSourceStep(state)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-031 – TC-034: deriveEscalationSourceStep with resumePoint
+// ---------------------------------------------------------------------------
+
+describe("TC-031: resumePoint present, current step's last run is escalation → returns step name", () => {
+  it("returns resumePoint.step when its last run verdict is escalation", () => {
+    const state = makeJobState({
+      status: "awaiting-resume",
+      resumePoint: { step: "spec-review", reason: "escalation", iterationsExhausted: 0 },
+      steps: {
+        "spec-review": [makeStepRun({ verdict: "escalation" })],
+      },
+    });
+    expect(deriveEscalationSourceStep(state)).toBe("spec-review");
+  });
+});
+
+describe("TC-032: resumePoint present, current step's last run is NOT escalation, history has old escalation → returns null", () => {
+  it("returns null when resumePoint step ran with null verdict, even though history has an escalation", () => {
+    const state = makeJobState({
+      status: "awaiting-resume",
+      resumePoint: { step: "implementer", reason: "timeout", iterationsExhausted: 0 },
+      steps: {
+        "spec-review": [makeStepRun({ verdict: "escalation" })],
+        "implementer": [makeStepRun({ verdict: null })],
+      },
+    });
+    expect(deriveEscalationSourceStep(state)).toBeNull();
+  });
+});
+
+describe("TC-033: resumePoint present, current step has no runs → returns null", () => {
+  it("returns null when resumePoint.step has no entries in steps", () => {
+    const state = makeJobState({
+      status: "awaiting-resume",
+      resumePoint: { step: "spec-review", reason: "escalation", iterationsExhausted: 0 },
+      steps: {},
+    });
+    expect(deriveEscalationSourceStep(state)).toBeNull();
+  });
+});
+
+describe("TC-034: resumePoint absent (legacy state), escalation run exists → returns step (regression guard)", () => {
+  it("falls back to history scan and returns the escalation step when no resumePoint", () => {
+    const state = makeJobState({
+      status: "awaiting-resume",
+      steps: {
+        "spec-review": [makeStepRun({ verdict: "escalation" })],
+      },
+    });
+    // No resumePoint field — legacy state
+    expect(deriveEscalationSourceStep(state)).toBe("spec-review");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-003: iteration-exhaustion awaiting-resume — deriveEscalationSourceStep returns null
+// even when steps history contains a past escalation run
+// ---------------------------------------------------------------------------
+
+describe("TC-003: iteration-exhaustion awaiting-resume does not show escalation source step", () => {
+  it("returns null when iterationsExhausted >= 1, even though a past escalation run exists in history", () => {
+    // Scenario: spec-review loop exhausted after 3 iterations.
+    // The pipeline records resumePoint on the fixer step ("implementer").
+    // Steps history has an old escalation run from "spec-review", but the
+    // current fixer run's verdict is null (not escalation).
+    const state = makeJobState({
+      status: "awaiting-resume",
+      resumePoint: {
+        step: "implementer",
+        reason: "spec-review did not complete after 3 iterations",
+        iterationsExhausted: 3,
+      },
+      steps: {
+        "spec-review": [makeStepRun({ verdict: "escalation", endedAt: "2025-01-01T09:00:00Z" })],
+        "implementer": [makeStepRun({ verdict: null, endedAt: "2025-01-01T10:00:00Z" })],
+      },
+    });
+    expect(deriveEscalationSourceStep(state)).toBeNull();
+  });
+
+  it("returns null when iterationsExhausted >= 1 and reviewerStep itself has only non-escalation last run", () => {
+    // Scenario: reviewer loop (code-review) exhausted; resumePoint points to
+    // the reviewer step itself with iterationsExhausted >= 1.
+    // The last run of the reviewer is "needs-fix" (not escalation).
+    const state = makeJobState({
+      status: "awaiting-resume",
+      resumePoint: {
+        step: "code-review",
+        reason: "code-review did not complete after 5 iterations",
+        iterationsExhausted: 5,
+      },
+      steps: {
+        "code-review": [
+          makeStepRun({ verdict: "escalation", endedAt: "2025-01-01T08:00:00Z" }),
+          makeStepRun({ verdict: "needs-fix", endedAt: "2025-01-01T10:00:00Z" }),
+        ],
       },
     });
     expect(deriveEscalationSourceStep(state)).toBeNull();
