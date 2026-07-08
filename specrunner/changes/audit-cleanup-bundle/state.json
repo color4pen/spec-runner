@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5d34093-918d-479f-93a7-fd0374a83a15",
   "createdAt": "2026-07-08T17:43:13.023Z",
-  "updatedAt": "2026-07-08T20:00:25.714Z",
+  "updatedAt": "2026-07-08T20:06:53.119Z",
   "request": {
     "title": "事後監査で検出した小粒不具合の一括修正",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "adr-gen",
   "status": "running",
   "branch": "fix/audit-cleanup-bundle-c5d34093",
   "error": null,
@@ -75,15 +75,15 @@
     }
   ],
   "_journal": {
-    "historyCount": 94,
+    "historyCount": 102,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 5,
-      "build-fixer": 3,
+      "verification": 6,
+      "build-fixer": 4,
       "code-review": 2,
       "code-fixer": 1,
       "scale-tolerance": 1,
