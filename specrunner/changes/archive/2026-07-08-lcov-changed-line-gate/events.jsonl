@@ -79,3 +79,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/lcov-changed-line-gate/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-08T11:58:06.030Z","endedAt":"2026-07-08T11:58:07.680Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-08T11:58:07.680Z","outputs":[{"path":"specrunner/changes/lcov-changed-line-gate/pr-create-result.md","hash":"sha256:daf4f327491c2b688a84a01dc11deb938eaa577f633b0d5d7fd7a56748d692f5"}],"inputs":[{"path":"change/lcov-changed-line-gate-e4b106de","hash":null}]}
 {"type":"transition","ts":"2026-07-08T11:58:07.691Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-08T12:16:57.361Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
