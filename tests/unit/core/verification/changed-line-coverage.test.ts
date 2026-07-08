@@ -11,12 +11,13 @@
  * TC-CLG-05: exclude-declared file → skipped (not fail)
  * TC-CLG-06: include-outside file → skipped (not fail)
  * TC-CLG-07: minChangedLineCoverage threshold met → passed
- * TC-CLG-08: minChangedLineCoverage threshold not met → failed
+ * TC-CLG-08: minChangedLineCoverage threshold not met → failed, reason "below-threshold", stdout shows rate + threshold
  * TC-CLG-09: default threshold — 1 line executed out of many unexecuted → passed
  * TC-CLG-GATE-01: coverage command exit non-0 → gate returns failed
  * TC-CLG-GATE-02: lcov file absent → gate returns failed
  * TC-CLG-GATE-03: lcov present + evaluation passed → gate returns passed
  * TC-CLG-GATE-04: lcov present + evaluation failed → gate returns failed
+ * TC-CLG-GATE-ROOT-01: root option causes PATH to include root/node_modules/.bin in spawned command
  */
 import { describe, it, expect } from "vitest";
 import * as fs from "node:fs/promises";
@@ -185,8 +186,8 @@ describe("TC-CLG-07: minChangedLineCoverage threshold met → passed", () => {
   });
 });
 
-describe("TC-CLG-08: minChangedLineCoverage threshold not met → failed", () => {
-  it("1/3 changed DA lines executed, threshold 0.8 → failed", () => {
+describe("TC-CLG-08: minChangedLineCoverage threshold not met → failed, reason below-threshold, stdout shows rate + threshold", () => {
+  it("1/3 changed DA lines executed, threshold 0.8 → failed with below-threshold reason and informative stdout", () => {
     const lcov = makeLcov([{ file: "src/foo.ts", lines: { 1: 0, 2: 0, 3: 5 } }]);
     const changed = makeChanged([{ file: "src/foo.ts", lines: [1, 2, 3] }]);
 
@@ -199,7 +200,15 @@ describe("TC-CLG-08: minChangedLineCoverage threshold not met → failed", () =>
 
     expect(result.status).toBe("failed");
     expect(result.failedFiles[0]?.file).toBe("src/foo.ts");
-    expect(result.failedFiles[0]?.reason).toBe("unexecuted");
+    // T-02: reason must be "below-threshold" (not "unexecuted") when threshold is set
+    expect(result.failedFiles[0]?.reason).toBe("below-threshold");
+    // T-02: ratio is stored (1/3 ≈ 0.333)
+    expect(result.failedFiles[0]?.ratio).toBeCloseTo(1 / 3, 5);
+    // T-02: stdout must include execution rate (33%) and threshold (80%)
+    expect(result.stdout).toContain("33%");
+    expect(result.stdout).toContain("80%");
+    // Sanity: unexecuted reason uses a different message
+    expect(result.stdout).not.toContain("changed DA lines were not executed");
   });
 });
 
@@ -478,6 +487,47 @@ describe("TC-CLG-GATE-06: git diff (per-file) failure → gate fails closed", as
       expect(result.exitCode).toBe(1);
       expect(result.stdout).toContain("failing closed");
       expect(result.stdout).toContain("src/bar.ts");
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-CLG-GATE-ROOT-01: root option causes PATH to include root/node_modules/.bin
+// ---------------------------------------------------------------------------
+// Approach: run a command that prints $PATH and exits with code 1, so the gate
+// returns a failed PhaseResult with the spawned PATH in its stdout.
+// This verifies the end-to-end PATH construction behaviour without needing to
+// intercept spawnCommand at the module level.
+
+describe("TC-CLG-GATE-ROOT-01: RunGateOptions.root causes PATH to include root/node_modules/.bin", async () => {
+  it("when root is set, the spawned command's $PATH includes root/node_modules/.bin", async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "lcov-gate-root-test-"));
+
+    try {
+      const FAKE_ROOT = "/fake/root";
+
+      // Run a coverage command that prints its PATH and exits non-zero so we
+      // can observe the spawned environment via the failed PhaseResult stdout.
+      const result = await runChangedLineCoverageGate({
+        slug: "test-slug",
+        cwd: tmpDir,
+        coverage: {
+          // Print PATH to stdout, then exit 1 so the gate reports it in the failure output.
+          command: "printf '%s\\n' \"$PATH\"; exit 1",
+          lcovPath: "coverage/lcov.info",
+          include: ["src/**"],
+        },
+        baseBranch: "main",
+        root: FAKE_ROOT,
+      });
+
+      // Gate must report failure (the command exited 1)
+      expect(result.status).toBe("failed");
+      // The stdout captured from the spawned command must contain the root bin path.
+      // spawnCommand prepends <cwd>/node_modules/.bin and <root>/node_modules/.bin to PATH.
+      expect(result.stdout).toContain(`${FAKE_ROOT}/node_modules/.bin`);
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true });
     }

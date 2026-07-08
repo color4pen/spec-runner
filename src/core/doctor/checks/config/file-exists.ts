@@ -19,7 +19,7 @@ export const configFileExistsCheck: DoctorCheck = {
       return {
         status: "fail" as const,
         message: `Config file is malformed: ${ctx.config.loadError}`,
-        hint: `Fix or regenerate ${configPath} by running 'specrunner init'.`,
+        hint: `Fix or regenerate ${ctx.config.loadErrorPath ?? configPath} by running 'specrunner init'.`,
       };
     }
 

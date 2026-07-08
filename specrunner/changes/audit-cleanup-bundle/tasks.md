@@ -4,17 +4,17 @@
 
 ### 実装
 
-- [ ] `src/core/verification/changed-line-coverage.ts` の `RunGateOptions` interface に `root?: string` フィールドを追加する
-- [ ] `runChangedLineCoverageGate` 内の `spawnCommand(commandStr, cwd, env)` 呼び出しを `spawnCommand(commandStr, cwd, env, options.root)` に変更する
-- [ ] `src/core/verification/runner.ts` の `runChangedLineCoverageGate` 呼び出し箇所（2 箇所）に `root` を追加する
+- [x] `src/core/verification/changed-line-coverage.ts` の `RunGateOptions` interface に `root?: string` フィールドを追加する
+- [x] `runChangedLineCoverageGate` 内の `spawnCommand(commandStr, cwd, env)` 呼び出しを `spawnCommand(commandStr, cwd, env, options.root)` に変更する
+- [x] `src/core/verification/runner.ts` の `runChangedLineCoverageGate` 呼び出し箇所（2 箇所）に `root` を追加する
   - `runVerificationCommands` 内（~line 398）: `{ slug, cwd, coverage, baseBranch, root }`
   - `runVerification` 内（~line 598）: `{ slug, cwd, coverage, baseBranch, root }`
 
 ### テスト
 
-- [ ] `tests/unit/core/verification/changed-line-coverage.test.ts` に TC-CLG-GATE-ROOT-01 を追加する
-  - `spawn` 引数に `vi.fn()` ラッパを注入し、呼び出し時の第 3 引数（env の PATH）に `root/node_modules/.bin` が含まれることを `expect` で固定する
-  - `RunGateOptions.root` に `/fake/root` を渡し、spawn された環境変数 PATH が `/fake/root/node_modules/.bin` を含むことを検証する
+- [x] `tests/unit/core/verification/changed-line-coverage.test.ts` に TC-CLG-GATE-ROOT-01 を追加する
+  - 実際にコマンドを実行して `$PATH` を出力させ、`root/node_modules/.bin` が含まれることを検証する
+  - `RunGateOptions.root` に `/fake/root` を渡し、失敗した PhaseResult の stdout に `/fake/root/node_modules/.bin` が含まれることを確認する
 
 **Acceptance Criteria**:
 - `RunGateOptions` に `root?: string` が存在する
@@ -28,25 +28,25 @@
 
 ### 実装
 
-- [ ] `src/core/verification/changed-line-coverage.ts` の `FailReason` 型に `"below-threshold"` を追加する
+- [x] `src/core/verification/changed-line-coverage.ts` の `FailReason` 型に `"below-threshold"` を追加する
   ```ts
   export type FailReason = "not-loaded" | "unexecuted" | "below-threshold";
   ```
-- [ ] `evaluateChangedLineCoverage` の threshold branch（`minChangedLineCoverage !== undefined` かつ ratio < threshold）で `reason: "below-threshold"` を使うよう変更する
+- [x] `evaluateChangedLineCoverage` の threshold branch（`minChangedLineCoverage !== undefined` かつ ratio < threshold）で `reason: "below-threshold"` を使うよう変更する
   ```ts
   failedFiles.push({ file, reason: "below-threshold" });
   ```
-- [ ] `stdout` 生成ブロック（lines 145-151）に `"below-threshold"` ケースを追加する
+- [x] `stdout` 生成ブロック（lines 145-151）に `"below-threshold"` ケースを追加する
   - `reason === "below-threshold"` のとき: `  - ${file}: ${Math.round(ratio * 100)}% coverage (${executedLines.length}/${changedDaLines.length} changed DA lines executed), threshold ${Math.round(minChangedLineCoverage! * 100)}%`
   - そのために `evaluateChangedLineCoverage` 戻り値に ratio を含めるか、failedFiles に ratio フィールドを追加する
     - **判断**: `failedFiles` に `ratio?: number` を追加し、`"below-threshold"` のとき ratio を格納するのが最小変更
-- [ ] `FailedFile` interface に `ratio?: number` フィールドを追加する
+- [x] `FailedFile` interface に `ratio?: number` フィールドを追加する
 
 ### テスト
 
-- [ ] TC-CLG-08 の assertion を更新する: `reason` が `"below-threshold"` であることを検証する
-- [ ] TC-CLG-08 に stdout の assertion を追加する: 実行率（`33%` 相当）と閾値（`80%`）が stdout に含まれることを検証する
-- [ ] TC-CLG-01（全行未実行）が引き続き `reason === "unexecuted"` であることを確認する（変更不要のはずだが回帰確認として TC を読む）
+- [x] TC-CLG-08 の assertion を更新する: `reason` が `"below-threshold"` であることを検証する
+- [x] TC-CLG-08 に stdout の assertion を追加する: 実行率（`33%` 相当）と閾値（`80%`）が stdout に含まれることを検証する
+- [x] TC-CLG-01（全行未実行）が引き続き `reason === "unexecuted"` であることを確認する（変更不要のはずだが回帰確認として TC を読む）
 
 **Acceptance Criteria**:
 - `FailReason` に `"below-threshold"` が存在する
@@ -60,9 +60,9 @@
 
 ### 実装
 
-- [ ] `specrunner/adr/2026-07-08-lcov-changed-line-gate.md` の line 57 を修正する
+- [x] `specrunner/adr/2026-07-08-lcov-changed-line-gate.md` の line 57 を修正する
   - `"minChangedLineCoverage": 0` → `"minChangedLineCoverage": 0.8`
-- [ ] 同ファイルの line 130 を修正する
+- [x] 同ファイルの line 130 を修正する
   - `指定時（0〜1）` → `指定時（>0〜1、例: 0.8）`
 
 ### テスト
@@ -80,7 +80,7 @@
 
 ### 実装
 
-- [ ] `src/core/doctor/types.ts` の `DoctorConfig` interface に `loadErrorPath?: string` を追加する
+- [x] `src/core/doctor/types.ts` の `DoctorConfig` interface に `loadErrorPath?: string` を追加する
   ```ts
   export interface DoctorConfig {
     get(path: string): unknown;
@@ -89,13 +89,13 @@
     loadErrorPath?: string;   // ← 追加
   }
   ```
-- [ ] `src/cli/doctor.ts` の `buildDoctorConfig` 関数のシグネチャに `loadErrorPath?: string` を追加し、戻り値オブジェクトに含める
+- [x] `src/cli/doctor.ts` の `buildDoctorConfig` 関数のシグネチャに `loadErrorPath?: string` を追加し、戻り値オブジェクトに含める
   ```ts
   function buildDoctorConfig(rawConfig: SpecRunnerConfig | null, loadError?: string, loadErrorPath?: string): DoctorConfig {
     return { loaded: rawConfig !== null, loadError, loadErrorPath, get(...) { ... } };
   }
   ```
-- [ ] `src/cli/doctor.ts` の `runDoctor` の catch ブロックを拡張し `configLoadErrorPath` を決定する
+- [x] `src/cli/doctor.ts` の `runDoctor` の catch ブロックを拡張し `configLoadErrorPath` を決定する
   ```ts
   let configLoadErrorPath: string | undefined;
   if (configLoadError) {
@@ -110,18 +110,18 @@
   }
   ```
   ※ `path` は `node:path`、`getConfigPath` は `../util/xdg.js` から import する（既存の import がない場合は追加）
-- [ ] `src/cli/doctor.ts` の `buildDoctorConfig` 呼び出しを `buildDoctorConfig(rawConfig, configLoadError, configLoadErrorPath)` に変更する
-- [ ] `src/core/doctor/checks/config/file-exists.ts` の hint を変更する
+- [x] `src/cli/doctor.ts` の `buildDoctorConfig` 呼び出しを `buildDoctorConfig(rawConfig, configLoadError, configLoadErrorPath)` に変更する
+- [x] `src/core/doctor/checks/config/file-exists.ts` の hint を変更する
   ```ts
   hint: `Fix or regenerate ${ctx.config.loadErrorPath ?? configPath} by running 'specrunner init'.`,
   ```
 
 ### テスト
 
-- [ ] `tests/core/doctor/checks/config/file-exists.test.ts` に TC-073 を追加する
+- [x] `tests/core/doctor/checks/config/file-exists.test.ts` に TC-073 を追加する
   - `config` に `loadError: "JSON parse error in project local config."` と `loadErrorPath: "/repo/.specrunner/config.json"` を設定する
   - `result.hint` に `/repo/.specrunner/config.json` が含まれ、user-global パス（`/fake/home/.config/specrunner/config.json`）が含まれないことを検証する
-- [ ] TC-072 が引き続き green であることを確認する（`loadErrorPath` 未設定時は `configPath` にフォールバック）
+- [x] TC-072 が引き続き green であることを確認する（`loadErrorPath` 未設定時は `configPath` にフォールバック）
 
 **Acceptance Criteria**:
 - `DoctorConfig` に `loadErrorPath?: string` が存在する
@@ -135,8 +135,8 @@
 
 ### T-05a: TC-032 を削除し理由をコメントで残す
 
-- [ ] `tests/unit/cli/ps-filter.test.ts` の TC-032 `describe` ブロック（line 359-393）を削除する
-- [ ] 削除箇所に以下のコメントを残す:
+- [x] `tests/unit/cli/ps-filter.test.ts` の TC-032 `describe` ブロック（line 359-393）を削除する
+- [x] 削除箇所に以下のコメントを残す:
   ```ts
   // TC-032 was removed.
   // vi.mock cannot intercept calls that runPs makes to checkPrMerged within the same module
@@ -146,11 +146,11 @@
   // The filtering behavior (awaiting-archive only) is implicitly covered by TC-027 and the
   // integration-level output assertions in the surrounding describe blocks.
   ```
-- [ ] ファイル先頭の JSDoc コメント（TC-032 の記述）を削除する
+- [x] ファイル先頭の JSDoc コメント（TC-032 の記述）を削除する
 
 ### T-05b: T-PMI-01 の同語反復 assertion を削除する
 
-- [ ] `src/core/archive/__tests__/merge-then-archive.test.ts` の T-PMI-01 テスト内の line 263-264 を削除する
+- [x] `src/core/archive/__tests__/merge-then-archive.test.ts` の T-PMI-01 テスト内の line 263-264 を削除する
   ```ts
   // The escalation text confirms the merge happened (MERGED)
   expect(FAKE_ESCALATION).toContain("MERGED");

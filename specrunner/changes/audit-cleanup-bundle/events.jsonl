@@ -17,3 +17,12 @@
 {"type":"transition","ts":"2026-07-08T18:01:28.277Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-08T18:01:28.277Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-07-08T18:01:28.279Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-07-08T18:03:24.199Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"bedd5081-75b9-4afd-bb1d-49568c0bfc0a","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-08T18:01:28.292Z","endedAt":"2026-07-08T18:03:22.754Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-07-08T18:03:22.754Z","outputs":[{"path":"specrunner/changes/audit-cleanup-bundle/test-cases.md","hash":"sha256:c59876bf25f85af86c0030ce718da10f6b2de144f3e95ec7b67e3831f57450b2"}],"inputs":[{"path":"specrunner/changes/audit-cleanup-bundle/design.md","hash":"sha256:9e12f398d191002361c8577f1995417a404dac3c50249ef6f1d356cdc9a88f62"},{"path":"specrunner/changes/audit-cleanup-bundle/tasks.md","hash":"sha256:a08fad70e4a74dfaa730fb67eda22b24e0d8757324512bd21200b1d80c8e7bd6"}]}
+{"type":"transition","ts":"2026-07-08T18:03:24.206Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-07-08T18:03:24.208Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
+{"type":"interruption","reason":"signal","ts":"2026-07-08T18:14:43.978Z"}
+{"type":"transition","ts":"2026-07-08T18:14:43.989Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-08T18:16:59.859Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'implementer'"}
+{"type":"transition","ts":"2026-07-08T18:16:59.928Z","step":"implementer-started","status":"started","message":"Starting implementer step"}

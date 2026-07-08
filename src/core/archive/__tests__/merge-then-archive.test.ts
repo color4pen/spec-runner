@@ -260,8 +260,6 @@ describe("merge-then-archive — post-merge integrity check wiring", () => {
     expect(result.exitCode).toBe(1);
     // Escalation is surfaced
     expect("escalation" in result && result.escalation).toBe(FAKE_ESCALATION);
-    // The escalation text confirms the merge happened (MERGED)
-    expect(FAKE_ESCALATION).toContain("MERGED");
     // Post-merge cleanup must NOT have been called on integrity failure
     expect(vi.mocked(runPostMergeCleanup)).not.toHaveBeenCalled();
     // Integrity check WAS called
