@@ -255,6 +255,54 @@ describe("TC-034: resumePoint absent (legacy state), escalation run exists → r
 });
 
 // ---------------------------------------------------------------------------
+// TC-003: iteration-exhaustion awaiting-resume — deriveEscalationSourceStep returns null
+// even when steps history contains a past escalation run
+// ---------------------------------------------------------------------------
+
+describe("TC-003: iteration-exhaustion awaiting-resume does not show escalation source step", () => {
+  it("returns null when iterationsExhausted >= 1, even though a past escalation run exists in history", () => {
+    // Scenario: spec-review loop exhausted after 3 iterations.
+    // The pipeline records resumePoint on the fixer step ("implementer").
+    // Steps history has an old escalation run from "spec-review", but the
+    // current fixer run's verdict is null (not escalation).
+    const state = makeJobState({
+      status: "awaiting-resume",
+      resumePoint: {
+        step: "implementer",
+        reason: "spec-review did not complete after 3 iterations",
+        iterationsExhausted: 3,
+      },
+      steps: {
+        "spec-review": [makeStepRun({ verdict: "escalation", endedAt: "2025-01-01T09:00:00Z" })],
+        "implementer": [makeStepRun({ verdict: null, endedAt: "2025-01-01T10:00:00Z" })],
+      },
+    });
+    expect(deriveEscalationSourceStep(state)).toBeNull();
+  });
+
+  it("returns null when iterationsExhausted >= 1 and reviewerStep itself has only non-escalation last run", () => {
+    // Scenario: reviewer loop (code-review) exhausted; resumePoint points to
+    // the reviewer step itself with iterationsExhausted >= 1.
+    // The last run of the reviewer is "needs-fix" (not escalation).
+    const state = makeJobState({
+      status: "awaiting-resume",
+      resumePoint: {
+        step: "code-review",
+        reason: "code-review did not complete after 5 iterations",
+        iterationsExhausted: 5,
+      },
+      steps: {
+        "code-review": [
+          makeStepRun({ verdict: "escalation", endedAt: "2025-01-01T08:00:00Z" }),
+          makeStepRun({ verdict: "needs-fix", endedAt: "2025-01-01T10:00:00Z" }),
+        ],
+      },
+    });
+    expect(deriveEscalationSourceStep(state)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-006 / TC-007 / TC-008 / TC-009 / TC-019 / TC-020 / TC-021 / TC-022
 // deriveNextAction
 // ---------------------------------------------------------------------------
