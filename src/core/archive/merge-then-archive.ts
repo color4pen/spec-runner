@@ -25,12 +25,13 @@ import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";
 import type { GitHubClient } from "../port/github-client.js";
 import type { WorktreeManager } from "../worktree/manager.js";
-import type { ResolvedDesignLayer } from "../../config/schema.js";
+import type { ResolvedDesignLayer, ShellCommand } from "../../config/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import { runArchiveOrchestrator, resolveWorktreePathForArchive } from "./orchestrator.js";
 import type { ArchiveResult } from "./orchestrator.js";
 import { runPostMergeCleanup } from "./post-merge-cleanup.js";
+import { runPostMergeIntegrityCheck } from "./post-merge-integrity.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { logResult } from "../../logger/stdout.js";
 import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS } from "../../config/schema.js";
@@ -83,6 +84,14 @@ export interface MergeThenArchiveInput {
    * When absent or disabled, the hook is a no-op.
    */
   designLayer?: ResolvedDesignLayer;
+  /**
+   * Commands to run on the merged base branch after a successful squash merge.
+   * When non-empty, an ephemeral worktree is created at the merge SHA and each
+   * command is executed fail-fast.  A non-zero exit produces an escalation and
+   * skips post-merge cleanup.
+   * Absent or empty = no integrity check (backward compatible).
+   */
+  postMergeVerify?: ShellCommand[];
 }
 
 export type MergeThenArchiveResult = ArchiveResult;
@@ -113,6 +122,7 @@ export async function runMergeThenArchive(
     nowFn = Date.now,
     protectedPaths,
     designLayer,
+    postMergeVerify,
   } = input;
 
   // Resolve effective timeout: undefined → default, null → unlimited, number → as-is
@@ -525,6 +535,24 @@ export async function runMergeThenArchive(
   }
 
   stdoutWrite(`PR #${prNumber} merged successfully.`);
+
+  // ---------------------------------------------------------------------------
+  // Step 5.5: Post-merge integrity check (only on fresh-merge path)
+  // ---------------------------------------------------------------------------
+  if (postMergeVerify && postMergeVerify.length > 0) {
+    const integrityResult = await runPostMergeIntegrityCheck({
+      slug,
+      cwd,
+      baseBranch: resolvedBaseBranch,
+      commands: postMergeVerify,
+      spawn,
+      githubToken,
+      prNumber,
+    });
+    if (!integrityResult.ok) {
+      return { exitCode: 1, escalation: integrityResult.escalation };
+    }
+  }
 
   // ---------------------------------------------------------------------------
   // Step 6: Post-merge cleanup (worktree teardown + branch delete)
