@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5d34093-918d-479f-93a7-fd0374a83a15",
   "createdAt": "2026-07-08T17:43:13.023Z",
-  "updatedAt": "2026-07-08T20:07:20.930Z",
+  "updatedAt": "2026-07-08T20:21:30.974Z",
   "request": {
     "title": "事後監査で検出した小粒不具合の一括修正",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/audit-cleanup-bundle-c5d34093",
   "error": null,
   "pipelineId": "standard",
@@ -47,7 +47,11 @@
       ]
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "signal",
+    "iterationsExhausted": 0
+  },
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
@@ -80,7 +84,7 @@
     "createdAt": "2026-07-08T20:07:20.917Z"
   },
   "_journal": {
-    "historyCount": 107,
+    "historyCount": 108,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

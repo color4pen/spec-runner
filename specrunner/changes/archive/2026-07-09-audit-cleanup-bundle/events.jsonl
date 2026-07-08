@@ -156,3 +156,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/audit-cleanup-bundle/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-08T20:07:19.137Z","endedAt":"2026-07-08T20:07:20.918Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-08T20:07:20.918Z","outputs":[{"path":"specrunner/changes/audit-cleanup-bundle/pr-create-result.md","hash":"sha256:c086b2915c6b7dcf46692644a4d02241fc2d1e4e9137c52f1e81d6b6dcf28b5e"}],"inputs":[{"path":"fix/audit-cleanup-bundle-c5d34093","hash":null}]}
 {"type":"transition","ts":"2026-07-08T20:07:20.930Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-08T20:21:30.974Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
