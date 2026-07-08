@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71e45bd7-b17c-429f-aa59-a77ae92e0a22",
   "createdAt": "2026-07-08T17:42:07.686Z",
-  "updatedAt": "2026-07-08T17:57:01.637Z",
+  "updatedAt": "2026-07-08T18:00:23.911Z",
   "request": {
     "title": "fast pipeline のガード構成データを自己保護する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/guard-config-self-protection-71e45bd7",
   "error": null,
@@ -48,10 +48,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
