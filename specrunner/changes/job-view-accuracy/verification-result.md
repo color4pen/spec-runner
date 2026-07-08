@@ -6,11 +6,11 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 1.1s | 0 |
-| 2 | typecheck | passed | 3.8s | 0 |
-| 3 | test | passed | 17.5s | 0 |
-| 4 | lint | passed | 4.6s | 0 |
-| 5 | changed-line-coverage | failed | 21.7s | 1 |
+| 1 | build | passed | 0.4s | 0 |
+| 2 | typecheck | passed | 3.9s | 0 |
+| 3 | test | passed | 17.4s | 0 |
+| 4 | lint | passed | 4.0s | 0 |
+| 5 | changed-line-coverage | failed | 22.5s | 1 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.05 MB
-ESM ⚡️ Build success in 82ms
+ESM ⚡️ Build success in 72ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -64,45 +64,21 @@ job-am-1	slug-job-am-1	init	awaiting-archive	-	188d
 
  Test Files  451 passed (451)
       Tests  6193 passed (6193)
-   Start at  03:01:36
-   Duration  17.21s (transform 4.03s, setup 0ms, import 14.55s, tests 19.16s, environment 22ms)
+   Start at  03:05:26
+   Duration  17.08s (transform 3.92s, setup 0ms, import 14.33s, tests 18.88s, environment 22ms)
 
 
 $ vitest run
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-n7SUFU/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-qjC68h/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-apWxLf/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-tYi1y6/specrunner/credentials.json has loose permissions (recommend 0600).
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Warning: A vi.hoisted() call in "tests/unit/cli/ps-filter.test.ts" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.
-See: https://vitest.dev/guide/mocking/modules#how-it-works
-Warning: A vi.mock("../../../src/cli/ps.js") call in "tests/unit/cli/ps-filter.test.ts" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.
-See: https://vitest.dev/guide/mocking/modules#how-it-works
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
@@ -123,6 +99,31 @@ See: https://vitest.dev/guide/mocking/modules#how-it-works
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=old-feature (issue#50)
+Warning: A vi.hoisted() call in "tests/unit/cli/ps-filter.test.ts" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.
+See: https://vitest.dev/guide/mocking/modules#how-it-works
+Warning: A vi.mock("../../../src/cli/ps.js") call in "tests/unit/cli/ps-filter.test.ts" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.
+See: https://vitest.dev/guide/mocking/modules#how-it-works
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
@@ -147,7 +148,6 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
@@ -155,10 +155,10 @@ GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
-ERROR: file not found
-spawn ENOENT
 Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
+ERROR: file not found
+spawn ENOENT
 
 ```
 
@@ -177,5 +177,5 @@ Step 'changed-line-coverage' failed
 changed-line-coverage: failed — 2 file(s) did not meet coverage requirements
   - src/core/command/__tests__/job-stats.test.ts: not loaded by test suite (absent from lcov)
   - src/core/job-list/__tests__/operations-view.test.ts: not loaded by test suite (absent from lcov)
-  Skipped (not in coverage surface): specrunner/changes/job-view-accuracy/design.md, specrunner/changes/job-view-accuracy/events.jsonl, specrunner/changes/job-view-accuracy/request-review-result-001.md, specrunner/changes/job-view-accuracy/request.md, specrunner/changes/job-view-accuracy/rules.md, specrunner/changes/job-view-accuracy/spec-review-result-001.md, specrunner/changes/job-view-accuracy/spec.md, specrunner/changes/job-view-accuracy/state.json, specrunner/changes/job-view-accuracy/tasks.md, specrunner/changes/job-view-accuracy/test-cases.md, specrunner/changes/job-view-accuracy/usage.json
+  Skipped (not in coverage surface): .specrunner/config.json, specrunner/changes/job-view-accuracy/design.md, specrunner/changes/job-view-accuracy/events.jsonl, specrunner/changes/job-view-accuracy/request-review-result-001.md, specrunner/changes/job-view-accuracy/request.md, specrunner/changes/job-view-accuracy/rules.md, specrunner/changes/job-view-accuracy/spec-review-result-001.md, specrunner/changes/job-view-accuracy/spec.md, specrunner/changes/job-view-accuracy/state.json, specrunner/changes/job-view-accuracy/tasks.md, specrunner/changes/job-view-accuracy/test-cases.md, specrunner/changes/job-view-accuracy/usage.json, specrunner/changes/job-view-accuracy/verification-result.md
 ```
