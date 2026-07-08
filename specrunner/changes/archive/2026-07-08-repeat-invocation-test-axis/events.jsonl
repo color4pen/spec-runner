@@ -80,3 +80,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/repeat-invocation-test-axis/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-08T11:26:24.146Z","endedAt":"2026-07-08T11:26:25.653Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-08T11:26:25.653Z","outputs":[{"path":"specrunner/changes/repeat-invocation-test-axis/pr-create-result.md","hash":"sha256:cb7dc7bbcbe9be5e1400fbf6703f60aacf4d7d1be8afac13fdad1a678fa4a931"}],"inputs":[{"path":"change/repeat-invocation-test-axis-bedd3590","hash":null}]}
 {"type":"transition","ts":"2026-07-08T11:26:25.660Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-08T11:27:25.896Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
