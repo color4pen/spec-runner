@@ -7,10 +7,10 @@
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
 | 1 | build | passed | 0.4s | 0 |
-| 2 | typecheck | passed | 3.7s | 0 |
-| 3 | test | passed | 17.5s | 0 |
-| 4 | lint | passed | 4.0s | 0 |
-| 5 | changed-line-coverage | passed | 30.3s | 0 |
+| 2 | typecheck | passed | 3.8s | 0 |
+| 3 | test | passed | 17.2s | 0 |
+| 4 | lint | passed | 3.9s | 0 |
+| 5 | changed-line-coverage | passed | 22.3s | 0 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.05 MB
-ESM ⚡️ Build success in 73ms
+ESM ⚡️ Build success in 70ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -63,22 +63,34 @@ JOB_ID	SLUG	STEP	STATUS	NEXT	AGE
 job-am-1	slug-job-am-1	init	awaiting-archive	-	188d
 
  Test Files  451 passed (451)
-      Tests  6193 passed (6193)
-   Start at  03:24:30
-   Duration  17.23s (transform 4.07s, setup 0ms, import 14.33s, tests 19.02s, environment 22ms)
+      Tests  6195 passed (6195)
+   Start at  03:40:09
+   Duration  16.90s (transform 3.90s, setup 0ms, import 14.17s, tests 18.44s, environment 24ms)
 
 
 $ vitest run
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-vdQdu9/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-u6JIMb/specrunner/credentials.json has loose permissions (recommend 0600).
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-w9i4OD/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-4J3LZf/specrunner/credentials.json has loose permissions (recommend 0600).
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
@@ -92,6 +104,11 @@ Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-u6JIMb/specr
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 Warning: A vi.hoisted() call in "tests/unit/cli/ps-filter.test.ts" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.
 See: https://vitest.dev/guide/mocking/modules#how-it-works
 Warning: A vi.mock("../../../src/cli/ps.js") call in "tests/unit/cli/ps-filter.test.ts" is not at the top level of the module. Although it appears nested, it will be hoisted and executed before any tests run. Move it to the top level to reflect its actual execution order. This will become an error in a future version.
@@ -116,18 +133,8 @@ See: https://vitest.dev/guide/mocking/modules#how-it-works
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=old-feature (issue#50)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -149,16 +156,9 @@ GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 Warning: issue-notifier: failed to write comment to issue #42: network error
 ERROR: file not found
 spawn ENOENT
-Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 
 ```
 
@@ -172,6 +172,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (17 changed files checked, 15 skipped)
-  Skipped (not in coverage surface): .specrunner/config.json, specrunner/changes/job-view-accuracy/design.md, specrunner/changes/job-view-accuracy/events.jsonl, specrunner/changes/job-view-accuracy/request-review-result-001.md, specrunner/changes/job-view-accuracy/request.md, specrunner/changes/job-view-accuracy/rules.md, specrunner/changes/job-view-accuracy/spec-review-result-001.md, specrunner/changes/job-view-accuracy/spec.md, specrunner/changes/job-view-accuracy/state.json, specrunner/changes/job-view-accuracy/tasks.md, specrunner/changes/job-view-accuracy/test-cases.md, specrunner/changes/job-view-accuracy/usage.json, specrunner/changes/job-view-accuracy/verification-result.md, tests/unit/core/command/job-stats-jobid-filter.test.ts, tests/unit/core/job-list/operations-view.test.ts
+changed-line-coverage: passed (21 changed files checked, 19 skipped)
+  Skipped (not in coverage surface): .specrunner/config.json, specrunner/changes/job-view-accuracy/conformance-result-001.md, specrunner/changes/job-view-accuracy/design.md, specrunner/changes/job-view-accuracy/events.jsonl, specrunner/changes/job-view-accuracy/regression-gate-result-001.md, specrunner/changes/job-view-accuracy/regression-gate-result-002.md, specrunner/changes/job-view-accuracy/request-review-result-001.md, specrunner/changes/job-view-accuracy/request.md, specrunner/changes/job-view-accuracy/review-feedback-001.md, specrunner/changes/job-view-accuracy/rules.md, specrunner/changes/job-view-accuracy/spec-review-result-001.md, specrunner/changes/job-view-accuracy/spec.md, specrunner/changes/job-view-accuracy/state.json, specrunner/changes/job-view-accuracy/tasks.md, specrunner/changes/job-view-accuracy/test-cases.md, specrunner/changes/job-view-accuracy/usage.json, specrunner/changes/job-view-accuracy/verification-result.md, tests/unit/core/command/job-stats-jobid-filter.test.ts, tests/unit/core/job-list/operations-view.test.ts
 ```
