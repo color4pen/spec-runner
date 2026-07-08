@@ -8,9 +8,9 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { deriveRunStat, buildJobStatsReport } from "../../command/job-stats.js";
-import type { NormalizedJobState } from "../../../store/job-state-store.js";
-import type { UsageFile } from "../../usage/types.js";
+import { deriveRunStat, buildJobStatsReport } from "../../../../src/core/command/job-stats.js";
+import type { NormalizedJobState } from "../../../../src/store/job-state-store.js";
+import type { UsageFile } from "../../../../src/core/usage/types.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures

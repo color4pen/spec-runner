@@ -37,9 +37,9 @@ import {
   buildOperationsView,
   formatOperationsViewHuman,
   formatOperationsViewJson,
-} from "../operations-view.js";
-import type { JobState, StepRun } from "../../../state/schema.js";
-import type { ViewEntry, OperationsView, JobViewRow } from "../operations-view.js";
+} from "../../../../src/core/job-list/operations-view.js";
+import type { JobState, StepRun } from "../../../../src/state/schema.js";
+import type { ViewEntry, OperationsView, JobViewRow } from "../../../../src/core/job-list/operations-view.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
