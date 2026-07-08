@@ -6,7 +6,12 @@
       { "name": "typecheck", "run": "bun run typecheck" },
       { "name": "test", "run": "bun run test" },
       { "name": "lint", "run": "bun run lint" }
-    ]
+    ],
+    "coverage": {
+      "command": "bun run test --coverage",
+      "lcovPath": "coverage/lcov.info",
+      "include": ["src/**"]
+    }
   },
   "steps": {
     "design": { "model": "claude-opus-4-8[1m]" }
