@@ -94,3 +94,11 @@
 {"type":"transition","ts":"2026-07-08T12:04:42.954Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
 {"type":"transition","ts":"2026-07-08T12:04:42.954Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
 {"type":"transition","ts":"2026-07-08T12:04:42.956Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-08T12:05:07.877Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"de0ab9e5-295b-479b-b01c-ac431d89dd7d","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-08T12:04:42.970Z","endedAt":"2026-07-08T12:05:05.076Z"}
+{"type":"transition","ts":"2026-07-08T12:05:07.883Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-08T12:05:07.886Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-08T12:05:09.482Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/post-merge-integrity-check/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-08T12:05:07.887Z","endedAt":"2026-07-08T12:05:09.481Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-08T12:05:09.481Z","outputs":[{"path":"specrunner/changes/post-merge-integrity-check/pr-create-result.md","hash":"sha256:f3509a7a89da2910041663a616b8a479b3266b1a7bfd11181d706acaaf983898"}],"inputs":[{"path":"feat/post-merge-integrity-check-96ec811a","hash":null}]}
+{"type":"transition","ts":"2026-07-08T12:05:09.495Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
