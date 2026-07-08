@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71e45bd7-b17c-429f-aa59-a77ae92e0a22",
   "createdAt": "2026-07-08T17:42:07.686Z",
-  "updatedAt": "2026-07-08T18:45:23.799Z",
+  "updatedAt": "2026-07-08T18:58:43.182Z",
   "request": {
     "title": "fast pipeline のガード構成データを自己保護する",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/guard-config-self-protection-71e45bd7",
   "error": null,
   "pipelineId": "standard",
@@ -47,7 +47,11 @@
       ]
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "signal",
+    "iterationsExhausted": 0
+  },
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
@@ -80,7 +84,7 @@
     "createdAt": "2026-07-08T18:45:23.787Z"
   },
   "_journal": {
-    "historyCount": 71,
+    "historyCount": 72,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

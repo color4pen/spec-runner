@@ -103,3 +103,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/guard-config-self-protection/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-08T18:45:22.285Z","endedAt":"2026-07-08T18:45:23.787Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-08T18:45:23.787Z","outputs":[{"path":"specrunner/changes/guard-config-self-protection/pr-create-result.md","hash":"sha256:37fe77fd2b2e9edf381a665fc4b7e62002e7a025df9489631e2aa81fd6b8c29e"}],"inputs":[{"path":"change/guard-config-self-protection-71e45bd7","hash":null}]}
 {"type":"transition","ts":"2026-07-08T18:45:23.799Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-08T18:58:43.182Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
