@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e4b106de-ad53-4cd4-bd46-da01e426cf7a",
   "createdAt": "2026-07-07T02:39:02.663Z",
-  "updatedAt": "2026-07-08T11:53:58.229Z",
+  "updatedAt": "2026-07-08T11:58:07.691Z",
   "request": {
     "title": "verification の test-coverage を TC-ID 存在照合から変更行の実行検証（lcov）に強化する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/lcov-changed-line-gate-e4b106de",
   "error": null,
   "pipelineId": "standard",
@@ -74,8 +74,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/751",
+    "number": 751,
+    "createdAt": "2026-07-08T11:58:07.679Z"
+  },
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 55,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
@@ -88,7 +93,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
