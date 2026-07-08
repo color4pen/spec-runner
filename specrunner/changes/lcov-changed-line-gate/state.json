@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e4b106de-ad53-4cd4-bd46-da01e426cf7a",
   "createdAt": "2026-07-07T02:39:02.663Z",
-  "updatedAt": "2026-07-08T11:40:17.438Z",
+  "updatedAt": "2026-07-08T11:49:23.139Z",
   "request": {
     "title": "verification の test-coverage を TC-ID 存在照合から変更行の実行検証（lcov）に強化する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/lcov-changed-line-gate-e4b106de",
   "error": null,
@@ -48,15 +48,45 @@
     }
   ],
   "resumePoint": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 29,
+    "historyCount": 41,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
