@@ -89,6 +89,29 @@ Extract testable behaviors across these four dimensions:
 - **Data Integrity**: DB operations, transactions, unique constraints
 - **Edge Cases**: Boundary values, null/empty, duplicates, concurrent operations
 
+## Repeat Invocation & Idempotency Axis
+
+For **every** request, examine whether the deliverables include any of the following:
+server, handler, connection, initialization, or resource-management artifacts.
+
+**If the deliverables include any of the above** (server / handler / connection / initialization /
+resource management):
+- Derive a **must** TC that verifies the same operation succeeds on the **2nd (or subsequent)
+  invocation** — i.e., consecutive calls do not corrupt state, re-initialize resources
+  incorrectly, or fail due to leftover state from the first call.
+- Examples of target patterns: module-scoped server/client that re-connects on each handler
+  invocation; resource double-initialization; state residue that breaks idempotency.
+
+**If none of the above apply** (the deliverables are purely logic, data transformation, or other
+non-resource-management artifacts):
+- Write a brief note in test-cases.md explicitly stating that this axis does not apply
+  (e.g., "繰り返し実行・冪等性の軸: 該当なし" or "Repeat invocation / idempotency axis: N/A").
+- **Do not silently omit** consideration of this axis. An explicit "N/A" statement is required.
+
+The "N/A" note is a free-text remark placed as a prose paragraph — it does **not** use the
+\`### TC-{NNN}\` heading format, Summary section counts, or Result YAML fields.
+No machine-parse contract is affected.
+
 ## Summary Section (Required)
 
 Place at the top of test-cases.md, immediately after the title. All four items are mandatory:

@@ -72,7 +72,9 @@ export function buildScaffoldTemplate(params: {
 ## 受け入れ基準
 
 <!-- コツ: 機械検証できる文にする（「〜をテストで固定する」「既存テスト無変更で green」）。
-     「適切に動作する」のような判定不能な文は conformance が照合できない。 -->
+     「適切に動作する」のような判定不能な文は conformance が照合できない。
+     繰り返し実行・冪等性: server / handler / 接続 / 初期化 / 資源管理系の成果物を含む場合は、
+     2 回目の呼び出しが成功／冪等であることを受け入れ基準に含めること。 -->
 
 - [ ] <基準 1>
 - [ ] \`typecheck && test\` が green

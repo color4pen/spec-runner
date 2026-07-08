@@ -334,6 +334,69 @@ describe("TC-REQ-006: executeValidate() returns 1 for non-existent file", () => 
 });
 
 // ---------------------------------------------------------------------------
+// TC-RIA-02: buildScaffoldTemplate に繰り返し実行・冪等性ガイダンスが含まれる
+// Source: spec.md > Requirement: request template の受け入れ基準ガイダンスが同観点を案内する
+//         > Scenario: template 出力にガイダンスが含まれる
+// ---------------------------------------------------------------------------
+
+describe("TC-RIA-02: buildScaffoldTemplate() — 繰り返し実行・冪等性ガイダンス", () => {
+  it("受け入れ基準コメントに繰り返し実行・冪等性のガイダンスが含まれる", () => {
+    const content = buildScaffoldTemplate({
+      title: "Test",
+      type: "new-feature",
+      slug: "test",
+    });
+    const hasRepeatGuidance =
+      content.includes("繰り返し実行") || content.includes("冪等");
+    expect(hasRepeatGuidance).toBe(true);
+  });
+
+  it("該当成果物で 2 回目の呼び出しを受け入れ基準に含める旨のガイダンスが含まれる", () => {
+    const content = buildScaffoldTemplate({
+      title: "Test",
+      type: "spec-change",
+      slug: "test-change",
+    });
+    const has2ndCall =
+      content.includes("2 回目") || content.includes("2nd");
+    expect(has2ndCall).toBe(true);
+  });
+
+  it("ガイダンスは既存 HTML コメント内に閉じており、新しい checkbox を追加しない", () => {
+    const content = buildScaffoldTemplate({
+      title: "Test",
+      type: "new-feature",
+      slug: "test",
+    });
+    // Find the 受け入れ基準 HTML comment specifically (contains "機械検証できる文")
+    const commentStart = content.indexOf("<!-- コツ: 機械検証できる文");
+    expect(commentStart).toBeGreaterThan(-1);
+    const commentEnd = content.indexOf("-->", commentStart);
+    const commentBlock = content.slice(commentStart, commentEnd + 3);
+    // The idempotency guidance should be inside this comment (not a checkbox)
+    const hasGuidance =
+      commentBlock.includes("繰り返し実行") || commentBlock.includes("冪等");
+    expect(hasGuidance).toBe(true);
+    // Count checkboxes — should not have increased beyond existing ones
+    const checkboxCount = (content.match(/^- \[ \]/gm) ?? []).length;
+    // The template currently has 2 checkboxes (基準1 + typecheck && test)
+    expect(checkboxCount).toBe(2);
+  });
+
+  it("buildScaffoldTemplate 出力が parseRequestMdContent を通過する（契約不変）", () => {
+    const content = buildScaffoldTemplate({
+      title: "Test Feature",
+      type: "new-feature",
+      slug: "test-feature",
+    });
+    // Should not throw
+    const parsed = parseRequestMdContent(content, "<test>");
+    expect(parsed.type).toBe("new-feature");
+    expect(parsed.slug).toBe("test-feature");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-004: executeValidate() + gate failure → return 1
 // ---------------------------------------------------------------------------
 //
