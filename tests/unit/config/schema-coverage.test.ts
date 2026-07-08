@@ -8,7 +8,7 @@
  * TC-COV-CFG-05: coverage.lcovPath missing → CONFIG_INVALID
  * TC-COV-CFG-06: coverage.lcovPath empty string → CONFIG_INVALID
  * TC-COV-CFG-07: coverage.command as object form → passes validation
- * TC-COV-CFG-08: coverage.minChangedLineCoverage=0 → passes (lower boundary)
+ * TC-COV-CFG-08: coverage.minChangedLineCoverage=0 → rejected (degenerate: weaker than default)
  * TC-COV-CFG-09: coverage.minChangedLineCoverage=1 → passes (upper boundary)
  * TC-COV-CFG-10: coverage.minChangedLineCoverage=-0.1 → CONFIG_INVALID
  * TC-COV-CFG-11: coverage.minChangedLineCoverage=1.1 → CONFIG_INVALID
@@ -164,8 +164,8 @@ describe("TC-COV-CFG-07: coverage.command as object form → passes", () => {
   });
 });
 
-describe("TC-COV-CFG-08: coverage.minChangedLineCoverage=0 → passes (lower boundary)", () => {
-  it("minChangedLineCoverage: 0 → valid", () => {
+describe("TC-COV-CFG-08: coverage.minChangedLineCoverage=0 → rejected (degenerate: weaker than default)", () => {
+  it("minChangedLineCoverage: 0 → invalid (ratio >= 0 is always true, weaker than the >0 default)", () => {
     const raw = {
       ...baseConfig,
       verification: {
@@ -174,6 +174,21 @@ describe("TC-COV-CFG-08: coverage.minChangedLineCoverage=0 → passes (lower bou
           lcovPath: "coverage/lcov.info",
           include: ["src/**"],
           minChangedLineCoverage: 0,
+        },
+      },
+    };
+    expect(() => validateConfig(raw)).toThrow();
+  });
+
+  it("minChangedLineCoverage: 0.01 → valid (smallest meaningful strengthening)", () => {
+    const raw = {
+      ...baseConfig,
+      verification: {
+        coverage: {
+          command: "true",
+          lcovPath: "coverage/lcov.info",
+          include: ["src/**"],
+          minChangedLineCoverage: 0.01,
         },
       },
     };

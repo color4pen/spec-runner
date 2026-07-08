@@ -113,8 +113,14 @@ export interface ChangedFilesOptions {
  *   git diff --name-only --diff-filter=d <baseBranch>...HEAD  (list changed, non-deleted files)
  *   git diff --unified=0 <baseBranch>...HEAD -- <file>        (per-file changed lines)
  *
+ * Fail-closed: any git failure (missing base ref, corrupted repo, spawn error) throws.
+ * Returning an empty/partial map here would make the coverage gate silently pass
+ * ("0 changed files checked") — dropping the declared guarantee. Callers convert
+ * the throw into a failed verification result.
+ *
  * @returns Map where keys are repo-root-relative POSIX paths (as output by git)
  *          and values are Sets of changed line numbers on the HEAD side.
+ * @throws Error when git diff fails for the file list or for any individual file.
  */
 export async function getChangedFilesAndLines(
   options: ChangedFilesOptions,
@@ -130,9 +136,12 @@ export async function getChangedFilesAndLines(
       cwd,
       spawn,
     );
-  } catch {
-    // No diff available (e.g. no git history) — return empty map.
-    return result;
+  } catch (err) {
+    // Fail-closed: an empty map would make the gate report "passed (0 changed
+    // files checked)" — silently dropping the declared guarantee.
+    throw new Error(
+      `changed-line derivation failed: git diff --name-only ${baseBranch}...HEAD: ${(err as Error).message}`,
+    );
   }
 
   const files = fileListOutput
@@ -153,10 +162,12 @@ export async function getChangedFilesAndLines(
         cwd,
         spawn,
       );
-    } catch {
-      // If diff fails for a single file, treat it as having no changed lines.
-      result.set(file, new Set<number>());
-      continue;
+    } catch (err) {
+      // Fail-closed: an empty line set would classify the file as
+      // "non-executable changes only" and pass it unverified.
+      throw new Error(
+        `changed-line derivation failed: git diff for ${file}: ${(err as Error).message}`,
+      );
     }
 
     result.set(file, parseUnifiedDiffChangedLines(diffText));

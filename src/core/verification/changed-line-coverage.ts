@@ -260,11 +260,27 @@ export async function runChangedLineCoverageGate(
   const lcov = parseLcov(lcovText, cwd);
 
   // Step 4: Get changed files and lines from git.
-  const changedLinesByFile = await getChangedFilesAndLines({
-    cwd,
-    baseBranch,
-    spawn,
-  });
+  // Fail-closed: if git diff fails, the gate cannot verify the declared
+  // guarantee — report failed instead of passing on an empty change set.
+  let changedLinesByFile: Map<string, Set<number>>;
+  try {
+    changedLinesByFile = await getChangedFilesAndLines({
+      cwd,
+      baseBranch,
+      spawn,
+    });
+  } catch (err) {
+    return {
+      phase: CHANGED_LINE_COVERAGE_PHASE,
+      status: "failed",
+      stdout:
+        `changed-line-coverage: failed to derive changed lines from git — ` +
+        `cannot verify the declared coverage guarantee; failing closed.\n${(err as Error).message}`,
+      stderr: "",
+      exitCode: 1,
+      durationMs: Date.now() - start,
+    };
+  }
 
   // Step 5: Evaluate.
   const evaluation = evaluateChangedLineCoverage({

@@ -233,6 +233,10 @@ function makeFakeSpawn(options: {
   gitNameOnlyFiles?: string[];
   gitDiffOutput?: Record<string, string>;
   exitCode?: number;
+  /** When set, `git diff --name-only` exits with this non-zero code. */
+  gitNameOnlyExitCode?: number;
+  /** When set, `git diff --unified=0` exits with this non-zero code. */
+  gitUnifiedExitCode?: number;
 }) {
   return function fakeSpawn(
     cmd: string,
@@ -250,10 +254,20 @@ function makeFakeSpawn(options: {
       if (cmd === "git") {
         const subCommand = args[0];
         if (subCommand === "diff" && args.includes("--name-only")) {
+          if (options.gitNameOnlyExitCode !== undefined) {
+            emitter.stderr.emit("data", Buffer.from("fatal: bad revision"));
+            emitter.emit("close", options.gitNameOnlyExitCode);
+            return;
+          }
           const output = (options.gitNameOnlyFiles ?? []).join("\n") + "\n";
           emitter.stdout.emit("data", Buffer.from(output));
           emitter.emit("close", 0);
         } else if (subCommand === "diff" && args.includes("--unified=0")) {
+          if (options.gitUnifiedExitCode !== undefined) {
+            emitter.stderr.emit("data", Buffer.from("fatal: ambiguous argument"));
+            emitter.emit("close", options.gitUnifiedExitCode);
+            return;
+          }
           // Last arg that's a file path
           const fileArg = args[args.length - 1] as string;
           const output = options.gitDiffOutput?.[fileArg] ?? "";
@@ -390,6 +404,79 @@ describe("TC-CLG-GATE-04: lcov present + evaluation failed → gate returns fail
       expect(result.phase).toBe(CHANGED_LINE_COVERAGE_PHASE);
       expect(result.status).toBe("failed");
       expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("src/bar.ts");
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("TC-CLG-GATE-05: git diff (file list) failure → gate fails closed", async () => {
+  it("git diff --name-only exits non-zero → failed PhaseResult, not vacuous pass", async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "lcov-gate-test-"));
+
+    try {
+      const lcovDir = path.join(tmpDir, "coverage");
+      await fs.mkdir(lcovDir, { recursive: true });
+      const lcovContent = `SF:src/foo.ts\nDA:1,5\nend_of_record\n`;
+      await fs.writeFile(path.join(lcovDir, "lcov.info"), lcovContent, "utf-8");
+
+      const fakeSpawn = makeFakeSpawn({ gitNameOnlyExitCode: 128 });
+
+      const result = await runChangedLineCoverageGate({
+        slug: "test-slug",
+        cwd: tmpDir,
+        coverage: {
+          command: "true",
+          lcovPath: "coverage/lcov.info",
+          include: ["src/**"],
+        },
+        baseBranch: "main",
+        spawn: fakeSpawn,
+      });
+
+      expect(result.phase).toBe(CHANGED_LINE_COVERAGE_PHASE);
+      expect(result.status).toBe("failed");
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("failing closed");
+      expect(result.stdout).toContain("failed to derive changed lines");
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("TC-CLG-GATE-06: git diff (per-file) failure → gate fails closed", async () => {
+  it("git diff --unified=0 exits non-zero → failed PhaseResult, file not silently passed", async () => {
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "lcov-gate-test-"));
+
+    try {
+      const lcovDir = path.join(tmpDir, "coverage");
+      await fs.mkdir(lcovDir, { recursive: true });
+      const lcovContent = `SF:src/bar.ts\nDA:1,5\nend_of_record\n`;
+      await fs.writeFile(path.join(lcovDir, "lcov.info"), lcovContent, "utf-8");
+
+      const fakeSpawn = makeFakeSpawn({
+        gitNameOnlyFiles: ["src/bar.ts"],
+        gitUnifiedExitCode: 128,
+      });
+
+      const result = await runChangedLineCoverageGate({
+        slug: "test-slug",
+        cwd: tmpDir,
+        coverage: {
+          command: "true",
+          lcovPath: "coverage/lcov.info",
+          include: ["src/**"],
+        },
+        baseBranch: "main",
+        spawn: fakeSpawn,
+      });
+
+      expect(result.phase).toBe(CHANGED_LINE_COVERAGE_PHASE);
+      expect(result.status).toBe("failed");
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout).toContain("failing closed");
       expect(result.stdout).toContain("src/bar.ts");
     } finally {
       await fs.rm(tmpDir, { recursive: true, force: true });

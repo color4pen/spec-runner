@@ -20,6 +20,7 @@ import {
   record,
   safeParse as zodSafeParse,
   int,
+  gt,
   gte,
   lte,
   minLength,
@@ -151,7 +152,8 @@ export interface CoverageConfig {
   exclude?: string[];
   /**
    * Minimum ratio of changed executable lines (DA records) that must be executed.
-   * Range: 0–1. When absent, the default threshold is "at least 1 changed line executed".
+   * Range: greater than 0, at most 1 (0 is rejected — it would be weaker than the default).
+   * When absent, the default threshold is "at least 1 changed line executed".
    * Example: 0.8 = 80% of changed DA lines must have count > 0.
    */
   minChangedLineCoverage?: number;
@@ -870,9 +872,9 @@ export const configSchema = object({
                 ),
               ),
               minChangedLineCoverage: optional(
-                number("must be a number between 0 and 1.").check(
-                  gte(0, "must be a number between 0 and 1."),
-                  lte(1, "must be a number between 0 and 1."),
+                number("must be a number greater than 0 and at most 1.").check(
+                  gt(0, "must be a number greater than 0 and at most 1."),
+                  lte(1, "must be a number greater than 0 and at most 1."),
                 ),
               ),
             },

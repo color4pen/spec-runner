@@ -191,7 +191,7 @@ Declare `verification.coverage` to assert that changed lines (base…HEAD diff) 
 | `lcovPath` | ✅ | cwd-relative path to the lcov output file (e.g. `coverage/lcov.info`). |
 | `include` | ✅ (non-empty) | Glob patterns of source files to check. Only changed files matching a pattern are verified. |
 | `exclude` | optional | Glob patterns of files to skip. Matching files are excluded even if they match `include`. |
-| `minChangedLineCoverage` | optional | Minimum ratio (0–1) of changed executable lines that must be executed. Default: at least 1 line executed. |
+| `minChangedLineCoverage` | optional | Minimum ratio (>0, ≤1) of changed executable lines that must be executed. `0` is rejected (weaker than the default). Default: at least 1 line executed. |
 
 **Decision table** (applied per changed file in `include − exclude`):
 
