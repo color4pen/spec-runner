@@ -6,6 +6,7 @@ import { propagateVerificationResult } from "../verification/propagate.js";
 import { verificationResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import { loadConfig } from "../../config/store.js";
 
 /**
  * VerificationStep: implements the verification pipeline step as a CLI-resident step.
@@ -33,7 +34,21 @@ export const VerificationStep: CliStep = {
   async run(state: JobState, deps: CliStepDeps): Promise<void> {
     const verificationCwd = deps.cwd ?? process.cwd();
 
-    await runVerification(deps.slug, verificationCwd, deps.config.verification, deps.request.baseBranch);
+    // Re-read verification config from the worktree's own .specrunner/config.json so
+    // that changes to coverage.exclude/include in the branch take effect immediately.
+    // This avoids a chicken-and-egg problem where the PR adds coverage excludes but the
+    // orchestrator (running from the main repo) cannot see them until after the PR merges.
+    let effectiveVerification = deps.config.verification;
+    try {
+      const worktreeConfig = await loadConfig(verificationCwd);
+      if (worktreeConfig.verification !== undefined) {
+        effectiveVerification = worktreeConfig.verification;
+      }
+    } catch {
+      // Fall back to orchestrator (main repo) config if worktree config cannot be loaded.
+    }
+
+    await runVerification(deps.slug, verificationCwd, effectiveVerification, deps.request.baseBranch);
 
     // Propagate verification-result.md to branch so build-fixer can read it
     if (state.branch) {

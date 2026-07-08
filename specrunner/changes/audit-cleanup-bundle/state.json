@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5d34093-918d-479f-93a7-fd0374a83a15",
   "createdAt": "2026-07-08T17:43:13.023Z",
-  "updatedAt": "2026-07-08T18:26:00.101Z",
+  "updatedAt": "2026-07-08T19:15:12.464Z",
   "request": {
     "title": "事後監査で検出した小粒不具合の一括修正",
     "type": "bug-fix",
@@ -49,14 +49,15 @@
   ],
   "resumePoint": null,
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 39,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
