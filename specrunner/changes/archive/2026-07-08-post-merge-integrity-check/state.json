@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96ec811a-d02a-4456-9bc8-0581d0533eac",
   "createdAt": "2026-07-07T02:40:35.998Z",
-  "updatedAt": "2026-07-08T12:05:09.495Z",
+  "updatedAt": "2026-07-08T12:07:11.372Z",
   "request": {
     "title": "archive --with-merge が merge 直後に main の整合性検証を実行する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/post-merge-integrity-check-96ec811a",
   "error": null,
   "pipelineId": "standard",
@@ -80,7 +80,7 @@
     "createdAt": "2026-07-08T12:05:09.480Z"
   },
   "_journal": {
-    "historyCount": 71,
+    "historyCount": 72,
     "stepCounts": {
       "request-review": 1,
       "design": 2,

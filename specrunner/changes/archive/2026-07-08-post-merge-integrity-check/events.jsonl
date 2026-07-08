@@ -102,3 +102,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/post-merge-integrity-check/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-08T12:05:07.887Z","endedAt":"2026-07-08T12:05:09.481Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-08T12:05:09.481Z","outputs":[{"path":"specrunner/changes/post-merge-integrity-check/pr-create-result.md","hash":"sha256:f3509a7a89da2910041663a616b8a479b3266b1a7bfd11181d706acaaf983898"}],"inputs":[{"path":"feat/post-merge-integrity-check-96ec811a","hash":null}]}
 {"type":"transition","ts":"2026-07-08T12:05:09.495Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-08T12:07:11.372Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
