@@ -22,3 +22,21 @@
 {"type":"lineage","step":"test-case-gen","ts":"2026-07-08T18:02:44.706Z","outputs":[{"path":"specrunner/changes/guard-config-self-protection/test-cases.md","hash":"sha256:c0e3c64dfd95db4d18e005bf282e2053389a75e10a5a0c095830fe5708ff86bc"}],"inputs":[{"path":"specrunner/changes/guard-config-self-protection/design.md","hash":"sha256:03d24fffe4a4946264dab62dad331fd84b843c95fe9faf091d018b96d47ae99c"},{"path":"specrunner/changes/guard-config-self-protection/tasks.md","hash":"sha256:34995cdd64582d11cfa55ac9f2f4d5e690867c8227f6acfff1b8d292ade5fd1e"}]}
 {"type":"transition","ts":"2026-07-08T18:02:46.071Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
 {"type":"transition","ts":"2026-07-08T18:02:46.072Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
+{"type":"transition","ts":"2026-07-08T18:09:31.857Z","step":"implementer-verdict","status":"ok","message":"implementer verdict: success"}
+{"type":"step-attempt","step":"implementer","sessionId":"ae7ae560-7988-4337-bb50-03d60cafcbd0","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-08T18:02:46.085Z","endedAt":"2026-07-08T18:09:30.164Z"}
+{"type":"lineage","step":"implementer","ts":"2026-07-08T18:09:30.164Z","outputs":[{"path":"specrunner/changes/guard-config-self-protection","hash":null},{"path":"specrunner/changes/guard-config-self-protection/tasks.md","hash":"sha256:974785ca0966e035decce39a746821ae8fc038af8c90140986dcbe672b895724"}],"inputs":[{"path":"specrunner/changes/guard-config-self-protection/tasks.md","hash":"sha256:974785ca0966e035decce39a746821ae8fc038af8c90140986dcbe672b895724"},{"path":"specrunner/changes/guard-config-self-protection/spec.md","hash":"sha256:8745f3f913fcf71af0c95c4eb45a7dce9439d79d932b5f4cbd6f5f0ff0a1a35c"}]}
+{"type":"transition","ts":"2026-07-08T18:09:31.864Z","step":"step-transition","status":"ok","message":"implementer → verification"}
+{"type":"transition","ts":"2026-07-08T18:09:31.865Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-07-08T18:09:31.867Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-07-08T18:10:22.077Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/guard-config-self-protection/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-08T18:09:31.868Z","endedAt":"2026-07-08T18:10:22.075Z"}
+{"type":"lineage","step":"verification","ts":"2026-07-08T18:10:22.075Z","outputs":[{"path":"specrunner/changes/guard-config-self-protection/verification-result.md","hash":"sha256:bcfe0ef99eb832b9f102f2c05f2f1251afd5f1a871bb6fe84d6c9e7d549b26cb"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-08T18:10:22.082Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
+{"type":"transition","ts":"2026-07-08T18:10:22.082Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-07-08T18:10:22.084Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-08T18:10:22.085Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
+{"type":"interruption","reason":"signal","ts":"2026-07-08T18:14:43.978Z"}
+{"type":"transition","ts":"2026-07-08T18:14:43.990Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-08T18:15:39.048Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-review'"}
+{"type":"transition","ts":"2026-07-08T18:15:39.132Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-08T18:15:39.134Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
