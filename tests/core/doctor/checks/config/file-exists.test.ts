@@ -3,8 +3,8 @@
  * TC-010: file not found → fail + "Run 'specrunner init' first."
  * TC-011: permission 0644 → warn
  * TC-071: win32 → skip permission check
- * TC-072: ctx.config.loadError set → fail with malformed message (loadErrorPath absent → falls back to user-global path)
- * TC-073: ctx.config.loadError set + loadErrorPath set → hint mentions the specific file (project-local), not user-global
+ * TC-072: ctx.config.loadError set → fail with malformed message (no "project local config" → falls back to user-global path)
+ * TC-073: loadError mentions "project local config" → hint uses ctx.cwd-derived project-local path, not user-global
  */
 import { describe, it, expect, vi } from "vitest";
 import { configFileExistsCheck } from "../../../../../src/core/doctor/checks/config/file-exists.js";
@@ -64,19 +64,18 @@ describe("configFileExistsCheck", () => {
     expect(result.message).toContain("Unexpected token < in JSON");
   });
 
-  // TC-073: loadErrorPath set to project-local → hint mentions project-local, not user-global
-  it("TC-073: hint mentions loadErrorPath (project-local) when loadErrorPath is set", async () => {
-    const PROJECT_LOCAL_PATH = "/repo/.specrunner/config.json";
+  // TC-073: loadError mentions "project local config" → hint derives path from ctx.cwd, not user-global
+  it("TC-073: hint uses cwd-derived project-local path when error mentions 'project local config'", async () => {
+    // Mock context has cwd: "/fake/cwd" — project-local path is derived from it
     const config = {
       ...buildMockConfig({}),
       loadError: "JSON parse error in project local config.",
-      loadErrorPath: PROJECT_LOCAL_PATH,
     };
     const ctx = buildMockContext({ config });
     const result = await configFileExistsCheck.check(ctx);
     expect(result.status).toBe("fail");
-    // Hint must mention the project-local path
-    expect(result.hint).toContain(PROJECT_LOCAL_PATH);
+    // Hint must mention the project-local path (derived from ctx.cwd = "/fake/cwd")
+    expect(result.hint).toContain("/fake/cwd/.specrunner/config.json");
     // Hint must NOT mention the user-global path (homeDir is /fake/home in mock context)
     expect(result.hint).not.toContain("/fake/home/.config/specrunner/config.json");
   });
