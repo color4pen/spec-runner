@@ -143,4 +143,7 @@ export interface DoctorConfig {
   loaded: boolean;
   /** Error message if config failed to load (e.g. malformed JSON), otherwise undefined */
   loadError?: string;
+  /** Absolute path to the config file that failed to load. When set, used in doctor hints
+   *  instead of the default user-global path. Undefined preserves backward-compatible behaviour. */
+  loadErrorPath?: string;
 }

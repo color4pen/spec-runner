@@ -16,10 +16,8 @@ export const configFileExistsCheck: DoctorCheck = {
 
     // If the config file was found but failed to parse, report before stat
     if (ctx.config.loadError !== undefined) {
-      // Determine which file failed: project-local (if error says so) or user-global (fallback).
-      const failedPath = ctx.config.loadError.includes("project local config")
-        ? path.join(ctx.cwd, ".specrunner", "config.json")
-        : configPath;
+      // Use the explicit failed-file path when available; fall back to user-global for compat.
+      const failedPath = ctx.config.loadErrorPath ?? configPath;
       return {
         status: "fail" as const,
         message: `Config file is malformed: ${ctx.config.loadError}`,
