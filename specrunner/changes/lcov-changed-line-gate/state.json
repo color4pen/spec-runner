@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e4b106de-ad53-4cd4-bd46-da01e426cf7a",
   "createdAt": "2026-07-07T02:39:02.663Z",
-  "updatedAt": "2026-07-08T11:49:23.139Z",
+  "updatedAt": "2026-07-08T11:49:56.580Z",
   "request": {
     "title": "verification の test-coverage を TC-ID 存在照合から変更行の実行検証（lcov）に強化する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/lcov-changed-line-gate-e4b106de",
   "error": null,
@@ -75,7 +75,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 41,
+    "historyCount": 46,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
@@ -86,7 +86,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

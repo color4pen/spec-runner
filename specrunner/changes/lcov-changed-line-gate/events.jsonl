@@ -57,3 +57,10 @@
 {"type":"transition","ts":"2026-07-08T11:49:23.137Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-07-08T11:49:23.138Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-07-08T11:49:23.139Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-08T11:49:56.557Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"302b92d6-5623-4ff6-b3a2-f233a7fae373","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/lcov-changed-line-gate/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[]},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-07-08T11:49:23.148Z","endedAt":"2026-07-08T11:49:55.185Z"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-08T11:49:55.185Z","outputs":[{"path":"specrunner/changes/lcov-changed-line-gate/regression-gate-result-002.md","hash":null}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-08T11:49:56.571Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-08T11:49:56.573Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-08T11:49:56.575Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-08T11:49:56.580Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
