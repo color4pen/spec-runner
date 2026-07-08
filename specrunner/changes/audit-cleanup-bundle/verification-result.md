@@ -7,10 +7,10 @@
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
 | 1 | build | passed | 0.4s | 0 |
-| 2 | typecheck | passed | 3.7s | 0 |
-| 3 | test | passed | 17.5s | 0 |
-| 4 | lint | passed | 4.0s | 0 |
-| 5 | changed-line-coverage | failed | 22.5s | 1 |
+| 2 | typecheck | passed | 3.6s | 0 |
+| 3 | test | passed | 17.1s | 0 |
+| 4 | lint | passed | 4.1s | 0 |
+| 5 | changed-line-coverage | failed | 22.0s | 1 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.05 MB
-ESM ⚡️ Build success in 81ms
+ESM ⚡️ Build success in 82ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -53,16 +53,16 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	188d
 
  Test Files  450 passed (450)
       Tests  6186 passed (6186)
-   Start at  03:32:51
-   Duration  17.21s (transform 4.04s, setup 0ms, import 14.32s, tests 19.23s, environment 22ms)
+   Start at  04:22:11
+   Duration  16.75s (transform 3.75s, setup 0ms, import 13.96s, tests 18.30s, environment 21ms)
 
 
 $ vitest run
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-YLkG6a/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-rtu2bH/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-VpbBhT/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-jRrwSv/specrunner/credentials.json has loose permissions (recommend 0600).
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -72,6 +72,28 @@ Warning: Could not parse verdict from agent step 'code-review'. Treating as esca
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
@@ -92,15 +114,6 @@ Warning: Could not parse verdict from agent step 'code-review'. Treating as esca
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=old-feature (issue#50)
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -121,29 +134,16 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
-ERROR: file not found
-spawn ENOENT
 Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
+ERROR: file not found
+spawn ENOENT
 
 ```
 
@@ -159,8 +159,7 @@ $ eslint ./src ./tests --max-warnings 0
 Step 'changed-line-coverage' failed
 
 ```
-changed-line-coverage: failed — 2 file(s) did not meet coverage requirements
-  - src/core/archive/__tests__/merge-then-archive.test.ts: not loaded by test suite (absent from lcov)
+changed-line-coverage: failed — 1 file(s) did not meet coverage requirements
   - src/core/doctor/types.ts: not loaded by test suite (absent from lcov)
-  Skipped (not in coverage surface): .specrunner/config.json, specrunner/adr/2026-07-08-lcov-changed-line-gate.md, specrunner/changes/audit-cleanup-bundle/design.md, specrunner/changes/audit-cleanup-bundle/events.jsonl, specrunner/changes/audit-cleanup-bundle/request-review-result-001.md, specrunner/changes/audit-cleanup-bundle/request.md, specrunner/changes/audit-cleanup-bundle/rules.md, specrunner/changes/audit-cleanup-bundle/spec-review-result-001.md, specrunner/changes/audit-cleanup-bundle/spec.md, specrunner/changes/audit-cleanup-bundle/state.json, specrunner/changes/audit-cleanup-bundle/tasks.md, specrunner/changes/audit-cleanup-bundle/test-cases.md, specrunner/changes/audit-cleanup-bundle/usage.json, specrunner/changes/audit-cleanup-bundle/verification-result.md, tests/core/doctor/checks/config/file-exists.test.ts, tests/unit/cli/ps-filter.test.ts, tests/unit/core/verification/changed-line-coverage.test.ts
+  Skipped (not in coverage surface): .specrunner/config.json, specrunner/adr/2026-07-08-lcov-changed-line-gate.md, specrunner/changes/audit-cleanup-bundle/design.md, specrunner/changes/audit-cleanup-bundle/events.jsonl, specrunner/changes/audit-cleanup-bundle/request-review-result-001.md, specrunner/changes/audit-cleanup-bundle/request.md, specrunner/changes/audit-cleanup-bundle/rules.md, specrunner/changes/audit-cleanup-bundle/spec-review-result-001.md, specrunner/changes/audit-cleanup-bundle/spec.md, specrunner/changes/audit-cleanup-bundle/state.json, specrunner/changes/audit-cleanup-bundle/tasks.md, specrunner/changes/audit-cleanup-bundle/test-cases.md, specrunner/changes/audit-cleanup-bundle/usage.json, specrunner/changes/audit-cleanup-bundle/verification-result.md, src/core/archive/__tests__/merge-then-archive.test.ts, tests/core/doctor/checks/config/file-exists.test.ts, tests/unit/cli/ps-filter.test.ts, tests/unit/core/verification/changed-line-coverage.test.ts
 ```
