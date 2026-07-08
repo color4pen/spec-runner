@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71e45bd7-b17c-429f-aa59-a77ae92e0a22",
   "createdAt": "2026-07-08T17:42:07.686Z",
-  "updatedAt": "2026-07-08T18:31:21.573Z",
+  "updatedAt": "2026-07-08T18:34:31.253Z",
   "request": {
     "title": "fast pipeline のガード構成データを自己保護する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/guard-config-self-protection-71e45bd7",
   "error": null,
@@ -48,8 +48,34 @@
     }
   ],
   "resumePoint": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 41,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -58,7 +84,10 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 2,
-      "code-fixer": 1
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
