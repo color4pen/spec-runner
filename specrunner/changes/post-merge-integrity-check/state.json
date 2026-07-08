@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96ec811a-d02a-4456-9bc8-0581d0533eac",
   "createdAt": "2026-07-07T02:40:35.998Z",
-  "updatedAt": "2026-07-08T11:38:13.372Z",
+  "updatedAt": "2026-07-08T11:46:04.753Z",
   "request": {
     "title": "archive --with-merge が merge 直後に main の整合性検証を実行する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/post-merge-integrity-check-96ec811a",
   "error": null,
@@ -49,14 +49,15 @@
   ],
   "resumePoint": null,
   "_journal": {
-    "historyCount": 29,
+    "historyCount": 33,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1
     }
   }
 }

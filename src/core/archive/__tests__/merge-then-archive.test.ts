@@ -342,6 +342,38 @@ describe("merge-then-archive — post-merge integrity check wiring", () => {
     expect(vi.mocked(runPostMergeCleanup)).toHaveBeenCalled();
   });
 
+  it("TC-015: merge-during-wait path with postMergeVerify set → integrity check not invoked", async () => {
+    // Initial getPullRequest (before archive recording): OPEN
+    // Second getPullRequest (inside the wait loop): MERGED — simulates another process merging
+    const getPullRequest = vi.fn()
+      .mockResolvedValueOnce({ state: "OPEN", mergeStateStatus: "CLEAN", mergeable: "MERGEABLE", headSha: "abc1234" })
+      .mockResolvedValueOnce({ state: "MERGED" });
+    const githubClient = makeGithubClient({ getPullRequest });
+
+    const result = await runMergeThenArchive(
+      {
+        slug: FAKE_SLUG,
+        cwd: FAKE_CWD,
+        spawn: makeSpawn(),
+        fs: makeFs(),
+        githubClient,
+        owner: "test",
+        repo: "repo",
+        postMergeVerify: ["bun install --frozen-lockfile"],
+        sleepFn: noopSleep,
+        nowFn: () => 0,
+      },
+      () => {},
+    );
+
+    expect(result.exitCode).toBe(0);
+    // Merge-during-wait path: the merge is not attributed to this execution,
+    // so the post-merge integrity check must NOT be invoked.
+    expect(vi.mocked(runPostMergeIntegrityCheck)).not.toHaveBeenCalled();
+    // Cleanup still runs on the merge-during-wait path.
+    expect(vi.mocked(runPostMergeCleanup)).toHaveBeenCalled();
+  });
+
   it("T-PMI-04: already-merged resume path does not invoke integrity check", async () => {
     // Simulate archived+MERGED scenario (PR merged before this run)
     vi.mocked(JobStateStore.list).mockResolvedValue([makeState({ status: "archived" })]);
