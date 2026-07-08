@@ -8,9 +8,13 @@
  * TC-PMI-02: a command exits non-zero → { ok: false }; escalation contains PR number,
  *             merge SHA, failing command output, and remediation text; no revert/rollback
  *             git command spawned; merge fact stated as MERGED.
+ *             TC-023: failedStep exact value = 'post-merge integrity check (main)'.
+ *             TC-024: resumeCommand exact value = 'specrunner job archive --with-merge <slug>'.
  * TC-PMI-03: fail-fast — after the first failing command, later commands are not spawned.
  * TC-PMI-04: git fetch failure → { ok: true } with a warning; no escalation; no worktree.
  * TC-PMI-05: worktree removal failure after a passing run → still { ok: true } (best-effort).
+ * TC-026: git worktree add failure → warn + { ok: true } (infra resilience).
+ * TC-027: git rev-parse failure → warn + { ok: true } (infra resilience).
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { SpawnFn, SpawnResult } from "../../../util/spawn.js";
@@ -157,6 +161,11 @@ describe("runPostMergeIntegrityCheck", () => {
     // Remediation: fix steps mention the base branch
     expect(escalation).toContain(FAKE_BASE);
 
+    // TC-023: failedStep exact value
+    expect(escalation).toContain(`Failed Step:       post-merge integrity check (${FAKE_BASE})`);
+    // TC-024: resumeCommand exact value
+    expect(escalation).toContain(`Resume Command:    specrunner job archive --with-merge ${FAKE_SLUG}`);
+
     // No revert / rollback git command
     const keys = spawnKeys(spawnFn);
     expect(keys.some((k) => k.includes("revert"))).toBe(false);
@@ -239,5 +248,64 @@ describe("runPostMergeIntegrityCheck", () => {
     expect(vi.mocked(stderrWrite)).toHaveBeenCalledWith(
       expect.stringContaining("integrity worktree"),
     );
+  });
+
+  it("TC-026: git worktree add failure → warn + { ok: true } (infra resilience)", async () => {
+    const spawnFn = makeSpawnFn({
+      // fetch and rev-parse succeed
+      "git rev-parse": { exitCode: 0, stdout: `${FAKE_SHA}\n`, stderr: "" },
+      // worktree add fails
+      "git worktree add": { exitCode: 1, stdout: "", stderr: "fatal: already a worktree" },
+    });
+
+    const result = await runPostMergeIntegrityCheck({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      baseBranch: FAKE_BASE,
+      commands: ["bun install --frozen-lockfile"],
+      spawn: spawnFn,
+      prNumber: FAKE_PR,
+    });
+
+    // Infrastructure failure → treated as unable to verify, not an escalation
+    expect(result).toEqual({ ok: true });
+
+    // Warning emitted stating integrity was not verified
+    expect(vi.mocked(stderrWrite)).toHaveBeenCalledWith(
+      expect.stringContaining("NOT verified"),
+    );
+
+    // No sh -c commands were spawned (worktree was never created)
+    const keys = spawnKeys(spawnFn);
+    expect(keys.some((k) => k.startsWith("sh -c"))).toBe(false);
+  });
+
+  it("TC-027: git rev-parse failure → warn + { ok: true } (infra resilience)", async () => {
+    const spawnFn = makeSpawnFn({
+      // fetch succeeds; rev-parse fails
+      "git rev-parse": { exitCode: 1, stdout: "", stderr: "fatal: ambiguous argument" },
+    });
+
+    const result = await runPostMergeIntegrityCheck({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      baseBranch: FAKE_BASE,
+      commands: ["bun install --frozen-lockfile"],
+      spawn: spawnFn,
+      prNumber: FAKE_PR,
+    });
+
+    // Infrastructure failure → treated as unable to verify, not an escalation
+    expect(result).toEqual({ ok: true });
+
+    // Warning emitted stating integrity was not verified
+    expect(vi.mocked(stderrWrite)).toHaveBeenCalledWith(
+      expect.stringContaining("NOT verified"),
+    );
+
+    // No worktree add or sh -c commands were spawned
+    const keys = spawnKeys(spawnFn);
+    expect(keys.some((k) => k.startsWith("git worktree add"))).toBe(false);
+    expect(keys.some((k) => k.startsWith("sh -c"))).toBe(false);
   });
 });
