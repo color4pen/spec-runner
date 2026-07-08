@@ -140,15 +140,42 @@ export function categorizeStatus(status: JobStatus): JobCategoryId {
 // ---------------------------------------------------------------------------
 
 /**
- * Find the step name of the most recent escalation verdict.
+ * Find the step name that is the source of the current escalation, if any.
  *
- * Scans all StepRun entries in state.steps.
- * Among runs with outcome.verdict === "escalation", picks the one with
- * the greatest endedAt (falls back to startedAt when endedAt is absent).
- * Returns null when no such run exists.
+ * Two-path logic:
+ *   (a) `resumePoint` present (current state): use `resumePoint.step` as the
+ *       sole candidate. Inspect that step's most recent run. Return the step
+ *       name only if the most recent run has `verdict === "escalation"`;
+ *       otherwise return null — a non-escalation resumePoint (e.g. timeout,
+ *       iteration exhaustion) must not be attributed to a past escalation.
+ *   (b) `resumePoint` absent (legacy state): fall back to the full-history
+ *       scan — among all StepRun entries, pick the step whose escalation run
+ *       has the greatest `endedAt` (falls back to `startedAt` when `endedAt`
+ *       is absent). Returns null when no escalation run exists.
  */
 export function deriveEscalationSourceStep(state: JobState): string | null {
   const steps = state.steps ?? {};
+
+  // (a) Primary path: resumePoint is the canonical source for current interruption
+  if (state.resumePoint != null) {
+    const runs = steps[state.resumePoint.step] ?? [];
+    // Find the most recent run by endedAt ?? startedAt
+    let mostRecentRun: (typeof runs)[number] | null = null;
+    let mostRecentTs: string | null = null;
+    for (const run of runs) {
+      const ts = run.endedAt ?? run.startedAt;
+      if (mostRecentTs === null || ts > mostRecentTs) {
+        mostRecentTs = ts;
+        mostRecentRun = run;
+      }
+    }
+    if (mostRecentRun?.outcome.verdict === "escalation") {
+      return state.resumePoint.step;
+    }
+    return null;
+  }
+
+  // (b) Legacy fallback: full-history scan for states without resumePoint
   let bestStepName: string | null = null;
   let bestTs: string | null = null;
 

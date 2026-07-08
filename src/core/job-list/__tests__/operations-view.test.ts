@@ -200,6 +200,61 @@ describe("TC-018: deriveEscalationSourceStep returns null for empty/undefined st
 });
 
 // ---------------------------------------------------------------------------
+// TC-031 – TC-034: deriveEscalationSourceStep with resumePoint
+// ---------------------------------------------------------------------------
+
+describe("TC-031: resumePoint present, current step's last run is escalation → returns step name", () => {
+  it("returns resumePoint.step when its last run verdict is escalation", () => {
+    const state = makeJobState({
+      status: "awaiting-resume",
+      resumePoint: { step: "spec-review", reason: "escalation", iterationsExhausted: 0 },
+      steps: {
+        "spec-review": [makeStepRun({ verdict: "escalation" })],
+      },
+    });
+    expect(deriveEscalationSourceStep(state)).toBe("spec-review");
+  });
+});
+
+describe("TC-032: resumePoint present, current step's last run is NOT escalation, history has old escalation → returns null", () => {
+  it("returns null when resumePoint step ran with null verdict, even though history has an escalation", () => {
+    const state = makeJobState({
+      status: "awaiting-resume",
+      resumePoint: { step: "implementer", reason: "timeout", iterationsExhausted: 0 },
+      steps: {
+        "spec-review": [makeStepRun({ verdict: "escalation" })],
+        "implementer": [makeStepRun({ verdict: null })],
+      },
+    });
+    expect(deriveEscalationSourceStep(state)).toBeNull();
+  });
+});
+
+describe("TC-033: resumePoint present, current step has no runs → returns null", () => {
+  it("returns null when resumePoint.step has no entries in steps", () => {
+    const state = makeJobState({
+      status: "awaiting-resume",
+      resumePoint: { step: "spec-review", reason: "escalation", iterationsExhausted: 0 },
+      steps: {},
+    });
+    expect(deriveEscalationSourceStep(state)).toBeNull();
+  });
+});
+
+describe("TC-034: resumePoint absent (legacy state), escalation run exists → returns step (regression guard)", () => {
+  it("falls back to history scan and returns the escalation step when no resumePoint", () => {
+    const state = makeJobState({
+      status: "awaiting-resume",
+      steps: {
+        "spec-review": [makeStepRun({ verdict: "escalation" })],
+      },
+    });
+    // No resumePoint field — legacy state
+    expect(deriveEscalationSourceStep(state)).toBe("spec-review");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-006 / TC-007 / TC-008 / TC-009 / TC-019 / TC-020 / TC-021 / TC-022
 // deriveNextAction
 // ---------------------------------------------------------------------------

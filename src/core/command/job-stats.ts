@@ -149,8 +149,12 @@ export function deriveRunStat(state: NormalizedJobState, usageFile: UsageFile | 
   if (usageFile !== null) {
     let total = 0;
     let hasAny = false;
+    const stateJobId = state.jobId;
 
     for (const inv of usageFile.commandInvocations) {
+      // Exclude invocations that belong to a different job.
+      // Invocations without a jobId (legacy format) are always included.
+      if (inv.jobId !== undefined && inv.jobId !== stateJobId) continue;
       if (!inv.modelUsage) continue;
       for (const [model, usage] of Object.entries(inv.modelUsage)) {
         const c = computeCostUsd(model, usage);
