@@ -26,6 +26,7 @@ import { canTransition, transitionJob } from "../../state/lifecycle.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
+import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 
 export interface ResumeOptions {
   from?: string;
@@ -78,6 +79,18 @@ export class ResumeCommand extends CommandRunner {
     const logLevel = this.options.logLevel ?? "default";
     setLogLevel(logLevel);
     const cwd = this.options.cwd ?? process.cwd();
+
+    // Worktree guard: reject resume from inside a specrunner job worktree.
+    // agent-edited config inside a worktree must not influence guard evaluation.
+    {
+      const wtResult = await detectSpecrunnerWorktree(cwd);
+      if (wtResult.isSpecrunnerWorktree) {
+        const mainPath = wtResult.mainCheckoutPath ?? "<main checkout>";
+        logError("job resume cannot be run from inside a specrunner worktree.");
+        stderrWrite(`Hint: Run from the main worktree checkout: cd ${mainPath} && specrunner job resume ${this.slug}`);
+        throw new PrepareError(2, "Cannot resume from inside a worktree");
+      }
+    }
 
     // Resolve job state by slug, with short Job ID fallback
     let state: JobState;

@@ -421,6 +421,21 @@ describe("dogfooding — .specrunner/config.json has the 3 forbidden surfaces", 
     const surface = surfaces.find((s) => s.id === "state-transitions");
     expect(surface?.paths).toContain("src/state/lifecycle.ts");
   });
+
+  it("declares the 'guard-config' surface", () => {
+    const pipeline = configJson["pipeline"] as Record<string, unknown>;
+    const fast = pipeline["fast"] as Record<string, unknown>;
+    const surfaces = fast["forbiddenSurfaces"] as Array<{ id: string; paths: string[] }>;
+    expect(surfaces.some((s) => s.id === "guard-config")).toBe(true);
+  });
+
+  it("guard-config surface has path '.specrunner/config.json'", () => {
+    const pipeline = configJson["pipeline"] as Record<string, unknown>;
+    const fast = pipeline["fast"] as Record<string, unknown>;
+    const surfaces = fast["forbiddenSurfaces"] as Array<{ id: string; paths: string[] }>;
+    const surface = surfaces.find((s) => s.id === "guard-config");
+    expect(surface?.paths).toContain(".specrunner/config.json");
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -69,6 +69,55 @@ export async function detectWorktree(cwd: string): Promise<WorktreeDetectionResu
   return { isWorktree: false };
 }
 
+// ---------------------------------------------------------------------------
+// detectSpecrunnerWorktree
+// ---------------------------------------------------------------------------
+
+export interface SpecrunnerWorktreeResult {
+  isSpecrunnerWorktree: boolean;
+  /**
+   * The main checkout root (parent of `.git`).
+   * Only set when isSpecrunnerWorktree === true.
+   */
+  mainCheckoutPath?: string;
+}
+
+/**
+ * Detect whether `cwd` is inside a specrunner job worktree
+ * (i.e. under `<repo-root>/.git/specrunner-worktrees/`).
+ *
+ * Detection strategy:
+ *   1. Resolve `cwd` with fs.realpath to normalise symlinks.
+ *   2. Split the resolved path into segments.
+ *   3. Look for a `.git` segment immediately followed by `specrunner-worktrees`.
+ *   4. If found, the main checkout root is the directory above `.git`.
+ *
+ * Fail-open: if `fs.realpath` throws (non-existent path etc.) or no matching
+ * pattern is found, returns `{ isSpecrunnerWorktree: false }`.
+ *
+ * Note: does NOT touch the existing `detectWorktree` function.
+ */
+export async function detectSpecrunnerWorktree(cwd: string): Promise<SpecrunnerWorktreeResult> {
+  let resolved: string;
+  try {
+    resolved = await fs.realpath(cwd);
+  } catch {
+    // Non-existent or inaccessible path → fail-open
+    return { isSpecrunnerWorktree: false };
+  }
+
+  const parts = resolved.split(path.sep);
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (parts[i] === ".git" && parts[i + 1] === "specrunner-worktrees") {
+      // Everything before the `.git` segment is the main checkout root.
+      const mainCheckoutPath = parts.slice(0, i).join(path.sep) || path.sep;
+      return { isSpecrunnerWorktree: true, mainCheckoutPath };
+    }
+  }
+
+  return { isSpecrunnerWorktree: false };
+}
+
 /**
  * Given an absolute gitdir path (e.g. /repo/.git/specrunner-worktrees/slug-abc),
  * return the main worktree root (e.g. /repo).

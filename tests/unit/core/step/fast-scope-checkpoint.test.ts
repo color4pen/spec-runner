@@ -221,6 +221,7 @@ function makeFastConfig(): SpecRunnerConfig {
           { id: "public-types",      paths: ["src/core/port/**"] },
           { id: "persisted-format",  paths: ["src/state/schema.ts"] },
           { id: "state-transitions", paths: ["src/state/lifecycle.ts"] },
+          { id: "guard-config",      paths: [".specrunner/config.json"] },
         ],
       },
     },
@@ -360,6 +361,45 @@ describe("T-05-1: breach at conformance checkpoint → scope finding + escalatio
     const tr = outcome?.toolResult as { findings?: Finding[] } | null;
     const scopeFinding = (tr?.findings ?? []).find((f) => f.origin === "scope");
     expect(scopeFinding?.options?.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("guard-config breach (.specrunner/config.json) → verdict escalation", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeEvaluableStrategy([".specrunner/config.json"]);
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      makeFastScopeFromConfig(),
+    );
+
+    const step = makeConformanceStep();
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "conformance");
+    expect(outcome?.verdict).toBe("escalation");
+  });
+
+  it("guard-config breach → scope finding (origin:'scope', resolution:'decision-needed') is synthesized", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeEvaluableStrategy([".specrunner/config.json"]);
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      makeFastScopeFromConfig(),
+    );
+
+    const step = makeConformanceStep();
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "conformance");
+    const tr = outcome?.toolResult as { findings?: Finding[] } | null;
+    const scopeFindings = (tr?.findings ?? []).filter((f) => f.origin === "scope");
+    expect(scopeFindings).toHaveLength(1);
+    expect(scopeFindings[0]!.resolution).toBe("decision-needed");
   });
 });
 
