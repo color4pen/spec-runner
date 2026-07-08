@@ -22,7 +22,7 @@ import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { loadConfig } from "../config/store.js";
 import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS, resolveDesignLayerConfig } from "../config/schema.js";
-import type { ResolvedDesignLayer } from "../config/schema.js";
+import type { ResolvedDesignLayer, ShellCommand } from "../config/schema.js";
 import { SpecRunnerError } from "../errors.js";
 import { registerExitGuard } from "../core/lifecycle/exit-guard.js";
 import { logResult, logError, stderrWrite } from "../logger/stdout.js";
@@ -146,6 +146,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
       let waitTimeoutMs: number | null | undefined = undefined;
       let pollIntervalMs: number | undefined = undefined;
       let protectedPaths: string[] | undefined = undefined;
+      let postMergeVerify: ShellCommand[] | undefined = undefined;
       let designLayerWithMerge: ResolvedDesignLayer = disabledDesignLayer;
       try {
         const config = await loadConfig();
@@ -161,9 +162,10 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
         }
         pollIntervalMs = config.archive?.mergeWaitPollIntervalMs ?? DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS;
         protectedPaths = config.archive?.protectedPaths;
+        postMergeVerify = config.archive?.postMergeVerify;
         designLayerWithMerge = resolveDesignLayerConfig(config);
       } catch {
-        // Config not available — use defaults (no guard applied)
+        // Config not available — use defaults (no guard applied; no integrity check)
         if (opts.mergeWaitMs !== undefined) {
           waitTimeoutMs = opts.mergeWaitMs;
         } else {
@@ -219,6 +221,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           waitTimeoutMs,
           pollIntervalMs,
           protectedPaths,
+          postMergeVerify,
           designLayer: designLayerWithMerge,
         },
         logResult,

@@ -227,7 +227,8 @@ When `sourceRoot` is omitted, the full source path is preserved under `testsRoot
   "archive": {
     "mergeWaitTimeoutMs": 600000,
     "mergeWaitPollIntervalMs": 15000,
-    "protectedPaths": [".github/workflows/**", "release-please-config.json"]
+    "protectedPaths": [".github/workflows/**", "release-please-config.json"],
+    "postMergeVerify": ["bun install --frozen-lockfile"]
   }
 }
 ```
@@ -237,6 +238,51 @@ When `sourceRoot` is omitted, the full source path is preserved under `testsRoot
 | `archive.mergeWaitTimeoutMs` | `600000` (10 min) | Max wait for PR checks to become green. `null` = unlimited. `0` = no wait |
 | `archive.mergeWaitPollIntervalMs` | `15000` (15s) | Interval between check-status polls |
 | `archive.protectedPaths` | `[]` | Glob patterns for files that must not be auto-merged. Matching PRs escalate instead |
+| `archive.postMergeVerify` | `[]` (no-op) | Commands to run on the merged base branch after squash merge. Non-zero exit escalates immediately |
+
+### Post-merge integrity check (`archive.postMergeVerify`)
+
+After a successful squash merge, `job archive --with-merge` can verify that the resulting base branch is in a consistent state (e.g. lockfiles are still valid). This catches breakage that can only be detected after merge — a squash merge may introduce lockfile conflicts invisible in the individual PR.
+
+**Schema**: `(string | { name?: string; run: string })[]` — the same `ShellCommand` shape used by `verification.commands` and `workspace.setup`.
+
+**Execution model**:
+- Commands run in an ephemeral detached worktree at the merge SHA (not in the main checkout)
+- Sequential execution in array order, fail-fast (first non-zero exit stops the sequence)
+- On non-zero exit: an escalation is emitted with PR number, merge SHA, failing command output, and fix steps; post-merge cleanup is still skipped (the merge has already happened and is not rolled back)
+- On success: post-merge cleanup runs as normal
+
+**Absent or empty `[]`**: no integrity check is performed (backward compatible — existing repos are unaffected).
+
+**Infrastructure failures** (network error during `git fetch`, worktree creation failure, etc.) emit a warning and allow the archive to continue — the warning is the honest signal that verification could not run.
+
+```jsonc
+// .specrunner/config.json
+{
+  "archive": {
+    "postMergeVerify": [
+      "bun install --frozen-lockfile"
+    ]
+  }
+}
+```
+
+Other examples:
+
+```jsonc
+// Python project: verify lockfile and environment
+{ "archive": { "postMergeVerify": ["uv sync --frozen"] } }
+
+// Multi-step check with a label
+{
+  "archive": {
+    "postMergeVerify": [
+      { "name": "install", "run": "bun install --frozen-lockfile" },
+      { "name": "typecheck", "run": "bun run typecheck" }
+    ]
+  }
+}
+```
 
 ## Pipeline
 

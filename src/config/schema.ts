@@ -309,6 +309,17 @@ export interface ArchiveConfig {
    *   [".github/workflows/**", "release-please-config.json"]
    */
   protectedPaths?: string[];
+  /**
+   * Ordered list of shell commands to run on the merged base branch after
+   * `job archive --with-merge` squash-merges. Commands run fail-fast inside an
+   * ephemeral worktree at the merge SHA. A non-zero exit escalates immediately.
+   *
+   * Uses the same `ShellCommand` shape as `verification.commands` and `workspace.setup`.
+   * Absent or empty array = no integrity check (backward compatible).
+   *
+   * Example: ["bun install --frozen-lockfile"]
+   */
+  postMergeVerify?: ShellCommand[];
 }
 
 /** GitHub host and API base URL configuration. */
@@ -885,6 +896,7 @@ export const configSchema = object({
             "must be an array.",
           ),
         ),
+        postMergeVerify: optional(array(shellCommandSchema, "must be an array.")),
       },
       "must be an object.",
     ),

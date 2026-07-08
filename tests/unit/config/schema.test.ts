@@ -236,6 +236,87 @@ describe("validateConfig: archive section", () => {
 });
 
 // ---------------------------------------------------------------------------
+// archive.postMergeVerify section validation (TC-001–TC-008)
+// ---------------------------------------------------------------------------
+describe("validateConfig: archive.postMergeVerify (TC-001–TC-008)", () => {
+  it("TC-001: archive.postMergeVerify absent → validation passes", () => {
+    const raw = { ...baseConfig, archive: {} };
+    expect(() => validateConfig(raw)).not.toThrow();
+    const result = validateConfig(raw);
+    expect(result.archive?.postMergeVerify).toBeUndefined();
+  });
+
+  it("TC-002: archive.postMergeVerify empty array → validation passes (no-op)", () => {
+    const raw = { ...baseConfig, archive: { postMergeVerify: [] } };
+    expect(() => validateConfig(raw)).not.toThrow();
+    const result = validateConfig(raw);
+    expect(result.archive?.postMergeVerify).toEqual([]);
+  });
+
+  it("TC-003: archive.postMergeVerify with string commands → valid", () => {
+    const raw = {
+      ...baseConfig,
+      archive: { postMergeVerify: ["bun install --frozen-lockfile"] },
+    };
+    expect(() => validateConfig(raw)).not.toThrow();
+    const result = validateConfig(raw);
+    expect(result.archive?.postMergeVerify).toEqual(["bun install --frozen-lockfile"]);
+  });
+
+  it("TC-004: archive.postMergeVerify with object-form { name, run } → valid", () => {
+    const raw = {
+      ...baseConfig,
+      archive: { postMergeVerify: [{ name: "install", run: "bun install --frozen-lockfile" }] },
+    };
+    expect(() => validateConfig(raw)).not.toThrow();
+    const result = validateConfig(raw);
+    expect(result.archive?.postMergeVerify).toEqual([
+      { name: "install", run: "bun install --frozen-lockfile" },
+    ]);
+  });
+
+  it("TC-005: archive.postMergeVerify is not an array → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, archive: { postMergeVerify: "bun install" } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+    expect(err!.message).toContain("archive.postMergeVerify");
+  });
+
+  it("TC-006: archive.postMergeVerify element is empty string → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, archive: { postMergeVerify: [""] } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+    expect(err!.message).toContain("archive.postMergeVerify[0]");
+  });
+
+  it("TC-007: archive.postMergeVerify element is object without run field → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, archive: { postMergeVerify: [{ name: "install" }] } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+    expect(err!.message).toContain("archive.postMergeVerify");
+  });
+
+  it("TC-008: archive.postMergeVerify element has empty run string → CONFIG_INVALID", () => {
+    const raw = { ...baseConfig, archive: { postMergeVerify: [{ run: "" }] } };
+    const err = (() => {
+      try { validateConfig(raw); return null; } catch (e) { return e as Error & { code?: string }; }
+    })();
+    expect(err).not.toBeNull();
+    expect(err!.code).toBe("CONFIG_INVALID");
+    expect(err!.message).toContain("archive.postMergeVerify[0].run");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // workspace.setup section validation (T-01 / T-08)
 // ---------------------------------------------------------------------------
 describe("validateConfig: workspace.setup section", () => {
