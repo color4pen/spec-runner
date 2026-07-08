@@ -12,7 +12,7 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { loadStateByJobId } from "../job-access/load-by-job-id.js";
 import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
 import { logInfo, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
-import { SpecRunnerError } from "../../errors.js";
+import { SpecRunnerError, worktreeGuardError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
 import { toStepName } from "../step/step-names.js";
 import { parseRequestMd } from "../../parser/request-md.js";
@@ -86,8 +86,9 @@ export class ResumeCommand extends CommandRunner {
       const wtResult = await detectSpecrunnerWorktree(cwd);
       if (wtResult.isSpecrunnerWorktree) {
         const mainPath = wtResult.mainCheckoutPath ?? "<main checkout>";
-        logError("job resume cannot be run from inside a specrunner worktree.");
-        stderrWrite(`Hint: Run from the main worktree checkout: cd ${mainPath} && specrunner job resume ${this.slug}`);
+        const guardErr = worktreeGuardError("job resume", mainPath);
+        logError(guardErr.message);
+        stderrWrite(`Hint: ${guardErr.hint}`);
         throw new PrepareError(2, "Cannot resume from inside a worktree");
       }
     }

@@ -7,7 +7,7 @@
  * - applyScopeConfig: config declared → forbidden matches + checkpoint preserved
  *                     no config → forbidden empty + presence maintained
  *                     standard / design-only → reference identical
- * - dogfooding: .specrunner/config.json declares 3 surfaces
+ * - dogfooding: .specrunner/config.json declares 4 surfaces
  * - no-breach + gate: capability gate still applies when forbidden=[]
  */
 import { describe, it, expect, beforeAll } from "vitest";
@@ -351,10 +351,10 @@ describe("capability gate — assertRuntimeSupportsScope", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Dogfooding: .specrunner/config.json declares the 3 surfaces
+// Dogfooding: .specrunner/config.json declares the 4 surfaces
 // ---------------------------------------------------------------------------
 
-describe("dogfooding — .specrunner/config.json has the 3 forbidden surfaces", () => {
+describe("dogfooding — .specrunner/config.json has the 4 forbidden surfaces", () => {
   let configJson: Record<string, unknown>;
 
   beforeAll(async () => {

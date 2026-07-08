@@ -110,4 +110,26 @@ describe("detectSpecrunnerWorktree", () => {
     expect(result.isSpecrunnerWorktree).toBe(false);
     expect(result.mainCheckoutPath).toBeUndefined();
   });
+
+  // TC-007: 無関係パスを「内側でない」と判定する
+  it("TC-007: .git/specrunner-worktrees/ を含まない無関係パスを isSpecrunnerWorktree: false と判定する", async () => {
+    // A directory with a path that has no .git/specrunner-worktrees/ segment
+    const unrelatedDir = path.join(tmpDir, "some", "unrelated", "path");
+    await fs.mkdir(unrelatedDir, { recursive: true });
+
+    const result = await detectSpecrunnerWorktree(unrelatedDir);
+
+    expect(result.isSpecrunnerWorktree).toBe(false);
+    expect(result.mainCheckoutPath).toBeUndefined();
+  });
+
+  // TC-009: realpath 失敗時は fail-open（内側でない）を返す
+  it("TC-009: 存在しないパスを cwd として与えると isSpecrunnerWorktree: false を返す（fail-open）", async () => {
+    const nonexistentPath = "/nonexistent/path/that/does/not/exist/specrunner-test";
+
+    const result = await detectSpecrunnerWorktree(nonexistentPath);
+
+    expect(result.isSpecrunnerWorktree).toBe(false);
+    expect(result.mainCheckoutPath).toBeUndefined();
+  });
 });

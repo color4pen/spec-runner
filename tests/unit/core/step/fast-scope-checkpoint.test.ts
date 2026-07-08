@@ -1,9 +1,9 @@
 /**
- * T-05: conformance checkpoint での 3 surfaces 評価（導出可能 runtime、executor 駆動）
+ * T-05: conformance checkpoint での 4 surfaces 評価（導出可能 runtime、executor 駆動）
  *
- * - breach: listChangedFiles が 3 surfaces のいずれかを返すとき、verdict = escalation かつ
+ * - breach: listChangedFiles が 4 surfaces のいずれかを返すとき、verdict = escalation かつ
  *   scope finding (origin:"scope", resolution:"decision-needed") が 1 件合成される
- * - no breach: 3 surfaces にマッチしないパスのみのとき、scope finding が合成されず verdict 不変
+ * - no breach: 4 surfaces にマッチしないパスのみのとき、scope finding が合成されず verdict 不変
  * - checkpoint 単一性: 非 checkpoint step (code-review) を同 permissionScope で実行しても
  *   scope 合成が走らない (listChangedFiles 未呼び出し)
  *
@@ -207,7 +207,7 @@ function makeCodeReviewStep(): AgentStep {
 }
 
 // ---------------------------------------------------------------------------
-// Config fixture with the 3 dogfooding surfaces (mirrors .specrunner/config.json)
+// Config fixture with the 4 dogfooding surfaces (mirrors .specrunner/config.json)
 // ---------------------------------------------------------------------------
 
 function makeFastConfig(): SpecRunnerConfig {
@@ -400,6 +400,58 @@ describe("T-05-1: breach at conformance checkpoint → scope finding + escalatio
     const scopeFindings = (tr?.findings ?? []).filter((f) => f.origin === "scope");
     expect(scopeFindings).toHaveLength(1);
     expect(scopeFindings[0]!.resolution).toBe("decision-needed");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-002: no breach with makeFastScopeFromConfig() and a safe changed file
+// ---------------------------------------------------------------------------
+
+describe("TC-002: guard-config surface declared — safe changed file does not cause breach", () => {
+  // Verifies that makeFastScopeFromConfig() (which includes all 4 surfaces including
+  // guard-config) does NOT produce a scope finding when the changed file is unrelated
+  // to any forbidden surface.
+
+  it("src/core/pipeline/types.ts with guard-config scope → no scope finding, verdict approved", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeEvaluableStrategy(["src/core/pipeline/types.ts"]);
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      makeFastScopeFromConfig(),
+    );
+
+    const step = makeConformanceStep();
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "conformance");
+    expect(outcome?.verdict).toBe("approved");
+    const tr = outcome?.toolResult as { findings?: Finding[] } | null;
+    const scopeFindings = (tr?.findings ?? []).filter((f) => f.origin === "scope");
+    expect(scopeFindings).toHaveLength(0);
+  });
+
+  it("src/core/command/run.ts with guard-config scope → no scope finding, verdict approved", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeEvaluableStrategy(["src/core/command/run.ts"]);
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      makeFastScopeFromConfig(),
+    );
+
+    const step = makeConformanceStep();
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "conformance");
+    expect(outcome?.verdict).toBe("approved");
+    const tr = outcome?.toolResult as { findings?: Finding[] } | null;
+    const scopeFindings = (tr?.findings ?? []).filter((f) => f.origin === "scope");
+    expect(scopeFindings).toHaveLength(0);
   });
 });
 
