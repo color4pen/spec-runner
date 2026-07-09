@@ -115,3 +115,24 @@ describe("TC-DL-CONFIG-005: resolveDesignLayerConfig returns provided values", (
     expect(resolved.enabled).toBe(false);
   });
 });
+
+describe("TC-DL-CONFIG-006 (TC-016): resolveDesignLayerConfig preserves topicEmission:false", () => {
+  it("returns topicEmission:false when designLayer.topicEmission is explicitly false", () => {
+    const config: SpecRunnerConfig = {
+      version: 1,
+      agents: {},
+      designLayer: { topicEmission: false },
+    } as SpecRunnerConfig;
+    const resolved = resolveDesignLayerConfig(config);
+    expect(resolved.topicEmission).toBe(false);
+  });
+});
+
+describe("TC-DL-CONFIG-007 (TC-019): invalid topicEmission type → CONFIG_INVALID", () => {
+  it("throws CONFIG_INVALID when topicEmission is a string", () => {
+    const raw = baseConfig({ designLayer: { topicEmission: "yes" } });
+    let err: Error | undefined;
+    try { validateConfig(raw); } catch (e) { err = e as Error; }
+    expect(err?.message).toContain("designLayer");
+  });
+});
