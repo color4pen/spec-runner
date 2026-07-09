@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "18ba00c4-9e4e-487b-a2d3-d84e281ef4a8",
   "createdAt": "2026-07-09T01:29:03.499Z",
-  "updatedAt": "2026-07-09T03:29:18.242Z",
+  "updatedAt": "2026-07-09T03:35:53.995Z",
   "request": {
     "title": "worktree job による main checkout への逃避書き込みを検出する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/main-checkout-write-detection-18ba00c4",
   "error": null,
@@ -75,21 +75,22 @@
   ],
   "resumePoint": null,
   "_journal": {
-    "historyCount": 66,
+    "historyCount": 75,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 3,
+      "verification": 4,
       "build-fixer": 2,
       "code-review": 1,
       "code-fixer": 1,
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
