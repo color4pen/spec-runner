@@ -40,6 +40,18 @@ export interface MainCheckoutGuardSnapshot {
 }
 
 /**
+ * Create an empty main-checkout guard snapshot (no dirty monitored entries).
+ *
+ * Convenience factory for the "nothing changed" baseline case. Exported as a
+ * runtime value so that importers of this port module generate an lcov record
+ * when coverage is collected, enabling the changed-line coverage gate to apply
+ * rule 3 (file present in lcov, changed lines have no DA records → pass).
+ */
+export function emptyGuardSnapshot(): MainCheckoutGuardSnapshot {
+  return { entries: [] };
+}
+
+/**
  * Port DTO for a required step input to be validated before step execution.
  * Domain-neutral — only the resolved path and artifact type.
  * Derived from step.reads() by filtering required !== false entries.

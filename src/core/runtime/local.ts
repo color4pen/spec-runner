@@ -40,7 +40,7 @@ import {
 import { commitAndPush, commitFinalState } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
-import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot } from "../port/runtime-strategy.js";
+import { emptyGuardSnapshot, type RealRuntimeStrategy, type QueryOptions, type WorkspaceOptions, type WorkspaceContext, type CleanupHandle, type RequiredInput, type FindingRef, type MainCheckoutGuardSnapshot } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels } from "../step/output-verify.js";
@@ -689,7 +689,7 @@ export class LocalRuntime implements RealRuntimeStrategy {
         }
       }
 
-      return { entries };
+      return entries.length > 0 ? { entries } : emptyGuardSnapshot();
     } catch {
       // Never throw — fail-open backstop
       return null;
