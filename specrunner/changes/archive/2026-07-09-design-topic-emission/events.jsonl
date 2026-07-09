@@ -98,3 +98,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/design-topic-emission/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-09T14:44:35.191Z","endedAt":"2026-07-09T14:44:36.995Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-09T14:44:36.995Z","outputs":[{"path":"specrunner/changes/design-topic-emission/pr-create-result.md","hash":"sha256:6b60f0834d6815e296ad82d2bb19ef63dcb3fb78c5be037f8a552a3f7cae2a2a"}],"inputs":[{"path":"feat/design-topic-emission-8e3fae36","hash":null}]}
 {"type":"transition","ts":"2026-07-09T14:44:36.999Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-09T14:51:36.909Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
