@@ -74,3 +74,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/claude-adapter-write-scope/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-09T04:31:04.338Z","endedAt":"2026-07-09T04:31:06.269Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-09T04:31:06.269Z","outputs":[{"path":"specrunner/changes/claude-adapter-write-scope/pr-create-result.md","hash":"sha256:8c545300db0514d7b86c3db2dd5544ab3e33ab1ea146557d1fb4d71f90d684b6"}],"inputs":[{"path":"change/claude-adapter-write-scope-96a1868f","hash":null}]}
 {"type":"transition","ts":"2026-07-09T04:31:06.278Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-09T04:38:55.021Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
