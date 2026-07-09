@@ -18,6 +18,8 @@ import { createClaudeCodeRunner, defaultQueryFn, type QueryFn } from "../../adap
 import { resolveClaudeCodeOAuthToken } from "../credentials/claude-code.js";
 import { DispatchingAgentRunner } from "../../adapter/dispatching/agent-runner.js";
 import { createWorktreeManager } from "../worktree/manager.js";
+import { detectSpecrunnerWorktree } from "../worktree/detection.js";
+import { resolveMonitoredGuardGlobs, matchesMonitored } from "../step/main-checkout-guard.js";
 import { spawnCommand } from "../../util/spawn.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { createTransportAuth } from "../../git/transport-auth.js";
@@ -38,7 +40,7 @@ import {
 import { commitAndPush, commitFinalState } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
-import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
+import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels } from "../step/output-verify.js";
@@ -624,6 +626,72 @@ export class LocalRuntime implements RealRuntimeStrategy {
       if (result.exitCode !== 0) return null;
       return result.stdout.trim() || null;
     } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Snapshot the state of guarded main-checkout paths at a moment in time.
+   *
+   * Workflow:
+   *   1. Detect whether cwd is a specrunner worktree; if not, return null (no-worktree / non-worktree skip).
+   *   2. Resolve monitored globs from config (forbiddenSurfaces + .specrunner/**).
+   *   3. Run `git status --porcelain -z --no-renames` in mainCheckoutPath.
+   *   4. Parse output paths, filter by monitored globs.
+   *   5. For each matched path: compute sha256 content hash (D4 convention), or null if deleted.
+   *
+   * Never throws — any error returns null (fail-open backstop, D6).
+   * Gitignored files (e.g. .specrunner/local/) are naturally excluded by git status.
+   */
+  async snapshotMainCheckoutGuard(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null> {
+    try {
+      const detection = await detectSpecrunnerWorktree(cwd);
+      if (!detection.isSpecrunnerWorktree || !detection.mainCheckoutPath) return null;
+
+      const mainCheckoutPath = detection.mainCheckoutPath;
+      const globs = resolveMonitoredGuardGlobs(config);
+
+      const result = await this.spawnFn(
+        "git",
+        ["status", "--porcelain", "-z", "--no-renames"],
+        { cwd: mainCheckoutPath },
+      );
+      if (result.exitCode !== 0) return null;
+
+      // Parse NUL-separated entries: each entry is "XY PATH" (3+ chars)
+      // -z outputs: XY<SP>PATH<NUL> for each changed file
+      const raw = result.stdout;
+      const parts = raw.split("\0").filter((p) => p.length > 0);
+
+      const entries: { path: string; hash: string | null }[] = [];
+      for (const part of parts) {
+        // Format: XY<SP>path  (status 2 chars + space + path)
+        if (part.length < 4) continue;
+        const xy = part.slice(0, 2);
+        const filePath = part.slice(3);
+
+        if (!matchesMonitored(filePath, globs)) continue;
+
+        // Deleted: either staged delete (D in X) or unstaged delete (D in Y)
+        const isDeleted = xy[0] === "D" || xy[1] === "D";
+        if (isDeleted) {
+          entries.push({ path: filePath, hash: null });
+        } else {
+          const absPath = path.join(mainCheckoutPath, filePath);
+          try {
+            const content = await fs.readFile(absPath);
+            const hex = crypto.createHash("sha256").update(content).digest("hex");
+            entries.push({ path: filePath, hash: `sha256:${hex}` });
+          } catch {
+            // File unreadable — treat as deleted/absent
+            entries.push({ path: filePath, hash: null });
+          }
+        }
+      }
+
+      return { entries };
+    } catch {
+      // Never throw — fail-open backstop
       return null;
     }
   }

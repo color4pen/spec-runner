@@ -27,6 +27,19 @@ import type { OutputContract, OutputCheckResult } from "./output-contract.js";
 // ---------------------------------------------------------------------------
 
 /**
+ * Port DTO for a single-moment snapshot of guarded main-checkout paths.
+ *
+ * Built from `git status --porcelain` filtered to monitored globs.
+ * hash: sha256:<hex> when the file exists, null when deleted (DELETED sentinel).
+ * Domain-neutral — no domain imports. Placed in port layer so step pure modules
+ * and both runtimes can import without creating back-edges (same pattern as
+ * RequiredInput / FindingRef).
+ */
+export interface MainCheckoutGuardSnapshot {
+  entries: { path: string; hash: string | null }[];
+}
+
+/**
  * Port DTO for a required step input to be validated before step execution.
  * Domain-neutral — only the resolved path and artifact type.
  * Derived from step.reads() by filtering required !== false entries.
@@ -417,6 +430,23 @@ export interface RuntimeStrategy {
    * requires it (mirrors canDeriveChangedFiles).
    */
   assertNoDuplicateLiveJob?(repoRoot: string, slug: string): Promise<void>;
+
+  /**
+   * Snapshot the state of guarded main-checkout paths at a moment in time.
+   *
+   * Used by StepExecutor to compare before/after an agent step and detect
+   * escape-writes to main checkout guarded paths (forbiddenSurfaces + .specrunner/).
+   *
+   * Contract:
+   * - Never throws — returns null on any git/fs error (fail-open backstop, D6).
+   * - no-worktree mode: detectSpecrunnerWorktree returns false → null.
+   * - managed runtime: null (no local worktree).
+   * - Git status ignores are naturally excluded (git status --porcelain omits them).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes remain unaffected.
+   * RealRuntimeStrategy requires the implementation (compile-time enforcement).
+   */
+  snapshotMainCheckoutGuard?(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
 }
 
 // ---------------------------------------------------------------------------
@@ -438,4 +468,5 @@ export interface RuntimeStrategy {
 export type RealRuntimeStrategy = RuntimeStrategy & {
   canDeriveChangedFiles(): boolean;
   assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>;
+  snapshotMainCheckoutGuard(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
 };

@@ -333,6 +333,21 @@ export interface JobState {
    * Optional for backward compat.
    */
   reviewerStatuses?: ReviewerStatus[];
+  /**
+   * Records main-checkout drift detected during an agent step boundary check.
+   *
+   * Set when StepExecutor detects that guarded paths in the main checkout were
+   * modified while a worktree-mode agent step was running.
+   *
+   * Absence (undefined/null) means no drift was detected or the check did not run
+   * (no-worktree mode, managed runtime, or no forbiddenSurfaces configured).
+   * Optional for backward compat — absent in legacy state files is valid.
+   */
+  mainCheckoutDrift?: {
+    changes: { path: string; kind: "created" | "modified" | "deleted" }[];
+    detectedAtStep: StepName;
+    ts: string;
+  } | null;
 }
 
 /**
@@ -519,6 +534,23 @@ export function validateJobState(raw: unknown): JobState {
   if ("resumePoint" in obj && obj["resumePoint"] !== null && obj["resumePoint"] !== undefined) {
     if (typeof obj["resumePoint"] !== "object") {
       throw new Error("resumePoint must be an object when present.");
+    }
+  }
+
+  // Validate mainCheckoutDrift when present (backward compat: absence is OK)
+  if ("mainCheckoutDrift" in obj && obj["mainCheckoutDrift"] !== null && obj["mainCheckoutDrift"] !== undefined) {
+    if (typeof obj["mainCheckoutDrift"] !== "object") {
+      throw new Error("mainCheckoutDrift must be an object when present.");
+    }
+    const drift = obj["mainCheckoutDrift"] as Record<string, unknown>;
+    if (!Array.isArray(drift["changes"])) {
+      throw new Error("mainCheckoutDrift.changes must be an array when present.");
+    }
+    if (typeof drift["detectedAtStep"] !== "string") {
+      throw new Error("mainCheckoutDrift.detectedAtStep must be a string when present.");
+    }
+    if (typeof drift["ts"] !== "string") {
+      throw new Error("mainCheckoutDrift.ts must be a string when present.");
     }
   }
 

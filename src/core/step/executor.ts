@@ -44,6 +44,7 @@ import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../../core/port/report-result.js";
 import type { PermissionScope } from "../pipeline/types.js";
 import { computeExtraScopeFindings } from "./scope-check.js";
+import { diffGuardSnapshots } from "./main-checkout-guard.js";
 
 import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL, REQUEST_REVIEW_REPORT_TOOL, CONFORMANCE_REPORT_TOOL } from "./report-tool.js";
 import { deriveJudgeVerdict, deriveRequestReviewVerdict, deriveConformanceVerdict, collectVerdictAffectingFindings } from "./judge-verdict.js";
@@ -352,6 +353,14 @@ export class StepExecutor {
       deps.resumeContext = undefined;
     }
 
+    // Capture main-checkout guard snapshot before agent executes (D2, D4).
+    // LocalRuntime (worktree mode): git status + content hash of guarded paths.
+    // LocalRuntime (no-worktree) / ManagedRuntime / absent strategy: null (skip).
+    const guardBefore: import("../port/runtime-strategy.js").MainCheckoutGuardSnapshot | null =
+      deps.runtimeStrategy?.snapshotMainCheckoutGuard
+        ? await deps.runtimeStrategy.snapshotMainCheckoutGuard(cwd, deps.config)
+        : null;
+
     // Capture HEAD SHA before agent executes (delegated to RuntimeStrategy seam).
     // LocalRuntime: git rev-parse HEAD. ManagedRuntime / no strategy: null (safe).
     const headBeforeStep: string | null = deps.runtimeStrategy
@@ -453,6 +462,61 @@ export class StepExecutor {
     // executor proceeds to finalizeStep. Verdict is determined by step-class:
     //   judge  → "needs-fix"  (conservative; fixer loop → loop exhaustion = grounded halt)
     //   producer → completionVerdict (downstream grounded step verifies correctness)
+
+    // ---------------------------------------------------------------------------
+    // Main-checkout drift detection (D2, D5)
+    // Runs after all failure guards, before output contract gate.
+    // Only active in worktree mode (guardBefore non-null) and only when the
+    // after-snapshot is also obtainable (fail-open: skip on git error).
+    // ---------------------------------------------------------------------------
+    if (guardBefore !== null) {
+      const guardAfter: import("../port/runtime-strategy.js").MainCheckoutGuardSnapshot | null =
+        deps.runtimeStrategy?.snapshotMainCheckoutGuard
+          ? await deps.runtimeStrategy.snapshotMainCheckoutGuard(cwd, deps.config)
+          : null;
+
+      if (guardAfter !== null) {
+        const drift = diffGuardSnapshots(guardBefore, guardAfter);
+        if (drift.drifted) {
+          const pathSummary = drift.changes.map((c) => `${c.kind}: ${c.path}`).join(", ");
+          const errorInfo: ErrorInfo = {
+            code: "MAIN_CHECKOUT_WRITE_DETECTED",
+            message: `Main checkout write detected during '${step.name}': ${pathSummary}`,
+            hint: `Guarded paths in main checkout were modified while the agent step was running. This may be a legitimate parallel edit by the operator. Verify the changes and run 'specrunner job resume ${deps.slug}' to continue.`,
+          };
+          state = recordFailedStepResult(state, step.name, errorInfo, { startedAt });
+          const detectedAtStep = toStepName(step.name);
+          const { state: driftState } = transitionJob(state, "awaiting-resume", {
+            trigger: "executor",
+            reason: "main checkout write detected",
+            patch: {
+              resumePoint: { step: detectedAtStep, reason: "main checkout write detected", iterationsExhausted: 0 },
+              mainCheckoutDrift: { changes: drift.changes, detectedAtStep, ts: new Date().toISOString() },
+              error: errorInfo,
+            },
+          });
+          state = driftState;
+          await store.appendInterruption({
+            type: "interruption",
+            reason: "failure",
+            errorCode: "MAIN_CHECKOUT_WRITE_DETECTED",
+            ts: new Date().toISOString(),
+          });
+          state = await store.appendHistory(state, {
+            ts: new Date().toISOString(),
+            step: `${step.name}-main-checkout-write-detected`,
+            status: "error",
+            message: `${step.name}: main checkout write detected — ${pathSummary}`,
+          });
+          await store.persist(state);
+          const driftErr = Object.assign(
+            new Error(errorInfo.message),
+            { code: "MAIN_CHECKOUT_WRITE_DETECTED", hint: errorInfo.hint },
+          );
+          attachStateAndRethrow(driftErr, state);
+        }
+      }
+    }
 
     // Output contract gate (D3: step-completion-verification).
     // Runs after runner.run() succeeds, before finalizeStepArtifacts (commit).
