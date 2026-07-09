@@ -9,11 +9,16 @@
  * T-04: localSidecarDir is NOT removed by orchestrator (moved to runPostMergeCleanup)
  * T-05: branch deletion (branch -D / push --delete) NOT called by orchestrator
  * T-06: draft rm failure does not fail archive (best-effort)
+ * T-DTE-01: designLayer enabled + decision-needed finding → topic file written + git add called
+ * T-DTE-02: topic emission runs before mark-hook (spawn call order)
+ * T-DTE-03: designLayer disabled → no topic file written
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { FinishFs } from "../../finish/types.js";
 import type { SpawnFn } from "../../../util/spawn.js";
-import type { JobState } from "../../../state/schema.js";
+import type { JobState, StepRun } from "../../../state/schema.js";
+import type { Finding } from "../../../kernel/report-result.js";
+import type { ResolvedDesignLayer } from "../../../config/schema.js";
 import { livenessJsonPath, managedMarkerPath, draftsDir, localSidecarDir } from "../../../util/paths.js";
 import * as nodePath from "node:path";
 
@@ -340,5 +345,197 @@ describe("archive orchestrator — side-effect boundaries (archive-on-branch-fir
     // No archive side-effects should have been executed
     expect(vi.mocked(commitArchive)).not.toHaveBeenCalled();
     expect(vi.mocked(archiveChangeFolder)).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-DTE: Design topic emission integration tests
+// ---------------------------------------------------------------------------
+
+function makeDecisionNeededFinding(): Finding {
+  return {
+    severity: "high",
+    resolution: "decision-needed",
+    file: "src/design.ts",
+    title: "Architecture decision required",
+    rationale: "The design has a structural gap.",
+    options: [
+      { label: "Option A", consequence: "Keep current approach" },
+      { label: "Option B", consequence: "Refactor design" },
+    ],
+  };
+}
+
+function makeStepRunWithFindings(attempt: number, findings: Finding[]): StepRun {
+  return {
+    attempt,
+    sessionId: null,
+    outcome: {
+      verdict: "escalated",
+      findingsPath: null,
+      error: null,
+      toolResult: { ok: true, findings },
+    },
+    startedAt: "2026-01-01T00:00:00.000Z",
+    endedAt: "2026-01-01T00:01:00.000Z",
+  };
+}
+
+function makeEnabledDesignLayer(): ResolvedDesignLayer {
+  return {
+    enabled: true,
+    command: "fake-aozu",
+    requireCitationTypes: [],
+    topicEmission: true,
+  };
+}
+
+/** FinishFs that presents design/ directory present, no topic files yet */
+function makeFsWithDesign(): FinishFs & {
+  writeFile: ReturnType<typeof vi.fn>;
+  mkdir: ReturnType<typeof vi.fn>;
+} {
+  return {
+    exists: vi.fn().mockImplementation(async (p: string) => {
+      if (p.endsWith(".md")) return false;          // Topic files don't exist yet
+      if (p.endsWith("design/topics")) return false; // topics/ dir doesn't exist yet
+      if (p.endsWith("/design")) return true;        // design/ directory exists
+      return true;
+    }),
+    readdir: vi.fn().mockResolvedValue([]),
+    stat: vi.fn().mockResolvedValue({ isDirectory: () => false }),
+    mkdir: vi.fn().mockResolvedValue(undefined),
+    writeFile: vi.fn().mockResolvedValue(undefined),
+    readFile: vi.fn().mockResolvedValue("{}"),
+    unlink: vi.fn().mockResolvedValue(undefined),
+    rm: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+describe("archive orchestrator — design topic emission (T-DTE)", () => {
+  beforeEach(() => {
+    vi.mocked(JobStateStore.list).mockResolvedValue([makeState()]);
+  });
+
+  it("T-DTE-01: designLayer enabled + decision-needed finding → topic file written + git add called", async () => {
+    const stateWithFinding = makeState({
+      steps: {
+        "spec-review": [makeStepRunWithFindings(1, [makeDecisionNeededFinding()])],
+      },
+    });
+    vi.mocked(JobStateStore.list).mockResolvedValue([stateWithFinding]);
+
+    const spawnMock = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "abc123\n", stderr: "" });
+    const mockFs = makeFsWithDesign();
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: spawnMock as unknown as SpawnFn,
+      fs: mockFs,
+      designLayer: makeEnabledDesignLayer(),
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    // Topic file should have been written
+    const writeFileCalls = vi.mocked(mockFs.writeFile).mock.calls;
+    const topicFileCall = writeFileCalls.find(([p]) =>
+      typeof p === "string" && p.includes("design/topics/"),
+    );
+    expect(topicFileCall).toBeDefined();
+
+    // File content should be a valid topic file with id and source
+    if (topicFileCall) {
+      const content = topicFileCall[1] as string;
+      expect(content).toContain("id: top-");
+      expect(content).toContain("source: specrunner:");
+    }
+
+    // git add -- design/topics should have been called
+    const addTopicsCall = spawnMock.mock.calls.find(
+      (c: unknown[]) =>
+        c[0] === "git" &&
+        Array.isArray(c[1]) &&
+        (c[1] as string[]).includes("add") &&
+        (c[1] as string[]).includes("design/topics"),
+    );
+    expect(addTopicsCall).toBeDefined();
+  });
+
+  it("T-DTE-02: topic emission runs before mark-hook (spawn call order)", async () => {
+    const stateWithFinding = makeState({
+      steps: {
+        "spec-review": [makeStepRunWithFindings(1, [makeDecisionNeededFinding()])],
+      },
+    });
+    vi.mocked(JobStateStore.list).mockResolvedValue([stateWithFinding]);
+
+    const callOrder: string[] = [];
+    const spawnMock = vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
+      const label = cmd === "git"
+        ? `git ${(args as string[]).join(" ")}`
+        : `${cmd} ${(args as string[]).join(" ")}`;
+      callOrder.push(label);
+      return { exitCode: 0, stdout: "abc123\n", stderr: "" };
+    });
+
+    const mockFs = makeFsWithDesign();
+
+    await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: spawnMock as unknown as SpawnFn,
+      fs: mockFs,
+      designLayer: makeEnabledDesignLayer(),
+    });
+
+    // Find positions of topic emission git add and mark-hook call
+    const addTopicsIdx = callOrder.findIndex((s) => s.includes("add") && s.includes("design/topics"));
+    const markHookIdx = callOrder.findIndex((s) => s.includes("mark"));
+
+    expect(addTopicsIdx).toBeGreaterThanOrEqual(0);
+    expect(markHookIdx).toBeGreaterThanOrEqual(0);
+    // Topic emission must come before mark-hook
+    expect(addTopicsIdx).toBeLessThan(markHookIdx);
+  });
+
+  it("T-DTE-03: designLayer disabled → no topic file written, no design/topics git add", async () => {
+    const stateWithFinding = makeState({
+      steps: {
+        "spec-review": [makeStepRunWithFindings(1, [makeDecisionNeededFinding()])],
+      },
+    });
+    vi.mocked(JobStateStore.list).mockResolvedValue([stateWithFinding]);
+
+    const spawnMock = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "abc123\n", stderr: "" });
+    const mockFs = makeFsWithDesign();
+
+    // Disabled designLayer (default when designLayer not passed)
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: spawnMock as unknown as SpawnFn,
+      fs: mockFs,
+      // No designLayer passed → noopDesignLayer with enabled:false
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    // No topic file should have been written
+    const writeFileCalls = vi.mocked(mockFs.writeFile).mock.calls;
+    const topicFileCall = writeFileCalls.find(([p]) =>
+      typeof p === "string" && p.includes("design/topics/"),
+    );
+    expect(topicFileCall).toBeUndefined();
+
+    // No design/topics git add should have been called
+    const addTopicsCall = spawnMock.mock.calls.find(
+      (c: unknown[]) =>
+        c[0] === "git" &&
+        Array.isArray(c[1]) &&
+        (c[1] as string[]).includes("design/topics"),
+    );
+    expect(addTopicsCall).toBeUndefined();
   });
 });

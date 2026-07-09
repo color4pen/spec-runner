@@ -20,6 +20,7 @@ function makeDesignLayer(overrides: Partial<ResolvedDesignLayer> = {}): Resolved
     enabled: true,
     command: "fake-aozu",
     requireCitationTypes: [],
+    topicEmission: true,
     ...overrides,
   };
 }

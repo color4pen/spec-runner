@@ -73,13 +73,14 @@ describe("TC-DL-CONFIG-003: invalid command type → CONFIG_INVALID", () => {
 });
 
 describe("TC-DL-CONFIG-004: resolveDesignLayerConfig returns defaults when absent", () => {
-  it("returns enabled:false, command:'aozu', requireCitationTypes:[] when designLayer absent", () => {
+  it("returns enabled:false, command:'aozu', requireCitationTypes:[], topicEmission:true when designLayer absent", () => {
     const config: SpecRunnerConfig = { version: 1, agents: {} } as SpecRunnerConfig;
     const resolved = resolveDesignLayerConfig(config);
     expect(resolved).toEqual({
       enabled: false,
       command: "aozu",
       requireCitationTypes: [],
+      topicEmission: true,
     });
   });
 });
@@ -100,6 +101,7 @@ describe("TC-DL-CONFIG-005: resolveDesignLayerConfig returns provided values", (
       enabled: true,
       command: "my-aozu",
       requireCitationTypes: ["new-feature"],
+      topicEmission: true,
     });
   });
 
@@ -111,5 +113,26 @@ describe("TC-DL-CONFIG-005: resolveDesignLayerConfig returns provided values", (
     } as SpecRunnerConfig;
     const resolved = resolveDesignLayerConfig(config);
     expect(resolved.enabled).toBe(false);
+  });
+});
+
+describe("TC-DL-CONFIG-006 (TC-016): resolveDesignLayerConfig preserves topicEmission:false", () => {
+  it("returns topicEmission:false when designLayer.topicEmission is explicitly false", () => {
+    const config: SpecRunnerConfig = {
+      version: 1,
+      agents: {},
+      designLayer: { topicEmission: false },
+    } as SpecRunnerConfig;
+    const resolved = resolveDesignLayerConfig(config);
+    expect(resolved.topicEmission).toBe(false);
+  });
+});
+
+describe("TC-DL-CONFIG-007 (TC-019): invalid topicEmission type → CONFIG_INVALID", () => {
+  it("throws CONFIG_INVALID when topicEmission is a string", () => {
+    const raw = baseConfig({ designLayer: { topicEmission: "yes" } });
+    let err: Error | undefined;
+    try { validateConfig(raw); } catch (e) { err = e as Error; }
+    expect(err?.message).toContain("designLayer");
   });
 });

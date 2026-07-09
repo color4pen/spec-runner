@@ -135,7 +135,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
     }
   }
 
-  const disabledDesignLayer: ResolvedDesignLayer = { enabled: false, command: "aozu", requireCitationTypes: [] };
+  const disabledDesignLayer: ResolvedDesignLayer = { enabled: false, command: "aozu", requireCitationTypes: [], topicEmission: false };
 
   let archiveResult;
   try {

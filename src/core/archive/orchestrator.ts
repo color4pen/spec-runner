@@ -33,7 +33,9 @@ import { logResult, stderrWrite } from "../../logger/stdout.js";
 import { KeepAlive } from "../lifecycle/keepalive.js";
 import { livenessJsonPath, draftsDir } from "../../util/paths.js";
 import { runDesignLayerMarkHook } from "../design-layer/mark-hook.js";
+import { emitDesignTopics } from "../design-layer/topic-emission.js";
 import type { ResolvedDesignLayer } from "../../config/schema.js";
+import type { JobState } from "../../state/schema.js";
 
 export interface ArchiveInput {
   /** Slug of the job to archive. */
@@ -115,6 +117,7 @@ export async function runArchiveOrchestrator(
   let branch: string | null;
   let noWorktree = false;
   let prNumber: number | undefined;
+  let jobState: JobState;
 
   try {
     const allStates = await JobStateStore.list(cwd, { includeArchived: true });
@@ -127,6 +130,7 @@ export async function runArchiveOrchestrator(
     // Use most recent state when multiple exist
     matching.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
     const state = matching[0]!;
+    jobState = state;
 
     jobId = state.jobId;
     worktreePath = await resolveWorktreePathForArchive(state, cwd);
@@ -286,9 +290,22 @@ export async function runArchiveOrchestrator(
       stderrWrite(`Warning: git add specrunner/changes/ failed: ${addResult.stderr.trim()}. Continuing.`);
     }
 
+    // Design-layer topic emission: emit design-level findings as topic files.
+    // Runs before mark-hook; failures are best-effort (archive continues).
+    const noopDesignLayer: ResolvedDesignLayer = { enabled: false, command: "aozu", requireCitationTypes: [], topicEmission: false };
+    await emitDesignTopics({
+      slug,
+      state: jobState,
+      designLayer: input.designLayer ?? noopDesignLayer,
+      recordDir,
+      spawn,
+      fs: input.fs,
+      stdoutWrite,
+      stderrWrite,
+    });
+
     // Design-layer exit hook: mark implemented in aozu and stage any state changes.
     // Runs after the scoped git add so aozu's writes are captured by the archive commit.
-    const noopDesignLayer: ResolvedDesignLayer = { enabled: false, command: "aozu", requireCitationTypes: [] };
     const markResult = await runDesignLayerMarkHook({
       slug,
       prNumber,

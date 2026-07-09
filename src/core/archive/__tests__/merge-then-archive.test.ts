@@ -15,6 +15,7 @@ import type { JobState } from "../../../state/schema.js";
 import type { GitHubClient } from "../../port/github-client.js";
 import type { SpawnFn } from "../../../util/spawn.js";
 import type { FinishFs } from "../../finish/types.js";
+import type { ResolvedDesignLayer } from "../../../config/schema.js";
 
 // ---------------------------------------------------------------------------
 // Module mocks (hoisted)
@@ -398,5 +399,38 @@ describe("merge-then-archive — post-merge integrity check wiring", () => {
     expect(vi.mocked(runPostMergeIntegrityCheck)).not.toHaveBeenCalled();
     // Cleanup runs (resume path)
     expect(vi.mocked(runPostMergeCleanup)).toHaveBeenCalled();
+  });
+
+  it("TC-017: designLayer is forwarded to runArchiveOrchestrator in the --with-merge path", async () => {
+    // Verify that topic emission (via designLayer) propagates through the --with-merge route.
+    // runMergeThenArchive delegates to runArchiveOrchestrator which handles topic emission;
+    // this test confirms the designLayer option reaches that call site.
+    const resolvedDesignLayer: ResolvedDesignLayer = {
+      enabled: true,
+      command: "aozu",
+      requireCitationTypes: [],
+      topicEmission: true,
+    };
+
+    await runMergeThenArchive(
+      {
+        slug: FAKE_SLUG,
+        cwd: FAKE_CWD,
+        spawn: makeSpawn(),
+        fs: makeFs(),
+        githubClient: makeFreshMergeGithubClient(),
+        owner: "test",
+        repo: "repo",
+        designLayer: resolvedDesignLayer,
+        sleepFn: noopSleep,
+        nowFn: () => 0,
+      },
+      () => {},
+    );
+
+    expect(vi.mocked(runArchiveOrchestrator)).toHaveBeenCalledWith(
+      expect.objectContaining({ designLayer: resolvedDesignLayer }),
+      expect.any(Function),
+    );
   });
 });

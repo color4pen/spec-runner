@@ -105,8 +105,8 @@ function makeSpawnWithAozuExit(aozuExitCode: number | null): SpawnFn {
   }) as unknown as SpawnFn;
 }
 
-const disabledDesignLayer: ResolvedDesignLayer = { enabled: false, command: "aozu", requireCitationTypes: [] };
-const enabledDesignLayer: ResolvedDesignLayer = { enabled: true, command: "fake-aozu", requireCitationTypes: [] };
+const disabledDesignLayer: ResolvedDesignLayer = { enabled: false, command: "aozu", requireCitationTypes: [], topicEmission: false };
+const enabledDesignLayer: ResolvedDesignLayer = { enabled: true, command: "fake-aozu", requireCitationTypes: [], topicEmission: true };
 
 beforeEach(() => {
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
@@ -301,7 +301,7 @@ describe("TC-010: fake が書いた state ファイルが archive コミット�
       const markResult = await runDesignLayerMarkHook({
         slug: "my-slug",
         prNumber: 42,
-        designLayer: { enabled: true, command: "fake-aozu", requireCitationTypes: [] },
+        designLayer: { enabled: true, command: "fake-aozu", requireCitationTypes: [], topicEmission: true },
         cwd: tmpDir,
         spawn: fakeSpawn,
       });

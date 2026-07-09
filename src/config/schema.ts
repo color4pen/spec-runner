@@ -478,6 +478,12 @@ export interface DesignLayerConfig {
    * Default: [] (no types require a citation).
    */
   requireCitationTypes?: string[];
+  /**
+   * Emit design-level findings (decision-needed / origin:"scope") as topic files
+   * to design/topics/ during archive. Only meaningful when designLayer.enabled is true.
+   * Default: true.
+   */
+  topicEmission?: boolean;
 }
 
 export interface SpecRunnerConfig {
@@ -1035,6 +1041,7 @@ export const configSchema = object({
             "must be an array.",
           ),
         ),
+        topicEmission: optional(boolean("must be a boolean.")),
       },
       "must be an object.",
     ),
@@ -1245,6 +1252,7 @@ export interface ResolvedDesignLayer {
   enabled: boolean;
   command: string;
   requireCitationTypes: string[];
+  topicEmission: boolean;
 }
 
 /**
@@ -1257,6 +1265,7 @@ export function resolveDesignLayerConfig(config: SpecRunnerConfig): ResolvedDesi
     enabled: config.designLayer?.enabled === true,
     command: config.designLayer?.command ?? "aozu",
     requireCitationTypes: config.designLayer?.requireCitationTypes ?? [],
+    topicEmission: config.designLayer?.topicEmission !== false,
   };
 }
 
