@@ -305,8 +305,19 @@ async function handleResult(finalState: JobState, slug: string, json: boolean): 
 
   if (finalState.status === "awaiting-resume") {
     const rp = finalState.resumePoint;
-    logError(`Pipeline halted at step '${rp?.step ?? "unknown"}': ${rp?.reason ?? "escalation"}`);
-    logInfo("Run 'specrunner resume' to continue from the halted step.");
+    const drift = finalState.mainCheckoutDrift;
+    if (drift) {
+      logError(`Pipeline halted: main checkout write detected during step '${rp?.step ?? "unknown"}'`);
+      logError(`Detected changes to guarded paths in main checkout:`);
+      for (const c of drift.changes) {
+        logError(`  ${c.kind}: ${c.path}`);
+      }
+      logError(`This may be a legitimate parallel edit by the operator, or an agent escape-write.`);
+      logInfo(`Verify the changes above, then run 'specrunner job resume ${slug}' to continue.`);
+    } else {
+      logError(`Pipeline halted at step '${rp?.step ?? "unknown"}': ${rp?.reason ?? "escalation"}`);
+      logInfo("Run 'specrunner resume' to continue from the halted step.");
+    }
     return 1;
   }
 

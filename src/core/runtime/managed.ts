@@ -23,7 +23,7 @@ import { createTransportAuth } from "../../git/transport-auth.js";
 import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
 import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, recopyDraftToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
-import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef } from "../port/runtime-strategy.js";
+import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels } from "../step/output-verify.js";
@@ -316,6 +316,14 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   // ---------------------------------------------------------------------------
 
   async captureHeadSha(_cwd: string): Promise<string | null> {
+    return null;
+  }
+
+  /**
+   * No-op: managed runtime has no local worktree to inspect.
+   * Returns null so executor skips drift detection.
+   */
+  async snapshotMainCheckoutGuard(_cwd: string, _config: import("../../config/schema.js").SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null> {
     return null;
   }
 
