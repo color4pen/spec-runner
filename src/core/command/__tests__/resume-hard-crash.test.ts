@@ -266,6 +266,48 @@ describe("ResumeCommand.prepare() — not-started job throws PrepareError", () =
 // T-04 AC3: resumePoint present — existing behaviour unchanged (regression)
 // ---------------------------------------------------------------------------
 
+describe("ResumeCommand.prepare() — resume clears mainCheckoutDrift", () => {
+  it("running transition patch clears mainCheckoutDrift alongside resumePoint and error", async () => {
+    const awaitingState = makeJobState({
+      status: "awaiting-resume",
+      step: "implementer",
+      resumePoint: {
+        step: "implementer",
+        reason: "main checkout write detected",
+        iterationsExhausted: 0,
+      },
+      mainCheckoutDrift: {
+        changes: [{ path: ".specrunner/config.json", kind: "modified" }],
+        detectedAtStep: "implementer",
+        ts: "2026-07-09T00:00:00.000Z",
+      },
+    });
+    const runningState = makeJobState({
+      status: "running",
+      step: "implementer",
+      resumePoint: null,
+      pid: process.pid,
+    });
+
+    vi.mocked(resolveJobStateBySlug).mockResolvedValue(awaitingState);
+    vi.mocked(isStaleRunning).mockReturnValue(false);
+    vi.mocked(transitionJob).mockReturnValue({ state: runningState, noop: false });
+
+    const cmd = new ResumeCommand(makeRuntime(), makeEventBus(), "test-slug", { cwd: "/repo" });
+    await callPrepare(cmd);
+
+    // The awaiting-resume → running transition must clear the drift record,
+    // otherwise a later unrelated halt would misreport the stale drift.
+    const runningCall = vi
+      .mocked(transitionJob)
+      .mock.calls.find(([, to]) => to === "running");
+    expect(runningCall).toBeDefined();
+    const patch = runningCall![2].patch as Record<string, unknown>;
+    expect(patch["resumePoint"]).toBeNull();
+    expect(patch["mainCheckoutDrift"]).toBeNull();
+  });
+});
+
 describe("ResumeCommand.prepare() — resumePoint present uses resumePoint.step (regression)", () => {
   it("AC3: uses resumePoint.step when resumePoint is present, even if state.step differs", async () => {
     const awaitingState = makeJobState({

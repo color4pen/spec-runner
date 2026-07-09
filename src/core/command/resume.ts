@@ -203,7 +203,7 @@ export class ResumeCommand extends CommandRunner {
       const { state: transitioned } = transitionJob(state, "running", {
         trigger: "resume",
         reason: `Resuming from step '${startStep}'`,
-        patch: { error: null, resumePoint: null, pid: process.pid },
+        patch: { error: null, resumePoint: null, mainCheckoutDrift: null, pid: process.pid },
       });
       if (this.options.noWorktree) {
         // no-worktree mode: state.json lives in cwd (no worktree path to find)
