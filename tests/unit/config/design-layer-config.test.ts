@@ -73,13 +73,14 @@ describe("TC-DL-CONFIG-003: invalid command type → CONFIG_INVALID", () => {
 });
 
 describe("TC-DL-CONFIG-004: resolveDesignLayerConfig returns defaults when absent", () => {
-  it("returns enabled:false, command:'aozu', requireCitationTypes:[] when designLayer absent", () => {
+  it("returns enabled:false, command:'aozu', requireCitationTypes:[], topicEmission:true when designLayer absent", () => {
     const config: SpecRunnerConfig = { version: 1, agents: {} } as SpecRunnerConfig;
     const resolved = resolveDesignLayerConfig(config);
     expect(resolved).toEqual({
       enabled: false,
       command: "aozu",
       requireCitationTypes: [],
+      topicEmission: true,
     });
   });
 });
@@ -100,6 +101,7 @@ describe("TC-DL-CONFIG-005: resolveDesignLayerConfig returns provided values", (
       enabled: true,
       command: "my-aozu",
       requireCitationTypes: ["new-feature"],
+      topicEmission: true,
     });
   });
 

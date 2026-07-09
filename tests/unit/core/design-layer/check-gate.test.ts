@@ -19,6 +19,7 @@ function makeDesignLayer(overrides: Partial<ResolvedDesignLayer> = {}): Resolved
     enabled: true,
     command: "fake-aozu",
     requireCitationTypes: [],
+    topicEmission: true,
     ...overrides,
   };
 }
@@ -47,7 +48,7 @@ describe("TC-GATE-001: disabled → skipped, spawn not called", () => {
     const result = await runDesignLayerCheckGate({
       requestMdPath: "/repo/request.md",
       requestType: "new-feature",
-      designLayer: { enabled: false, command: "aozu", requireCitationTypes: [] },
+      designLayer: { enabled: false, command: "aozu", requireCitationTypes: [], topicEmission: false },
       cwd: "/repo",
       spawn,
     });
