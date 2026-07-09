@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-07-09T04:07:02.600Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-09T04:07:02.600Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-07-09T04:07:02.602Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-07-09T04:09:28.431Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"c26c7045-1c1f-4cf0-857d-5d3c95e7e20f","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-09T04:07:02.658Z","endedAt":"2026-07-09T04:09:26.866Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-07-09T04:09:26.866Z","outputs":[{"path":"specrunner/changes/claude-adapter-write-scope/test-cases.md","hash":"sha256:114a71bf2efd132e76cc783367a11c45e663213aaa95bf6b611bc639bb0d6550"}],"inputs":[{"path":"specrunner/changes/claude-adapter-write-scope/design.md","hash":"sha256:6787296629d46932bbebbf6f62ff9672b017237f8081eb73664aa4ca064b15a3"},{"path":"specrunner/changes/claude-adapter-write-scope/tasks.md","hash":"sha256:b475cc830e2c52e5b9baf0e91bc0d2533b50d71be21945bcad9a6021b2995cf4"}]}
+{"type":"transition","ts":"2026-07-09T04:09:28.438Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-07-09T04:09:28.441Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
