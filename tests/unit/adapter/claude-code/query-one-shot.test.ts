@@ -411,6 +411,37 @@ describe("TC-OSQ-08: one-shot default model — config resolution", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-SB-05: one-shot query options carry no sandbox setting (regression guard)
+// ---------------------------------------------------------------------------
+
+describe("TC-SB-05: one-shot options carry no sandbox key", () => {
+  it("sandbox key is absent, allowedTools defaults are correct, permissionMode is bypassPermissions", async () => {
+    let capturedOptions: Record<string, unknown> | undefined;
+
+    const mockQueryFn: QueryFn = vi.fn().mockImplementation(
+      ({ options }: { prompt: string; options?: Record<string, unknown> }) => {
+        capturedOptions = options;
+        return (async function* () {
+          yield { type: "result", subtype: "success", result: "done", session_id: undefined };
+        })();
+      },
+    ) as unknown as QueryFn;
+
+    await queryOneShot(
+      { systemPrompt: "sys", prompt: "user" },
+      makeConfig(),
+      mockQueryFn,
+    );
+
+    expect(capturedOptions).toBeDefined();
+    // D6 / spec "One-shot query behavior is unchanged": no sandbox key on the one-shot path
+    expect(Object.prototype.hasOwnProperty.call(capturedOptions, "sandbox")).toBe(false);
+    expect(capturedOptions!["allowedTools"]).toEqual(["Read", "Bash", "Grep", "Glob"]);
+    expect(capturedOptions!["permissionMode"]).toBe("bypassPermissions");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-OSQ-05: non-success result → SpecRunnerError("QUERY_ONE_SHOT_FAILED")
 // ---------------------------------------------------------------------------
 describe("TC-OSQ-05: non-success result throws QUERY_ONE_SHOT_FAILED", () => {

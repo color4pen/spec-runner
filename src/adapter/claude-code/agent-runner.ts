@@ -56,6 +56,60 @@ export type ClaudeCodeOAuthTokenResolver = (
 ) => Promise<{ token: string; source: "env" | "credentials" } | undefined>;
 
 /**
+ * Build SDK sandbox settings that scope filesystem writes to the agent's workspace.
+ *
+ * D1: filesystem.allowWrite restricts writes to cwd and its subtree (OS-level enforcement).
+ * D2: failIfUnavailable: false enables fail-open degradation (unsupported platforms continue).
+ * D3: no denyRead / allowRead — reads remain unrestricted.
+ * D4: autoAllowBashIfSandboxed: true preserves Bash tool execution under the sandbox.
+ *
+ * @param cwd Agent working directory (job worktree or repo root in --no-worktree mode).
+ */
+export function buildWorkspaceSandbox(cwd: string): Record<string, unknown> {
+  return {
+    enabled: true,
+    failIfUnavailable: false,
+    autoAllowBashIfSandboxed: true,
+    filesystem: {
+      allowWrite: [cwd, `${cwd}/**`],
+    },
+  };
+}
+
+/**
+ * Returns true if the SDK stderr chunk signals that the sandbox is unavailable
+ * or has fallen back to unsandboxed operation.
+ *
+ * Intentionally broad-but-specific: requires "sandbox" to be present alongside
+ * a degradation indicator. False positives on unrelated lines are avoided by
+ * requiring the "sandbox" keyword. False negatives on future SDK wording changes
+ * are acceptable — by D5 / design.md the run continues regardless (fail-open
+ * relies on failIfUnavailable: false, not on this predicate).
+ *
+ * D5: Detection is decoupled from the fail-open guarantee.
+ */
+export function isSandboxUnavailableWarning(chunk: string): boolean {
+  const lower = chunk.toLowerCase();
+  if (!lower.includes("sandbox")) return false;
+  return (
+    lower.includes("unavailable") ||
+    lower.includes("not support") ||
+    lower.includes("unsupport") ||
+    lower.includes("missing") ||
+    lower.includes("degrad") ||
+    lower.includes("unsandboxed") ||
+    lower.includes("falling") ||
+    lower.includes("fallback") ||
+    lower.includes("fall back") ||
+    lower.includes("disabled") ||
+    lower.includes("failed") ||
+    lower.includes("cannot") ||
+    lower.includes("not available") ||
+    lower.includes("not installed")
+  );
+}
+
+/**
  * Best-effort extraction of a human-readable target string from a tool's input.
  * Returns undefined when no meaningful target can be inferred.
  */
@@ -273,11 +327,36 @@ export class ClaudeCodeRunner implements AgentRunner {
       }
     }
 
+    // D5: once-latch for sandbox degradation warning (shared across all turns of this run).
+    // The fail-open guarantee relies on failIfUnavailable: false (T-01), not on this latch.
+    let sandboxDegradationWarned = false;
+
+    // SDK default stderr handling: when no stderr callback is registered, the Claude Code
+    // subprocess stdio is set to "ignore" for stderr — output is silently dropped.
+    // Registering this callback switches it to "pipe", enabling capture of the degradation
+    // warning. No write-through is needed (there was no prior forwarding to preserve).
+    const sandboxStderrCallback = (data: string): void => {
+      if (!sandboxDegradationWarned && isSandboxUnavailableWarning(data)) {
+        sandboxDegradationWarned = true;
+        stderrWrite(
+          `[specrunner] warn: sandbox unavailable for step '${step.name}' — run continues without workspace write scope. The main-checkout detection backstop remains active.`,
+        );
+      }
+    };
+
     const queryOptions: Record<string, unknown> = {
       cwd,
       allowedTools: ["Read", "Edit", "Write", "Bash", "Grep", "Glob"],
       disallowedTools: ["Agent", "Task"],
       permissionMode: "bypassPermissions",
+      // D1: scope filesystem writes to the workspace (OS-level enforcement via SDK native sandbox).
+      // D2: failIfUnavailable: false → fail-open when sandbox is unavailable.
+      // D4: autoAllowBashIfSandboxed: true → Bash runs normally under the sandbox.
+      sandbox: buildWorkspaceSandbox(cwd),
+      // D5: stderr callback observes sandbox degradation; once-latch emits a single warning.
+      //     Follow-up / retry / postWork turns spread ...queryOptions, reusing this callback
+      //     and its shared latch so the warning fires at most once per run().
+      stderr: sandboxStderrCallback,
       ...maxTurnsOption,
       model: resolvedConfig.model,
       abortController,
