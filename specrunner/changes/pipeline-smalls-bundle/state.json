@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "fc263ec3-5364-4afe-89a4-192c8ffbf4cb",
   "createdAt": "2026-07-09T01:30:36.549Z",
-  "updatedAt": "2026-07-09T02:26:17.261Z",
+  "updatedAt": "2026-07-09T02:26:40.640Z",
   "request": {
     "title": "pipeline 運用の小粒不具合 3 件の一括修正（fixer prompt / exit-guard / worktree cwd の view コマンド）",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/pipeline-smalls-bundle-fc263ec3",
   "error": null,
   "pipelineId": "standard",
@@ -73,8 +73,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/759",
+    "number": 759,
+    "createdAt": "2026-07-09T02:26:40.623Z"
+  },
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +93,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }

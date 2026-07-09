@@ -89,3 +89,11 @@
 {"type":"transition","ts":"2026-07-09T02:26:17.257Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
 {"type":"transition","ts":"2026-07-09T02:26:17.257Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
 {"type":"transition","ts":"2026-07-09T02:26:17.261Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-09T02:26:39.039Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"94fb2573-c5a4-46f9-9d85-36299986350e","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-09T02:26:17.273Z","endedAt":"2026-07-09T02:26:37.745Z"}
+{"type":"transition","ts":"2026-07-09T02:26:39.049Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-09T02:26:39.052Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-09T02:26:40.626Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/pipeline-smalls-bundle/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-09T02:26:39.054Z","endedAt":"2026-07-09T02:26:40.624Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-09T02:26:40.624Z","outputs":[{"path":"specrunner/changes/pipeline-smalls-bundle/pr-create-result.md","hash":"sha256:11df6e7b2a9ef113a1dde5cda073b14a58dc31d1df8926ef49c6bfa3c71eab26"}],"inputs":[{"path":"fix/pipeline-smalls-bundle-fc263ec3","hash":null}]}
+{"type":"transition","ts":"2026-07-09T02:26:40.640Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
