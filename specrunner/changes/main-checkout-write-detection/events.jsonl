@@ -82,3 +82,17 @@
 {"type":"transition","ts":"2026-07-09T03:03:16.177Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-07-09T03:03:16.178Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-07-09T03:03:16.179Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-09T03:09:37.477Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"cb1cebaa-f7ab-40a6-be2e-2ebbeae91cf4","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/main-checkout-write-detection/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"observations":[{"severity":"low","file":"src/core/command/runner.ts","title":"TC-007 テスト欠如はリグレッションではない（ledger 不正確）","rationale":"code-review で Fix=no と明示され、code-fixer は当該ファイルを一切変更していない。implementer commit から一度も fix されておらず、リグレッション（fix 後の巻き戻し）ではない。"},{"severity":"low","file":"src/core/step/executor.ts","title":"completedAt 欠落はリグレッションではない（ledger 不正確）","rationale":"cross-boundary-invariants が F-001 として指摘したが approved 判定（non-blocking）を出した。そのコミットも executor.ts を変更しておらず、implementer commit から一度も fix されていない。リグレッションではない。","line":487}]},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-09T03:03:16.189Z","endedAt":"2026-07-09T03:09:36.098Z"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-09T03:09:36.098Z","outputs":[{"path":"specrunner/changes/main-checkout-write-detection/regression-gate-result-002.md","hash":null}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-09T03:09:37.486Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-09T03:09:37.486Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-09T03:09:37.490Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-09T03:09:37.492Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
+{"type":"interruption","reason":"signal","ts":"2026-07-09T03:12:34.181Z"}
+{"type":"interruption","reason":"signal","ts":"2026-07-09T03:12:34.181Z"}
+{"type":"transition","ts":"2026-07-09T03:12:34.181Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-09T03:12:34.181Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-09T03:29:18.137Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'conformance'"}
+{"type":"transition","ts":"2026-07-09T03:29:18.240Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-09T03:29:18.242Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
