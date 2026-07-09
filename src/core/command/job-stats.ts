@@ -22,7 +22,9 @@ import { getJobSlug } from "../../state/job-slug.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { resolveChangeDir } from "../job-access/resolve-change-dir.js";
 import { readUsageFile } from "../usage/store.js";
-import { stdoutWrite } from "../../logger/stdout.js";
+import { stdoutWrite, stderrWrite } from "../../logger/stdout.js";
+import { detectSpecrunnerWorktree } from "../worktree/detection.js";
+import { worktreeGuardError } from "../../errors.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -346,6 +348,16 @@ export function renderJobStatsJson(report: JobStatsReport): string {
  */
 export async function runJobStats(opts: { cwd: string; json: boolean }): Promise<number> {
   const { cwd, json } = opts;
+
+  // Worktree guard: reject from inside a specrunner job worktree
+  const wtResult = await detectSpecrunnerWorktree(cwd);
+  if (wtResult.isSpecrunnerWorktree) {
+    const mainPath = wtResult.mainCheckoutPath ?? "<main checkout>";
+    const guardErr = worktreeGuardError("job stats", mainPath);
+    stderrWrite(guardErr.message);
+    stderrWrite(`Hint: ${guardErr.hint}`);
+    return 2;
+  }
 
   const states = await JobStateStore.list(cwd, { includeArchived: true });
 

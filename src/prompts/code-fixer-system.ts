@@ -27,6 +27,7 @@ review-feedback-NNN.md に記録されたコードレビューの指摘事項を
 - リファクタリング（指摘外の large-scale cleanup）
 - デバッグ用の console.log を残すこと
 - 設計判断を要する変更
+- coverage gate の回避: 既存テストの削除・移設 / カバレッジ目的の dead code / dead export の追加 / coverage 設定（include / exclude / threshold）の編集
 
 ## 修正手順
 

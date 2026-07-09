@@ -21,6 +21,7 @@ verification-result.md に記録された build/test/lint/typecheck エラーを
 - 新機能の追加
 - verification-result.md に記載されていない変更
 - デバッグ用の console.log を残すこと
+- coverage gate の回避: 既存テストの削除・移設 / カバレッジ目的の dead code / dead export の追加 / coverage 設定（include / exclude / threshold）の編集
 
 ## 修正手順
 
@@ -28,10 +29,9 @@ verification-result.md に記録された build/test/lint/typecheck エラーを
 2. verification-result.md を読み込む（failed phase のエラーログを確認）
 3. エラーの原因を特定し、最小限の機械的修正を行う
 4. **Phase: test-coverage が failed の場合**:
-   - verification-result.md の \`## Phase: test-coverage\` セクションに記載された missing TC ID を確認する
-   - change folder の \`test-cases.md\` から該当 TC の GIVEN/WHEN/THEN を読み取る
-   - 対応する test を追加する（配置先はプロジェクトの既存テストの配置パターンに従う。特定ディレクトリを指定しない）
-   - test 関数名または直前のコメントに TC ID を必ず記載する（例: \`it("TC-003: ...", ...)\`）
+   - verification-result.md の \`## Phase: test-coverage\` セクションに記録された未実行の変更行（file:line）と実行率を確認する
+   - **その行を実際に実行する実テストを追加する** ことが唯一の正当な修正である。dead code の追加や export の追加は禁止
+   - 正当な修正で解消できない場合は修正せず失敗のまま終える（escalation は pipeline の iteration 上限が担う）
 5. 修正が完了したら作業を終える
 
 ## セキュリティ

@@ -20,6 +20,8 @@ import { getJobSlug } from "../state/job-slug.js";
 import type { JobState } from "../state/schema.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
 import { logResult, stderrWrite } from "../logger/stdout.js";
+import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
+import { worktreeGuardError } from "../errors.js";
 import { getVerboseLogPath } from "../util/xdg.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { fold } from "../store/event-journal.js";
@@ -38,6 +40,18 @@ const UUID_REGEX = /^[a-f0-9-]{36}$/;
 export async function runJobShow(input: string): Promise<number> {
   // Read-only command — fallback to cwd if git unavailable
   const repoRoot = (await resolveRepoRoot()) ?? process.cwd();
+
+  // Worktree guard: reject from inside a specrunner job worktree.
+  // Uses resolved repoRoot (which equals the worktree root when running from inside one)
+  // so that git-aware resolution captures worktree context correctly.
+  const wtResult = await detectSpecrunnerWorktree(repoRoot);
+  if (wtResult.isSpecrunnerWorktree) {
+    const mainPath = wtResult.mainCheckoutPath ?? "<main checkout>";
+    const guardErr = worktreeGuardError("job show", mainPath);
+    stderrWrite(guardErr.message);
+    stderrWrite(`Hint: ${guardErr.hint}`);
+    return 2;
+  }
 
   let state: JobState;
 

@@ -6,32 +6,27 @@
 import { describe, it, expect } from "vitest";
 import { BUILD_FIXER_SYSTEM_PROMPT } from "../../src/prompts/build-fixer-system.js";
 
-// TC-024: BUILD_FIXER_SYSTEM_PROMPT — test-coverage 失敗時の対処規律
+// TC-024: BUILD_FIXER_SYSTEM_PROMPT — test-coverage 失敗時の対処規律（lcov 変更行 gate）
 describe("TC-024: BUILD_FIXER_SYSTEM_PROMPT — test-coverage 失敗時の対処規律", () => {
-  it("Phase: test-coverage が failed の場合に verification-result.md から missing TC ID を確認する指示が含まれる", () => {
-    const hasMissingTcRef =
+  it("Phase: test-coverage が failed の場合に verification-result.md から変更行を確認する指示が含まれる", () => {
+    const hasLcovRef =
       BUILD_FIXER_SYSTEM_PROMPT.includes("test-coverage") &&
-      (BUILD_FIXER_SYSTEM_PROMPT.includes("missing") ||
-        BUILD_FIXER_SYSTEM_PROMPT.includes("TC ID") ||
-        BUILD_FIXER_SYSTEM_PROMPT.includes("TC-"));
-    expect(hasMissingTcRef).toBe(true);
+      BUILD_FIXER_SYSTEM_PROMPT.includes("verification-result.md") &&
+      BUILD_FIXER_SYSTEM_PROMPT.includes("変更行");
+    expect(hasLcovRef).toBe(true);
   });
 
-  it("test-cases.md から GIVEN/WHEN/THEN を読んで test を追加する指示が含まれる", () => {
-    const hasTestCasesMdRef =
-      BUILD_FIXER_SYSTEM_PROMPT.includes("test-cases.md") &&
-      (BUILD_FIXER_SYSTEM_PROMPT.includes("GIVEN") ||
-        BUILD_FIXER_SYSTEM_PROMPT.includes("WHEN") ||
-        BUILD_FIXER_SYSTEM_PROMPT.includes("test を追加") ||
-        BUILD_FIXER_SYSTEM_PROMPT.includes("test を `tests/`"));
-    expect(hasTestCasesMdRef).toBe(true);
+  it("実テストを追加することが正当な修正であることが含まれる", () => {
+    const hasTestAddRef =
+      BUILD_FIXER_SYSTEM_PROMPT.includes("実テストを追加する");
+    expect(hasTestAddRef).toBe(true);
   });
 
-  it("test 関数名または comment に TC ID を記載する規律が含まれる", () => {
-    const hasTcIdRule =
-      BUILD_FIXER_SYSTEM_PROMPT.includes("TC ID") ||
-      BUILD_FIXER_SYSTEM_PROMPT.includes('it("TC-');
-    expect(hasTcIdRule).toBe(true);
+  it("正当な修正で解消できない場合は失敗のまま終える規律が含まれる", () => {
+    const hasEscalationRef =
+      BUILD_FIXER_SYSTEM_PROMPT.includes("失敗のまま終える") ||
+      BUILD_FIXER_SYSTEM_PROMPT.includes("iteration 上限");
+    expect(hasEscalationRef).toBe(true);
   });
 });
 
