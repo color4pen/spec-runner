@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96a1868f-fc04-432b-8e5d-079b9806a468",
   "createdAt": "2026-07-09T03:46:31.869Z",
-  "updatedAt": "2026-07-09T04:00:11.437Z",
+  "updatedAt": "2026-07-09T04:07:02.602Z",
   "request": {
     "title": "claude-code adapter の書き込みを workspace に SDK native sandbox でスコープする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/claude-adapter-write-scope-96a1868f",
   "error": null,
@@ -48,10 +48,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
