@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "18ba00c4-9e4e-487b-a2d3-d84e281ef4a8",
   "createdAt": "2026-07-09T01:29:03.499Z",
-  "updatedAt": "2026-07-09T02:46:02.111Z",
+  "updatedAt": "2026-07-09T03:03:16.179Z",
   "request": {
     "title": "worktree job による main checkout への逃避書き込みを検出する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "scale-tolerance",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/main-checkout-write-detection-18ba00c4",
   "error": null,
@@ -47,8 +47,34 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "f3b998a50e1594097a6b29fcc660d0b16fe14ac0",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -59,7 +85,9 @@
       "build-fixer": 2,
       "code-review": 1,
       "code-fixer": 1,
-      "scale-tolerance": 1
+      "scale-tolerance": 1,
+      "cross-boundary-invariants": 1,
+      "custom-reviewers": 1
     }
   }
 }
