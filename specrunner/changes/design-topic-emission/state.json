@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e3fae36-7a98-40e4-ae49-ab606549dd30",
   "createdAt": "2026-07-09T13:44:08.481Z",
-  "updatedAt": "2026-07-09T14:34:06.492Z",
+  "updatedAt": "2026-07-09T14:40:15.561Z",
   "request": {
     "title": "設計層 topic 排出 — archive 時に design-level findings を design/topics/ へ機械排出する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/design-topic-emission-8e3fae36",
   "error": null,
@@ -74,20 +74,21 @@
     }
   ],
   "_journal": {
-    "historyCount": 53,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 2,
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
