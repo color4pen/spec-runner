@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e3fae36-7a98-40e4-ae49-ab606549dd30",
   "createdAt": "2026-07-09T13:44:08.481Z",
-  "updatedAt": "2026-07-09T14:40:15.561Z",
+  "updatedAt": "2026-07-09T14:44:36.999Z",
   "request": {
     "title": "設計層 topic 排出 — archive 時に design-level findings を design/topics/ へ機械排出する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/design-topic-emission-8e3fae36",
   "error": null,
   "pipelineId": "standard",
@@ -73,8 +73,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/763",
+    "number": 763,
+    "createdAt": "2026-07-09T14:44:36.995Z"
+  },
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +93,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
