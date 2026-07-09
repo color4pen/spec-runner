@@ -5,7 +5,7 @@ import { getJobSlug } from "../state/job-slug.js";
 import { ACTIVE_STATUSES, isTerminal } from "../state/lifecycle.js";
 import type { GitHubClient } from "../core/port/github-client.js";
 import { resolveRepoRoot } from "../util/repo-root.js";
-import { stdoutWrite } from "../logger/stdout.js";
+import { stdoutWrite, stderrWrite } from "../logger/stdout.js";
 import { isStaleRunning } from "../core/resume/safety.js";
 import { livenessJsonPath } from "../util/paths.js";
 import {
@@ -14,6 +14,8 @@ import {
   formatOperationsViewJson,
 } from "../core/job-list/operations-view.js";
 import type { ViewEntry } from "../core/job-list/operations-view.js";
+import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
+import { worktreeGuardError } from "../errors.js";
 
 /**
  * Format a job age in human-readable form.
@@ -83,6 +85,18 @@ export async function runPs(
 ): Promise<number> {
   // Read-only command — fallback to cwd if git unavailable
   const repoRoot = opts.repoRoot ?? (await resolveRepoRoot()) ?? process.cwd();
+
+  // Worktree guard: reject from inside a specrunner job worktree.
+  // Uses resolved repoRoot (which equals the worktree root when running from inside one)
+  // so that git-aware resolution captures worktree context correctly.
+  const wtResult = await detectSpecrunnerWorktree(repoRoot);
+  if (wtResult.isSpecrunnerWorktree) {
+    const mainPath = wtResult.mainCheckoutPath ?? "<main checkout>";
+    const guardErr = worktreeGuardError("job ls", mainPath);
+    stderrWrite(guardErr.message);
+    stderrWrite(`Hint: ${guardErr.hint}`);
+    return 2;
+  }
 
   const allJobs = await JobStateStore.list(repoRoot, { includeArchived: opts.all === true || opts.status === "archived" });
 

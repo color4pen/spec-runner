@@ -65,6 +65,7 @@ async function handleNoWorktreeExit(repoRoot: string, jobId: string, slug: strin
     const { state: updated } = transitionJob(state, "awaiting-resume", {
       trigger: "exit-guard",
       reason: `process exiting with running job ${jobId}`,
+      ...(state.step ? { patch: { resumePoint: { step: state.step, reason: "signal", iterationsExhausted: 0 } } } : {}),
     });
     await store.persist(updated);
   } catch {
@@ -131,6 +132,7 @@ async function handlePerJobExit(repoRoot: string, jobId: string): Promise<void> 
     const { state: updated } = transitionJob(state, "awaiting-resume", {
       trigger: "exit-guard",
       reason: `process exiting with running job ${jobId}`,
+      ...(state.step ? { patch: { resumePoint: { step: state.step, reason: "signal", iterationsExhausted: 0 } } } : {}),
     });
     await store.persist(updated);
   } catch {
@@ -152,6 +154,7 @@ async function handleGlobalExit(repoRoot: string): Promise<void> {
       const { state: updated } = transitionJob(state, "awaiting-resume", {
         trigger: "exit-guard",
         reason: `process exiting with running job ${state.jobId}`,
+        ...(state.step ? { patch: { resumePoint: { step: state.step, reason: "signal", iterationsExhausted: 0 } } } : {}),
       });
       await store.persist(updated);
     } catch {
