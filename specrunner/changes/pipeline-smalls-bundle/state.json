@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "fc263ec3-5364-4afe-89a4-192c8ffbf4cb",
   "createdAt": "2026-07-09T01:30:36.549Z",
-  "updatedAt": "2026-07-09T02:20:48.762Z",
+  "updatedAt": "2026-07-09T02:26:17.261Z",
   "request": {
     "title": "pipeline 運用の小粒不具合 3 件の一括修正（fixer prompt / exit-guard / worktree cwd の view コマンド）",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "fix/pipeline-smalls-bundle-fc263ec3",
   "error": null,
@@ -74,20 +74,21 @@
     }
   ],
   "_journal": {
-    "historyCount": 53,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 2,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
