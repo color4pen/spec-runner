@@ -3,6 +3,7 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
+import { isSignalHandlerFired } from "./signal-state.js";
 
 /**
  * Returns a handler that can be called multiple times but only executes once (fired guard).
@@ -52,6 +53,8 @@ export function createExitGuardHandler(
  * No-worktree exit guard: load state from cwd-based store and transition to awaiting-resume.
  */
 async function handleNoWorktreeExit(repoRoot: string, jobId: string, slug: string): Promise<void> {
+  // Signal handler is responsible — skip to avoid duplicate interruption record
+  if (isSignalHandlerFired()) return;
   try {
     stderrWrite(`[specrunner] warn: process exiting with running job ${jobId}, transitioning to awaiting-resume`);
     const store = new JobStateStore(jobId, repoRoot, { slug, stateRoot: repoRoot });
@@ -77,6 +80,8 @@ async function handleNoWorktreeExit(repoRoot: string, jobId: string, slug: strin
  * Per-job exit guard: find the worktree for jobId and update only that job's state.
  */
 async function handlePerJobExit(repoRoot: string, jobId: string): Promise<void> {
+  // Signal handler is responsible — skip to avoid duplicate interruption record
+  if (isSignalHandlerFired()) return;
   const jobId8 = jobId.slice(0, 8);
   const worktreesDir = path.join(repoRoot, ".git", "specrunner-worktrees");
 
@@ -144,6 +149,8 @@ async function handlePerJobExit(repoRoot: string, jobId: string): Promise<void> 
  * Global scan: transition all running jobs to awaiting-resume.
  */
 async function handleGlobalExit(repoRoot: string): Promise<void> {
+  // Signal handler is responsible — skip to avoid duplicate interruption record
+  if (isSignalHandlerFired()) return;
   const states = await JobStateStore.list(repoRoot);
   for (const state of states) {
     if (state.status !== "running") continue;

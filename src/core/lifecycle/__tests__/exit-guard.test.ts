@@ -5,6 +5,11 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { JobStateStore } from "../../../store/job-state-store.js";
 import { createExitGuardHandler } from "../exit-guard.js";
+import {
+  markSignalHandlerFired,
+  isSignalHandlerFired,
+  resetSignalHandlerFiredForTest,
+} from "../signal-state.js";
 
 let tempDir: string;
 
@@ -16,6 +21,7 @@ beforeEach(async () => {
 afterEach(async () => {
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
+  resetSignalHandlerFiredForTest();
 });
 
 /**
@@ -295,5 +301,193 @@ describe("exit-guard: resumePoint が正しく書き込まれる", () => {
     expect(rp.step).toBe("build-fixer");
     expect(rp.reason).toBe("signal");
     expect(rp.iterationsExhausted).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-08: signal handler fired → exit-guard skips write (duplicate suppression)
+// ---------------------------------------------------------------------------
+
+describe("exit-guard: signal handler fired → duplicate interruption suppressed", () => {
+  it("signal handler fired — exit-guard does NOT append interruption (events.jsonl unchanged) [no-worktree mode]", async () => {
+    // TC-008: uses no-worktree mode so handleNoWorktreeExit is exercised.
+    // handleNoWorktreeExit calls appendInterruption when signal NOT fired, and skips it
+    // when signal IS fired — making events.jsonl the correct observable for the guard.
+    // (Global scan mode never calls appendInterruption, so checking events.jsonl there
+    // is vacuous; this test must use a mode where appendInterruption is on the call path.)
+    const jobId = "dddddddd-0000-0000-0000-000000000001";
+    const slug = `guard-${jobId.slice(0, 8)}`;
+
+    const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+    await fs.mkdir(slugDir, { recursive: true });
+    const stateData = {
+      version: 2,
+      jobId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      request: { path: "/req.md", type: "new-feature", title: "test", slug },
+      repository: { owner: "test", name: "test" },
+      session: null,
+      step: "implementer",
+      status: "running",
+      pid: 12345,
+      branch: null,
+      history: [],
+      error: null,
+      _journal: { historyCount: 0, stepCounts: {} },
+    };
+    await fs.writeFile(path.join(slugDir, "state.json"), JSON.stringify(stateData), "utf-8");
+    await fs.writeFile(path.join(slugDir, "events.jsonl"), "", "utf-8");
+
+    const eventsPath = path.join(slugDir, "events.jsonl");
+    const before = (await fs.readFile(eventsPath, "utf-8")).split("\n").filter(Boolean).length;
+
+    // Simulate signal handler having fired
+    markSignalHandlerFired();
+
+    // no-worktree mode: handleNoWorktreeExit is invoked, which calls appendInterruption
+    // when the signal guard is NOT active — but skips it when the guard IS active.
+    const handler = createExitGuardHandler(tempDir, jobId, { noWorktree: true, slug });
+    handler();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const after = (await fs.readFile(eventsPath, "utf-8")).split("\n").filter(Boolean).length;
+    // Signal guard is active — no interruption line should have been appended
+    expect(after).toBe(before);
+  });
+
+  it("signal handler fired — exit-guard does NOT persist state (status stays 'running')", async () => {
+    const jobId = "dddddddd-0000-0000-0000-000000000002";
+    await createJobStateWithStep(tempDir, jobId, "running", "implementer");
+
+    markSignalHandlerFired();
+
+    const handler = createExitGuardHandler(tempDir);
+    handler();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const slug = `guard-${jobId.slice(0, 8)}`;
+    const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
+    const state = await store.load();
+    // Status must NOT have been changed by exit-guard
+    expect(state.status).toBe("running");
+  });
+
+  it("signal handler NOT fired — exit-guard proceeds normally (awaiting-resume)", async () => {
+    const jobId = "dddddddd-0000-0000-0000-000000000003";
+    await createJobStateWithStep(tempDir, jobId, "running", "implementer");
+
+    // Do NOT call markSignalHandlerFired() — this is the non-signal exit path
+
+    const handler = createExitGuardHandler(tempDir);
+    handler();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const slug = `guard-${jobId.slice(0, 8)}`;
+    const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
+    const state = await store.load();
+    expect(state.status).toBe("awaiting-resume");
+  });
+
+  it("signal handler fired — per-job mode also skips write", async () => {
+    const jobId = "dddddddd-0000-0000-0000-000000000004";
+    const jobId8 = jobId.slice(0, 8);
+    const slug = `guard-${jobId8}`;
+
+    const worktreesDir = path.join(tempDir, ".git", "specrunner-worktrees");
+    const worktreePath = path.join(worktreesDir, slug);
+    const slugDir = path.join(worktreePath, "specrunner", "changes", slug);
+    await fs.mkdir(slugDir, { recursive: true });
+
+    const stateData = {
+      version: 2,
+      jobId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      request: { path: "/req.md", type: "new-feature", title: "test", slug },
+      repository: { owner: "test", name: "test" },
+      session: null,
+      step: "code-review",
+      status: "running",
+      pid: 12345,
+      branch: null,
+      history: [],
+      error: null,
+      _journal: { historyCount: 0, stepCounts: {} },
+    };
+    await fs.writeFile(path.join(slugDir, "state.json"), JSON.stringify(stateData), "utf-8");
+    await fs.writeFile(path.join(slugDir, "events.jsonl"), "", "utf-8");
+
+    markSignalHandlerFired();
+
+    const handler = createExitGuardHandler(tempDir, jobId);
+    handler();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: worktreePath });
+    const state = await store.load();
+    expect(state.status).toBe("running");
+  });
+
+  it("signal handler fired — no-worktree mode also skips write", async () => {
+    const jobId = "dddddddd-0000-0000-0000-000000000005";
+    const slug = `guard-${jobId.slice(0, 8)}`;
+
+    const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+    await fs.mkdir(slugDir, { recursive: true });
+    const stateData = {
+      version: 2,
+      jobId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      request: { path: "/req.md", type: "new-feature", title: "test", slug },
+      repository: { owner: "test", name: "test" },
+      session: null,
+      step: "design",
+      status: "running",
+      pid: 12345,
+      branch: null,
+      history: [],
+      error: null,
+      _journal: { historyCount: 0, stepCounts: {} },
+    };
+    await fs.writeFile(path.join(slugDir, "state.json"), JSON.stringify(stateData), "utf-8");
+    await fs.writeFile(path.join(slugDir, "events.jsonl"), "", "utf-8");
+
+    markSignalHandlerFired();
+
+    const handler = createExitGuardHandler(tempDir, jobId, { noWorktree: true, slug });
+    handler();
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
+    const state = await store.load();
+    expect(state.status).toBe("running");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-015: signal-state.ts module contract — initial / mark / reset cycle
+// ---------------------------------------------------------------------------
+
+describe("signal-state: module contract (TC-015)", () => {
+  // afterEach in the outer scope already calls resetSignalHandlerFiredForTest(),
+  // so each test starts with the flag cleared.
+
+  it("initial state: isSignalHandlerFired() returns false", () => {
+    // No call to markSignalHandlerFired() — flag must be false out of the box.
+    expect(isSignalHandlerFired()).toBe(false);
+  });
+
+  it("after markSignalHandlerFired(): isSignalHandlerFired() returns true", () => {
+    markSignalHandlerFired();
+    expect(isSignalHandlerFired()).toBe(true);
+  });
+
+  it("after resetSignalHandlerFiredForTest(): isSignalHandlerFired() returns false again", () => {
+    markSignalHandlerFired();
+    expect(isSignalHandlerFired()).toBe(true); // sanity-check mark worked
+    resetSignalHandlerFiredForTest();
+    expect(isSignalHandlerFired()).toBe(false);
   });
 });

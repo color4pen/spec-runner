@@ -1,11 +1,13 @@
 /**
- * Unit tests for resolveResumeStep.
+ * Unit tests for resolveResumeStep and buildAllowedStepSet.
  *
- * Covers all five resolution branches and regression paths for existing behaviour.
+ * Covers all five resolution branches and regression paths for existing behaviour,
+ * plus member→coordinator mapping (T-01, T-02).
  */
 import { describe, expect, it } from "vitest";
-import { resolveResumeStep } from "../resolve-step.js";
+import { resolveResumeStep, buildAllowedStepSet } from "../resolve-step.js";
 import type { ResumePoint } from "../../../state/schema.js";
+import { CUSTOM_REVIEWERS_STEP_NAME } from "../../pipeline/types.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -13,6 +15,11 @@ import type { ResumePoint } from "../../../state/schema.js";
 
 function makeResumePoint(step = "design"): ResumePoint {
   return { step, reason: "timeout", iterationsExhausted: 2 };
+}
+
+/** Build a minimal reviewer array for use in tests. */
+function makeReviewers(names: string[]): ReadonlyArray<{ name: string }> {
+  return names.map((name) => ({ name }));
 }
 
 // ---------------------------------------------------------------------------
@@ -122,5 +129,122 @@ describe("resolveResumeStep — --from with invalid step name", () => {
     expect(() => resolveResumeStep("bad-step", rp, "design")).toThrow(
       'Invalid --from value: "bad-step"',
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-01: buildAllowedStepSet — coordinator inclusion
+// ---------------------------------------------------------------------------
+
+describe("buildAllowedStepSet — coordinator inclusion", () => {
+  it("includes 'custom-reviewers' when reviewers are present", () => {
+    const set = buildAllowedStepSet(makeReviewers(["security"]));
+    expect(set.has(CUSTOM_REVIEWERS_STEP_NAME)).toBe(true);
+  });
+
+  it("includes each reviewer member name when reviewers are present", () => {
+    const set = buildAllowedStepSet(makeReviewers(["security", "cross-boundary-invariants"]));
+    expect(set.has("security")).toBe(true);
+    expect(set.has("cross-boundary-invariants")).toBe(true);
+  });
+
+  it("includes 'regression-gate' when reviewers are present", () => {
+    const set = buildAllowedStepSet(makeReviewers(["security"]));
+    expect(set.has("regression-gate")).toBe(true);
+  });
+
+  it("does NOT include 'custom-reviewers' when reviewers array is empty", () => {
+    const set = buildAllowedStepSet([]);
+    expect(set.has(CUSTOM_REVIEWERS_STEP_NAME)).toBe(false);
+  });
+
+  it("does NOT include 'custom-reviewers' when reviewers is undefined", () => {
+    const set = buildAllowedStepSet(undefined);
+    expect(set.has(CUSTOM_REVIEWERS_STEP_NAME)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-02: resolveResumeStep — member → coordinator mapping
+// ---------------------------------------------------------------------------
+
+describe("resolveResumeStep — member → coordinator mapping", () => {
+  const reviewers = makeReviewers(["cross-boundary-invariants", "security"]);
+
+  // Build allowed set that includes the coordinator and member names
+  const allowedWithReviewers = buildAllowedStepSet(reviewers);
+
+  it("maps resumePoint.step member name → 'custom-reviewers' (job 8d5f9b5c fixture)", () => {
+    // This is the exact scenario from issue #769 / job 8d5f9b5c:
+    // process interrupted while cross-boundary-invariants member was running
+    const rp = makeResumePoint("cross-boundary-invariants");
+    const result = resolveResumeStep(undefined, rp, undefined, allowedWithReviewers, reviewers);
+    expect(result).toBe(CUSTOM_REVIEWERS_STEP_NAME);
+  });
+
+  it("maps --from <member name> → 'custom-reviewers'", () => {
+    const result = resolveResumeStep(
+      "cross-boundary-invariants",
+      null,
+      undefined,
+      allowedWithReviewers,
+      reviewers,
+    );
+    expect(result).toBe(CUSTOM_REVIEWERS_STEP_NAME);
+  });
+
+  it("passes through --from 'custom-reviewers' directly (coordinator direct spec)", () => {
+    const result = resolveResumeStep(
+      CUSTOM_REVIEWERS_STEP_NAME,
+      null,
+      undefined,
+      allowedWithReviewers,
+      reviewers,
+    );
+    expect(result).toBe(CUSTOM_REVIEWERS_STEP_NAME);
+  });
+
+  it("does NOT map resumePoint.step for non-member static steps", () => {
+    const rp = makeResumePoint("code-review");
+    const result = resolveResumeStep(undefined, rp, undefined, allowedWithReviewers, reviewers);
+    expect(result).toBe("code-review");
+  });
+
+  it("does NOT map --from for non-member static steps", () => {
+    const result = resolveResumeStep(
+      "code-review",
+      null,
+      undefined,
+      allowedWithReviewers,
+      reviewers,
+    );
+    expect(result).toBe("code-review");
+  });
+
+  it("throws for truly unknown --from that is not a member name", () => {
+    expect(() =>
+      resolveResumeStep("totally-unknown", null, undefined, allowedWithReviewers, reviewers),
+    ).toThrow('Invalid --from value: "totally-unknown"');
+  });
+
+  it("maps second member name too (security)", () => {
+    const rp = makeResumePoint("security");
+    const result = resolveResumeStep(undefined, rp, undefined, allowedWithReviewers, reviewers);
+    expect(result).toBe(CUSTOM_REVIEWERS_STEP_NAME);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-02: existing tests still green with 5th arg omitted (backward compat)
+// ---------------------------------------------------------------------------
+
+describe("resolveResumeStep — backward compat when reviewers omitted", () => {
+  it("resolves resumePoint.step without mapping when no reviewers provided", () => {
+    const rp = makeResumePoint("design");
+    expect(resolveResumeStep(undefined, rp, undefined)).toBe("design");
+  });
+
+  it("resolves --from without mapping when no reviewers provided", () => {
+    expect(resolveResumeStep("implementer", null, undefined)).toBe("implementer");
   });
 });

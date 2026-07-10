@@ -177,7 +177,7 @@ export class ResumeCommand extends CommandRunner {
     let startStep: StepName;
     try {
       const allowedSteps = buildAllowedStepSet(state.reviewers);
-      startStep = resolveResumeStep(this.options.from, resumePoint, state.step, allowedSteps);
+      startStep = resolveResumeStep(this.options.from, resumePoint, state.step, allowedSteps, state.reviewers);
     } catch (err) {
       logError((err as Error).message);
       throw new PrepareError(1, "Failed to resolve resume step");

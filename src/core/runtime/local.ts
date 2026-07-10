@@ -47,6 +47,7 @@ import { parseIncompleteTaskLabels } from "../step/output-verify.js";
 import { SpecRunnerError, ERROR_CODES, worktreeDirtyError } from "../../errors.js";
 import { checkDuplicateLiveJob } from "./duplicate-slug-guard.js";
 import { stderrWrite } from "../../logger/stdout.js";
+import { markSignalHandlerFired } from "../lifecycle/signal-state.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { stripSecrets } from "../../util/env-filter.js";
 import { resolveWorkspaceSetupPlan } from "../worktree/setup.js";
@@ -958,6 +959,7 @@ export class LocalRuntime implements RealRuntimeStrategy {
 
     // Signal handler (layer 1 of 3-layer cleanup)
     const signalCleanup = async (): Promise<void> => {
+      markSignalHandlerFired();
       try {
         const store = makeStore();
         const current = await store.load();
