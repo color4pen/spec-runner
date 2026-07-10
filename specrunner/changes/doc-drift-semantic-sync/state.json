@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "93c06854-4da3-4936-9124-c166ff2aa7f6",
   "createdAt": "2026-07-10T09:48:05.792Z",
-  "updatedAt": "2026-07-10T10:13:50.298Z",
+  "updatedAt": "2026-07-10T10:18:57.985Z",
   "request": {
     "title": "authority 文書と実装の drift 3 件を修正し、同期テストを意味的照合に拡張する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "scale-tolerance",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/doc-drift-semantic-sync-93c06854",
   "error": null,
@@ -47,8 +47,34 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "19191dd8a257f9fb5a6d03b670dc8dc253d2a389",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -57,7 +83,9 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "scale-tolerance": 1
+      "scale-tolerance": 1,
+      "cross-boundary-invariants": 1,
+      "custom-reviewers": 1
     }
   }
 }
