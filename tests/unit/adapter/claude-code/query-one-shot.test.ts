@@ -442,6 +442,39 @@ describe("TC-SB-05: one-shot options carry no sandbox key", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-FW-07: one-shot options carry no canUseTool guard (regression guard)
+// ---------------------------------------------------------------------------
+
+describe("TC-FW-07: one-shot options carry no canUseTool guard", () => {
+  it("canUseTool key is absent; sandbox key is absent; permissionMode is bypassPermissions; allowedTools correct", async () => {
+    let capturedOptions: Record<string, unknown> | undefined;
+
+    const mockQueryFn: QueryFn = vi.fn().mockImplementation(
+      ({ options }: { prompt: string; options?: Record<string, unknown> }) => {
+        capturedOptions = options;
+        return (async function* () {
+          yield { type: "result", subtype: "success", result: "done", session_id: undefined };
+        })();
+      },
+    ) as unknown as QueryFn;
+
+    await queryOneShot(
+      { systemPrompt: "sys", prompt: "user" },
+      makeConfig(),
+      mockQueryFn,
+    );
+
+    expect(capturedOptions).toBeDefined();
+    // Regression guard (design D5): the one-shot path must never gain a canUseTool guard
+    // or a sandbox — it must remain the lightweight, bypassPermissions one-shot path.
+    expect(Object.prototype.hasOwnProperty.call(capturedOptions, "canUseTool")).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(capturedOptions, "sandbox")).toBe(false);
+    expect(capturedOptions!["permissionMode"]).toBe("bypassPermissions");
+    expect(capturedOptions!["allowedTools"]).toEqual(["Read", "Bash", "Grep", "Glob"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-OSQ-05: non-success result → SpecRunnerError("QUERY_ONE_SHOT_FAILED")
 // ---------------------------------------------------------------------------
 describe("TC-OSQ-05: non-success result throws QUERY_ONE_SHOT_FAILED", () => {
