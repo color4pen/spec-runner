@@ -65,3 +65,15 @@
 {"type":"transition","ts":"2026-07-10T10:56:52.030Z","step":"custom-reviewers","status":"warning","message":"custom-reviewers iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-07-10T10:56:52.031Z","step":"step-transition","status":"ok","message":"custom-reviewers → code-fixer"}
 {"type":"transition","ts":"2026-07-10T10:56:52.032Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-07-10T10:57:54.738Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"9ea608b1-3ded-4973-8749-edafdca1be81","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-10T10:56:52.082Z","endedAt":"2026-07-10T10:57:52.935Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-07-10T10:57:52.935Z","outputs":[{"path":"specrunner/changes/journal-integrity-fail-closed","hash":null}],"inputs":[{"path":"specrunner/changes/journal-integrity-fail-closed/cross-boundary-invariants-result-001.md","hash":"sha256:08c2b9220811fed0c748da5b494eb470ad438aedd8540745a07914fc504bae69"}]}
+{"type":"transition","ts":"2026-07-10T10:57:54.743Z","step":"step-transition","status":"ok","message":"code-fixer → custom-reviewers"}
+{"type":"transition","ts":"2026-07-10T10:57:54.744Z","step":"custom-reviewers","status":"started","message":"custom-reviewers iteration 2 started"}
+{"type":"transition","ts":"2026-07-10T10:57:54.765Z","step":"cross-boundary-invariants-started","status":"started","message":"Starting cross-boundary-invariants step"}
+{"type":"interruption","reason":"signal","ts":"2026-07-10T11:03:19.970Z"}
+{"type":"interruption","reason":"signal","ts":"2026-07-10T11:03:19.970Z"}
+{"type":"transition","ts":"2026-07-10T11:03:19.971Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-10T11:03:19.971Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-10T11:03:44.928Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'cross-boundary-invariants'"}
+{"type":"transition","ts":"2026-07-10T11:03:45.098Z","step":"cross-boundary-invariants-started","status":"started","message":"Starting cross-boundary-invariants step"}
