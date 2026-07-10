@@ -7,6 +7,7 @@ import { JobStateStore } from "../../../store/job-state-store.js";
 import { createExitGuardHandler } from "../exit-guard.js";
 import {
   markSignalHandlerFired,
+  isSignalHandlerFired,
   resetSignalHandlerFiredForTest,
 } from "../signal-state.js";
 
@@ -308,25 +309,50 @@ describe("exit-guard: resumePoint が正しく書き込まれる", () => {
 // ---------------------------------------------------------------------------
 
 describe("exit-guard: signal handler fired → duplicate interruption suppressed", () => {
-  it("signal handler fired — exit-guard does NOT append interruption (events.jsonl unchanged)", async () => {
+  it("signal handler fired — exit-guard does NOT append interruption (events.jsonl unchanged) [no-worktree mode]", async () => {
+    // TC-008: uses no-worktree mode so handleNoWorktreeExit is exercised.
+    // handleNoWorktreeExit calls appendInterruption when signal NOT fired, and skips it
+    // when signal IS fired — making events.jsonl the correct observable for the guard.
+    // (Global scan mode never calls appendInterruption, so checking events.jsonl there
+    // is vacuous; this test must use a mode where appendInterruption is on the call path.)
     const jobId = "dddddddd-0000-0000-0000-000000000001";
-    await createJobStateWithStep(tempDir, jobId, "running", "implementer");
-
     const slug = `guard-${jobId.slice(0, 8)}`;
-    const eventsPath = path.join(tempDir, "specrunner", "changes", slug, "events.jsonl");
 
-    // Record line count before
+    const slugDir = path.join(tempDir, "specrunner", "changes", slug);
+    await fs.mkdir(slugDir, { recursive: true });
+    const stateData = {
+      version: 2,
+      jobId,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      request: { path: "/req.md", type: "new-feature", title: "test", slug },
+      repository: { owner: "test", name: "test" },
+      session: null,
+      step: "implementer",
+      status: "running",
+      pid: 12345,
+      branch: null,
+      history: [],
+      error: null,
+      _journal: { historyCount: 0, stepCounts: {} },
+    };
+    await fs.writeFile(path.join(slugDir, "state.json"), JSON.stringify(stateData), "utf-8");
+    await fs.writeFile(path.join(slugDir, "events.jsonl"), "", "utf-8");
+
+    const eventsPath = path.join(slugDir, "events.jsonl");
     const before = (await fs.readFile(eventsPath, "utf-8")).split("\n").filter(Boolean).length;
 
     // Simulate signal handler having fired
     markSignalHandlerFired();
 
-    const handler = createExitGuardHandler(tempDir);
+    // no-worktree mode: handleNoWorktreeExit is invoked, which calls appendInterruption
+    // when the signal guard is NOT active — but skips it when the guard IS active.
+    const handler = createExitGuardHandler(tempDir, jobId, { noWorktree: true, slug });
     handler();
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     const after = (await fs.readFile(eventsPath, "utf-8")).split("\n").filter(Boolean).length;
-    // No new lines should have been appended
+    // Signal guard is active — no interruption line should have been appended
     expect(after).toBe(before);
   });
 
@@ -437,5 +463,31 @@ describe("exit-guard: signal handler fired → duplicate interruption suppressed
     const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
     const state = await store.load();
     expect(state.status).toBe("running");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-015: signal-state.ts module contract — initial / mark / reset cycle
+// ---------------------------------------------------------------------------
+
+describe("signal-state: module contract (TC-015)", () => {
+  // afterEach in the outer scope already calls resetSignalHandlerFiredForTest(),
+  // so each test starts with the flag cleared.
+
+  it("initial state: isSignalHandlerFired() returns false", () => {
+    // No call to markSignalHandlerFired() — flag must be false out of the box.
+    expect(isSignalHandlerFired()).toBe(false);
+  });
+
+  it("after markSignalHandlerFired(): isSignalHandlerFired() returns true", () => {
+    markSignalHandlerFired();
+    expect(isSignalHandlerFired()).toBe(true);
+  });
+
+  it("after resetSignalHandlerFiredForTest(): isSignalHandlerFired() returns false again", () => {
+    markSignalHandlerFired();
+    expect(isSignalHandlerFired()).toBe(true); // sanity-check mark worked
+    resetSignalHandlerFiredForTest();
+    expect(isSignalHandlerFired()).toBe(false);
   });
 });
