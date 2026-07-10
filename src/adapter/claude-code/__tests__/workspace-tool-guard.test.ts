@@ -18,7 +18,7 @@ import {
   createWorkspaceToolGuard,
   ClaudeCodeRunner,
 } from "../agent-runner.js";
-import type { QueryFn, CreateMcpServerFn, WorkspaceToolGuard } from "../agent-runner.js";
+import type { QueryFn, CreateMcpServerFn } from "../agent-runner.js";
 import type { AgentRunContext } from "../../../core/port/agent-runner.js";
 import type { ReportToolSpec } from "../../../core/port/report-result.js";
 import { parseBaseReportInput } from "../../../core/port/report-result.js";
