@@ -32,6 +32,7 @@ import type { JobState, StepName } from "../../state/schema.js";
 import { getLatestStepResult } from "../../state/helpers.js";
 import { EventBus } from "../event/event-bus.js";
 import { buildPipelineForJob } from "../pipeline/index.js";
+import { scopeConfigWarningForJob } from "../pipeline/scope-warning.js";
 import type { CleanupHandle, RuntimeStrategy, WorkspaceOptions } from "../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
@@ -203,6 +204,12 @@ export abstract class CommandRunner {
       }
 
       // Step 5: runPipeline
+      // Emit scope-config warning once per run, before buildPipelineForJob is called.
+      const scopeWarning = scopeConfigWarningForJob(jobState, config);
+      if (scopeWarning !== null) {
+        logWarn(scopeWarning);
+      }
+
       let finalState: JobState;
       try {
         const pipeline = buildPipelineForJob(jobState, deps, this.events);
