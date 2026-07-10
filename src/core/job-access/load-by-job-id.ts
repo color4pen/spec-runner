@@ -47,7 +47,12 @@ export async function loadStateByJobId(
             slug: sidecarEntry.slug,
             stateRoot: sidecarEntry.worktreePath,
           }).load();
-        } catch {
+        } catch (err) {
+          // Re-throw journal corruption — must not be silently swallowed or
+          // masked by falling through to canonical lookup.
+          if (err instanceof SpecRunnerError && err.code === ERROR_CODES.JOURNAL_CORRUPTED) {
+            throw err;
+          }
           // Not in worktree — fall through to canonical lookup
         }
       }

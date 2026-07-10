@@ -18,6 +18,7 @@ import { JobStateStore } from "../../src/store/job-state-store.js";
 import type { NormalizedJobState } from "../../src/store/job-state-store.js";
 import type { StepRun } from "../../src/state/schema.js";
 import { specReviewResultPath } from "../../src/util/paths.js";
+import { SpecRunnerError, ERROR_CODES } from "../../src/errors.js";
 
 let tempDir: string;
 
@@ -573,5 +574,294 @@ describe("TC-018: changeDir + slug + stateRoot (isSlugMode=true) load() is uncha
     // slugInject: request.slug and request.path injected from convention
     expect(loaded.request.slug).toBe(slug);
     expect(loaded.request.path).toContain(slug);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-04 tests: journal integrity fail-closed behavior
+// ---------------------------------------------------------------------------
+
+/**
+ * Helper: write a minimal valid state.json + events.jsonl to a changeDir.
+ * Returns the store and the paths.
+ */
+async function makeChangeDirStore(
+  jobId: string,
+  opts: {
+    historyCount?: number;
+    stepCounts?: Record<string, number>;
+  } = {},
+): Promise<{ store: JobStateStore; changeDir: string; eventsPath: string; stateJsonPath: string }> {
+  const changeDir = path.join(tempDir, ".specrunner", "integrity-test", jobId);
+  await fs.mkdir(changeDir, { recursive: true });
+  const stateJson = {
+    version: 1,
+    jobId,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    request: { path: "/req.md", title: "Test", type: "new-feature" },
+    repository: { owner: "u", name: "r" },
+    session: null,
+    step: "init",
+    status: "running",
+    branch: null,
+    error: null,
+    _journal: {
+      historyCount: opts.historyCount ?? 0,
+      stepCounts: opts.stepCounts ?? {},
+    },
+  };
+  const stateJsonPath = path.join(changeDir, "state.json");
+  const eventsPath = path.join(changeDir, "events.jsonl");
+  await fs.writeFile(stateJsonPath, JSON.stringify(stateJson));
+  await fs.writeFile(eventsPath, "");
+  const store = new JobStateStore(jobId, tempDir, { changeDir });
+  return { store, changeDir, eventsPath, stateJsonPath };
+}
+
+describe("T-04: load() fail-closed on corrupt journal", () => {
+  it("throws JOURNAL_CORRUPTED when events.jsonl has a mid-journal invalid-json line", async () => {
+    const jobId = "t04-load-corrupt-json";
+    const { store, eventsPath } = await makeChangeDirStore(jobId);
+
+    // Write: valid line, corrupt line, valid line
+    const good = JSON.stringify({ type: "transition", ts: "2026-01-01T00:00:00Z", step: "init", status: "started", message: "m" });
+    const bad = "NOT JSON AT ALL";
+    const good2 = JSON.stringify({ type: "transition", ts: "2026-01-01T00:01:00Z", step: "design", status: "started", message: "m" });
+    await fs.writeFile(eventsPath, [good, bad, good2].join("\n") + "\n");
+
+    await expect(store.load()).rejects.toMatchObject({
+      code: ERROR_CODES.JOURNAL_CORRUPTED,
+    });
+    await expect(store.load()).rejects.toBeInstanceOf(SpecRunnerError);
+  });
+
+  it("throws JOURNAL_CORRUPTED when a committed line parses as non-object (array)", async () => {
+    const jobId = "t04-load-not-object";
+    const { store, eventsPath } = await makeChangeDirStore(jobId);
+
+    // Use 3 lines so the array line is a committed (non-tail) line
+    const good = JSON.stringify({ type: "transition", ts: "2026-01-01T00:00:00Z", step: "init", status: "started", message: "m" });
+    const arrayLine = JSON.stringify(["not", "an", "object"]);
+    const good2 = JSON.stringify({ type: "transition", ts: "2026-01-01T00:01:00Z", step: "design", status: "started", message: "m" });
+    await fs.writeFile(eventsPath, [good, arrayLine, good2].join("\n") + "\n");
+
+    await expect(store.load()).rejects.toMatchObject({
+      code: ERROR_CODES.JOURNAL_CORRUPTED,
+    });
+  });
+
+  it("succeeds when journal has only a tail-partial (tail dropped, prior records restored)", async () => {
+    const jobId = "t04-load-tail-partial";
+    const { store, eventsPath } = await makeChangeDirStore(jobId);
+
+    const good = JSON.stringify({ type: "transition", ts: "2026-01-01T00:00:00Z", step: "init", status: "started", message: "m" });
+    const partial = '{"type":"transition","ts":"2026-01-01T00:01'; // truncated
+    await fs.writeFile(eventsPath, [good, partial].join("\n"));
+
+    const state = await store.load();
+    expect(state.history).toHaveLength(1);
+    expect(state.history[0]!.step).toBe("init");
+  });
+
+  it("succeeds when events.jsonl is absent (no journal)", async () => {
+    const jobId = "t04-load-no-events";
+    const changeDir = path.join(tempDir, ".specrunner", "integrity-test", jobId);
+    await fs.mkdir(changeDir, { recursive: true });
+    await fs.writeFile(
+      path.join(changeDir, "state.json"),
+      JSON.stringify({
+        version: 1,
+        jobId,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        request: { path: "/req.md", title: "Test", type: "new-feature" },
+        repository: { owner: "u", name: "r" },
+        session: null,
+        step: "init",
+        status: "running",
+        branch: null,
+        error: null,
+        _journal: { historyCount: 0, stepCounts: {} },
+      }),
+    );
+    // No events.jsonl written
+    const store = new JobStateStore(jobId, tempDir, { changeDir });
+    const state = await store.load();
+    expect(state.history).toHaveLength(0);
+  });
+});
+
+describe("T-04: persist() fail-closed on corrupt journal", () => {
+  it("throws JOURNAL_CORRUPTED when events.jsonl has a mid-journal corrupt line", async () => {
+    const jobId = "t04-persist-corrupt";
+    // state.json has historyCount=0; we'll write 3 lines to events.jsonl to ensure bad line is committed
+    const { store, eventsPath } = await makeChangeDirStore(jobId);
+
+    // 3 lines: good, CORRUPT, good — so the corrupt line is committed (not tail-partial)
+    const good = JSON.stringify({ type: "transition", ts: "2026-01-01T00:00:00Z", step: "init", status: "started", message: "m" });
+    const bad = "CORRUPT LINE";
+    const good2 = JSON.stringify({ type: "transition", ts: "2026-01-01T00:01:00Z", step: "design", status: "started", message: "m2" });
+    await fs.writeFile(eventsPath, [good, bad, good2].join("\n") + "\n");
+
+    // State has 3 entries (> 0 stored) so fast path is not taken and fold is triggered
+    const state: NormalizedJobState = {
+      version: 1,
+      jobId,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:01:00.000Z",
+      request: { path: "/req.md", title: "Test", type: "new-feature" },
+      repository: { owner: "u", name: "r" },
+      session: null,
+      step: "design",
+      status: "running",
+      branch: null,
+      error: null,
+      history: [
+        { ts: "2026-01-01T00:00:00.000Z", step: "init", status: "started", message: "m" },
+        { ts: "2026-01-01T00:01:00.000Z", step: "design", status: "started", message: "m2" },
+        { ts: "2026-01-01T00:02:00.000Z", step: "design", status: "ok", message: "done" },
+      ],
+      steps: {},
+    };
+    await expect(store.persist(state)).rejects.toMatchObject({
+      code: ERROR_CODES.JOURNAL_CORRUPTED,
+    });
+  });
+
+  it("throws JOURNAL_CORRUPTED when stored counters exceed fold counts (journal truncation)", async () => {
+    const jobId = "t04-persist-truncated";
+    // Scenario: state.json says historyCount=5 (last successful persist)
+    // events.jsonl was truncated externally → only 1 record
+    // Now persist() is called with 6 in-memory entries (5+1 new)
+    // Fast path: existingCounters.historyCount(5) >= state.history.length(6)? 5 >= 6 → false
+    // → fold path taken → fold gives historyCount=1 → detectCounterReversal finds reversal
+    const { store, eventsPath } = await makeChangeDirStore(jobId, {
+      historyCount: 5, // stored says 5
+    });
+
+    // events.jsonl has only 1 record (truncated)
+    const line = JSON.stringify({ type: "transition", ts: "t", step: "init", status: "started", message: "m" });
+    await fs.writeFile(eventsPath, line + "\n");
+
+    // State has 6 entries so fast path is not taken (5 < 6)
+    const history = Array.from({ length: 6 }, (_, i) => ({
+      ts: `2026-01-01T00:0${i}:00Z`,
+      step: i === 0 ? "init" : "design",
+      status: "started" as const,
+      message: `msg ${i}`,
+    }));
+    const state: NormalizedJobState = {
+      version: 1,
+      jobId,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:05:00.000Z",
+      request: { path: "/req.md", title: "Test", type: "new-feature" },
+      repository: { owner: "u", name: "r" },
+      session: null,
+      step: "design",
+      status: "running",
+      branch: null,
+      error: null,
+      history,
+      steps: {},
+    };
+    await expect(store.persist(state)).rejects.toMatchObject({
+      code: ERROR_CODES.JOURNAL_CORRUPTED,
+    });
+  });
+
+  it("succeeds and appends only the true delta when fold is ahead of stored (crash recovery)", async () => {
+    const jobId = "t04-persist-fold-ahead";
+    const { store, eventsPath } = await makeChangeDirStore(jobId, {
+      historyCount: 0, // state.json says 0, events.jsonl has 1 record
+    });
+
+    // Write 1 transition record to events.jsonl (fold > stored)
+    const line1 = JSON.stringify({ type: "transition", ts: "2026-01-01T00:00:00Z", step: "init", status: "started", message: "m" });
+    await fs.writeFile(eventsPath, line1 + "\n");
+
+    // State has 2 history entries (1 existing + 1 new)
+    const state: NormalizedJobState = {
+      version: 1,
+      jobId,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:05:00.000Z",
+      request: { path: "/req.md", title: "Test", type: "new-feature" },
+      repository: { owner: "u", name: "r" },
+      session: null,
+      step: "design",
+      status: "running",
+      branch: null,
+      error: null,
+      history: [
+        { ts: "2026-01-01T00:00:00Z", step: "init", status: "started", message: "m" },
+        { ts: "2026-01-01T00:05:00Z", step: "design", status: "started", message: "m2" },
+      ],
+      steps: {},
+    };
+
+    // Count lines before persist
+    const beforeContent = await fs.readFile(eventsPath, "utf-8");
+    const beforeLines = beforeContent.split("\n").filter((l) => l.trim().length > 0).length;
+    expect(beforeLines).toBe(1);
+
+    await store.persist(state);
+
+    // Only 1 delta record should be appended (not 2 — no double-append)
+    const afterContent = await fs.readFile(eventsPath, "utf-8");
+    const afterLines = afterContent.split("\n").filter((l) => l.trim().length > 0).length;
+    expect(afterLines).toBe(2); // 1 original + 1 new
+  });
+});
+
+describe("T-04: list() tolerant — returns corrupt-journal jobs, still skips invalid state.json", () => {
+  it("list() includes a job whose events.jsonl is corrupt (journal corruption ≠ skip)", async () => {
+    const slug = "t04-list-corrupt-journal";
+    const jobId = "t04-list-cj-00000000-0000-0000-0000-000000000001";
+
+    const dir = path.join(tempDir, "specrunner", "changes", slug);
+    await fs.mkdir(dir, { recursive: true });
+
+    // Write valid state.json
+    await fs.writeFile(
+      path.join(dir, "state.json"),
+      JSON.stringify({
+        version: 1,
+        jobId,
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        request: { path: "/req.md", title: "T", type: "new-feature" },
+        repository: { owner: "u", name: "r" },
+        session: null,
+        step: "init",
+        status: "running",
+        branch: null,
+        error: null,
+        _journal: { historyCount: 0, stepCounts: {} },
+      }),
+    );
+
+    // Write corrupt events.jsonl (mid-journal bad line)
+    const good = JSON.stringify({ type: "transition", ts: "t", step: "init", status: "started", message: "m" });
+    const bad = "CORRUPT LINE IN JOURNAL";
+    await fs.writeFile(path.join(dir, "events.jsonl"), [good, bad].join("\n") + "\n");
+
+    const states = await JobStateStore.list(tempDir);
+    const found = states.find((s) => s.jobId === jobId);
+    expect(found).toBeDefined(); // corrupt-journal job IS included in list()
+    expect(found!.status).toBe("running");
+  });
+
+  it("list() still skips a job whose state.json is invalid (unchanged behavior)", async () => {
+    const slug = "t04-list-bad-statejson";
+    const dir = path.join(tempDir, "specrunner", "changes", slug);
+    await fs.mkdir(dir, { recursive: true });
+    await fs.writeFile(path.join(dir, "state.json"), "NOT VALID JSON {{{");
+    await fs.writeFile(path.join(dir, "events.jsonl"), "");
+
+    const states = await JobStateStore.list(tempDir);
+    const found = states.find((s) => s.jobId === slug);
+    expect(found).toBeUndefined();
   });
 });

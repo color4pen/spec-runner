@@ -25,6 +25,7 @@ import { worktreeGuardError, SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { getVerboseLogPath } from "../util/xdg.js";
 import { fold } from "../store/event-journal.js";
 import type { LineageRecord } from "../store/event-journal.js";
+import { inspectJournalDir, describeJournalIssue } from "../store/journal-integrity.js";
 import { readUsageFile } from "../core/usage/store.js";
 import { computeCostUsd, formatUsd } from "../core/usage/pricing.js";
 import type { ModelUsage } from "../state/schema.js";
@@ -60,6 +61,14 @@ export async function runJobShow(input: string): Promise<number> {
       const loaded = await loadStateByJobId(repoRoot, input);
       state = loaded as JobState;
     } catch (err: unknown) {
+      if (err instanceof SpecRunnerError && err.code === ERROR_CODES.JOURNAL_CORRUPTED) {
+        // Journal corruption: show a banner and return 0 (read-only observability preserved)
+        logResult(`\n${"─".repeat(40)}`);
+        logResult(`⚠ Journal integrity: CORRUPTED`);
+        logResult(err.message);
+        logResult(`Hint: ${err.hint}`);
+        return 0;
+      }
       if (err instanceof SpecRunnerError && err.code === ERROR_CODES.JOB_NOT_FOUND) {
         stderrWrite(`Error: Job not found: ${input}`);
         return 1;
@@ -113,6 +122,18 @@ export async function printJobState(state: JobState, repoRoot: string = process.
   if (!slug) return;
 
   const changeDir = await resolveChangeDir(slug, repoRoot);
+
+  // ── Journal integrity check ──────────────────────────────────────────────────
+  if (changeDir) {
+    const issue = await inspectJournalDir(changeDir);
+    if (issue) {
+      logResult(`\n${"─".repeat(40)}`);
+      logResult(`⚠ Journal integrity: CORRUPTED — ${describeJournalIssue(issue)}`);
+      logResult(`Hint: Restore events.jsonl from git history before re-running:`);
+      logResult(`  git restore --source=<good-ref> -- ${path.join(changeDir, "events.jsonl")}`);
+      return; // Skip lineage and cost sections
+    }
+  }
 
   // ── Lineage section ─────────────────────────────────────────────────────────
   const lineage = changeDir ? await readLineage(changeDir) : [];

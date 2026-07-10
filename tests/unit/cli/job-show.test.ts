@@ -36,6 +36,8 @@ vi.mock("../../../src/core/job-access/load-by-job-id.js", () => ({
   loadStateByJobId: vi.fn().mockImplementation(() => mockLoad()),
 }));
 
+import { SpecRunnerError, ERROR_CODES } from "../../../src/errors.js";
+
 const VALID_UUID = "abcd1234-ef56-7890-abcd-ef1234567890";
 
 function makeJob(overrides: Partial<JobState> = {}): JobState {
@@ -372,6 +374,114 @@ describe("T-047: Log field shows relative path when log file exists", () => {
       // Should contain a relative path, not "(none)"
       expect(output).not.toContain("Log:     (none)");
       expect(output).toContain(".specrunner");
+    } finally {
+      await fsMod.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-05 tests: job show handles corrupt journal without crashing
+// ---------------------------------------------------------------------------
+
+describe("T-05: job show — corrupt journal via UUID path does not crash", () => {
+  it("UUID path: JOURNAL_CORRUPTED error prints corruption banner and returns 0", async () => {
+    const corruptError = new SpecRunnerError(
+      ERROR_CODES.JOURNAL_CORRUPTED,
+      "Restore events.jsonl from git history before re-running.",
+      `Event journal integrity check failed at /path/to/events.jsonl: corrupt record at line 1 (invalid-json): BAD`,
+    );
+    mockLoad.mockRejectedValue(corruptError);
+
+    const result = await invokeRunJobShow(VALID_UUID);
+
+    expect(result).toBe(0); // does not crash
+    const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+    expect(output).toContain("CORRUPTED");
+    expect(output).toContain("integrity");
+  });
+
+  it("UUID path: JOURNAL_CORRUPTED error does not call process.exit(1)", async () => {
+    const corruptError = new SpecRunnerError(
+      ERROR_CODES.JOURNAL_CORRUPTED,
+      "Restore hint",
+      "Event journal integrity check failed at /path/events.jsonl: corrupt record",
+    );
+    mockLoad.mockRejectedValue(corruptError);
+
+    let exitCalled = false;
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      exitCalled = true;
+      throw new Error("process.exit called");
+    });
+
+    try {
+      const result = await invokeRunJobShow(VALID_UUID);
+      expect(result).toBe(0);
+      expect(exitCalled).toBe(false);
+    } finally {
+      exitSpy.mockRestore();
+    }
+  });
+});
+
+describe("T-05: job show — corrupt journal via slug/printJobState path does not crash", () => {
+  it("printJobState: corrupt events.jsonl shows corruption banner, skips lineage and cost", async () => {
+    const { printJobState } = await import("../../../src/cli/job-show.js");
+    const job = makeJob();
+
+    const os = await import("node:os");
+    const pathMod = await import("node:path");
+    const fsMod = await import("node:fs/promises");
+
+    const tmpDir = await fsMod.mkdtemp(pathMod.join(os.tmpdir(), "job-show-corrupt-test-"));
+    try {
+      // Create change folder with a corrupt events.jsonl (mid-journal bad line)
+      const changeDir = pathMod.join(tmpDir, "specrunner", "changes", "my-feature");
+      await fsMod.mkdir(changeDir, { recursive: true });
+
+      const goodLine = JSON.stringify({ type: "transition", ts: "t", step: "init", status: "started", message: "m" });
+      const badLine = "CORRUPT LINE";
+      const anotherGood = JSON.stringify({ type: "lineage", step: "design", ts: "t2", outputs: [], inputs: [] });
+      await fsMod.writeFile(
+        pathMod.join(changeDir, "events.jsonl"),
+        [goodLine, badLine, anotherGood].join("\n") + "\n",
+      );
+
+      // Also write a valid state.json with high counters (so counter check would also fail, but corruption check runs first)
+      await fsMod.writeFile(
+        pathMod.join(changeDir, "state.json"),
+        JSON.stringify({ _journal: { historyCount: 0, stepCounts: {} } }),
+      );
+
+      await printJobState(job, tmpDir);
+
+      const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+      expect(output).toContain("CORRUPTED");
+      // Lineage and cost sections should be suppressed
+      expect(output).not.toContain("Lineage:");
+      expect(output).not.toContain("Cost by step:");
+    } finally {
+      await fsMod.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("printJobState: intact events.jsonl (no corruption) prints existing header normally", async () => {
+    const { printJobState } = await import("../../../src/cli/job-show.js");
+    const job = makeJob();
+
+    const os = await import("node:os");
+    const pathMod = await import("node:path");
+    const fsMod = await import("node:fs/promises");
+
+    const tmpDir = await fsMod.mkdtemp(pathMod.join(os.tmpdir(), "job-show-intact-test-"));
+    try {
+      // No change folder at all — resolveChangeDir returns null → inspectJournalDir not called → no banner
+      await printJobState(job, tmpDir);
+
+      const output = (stdoutSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+      expect(output).toContain("Job ID:");
+      expect(output).not.toContain("CORRUPTED");
     } finally {
       await fsMod.rm(tmpDir, { recursive: true, force: true });
     }

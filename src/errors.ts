@@ -99,6 +99,7 @@ export const ERROR_CODES = {
   ENVIRONMENT_NOT_SET: "ENVIRONMENT_NOT_SET",
   DESIGN_LAYER_CHECK_FAILED: "DESIGN_LAYER_CHECK_FAILED",
   DUPLICATE_LIVE_JOB: "DUPLICATE_LIVE_JOB",
+  JOURNAL_CORRUPTED: "JOURNAL_CORRUPTED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -355,5 +356,15 @@ export function duplicateLiveJobError(slug: string, priorJobId: string | null): 
     ERROR_CODES.DUPLICATE_LIVE_JOB,
     `A live job is already running for slug '${slug}'. Cancel it with 'specrunner job cancel <jobId>' (see 'specrunner job list'), or wait for it to finish before re-running.`,
     `Refusing to start a duplicate run: slug '${slug}' already has a live job.`,
+  );
+}
+
+export function journalCorruptedError(eventsPath: string, detail: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.JOURNAL_CORRUPTED,
+    `The event journal (events.jsonl) is the append-only source of truth and must not be ` +
+    `hand-edited or truncated. Restore it from git history (e.g. ` +
+    `\`git restore --source=<good-ref> -- ${eventsPath}\`) before re-running.`,
+    `Event journal integrity check failed at ${eventsPath}: ${detail}`,
   );
 }

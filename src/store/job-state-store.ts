@@ -16,14 +16,15 @@ import { appendHistoryEntry, validateJobState } from "../state/schema.js";
 import type { JobState, StepRun, ErrorInfo, HistoryEntry, RequestInfo, RepositoryInfo } from "../state/schema.js";
 import { STANDARD_PIPELINE_ID } from "../kernel/pipeline-ids.js";
 import { transitionJob } from "../state/lifecycle.js";
-import { SpecRunnerError, ERROR_CODES, ambiguousJobIdError } from "../errors.js";
+import { SpecRunnerError, ERROR_CODES, ambiguousJobIdError, journalCorruptedError } from "../errors.js";
 import {
   fold,
   appendEventRecord,
   stepRunToRecord,
   historyEntryToRecord,
 } from "./event-journal.js";
-import type { FoldResult, InterruptionRecord, LineageRecord } from "./event-journal.js";
+import type { FoldResult, InterruptionRecord, LineageRecord, FoldCorruption } from "./event-journal.js";
+import { detectCounterReversal, describeJournalIssue } from "./journal-integrity.js";
 
 /**
  * Normalized view of a JobState with steps as StepRun[].
@@ -227,7 +228,7 @@ export class JobStateStore {
         const stateJsonPath = path.join(repoRoot, slugStateJsonPath(slug));
         const eventsPath = path.join(repoRoot, slugEventsPath(slug));
         try {
-          const state = await loadSplitLayout(stateJsonPath, eventsPath, { slug, stateRoot: repoRoot });
+          const { state } = await composeSplitLayout(stateJsonPath, eventsPath, { slug, stateRoot: repoRoot });
           tryMerge(state);
         } catch {
           // Skip malformed slug state in current checkout
@@ -252,7 +253,7 @@ export class JobStateStore {
           const stateJsonPath = path.join(archiveDir, datedSlug, "state.json");
           const eventsPath = path.join(archiveDir, datedSlug, "events.jsonl");
           try {
-            const state = await loadSplitLayout(stateJsonPath, eventsPath, { slug: archiveSlug, stateRoot: repoRoot });
+            const { state } = await composeSplitLayout(stateJsonPath, eventsPath, { slug: archiveSlug, stateRoot: repoRoot });
             tryMerge(state);
           } catch {
             // Skip malformed archive state
@@ -280,7 +281,7 @@ export class JobStateStore {
             const stateJsonPath = path.join(worktreePath, slugStateJsonPath(slug));
             const eventsPath = path.join(worktreePath, slugEventsPath(slug));
             try {
-              const state = await loadSplitLayout(stateJsonPath, eventsPath, { slug, stateRoot: worktreePath });
+              const { state } = await composeSplitLayout(stateJsonPath, eventsPath, { slug, stateRoot: worktreePath });
               tryMerge(state);
             } catch {
               // Skip malformed worktree slug state
@@ -307,7 +308,7 @@ export class JobStateStore {
       const sidecarStateJsonPath = path.join(sidecarEntry.worktreePath, slugStateJsonPath(sidecarEntry.slug));
       const sidecarEventsPath = path.join(sidecarEntry.worktreePath, slugEventsPath(sidecarEntry.slug));
       try {
-        const state = await loadSplitLayout(sidecarStateJsonPath, sidecarEventsPath, {
+        const { state } = await composeSplitLayout(sidecarStateJsonPath, sidecarEventsPath, {
           slug: sidecarEntry.slug,
           stateRoot: sidecarEntry.worktreePath,
         });
@@ -340,7 +341,7 @@ export class JobStateStore {
           const markerStateJsonPath = path.join(repoRoot, localSlugStateJsonPath(slug));
           const markerEventsPath = path.join(repoRoot, localSlugEventsPath(slug));
           try {
-            const state = await loadSplitLayout(markerStateJsonPath, markerEventsPath);
+            const { state } = await composeSplitLayout(markerStateJsonPath, markerEventsPath);
             tryMerge(state);
           } catch {
             // State file not found locally — skip; marker alone cannot reconstruct full state
@@ -497,10 +498,29 @@ export class JobStateStore {
       }
     }
 
-    // Crash recovery: if fold count > stored counter, reset counters (D3)
+    // Fail-closed: reject corrupt journal (mid-journal invalid JSON or non-object line)
+    if (foldResult.corruption) {
+      throw journalCorruptedError(
+        eventsPath,
+        describeJournalIssue({ kind: "corrupt-record", corruption: foldResult.corruption }),
+      );
+    }
+
+    // Fail-closed: reject counter reversal (journal was truncated externally)
+    const reversal = detectCounterReversal(existingCounters, foldResult);
+    if (reversal !== null) {
+      throw journalCorruptedError(
+        eventsPath,
+        describeJournalIssue({ kind: "counter-reversal", reversal }),
+      );
+    }
+
+    // After the reversal check, fold >= stored for all counters.
+    // Spread foldResult.stepCounts over existingCounters.stepCounts so new steps
+    // from the fold (crash-recovery: fold > stored) are included.
     const recoveredCounters: JournalCounters = {
-      historyCount: Math.max(existingCounters.historyCount, foldResult.historyCount),
-      stepCounts: mergeStepCountsMax(existingCounters.stepCounts, foldResult.stepCounts),
+      historyCount: foldResult.historyCount,
+      stepCounts: { ...existingCounters.stepCounts, ...foldResult.stepCounts },
     };
 
     // Compute and append history delta
@@ -628,16 +648,18 @@ export class JobStateStore {
 // ---------------------------------------------------------------------------
 
 /**
- * Load a split-layout job state from state.json + events.jsonl.
- * Performs crash recovery if fold count > stored counter.
- * If slugInject is provided, injects request.slug and request.path from convention,
- * and materializes resumePoint from lastInterruption if present in fold result.
+ * Compose a split-layout job state from state.json + events.jsonl.
+ * Returns both the composed NormalizedJobState and the fold's corruption field
+ * (null when clean). Does NOT throw on journal corruption; still throws on
+ * missing/invalid state.json exactly as before.
+ *
+ * Used by list() (tolerant) and loadSplitLayout() (fail-closed wrapper).
  */
-async function loadSplitLayout(
+async function composeSplitLayout(
   stateJsonPath: string,
   eventsPath: string,
   slugInject?: SlugInjectOptions,
-): Promise<NormalizedJobState> {
+): Promise<{ state: NormalizedJobState; corruption: FoldCorruption | null }> {
   // Read state.json
   const rawState = await fs.readFile(stateJsonPath, "utf-8");
   const parsedState = JSON.parse(rawState) as Record<string, unknown>;
@@ -726,7 +748,27 @@ async function loadSplitLayout(
     steps: composedSteps,
   };
 
-  return composed;
+  return { state: composed, corruption: foldResult.corruption ?? null };
+}
+
+/**
+ * Fail-closed wrapper around composeSplitLayout.
+ * Throws JOURNAL_CORRUPTED when the fold detects mid-journal corruption.
+ * Used by load() and loadStateByJobId (resume/finish/cancel paths).
+ */
+async function loadSplitLayout(
+  stateJsonPath: string,
+  eventsPath: string,
+  slugInject?: SlugInjectOptions,
+): Promise<NormalizedJobState> {
+  const { state, corruption } = await composeSplitLayout(stateJsonPath, eventsPath, slugInject);
+  if (corruption !== null) {
+    throw journalCorruptedError(
+      eventsPath,
+      describeJournalIssue({ kind: "corrupt-record", corruption }),
+    );
+  }
+  return state;
 }
 
 /**
@@ -799,16 +841,3 @@ function buildStepCounts(
   return result;
 }
 
-/**
- * Merge two stepCounts records, taking the max value for each step.
- */
-function mergeStepCountsMax(
-  a: Record<string, number>,
-  b: Record<string, number>,
-): Record<string, number> {
-  const result: Record<string, number> = { ...a };
-  for (const [step, count] of Object.entries(b)) {
-    result[step] = Math.max(result[step] ?? 0, count);
-  }
-  return result;
-}

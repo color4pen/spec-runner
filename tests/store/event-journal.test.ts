@@ -19,7 +19,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { fold, appendEventRecord } from "../../src/store/event-journal.js";
-import type { StepAttemptRecord, TransitionRecord } from "../../src/store/event-journal.js";
+import type { StepAttemptRecord, TransitionRecord, FoldCorruption } from "../../src/store/event-journal.js";
 import { makeStoreFactory } from "../helpers/store-factory.js";
 import { resolveResumeStep } from "../../src/core/resume/resolve-step.js";
 import type { BaseReportResult } from "../../src/kernel/report-result.js";
@@ -394,6 +394,157 @@ describe("TC-030: delta-append crash recovery — no double-append after persist
 
     // events.jsonl should now have 2 lines: the original 1 + 1 new delta
     expect(await countEventLines(jobId)).toBe(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-01 tests: fold() corruption detection contract
+// ---------------------------------------------------------------------------
+
+describe("T-01: fold() — mid-journal corruption detection", () => {
+  // Helpers
+  function makeTransition(step: string): string {
+    return JSON.stringify({
+      type: "transition",
+      ts: "2026-01-01T00:00:00.000Z",
+      step,
+      status: "started",
+      message: "msg",
+    });
+  }
+
+  it("mid-journal invalid-json line sets corruption, valid records still folded", () => {
+    const r1 = makeTransition("init");
+    const corrupt = "NOT VALID JSON {{{";
+    const r3 = makeTransition("design");
+
+    const content = [r1, corrupt, r3].join("\n");
+    const result = fold(content);
+
+    expect(result.corruption).toBeDefined();
+    const c = result.corruption as FoldCorruption;
+    expect(c.reason).toBe("invalid-json");
+    expect(c.lineIndex).toBe(1); // 0-based; first corrupt line is at index 1
+    expect(c.snippet).toContain("NOT VALID JSON");
+
+    // Valid records are still folded
+    expect(result.historyCount).toBe(2);
+    expect(result.history[0]!.step).toBe("init");
+    expect(result.history[1]!.step).toBe("design");
+  });
+
+  it("corruption lineIndex is 0 when the very first committed line is invalid JSON", () => {
+    const corrupt = "GARBAGE";
+    const r2 = makeTransition("design");
+    const content = [corrupt, r2].join("\n");
+    const result = fold(content);
+
+    expect(result.corruption).toBeDefined();
+    expect(result.corruption!.lineIndex).toBe(0);
+    // r2 still folded
+    expect(result.historyCount).toBe(1);
+  });
+
+  it("only FIRST corruption is recorded when multiple corrupt lines exist", () => {
+    const r1 = makeTransition("init");
+    const bad1 = "BAD LINE ONE";
+    const bad2 = "BAD LINE TWO";
+    const r4 = makeTransition("design");
+    const content = [r1, bad1, bad2, r4].join("\n");
+    const result = fold(content);
+
+    expect(result.corruption).toBeDefined();
+    expect(result.corruption!.lineIndex).toBe(1); // first corrupt line
+    expect(result.corruption!.snippet).toContain("BAD LINE ONE");
+  });
+
+  it("not-an-object: committed line that parses as array sets corruption", () => {
+    const r1 = makeTransition("init");
+    const arrayLine = JSON.stringify(["array", "not", "object"]);
+    const r3 = makeTransition("design");
+    const content = [r1, arrayLine, r3].join("\n");
+    const result = fold(content);
+
+    expect(result.corruption).toBeDefined();
+    expect(result.corruption!.reason).toBe("not-an-object");
+    expect(result.corruption!.lineIndex).toBe(1);
+    // Valid records still folded
+    expect(result.historyCount).toBe(2);
+  });
+
+  it("not-an-object: committed line that parses as null sets corruption", () => {
+    const r1 = makeTransition("init");
+    const nullLine = "null";
+    const content = [r1, nullLine].join("\n");
+    const result = fold(content);
+
+    expect(result.corruption).toBeDefined();
+    expect(result.corruption!.reason).toBe("not-an-object");
+  });
+
+  it("not-an-object: committed line that parses as a string sets corruption", () => {
+    const stringLine = JSON.stringify("just a string");
+    const r2 = makeTransition("init");
+    const content = [stringLine, r2].join("\n");
+    const result = fold(content);
+
+    expect(result.corruption).toBeDefined();
+    expect(result.corruption!.reason).toBe("not-an-object");
+  });
+
+  it("forward compat: unknown object type does NOT set corruption", () => {
+    const r1 = makeTransition("init");
+    const unknownType = JSON.stringify({ type: "future-record-type", data: "something" });
+    const r3 = makeTransition("design");
+    const content = [r1, unknownType, r3].join("\n");
+    const result = fold(content);
+
+    expect(result.corruption).toBeUndefined();
+    expect(result.historyCount).toBe(2); // both valid records folded
+  });
+
+  it("tail partial only (single truncated last line) does NOT set corruption", () => {
+    const r1 = makeTransition("init");
+    const partial = '{"type":"transition","ts":"2026-01-01T00:05'; // truncated
+    const content = [r1, partial].join("\n");
+    const result = fold(content);
+
+    expect(result.corruption).toBeUndefined();
+    expect(result.historyCount).toBe(1);
+  });
+
+  it("empty content does NOT set corruption", () => {
+    const result = fold("");
+    expect(result.corruption).toBeUndefined();
+    expect(result.historyCount).toBe(0);
+  });
+
+  it("whitespace-only content does NOT set corruption", () => {
+    const result = fold("   \n  \n  ");
+    expect(result.corruption).toBeUndefined();
+  });
+
+  it("valid records only (no tail partial) does NOT set corruption", () => {
+    const r1 = makeTransition("init");
+    const r2 = makeTransition("design");
+    const result = fold([r1, r2].join("\n") + "\n");
+    expect(result.corruption).toBeUndefined();
+    expect(result.historyCount).toBe(2);
+  });
+
+  it("snippet is truncated to 120 chars for very long corrupt lines", () => {
+    const longBadLine = "X".repeat(200);
+    const result = fold(longBadLine);
+    // Last line is treated as tail partial (single non-empty line that fails parse)
+    // so corruption is NOT set for a single corrupt line
+    expect(result.corruption).toBeUndefined();
+
+    // But if there's a valid line after it, then the long bad line is a committed line
+    const validAfter = JSON.stringify({ type: "transition", ts: "t", step: "s", status: "started", message: "m" });
+    const result2 = fold(longBadLine + "\n" + validAfter);
+    // Now the long bad line is committed (first line) and the validAfter is the last
+    expect(result2.corruption).toBeDefined();
+    expect(result2.corruption!.snippet.length).toBeLessThanOrEqual(120);
   });
 });
 
