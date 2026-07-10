@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "28e44510-6f74-48e1-8a46-073fd4d61a51",
   "createdAt": "2026-07-10T13:16:45.211Z",
-  "updatedAt": "2026-07-10T14:45:46.642Z",
+  "updatedAt": "2026-07-10T15:04:26.672Z",
   "request": {
     "title": "claude-code adapter の workspace write guard を実測済み構成で再実装する（#766 redo）",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "awaiting-resume",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/write-scope-guard-redo-28e44510",
-  "error": {
-    "code": "MAIN_CHECKOUT_WRITE_DETECTED",
-    "message": "Main checkout write detected during 'build-fixer': created: src/core/port/runtime-strategy.ts",
-    "hint": "Guarded paths in main checkout were modified while the agent step was running. This may be a legitimate parallel edit by the operator. Verify the changes and run 'specrunner job resume write-scope-guard-redo' to continue."
-  },
+  "error": null,
   "pipelineId": "standard",
   "reviewers": [
     {
@@ -77,23 +73,15 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "build-fixer",
-    "reason": "main checkout write detected",
-    "iterationsExhausted": 0
-  },
-  "mainCheckoutDrift": {
-    "changes": [
-      {
-        "path": "src/core/port/runtime-strategy.ts",
-        "kind": "created"
-      }
-    ],
-    "detectedAtStep": "build-fixer",
-    "ts": "2026-07-10T14:44:58.061Z"
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/773",
+    "number": 773,
+    "createdAt": "2026-07-10T15:04:26.660Z"
   },
   "_journal": {
-    "historyCount": 79,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -108,7 +96,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 2
     }
   }
 }
