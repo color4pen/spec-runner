@@ -58,3 +58,15 @@
 {"type":"transition","ts":"2026-07-10T14:10:01.697Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-07-10T14:10:01.719Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-07-10T14:10:01.768Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-10T14:11:43.414Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"876cff27-c5fa-48b1-a922-bfefc1de0ff4","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/resume-member-step-routing/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[]},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-07-10T14:10:02.134Z","endedAt":"2026-07-10T14:11:40.440Z"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-10T14:11:40.440Z","outputs":[{"path":"specrunner/changes/resume-member-step-routing/regression-gate-result-002.md","hash":null}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-10T14:11:43.469Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-10T14:11:43.470Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-10T14:11:43.515Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-10T14:11:43.535Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
+{"type":"interruption","reason":"signal","ts":"2026-07-10T14:14:10.539Z"}
+{"type":"transition","ts":"2026-07-10T14:14:10.602Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-10T14:15:13.321Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'conformance'"}
+{"type":"transition","ts":"2026-07-10T14:15:13.712Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-10T14:15:13.727Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
