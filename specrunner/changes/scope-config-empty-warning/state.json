@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "aac29758-981f-4e06-99a0-314bcff236d6",
   "createdAt": "2026-07-10T12:13:23.704Z",
-  "updatedAt": "2026-07-10T12:13:26.352Z",
+  "updatedAt": "2026-07-10T12:16:32.834Z",
   "request": {
     "title": "permissionScope 宣言 pipeline で forbidden surfaces が未設定のとき job start に warning を出す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/scope-config-empty-warning-aac29758",
   "error": null,
@@ -48,7 +48,9 @@
     }
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
