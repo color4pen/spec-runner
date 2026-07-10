@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "28e44510-6f74-48e1-8a46-073fd4d61a51",
   "createdAt": "2026-07-10T13:16:45.211Z",
-  "updatedAt": "2026-07-10T14:14:51.971Z",
+  "updatedAt": "2026-07-10T14:45:46.642Z",
   "request": {
     "title": "claude-code adapter の workspace write guard を実測済み構成で再実装する（#766 redo）",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "adr-gen",
+  "status": "awaiting-resume",
   "branch": "change/write-scope-guard-redo-28e44510",
-  "error": null,
+  "error": {
+    "code": "MAIN_CHECKOUT_WRITE_DETECTED",
+    "message": "Main checkout write detected during 'build-fixer': created: src/core/port/runtime-strategy.ts",
+    "hint": "Guarded paths in main checkout were modified while the agent step was running. This may be a legitimate parallel edit by the operator. Verify the changes and run 'specrunner job resume write-scope-guard-redo' to continue."
+  },
   "pipelineId": "standard",
   "reviewers": [
     {
@@ -73,24 +77,38 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": null,
-  "mainCheckoutDrift": null,
+  "resumePoint": {
+    "step": "build-fixer",
+    "reason": "main checkout write detected",
+    "iterationsExhausted": 0
+  },
+  "mainCheckoutDrift": {
+    "changes": [
+      {
+        "path": "src/core/port/runtime-strategy.ts",
+        "kind": "created"
+      }
+    ],
+    "detectedAtStep": "build-fixer",
+    "ts": "2026-07-10T14:44:58.061Z"
+  },
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 79,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 2,
-      "build-fixer": 1,
+      "verification": 4,
+      "build-fixer": 3,
       "code-review": 1,
       "code-fixer": 1,
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
