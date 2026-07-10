@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "93c06854-4da3-4936-9124-c166ff2aa7f6",
   "createdAt": "2026-07-10T09:48:05.792Z",
-  "updatedAt": "2026-07-10T09:50:23.920Z",
+  "updatedAt": "2026-07-10T09:57:41.942Z",
   "request": {
     "title": "authority 文書と実装の drift 3 件を修正し、同期テストを意味的照合に拡張する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/doc-drift-semantic-sync-93c06854",
   "error": null,
@@ -48,9 +48,10 @@
     }
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
