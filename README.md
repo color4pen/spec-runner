@@ -91,7 +91,7 @@ For the full configuration reference (environment variables, verification comman
 ## Extending the Review Chain
 
 - **Rules** (`specrunner/rules/<step>/*.md`) — extra discipline injected into a step's prompt. No extra session.
-- **Custom reviewers** (`specrunner/reviewers/<name>.md`) — independent review lens with its own convergence loop, budget, and model override. Declared as data (purpose / criteria / judgment sections in markdown), validated at job start, and run serially after `code-review`. Scoped with `paths` globs and `requestTypes`.
+- **Custom reviewers** (`specrunner/reviewers/<name>.md`) — independent review lens with its own convergence loop, budget, and model override. Declared as data (purpose / criteria / judgment sections in markdown), validated at job start, and run as a **parallel fan-out** after `code-review` — member reviewers execute concurrently, with only their commit/push serialized (FIFO mutex). Scoped with `paths` globs and `requestTypes`.
 - **Regression gate** — runs automatically when custom reviewers are present. Re-checks every fixed finding against the final code.
 
 Scaffold a definition: `specrunner reviewers new <name>`.
