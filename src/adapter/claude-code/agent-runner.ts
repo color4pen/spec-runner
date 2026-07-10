@@ -14,6 +14,13 @@
  * - follow-up retry when agent doesn't call report_result (up to policy.maxAttempts)
  * - tool detection applies only to main work turn, not postWorkPrompts turns
  *
+ * write-scope-guard (write-scope-guard-redo):
+ * - permissionMode: "default" — canUseTool fires for tools not on allowedTools
+ * - Edit / Write removed from allowedTools — routes them through canUseTool workspace guard
+ * - createWorkspaceToolGuard(cwd): deny Edit/Write outside cwd; allow everything else
+ * - report_result MCP tool pre-approved via mcp__specrunner_report__<name> on allowedTools
+ * - buildWorkspaceSandbox: allowUnsandboxedCommands: false closes the escape hatch
+ *
  * TC-022: ClaudeCodeRunner implements AgentRunner interface
  * TC-023: query() receives ctx.cwd
  * TC-024: no SessionClient / @anthropic-ai/sdk import
@@ -46,6 +53,21 @@ import { SpecRunnerError } from "../../errors.js";
 export type { SpawnFn } from "./git-exec.js";
 
 /**
+ * Local type alias for the SDK's CanUseTool / PermissionResult, keeping this
+ * file free of a static import from @anthropic-ai/claude-agent-sdk (TC-024).
+ * Shape matches sdk.d.ts v0.2.128 — confirmed by probe (write-scope-guard-redo D5).
+ */
+export type WorkspacePermissionResult =
+  | { behavior: "allow"; updatedInput?: Record<string, unknown> }
+  | { behavior: "deny"; message: string; interrupt?: boolean };
+
+export type WorkspaceToolGuard = (
+  toolName: string,
+  input: Record<string, unknown>,
+  options: { signal: AbortSignal; toolUseID: string; [key: string]: unknown },
+) => Promise<WorkspacePermissionResult>;
+
+/**
  * Injectable type for the Claude Code OAuth token resolver.
  * Injected by the composition root (core/runtime/local.ts) so this adapter
  * does not import from the domain (core/credentials/) directly.
@@ -62,6 +84,8 @@ export type ClaudeCodeOAuthTokenResolver = (
  * D2: failIfUnavailable: false enables fail-open degradation (unsupported platforms continue).
  * D3: no denyRead / allowRead — reads remain unrestricted.
  * D4: autoAllowBashIfSandboxed: true preserves Bash tool execution under the sandbox.
+ * write-scope-guard-redo D4: allowUnsandboxedCommands: false closes the dangerouslyDisableSandbox
+ *   escape hatch — the model cannot re-run a sandboxed Bash command unsandboxed.
  *
  * @param cwd Agent working directory (job worktree or repo root in --no-worktree mode).
  */
@@ -70,9 +94,53 @@ export function buildWorkspaceSandbox(cwd: string): Record<string, unknown> {
     enabled: true,
     failIfUnavailable: false,
     autoAllowBashIfSandboxed: true,
+    allowUnsandboxedCommands: false,
     filesystem: {
       allowWrite: [cwd, `${cwd}/**`],
     },
+  };
+}
+
+/**
+ * Factory for the workspace write-scope guard passed as `canUseTool` to the step-agent.
+ *
+ * write-scope-guard-redo D2: deny Edit / Write whose resolved file_path is outside cwd;
+ * allow all other tools and any Edit/Write with malformed (missing / non-string) file_path.
+ *
+ * Measured SDK facts (confirmed by probe):
+ * - Under permissionMode "default", canUseTool fires for tools NOT on allowedTools.
+ * - Edit and Write are removed from allowedTools so this guard fires for them.
+ * - Tools on allowedTools (Read, Bash, Grep, Glob, MCP report) bypass canUseTool entirely;
+ *   the default-allow arm below is defense-in-depth only.
+ *
+ * @param cwd Agent working directory — the boundary for allowed writes.
+ * @returns CanUseTool callback suitable for inclusion in queryOptions.
+ */
+export function createWorkspaceToolGuard(cwd: string): WorkspaceToolGuard {
+  return async (toolName: string, input: Record<string, unknown>): Promise<WorkspacePermissionResult> => {
+    if (toolName === "Edit" || toolName === "Write") {
+      const filePath = input["file_path"];
+      if (typeof filePath !== "string") {
+        // Missing or non-string file_path — defer to the tool's own input validation.
+        return { behavior: "allow" };
+      }
+      const resolved = path.resolve(cwd, filePath);
+      const relative = path.relative(cwd, resolved);
+      // Inside the workspace iff the relative path is "" (equals cwd) or does not
+      // begin with ".." and is not itself absolute.
+      const isInside =
+        relative === "" ||
+        (!relative.startsWith("..") && !path.isAbsolute(relative));
+      if (isInside) {
+        return { behavior: "allow" };
+      }
+      return {
+        behavior: "deny",
+        message: `Write to '${filePath}' is outside the agent worktree '${cwd}'. Write files only inside the worktree.`,
+      };
+    }
+    // All other tools (Read, Bash, Grep, Glob, MCP tools, etc.) are allowed.
+    return { behavior: "allow" };
   };
 }
 
@@ -296,12 +364,16 @@ export class ClaudeCodeRunner implements AgentRunner {
     let capturedToolResult: BaseReportResult | null = null;
     let reportMcpServer: ReturnType<CreateMcpServerFn> | null = null;
 
+    // write-scope-guard-redo D3: single-sourced MCP server name used in both createSdkMcpServer
+    // (mcpServers key / name field) and the allowedTools MCP pre-approval entry.
+    const REPORT_MCP_SERVER_NAME = "specrunner_report";
+
     const reportTool: ReportToolSpec | undefined = ctx.policy?.reportTool;
     if (reportTool) {
       const createMcpServerFn = this.injectedCreateMcpServerFn ?? (await this.loadSdkFn()).createSdkMcpServer;
       const toolSpec = reportTool;
       reportMcpServer = createMcpServerFn({
-        name: "specrunner_report",
+        name: REPORT_MCP_SERVER_NAME,
         tools: [
           {
             name: toolSpec.name,
@@ -344,14 +416,29 @@ export class ClaudeCodeRunner implements AgentRunner {
       }
     };
 
+    // write-scope-guard-redo D1: allowedTools base — Edit / Write removed so canUseTool fires for them.
+    // write-scope-guard-redo D3: when reportTool is configured, pre-approve its MCP tool name so
+    //   report_result runs immediately without consulting canUseTool (pipeline lifeline isolation).
+    //   MCP tool name format: mcp__<serverName>__<toolName> (measured fact 5).
+    const baseAllowedTools = ["Read", "Bash", "Grep", "Glob"];
+    const allowedTools = reportTool
+      ? [...baseAllowedTools, `mcp__${REPORT_MCP_SERVER_NAME}__${reportTool.name}`]
+      : baseAllowedTools;
+
     const queryOptions: Record<string, unknown> = {
       cwd,
-      allowedTools: ["Read", "Edit", "Write", "Bash", "Grep", "Glob"],
+      allowedTools,
       disallowedTools: ["Agent", "Task"],
-      permissionMode: "bypassPermissions",
+      // write-scope-guard-redo D1: "default" mode — canUseTool fires for tools not on allowedTools.
+      // "bypassPermissions" never calls canUseTool; "dontAsk" denies without consulting canUseTool.
+      permissionMode: "default",
+      // write-scope-guard-redo D2: workspace guard — deny Edit/Write outside cwd, allow all else.
+      // Wired once; follow-up / retry / postWork turns spread ...queryOptions, propagating the guard.
+      canUseTool: createWorkspaceToolGuard(cwd),
       // D1: scope filesystem writes to the workspace (OS-level enforcement via SDK native sandbox).
       // D2: failIfUnavailable: false → fail-open when sandbox is unavailable.
       // D4: autoAllowBashIfSandboxed: true → Bash runs normally under the sandbox.
+      // write-scope-guard-redo D4: allowUnsandboxedCommands: false → escape hatch disabled.
       sandbox: buildWorkspaceSandbox(cwd),
       // D5: stderr callback observes sandbox degradation; once-latch emits a single warning.
       //     Follow-up / retry / postWork turns spread ...queryOptions, reusing this callback
@@ -362,7 +449,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       abortController,
       env: sdkEnv,
       ...resumeOption,
-      ...(reportMcpServer ? { mcpServers: { specrunner_report: reportMcpServer } } : {}),
+      ...(reportMcpServer ? { mcpServers: { [REPORT_MCP_SERVER_NAME]: reportMcpServer } } : {}),
     };
 
     const agentRedirectCounter = { count: 0 };

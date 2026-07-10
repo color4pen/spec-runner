@@ -307,8 +307,8 @@ describe("TC-023: ClaudeCodeRunner invokes query() with ctx.cwd", () => {
 
     await runner.run(ctx);
 
-    expect(capturedParams!.options?.allowedTools).toEqual(["Read", "Edit", "Write", "Bash", "Grep", "Glob"]);
-    expect(capturedParams!.options?.permissionMode).toBe("bypassPermissions");
+    expect(capturedParams!.options?.allowedTools).toEqual(["Read", "Bash", "Grep", "Glob"]);
+    expect(capturedParams!.options?.permissionMode).toBe("default");
     // model comes from step.agent.model via stepDefaults resolution
     expect(capturedParams!.options?.model).toBe("claude-sonnet-4-5");
     // maxTurns is absent because step.maxTurns=undefined, config has no steps → null → unlimited

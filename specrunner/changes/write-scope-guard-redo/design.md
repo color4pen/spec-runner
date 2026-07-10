@@ -377,15 +377,29 @@ the one test; no other existing test changes.
 
 ## Probe Execution Log
 
-<!--
-IMPLEMENTER: after writing `scripts/probes/write-scope-guard-probe.ts` and running it
-against the real SDK (`bun scripts/probes/write-scope-guard-probe.ts`), paste the RAW
-stdout/stderr below, replacing this placeholder. The pasted output MUST include the
-three `[PROBE] scenario=... verdict=...` lines (out-of-workspace-write,
-in-workspace-write, report_result). Do NOT substitute SDK docs, type definitions, or
-bundled-source reading for the real execution trace.
--->
+Run: `bun scripts/probes/write-scope-guard-probe.ts` (2026-07-10, worktree write-scope-guard-redo-28e44510)
+SDK: `@anthropic-ai/claude-agent-sdk` `^0.2.128`
 
 ```
-<!-- raw probe output to be pasted here by the implementer -->
+[PROBE] workspace=/var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/probe-workspace-Mp67V2
+[PROBE] outsideDir=/var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/probe-outside-fP1uF0
+
+[PROBE] Running scenario=out-of-workspace-write ...
+[PROBE] scenario=out-of-workspace-write canUseTool=fired decision=deny file_created=false verdict=PASS
+
+[PROBE] Running scenario=in-workspace-write ...
+[PROBE] scenario=in-workspace-write error: Claude Code returned an error result: Reached maximum number of turns (5)
+[PROBE] scenario=in-workspace-write canUseTool=fired decision=allow file_created=true verdict=PASS
+
+[PROBE] Running scenario=report_result ...
+[PROBE] scenario=report_result canUseTool=not-consulted handler_invoked=true verdict=PASS
+
+[PROBE] Cleanup done.
 ```
+
+Verdict summary:
+- `scenario=out-of-workspace-write`: canUseTool fired, decision=deny, file not created → **PASS**
+- `scenario=in-workspace-write`: canUseTool fired, decision=allow, file created → **PASS** (the "max turns" error is from the SDK reaching the maxTurns=5 cap after writing the file; the write itself succeeded as confirmed by file_created=true)
+- `scenario=report_result`: MCP handler invoked, canUseTool not consulted (pre-approved) → **PASS**
+
+All three measured-fact-6 scenarios green. Re-confirms SDK measured facts 3, 4, 5, 6 recorded above.

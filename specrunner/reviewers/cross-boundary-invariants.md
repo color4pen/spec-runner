@@ -6,6 +6,7 @@ paths:
   - src/core/step/**
   - src/state/**
   - src/store/**
+  - src/adapter/**
 ---
 
 ## 目的
