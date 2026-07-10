@@ -97,6 +97,17 @@ describe("member-resume-routing: resolveResumeStep maps member → coordinator",
     expect(startStep).not.toBe("cross-boundary-invariants");
     expect(startStep).toBe(CUSTOM_REVIEWERS_STEP_NAME);
   });
+
+  it("explicit --from 'cross-boundary-invariants' maps to 'custom-reviewers'", () => {
+    const result = resolveResumeStep("cross-boundary-invariants", null, undefined, allowed, REVIEWERS);
+    expect(result).toBe(CUSTOM_REVIEWERS_STEP_NAME);
+  });
+
+  it("explicit --from with a member name takes priority over a resumePoint pointing elsewhere", () => {
+    const resumePoint = { step: "code-review", reason: "test", iterationsExhausted: 0 };
+    const result = resolveResumeStep("cross-boundary-invariants", resumePoint, undefined, allowed, REVIEWERS);
+    expect(result).toBe(CUSTOM_REVIEWERS_STEP_NAME);
+  });
 });
 
 // ---------------------------------------------------------------------------
