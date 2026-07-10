@@ -16,9 +16,6 @@
     "README.md",
     "LICENSE"
   ],
-  "exports": {
-    ".": "./dist/specrunner.js"
-  },
   "engines": {
     "bun": ">=1.0.0",
     "node": ">=20"

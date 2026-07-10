@@ -6,7 +6,7 @@
  * TC-VERSION-03: throws when no package.json exists in any ancestor
  * TC-004: package.json bin value is "dist/specrunner.js" (no ./ prefix)
  * TC-006: throws when version field is not a string
- * TC-007: package.json exports["."] remains "./dist/specrunner.js"
+ * TC-007: package.json has no exports field (bin-only CLI package)
  */
 import { describe, it, expect, afterEach } from "vitest";
 import * as fs from "node:fs";
@@ -123,10 +123,12 @@ describe("TC-006: throws when version field is not a string", () => {
   });
 });
 
-// TC-007: exports["."] must remain "./dist/specrunner.js"
-describe('TC-007: exports["."] is unchanged', () => {
-  it('package.json exports["."] equals "./dist/specrunner.js"', () => {
+// TC-007: bin-only CLI package — exports must not exist.
+// An exports["."] pointing at the CLI entrypoint would let `import "@color4pen/specrunner"`
+// execute main() and exit the process; bare import must fail to resolve instead.
+describe("TC-007: package has no exports field", () => {
+  it("package.json exports is undefined (bin-only CLI package)", () => {
     const pkg = require("../../../package.json");
-    expect(pkg.exports["."]).toBe("./dist/specrunner.js");
+    expect(pkg.exports).toBeUndefined();
   });
 });
