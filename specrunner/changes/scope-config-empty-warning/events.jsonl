@@ -66,3 +66,11 @@
 {"type":"transition","ts":"2026-07-10T12:51:44.589Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-10T12:51:44.589Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
 {"type":"transition","ts":"2026-07-10T12:51:44.591Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-10T12:52:11.343Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"b1b498a8-3c4b-404a-a23d-7eebc47a4e2f","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-10T12:51:44.654Z","endedAt":"2026-07-10T12:52:09.882Z"}
+{"type":"transition","ts":"2026-07-10T12:52:11.348Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-10T12:52:11.351Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-10T12:52:13.820Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/scope-config-empty-warning/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-10T12:52:11.352Z","endedAt":"2026-07-10T12:52:13.819Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-10T12:52:13.819Z","outputs":[{"path":"specrunner/changes/scope-config-empty-warning/pr-create-result.md","hash":"sha256:c6766e369a9225171679a6b27f9b227691186de0199ac7e4cd07c358f977a01a"}],"inputs":[{"path":"feat/scope-config-empty-warning-aac29758","hash":null}]}
+{"type":"transition","ts":"2026-07-10T12:52:13.831Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}

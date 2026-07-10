@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "aac29758-981f-4e06-99a0-314bcff236d6",
   "createdAt": "2026-07-10T12:13:23.704Z",
-  "updatedAt": "2026-07-10T12:51:44.591Z",
+  "updatedAt": "2026-07-10T12:52:13.831Z",
   "request": {
     "title": "permissionScope 宣言 pipeline で forbidden surfaces が未設定のとき job start に warning を出す",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/scope-config-empty-warning-aac29758",
   "error": null,
   "pipelineId": "standard",
@@ -73,8 +73,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/771",
+    "number": 771,
+    "createdAt": "2026-07-10T12:52:13.817Z"
+  },
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -87,7 +92,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
