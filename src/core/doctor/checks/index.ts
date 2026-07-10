@@ -47,6 +47,7 @@ import { localStateWritableCheck } from "./storage/local-state-writable.js";
 import { legacyJobsDirCheck } from "./storage/legacy-jobs-dir.js";
 import { orphanSidecarsCheck } from "./storage/orphan-sidecars.js";
 import { orphanWorktreesCheck } from "./storage/orphan-worktrees.js";
+import { journalIntegrityCheck } from "./storage/journal-integrity.js";
 
 export const commonChecks: DoctorCheck[] = [
   // Runtime (4 — gh CLI check removed: no longer required)
@@ -71,6 +72,7 @@ export const commonChecks: DoctorCheck[] = [
   legacyJobsDirCheck,
   orphanSidecarsCheck,
   orphanWorktreesCheck,
+  journalIntegrityCheck,
 ];
 
 export const managedChecks: DoctorCheck[] = [
@@ -121,4 +123,5 @@ export {
   legacyJobsDirCheck,
   orphanSidecarsCheck,
   orphanWorktreesCheck,
+  journalIntegrityCheck,
 };

@@ -100,6 +100,23 @@ export interface LineageRecord {
 export type EventRecord = StepAttemptRecord | TransitionRecord | InterruptionRecord | LineageRecord;
 
 // ---------------------------------------------------------------------------
+// Fold corruption
+// ---------------------------------------------------------------------------
+
+/**
+ * Describes a mid-journal corruption detected by fold().
+ * Only the FIRST corruption in the committed lines is recorded.
+ */
+export interface FoldCorruption {
+  /** 0-based index within the committed lines (after tail-partial is dropped). */
+  lineIndex: number;
+  /** Why the line is considered corrupt. */
+  reason: "invalid-json" | "not-an-object";
+  /** First ~120 chars of the offending line (for diagnostics). */
+  snippet: string;
+}
+
+// ---------------------------------------------------------------------------
 // Fold result
 // ---------------------------------------------------------------------------
 
@@ -125,6 +142,15 @@ export interface FoldResult {
    * Empty array if no lineage records have been appended.
    */
   lineage: LineageRecord[];
+  /**
+   * Present when a mid-journal corruption was detected (a committed line that is
+   * not valid JSON or not a plain object). Absent when the journal is clean.
+   *
+   * Only the FIRST corruption is recorded; fold() continues building best-effort
+   * results from the remaining valid lines even when corruption is set.
+   * Tail-partial (dropped last line) is NOT a corruption and does not set this.
+   */
+  corruption?: FoldCorruption;
 }
 
 // ---------------------------------------------------------------------------
@@ -136,20 +162,25 @@ export interface FoldResult {
  *
  * Algorithm:
  * 1. Split into lines.
- * 2. Skip the last line if it does not parse as valid JSON (partial write).
- * 3. For each line: parse and dispatch by `type` field.
+ * 2. Drop the last non-empty line if it fails JSON.parse (benign tail partial write).
+ *    The remaining non-empty lines are the "committed" lines.
+ * 3. For each committed line:
+ *    - If JSON.parse throws → record corruption { reason: "invalid-json" } (first only).
+ *    - If parsed value is null, an array, or a primitive → record corruption { reason: "not-an-object" } (first only).
+ *    - Object records dispatch by `type`; unknown `type` values are silently ignored (forward compat).
  * 4. step-attempt records: group by step, assign attempt = groupIndex + 1.
  * 5. transition records: append to history array.
- * 6. interruption records: tracked but not used in fold output (Stage 2 uses them).
+ * 6. interruption records: tracked (Stage 2 T-11).
  *
- * Partial tail: only the last line can be partial. If any non-last line fails to
- * parse, it is silently skipped (best-effort recovery for multi-record corruption).
+ * Corruption: only the FIRST offending committed line is recorded in `result.corruption`.
+ * Folding continues on all remaining lines to produce best-effort steps/history.
+ * Tail partial (the dropped last line) is NOT a corruption.
+ * fold() never throws for any input string.
  */
 export function fold(content: string): FoldResult {
   const lines = content.split("\n");
 
-  // Remove the last line if it is empty (trailing newline) or partial
-  // "Partial" = the last non-empty line fails JSON.parse
+  // Collect non-empty lines
   const nonEmptyLines: string[] = [];
   for (const line of lines) {
     if (line.trim().length > 0) {
@@ -157,11 +188,10 @@ export function fold(content: string): FoldResult {
     }
   }
 
-  // Try to determine if the last line is a complete JSON record
-  // If it fails to parse, drop it (partial write detection)
-  let validLines: string[];
+  // Determine committed lines: drop the last non-empty line if it fails JSON.parse (tail partial).
+  let committedLines: string[];
   if (nonEmptyLines.length === 0) {
-    validLines = [];
+    committedLines = [];
   } else {
     const lastLine = nonEmptyLines[nonEmptyLines.length - 1]!;
     let lastLineValid = true;
@@ -171,10 +201,10 @@ export function fold(content: string): FoldResult {
       lastLineValid = false;
     }
     if (lastLineValid) {
-      validLines = nonEmptyLines;
+      committedLines = nonEmptyLines;
     } else {
       // Drop partial tail
-      validLines = nonEmptyLines.slice(0, -1);
+      committedLines = nonEmptyLines.slice(0, -1);
     }
   }
 
@@ -183,17 +213,39 @@ export function fold(content: string): FoldResult {
   const historyRecords: TransitionRecord[] = [];
   let lastInterruption: InterruptionRecord | undefined;
   const lineageRecords: LineageRecord[] = [];
+  let corruption: FoldCorruption | undefined;
 
-  for (const line of validLines) {
+  for (let i = 0; i < committedLines.length; i++) {
+    const line = committedLines[i]!;
     let record: unknown;
     try {
       record = JSON.parse(line);
     } catch {
-      // Skip malformed line (not just tail)
+      // Mid-journal invalid JSON — record first corruption, continue folding
+      if (!corruption) {
+        corruption = {
+          lineIndex: i,
+          reason: "invalid-json",
+          snippet: line.slice(0, 120),
+        };
+      }
       continue;
     }
 
-    if (typeof record !== "object" || record === null) continue;
+    if (typeof record !== "object" || record === null || Array.isArray(record)) {
+      // Committed line parsed but is not a plain object (null, array, or a primitive).
+      // Note: typeof null === "object" and typeof [] === "object" in JS,
+      // so we check both explicitly.
+      if (!corruption) {
+        corruption = {
+          lineIndex: i,
+          reason: "not-an-object",
+          snippet: line.slice(0, 120),
+        };
+      }
+      continue;
+    }
+
     const obj = record as Record<string, unknown>;
 
     if (obj["type"] === "step-attempt") {
@@ -211,6 +263,7 @@ export function fold(content: string): FoldResult {
       lineageRecords.push(obj as unknown as LineageRecord);
     }
     // Unknown / legacy types (e.g. "history") are silently ignored for forward compat.
+    // Unknown type is NOT a corruption — forward compatibility.
   }
 
   // Build steps: Record<stepName, StepRun[]>
@@ -255,6 +308,7 @@ export function fold(content: string): FoldResult {
     historyCount: historyRecords.length,
     lineage: lineageRecords,
     ...(lastInterruption !== undefined ? { lastInterruption } : {}),
+    ...(corruption !== undefined ? { corruption } : {}),
   };
 }
 
