@@ -7,10 +7,10 @@
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
 | 1 | build | passed | 0.4s | 0 |
-| 2 | typecheck | passed | 5.9s | 0 |
-| 3 | test | passed | 18.2s | 0 |
-| 4 | lint | passed | 4.1s | 0 |
-| 5 | changed-line-coverage | passed | 22.7s | 0 |
+| 2 | typecheck | passed | 3.9s | 0 |
+| 3 | test | passed | 18.6s | 0 |
+| 4 | lint | passed | 4.2s | 0 |
+| 5 | changed-line-coverage | passed | 25.3s | 0 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.08 MB
-ESM ⚡️ Build success in 67ms
+ESM ⚡️ Build success in 69ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -53,16 +53,21 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	190d
 
  Test Files  460 passed (460)
       Tests  6381 passed (6381)
-   Start at  19:40:03
-   Duration  17.90s (transform 4.12s, setup 0ms, import 15.16s, tests 19.95s, environment 22ms)
+   Start at  20:57:26
+   Duration  18.29s (transform 4.15s, setup 0ms, import 15.39s, tests 20.11s, environment 23ms)
 
 
 $ vitest run
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-pOXssA/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-2exI4b/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-r5uooS/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-9wW1We/specrunner/credentials.json has loose permissions (recommend 0600).
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -72,42 +77,10 @@ Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-2exI4b/specr
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-[inbox] started job slug=fix-login-bug from issue#1
-[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
-[inbox] started job slug=fix-login-bug from issue#1
-[inbox] resumed job slug=fix-login-bug (issue#10)
-[inbox] dry-run: no effects will be executed.
-[inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
-  start    issue#1 → slug=fix-login-bug
-  resume   fix-login-bug (issue#10)
-[inbox] recovered stale job slug=my-feature (attempt 1)
-[inbox] escalated stale job slug=my-feature to awaiting-resume
-[inbox] dry-run: no effects will be executed.
-[inbox] plan: 0 start(s), 0 reject(s), 0 resume(s), 1 recover(s), 1 escalate(s)
-  recover  my-feature (attempt 1)
-  escalate other-feat (step=design)
-[inbox] warn: recover my-feature: disk full
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=old-feature (issue#50)
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -128,11 +101,38 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
 [specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] resumed job slug=fix-login-bug (issue#10)
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
+  start    issue#1 → slug=fix-login-bug
+  resume   fix-login-bug (issue#10)
+[inbox] recovered stale job slug=my-feature (attempt 1)
+[inbox] escalated stale job slug=my-feature to awaiting-resume
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 0 start(s), 0 reject(s), 0 resume(s), 1 recover(s), 1 escalate(s)
+  recover  my-feature (attempt 1)
+  escalate other-feat (step=design)
+[inbox] warn: recover my-feature: disk full
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=old-feature (issue#50)
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
@@ -140,9 +140,9 @@ Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalati
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
+Warning: issue-notifier: failed to write comment to issue #42: network error
 Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
-Warning: issue-notifier: failed to write comment to issue #42: network error
 ERROR: file not found
 spawn ENOENT
 
@@ -158,6 +158,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (24 changed files checked, 17 skipped)
-  Skipped (not in coverage surface): specrunner/changes/journal-integrity-fail-closed/design.md, specrunner/changes/journal-integrity-fail-closed/events.jsonl, specrunner/changes/journal-integrity-fail-closed/request-review-result-001.md, specrunner/changes/journal-integrity-fail-closed/request.md, specrunner/changes/journal-integrity-fail-closed/rules.md, specrunner/changes/journal-integrity-fail-closed/spec-review-result-001.md, specrunner/changes/journal-integrity-fail-closed/spec.md, specrunner/changes/journal-integrity-fail-closed/state.json, specrunner/changes/journal-integrity-fail-closed/tasks.md, specrunner/changes/journal-integrity-fail-closed/test-cases.md, specrunner/changes/journal-integrity-fail-closed/usage.json, specrunner/changes/journal-integrity-fail-closed/verification-result.md, tests/core/doctor/checks/storage/journal-integrity.test.ts, tests/store/event-journal.test.ts, tests/store/job-state-store.test.ts, tests/store/journal-integrity.test.ts, tests/unit/cli/job-show.test.ts
+changed-line-coverage: passed (35 changed files checked, 27 skipped)
+  Skipped (not in coverage surface): specrunner/changes/journal-integrity-fail-closed/conformance-result-001.md, specrunner/changes/journal-integrity-fail-closed/cross-boundary-invariants-result-001.md, specrunner/changes/journal-integrity-fail-closed/cross-boundary-invariants-result-002.md, specrunner/changes/journal-integrity-fail-closed/cross-boundary-invariants-result-003.md, specrunner/changes/journal-integrity-fail-closed/cross-boundary-invariants-result-004.md, specrunner/changes/journal-integrity-fail-closed/cross-boundary-invariants-result-005.md, specrunner/changes/journal-integrity-fail-closed/design.md, specrunner/changes/journal-integrity-fail-closed/events.jsonl, specrunner/changes/journal-integrity-fail-closed/regression-gate-result-001.md, specrunner/changes/journal-integrity-fail-closed/request-review-result-001.md, specrunner/changes/journal-integrity-fail-closed/request.md, specrunner/changes/journal-integrity-fail-closed/review-feedback-001.md, specrunner/changes/journal-integrity-fail-closed/review-feedback-002.md, specrunner/changes/journal-integrity-fail-closed/rules.md, specrunner/changes/journal-integrity-fail-closed/scale-tolerance-result-001.md, specrunner/changes/journal-integrity-fail-closed/spec-review-result-001.md, specrunner/changes/journal-integrity-fail-closed/spec.md, specrunner/changes/journal-integrity-fail-closed/state.json, specrunner/changes/journal-integrity-fail-closed/tasks.md, specrunner/changes/journal-integrity-fail-closed/test-cases.md, specrunner/changes/journal-integrity-fail-closed/usage.json, specrunner/changes/journal-integrity-fail-closed/verification-result.md, tests/core/doctor/checks/storage/journal-integrity.test.ts, tests/store/event-journal.test.ts, tests/store/job-state-store.test.ts, tests/store/journal-integrity.test.ts, tests/unit/cli/job-show.test.ts
 ```
