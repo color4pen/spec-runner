@@ -1,16 +1,16 @@
 # Verification Result — journal-integrity-fail-closed — iter 1
 
-## Verdict: failed
+## Verdict: passed
 
 ## Phase Results
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 1.0s | 0 |
-| 2 | typecheck | passed | 3.7s | 0 |
-| 3 | test | passed | 18.4s | 0 |
-| 4 | lint | failed | 4.6s | 1 |
-| 5 | changed-line-coverage | skipped | — | — |
+| 1 | build | passed | 0.4s | 0 |
+| 2 | typecheck | passed | 5.9s | 0 |
+| 3 | test | passed | 18.2s | 0 |
+| 4 | lint | passed | 4.1s | 0 |
+| 5 | changed-line-coverage | passed | 22.7s | 0 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.08 MB
-ESM ⚡️ Build success in 64ms
+ESM ⚡️ Build success in 67ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -53,36 +53,16 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	190d
 
  Test Files  460 passed (460)
       Tests  6381 passed (6381)
-   Start at  19:38:46
-   Duration  20.10s (transform 4.64s, setup 0ms, import 17.65s, tests 19.86s, environment 25ms)
+   Start at  19:40:03
+   Duration  17.90s (transform 4.12s, setup 0ms, import 15.16s, tests 19.95s, environment 22ms)
 
 
 $ vitest run
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-uN0gRi/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-y7Ifml/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-pOXssA/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-2exI4b/specrunner/credentials.json has loose permissions (recommend 0600).
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -92,26 +72,22 @@ Retrying worktree add: lock contention (attempt 2/3)
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
-GitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...
-GitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...
-GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
-GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...
-GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
-GitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...
-GitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...
-GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
@@ -132,6 +108,30 @@ GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=old-feature (issue#50)
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...
+GitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 [specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
@@ -140,32 +140,24 @@ Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalati
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
+Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 Warning: issue-notifier: failed to write comment to issue #42: network error
 ERROR: file not found
 spawn ENOENT
-Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 
 ```
 
 ## Phase: lint
 
-Step 'lint' failed
-
 ```
-
-tests/store/job-state-store.test.ts
-  22:10  warning  'appendEventRecord' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-
-✖ 1 problem (0 errors, 1 warning)
-
-
 $ eslint ./src ./tests --max-warnings 0
-ESLint found too many warnings (maximum: 0).
-error: script "lint" exited with code 1
 
 ```
 
 ## Phase: changed-line-coverage
 
-_(skipped — previous command failed)_
+```
+changed-line-coverage: passed (24 changed files checked, 17 skipped)
+  Skipped (not in coverage surface): specrunner/changes/journal-integrity-fail-closed/design.md, specrunner/changes/journal-integrity-fail-closed/events.jsonl, specrunner/changes/journal-integrity-fail-closed/request-review-result-001.md, specrunner/changes/journal-integrity-fail-closed/request.md, specrunner/changes/journal-integrity-fail-closed/rules.md, specrunner/changes/journal-integrity-fail-closed/spec-review-result-001.md, specrunner/changes/journal-integrity-fail-closed/spec.md, specrunner/changes/journal-integrity-fail-closed/state.json, specrunner/changes/journal-integrity-fail-closed/tasks.md, specrunner/changes/journal-integrity-fail-closed/test-cases.md, specrunner/changes/journal-integrity-fail-closed/usage.json, specrunner/changes/journal-integrity-fail-closed/verification-result.md, tests/core/doctor/checks/storage/journal-integrity.test.ts, tests/store/event-journal.test.ts, tests/store/job-state-store.test.ts, tests/store/journal-integrity.test.ts, tests/unit/cli/job-show.test.ts
+```
