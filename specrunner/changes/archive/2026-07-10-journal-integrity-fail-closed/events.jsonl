@@ -140,3 +140,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/journal-integrity-fail-closed/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-10T12:02:28.092Z","endedAt":"2026-07-10T12:02:29.774Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-10T12:02:29.774Z","outputs":[{"path":"specrunner/changes/journal-integrity-fail-closed/pr-create-result.md","hash":"sha256:3e4471789748e94dc51a90d60314de96805d9cf1dc831674c427d13197f99e0c"}],"inputs":[{"path":"change/journal-integrity-fail-closed-8d5f9b5c","hash":null}]}
 {"type":"transition","ts":"2026-07-10T12:02:29.783Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-10T12:08:46.128Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
