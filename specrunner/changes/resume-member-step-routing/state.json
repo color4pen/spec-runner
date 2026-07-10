@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0305307b-a405-4573-9605-09462dfa8ca9",
   "createdAt": "2026-07-10T13:17:11.514Z",
-  "updatedAt": "2026-07-10T14:41:43.931Z",
+  "updatedAt": "2026-07-10T14:43:45.314Z",
   "request": {
     "title": "custom reviewer member step からの resume を coordinator 経由に修正し、シグナル停止時の interruption 二重記録を解消する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/resume-member-step-routing-0305307b",
   "error": null,
   "pipelineId": "standard",
@@ -76,8 +76,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/772",
+    "number": 772,
+    "createdAt": "2026-07-10T14:43:45.302Z"
+  },
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -92,7 +97,8 @@
       "custom-reviewers": 1,
       "regression-gate": 1,
       "conformance": 1,
-      "adr-gen": 1
+      "adr-gen": 2,
+      "pr-create": 1
     }
   }
 }
