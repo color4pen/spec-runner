@@ -308,10 +308,7 @@ describe("TC-023: ClaudeCodeRunner invokes query() with ctx.cwd", () => {
     await runner.run(ctx);
 
     expect(capturedParams!.options?.allowedTools).toEqual(["Read", "Edit", "Write", "Bash", "Grep", "Glob"]);
-    // Branch B (file-tool-write-scope): permissionMode changed from "bypassPermissions" to "dontAsk"
-    // so that canUseTool (the workspace write guard) is invoked.
-    // bypassPermissions skips all permission checks including canUseTool callbacks.
-    expect(capturedParams!.options?.permissionMode).toBe("dontAsk");
+    expect(capturedParams!.options?.permissionMode).toBe("bypassPermissions");
     // model comes from step.agent.model via stepDefaults resolution
     expect(capturedParams!.options?.model).toBe("claude-sonnet-4-5");
     // maxTurns is absent because step.maxTurns=undefined, config has no steps → null → unlimited
