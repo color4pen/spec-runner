@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "28e44510-6f74-48e1-8a46-073fd4d61a51",
   "createdAt": "2026-07-10T13:16:45.211Z",
-  "updatedAt": "2026-07-10T13:31:06.851Z",
+  "updatedAt": "2026-07-10T13:36:47.158Z",
   "request": {
     "title": "claude-code adapter の workspace write guard を実測済み構成で再実装する（#766 redo）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/write-scope-guard-redo-28e44510",
   "error": null,
@@ -48,10 +48,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
