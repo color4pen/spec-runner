@@ -24,7 +24,7 @@ import { AdrGenStep } from "../step/adr-gen.js";
 import { PrCreateStep } from "../step/pr-create.js";
 
 /**
- * Standard 12-step pipeline descriptor.
+ * Standard 13-step pipeline descriptor.
  * All fields match the current createStandardPipeline / STANDARD_* constants exactly.
  */
 export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
@@ -163,7 +163,7 @@ export const FAST_DESCRIPTOR: PipelineDescriptor = {
 
 /**
  * Registry mapping pipeline ids to their descriptors.
- * Three entries: standard (12-step), design-only (1-step), fast (9-step slim with scope).
+ * Three entries: standard (13-step), design-only (1-step), fast (9-step slim with scope).
  */
 export const PIPELINE_REGISTRY: Record<string, PipelineDescriptor> = {
   [PIPELINE_IDS.STANDARD]:    STANDARD_DESCRIPTOR,

@@ -9,14 +9,14 @@
 
 **File**: `README.md` (line 94, "Extending the Review Chain" → Custom reviewers bullet)
 
-- [ ] Replace the phrase "run serially after `code-review`" with an accurate description of the
+- [x] Replace the phrase "run serially after `code-review`" with an accurate description of the
   parallel fan-out model. Target wording (implementer may refine, must stay accurate):
   "…validated at job start, and run as a **parallel fan-out** after `code-review` — member reviewers
   execute concurrently, with only their commit/push serialized (FIFO mutex). Scoped with `paths`
   globs and `requestTypes`."
-- [ ] Keep the literal token `code-review` in the sentence (the existing README drift guard asserts
+- [x] Keep the literal token `code-review` in the sentence (the existing README drift guard asserts
   README contains every step name; do not break it).
-- [ ] Do not restructure any other part of README (README rewrite is out of scope / backlog B-1).
+- [x] Do not restructure any other part of README (README rewrite is out of scope / backlog B-1).
 
 **Acceptance Criteria**:
 - The custom-reviewers bullet no longer claims serial execution and describes the parallel fan-out
@@ -31,11 +31,11 @@
 
 **File**: `src/core/pipeline/registry.ts` (comments only — lines 27 and 166)
 
-- [ ] Line 27: change "Standard 12-step pipeline descriptor." → "Standard 13-step pipeline
+- [x] Line 27: change "Standard 12-step pipeline descriptor." → "Standard 13-step pipeline
   descriptor." (`STANDARD_DESCRIPTOR.steps` has 13 entries).
-- [ ] Line 166: change "standard (12-step)" → "standard (13-step)". Leave "design-only (1-step)"
+- [x] Line 166: change "standard (12-step)" → "standard (13-step)". Leave "design-only (1-step)"
   and "fast (9-step slim with scope)" unchanged (already correct).
-- [ ] Change comments only — do NOT touch the `steps` arrays, transitions, roles, or any code.
+- [x] Change comments only — do NOT touch the `steps` arrays, transitions, roles, or any code.
 
 **Acceptance Criteria**:
 - Both "N-step" mentions for the standard pipeline read "13-step"; design-only reads "1-step" and
@@ -48,13 +48,13 @@
 
 **File**: `architecture/domain-model.md` (line 20, JobState 不変条件 bullet)
 
-- [ ] Replace "`version` は常に 1。" with a description matching the schema. Target wording
+- [x] Replace "`version` は常に 1。" with a description matching the schema. Target wording
   (implementer may refine, must stay accurate and keep the trailing `status` clause intact):
   "`version` は `1 | 2`（新規 state は 2、旧 version 1 は read 時に 2 へ normalize）。`status` は
   `JobStatus` の列挙内（validateJobState が強制）。"
-- [ ] The `version` clause MUST lead the bullet and BOTH union members (`1` and `2`) MUST appear
+- [x] The `version` clause MUST lead the bullet and BOTH union members (`1` and `2`) MUST appear
   before the first `。` (the axis-(b) guard extracts the clause up to the first `。`).
-- [ ] Do not remove the existing "正確なフィールドはコードが正典" SoT note (line 21).
+- [x] Do not remove the existing "正確なフィールドはコードが正典" SoT note (line 21).
 
 **Acceptance Criteria**:
 - The `version` invariant describes `1 | 2` with the 1→2 normalization direction and new-state
@@ -67,20 +67,20 @@
 
 **File**: `tests/unit/docs/doc-drift-sync.test.ts` (new)
 
-- [ ] Import the three descriptors from `../../../src/core/pipeline/registry.js`:
+- [x] Import the three descriptors from `../../../src/core/pipeline/registry.js`:
   `STANDARD_DESCRIPTOR`, `DESIGN_ONLY_DESCRIPTOR`, `FAST_DESCRIPTOR`.
-- [ ] Read `src/core/pipeline/registry.ts` source as a string (resolve via
+- [x] Read `src/core/pipeline/registry.ts` source as a string (resolve via
   `path.resolve(process.cwd(), "src/core/pipeline/registry.ts")`, consistent with the docs test
   directory).
-- [ ] Define a label→descriptor table and, for each pipeline, a label-anchored regex that captures
+- [x] Define a label→descriptor table and, for each pipeline, a label-anchored regex that captures
   the `N` in its "N-step" mentions, e.g.:
   - standard: `/Standard\s+(\d+)-step/g` and `/standard\s*\((\d+)-step\)/g`
   - design-only: `/design-only\s*\((\d+)-step\)/g`
   - fast: `/fast\s*\((\d+)-step/g`
-- [ ] For each pipeline: collect ALL captured numbers from the registry source, assert at least one
+- [x] For each pipeline: collect ALL captured numbers from the registry source, assert at least one
   match exists, and assert every captured number equals that descriptor's `steps.length`. Derive the
   expected value from `descriptor.steps.length` — do NOT hardcode 13 / 1 / 9.
-- [ ] Follow the drift-guard convention of `tests/grep-no-step-name-hardcode.test.ts` (read source
+- [x] Follow the drift-guard convention of `tests/grep-no-step-name-hardcode.test.ts` (read source
   text, assert with regex).
 
 **Acceptance Criteria**:
@@ -97,16 +97,16 @@
 
 **File**: `tests/unit/docs/doc-drift-sync.test.ts` (same new file, second describe block)
 
-- [ ] Read `src/state/schema.ts` source and regex-extract the `version` union, tolerant of
+- [x] Read `src/state/schema.ts` source and regex-extract the `version` union, tolerant of
   whitespace and an arbitrary number of members, e.g. capture the run after `version:` up to `;`
   (`/version:\s*([\d\s|]+);/`), split on `|`, and parse into a numeric set (allowed versions).
   Do NOT hardcode `[1, 2]`.
-- [ ] Read `architecture/domain-model.md` source and extract the `version` clause: the substring
+- [x] Read `architecture/domain-model.md` source and extract the `version` clause: the substring
   from `` `version` `` up to the first `。` (document the expected clause shape in a comment).
-- [ ] Assert the extracted `version` clause contains the string form of EVERY allowed version member
+- [x] Assert the extracted `version` clause contains the string form of EVERY allowed version member
   (so with union `1 | 2` the clause must mention both `1` and `2`). Reverting to "`version` は常に 1"
   omits `2` and fails.
-- [ ] Follow the same read-source-text + regex convention.
+- [x] Follow the same read-source-text + regex convention.
 
 **Acceptance Criteria**:
 - With `schema.ts` declaring `version: 1 | 2` and domain-model.md describing `1 | 2`, the guard
@@ -120,8 +120,8 @@
 
 ## T-06: Verify the full green gate
 
-- [ ] Run `bun run typecheck` — passes.
-- [ ] Run `bun run test` — passes, including the new `doc-drift-sync.test.ts` and the unmodified
+- [x] Run `bun run typecheck` — passes.
+- [x] Run `bun run test` — passes, including the new `doc-drift-sync.test.ts` and the unmodified
   existing tests.
 
 **Acceptance Criteria**:
