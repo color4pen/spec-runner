@@ -658,6 +658,135 @@ describe("TC-JSON-SETUP-002: json=false + setupWorkspace failure → no stdout J
   });
 });
 
+// TC-SW-RUNNER-001: fast + forbidden empty config → scope warning emitted exactly once
+describe("TC-SW-RUNNER-001: fast + forbidden empty config → scope warning in stderr exactly once", () => {
+  it("emits scope warning to stderr exactly once for fast pipeline with no forbidden surfaces", async () => {
+    const fastJobState = buildJobState({ pipelineId: "fast" });
+    const noSurfacesConfig = {
+      version: 1 as const,
+      runtime: "local" as const,
+      agents: {},
+      // No pipeline.fast.forbiddenSurfaces — forbidden resolves to []
+    };
+    const prepareResult = buildPrepareResult({
+      jobState: fastJobState,
+      config: noSurfacesConfig,
+    });
+
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, prepareResult);
+    await command.execute();
+
+    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStderr = stderrCalls.map((c) => String(c[0])).join("");
+    // Warning should be present
+    expect(allStderr).toContain("pipeline.fast.forbiddenSurfaces");
+    // Count occurrences of the config key to ensure exactly 1 warning
+    const occurrences = allStderr.split("pipeline.fast.forbiddenSurfaces").length - 1;
+    expect(occurrences).toBe(1);
+  });
+
+  it("warning contains 'fast' pipeline id and indicates detection is ineffective", async () => {
+    const fastJobState = buildJobState({ pipelineId: "fast" });
+    const noSurfacesConfig = { version: 1 as const, runtime: "local" as const, agents: {} };
+    const prepareResult = buildPrepareResult({
+      jobState: fastJobState,
+      config: noSurfacesConfig,
+    });
+
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, prepareResult);
+    await command.execute();
+
+    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStderr = stderrCalls.map((c) => String(c[0])).join("");
+    expect(allStderr).toContain("fast");
+    expect(allStderr).toContain("pipeline.fast.forbiddenSurfaces");
+    // Should indicate detection is disabled/ineffective
+    expect(allStderr.toLowerCase()).toMatch(/disabled|ineffective|effectively/);
+  });
+});
+
+// TC-SW-RUNNER-002: standard pipeline → no scope warning
+describe("TC-SW-RUNNER-002: standard pipeline → no scope warning emitted", () => {
+  it("does not emit scope warning for standard pipeline (pipelineId absent)", async () => {
+    // Default buildJobState has no pipelineId → resolves to 'standard'
+    const prepareResult = buildPrepareResult();
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, prepareResult);
+    await command.execute();
+
+    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStderr = stderrCalls.map((c) => String(c[0])).join("");
+    expect(allStderr).not.toContain("forbiddenSurfaces");
+  });
+
+  it("does not emit scope warning for explicit pipelineId='standard'", async () => {
+    const standardJobState = buildJobState({ pipelineId: "standard" });
+    const prepareResult = buildPrepareResult({ jobState: standardJobState });
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, prepareResult);
+    await command.execute();
+
+    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStderr = stderrCalls.map((c) => String(c[0])).join("");
+    expect(allStderr).not.toContain("forbiddenSurfaces");
+  });
+});
+
+// TC-SW-RUNNER-003: fast + surfaces configured → no scope warning
+describe("TC-SW-RUNNER-003: fast + surfaces configured → no scope warning", () => {
+  it("does not emit scope warning when fast pipeline has forbidden surfaces configured", async () => {
+    const fastJobState = buildJobState({ pipelineId: "fast" });
+    const withSurfacesConfig = {
+      version: 1 as const,
+      runtime: "local" as const,
+      agents: {},
+      pipeline: {
+        fast: {
+          forbiddenSurfaces: [
+            { id: "public-types", paths: ["src/core/port/**"] },
+          ],
+        },
+      },
+    };
+    const prepareResult = buildPrepareResult({
+      jobState: fastJobState,
+      config: withSurfacesConfig,
+    });
+
+    const runtime = buildMockRuntime();
+    const command = new TestCommand(runtime, prepareResult);
+    await command.execute();
+
+    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStderr = stderrCalls.map((c) => String(c[0])).join("");
+    expect(allStderr).not.toContain("forbiddenSurfaces");
+  });
+});
+
+// TC-SW-RUNNER-004: setupWorkspace failure → no scope warning (early return before step 5)
+describe("TC-SW-RUNNER-004: setupWorkspace failure → no scope warning (pre-pipeline early return)", () => {
+  it("does not emit scope warning when setupWorkspace fails", async () => {
+    const fastJobState = buildJobState({ pipelineId: "fast" });
+    const noSurfacesConfig = { version: 1 as const, runtime: "local" as const, agents: {} };
+    const realJobState = fastJobState;
+    const prepareResult = buildPrepareResult({
+      jobState: realJobState,
+      repoRoot: tempDir,
+      config: noSurfacesConfig,
+    });
+
+    const runtime = buildMockRuntime({ setupThrow: new Error("workspace setup failed") });
+    const command = new TestCommand(runtime, prepareResult);
+    await command.execute();
+
+    const stderrCalls = (process.stderr.write as ReturnType<typeof vi.fn>).mock.calls;
+    const allStderr = stderrCalls.map((c) => String(c[0])).join("");
+    expect(allStderr).not.toContain("forbiddenSurfaces");
+  });
+});
+
 // T-033: pruneOldLogs exception does not abort pipeline
 describe("T-033: pruneOldLogs exception does not abort pipeline", () => {
   it("logs warning and continues pipeline when pruneOldLogs throws", async () => {
