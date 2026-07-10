@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0305307b-a405-4573-9605-09462dfa8ca9",
   "createdAt": "2026-07-10T13:17:11.514Z",
-  "updatedAt": "2026-07-10T13:34:31.815Z",
+  "updatedAt": "2026-07-10T13:36:58.963Z",
   "request": {
     "title": "custom reviewer member step からの resume を coordinator 経由に修正し、シグナル停止時の interruption 二重記録を解消する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "fix/resume-member-step-routing-0305307b",
   "error": null,
@@ -49,11 +49,12 @@
   ],
   "issueNumber": 769,
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }
