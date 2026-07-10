@@ -403,3 +403,36 @@ Verdict summary:
 - `scenario=report_result`: MCP handler invoked, canUseTool not consulted (pre-approved) → **PASS**
 
 All three measured-fact-6 scenarios green. Re-confirms SDK measured facts 3, 4, 5, 6 recorded above.
+
+## Addendum (2026-07-11): allow には updatedInput が必須 — 初回 probe の scenario 2 は偽陽性だった
+
+マージ前レビューでの probe **独立再実行**により、上記ログの `in-workspace-write` PASS が
+偽陽性であったことが判明した。
+
+- **確定した SDK 実測事実（追加）**: permission result の allow branch は
+  `{ behavior: "allow", updatedInput: <record> }` の形を Zod スキーマで要求する。
+  `updatedInput` を欠いた bare allow は `Tool permission request failed: ZodError`
+  で拒否され、**tool call 自体が実行されない**（= workspace 内への正当な Edit / Write
+  もすべて失敗する）。
+- **初回ログが PASS に見えた理由**: 当時の probe は allowedTools に Bash を含み
+  sandbox も無かったため、Write 拒否後に agent が **Bash で**ファイルを作成し
+  `file_created=true` になっていた（"Reached maximum number of turns" は
+  その試行錯誤の痕跡）。
+- **修正**: `createWorkspaceToolGuard` の全 allow arm を
+  `{ behavior: "allow", updatedInput: input }`（原 input のパススルー）に変更。
+  `WorkspacePermissionResult` の allow branch も `updatedInput` を必須に変更。
+  unit テスト（allow results carry updatedInput）で凍結。
+- **probe の強化**: scenario 1 / 2 から Bash を除外（Write を唯一の書き込み経路にし、
+  `file_created` が guard 判定を忠実に反映するようにする）、transient query エラーの
+  リトライ、tool_result エラー・permission_denials の診断出力を追加。
+
+### 修正後 probe 実行ログ（2026-07-11、guard 修正後）
+
+```
+[PROBE] scenario=out-of-workspace-write canUseTool=fired decision=deny file_created=false verdict=PASS
+[PROBE] scenario=in-workspace-write canUseTool=fired decision=allow guard_path=<workspace>/probe-in.txt file_created=true verdict=PASS
+[PROBE] scenario=report_result canUseTool=not-consulted handler_invoked=true verdict=PASS
+```
+
+教訓: probe は検証対象以外の経路（今回は Bash）を閉じて初めて事実を測定できる。
+「file が出来た」は「その tool が書いた」を意味しない。

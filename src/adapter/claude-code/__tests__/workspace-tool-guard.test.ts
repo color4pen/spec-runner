@@ -243,6 +243,41 @@ describe("TC-FW-05: Write with missing / non-string file_path → allow", () => 
   });
 });
 
+describe("allow results carry updatedInput (SDK Zod schema requires it)", () => {
+  // Measured 2026-07-11: the SDK validates the permission result against a union whose
+  // allow branch REQUIRES updatedInput as a record. A bare { behavior: "allow" } fails
+  // with "Tool permission request failed: ZodError" and the tool call is rejected —
+  // i.e. in-workspace writes would be effectively denied. These tests freeze the
+  // pass-through contract: allow must return the original input as updatedInput.
+  it("in-workspace Write: updatedInput equals the original input", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { file_path: path.join(tempDir, "a.txt"), content: "x" };
+    const result = await guard("Write", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("non-guarded tool (Bash): updatedInput equals the original input", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { command: "bun run test" };
+    const result = await guard("Bash", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("malformed file_path (missing): updatedInput equals the original input", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = {};
+    const result = await guard("Write", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("deny result carries no updatedInput", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Write", { file_path: "/etc/evil.txt" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+    expect("updatedInput" in result).toBe(false);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // TC-FW-06: step-agent queryOptions freeze (no reportTool)
 // ---------------------------------------------------------------------------

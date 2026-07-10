@@ -135,3 +135,10 @@ containment 判定: `path.resolve(cwd, file_path)` した絶対パスを `path.r
 - **SDK の permissionMode semantics は文書から直感的には読めない**。特に「`bypassPermissions` は canUseTool を無効化する」「`dontAsk` は canUseTool に委譲しない」は実測して初めて確認できる事実であり、adapter の permission 設定を変更する際は必ず probe で確認すること。
 - **guard をかけたい tool を allowedTools に入れてはならない**。pre-approve は guard の手前で分岐するため、guard が一切機能しなくなる。
 - **外部 SDK への主張は実行証拠を伴う**。`scripts/probes/` に probe を置き `design.md` に実行ログを貼ることを、SDK 挙動依存の変更の acceptance 条件とする。
+
+## 追記（2026-07-11）: allow result の updatedInput 必須
+
+マージ前の probe 独立再実行により追加の実測事実を確認: permission result の allow は
+`{ behavior: "allow", updatedInput: <record> }` を Zod スキーマで要求し、bare allow は
+ZodError で拒否され tool call が実行されない。`createWorkspaceToolGuard` は全 allow arm で
+原 input を `updatedInput` としてパススルーする。詳細は change の design.md Addendum を参照。

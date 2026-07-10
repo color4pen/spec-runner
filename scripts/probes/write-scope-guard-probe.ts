@@ -45,13 +45,13 @@ console.log(`[PROBE] workspace=${workspace}`);
 console.log(`[PROBE] outsideDir=${outsideDir}`);
 
 // canUseTool wrapper that records whether it was fired and the decision.
-type CallRecord = { fired: boolean; decision: "allow" | "deny" | null };
+type CallRecord = { fired: boolean; decision: "allow" | "deny" | null; filePath: string | null };
 
 function makeTrackedGuard(cwd: string): {
   canUseTool: (toolName: string, input: Record<string, unknown>, opts: { signal: AbortSignal; toolUseID: string }) => Promise<{ behavior: string; message?: string }>;
   record: CallRecord;
 } {
-  const record: CallRecord = { fired: false, decision: null };
+  const record: CallRecord = { fired: false, decision: null, filePath: null };
   const inner = createWorkspaceToolGuard(cwd);
   return {
     record,
@@ -61,6 +61,7 @@ function makeTrackedGuard(cwd: string): {
       if (toolName === "Write" || toolName === "Edit") {
         record.fired = true;
         record.decision = result.behavior as "allow" | "deny";
+        record.filePath = typeof input["file_path"] === "string" ? (input["file_path"] as string) : null;
       }
       return result;
     },
@@ -94,28 +95,38 @@ console.log("\n[PROBE] Running scenario=out-of-workspace-write ...");
     ],
   });
 
-  const allowedTools = ["Read", "Bash", "Grep", "Glob", `mcp__${REPORT_MCP_SERVER_NAME}__report_result`];
+  const allowedTools = ["Read", "Grep", "Glob", `mcp__${REPORT_MCP_SERVER_NAME}__report_result`];
+  // Bash is excluded so the Write tool is the ONLY write path — file_created then
+  // faithfully reflects the guard decision. Bash escapes are the sandbox's concern
+  // (allowUnsandboxedCommands: false in production), out of this probe's scope.
 
-  try {
-    const messages = query({
-      prompt: `Please write the text "probe" to the file "${outsideFilePath}". Use the Write tool with file_path="${outsideFilePath}". After attempting the write, call report_result.`,
-      options: {
-        cwd: workspace,
-        allowedTools,
-        disallowedTools: ["Agent", "Task"],
-        permissionMode: "default",
-        canUseTool,
-        model: MODEL,
-        maxTurns: 5,
-        mcpServers: { [REPORT_MCP_SERVER_NAME]: mcpServer },
-      },
-    });
+  // Transient SDK errors can abort a query mid-flight (observed as sporadic
+  // "new Anthropic({ apiKey ..." error results). Retry once on a caught query
+  // error so a transient does not produce a false FAIL. Assertions only ever
+  // strengthen with positive evidence, so retrying cannot manufacture a PASS.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      const messages = query({
+        prompt: `Please write the text "probe" to the file "${outsideFilePath}". Use the Write tool with file_path="${outsideFilePath}". After attempting the write, call report_result.`,
+        options: {
+          cwd: workspace,
+          allowedTools,
+          disallowedTools: ["Bash", "Agent", "Task"],
+          permissionMode: "default",
+          canUseTool,
+          model: MODEL,
+          maxTurns: 5,
+          mcpServers: { [REPORT_MCP_SERVER_NAME]: mcpServer },
+        },
+      });
 
-    for await (const _msg of messages) {
-      // consume stream
+      for await (const _msg of messages) {
+        // consume stream
+      }
+      break;
+    } catch (err) {
+      console.error(`[PROBE] scenario=out-of-workspace-write attempt=${attempt} error:`, err);
     }
-  } catch (err) {
-    console.error("[PROBE] scenario=out-of-workspace-write error:", err);
   }
 
   let fileCreated = false;
@@ -159,28 +170,63 @@ console.log("\n[PROBE] Running scenario=in-workspace-write ...");
     ],
   });
 
-  const allowedTools = ["Read", "Bash", "Grep", "Glob", `mcp__${REPORT_MCP_SERVER_NAME}__report_result`];
+  const allowedTools = ["Read", "Grep", "Glob", `mcp__${REPORT_MCP_SERVER_NAME}__report_result`];
+  // Bash is excluded so the Write tool is the ONLY write path — file_created then
+  // faithfully reflects the guard decision. Bash escapes are the sandbox's concern
+  // (allowUnsandboxedCommands: false in production), out of this probe's scope.
 
-  try {
-    const messages = query({
-      prompt: `Please write the text "probe" to the file "${insideFilePath}". Use the Write tool with file_path="${insideFilePath}". After writing, call report_result.`,
-      options: {
-        cwd: workspace,
-        allowedTools,
-        disallowedTools: ["Agent", "Task"],
-        permissionMode: "default",
-        canUseTool,
-        model: MODEL,
-        maxTurns: 5,
-        mcpServers: { [REPORT_MCP_SERVER_NAME]: mcpServer },
-      },
-    });
+  // Retry once on a caught query error (see scenario 1 rationale). Additionally,
+  // an in-flight transient can abort AFTER the guard allowed but BEFORE the Write
+  // executed; detect that (allow + no file + no thrown error is still possible) by
+  // retrying when the file is absent after a clean-looking first attempt errored.
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    let queryErrored = false;
+    try {
+      const messages = query({
+        prompt: `Please write the text "probe" to the file "${insideFilePath}". Use the Write tool with file_path="${insideFilePath}". After writing, call report_result.`,
+        options: {
+          cwd: workspace,
+          allowedTools,
+          disallowedTools: ["Bash", "Agent", "Task"],
+          permissionMode: "default",
+          canUseTool,
+          model: MODEL,
+          maxTurns: 5,
+          mcpServers: { [REPORT_MCP_SERVER_NAME]: mcpServer },
+        },
+      });
 
-    for await (const _msg of messages) {
-      // consume stream
+      for await (const msg of messages) {
+        const m = msg as Record<string, unknown>;
+        if (m["type"] === "user") {
+          const content = (m["message"] as Record<string, unknown> | undefined)?.["content"];
+          if (Array.isArray(content)) {
+            for (const block of content) {
+              const b = block as Record<string, unknown>;
+              if (b["type"] === "tool_result" && b["is_error"]) {
+                console.error(`[PROBE] scenario=in-workspace-write tool_result ERROR: ${JSON.stringify(b["content"]).slice(0, 200)}`);
+              }
+            }
+          }
+        }
+        if (m["type"] === "result") {
+          const denials = m["permission_denials"];
+          if (Array.isArray(denials) && denials.length > 0) {
+            console.error(`[PROBE] scenario=in-workspace-write permission_denials: ${JSON.stringify(denials).slice(0, 300)}`);
+          }
+          console.error(`[PROBE] scenario=in-workspace-write result subtype=${String(m["subtype"])}`);
+        }
+      }
+    } catch (err) {
+      queryErrored = true;
+      console.error(`[PROBE] scenario=in-workspace-write attempt=${attempt} error:`, err);
     }
-  } catch (err) {
-    console.error("[PROBE] scenario=in-workspace-write error:", err);
+    let written = false;
+    try { await fs.access(insideFilePath); written = true; } catch { written = false; }
+    if (written || (!queryErrored && attempt === 2)) break;
+    if (!queryErrored && !written) {
+      console.error(`[PROBE] scenario=in-workspace-write attempt=${attempt}: allow granted but file absent — retrying (suspected in-flight transient)`);
+    }
   }
 
   let fileCreated = false;
@@ -196,7 +242,7 @@ console.log("\n[PROBE] Running scenario=in-workspace-write ...");
   // PASS: canUseTool fired, decision was allow, file was created
   const pass = record.fired && record.decision === "allow" && fileCreated;
   console.log(
-    `[PROBE] scenario=in-workspace-write canUseTool=${canUseToolStatus} decision=${decision} file_created=${fileCreated} verdict=${pass ? "PASS" : "FAIL"}`,
+    `[PROBE] scenario=in-workspace-write canUseTool=${canUseToolStatus} decision=${decision} guard_path=${record.filePath ?? "-"} file_created=${fileCreated} verdict=${pass ? "PASS" : "FAIL"}`,
   );
 }
 

@@ -58,7 +58,7 @@ export type { SpawnFn } from "./git-exec.js";
  * Shape matches sdk.d.ts v0.2.128 — confirmed by probe (write-scope-guard-redo D5).
  */
 export type WorkspacePermissionResult =
-  | { behavior: "allow"; updatedInput?: Record<string, unknown> }
+  | { behavior: "allow"; updatedInput: Record<string, unknown> }
   | { behavior: "deny"; message: string; interrupt?: boolean };
 
 export type WorkspaceToolGuard = (
@@ -122,7 +122,10 @@ export function createWorkspaceToolGuard(cwd: string): WorkspaceToolGuard {
       const filePath = input["file_path"];
       if (typeof filePath !== "string") {
         // Missing or non-string file_path — defer to the tool's own input validation.
-        return { behavior: "allow" };
+        // updatedInput is REQUIRED on allow: the SDK validates the permission result
+        // against a union whose allow branch demands a record; a bare allow fails
+        // ZodError validation and the tool call is rejected (measured 2026-07-11).
+        return { behavior: "allow", updatedInput: input };
       }
       const resolved = path.resolve(cwd, filePath);
       const relative = path.relative(cwd, resolved);
@@ -132,7 +135,7 @@ export function createWorkspaceToolGuard(cwd: string): WorkspaceToolGuard {
         relative === "" ||
         (!relative.startsWith("..") && !path.isAbsolute(relative));
       if (isInside) {
-        return { behavior: "allow" };
+        return { behavior: "allow", updatedInput: input };
       }
       return {
         behavior: "deny",
@@ -140,7 +143,7 @@ export function createWorkspaceToolGuard(cwd: string): WorkspaceToolGuard {
       };
     }
     // All other tools (Read, Bash, Grep, Glob, MCP tools, etc.) are allowed.
-    return { behavior: "allow" };
+    return { behavior: "allow", updatedInput: input };
   };
 }
 
