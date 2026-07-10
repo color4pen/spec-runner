@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.3.8](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.7...specrunner-v0.3.8) (2026-07-10)
+
+
+### Features
+
+* archive --with-merge が merge 直後に main の整合性検証を実行する ([#752](https://github.com/color4pen/spec-runner/issues/752)) ([fdf6342](https://github.com/color4pen/spec-runner/commit/fdf6342831623575ecbee66013b7b94fa2d7cc6f))
+* authority 文書と実装の drift 3 件を修正し、同期テストを意味的照合に拡張する ([#767](https://github.com/color4pen/spec-runner/issues/767)) ([b70cfde](https://github.com/color4pen/spec-runner/commit/b70cfde7321539a5ed26f22d0a24cd8f8598d74e))
+* claude-code adapter の Edit / Write ツールに workspace 書き込みスコープを追加する ([#766](https://github.com/color4pen/spec-runner/issues/766)) ([c2afcf5](https://github.com/color4pen/spec-runner/commit/c2afcf55ff288c823552892f121c06a5a46fd58b))
+* claude-code adapter の workspace write guard を実測済み構成で再実装する（[#766](https://github.com/color4pen/spec-runner/issues/766) redo） ([#773](https://github.com/color4pen/spec-runner/issues/773)) ([332dc68](https://github.com/color4pen/spec-runner/commit/332dc6800ca174b4a7b883bda50c9fdfb4d3cf13))
+* claude-code adapter の書き込みを workspace に SDK native sandbox でスコープする ([#761](https://github.com/color4pen/spec-runner/issues/761)) ([5188200](https://github.com/color4pen/spec-runner/commit/51882001030564eaf382c7d127999c38a21ba0e0))
+* event journal の中間破損を fail-closed にする — fold の corruption 検出と counter 逆行検査 ([#770](https://github.com/color4pen/spec-runner/issues/770)) ([ad67c12](https://github.com/color4pen/spec-runner/commit/ad67c12fabedf1ca09be8ef1474ed511c3237701))
+* fast pipeline の forbidden surfaces を repo config に外出しする ([#746](https://github.com/color4pen/spec-runner/issues/746)) ([58e2491](https://github.com/color4pen/spec-runner/commit/58e2491a2c7e76113eebddbf1cf64a3eca28d0a7))
+* fast pipeline のガード構成データを自己保護する ([#756](https://github.com/color4pen/spec-runner/issues/756)) ([e0a839b](https://github.com/color4pen/spec-runner/commit/e0a839b4f1e8f03c8f3c76b8edae637086fc4c11))
+* job ls を運用一覧にする — 区分表示・escalation の可視化・次アクションの提示 ([#745](https://github.com/color4pen/spec-runner/issues/745)) ([49a02be](https://github.com/color4pen/spec-runner/commit/49a02bed3f565755f066d8c493fc56d5a66f1819))
+* permissionScope 宣言 pipeline で forbidden surfaces が未設定のとき job start に warning を出す ([#771](https://github.com/color4pen/spec-runner/issues/771)) ([2fbbdae](https://github.com/color4pen/spec-runner/commit/2fbbdaeb2d5a9d1c3a78d5f4e3ed9040cbf717ee))
+* run 単位の統計（コスト・収束回数・所要時間）を集計する job stats コマンド ([#744](https://github.com/color4pen/spec-runner/issues/744)) ([1d1589e](https://github.com/color4pen/spec-runner/commit/1d1589efb92fcda0ab94a54f4af82566be48fdf0))
+* test-case-gen に繰り返し実行・冪等性の導出軸を追加する ([#750](https://github.com/color4pen/spec-runner/issues/750)) ([9ff21f3](https://github.com/color4pen/spec-runner/commit/9ff21f3bd0aff465bd11b0a59e8281ce82781521))
+* verification の test-coverage を TC-ID 存在照合から変更行の実行検証（lcov）に強化する ([#751](https://github.com/color4pen/spec-runner/issues/751)) ([f33e2eb](https://github.com/color4pen/spec-runner/commit/f33e2eb1f45d4150aff1afd0bee98d432a074a59))
+* worktree job による main checkout への逃避書き込みを検出する ([#760](https://github.com/color4pen/spec-runner/issues/760)) ([71fd1a0](https://github.com/color4pen/spec-runner/commit/71fd1a0320dd56650e89f3858aac35a70e1d2692))
+* 自 repo の verification に changed-line coverage gate を宣言する ([#754](https://github.com/color4pen/spec-runner/issues/754)) ([7573a72](https://github.com/color4pen/spec-runner/commit/7573a728a7f584d12f4836c7c4a0da4785922ac8))
+* 設計層 topic 排出 — archive 時に design-level findings を design/topics/ へ機械排出する ([#763](https://github.com/color4pen/spec-runner/issues/763)) ([12a58b8](https://github.com/color4pen/spec-runner/commit/12a58b802a249fc9a3680dbccc5ed9489d6b9d0e))
+
+
+### Bug Fixes
+
+* custom reviewer member step からの resume を coordinator 経由に修正し、シグナル停止時の interruption 二重記録を解消する ([#772](https://github.com/color4pen/spec-runner/issues/772)) ([e5cb332](https://github.com/color4pen/spec-runner/commit/e5cb332546dcad414588782c4b74cba2f793de40))
+* doctor が project-local 設定を読まず designLayer / runtime チェックを誤診断する ([#747](https://github.com/color4pen/spec-runner/issues/747)) ([1f4399c](https://github.com/color4pen/spec-runner/commit/1f4399c1cc0806010ae5cc0cf7144bb5c2f90c3f))
+* job ls / job stats の表示・集計を事実に一致させる ([#755](https://github.com/color4pen/spec-runner/issues/755)) ([d8ff80e](https://github.com/color4pen/spec-runner/commit/d8ff80e7fb88c4bd6827727665f479664f40cf6d))
+* pipeline 運用の小粒不具合 3 件の一括修正（fixer prompt / exit-guard / worktree cwd の view コマンド） ([#759](https://github.com/color4pen/spec-runner/issues/759)) ([eaf44f1](https://github.com/color4pen/spec-runner/commit/eaf44f10f0dbfafa9d61dc1d212667495f48067f))
+* 事後監査で検出した小粒不具合の一括修正 ([#757](https://github.com/color4pen/spec-runner/issues/757)) ([a9bd170](https://github.com/color4pen/spec-runner/commit/a9bd1701a7de0b8a204a31d41683d59a1aaee7ad))
+
+
+### Reverts
+
+* [#766](https://github.com/color4pen/spec-runner/issues/766) file-tool-write-scope — dontAsk が headless runner で report_result を deny し pipeline を停止させる ([#768](https://github.com/color4pen/spec-runner/issues/768)) ([dd61763](https://github.com/color4pen/spec-runner/commit/dd617630ee38b683807a1e573edc1afb281dc457))
+
 ## [0.3.7](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.6...specrunner-v0.3.7) (2026-07-04)
 
 
