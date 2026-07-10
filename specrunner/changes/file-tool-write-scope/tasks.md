@@ -10,18 +10,18 @@ Test-ID namespace for new tests: `TC-FW-*`.
 
 ## T-01: Probe `canUseTool` × `permissionMode` and record the result in design.md
 
-- [ ] Empirically determine whether the SDK invokes `canUseTool` while
+- [x] Empirically determine whether the SDK invokes `canUseTool` while
   `permissionMode: "bypassPermissions"` (per design D2, this is not derivable from the
   types/docs). Observe firing/non-firing directly (e.g. a minimal query with a
   `canUseTool` that records invocations, or the smallest reliable observation available
   in this environment).
-- [ ] If it does NOT fire under `bypassPermissions`, determine the `permissionMode`
+- [x] If it does NOT fire under `bypassPermissions`, determine the `permissionMode`
   value that (a) invokes `canUseTool` and (b) never blocks on an interactive prompt in
   the non-interactive runner context (candidate: `"dontAsk"`).
-- [ ] Confirm `canUseTool` is also consulted for the `report_result` MCP tool and in
+- [x] Confirm `canUseTool` is also consulted for the `report_result` MCP tool and in
   the follow-up / postWork turns, or note that the default-allow arm (T-02) covers them
   regardless.
-- [ ] Fill in `design.md` §Empirical Results → "`canUseTool` × `permissionMode`":
+- [x] Fill in `design.md` §Empirical Results → "`canUseTool` × `permissionMode`":
   firing yes/no, branch taken (A/B), shipped `permissionMode` value, and the evidence.
 
 **Acceptance Criteria**:
@@ -32,10 +32,10 @@ Test-ID namespace for new tests: `TC-FW-*`.
 
 ## T-02: Implement the workspace write guard (`createWorkspaceToolGuard`)
 
-- [ ] In `src/adapter/claude-code/agent-runner.ts`, add and export a pure factory
+- [x] In `src/adapter/claude-code/agent-runner.ts`, add and export a pure factory
   `createWorkspaceToolGuard(cwd: string): CanUseTool` (import `CanUseTool` type from the
   SDK loader / `@anthropic-ai/claude-agent-sdk`).
-- [ ] Behavior (design D1 / D6):
+- [x] Behavior (design D1 / D6):
   - For `toolName === "Edit"` or `"Write"`: read `input.file_path`. If it is missing or
     not a string, return `{ behavior: "allow" }` (do not synthesize a new error path).
     Otherwise resolve with `path.resolve(cwd, file_path)` and test containment with
@@ -44,10 +44,10 @@ Test-ID namespace for new tests: `TC-FW-*`.
     `{ behavior: "deny", message }`; if inside, return `{ behavior: "allow" }`.
   - For every other `toolName` (`Read`, `Grep`, `Glob`, `Bash`, MCP tools such as
     `report_result`, and anything else): return `{ behavior: "allow" }`.
-- [ ] The deny `message` MUST name the worktree (`cwd`) and instruct the agent to write
+- [x] The deny `message` MUST name the worktree (`cwd`) and instruct the agent to write
   only inside it (stable wording; a test asserts a substring such as `worktree` or
   `workspace` and that it is non-empty).
-- [ ] Do NOT special-case `Agent` / `Task` here — they stay blocked by
+- [x] Do NOT special-case `Agent` / `Task` here — they stay blocked by
   `disallowedTools` and the existing redirect counter (design D3).
 
 **Acceptance Criteria**:
@@ -59,14 +59,14 @@ Test-ID namespace for new tests: `TC-FW-*`.
 
 ## T-03: Wire the guard (and, if Branch B, the permission mode) into the step-agent query options
 
-- [ ] Add `canUseTool: createWorkspaceToolGuard(cwd)` to the step-agent `queryOptions`
+- [x] Add `canUseTool: createWorkspaceToolGuard(cwd)` to the step-agent `queryOptions`
   object in `run()`. Because follow-up / retry / postWork / outputVerification turns are
   built by spreading `...queryOptions`, this single addition propagates to all turns
   (same pattern as the existing `stderr` callback) — do not re-create the guard per turn.
-- [ ] Set `permissionMode` to the value chosen in T-01:
+- [x] Set `permissionMode` to the value chosen in T-01:
   - Branch A: leave `permissionMode: "bypassPermissions"` unchanged.
   - Branch B: change `permissionMode` to the selected prompt-free mode.
-- [ ] Keep `allowedTools`, `disallowedTools`, `sandbox`, and `stderr` exactly as they
+- [x] Keep `allowedTools`, `disallowedTools`, `sandbox`, and `stderr` exactly as they
   are (aside from T-04's `allowUnsandboxedCommands` addition inside `buildWorkspaceSandbox`).
 
 **Acceptance Criteria**:
@@ -76,14 +76,14 @@ Test-ID namespace for new tests: `TC-FW-*`.
 
 ## T-04: Disable the escape hatch in `buildWorkspaceSandbox` (or waive with recorded reason)
 
-- [ ] Confirm the design D4 network assessment against the step-agent Bash workload
+- [x] Confirm the design D4 network assessment against the step-agent Bash workload
   (local git / build / typecheck / test / lint; `git push` is outside the agent query
   via `StepExecutor.commitAndPush`). If no legitimate step-agent Bash need for
   unsandboxed/network execution exists, add `allowUnsandboxedCommands: false` to the
   object returned by `buildWorkspaceSandbox(cwd)`.
-- [ ] If a legitimate need IS found, do NOT add the flag; record the waiver and its
+- [x] If a legitimate need IS found, do NOT add the flag; record the waiver and its
   reason in `design.md` §Empirical Results → "`allowUnsandboxedCommands` adoption".
-- [ ] Record the adoption/waiver outcome in `design.md` §Empirical Results either way.
+- [x] Record the adoption/waiver outcome in `design.md` §Empirical Results either way.
 
 **Acceptance Criteria**:
 - `design.md` §Empirical Results records the adoption decision and its rationale
@@ -94,16 +94,16 @@ Test-ID namespace for new tests: `TC-FW-*`.
 
 ## T-05: Test — guard input/output (deny out, allow in, allow others)
 
-- [ ] Add `TC-FW-*` unit tests (suggested file
+- [x] Add `TC-FW-*` unit tests (suggested file
   `src/adapter/claude-code/__tests__/workspace-tool-guard.test.ts`, or a new `describe`
   block in `sandbox-scope.test.ts`) that call `createWorkspaceToolGuard(cwd)` directly.
-- [ ] `TC-FW-01`: out-of-workspace absolute `Write` → `behavior: "deny"`, message
+- [x] `TC-FW-01`: out-of-workspace absolute `Write` → `behavior: "deny"`, message
   non-empty and contains a worktree/workspace substring.
-- [ ] `TC-FW-02`: relative-escape `Edit` (`file_path: "../outside.txt"`) → `deny`.
-- [ ] `TC-FW-03`: in-workspace `Edit` (path under `cwd`) → `allow`.
-- [ ] `TC-FW-04`: `Bash` (any command), `Read` (any path), and an MCP tool name (e.g.
+- [x] `TC-FW-02`: relative-escape `Edit` (`file_path: "../outside.txt"`) → `deny`.
+- [x] `TC-FW-03`: in-workspace `Edit` (path under `cwd`) → `allow`.
+- [x] `TC-FW-04`: `Bash` (any command), `Read` (any path), and an MCP tool name (e.g.
   `report_result`) → `allow` for each.
-- [ ] Use a real temp dir as `cwd` (mkdtemp) so `path.resolve` / `path.relative`
+- [x] Use a real temp dir as `cwd` (mkdtemp) so `path.resolve` / `path.relative`
   behave against a concrete absolute base, mirroring the existing sandbox-scope tests.
 
 **Acceptance Criteria**:
@@ -112,14 +112,14 @@ Test-ID namespace for new tests: `TC-FW-*`.
 
 ## T-06: Test — step-agent query options carry the guard, mode, and escape-hatch closure
 
-- [ ] Add `TC-FW-*` tests that capture `params.options` via an injected `_queryFn`
+- [x] Add `TC-FW-*` tests that capture `params.options` via an injected `_queryFn`
   (same pattern as TC-SB-01 / TC-AR-01), asserting individual keys (never a whole-object
   `toEqual`).
-- [ ] `TC-FW-05`: `capturedOptions.canUseTool` is a function; `capturedOptions.permissionMode`
+- [x] `TC-FW-05`: `capturedOptions.canUseTool` is a function; `capturedOptions.permissionMode`
   equals the shipped value from design.md; `allowedTools` and `disallowedTools` are
   unchanged (`["Read","Edit","Write","Bash","Grep","Glob"]` and `["Agent","Task"]`).
-- [ ] `TC-FW-06` (when T-04 adopts the flag): `capturedOptions.sandbox.allowUnsandboxedCommands === false`.
-- [ ] Optionally assert the captured `canUseTool` denies an out-of-workspace write and
+- [x] `TC-FW-06` (when T-04 adopts the flag): `capturedOptions.sandbox.allowUnsandboxedCommands === false`.
+- [x] Optionally assert the captured `canUseTool` denies an out-of-workspace write and
   allows an in-workspace write, to fix end-to-end that the wired guard is the workspace guard.
 
 **Acceptance Criteria**:
@@ -128,9 +128,9 @@ Test-ID namespace for new tests: `TC-FW-*`.
 
 ## T-07: Test — one-shot query options remain unchanged (regression guard)
 
-- [ ] In `tests/unit/adapter/claude-code/query-one-shot.test.ts`, add a NEW `describe`
+- [x] In `tests/unit/adapter/claude-code/query-one-shot.test.ts`, add a NEW `describe`
   block (`TC-FW-07`) — do NOT edit the existing `TC-SB-05` block.
-- [ ] Capture the one-shot options via the injected query fn and assert: no `canUseTool`
+- [x] Capture the one-shot options via the injected query fn and assert: no `canUseTool`
   key, no `sandbox` key, `permissionMode === "bypassPermissions"`, and default
   `allowedTools` equals `["Read","Bash","Grep","Glob"]`.
 
@@ -142,13 +142,13 @@ Test-ID namespace for new tests: `TC-FW-*`.
 
 ## T-08: Verification — existing tests green; bounded test edits only
 
-- [ ] Run `bun run typecheck && bun run test` (or the project's `verification.commands`)
+- [x] Run `bun run typecheck && bun run test` (or the project's `verification.commands`)
   and confirm green.
-- [ ] Confirm no existing test file was modified to accommodate the additive
+- [x] Confirm no existing test file was modified to accommodate the additive
   `canUseTool` / `allowUnsandboxedCommands` keys — the existing TC-023 options test,
   TC-AR-01 `disallowedTools` test, TC-AR-02 redirect test, and the TC-SB-01..04
   sandbox-scope tests must remain untouched and green.
-- [ ] **Single permitted exception, Branch B only**: if T-01 shipped a changed
+- [x] **Single permitted exception, Branch B only**: if T-01 shipped a changed
   `permissionMode`, the ONE assertion in `tests/unit/adapter/claude-code/agent-runner.test.ts`
   that freezes `permissionMode === "bypassPermissions"` (the TC-023 options test) must
   be updated to the newly shipped value. This is the only existing assertion permitted

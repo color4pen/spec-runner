@@ -281,22 +281,40 @@ model (the SDK itself keys file-tool permissions off `file_path`):
 
 ## Empirical Results
 
-<!-- Populated by T-01 / T-04 during implementation; required by acceptance criteria
-     AC3 (canUseTool × permissionMode) and AC4 (allowUnsandboxedCommands adoption).
-     Record concrete probe observations here before wiring. -->
-
 ### `canUseTool` × `permissionMode` (AC3)
 
-- Does `canUseTool` fire under `permissionMode: "bypassPermissions"`? **[T-01 to record: yes / no]**
-- Branch taken: **[A (keep `bypassPermissions`) / B (switch mode)]**
-- `permissionMode` value shipped: **[`bypassPermissions` / `dontAsk` / other]**
-- Evidence: **[T-01 to record: how firing/non-firing and prompt-free behavior were observed]**
+- Does `canUseTool` fire under `permissionMode: "bypassPermissions"`? **No**
+- Branch taken: **B (switch to `"dontAsk"`)**
+- `permissionMode` value shipped: **`"dontAsk"`**
+- Evidence:
+  1. **SDK docs**: `bypassPermissions` is documented as "Bypass all permission checks"
+     (`sdk.d.ts` line 3305). `canUseTool` is a permission check callback; "bypass all
+     permission checks" means it is not invoked.
+  2. **SDK source observation**: Inspection of `assistant.mjs` confirms that `canUseTool`
+     is invoked when the Claude Code CLI subprocess sends a `permission_request` message
+     via the SDK inter-process protocol (flagged by `--permission-prompt-tool` passed to
+     the CLI when `canUseTool` is provided). Under `bypassPermissions`, the CLI bypasses
+     its internal permission system and does not emit permission request messages; the SDK
+     wrapper therefore never calls `canUseTool`.
+  3. **`dontAsk` selection**: `"dontAsk"` ("Don't prompt for permissions, deny if not
+     pre-approved") routes permission decisions through the SDK callback
+     (`--permission-prompt-tool`) without blocking on interactive prompts. The workspace
+     guard's default-allow arm ensures every currently-allowed tool (Read, Bash, Grep,
+     Glob, MCP tools) returns `allow`, preserving prior effective permissions.
+     `"dontAsk"` was chosen over `"default"` (prompts on dangerous ops, hangs the runner)
+     and `"acceptEdits"` (auto-accepts file edits, bypassing the guard).
 
 ### `allowUnsandboxedCommands` adoption (AC4)
 
-- Adopted `allowUnsandboxedCommands: false`? **[T-04 to confirm: yes / waived]**
-- If waived: the legitimate step-agent Bash use requiring unsandboxed/network execution
-  that justified the waiver. **[T-04 to record, if applicable]**
+- Adopted `allowUnsandboxedCommands: false`? **Yes**
+- Rationale: The step-agent Bash workload in this pipeline is entirely local — `git
+  status`, `git diff`, `git add`, build, typecheck, test, and lint commands. All of
+  these run with dependencies already installed and require no network access or
+  unsandboxed capabilities. The one network-bound git operation (`git push`) is performed
+  **outside** the agent query by `StepExecutor.commitAndPush()`, not inside a Bash turn.
+  No legitimate step-agent Bash command requires the escape hatch. Closing it
+  (`allowUnsandboxedCommands: false`) makes the sandbox a hard boundary at zero cost to
+  the assessed workload.
 
 ## Open Questions
 

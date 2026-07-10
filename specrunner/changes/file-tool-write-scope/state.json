@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1aadc85c-dc4c-4ad2-9b85-eadc55e5de27",
   "createdAt": "2026-07-10T09:29:54.940Z",
-  "updatedAt": "2026-07-10T09:48:43.095Z",
+  "updatedAt": "2026-07-10T09:51:03.117Z",
   "request": {
     "title": "claude-code adapter の Edit / Write ツールに workspace 書き込みスコープを追加する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "change/file-tool-write-scope-1aadc85c",
   "error": null,
@@ -48,11 +48,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }

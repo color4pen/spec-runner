@@ -25,7 +25,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import { isToolUse } from "./message-types.js";
-import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader, type ClaudeSdkCreateMcpServer } from "./sdk-loader.js";
+import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader, type ClaudeSdkCreateMcpServer, type CanUseTool, type PermissionResult } from "./sdk-loader.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
 import type { DomainEvent } from "../../kernel/event-types.js";
 import type { StepContext } from "../../core/port/step-context.js";
@@ -62,6 +62,11 @@ export type ClaudeCodeOAuthTokenResolver = (
  * D2: failIfUnavailable: false enables fail-open degradation (unsupported platforms continue).
  * D3: no denyRead / allowRead — reads remain unrestricted.
  * D4: autoAllowBashIfSandboxed: true preserves Bash tool execution under the sandbox.
+ * D4 (file-tool-write-scope): allowUnsandboxedCommands: false disables the
+ *   dangerouslyDisableSandbox escape hatch. Step-agent Bash workload is fully local
+ *   (git status/diff/add, build, typecheck, test, lint); git push is performed outside
+ *   the agent query by StepExecutor.commitAndPush(), so no legitimate use requires
+ *   unsandboxed execution. Closing the escape hatch makes the sandbox a hard boundary.
  *
  * @param cwd Agent working directory (job worktree or repo root in --no-worktree mode).
  */
@@ -70,9 +75,53 @@ export function buildWorkspaceSandbox(cwd: string): Record<string, unknown> {
     enabled: true,
     failIfUnavailable: false,
     autoAllowBashIfSandboxed: true,
+    allowUnsandboxedCommands: false,
     filesystem: {
       allowWrite: [cwd, `${cwd}/**`],
     },
+  };
+}
+
+/**
+ * Creates a `canUseTool` callback that denies `Edit` / `Write` tool executions
+ * whose `file_path` resolves to a location outside the agent workspace (`cwd` subtree).
+ * All other tools — `Read`, `Bash`, `Grep`, `Glob`, MCP tools such as `report_result`,
+ * and anything else — are unconditionally allowed.
+ *
+ * Design D1: complements the Bash-covering sandbox; together they cover all write paths.
+ * Design D6: containment is judged statically via path.resolve + path.relative.
+ *   Missing / non-string file_path is allowed (the file tool will fail on its own
+ *   malformed input; the guard does not synthesize new error paths).
+ *
+ * @param cwd Agent working directory — the workspace root.
+ */
+export function createWorkspaceToolGuard(cwd: string): CanUseTool {
+  return async (toolName: string, input: Record<string, unknown>): Promise<PermissionResult> => {
+    if (toolName === "Edit" || toolName === "Write") {
+      const filePath = input["file_path"];
+      if (typeof filePath !== "string") {
+        // Missing or non-string file_path: allow and let the tool fail on its own.
+        return { behavior: "allow" };
+      }
+      // path.resolve handles both absolute and relative inputs:
+      // absolute → passes through; relative → resolved against cwd.
+      const resolved = path.resolve(cwd, filePath);
+      const relative = path.relative(cwd, resolved);
+      // Inside iff relative is "" (equals cwd itself) or has no leading ".." and is not absolute.
+      const inside =
+        relative === "" ||
+        (!relative.startsWith("..") && !path.isAbsolute(relative));
+      if (!inside) {
+        return {
+          behavior: "deny",
+          message:
+            `Write blocked: '${filePath}' is outside the worktree. ` +
+            `Write files only inside the workspace: ${cwd}`,
+        };
+      }
+    }
+    // Read, Bash, Grep, Glob, MCP tools (report_result, etc.), and all other tools: allow.
+    return { behavior: "allow" };
   };
 }
 
@@ -348,11 +397,21 @@ export class ClaudeCodeRunner implements AgentRunner {
       cwd,
       allowedTools: ["Read", "Edit", "Write", "Bash", "Grep", "Glob"],
       disallowedTools: ["Agent", "Task"],
-      permissionMode: "bypassPermissions",
-      // D1: scope filesystem writes to the workspace (OS-level enforcement via SDK native sandbox).
-      // D2: failIfUnavailable: false → fail-open when sandbox is unavailable.
-      // D4: autoAllowBashIfSandboxed: true → Bash runs normally under the sandbox.
+      // Branch B (file-tool-write-scope T-01): canUseTool does not fire under
+      // "bypassPermissions" (the mode bypasses all permission checks, including the
+      // callback). "dontAsk" routes permission decisions through canUseTool without
+      // prompting the user — prompt-free and non-blocking for the non-interactive runner.
+      permissionMode: "dontAsk",
+      // D1 (claude-adapter-write-scope): scope filesystem writes to the workspace
+      //   (OS-level enforcement via SDK native sandbox). Covers Bash subprocesses.
+      // D4 (file-tool-write-scope): allowUnsandboxedCommands: false closes the
+      //   dangerouslyDisableSandbox escape hatch (see buildWorkspaceSandbox JSDoc).
       sandbox: buildWorkspaceSandbox(cwd),
+      // D1 (file-tool-write-scope): workspace write guard — denies Edit/Write whose
+      //   file_path resolves outside cwd. Complements the sandbox (Bash-only) so that
+      //   every write path is covered. Propagates to follow-up/retry/postWork turns via
+      //   the ...queryOptions spread, same as the stderr callback below.
+      canUseTool: createWorkspaceToolGuard(cwd),
       // D5: stderr callback observes sandbox degradation; once-latch emits a single warning.
       //     Follow-up / retry / postWork turns spread ...queryOptions, reusing this callback
       //     and its shared latch so the warning fires at most once per run().
