@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8d5f9b5c-e5dc-492d-836b-1b4ddb198c72",
   "createdAt": "2026-07-10T09:47:30.685Z",
-  "updatedAt": "2026-07-10T10:17:27.971Z",
+  "updatedAt": "2026-07-10T10:39:10.296Z",
   "request": {
     "title": "event journal の中間破損を fail-closed にする — fold の corruption 検出と counter 逆行検査",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "build-fixer",
   "status": "running",
   "branch": "change/journal-integrity-fail-closed-8d5f9b5c",
   "error": null,
@@ -48,12 +48,14 @@
     }
   ],
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }

@@ -19,7 +19,6 @@ import type { NormalizedJobState } from "../../src/store/job-state-store.js";
 import type { StepRun } from "../../src/state/schema.js";
 import { specReviewResultPath } from "../../src/util/paths.js";
 import { SpecRunnerError, ERROR_CODES } from "../../src/errors.js";
-import { appendEventRecord } from "../../src/store/event-journal.js";
 
 let tempDir: string;
 
