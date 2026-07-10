@@ -126,3 +126,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/write-scope-guard-redo/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-10T15:04:26.096Z","endedAt":"2026-07-10T15:04:26.661Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-10T15:04:26.661Z","outputs":[{"path":"specrunner/changes/write-scope-guard-redo/pr-create-result.md","hash":"sha256:6aa330c34a9ac2d0da464484d83e017a7468fd4d245beba2f8fd10494fd584c0"}],"inputs":[{"path":"change/write-scope-guard-redo-28e44510","hash":null}]}
 {"type":"transition","ts":"2026-07-10T15:04:26.672Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-10T15:21:45.431Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

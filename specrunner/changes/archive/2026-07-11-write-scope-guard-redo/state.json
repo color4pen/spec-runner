@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "28e44510-6f74-48e1-8a46-073fd4d61a51",
   "createdAt": "2026-07-10T13:16:45.211Z",
-  "updatedAt": "2026-07-10T15:04:26.672Z",
+  "updatedAt": "2026-07-10T15:21:45.431Z",
   "request": {
     "title": "claude-code adapter の workspace write guard を実測済み構成で再実装する（#766 redo）",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/write-scope-guard-redo-28e44510",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,11 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "failure",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/773",
@@ -81,7 +85,7 @@
     "createdAt": "2026-07-10T15:04:26.660Z"
   },
   "_journal": {
-    "historyCount": 87,
+    "historyCount": 88,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
