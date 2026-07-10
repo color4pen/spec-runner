@@ -38,10 +38,11 @@ describe("TC-001/TC-002: publish.yml — OIDC 認証構成", () => {
     expect(content).toContain("npm publish --provenance");
   });
 
-  it("TC-007: npm install -g npm@latest 相当の step が npm publish より前に存在する", async () => {
+  it("TC-007: OIDC publish 要件（npm >= 11.5.1）を満たす npm@11 固定の install step が npm publish より前に存在する", async () => {
     const content = await readWorkflow("publish.yml");
-    expect(content).toContain("npm install -g npm@latest");
-    const npmUpdateIdx = content.indexOf("npm install -g npm@latest");
+    expect(content).toContain("npm install -g npm@11");
+    expect(content).not.toContain("npm install -g npm@latest");
+    const npmUpdateIdx = content.indexOf("npm install -g npm@11");
     const npmPublishIdx = content.indexOf("npm publish --provenance");
     expect(npmUpdateIdx).toBeGreaterThanOrEqual(0);
     expect(npmPublishIdx).toBeGreaterThanOrEqual(0);
