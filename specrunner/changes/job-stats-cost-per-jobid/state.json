@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6504fe44-8492-4bcc-94f7-5e54a32517d6",
   "createdAt": "2026-07-12T22:24:43.257Z",
-  "updatedAt": "2026-07-12T23:06:49.503Z",
+  "updatedAt": "2026-07-12T23:11:21.883Z",
   "request": {
     "title": "job stats のコスト集計で usage.json を slug でなく行の jobId / change-dir から解決し、同一 base-slug の誤配を解消する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "fix/job-stats-cost-per-jobid-6504fe44",
   "error": null,
@@ -78,20 +78,21 @@
     }
   ],
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 63,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "code-fixer": 1
+      "code-fixer": 1,
+      "conformance": 1
     }
   }
 }
