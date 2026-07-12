@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6504fe44-8492-4bcc-94f7-5e54a32517d6",
   "createdAt": "2026-07-12T22:24:43.257Z",
-  "updatedAt": "2026-07-12T23:11:21.883Z",
+  "updatedAt": "2026-07-12T23:11:49.527Z",
   "request": {
     "title": "job stats のコスト集計で usage.json を slug でなく行の jobId / change-dir から解決し、同一 base-slug の誤配を解消する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/job-stats-cost-per-jobid-6504fe44",
   "error": null,
   "pipelineId": "standard",
@@ -77,8 +77,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/778",
+    "number": 778,
+    "createdAt": "2026-07-12T23:11:49.510Z"
+  },
   "_journal": {
-    "historyCount": 63,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -92,7 +97,9 @@
       "custom-reviewers": 1,
       "regression-gate": 2,
       "code-fixer": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
