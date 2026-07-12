@@ -1,7 +1,7 @@
 /**
  * Architecture invariant enforcement: core layer — full scope.
  *
- * Enforces architecture/model.md §4 invariants B-1 through B-8 across the
+ * Enforces architecture/model.md §4 invariants B-1 through B-12 across the
  * entire src/core/ directory (formerly only core/request/ was covered).
  *
  * Scope expansion rationale (arch-test-core-wide-ratchet):

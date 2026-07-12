@@ -2,7 +2,7 @@
  * Architecture enforcement allowlist.
  *
  * Documents known divergences from the structural invariants defined in
- * architecture/model.md §4 (B-1 through B-8).
+ * architecture/model.md §4 (B-1 through B-12).
  *
  * GOVERNANCE:
  * - All entries were grandfather'd at the arch-test-core-wide-ratchet change.

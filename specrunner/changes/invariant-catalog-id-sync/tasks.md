@@ -23,31 +23,31 @@ New test-ID namespace: `TC-ICS-*` (invariant-catalog-sync).
 
 ## T-01: Implement the pure extraction + parity helpers in the new file
 
-- [ ] Create `tests/unit/architecture/invariant-catalog-parity.test.ts`.
-- [ ] Resolve paths from the file location (mirror `core-invariants.test.ts`):
+- [x] Create `tests/unit/architecture/invariant-catalog-parity.test.ts`.
+- [x] Resolve paths from the file location (mirror `core-invariants.test.ts`):
   `__dirname` via `url.fileURLToPath(import.meta.url)`, `ROOT = path.resolve(__dirname,
   "../../..")`. Read the four sources with `fs.readFileSync(..., "utf-8")`:
   `path.join(ROOT, "architecture/model.md")`,
   `path.join(ROOT, "architecture/conformance.md")`,
   `path.join(__dirname, "core-invariants.test.ts")`,
   `path.join(__dirname, "arch-allowlist.ts")`.
-- [ ] Add a `sliceSection(text: string, startRe: RegExp, endRe: RegExp): string` helper:
+- [x] Add a `sliceSection(text: string, startRe: RegExp, endRe: RegExp): string` helper:
   find the first line matching `startRe`; if none, **throw** with a clear message
   (e.g. `"catalog section heading not found: <startRe>"`); slice from there to the next
   line matching `endRe` (or end of file).
-- [ ] Add `normalizeId(n: string): string` returning `` `B-${parseInt(n, 10)}` `` and
+- [x] Add `normalizeId(n: string): string` returning `` `B-${parseInt(n, 10)}` `` and
   `sortIds(ids: Iterable<string>): string[]` sorting by the integer after `"B-"`.
-- [ ] Add four extractors returning `Set<string>` (design D2):
+- [x] Add four extractors returning `Set<string>` (design D2):
   - `extractModelCatalogIds(md)`: `sliceSection(md, /^##\s+4\./m, /^##\s+/m)` then collect
     from lines matching `/^\s*\|\s*\*\*B-(\d+)\*\*/`.
   - `extractConformanceCatalogIds(md)`: `sliceSection(md, /^###\s+\(A\)/m, /^###\s+/m)`
     then collect with the same leading-cell pattern.
   - `extractDescribeIds(ts)`: collect all matches of `/describe\("B-(\d+)/g`.
   - `extractAllowlistIds(ts)`: collect all matches of `/invariant:\s*"B-(\d+)"/g`.
-- [ ] Add `computeParity(catalog: Set<string>, teeth: Set<string>)` returning
+- [x] Add `computeParity(catalog: Set<string>, teeth: Set<string>)` returning
   `{ undocumented: string[]; unenforced: string[] }` where
   `undocumented = sortIds(teeth − catalog)` and `unenforced = sortIds(catalog − teeth)`.
-- [ ] Keep all helpers module-local (not exported); no direct SDK/child_process import.
+- [x] Keep all helpers module-local (not exported); no direct SDK/child_process import.
 
 **Acceptance Criteria**:
 - The file reads the four sources by absolute path resolved from `import.meta.url` (no
@@ -59,14 +59,14 @@ New test-ID namespace: `TC-ICS-*` (invariant-catalog-sync).
 
 ## T-02: Assert catalog↔teeth parity and catalog internal consistency
 
-- [ ] In a `describe("invariant catalog ↔ teeth B-x ID parity", ...)` block (title MUST
+- [x] In a `describe("invariant catalog ↔ teeth B-x ID parity", ...)` block (title MUST
   NOT begin with `B-N`, so it is never picked up by any `describe("B-` extractor):
-  - [ ] `TC-ICS-01`: assert `sortIds(modelIds)` deep-equals `sortIds(conformanceIds)`
+  - [x] `TC-ICS-01`: assert `sortIds(modelIds)` deep-equals `sortIds(conformanceIds)`
     (the two catalog tables agree; design D3).
-  - [ ] `TC-ICS-02`: build `teethIds = new Set([...describeIds, ...allowlistIds])` and
+  - [x] `TC-ICS-02`: build `teethIds = new Set([...describeIds, ...allowlistIds])` and
     `catalogIds = modelIds`; assert `computeParity(catalogIds, teethIds).undocumented`
     `toEqual([])` and `.unenforced` `toEqual([])` (bidirectional parity; design D3).
-  - [ ] `TC-ICS-03`: assert `allowlistIds ⊆ describeIds` (every allowlist `invariant` ID
+  - [x] `TC-ICS-03`: assert `allowlistIds ⊆ describeIds` (every allowlist `invariant` ID
     has a corresponding enforcing `describe` block; design D3). Implement as: the sorted
     array of `[...allowlistIds].filter(id => !describeIds.has(id))` `toEqual([])`.
 
@@ -80,7 +80,7 @@ New test-ID namespace: `TC-ICS-*` (invariant-catalog-sync).
 
 ## T-03: Assert liveness (non-empty extracted sets)
 
-- [ ] `TC-ICS-04`: assert `modelIds.size > 0`, `conformanceIds.size > 0`, and
+- [x] `TC-ICS-04`: assert `modelIds.size > 0`, `conformanceIds.size > 0`, and
   `describeIds.size > 0` (design D4). Do NOT assert `allowlistIds.size > 0` (a fully
   burned-down allowlist legitimately has zero B-x entries).
 
@@ -91,14 +91,14 @@ New test-ID namespace: `TC-ICS-*` (invariant-catalog-sync).
 
 ## T-04: Detection test — reproduce the B-12 desync and assert red
 
-- [ ] `TC-ICS-05` (design D5): remove the `**B-12**` table row from BOTH real texts:
+- [x] `TC-ICS-05` (design D5): remove the `**B-12**` table row from BOTH real texts:
   `dropB12 = (text) => text.split("\n").filter(l => !/^\s*\|\s*\*\*B-12\*\*/.test(l)).join("\n")`.
   Compute `catalogIdsNo12 = extractModelCatalogIds(dropB12(modelText))`.
-  - [ ] Perturbation guard: assert `catalogIdsNo12.has("B-12")` is `false` (the row was
+  - [x] Perturbation guard: assert `catalogIdsNo12.has("B-12")` is `false` (the row was
     actually removed; fails loudly if the row format drifted).
-  - [ ] Assert `computeParity(catalogIdsNo12, teethIds).undocumented` **contains** `"B-12"`
+  - [x] Assert `computeParity(catalogIdsNo12, teethIds).undocumented` **contains** `"B-12"`
     (the historical desync is detected as red), where `teethIds` still contains B-12.
-- [ ] Optionally also confirm `extractConformanceCatalogIds(dropB12(conformanceText))`
+- [x] Optionally also confirm `extractConformanceCatalogIds(dropB12(conformanceText))`
   likewise drops B-12, matching the historical state where both tables stopped at B-11.
 
 **Acceptance Criteria**:
@@ -108,12 +108,12 @@ New test-ID namespace: `TC-ICS-*` (invariant-catalog-sync).
 
 ## T-05: Update the stale prose range strings (requirement 4)
 
-- [ ] In `tests/unit/architecture/arch-allowlist.ts` docstring, change
+- [x] In `tests/unit/architecture/arch-allowlist.ts` docstring, change
   `architecture/model.md §4 (B-1 through B-8).` → `architecture/model.md §4 (B-1 through B-12).`
-- [ ] In `tests/unit/architecture/core-invariants.test.ts` docstring, change
+- [x] In `tests/unit/architecture/core-invariants.test.ts` docstring, change
   `Enforces architecture/model.md §4 invariants B-1 through B-8 across the` →
   `Enforces architecture/model.md §4 invariants B-1 through B-12 across the`
-- [ ] Change ONLY these comment strings. Do NOT modify any `describe` title, any
+- [x] Change ONLY these comment strings. Do NOT modify any `describe` title, any
   `invariant` field, any assertion, or any allowlist entry (design D6).
 
 **Acceptance Criteria**:
@@ -125,14 +125,14 @@ New test-ID namespace: `TC-ICS-*` (invariant-catalog-sync).
 
 ## T-06: Verification — green gate and no-regression checks
 
-- [ ] Run `bun run typecheck && bun run test` and confirm green.
-- [ ] Confirm every existing B-1 … B-12 check and the DSM closure / regression-guard
+- [x] Run `bun run typecheck && bun run test` and confirm green.
+- [x] Confirm every existing B-1 … B-12 check and the DSM closure / regression-guard
   tests in `core-invariants.test.ts` pass unchanged.
-- [ ] Confirm the only diff to `core-invariants.test.ts` and `arch-allowlist.ts` is the
+- [x] Confirm the only diff to `core-invariants.test.ts` and `arch-allowlist.ts` is the
   requirement-4 docstring range string (T-05), with no assertion/entry change.
-- [ ] Confirm `architecture/model.md`, `architecture/conformance.md`, and
+- [x] Confirm `architecture/model.md`, `architecture/conformance.md`, and
   `architecture/divergence-status.md` are untouched.
-- [ ] Confirm the new file is discovered by vitest (`tests/**/*.test.ts`) and typechecked
+- [x] Confirm the new file is discovered by vitest (`tests/**/*.test.ts`) and typechecked
   (`tests/**/*.ts`) — the five `TC-ICS-*` tests run and pass.
 
 **Acceptance Criteria**:
