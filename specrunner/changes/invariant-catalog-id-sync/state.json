@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "dd60e71f-34b2-4cc4-b97f-bb9ecb5a777a",
   "createdAt": "2026-07-12T22:24:01.014Z",
-  "updatedAt": "2026-07-12T22:57:44.593Z",
+  "updatedAt": "2026-07-12T23:04:04.739Z",
   "request": {
     "title": "不変条件カタログ（doc）と歯（test / allowlist）の B-x ID 集合が一致することを test で固定する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/invariant-catalog-id-sync-dd60e71f",
   "error": null,
@@ -50,15 +50,46 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 29,
+    "historyCount": 41,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "scale-tolerance": 1,
+      "cross-boundary-invariants": 1,
+      "custom-reviewers": 1
     }
   }
 }
