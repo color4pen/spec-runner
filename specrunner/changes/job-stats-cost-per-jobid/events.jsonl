@@ -65,3 +65,9 @@
 {"type":"transition","ts":"2026-07-12T23:04:27.026Z","step":"regression-gate","status":"warning","message":"regression-gate iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-07-12T23:04:27.026Z","step":"step-transition","status":"ok","message":"regression-gate → code-fixer"}
 {"type":"transition","ts":"2026-07-12T23:04:27.029Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-07-12T23:05:57.880Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"2577d411-15a1-4e57-9196-6d6ef4e47e60","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-12T23:04:27.086Z","endedAt":"2026-07-12T23:05:56.302Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-07-12T23:05:56.302Z","outputs":[{"path":"specrunner/changes/job-stats-cost-per-jobid","hash":null}],"inputs":[{"path":"specrunner/changes/job-stats-cost-per-jobid/regression-gate-result-001.md","hash":"sha256:d22af7df07e3a6f3a034c7ae8453d4b9fe046302bc6f5bcd5b51eb0408722d2a"}]}
+{"type":"transition","ts":"2026-07-12T23:05:57.887Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
+{"type":"transition","ts":"2026-07-12T23:05:57.888Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
+{"type":"transition","ts":"2026-07-12T23:05:57.889Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
