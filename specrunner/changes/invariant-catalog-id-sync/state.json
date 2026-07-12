@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "dd60e71f-34b2-4cc4-b97f-bb9ecb5a777a",
   "createdAt": "2026-07-12T22:24:01.014Z",
-  "updatedAt": "2026-07-12T23:04:43.848Z",
+  "updatedAt": "2026-07-12T23:07:46.349Z",
   "request": {
     "title": "不変条件カタログ（doc）と歯（test / allowlist）の B-x ID 集合が一致することを test で固定する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/invariant-catalog-id-sync-dd60e71f",
   "error": null,
@@ -78,7 +78,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -90,7 +90,8 @@
       "scale-tolerance": 1,
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
