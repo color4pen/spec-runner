@@ -22,3 +22,21 @@
 {"type":"lineage","step":"test-case-gen","ts":"2026-07-12T22:45:49.272Z","outputs":[{"path":"specrunner/changes/invariant-catalog-id-sync/test-cases.md","hash":"sha256:060f8611574d2dc380e57799d62e21bdff6e0e69eebf0b50143f204c508937c0"}],"inputs":[{"path":"specrunner/changes/invariant-catalog-id-sync/design.md","hash":"sha256:644c8e05d019cc2c1c8397108caad06de074c4e80ff357f59b9e92603fb5a550"},{"path":"specrunner/changes/invariant-catalog-id-sync/tasks.md","hash":"sha256:87f7d5d5b69b1422b8ddeb018f0880c132e2acd26fd5f67434151845b7d707d6"}]}
 {"type":"transition","ts":"2026-07-12T22:45:50.815Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
 {"type":"transition","ts":"2026-07-12T22:45:50.817Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
+{"type":"transition","ts":"2026-07-12T22:51:45.017Z","step":"implementer-verdict","status":"ok","message":"implementer verdict: success"}
+{"type":"step-attempt","step":"implementer","sessionId":"22d56e80-e1d5-4e9f-bf49-7ea0caa7e4c5","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-12T22:45:50.877Z","endedAt":"2026-07-12T22:51:43.529Z"}
+{"type":"lineage","step":"implementer","ts":"2026-07-12T22:51:43.529Z","outputs":[{"path":"specrunner/changes/invariant-catalog-id-sync","hash":null},{"path":"specrunner/changes/invariant-catalog-id-sync/tasks.md","hash":"sha256:0c5d6a14756ce93a5f895caadf07a78c1d6f02a9da0ec7860cd56d083cf8089d"}],"inputs":[{"path":"specrunner/changes/invariant-catalog-id-sync/tasks.md","hash":"sha256:0c5d6a14756ce93a5f895caadf07a78c1d6f02a9da0ec7860cd56d083cf8089d"},{"path":"specrunner/changes/invariant-catalog-id-sync/spec.md","hash":"sha256:f1d6323e0a108a9a055e4c7ca20f4773d1bb24ca5d8c4821f844661fedc031ed"}]}
+{"type":"transition","ts":"2026-07-12T22:51:45.024Z","step":"step-transition","status":"ok","message":"implementer → verification"}
+{"type":"transition","ts":"2026-07-12T22:51:45.025Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-07-12T22:51:45.027Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-07-12T22:52:51.549Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/invariant-catalog-id-sync/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-12T22:51:45.029Z","endedAt":"2026-07-12T22:52:51.548Z"}
+{"type":"lineage","step":"verification","ts":"2026-07-12T22:52:51.548Z","outputs":[{"path":"specrunner/changes/invariant-catalog-id-sync/verification-result.md","hash":"sha256:eb9c7196881cec7e312ab5f035de06d1958bcdddeea47182a36f5af8e05131b6"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-12T22:52:51.552Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
+{"type":"transition","ts":"2026-07-12T22:52:51.553Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-07-12T22:52:51.554Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-12T22:52:51.555Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
+{"type":"interruption","reason":"signal","ts":"2026-07-12T22:56:54.302Z"}
+{"type":"transition","ts":"2026-07-12T22:56:54.303Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-12T22:57:44.512Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-review'"}
+{"type":"transition","ts":"2026-07-12T22:57:44.591Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-12T22:57:44.593Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
