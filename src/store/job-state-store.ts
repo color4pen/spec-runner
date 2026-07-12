@@ -34,6 +34,23 @@ export type NormalizedJobState = Omit<JobState, "steps"> & {
   steps: Record<string, StepRun[]>;
 };
 
+/**
+ * An entry returned by JobStateStore.listWithSourceDirs().
+ * Pairs each job state with the change directory it was loaded from,
+ * so callers can resolve per-job artifacts (e.g. usage.json) without slug re-lookup.
+ */
+export interface ListedJobEntry {
+  state: JobState;
+  /**
+   * Absolute path to the change directory that contains state.json (and usage.json)
+   * for this job. Derived from the scan source: active slug dir, archive dir,
+   * worktree slug dir, or sidecar worktree slug dir.
+   * For managed-marker entries (section 4), this is the slug-based change dir
+   * in the main checkout.
+   */
+  sourceChangeDir: string;
+}
+
 // ---------------------------------------------------------------------------
 // Internal journal counter structure stored in state.json
 // ---------------------------------------------------------------------------
@@ -199,22 +216,25 @@ export class JobStateStore {
   // -------------------------------------------------------------------------
 
   /**
-   * List all valid job states from slug-based stores.
+   * List all valid job states from slug-based stores, paired with their source change directory.
    * Scans (1) slug-based states in current checkout and local worktrees,
    * (2) archived states (only when opts.includeArchived === true),
    * (3) machine-local sidecar supplement, (4) managed markers.
    * Deduplicates by jobId: newest updatedAt wins.
    *
+   * Each entry carries the absolute sourceChangeDir from which the state was loaded,
+   * so callers can resolve per-job artifacts (e.g. usage.json) without slug re-lookup.
+   *
    * By default archived states are skipped entirely (no directory scan).
    * Pass { includeArchived: true } to include archived states (e.g. --all, job show).
    */
-  static async list(repoRoot: string, opts?: { includeArchived?: boolean }): Promise<JobState[]> {
-    const stateMap = new Map<string, JobState>(); // jobId → most-recent state
+  static async listWithSourceDirs(repoRoot: string, opts?: { includeArchived?: boolean }): Promise<ListedJobEntry[]> {
+    const entryMap = new Map<string, ListedJobEntry>(); // jobId → most-recent entry
 
-    const tryMerge = (state: JobState) => {
-      const existing = stateMap.get(state.jobId);
-      if (!existing || new Date(state.updatedAt) > new Date(existing.updatedAt)) {
-        stateMap.set(state.jobId, state);
+    const tryMerge = (state: JobState, sourceChangeDir: string) => {
+      const existing = entryMap.get(state.jobId);
+      if (!existing || new Date(state.updatedAt) > new Date(existing.state.updatedAt)) {
+        entryMap.set(state.jobId, { state, sourceChangeDir });
       }
     };
 
@@ -227,9 +247,10 @@ export class JobStateStore {
         const slug = entry.name;
         const stateJsonPath = path.join(repoRoot, slugStateJsonPath(slug));
         const eventsPath = path.join(repoRoot, slugEventsPath(slug));
+        const sourceChangeDir = path.join(repoRoot, "specrunner", "changes", slug);
         try {
           const { state } = await composeSplitLayout(stateJsonPath, eventsPath, { slug, stateRoot: repoRoot });
-          tryMerge(state);
+          tryMerge(state, sourceChangeDir);
         } catch {
           // Skip malformed slug state in current checkout
         }
@@ -252,9 +273,10 @@ export class JobStateStore {
           const { slug: archiveSlug } = parseArchiveDirName(datedSlug);
           const stateJsonPath = path.join(archiveDir, datedSlug, "state.json");
           const eventsPath = path.join(archiveDir, datedSlug, "events.jsonl");
+          const sourceChangeDir = path.join(archiveDir, datedSlug);
           try {
             const { state } = await composeSplitLayout(stateJsonPath, eventsPath, { slug: archiveSlug, stateRoot: repoRoot });
-            tryMerge(state);
+            tryMerge(state, sourceChangeDir);
           } catch {
             // Skip malformed archive state
           }
@@ -280,9 +302,10 @@ export class JobStateStore {
             const slug = slugEntry.name;
             const stateJsonPath = path.join(worktreePath, slugStateJsonPath(slug));
             const eventsPath = path.join(worktreePath, slugEventsPath(slug));
+            const sourceChangeDir = path.join(worktreePath, "specrunner", "changes", slug);
             try {
               const { state } = await composeSplitLayout(stateJsonPath, eventsPath, { slug, stateRoot: worktreePath });
-              tryMerge(state);
+              tryMerge(state, sourceChangeDir);
             } catch {
               // Skip malformed worktree slug state
             }
@@ -296,23 +319,24 @@ export class JobStateStore {
       if (code !== "ENOENT") throw err;
     }
 
-    // 3. Sidecar supplement (D2): for local entries not yet in stateMap, try worktreePath slug dir.
+    // 3. Sidecar supplement (D2): for local entries not yet in entryMap, try worktreePath slug dir.
     // Sections 1/1b/2 cover main-checkout active, archived, and standard worktrees.
     // This supplement adds coverage for non-standard worktree paths and future edge cases.
     const localSidecars = await listLocalSidecars(repoRoot);
     for (const sidecarEntry of localSidecars) {
       if (sidecarEntry.kind !== "local") continue; // managed handled by section 4
-      if (stateMap.has(sidecarEntry.jobId)) continue; // already found
+      if (entryMap.has(sidecarEntry.jobId)) continue; // already found
       if (!sidecarEntry.worktreePath) continue; // no worktree to try
 
       const sidecarStateJsonPath = path.join(sidecarEntry.worktreePath, slugStateJsonPath(sidecarEntry.slug));
       const sidecarEventsPath = path.join(sidecarEntry.worktreePath, slugEventsPath(sidecarEntry.slug));
+      const sourceChangeDir = path.join(sidecarEntry.worktreePath, "specrunner", "changes", sidecarEntry.slug);
       try {
         const { state } = await composeSplitLayout(sidecarStateJsonPath, sidecarEventsPath, {
           slug: sidecarEntry.slug,
           stateRoot: sidecarEntry.worktreePath,
         });
-        tryMerge(state);
+        tryMerge(state, sourceChangeDir);
       } catch {
         // Worktree slug dir not accessible — state not available, skip (jobId preserved in resolveId)
       }
@@ -335,14 +359,15 @@ export class JobStateStore {
           if (!markerJobId) continue;
 
           // Skip if already found by another scan (dedup by jobId)
-          if (stateMap.has(markerJobId)) continue;
+          if (entryMap.has(markerJobId)) continue;
 
           // Try to load from co-located .specrunner/local/<slug>/state.json (D4)
           const markerStateJsonPath = path.join(repoRoot, localSlugStateJsonPath(slug));
           const markerEventsPath = path.join(repoRoot, localSlugEventsPath(slug));
+          const sourceChangeDir = path.join(repoRoot, changeFolderPath(slug));
           try {
             const { state } = await composeSplitLayout(markerStateJsonPath, markerEventsPath);
-            tryMerge(state);
+            tryMerge(state, sourceChangeDir);
           } catch {
             // State file not found locally — skip; marker alone cannot reconstruct full state
           }
@@ -355,7 +380,22 @@ export class JobStateStore {
       if (code !== "ENOENT") throw err;
     }
 
-    return Array.from(stateMap.values());
+    return Array.from(entryMap.values());
+  }
+
+  /**
+   * List all valid job states from slug-based stores.
+   * Scans (1) slug-based states in current checkout and local worktrees,
+   * (2) archived states (only when opts.includeArchived === true),
+   * (3) machine-local sidecar supplement, (4) managed markers.
+   * Deduplicates by jobId: newest updatedAt wins.
+   *
+   * By default archived states are skipped entirely (no directory scan).
+   * Pass { includeArchived: true } to include archived states (e.g. --all, job show).
+   */
+  static async list(repoRoot: string, opts?: { includeArchived?: boolean }): Promise<JobState[]> {
+    const entries = await JobStateStore.listWithSourceDirs(repoRoot, opts);
+    return entries.map((e) => e.state);
   }
 
   /**

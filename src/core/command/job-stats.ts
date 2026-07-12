@@ -9,9 +9,8 @@
  * Reuses existing mechanisms:
  *   - computeCostUsd / formatUsd (pricing.ts)
  *   - getJobSlug (state/job-slug.ts)
- *   - resolveChangeDir (core/job-access/resolve-change-dir.ts)
  *   - readUsageFile (core/usage/store.ts)
- *   - JobStateStore.list (store/job-state-store.ts)
+ *   - JobStateStore.listWithSourceDirs (store/job-state-store.ts)
  */
 
 import * as path from "node:path";
@@ -20,7 +19,6 @@ import type { UsageFile } from "../usage/types.js";
 import { computeCostUsd, formatUsd } from "../usage/pricing.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import { JobStateStore } from "../../store/job-state-store.js";
-import { resolveChangeDir } from "../job-access/resolve-change-dir.js";
 import { readUsageFile } from "../usage/store.js";
 import { stdoutWrite, stderrWrite } from "../../logger/stdout.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
@@ -359,11 +357,11 @@ export async function runJobStats(opts: { cwd: string; json: boolean }): Promise
     return 2;
   }
 
-  const states = await JobStateStore.list(cwd, { includeArchived: true });
+  const entries = await JobStateStore.listWithSourceDirs(cwd, { includeArchived: true });
 
   const rows: JobStatRow[] = [];
 
-  for (const state of states) {
+  for (const { state, sourceChangeDir } of entries) {
     try {
       // Normalize optional `steps` field to always be a Record
       const normalizedState: NormalizedJobState = {
@@ -371,19 +369,14 @@ export async function runJobStats(opts: { cwd: string; json: boolean }): Promise
         steps: state.steps ?? {},
       };
 
-      // Resolve the change directory for usage.json
-      const slug = getJobSlug(normalizedState);
       let usageFile: UsageFile | null = null;
 
       try {
-        const changeDir = await resolveChangeDir(slug, cwd);
-        if (changeDir) {
-          const usagePath = path.join(changeDir, "usage.json");
-          const read = await readUsageFile(usagePath);
-          // readUsageFile returns { commandInvocations: [] } when ENOENT — treat as null
-          if (read.commandInvocations.length > 0) {
-            usageFile = read;
-          }
+        const usagePath = path.join(sourceChangeDir, "usage.json");
+        const read = await readUsageFile(usagePath);
+        // readUsageFile returns { commandInvocations: [] } when ENOENT — treat as null
+        if (read.commandInvocations.length > 0) {
+          usageFile = read;
         }
       } catch {
         // Usage file read error — treat as absent
