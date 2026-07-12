@@ -22,6 +22,7 @@ vi.mock("../../core/worktree/detection.js", () => ({
 vi.mock("../../store/job-state-store.js", () => ({
   JobStateStore: {
     list: vi.fn().mockResolvedValue([]),
+    listWithSourceDirs: vi.fn().mockResolvedValue([]),
     resolveId: vi.fn(),
   },
 }));
@@ -53,6 +54,7 @@ import { stderrWrite } from "../../logger/stdout.js";
 
 const mockDetect = detectSpecrunnerWorktree as ReturnType<typeof vi.fn>;
 const mockList = JobStateStore.list as ReturnType<typeof vi.fn>;
+const mockListWithSourceDirs = JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>;
 const mockStderrWrite = stderrWrite as ReturnType<typeof vi.fn>;
 
 // ---------------------------------------------------------------------------
@@ -97,9 +99,9 @@ describe("worktree cwd guard fires (isSpecrunnerWorktree: true)", () => {
     expect(code).toBe(2);
   });
 
-  it("runJobStats does not call JobStateStore.list", async () => {
+  it("runJobStats does not call JobStateStore.listWithSourceDirs", async () => {
     await runJobStats({ cwd: process.cwd(), json: false });
-    expect(mockList).not.toHaveBeenCalled();
+    expect(mockListWithSourceDirs).not.toHaveBeenCalled();
   });
 
   it("runJobStats writes main checkout path to stderr", async () => {
