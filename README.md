@@ -4,11 +4,33 @@
 
 ## Quick Start
 
-```bash
-# Install
-npm install -D @color4pen/specrunner
+### Unattended Loop (Recommended)
 
-# Set up
+```bash
+# 1. Install & set up
+npm install -D @color4pen/specrunner
+npx specrunner init
+npx specrunner login
+
+# 2. Write your request as a GitHub issue
+#    Run `npx specrunner request template` to see the required format
+#    Issue body must follow the request.md format
+
+# 3. Apply the approval label to the issue (default: specrunner-approved)
+
+# 4. Start the inbox — run on a schedule via cron or GitHub Actions
+npx specrunner inbox run
+
+# 5. When a job escalates, reply with a /resume comment in the issue
+#    /resume <instructions>  → picked up on the next inbox run
+```
+
+For scheduler setup (crontab / GitHub Actions), see [docs/operations.md](docs/operations.md).
+
+### Alternative: Attended Flow (small-scale / one-shot)
+
+```bash
+npm install -D @color4pen/specrunner
 npx specrunner init
 npx specrunner login
 
@@ -21,7 +43,7 @@ npx specrunner run my-feature
 npx specrunner job archive --with-merge my-feature
 ```
 
-When a job escalates (ambiguous request, unresolvable findings, unfixable build), its state is preserved:
+When a job escalates (ambiguous request, unresolvable findings, unfixable build), its state is preserved — resume it directly:
 
 ```bash
 specrunner job resume my-feature
