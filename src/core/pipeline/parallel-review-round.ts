@@ -135,7 +135,7 @@ export class ParallelReviewRound {
     const now = new Date().toISOString();
     let aggregateVerdictResult: "approved" | "needs-fix" | "escalation";
     // Member results for commitRound (empty for fast path)
-    let members: Array<{ step: Step; startedAt: string; result: StepExecutionResult }> = [];
+    const members: Array<{ step: Step; startedAt: string; result: StepExecutionResult }> = [];
     // Round error (set when git effects detect non-declared changes)
     let roundError: ErrorInfo | null = null;
 

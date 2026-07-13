@@ -19,8 +19,6 @@ import { StepExecutor } from "../executor.js";
 import type { AgentStep } from "../../port/step-types.js";
 import type { PipelineDeps } from "../../types.js";
 import type { JobState } from "../../../state/schema.js";
-import type { StepExecutionResult } from "../commit-orchestrator.js";
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

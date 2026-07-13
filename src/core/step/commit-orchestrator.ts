@@ -398,7 +398,7 @@ export class CommitOrchestrator {
 
     for (const { step, startedAt, result } of members) {
       if (result.kind === "success") {
-        const { completion, completedAt, session, modelUsage, followUpAttempts, transientRetryAttempts, completionReportDiagnostics } = result;
+        const { completion, completedAt, session, modelUsage: _modelUsage, followUpAttempts, transientRetryAttempts, completionReportDiagnostics } = result;
         const { verdict, persistToolResult } = completion;
         const findingsPath = step.resultFilePath(base, deps);
 
