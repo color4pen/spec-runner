@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "db8b056a-7479-40bf-929b-d6c3c90b23d7",
   "createdAt": "2026-07-13T20:03:50.282Z",
-  "updatedAt": "2026-07-13T21:04:31.229Z",
+  "updatedAt": "2026-07-13T21:11:13.530Z",
   "request": {
     "title": "並列 round の git 副作用を coordinator が round 単位で所有する（scoped staging・非宣言変更 halt）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "scale-tolerance",
   "status": "running",
   "branch": "change/round-owned-git-effects-db8b056a",
   "error": null,
@@ -49,7 +49,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 41,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -57,7 +57,9 @@
       "test-case-gen": 1,
       "implementer": 1,
       "verification": 3,
-      "build-fixer": 2
+      "build-fixer": 2,
+      "code-review": 1,
+      "scale-tolerance": 1
     }
   }
 }
