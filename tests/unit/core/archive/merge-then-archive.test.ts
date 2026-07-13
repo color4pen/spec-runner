@@ -31,13 +31,17 @@ import type { GitHubClient, CheckRollup } from "../../../../src/core/port/github
 
 vi.mock("../../../../src/store/job-state-store.js", () => ({
   JobStateStore: {
-    list: vi.fn(),
+    listWithSourceDirs: vi.fn(),
   },
 }));
 
 vi.mock("../../../../src/core/archive/orchestrator.js", () => ({
   runArchiveOrchestrator: vi.fn().mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" }),
   resolveWorktreePathForArchive: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock("../../../../src/core/finish/job-state-update.js", () => ({
+  markJobArchived: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../../../../src/core/archive/post-merge-cleanup.js", () => ({
@@ -102,6 +106,26 @@ function makeJobState(prNumber = 42, overrides: Record<string, unknown> = {}) {
 
 const CWD = "/tmp/repo";
 const SLUG = "my-slug";
+
+/**
+ * Wrap a state into a ListedJobEntry with active (non-archive) sourceChangeDir.
+ * archiveRecorded = basename(dirname(sourceChangeDir)) === "archive"
+ *                 = basename("/tmp/repo/specrunner/changes") === "archive"
+ *                 = "changes" === "archive" → false
+ */
+function makeActiveEntry(state: ReturnType<typeof makeJobState>) {
+  return { state, sourceChangeDir: `${CWD}/specrunner/changes/${SLUG}` };
+}
+
+/**
+ * Wrap a state into a ListedJobEntry with archive sourceChangeDir.
+ * archiveRecorded = basename(dirname(sourceChangeDir)) === "archive"
+ *                 = basename("/tmp/repo/specrunner/changes/archive") === "archive"
+ *                 = "archive" === "archive" → true
+ */
+function makeArchiveEntry(state: ReturnType<typeof makeJobState>) {
+  return { state, sourceChangeDir: `${CWD}/specrunner/changes/archive/2026-01-01-${SLUG}` };
+}
 const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
 const fsMock = {
   exists: vi.fn().mockResolvedValue(true),
@@ -128,11 +152,12 @@ afterEach(() => {
 // TC-014: PR が既に MERGED + status=archived → 記帳済みの resume として cleanup のみ実行
 // ---------------------------------------------------------------------------
 
-describe("TC-014: PR が既に MERGED かつ status=archived は cleanup のみ実行（記帳済み resume）", () => {
+describe("TC-014: PR が既に MERGED かつ archive 記録済み（archive/ 配下）は cleanup のみ実行（crash resume）", () => {
   it("記帳(runArchiveOrchestrator)と mergePullRequest を呼ばず、runPostMergeCleanup を呼ぶ", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    // status=archived: archive rode the PR before it merged; this is a cleanup-only resume.
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42, { status: "archived" })]);
+    // archive-recorded: change folder is in archive/ dir (archiveRecorded = true).
+    // This is the crash-resume path: archive rode the PR before it merged.
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeArchiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: undefined });
@@ -174,11 +199,11 @@ describe("TC-014: PR が既に MERGED かつ status=archived は cleanup のみ�
 // TC-MTA-MERGED-NOT-ARCHIVED: PR merged but status != archived → エラー（順序ミス）
 // ---------------------------------------------------------------------------
 
-describe("TC-MTA-MERGED-NOT-ARCHIVED: マージ済みだが未 archive はエラーで返す", () => {
-  it("status=awaiting-archive + PR merged → exitCode 1、記帳も cleanup も merge も呼ばない", async () => {
+describe("TC-MTA-MERGED-NOT-ARCHIVED: マージ済みだが archive 未記録（active 配下）はエラーで返す", () => {
+  it("active sourceChangeDir + PR merged → exitCode 1、記帳も cleanup も merge も呼ばない", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    // Merged before archiving: archive never recorded (status still awaiting-archive).
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42, { status: "awaiting-archive" })]);
+    // Merged before archiving: archive never recorded (sourceChangeDir is in active location).
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: undefined });
@@ -226,7 +251,7 @@ describe("TC-MTA-MERGED-NOT-ARCHIVED: マージ済みだが未 archive はエラ
 describe("TC-MTA-001: all checks success → merge → cleanup", () => {
   it("getCheckStatus success → merge → runPostMergeCleanup", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -276,7 +301,7 @@ describe("TC-MTA-001: all checks success → merge → cleanup", () => {
 describe("TC-MTA-002: check state 'none' → grace 後に merge → cleanup", () => {
   it("none が続いても grace 期間経過後に merge へ進む（初回 none では即 merge しない）", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -333,7 +358,7 @@ describe("TC-MTA-002: check state 'none' → grace 後に merge → cleanup", ()
 describe("TC-MTA-003: check pending → success → merge → cleanup", () => {
   it("waits on pending, then merges when success", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -389,7 +414,7 @@ describe("TC-MTA-003: check pending → success → merge → cleanup", () => {
 describe("TC-MTA-004: check failure → escalation", () => {
   it("getCheckStatus failure → exitCode 1, merge/cleanup not called", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -439,7 +464,7 @@ describe("TC-MTA-004: check failure → escalation", () => {
 describe("TC-MTA-005: pending timeout → escalation", () => {
   it("pending exceeds waitTimeoutMs → exitCode 1, merge/cleanup not called", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -497,7 +522,7 @@ describe("TC-MTA-005: pending timeout → escalation", () => {
 describe("TC-MTA-006: DIRTY → conflict escalation", () => {
   it("mergeStateStatus DIRTY → exitCode 1, merge/cleanup not called", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -544,7 +569,7 @@ describe("TC-MTA-006: DIRTY → conflict escalation", () => {
 describe("TC-MTA-007: mergeable CONFLICTING → escalation", () => {
   it("mergeable CONFLICTING → exitCode 1, merge/cleanup not called", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -589,7 +614,7 @@ describe("TC-MTA-007: mergeable CONFLICTING → escalation", () => {
 describe("TC-MTA-008: persistent BLOCKED + success rollup → branch-protection escalation", () => {
   it("mergeStateStatus BLOCKED + success rollup → exitCode 1 branch-protection escalation, merge/cleanup not called", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -654,7 +679,7 @@ describe("TC-MTA-008: persistent BLOCKED + success rollup → branch-protection 
 describe("TC-MTA-BLOCKED-PENDING-THEN-MERGE: BLOCKED+pending does not escalate; merges after checks pass", () => {
   it("poll 1 BLOCKED+pending → sleep; poll 2 CLEAN+success → mergePullRequest called, cleanup runs", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -726,7 +751,7 @@ describe("TC-MTA-BLOCKED-PENDING-THEN-MERGE: BLOCKED+pending does not escalate; 
 describe("TC-MTA-BLOCKED-NONE-EXHAUSTED: persistent BLOCKED + no checks after grace → branch-protection escalation", () => {
   it("BLOCKED + none rollup until grace exhausted → exitCode 1 branch-protection escalation, merge not called", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -783,7 +808,7 @@ describe("TC-MTA-BLOCKED-NONE-EXHAUSTED: persistent BLOCKED + no checks after gr
 describe("TC-MTA-UNKNOWN-REACHES-MERGE: mergeable UNKNOWN with green checks proceeds to mergePullRequest", () => {
   it("mergeable UNKNOWN + mergeStateStatus CLEAN + success rollup → mergePullRequest called without mergeable-gate escalation", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -832,7 +857,7 @@ describe("TC-MTA-UNKNOWN-REACHES-MERGE: mergeable UNKNOWN with green checks proc
 describe("TC-MTA-MERGE-FAIL-CONFLICT: mergePullRequest conflict message → squash merge (conflict) escalation", () => {
   it("{ merged: false, message: 'Merge conflict detected' } → exitCode 1 conflict escalation, cleanup not called", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -879,7 +904,7 @@ describe("TC-MTA-MERGE-FAIL-CONFLICT: mergePullRequest conflict message → squa
 describe("TC-MTA-MERGE-FAIL-CHECKS: mergePullRequest checks-failed message → squash merge (required checks failed) escalation", () => {
   it('{ merged: false, message: \'required status check "ci/build" has failed\' } → exitCode 1 checks-failed escalation', async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -929,7 +954,7 @@ describe("TC-MTA-MERGE-FAIL-CHECKS: mergePullRequest checks-failed message → s
 describe("TC-MTA-MERGE-FAIL-OTHER: mergePullRequest unclassified message → generic squash merge (REST API) escalation", () => {
   it("{ merged: false, message: 'repository rule violations found' } → exitCode 1 generic escalation with resume command", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -980,7 +1005,7 @@ describe("TC-MTA-MERGE-FAIL-OTHER: mergePullRequest unclassified message → gen
 describe("TC-MTA-009: headSha missing → escalation", () => {
   it("PR returned without headSha → exitCode 1 with 'head SHA missing' message", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1027,7 +1052,7 @@ describe("TC-MTA-009: headSha missing → escalation", () => {
 describe("TC-MTA-010: waitTimeoutMs null → unlimited wait", () => {
   it("null timeout does not trigger timeout escalation even after elapsed time", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1085,7 +1110,7 @@ describe("TC-MTA-010: waitTimeoutMs null → unlimited wait", () => {
 describe("TC-MTA-011: none → pending → success (grace 内に check 出現)", () => {
   it("check が grace 内に出現したら既存の pending→success ループに合流して merge する", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1143,7 +1168,7 @@ describe("TC-MTA-011: none → pending → success (grace 内に check 出現)",
 describe("TC-MTA-012: none → failure (grace 内に check 出現 → failure escalation)", () => {
   it("grace 内に failure check が出現したら merge せず escalation で終了する", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1201,7 +1226,7 @@ describe("TC-MTA-012: none → failure (grace 内に check 出現 → failure es
 describe("TC-MTA-013: waitTimeoutMs null + 常に none → grace 後に merge（bounded）", () => {
   it("無制限 timeout でも grace 経過後に merge へ進み永久 hang しない", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1259,7 +1284,7 @@ describe("TC-MTA-ARCHIVE-SHA: archiveSha tracking in wait loop", () => {
     const OLD_HEAD_SHA = "old-head-sha-before-archive";
 
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: ARCHIVE_SHA });
@@ -1331,7 +1356,7 @@ describe("TC-MTA-ARCHIVE-SHA: archiveSha tracking in wait loop", () => {
     const OLD_HEAD_SHA = "head-that-never-reflects-archive";
 
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: ARCHIVE_SHA });
@@ -1384,7 +1409,7 @@ describe("TC-MTA-ARCHIVE-SHA: archiveSha tracking in wait loop", () => {
 describe("TC-MTA-CLEANUP-ONLY-MERGED: wait loop 中に MERGED → cleanup のみ実行", () => {
   it("wait loop 中に PR が MERGED になったら cleanup のみ実行し merge は呼ばない", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1439,7 +1464,7 @@ describe("TC-MTA-CLEANUP-ONLY-MERGED: wait loop 中に MERGED → cleanup のみ
 describe("TC-MTA-CLEANUP-POST-MERGE: merge 成功後にのみ cleanup が呼ばれ、失敗時は呼ばれない", () => {
   it("mergePullRequest throws → cleanup NOT called", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1526,7 +1551,7 @@ describe("TC-MTA-STATUS-NO-WRITE: post-merge cleanup は job status を書き換
 describe("TC-PPG-001: protected-path match → escalation, merge/cleanup not called", () => {
   it("blocks merge when a changed file matches a protected path", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1579,7 +1604,7 @@ describe("TC-PPG-001: protected-path match → escalation, merge/cleanup not cal
 describe("TC-PPG-002: truncated file list + non-empty patterns → escalation", () => {
   it("blocks merge when file list is truncated and patterns are configured", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1631,7 +1656,7 @@ describe("TC-PPG-002: truncated file list + non-empty patterns → escalation", 
 describe("TC-PPG-003: no protected-path match → merge proceeds normally", () => {
   it("merges normally when changed files do not match any protected pattern", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1682,7 +1707,7 @@ describe("TC-PPG-003: no protected-path match → merge proceeds normally", () =
 describe("TC-PPG-004: empty/undefined protectedPaths → listPullRequestFiles not called", () => {
   it("skips guard when protectedPaths is undefined", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1721,7 +1746,7 @@ describe("TC-PPG-004: empty/undefined protectedPaths → listPullRequestFiles no
 
   it("skips guard when protectedPaths is an empty array", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1761,13 +1786,13 @@ describe("TC-PPG-004: empty/undefined protectedPaths → listPullRequestFiles no
 });
 
 // ---------------------------------------------------------------------------
-// TC-MTA-E01: Step 1 — JobStateStore.list throws → exitCode 2
+// TC-MTA-E01: Step 1 — JobStateStore.listWithSourceDirs throws → exitCode 2
 // ---------------------------------------------------------------------------
 
-describe("TC-MTA-E01: JobStateStore.list throws → exitCode 2", () => {
-  it("list() throws → exitCode 2 with error message", async () => {
+describe("TC-MTA-E01: JobStateStore.listWithSourceDirs throws → exitCode 2", () => {
+  it("listWithSourceDirs() throws → exitCode 2 with error message", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("disk read error"));
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("disk read error"));
 
     const client = makeGitHubClient();
     const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
@@ -1799,7 +1824,7 @@ describe("TC-MTA-E01: JobStateStore.list throws → exitCode 2", () => {
 describe("TC-MTA-E02: initial getPullRequest throws → exitCode 1 escalation", () => {
   it("getPullRequest throws before recording → exitCode 1, 'PR status check', recording NOT called", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1837,7 +1862,7 @@ describe("TC-MTA-E02: initial getPullRequest throws → exitCode 1 escalation", 
 describe("TC-MTA-E03: mergePullRequest throws → exitCode 1 escalation", () => {
   it("mergePullRequest throws → exitCode 1, failedStep contains 'squash merge (REST API)'", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1887,7 +1912,7 @@ describe("TC-MTA-E03: mergePullRequest throws → exitCode 1 escalation", () => 
 describe("TC-MTA-E04: mergePullRequest returns merged: false → exitCode 1 escalation", () => {
   it("mergePullRequest returns {merged: false} → exitCode 1, failedStep contains 'squash merge (REST API)'", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42)]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: "archive-sha-001" });
@@ -1934,10 +1959,11 @@ describe("TC-MTA-E04: mergePullRequest returns merged: false → exitCode 1 esca
 // TC-PPG-005: Already-MERGED PR → protected-path guard skipped
 // ---------------------------------------------------------------------------
 
-describe("TC-PPG-005: already-MERGED PR → protected-path guard skipped", () => {
-  it("skips guard and runs cleanup directly when PR is already MERGED", async () => {
+describe("TC-PPG-005: already-MERGED PR and archive-recorded → protected-path guard skipped", () => {
+  it("skips guard and runs cleanup directly when archive-recorded + PR is already MERGED", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42, { status: "archived" })]);
+    // archive-recorded (sourceChangeDir in archive/) + MERGED → cleanup-only path; guard skipped.
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeArchiveEntry(makeJobState(42))]);
 
     const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
     (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: undefined });
@@ -1985,7 +2011,7 @@ describe("TC-MTA-WORKTREE-FALLBACK: resolveWorktreePathForArchive フォール�
 
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     // worktreePath is absent from state (local job — not written to state)
-    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([makeJobState(42, { worktreePath: null })]);
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([makeActiveEntry(makeJobState(42, { worktreePath: null }))]);
 
     const { runArchiveOrchestrator, resolveWorktreePathForArchive } = await import(
       "../../../../src/core/archive/orchestrator.js"

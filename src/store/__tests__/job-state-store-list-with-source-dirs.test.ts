@@ -137,3 +137,144 @@ describe("JobStateStore.listWithSourceDirs", () => {
     expect(matching[0]!.sourceChangeDir).toBe(path.join(tmpDir, "specrunner", "changes", slug));
   });
 });
+
+// ---------------------------------------------------------------------------
+// Worktree archive walk tests (T-04 / TC-003, TC-012, TC-013)
+// ---------------------------------------------------------------------------
+
+describe("JobStateStore.listWithSourceDirs — worktree archive walk (section 2b)", () => {
+  let tmpDir: string | undefined;
+
+  afterEach(async () => {
+    if (tmpDir) {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+      tmpDir = undefined;
+    }
+  });
+
+  /**
+   * TC-003: worktree archive/ entry is discovered when includeArchived: true.
+   * After archive-record, the change folder lives in the worktree archive/ dir
+   * (status still awaiting-archive — deferred transition).
+   * listWithSourceDirs must find this entry and set sourceChangeDir to the worktree archive dir.
+   */
+  it("TC-003: worktree archive dir discovered with includeArchived: true; sourceChangeDir points to worktree archive", async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "store-wt-archive-003-"));
+
+    const slug = "my-feature";
+    const datedSlug = "2026-07-01-my-feature";
+    const jobId = "dddddddd-0000-0000-0000-000000000004";
+    const worktreeName = `my-feature-${jobId.slice(0, 8)}`;
+
+    // Create worktree archive structure:
+    // <repoRoot>/.git/specrunner-worktrees/<wt>/specrunner/changes/archive/<dated-slug>/state.json
+    const worktreeArchiveDir = path.join(
+      tmpDir,
+      ".git",
+      "specrunner-worktrees",
+      worktreeName,
+      "specrunner",
+      "changes",
+      "archive",
+      datedSlug,
+    );
+    await fs.mkdir(worktreeArchiveDir, { recursive: true });
+    await fs.writeFile(
+      path.join(worktreeArchiveDir, "state.json"),
+      makeMinimalStateJson({ jobId, slug, status: "awaiting-archive" }),
+    );
+
+    const entries = await JobStateStore.listWithSourceDirs(tmpDir, { includeArchived: true });
+
+    const entry = entries.find((e) => e.state.jobId === jobId);
+    expect(entry).toBeDefined();
+    // sourceChangeDir must point to the worktree archive dated dir
+    expect(entry!.sourceChangeDir).toBe(worktreeArchiveDir);
+    // Status is still awaiting-archive (deferred transition)
+    expect(entry!.state.status).toBe("awaiting-archive");
+  });
+
+  /**
+   * TC-012: worktree archive/ entry is NOT discovered when includeArchived: false.
+   * The walk is gated by includeArchived — callers that do not need archived state
+   * (cancel / inbox / default ps) must not pay the scan cost or see archive entries.
+   */
+  it("TC-012: worktree archive dir NOT discovered with includeArchived: false", async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "store-wt-archive-012-"));
+
+    const slug = "my-feature-2";
+    const datedSlug = "2026-07-01-my-feature-2";
+    const jobId = "eeeeeeee-0000-0000-0000-000000000005";
+    const worktreeName = `my-feature-2-${jobId.slice(0, 8)}`;
+
+    const worktreeArchiveDir = path.join(
+      tmpDir,
+      ".git",
+      "specrunner-worktrees",
+      worktreeName,
+      "specrunner",
+      "changes",
+      "archive",
+      datedSlug,
+    );
+    await fs.mkdir(worktreeArchiveDir, { recursive: true });
+    await fs.writeFile(
+      path.join(worktreeArchiveDir, "state.json"),
+      makeMinimalStateJson({ jobId, slug, status: "awaiting-archive" }),
+    );
+
+    // includeArchived: false — worktree archive must not be discovered
+    const entries = await JobStateStore.listWithSourceDirs(tmpDir, { includeArchived: false });
+
+    const entry = entries.find((e) => e.state.jobId === jobId);
+    expect(entry).toBeUndefined();
+  });
+
+  /**
+   * TC-013: same jobId in main checkout archive and worktree archive → newest updatedAt wins.
+   * Dedup must handle cross-section collisions correctly (section 1b vs section 2b).
+   */
+  it("TC-013: same jobId in main archive and worktree archive — newer updatedAt wins", async () => {
+    tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "store-wt-archive-013-"));
+
+    const slug = "shared-feature";
+    const datedSlug = "2026-07-01-shared-feature";
+    const jobId = "ffffffff-0000-0000-0000-000000000006";
+    const worktreeName = `shared-feature-${jobId.slice(0, 8)}`;
+
+    // Main checkout archive — older entry
+    const mainArchiveDir = path.join(tmpDir, "specrunner", "changes", "archive", datedSlug);
+    await fs.mkdir(mainArchiveDir, { recursive: true });
+    await fs.writeFile(
+      path.join(mainArchiveDir, "state.json"),
+      makeMinimalStateJson({ jobId, slug, updatedAt: "2026-07-01T08:00:00.000Z", status: "archived" }),
+    );
+
+    // Worktree archive — newer entry (awaiting-archive, deferred transition)
+    const worktreeArchiveDir = path.join(
+      tmpDir,
+      ".git",
+      "specrunner-worktrees",
+      worktreeName,
+      "specrunner",
+      "changes",
+      "archive",
+      datedSlug,
+    );
+    await fs.mkdir(worktreeArchiveDir, { recursive: true });
+    await fs.writeFile(
+      path.join(worktreeArchiveDir, "state.json"),
+      makeMinimalStateJson({ jobId, slug, updatedAt: "2026-07-01T12:00:00.000Z", status: "awaiting-archive" }),
+    );
+
+    const entries = await JobStateStore.listWithSourceDirs(tmpDir, { includeArchived: true });
+
+    // Only one entry for this jobId
+    const matching = entries.filter((e) => e.state.jobId === jobId);
+    expect(matching).toHaveLength(1);
+
+    // The newer worktree archive entry wins
+    expect(matching[0]!.sourceChangeDir).toBe(worktreeArchiveDir);
+    expect(matching[0]!.state.status).toBe("awaiting-archive");
+  });
+});

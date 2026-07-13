@@ -53,6 +53,13 @@ export interface ArchiveInput {
    * When absent or disabled, the hook is a no-op.
    */
   designLayer?: ResolvedDesignLayer;
+  /**
+   * When true, skip the `markJobArchived` call (awaiting-archive → archived transition).
+   * Used by the --with-merge path so that status stays at awaiting-archive (re-solvable)
+   * until after the PR is merged. The caller is responsible for calling markJobArchived
+   * post-merge. Default: false (plain `job archive` transitions at record time).
+   */
+  deferArchivedTransition?: boolean;
 }
 
 export type ArchiveResult =
@@ -248,21 +255,24 @@ export async function runArchiveOrchestrator(
     }
     if (!archiveResult.skipped) stdoutWrite(archiveResult.message);
 
-    // Mark job archived (D1/D2/D3): resolve slug canonical state dir and transition to archived
-    try {
-      await markJobArchived(slug, recordDir);
-      stdoutWrite(`Job ${slug} marked as archived.`);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      return {
-        exitCode: 1,
-        escalation: formatEscalation({
-          failedStep: "Phase 1 (markJobArchived)",
-          detectedState: message,
-          recommendedAction: `Re-run: specrunner job archive ${slug}`,
-          resumeCommand: `specrunner job archive ${slug}`,
-        }),
-      };
+    // Mark job archived: transition awaiting-archive → archived.
+    // Skipped when deferArchivedTransition is true (--with-merge path defers until post-merge).
+    if (!input.deferArchivedTransition) {
+      try {
+        await markJobArchived(slug, recordDir);
+        stdoutWrite(`Job ${slug} marked as archived.`);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "Phase 1 (markJobArchived)",
+            detectedState: message,
+            recommendedAction: `Re-run: specrunner job archive ${slug}`,
+            resumeCommand: `specrunner job archive ${slug}`,
+          }),
+        };
+      }
     }
 
     // Delete draft folder for this slug (best-effort; archive continues even if this fails)

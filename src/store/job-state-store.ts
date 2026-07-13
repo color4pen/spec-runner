@@ -319,6 +319,49 @@ export class JobStateStore {
       if (code !== "ENOENT") throw err;
     }
 
+    // 2b. Archived states in local worktrees (.git/specrunner-worktrees/*/specrunner/changes/archive/*/state.json)
+    // Symmetric with section 1b: only scanned when opts.includeArchived === true.
+    // This is the key section that makes --with-merge recovery work: after archive-record, the
+    // change folder lives in the worktree archive/ dir (status still awaiting-archive), and this
+    // scan makes it findable so `archive --with-merge` can re-resolve it after a merge failure.
+    if (opts?.includeArchived === true) {
+      // Reuse the worktrees dir already computed above (path unchanged)
+      const worktreesDirForArchive = path.join(repoRoot, ".git", "specrunner-worktrees");
+      try {
+        const worktreeDirsForArchive = await fs.readdir(worktreesDirForArchive, { withFileTypes: true });
+        for (const worktreeEntry of worktreeDirsForArchive) {
+          if (!worktreeEntry.isDirectory()) continue;
+          const worktreePath = path.join(worktreesDirForArchive, worktreeEntry.name);
+          const archiveInWorktree = path.join(worktreePath, "specrunner", "changes", "archive");
+          try {
+            const archiveEntries = await fs.readdir(archiveInWorktree, { withFileTypes: true });
+            for (const archiveEntry of archiveEntries) {
+              if (!archiveEntry.isDirectory()) continue;
+              const datedSlug = archiveEntry.name;
+              const { slug: archiveSlug } = parseArchiveDirName(datedSlug);
+              const stateJsonPath = path.join(archiveInWorktree, datedSlug, "state.json");
+              const eventsPath = path.join(archiveInWorktree, datedSlug, "events.jsonl");
+              const sourceChangeDir = path.join(archiveInWorktree, datedSlug);
+              try {
+                const { state } = await composeSplitLayout(stateJsonPath, eventsPath, {
+                  slug: archiveSlug,
+                  stateRoot: worktreePath,
+                });
+                tryMerge(state, sourceChangeDir);
+              } catch {
+                // Skip malformed worktree archive state
+              }
+            }
+          } catch {
+            // Worktree has no archive dir — skip
+          }
+        }
+      } catch (err: unknown) {
+        const code = (err as NodeJS.ErrnoException).code;
+        if (code !== "ENOENT") throw err;
+      }
+    }
+
     // 3. Sidecar supplement (D2): for local entries not yet in entryMap, try worktreePath slug dir.
     // Sections 1/1b/2 cover main-checkout active, archived, and standard worktrees.
     // This supplement adds coverage for non-standard worktree paths and future edge cases.

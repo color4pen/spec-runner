@@ -21,6 +21,7 @@
  * 6. squash merge via mergePullRequest (final mergeability decided by merge endpoint)
  * 7. merge success → runPostMergeCleanup → done
  */
+import * as nodePath from "node:path";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";
 import type { GitHubClient } from "../port/github-client.js";
@@ -33,9 +34,10 @@ import type { ArchiveResult } from "./orchestrator.js";
 import { runPostMergeCleanup } from "./post-merge-cleanup.js";
 import { runPostMergeIntegrityCheck } from "./post-merge-integrity.js";
 import { formatEscalation } from "../finish/escalation.js";
-import { logResult } from "../../logger/stdout.js";
+import { logResult, stderrWrite } from "../../logger/stdout.js";
 import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS } from "../../config/schema.js";
 import { evaluateProtectedPaths } from "./protected-paths.js";
+import { markJobArchived } from "../finish/job-state-update.js";
 
 /**
  * Grace period (ms) to wait for the first check run to appear after a push.
@@ -143,18 +145,21 @@ export async function runMergeThenArchive(
   let branch: string | null;
   let worktreePath: string | null;
   let noWorktree = false;
-  let jobStatus: string;
+  /** True when the change folder has been moved to archive/ (on any checkout or worktree). */
+  let archiveRecorded = false;
+  /** Working tree where the archive-record commit was (or will be) made. */
+  let recordDir: string;
 
   try {
-    const allStates = await JobStateStore.list(cwd, { includeArchived: true });
-    const matching = allStates.filter((s) => getJobSlug(s) === slug);
+    const allEntries = await JobStateStore.listWithSourceDirs(cwd, { includeArchived: true });
+    const matching = allEntries.filter((e) => getJobSlug(e.state) === slug);
 
     if (matching.length === 0) {
       return { exitCode: 2, message: `No job found with slug '${slug}'. Run 'specrunner ps' to see available jobs.` };
     }
 
-    matching.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
-    const state = matching[0]!;
+    matching.sort((a, b) => new Date(b.state.updatedAt).getTime() - new Date(a.state.updatedAt).getTime());
+    const { state, sourceChangeDir } = matching[0]!;
 
     if (!state.pullRequest?.number) {
       return {
@@ -167,7 +172,14 @@ export async function runMergeThenArchive(
     branch = state.branch;
     worktreePath = await resolveWorktreePathForArchive(state, cwd);
     noWorktree = state.noWorktree === true;
-    jobStatus = state.status;
+
+    // D2: "archive recorded" signal — change folder is in archive/ if dirname basename === "archive".
+    // e.g. ".../specrunner/changes/archive/2026-01-01-slug" → dirname "archive"
+    // e.g. ".../specrunner/changes/slug" → dirname "changes"
+    archiveRecorded = nodePath.basename(nodePath.dirname(sourceChangeDir)) === "archive";
+
+    // D3: recordDir — the working tree where the archive-record commit was/will be made.
+    recordDir = noWorktree ? cwd : (worktreePath ?? cwd);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return { exitCode: 2, message };
@@ -177,11 +189,13 @@ export async function runMergeThenArchive(
   // Step 2: Initial PR status check (BEFORE recording).
   // When --with-merge is set, the merge state must be confirmed first. The
   // handling of an already-merged PR depends on whether the archive was recorded:
-  //   - status === "archived": archive rode the PR before it merged; this is a
-  //     resume (e.g. crash after merge, before cleanup) → run post-merge cleanup.
-  //   - otherwise: the PR was merged BEFORE the archive was recorded, so the
-  //     change folder is stuck at its active location on the base branch and
-  //     cannot be relocated without a direct base commit → escalate (order error).
+  //   - archiveRecorded (change folder in archive/ dir): archive rode the PR before
+  //     it merged; this is a resume (e.g. crash after merge, before cleanup) →
+  //     transition status to archived + run post-merge cleanup.
+  //   - !archiveRecorded (change folder still at active location): the PR was merged
+  //     BEFORE the archive was recorded, so the change folder is stuck at its active
+  //     location on the base branch and cannot be relocated without a direct base
+  //     commit → escalate (order error).
   // ---------------------------------------------------------------------------
   let prData: { state: string; mergeStateStatus?: string; mergeable?: string; headSha?: string };
   try {
@@ -200,9 +214,10 @@ export async function runMergeThenArchive(
   }
 
   if (prData.state === "MERGED") {
-    if (jobStatus === "archived") {
+    if (archiveRecorded) {
       // Archive was recorded before the merge → finish the (interrupted) cleanup.
       stdoutWrite(`PR #${prNumber} already merged and archive recorded. Running post-merge cleanup...`);
+      await performPostMergeTransition(slug, recordDir, stdoutWrite);
       await runPostMergeCleanup(
         { slug, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
         stdoutWrite,
@@ -214,7 +229,10 @@ export async function runMergeThenArchive(
       exitCode: 1,
       escalation: formatEscalation({
         failedStep: "merge gate (PR merged before archive)",
-        detectedState: `PR #${prNumber} is already merged but the archive was not recorded first (status=${jobStatus}). The archive folder move rides the PR, so archiving must happen before the PR is merged.`,
+        detectedState:
+          `PR #${prNumber} is already merged but the archive was not recorded first ` +
+          `(change folder is still at active location). The archive folder move rides the PR, ` +
+          `so archiving must happen before the PR is merged.`,
         recommendedAction: `Archive before merging. The change folder for '${slug}' remains at its active location on ${resolvedBaseBranch} and can only be relocated by a direct ${resolvedBaseBranch} commit (which job archive does not perform).`,
         resumeCommand: `specrunner job archive --with-merge ${slug}`,
       }),
@@ -227,7 +245,7 @@ export async function runMergeThenArchive(
   stdoutWrite(`Recording archive on feature branch...`);
 
   const archiveRecordResult = await runArchiveOrchestrator(
-    { slug, cwd, spawn, fs, baseBranch: resolvedBaseBranch, githubToken, designLayer },
+    { slug, cwd, spawn, fs, baseBranch: resolvedBaseBranch, githubToken, designLayer, deferArchivedTransition: true },
     stdoutWrite,
   );
 
@@ -333,6 +351,7 @@ export async function runMergeThenArchive(
     // Already merged (e.g. merged by another process during wait)
     if (prData.state === "MERGED") {
       stdoutWrite(`PR #${prNumber} merged during wait. Running post-merge cleanup...`);
+      await performPostMergeTransition(slug, recordDir, stdoutWrite);
       await runPostMergeCleanup(
         { slug, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
         stdoutWrite,
@@ -590,8 +609,9 @@ export async function runMergeThenArchive(
   }
 
   // ---------------------------------------------------------------------------
-  // Step 6: Post-merge cleanup (worktree teardown + branch delete)
+  // Step 6: Transition to archived + post-merge cleanup (worktree teardown + branch delete)
   // ---------------------------------------------------------------------------
+  await performPostMergeTransition(slug, recordDir, stdoutWrite);
   await runPostMergeCleanup(
     { slug, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
     stdoutWrite,
@@ -602,6 +622,26 @@ export async function runMergeThenArchive(
 
 function defaultSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Best-effort post-merge status transition: awaiting-archive → archived.
+ * Called immediately before runPostMergeCleanup on every merge-success path.
+ * Idempotent (already archived → no-op). Failures emit a warning but do not
+ * abort the caller — the merge is already done and cleanup must proceed.
+ */
+async function performPostMergeTransition(
+  slug: string,
+  recordDir: string,
+  stdoutWrite: (msg: string) => void,
+): Promise<void> {
+  try {
+    await markJobArchived(slug, recordDir);
+    stdoutWrite(`Job ${slug} marked as archived.`);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    stderrWrite(`Warning: failed to transition ${slug} to archived: ${message}. Continuing cleanup.`);
+  }
 }
 
 /**
