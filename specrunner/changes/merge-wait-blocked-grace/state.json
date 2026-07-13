@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a197fafc-5b68-4fd3-ab0d-260f440ec559",
   "createdAt": "2026-07-13T11:10:46.325Z",
-  "updatedAt": "2026-07-13T11:48:21.999Z",
+  "updatedAt": "2026-07-13T11:48:48.440Z",
   "request": {
     "title": "archive --with-merge の merge-wait が transient BLOCKED で誤 escalation するのを修正",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/merge-wait-blocked-grace-a197fafc",
   "error": null,
   "pipelineId": "standard",
@@ -77,8 +77,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/790",
+    "number": 790,
+    "createdAt": "2026-07-13T11:48:47.818Z"
+  },
   "_journal": {
-    "historyCount": 52,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -91,7 +96,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 2
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
