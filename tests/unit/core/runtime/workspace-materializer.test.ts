@@ -4,21 +4,24 @@
  * TC-WM-001: All five DU variants of WorktreeMaterializationPlan are constructable.
  * TC-WM-002: "new-run" variant accepts an optional branchName.
  *
- * Note: workspace-materializer.ts is a type-only module. The namespace import
- * ensures the module is loaded by the test runner and appears in coverage reports.
+ * Note: workspace-materializer.ts is a type-only module. The bare import below
+ * ensures the module is loaded at runtime (side-effect import survives esbuild
+ * tree-shaking) so it appears in v8 coverage reports.
  */
+// Side-effect import: forces the module to be loaded at runtime for coverage tracking.
+import "../../../../src/core/runtime/workspace-materializer.js";
 import { describe, it, expect } from "vitest";
-import * as _wm from "../../../../src/core/runtime/workspace-materializer.js";
+import type { WorktreeMaterializationPlan } from "../../../../src/core/runtime/workspace-materializer.js";
 
 describe("WorktreeMaterializationPlan", () => {
   describe("TC-WM-001: all DU variants are constructable", () => {
     it("no-worktree variant", () => {
-      const plan: _wm.WorktreeMaterializationPlan = { kind: "no-worktree" };
+      const plan: WorktreeMaterializationPlan = { kind: "no-worktree" };
       expect(plan.kind).toBe("no-worktree");
     });
 
     it("resume-existing variant", () => {
-      const plan: _wm.WorktreeMaterializationPlan = {
+      const plan: WorktreeMaterializationPlan = {
         kind: "resume-existing",
         worktreePath: "/tmp/worktrees/job-abc",
       };
@@ -29,7 +32,7 @@ describe("WorktreeMaterializationPlan", () => {
     });
 
     it("resume-recreated variant", () => {
-      const plan: _wm.WorktreeMaterializationPlan = {
+      const plan: WorktreeMaterializationPlan = {
         kind: "resume-recreated",
         remoteBaseRef: "origin/main",
       };
@@ -40,7 +43,7 @@ describe("WorktreeMaterializationPlan", () => {
     });
 
     it("resume-without-recorded-worktree variant", () => {
-      const plan: _wm.WorktreeMaterializationPlan = {
+      const plan: WorktreeMaterializationPlan = {
         kind: "resume-without-recorded-worktree",
         remoteBaseRef: "origin/main",
       };
@@ -51,7 +54,7 @@ describe("WorktreeMaterializationPlan", () => {
     });
 
     it("new-run variant (without branchName)", () => {
-      const plan: _wm.WorktreeMaterializationPlan = {
+      const plan: WorktreeMaterializationPlan = {
         kind: "new-run",
         remoteBaseRef: "origin/main",
       };
@@ -65,7 +68,7 @@ describe("WorktreeMaterializationPlan", () => {
 
   describe("TC-WM-002: new-run accepts optional branchName", () => {
     it("new-run variant with branchName", () => {
-      const plan: _wm.WorktreeMaterializationPlan = {
+      const plan: WorktreeMaterializationPlan = {
         kind: "new-run",
         remoteBaseRef: "origin/main",
         branchName: "feature/my-feature",
