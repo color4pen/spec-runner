@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "955601a3-1a5c-4540-834d-dbc841289ed3",
   "createdAt": "2026-07-13T15:01:51.925Z",
-  "updatedAt": "2026-07-13T15:51:53.981Z",
+  "updatedAt": "2026-07-13T15:57:10.447Z",
   "request": {
     "title": "executor の runAgentStep を Context / StepHalt値 / Completion へ概念分解する（挙動不変）",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "refactor/executor-decompose-runagentstep-955601a3",
   "error": null,
@@ -49,13 +49,14 @@
     }
   ],
   "_journal": {
-    "historyCount": 25,
+    "historyCount": 29,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "implementer": 1,
       "verification": 2,
-      "build-fixer": 1
+      "build-fixer": 1,
+      "code-review": 1
     }
   }
 }
