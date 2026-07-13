@@ -434,3 +434,233 @@ describe("merge-then-archive — post-merge integrity check wiring", () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// blocked-grace wait loop tests
+// ---------------------------------------------------------------------------
+
+describe("merge-then-archive — blocked-grace wait loop", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(JobStateStore.list).mockResolvedValue([makeState({ status: "awaiting-archive" })]);
+    vi.mocked(runArchiveOrchestrator).mockResolvedValue({ exitCode: 0, headSha: "abc1234" });
+    vi.mocked(runPostMergeCleanup).mockResolvedValue(undefined);
+    vi.mocked(runPostMergeIntegrityCheck).mockResolvedValue({ ok: true });
+  });
+
+  it("TBG-01: success + BLOCKED → next poll CLEAN → merge proceeds (exitCode 0)", async () => {
+    // First loop iteration sees BLOCKED; second sees CLEAN.
+    // nowFn always returns 0 so grace never expires.
+    const getPullRequest = vi.fn()
+      .mockResolvedValueOnce({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        mergeable: "MERGEABLE",
+        headSha: "abc1234",
+      }) // initial pre-archive check
+      .mockResolvedValueOnce({
+        state: "OPEN",
+        mergeStateStatus: "BLOCKED",
+        mergeable: "MERGEABLE",
+        headSha: "abc1234",
+      }) // loop iteration 1 — still BLOCKED
+      .mockResolvedValueOnce({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        mergeable: "MERGEABLE",
+        headSha: "abc1234",
+      }); // loop iteration 2 — CLEAN, proceed to merge
+
+    const githubClient = makeGithubClient({
+      getPullRequest,
+      getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 1, failing: [], pending: [] }),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "squash-merged" }),
+    });
+
+    const result = await runMergeThenArchive(
+      {
+        slug: FAKE_SLUG,
+        cwd: FAKE_CWD,
+        spawn: makeSpawn(),
+        fs: makeFs(),
+        githubClient,
+        owner: "test",
+        repo: "repo",
+        sleepFn: noopSleep,
+        nowFn: () => 0,
+        waitTimeoutMs: null,
+      },
+      () => {},
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(vi.mocked(githubClient.mergePullRequest)).toHaveBeenCalled();
+    // No branch-protection escalation
+    if ("escalation" in result) {
+      expect((result as { escalation: string }).escalation).not.toMatch(/branch protection/);
+    }
+  });
+
+  it("TBG-02: success + BLOCKED → grace exhausted → branch-protection escalation (exitCode 1)", async () => {
+    // getPullRequest always returns BLOCKED; grace expires on second success+BLOCKED observation.
+    const getPullRequest = vi.fn().mockResolvedValue({
+      state: "OPEN",
+      mergeStateStatus: "BLOCKED",
+      mergeable: "MERGEABLE",
+      headSha: "abc1234",
+    });
+
+    const mergePullRequest = vi.fn().mockResolvedValue({ merged: true, message: "squash-merged" });
+
+    const githubClient = makeGithubClient({
+      getPullRequest,
+      getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 1, failing: [], pending: [] }),
+      mergePullRequest,
+    });
+
+    // nowFn call order:
+    //   1. start = nowFn()                          → 0
+    //   2. grace check (1st success+BLOCKED): now   → 0  → elapsed = 0 < 30_000 → sleep+continue
+    //   3. grace check (2nd success+BLOCKED): now   → 31_000 → elapsed = 31_000 >= 30_000 → escalation
+    const nowFn = vi.fn()
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0)
+      .mockReturnValue(31_000);
+
+    const result = await runMergeThenArchive(
+      {
+        slug: FAKE_SLUG,
+        cwd: FAKE_CWD,
+        spawn: makeSpawn(),
+        fs: makeFs(),
+        githubClient,
+        owner: "test",
+        repo: "repo",
+        sleepFn: noopSleep,
+        nowFn,
+        waitTimeoutMs: null,
+      },
+      () => {},
+    );
+
+    expect(result.exitCode).toBe(1);
+    expect("escalation" in result && result.escalation).toMatch(/merge gate \(branch protection\)/);
+    expect(mergePullRequest).not.toHaveBeenCalled();
+  });
+
+  it("TBG-03: conflict (DIRTY) escalation is unchanged (regression)", async () => {
+    const getPullRequest = vi.fn().mockResolvedValue({
+      state: "OPEN",
+      mergeStateStatus: "DIRTY",
+      mergeable: "MERGEABLE",
+      headSha: "abc1234",
+    });
+
+    const githubClient = makeGithubClient({ getPullRequest });
+
+    const result = await runMergeThenArchive(
+      {
+        slug: FAKE_SLUG,
+        cwd: FAKE_CWD,
+        spawn: makeSpawn(),
+        fs: makeFs(),
+        githubClient,
+        owner: "test",
+        repo: "repo",
+        sleepFn: noopSleep,
+        nowFn: () => 0,
+        waitTimeoutMs: null,
+      },
+      () => {},
+    );
+
+    expect(result.exitCode).toBe(1);
+    expect("escalation" in result && result.escalation).toMatch(/merge gate \(conflict\)/);
+  });
+
+  it("TBG-04: check failure escalation is unchanged (regression)", async () => {
+    const getPullRequest = vi.fn().mockResolvedValue({
+      state: "OPEN",
+      mergeStateStatus: "CLEAN",
+      mergeable: "MERGEABLE",
+      headSha: "abc1234",
+    });
+
+    const getCheckStatus = vi.fn().mockResolvedValue({
+      state: "failure",
+      total: 1,
+      failing: ["ci/test"],
+      pending: [],
+    });
+
+    const githubClient = makeGithubClient({ getPullRequest, getCheckStatus });
+
+    const result = await runMergeThenArchive(
+      {
+        slug: FAKE_SLUG,
+        cwd: FAKE_CWD,
+        spawn: makeSpawn(),
+        fs: makeFs(),
+        githubClient,
+        owner: "test",
+        repo: "repo",
+        sleepFn: noopSleep,
+        nowFn: () => 0,
+        waitTimeoutMs: null,
+      },
+      () => {},
+    );
+
+    expect(result.exitCode).toBe(1);
+    expect("escalation" in result && result.escalation).toMatch(/check status \(failed checks\)/);
+  });
+
+  it("TBG-05: none-check grace path is unchanged — CI-less repo proceeds to merge (regression)", async () => {
+    // getCheckStatus always returns "none"; grace expires on second observation.
+    const getPullRequest = vi.fn().mockResolvedValue({
+      state: "OPEN",
+      mergeStateStatus: "CLEAN",
+      mergeable: "MERGEABLE",
+      headSha: "abc1234",
+    });
+
+    const getCheckStatus = vi.fn().mockResolvedValue({
+      state: "none",
+      total: 0,
+      failing: [],
+      pending: [],
+    });
+
+    const mergePullRequest = vi.fn().mockResolvedValue({ merged: true, message: "squash-merged" });
+
+    const githubClient = makeGithubClient({ getPullRequest, getCheckStatus, mergePullRequest });
+
+    // nowFn call order:
+    //   1. start = nowFn()                             → 0
+    //   2. noneGraceStart set (1st none): now          → 0  → elapsed = 0 < 60_000 → sleep+continue
+    //   3. none grace check (2nd none): now            → 61_000 → elapsed = 61_000 >= 60_000 → break → merge
+    const nowFn = vi.fn()
+      .mockReturnValueOnce(0)
+      .mockReturnValueOnce(0)
+      .mockReturnValue(61_000);
+
+    const result = await runMergeThenArchive(
+      {
+        slug: FAKE_SLUG,
+        cwd: FAKE_CWD,
+        spawn: makeSpawn(),
+        fs: makeFs(),
+        githubClient,
+        owner: "test",
+        repo: "repo",
+        sleepFn: noopSleep,
+        nowFn,
+        waitTimeoutMs: null,
+      },
+      () => {},
+    );
+
+    expect(result.exitCode).toBe(0);
+    expect(mergePullRequest).toHaveBeenCalled();
+  });
+});

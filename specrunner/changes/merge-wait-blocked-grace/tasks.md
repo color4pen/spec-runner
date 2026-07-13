@@ -4,9 +4,9 @@
 
 対象ファイル: `src/core/archive/merge-then-archive.ts`
 
-- [ ] `NONE_CHECK_GRACE_MS` の定義の直後（L46 付近）に `const BLOCKED_CHECK_GRACE_MS = 30_000;` を追加する。JSDoc に「Grace period (ms) to allow mergeStateStatus to transition from BLOCKED to CLEAN after checks succeed. GitHub's mergeStateStatus sometimes lags behind check resolution by a few seconds. Not configurable.」を記載する。
-- [ ] merge-wait loop 直前（`let noneGraceStart: number | null = null;` の直後、L303 付近）に `let blockedGraceStart: number | null = null;` を追加する。JSDoc に「Set-once timestamp (ms) of the first "success+BLOCKED" observation. Never reset.」を記載する。
-- [ ] ファイル冒頭のフロー説明コメント（L1-23）の wait loop 箇条書きを更新する。`BLOCKED + success/none checks → branch-protection escalation` の行を `BLOCKED + success checks → grace wait (BLOCKED_CHECK_GRACE_MS); if exhausted → branch-protection escalation` に修正する。
+- [x] `NONE_CHECK_GRACE_MS` の定義の直後（L46 付近）に `const BLOCKED_CHECK_GRACE_MS = 30_000;` を追加する。JSDoc に「Grace period (ms) to allow mergeStateStatus to transition from BLOCKED to CLEAN after checks succeed. GitHub's mergeStateStatus sometimes lags behind check resolution by a few seconds. Not configurable.」を記載する。
+- [x] merge-wait loop 直前（`let noneGraceStart: number | null = null;` の直後、L303 付近）に `let blockedGraceStart: number | null = null;` を追加する。JSDoc に「Set-once timestamp (ms) of the first "success+BLOCKED" observation. Never reset.」を記載する。
+- [x] ファイル冒頭のフロー説明コメント（L1-23）の wait loop 箇条書きを更新する。`BLOCKED + success/none checks → branch-protection escalation` の行を `BLOCKED + success checks → grace wait (BLOCKED_CHECK_GRACE_MS); if exhausted → branch-protection escalation` に修正する。
 
 **Acceptance Criteria**:
 - `BLOCKED_CHECK_GRACE_MS` が `30_000` で定数定義されている。
@@ -54,9 +54,9 @@ if (rollup.state === "success") {
 }
 ```
 
-- [ ] 上記疑似コードに従って L422-430 を書き換える。
-- [ ] `blockedGraceStart` の set-once セマンティクスを保つ（`if (blockedGraceStart === null)` のガードを必ず入れる）。
-- [ ] `sleepFn` と `continue` の位置が `noneGraceStart` の grace パス（L455-456）と対称になっていることを確認する。
+- [x] 上記疑似コードに従って L422-430 を書き換える。
+- [x] `blockedGraceStart` の set-once セマンティクスを保つ（`if (blockedGraceStart === null)` のガードを必ず入れる）。
+- [x] `sleepFn` と `continue` の位置が `noneGraceStart` の grace パス（L455-456）と対称になっていることを確認する。
 
 **Acceptance Criteria**:
 - `success && BLOCKED && grace not expired` のとき `sleepFn` して loop が続く。
@@ -78,29 +78,29 @@ if (rollup.state === "success") {
 
 **テストケース**:
 
-- [ ] **TBG-01**: `success + BLOCKED → 次の poll で CLEAN → merge へ進む`
+- [x] **TBG-01**: `success + BLOCKED → 次の poll で CLEAN → merge へ進む`
   - getPullRequest が 1 回目 `mergeStateStatus: "BLOCKED"`、2 回目 `mergeStateStatus: "CLEAN"` を返す。
   - `nowFn` は常に 0 を返す（grace 未満）。
   - `getCheckStatus` は常に `{ state: "success", ... }` を返す。
   - `mergePullRequest` が呼ばれること、`exitCode: 0` になることを検証。
   - `blockedAfterChecksEscalation` 相当の escalation が返らないことを検証。
 
-- [ ] **TBG-02**: `success + BLOCKED → grace 超過後も BLOCKED → branch-protection escalation`
+- [x] **TBG-02**: `success + BLOCKED → grace 超過後も BLOCKED → branch-protection escalation`
   - getPullRequest は常に `mergeStateStatus: "BLOCKED"` を返す。
   - `nowFn` は呼ばれるたびに単調増加し、2 回目以降の `success && BLOCKED` チェック時に `BLOCKED_CHECK_GRACE_MS` を超えた値を返す（例: 1 回目 = 0, 2 回目 = 31_000）。
   - `getCheckStatus` は常に `{ state: "success", ... }` を返す。
   - `exitCode: 1` かつ escalation に `"merge gate (branch protection)"` が含まれること、`mergePullRequest` が呼ばれないことを検証。
 
-- [ ] **TBG-03**: 既存の conflict escalation が不変であること（regression）
+- [x] **TBG-03**: 既存の conflict escalation が不変であること（regression）
   - getPullRequest が `mergeStateStatus: "DIRTY"` を返す。
   - `exitCode: 1` かつ escalation に `"merge gate (conflict)"` が含まれること。
 
-- [ ] **TBG-04**: 既存の check failure escalation が不変であること（regression）
+- [x] **TBG-04**: 既存の check failure escalation が不変であること（regression）
   - getPullRequest が `mergeStateStatus: "CLEAN"` を返す。
   - `getCheckStatus` が `{ state: "failure", failing: ["ci/test"], ... }` を返す。
   - `exitCode: 1` かつ escalation に `"check status (failed checks)"` が含まれること。
 
-- [ ] **TBG-05**: 既存の none-check grace パスが不変であること（regression）
+- [x] **TBG-05**: 既存の none-check grace パスが不変であること（regression）
   - getPullRequest が `mergeStateStatus: "CLEAN"` を返す。
   - `getCheckStatus` が最初は `{ state: "none", ... }`、NONE_CHECK_GRACE_MS を超えたあとも `"none"` を返す。
   - `nowFn` で none grace を超過させる。
@@ -113,8 +113,8 @@ if (rollup.state === "success") {
 
 ## T-04: 型チェックとテスト実行
 
-- [ ] `bun run typecheck` が green であること。
-- [ ] `bun run test` が green であること（既存テスト含む）。
+- [x] `bun run typecheck` が green であること。
+- [x] `bun run test` が green であること（既存テスト含む）。
 
 **Acceptance Criteria**:
 - TypeScript 型エラーなし。

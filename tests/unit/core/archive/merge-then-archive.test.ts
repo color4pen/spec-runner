@@ -610,6 +610,19 @@ describe("TC-MTA-008: persistent BLOCKED + success rollup → branch-protection 
 
     const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
 
+    // Inject nowFn that expires the BLOCKED_CHECK_GRACE_MS (30_000ms) on the second
+    // success+BLOCKED observation, and noopSleep so the test doesn't block.
+    // nowFn call order:
+    //   1. start = nowFn()                          → 0
+    //   2. grace check (1st success+BLOCKED): now   → 0  → elapsed = 0 < 30_000 → sleep+continue
+    //   3. grace check (2nd success+BLOCKED): now   → 31_000 → elapsed ≥ 30_000 → escalation
+    let nowCallCount = 0;
+    const nowFn = () => {
+      nowCallCount++;
+      if (nowCallCount <= 2) return 0;
+      return 31_000;
+    };
+
     const result = await runMergeThenArchive({
       slug: SLUG,
       cwd: CWD,
@@ -618,7 +631,9 @@ describe("TC-MTA-008: persistent BLOCKED + success rollup → branch-protection 
       githubClient: client,
       owner: "user",
       repo: "repo",
-      waitTimeoutMs: 60_000,
+      waitTimeoutMs: null,
+      sleepFn: () => Promise.resolve(),
+      nowFn,
     });
 
     expect(result.exitCode).toBe(1);

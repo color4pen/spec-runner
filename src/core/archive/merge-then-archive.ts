@@ -12,7 +12,7 @@
  *    - Wait for PR headSha to match archiveSha before trusting CI rollup
  *    - DIRTY / CONFLICTING → conflict escalation (no merge, no cleanup)
  *    - BLOCKED + pending checks → keep waiting (transient; CI not yet resolved)
- *    - BLOCKED + success/none checks → branch-protection escalation (non-check requirement unmet)
+ *    - BLOCKED + success checks → grace wait (BLOCKED_CHECK_GRACE_MS); if exhausted → branch-protection escalation
  *    - check failure → escalation (no merge, no cleanup)
  *    - check success → proceed to merge (if not still BLOCKED)
  *    - check none → grace wait (NONE_CHECK_GRACE_MS); if exhausted → proceed to merge (if not still BLOCKED)
@@ -44,6 +44,13 @@ import { evaluateProtectedPaths } from "./protected-paths.js";
  * (prevents permanent hang even when mergeWaitTimeoutMs is null). Not configurable.
  */
 const NONE_CHECK_GRACE_MS = 60_000;
+
+/**
+ * Grace period (ms) to allow mergeStateStatus to transition from BLOCKED to CLEAN
+ * after checks succeed. GitHub's mergeStateStatus sometimes lags behind check
+ * resolution by a few seconds. Not configurable.
+ */
+const BLOCKED_CHECK_GRACE_MS = 30_000;
 
 export interface MergeThenArchiveInput {
   /** Slug of the job to archive. */
@@ -301,6 +308,8 @@ export async function runMergeThenArchive(
   const start = nowFn();
   /** Set-once timestamp (ms) of the first "none" observation. Never reset. */
   let noneGraceStart: number | null = null;
+  /** Set-once timestamp (ms) of the first "success+BLOCKED" observation. Never reset. */
+  let blockedGraceStart: number | null = null;
 
   stdoutWrite(`Waiting for PR #${prNumber} checks to resolve...`);
 
@@ -421,10 +430,23 @@ export async function runMergeThenArchive(
 
     if (rollup.state === "success") {
       if (isBlocked) {
-        // Checks resolved but PR is still BLOCKED — a non-check branch-protection requirement is unmet.
-        return blockedAfterChecksEscalation(slug, "success");
+        const now = nowFn();
+        if (blockedGraceStart === null) {
+          blockedGraceStart = now;
+        }
+        const elapsed = now - blockedGraceStart;
+        if (elapsed >= BLOCKED_CHECK_GRACE_MS) {
+          // Grace exhausted: treat as genuine branch-protection requirement unmet.
+          return blockedAfterChecksEscalation(slug, "success");
+        }
+        // Grace still running: mergeStateStatus may be transiently BLOCKED after CI resolved.
+        stdoutWrite(
+          `PR #${prNumber} checks success but mergeStateStatus BLOCKED (${Math.round(elapsed / 1000)}s / ${BLOCKED_CHECK_GRACE_MS / 1000}s grace). Waiting ${pollIntervalMs / 1000}s...`,
+        );
+        await sleepFn(pollIntervalMs);
+        continue;
       }
-      // Checks are green — proceed to merge
+      // Checks are green and not blocked — proceed to merge.
       stdoutWrite(`PR #${prNumber} checks passed. Proceeding to merge...`);
       break;
     }
