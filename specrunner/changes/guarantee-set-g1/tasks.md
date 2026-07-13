@@ -2,9 +2,9 @@
 
 ## T-01: docs/guarantees.md を新設して G1 保証集合を記述する
 
-- [ ] `docs/guarantees.md` を新規作成する
-- [ ] ファイル冒頭に G1 の版号（`# Guarantee Set G1`）と制定日（2026-07-13）を明記する
-- [ ] 以下の 6 保証を各々「保証の主張」＋「enforce 機構（file 参照付き）」の対として列挙する:
+- [x] `docs/guarantees.md` を新規作成する
+- [x] ファイル冒頭に G1 の版号（`# Guarantee Set G1`）と制定日（2026-07-13）を明記する
+- [x] 以下の 6 保証を各々「保証の主張」＋「enforce 機構（file 参照付き）」の対として列挙する:
 
   **G1-1: verdict は findings からの機械導出（agent の自己申告に依らない）**
   - 保証の主張: review / conformance 系 step の verdict は agent が宣言するのでなく、agent が申告した findings（severity / resolution 属性付き）から CLI の純関数が機械的に導出する
@@ -46,11 +46,11 @@
     - `src/core/step/conformance.ts` の `ConformanceStep` — request.md・tasks.md・design.md・spec.md を読み実装との照合を行う gate step
     - `src/core/pipeline/registry.ts` の `STANDARD_DESCRIPTOR` および `FAST_DESCRIPTOR` — 両 profile で `ConformanceStep` が `PR_CREATE` の直前に配置される
 
-- [ ] ページ内に「版号更新の運用規約」節を設け、以下を明記する:
+- [x] ページ内に「版号更新の運用規約」節を設け、以下を明記する:
   - 版号を上げるトリガー: 保証の追加・削除・意味変更
   - 版号を上げないもの: typo 修正、file 参照の更新（enforce 機構の所在変更への追随）
   - 版号の命名規則: G1, G2, G3, …（フラット増分）
-- [ ] ページ内に「変更履歴」節を設け、G1 の初版エントリ（制定日・含む保証集合の要約）を記録する
+- [x] ページ内に「変更履歴」節を設け、G1 の初版エントリ（制定日・含む保証集合の要約）を記録する
 
 **Acceptance Criteria**:
 - `docs/guarantees.md` が存在する
@@ -61,8 +61,8 @@
 
 ## T-02: docs/README.md に guarantees.md へのリンクを追加する
 
-- [ ] `docs/README.md` を編集し、既存のドキュメント配置表または原則節に `guarantees.md` へのリンクを追加する
-- [ ] リンクは `docs/` 配下のドキュメントとして自然な位置に収める
+- [x] `docs/README.md` を編集し、既存のドキュメント配置表または原則節に `guarantees.md` へのリンクを追加する
+- [x] リンクは `docs/` 配下のドキュメントとして自然な位置に収める
 
 **Acceptance Criteria**:
 - `docs/README.md` に `guarantees.md` へのリンクが存在する
