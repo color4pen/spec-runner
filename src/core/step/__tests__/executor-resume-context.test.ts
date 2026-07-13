@@ -99,8 +99,8 @@ function makeStep(name: string): AgentStep {
   };
 }
 
-describe("StepExecutor resume context consumption", () => {
-  it("consumes unmatched resume context before a later agent step can see it", async () => {
+describe("StepExecutor resume context — executor does not mutate deps (D4, round-immutable-input)", () => {
+  it("executor does not clear deps.resumeContext or deps.resumePrompt after execution", async () => {
     const prompts: Array<string | undefined> = [];
     const runner = {
       run: vi.fn(async (ctx: { session: { resumePrompt?: string } }) => {
@@ -122,11 +122,19 @@ describe("StepExecutor resume context consumption", () => {
     const state = makeState();
     const deps = makeDeps({ runner: runner as never });
 
+    // Execute "design": resumeContext.resumePoint.step=spec-review ≠ "design"
+    // → buildResumePrompt returns undefined (no match, no humanResumePrompt)
     await executor.execute(makeStep("design"), state, deps);
-    await executor.execute(makeStep("spec-review"), state, deps);
+    expect(prompts[0]).toBeUndefined();
 
-    expect(prompts).toEqual([undefined, undefined]);
-    expect(deps.resumeContext).toBeUndefined();
-    expect(deps.resumePrompt).toBeUndefined();
+    // Executor must NOT have cleared deps — resumeContext and resumePrompt are still set
+    expect(deps.resumeContext).toBeDefined();
+    expect(deps.resumeContext?.resumePoint.step).toBe("spec-review");
+
+    // Execute "spec-review": resumeContext.resumePoint.step=spec-review === "spec-review"
+    // → buildResumePrompt returns automatic resume context (match)
+    await executor.execute(makeStep("spec-review"), state, deps);
+    // Second execution sees automatic context because executor did NOT clear deps
+    expect(prompts[1]).toContain("Automatic resume context");
   });
 });

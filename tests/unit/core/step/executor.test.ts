@@ -163,11 +163,15 @@ describe("TC-EXEC-001: deps.resumePrompt が設定されているとき、ctx.re
 });
 
 // ---------------------------------------------------------------------------
-// TC-EXEC-002: 最初の agent step 実行後、deps.resumePrompt が undefined になる
+// TC-EXEC-002: executor は deps.resumePrompt を in-place クリアしない（D4, round-immutable-input）
+//
+// One-shot ownership has moved to Pipeline.runInternal. The executor's role is
+// to READ deps.resumePrompt (via buildStepContext/buildResumePrompt) without
+// mutating the shared deps object.
 // ---------------------------------------------------------------------------
 
-describe("TC-EXEC-002: 最初の agent step 実行後、deps.resumePrompt が undefined になる", () => {
-  it("executor.execute() 後に deps.resumePrompt が undefined になる", async () => {
+describe("TC-EXEC-002: executor は deps.resumePrompt を変更しない（一度限りの配布は Pipeline の責務）", () => {
+  it("executor.execute() 後も deps.resumePrompt は元の値のまま", async () => {
     const jobState = await createRunningJobState();
     const { runner } = makeCapturingRunner();
 
@@ -179,16 +183,22 @@ describe("TC-EXEC-002: 最初の agent step 実行後、deps.resumePrompt が un
 
     expect(deps.resumePrompt).toBe("前回の review feedback を強調");
     await executor.execute(step, jobState, deps);
-    expect(deps.resumePrompt).toBeUndefined();
+    // Executor must NOT clear deps — one-shot is Pipeline's responsibility
+    expect(deps.resumePrompt).toBe("前回の review feedback を強調");
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-EXEC-003: 2 回目以降の agent step では ctx.resumePrompt が undefined になる
+// TC-EXEC-003: executor は deps を書き換えないため、同じ deps で複数回 execute しても値が保持される
+//
+// After D4 (round-immutable-input), the executor reads deps without mutating it.
+// One-shot distribution (first step only) is managed by Pipeline.runInternal.
+// When the same deps is passed to executor multiple times, all calls receive the
+// same values (no clearing side-effect).
 // ---------------------------------------------------------------------------
 
-describe("TC-EXEC-003: 2 回目以降の agent step では ctx.resumePrompt が undefined になる", () => {
-  it("2 回目の executor.execute() 呼び出しでは ctx.resumePrompt が undefined", async () => {
+describe("TC-EXEC-003: 複数回 execute しても deps は変更されず同じ値が届く", () => {
+  it("2 回目の executor.execute() 呼び出しでも deps.resumePrompt の値が届く", async () => {
     const jobState = await createRunningJobState();
     const { runner, capturedCtxList } = makeCapturingRunner();
 
@@ -198,15 +208,17 @@ describe("TC-EXEC-003: 2 回目以降の agent step では ctx.resumePrompt が 
     const deps = makeDeps({ resumePrompt: "first time context" });
     const step = makeAgentStep();
 
-    // First execute: resumePrompt should be passed and then cleared
+    // First execute: resumePrompt is passed through to ctx
     const state1 = await executor.execute(step, jobState, deps);
 
-    // Second execute: resumePrompt should be undefined in ctx
+    // Second execute: executor does NOT clear deps, so the same value is available
+    // (one-shot gating would be done by Pipeline.runInternal, not the executor)
     await executor.execute(step, state1, deps);
 
     expect(capturedCtxList).toHaveLength(2);
     expect(capturedCtxList[0]!.session.resumePrompt).toBe("first time context");
-    expect(capturedCtxList[1]!.session.resumePrompt).toBeUndefined();
+    // After D4: executor does not clear → second call also receives the value
+    expect(capturedCtxList[1]!.session.resumePrompt).toBe("first time context");
   });
 
   it("resumePrompt が未設定のとき、ctx.resumePrompt は常に undefined", async () => {
@@ -311,7 +323,9 @@ describe("resume context auto injection", () => {
     expect(capturedCtxList[0]!.session.resumePrompt).toBeUndefined();
   });
 
-  it("human resume prose is still one-shot when no automatic resume context is present", async () => {
+  it("executor does not clear deps — both calls receive the human resume prose", async () => {
+    // One-shot gating is Pipeline.runInternal's responsibility (via depsWithoutResume).
+    // The executor only reads deps without mutating it, so every call sees the same value.
     const jobState = await createRunningJobState();
     const { runner, capturedCtxList } = makeCapturingRunner();
 
@@ -329,10 +343,14 @@ describe("resume context auto injection", () => {
     await executor.execute(secondStep, state1, deps);
 
     expect(capturedCtxList[0]!.session.resumePrompt).toBe("human prose only");
-    expect(capturedCtxList[1]!.session.resumePrompt).toBeUndefined();
+    // Executor does NOT clear deps — second call also receives the value.
+    expect(capturedCtxList[1]!.session.resumePrompt).toBe("human prose only");
   });
 
-  it("consumes the composed automatic and human resume prompt only once", async () => {
+  it("executor does not clear deps — both calls receive the composed automatic and human resume prompt", async () => {
+    // One-shot gating is Pipeline.runInternal's responsibility (via depsWithoutResume).
+    // The executor only reads deps without mutating it, so every call with the same deps
+    // receives the same composed prompt (automatic context + human prose).
     const jobState = {
       ...(await createRunningJobState()),
       resumePoint: null,
@@ -359,11 +377,15 @@ describe("resume context auto injection", () => {
     await executor.execute(step, state1, deps);
 
     expect(capturedCtxList).toHaveLength(2);
+    // First call: composed prompt (automatic context + human prose)
     expect(capturedCtxList[0]!.session.resumePrompt).toContain("## Automatic resume context");
     expect(capturedCtxList[0]!.session.resumePrompt).toContain("human prose");
-    expect(capturedCtxList[1]!.session.resumePrompt).toBeUndefined();
-    expect(deps.resumePrompt).toBeUndefined();
-    expect(deps.resumeContext).toBeUndefined();
+    // Executor does NOT clear deps — second call also receives the composed prompt.
+    expect(capturedCtxList[1]!.session.resumePrompt).toContain("## Automatic resume context");
+    expect(capturedCtxList[1]!.session.resumePrompt).toContain("human prose");
+    // deps must NOT be mutated by executor
+    expect(deps.resumePrompt).toBe("human prose");
+    expect(deps.resumeContext).toBeDefined();
   });
 });
 

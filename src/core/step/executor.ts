@@ -239,12 +239,6 @@ export class StepExecutor {
       readdir: (dir: string) => fsReaddir(dir),
     });
 
-    // One-shot: resume-related inputs are consumed by the first agent step that sees them.
-    if (deps.resumePrompt !== undefined || deps.resumeContext !== undefined) {
-      deps.resumePrompt = undefined;
-      deps.resumeContext = undefined;
-    }
-
     // Capture main-checkout guard snapshot before agent executes (D2, D4).
     const guardBefore: import("../port/runtime-strategy.js").MainCheckoutGuardSnapshot | null =
       deps.runtimeStrategy?.snapshotMainCheckoutGuard

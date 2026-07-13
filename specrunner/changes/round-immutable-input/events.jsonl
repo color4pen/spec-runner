@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-07-13T19:14:01.920Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-13T19:14:01.920Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-07-13T19:14:01.922Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-07-13T19:16:06.629Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"86c00d1e-5491-4f72-af24-e4175a8f7033","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-13T19:14:01.984Z","endedAt":"2026-07-13T19:16:05.069Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-07-13T19:16:05.069Z","outputs":[{"path":"specrunner/changes/round-immutable-input/test-cases.md","hash":"sha256:d9bc47188fdd39e5c1c4701d506a0ce2fb057f58fc0c50fd5fa4b38cf100c960"}],"inputs":[{"path":"specrunner/changes/round-immutable-input/design.md","hash":"sha256:34886424057f1c523a4c08b1d4dd58e821768748bc3e7cf5f9226793b615c1b5"},{"path":"specrunner/changes/round-immutable-input/tasks.md","hash":"sha256:df1f1c2adfbd6df9b81aaefdfddeea165965d3fe1ab56e51afdf4401244cadcc"}]}
+{"type":"transition","ts":"2026-07-13T19:16:06.637Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-07-13T19:16:06.640Z","step":"implementer-started","status":"started","message":"Starting implementer step"}

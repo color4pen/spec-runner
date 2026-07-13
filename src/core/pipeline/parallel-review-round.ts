@@ -179,13 +179,17 @@ export class ParallelReviewRound {
       aggregateVerdictResult = "approved";
     } else {
       // --- 5. Fan-out: execute each pending member step in parallel ---
+      // D4: construct a per-round readonly execution input from the received deps.
+      // This shallow clone is what all members receive; the shared orchestration
+      // deps object is never passed to member executors.
+      const roundDeps: PipelineDeps = { ...deps };
       const memberResults = await Promise.allSettled(
         pending.map(async (name) => {
           const memberStep = this.steps.get(name);
           if (!memberStep) {
             throw new Error(`Member step not found in pipeline: ${name}`);
           }
-          return this.executor.execute(memberStep, state, deps);
+          return this.executor.execute(memberStep, state, roundDeps);
         }),
       );
 

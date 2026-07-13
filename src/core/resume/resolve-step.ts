@@ -36,10 +36,14 @@ export function buildAllowedStepSet(
  * so that resume enters the coordinator (which re-evaluates pending members via
  * reviewerStatuses ledger). Non-member steps are returned unchanged.
  *
+ * Exported so that ResumeCommand.prepare() can apply the same mapping when constructing
+ * resumeContext — ensuring automatic context is not dropped on member→coordinator routing
+ * (D3, round-immutable-input).
+ *
  * @param step      - Step name to check.
  * @param reviewers - Reviewer snapshots for this job. When absent/empty, no mapping occurs.
  */
-function mapMemberToCoordinator(
+export function mapMemberToCoordinator(
   step: string,
   reviewers: ReadonlyArray<{ name: string }> | undefined,
 ): string {
