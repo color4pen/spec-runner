@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "61aea357-1df4-4983-a645-51b01bf5f447",
   "createdAt": "2026-07-13T16:21:02.531Z",
-  "updatedAt": "2026-07-13T16:50:22.636Z",
+  "updatedAt": "2026-07-13T16:54:18.873Z",
   "request": {
     "title": "local の setupWorkspace を WorktreeMaterializationPlan / materializeWorktree へ集約する（挙動不変）",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/local-workspace-materializer-61aea357",
   "error": null,
@@ -48,14 +48,45 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "implementer": 1,
       "verification": 3,
-      "build-fixer": 2
+      "build-fixer": 2,
+      "code-review": 1,
+      "scale-tolerance": 1,
+      "cross-boundary-invariants": 1,
+      "custom-reviewers": 1
     }
   }
 }
