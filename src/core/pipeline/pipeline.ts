@@ -12,13 +12,8 @@ import { transitionJob } from "../../state/lifecycle.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { notifyJobTerminal } from "../notify/issue-notifier.js";
 import { resolveActiveReviewer } from "./reviewer-chain.js";
-import {
-  deriveReviewerStatuses,
-  selectPendingMembers,
-  applyRoundResults,
-  aggregateVerdict,
-  computeInvalidations,
-} from "./reviewer-status.js";
+import { ConvergenceBudget } from "./convergence-budget.js";
+import { ParallelReviewRound } from "./parallel-review-round.js";
 
 /** Error codes that indicate truly fatal pipeline failures (not resumable). */
 const FATAL_ERROR_CODES: Set<string> = new Set([
@@ -69,62 +64,6 @@ function resolvePairedReviewForFixer(
  * The loop guard tracks iterations of `loopName` and terminates with
  * SPEC_REVIEW_RETRIES_EXHAUSTED at maxIterations.
  */
-/**
- * Merge parallel reviewer result states into a base state.
- *
- * Design D3 (reviewer-parallel-execution): each parallel member execution returns a
- * state with its own `steps[member]` updated and history delta appended. This function
- * merges all member states into base by:
- * - Updating each known member's StepRun array from the result (always overwrite,
- *   since result was built on top of base and contains the full up-to-date array)
- * - Adding any other new step keys not present in base
- * - Appending each member's history delta (entries added since base.history.length)
- *   in completion order (allSettled returns in submission order)
- *
- * Member step keys must always be copied from results because on re-runs (coordinator
- * iteration 2+) the member key already exists in base from the prior round. The result
- * state's version supersedes the base's version for that member.
- *
- * @param base        - Base state before parallel execution.
- * @param results     - Array of fulfilled member result states (from allSettled).
- * @param memberNames - Names of the pending member steps that ran in this round.
- *   Their step arrays are always copied from results regardless of base content.
- */
-export function mergeParallelReviewerStates(
-  base: JobState,
-  results: JobState[],
-  memberNames: string[],
-): JobState {
-  const memberSet = new Set(memberNames);
-  const baseHistoryLen = base.history.length;
-  let merged = base;
-
-  for (const result of results) {
-    // Merge each member's steps into the accumulated state
-    const mergedSteps = { ...(merged.steps ?? {}) };
-    for (const [key, runs] of Object.entries(result.steps ?? {})) {
-      // Known member steps: always copy (result has the full updated array for this member,
-      // even when the key already existed in base from a prior coordinator round).
-      // Other keys: only copy if absent from base (preserve base steps unchanged).
-      if (memberSet.has(key) || !(key in (base.steps ?? {}))) {
-        mergedSteps[key] = runs;
-      }
-    }
-
-    // Append history delta from this result (entries added since base)
-    const historyDelta = result.history.slice(baseHistoryLen);
-
-    merged = {
-      ...merged,
-      steps: mergedSteps,
-      history: [...merged.history, ...historyDelta],
-      updatedAt: result.updatedAt,
-    };
-  }
-
-  return merged;
-}
-
 export class Pipeline {
   private readonly steps: Map<string, Step>;
   private readonly transitions: Transition[];
@@ -151,6 +90,8 @@ export class Pipeline {
    * absent = standard sequential execution (zero-reviewer backward compat preserved)
    */
   private readonly parallelReview: ParallelReviewConfig | undefined;
+  /** Component that encapsulates coordinator fan-out for parallel reviewer execution. */
+  private readonly round: ParallelReviewRound | undefined;
 
   constructor(params: {
     steps: Map<string, Step>;
@@ -176,6 +117,9 @@ export class Pipeline {
     this.loopFixerPairs = params.loopFixerPairs ?? {};
     this.summaryStep = params.summaryStep;
     this.parallelReview = params.parallelReview;
+    this.round = params.parallelReview
+      ? new ParallelReviewRound({ executor: this.executor, steps: this.steps, parallelReview: params.parallelReview })
+      : undefined;
   }
 
   /**
@@ -260,11 +204,7 @@ export class Pipeline {
   ): Promise<JobState> {
     let state = jobState;
     let currentStep = startStep;
-    // Per-loop iteration counters (supports multiple loops)
-    const loopIters = new Map<string, number>();
-    // Per-fixer iteration counters (independent from loopIters)
-    const fixerIters = new Map<string, number>();
-    let prevLoopStep = "";  // last step before entering the primary loopName (for history message)
+    let budget = ConvergenceBudget.initial();
 
     while (true) {
       // --- Coordinator fan-out detection (must precede steps.get) ---
@@ -278,11 +218,9 @@ export class Pipeline {
       const isLoopStep = currentStep === this.loopName;
       const isAnyLoopStep = this.loopNames.includes(currentStep);
       if (isAnyLoopStep) {
-        const prevIter = loopIters.get(currentStep) ?? 0;
-        const newIter = prevIter + 1;
-        loopIters.set(currentStep, newIter);
+        const { budget: nextBudget, iteration: loopIter } = budget.enterLoopStep(currentStep);
+        budget = nextBudget;
 
-        const loopIter = newIter;
         // T-04: use resolveMaxIterations(currentStep) so step-specific overrides are reflected
         // in the displayed /M value (fixes iter N/M showing global max instead of step max).
         this.events.emit("pipeline:iteration:start", { step: currentStep, iteration: loopIter, maxIterations: this.resolveMaxIterations(currentStep) });
@@ -292,15 +230,14 @@ export class Pipeline {
           ts: new Date().toISOString(),
           step: currentStep,
           status: "started" as const,
-          message: `${currentStep} iteration ${loopIters.get(currentStep)} started`,
+          message: `${currentStep} iteration ${budget.getLoopIter(currentStep)} started`,
         });
       }
 
       // --- Fixer step entry bookkeeping ---
       const isFixer = Object.values(this.loopFixerPairs).includes(currentStep);
       if (isFixer) {
-        const prevFixerIter = fixerIters.get(currentStep) ?? 0;
-        fixerIters.set(currentStep, prevFixerIter + 1);
+        budget = budget.enterFixerStep(currentStep);
       }
 
       // --- Execute: coordinator fan-out or regular step dispatch ---
@@ -308,7 +245,9 @@ export class Pipeline {
 
       if (isCoordinator) {
         // --- Coordinator fan-out (D3 / D4 / D6 / D8) ---
-        outcome = await this.runCoordinatorFanOut(currentStep, state, deps, (s) => { state = s; });
+        const fanResult = await this.round!.run(currentStep, state, deps);
+        state = fanResult.state;
+        outcome = fanResult.outcome;
       } else {
         const step = this.steps.get(currentStep);
         if (!step) {
@@ -361,7 +300,7 @@ export class Pipeline {
         }
       }
 
-      const loopIter = loopIters.get(currentStep) ?? 0;
+      const loopIter = budget.getLoopIter(currentStep);
 
       // --- Loop step exit bookkeeping ---
       if (isAnyLoopStep) {
@@ -426,7 +365,7 @@ export class Pipeline {
               resumePoint: {
                 step: toStepName(currentStep),
                 reason: state.error?.message ?? `${currentStep} escalated`,
-                iterationsExhausted: loopIters.get(currentStep) ?? 0,
+                iterationsExhausted: budget.getLoopIter(currentStep),
               },
             },
           });
@@ -465,8 +404,7 @@ export class Pipeline {
           newEpisode = siblings.length > 1 && resolveActiveReviewer(state, siblings) !== nextStep;
         }
         if (newEpisode) {
-          loopIters.set(nextStep as string, 0);
-          fixerIters.set(pairedFixerForNext, 0);
+          budget = budget.resetLoopStep(nextStep as string).resetFixerStep(pairedFixerForNext);
         }
       }
 
@@ -478,9 +416,8 @@ export class Pipeline {
       if (!(currentStep in this.loopFixerPairs)) {
         const fixerNames = new Set(Object.values(this.loopFixerPairs));
         if (typeof nextStep === "string" && fixerNames.has(nextStep)) {
-          fixerIters.set(nextStep, 0);
           const pairedReview = resolvePairedReviewForFixer(state, nextStep, this.loopFixerPairs);
-          loopIters.set(pairedReview, 0);
+          budget = budget.resetFixerStep(nextStep as string).resetLoopStep(pairedReview);
         }
       }
 
@@ -492,7 +429,7 @@ export class Pipeline {
       if (isAnyLoopStep && nextStep !== "end" && nextStep !== "escalate" && outcome !== "approved" && outcome !== "passed") {
         const pairedFixer = this.loopFixerPairs[currentStep];
         if (pairedFixer === undefined) {
-          const r = await this.tryExhaust(state, deps, { iteration: loopIters.get(currentStep) ?? 0, stepName: currentStep, phase: "review-exhausted" });
+          const r = await this.tryExhaust(state, deps, { iteration: budget.getLoopIter(currentStep), stepName: currentStep, phase: "review-exhausted" });
           if (r.exhausted) { state = r.state; break; }
         }
       }
@@ -506,7 +443,7 @@ export class Pipeline {
       // so this counter-based check is correct for any path that reaches the review.
       if (this.loopNames.includes(nextStep as string)) {
         const pairedFixer = this.loopFixerPairs[nextStep as string];
-        const r = await this.tryExhaust(state, deps, { iteration: loopIters.get(nextStep as string) ?? 0, stepName: nextStep as string, phase: "review-exhausted", bypassIteration: pairedFixer !== undefined ? (fixerIters.get(pairedFixer) ?? 0) : undefined });
+        const r = await this.tryExhaust(state, deps, { iteration: budget.getLoopIter(nextStep as string), stepName: nextStep as string, phase: "review-exhausted", bypassIteration: pairedFixer !== undefined ? budget.getFixerIter(pairedFixer) : undefined });
         if (r.exhausted) { state = r.state; break; }
       }
 
@@ -519,7 +456,7 @@ export class Pipeline {
       if (fixerNames.has(nextStep as string)) {
         const exhaustedLoopName = resolvePairedReviewForFixer(state, nextStep as string, this.loopFixerPairs);
         const effectiveMax = this.resolveMaxIterations(exhaustedLoopName);
-        const r = await this.tryExhaust(state, deps, { iteration: fixerIters.get(nextStep as string) ?? 0, stepName: exhaustedLoopName, phase: "review-after-final-fix", reportIteration: effectiveMax });
+        const r = await this.tryExhaust(state, deps, { iteration: budget.getFixerIter(nextStep as string), stepName: exhaustedLoopName, phase: "review-after-final-fix", reportIteration: effectiveMax });
         if (r.exhausted) { state = r.state; break; }
       }
 
@@ -529,8 +466,8 @@ export class Pipeline {
       }
 
       // --- Append transition history ---
-      const fromMsg = prevLoopStep
-        ? `${prevLoopStep} complete → ${nextStep} (iter ${(loopIters.get(this.loopName) ?? 0) + (nextStep === this.loopName ? 1 : 0)})`
+      const fromMsg = budget.getPreviousLoopStep()
+        ? `${budget.getPreviousLoopStep()} complete → ${nextStep} (iter ${budget.getLoopIter(this.loopName) + (nextStep === this.loopName ? 1 : 0)})`
         : `${currentStep} → ${nextStep}`;
       const transitionStore = deps.storeFactory(state.jobId);
       state = await transitionStore.appendHistory(state, {
@@ -540,7 +477,7 @@ export class Pipeline {
         message: fromMsg,
       });
 
-      prevLoopStep = isLoopStep ? currentStep : "";
+      budget = budget.withPreviousLoopStep(isLoopStep ? currentStep : "");
       currentStep = nextStep as string;
     }
 
@@ -698,172 +635,4 @@ export class Pipeline {
     return exhaustedState;
   }
 
-  /**
-   * Coordinator fan-out: execute pending member steps in parallel and produce an
-   * aggregate verdict as a synthetic coordinator StepRun.
-   *
-   * Design D3 / D4 / D5 / D6 / D8 (reviewer-parallel-execution):
-   *
-   * 1. Derive/init reviewer statuses from state.
-   * 2. Compute invalidations: for each approved member, check if fixer touched
-   *    their activation paths (listChangedFiles from approvedAtCommit to HEAD).
-   * 3. Select pending members (approved/skipped are excluded → resume skip D8).
-   * 4. If no pending → all approved → synthetic "approved" StepRun (fast path).
-   * 5. Fan-out: execute each pending member step via Promise.allSettled.
-   * 6. Merge results (mergeParallelReviewerStates).
-   * 7. Update reviewerStatuses (applyRoundResults) + compute aggregate verdict.
-   * 8. Push synthetic coordinator StepRun with aggregate verdict.
-   * 9. Persist merged state authoritatively.
-   *
-   * NOTE: coordinator is NOT in the steps Map (it's a virtual node).
-   * NOTE: --from coordinator is not supported for explicit resume (coordinator is
-   * a virtual injected node, not in the standard step name list). ResumePoint-based
-   * auto-resume works normally since it routes to code-fixer (the paired fixer).
-   *
-   * Managed runtime: listChangedFiles returns [] → invalidation not fired (fail-safe).
-   * Parallel custom reviewer managed support is a known limitation (Non-Goal).
-   *
-   * @param coordinatorName - Coordinator step name.
-   * @param state           - Current job state (read-only; updates via setState).
-   * @param deps            - Pipeline dependencies.
-   * @param setState        - Callback to update the outer `state` variable.
-   * @returns Aggregate verdict string for transition lookup.
-   */
-  private async runCoordinatorFanOut(
-    coordinatorName: string,
-    state: JobState,
-    deps: PipelineDeps,
-    setState: (s: JobState) => void,
-  ): Promise<string> {
-    const parallelReview = this.parallelReview!;
-    const memberNames = [...parallelReview.members];
-    const cwd = deps.cwd ?? process.cwd();
-    const requestType = deps.request.type;
-
-    // --- 1. Derive / initialize reviewer statuses ---
-    const snapshots = (state.reviewers ?? []).filter((s) => memberNames.includes(s.name));
-    let statuses = deriveReviewerStatuses(state, snapshots);
-
-    // --- 2. Compute invalidations (approved members whose paths were touched by fixer) ---
-    // Design D6: for each approved member, call listChangedFiles(approvedAtCommit, cwd, branch)
-    // and evaluate whether the fixer touched their activation paths.
-    // New seam NOT introduced — reuse existing RuntimeStrategy.listChangedFiles.
-    // Managed runtime: listChangedFiles returns [] → invalidation not fired (fail-safe).
-    // NOTE: parallel custom reviewer managed support is a known limitation (Non-Goal).
-    if (deps.runtimeStrategy) {
-      // Capture HEAD SHA once for the invalidatedByCommit field
-      const currentHeadSha = await deps.runtimeStrategy.captureHeadSha(cwd) ?? new Date().toISOString();
-
-      // Per-member invalidation: each approved member has its own approvedAtCommit
-      const updatedStatuses = [...statuses];
-      for (let i = 0; i < updatedStatuses.length; i++) {
-        const s = updatedStatuses[i]!;
-        if (s.status !== "approved" || !s.approvedAtCommit) continue;
-
-        const touched = await deps.runtimeStrategy.listChangedFiles(
-          s.approvedAtCommit,
-          cwd,
-          state.branch ?? null,
-        );
-
-        // computeInvalidations evaluates a single member's touched files against its activation paths
-        // We compute per-member by passing a single-element statuses array
-        const [invalidated] = computeInvalidations([s], touched, requestType, currentHeadSha);
-        if (invalidated) updatedStatuses[i] = invalidated;
-      }
-      statuses = updatedStatuses;
-    }
-
-    // --- 3. Select pending members ---
-    const pending = selectPendingMembers(statuses, memberNames);
-    logPipelineDiag("pipeline:coordinator:pending", `coordinator=${coordinatorName}, pending=[${pending.join(",")}]`);
-
-    // --- 4. All approved fast path ---
-    const now = new Date().toISOString();
-    let aggregateVerdictResult: "approved" | "needs-fix" | "escalation";
-
-    if (pending.length === 0) {
-      // All approved / skipped → synthetic approved, skip to gate
-      logPipelineDiag("pipeline:coordinator:all-approved", `coordinator=${coordinatorName}`);
-      aggregateVerdictResult = "approved";
-    } else {
-      // --- 5. Fan-out: execute each pending member step in parallel ---
-      const memberResults = await Promise.allSettled(
-        pending.map(async (name) => {
-          const memberStep = this.steps.get(name);
-          if (!memberStep) {
-            throw new Error(`Member step not found in pipeline: ${name}`);
-          }
-          return this.executor.execute(memberStep, state, deps);
-        }),
-      );
-
-      // --- 6. Merge results ---
-      const fulfilledStates: JobState[] = [];
-      const memberVerdicts = new Map<string, string>();
-      // Capture HEAD SHA after all members have committed (for approvedAtCommit)
-      const headSha = deps.runtimeStrategy
-        ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? now
-        : now;
-
-      for (let i = 0; i < pending.length; i++) {
-        const name = pending[i]!;
-        const result = memberResults[i]!;
-
-        if (result.status === "fulfilled") {
-          fulfilledStates.push(result.value);
-          const memberRuns = result.value.steps?.[name] ?? [];
-          const lastRun = memberRuns[memberRuns.length - 1];
-          memberVerdicts.set(name, lastRun?.outcome.verdict ?? "escalation");
-        } else {
-          // Rejected: extract state from attached error if available
-          const errWithState = result.reason as { state?: JobState };
-          if (errWithState.state) {
-            fulfilledStates.push(errWithState.state);
-          }
-          memberVerdicts.set(name, "escalation");
-        }
-      }
-
-      // Merge all fulfilled states (including error states) into base.
-      // Pass `pending` so mergeParallelReviewerStates always copies member step arrays
-      // (needed for re-runs where the member key already exists in base from prior rounds).
-      state = mergeParallelReviewerStates(state, fulfilledStates, pending);
-
-      // --- 7. Apply round results and compute aggregate ---
-      statuses = applyRoundResults(statuses, memberVerdicts, headSha);
-      aggregateVerdictResult = aggregateVerdict([...memberVerdicts.values()]);
-    }
-
-    // --- 8. Push synthetic coordinator StepRun ---
-    const coordinatorRuns = state.steps?.[coordinatorName] ?? [];
-    const syntheticRun: StepRun = {
-      attempt: coordinatorRuns.length + 1,
-      sessionId: null,
-      outcome: {
-        verdict: aggregateVerdictResult,
-        findingsPath: null,
-        error: null,
-      },
-      startedAt: now,
-      endedAt: new Date().toISOString(),
-    };
-
-    state = {
-      ...state,
-      reviewerStatuses: statuses,
-      steps: {
-        ...(state.steps ?? {}),
-        [coordinatorName]: [...coordinatorRuns, syntheticRun],
-      },
-      updatedAt: new Date().toISOString(),
-    };
-
-    // --- 9. Persist merged state authoritatively ---
-    const store = deps.storeFactory(state.jobId);
-    await store.persist(state);
-
-    setState(state);
-    return aggregateVerdictResult;
-  }
 }
