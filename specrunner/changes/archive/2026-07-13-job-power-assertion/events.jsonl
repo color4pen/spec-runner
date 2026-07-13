@@ -89,3 +89,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/job-power-assertion/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T02:42:03.671Z","endedAt":"2026-07-13T02:42:05.120Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-13T02:42:05.120Z","outputs":[{"path":"specrunner/changes/job-power-assertion/pr-create-result.md","hash":"sha256:f29f9cd07a6a2762994f36e695549249ea39cdd8fb9b239d0faddff8fe5989b3"}],"inputs":[{"path":"feat/job-power-assertion-2a9f0577","hash":null}]}
 {"type":"transition","ts":"2026-07-13T02:42:05.129Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-13T02:43:38.665Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
