@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b794df81-2678-4c04-ac40-c7276d002bbf",
   "createdAt": "2026-07-13T18:52:05.902Z",
-  "updatedAt": "2026-07-13T19:48:54.794Z",
+  "updatedAt": "2026-07-13T19:53:53.847Z",
   "request": {
     "title": "並列 round の入力を immutable にする（共有 deps 不変・resume 配布）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "scale-tolerance",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/round-immutable-input-b794df81",
   "error": null,
@@ -48,8 +48,35 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "9482c66c22d1b934c04d0026f1bfbbe129153462",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -58,7 +85,9 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "scale-tolerance": 1
+      "scale-tolerance": 1,
+      "cross-boundary-invariants": 1,
+      "custom-reviewers": 1
     }
   }
 }
