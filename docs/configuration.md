@@ -210,6 +210,7 @@ Declare `verification.coverage` to assert that changed lines (base…HEAD diff) 
 - When `verification.coverage` is **not declared**, the gate is skipped and a note appears in `verification-result.md`. Existing behaviour is fully preserved.
 - Coverage command failure or missing/empty lcov file → **fail** (declared guarantees are not silently dropped).
 - Files that are legitimately untestable (generated code, fixtures, etc.) should be listed in `exclude`. Remaining genuine exceptions escalate through the normal escalation → human judgment → resume flow.
+- **In-job coverage re-resolution**: immediately before each verification attempt, the pipeline re-reads `verification.coverage` from `.specrunner/config.json` on disk. This means that if build-fixer edits the project config (e.g. adding an entry to `exclude`) during the same job, the subsequent verification reflects that change — without needing a resume. Re-resolution is limited to `verification.coverage`; `verification.commands` and all other config fields retain their job-start values. Config changes made this way are included in the PR and remain subject to human review as usual.
 
 ## Test placement
 

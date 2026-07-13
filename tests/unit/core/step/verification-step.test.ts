@@ -20,6 +20,12 @@ vi.mock("../../../../src/core/verification/propagate.js", () => ({
   propagateVerificationResult: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
+// Mock reloadCoverageConfig to return applied: false by default so existing tests
+// are hermetic (no real git/fs I/O) and effective config === deps.config.verification.
+vi.mock("../../../../src/core/verification/reload-coverage-config.js", () => ({
+  reloadCoverageConfig: vi.fn().mockResolvedValue({ applied: false }),
+}));
+
 import { runVerification } from "../../../../src/core/verification/runner.js";
 import { VerificationStep } from "../../../../src/core/step/verification.js";
 
