@@ -38,12 +38,12 @@ npx specrunner run my-feature
 npx specrunner job archive --with-merge my-feature
 ```
 
-- [ ] `README.md` の Quick Start 節（`## Quick Start` から次の `##` 節の直前まで）を上記構成に準じて書き換える。
-  - [ ] 無人ループを第一パスとして提示する（install → init/login → issue 作成 → 承認ラベル → `inbox run` → escalation 応答の順番付き手順）。
-  - [ ] スケジューラの詳細（crontab/launchd/GitHub Actions 例）は Quick Start 本文に展開せず、`docs/operations.md` へのリンクのみを置く。
-  - [ ] attended フローを「代替パス」として Quick Start 内の別小節（例: `### 代替: attended フロー`）に移動する（削除しない）。
-  - [ ] `specrunner request template` への言及を無人ループの手順内に含め、issue 本文の書き方に迷わないようにする。
-  - [ ] escalation 応答（`/resume`）の最小説明を無人ループの手順内に含める。
+- [x] `README.md` の Quick Start 節（`## Quick Start` から次の `##` 節の直前まで）を上記構成に準じて書き換える。
+  - [x] 無人ループを第一パスとして提示する（install → init/login → issue 作成 → 承認ラベル → `inbox run` → escalation 応答の順番付き手順）。
+  - [x] スケジューラの詳細（crontab/launchd/GitHub Actions 例）は Quick Start 本文に展開せず、`docs/operations.md` へのリンクのみを置く。
+  - [x] attended フローを「代替パス」として Quick Start 内の別小節（例: `### 代替: attended フロー`）に移動する（削除しない）。
+  - [x] `specrunner request template` への言及を無人ループの手順内に含め、issue 本文の書き方に迷わないようにする。
+  - [x] escalation 応答（`/resume`）の最小説明を無人ループの手順内に含める。
 
 **Acceptance Criteria**:
 - README.md を開いたとき、Quick Start の第一パスが無人ループ（issue → 承認ラベル → `inbox run` → PR → `/resume`）である。
