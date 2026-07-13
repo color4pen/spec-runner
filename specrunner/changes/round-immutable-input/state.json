@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b794df81-2678-4c04-ac40-c7276d002bbf",
   "createdAt": "2026-07-13T18:52:05.902Z",
-  "updatedAt": "2026-07-13T19:16:06.640Z",
+  "updatedAt": "2026-07-13T19:43:11.416Z",
   "request": {
     "title": "並列 round の入力を immutable にする（共有 deps 不変・resume 配布）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/round-immutable-input-b794df81",
   "error": null,
@@ -49,12 +49,14 @@
     }
   ],
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 25,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
