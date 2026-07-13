@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b4267ad1-b249-4c93-8237-24959daada6d",
   "createdAt": "2026-07-13T08:55:20.619Z",
-  "updatedAt": "2026-07-13T09:04:22.976Z",
+  "updatedAt": "2026-07-13T09:05:01.015Z",
   "request": {
     "title": "README Quick Start を無人ループ中心に再構成",
     "type": "chore",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "chore/readme-unattended-quickstart-b4267ad1",
   "error": null,
@@ -76,7 +76,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 29,
+    "historyCount": 34,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -85,7 +85,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
