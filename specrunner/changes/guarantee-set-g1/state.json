@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ca8c3b14-69dc-4b8e-8099-d420dd7d37e2",
   "createdAt": "2026-07-13T08:09:20.510Z",
-  "updatedAt": "2026-07-13T08:20:09.377Z",
+  "updatedAt": "2026-07-13T08:22:46.965Z",
   "request": {
     "title": "保証集合 G1 の明文化と版号付け",
     "type": "chore",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "chore/guarantee-set-g1-ca8c3b14",
   "error": null,
@@ -48,13 +48,44 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 17,
+    "historyCount": 29,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
