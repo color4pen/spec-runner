@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7b959b90-ad3a-43b0-87b6-0b1c61a4b78b",
   "createdAt": "2026-07-13T08:59:15.396Z",
-  "updatedAt": "2026-07-13T10:07:58.739Z",
+  "updatedAt": "2026-07-13T10:11:02.615Z",
   "request": {
     "title": "PR ごとの attestation をコメント添付する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "feat/pr-attestation-comment-7b959b90",
   "error": null,
   "pipelineId": "standard",
@@ -83,7 +83,7 @@
     "createdAt": "2026-07-13T10:07:58.727Z"
   },
   "_journal": {
-    "historyCount": 76,
+    "historyCount": 77,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
