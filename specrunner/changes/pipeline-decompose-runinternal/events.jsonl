@@ -29,3 +29,11 @@
 {"type":"transition","ts":"2026-07-13T16:42:31.096Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-13T16:42:31.096Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-07-13T16:42:31.101Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-07-13T16:43:03.171Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"ab78e877-95b9-4be3-9a7a-dd8bc8cd2df4","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-13T16:42:31.159Z","endedAt":"2026-07-13T16:43:01.473Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-07-13T16:43:01.473Z","outputs":[{"path":"specrunner/changes/pipeline-decompose-runinternal","hash":null}],"inputs":[{"path":"specrunner/changes/pipeline-decompose-runinternal/review-feedback-001.md","hash":"sha256:20d32fb5675356fe0a915447b2241f0b0de2a8a35f770c5c5054b5f38167ec27"}]}
+{"type":"transition","ts":"2026-07-13T16:43:03.174Z","step":"step-transition","status":"ok","message":"code-review complete → custom-reviewers (iter 1)"}
+{"type":"transition","ts":"2026-07-13T16:43:03.175Z","step":"custom-reviewers","status":"started","message":"custom-reviewers iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T16:43:03.175Z","step":"custom-reviewers","status":"started","message":"custom-reviewers iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T16:43:03.198Z","step":"scale-tolerance-skipped","status":"warning","message":"scale-tolerance skipped: no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"}
+{"type":"step-attempt","step":"scale-tolerance","sessionId":null,"outcome":{"verdict":"skipped","findingsPath":null,"error":null,"skipReason":"no changed files matched paths [src/store/**, src/adapter/github/**, src/core/inbox/**, src/logger/**]"},"startedAt":"2026-07-13T16:43:03.198Z","endedAt":"2026-07-13T16:43:03.198Z"}
