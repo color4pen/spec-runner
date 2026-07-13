@@ -15,7 +15,7 @@ import * as os from "node:os";
 import type { JobState } from "../../../src/state/schema.js";
 import type { CliStepDeps } from "../../../src/core/step/types.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
-import { changeFolderPath, prCreateResultPath, slugEventsPath, usageJsonPath } from "../../../src/util/paths.js";
+import { changeFolderPath, prCreateResultPath, slugEventsPath } from "../../../src/util/paths.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
