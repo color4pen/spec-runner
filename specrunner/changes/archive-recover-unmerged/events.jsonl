@@ -37,3 +37,16 @@
 {"type":"transition","ts":"2026-07-13T12:49:12.714Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
 {"type":"transition","ts":"2026-07-13T12:50:12.536Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'implementer'"}
 {"type":"transition","ts":"2026-07-13T12:50:12.594Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
+{"type":"transition","ts":"2026-07-13T13:07:10.612Z","step":"implementer-verdict","status":"ok","message":"implementer verdict: success"}
+{"type":"step-attempt","step":"implementer","sessionId":"2eaa274a-743e-4eb7-a0bc-26a7c3abc71f","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-13T12:50:12.732Z","endedAt":"2026-07-13T13:07:08.736Z"}
+{"type":"lineage","step":"implementer","ts":"2026-07-13T13:07:08.736Z","outputs":[{"path":"specrunner/changes/archive-recover-unmerged","hash":null},{"path":"specrunner/changes/archive-recover-unmerged/tasks.md","hash":"sha256:1d9b586bafc9c06fd3c634c06d5cd999c09f94de0a087f73a5588ef816c5fdad"}],"inputs":[{"path":"specrunner/changes/archive-recover-unmerged/tasks.md","hash":"sha256:1d9b586bafc9c06fd3c634c06d5cd999c09f94de0a087f73a5588ef816c5fdad"},{"path":"specrunner/changes/archive-recover-unmerged/spec.md","hash":"sha256:c95a754cfd3420ef167a8063a881b86db1cf3ef94b57b0b35599c674f447f6e6"}]}
+{"type":"transition","ts":"2026-07-13T13:07:10.624Z","step":"step-transition","status":"ok","message":"implementer → verification"}
+{"type":"transition","ts":"2026-07-13T13:07:10.625Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T13:07:10.627Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-07-13T13:08:02.985Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/archive-recover-unmerged/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T13:07:10.627Z","endedAt":"2026-07-13T13:08:02.984Z"}
+{"type":"lineage","step":"verification","ts":"2026-07-13T13:08:02.984Z","outputs":[{"path":"specrunner/changes/archive-recover-unmerged/verification-result.md","hash":"sha256:7ff723a983f69499b087f9536ee883acd7eabca3acf930d9f953b919a735f17f"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-13T13:08:02.990Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
+{"type":"transition","ts":"2026-07-13T13:08:02.990Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-07-13T13:08:02.992Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T13:08:02.993Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
