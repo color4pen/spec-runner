@@ -99,3 +99,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/archive-recover-unmerged/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T13:39:59.600Z","endedAt":"2026-07-13T13:40:02.235Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-13T13:40:02.235Z","outputs":[{"path":"specrunner/changes/archive-recover-unmerged/pr-create-result.md","hash":"sha256:5dc34d42ed8b5dd8054de4e8f99dbfc9eec5ff258f9549d0d6b04490444b0df4"}],"inputs":[{"path":"change/archive-recover-unmerged-6d477d57","hash":null}]}
 {"type":"transition","ts":"2026-07-13T13:40:02.245Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-13T13:43:35.648Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}

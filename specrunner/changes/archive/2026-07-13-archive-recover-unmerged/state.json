@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6d477d57-d0e6-473c-bd42-9cece0550bf5",
   "createdAt": "2026-07-13T11:58:14.215Z",
-  "updatedAt": "2026-07-13T13:40:02.245Z",
+  "updatedAt": "2026-07-13T13:43:35.648Z",
   "request": {
     "title": "archive --with-merge の merge 失敗後に job が復旧不能になる問題を修正",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/archive-recover-unmerged-6d477d57",
   "error": null,
   "pipelineId": "standard",
@@ -48,7 +48,11 @@
       ]
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "signal",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -83,7 +87,7 @@
     "createdAt": "2026-07-13T13:40:01.237Z"
   },
   "_journal": {
-    "historyCount": 67,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
