@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7b959b90-ad3a-43b0-87b6-0b1c61a4b78b",
   "createdAt": "2026-07-13T08:59:15.396Z",
-  "updatedAt": "2026-07-13T09:03:28.692Z",
+  "updatedAt": "2026-07-13T09:14:10.390Z",
   "request": {
     "title": "PR ごとの attestation をコメント添付する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/pr-attestation-comment-7b959b90",
   "error": null,
@@ -49,9 +49,10 @@
     }
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
