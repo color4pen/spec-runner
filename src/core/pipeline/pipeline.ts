@@ -118,7 +118,7 @@ export class Pipeline {
     this.summaryStep = params.summaryStep;
     this.parallelReview = params.parallelReview;
     this.round = params.parallelReview
-      ? new ParallelReviewRound({ executor: this.executor, steps: this.steps, parallelReview: params.parallelReview })
+      ? new ParallelReviewRound({ executor: this.executor, steps: this.steps, parallelReview: params.parallelReview, events: this.events })
       : undefined;
   }
 

@@ -1,0 +1,225 @@
+/**
+ * Intended-invariant tests for round-git-scope pure logic.
+ *
+ * T-01 (round-owned-git-effects): these tests fix the changed⊆declared / scoped staging
+ * contract as a pure function, without any git / executor dependencies.
+ *
+ * Scenarios:
+ *   1. Only declared outputs in changed → toStage = declared outputs, offending = []
+ *   2. Undeclared path in changed → included in offending
+ *   3. Pipeline-managed paths in changed → excluded from both offending AND toStage
+ *   4. Deleted declared file (changed ∩ declared) → toStage includes it
+ *   5. Declared file not in changed → absent from toStage (no pathspec mismatch)
+ */
+
+import { describe, it, expect } from "vitest";
+import { pipelineManagedPaths, partitionRoundChanges } from "../round-git-scope.js";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const SLUG = "my-change";
+
+/** Pipeline-managed paths for SLUG */
+const STATE_JSON = `specrunner/changes/${SLUG}/state.json`;
+const EVENTS_JSONL = `specrunner/changes/${SLUG}/events.jsonl`;
+const USAGE_JSON = `specrunner/changes/${SLUG}/usage.json`;
+
+/** Declared output paths (typical reviewer result files) */
+const DECLARED_A = `specrunner/changes/${SLUG}/spec-result-001.md`;
+const DECLARED_B = `specrunner/changes/${SLUG}/review-feedback-001.md`;
+
+/** An undeclared path (a source file not listed in any member's writes()) */
+const UNDECLARED_SRC = "src/foo.ts";
+const UNDECLARED_OTHER = "some/other/file.md";
+
+// ---------------------------------------------------------------------------
+// pipelineManagedPaths
+// ---------------------------------------------------------------------------
+
+describe("pipelineManagedPaths", () => {
+  it("returns state.json, events.jsonl, usage.json for the given slug", () => {
+    const paths = pipelineManagedPaths(SLUG);
+    expect(paths).toContain(STATE_JSON);
+    expect(paths).toContain(EVENTS_JSONL);
+    expect(paths).toContain(USAGE_JSON);
+    expect(paths).toHaveLength(3);
+  });
+
+  it("uses the slug to build paths under specrunner/changes/<slug>/", () => {
+    const other = "other-slug";
+    const paths = pipelineManagedPaths(other);
+    expect(paths.every((p) => p.startsWith(`specrunner/changes/${other}/`))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// partitionRoundChanges — scenario 1: only declared outputs changed
+// ---------------------------------------------------------------------------
+
+describe("partitionRoundChanges — only declared outputs in changed", () => {
+  it("toStage = declared outputs, offending = []", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [DECLARED_A, DECLARED_B],
+      declared: [DECLARED_A, DECLARED_B],
+      slug: SLUG,
+    });
+    expect(toStage).toContain(DECLARED_A);
+    expect(toStage).toContain(DECLARED_B);
+    expect(toStage).toHaveLength(2);
+    expect(offending).toHaveLength(0);
+  });
+
+  it("single declared path → toStage contains exactly that path", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [DECLARED_A],
+      declared: [DECLARED_A],
+      slug: SLUG,
+    });
+    expect(toStage).toEqual([DECLARED_A]);
+    expect(offending).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// partitionRoundChanges — scenario 2: undeclared path in changed
+// ---------------------------------------------------------------------------
+
+describe("partitionRoundChanges — undeclared path in changed", () => {
+  it("undeclared src file → included in offending", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [DECLARED_A, UNDECLARED_SRC],
+      declared: [DECLARED_A],
+      slug: SLUG,
+    });
+    expect(toStage).toEqual([DECLARED_A]);
+    expect(offending).toContain(UNDECLARED_SRC);
+  });
+
+  it("multiple undeclared files → all included in offending", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [DECLARED_A, UNDECLARED_SRC, UNDECLARED_OTHER],
+      declared: [DECLARED_A],
+      slug: SLUG,
+    });
+    expect(toStage).toEqual([DECLARED_A]);
+    expect(offending).toContain(UNDECLARED_SRC);
+    expect(offending).toContain(UNDECLARED_OTHER);
+    expect(offending).toHaveLength(2);
+  });
+
+  it("entirely undeclared changes → toStage = [], offending = all changed", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [UNDECLARED_SRC, UNDECLARED_OTHER],
+      declared: [DECLARED_A],
+      slug: SLUG,
+    });
+    expect(toStage).toHaveLength(0);
+    expect(offending).toContain(UNDECLARED_SRC);
+    expect(offending).toContain(UNDECLARED_OTHER);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// partitionRoundChanges — scenario 3: pipeline-managed paths in changed
+// ---------------------------------------------------------------------------
+
+describe("partitionRoundChanges — pipeline-managed paths in changed", () => {
+  it("state.json in changed → excluded from BOTH offending AND toStage", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [DECLARED_A, STATE_JSON],
+      declared: [DECLARED_A],
+      slug: SLUG,
+    });
+    expect(toStage).toEqual([DECLARED_A]);
+    expect(toStage).not.toContain(STATE_JSON);
+    expect(offending).not.toContain(STATE_JSON);
+  });
+
+  it("events.jsonl in changed → excluded from both", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [DECLARED_A, EVENTS_JSONL],
+      declared: [DECLARED_A],
+      slug: SLUG,
+    });
+    expect(toStage).toEqual([DECLARED_A]);
+    expect(offending).toHaveLength(0);
+  });
+
+  it("usage.json in changed → excluded from both", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [DECLARED_A, USAGE_JSON],
+      declared: [DECLARED_A],
+      slug: SLUG,
+    });
+    expect(toStage).toEqual([DECLARED_A]);
+    expect(offending).toHaveLength(0);
+  });
+
+  it("all three pipeline-managed paths in changed → none in offending or toStage", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [DECLARED_A, STATE_JSON, EVENTS_JSONL, USAGE_JSON],
+      declared: [DECLARED_A],
+      slug: SLUG,
+    });
+    expect(toStage).toEqual([DECLARED_A]);
+    expect(offending).toHaveLength(0);
+  });
+
+  it("pipeline-managed only (no declared changes) → toStage = [], offending = []", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [STATE_JSON, EVENTS_JSONL, USAGE_JSON],
+      declared: [DECLARED_A, DECLARED_B],
+      slug: SLUG,
+    });
+    expect(toStage).toHaveLength(0);
+    expect(offending).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// partitionRoundChanges — scenario 4: deleted declared file
+// ---------------------------------------------------------------------------
+
+describe("partitionRoundChanges — deleted declared file (changed ∩ declared)", () => {
+  it("declared path that appears in changed (e.g. deletion) → in toStage, not in offending", () => {
+    // A declared file that was deleted: it appears in `changed` (git reports the deletion)
+    // but is also in `declared`. Should go to toStage (deletion is staged), not offending.
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [DECLARED_A],
+      declared: [DECLARED_A, DECLARED_B],
+      slug: SLUG,
+    });
+    expect(toStage).toContain(DECLARED_A);
+    expect(offending).not.toContain(DECLARED_A);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// partitionRoundChanges — scenario 5: declared file not in changed
+// ---------------------------------------------------------------------------
+
+describe("partitionRoundChanges — declared file absent from changed", () => {
+  it("declared path not written by member → absent from toStage (no pathspec mismatch)", () => {
+    // DECLARED_B is declared but not changed (member did not write it)
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [DECLARED_A],
+      declared: [DECLARED_A, DECLARED_B],
+      slug: SLUG,
+    });
+    expect(toStage).toContain(DECLARED_A);
+    expect(toStage).not.toContain(DECLARED_B);
+    expect(offending).toHaveLength(0);
+  });
+
+  it("no files changed → toStage = [], offending = []", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [],
+      declared: [DECLARED_A, DECLARED_B],
+      slug: SLUG,
+    });
+    expect(toStage).toHaveLength(0);
+    expect(offending).toHaveLength(0);
+  });
+});

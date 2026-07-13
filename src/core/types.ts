@@ -89,4 +89,15 @@ export interface PipelineDeps extends StepContext {
    * Optional for backward compatibility with existing tests that don't inject it.
    */
   runtimeStrategy?: RuntimeStrategy;
+  /**
+   * When true, this execution input is owned by a coordinator round.
+   * The executor skips finalizeStepArtifacts (git stage/commit/push) entirely;
+   * the coordinator is responsible for the round's git side effects via
+   * commitRoundArtifacts after all members complete.
+   *
+   * Absent / false = sequential path: finalizeStepArtifacts runs as before.
+   *
+   * D3 (round-owned-git-effects): round ownership flag for the executor gate.
+   */
+  roundOwnsGitEffects?: boolean;
 }

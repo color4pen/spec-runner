@@ -7,12 +7,12 @@
 
 ## T-01: changed ⊆ declared / scoped staging の pure logic を intended-invariant として固定する
 
-- [ ] `src/core/pipeline/round-git-scope.ts`（新規、pure module、I/O なし）を作る:
+- [x] `src/core/pipeline/round-git-scope.ts`（新規、pure module、I/O なし）を作る:
   - `pipelineManagedPaths(slug: string): string[]` — `util/paths.ts` の `slugStateJsonPath` / `slugEventsPath` / `usageJsonPath` を使い `[state.json, events.jsonl, usage.json]`（いずれも `specrunner/changes/<slug>/` 相対）を返す。
   - `partitionRoundChanges({ changed, declared, slug }: { changed: string[]; declared: string[]; slug: string }): { toStage: string[]; offending: string[] }` —
     - `toStage = changed.filter(f => declared.includes(f))`（changed ∩ declared）。
     - `offending = changed.filter(f => !pipelineManagedPaths(slug).includes(f) && !declared.includes(f))`。
-- [ ] `src/core/pipeline/__tests__/round-git-scope.test.ts`（新規）で以下を固定する:
+- [x] `src/core/pipeline/__tests__/round-git-scope.test.ts`（新規）で以下を固定する:
   - 宣言出力だけが changed のとき `toStage` = 宣言出力、`offending` = `[]`。
   - changed に宣言外 path（例: `src/foo.ts`）が混じると `offending` に含まれる。
   - changed に pipeline 管理 path（`state.json` / `events.jsonl` / `usage.json`）が混じっても `offending` に含まれず、かつ `toStage` にも入らない。
@@ -26,9 +26,9 @@
 
 ## T-02: member 実行入力に round 所有を宣言し、executor の finalize を抑止する（D1）
 
-- [ ] `src/core/types.ts` の `PipelineDeps` に `roundOwnsGitEffects?: boolean` を追加する（round 所有下の実行入力であることを示す。逐次経路は未設定 = 従来挙動）。
-- [ ] `src/core/step/executor.ts` `runAgentStep` の finalize ブロック（`finalizeStepArtifacts` を commit mutex 経由で呼ぶ ≈ L343-374）を `if (!deps.roundOwnsGitEffects) { ... }` で gate する。round 所有下では `finalizeStepArtifacts`（`cleanupOutputTemplates` ＋ `commitAndPush`）を一切呼ばない。
-- [ ] flag 未設定の逐次経路では finalize ブロックが従来どおり実行される（commit mutex・`finalizeStepArtifacts` 呼び出し・commit fail halt の経路が不変）ことをコード上で担保する。
+- [x] `src/core/types.ts` の `PipelineDeps` に `roundOwnsGitEffects?: boolean` を追加する（round 所有下の実行入力であることを示す。逐次経路は未設定 = 従来挙動）。
+- [x] `src/core/step/executor.ts` `runAgentStep` の finalize ブロック（`finalizeStepArtifacts` を commit mutex 経由で呼ぶ ≈ L343-374）を `if (!deps.roundOwnsGitEffects) { ... }` で gate する。round 所有下では `finalizeStepArtifacts`（`cleanupOutputTemplates` ＋ `commitAndPush`）を一切呼ばない。
+- [x] flag 未設定の逐次経路では finalize ブロックが従来どおり実行される（commit mutex・`finalizeStepArtifacts` 呼び出し・commit fail halt の経路が不変）ことをコード上で担保する。
 
 **Acceptance Criteria**:
 - `roundOwnsGitEffects === true` の実行入力で agent step を成功実行しても `finalizeStepArtifacts` が呼ばれない。
@@ -37,18 +37,18 @@
 
 ## T-03: coordinator round 所有点の git primitive を RuntimeStrategy seam に追加する（D2）
 
-- [ ] `src/core/step/commit-push.ts` に scoped commit helper（例: `commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra: CommitPushInfra)`）を追加する:
+- [x] `src/core/step/commit-push.ts` に scoped commit helper（例: `commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra: CommitPushInfra)`）を追加する:
   - `stagePaths` が空なら no-op。
   - `git add -A -- <stagePaths...>`（pathspec 限定、`git add -A` 無差別 stage を使わない）。add が非 0 exit（git 非機能）なら silent return。
   - `git diff --cached --quiet` が exit 1（staged あり）のときだけ `git commit -m "<commitMessage>"` → `pushOnly(branch, cwd, coordinatorName, infra)`（既存 `pushOnly` を再利用）。
-- [ ] `src/core/port/runtime-strategy.ts` の `RuntimeStrategy` に **optional** で 2 メソッドを追加する:
+- [x] `src/core/port/runtime-strategy.ts` の `RuntimeStrategy` に **optional** で 2 メソッドを追加する:
   - `listWorktreeChanges?(cwd: string): Promise<string[]>` — worktree の未 commit 変更（追加・変更・削除）を repo 相対 path で返す。never-throw、error 時 `[]`。
   - `commitRoundArtifacts?(stagePaths: string[], cwd: string, branch: string, coordinatorName: string, slug: string, commitPushInfra: unknown): Promise<void>` — scoped stage ＋ commit ＋ push。domain 型は既存 seam と同じく `unknown`。
-- [ ] `RealRuntimeStrategy`（`runtime-strategy.ts:468-472` の intersection）に上記 2 メソッドを **required** で足す（`canDeriveChangedFiles` / `snapshotMainCheckoutGuard` と同じ optional-on-port / required-on-real パターン）。
-- [ ] `src/core/runtime/local.ts` に実装する:
+- [x] `RealRuntimeStrategy`（`runtime-strategy.ts:468-472` の intersection）に上記 2 メソッドを **required** で足す（`canDeriveChangedFiles` / `snapshotMainCheckoutGuard` と同じ optional-on-port / required-on-real パターン）。
+- [x] `src/core/runtime/local.ts` に実装する:
   - `listWorktreeChanges(cwd)`: `git status --porcelain -z --no-renames` を cwd で実行し、`snapshotMainCheckoutGuard`（L684-735）と同じ NUL パースで path を抽出する（`??` 追加・` M` 変更・` D`/`D ` 削除を含む）。error 時 `[]`。
   - `commitRoundArtifacts(...)`: `commitScopedPaths(stagePaths, cwd, branch, "<coordinatorName>: <slug>", infra)` へ委譲する（`commitMessage` は逐次の `"<step>: <slug>"` と同型）。
-- [ ] `src/core/runtime/managed.ts` に実装する: `listWorktreeChanges` → `[]`、`commitRoundArtifacts` → no-op（no local worktree、既知 Non-Goal の fail-safe）。
+- [x] `src/core/runtime/managed.ts` に実装する: `listWorktreeChanges` → `[]`、`commitRoundArtifacts` → no-op（no local worktree、既知 Non-Goal の fail-safe）。
 
 **Acceptance Criteria**:
 - `commitScopedPaths` が pathspec 限定 add（`git add -A -- <paths>`）のみを使い、pathspec なしの `git add -A` を使わない。
@@ -58,7 +58,7 @@
 
 ## T-04: coordinator round 所有点を配線する（D3 / D4）
 
-- [ ] `src/core/pipeline/parallel-review-round.ts` の `run`:
+- [x] `src/core/pipeline/parallel-review-round.ts` の `run`:
   - fan-out 前の `roundDeps` 構築（L185）を `{ ...deps, roundOwnsGitEffects: true }` に変更する。
   - fan-out（merge）**前** の base `state` から declared union を計算する: pending member ごとに `this.steps.get(name)?.writes?.(state, roundDeps) ?? []` を集め、`path` を union する。
   - merge / aggregate 後、`deps.runtimeStrategy?.listWorktreeChanges` が存在すれば `changed = await listWorktreeChanges(cwd)` を取得し、`partitionRoundChanges({ changed, declared, slug: deps.slug })` を呼ぶ:
@@ -66,8 +66,8 @@
     - `offending.length === 0` かつ `toStage.length > 0` → `deps.runtimeStrategy.commitRoundArtifacts?.(toStage, cwd, branch, coordinatorName, deps.slug, infra)` を呼ぶ。
     - `listWorktreeChanges` 不在（test fake 等）→ 判定・commit を skip（従来挙動）。
   - `infra`（`CommitPushInfra`）は `{ spawnFn: deps.gitTransportSpawn ?? defaultSpawnFn, sleepFn: deps.sleepFn ?? 既定, events: this.events }` で構築する（executor の `commitPushInfra` 構築＝ `executor.ts:100` と対称）。
-- [ ] `ParallelReviewRound` の constructor に `events: EventBus` を追加し、`src/core/pipeline/pipeline.ts` の round 構築（L120-121）で `this.events` を渡す。
-- [ ] 既存の synthetic coordinator StepRun push（L233-255）と `store.persist`（L258-259）は commit 判定の後に行う（commit → synthetic StepRun → persist の順）。approved / needs-fix の aggregate 導出（`aggregateVerdict`）と merge / pending 選択・invalidation は不変。
+- [x] `ParallelReviewRound` の constructor に `events: EventBus` を追加し、`src/core/pipeline/pipeline.ts` の round 構築（L120-121）で `this.events` を渡す。
+- [x] 既存の synthetic coordinator StepRun push（L233-255）と `store.persist`（L258-259）は commit 判定の後に行う（commit → synthetic StepRun → persist の順）。approved / needs-fix の aggregate 導出（`aggregateVerdict`）と merge / pending 選択・invalidation は不変。
 
 **Acceptance Criteria**:
 - coordinator が宣言出力 union（実際に変更された分 = changed ∩ declared）だけを `commitRoundArtifacts` へ渡す。
@@ -77,15 +77,15 @@
 
 ## T-05: intended-invariant / behavior test（seam 確定後）
 
-- [ ] executor level（`src/core/step/__tests__/executor-round-commit.test.ts` 新規、または既存 executor test に describe 追加）:
+- [x] executor level（`src/core/step/__tests__/executor-round-commit.test.ts` 新規、または既存 executor test に describe 追加）:
   - `finalizeStepArtifacts` を spy にした fake runtimeStrategy と fake runner で agent step を実行する。
   - `deps.roundOwnsGitEffects === true` の実行で `finalizeStepArtifacts` が **呼ばれない** ことを固定する（受け入れ基準: member 経路が git stage/commit port を呼ばない）。
   - flag 未設定（逐次）の実行で `finalizeStepArtifacts` が **呼ばれる** ことを固定する（逐次不変）。
-- [ ] coordinator level（`src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts` 新規）で、`writes()` が宣言 path を返す fake member step ＋ member 出力を simulate する fake executor ＋ `listWorktreeChanges` / `commitRoundArtifacts` を spy にした fake runtimeStrategy で `ParallelReviewRound.run` を駆動する:
+- [x] coordinator level（`src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts` 新規）で、`writes()` が宣言 path を返す fake member step ＋ member 出力を simulate する fake executor ＋ `listWorktreeChanges` / `commitRoundArtifacts` を spy にした fake runtimeStrategy で `ParallelReviewRound.run` を駆動する:
   - `listWorktreeChanges` が宣言出力だけを返す → `commitRoundArtifacts` が declared（= changed ∩ declared）だけを stagePaths として 1 回呼ばれる（scoped staging を固定）。
   - `listWorktreeChanges` が宣言出力 ＋ 宣言外 path を返す → outcome escalation、`commitRoundArtifacts` が **呼ばれない**、offending が記録される（round halt を固定）。
   - `listWorktreeChanges` が宣言出力 ＋ pipeline 管理 path（`state.json` 等）を返す → halt せず、`commitRoundArtifacts` の stagePaths に簿記が含まれない（簿記を round commit に呑まないことを固定）。
-- [ ] 既存 `src/core/pipeline/__tests__/parallel-review-round-resume.test.ts` が回帰しない（新メソッドは optional で fake は未実装のまま、commit / halt を skip する経路で従来どおり通る）ことを確認する。
+- [x] 既存 `src/core/pipeline/__tests__/parallel-review-round-resume.test.ts` が回帰しない（新メソッドは optional で fake は未実装のまま、commit / halt を skip する経路で従来どおり通る）ことを確認する。
 
 **Acceptance Criteria**:
 - member 経路が git stage/commit port を呼ばず、coordinator round 所有点だけが宣言出力を stage することが test で固定される（intended-invariant）。
@@ -94,10 +94,10 @@
 
 ## T-06: 全体検証
 
-- [ ] `bun run typecheck` が green。
-- [ ] `bun run test` が green（新規・更新 test 含む、既存 parallel review / resume / executor / commit-and-push test の regression なし）。
-- [ ] 変更ファイルが `src/core/types.ts` / `src/core/step/executor.ts` / `src/core/step/commit-push.ts` / `src/core/port/runtime-strategy.ts` / `src/core/runtime/local.ts` / `src/core/runtime/managed.ts` / `src/core/pipeline/parallel-review-round.ts` / `src/core/pipeline/pipeline.ts` / `src/core/pipeline/round-git-scope.ts` と対応 test に限られることを確認する。
-- [ ] `architecture/` 配下・`specrunner/adr/` 配下に変更が無いことを確認する（B-15 の ratify は本 pipeline では行わない ― スコープ外）。
+- [x] `bun run typecheck` が green。
+- [x] `bun run test` が green（新規・更新 test 含む、既存 parallel review / resume / executor / commit-and-push test の regression なし）。
+- [x] 変更ファイルが `src/core/types.ts` / `src/core/step/executor.ts` / `src/core/step/commit-push.ts` / `src/core/port/runtime-strategy.ts` / `src/core/runtime/local.ts` / `src/core/runtime/managed.ts` / `src/core/pipeline/parallel-review-round.ts` / `src/core/pipeline/pipeline.ts` / `src/core/pipeline/round-git-scope.ts` と対応 test に限られることを確認する。
+- [x] `architecture/` 配下・`specrunner/adr/` 配下に変更が無いことを確認する（B-15 の ratify は本 pipeline では行わない ― スコープ外）。
 
 **Acceptance Criteria**:
 - `typecheck && test` が green。

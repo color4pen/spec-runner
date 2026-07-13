@@ -131,6 +131,57 @@ export async function commitFinalState(params: {
 }
 
 /**
+ * Stage only the declared paths and commit+push if there are staged changes.
+ *
+ * D3 (round-owned-git-effects): coordinator-owned scoped staging.
+ * Unlike commitAndPush, this function NEVER calls `git add -A` indiscriminately.
+ * It limits staging to the explicit `stagePaths` list via `git add -A -- <paths...>`.
+ *
+ * Workflow:
+ *   1. stagePaths empty → no-op (nothing to stage or commit).
+ *   2. `git add -A -- <stagePaths...>` (pathspec-limited; also stages deletions for listed paths).
+ *   3. If add exits non-zero → git non-functional; silent return.
+ *   4. `git diff --cached --quiet`:
+ *      - exit 0 → no staged changes → no-op (nothing was changed in the declared paths).
+ *      - exit 1 → staged changes → commit then push.
+ *   5. `git commit -m <commitMessage>` then `pushOnly` (one retry on failure).
+ *
+ * @param stagePaths    - Worktree-relative paths to stage (must all be declared outputs).
+ * @param cwd           - Working directory for git commands.
+ * @param branch        - Branch to push to.
+ * @param commitMessage - Commit message (typically "<coordinator>: <slug>").
+ * @param infra         - Commit/push infrastructure (spawnFn, sleepFn, events).
+ */
+export async function commitScopedPaths(
+  stagePaths: string[],
+  cwd: string,
+  branch: string,
+  commitMessage: string,
+  infra: CommitPushInfra,
+): Promise<void> {
+  if (stagePaths.length === 0) return;
+
+  // Stage only the declared paths (pathspec-limited; never `git add -A` without pathspec).
+  const addExitCode = await gitExecExitCode(infra.spawnFn, cwd, ["add", "-A", "--", ...stagePaths]);
+  if (addExitCode !== 0) {
+    // git is non-functional in this directory — silently skip.
+    return;
+  }
+
+  // Check if there are staged changes.
+  // exit 0 = no staged changes; exit 1 = staged changes present.
+  const diffExitCode = await gitExecExitCode(infra.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
+  const hasChanges = diffExitCode === 1;
+  if (!hasChanges) return;
+
+  // Commit
+  await gitExec(infra.spawnFn, cwd, ["commit", "-m", commitMessage]);
+
+  // Push with one retry (uses commitMessage as step label for the event)
+  await pushOnly(branch, cwd, commitMessage, infra);
+}
+
+/**
  * Push to origin with one retry on failure.
  * Emits commit:push event on success.
  * Throws pushFailedError if both attempts fail.

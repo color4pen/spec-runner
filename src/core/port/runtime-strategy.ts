@@ -398,6 +398,68 @@ export interface RuntimeStrategy {
    */
   listChangedFiles(baseBranch: string, cwd: string, branch: string | null): Promise<string[]>;
 
+  // ---------------------------------------------------------------------------
+  // Round-owned git effects (D3, round-owned-git-effects)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List files with uncommitted changes in the worktree.
+   *
+   * Used by ParallelReviewRound after the fan-out completes to detect which files
+   * were changed by the round members (who did not commit under roundOwnsGitEffects).
+   *
+   * Contract:
+   * - Never throws — returns [] on any error (git unavailable, non-zero exit, etc.).
+   * - Returns worktree-relative paths (e.g. "specrunner/changes/foo/spec-result-001.md").
+   * - Includes added, modified, and deleted files (including untracked new files).
+   *
+   * - local:   `git status --porcelain -z --no-renames` in cwd; parses NUL-separated output.
+   * - managed: returns [] (no local worktree; known Non-Goal for managed runtime).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
+   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
+   *
+   * @param cwd - Working directory (the worktree in which to run git status).
+   */
+  listWorktreeChanges?(cwd: string): Promise<string[]>;
+
+  /**
+   * Stage only the declared paths and commit+push (scoped staging for coordinator rounds).
+   *
+   * Called by ParallelReviewRound after partitionRoundChanges when there are declared
+   * outputs to stage (toStage non-empty and no offending paths).
+   *
+   * Contract:
+   * - stagePaths empty → no-op.
+   * - Uses `git add -A -- <stagePaths...>` (pathspec-limited; never `git add -A`).
+   * - Commits only if there are staged changes; no-op otherwise.
+   * - Push is one retry on failure (same as finalizeStepArtifacts).
+   *
+   * Parameters are typed as `unknown` at the port level to keep this file free of
+   * ports→domain imports. LocalRuntime declares concrete types (CommitPushInfra).
+   *
+   * - local:   delegates to commitScopedPaths in commit-push.ts.
+   * - managed: no-op (no local worktree; known Non-Goal for managed runtime).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
+   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
+   *
+   * @param stagePaths     - Declared outputs to stage (from partitionRoundChanges.toStage).
+   * @param cwd            - Working directory (the worktree).
+   * @param branch         - Branch to push to.
+   * @param coordinatorName - Name of the coordinator step (used in commit message + event).
+   * @param slug           - Job slug (used in commit message).
+   * @param commitPushInfra - Infrastructure for commit/push (typed unknown at port level).
+   */
+  commitRoundArtifacts?(
+    stagePaths: string[],
+    cwd: string,
+    branch: string,
+    coordinatorName: string,
+    slug: string,
+    commitPushInfra: unknown,
+  ): Promise<void>;
+
   /**
    * Seam meta-information: whether this runtime can mechanically derive changed files.
    *
@@ -469,4 +531,13 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
   canDeriveChangedFiles(): boolean;
   assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>;
   snapshotMainCheckoutGuard(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
+  listWorktreeChanges(cwd: string): Promise<string[]>;
+  commitRoundArtifacts(
+    stagePaths: string[],
+    cwd: string,
+    branch: string,
+    coordinatorName: string,
+    slug: string,
+    commitPushInfra: unknown,
+  ): Promise<void>;
 };

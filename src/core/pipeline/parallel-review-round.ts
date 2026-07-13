@@ -8,9 +8,12 @@
 
 import type { Step } from "../step/types.js";
 import type { ParallelReviewConfig } from "./types.js";
-import type { JobState, StepRun } from "../../state/schema.js";
+import type { JobState, StepRun, ErrorInfo } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
+import type { EventBus } from "../event/event-bus.js";
+import type { CommitPushInfra } from "../step/commit-push.js";
 import { StepExecutor } from "../step/executor.js";
+import { defaultSpawnFn } from "../../util/git-exec.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import {
   deriveReviewerStatuses,
@@ -19,6 +22,7 @@ import {
   aggregateVerdict,
   computeInvalidations,
 } from "./reviewer-status.js";
+import { partitionRoundChanges } from "./round-git-scope.js";
 
 /**
  * Merge parallel reviewer result states into a base state.
@@ -80,15 +84,18 @@ export class ParallelReviewRound {
   private readonly executor: StepExecutor;
   private readonly steps: Map<string, Step>;
   private readonly parallelReview: ParallelReviewConfig;
+  private readonly events: EventBus;
 
   constructor(params: {
     executor: StepExecutor;
     steps: Map<string, Step>;
     parallelReview: ParallelReviewConfig;
+    events: EventBus;
   }) {
     this.executor = params.executor;
     this.steps = params.steps;
     this.parallelReview = params.parallelReview;
+    this.events = params.events;
   }
 
   /**
@@ -182,7 +189,22 @@ export class ParallelReviewRound {
       // D4: construct a per-round readonly execution input from the received deps.
       // This shallow clone is what all members receive; the shared orchestration
       // deps object is never passed to member executors.
-      const roundDeps: PipelineDeps = { ...deps };
+      //
+      // D3 (round-owned-git-effects): set roundOwnsGitEffects so the executor skips
+      // finalizeStepArtifacts (git stage/commit/push) for each member step.
+      // The coordinator owns all git side effects for this round via commitRoundArtifacts.
+      const roundDeps: PipelineDeps = { ...deps, roundOwnsGitEffects: true };
+
+      // Compute declared output union from pending members BEFORE fan-out
+      // (base state is used so all members see the same pre-round state).
+      const declaredSet = new Set<string>();
+      for (const name of pending) {
+        const memberStep = this.steps.get(name);
+        const writes = memberStep?.writes?.(state, roundDeps) ?? [];
+        for (const ref of writes) declaredSet.add(ref.path);
+      }
+      const declared = [...declaredSet];
+
       const memberResults = await Promise.allSettled(
         pending.map(async (name) => {
           const memberStep = this.steps.get(name);
@@ -196,7 +218,9 @@ export class ParallelReviewRound {
       // --- 6. Merge results ---
       const fulfilledStates: JobState[] = [];
       const memberVerdicts = new Map<string, string>();
-      // Capture HEAD SHA after all members have committed (for approvedAtCommit)
+      // Capture HEAD SHA after all members have run (for approvedAtCommit).
+      // Under roundOwnsGitEffects, members do not commit, so HEAD should not have
+      // advanced — but we capture it here for consistency with the non-round path.
       const headSha = deps.runtimeStrategy
         ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? now
         : now;
@@ -228,9 +252,55 @@ export class ParallelReviewRound {
       // --- 7. Apply round results and compute aggregate ---
       statuses = applyRoundResults(statuses, memberVerdicts, headSha);
       aggregateVerdictResult = aggregateVerdict([...memberVerdicts.values()]);
+
+      // --- 7b. Round-owned git effects: detect non-declared changes, then stage+commit ---
+      // D3 (round-owned-git-effects): after all members have run (without committing),
+      // the coordinator checks what changed in the worktree and compares against the
+      // declared outputs union. Undeclared changes (excluding pipeline-managed paths) halt
+      // the round; declared changes are committed via scoped staging.
+      if (deps.runtimeStrategy?.listWorktreeChanges) {
+        const branch = state.branch ?? "";
+        const defaultSleepFn = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+        const infra: CommitPushInfra = {
+          spawnFn: deps.gitTransportSpawn ?? defaultSpawnFn,
+          sleepFn: deps.sleepFn ?? defaultSleepFn,
+          events: this.events,
+        };
+
+        const changed = await deps.runtimeStrategy.listWorktreeChanges(cwd);
+        const { toStage, offending } = partitionRoundChanges({ changed, declared, slug: deps.slug });
+
+        if (offending.length > 0) {
+          // Non-declared changes detected — halt the entire round.
+          aggregateVerdictResult = "escalation";
+          const roundError: ErrorInfo = {
+            code: "ROUND_NONDECLARED_CHANGE",
+            message: `Round produced undeclared file changes: ${offending.join(", ")}`,
+            hint: "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration.",
+          };
+          state = { ...state, error: roundError };
+          logPipelineDiag(
+            "pipeline:coordinator:round-halt",
+            `coordinator=${coordinatorName}, offending=[${offending.join(",")}]`,
+          );
+        } else if (toStage.length > 0) {
+          // All changes are within declared outputs — scoped stage + commit + push.
+          await deps.runtimeStrategy.commitRoundArtifacts?.(
+            toStage,
+            cwd,
+            branch,
+            coordinatorName,
+            deps.slug,
+            infra,
+          );
+        }
+        // toStage empty and no offending → nothing changed in declared paths; no-op.
+      }
+      // listWorktreeChanges absent (test fake without the method) → skip detection + commit.
     }
 
     // --- 8. Push synthetic coordinator StepRun ---
+    // Built after git operations so that the verdict and error reflect the final outcome.
     const coordinatorRuns = state.steps?.[coordinatorName] ?? [];
     const syntheticRun: StepRun = {
       attempt: coordinatorRuns.length + 1,
@@ -238,7 +308,7 @@ export class ParallelReviewRound {
       outcome: {
         verdict: aggregateVerdictResult,
         findingsPath: null,
-        error: null,
+        error: aggregateVerdictResult === "escalation" ? (state.error ?? null) : null,
       },
       startedAt: now,
       endedAt: new Date().toISOString(),

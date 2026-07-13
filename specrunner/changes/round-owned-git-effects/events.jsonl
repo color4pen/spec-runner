@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-07-13T20:33:04.736Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-13T20:33:04.736Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-07-13T20:33:04.740Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-07-13T20:36:10.808Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"bb8989f1-50a3-4ab7-8636-e8edd5ec95bc","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-13T20:33:04.799Z","endedAt":"2026-07-13T20:36:09.205Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-07-13T20:36:09.205Z","outputs":[{"path":"specrunner/changes/round-owned-git-effects/test-cases.md","hash":"sha256:de29ee12dc3b28ab4aac4ef7aa566292d0a828486c8e928b0bcb378d4298f3b9"}],"inputs":[{"path":"specrunner/changes/round-owned-git-effects/design.md","hash":"sha256:c97212b95d14b940fd3da447eaec876ce205bb3384b76b73212af0eaacc36fde"},{"path":"specrunner/changes/round-owned-git-effects/tasks.md","hash":"sha256:2fba403bebd6b96f0d85cdef6ea12eb02d51cd3b363a45539f8273aaeee46b8e"}]}
+{"type":"transition","ts":"2026-07-13T20:36:10.817Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-07-13T20:36:10.821Z","step":"implementer-started","status":"started","message":"Starting implementer step"}

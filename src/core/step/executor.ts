@@ -347,8 +347,14 @@ export class StepExecutor {
     // Design D3 (reviewer-parallel-execution): finalizeStepArtifacts is serialized via a
     // FIFO promise-chain mutex to prevent git index.lock conflicts when multiple member steps
     // execute concurrently (Promise.allSettled fan-out in pipeline.ts).
+    //
+    // D3 (round-owned-git-effects): when deps.roundOwnsGitEffects is true, the executor
+    // is running inside a coordinator round. The coordinator owns all git side effects for
+    // this round, so finalizeStepArtifacts (cleanupOutputTemplates + commitAndPush) must
+    // NOT be called here. The coordinator will call commitRoundArtifacts after all members
+    // complete, staging only the declared outputs.
     // ---------------------------------------------------------------------------
-    {
+    if (!deps.roundOwnsGitEffects) {
       const stateForFinalize = state;
       const headForFinalize = headBeforeStep;
       let finalizeError: unknown;

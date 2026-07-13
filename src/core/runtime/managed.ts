@@ -549,6 +549,35 @@ export class ManagedRuntime implements RealRuntimeStrategy {
     // no-op
   }
 
+  /**
+   * No local worktree available — always returns [].
+   * Parallel custom reviewer managed support is a known Non-Goal; no local git
+   * state means the coordinator cannot detect worktree changes.
+   * Consistent with the fail-safe pattern of listChangedFiles (managed = []).
+   *
+   * D3 (round-owned-git-effects): fail-safe for managed runtime.
+   */
+  async listWorktreeChanges(_cwd: string): Promise<string[]> {
+    return [];
+  }
+
+  /**
+   * No local worktree available — no-op.
+   * Parallel custom reviewer managed support is a known Non-Goal.
+   *
+   * D3 (round-owned-git-effects): fail-safe for managed runtime.
+   */
+  async commitRoundArtifacts(
+    _stagePaths: string[],
+    _cwd: string,
+    _branch: string,
+    _coordinatorName: string,
+    _slug: string,
+    _commitPushInfra: unknown,
+  ): Promise<void> {
+    // no-op: no local worktree
+  }
+
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
     const slug = this.currentSlug;
 
