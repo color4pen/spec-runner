@@ -1,6 +1,6 @@
 # Tasks: GitHub Actions permissions と失敗時挙動の補完
 
-## T-01: GitHub Actions セクションに「いつ Actions を選ぶか」の前置きを追加
+## [x] T-01: GitHub Actions セクションに「いつ Actions を選ぶか」の前置きを追加
 
 対象ファイル: `docs/operations.md`
 
@@ -17,7 +17,7 @@
 
 ---
 
-## T-02: workflow YAML 例に `permissions:` ブロックを追加し説明を記述
+## [x] T-02: workflow YAML 例に `permissions:` ブロックを追加し説明を記述
 
 対象ファイル: `docs/operations.md`
 
@@ -48,7 +48,7 @@ YAML ブロックの後（または「承認ラベルフィルタ」の補足コ
 
 ---
 
-## T-03: 失敗時の挙動を GitHub Actions セクションに追記
+## [x] T-03: 失敗時の挙動を GitHub Actions セクションに追記
 
 対象ファイル: `docs/operations.md`
 
@@ -67,7 +67,7 @@ GitHub Actions セクション内（workflow YAML とその補足の後）に、
 
 ---
 
-## T-04: 受け入れ基準の機械検証
+## [x] T-04: 受け入れ基準の機械検証
 
 `typecheck && test` を実行して既存テストが green であることを確認する。
 
