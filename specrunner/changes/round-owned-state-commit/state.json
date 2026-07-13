@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "fcfb911e-2898-4f68-afcd-49c64ef0d445",
   "createdAt": "2026-07-13T21:29:12.320Z",
-  "updatedAt": "2026-07-13T21:47:31.264Z",
+  "updatedAt": "2026-07-13T23:04:21.908Z",
   "request": {
     "title": "並列 round の state commit を coordinator が round 単位で所有する（member no-persist）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/round-owned-state-commit-fcfb911e",
   "error": null,
@@ -49,10 +49,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
