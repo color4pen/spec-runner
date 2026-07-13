@@ -90,3 +90,11 @@
 {"type":"transition","ts":"2026-07-13T18:42:15.420Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
 {"type":"transition","ts":"2026-07-13T18:42:15.420Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
 {"type":"transition","ts":"2026-07-13T18:42:15.423Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-13T18:42:44.972Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"e8523fcb-13b4-4123-a0a1-e2ab86b19dba","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-13T18:42:15.492Z","endedAt":"2026-07-13T18:42:42.759Z"}
+{"type":"transition","ts":"2026-07-13T18:42:44.980Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-13T18:42:44.983Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-13T18:42:48.238Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/sequential-single-writer/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T18:42:44.985Z","endedAt":"2026-07-13T18:42:48.236Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-13T18:42:48.236Z","outputs":[{"path":"specrunner/changes/sequential-single-writer/pr-create-result.md","hash":"sha256:2c6c382fc405953a08d56b2434457defb2765c48d465d6a7090a9f933262546b"}],"inputs":[{"path":"change/sequential-single-writer-6978ac59","hash":null}]}
+{"type":"transition","ts":"2026-07-13T18:42:48.251Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
