@@ -57,3 +57,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/readme-unattended-quickstart/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T09:06:52.467Z","endedAt":"2026-07-13T09:06:53.989Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-13T09:06:53.989Z","outputs":[{"path":"specrunner/changes/readme-unattended-quickstart/pr-create-result.md","hash":"sha256:404a073aaef9cdb8f29d33a586c74a16720d223ca8bb0ac75ae20e71d6ea0e27"}],"inputs":[{"path":"chore/readme-unattended-quickstart-b4267ad1","hash":null}]}
 {"type":"transition","ts":"2026-07-13T09:06:54.003Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-13T09:08:11.004Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
