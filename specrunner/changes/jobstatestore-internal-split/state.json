@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c687abe1-5685-451c-adb0-810516441a06",
   "createdAt": "2026-07-13T16:21:27.127Z",
-  "updatedAt": "2026-07-13T16:42:44.545Z",
+  "updatedAt": "2026-07-13T16:46:10.067Z",
   "request": {
     "title": "JobStateStore を内部コンポーネントへ分割する（public API 不変）",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "cross-boundary-invariants",
+  "step": "scale-tolerance",
   "status": "running",
   "branch": "refactor/jobstatestore-internal-split-c687abe1",
   "error": null,
@@ -49,13 +49,14 @@
     }
   ],
   "_journal": {
-    "historyCount": 22,
+    "historyCount": 23,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "scale-tolerance": 1
     }
   }
 }
