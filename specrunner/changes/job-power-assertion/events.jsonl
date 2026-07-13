@@ -22,3 +22,31 @@
 {"type":"lineage","step":"test-case-gen","ts":"2026-07-13T01:37:36.427Z","outputs":[{"path":"specrunner/changes/job-power-assertion/test-cases.md","hash":"sha256:dac6b1edabccf83a8042b76e832e07f406d9f708d934e2523b4b3934d2ec43c9"}],"inputs":[{"path":"specrunner/changes/job-power-assertion/design.md","hash":"sha256:f4e5a5c42531946ec8b20ad786008b5ecf1e67694fe6f604bc0036a43eff08a2"},{"path":"specrunner/changes/job-power-assertion/tasks.md","hash":"sha256:2837b58092e2714417f59a3501ca01d19554b9db072488fc45b5a3aa4d8cd285"}]}
 {"type":"transition","ts":"2026-07-13T01:37:37.838Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
 {"type":"transition","ts":"2026-07-13T01:37:37.840Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
+{"type":"transition","ts":"2026-07-13T01:53:19.156Z","step":"implementer-verdict","status":"ok","message":"implementer verdict: success"}
+{"type":"step-attempt","step":"implementer","sessionId":"e33bc921-f081-41c6-bf38-54e68accd477","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-13T01:37:37.895Z","endedAt":"2026-07-13T01:53:17.498Z"}
+{"type":"lineage","step":"implementer","ts":"2026-07-13T01:53:17.498Z","outputs":[{"path":"specrunner/changes/job-power-assertion","hash":null},{"path":"specrunner/changes/job-power-assertion/tasks.md","hash":"sha256:e0fdfa1ccc90f698724850f86d74d6833edb5ae2513acc40871770fbbf492ed1"}],"inputs":[{"path":"specrunner/changes/job-power-assertion/tasks.md","hash":"sha256:e0fdfa1ccc90f698724850f86d74d6833edb5ae2513acc40871770fbbf492ed1"},{"path":"specrunner/changes/job-power-assertion/spec.md","hash":"sha256:fd9babd257a3e234f24f0d6d2053e215dd91015a221a5792827707913328c404"}]}
+{"type":"transition","ts":"2026-07-13T01:53:19.162Z","step":"step-transition","status":"ok","message":"implementer → verification"}
+{"type":"transition","ts":"2026-07-13T01:53:19.163Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T01:53:19.164Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"interruption","reason":"signal","ts":"2026-07-13T01:53:38.976Z"}
+{"type":"transition","ts":"2026-07-13T01:53:38.976Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-13T01:54:15.898Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'verification'"}
+{"type":"transition","ts":"2026-07-13T01:54:15.972Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T01:54:15.973Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"interruption","reason":"signal","ts":"2026-07-13T01:54:36.585Z"}
+{"type":"transition","ts":"2026-07-13T01:54:36.585Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-13T02:05:39.031Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'verification'"}
+{"type":"transition","ts":"2026-07-13T02:05:39.087Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T02:05:39.088Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"interruption","reason":"signal","ts":"2026-07-13T02:05:59.044Z"}
+{"type":"transition","ts":"2026-07-13T02:05:59.044Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-13T02:28:10.316Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'verification'"}
+{"type":"transition","ts":"2026-07-13T02:28:10.400Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T02:28:10.401Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-07-13T02:29:02.180Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/job-power-assertion/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T02:28:10.402Z","endedAt":"2026-07-13T02:29:02.177Z"}
+{"type":"lineage","step":"verification","ts":"2026-07-13T02:29:02.177Z","outputs":[{"path":"specrunner/changes/job-power-assertion/verification-result.md","hash":"sha256:a777fabd6b1c3a7ffe856c1ab57f8a4b4740238450eb9704e4ace7726af59957"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-13T02:29:02.189Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
+{"type":"transition","ts":"2026-07-13T02:29:02.189Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-07-13T02:29:02.191Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T02:29:02.193Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
