@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7b959b90-ad3a-43b0-87b6-0b1c61a4b78b",
   "createdAt": "2026-07-13T08:59:15.396Z",
-  "updatedAt": "2026-07-13T09:32:52.056Z",
+  "updatedAt": "2026-07-13T09:38:58.120Z",
   "request": {
     "title": "PR ごとの attestation をコメント添付する",
     "type": "new-feature",
@@ -48,16 +48,18 @@
       ]
     }
   ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 32,
+    "historyCount": 41,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 2,
-      "build-fixer": 1
+      "verification": 3,
+      "build-fixer": 2
     }
   }
 }

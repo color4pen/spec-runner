@@ -11,24 +11,17 @@ import { createHash } from "node:crypto";
 import { fold } from "../../store/event-journal.js";
 import { computeCostUsd } from "../usage/pricing.js";
 import type { Finding } from "../../kernel/report-result.js";
-import type {
-  AttestationInput,
-  Attestation,
-  GateExecution,
-  StepModels,
-  StepCost,
-  CostSummary,
-  TokenTotals,
-  FindingsSummary,
+import {
+  zeroTokenTotals,
+  type AttestationInput,
+  type Attestation,
+  type GateExecution,
+  type StepModels,
+  type StepCost,
+  type CostSummary,
+  type TokenTotals,
+  type FindingsSummary,
 } from "./types.js";
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function emptyTokenTotals(): TokenTotals {
-  return { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
-}
 
 function addTokenTotals(acc: TokenTotals, delta: TokenTotals): TokenTotals {
   return {
@@ -141,13 +134,13 @@ export function buildAttestation(input: AttestationInput): Attestation {
   const perStep: StepCost[] = [];
   const unpricedModelsSet = new Set<string>();
   let totalCostAccumulator: number | null = null;
-  const totalTokensAccumulator = emptyTokenTotals();
+  const totalTokensAccumulator = zeroTokenTotals();
 
   for (const [stepName, invocations] of Object.entries(byStep)) {
     const modelsSet = new Set<string>();
     let stepCostUsd: number | null = null;
     let stepHasUnpriced = false;
-    const stepTokens = emptyTokenTotals();
+    const stepTokens = zeroTokenTotals();
 
     for (const inv of invocations) {
       if (inv.modelUsage === null) {

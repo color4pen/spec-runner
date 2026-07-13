@@ -59,3 +59,11 @@ export interface AttestationInput {
   journalContent: string;    // events.jsonl 生バイト列
   usage: UsageFile;          // 解析済み usage.json
 }
+
+/**
+ * Returns a zero-value TokenTotals (additive identity).
+ * Factory function — each call returns a distinct mutable object.
+ */
+export function zeroTokenTotals(): TokenTotals {
+  return { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 };
+}
