@@ -15,7 +15,8 @@
 
 import * as path from "node:path";
 import type { Step, AgentStep } from "./types.js";
-import type { JobState, Verdict, ModelUsage } from "../../state/schema.js";
+import type { JobState, Verdict, ModelUsage, StepRun, ErrorInfo } from "../../state/schema.js";
+import type { ReviewerStatus } from "../../kernel/reviewer-snapshot.js";
 import type { PipelineDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
@@ -344,6 +345,231 @@ export class CommitOrchestrator {
 
     await store.persist(s);
     attachStateAndRethrow(halt.thrownErr, s);
+  }
+
+  /**
+   * Commit all member results and coordinator patch in a single atomic persist.
+   * Called by ParallelReviewRound after all members have run via produceResult
+   * (i.e. without persisting state individually).
+   *
+   * D1 (execution-ownership-model ADR, parallel round): coordinator is the sole
+   * writer for parallel round state. This method is the single persist boundary.
+   *
+   * Sequence:
+   *   1. Fold each member result into state in-memory (no store calls).
+   *   2. Apply coordinator patch: reviewerStatuses, coordinator StepRun, error, updatedAt.
+   *   3. store.persist(state) — exactly once.
+   *   4. Best-effort post-persist: usage + lineage per success member + verdict:parsed emit.
+   *
+   * member halt: recordFailedStepResult only (records StepRun error in-memory).
+   *   store.fail / transitionJob are NOT called — job lifecycle (failed transition)
+   *   is handled by the pipeline after observing the escalation coordinator verdict.
+   *
+   * members: [] (fast path — all previously approved) is valid; only coordinator
+   * patch + single persist occurs.
+   *
+   * @param params.coordinatorName   - Name of the coordinator step.
+   * @param params.base              - Job state before member execution.
+   * @param params.deps              - Pipeline dependencies (used for usage/lineage paths).
+   * @param params.members           - Fan-out results in pending order.
+   * @param params.reviewerStatuses  - Updated reviewer status records for the round.
+   * @param params.coordinatorRun    - Synthetic coordinator StepRun to append.
+   * @param params.roundError        - Error to set on state (null clears previous error).
+   */
+  async commitRound(params: {
+    coordinatorName: string;
+    base: JobState;
+    deps: PipelineDeps;
+    members: ReadonlyArray<{ step: Step; startedAt: string; result: StepExecutionResult }>;
+    reviewerStatuses: ReviewerStatus[];
+    coordinatorRun: StepRun;
+    roundError: ErrorInfo | null;
+  }): Promise<JobState> {
+    const { coordinatorName, base, deps, members, reviewerStatuses, coordinatorRun, roundError } = params;
+    const store = this.getStore(base.jobId);
+    const now = new Date().toISOString();
+
+    // Track success member entries for best-effort post-persist work
+    const successEntries: Array<{ step: Step; result: StepExecutionResult & { kind: "success" } }> = [];
+    const skippedEntries: Array<{ step: Step; result: StepExecutionResult & { kind: "skipped" } }> = [];
+
+    // --- 1. Fold members in-memory (no store calls) ---
+    let state = base;
+
+    for (const { step, startedAt, result } of members) {
+      if (result.kind === "success") {
+        const { completion, completedAt, session, modelUsage, followUpAttempts, transientRetryAttempts, completionReportDiagnostics } = result;
+        const { verdict, persistToolResult } = completion;
+        const findingsPath = step.resultFilePath(base, deps);
+
+        // pushStepResult (mirrors commitSuccess)
+        state = pushStepResult(state, step.name, {
+          session,
+          verdict: verdict as Verdict | null,
+          findingsPath,
+          completedAt,
+          startedAt,
+          error: null,
+          toolResult: persistToolResult,
+          followUpAttempts: followUpAttempts ?? 0,
+          transientRetryAttempts,
+          completionReportDiagnostics,
+        });
+
+        // history: {member}-started (matches CommitOrchestrator.begin agent path)
+        state = {
+          ...state,
+          history: [
+            ...state.history,
+            { ts: startedAt, step: `${step.name}-started`, status: "started" as const, message: `Starting ${step.name} step` },
+          ],
+        };
+
+        // history: {member}-verdict (matches commitSuccess appendHistory)
+        state = {
+          ...state,
+          history: [
+            ...state.history,
+            { ts: now, step: `${step.name}-verdict`, status: "ok" as const, message: `${step.name} verdict: ${verdict}` },
+          ],
+        };
+
+        successEntries.push({ step, result });
+      } else if (result.kind === "skipped") {
+        // pushStepResult (mirrors commitSkipped)
+        state = pushStepResult(state, step.name, {
+          session: null,
+          verdict: "skipped" as Verdict,
+          findingsPath: null,
+          completedAt: now,
+          startedAt,
+          error: null,
+          skipReason: result.skipReason,
+        });
+
+        // history: {member}-started
+        state = {
+          ...state,
+          history: [
+            ...state.history,
+            { ts: startedAt, step: `${step.name}-started`, status: "started" as const, message: `Starting ${step.name} step` },
+          ],
+        };
+
+        // history: {member}-skipped (matches commitSkipped appendHistory)
+        state = {
+          ...state,
+          history: [
+            ...state.history,
+            { ts: now, step: `${step.name}-skipped`, status: "warning" as const, message: `${step.name} skipped: ${result.skipReason}` },
+          ],
+        };
+
+        skippedEntries.push({ step, result });
+      } else {
+        // halt — recordFailedStepResult only (no store.fail / transitionJob)
+        state = recordFailedStepResult(state, step.name, result.halt.error, result.halt.recordOpts ?? {});
+
+        // history from halt.history (in-memory append, matches commitHalt record phase)
+        if (result.halt.history) {
+          state = {
+            ...state,
+            history: [
+              ...state.history,
+              { ts: now, ...result.halt.history },
+            ],
+          };
+        }
+      }
+    }
+
+    // --- 2. Apply coordinator patch ---
+    const coordinatorRuns = state.steps?.[coordinatorName] ?? [];
+    state = {
+      ...state,
+      reviewerStatuses,
+      steps: {
+        ...(state.steps ?? {}),
+        [coordinatorName]: [...coordinatorRuns, coordinatorRun],
+      },
+      error: roundError,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // --- 3. Persist exactly once ---
+    await store.persist(state);
+
+    // --- 4. Best-effort post-persist: usage + lineage + verdict:parsed ---
+    for (const { step, result } of successEntries) {
+      const { completion, completedAt, modelUsage } = result;
+      const { verdict, persistToolResult } = completion;
+
+      // usage (appendInvocation — mirrors commitSuccess)
+      if (modelUsage && deps.cwd && deps.slug) {
+        const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
+        try {
+          await appendInvocation(usageAbsPath, {
+            command: "job",
+            timestamp: completedAt,
+            modelUsage,
+            jobId: state.jobId,
+            stepName: step.name,
+          });
+        } catch {
+          // best-effort
+        }
+      }
+
+      // lineage (appendLineage — mirrors commitSuccess)
+      if (deps.runtimeStrategy && step.writes && deps.cwd) {
+        try {
+          const cwd = deps.cwd;
+          const writes = step.writes(state, deps);
+          if (writes.length > 0) {
+            const reads = step.reads ? step.reads(state, deps) : [];
+            const [outputRefs, inputRefs] = await Promise.all([
+              deps.runtimeStrategy.digestArtifacts(writes.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+              deps.runtimeStrategy.digestArtifacts(reads.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+            ]);
+            const inputArtifactRefs = inputRefs.map((r, i) => {
+              const ioRef = reads[i];
+              if (ioRef?.required !== undefined) return { ...r, required: ioRef.required };
+              return r;
+            });
+            const lineageRecord: LineageRecord = {
+              type: "lineage",
+              step: step.name,
+              ts: completedAt,
+              outputs: outputRefs,
+              inputs: inputArtifactRefs,
+            };
+            await store.appendLineage(lineageRecord);
+          }
+        } catch {
+          // best-effort
+        }
+      }
+
+      // verdict:parsed (mirrors commitSuccess, emitted after persist)
+      this.events.emit("verdict:parsed", {
+        step: step.name,
+        outcome: {
+          verdict,
+          toolResult: persistToolResult,
+          followUpAttempts: result.followUpAttempts ?? 0,
+        },
+      });
+    }
+
+    // verdict:parsed for skipped members (mirrors commitSkipped)
+    for (const { step } of skippedEntries) {
+      this.events.emit("verdict:parsed", {
+        step: step.name,
+        outcome: { verdict: "skipped", toolResult: null, followUpAttempts: 0 },
+      });
+    }
+
+    return state;
   }
 
   /**

@@ -21,6 +21,7 @@
 import type { JobState } from "../../state/schema.js";
 import type { ReviewerStatus } from "../../kernel/reviewer-snapshot.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
+import type { StepExecutionResult } from "../step/commit-orchestrator.js";
 import { evaluateActivation } from "../reviewers/activation.js";
 
 export type { ReviewerStatus };
@@ -219,4 +220,36 @@ export function computeInvalidations(
 
     return s;
   });
+}
+
+// ---------------------------------------------------------------------------
+// verdictOfResult
+// ---------------------------------------------------------------------------
+
+/**
+ * Derive a member verdict string from a StepExecutionResult.
+ *
+ * D1/D3 (round-owned-state-commit): used by ParallelReviewRound coordinator to
+ * compute per-member verdicts from producer-only results without reading StepRun
+ * arrays persisted by the (now-removed) member executor path.
+ *
+ * Equivalence with current member verdict derivation
+ * (parallel-review-round.ts, pre-T-04):
+ *   Current: `lastRun?.outcome.verdict ?? "escalation"` for fulfilled,
+ *            `"escalation"` for rejected (halt/throw path).
+ *   After:   success → completion.verdict ?? "escalation" (same null-coalesce)
+ *            skipped → "skipped"
+ *            halt    → "escalation"
+ *
+ * @param result - Producer result from StepExecutor.produceResult.
+ */
+export function verdictOfResult(result: StepExecutionResult): string {
+  if (result.kind === "success") {
+    return result.completion.verdict ?? "escalation";
+  }
+  if (result.kind === "skipped") {
+    return "skipped";
+  }
+  // halt
+  return "escalation";
 }

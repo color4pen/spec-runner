@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-07-13T23:04:21.906Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-13T23:04:21.906Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-07-13T23:04:21.908Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-07-13T23:08:23.969Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"1500cd3b-acb3-4773-8e0b-17e13cbba1df","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-13T23:04:21.965Z","endedAt":"2026-07-13T23:08:22.613Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-07-13T23:08:22.613Z","outputs":[{"path":"specrunner/changes/round-owned-state-commit/test-cases.md","hash":"sha256:d92e74e478140c0f7f867a21d27f1a7d1723e130fa8d24d1e5e70e4bcc5e47cd"}],"inputs":[{"path":"specrunner/changes/round-owned-state-commit/design.md","hash":"sha256:56e2440ec48db086a21d68ce7bde1fd9a15c510f4d840687f350d3dcbbdb2c2b"},{"path":"specrunner/changes/round-owned-state-commit/tasks.md","hash":"sha256:88a39ce993295321febbdab646821df513f23fbe6a6bde1c9a54bde230b18b5e"}]}
+{"type":"transition","ts":"2026-07-13T23:08:23.977Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-07-13T23:08:23.979Z","step":"implementer-started","status":"started","message":"Starting implementer step"}

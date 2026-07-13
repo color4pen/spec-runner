@@ -25,6 +25,7 @@ import {
   makeAgentThrowHalt,
   makeTimeoutHalt,
 } from "../step-halt.js";
+import type { Verdict } from "../../../state/schema.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -120,7 +121,7 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
   } as PipelineDeps;
 }
 
-function makeCompletion(verdict = "approved" as const): StepCompletion {
+function makeCompletion(verdict: Verdict = "approved"): StepCompletion {
   return {
     verdict,
     persistToolResult: null,
@@ -397,5 +398,298 @@ describe("CommitOrchestrator — apply dispatch (TC-015-F)", () => {
     await expect(orchestrator.apply(step, state, deps, result)).rejects.toThrow("test halt");
     expect(store.fail).toHaveBeenCalledOnce();
     expect(store.persist).toHaveBeenCalledOnce();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-015-G: commitRound — round state commit (T-03)
+// ---------------------------------------------------------------------------
+
+describe("CommitOrchestrator — commitRound (TC-015-G)", () => {
+  it("store.persist called exactly once with 2 success members + coordinator run", async () => {
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+
+    const stepA = makeStep("reviewer-alpha");
+    const stepB = makeStep("reviewer-beta");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const memberA = {
+      step: stepA,
+      startedAt: "2026-01-01T00:00:00.000Z",
+      result: makeSuccessResult(makeCompletion("approved")),
+    };
+    const memberB = {
+      step: stepB,
+      startedAt: "2026-01-01T00:00:01.000Z",
+      result: makeSuccessResult(makeCompletion("needs-fix")),
+    };
+
+    const coordinatorRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: { verdict: "needs-fix" as const, findingsPath: null, error: null },
+      startedAt: "2026-01-01T00:01:00.000Z",
+      endedAt: "2026-01-01T00:01:00.000Z",
+    };
+
+    const reviewerStatuses = [
+      { name: "reviewer-alpha", status: "approved" as const, approvedAtCommit: "sha1", activationPaths: undefined, invalidatedByCommit: null },
+      { name: "reviewer-beta", status: "pending" as const, approvedAtCommit: null, activationPaths: undefined, invalidatedByCommit: null },
+    ];
+
+    await orchestrator.commitRound({
+      coordinatorName: "custom-reviewers",
+      base: state,
+      deps,
+      members: [memberA, memberB],
+      reviewerStatuses,
+      coordinatorRun,
+      roundError: null,
+    });
+
+    // AC #2: persist called exactly once
+    expect(store.persist).toHaveBeenCalledOnce();
+    // store.fail / transitionJob NOT called (members used produceResult)
+    expect(store.fail).not.toHaveBeenCalled();
+  });
+
+  it("persisted state contains both member StepRuns + coordinator StepRun", async () => {
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+
+    const stepA = makeStep("reviewer-alpha");
+    const stepB = makeStep("reviewer-beta");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const memberA = {
+      step: stepA,
+      startedAt: "2026-01-01T00:00:00.000Z",
+      result: makeSuccessResult(makeCompletion("approved")),
+    };
+    const memberB = {
+      step: stepB,
+      startedAt: "2026-01-01T00:00:01.000Z",
+      result: makeSuccessResult(makeCompletion("needs-fix")),
+    };
+
+    const coordinatorRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: { verdict: "needs-fix" as const, findingsPath: null, error: null },
+      startedAt: "2026-01-01T00:01:00.000Z",
+      endedAt: "2026-01-01T00:01:00.000Z",
+    };
+
+    await orchestrator.commitRound({
+      coordinatorName: "custom-reviewers",
+      base: state,
+      deps,
+      members: [memberA, memberB],
+      reviewerStatuses: [],
+      coordinatorRun,
+      roundError: null,
+    });
+
+    // Capture the state passed to persist
+    const persistedState = store.persist.mock.calls[0]?.[0] as import("../../../state/schema.js").JobState;
+    expect(persistedState).toBeDefined();
+
+    // Both member StepRuns present
+    expect(persistedState.steps?.["reviewer-alpha"]).toHaveLength(1);
+    expect(persistedState.steps?.["reviewer-beta"]).toHaveLength(1);
+    // Coordinator StepRun present
+    expect(persistedState.steps?.["custom-reviewers"]).toHaveLength(1);
+    expect(persistedState.steps?.["custom-reviewers"]?.[0]?.outcome.verdict).toBe("needs-fix");
+  });
+
+  it("member halt: StepRun with error recorded, store.fail NOT called (AC #3)", async () => {
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+
+    const stepA = makeStep("reviewer-alpha");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const err = Object.assign(new Error("member failed"), { code: "AGENT_STEP_FAILED" });
+    const haltResult: StepExecutionResult = {
+      kind: "halt",
+      halt: makeAgentThrowHalt(err, "reviewer-alpha"),
+    };
+
+    const memberA = {
+      step: stepA,
+      startedAt: "2026-01-01T00:00:00.000Z",
+      result: haltResult,
+    };
+
+    const coordinatorRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: { verdict: "escalation" as const, findingsPath: null, error: null },
+      startedAt: "2026-01-01T00:01:00.000Z",
+      endedAt: "2026-01-01T00:01:00.000Z",
+    };
+
+    await orchestrator.commitRound({
+      coordinatorName: "custom-reviewers",
+      base: state,
+      deps,
+      members: [memberA],
+      reviewerStatuses: [],
+      coordinatorRun,
+      roundError: null,
+    });
+
+    // store.fail NOT called (member halt in round → StepRun record only, no job transition)
+    expect(store.fail).not.toHaveBeenCalled();
+    // persist still called exactly once
+    expect(store.persist).toHaveBeenCalledOnce();
+
+    // Member StepRun has error recorded
+    const persistedState = store.persist.mock.calls[0]?.[0] as import("../../../state/schema.js").JobState;
+    const memberRuns = persistedState.steps?.["reviewer-alpha"] ?? [];
+    expect(memberRuns).toHaveLength(1);
+    expect(memberRuns[0]?.outcome.error).not.toBeNull();
+  });
+
+  it("reviewerStatuses set on persisted state", async () => {
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+    const reviewerStatuses = [
+      { name: "reviewer-alpha", status: "approved" as const, approvedAtCommit: "sha-abc", activationPaths: undefined, invalidatedByCommit: null },
+    ];
+
+    const coordinatorRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+      startedAt: "2026-01-01T00:01:00.000Z",
+      endedAt: "2026-01-01T00:01:00.000Z",
+    };
+
+    await orchestrator.commitRound({
+      coordinatorName: "custom-reviewers",
+      base: state,
+      deps,
+      members: [],
+      reviewerStatuses,
+      coordinatorRun,
+      roundError: null,
+    });
+
+    const persistedState = store.persist.mock.calls[0]?.[0] as import("../../../state/schema.js").JobState;
+    expect(persistedState.reviewerStatuses).toEqual(reviewerStatuses);
+  });
+
+  it("roundError set on persisted state when non-null", async () => {
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+    const roundError = { code: "ROUND_NONDECLARED_CHANGE", message: "offending: foo.ts", hint: "inspect" };
+
+    const coordinatorRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: { verdict: "escalation" as const, findingsPath: null, error: roundError },
+      startedAt: "2026-01-01T00:01:00.000Z",
+      endedAt: "2026-01-01T00:01:00.000Z",
+    };
+
+    await orchestrator.commitRound({
+      coordinatorName: "custom-reviewers",
+      base: state,
+      deps,
+      members: [],
+      reviewerStatuses: [],
+      coordinatorRun,
+      roundError,
+    });
+
+    const persistedState = store.persist.mock.calls[0]?.[0] as import("../../../state/schema.js").JobState;
+    expect(persistedState.error?.code).toBe("ROUND_NONDECLARED_CHANGE");
+  });
+
+  it("empty members (fast path): coordinator patch + single persist still occurs", async () => {
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const coordinatorRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+      startedAt: "2026-01-01T00:01:00.000Z",
+      endedAt: "2026-01-01T00:01:00.000Z",
+    };
+
+    const result = await orchestrator.commitRound({
+      coordinatorName: "custom-reviewers",
+      base: state,
+      deps,
+      members: [],
+      reviewerStatuses: [],
+      coordinatorRun,
+      roundError: null,
+    });
+
+    expect(store.persist).toHaveBeenCalledOnce();
+    expect(result.steps?.["custom-reviewers"]).toHaveLength(1);
+    expect(result.steps?.["custom-reviewers"]?.[0]?.outcome.verdict).toBe("approved");
+  });
+
+  it("verdict:parsed emitted for success members after persist", async () => {
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const emitted: Array<{ step: string; verdict: string }> = [];
+    events.on("verdict:parsed", (payload: Record<string, unknown>) => {
+      emitted.push({
+        step: payload.step as string,
+        verdict: (payload.outcome as Record<string, unknown>).verdict as string,
+      });
+    });
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+
+    const stepA = makeStep("reviewer-alpha");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    await orchestrator.commitRound({
+      coordinatorName: "custom-reviewers",
+      base: state,
+      deps,
+      members: [{
+        step: stepA,
+        startedAt: "2026-01-01T00:00:00.000Z",
+        result: makeSuccessResult(makeCompletion("approved")),
+      }],
+      reviewerStatuses: [],
+      coordinatorRun: {
+        attempt: 1, sessionId: null,
+        outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+        startedAt: "2026-01-01T00:01:00.000Z",
+        endedAt: "2026-01-01T00:01:00.000Z",
+      },
+      roundError: null,
+    });
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0]?.step).toBe("reviewer-alpha");
+    expect(emitted[0]?.verdict).toBe("approved");
   });
 });
