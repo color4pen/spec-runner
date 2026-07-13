@@ -15,7 +15,7 @@ import { EventBus } from "../../../src/core/event/event-bus.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { JobState } from "../../../src/core/step/../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
-import type { AgentRunner, AgentRunResult } from "../../../src/core/port/agent-runner.js";
+import type { AgentRunResult } from "../../../src/core/port/agent-runner.js";
 import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
