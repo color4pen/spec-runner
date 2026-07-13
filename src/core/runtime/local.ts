@@ -20,8 +20,9 @@ import { DispatchingAgentRunner } from "../../adapter/dispatching/agent-runner.j
 import { createWorktreeManager } from "../worktree/manager.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 import { resolveMonitoredGuardGlobs, matchesMonitored } from "../step/main-checkout-guard.js";
-import { spawnCommand } from "../../util/spawn.js";
-import type { SpawnFn } from "../../util/spawn.js";
+import { spawnCommand, spawnBackground } from "../../util/spawn.js";
+import type { SpawnFn, SpawnBackgroundFn } from "../../util/spawn.js";
+import { acquirePowerAssertion } from "./power-assertion.js";
 import { createTransportAuth } from "../../git/transport-auth.js";
 import { defaultSpawnFn } from "../../util/git-exec.js";
 import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
@@ -62,6 +63,7 @@ interface LocalCleanupInternals {
   startStep: string;
   signalCleanup: () => Promise<void>;
   cleanupWorktreeOnFailure: () => Promise<void>;
+  releasePowerAssertion: () => void;
 }
 
 function makeHandle(internals: LocalCleanupInternals): CleanupHandle {
@@ -89,6 +91,10 @@ export interface LocalRuntimeOptions {
    * When absent, JS dependency trace detection determines whether install runs.
    */
   workspaceSetup?: ShellCommand[];
+  /** Background spawn function for dependency injection (power assertion, tests). */
+  spawnBackgroundFn?: SpawnBackgroundFn;
+  /** Platform override for dependency injection (power assertion, tests). */
+  platform?: NodeJS.Platform;
 }
 
 export class LocalRuntime implements RealRuntimeStrategy {
@@ -105,6 +111,10 @@ export class LocalRuntime implements RealRuntimeStrategy {
   private readonly wrappedSpawnFn: SpawnFn;
   /** Workspace setup commands from config.workspace.setup. undefined = use default detectPm logic. */
   private readonly workspaceSetup: ShellCommand[] | undefined;
+  /** Background spawn function for power assertion (injectable for tests). */
+  private readonly spawnBackgroundFn: SpawnBackgroundFn;
+  /** Platform for power assertion (injectable for tests). */
+  private readonly platform: NodeJS.Platform;
 
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
@@ -123,6 +133,8 @@ export class LocalRuntime implements RealRuntimeStrategy {
     this.transportAuth = createTransportAuth({ token: this.githubToken, cwd: opts.cwd });
     this.wrappedSpawnFn = this.transportAuth.wrapSpawn(this.spawnFn);
     this.workspaceSetup = opts.workspaceSetup;
+    this.spawnBackgroundFn = opts.spawnBackgroundFn ?? spawnBackground;
+    this.platform = opts.platform ?? process.platform;
   }
 
   /**
@@ -936,6 +948,15 @@ export class LocalRuntime implements RealRuntimeStrategy {
       );
     };
 
+    // Acquire power assertion for the duration of this job
+    const powerAssertion = acquirePowerAssertion({
+      cwd,
+      parentPid: process.pid,
+      platform: this.platform,
+      spawnBackgroundFn: this.spawnBackgroundFn,
+    });
+    const releasePowerAssertion = () => powerAssertion.release();
+
     // Best-effort cleanup for all failure paths.
     // On success the worktree is left for finish — finish cleans it up.
     const cleanupWorktreeOnFailure = async (): Promise<void> => {
@@ -985,6 +1006,7 @@ export class LocalRuntime implements RealRuntimeStrategy {
       } catch {
         // Best-effort persist; state file (layer 2) handles residuals
       }
+      releasePowerAssertion();
       process.exit(130); // 128 + SIGINT(2)
     };
 
@@ -998,6 +1020,7 @@ export class LocalRuntime implements RealRuntimeStrategy {
       startStep,
       signalCleanup,
       cleanupWorktreeOnFailure,
+      releasePowerAssertion,
     });
   }
 
@@ -1007,6 +1030,9 @@ export class LocalRuntime implements RealRuntimeStrategy {
     // Deregister signal handlers
     process.off("SIGINT", internals.signalCleanup);
     process.off("SIGTERM", internals.signalCleanup);
+
+    // Release power assertion (idempotent, all finalStatus values)
+    internals.releasePowerAssertion();
 
     // Cleanup worktree on failure (on success, archive handles worktree cleanup)
     if (finalStatus !== "awaiting-archive") {

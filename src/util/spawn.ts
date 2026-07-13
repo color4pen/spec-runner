@@ -28,6 +28,84 @@ export type SpawnFn = (
   opts: SpawnOptions,
 ) => Promise<SpawnResult>;
 
+// ─── Background (resident) process support ───────────────────────────────────
+
+/**
+ * Handle returned by spawnBackground.
+ * kill() is idempotent and never throws.
+ */
+export interface BackgroundProcessHandle {
+  readonly pid: number | undefined;
+  kill(): void;
+}
+
+/**
+ * Options for spawnBackground.
+ */
+export interface SpawnBackgroundOptions {
+  cwd: string;
+  env?: Record<string, string | undefined>;
+  onError?: (err: Error) => void;
+}
+
+/**
+ * SpawnBackgroundFn type for dependency injection in tests.
+ */
+export type SpawnBackgroundFn = (
+  cmd: string,
+  args: string[],
+  opts: SpawnBackgroundOptions,
+) => BackgroundProcessHandle;
+
+/**
+ * Spawn a long-lived background process and return a handle to kill it.
+ * Unlike spawnCommand, this does NOT await process exit — it returns immediately
+ * with a kill handle so callers can terminate the process at any time.
+ *
+ * Env follows the same B-6 strip point as spawnCommand:
+ *   stripSecrets(process.env) + optional opts.env overlay.
+ *
+ * The child process is unref()'d so it never keeps the CLI event loop alive.
+ * The error listener is attached synchronously (before return) to prevent an
+ * async ENOENT from becoming an unhandled error event.
+ * kill() is idempotent and never throws.
+ */
+export function spawnBackground(
+  cmd: string,
+  args: string[],
+  opts: SpawnBackgroundOptions,
+): BackgroundProcessHandle {
+  const env: Record<string, string> = opts.env
+    ? { ...stripSecrets(process.env as Record<string, string | undefined>), ...opts.env } as Record<string, string>
+    : stripSecrets(process.env as Record<string, string | undefined>) as Record<string, string>;
+
+  const proc = spawn(cmd, args, {
+    cwd: opts.cwd,
+    shell: false,
+    stdio: "ignore",
+    env,
+  });
+
+  // Attach error handler synchronously to prevent unhandled error events
+  proc.on("error", (err: Error) => {
+    opts.onError?.(err);
+  });
+
+  // Unref so the child never keeps the CLI event loop alive
+  proc.unref();
+
+  let killed = false;
+
+  return {
+    get pid() { return proc.pid; },
+    kill() {
+      if (killed) return;
+      killed = true;
+      try { proc.kill("SIGTERM"); } catch { /* best-effort */ }
+    },
+  };
+}
+
 /**
  * Spawn a command and collect stdout/stderr.
  * Resolves with { exitCode, stdout, stderr }.
