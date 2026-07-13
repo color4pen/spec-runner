@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7b959b90-ad3a-43b0-87b6-0b1c61a4b78b",
   "createdAt": "2026-07-13T08:59:15.396Z",
-  "updatedAt": "2026-07-13T09:54:34.734Z",
+  "updatedAt": "2026-07-13T10:02:45.443Z",
   "request": {
     "title": "PR ごとの attestation をコメント添付する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "scale-tolerance",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/pr-attestation-comment-7b959b90",
   "error": null,
@@ -50,8 +50,35 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "6126c1528849bec765153fe9eb295ade1538f61b",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -61,7 +88,9 @@
       "verification": 4,
       "build-fixer": 3,
       "code-review": 1,
-      "scale-tolerance": 1
+      "scale-tolerance": 1,
+      "cross-boundary-invariants": 1,
+      "custom-reviewers": 1
     }
   }
 }
