@@ -65,3 +65,10 @@
 {"type":"transition","ts":"2026-07-13T23:53:49.848Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-07-13T23:53:49.850Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-07-13T23:53:49.851Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-13T23:54:17.369Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"d03dd2fa-c4e8-4961-af5a-964240588be3","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/round-owned-state-commit/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[]},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-07-13T23:53:49.907Z","endedAt":"2026-07-13T23:54:16.016Z"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-13T23:54:16.016Z","outputs":[{"path":"specrunner/changes/round-owned-state-commit/regression-gate-result-002.md","hash":null}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-13T23:54:17.375Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-13T23:54:17.375Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-13T23:54:17.377Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T23:54:17.378Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
