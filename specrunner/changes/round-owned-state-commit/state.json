@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "fcfb911e-2898-4f68-afcd-49c64ef0d445",
   "createdAt": "2026-07-13T21:29:12.320Z",
-  "updatedAt": "2026-07-13T23:58:18.926Z",
+  "updatedAt": "2026-07-13T23:58:42.916Z",
   "request": {
     "title": "並列 round の state commit を coordinator が round 単位で所有する（member no-persist）",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/round-owned-state-commit-fcfb911e",
   "error": null,
   "pipelineId": "standard",
@@ -75,8 +75,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/801",
+    "number": 801,
+    "createdAt": "2026-07-13T23:58:41.891Z"
+  },
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -90,7 +95,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
