@@ -74,3 +74,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/one-shot-env-strip/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T01:55:29.418Z","endedAt":"2026-07-13T01:55:30.760Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-13T01:55:30.760Z","outputs":[{"path":"specrunner/changes/one-shot-env-strip/pr-create-result.md","hash":"sha256:c4ccd000a231a4b6dc3b40a0aa0bd2a9d486c1ae9a0f2ec7d314a2b73d1fdff5"}],"inputs":[{"path":"change/one-shot-env-strip-ed2a6cc1","hash":null}]}
 {"type":"transition","ts":"2026-07-13T01:55:30.767Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-13T02:03:13.230Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
