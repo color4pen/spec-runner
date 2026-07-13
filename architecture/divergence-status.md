@@ -4,7 +4,7 @@
 > 構造の定規は `model.md`（層 / closure / B-x 不変条件）で、本書は「actual がそこへどれだけ収束しているか」の現状記録にすぎない。設計書（`model.md` / `components.md` / `domain-model.md` / `conformance.md`）は時間に依存しない構造のみを持ち、状況断面は持たない。
 > **live な真実**は歯: `tests/unit/architecture/core-invariants.test.ts`（検査）＋ `tests/unit/architecture/arch-allowlist.ts`（既知 divergence の grandfather 台帳、削除のみで縮む ratchet）。本書はその人間向け要約。
 
-## 現状（2026-06-14 時点）
+## 現状（2026-07-13 時点）
 
 - **B-1〜B-12 ＋ §3 DSM closure に対する実 divergence = ゼロ。**
 - `arch-allowlist.ts` の残エントリは `B-1` の `R2-*-adapter` 3件のみ。これは composition-root（`core/runtime/`）が adapter を import する §3 許可 edge の記録であり、**違反ではない**。
@@ -44,3 +44,4 @@
 - **reviewer 注入**（review criteria に B-1〜B-12 を追加）: 未着手。
 - **`tests/` 二重構造（`tests/core/` と `tests/unit/`）整理**: 未着手。
 - T1 trust（branch protection）: private repo・owner 手動 gate のため対象外。
+- **実行所有権モデル（`adr/2026-07-13-execution-ownership-model.md`、proposed）**: invariants **B-13〜B-16 は ratify 待ち**（歯未実装のため §4 未昇格）。実 divergence あり ― state commit 所有の分散（`StepExecutor` ＋ `Pipeline` が同一 state を二重駆動）／ 並列 round の共有 base・可変 `deps`・中間 persist（crash 時に member 部分状態が残りうる）／ 失敗遷移の call-site 複製／ 共有 worktree への `git add -A` による commit 帰属の実行順依存。実装 PR ごとに §4 ＋ `conformance.md` (A) ＋歯へ昇格し burn-down する。
