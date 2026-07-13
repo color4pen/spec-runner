@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6d477d57-d0e6-473c-bd42-9cece0550bf5",
   "createdAt": "2026-07-13T11:58:14.215Z",
-  "updatedAt": "2026-07-13T13:36:21.575Z",
+  "updatedAt": "2026-07-13T13:40:02.245Z",
   "request": {
     "title": "archive --with-merge の merge 失敗後に job が復旧不能になる問題を修正",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/archive-recover-unmerged-6d477d57",
   "error": null,
   "pipelineId": "standard",
@@ -77,8 +77,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/792",
+    "number": 792,
+    "createdAt": "2026-07-13T13:40:01.237Z"
+  },
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -91,7 +96,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
