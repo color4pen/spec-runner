@@ -15,6 +15,7 @@ import { SpecRunnerError } from "../../errors.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ModelUsage } from "../../core/port/model-usage.js";
 import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader } from "./sdk-loader.js";
+import { stripSecrets } from "../../util/env-filter.js";
 
 // ---------------------------------------------------------------------------
 // QueryFn type (local definition — avoids circular dependency with agent-runner.ts)
@@ -137,6 +138,7 @@ export async function queryOneShot(
         model: effectiveModel,
         systemPrompt: opts.systemPrompt,
         abortController,
+        env: stripSecrets(process.env as Record<string, string | undefined>),
       },
     });
 
