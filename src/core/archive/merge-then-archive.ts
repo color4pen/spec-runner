@@ -440,6 +440,19 @@ export async function runMergeThenArchive(
           return blockedAfterChecksEscalation(slug, "success");
         }
         // Grace still running: mergeStateStatus may be transiently BLOCKED after CI resolved.
+        // Also bound by the overall deadline (defensive: if BLOCKED_CHECK_GRACE_MS is ever
+        // configured larger than effectiveTimeoutMs, the overall timeout still terminates the wait).
+        if (effectiveTimeoutMs !== null && now - start >= effectiveTimeoutMs) {
+          return {
+            exitCode: 1,
+            escalation: formatEscalation({
+              failedStep: "check status (timeout)",
+              detectedState: `Timed out after ${Math.round((now - start) / 1000)}s waiting for mergeStateStatus to clear (checks success, still BLOCKED).`,
+              recommendedAction: `Wait for the branch-protection state to resolve, then re-run: specrunner job archive --with-merge ${slug}`,
+              resumeCommand: `specrunner job archive --with-merge ${slug}`,
+            }),
+          };
+        }
         stdoutWrite(
           `PR #${prNumber} checks success but mergeStateStatus BLOCKED (${Math.round(elapsed / 1000)}s / ${BLOCKED_CHECK_GRACE_MS / 1000}s grace). Waiting ${pollIntervalMs / 1000}s...`,
         );
