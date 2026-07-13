@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { readdir, readFile } from "node:fs/promises";
+import { readdir as fsReaddir, readFile as fsReadFile } from "node:fs/promises";
 import type { Step, AgentStep, CliStep } from "./types.js";
 import type { JobState, Verdict, ModelUsage } from "../../state/schema.js";
 import type { PipelineDeps, StoreFactory } from "../types.js";
@@ -10,17 +10,11 @@ import type { RequiredInput } from "../port/runtime-strategy.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
 import {
   buildAllOutputContracts,
-  buildOutputFollowUpPrompt,
   partitionByPolicy,
-  OUTPUT_FOLLOWUP_MAX_ATTEMPTS,
 } from "./output-verify.js";
-import type { OutputContract } from "../port/output-contract.js";
 import { pushStepResult } from "../../state/helpers.js";
-import { stderrWrite, logVerbose, isLevelEnabled } from "../../logger/stdout.js";
-import { getAgentLogDir } from "../../util/xdg.js";
-import * as nodePath from "node:path";
+import { logVerbose } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
-import { toStepName } from "./step-names.js";
 import { appendInvocation } from "../usage/store.js";
 import type { LineageRecord } from "../../store/event-journal.js";
 import { usageJsonPath } from "../../util/paths.js";
@@ -32,25 +26,23 @@ import { evaluateActivation } from "../reviewers/activation.js";
 import type { ErrorInfo } from "../../state/schema.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { transitionJob } from "../../state/lifecycle.js";
-import { projectMdPath } from "../../util/paths.js";
-import { resolveStepRules } from "./rules-resolve.js";
-import { buildRulesFollowUpPrompts } from "./rules-followup-prompts.js";
 import { defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
-import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
 import { detectNoOp } from "./no-op-detect.js";
 import { codeReviewFindingsRoutingActive } from "../pipeline/reviewer-chain.js";
 import type { CommitPushInfra } from "./commit-push.js";
-import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
-import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../../core/port/report-result.js";
 import type { PermissionScope } from "../pipeline/types.js";
-import { computeExtraScopeFindings } from "./scope-check.js";
 import { diffGuardSnapshots } from "./main-checkout-guard.js";
-
-import { JUDGE_REPORT_TOOL, CODE_REVIEW_REPORT_TOOL, REQUEST_REVIEW_REPORT_TOOL, CONFORMANCE_REPORT_TOOL } from "./report-tool.js";
-import { deriveJudgeVerdict, deriveRequestReviewVerdict, deriveConformanceVerdict, collectVerdictAffectingFindings } from "./judge-verdict.js";
-import type { FindingRef } from "./judge-verdict.js";
-import { filterUndecidedFindings } from "../decision/decision-ledger.js";
-import { buildResumePrompt } from "../resume/resume-context.js";
+import { buildStepContext } from "./step-context-builder.js";
+import {
+  makeAgentThrowHalt,
+  makeTimeoutHalt,
+  makeNonSuccessHalt,
+  makeDriftHalt,
+  makeOutputGateHalt,
+  makeCommitFailHalt,
+} from "./step-halt.js";
+import { deriveStepCompletion } from "./step-completion.js";
+import type { StepCompletionInput } from "./step-completion.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -253,98 +245,15 @@ export class StepExecutor {
       }
     }
 
-    let projectContext: string | undefined;
-    if (step.needsProjectContext === true) {
-      const pmPath = path.join(cwd, projectMdPath());
-      try {
-        projectContext = await readFile(pmPath, "utf-8");
-      } catch {
-        // File not found — projectContext remains undefined
-      }
-    }
-
-    // Resolve project rules for this step and build follow-up prompt list.
-    const ruleContents = await resolveStepRules(step.name, cwd, {
-      readdir: (dir: string) => readdir(dir),
-      readFile: async (filePath: string, _enc: string): Promise<string> => readFile(filePath, "utf-8"),
+    // ---------------------------------------------------------------------------
+    // Build agent run context — pure assembly, no control flow, no exceptions.
+    // ---------------------------------------------------------------------------
+    const ctx = await buildStepContext(step, state, deps, cwd, (event: DomainEvent, payload: Record<string, unknown>) => {
+      this.events.emit(event, payload as never);
+    }, {
+      readFile: (p: string, _enc: string) => fsReadFile(p, "utf-8"),
+      readdir: (dir: string) => fsReaddir(dir),
     });
-    const rulesPrompts = buildRulesFollowUpPrompts(ruleContents);
-    const existingFollowUp = step.getFollowUpPrompt?.(state, deps) ?? step.followUpPrompt;
-    const allFollowUpPrompts = [
-      ...(existingFollowUp ? [existingFollowUp] : []),
-      ...rulesPrompts,
-    ];
-
-    // For fixer steps, pass the previous session ID so adapters can continue the session.
-    // Non-fixer steps always get undefined (new session).
-    const resumeSessionId = FIXER_STEP_NAMES.has(step.name)
-      ? getPreviousSessionId(state, step.name) ?? undefined
-      : undefined;
-
-    // Compute session log path if debug level and repoRoot is available
-    let sessionLogPath: string | undefined;
-    if (isLevelEnabled("debug") && deps.repoRoot) {
-      const attempt = (state.steps?.[step.name]?.length ?? 0) + 1;
-      const agentLogDir = getAgentLogDir(deps.repoRoot, state.jobId);
-      sessionLogPath = nodePath.join(agentLogDir, `${step.name}-${attempt}.jsonl`);
-    }
-
-    // Build outputVerification policy for follow-up-class contracts.
-    // Only constructed when runtimeStrategy is available and step declares follow-up contracts.
-    // Bound to (followUpContracts, cwd, branch) so detect() has no free parameters.
-    let outputVerification: import("../port/output-contract.js").OutputVerificationPolicy | undefined;
-    if (deps.runtimeStrategy) {
-      const followUpContracts: OutputContract[] = (step.outputContracts?.(state, deps) ?? [])
-        .filter((c) => c.policy === "follow-up");
-      if (followUpContracts.length > 0) {
-        const strategy = deps.runtimeStrategy;
-        const branch = state.branch ?? null;
-        outputVerification = {
-          detect: () => strategy.validateStepOutputs(followUpContracts, cwd, branch),
-          maxAttempts: OUTPUT_FOLLOWUP_MAX_ATTEMPTS,
-          buildPrompt: (violations, _attempt) => buildOutputFollowUpPrompt(violations),
-        };
-      }
-    }
-
-    const effectiveResumePrompt = buildResumePrompt({
-      state,
-      stepName: step.name,
-      resumeContext: deps.resumeContext,
-      humanResumePrompt: deps.resumePrompt,
-    });
-
-    const ctx = {
-      step,
-      state,
-      branch: state.branch ?? "",
-      slug: deps.slug,
-      cwd,
-      requestType: deps.request.type,
-      config: deps.config,
-      input: {
-        requestContent: deps.request.content,
-        requestAdr: deps.request.adr,
-        requestBaseBranch: deps.request.baseBranch,
-        dynamicContext: deps.dynamicContext,
-        projectContext,
-      },
-      session: {
-        resumeSessionId,
-        resumePrompt: effectiveResumePrompt,
-        logPath: sessionLogPath,
-      },
-      policy: {
-        postWorkPrompts: allFollowUpPrompts.length > 0 ? allFollowUpPrompts : undefined,
-        reportTool: step.reportTool,
-        toolReportRetry: step.reportTool ? DEFAULT_TOOL_RETRY : undefined,
-        outputVerification,
-      },
-      emit: (event: DomainEvent, payload: Record<string, unknown>) => {
-        // Forward adapter events to the event bus
-        this.events.emit(event, payload as never);
-      },
-    };
 
     // One-shot: resume-related inputs are consumed by the first agent step that sees them.
     // This clears unmatched snapshots too, so stale resume context cannot leak into a later step.
@@ -378,22 +287,17 @@ export class StepExecutor {
 
     logPipelineDiag("executor:agent:pre-run", `step=${step.name}`);
     const runResult = await this.runner.run(ctx).catch(async (thrownErr: unknown) => {
-      const err = thrownErr as Error & { code?: string; hint?: string };
-      const errorInfo: ErrorInfo = {
-        code: err.code ?? "AGENT_STEP_FAILED",
-        message: err.message,
-        hint: err.hint ?? "",
-      };
-      state = recordFailedStepResult(state, step.name, errorInfo, { startedAt });
-      state = await store.fail(state, errorInfo, step.name);
+      const halt = makeAgentThrowHalt(thrownErr as Error & { code?: string; hint?: string }, step.name);
+      state = recordFailedStepResult(state, step.name, halt.error, { startedAt });
+      state = await store.fail(state, halt.error, step.name);
       state = await store.appendHistory(state, {
         ts: new Date().toISOString(),
         step: `${step.name}-failed`,
         status: "error",
-        message: `${step.name} failed: ${errorInfo.code} — ${errorInfo.message}`,
+        message: `${step.name} failed: ${halt.error.code} — ${halt.error.message}`,
       });
       await store.persist(state);
-      attachStateAndRethrow(err, state);
+      attachStateAndRethrow(halt.thrownErr, state);
       // Never reached — attachStateAndRethrow always throws
       return null as never;
     });
@@ -403,13 +307,8 @@ export class StepExecutor {
 
     if (runResult.completionReason === "timeout") {
       // Poll timeout — transition to awaiting-resume (not a hard failure)
-      const err = runResult.error ?? new Error(`Agent step '${step.name}' timed out`);
-      const errorInfo: ErrorInfo = {
-        code: (err as Error & { code?: string }).code ?? "POLL_TIMEOUT",
-        message: err.message,
-        hint: (err as Error & { hint?: string }).hint ?? "",
-      };
-      state = recordFailedStepResult(state, step.name, errorInfo, {
+      const halt = makeTimeoutHalt(runResult, step.name);
+      state = recordFailedStepResult(state, step.name, halt.error, {
         completedAt,
         startedAt,
         transientRetryAttempts: runResult.transientRetryAttempts,
@@ -418,43 +317,37 @@ export class StepExecutor {
         trigger: "executor",
         reason: "timeout",
         patch: {
-          resumePoint: { step: toStepName(step.name), reason: "timeout", iterationsExhausted: 0 },
-          error: errorInfo,
+          resumePoint: halt.resumePoint,
+          error: halt.error,
         },
       });
       state = timeoutState;
       // T-11: Record interruption event in journal
       await store.appendInterruption({
-        type: "interruption",
-        reason: "timeout",
+        ...halt.interruption,
         ts: new Date().toISOString(),
       });
       state = await store.appendHistory(state, {
         ts: new Date().toISOString(),
         step: `${step.name}-timeout`,
         status: "error",
-        message: `${step.name} timed out: ${errorInfo.message}`,
+        message: `${step.name} timed out: ${halt.error.message}`,
       });
       await store.persist(state);
-      attachStateAndRethrow(err, state);
+      attachStateAndRethrow(halt.thrownErr, state);
     }
 
     if (runResult.completionReason !== "success") {
       // Agent step failed — record error and rethrow
-      const err = runResult.error ?? new Error(`Agent step '${step.name}' failed`);
-      const errorInfo: ErrorInfo = {
-        code: (err as Error & { code?: string }).code ?? "AGENT_STEP_FAILED",
-        message: err.message,
-        hint: (err as Error & { hint?: string }).hint ?? "",
-      };
-      state = recordFailedStepResult(state, step.name, errorInfo, {
+      const halt = makeNonSuccessHalt(runResult, step.name);
+      state = recordFailedStepResult(state, step.name, halt.error, {
         completedAt,
         startedAt,
         transientRetryAttempts: runResult.transientRetryAttempts,
       });
-      state = await store.fail(state, errorInfo, step.name);
+      state = await store.fail(state, halt.error, step.name);
       await store.persist(state);
-      attachStateAndRethrow(err, state);
+      attachStateAndRethrow(halt.thrownErr, state);
     }
 
     // T-02 (outcome-cutover R3): no-tool-call → proceed instead of halt.
@@ -478,28 +371,21 @@ export class StepExecutor {
       if (guardAfter !== null) {
         const drift = diffGuardSnapshots(guardBefore, guardAfter);
         if (drift.drifted) {
+          const halt = makeDriftHalt(drift, step.name, deps.slug);
           const pathSummary = drift.changes.map((c) => `${c.kind}: ${c.path}`).join(", ");
-          const errorInfo: ErrorInfo = {
-            code: "MAIN_CHECKOUT_WRITE_DETECTED",
-            message: `Main checkout write detected during '${step.name}': ${pathSummary}`,
-            hint: `Guarded paths in main checkout were modified while the agent step was running. This may be a legitimate parallel edit by the operator. Verify the changes and run 'specrunner job resume ${deps.slug}' to continue.`,
-          };
-          state = recordFailedStepResult(state, step.name, errorInfo, { startedAt });
-          const detectedAtStep = toStepName(step.name);
+          state = recordFailedStepResult(state, step.name, halt.error, { startedAt });
           const { state: driftState } = transitionJob(state, "awaiting-resume", {
             trigger: "executor",
             reason: "main checkout write detected",
             patch: {
-              resumePoint: { step: detectedAtStep, reason: "main checkout write detected", iterationsExhausted: 0 },
-              mainCheckoutDrift: { changes: drift.changes, detectedAtStep, ts: new Date().toISOString() },
-              error: errorInfo,
+              resumePoint: halt.resumePoint,
+              mainCheckoutDrift: halt.statePatch?.mainCheckoutDrift,
+              error: halt.error,
             },
           });
           state = driftState;
           await store.appendInterruption({
-            type: "interruption",
-            reason: "failure",
-            errorCode: "MAIN_CHECKOUT_WRITE_DETECTED",
+            ...halt.interruption,
             ts: new Date().toISOString(),
           });
           state = await store.appendHistory(state, {
@@ -509,11 +395,7 @@ export class StepExecutor {
             message: `${step.name}: main checkout write detected — ${pathSummary}`,
           });
           await store.persist(state);
-          const driftErr = Object.assign(
-            new Error(errorInfo.message),
-            { code: "MAIN_CHECKOUT_WRITE_DETECTED", hint: errorInfo.hint },
-          );
-          attachStateAndRethrow(driftErr, state);
+          attachStateAndRethrow(halt.thrownErr, state);
         }
       }
     }
@@ -529,37 +411,22 @@ export class StepExecutor {
         const checkResult = await deps.runtimeStrategy.validateStepOutputs(
           allContracts, cwd, state.branch ?? null,
         );
-        const { followUp, halt } = partitionByPolicy(checkResult);
+        const { followUp, halt: haltViolations } = partitionByPolicy(checkResult);
 
         // Gate: halt violations OR remaining follow-up violations → STEP_OUTPUT_MISSING
-        if (halt.length > 0 || followUp.length > 0) {
-          const allViolations = [...halt, ...followUp];
-          const violationPaths = allViolations.map((v) =>
-            v.kind === "tasks-complete"
-              ? `${v.path} (incomplete tasks: ${v.detail.join(", ") || "see file"})`
-              : v.path,
-          );
-          const pathList = violationPaths.map((p) => `  - ${p}`).join("\n");
-          const branchNote = state.branch ? ` on branch '${state.branch}'` : "";
-          const errorInfo: ErrorInfo = {
-            code: "STEP_OUTPUT_MISSING",
-            message: `Step '${step.name}' output contract(s) not satisfied${branchNote}: ${violationPaths.join(", ")}`,
-            hint: `Required step output(s) missing or incomplete${branchNote}.\nViolations:\n${pathList}`,
-          };
-          state = recordFailedStepResult(state, step.name, errorInfo, { startedAt });
-          state = await store.fail(state, errorInfo, step.name);
+        if (haltViolations.length > 0 || followUp.length > 0) {
+          const allViolations = [...haltViolations, ...followUp];
+          const halt = makeOutputGateHalt(allViolations, step.name, state.branch ?? null);
+          state = recordFailedStepResult(state, step.name, halt.error, { startedAt });
+          state = await store.fail(state, halt.error, step.name);
           state = await store.appendHistory(state, {
             ts: new Date().toISOString(),
             step: `${step.name}-failed`,
             status: "error",
-            message: `${step.name} failed: STEP_OUTPUT_MISSING — ${errorInfo.message}`,
+            message: `${step.name} failed: ${halt.error.code} — ${halt.error.message}`,
           });
           await store.persist(state);
-          const gateErr = Object.assign(
-            new Error(errorInfo.message),
-            { code: "STEP_OUTPUT_MISSING", hint: errorInfo.hint },
-          );
-          attachStateAndRethrow(gateErr, state);
+          attachStateAndRethrow(halt.thrownErr, state);
         }
       }
     }
@@ -596,16 +463,11 @@ export class StepExecutor {
       await myFinalize;
 
       if (finalizeError !== undefined) {
-        const err = finalizeError as Error & { code?: string; hint?: string };
-        const errorInfo: ErrorInfo = {
-          code: err.code ?? "COMMIT_AND_PUSH_FAILED",
-          message: err.message,
-          hint: err.hint ?? "",
-        };
-        state = recordFailedStepResult(state, step.name, errorInfo, { startedAt });
-        state = await store.fail(state, errorInfo, step.name);
+        const halt = makeCommitFailHalt(finalizeError as Error & { code?: string; hint?: string }, step.name);
+        state = recordFailedStepResult(state, step.name, halt.error, { startedAt });
+        state = await store.fail(state, halt.error, step.name);
         await store.persist(state);
-        attachStateAndRethrow(err, state);
+        attachStateAndRethrow(halt.thrownErr, state);
         return null as never;
       }
     }
@@ -628,7 +490,8 @@ export class StepExecutor {
           })
         : undefined;
 
-    return this.finalizeStep(step, state, deps, runResult.resultContent, completedAt, startedAt, {
+    return this.finalizeStep(step, state, deps, completedAt, startedAt, {
+      resultContent: runResult.resultContent,
       sessionId: runResult.sessionId,
       agentBranch: runResult.agentBranch,
       modelUsage: runResult.modelUsage,
@@ -758,172 +621,34 @@ export class StepExecutor {
       // File may not exist yet — treat as null verdict
     }
 
-    return this.finalizeStep(step, state, deps, fileContent, completedAt, startedAt);
+    return this.finalizeStep(step, state, deps, completedAt, startedAt, { resultContent: fileContent });
   }
 
-  /** Shared success path: parse verdict, persist result, set branch, and emit events. */
+  /** Shared success path: derive completion, persist result, set branch, and emit events. */
   private async finalizeStep(
     step: Step,
     state: JobState,
     deps: PipelineDeps,
-    resultContent: string | null,
     completedAt: string,
     startedAt: string,
-    agentResult?: {
+    agentResult?: StepCompletionInput & {
       sessionId?: string;
       agentBranch?: string;
       modelUsage?: Record<string, ModelUsage>;
-      toolResult?: import("../port/report-result.js").BaseReportResult | null;
       followUpAttempts?: number;
       transientRetryAttempts?: number;
       completionReportDiagnostics?: import("../port/agent-runner.js").CompletionReportDiagnostic[];
-      /**
-       * T-03 (no-op detection): when set, overrides the derived verdict after all
-       * normal computation completes. Used by runAgentStep to inject "needs-fix"
-       * when code-fixer produced no source changes.
-       */
-      verdictOverride?: Verdict;
     },
   ): Promise<JobState> {
     const store = this.getStore(state.jobId);
     const findingsPath = step.resultFilePath(state, deps);
-    let verdict: Verdict | string | null = null;
-    let parsed: import("./types.js").ParsedStepResult | null = null;
 
-    // T-01 (outcome-cutover R3): typed outcome takes priority over prose parse.
-    // Determine if this is a judge step (spec-review / code-review) by reportTool identity.
-    const stepReportTool = "reportTool" in step ? step.reportTool : undefined;
-    const isConformanceStep = stepReportTool === CONFORMANCE_REPORT_TOOL;
-    // isJudgeStep: include conformance so that verifyFindingRefs and no-tool-call escalation apply
-    const isJudgeStep = stepReportTool === JUDGE_REPORT_TOOL || stepReportTool === CODE_REVIEW_REPORT_TOOL || isConformanceStep;
-    const isRequestReviewStep = stepReportTool === REQUEST_REVIEW_REPORT_TOOL;
+    // Derive verdict and persistToolResult via extracted completion module.
+    const completion = await deriveStepCompletion(
+      step, state, deps, agentResult, this.permissionScope,
+    );
+    const { verdict, persistToolResult } = completion;
 
-    // Track effective toolResult for persistence. Updated to include scope findings when a breach
-    // is synthesized; otherwise equals agentResult.toolResult (unchanged, byte-equivalent).
-    let persistToolResult: (import("../port/report-result.js").BaseReportResult & { findings?: import("../../kernel/report-result.js").Finding[] }) | null =
-      (agentResult?.toolResult as (import("../port/report-result.js").BaseReportResult & { findings?: import("../../kernel/report-result.js").Finding[] }) | null | undefined) ?? null;
-
-    if (agentResult !== undefined && stepReportTool !== undefined) {
-      // Agent step with reportTool — use typed outcome exclusively.
-      const toolResult = agentResult.toolResult;
-      if (toolResult !== null && toolResult !== undefined) {
-        // Non-null toolResult: derive verdict from findings (judge steps) or fields (producer).
-
-        // Scope breach synthesis: delegate to sibling scope-check.ts (executor-bloat guard).
-        // Returns [] when permissionScope absent / step not checkpoint / no breach.
-        // Only meaningful for judge/conformance steps; guard in computeExtraScopeFindings.
-        const extraScopeFindings = (isJudgeStep || isConformanceStep)
-          ? await computeExtraScopeFindings(step.name, this.permissionScope, state, deps)
-          : [];
-
-        if (isRequestReviewStep) {
-          // request-review: derive from findings using pure function
-          // Filter already-decided findings before verdict derivation (D8)
-          const tr = toolResult as RequestReviewReportResult;
-          const allFindings = tr.findings ?? [];
-          const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
-          verdict = deriveRequestReviewVerdict(undecidedFindings, tr.ok);
-        } else if (isConformanceStep) {
-          // conformance: derive routed needs-fix verdict (needs-fix:<target>)
-          // Filter already-decided findings before verdict derivation (D8)
-          // extraScopeFindings (if any) merged before filtering
-          const tr = toolResult as JudgeReportResult;
-          const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];
-          const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
-          verdict = deriveConformanceVerdict(undecidedFindings, tr.ok);
-        } else if (isJudgeStep) {
-          // judge: derive from findings using pure function (approved boolean ignored)
-          // Filter already-decided findings before verdict derivation (D8)
-          // extraScopeFindings (if any) merged before filtering
-          const tr = toolResult as JudgeReportResult;
-          const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];
-          const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
-          // T-01: use step-specific judgeVerdictFn if available (e.g. regression-gate),
-          // otherwise fall back to the standard deriveJudgeVerdict.
-          const verdictFn = ("judgeVerdictFn" in step && step.judgeVerdictFn)
-            ? step.judgeVerdictFn
-            : deriveJudgeVerdict;
-          verdict = verdictFn(undecidedFindings, tr.ok);
-        } else {
-          // producer: status "error" → "error", else completionVerdict (fallback "success")
-          const completionVerdict =
-            "completionVerdict" in step
-              ? (step as { completionVerdict?: Verdict }).completionVerdict
-              : undefined;
-          verdict =
-            (toolResult as ProducerReportResult).status === "error"
-              ? "error"
-              : (completionVerdict ?? "success");
-        }
-
-        // Build the effective toolResult for persistence.
-        // When scope findings were synthesized, merge them into findings so that
-        // getOpenDecisionFindings() can read them for escalation comment rendering.
-        // When no scope findings, effectiveToolResult === toolResult (unchanged).
-        const effectiveToolResult: import("../port/report-result.js").BaseReportResult & { findings?: import("../../kernel/report-result.js").Finding[] } =
-          extraScopeFindings.length > 0
-            ? {
-                ...(toolResult as JudgeReportResult),
-                findings: [
-                  ...((toolResult as JudgeReportResult).findings ?? []),
-                  ...extraScopeFindings,
-                ],
-              }
-            : (toolResult as import("../port/report-result.js").BaseReportResult & { findings?: import("../../kernel/report-result.js").Finding[] });
-        persistToolResult = effectiveToolResult;
-
-        // Post-verdict: verify finding refs exist for judge/request-review steps
-        // Use undecided findings only — decided findings should not re-trigger escalation (D8)
-        // For judge/conformance steps, effectiveToolResult includes scope findings.
-        if ((isJudgeStep || isRequestReviewStep) && deps.runtimeStrategy) {
-          const tr = effectiveToolResult as JudgeReportResult | RequestReviewReportResult;
-          const allFindings = tr.findings ?? [];
-          const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
-          const affectingFindings = collectVerdictAffectingFindings(undecidedFindings);
-          if (affectingFindings.length > 0) {
-            const refs: FindingRef[] = affectingFindings.map((f) => ({ file: f.file, line: f.line }));
-            const cwd = deps.cwd ?? process.cwd();
-            const nonExistent = await deps.runtimeStrategy.verifyFindingRefs(refs, cwd, state.branch ?? null);
-            if (nonExistent.length > 0) {
-              verdict = "escalation";
-            }
-          }
-        }
-      } else {
-        // Null toolResult (no-tool-call proceed path) — step-class based fallback.
-        if (isRequestReviewStep) {
-          verdict = "needs-discussion";
-        } else if (isJudgeStep) {
-          // D7: no-tool-call judge verdict is escalation (conservative)
-          verdict = "escalation";
-        } else {
-          const completionVerdict =
-            "completionVerdict" in step
-              ? (step as { completionVerdict?: Verdict }).completionVerdict
-              : undefined;
-          verdict = completionVerdict ?? "success";
-        }
-      }
-    } else {
-      // Prose parse path: grounded CLI steps or agent steps without reportTool.
-      if (resultContent !== null) {
-        parsed = step.parseResult(resultContent, deps);
-        verdict = parsed.verdict;
-      } else if ("completionVerdict" in step) {
-        verdict = (step as { completionVerdict?: Verdict | null }).completionVerdict ?? null;
-      }
-    }
-
-    if (verdict === null) {
-      stderrWrite(`Warning: Could not parse verdict from ${step.kind} step '${step.name}'. Treating as escalation.`);
-    }
-    verdict = verdict ?? "escalation";
-
-    // T-03 (no-op detection): override verdict when runAgentStep detected no source changes.
-    // Guard: do not override a producer status:error verdict — error takes precedence over no-op.
-    if (agentResult?.verdictOverride !== undefined && verdict !== "error") {
-      verdict = agentResult.verdictOverride;
-    }
     logVerbose("step", "verdict parsed", { step: step.name, verdict });
     this.events.emit("verdict:parsed", {
       step: step.name,
@@ -961,8 +686,8 @@ export class StepExecutor {
       const prefix = getBranchPrefix(deps.request.type);
       state = { ...state, branch: `${prefix}${deps.slug}-${state.jobId.slice(0, 8)}` };
     }
-    if (parsed?.pullRequest) {
-      state = { ...state, pullRequest: parsed.pullRequest };
+    if (completion.pullRequest) {
+      state = { ...state, pullRequest: completion.pullRequest };
     }
     // T-10: Append per-step usage to changes/<slug>/usage.json before step commit
     if (agentResult?.modelUsage && deps.cwd && deps.slug) {
