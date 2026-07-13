@@ -11,7 +11,7 @@
       "command": "bun run test --coverage",
       "lcovPath": "coverage/lcov.info",
       "include": ["src/**"],
-      "exclude": ["src/**/__tests__/**", "src/core/doctor/types.ts", "src/core/port/runtime-strategy.ts", "src/core/attestation/types.ts"]
+      "exclude": ["src/**/__tests__/**", "src/core/doctor/types.ts", "src/core/port/runtime-strategy.ts", "src/core/attestation/types.ts", "src/core/types.ts"]
     }
   },
   "steps": {
