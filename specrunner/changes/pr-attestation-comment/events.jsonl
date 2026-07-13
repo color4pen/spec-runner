@@ -59,3 +59,16 @@
 {"type":"transition","ts":"2026-07-13T09:35:09.396Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: verification did not pass after 2 iterations"}
 {"type":"transition","ts":"2026-07-13T09:38:58.080Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'build-fixer'"}
 {"type":"transition","ts":"2026-07-13T09:38:58.120Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-07-13T09:48:40.038Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"894a353b-678e-408e-a4ec-cc5dc68c256c","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-07-13T09:38:58.167Z","endedAt":"2026-07-13T09:48:38.444Z"}
+{"type":"lineage","step":"build-fixer","ts":"2026-07-13T09:48:38.444Z","outputs":[{"path":"specrunner/changes/pr-attestation-comment","hash":null}],"inputs":[{"path":"specrunner/changes/pr-attestation-comment/verification-result.md","hash":"sha256:dd619ed4b9bca72360b54c5548bef3b61e81023510013f2ff21661c55094157a"}]}
+{"type":"transition","ts":"2026-07-13T09:48:40.046Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-07-13T09:48:40.047Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T09:48:40.048Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-07-13T09:49:30.466Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/pr-attestation-comment/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T09:48:40.049Z","endedAt":"2026-07-13T09:49:30.465Z"}
+{"type":"lineage","step":"verification","ts":"2026-07-13T09:49:30.465Z","outputs":[{"path":"specrunner/changes/pr-attestation-comment/verification-result.md","hash":"sha256:a115e0b2e0d28edb5becaf67dded4719faffc4f1d0020e11687d6197fe991438"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-13T09:49:30.470Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
+{"type":"transition","ts":"2026-07-13T09:49:30.470Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-07-13T09:49:30.471Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-13T09:49:30.473Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
