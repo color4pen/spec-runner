@@ -103,3 +103,11 @@
 {"type":"transition","ts":"2026-07-13T10:07:32.711Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-13T10:07:32.711Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
 {"type":"transition","ts":"2026-07-13T10:07:32.713Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-13T10:07:57.096Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"50a047ca-873c-4797-87db-13dee88a796e","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-13T10:07:32.766Z","endedAt":"2026-07-13T10:07:55.526Z"}
+{"type":"transition","ts":"2026-07-13T10:07:57.101Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-13T10:07:57.104Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-13T10:07:58.730Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/pr-attestation-comment/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T10:07:57.106Z","endedAt":"2026-07-13T10:07:58.729Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-13T10:07:58.729Z","outputs":[{"path":"specrunner/changes/pr-attestation-comment/pr-create-result.md","hash":"sha256:04e3efdd27be25d6035d7829e7279c3254a53bf7870fae199386816971ae7ec8"}],"inputs":[{"path":"feat/pr-attestation-comment-7b959b90","hash":null}]}
+{"type":"transition","ts":"2026-07-13T10:07:58.739Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}

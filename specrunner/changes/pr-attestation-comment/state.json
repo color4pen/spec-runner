@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7b959b90-ad3a-43b0-87b6-0b1c61a4b78b",
   "createdAt": "2026-07-13T08:59:15.396Z",
-  "updatedAt": "2026-07-13T10:07:32.713Z",
+  "updatedAt": "2026-07-13T10:07:58.739Z",
   "request": {
     "title": "PR ごとの attestation をコメント添付する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/pr-attestation-comment-7b959b90",
   "error": null,
   "pipelineId": "standard",
@@ -77,8 +77,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/789",
+    "number": 789,
+    "createdAt": "2026-07-13T10:07:58.727Z"
+  },
   "_journal": {
-    "historyCount": 71,
+    "historyCount": 76,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -92,7 +97,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
