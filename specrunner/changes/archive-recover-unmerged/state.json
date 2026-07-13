@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6d477d57-d0e6-473c-bd42-9cece0550bf5",
   "createdAt": "2026-07-13T11:58:14.215Z",
-  "updatedAt": "2026-07-13T12:36:12.035Z",
+  "updatedAt": "2026-07-13T12:42:21.730Z",
   "request": {
     "title": "archive --with-merge の merge 失敗後に job が復旧不能になる問題を修正",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/archive-recover-unmerged-6d477d57",
   "error": null,
@@ -51,10 +51,11 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 17,
+    "historyCount": 21,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
