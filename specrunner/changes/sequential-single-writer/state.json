@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6978ac59-c719-431c-bddc-a65db0e843b3",
   "createdAt": "2026-07-13T17:01:46.193Z",
-  "updatedAt": "2026-07-13T18:22:13.726Z",
+  "updatedAt": "2026-07-13T18:22:46.569Z",
   "request": {
     "title": "逐次経路の single-writer: StepExecutor は実行結果を返し CommitOrchestrator が唯一の commit 者になる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "scale-tolerance",
   "status": "running",
   "branch": "change/sequential-single-writer-6978ac59",
   "error": null,
@@ -49,7 +49,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 37,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -58,7 +58,9 @@
       "implementer": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "scale-tolerance": 1
     }
   }
 }
