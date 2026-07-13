@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "63fc4dfc-ceba-4685-b6d1-01aad04f6e13",
   "createdAt": "2026-07-13T11:11:06.953Z",
-  "updatedAt": "2026-07-13T12:15:22.883Z",
+  "updatedAt": "2026-07-13T12:16:59.193Z",
   "request": {
     "title": "build-fixer の config 編集が同一 job 内 verification に反映されず coverage self-heal できない問題を修正",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "change/verification-config-reload-63fc4dfc",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,11 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "signal",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/791",
@@ -83,7 +87,7 @@
     "createdAt": "2026-07-13T12:15:22.109Z"
   },
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 69,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
