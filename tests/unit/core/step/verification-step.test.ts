@@ -20,7 +20,14 @@ vi.mock("../../../../src/core/verification/propagate.js", () => ({
   propagateVerificationResult: vi.fn().mockResolvedValue({ ok: true }),
 }));
 
+// Mock reloadCoverageConfig to return applied: false by default so existing tests
+// are hermetic (no real git/fs I/O) and effective config === deps.config.verification.
+vi.mock("../../../../src/core/verification/reload-coverage-config.js", () => ({
+  reloadCoverageConfig: vi.fn().mockResolvedValue({ applied: false }),
+}));
+
 import { runVerification } from "../../../../src/core/verification/runner.js";
+import { reloadCoverageConfig } from "../../../../src/core/verification/reload-coverage-config.js";
 import { VerificationStep } from "../../../../src/core/step/verification.js";
 
 function makeMinimalState(): JobState {
@@ -62,8 +69,45 @@ function makeMinimalDeps(baseBranch: string, cwd: string): CliStepDeps {
   };
 }
 
+describe("TC-003: commands は job 開始時の値を保持する", () => {
+  it("reload.applied === true でも verification.commands は deps (job 開始時) の値を維持し disk reload に上書きされない", async () => {
+    // Simulate build-fixer having edited disk config: reloadCoverageConfig returns
+    // applied: true with updated coverage. The disk config file may also declare
+    // verification.commands, but reloadCoverageConfig only surfaces coverage —
+    // so the spread { ...deps.config.verification, coverage: reload.coverage }
+    // must keep the job-start commands intact.
+    vi.mocked(reloadCoverageConfig).mockResolvedValueOnce({
+      applied: true,
+      coverage: {
+        command: "npm test -- --coverage",
+        lcovPath: "coverage/lcov.info",
+        include: [],
+      },
+    });
+    vi.mocked(runVerification).mockClear();
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps("main", "/fake/cwd");
+    // Set a distinct job-start commands value to prove it is NOT replaced by disk reload.
+    deps.config.verification = { commands: ["echo job-start-cmd"] };
+
+    await VerificationStep.run(state, deps);
+
+    const spy = vi.mocked(runVerification);
+    expect(spy).toHaveBeenCalledOnce();
+
+    const effectiveVerification = spy.mock.calls[0]?.[2];
+    // commands must be the job-start value — disk reload only changes coverage.
+    expect(effectiveVerification?.commands).toEqual(["echo job-start-cmd"]);
+    // coverage must be the reloaded value from disk (not the job-start undefined).
+    expect(effectiveVerification?.coverage?.command).toBe("npm test -- --coverage");
+  });
+});
+
 describe("TC-11: VerificationStep.run passes deps.request.baseBranch to runVerification", () => {
   it("runVerification が第4引数に baseBranch='feature-base' を受け取る", async () => {
+    vi.mocked(runVerification).mockClear();
+
     const state = makeMinimalState();
     const deps = makeMinimalDeps("feature-base", "/fake/cwd");
 

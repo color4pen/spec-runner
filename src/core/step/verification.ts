@@ -3,6 +3,7 @@ import type { JobState } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import { runVerification } from "../verification/runner.js";
 import { propagateVerificationResult } from "../verification/propagate.js";
+import { reloadCoverageConfig } from "../verification/reload-coverage-config.js";
 import { verificationResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { stderrWrite } from "../../logger/stdout.js";
@@ -33,7 +34,19 @@ export const VerificationStep: CliStep = {
   async run(state: JobState, deps: CliStepDeps): Promise<void> {
     const verificationCwd = deps.cwd ?? process.cwd();
 
-    await runVerification(deps.slug, verificationCwd, deps.config.verification, deps.request.baseBranch);
+    // Re-resolve coverage config from disk immediately before running verification.
+    // This ensures that edits made by build-fixer (e.g. adding exclude entries) during
+    // the same job are reflected in subsequent verification attempts.
+    // Only verification.coverage is re-read; all other config fields (including
+    // verification.commands) retain their job-start values from deps.config.
+    // When applied === false (no project-local config or any error), falls back to
+    // the job-start value — no pipeline disruption.
+    const reload = await reloadCoverageConfig(verificationCwd);
+    const effectiveVerification = reload.applied
+      ? { ...deps.config.verification, coverage: reload.coverage }
+      : deps.config.verification;
+
+    await runVerification(deps.slug, verificationCwd, effectiveVerification, deps.request.baseBranch);
 
     // Propagate verification-result.md to branch so build-fixer can read it
     if (state.branch) {
