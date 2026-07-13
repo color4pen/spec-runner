@@ -14,7 +14,6 @@ import {
 import { logVerbose } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { evaluateActivation } from "../reviewers/activation.js";
-import { getBranchPrefix } from "../../config/type-config.js";
 import { defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
 import { detectNoOp } from "./no-op-detect.js";
 import { codeReviewFindingsRoutingActive } from "../pipeline/reviewer-chain.js";

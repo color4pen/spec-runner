@@ -13,7 +13,7 @@
  * B-14: transitionJob / attachStateAndRethrow are called only inside CommitOrchestrator.
  */
 
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { CommitOrchestrator } from "../commit-orchestrator.js";
 import { EventBus } from "../../event/event-bus.js";
 import type { Step, AgentStep } from "../types.js";
@@ -79,7 +79,6 @@ interface StoreMock {
 }
 
 function makeStoreMock(): StoreMock {
-  const state = makeState();
   return {
     update: vi.fn(async (s: JobState, patch: Partial<JobState>) => ({ ...s, ...patch })),
     appendHistory: vi.fn(async (s: JobState) => s),

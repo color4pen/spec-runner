@@ -251,7 +251,7 @@ describe("TC-REG-01: Agent success step — observational invariants", () => {
 describe("TC-REG-02: Agent non-success failure — observational invariants", () => {
   it("throws when runner returns completionReason 'error'", async () => {
     const store = makeTrackingStore();
-    const { run: runner, err } = makeErrorRunner();
+    const { run: runner } = makeErrorRunner();
     const executor = new StepExecutor(new EventBus(), { run: runner } as never, () => store as never);
     const step = makeAgentStep("implementer", "success");
     const deps = makeDeps(store);
