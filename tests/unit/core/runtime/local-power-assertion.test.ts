@@ -15,6 +15,7 @@ import * as os from "node:os";
 import { LocalRuntime } from "../../../../src/core/runtime/local.js";
 import { JobStateStore, buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { SpawnBackgroundFn, BackgroundProcessHandle } from "../../../../src/util/spawn.js";
+import { noopSpawnBackground } from "../../../../src/util/spawn.js";
 import {
   resetSignalHandlerFiredForTest,
 } from "../../../../src/core/lifecycle/signal-state.js";
@@ -106,6 +107,25 @@ async function makeJobState(slug = "pa-test-slug") {
   await new JobStateStore(state.jobId, tempDir, { slug, stateRoot: slugDir }).persist(state);
   return { state, slugDir };
 }
+
+// ─── TC-LPA-00: opt-in default ────────────────────────────────────────────────
+
+describe("TC-LPA-00: power assertion is opt-in — default spawnBackgroundFn is the no-op", () => {
+  it("LocalRuntime constructed without spawnBackgroundFn defaults to noopSpawnBackground (no real spawn even on darwin)", () => {
+    const runtime = new LocalRuntime({
+      cwd: tempDir,
+      githubClient: buildMockGitHubClient(),
+      manager: buildMockManager(tempDir),
+      platform: "darwin",
+      // no spawnBackgroundFn — must default to the no-op so mere construction
+      // (e.g. in tests) never spawns a real caffeinate process
+    });
+
+    expect(
+      (runtime as unknown as { spawnBackgroundFn: unknown }).spawnBackgroundFn,
+    ).toBe(noopSpawnBackground);
+  });
+});
 
 // ─── TC-LPA-01: acquire ───────────────────────────────────────────────────────
 

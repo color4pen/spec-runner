@@ -20,7 +20,7 @@ import { DispatchingAgentRunner } from "../../adapter/dispatching/agent-runner.j
 import { createWorktreeManager } from "../worktree/manager.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 import { resolveMonitoredGuardGlobs, matchesMonitored } from "../step/main-checkout-guard.js";
-import { spawnCommand, spawnBackground } from "../../util/spawn.js";
+import { spawnCommand, noopSpawnBackground } from "../../util/spawn.js";
 import type { SpawnFn, SpawnBackgroundFn } from "../../util/spawn.js";
 import { acquirePowerAssertion } from "./power-assertion.js";
 import { createTransportAuth } from "../../git/transport-auth.js";
@@ -133,7 +133,10 @@ export class LocalRuntime implements RealRuntimeStrategy {
     this.transportAuth = createTransportAuth({ token: this.githubToken, cwd: opts.cwd });
     this.wrappedSpawnFn = this.transportAuth.wrapSpawn(this.spawnFn);
     this.workspaceSetup = opts.workspaceSetup;
-    this.spawnBackgroundFn = opts.spawnBackgroundFn ?? spawnBackground;
+    // Default to a no-op so constructing a LocalRuntime never spawns a real
+    // background process (e.g. in tests). The real spawnBackground is injected
+    // at the composition root (createRuntime) for production job execution.
+    this.spawnBackgroundFn = opts.spawnBackgroundFn ?? noopSpawnBackground;
     this.platform = opts.platform ?? process.platform;
   }
 

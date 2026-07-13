@@ -174,9 +174,15 @@ bookkeeping. It is exactly the request author's recommendation.
 ### D4 — Bind acquire/release to the job lifecycle in `local.ts`
 
 - `LocalRuntimeOptions` gains `spawnBackgroundFn?: SpawnBackgroundFn` (default
-  `spawnBackground`) and `platform?: NodeJS.Platform` (default `process.platform`);
-  the constructor stores both as readonly fields. These are the injection points
-  the tests use.
+  `noopSpawnBackground`) and `platform?: NodeJS.Platform` (default
+  `process.platform`); the constructor stores both as readonly fields. These are
+  the injection points the tests use.
+- **Power assertion is opt-in.** The `spawnBackgroundFn` default is the no-op
+  `noopSpawnBackground`, so merely constructing a `LocalRuntime` (as many existing
+  tests do) never spawns a real background process. The real `spawnBackground` is
+  injected only at the composition root (`createRuntime` in `factory.ts`) for
+  production job execution. This keeps the whole test path free of real
+  `caffeinate` side-effects while preserving the production behaviour.
 - `registerCleanup` calls `acquirePowerAssertion({ cwd, parentPid: process.pid,
   platform: this.platform, spawnBackgroundFn: this.spawnBackgroundFn })` and holds
   the resulting `release` closure.
@@ -243,8 +249,14 @@ out-of-loop status of `architecture/model.md`.
   **Mitigation**: `platform` is injected as `"darwin"` in the lifecycle test and
   the seam is a recorded fake, so acquire/release are observed on any host.
 - [Risk] Widening `LocalRuntimeOptions` looks like surface creep → **Mitigation**:
-  both new fields are optional with production defaults (`spawnBackground`,
-  `process.platform`); production construction is unchanged.
+  both new fields are optional; `spawnBackgroundFn` defaults to the no-op
+  (`noopSpawnBackground`) and `platform` to `process.platform`. Production
+  construction opts in by injecting the real `spawnBackground` at the composition
+  root (`createRuntime`); every other construction (tests) stays side-effect-free.
+- [Risk] A real `caffeinate` spawned by default in `registerCleanup` would fire in
+  every test that builds a real `LocalRuntime`, leaving `-w <pid>` children that
+  keep the test process alive and hang the suite → **Mitigation**: the opt-in
+  default (above) — only the composition root enables the real spawn.
 - [Risk] The B-12 tooth regresses if the helper imports `node:child_process` →
   **Mitigation**: the helper imports only `spawnBackground` from the seam; a task
   asserts the `node:child_process` import set (and the B-12 test) is unchanged.

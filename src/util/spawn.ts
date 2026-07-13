@@ -107,6 +107,18 @@ export function spawnBackground(
 }
 
 /**
+ * No-op SpawnBackgroundFn. Returns a handle that spawns nothing and whose
+ * kill() is a no-op. This is the default background-spawn for LocalRuntime, so
+ * merely constructing a runtime (e.g. in tests) never spawns a real process.
+ * The real spawnBackground is injected only at the composition root
+ * (createRuntime) for production job execution.
+ */
+export const noopSpawnBackground: SpawnBackgroundFn = () => ({
+  pid: undefined,
+  kill() {},
+});
+
+/**
  * Spawn a command and collect stdout/stderr.
  * Resolves with { exitCode, stdout, stderr }.
  * Never throws on non-zero exit — callers check exitCode.
