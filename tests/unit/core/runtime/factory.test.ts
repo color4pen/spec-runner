@@ -93,6 +93,20 @@ describe("TC-RT-003: createRuntime defaults to ManagedRuntime when runtime is un
   });
 });
 
+// TC-PA-FACTORY: power assertion is opt-in — the composition root injects the real spawnBackground
+describe("TC-PA-FACTORY: createRuntime enables power assertion by injecting the real spawnBackground", () => {
+  it("LocalRuntime.spawnBackgroundFn is the real spawnBackground, not the no-op default", async () => {
+    const { createRuntime } = await import("../../../../src/core/runtime/factory.js");
+    const { spawnBackground, noopSpawnBackground } = await import("../../../../src/util/spawn.js");
+    const githubClient = buildMockGithubClient();
+    const runtime = createRuntime(buildLocalConfig(), "/repo", githubClient, repo, undefined, "");
+    // Access TypeScript-private field at runtime to verify factory wiring
+    const injected = (runtime as unknown as { spawnBackgroundFn: unknown }).spawnBackgroundFn;
+    expect(injected).toBe(spawnBackground);
+    expect(injected).not.toBe(noopSpawnBackground);
+  });
+});
+
 // TC-028: config.workspace.setup is wired to LocalRuntime.workspaceSetup
 describe("TC-028: createRuntime wires config.workspace.setup to LocalRuntime.workspaceSetup", () => {
   it("LocalRuntime.workspaceSetup is set to config.workspace.setup value", async () => {
