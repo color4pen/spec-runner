@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ed2a6cc1-41f7-4220-9ecd-53e403ef2cc9",
   "createdAt": "2026-07-13T01:19:10.769Z",
-  "updatedAt": "2026-07-13T01:46:25.576Z",
+  "updatedAt": "2026-07-13T01:50:38.307Z",
   "request": {
     "title": "one-shot SDK query の env を stripSecrets 経由に統一し、B-6 の歯を env-omission まで強める",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "scale-tolerance",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/one-shot-env-strip-ed2a6cc1",
   "error": null,
@@ -48,8 +48,35 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "d9294a1d780b8d1efe8afc8fc0e38aa95982df5c",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -58,7 +85,9 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "scale-tolerance": 1
+      "scale-tolerance": 1,
+      "cross-boundary-invariants": 1,
+      "custom-reviewers": 1
     }
   }
 }
