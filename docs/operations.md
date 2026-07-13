@@ -100,9 +100,11 @@ tick 内の起動は逐次（1 つの tick プロセスが pipeline を完走ま
 
 ### GitHub Actions
 
+常時稼働の Mac が不要なクラウド環境・サーバーサイドリポジトリや、チームで per-developer 設定なしに共有トリガーを使いたい場合に適する。すでに GitHub Actions で CI/CD を運用しているリポジトリでは自然な選択だ。launchd / crontab がローカル Mac 環境向けであるのに対し、Actions はクラウド環境向けの運用パスとなる。
+
 3 つのトリガーで一般的な自動化パターンをカバーする。`concurrency` グループで実行の重複を防ぐ。
 
-`GITHUB_TOKEN` は GitHub Actions が run ごとに自動注入するため、手動の secret 設定は不要。
+`GITHUB_TOKEN` は GitHub Actions が run ごとに自動注入するため、手動の secret 設定は不要。ただし、リポジトリのデフォルト設定では `GITHUB_TOKEN` が read-only になる場合があるため、`permissions:` の明示宣言が必要になる（詳細は後述）。
 
 ```yaml
 name: SpecRunner Inbox
@@ -122,6 +124,10 @@ concurrency:
 jobs:
   inbox-run:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write        # agent の push / branch 操作に必要
+      pull-requests: write   # agent の PR 作成に必要
+      issues: write          # agent の issue コメント（escalation 通知・完了通知）に必要
     steps:
       - uses: actions/checkout@v4
 
@@ -131,6 +137,16 @@ jobs:
         run: npx specrunner inbox run
 ```
 
+#### `permissions:` が必要な理由
+
+GitHub リポジトリのデフォルト設定（Settings → Actions → General → Workflow permissions）では `GITHUB_TOKEN` が read-only になる場合がある。agent が push・PR 作成・issue コメントを行うには以下の権限が必要で、`permissions:` ブロックで明示的に付与しなければ権限不足で失敗する:
+
+- `contents: write` — agent によるブランチ push・コミット操作
+- `pull-requests: write` — agent による PR 作成
+- `issues: write` — escalation 通知・完了通知の issue コメント投稿
+
+`GITHUB_TOKEN` は run ごとに自動注入されるため secret 設定は不要だが、権限スコープの明示宣言は省略できない。
+
 `issues.labeled` トリガーに承認ラベルのフィルタを追加する場合:
 
 ```yaml
@@ -139,6 +155,17 @@ jobs:
 # job 側:
     if: github.event.label.name == 'specrunner-approved'
 ```
+
+#### 失敗時の挙動
+
+**inbox run が非ゼロ終了した場合**  
+Actions の job が failed になる。次のスケジュール tick（次の cron 発火）または次のトリガーイベントで新しい run が起動し、inbox の冪等設計により安全に再試行される（再試行で同一 job が二重起動されることはない）。
+
+**agent escalation 時**  
+job の状態（進捗・context）はブランチに保持される。次の tick または issue への `/resume` コメントで再開できる（「inbox の挙動詳細」セクションの `/resume` ワークフロー参照）。Actions run 自体は failed または成功終了になるが、job の進捗は失われない。
+
+**`concurrency` による直列化**  
+`cancel-in-progress: false` により、実行中の run は完走させつつ次の run はキューに入る。複数のトリガーが短時間に重なっても多重実行にならない。
 
 ## inbox の挙動詳細
 
