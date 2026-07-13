@@ -44,4 +44,4 @@
 - **reviewer 注入**（review criteria に B-1〜B-12 を追加）: 未着手。
 - **`tests/` 二重構造（`tests/core/` と `tests/unit/`）整理**: 未着手。
 - T1 trust（branch protection）: private repo・owner 手動 gate のため対象外。
-- **実行所有権モデル（`adr/2026-07-13-execution-ownership-model.md`、proposed）**: invariants **B-13〜B-16 は ratify 待ち**（歯未実装のため §4 未昇格）。実 divergence あり ― state commit 所有の分散（`StepExecutor` ＋ `Pipeline` が同一 state を二重駆動）／ 並列 round の共有 base・可変 `deps`・中間 persist（crash 時に member 部分状態が残りうる）／ 失敗遷移の call-site 複製／ 共有 worktree への `git add -A` による commit 帰属の実行順依存。実装 PR ごとに §4 ＋ `conformance.md` (A) ＋歯へ昇格し burn-down する。
+- **実行所有権モデル（`adr/2026-07-13-execution-ownership-model.md`、ADR accepted）**: 構造判断（D1〜D4 の所有権配置）は採用済み。invariants **B-13〜B-16 は proposed / ratify 待ち**（歯未実装のため §4 未昇格）。実 divergence あり ― state commit 所有の分散（`StepExecutor` ＋ `Pipeline` が同一 state を二重駆動）／ 並列 round の共有 base・可変 `deps`・中間 persist（crash 時に member 部分状態が残りうる）／ 失敗遷移の call-site 複製／ 共有 worktree への `git add -A` による commit 帰属の実行順依存。実装 PR ごとに §4 ＋ `conformance.md` (A) ＋歯へ昇格し burn-down する。
