@@ -43,7 +43,7 @@ const USAGE_JSON = `specrunner/changes/${SLUG}/usage.json`;
 // Fixtures
 // ---------------------------------------------------------------------------
 
-function makeApprovedRun(name: string): StepRun {
+function makeApprovedRun(_name: string): StepRun {
   return {
     attempt: 1,
     sessionId: null,
