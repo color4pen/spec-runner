@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "63fc4dfc-ceba-4685-b6d1-01aad04f6e13",
   "createdAt": "2026-07-13T11:11:06.953Z",
-  "updatedAt": "2026-07-13T11:52:56.842Z",
+  "updatedAt": "2026-07-13T11:56:05.517Z",
   "request": {
     "title": "build-fixer の config 編集が同一 job 内 verification に反映されず coverage self-heal できない問題を修正",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "scale-tolerance",
   "status": "running",
   "branch": "change/verification-config-reload-63fc4dfc",
   "error": null,
@@ -49,7 +49,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 39,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -57,8 +57,9 @@
       "test-case-gen": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1,
-      "code-fixer": 1
+      "code-review": 2,
+      "code-fixer": 1,
+      "scale-tolerance": 1
     }
   }
 }
