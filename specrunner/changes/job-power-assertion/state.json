@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2a9f0577-36f7-40ea-a9f3-ab0224743da8",
   "createdAt": "2026-07-13T01:19:40.046Z",
-  "updatedAt": "2026-07-13T02:29:02.193Z",
+  "updatedAt": "2026-07-13T02:34:12.203Z",
   "request": {
     "title": "実行中の local job で OS のアイドルスリープを抑止する（self-caffeinate、#758）",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/job-power-assertion-2a9f0577",
   "error": null,
@@ -50,15 +50,46 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 37,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
