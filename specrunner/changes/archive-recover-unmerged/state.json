@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6d477d57-d0e6-473c-bd42-9cece0550bf5",
   "createdAt": "2026-07-13T11:58:14.215Z",
-  "updatedAt": "2026-07-13T13:21:45.675Z",
+  "updatedAt": "2026-07-13T13:28:16.719Z",
   "request": {
     "title": "archive --with-merge の merge 失敗後に job が復旧不能になる問題を修正",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "scale-tolerance",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/archive-recover-unmerged-6d477d57",
   "error": null,
@@ -50,8 +50,35 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "c8c5e15df8233d6f5d3f227918a53b853d2f0de1",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "c8c5e15df8233d6f5d3f227918a53b853d2f0de1",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 53,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -60,7 +87,9 @@
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "scale-tolerance": 2
+      "scale-tolerance": 2,
+      "cross-boundary-invariants": 1,
+      "custom-reviewers": 1
     }
   }
 }
