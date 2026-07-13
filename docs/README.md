@@ -11,6 +11,18 @@
 | `specrunner/rules/` `specrunner/reviewers/` | **agent**（実行される） | 規律・レビューレンズ（データとしての知識） | load-time validation と実行で常時運動。黙って腐れない |
 | `specrunner/adr/` `CHANGELOG.md` | 履歴を辿る人 | pipeline 生成の挙動 ADR / リリースノート | 追記専用・生成。更新義務なし |
 
+## docs/ ファイル一覧
+
+| ファイル | 内容 |
+|---|---|
+| [guarantees.md](guarantees.md) | 保証集合 G1 — 全 run が通過する保証群と enforce 機構の一覧（版号付き） |
+| [configuration.md](configuration.md) | 設定ファイルの構造・解決順・設定例 |
+| [cost.md](cost.md) | API コスト管理・見積もり |
+| [design-philosophy.md](design-philosophy.md) | 設計思想と判断基準 |
+| [model-evaluation.md](model-evaluation.md) | モデル評価の観点と手順 |
+| [operations.md](operations.md) | 無人運用・監視・障害対応 |
+| [request-authoring.md](request-authoring.md) | request.md の書き方リファレンス |
+
 ## 原則
 
 1. **各事実は一箇所にだけ住む。** 他の場所はリンクする。正確な signature・型は常にコードが正典で、docs は責務と契約の形までを書く
