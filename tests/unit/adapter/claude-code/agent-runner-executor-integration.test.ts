@@ -687,21 +687,30 @@ describe("TC-005: setsBranch flag — does not overwrite existing state.branch",
 // TC-006: step name hardcode check — setsBranch flag approach used in source
 // ---------------------------------------------------------------------------
 
-describe("TC-006: executor.ts uses setsBranch flag, not step.name hardcode", () => {
-  it("executor.ts does not contain step.name === 'propose' condition", async () => {
-    const executorSrc = await import("node:fs/promises").then((fsp) =>
-      fsp.readFile(
-        new URL("../../../../src/core/step/executor.ts", import.meta.url).pathname,
-        "utf-8",
+describe("TC-006: executor.ts / commit-orchestrator.ts uses setsBranch flag, not step.name hardcode", () => {
+  it("executor.ts does not contain step.name === 'propose' condition, setsBranch in orchestrator", async () => {
+    const [executorSrc, orchestratorSrc] = await Promise.all([
+      import("node:fs/promises").then((fsp) =>
+        fsp.readFile(
+          new URL("../../../../src/core/step/executor.ts", import.meta.url).pathname,
+          "utf-8",
+        ),
       ),
-    );
+      import("node:fs/promises").then((fsp) =>
+        fsp.readFile(
+          new URL("../../../../src/core/step/commit-orchestrator.ts", import.meta.url).pathname,
+          "utf-8",
+        ),
+      ),
+    ]);
 
     // Step name hardcode dispatch patterns (TC-003 / TC-006)
     const stepNameHardcodePattern =
       /if\s*\(.*step\.name\s*===?\s*["'](?:design|spec-review|implementer|build-fixer|spec-fixer|verification)["']/;
     expect(stepNameHardcodePattern.test(executorSrc)).toBe(false);
+    expect(stepNameHardcodePattern.test(orchestratorSrc)).toBe(false);
 
-    // Must use setsBranch flag instead
-    expect(executorSrc).toContain("setsBranch");
+    // setsBranch logic moved to commit-orchestrator.ts (B-13 single-writer refactor)
+    expect(orchestratorSrc).toContain("setsBranch");
   });
 });

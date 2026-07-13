@@ -1,7 +1,7 @@
 /**
  * Architecture invariant enforcement: core layer — full scope.
  *
- * Enforces architecture/model.md §4 invariants B-1 through B-12 across the
+ * Enforces architecture/model.md §4 invariants B-1 through B-14 across the
  * entire src/core/ directory (formerly only core/request/ was covered).
  *
  * Scope expansion rationale (arch-test-core-wide-ratchet):
@@ -993,6 +993,97 @@ describe("B-11 (arch pin): src/core/runtime/ 具象クラスは bare implements 
       (m) => !isCommentLine(m.content) && !m.content.includes("RealRuntimeStrategy"),
     );
     expect(bareImplements).toHaveLength(0);
+  });
+});
+
+// ─── B-13: StepExecutor は store 永続化 API を直接呼ばない ──────────────────────
+
+describe("B-13 (arch pin): StepExecutor は store 永続化 API を CommitOrchestrator 経由でしか呼ばない", () => {
+  /**
+   * B-13 (single-writer ownership): StepExecutor must not call store mutation
+   * APIs directly. CommitOrchestrator is the sole owner of state persistence,
+   * history recording, transition application, and event emission.
+   *
+   * Covered call-sites: store.persist / store.fail / store.update /
+   *   store.appendHistory / store.appendInterruption / store.appendLineage /
+   *   store.appendStepRun
+   *
+   * Liveness: commit-orchestrator.ts must contain these call-sites (confirms
+   * the grep is not vacuously passing because the methods were renamed).
+   */
+  it("executor.ts に store 永続化 API の直接呼び出しが存在しない", () => {
+    const raw = grepE(
+      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun)\\("`,
+      "src/core/step/executor.ts",
+    );
+    const matches = parseGrepOutput(raw);
+    const violations = matches.filter((m) => !isCommentLine(m.content));
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  it("B-13 liveness: commit-orchestrator.ts に store 永続化 API 呼び出しが存在する（grep が vacuous でない）", () => {
+    const raw = grepE(
+      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun)\\("`,
+      "src/core/step/commit-orchestrator.ts",
+    );
+    const matches = parseGrepOutput(raw);
+    const nonComment = matches.filter((m) => !isCommentLine(m.content));
+    expect(nonComment.length).toBeGreaterThan(0);
+  });
+
+  it("B-13 regression guard: store 永続化 API 呼び出しが executor.ts にあれば検出される", () => {
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/core/step/executor.ts",
+        line: 42,
+        content: "    await store.persist(s);",
+      },
+    ];
+    const violations = injectedMatches.filter((m) => !isCommentLine(m.content));
+    expect(violations).toHaveLength(1);
+  });
+});
+
+// ─── B-14: StepExecutor は transitionJob / attachStateAndRethrow を直接呼ばない ─
+
+describe("B-14 (arch pin): StepExecutor は transitionJob / attachStateAndRethrow を直接呼ばない", () => {
+  /**
+   * B-14 (halt application ownership): StepExecutor must not call transitionJob
+   * or attachStateAndRethrow directly. These are CommitOrchestrator's sole
+   * responsibility (applied inside commitHalt / apply).
+   *
+   * Liveness: commit-orchestrator.ts must contain these call-sites.
+   */
+  it("executor.ts に transitionJob / attachStateAndRethrow の直接呼び出しが存在しない", () => {
+    const raw = grepE(
+      `"(transitionJob|attachStateAndRethrow)\\("`,
+      "src/core/step/executor.ts",
+    );
+    const matches = parseGrepOutput(raw);
+    const violations = matches.filter((m) => !isCommentLine(m.content));
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  it("B-14 liveness: commit-orchestrator.ts に transitionJob / attachStateAndRethrow 呼び出しが存在する", () => {
+    const raw = grepE(
+      `"(transitionJob|attachStateAndRethrow)\\("`,
+      "src/core/step/commit-orchestrator.ts",
+    );
+    const matches = parseGrepOutput(raw);
+    const nonComment = matches.filter((m) => !isCommentLine(m.content));
+    expect(nonComment.length).toBeGreaterThan(0);
+  });
+
+  it("B-14 regression guard: transitionJob 呼び出しが executor.ts にあれば検出される", () => {
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/core/step/executor.ts",
+        line: 99,
+        content: "    const { state: s2 } = transitionJob(s, 'awaiting-resume', opts);",
+      },
+    ];
+    const violations = injectedMatches.filter((m) => !isCommentLine(m.content));
+    expect(violations).toHaveLength(1);
   });
 });
 
