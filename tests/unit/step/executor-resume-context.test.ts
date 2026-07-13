@@ -275,11 +275,15 @@ describe("TC-RC-003: non-fixer step → resumeSessionId always undefined", () =>
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-RC-004: deps.resumePrompt is consumed (one-shot) after the step executes
+// TC-RC-004: executor does NOT clear deps.resumePrompt (D4, round-immutable-input)
+//
+// One-shot ownership has moved from StepExecutor to Pipeline.runInternal.
+// The executor's role is to READ deps.resumePrompt (via buildStepContext/buildResumePrompt)
+// without mutating the shared deps object. Pipeline owns the one-shot gate.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-RC-004: deps.resumePrompt consumed after step", () => {
-  it("clears deps.resumePrompt to undefined after the agent step runs", async () => {
+describe("TC-RC-004: executor does not clear deps.resumePrompt (one-shot is Pipeline's responsibility)", () => {
+  it("deps.resumePrompt is preserved (not cleared) after the agent step runs", async () => {
     const jobId = "tc-rc-004";
     const state = makeJobState(jobId, "code-fixer");
     await seedJobState(jobId, state);
@@ -292,7 +296,7 @@ describe("TC-RC-004: deps.resumePrompt consumed after step", () => {
 
     await executor.execute(makeAgentStep("code-fixer"), state, deps);
 
-    // After execution, resumePrompt must be cleared (one-shot consumption).
-    expect(deps.resumePrompt).toBeUndefined();
+    // Executor must NOT clear deps.resumePrompt — one-shot ownership belongs to Pipeline.
+    expect(deps.resumePrompt).toBe("resume note from operator");
   });
 });

@@ -205,6 +205,13 @@ export class Pipeline {
     let state = jobState;
     let currentStep = startStep;
     let budget = ConvergenceBudget.initial();
+    // D4: one-shot resume input ownership.
+    // The first unit to execute (step or coordinator round) receives the original deps
+    // (which may carry resumePrompt / resumeContext). Subsequent units receive a clone
+    // with both resume fields stripped. This replaces the per-executor in-place clearing
+    // that was previously in executor.ts.
+    const depsWithoutResume: PipelineDeps = { ...deps, resumePrompt: undefined, resumeContext: undefined };
+    let firstUnitExecuted = false;
 
     while (true) {
       // --- Coordinator fan-out detection (must precede steps.get) ---
@@ -243,9 +250,13 @@ export class Pipeline {
       // --- Execute: coordinator fan-out or regular step dispatch ---
       let outcome: string;
 
+      // Select effective deps for this unit: first unit gets original deps (with resume
+      // input); subsequent units get depsWithoutResume (one-shot ownership, D4).
+      const effectiveDeps = firstUnitExecuted ? depsWithoutResume : deps;
+
       if (isCoordinator) {
         // --- Coordinator fan-out (D3 / D4 / D6 / D8) ---
-        const fanResult = await this.round!.run(currentStep, state, deps);
+        const fanResult = await this.round!.run(currentStep, state, effectiveDeps);
         state = fanResult.state;
         outcome = fanResult.outcome;
       } else {
@@ -264,7 +275,7 @@ export class Pipeline {
         const stateBeforeExec = state;
         logPipelineDiag("pipeline:step:pre-execute", `step=${currentStep}`);
         try {
-          state = await this.executor.execute(step, state, deps);
+          state = await this.executor.execute(step, state, effectiveDeps);
         } catch (err) {
           const errWithState = err as { state?: JobState };
           if (errWithState.state) {
@@ -299,6 +310,9 @@ export class Pipeline {
           }
         }
       }
+
+      // D4: mark first unit as executed so subsequent units receive depsWithoutResume.
+      firstUnitExecuted = true;
 
       const loopIter = budget.getLoopIter(currentStep);
 

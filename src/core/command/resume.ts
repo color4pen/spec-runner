@@ -19,7 +19,7 @@ import { parseRequestMd } from "../../parser/request-md.js";
 import { resolveJobStateBySlug } from "../resume/resolve-job.js";
 import { resolveRequestPath } from "../resume/resolve-request-path.js";
 import { getJobSlug } from "../../state/job-slug.js";
-import { resolveResumeStep, buildAllowedStepSet } from "../resume/resolve-step.js";
+import { resolveResumeStep, buildAllowedStepSet, mapMemberToCoordinator } from "../resume/resolve-step.js";
 import { checkConsecutiveEscalations, checkStaleState, isStaleRunning } from "../resume/safety.js";
 import { livenessJsonPath } from "../../util/paths.js";
 import { canTransition, transitionJob } from "../../state/lifecycle.js";
@@ -271,7 +271,17 @@ export class ResumeCommand extends CommandRunner {
       },
       // Automatic resume context is only valid when we actually resume from the recorded step.
       // `--from` can intentionally redirect execution to a different start step.
-      resumeContext: resumePoint && startStep === resumePoint.step ? { resumePoint } : undefined,
+      //
+      // D3 (round-immutable-input): when resumePoint.step is a reviewer member name,
+      // resolveResumeStep maps it to the coordinator (e.g. "cross-boundary-invariants" →
+      // "custom-reviewers"). Apply the same mapping here so the gate still passes even
+      // after member→coordinator routing. The resumePoint itself is preserved with the
+      // original member step name so that automatic context routing inside the round works.
+      resumeContext: (() => {
+        if (!resumePoint) return undefined;
+        const mappedResumeStep = mapMemberToCoordinator(resumePoint.step, updatedState.reviewers);
+        return startStep === mappedResumeStep ? { resumePoint } : undefined;
+      })(),
       resumePrompt: this.options.prompt,
       json: this.options.json ?? false,
     };
