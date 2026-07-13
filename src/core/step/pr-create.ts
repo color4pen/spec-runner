@@ -17,7 +17,11 @@ import * as path from "node:path";
 import { runPrCreate } from "../pr-create/runner.js";
 import { renderPrTitle, renderPrBody } from "../pr-create/body-template.js";
 import { branchNotSetError } from "../../errors.js";
-import { prCreateResultPath } from "../../util/paths.js";
+import { prCreateResultPath, slugEventsPath, usageJsonPath } from "../../util/paths.js";
+import { readUsageFile } from "../usage/store.js";
+import { buildAttestation } from "../attestation/build-attestation.js";
+import { renderAttestationComment } from "../attestation/render-comment.js";
+import { logWarn } from "../../logger/stdout.js";
 import { STEP_NAMES } from "./step-names.js";
 
 export const PrCreateStep: CliStep = {
@@ -74,6 +78,30 @@ export const PrCreateStep: CliStep = {
       ].join("\n");
 
       await fs.writeFile(path.resolve(cwd, resultFilePath), content, "utf-8");
+
+      // Best-effort: attach attestation as PR comment
+      if (typeof result.number === "number") {
+        try {
+          const journalPath = path.resolve(cwd, slugEventsPath(slug));
+          let journalContent: string;
+          try {
+            journalContent = await fs.readFile(journalPath, "utf-8");
+          } catch {
+            logWarn(`pr-create: could not read events.jsonl for attestation, skipping comment`);
+            journalContent = "";
+          }
+
+          if (journalContent) {
+            const usagePath = path.resolve(cwd, usageJsonPath(slug));
+            const usage = await readUsageFile(usagePath);
+            const attestation = buildAttestation({ journalContent, usage });
+            const body = renderAttestationComment(attestation);
+            await deps.githubClient!.createIssueComment(deps.owner!, deps.repo!, result.number, body);
+          }
+        } catch (err: unknown) {
+          logWarn(`pr-create: attestation comment failed: ${(err as Error).message ?? String(err)}`);
+        }
+      }
     } else {
       // Error — do NOT modify state.pullRequest
       const content = [
