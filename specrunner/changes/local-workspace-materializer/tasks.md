@@ -4,8 +4,8 @@
 
 新ファイル `src/core/runtime/workspace-materializer.ts` を作成し、5 アームに対応する識別合併型を定義する。
 
-- [ ] `src/core/runtime/workspace-materializer.ts` を新規作成する。
-- [ ] 以下の DU を export する:
+- [x] `src/core/runtime/workspace-materializer.ts` を新規作成する。
+- [x] 以下の DU を export する:
   ```typescript
   export type WorktreeMaterializationPlan =
     | { kind: "no-worktree" }
@@ -14,8 +14,8 @@
     | { kind: "resume-without-recorded-worktree"; remoteBaseRef: string }
     | { kind: "new-run"; remoteBaseRef: string; branchName?: string };
   ```
-- [ ] ファイル先頭に JSDoc コメントを付ける（型の目的・各 variant の対応するアームを記述）。
-- [ ] 他の export は含めない（型定義のみのファイル）。
+- [x] ファイル先頭に JSDoc コメントを付ける（型の目的・各 variant の対応するアームを記述）。
+- [x] 他の export は含めない（型定義のみのファイル）。
 
 **Acceptance Criteria**:
 - `src/core/runtime/workspace-materializer.ts` が存在し、`WorktreeMaterializationPlan` がコンパイルエラーなく export されている。
@@ -27,8 +27,8 @@
 
 `local.ts` に `private async materializeWorktree(...)` を追加し、各アームの「実体化＋registration」ロジックを集約する。
 
-- [ ] `local.ts` の import に `WorktreeMaterializationPlan` を追加する（`./workspace-materializer.js` から）。
-- [ ] `materializeWorktree` の実装を以下のシグネチャで追加する:
+- [x] `local.ts` の import に `WorktreeMaterializationPlan` を追加する（`./workspace-materializer.js` から）。
+- [x] `materializeWorktree` の実装を以下のシグネチャで追加する:
   ```typescript
   private async materializeWorktree(
     slug: string,
@@ -37,7 +37,7 @@
     opts?: WorkspaceOptions,
   ): Promise<WorkspaceContext>
   ```
-- [ ] `switch (plan.kind)` で 5 arm を処理する。各 arm の責務:
+- [x] `switch (plan.kind)` で 5 arm を処理する。各 arm の責務:
   - `no-worktree`: `setupWorkspaceNoWorktree(slug, jobId, opts)` を呼んで返す（既存 private method に委譲）。
   - `resume-existing`:
     - `workspace = { cwd: plan.worktreePath, worktreePath: plan.worktreePath }` を作成。
@@ -66,8 +66,8 @@
     - `opts?.requestFilePath` があれば既存の copy / git add / usage / rules / state update / commit ロジック（現在 `setupWorkspace` の `:552-596` 相当）をそのまま移植する。
     - `plan.branchName` があれば `updateJobState(jobId, (s) => ({ ...s, branch: plan.branchName }), slugOpts)` を呼ぶ。
     - workspaceCtx を返す。
-- [ ] `resume-recreated` と `resume-without-recorded-worktree` の処理を共通化してよいが、DU の variant は分けて残す（将来の差分追加のため）。
-- [ ] 既存の `writeLivenessSidecar` / `updateJobState` / `recopyDraftToChangeFolder` などのヘルパー呼び出し順序を変えない。
+- [x] `resume-recreated` と `resume-without-recorded-worktree` の処理を共通化してよいが、DU の variant は分けて残す（将来の差分追加のため）。
+- [x] 既存の `writeLivenessSidecar` / `updateJobState` / `recopyDraftToChangeFolder` などのヘルパー呼び出し順序を変えない。
 
 **Acceptance Criteria**:
 - `materializeWorktree` が `LocalRuntime` の private method として存在する。
@@ -80,7 +80,7 @@
 
 `setupWorkspace` から個々の arm の実体化ロジックを取り除き、plan 決定と `materializeWorktree` 呼び出しのみにする。
 
-- [ ] `setupWorkspace` の本体を以下の構造に書き換える:
+- [x] `setupWorkspace` の本体を以下の構造に書き換える:
   1. `this.currentSlug = slug`（既存）
   2. transport auth pre-warm（既存）
   3. `baseBranch`, `remoteBaseRef`, `existingWorktreePath` を計算（既存）
@@ -96,8 +96,8 @@
        - behind / ahead 警告（既存）
        - `{ kind: "new-run", remoteBaseRef, branchName: opts?.branchName }`
   5. `return this.materializeWorktree(slug, jobId, plan, opts)`
-- [ ] `setupWorkspace` から移植済みロジック（実体化＋registration）を削除する。
-- [ ] `setupWorkspaceNoWorktree` は削除しない（`materializeWorktree` の `no-worktree` arm から参照される）。
+- [x] `setupWorkspace` から移植済みロジック（実体化＋registration）を削除する。
+- [x] `setupWorkspaceNoWorktree` は削除しない（`materializeWorktree` の `no-worktree` arm から参照される）。
 
 **Acceptance Criteria**:
 - `setupWorkspace` の実装が「plan 決定 + `materializeWorktree` 呼び出し」のみになっており、`WorkspaceContext` の組立・`this.workspace` セット・bootstrap seed・`updateJobState`・liveness sidecar・recopy の各ロジックが本メソッド内に存在しない。
@@ -108,9 +108,9 @@
 
 ## T-04: typecheck && test を green で通す
 
-- [ ] `bun run typecheck` が 0 exit で完了する。
-- [ ] `bun run test` が 0 exit で完了する（既存テストの期待値書き換えは行わない; import / mock path の機械的更新は許容）。
-- [ ] T-01〜T-03 で変更したファイル以外に src/ 配下のファイルを変更していない（スコープ遵守）。
+- [x] `bun run typecheck` が 0 exit で完了する。
+- [x] `bun run test` が 0 exit で完了する（既存テストの期待値書き換えは行わない; import / mock path の機械的更新は許容）。
+- [x] T-01〜T-03 で変更したファイル以外に src/ 配下のファイルを変更していない（スコープ遵守）。
 
 **Acceptance Criteria**:
 - `bun run typecheck` が green。
