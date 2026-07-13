@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2a9f0577-36f7-40ea-a9f3-ab0224743da8",
   "createdAt": "2026-07-13T01:19:40.046Z",
-  "updatedAt": "2026-07-13T02:34:43.481Z",
+  "updatedAt": "2026-07-13T02:38:22.308Z",
   "request": {
     "title": "実行中の local job で OS のアイドルスリープを抑止する（self-caffeinate、#758）",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/job-power-assertion-2a9f0577",
   "error": null,
@@ -78,7 +78,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 58,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -90,7 +90,8 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
