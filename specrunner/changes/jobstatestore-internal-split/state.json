@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c687abe1-5685-451c-adb0-810516441a06",
   "createdAt": "2026-07-13T16:21:27.127Z",
-  "updatedAt": "2026-07-13T16:46:10.067Z",
+  "updatedAt": "2026-07-13T16:48:54.057Z",
   "request": {
     "title": "JobStateStore を内部コンポーネントへ分割する（public API 不変）",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "scale-tolerance",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/jobstatestore-internal-split-c687abe1",
   "error": null,
@@ -48,15 +48,44 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "02338adee73d509807c5c7b332863b45d4aed0e9",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "02338adee73d509807c5c7b332863b45d4aed0e9",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 23,
+    "historyCount": 29,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "implementer": 1,
       "verification": 1,
       "code-review": 1,
-      "scale-tolerance": 1
+      "scale-tolerance": 1,
+      "cross-boundary-invariants": 1,
+      "custom-reviewers": 1
     }
   }
 }
