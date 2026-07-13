@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect } from "vitest";
+import { EventBus } from "../../event/event-bus.js";
 import { ParallelReviewRound } from "../parallel-review-round.js";
 import type { ParallelReviewConfig } from "../types.js";
 import type { Step } from "../../step/types.js";
@@ -128,7 +129,7 @@ function makeRound(fakeExecutor: StepExecutor): ParallelReviewRound {
     [MEMBER_A, makeStep(MEMBER_A)],
     [MEMBER_B, makeStep(MEMBER_B)],
   ]);
-  return new ParallelReviewRound({ executor: fakeExecutor, steps, parallelReview });
+  return new ParallelReviewRound({ executor: fakeExecutor, steps, parallelReview, events: new EventBus() });
 }
 
 /**

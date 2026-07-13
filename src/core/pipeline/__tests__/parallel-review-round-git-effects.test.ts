@@ -1,0 +1,442 @@
+/**
+ * Intended-invariant tests for coordinator round git effect ownership.
+ *
+ * T-05 (round-owned-git-effects): verifies that ParallelReviewRound correctly:
+ *   1. Passes roundOwnsGitEffects=true to all member executions.
+ *   2. Calls commitRoundArtifacts with only the declared outputs that were changed
+ *      (toStage = changed ∩ declared) when there are no offending paths.
+ *   3. Halts the round (escalation + ROUND_NONDECLARED_CHANGE) when changed ⊄ declared
+ *      (after excluding pipeline-managed paths), WITHOUT calling commitRoundArtifacts.
+ *   4. Excludes pipeline-managed paths (state.json etc.) from staging even if they changed.
+ *   5. Existing test fakes without listWorktreeChanges continue to work (skip git ops).
+ *
+ * All scenarios use fake members and fake runtimeStrategy to drive ParallelReviewRound.run
+ * without any git, filesystem, or network I/O.
+ */
+
+import { describe, it, expect, vi } from "vitest";
+import { EventBus } from "../../event/event-bus.js";
+import { ParallelReviewRound } from "../parallel-review-round.js";
+import type { ParallelReviewConfig } from "../types.js";
+import type { Step } from "../../step/types.js";
+import type { JobState, StepRun } from "../../../state/schema.js";
+import type { PipelineDeps } from "../../types.js";
+import type { StepExecutor } from "../../step/executor.js";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const SLUG = "my-change";
+const MEMBER_A = "reviewer-alpha";
+const MEMBER_B = "reviewer-beta";
+const COORDINATOR = "custom-reviewers";
+
+const DECLARED_A = `specrunner/changes/${SLUG}/alpha-result-001.md`;
+const DECLARED_B = `specrunner/changes/${SLUG}/beta-result-001.md`;
+const UNDECLARED = "src/sneaky.ts";
+const STATE_JSON = `specrunner/changes/${SLUG}/state.json`;
+const EVENTS_JSONL = `specrunner/changes/${SLUG}/events.jsonl`;
+const USAGE_JSON = `specrunner/changes/${SLUG}/usage.json`;
+
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
+
+function makeApprovedRun(_name: string): StepRun {
+  return {
+    attempt: 1,
+    sessionId: null,
+    outcome: { verdict: "approved", findingsPath: null, error: null, toolResult: null },
+    startedAt: new Date().toISOString(),
+    endedAt: new Date().toISOString(),
+  };
+}
+
+function makeState(): JobState {
+  return {
+    version: 2,
+    jobId: "round-git-effects-test",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    request: { path: "specrunner/changes/my-change/request.md", title: "Test", type: "bug-fix" },
+    repository: { owner: "test", name: "repo" },
+    session: null,
+    step: COORDINATOR,
+    status: "running",
+    branch: "change/my-change",
+    history: [],
+    error: null,
+    steps: {},
+    reviewers: [
+      { name: MEMBER_A, maxIterations: 3, purpose: "", criteria: "", judgment: "", freeText: "" },
+      { name: MEMBER_B, maxIterations: 3, purpose: "", criteria: "", judgment: "", freeText: "" },
+    ],
+  };
+}
+
+function makeStore() {
+  return {
+    persist: async () => undefined,
+    update: async (state: JobState) => state,
+    fail: async (state: JobState) => state,
+    appendHistory: async (state: JobState) => state,
+    appendLineage: async () => undefined,
+    appendInterruption: async (state: JobState) => state,
+  };
+}
+
+/**
+ * Build a Step fake that declares writes() returning the given paths.
+ */
+function makeStepWithWrites(name: string, declaredPaths: string[]): Step {
+  return {
+    kind: "agent",
+    name,
+    agent: { id: `${name}-agent` } as never,
+    buildMessage: () => `${name} message`,
+    resultFilePath: () => null,
+    parseResult: () => ({ verdict: null, findingsPath: null }),
+    writes: () => declaredPaths.map((path) => ({ path })),
+  } as unknown as Step;
+}
+
+/**
+ * Fake executor that immediately returns an approved state for each member.
+ * Also captures the deps.roundOwnsGitEffects flag and any captured deps per member.
+ */
+function makeFakeExecutor(): {
+  executor: StepExecutor;
+  getCapturedRoundOwnsGitEffects: (name: string) => boolean | undefined;
+} {
+  const capturedFlags = new Map<string, boolean | undefined>();
+
+  const executor = {
+    execute: async (step: Step, state: JobState, deps: PipelineDeps): Promise<JobState> => {
+      capturedFlags.set(step.name, deps.roundOwnsGitEffects);
+      return {
+        ...state,
+        steps: { ...(state.steps ?? {}), [step.name]: [makeApprovedRun(step.name)] },
+        updatedAt: new Date().toISOString(),
+      };
+    },
+  } as unknown as StepExecutor;
+
+  return {
+    executor,
+    getCapturedRoundOwnsGitEffects: (name: string) => capturedFlags.get(name),
+  };
+}
+
+/**
+ * Build a runtimeStrategy fake with spied listWorktreeChanges and commitRoundArtifacts.
+ */
+function makeRuntimeStrategy(opts: {
+  worktreeChanges: string[];
+}) {
+  return {
+    captureHeadSha: vi.fn(async () => "abc123"),
+    listChangedFiles: vi.fn(async () => [] as string[]),
+    finalizeStepArtifacts: vi.fn(async () => {}),
+    validateStepInputs: vi.fn(async () => {}),
+    validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+    listWorktreeChanges: vi.fn(async (_cwd: string) => opts.worktreeChanges),
+    commitRoundArtifacts: vi.fn(
+      async (
+        _stagePaths: string[],
+        _cwd: string,
+        _branch: string,
+        _coordinatorName: string,
+        _slug: string,
+        _infra: unknown,
+      ) => {},
+    ),
+  };
+}
+
+/**
+ * Build a ParallelReviewRound with the given fake executor and steps.
+ */
+function makeRound(fakeExecutor: StepExecutor, steps: Map<string, Step>): ParallelReviewRound {
+  const parallelReview: ParallelReviewConfig = {
+    coordinator: COORDINATOR,
+    members: [MEMBER_A, MEMBER_B],
+  };
+  return new ParallelReviewRound({
+    executor: fakeExecutor,
+    steps,
+    parallelReview,
+    events: new EventBus(),
+  });
+}
+
+function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
+  return {
+    cwd: "/tmp/test",
+    slug: SLUG,
+    config: {} as never,
+    request: {
+      type: "bug-fix",
+      title: "Test",
+      slug: SLUG,
+      baseBranch: "main",
+      content: "...",
+      adr: false,
+    },
+    dynamicContext: undefined,
+    githubClient: {} as never,
+    owner: "test",
+    repo: "repo",
+    spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }) as never,
+    storeFactory: () => makeStore() as never,
+    runtimeStrategy: undefined,
+    ...overrides,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Scenario 1: declared-only changes → commitRoundArtifacts called with toStage
+// ---------------------------------------------------------------------------
+
+describe("ParallelReviewRound git effects — declared-only changes → scoped commit", () => {
+  it("commitRoundArtifacts is called with declared paths when changed ⊆ declared", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({ worktreeChanges: [DECLARED_A, DECLARED_B] });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    // Should NOT halt
+    expect(result.outcome).toBe("approved");
+
+    // commitRoundArtifacts must be called exactly once with both declared paths
+    expect(runtimeStrategy.commitRoundArtifacts).toHaveBeenCalledTimes(1);
+    const [stagePaths, , , coordinatorArg, slugArg] = runtimeStrategy.commitRoundArtifacts.mock.calls[0]!;
+    expect(stagePaths).toContain(DECLARED_A);
+    expect(stagePaths).toContain(DECLARED_B);
+    // Pipeline-managed paths must not be in stagePaths
+    expect(stagePaths).not.toContain(STATE_JSON);
+    expect(coordinatorArg).toBe(COORDINATOR);
+    expect(slugArg).toBe(SLUG);
+  });
+
+  it("commitRoundArtifacts stagePaths = changed ∩ declared (not all declared)", async () => {
+    // Only DECLARED_A was actually changed (DECLARED_B was not written by any member)
+    const runtimeStrategy = makeRuntimeStrategy({ worktreeChanges: [DECLARED_A] });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A, DECLARED_B])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    const [stagePaths] = runtimeStrategy.commitRoundArtifacts.mock.calls[0]!;
+    // Only the actually-changed declared path goes to staging
+    expect(stagePaths).toEqual([DECLARED_A]);
+    expect(stagePaths).not.toContain(DECLARED_B);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scenario 2: undeclared changes → round halt, commitRoundArtifacts NOT called
+// ---------------------------------------------------------------------------
+
+describe("ParallelReviewRound git effects — undeclared changes → round halt", () => {
+  it("outcome is escalation when undeclared path is in changed", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, UNDECLARED],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(result.outcome).toBe("escalation");
+  });
+
+  it("commitRoundArtifacts is NOT called when there are offending paths", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, UNDECLARED],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(runtimeStrategy.commitRoundArtifacts).not.toHaveBeenCalled();
+  });
+
+  it("state.error records ROUND_NONDECLARED_CHANGE with offending paths", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, UNDECLARED],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(result.state.error).not.toBeNull();
+    expect(result.state.error?.code).toBe("ROUND_NONDECLARED_CHANGE");
+    expect(result.state.error?.message).toContain(UNDECLARED);
+  });
+
+  it("synthetic coordinator StepRun outcome has escalation verdict when offending", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, UNDECLARED],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    const coordinatorRuns = result.state.steps?.[COORDINATOR] ?? [];
+    const lastRun = coordinatorRuns[coordinatorRuns.length - 1];
+    expect(lastRun?.outcome.verdict).toBe("escalation");
+    expect(lastRun?.outcome.error?.code).toBe("ROUND_NONDECLARED_CHANGE");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scenario 3: pipeline-managed paths in changed → excluded from stage AND halt
+// ---------------------------------------------------------------------------
+
+describe("ParallelReviewRound git effects — pipeline-managed paths excluded from stage and halt", () => {
+  it("state.json, events.jsonl, usage.json in changed → not staged, no halt", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, STATE_JSON, EVENTS_JSONL, USAGE_JSON],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    // Should NOT halt (pipeline-managed paths are exempt)
+    expect(result.outcome).toBe("approved");
+
+    // commitRoundArtifacts should be called with only the declared changed path
+    expect(runtimeStrategy.commitRoundArtifacts).toHaveBeenCalledTimes(1);
+    const [stagePaths] = runtimeStrategy.commitRoundArtifacts.mock.calls[0]!;
+    expect(stagePaths).toEqual([DECLARED_A]);
+    expect(stagePaths).not.toContain(STATE_JSON);
+    expect(stagePaths).not.toContain(EVENTS_JSONL);
+    expect(stagePaths).not.toContain(USAGE_JSON);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scenario 4: no changes → commitRoundArtifacts NOT called (no-op)
+// ---------------------------------------------------------------------------
+
+describe("ParallelReviewRound git effects — no changes → no commit", () => {
+  it("commitRoundArtifacts is NOT called when worktree has no changes", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({ worktreeChanges: [] });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(result.outcome).toBe("approved");
+    expect(runtimeStrategy.commitRoundArtifacts).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scenario 5: roundOwnsGitEffects is passed to members
+// ---------------------------------------------------------------------------
+
+describe("ParallelReviewRound git effects — members receive roundOwnsGitEffects=true", () => {
+  it("all pending members receive roundOwnsGitEffects === true", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({ worktreeChanges: [] });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor, getCapturedRoundOwnsGitEffects } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(getCapturedRoundOwnsGitEffects(MEMBER_A)).toBe(true);
+    expect(getCapturedRoundOwnsGitEffects(MEMBER_B)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scenario 6: test fake without listWorktreeChanges → skip git ops (regression)
+// ---------------------------------------------------------------------------
+
+describe("ParallelReviewRound git effects — fake without listWorktreeChanges still works", () => {
+  it("round completes without error when runtimeStrategy has no listWorktreeChanges", async () => {
+    // Simulate the existing test pattern where the fake has no listWorktreeChanges
+    const minimalRuntimeStrategy = {
+      captureHeadSha: vi.fn(async () => "abc123"),
+      listChangedFiles: vi.fn(async () => [] as string[]),
+      finalizeStepArtifacts: vi.fn(async () => {}),
+      validateStepInputs: vi.fn(async () => {}),
+      validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+      // No listWorktreeChanges — omitted intentionally
+    };
+
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: minimalRuntimeStrategy as never,
+    }));
+
+    // Round should complete as approved (git ops skipped, no halt)
+    expect(result.outcome).toBe("approved");
+  });
+});

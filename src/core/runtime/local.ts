@@ -38,7 +38,7 @@ import {
   writeOutputTemplates,
   cleanupOutputTemplates,
 } from "../artifact/copy-artifacts.js";
-import { commitAndPush, commitFinalState } from "../step/commit-push.js";
+import { commitAndPush, commitFinalState, commitScopedPaths } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot } from "../port/runtime-strategy.js";
@@ -828,6 +828,66 @@ export class LocalRuntime implements RealRuntimeStrategy {
    */
   canDeriveChangedFiles(): boolean {
     return true;
+  }
+
+  /**
+   * List files with uncommitted changes in the worktree.
+   *
+   * Runs `git status --porcelain -z --no-renames` in cwd and returns worktree-relative
+   * paths for all changed entries (added, modified, deleted, untracked).
+   * Uses the same NUL-separator parsing as snapshotMainCheckoutGuard.
+   *
+   * Never throws — returns [] on any error.
+   *
+   * D3 (round-owned-git-effects): used by ParallelReviewRound after fan-out to detect
+   * uncommitted changes left by round members (who did not commit under roundOwnsGitEffects).
+   */
+  async listWorktreeChanges(cwd: string): Promise<string[]> {
+    try {
+      const result = await this.spawnFn(
+        "git",
+        ["status", "--porcelain", "-z", "--no-renames"],
+        { cwd },
+      );
+      if (result.exitCode !== 0) return [];
+
+      // Parse NUL-separated entries: each entry is "XY PATH" (3+ chars, status 2 + space + path)
+      const raw = result.stdout;
+      const parts = raw.split("\0").filter((p) => p.length > 0);
+      const paths: string[] = [];
+
+      for (const part of parts) {
+        // Format: XY<SP>path (2-char status + space + path)
+        if (part.length < 4) continue;
+        const filePath = part.slice(3);
+        if (filePath) paths.push(filePath);
+      }
+
+      return paths;
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Stage only the declared paths and commit+push (scoped staging for coordinator rounds).
+   *
+   * Delegates to commitScopedPaths with a commit message of "<coordinatorName>: <slug>".
+   * Never throws — errors propagate from commitScopedPaths / pushOnly.
+   *
+   * D3 (round-owned-git-effects): coordinator round ownership seam.
+   */
+  async commitRoundArtifacts(
+    stagePaths: string[],
+    cwd: string,
+    branch: string,
+    coordinatorName: string,
+    slug: string,
+    commitPushInfra: unknown,
+  ): Promise<void> {
+    const infra = commitPushInfra as CommitPushInfra;
+    const commitMessage = `${coordinatorName}: ${slug}`;
+    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra);
   }
 
   /**
