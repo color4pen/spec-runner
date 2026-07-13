@@ -99,6 +99,26 @@
       },
       "jobId": "f8a1c60a-cfc1-457d-be3e-264c8ba85aab",
       "stepName": "code-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-07-13T16:48:21.476Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 6025,
+          "outputTokens": 18,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 23,
+          "outputTokens": 16505,
+          "cacheReadInputTokens": 1052761,
+          "cacheCreationInputTokens": 76059
+        }
+      },
+      "jobId": "f8a1c60a-cfc1-457d-be3e-264c8ba85aab",
+      "stepName": "cross-boundary-invariants"
     }
   ]
 }
