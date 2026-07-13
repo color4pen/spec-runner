@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a197fafc-5b68-4fd3-ab0d-260f440ec559",
   "createdAt": "2026-07-13T11:10:46.325Z",
-  "updatedAt": "2026-07-13T11:36:22.224Z",
+  "updatedAt": "2026-07-13T11:43:56.846Z",
   "request": {
     "title": "archive --with-merge の merge-wait が transient BLOCKED で誤 escalation するのを修正",
     "type": "bug-fix",
@@ -75,8 +75,10 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +90,8 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
