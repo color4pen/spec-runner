@@ -87,21 +87,27 @@ describe("TC-003: executor.ts と executor-helpers.ts に step 名 hardcode が�
   });
 });
 
-// TC-017: executor.ts は buildFindingsPath を import せず、step.resultFilePath() で取得した findingsPath を直接使う
+// TC-017: executor.ts / commit-orchestrator.ts は buildFindingsPath を import せず、
+// step.resultFilePath() で取得した findingsPath を直接使う
 describe("TC-017: runPollingStyleStep step.name 汎用化", () => {
-  it("executor.ts の iteration カウントが state.steps?.[step.name]?.length を使用している", async () => {
+  it("executor.ts / commit-orchestrator.ts の step path 取得が findingsPath を使用している", async () => {
     const executorPath = path.join(STEP_DIR, "executor.ts");
-    const content = await readFile(executorPath);
+    const orchestratorPath = path.join(STEP_DIR, "commit-orchestrator.ts");
+    const executorContent = await readFile(executorPath);
+    const orchestratorContent = await readFile(orchestratorPath);
 
-    // After F1 fix: executor uses findingsPath (from step.resultFilePath) directly.
-    // No step-specific path builder is imported or called in executor.ts.
-    // Verify buildFindingsPath is NOT imported (would couple executor to spec-review's naming)
-    expect(content).not.toContain("buildFindingsPath");
+    // After B-13 refactor: findingsPath lives in commit-orchestrator.ts (moved from executor).
+    // No step-specific path builder is imported or called.
+    // Verify buildFindingsPath is NOT imported in either file (would couple to spec-review's naming)
+    expect(executorContent).not.toContain("buildFindingsPath");
+    expect(orchestratorContent).not.toContain("buildFindingsPath");
 
     // Should NOT have hardcoded "spec-review" in steps array access
-    expect(content).not.toMatch(/state\.steps\?\.\["spec-review"\]/);
+    expect(executorContent).not.toMatch(/state\.steps\?\.\["spec-review"\]/);
+    expect(orchestratorContent).not.toMatch(/state\.steps\?\.\["spec-review"\]/);
 
-    // Verify executor delegates path to step via resultFilePath / findingsPath variable
-    expect(content).toContain("findingsPath");
+    // Verify the step layer delegates path to step via resultFilePath / findingsPath variable.
+    // After single-writer refactor, findingsPath is in commit-orchestrator.ts.
+    expect(orchestratorContent).toContain("findingsPath");
   });
 });

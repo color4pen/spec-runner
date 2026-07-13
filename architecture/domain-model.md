@@ -98,6 +98,20 @@ interface PermissionScope { checkpoint: string; forbidden: readonly ForbiddenSur
 - **不変条件**: breach 判定は純関数（`deriveScopeBreach`。I/O は RuntimeStrategy seam 経由＝B-5）。breach も評価不能（UNKNOWN）も `origin:"scope"` の decision-needed finding に**合成**され、既存の judge verdict 導出経路へ載る。`permissionScope` を宣言する profile は changed-files 導出可能な runtime を要求する（着手前 capability gate → `dynamic-model.md`、real runtime 側の能力必須化は B-11）。
 - → `src/core/pipeline/types.ts`（型）/ `src/core/pipeline/scope.ts`（breach 導出・finding 合成の純関数）
 
+### StepHalt — step 停止判断の VO
+```ts
+type StepHalt =
+  | { kind: "failed";        error: ErrorInfo; thrownErr: Error; recordOpts?; history? }
+  | { kind: "awaiting-resume"; error: ErrorInfo; thrownErr: Error; resumePoint; interruption; statePatch?; recordOpts?; history? }
+```
+- **役割**: guard 条件（タイムアウト・出力ゲート違反・drift 検知等）が生成する「step 停止判断の値」。I/O なし・pure value。`CommitOrchestrator.commitHalt` が受け取り、永続化・FSM 遷移・rethrow を一括担う（B-13/B-14）。
+- **不変条件**:
+  - `StepExecutor` の各 guard は `makeXxxHalt` factory で値を生成するだけ。`store.persist` / `transitionJob` / `attachStateAndRethrow` を直接呼ばない（B-13 / B-14）。
+  - `history` フィールドは CommitOrchestrator が `ts` を付与して `store.appendHistory` に渡す（factory 側で `ts` は不要）。
+  - `recordOpts` は `recordFailedStepResult` の第4引数として転送（`startedAt` / `transientRetryAttempts` 等の差異を guard ごとに吸収）。
+  - `resumePoint.step` は `toStepName(stepName)` で型安全な `StepName` に変換。
+- → `src/core/step/step-halt.ts`（型定義・factory 群）
+
 ### AgentDefinition / ParsedStepResult / Transition
 ```ts
 interface AgentDefinition { readonly name; readonly role: AgentStepName; readonly model; readonly system; readonly tools: ToolSpec[] }  // SDK 型を含まない（B-2）
