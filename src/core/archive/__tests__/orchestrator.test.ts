@@ -12,6 +12,8 @@
  * T-DTE-01: designLayer enabled + decision-needed finding → topic file written + git add called
  * T-DTE-02: topic emission runs before mark-hook (spawn call order)
  * T-DTE-03: designLayer disabled → no topic file written
+ * TC-009: deferArchivedTransition: true → markJobArchived NOT called; mv/commit/push still run
+ * TC-010: deferArchivedTransition unset → markJobArchived IS called (regression guard)
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { FinishFs } from "../../finish/types.js";
@@ -66,6 +68,7 @@ import { JobStateStore } from "../../../store/job-state-store.js";
 import { stderrWrite } from "../../../logger/stdout.js";
 import { commitArchive } from "../../finish/commit-archive.js";
 import { archiveChangeFolder } from "../../finish/archive-change-folder.js";
+import { markJobArchived } from "../../finish/job-state-update.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -537,5 +540,78 @@ describe("archive orchestrator — design topic emission (T-DTE)", () => {
         (c[1] as string[]).includes("design/topics"),
     );
     expect(addTopicsCall).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06 / TC-009, TC-010: deferArchivedTransition option
+// ---------------------------------------------------------------------------
+
+describe("archive orchestrator — deferArchivedTransition (TC-009, TC-010)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(JobStateStore.list).mockResolvedValue([makeState()]);
+    vi.mocked(markJobArchived).mockResolvedValue({} as never);
+    vi.mocked(archiveChangeFolder).mockResolvedValue({ ok: true, skipped: false, message: "archived" });
+    vi.mocked(commitArchive).mockResolvedValue({ ok: true, skipped: false, message: "committed" });
+  });
+
+  /**
+   * TC-009: deferArchivedTransition: true → markJobArchived NOT called.
+   * archiveChangeFolder / commitArchive / git push / headSha capture must still run.
+   */
+  it("TC-009: deferArchivedTransition: true → markJobArchived NOT called; mv/commit/push executed", async () => {
+    const spawnMock = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "deadbeef\n", stderr: "" });
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: spawnMock as unknown as SpawnFn,
+      fs: makeFs(),
+      deferArchivedTransition: true,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    // markJobArchived must NOT have been called
+    expect(vi.mocked(markJobArchived)).not.toHaveBeenCalled();
+
+    // archiveChangeFolder (folder mv) must have been called
+    expect(vi.mocked(archiveChangeFolder)).toHaveBeenCalled();
+
+    // commitArchive must have been called
+    expect(vi.mocked(commitArchive)).toHaveBeenCalled();
+
+    // git push origin <branch> must have been called
+    const pushCall = spawnMock.mock.calls.find(
+      (c: unknown[]) =>
+        c[0] === "git" &&
+        Array.isArray(c[1]) &&
+        (c[1] as string[])[0] === "push" &&
+        (c[1] as string[])[1] === "origin",
+    );
+    expect(pushCall).toBeDefined();
+
+    // headSha must have been captured (exitCode 0 with headSha set)
+    expect("headSha" in result && (result as { headSha?: string }).headSha).toBeDefined();
+  });
+
+  /**
+   * TC-010: deferArchivedTransition unset (default false) → markJobArchived IS called.
+   * Plain `job archive` must still transition to archived at record time.
+   */
+  it("TC-010: deferArchivedTransition unset → markJobArchived IS called (regression guard)", async () => {
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: makeFs(),
+      // deferArchivedTransition absent → defaults to false
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    // markJobArchived must have been called (plain `job archive` transitions at record time)
+    expect(vi.mocked(markJobArchived)).toHaveBeenCalled();
   });
 });
