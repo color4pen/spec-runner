@@ -17,7 +17,7 @@ import type { JobState } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { AgentRunContext } from "../port/agent-runner.js";
 import type { DomainEvent } from "../../kernel/event-types.js";
-import type { OutputContract } from "../port/output-contract.js";
+import type { OutputContract, OutputVerificationPolicy } from "../port/output-contract.js";
 import { resolveStepRules } from "./rules-resolve.js";
 import { buildRulesFollowUpPrompts } from "./rules-followup-prompts.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
@@ -103,7 +103,7 @@ export async function buildStepContext(
   }
 
   // 5. Output verification policy (follow-up contracts only).
-  let outputVerification: import("../port/output-contract.js").OutputVerificationPolicy | undefined;
+  let outputVerification: OutputVerificationPolicy | undefined;
   if (deps.runtimeStrategy) {
     const followUpContracts: OutputContract[] = (step.outputContracts?.(state, deps) ?? [])
       .filter((c) => c.policy === "follow-up");
