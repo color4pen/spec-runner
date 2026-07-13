@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a197fafc-5b68-4fd3-ab0d-260f440ec559",
   "createdAt": "2026-07-13T11:10:46.325Z",
-  "updatedAt": "2026-07-13T11:48:48.440Z",
+  "updatedAt": "2026-07-13T11:49:39.546Z",
   "request": {
     "title": "archive --with-merge の merge-wait が transient BLOCKED で誤 escalation するのを修正",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "archived",
   "branch": "fix/merge-wait-blocked-grace-a197fafc",
   "error": null,
   "pipelineId": "standard",
@@ -83,7 +83,7 @@
     "createdAt": "2026-07-13T11:48:47.818Z"
   },
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 58,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

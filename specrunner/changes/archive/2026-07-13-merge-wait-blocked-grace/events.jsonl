@@ -81,3 +81,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/merge-wait-blocked-grace/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T11:48:46.161Z","endedAt":"2026-07-13T11:48:48.430Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-13T11:48:48.430Z","outputs":[{"path":"specrunner/changes/merge-wait-blocked-grace/pr-create-result.md","hash":"sha256:6a111e276b4343ce88a084302416ce8859d76e250a39dd13c600b0aa8567f71f"}],"inputs":[{"path":"fix/merge-wait-blocked-grace-a197fafc","hash":null}]}
 {"type":"transition","ts":"2026-07-13T11:48:48.440Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-13T11:49:39.546Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
