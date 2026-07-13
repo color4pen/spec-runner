@@ -57,3 +57,4 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/guarantee-set-g1/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T08:25:28.966Z","endedAt":"2026-07-13T08:25:30.431Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-13T08:25:30.431Z","outputs":[{"path":"specrunner/changes/guarantee-set-g1/pr-create-result.md","hash":"sha256:5b946b93552e4fa691e24b419fa428b5a83f40567077c411a70414da0bfcd344"}],"inputs":[{"path":"chore/guarantee-set-g1-ca8c3b14","hash":null}]}
 {"type":"transition","ts":"2026-07-13T08:25:30.440Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-13T08:49:32.313Z","step":"archive","status":"ok","message":"awaiting-archive → archived: change archived"}
