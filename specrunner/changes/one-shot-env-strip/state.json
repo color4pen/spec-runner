@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ed2a6cc1-41f7-4220-9ecd-53e403ef2cc9",
   "createdAt": "2026-07-13T01:19:10.769Z",
-  "updatedAt": "2026-07-13T01:54:58.371Z",
+  "updatedAt": "2026-07-13T01:55:30.767Z",
   "request": {
     "title": "one-shot SDK query の env を stripSecrets 経由に統一し、B-6 の歯を env-omission まで強める",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/one-shot-env-strip-ed2a6cc1",
   "error": null,
   "pipelineId": "standard",
@@ -75,8 +75,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/780",
+    "number": 780,
+    "createdAt": "2026-07-13T01:55:30.759Z"
+  },
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -89,7 +94,9 @@
       "cross-boundary-invariants": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
