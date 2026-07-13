@@ -7,11 +7,40 @@
  * TC-OSQ-04: session_id が QueryOneShotResult.sessionId に伝播する
  * TC-OSQ-05: 非 success result で SpecRunnerError("QUERY_ONE_SHOT_FAILED") を throw
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { queryOneShot, type QueryFn } from "../../../../src/adapter/claude-code/query-one-shot.js";
 import { DEFAULT_ONE_SHOT_MODEL } from "../../../../src/config/model-registry.js";
 import { SpecRunnerError } from "../../../../src/errors.js";
 import type { SpecRunnerConfig } from "../../../../src/config/schema.js";
+import { stripSecrets, SECRET_DENYLIST } from "../../../../src/util/env-filter.js";
+
+// ---------------------------------------------------------------------------
+// envOmissionViolations — pure predicate (design D3)
+//
+// Shared by TC-OSQ-ENV-02 (behavioral capture) and TC-OSQ-ENV-03 (detection guard)
+// so that the real-behaviour assertion and the detection mechanism cannot diverge.
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns an array of violation strings for a given env value.
+ * - undefined / null → env was omitted (SDK would inherit raw process.env)
+ * - any key in SECRET_DENYLIST is present → secret leaked
+ * - empty array → env is clean (strip-済み)
+ */
+function envOmissionViolations(
+  env: Record<string, string | undefined> | undefined | null,
+): string[] {
+  if (env == null) {
+    return ["env omitted — SDK inherits raw process.env"];
+  }
+  const leaks: string[] = [];
+  for (const key of SECRET_DENYLIST) {
+    if (Object.prototype.hasOwnProperty.call(env, key)) {
+      leaks.push(`secret leaked: ${key}`);
+    }
+  }
+  return leaks;
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -471,6 +500,110 @@ describe("TC-FW-07: one-shot options carry no canUseTool guard", () => {
     expect(Object.prototype.hasOwnProperty.call(capturedOptions, "sandbox")).toBe(false);
     expect(capturedOptions!["permissionMode"]).toBe("bypassPermissions");
     expect(capturedOptions!["allowedTools"]).toEqual(["Read", "Bash", "Grep", "Glob"]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-OSQ-ENV-01: queryOneShot passes env derived from stripSecrets(process.env)
+// ---------------------------------------------------------------------------
+
+describe("TC-OSQ-ENV-01: queryOneShot passes stripSecrets(process.env) as env to SDK query", () => {
+  it("options.env is defined and equals stripSecrets(process.env)", async () => {
+    let capturedOptions: Record<string, unknown> | undefined;
+
+    const mockQueryFn: QueryFn = vi.fn().mockImplementation(
+      ({ options }: { prompt: string; options?: Record<string, unknown> }) => {
+        capturedOptions = options;
+        return (async function* () {
+          yield { type: "result", subtype: "success", result: "done", session_id: undefined };
+        })();
+      },
+    ) as unknown as QueryFn;
+
+    await queryOneShot(
+      { systemPrompt: "sys", prompt: "user" },
+      makeConfig(),
+      mockQueryFn,
+    );
+
+    expect(capturedOptions).toBeDefined();
+    expect(capturedOptions!["env"]).toBeDefined();
+    expect(capturedOptions!["env"]).toEqual(
+      stripSecrets(process.env as Record<string, string | undefined>),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-OSQ-ENV-02: captured env strips secrets and retains non-secrets
+// ---------------------------------------------------------------------------
+
+describe("TC-OSQ-ENV-02: captured env excludes secrets and retains non-secrets", () => {
+  // Save and restore GH_TOKEN around each test to avoid cross-test pollution
+  const originalGhToken = process.env["GH_TOKEN"];
+  afterEach(() => {
+    if (originalGhToken === undefined) {
+      delete process.env["GH_TOKEN"];
+    } else {
+      process.env["GH_TOKEN"] = originalGhToken;
+    }
+  });
+
+  it("GH_TOKEN is absent and PATH is present in the env passed to SDK; envOmissionViolations returns []", async () => {
+    process.env["GH_TOKEN"] = "test-secret-token";
+
+    let capturedOptions: Record<string, unknown> | undefined;
+
+    const mockQueryFn: QueryFn = vi.fn().mockImplementation(
+      ({ options }: { prompt: string; options?: Record<string, unknown> }) => {
+        capturedOptions = options;
+        return (async function* () {
+          yield { type: "result", subtype: "success", result: "done", session_id: undefined };
+        })();
+      },
+    ) as unknown as QueryFn;
+
+    await queryOneShot(
+      { systemPrompt: "sys", prompt: "user" },
+      makeConfig(),
+      mockQueryFn,
+    );
+
+    const capturedEnv = capturedOptions!["env"] as Record<string, string | undefined> | undefined;
+
+    // Secret must be stripped
+    expect(capturedEnv).not.toHaveProperty("GH_TOKEN");
+
+    // Non-secret must be retained (use PATH; if absent in this runtime, set a marker instead)
+    if (process.env["PATH"] !== undefined) {
+      expect(capturedEnv).toHaveProperty("PATH");
+    }
+
+    // The same predicate used in TC-OSQ-ENV-03 must pass (no violations)
+    expect(envOmissionViolations(capturedEnv)).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-OSQ-ENV-03: envOmissionViolations detects env-omission and secret leaks
+// (design D3 — same predicate as TC-OSQ-ENV-02, so real-behaviour and detection
+//  mechanism cannot diverge)
+// ---------------------------------------------------------------------------
+
+describe("TC-OSQ-ENV-03: envOmissionViolations detects env-omission and secret leaks", () => {
+  it("returns non-empty violations for undefined env (env-omission)", () => {
+    const violations = envOmissionViolations(undefined);
+    expect(violations.length).toBeGreaterThan(0);
+  });
+
+  it("returns 'secret leaked: GH_TOKEN' when GH_TOKEN is present", () => {
+    const violations = envOmissionViolations({ GH_TOKEN: "x", PATH: "/bin" });
+    expect(violations).toContain("secret leaked: GH_TOKEN");
+  });
+
+  it("returns [] for a stripped env with only non-secrets", () => {
+    const violations = envOmissionViolations({ PATH: "/bin" });
+    expect(violations).toEqual([]);
   });
 });
 

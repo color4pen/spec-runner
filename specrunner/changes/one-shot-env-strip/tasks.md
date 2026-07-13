@@ -29,14 +29,14 @@ Scenario を参照すること。
 
 ## T-01: one-shot query options に stripSecrets 由来の env を渡す
 
-- [ ] `src/adapter/claude-code/query-one-shot.ts` の import 群に
+- [x] `src/adapter/claude-code/query-one-shot.ts` の import 群に
   `import { stripSecrets } from "../../util/env-filter.js";` を追加する。
-- [ ] Step 4 の SDK query options オブジェクト（現状 line 132-140、`fn({ prompt, options: { … } })`）
+- [x] Step 4 の SDK query options オブジェクト（現状 line 132-140、`fn({ prompt, options: { … } })`）
   に `env: stripSecrets(process.env as Record<string, string | undefined>)` を**1 プロパティ
   として追加**する。`agent-runner.ts:397` と同一のキャスト・同一の strip 関数を使う。
-- [ ] 中間可変変数（`const sdkEnv = …`）を作らずインラインで渡す（design D1: token 注入の
+- [x] 中間可変変数（`const sdkEnv = …`）を作らずインラインで渡す（design D1: token 注入の
   コピーペースト混入を構造的に避ける）。`CLAUDE_CODE_OAUTH_TOKEN` 注入ブロックは追加しない。
-- [ ] 既存の options キー（`cwd` / `allowedTools` / `permissionMode` / `...maxTurnsOption` /
+- [x] 既存の options キー（`cwd` / `allowedTools` / `permissionMode` / `...maxTurnsOption` /
   `model` / `systemPrompt` / `abortController`）は位置も値も変更しない。
 
 **Acceptance Criteria**:
@@ -50,22 +50,22 @@ Scenario を参照すること。
 
 ## T-02: 純粋述語 envOmissionViolations と behavioral 捕捉テストを追加する
 
-- [ ] `tests/unit/adapter/claude-code/query-one-shot.test.ts` に、`src/util/env-filter` から
+- [x] `tests/unit/adapter/claude-code/query-one-shot.test.ts` に、`src/util/env-filter` から
   `stripSecrets` と `SECRET_DENYLIST` を import する。
-- [ ] module-local の純粋関数
+- [x] module-local の純粋関数
   `envOmissionViolations(env: Record<string, string | undefined> | undefined): string[]`
   を定義する（design D3）:
   - `env` が `undefined` / `null` → `["env omitted — SDK inherits raw process.env"]` を返す。
   - `env` が `SECRET_DENYLIST` のいずれかのキーを含む → 各混入キーにつき
     `"secret leaked: <KEY>"` を含むリストを返す。
   - どちらでもない → `[]`。
-- [ ] `TC-OSQ-ENV-01`（要件 1）: 注入 `queryFn` で `options` を捕捉し（既存の `capturedOptions`
+- [x] `TC-OSQ-ENV-01`（要件 1）: 注入 `queryFn` で `options` を捕捉し（既存の `capturedOptions`
   パターンを流用）、`queryOneShot` 実行後に
   - 捕捉した `options.env` が定義されている（`toBeDefined`）、
   - `options.env` が `stripSecrets(process.env as Record<string, string | undefined>)` と
     `toEqual` で一致する、
   を assert する。
-- [ ] `TC-OSQ-ENV-02`（要件 2）: `process.env.GH_TOKEN` に test 値を設定してから
+- [x] `TC-OSQ-ENV-02`（要件 2）: `process.env.GH_TOKEN` に test 値を設定してから
   `queryOneShot` を実行し、捕捉した env が
   - `GH_TOKEN` キーを**含まない**（`not.toHaveProperty("GH_TOKEN")`）、
   - `PATH` キーを**含む**（`toHaveProperty("PATH")`）、
@@ -82,13 +82,13 @@ Scenario を参照すること。
 
 ## T-03: env-omission 検出テストで歯が red になることを固定する
 
-- [ ] `TC-OSQ-ENV-03`（要件 3・design D3）: 合成入力に対し `envOmissionViolations` が
+- [x] `TC-OSQ-ENV-03`（要件 3・design D3）: 合成入力に対し `envOmissionViolations` が
   env-omission と secret 混入を red 判定することを assert する:
   - `envOmissionViolations(undefined)` が**非空**（`.length` > 0。env-omission を検出）。
   - `envOmissionViolations({ GH_TOKEN: "x", PATH: "/bin" })` が
     `"secret leaked: GH_TOKEN"` を**含む**（secret 混入を検出）。
   - `envOmissionViolations({ PATH: "/bin" })` が `toEqual([])`（strip 済み env は緑）。
-- [ ] このテストが「要件 2 の捕捉テストと同一述語を用いて要件 3 のガードを兼ねる」ことを
+- [x] このテストが「要件 2 の捕捉テストと同一述語を用いて要件 3 のガードを兼ねる」ことを
   コメントで明示する（request-review finding #1）。
 
 **Acceptance Criteria**:
@@ -99,13 +99,13 @@ Scenario を参照すること。
 
 ## T-04: 無変更凍結の確認と green ゲート
 
-- [ ] `bun run typecheck && bun run test` を実行し green を確認する。
-- [ ] 既存 B-6 grep 歯（`core-invariants.test.ts` の `describe("B-6 …")`）と DSM / 他の
+- [x] `bun run typecheck && bun run test` を実行し green を確認する。
+- [x] 既存 B-6 grep 歯（`core-invariants.test.ts` の `describe("B-6 …")`）と DSM / 他の
   アーキ歯が**検査ロジック無変更**で pass することを確認する。
-- [ ] one-shot の既存凍結テスト（`TC-SB-05`: sandbox キー不在 / `TC-FW-07`: canUseTool キー
+- [x] one-shot の既存凍結テスト（`TC-SB-05`: sandbox キー不在 / `TC-FW-07`: canUseTool キー
   不在・permissionMode・allowedTools）と codex の既存テストが**無変更で green**であることを
   確認する（`env` キー追加が既存 assertion に影響しないこと）。
-- [ ] `git diff` で編集が `src/adapter/claude-code/query-one-shot.ts` と
+- [x] `git diff` で編集が `src/adapter/claude-code/query-one-shot.ts` と
   `tests/unit/adapter/claude-code/query-one-shot.test.ts` の 2 ファイルに限られ、
   `agent-runner.ts` / codex / `core-invariants.test.ts` / `arch-allowlist.ts` /
   `architecture/**` が**未変更**であることを確認する。
