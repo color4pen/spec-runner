@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a197fafc-5b68-4fd3-ab0d-260f440ec559",
   "createdAt": "2026-07-13T11:10:46.325Z",
-  "updatedAt": "2026-07-13T11:17:39.342Z",
+  "updatedAt": "2026-07-13T11:20:39.994Z",
   "request": {
     "title": "archive --with-merge の merge-wait が transient BLOCKED で誤 escalation するのを修正",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "fix/merge-wait-blocked-grace-a197fafc",
   "error": null,
@@ -49,10 +49,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
