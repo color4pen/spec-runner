@@ -54,6 +54,7 @@ import { stripSecrets } from "../../util/env-filter.js";
 import { resolveWorkspaceSetupPlan } from "../worktree/setup.js";
 import type { WorkspaceSetupPlan } from "../worktree/setup.js";
 import { hasJsDependencyTraces } from "../../util/detect-pm.js";
+import type { WorktreeMaterializationPlan } from "./workspace-materializer.js";
 
 // Internal structure stored inside CleanupHandle
 interface LocalCleanupInternals {
@@ -405,17 +406,17 @@ export class LocalRuntime implements RealRuntimeStrategy {
     // auth args before any StepExecutor push calls. Best-effort: suppressed on failure.
     await this.transportAuth.authArgs().catch(() => {});
 
-    // No-worktree mode: bypass worktree creation and use cwd directly
-    if (opts?.noWorktree) {
-      return this.setupWorkspaceNoWorktree(slug, jobId, opts);
-    }
-
     const baseBranch = opts?.baseBranch ?? "main";
     const remoteBaseRef = `origin/${baseBranch}`;
     const existingWorktreePath = opts?.existingWorktreePath;
 
-    if (existingWorktreePath !== undefined && existingWorktreePath !== null) {
-      // Resume path: check if existing worktree is still on disk
+    // Determine the materialization plan for this workspace setup invocation.
+    let plan: WorktreeMaterializationPlan;
+
+    if (opts?.noWorktree) {
+      plan = { kind: "no-worktree" };
+    } else if (existingWorktreePath !== undefined && existingWorktreePath !== null) {
+      // Resume path: check if existing worktree is still on disk.
       let worktreeExists = false;
       try {
         await fs.access(existingWorktreePath);
@@ -423,23 +424,103 @@ export class LocalRuntime implements RealRuntimeStrategy {
       } catch {
         worktreeExists = false;
       }
-
       if (worktreeExists) {
-        // Reuse existing worktree
+        plan = { kind: "resume-existing", worktreePath: existingWorktreePath };
+      } else {
+        plan = { kind: "resume-recreated", remoteBaseRef };
+      }
+    } else if (existingWorktreePath === null) {
+      plan = { kind: "resume-without-recorded-worktree", remoteBaseRef };
+    } else {
+      // New run: fetch origin to ensure freshness.
+      await this.transportAuth.authArgs().catch(() => {});
+      const fetchResult = await this.wrappedSpawnFn("git", ["fetch", "origin"], { cwd: this.cwd });
+      if (fetchResult.exitCode !== 0) {
+        throw new Error(`git fetch origin failed (exit ${fetchResult.exitCode}): ${fetchResult.stderr.trim()}`);
+      }
+
+      // Warn if local base branch is behind remote (informational — worktree uses remoteBaseRef so this is safe)
+      const behindResult = await this.spawnFn(
+        "git",
+        ["rev-list", `HEAD..${remoteBaseRef}`, "--count"],
+        { cwd: this.cwd },
+      );
+      if (behindResult.exitCode === 0) {
+        const behind = parseInt(behindResult.stdout.trim(), 10);
+        if (!isNaN(behind) && behind > 0) {
+          stderrWrite(
+            `Warning: local ${baseBranch} is ${behind} commit(s) behind ${remoteBaseRef}. Worktree will be created from ${remoteBaseRef}.`,
+          );
+        }
+      }
+
+      // Warn if local base branch is ahead of remote and designLayer is enabled.
+      // The job worktree is created from origin/<baseBranch>, so unpushed commits on
+      // local <baseBranch> will be absent in the worktree. When designLayer is enabled,
+      // request-review resolves design element references ([[id]] / ADR) inside the
+      // worktree, and those references may not resolve if the design commits are unpushed.
+      if (opts?.designLayerEnabled === true) {
+        const aheadResult = await this.spawnFn(
+          "git",
+          ["rev-list", `${remoteBaseRef}..${baseBranch}`, "--count"],
+          { cwd: this.cwd },
+        );
+        if (aheadResult.exitCode === 0) {
+          const ahead = parseInt(aheadResult.stdout.trim(), 10);
+          if (!isNaN(ahead) && ahead > 0) {
+            stderrWrite(
+              `Warning: designLayer is enabled and local ${baseBranch} is ${ahead} commit(s) ahead of ${remoteBaseRef} (unpushed commits).\n` +
+              `The job worktree is created from ${remoteBaseRef}, so design elements ([[id]] / ADR) referenced in the request may be missing in the worktree.\n` +
+              `Push your design commits before running: git push origin ${baseBranch}`,
+            );
+          }
+        }
+      }
+
+      plan = { kind: "new-run", remoteBaseRef, branchName: opts?.branchName };
+    }
+
+    return this.materializeWorktree(slug, jobId, plan, opts);
+  }
+
+  /**
+   * Materialize a worktree according to the given plan and register it as the
+   * active workspace (this.workspace). This consolidates the "create → set
+   * this.workspace → seed slug store → updateJobState → liveness sidecar →
+   * recopy" sequence that was previously duplicated across the five arms of
+   * setupWorkspace().
+   */
+  private async materializeWorktree(
+    slug: string,
+    jobId: string,
+    plan: WorktreeMaterializationPlan,
+    opts?: WorkspaceOptions,
+  ): Promise<WorkspaceContext> {
+    switch (plan.kind) {
+      case "no-worktree":
+        return this.setupWorkspaceNoWorktree(slug, jobId, opts);
+
+      case "resume-existing": {
         const workspace: WorkspaceContext = {
-          cwd: existingWorktreePath,
-          worktreePath: existingWorktreePath,
+          cwd: plan.worktreePath,
+          worktreePath: plan.worktreePath,
         };
         this.workspace = workspace;
         // Refresh sidecar pid for the resuming process (T-03)
-        await this.writeLivenessSidecar(slug, jobId, existingWorktreePath);
+        await this.writeLivenessSidecar(slug, jobId, plan.worktreePath);
         // Resume: recopy draft request.md into change folder (copy semantics)
         await recopyDraftToChangeFolder(this.cwd, workspace.cwd, slug, this.spawnFn);
         return workspace;
-      } else {
-        // Worktree was deleted — create a new one (resume path: fetch already ran during original run)
-        const plan = this.resolveSetupPlan();
-        const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef, undefined, plan);
+      }
+
+      case "resume-recreated":
+      case "resume-without-recorded-worktree": {
+        // Worktree was deleted or was never recorded — create a new one.
+        // (fetch already ran during the original run)
+        const setupPlan = this.resolveSetupPlan();
+        const newWorktreePath = await this.manager.create(
+          this.cwd, slug, jobId, plan.remoteBaseRef, undefined, setupPlan,
+        );
         const workspace: WorkspaceContext = {
           cwd: newWorktreePath,
           worktreePath: newWorktreePath,
@@ -456,152 +537,93 @@ export class LocalRuntime implements RealRuntimeStrategy {
         await recopyDraftToChangeFolder(this.cwd, workspace.cwd, slug, this.spawnFn);
         return workspace;
       }
-    }
 
-    if (existingWorktreePath === null) {
-      // Resume: no worktree recorded — create new one (fetch already ran during original run)
-      const plan = this.resolveSetupPlan();
-      const newWorktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef, undefined, plan);
-      const workspace: WorkspaceContext = {
-        cwd: newWorktreePath,
-        worktreePath: newWorktreePath,
-      };
-      this.workspace = workspace;
-      const slugOpts = { slug, stateRoot: newWorktreePath };
-      // Seed slug store with bootstrap state before updateJobState (T-02)
-      if (opts?.bootstrapState) {
-        await new JobStateStore(jobId, this.cwd, slugOpts).persist(opts.bootstrapState);
-      }
-      await this.updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }), slugOpts);
-      await this.writeLivenessSidecar(slug, jobId, newWorktreePath);
-      // Resume: recopy draft request.md into change folder (copy semantics)
-      await recopyDraftToChangeFolder(this.cwd, workspace.cwd, slug, this.spawnFn);
-      return workspace;
-    }
-
-    // Run path: fetch origin to ensure freshness, then create new worktree from origin/main
-    // Pre-warm transport auth cache so git-exec spawn wrapper is ready for subsequent push calls.
-    await this.transportAuth.authArgs().catch(() => {});
-    const fetchResult = await this.wrappedSpawnFn("git", ["fetch", "origin"], { cwd: this.cwd });
-    if (fetchResult.exitCode !== 0) {
-      throw new Error(`git fetch origin failed (exit ${fetchResult.exitCode}): ${fetchResult.stderr.trim()}`);
-    }
-
-    // Warn if local base branch is behind remote (informational — worktree uses remoteBaseRef so this is safe)
-    const behindResult = await this.spawnFn(
-      "git",
-      ["rev-list", `HEAD..${remoteBaseRef}`, "--count"],
-      { cwd: this.cwd },
-    );
-    if (behindResult.exitCode === 0) {
-      const behind = parseInt(behindResult.stdout.trim(), 10);
-      if (!isNaN(behind) && behind > 0) {
-        stderrWrite(
-          `Warning: local ${baseBranch} is ${behind} commit(s) behind ${remoteBaseRef}. Worktree will be created from ${remoteBaseRef}.`,
+      case "new-run": {
+        // Pass branchName so manager creates the branch in the worktree (D1)
+        const setupPlan = this.resolveSetupPlan();
+        const worktreePath = await this.manager.create(
+          this.cwd, slug, jobId, plan.remoteBaseRef, plan.branchName, setupPlan,
         );
-      }
-    }
 
-    // Warn if local base branch is ahead of remote and designLayer is enabled.
-    // The job worktree is created from origin/<baseBranch>, so unpushed commits on
-    // local <baseBranch> will be absent in the worktree. When designLayer is enabled,
-    // request-review resolves design element references ([[id]] / ADR) inside the
-    // worktree, and those references may not resolve if the design commits are unpushed.
-    if (opts?.designLayerEnabled === true) {
-      const aheadResult = await this.spawnFn(
-        "git",
-        ["rev-list", `${remoteBaseRef}..${baseBranch}`, "--count"],
-        { cwd: this.cwd },
-      );
-      if (aheadResult.exitCode === 0) {
-        const ahead = parseInt(aheadResult.stdout.trim(), 10);
-        if (!isNaN(ahead) && ahead > 0) {
-          stderrWrite(
-            `Warning: designLayer is enabled and local ${baseBranch} is ${ahead} commit(s) ahead of ${remoteBaseRef} (unpushed commits).\n` +
-            `The job worktree is created from ${remoteBaseRef}, so design elements ([[id]] / ADR) referenced in the request may be missing in the worktree.\n` +
-            `Push your design commits before running: git push origin ${baseBranch}`,
+        // workspace must be set before updateJobState so slugStoreOpts() works
+        const workspaceCtx: WorkspaceContext = {
+          cwd: worktreePath,
+          worktreePath,
+          branch: plan.branchName,
+        };
+        this.workspace = workspaceCtx;
+
+        // Seed slug store with bootstrap state before updateJobState (T-02)
+        const slugOpts = { slug, stateRoot: worktreePath };
+        if (opts?.bootstrapState) {
+          await new JobStateStore(jobId, this.cwd, slugOpts).persist(opts.bootstrapState);
+        }
+
+        // Record worktreePath in state (slug-based store) and write liveness sidecar
+        await this.updateJobState(jobId, (s) => ({ ...s, worktreePath }), slugOpts);
+        await this.writeLivenessSidecar(slug, jobId, worktreePath);
+
+        // Copy request.md into the change folder so the agent can read it
+        if (opts?.requestFilePath) {
+          // Only copy request.md into the change folder (no canonical path copy)
+          const changeFolderRequestPath = path.join(worktreePath, changeFolderPath(slug), "request.md");
+          await fs.mkdir(path.dirname(changeFolderRequestPath), { recursive: true });
+          await rejectSymlink(opts.requestFilePath);
+          await fs.cp(opts.requestFilePath, changeFolderRequestPath);
+
+          // Stage the change folder request.md
+          const gitAddChangeFolderResult = await this.spawnFn(
+            "git",
+            ["add", path.join(changeFolderPath(slug), "request.md")],
+            { cwd: worktreePath },
+          );
+          if (gitAddChangeFolderResult.exitCode !== 0) {
+            // Cleanup worktree before propagating error
+            await this.manager.remove(worktreePath, this.cwd).catch(() => {});
+            await this.manager.prune(this.cwd).catch(() => {});
+            throw new Error(`Failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}`);
+          }
+
+          // Copy draft's usage.json into the change folder (silent no-op if absent)
+          await copyDraftUsageToChangeFolder(opts.requestFilePath, worktreePath, slug, this.spawnFn);
+
+          // Also copy rules.md into the change folder so agents can read project disciplines
+          await copyRulesToChangeFolder(worktreePath, slug, this.spawnFn);
+
+          // Update state.request.path to point to the permanent copy (not the draft)
+          // In slug mode, request.path is derived from convention at load time — this persist is a no-op for path field.
+          await this.updateJobState(jobId, (s) => ({
+            ...s,
+            request: { ...s.request, path: changeFolderRequestPath },
+          }), { slug, stateRoot: worktreePath });
+
+          // Commit change folder request.md and rules.md as the first commit on the feature branch (D2)
+          const gitCommitResult = await this.spawnFn(
+            "git",
+            ["commit", "-m", `add request.md for ${slug}`],
+            { cwd: worktreePath },
+          );
+          if (gitCommitResult.exitCode !== 0) {
+            // Cleanup worktree before propagating error
+            await this.manager.remove(worktreePath, this.cwd).catch(() => {});
+            await this.manager.prune(this.cwd).catch(() => {});
+            throw new Error(`Failed to commit request file: ${gitCommitResult.stderr.trim()}`);
+          }
+        }
+
+        // Record branchName in state so downstream steps can use it (D3)
+        const branchName = plan.branchName;
+        if (branchName) {
+          await this.updateJobState(
+            jobId,
+            (s) => ({ ...s, branch: branchName }),
+            { slug, stateRoot: worktreePath },
           );
         }
+
+        return workspaceCtx;
       }
     }
-
-    // Pass branchName so manager creates the branch in the worktree (D1)
-    const branchName = opts?.branchName;
-    const plan = this.resolveSetupPlan();
-    const worktreePath = await this.manager.create(this.cwd, slug, jobId, remoteBaseRef, branchName, plan);
-
-    // workspace must be set before updateJobState so slugStoreOpts() works
-    const workspaceCtx: WorkspaceContext = {
-      cwd: worktreePath,
-      worktreePath,
-      branch: branchName,
-    };
-    this.workspace = workspaceCtx;
-
-    // Seed slug store with bootstrap state before updateJobState (T-02)
-    const slugOpts = { slug, stateRoot: worktreePath };
-    if (opts?.bootstrapState) {
-      await new JobStateStore(jobId, this.cwd, slugOpts).persist(opts.bootstrapState);
-    }
-
-    // Record worktreePath in state (slug-based store) and write liveness sidecar
-    await this.updateJobState(jobId, (s) => ({ ...s, worktreePath }), slugOpts);
-    await this.writeLivenessSidecar(slug, jobId, worktreePath);
-
-    // Copy request.md into the change folder so the agent can read it
-    if (opts?.requestFilePath) {
-      // Only copy request.md into the change folder (no canonical path copy)
-      const changeFolderRequestPath = path.join(worktreePath, changeFolderPath(slug), "request.md");
-      await fs.mkdir(path.dirname(changeFolderRequestPath), { recursive: true });
-      await rejectSymlink(opts.requestFilePath);
-      await fs.cp(opts.requestFilePath, changeFolderRequestPath);
-
-      // Stage the change folder request.md
-      const gitAddChangeFolderResult = await this.spawnFn(
-        "git",
-        ["add", path.join(changeFolderPath(slug), "request.md")],
-        { cwd: worktreePath },
-      );
-      if (gitAddChangeFolderResult.exitCode !== 0) {
-        // Cleanup worktree before propagating error
-        await this.manager.remove(worktreePath, this.cwd).catch(() => {});
-        await this.manager.prune(this.cwd).catch(() => {});
-        throw new Error(`Failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}`);
-      }
-
-      // Copy draft's usage.json into the change folder (silent no-op if absent)
-      await copyDraftUsageToChangeFolder(opts.requestFilePath, worktreePath, slug, this.spawnFn);
-
-      // Also copy rules.md into the change folder so agents can read project disciplines
-      await copyRulesToChangeFolder(worktreePath, slug, this.spawnFn);
-
-      // Update state.request.path to point to the permanent copy (not the draft)
-      // In slug mode, request.path is derived from convention at load time — this persist is a no-op for path field.
-      await this.updateJobState(jobId, (s) => ({
-        ...s,
-        request: { ...s.request, path: changeFolderRequestPath },
-      }), { slug, stateRoot: worktreePath });
-
-      // Commit change folder request.md and rules.md as the first commit on the feature branch (D2)
-      const gitCommitResult = await this.spawnFn(
-        "git",
-        ["commit", "-m", `add request.md for ${slug}`],
-        { cwd: worktreePath },
-      );
-      if (gitCommitResult.exitCode !== 0) {
-        // Cleanup worktree before propagating error
-        await this.manager.remove(worktreePath, this.cwd).catch(() => {});
-        await this.manager.prune(this.cwd).catch(() => {});
-        throw new Error(`Failed to commit request file: ${gitCommitResult.stderr.trim()}`);
-      }
-    }
-
-    // Record branchName in state so downstream steps can use it (D3)
-    if (branchName) {
-      await this.updateJobState(jobId, (s) => ({ ...s, branch: branchName }), { slug, stateRoot: worktreePath });
-    }
-
-    return workspaceCtx;
   }
 
   buildDeps(
