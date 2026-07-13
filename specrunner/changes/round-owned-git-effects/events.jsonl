@@ -90,3 +90,11 @@
 {"type":"transition","ts":"2026-07-13T21:23:27.426Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-13T21:23:27.426Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
 {"type":"transition","ts":"2026-07-13T21:23:27.432Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-13T21:23:51.425Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"e611260c-fbcc-413d-a07e-e4d171ae591c","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-13T21:23:27.491Z","endedAt":"2026-07-13T21:23:49.908Z"}
+{"type":"transition","ts":"2026-07-13T21:23:51.432Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-13T21:23:51.437Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-13T21:23:53.613Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/round-owned-git-effects/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-13T21:23:51.440Z","endedAt":"2026-07-13T21:23:53.612Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-13T21:23:53.612Z","outputs":[{"path":"specrunner/changes/round-owned-git-effects/pr-create-result.md","hash":"sha256:7d68f6b63af941c659632f0ef1c667396553a05e8acffd6c14a193045dbc6e06"}],"inputs":[{"path":"change/round-owned-git-effects-db8b056a","hash":null}]}
+{"type":"transition","ts":"2026-07-13T21:23:53.626Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
