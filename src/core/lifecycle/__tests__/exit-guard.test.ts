@@ -109,6 +109,27 @@ async function createJobStateWithStep(
   );
 }
 
+/**
+ * The exit guard performs its state transition inside a fire-and-forget async
+ * task (a process exit handler cannot itself be awaited). Poll the store until
+ * the job reaches `expected` (or `maxMs` elapses) instead of assuming a fixed
+ * delay: under full-suite CPU load the async file I/O can miss a fixed window,
+ * which is the sole source of this suite's historical flakiness.
+ */
+async function loadUntilStatus(
+  store: JobStateStore,
+  expected: string,
+  maxMs = 2000,
+) {
+  const deadline = Date.now() + maxMs;
+  let state = await store.load();
+  while (state.status !== expected && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    state = await store.load();
+  }
+  return state;
+}
+
 describe("createExitGuardHandler", () => {
   it("running job → transitioned to awaiting-resume", async () => {
     const jobId = "aaaaaaaa-0000-0000-0000-000000000001";
@@ -117,12 +138,9 @@ describe("createExitGuardHandler", () => {
     const handler = createExitGuardHandler(tempDir);
     handler();
 
-    // Wait for async work in void IIFE
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
     const slug = `guard-${jobId.slice(0, 8)}`;
     const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
-    const state = await store.load();
+    const state = await loadUntilStatus(store, "awaiting-resume");
     expect(state.status).toBe("awaiting-resume");
   });
 
@@ -183,11 +201,9 @@ describe("exit-guard: resumePoint が正しく書き込まれる", () => {
     const handler = createExitGuardHandler(tempDir);
     handler();
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
     const slug = `guard-${jobId.slice(0, 8)}`;
     const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
-    const state = await store.load();
+    const state = await loadUntilStatus(store, "awaiting-resume");
 
     expect(state.status).toBe("awaiting-resume");
     expect((state as Record<string, unknown>)["resumePoint"]).toBeDefined();
@@ -204,11 +220,9 @@ describe("exit-guard: resumePoint が正しく書き込まれる", () => {
     const handler = createExitGuardHandler(tempDir);
     handler();
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
     const slug = `guard-${jobId.slice(0, 8)}`;
     const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
-    const state = await store.load();
+    const state = await loadUntilStatus(store, "awaiting-resume");
 
     expect(state.status).toBe("awaiting-resume");
     expect((state as Record<string, unknown>)["resumePoint"]).toBeFalsy();
@@ -248,10 +262,8 @@ describe("exit-guard: resumePoint が正しく書き込まれる", () => {
     const handler = createExitGuardHandler(tempDir, jobId);
     handler();
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
     const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: worktreePath });
-    const state = await store.load();
+    const state = await loadUntilStatus(store, "awaiting-resume");
 
     expect(state.status).toBe("awaiting-resume");
     expect((state as Record<string, unknown>)["resumePoint"]).toBeDefined();
@@ -290,10 +302,8 @@ describe("exit-guard: resumePoint が正しく書き込まれる", () => {
     const handler = createExitGuardHandler(tempDir, jobId, { noWorktree: true, slug });
     handler();
 
-    await new Promise((resolve) => setTimeout(resolve, 100));
-
     const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
-    const state = await store.load();
+    const state = await loadUntilStatus(store, "awaiting-resume");
 
     expect(state.status).toBe("awaiting-resume");
     expect((state as Record<string, unknown>)["resumePoint"]).toBeDefined();
@@ -381,11 +391,10 @@ describe("exit-guard: signal handler fired → duplicate interruption suppressed
 
     const handler = createExitGuardHandler(tempDir);
     handler();
-    await new Promise((resolve) => setTimeout(resolve, 100));
 
     const slug = `guard-${jobId.slice(0, 8)}`;
     const store = new JobStateStore(jobId, tempDir, { slug, stateRoot: tempDir });
-    const state = await store.load();
+    const state = await loadUntilStatus(store, "awaiting-resume");
     expect(state.status).toBe("awaiting-resume");
   });
 
