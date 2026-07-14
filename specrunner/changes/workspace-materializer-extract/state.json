@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "220f2dec-ec1a-4aa6-b71a-e6e0e11d29e8",
   "createdAt": "2026-07-14T04:22:02.355Z",
-  "updatedAt": "2026-07-14T04:50:58.746Z",
+  "updatedAt": "2026-07-14T04:55:24.295Z",
   "request": {
     "title": "LocalRuntime.materializeWorktree の worktree 実体化 / 登録 / liveness を WorkspaceMaterializer へ抽出する（挙動不変）",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "refactor/workspace-materializer-extract-220f2dec",
   "error": null,
@@ -76,7 +76,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 46,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +88,8 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
