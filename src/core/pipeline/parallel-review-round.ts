@@ -209,8 +209,9 @@ export class ParallelReviewRound {
         }
       }
 
-      // --- 7. Apply round results and compute aggregate ---
-      statuses = applyRoundResults(statuses, memberVerdicts, headSha);
+      // --- 7. Compute aggregate verdict from member results ---
+      // Member statuses are applied AFTER git-effects inspection (step 7c) so that a
+      // fail-closed inspection escalation leaves members pending rather than approved.
       aggregateVerdictResult = aggregateVerdict([...memberVerdicts.values()]);
 
       // --- 7b. Round-owned git effects: detect non-declared changes, then stage+commit ---
@@ -219,6 +220,10 @@ export class ParallelReviewRound {
       // declared outputs union. Undeclared changes (excluding pipeline-managed paths) halt
       // the round; declared changes are committed via scoped staging.
       // roundError is passed to commitRound (not applied to state directly).
+      // inspectionEscalated: true when the round is halted by a fail-closed inspection
+      // outcome (git status unavailable, or undeclared changes). Consumed at step 7c to
+      // keep members pending so resume re-runs the fan-out and re-inspects.
+      let inspectionEscalated = false;
       if (deps.runtimeStrategy?.listWorktreeChanges) {
         const branch = state.branch ?? "";
         const defaultSleepFn = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -233,6 +238,7 @@ export class ParallelReviewRound {
         if (inspection.kind === "unavailable") {
           // Worktree inspection failed — fail-closed: do not approve an uninspected worktree.
           aggregateVerdictResult = "escalation";
+          inspectionEscalated = true;
           roundError = {
             code: "ROUND_INSPECTION_UNAVAILABLE",
             message: `Worktree inspection unavailable: ${inspection.reason}`,
@@ -249,6 +255,7 @@ export class ParallelReviewRound {
           if (offending.length > 0) {
             // Non-declared changes detected — halt the entire round.
             aggregateVerdictResult = "escalation";
+            inspectionEscalated = true;
             roundError = {
               code: "ROUND_NONDECLARED_CHANGE",
               message: `Round produced undeclared file changes: ${offending.join(", ")}`,
@@ -273,6 +280,16 @@ export class ParallelReviewRound {
         }
       }
       // listWorktreeChanges absent (test fake without the method) → skip detection + commit.
+
+      // --- 7c. Apply member results (fail-closed) ---
+      // Apply approved/skipped member statuses ONLY if the round was not halted by a
+      // fail-closed inspection escalation. On inspection escalation, members stay pending
+      // (as selected at step 3) so resume re-runs the fan-out and re-inspects — a round
+      // must never finalize approved without a successful worktree inspection. This also
+      // closes the resume bypass for ROUND_NONDECLARED_CHANGE.
+      if (!inspectionEscalated) {
+        statuses = applyRoundResults(statuses, memberVerdicts, headSha);
+      }
     }
 
     // --- 8. Build synthetic coordinator StepRun ---

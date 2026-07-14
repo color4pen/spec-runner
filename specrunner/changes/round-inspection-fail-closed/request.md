@@ -37,6 +37,7 @@
 3. `ManagedRuntime.listWorktreeChanges`: `{kind:"success", paths:[]}`（挙動不変。local worktree が設計上存在しないため「変更なし」は検査失敗ではなく真の空。下記設計判断参照）。
 4. consumer（`ParallelReviewRound`）: 戻り値が `unavailable` の場合、**round を escalation** させる（`aggregateVerdictResult = "escalation"`、`roundError = {code:"ROUND_INSPECTION_UNAVAILABLE", message, hint}`）。この場合 `commitRoundArtifacts` は呼ばない。`success` の場合は従来どおり `partitionRoundChanges(paths)` を通す。
 5. 全実装・全 test fake・既存テストを新 DU に追随させる（`grep -rn listWorktreeChanges src tests` で漏れなく更新）。`listWorktreeChanges` が未定義の fake（method 省略）が skip される既存挙動は維持する。
+6. **round escalation 時に member results を approved で確定させない（resume でも fail-closed）**: inspection 判定を member 結果の適用（`applyRoundResults`）より**前**に行い、inspection escalation（`unavailable` / `ROUND_NONDECLARED_CHANGE`）のときは member statuses を適用せず pending に留める。これにより resume 時に `selectPendingMembers` が member を再選出し、fan-out が再実行されて再 inspection される。この措置がないと、全 member approved の invocation で inspection escalation → 既に approved が persist → resume の all-approved fast-path が inspection を skip して approved 確定する穴が残る。既存の `ROUND_NONDECLARED_CHANGE`（宣言外変更 halt）経路も同型の穴を持つため一緒に塞ぐ。
 
 ## スコープ外
 
@@ -50,6 +51,7 @@
 - [ ] managed: `{kind:"success", paths:[]}` を返す（挙動不変、テストで固定）。
 - [ ] **consumer: `unavailable` を受けたとき round が escalation（verdict = escalation、`roundError.code = "ROUND_INSPECTION_UNAVAILABLE"`）し、`commitRoundArtifacts` を呼ばないことをテストで固定する（本 request の主眼）**。
 - [ ] `success` 経路は従来どおり宣言外変更検出・scoped commit が働くことを既存テストで維持する。
+- [ ] inspection escalation（`unavailable` / offending）後、member reviewer statuses が `approved` でなく `pending` であることをテストで固定する（resume で再 inspection される前提）。inspection 成功時は `approved` になることも対で固定する。
 - [ ] port の doc comment から「Never throws — returns [] on any error」が消え、新 contract に更新されている。
 - [ ] `typecheck && test` が green。
 

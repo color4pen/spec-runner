@@ -105,6 +105,15 @@ WorktreeInspectionResult =
 - *`unavailable` を needs-fix にする*: needs-fix は fixer ループへ回るが、worktree 検査不能は fixer が自動で直せる問題ではない（git 環境 / worktree の破損）。人の介入を要する escalation が正しい。却下。
 - *`unavailable` でも `commitRoundArtifacts` を best-effort で呼ぶ*: 検査できていない worktree に対する commit は宣言範囲を保証できず、fail-open を別経路で復活させる。commit は呼ばない。却下。
 
+### D5 — inspection escalation では member statuses を pending に留める（resume でも fail-closed / G2）
+
+worktree 検査は member 結果の適用（`applyRoundResults`）より**前**に評価する。inspection escalation（`unavailable` / `ROUND_NONDECLARED_CHANGE`）のときは member statuses を適用せず、round member を選抜時点の pending のまま `commitRound` に渡す。
+
+- resume 時に `selectPendingMembers` が member を再選出し、fan-out が再実行されて worktree が再検査される。検査を通過しない限り round は approved に確定しない。
+- この措置がないと、全 member approved の invocation で inspection escalation → `applyRoundResults` が既に approved を persist → resume で `selectPendingMembers` が空を返し、all-approved fast-path が検査を skip して approved 確定する穴が残る。既存の `ROUND_NONDECLARED_CHANGE` 経路も同型の穴を持つため、この順序変更が両方を塞ぐ。
+
+**Rationale**: fail-closed の不変（検査を通過しない worktree を approved にしない）を、初回 invocation だけでなく resume 経路でも貫徹する最小変更。`commitRound` は渡された `reviewerStatuses` をそのまま persist し member からは再導出しないため、pending を渡せば pending が persist される。member の実行記録（StepRun / history）は従来どおり残る。
+
 ## Risks / Trade-offs
 
 - **[Risk] 検査不能 escalation の頻発** → 一時的な git 失敗（ロック競合等）でも round が escalation で止まる。→ 検査できていない worktree を approved に落とすより、止めて resume で人が確認する方が安全（fail-closed の意図どおり）。reason を message に載せて診断可能にする。resume 時に worktree の全変更は commit されず保持される。
