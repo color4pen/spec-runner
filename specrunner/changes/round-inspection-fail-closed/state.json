@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "57d8fbcf-bd92-42be-bb23-c16742b114d4",
   "createdAt": "2026-07-14T02:23:38.882Z",
-  "updatedAt": "2026-07-14T03:43:55.005Z",
+  "updatedAt": "2026-07-14T03:44:22.396Z",
   "request": {
     "title": "並列 round の worktree 検査を fail-closed 化する（検査不能を clean と区別し escalation）",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/round-inspection-fail-closed-57d8fbcf",
   "error": null,
   "pipelineId": "standard",
@@ -77,8 +77,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/814",
+    "number": 814,
+    "createdAt": "2026-07-14T03:44:21.505Z"
+  },
   "_journal": {
-    "historyCount": 58,
+    "historyCount": 63,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -91,7 +96,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 1,
-      "conformance": 2
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
