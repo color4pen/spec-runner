@@ -3097,9 +3097,9 @@ describe("T-06: addedTurns per-type metrics", () => {
   it("addedTurns.reportRetry increments when agent fails to call report_result on first turn", async () => {
     // Simulate: agent does NOT call report_result on first turn → retry fires.
     // Tool is never called → retryPolicy.maxAttempts retries fire.
-    let callCount = 0;
+    let _callCount = 0;
     const queryFn: QueryFn = async function* (params) {
-      callCount++;
+      _callCount++;
       yield {
         type: "result" as const,
         subtype: "success" as const,
