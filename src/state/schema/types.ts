@@ -154,6 +154,15 @@ export interface StepOutcome {
    * Added in codex-completion-contract-injection.
    */
   completionReportDiagnostics?: CompletionReportDiagnostic[];
+  /**
+   * Added-turn metrics broken down by type (local runtime only).
+   * - reportRetry: turns spent retrying the report_result tool call.
+   * - postWork: turns spent on postWorkPrompts (NOT counted in followUpAttempts).
+   * - outputRepair: turns spent repairing output-contract violations.
+   * Invariant: reportRetry + outputRepair === followUpAttempts.
+   * Added in reduce-added-agent-turns.
+   */
+  addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
 }
 
 /**

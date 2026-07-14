@@ -254,10 +254,19 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
     expect(result.steps?.["spec-fixer"]).toBeUndefined();
 
     // After spec-review approved, pipeline continues:
-    // request-review(1) + design(1) + spec-review(1) + test-case-gen(1) + implementer(1) + code-review(1) + conformance(1) + adr-gen(1) = 8 sessions
-    // VerificationStep is CLI (no session). Total = 8 createSession calls.
+    // request-review(1) + design(1) + spec-review(1) + test-case-gen(1) + implementer(1) + code-review(1) + conformance(1) = 7 sessions
+    // adr-gen is SKIPPED (request.adr === false) — no session created.
+    // VerificationStep is CLI (no session). Total = 7 createSession calls.
     const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
-    expect(createCalls.length).toBe(8);
+    expect(createCalls.length).toBe(7);
+
+    // adr-gen should be recorded with verdict "skipped"
+    const adrGenArr = result.steps?.["adr-gen"];
+    expect(adrGenArr).toBeDefined();
+    expect(adrGenArr?.length).toBe(1);
+    const adrGenRun = adrGenArr?.[0] as import("../src/state/schema.js").StepRun | undefined;
+    expect(adrGenRun?.outcome.verdict).toBe("skipped");
+    expect(adrGenRun?.outcome.skipReason).toContain("adr: false");
 
     // implementer should have run
     expect(result.steps?.["implementer"]).toBeDefined();

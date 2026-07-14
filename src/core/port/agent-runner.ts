@@ -197,6 +197,20 @@ export interface AgentRunResult {
    * Added in codex-completion-contract-injection.
    */
   completionReportDiagnostics?: CompletionReportDiagnostic[];
+  /**
+   * Added-turn metrics broken down by type.
+   * - reportRetry: turns spent retrying the report_result tool call (the agent did not call it on
+   *   the first turn, so the adapter prompted again up to policy.maxAttempts times).
+   * - postWork: turns spent on postWorkPrompts (same-session follow-up prompts run after the main
+   *   work turn; NOT included in followUpAttempts).
+   * - outputRepair: turns spent repairing output-contract violations detected by outputVerification.
+   *
+   * Invariant: addedTurns.reportRetry + addedTurns.outputRepair === followUpAttempts.
+   *
+   * Only populated by ClaudeCodeRunner. ManagedAgentRunner and CodexAgentRunner leave it undefined.
+   * Added in reduce-added-agent-turns.
+   */
+  addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
 }
 
 /**

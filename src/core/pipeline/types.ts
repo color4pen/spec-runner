@@ -263,6 +263,8 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.CONFORMANCE, on: "needs-fix", to: STEP_NAMES.IMPLEMENTER },
   // --- adr-gen (single shot, after conformance approved) ---
   { step: STEP_NAMES.ADR_GEN,     on: "success",   to: STEP_NAMES.PR_CREATE },
+  // reduce-added-agent-turns T-03: adr:false triggers skipWhen → skipped verdict → pr-create
+  { step: STEP_NAMES.ADR_GEN,     on: "skipped",   to: STEP_NAMES.PR_CREATE },
   { step: STEP_NAMES.ADR_GEN,     on: "error",     to: "escalate" },
   // --- pr-create (single shot, no loop) ---
   { step: STEP_NAMES.PR_CREATE,   on: "success",   to: "end" },

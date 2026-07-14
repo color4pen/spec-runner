@@ -63,6 +63,8 @@ export type StepExecutionResult =
       followUpAttempts?: number;
       transientRetryAttempts?: number;
       completionReportDiagnostics?: CompletionReportDiagnostic[];
+      /** Added-turn metrics by type. Only populated by ClaudeCodeRunner. */
+      addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
     }
   | { kind: "halt"; halt: StepHalt }
   | { kind: "skipped"; skipReason: string };
@@ -84,7 +86,7 @@ function projectSuccess(
   result: StepExecutionResult & { kind: "success" },
   findingsPath: string | null,
 ): JobState {
-  const { completion, completedAt, startedAt, session, followUpAttempts, transientRetryAttempts, completionReportDiagnostics } = result;
+  const { completion, completedAt, startedAt, session, followUpAttempts, transientRetryAttempts, completionReportDiagnostics, addedTurns } = result;
   const { verdict, persistToolResult } = completion;
 
   return pushStepResult(state, step.name, {
@@ -98,6 +100,7 @@ function projectSuccess(
     followUpAttempts: followUpAttempts ?? 0,
     transientRetryAttempts,
     completionReportDiagnostics,
+    addedTurns,
   });
 }
 

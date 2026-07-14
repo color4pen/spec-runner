@@ -244,6 +244,22 @@ export interface AgentStep {
   activation?: ReviewerActivation;
 
   /**
+   * Deterministic skip predicate for steps whose outcome is fixed before the agent runs.
+   * Returns the skip reason (human-readable string) when the step should be skipped,
+   * or null when the agent should run normally.
+   *
+   * Pure function — I/O is not allowed. Evaluated before agent execution, buildStepContext,
+   * and prepareStepArtifacts (no side effects are produced when skipping).
+   *
+   * This is a separate axis from declarative activation (paths / requestTypes) and must NOT
+   * be expressed via activation: activation operates on changed-file sets and request types,
+   * whereas skipWhen can inspect arbitrary state / deps fields (e.g. request.adr, ledger).
+   *
+   * Design (reduce-added-agent-turns): state/deps-dependent skip gate for deterministic steps.
+   */
+  skipWhen?(state: JobState, deps: StepDeps): string | null;
+
+  /**
    * Custom verdict derivation for judge steps.
    * When set, executor uses this instead of deriveJudgeVerdict.
    * Only applies when isJudgeStep is true (step uses JUDGE_REPORT_TOOL or CODE_REVIEW_REPORT_TOOL).
