@@ -36,6 +36,14 @@ export interface DynamicContext {
    */
   requestContentHash?: string;
   /**
+   * Source revision recorded by RequestReviewStep.enrichContext() at request-review time.
+   * SHA of the most recent commit outside the change folder (specrunner/changes/).
+   * Injected into the request-review message so the agent can write it verbatim into
+   * the fact-check attestation file. Used by design to detect source changes after
+   * the attestation was written. Absent for all other steps.
+   */
+  sourceRevision?: string;
+  /**
    * Fact-check attestation evaluation result, computed by DesignStep.enrichContext().
    * Declares whether the request-review attestation is valid, stale, or absent relative
    * to the current request.md, and lists the already-verified assertions.

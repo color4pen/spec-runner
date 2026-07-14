@@ -8,6 +8,7 @@ import { buildInitialMessage, DESIGN_SYSTEM_PROMPT } from "../../prompts/design-
 import { getBranchPrefix, isSpecRequired } from "../../config/type-config.js";
 import { requestMdPath, changeFolderPath, factCheckAttestationPath } from "../../util/paths.js";
 import { evaluateFactCheckAttestation, buildFactCheckDirective } from "../factcheck-attestation.js";
+import { readSourceRevision } from "../../git/source-revision.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import type { OutputContract } from "../port/output-contract.js";
@@ -118,7 +119,12 @@ export const DesignStep: AgentStep = {
         attestationRaw = null;
       }
 
-      const evaluation = evaluateFactCheckAttestation(attestationRaw, requestContent);
+      // Read current source revision for source-binding stale check.
+      // readSourceRevision never throws; returns null when git is unavailable.
+      // null → evaluateFactCheckAttestation treats it as stale (fail-safe).
+      const currentSourceRevision = await readSourceRevision(cwd);
+
+      const evaluation = evaluateFactCheckAttestation(attestationRaw, requestContent, currentSourceRevision);
       return { ...dynamicContext, factCheckAttestation: evaluation };
     } catch {
       // On any read failure of request.md, return unchanged (degradation: design verifies all).

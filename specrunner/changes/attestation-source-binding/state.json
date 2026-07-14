@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "cdccb8b6-c5c2-41c0-8ae8-491001556e2c",
   "createdAt": "2026-07-14T11:47:14.965Z",
-  "updatedAt": "2026-07-14T12:08:53.395Z",
+  "updatedAt": "2026-07-14T12:11:12.374Z",
   "request": {
     "title": "fact-check attestation を source revision にも束縛し、request.md 不変でも source 変化で stale にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "change/attestation-source-binding-cdccb8b6",
   "error": null,
@@ -49,11 +49,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }

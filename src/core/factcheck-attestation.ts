@@ -19,6 +19,14 @@ export interface FactCheckAttestation {
   requestHash: string;
   codeAssertionsVerified: boolean;
   verifiedAssertions: string[];
+  /**
+   * SHA of the most recent source commit (excluding the change folder) at the
+   * time request-review ran. Used by design to detect source changes that occurred
+   * after the attestation was written.
+   * Optional for backward compatibility — absent in attestations written before
+   * this field was introduced (treated as stale by evaluateFactCheckAttestation).
+   */
+  sourceRevision?: string;
 }
 
 export type AttestationStatus = "valid" | "stale" | "absent";
@@ -47,18 +55,31 @@ export function hashRequestContent(content: string): string {
 // ---------------------------------------------------------------------------
 
 /**
- * Build a FactCheckAttestation from request content and verified assertions.
+ * Build a FactCheckAttestation from request content, verified assertions, and
+ * an optional source revision.
+ *
+ * @param requestContent - The raw content of request.md (used to compute requestHash).
+ * @param verifiedAssertions - List of assertion descriptions verified in Step 2.
+ * @param sourceRevision - Optional git SHA of the most recent source commit
+ *   (excluding the change folder). When provided, it is included in the output
+ *   so design can verify the source has not changed since request-review ran.
+ *   When omitted, the field is not included in the output.
  * Pure: no I/O.
  */
 export function buildFactCheckAttestation(
   requestContent: string,
   verifiedAssertions: string[],
+  sourceRevision?: string,
 ): FactCheckAttestation {
-  return {
+  const attestation: FactCheckAttestation = {
     requestHash: hashRequestContent(requestContent),
     codeAssertionsVerified: true,
     verifiedAssertions: Array.from(verifiedAssertions),
   };
+  if (sourceRevision !== undefined) {
+    attestation.sourceRevision = sourceRevision;
+  }
+  return attestation;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,11 +108,18 @@ export function parseFactCheckAttestation(raw: string): FactCheckAttestation | n
     const verifiedAssertions = (obj["verifiedAssertions"] as unknown[]).map((item) =>
       typeof item === "string" ? item : String(item),
     );
-    return {
+    // sourceRevision is optional; accept only string values, treat all others as undefined.
+    const sourceRevision =
+      typeof obj["sourceRevision"] === "string" ? obj["sourceRevision"] : undefined;
+    const attestation: FactCheckAttestation = {
       requestHash: obj["requestHash"] as string,
       codeAssertionsVerified: obj["codeAssertionsVerified"] as boolean,
       verifiedAssertions,
     };
+    if (sourceRevision !== undefined) {
+      attestation.sourceRevision = sourceRevision;
+    }
+    return attestation;
   } catch {
     return null;
   }
@@ -102,16 +130,30 @@ export function parseFactCheckAttestation(raw: string): FactCheckAttestation | n
 // ---------------------------------------------------------------------------
 
 /**
- * Evaluate a raw attestation string against the current request.md content.
+ * Evaluate a raw attestation string against the current request.md content and
+ * the current source revision.
  *
- * - null or unparseable → { status: "absent", verifiedAssertions: [] }
- * - parsed but codeAssertionsVerified !== true OR hash mismatch → { status: "stale", verifiedAssertions: [] }
- * - parsed AND codeAssertionsVerified AND hash matches → { status: "valid", verifiedAssertions }
+ * Judgment order (fail-safe: every ambiguity resolves to stale rather than valid):
+ *
+ * 1. null or unparseable → { status: "absent", verifiedAssertions: [] }
+ * 2. !codeAssertionsVerified OR requestHash mismatch → { status: "stale", ... }
+ * 3. attestation.sourceRevision === undefined (old attestation without source binding),
+ *    OR currentSourceRevision === null (git unavailable / no source commits),
+ *    OR sourceRevision mismatch → { status: "stale", ... }
+ * 4. All checks pass → { status: "valid", verifiedAssertions }
+ *
+ * @param attestationRaw - Raw JSON string from the attestation file, or null if absent.
+ * @param currentRequestContent - Current content of request.md (for hash comparison).
+ * @param currentSourceRevision - Source revision read at evaluation time (from
+ *   readSourceRevision). Pass null when git is unavailable; the result will be stale
+ *   (fail-safe).
  */
 export function evaluateFactCheckAttestation(
   attestationRaw: string | null,
   currentRequestContent: string,
+  currentSourceRevision: string | null,
 ): AttestationEvaluation {
+  // 1. Absent / unparseable
   if (attestationRaw === null) {
     return { status: "absent", verifiedAssertions: [] };
   }
@@ -121,10 +163,21 @@ export function evaluateFactCheckAttestation(
     return { status: "absent", verifiedAssertions: [] };
   }
 
+  // 2. Existing stale conditions (preserved verbatim)
   if (!parsed.codeAssertionsVerified || parsed.requestHash !== hashRequestContent(currentRequestContent)) {
     return { status: "stale", verifiedAssertions: [] };
   }
 
+  // 3. Source revision binding (fail-safe: any missing / mismatched signal → stale)
+  if (
+    parsed.sourceRevision === undefined ||
+    currentSourceRevision === null ||
+    parsed.sourceRevision !== currentSourceRevision
+  ) {
+    return { status: "stale", verifiedAssertions: [] };
+  }
+
+  // 4. All checks passed
   return { status: "valid", verifiedAssertions: parsed.verifiedAssertions };
 }
 
@@ -158,7 +211,7 @@ ${listItems}
   // stale or absent
   const reason =
     evaluation.status === "stale"
-      ? "the attestation is stale (request.md has changed since request-review ran, or codeAssertionsVerified is false)"
+      ? "the attestation is stale (request.md has changed, source revision has changed since request-review ran, or codeAssertionsVerified is false)"
       : "no fact-check attestation is present for this change";
 
   return `## Fact-Check Attestation Directive
