@@ -83,3 +83,10 @@
 {"type":"transition","ts":"2026-07-14T10:51:37.516Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-07-14T10:51:37.517Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-07-14T10:51:37.518Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-14T10:55:46.037Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"d6164c7a-fba8-4e2f-b40e-8acfbd4f6035","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/postwork-format-check-as-detector/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"observations":[{"severity":"low","file":"src/core/step/output-verify.ts","title":"[LOW] repair prompt 文言（Fix: no）は承認済み状態から後退なし","rationale":"code-review が Fix: no で approved を出し、code-fixer が LOW ポリシーでスキップ済み。文言は approved 時点と同一のまま。TC-OV-007（L414）の report_result 非包含テストが不変条件を固定しているため、リスクは封じられている。","line":182}]},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-07-14T10:51:37.571Z","endedAt":"2026-07-14T10:55:44.566Z"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-14T10:55:44.566Z","outputs":[{"path":"specrunner/changes/postwork-format-check-as-detector/regression-gate-result-002.md","hash":null}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-14T10:55:46.044Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-14T10:55:46.044Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-14T10:55:46.046Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-14T10:55:46.047Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
