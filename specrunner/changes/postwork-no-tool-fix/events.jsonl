@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-07-14T08:20:23.334Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-14T08:20:23.334Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-07-14T08:20:23.337Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-07-14T08:22:22.531Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"09a3edd5-6454-46dc-8052-79d261f3b069","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-14T08:20:23.400Z","endedAt":"2026-07-14T08:22:21.121Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-07-14T08:22:21.121Z","outputs":[{"path":"specrunner/changes/postwork-no-tool-fix/test-cases.md","hash":"sha256:94ed2bc0a081d937949fa5749962ca9099a65b5e8b635510ee913f1d83307992"}],"inputs":[{"path":"specrunner/changes/postwork-no-tool-fix/design.md","hash":"sha256:2e47ad26259411bc59cae6e43808d2d260b83cd417b6a21bcbd5648ab62f6eb3"},{"path":"specrunner/changes/postwork-no-tool-fix/tasks.md","hash":"sha256:0b9fcd290c6ee9ccfe04bee2a753546de0e1f0417436e144a0135649cac7c987"}]}
+{"type":"transition","ts":"2026-07-14T08:22:22.544Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-07-14T08:22:22.546Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
