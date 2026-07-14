@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.4.0](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.8...specrunner-v0.4.0) (2026-07-14)
+
+
+### Features
+
+* archive --with-merge の merge 失敗後に job が復旧不能になる問題を修正 ([#792](https://github.com/color4pen/spec-runner/issues/792)) ([b05339d](https://github.com/color4pen/spec-runner/commit/b05339d510230276c61c64b638aada6479aa9dd3))
+* build-fixer の config 編集が同一 job 内 verification に反映されず coverage self-heal できない問題を修正 ([#791](https://github.com/color4pen/spec-runner/issues/791)) ([2dce15c](https://github.com/color4pen/spec-runner/commit/2dce15c3eb98958eb52358ca751c83e781f3a101))
+* one-shot SDK query の env を stripSecrets 経由に統一し、B-6 の歯を env-omission まで強める ([#780](https://github.com/color4pen/spec-runner/issues/780)) ([9370031](https://github.com/color4pen/spec-runner/commit/9370031022c638c97a13faea6b1ca90b2c41ca43))
+* PR ごとの attestation をコメント添付する ([#789](https://github.com/color4pen/spec-runner/issues/789)) ([c51a0a3](https://github.com/color4pen/spec-runner/commit/c51a0a308db3daa52751bb5077410bea2cab7644))
+* 不変条件カタログ（doc）と歯（test / allowlist）の B-x ID 集合が一致することを test で固定する ([#777](https://github.com/color4pen/spec-runner/issues/777)) ([8a5d98f](https://github.com/color4pen/spec-runner/commit/8a5d98fd054193198361abd247645fd1e14d2dbe))
+* 並列 round の git 副作用を coordinator が round 単位で所有する（scoped staging・非宣言変更 halt） ([#800](https://github.com/color4pen/spec-runner/issues/800)) ([f2d9489](https://github.com/color4pen/spec-runner/commit/f2d948986960ec7b1e1a644dff778acede08ab3c))
+* 並列 round の state commit を coordinator が round 単位で所有する（member no-persist） ([#801](https://github.com/color4pen/spec-runner/issues/801)) ([cc3472f](https://github.com/color4pen/spec-runner/commit/cc3472fcabe82aca248b63f6a62bc8798bd2942b))
+* 並列 round の入力を immutable にする（共有 deps 不変・resume 配布） ([#799](https://github.com/color4pen/spec-runner/issues/799)) ([7e09e7a](https://github.com/color4pen/spec-runner/commit/7e09e7a5959d9a9b3cff42379b14c1d63b1ba7e8))
+* 実行中の local job で OS のアイドルスリープを抑止する（self-caffeinate、[#758](https://github.com/color4pen/spec-runner/issues/758)） ([#781](https://github.com/color4pen/spec-runner/issues/781)) ([4f185f0](https://github.com/color4pen/spec-runner/commit/4f185f0d1dc04ba76080e763ca05b1ee2e4feb4b))
+* 逐次経路の single-writer: StepExecutor は実行結果を返し CommitOrchestrator が唯一の commit 者になる ([#798](https://github.com/color4pen/spec-runner/issues/798)) ([94b7236](https://github.com/color4pen/spec-runner/commit/94b72364e288fd405adf78801adb8f682f05349b))
+
+
+### Bug Fixes
+
+* archive --with-merge の merge-wait が transient BLOCKED で誤 escalation するのを修正 ([#790](https://github.com/color4pen/spec-runner/issues/790)) ([b1c881f](https://github.com/color4pen/spec-runner/commit/b1c881f65b28c108daa3241e28ca487672a2e0d0))
+* job stats のコスト集計で usage.json を slug でなく行の jobId / change-dir から解決し、同一 base-slug の誤配を解消する ([#778](https://github.com/color4pen/spec-runner/issues/778)) ([707ec26](https://github.com/color4pen/spec-runner/commit/707ec26ac983e56b079ee550bcf400845f54f95e))
+
+
+### Miscellaneous Chores
+
+* 次リリースを 0.4.0 として切る ([#805](https://github.com/color4pen/spec-runner/issues/805)) ([80db1fb](https://github.com/color4pen/spec-runner/commit/80db1fb5fa9ade57227e6b7147b32c1ba69779e9))
+
 ## [0.3.8](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.7...specrunner-v0.3.8) (2026-07-10)
 
 
