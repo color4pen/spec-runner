@@ -204,7 +204,7 @@ describe("TC-REG-01: Agent success step — observational invariants", () => {
     expect(stepRuns[stepRuns.length - 1]?.outcome.verdict).toBe("approved");
   });
 
-  it("store.persist called once on success", async () => {
+  it("store.persist called twice on success (projection persist + branch/PR patch persist)", async () => {
     const store = makeTrackingStore();
     const runner = makeSuccessRunner();
     const executor = new StepExecutor(new EventBus(), runner as never, () => store as never);
@@ -213,7 +213,7 @@ describe("TC-REG-01: Agent success step — observational invariants", () => {
 
     await executor.execute(step, makeState(), deps);
 
-    expect(store.persist).toHaveBeenCalledOnce();
+    expect(store.persist).toHaveBeenCalledTimes(2);
   });
 
   it("history includes {step}-started and {step}-verdict entries", async () => {
@@ -225,9 +225,11 @@ describe("TC-REG-01: Agent success step — observational invariants", () => {
 
     await executor.execute(step, makeState(), deps);
 
-    // begin() appends {step}-started; commitSuccess() appends {step}-verdict
+    // begin() appends {step}-started via store.appendHistory
     expect(store.historySteps).toContain("spec-review-started");
-    expect(store.historySteps).toContain("spec-review-verdict");
+    // commitSuccess() appends {step}-verdict via pure appendHistoryEntry (in persisted state)
+    const history = store.lastPersistedState?.history ?? [];
+    expect(history.some((e: { step: string }) => e.step === "spec-review-verdict")).toBe(true);
   });
 
   it("store.fail and appendInterruption are NOT called on success", async () => {
@@ -413,7 +415,7 @@ describe("TC-REG-04: CLI step success (prose-parse) — observational invariants
     expect(stepRuns[stepRuns.length - 1]?.outcome.verdict).toBe("success");
   });
 
-  it("store.persist called once on CLI success, step-transition history appended", async () => {
+  it("store.persist called twice on CLI success, step-transition history appended", async () => {
     const store = makeTrackingStore();
     const executor = new StepExecutor(new EventBus(), {} as never, () => store as never);
     const step = makeCliStepDecl("verification");
@@ -421,11 +423,12 @@ describe("TC-REG-04: CLI step success (prose-parse) — observational invariants
 
     await executor.execute(step, makeState(), deps);
 
-    expect(store.persist).toHaveBeenCalledOnce();
-    // begin() appends step-transition for CLI steps
+    expect(store.persist).toHaveBeenCalledTimes(2);
+    // begin() appends step-transition for CLI steps via store.appendHistory
     expect(store.historySteps).toContain("step-transition");
-    // commitSuccess appends verification-verdict
-    expect(store.historySteps).toContain("verification-verdict");
+    // commitSuccess appends verification-verdict via pure appendHistoryEntry (in persisted state)
+    const history = store.lastPersistedState?.history ?? [];
+    expect(history.some((e: { step: string }) => e.step === "verification-verdict")).toBe(true);
   });
 
   it("store.fail and appendInterruption NOT called on CLI success", async () => {

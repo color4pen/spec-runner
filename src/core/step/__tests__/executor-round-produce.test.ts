@@ -340,7 +340,7 @@ describe("StepExecutor.execute (sequential) — unchanged after produceResult ad
       makeDeps(store, { runtimeStrategy: runtimeStrategy as never }),
     );
 
-    // Sequential path: store.persist is called once (CommitOrchestrator.commitSuccess)
-    expect(store.persist).toHaveBeenCalledOnce();
+    // Sequential path: store.persist is called twice (projection persist + branch/PR patch persist)
+    expect(store.persist).toHaveBeenCalledTimes(2);
   });
 });

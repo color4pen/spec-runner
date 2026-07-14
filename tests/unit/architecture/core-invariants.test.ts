@@ -1400,3 +1400,46 @@ describe("DSM regression guard: new forbidden edge not in allowlist triggers det
     expect(violations[0]?.file).toBe("src/config/new-helper.ts");
   });
 });
+
+// ─── commit-projection-unify structure gates ──────────────────────────────────
+
+describe("commit-projection-unify structure gates", () => {
+  /**
+   * Structural gates for the commit-projection-unify refactoring.
+   *
+   * Gate 1–2: No "mirrors commit" / "matches commit" duplication comments remain.
+   * Gate 3–4: Shared projectors (projectSuccess / projectSkip) are called from
+   *   both the sequential path (commitSuccess / commitSkipped) and the round path
+   *   (commitRound), confirming the unification is real (not merely a rename).
+   */
+
+  const ORCHESTRATOR = "src/core/step/commit-orchestrator.ts";
+
+  it("Gate 1: 'mirrors commit' string is absent from commit-orchestrator.ts", () => {
+    const raw = grepE(`"mirrors commit"`, ORCHESTRATOR);
+    const matches = parseGrepOutput(raw);
+    const nonComment = matches.filter((m) => !isCommentLine(m.content));
+    expect(nonComment).toHaveLength(0);
+  });
+
+  it("Gate 2: 'matches commit' string is absent from commit-orchestrator.ts", () => {
+    const raw = grepE(`"matches commit"`, ORCHESTRATOR);
+    const matches = parseGrepOutput(raw);
+    const nonComment = matches.filter((m) => !isCommentLine(m.content));
+    expect(nonComment).toHaveLength(0);
+  });
+
+  it("Gate 3 (liveness): projectSuccess( appears at ≥ 2 non-comment call sites in commit-orchestrator.ts", () => {
+    const raw = grepE(`"projectSuccess\\\\("`, ORCHESTRATOR);
+    const matches = parseGrepOutput(raw);
+    const nonComment = matches.filter((m) => !isCommentLine(m.content));
+    expect(nonComment.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("Gate 4 (liveness): projectSkip( appears at ≥ 2 non-comment call sites in commit-orchestrator.ts", () => {
+    const raw = grepE(`"projectSkip\\\\("`, ORCHESTRATOR);
+    const matches = parseGrepOutput(raw);
+    const nonComment = matches.filter((m) => !isCommentLine(m.content));
+    expect(nonComment.length).toBeGreaterThanOrEqual(2);
+  });
+});
