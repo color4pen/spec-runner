@@ -40,10 +40,10 @@ export class WorkspaceMaterializer {
 }
 ```
 
-- [ ] Add `MaterializerHost` interface to `workspace-materializer.ts` with the 7 members listed above
-- [ ] Add `WorkspaceMaterializer` class with constructor and stub `materialize()` method
-- [ ] Add all required imports
-- [ ] Confirm `bun run typecheck` reports no type errors in `workspace-materializer.ts`
+- [x] Add `MaterializerHost` interface to `workspace-materializer.ts` with the 7 members listed above
+- [x] Add `WorkspaceMaterializer` class with constructor and stub `materialize()` method
+- [x] Add all required imports
+- [x] Confirm `bun run typecheck` reports no type errors in `workspace-materializer.ts`
 
 **Acceptance Criteria**:
 - `workspace-materializer.ts` exports `MaterializerHost` interface and `WorkspaceMaterializer` class
@@ -89,11 +89,11 @@ Required additional imports in `workspace-materializer.ts`:
 - `changeFolderPath` from `"../../util/paths.js"`
 - `copyRulesToChangeFolder`, `copyDraftUsageToChangeFolder`, `recopyDraftToChangeFolder`, `rejectSymlink` from `"../artifact/copy-artifacts.js"`
 
-- [ ] Implement `resume-existing` arm in `WorkspaceMaterializer.materialize()` using host seam
-- [ ] Implement `resume-recreated` / `resume-without-recorded-worktree` arm; ensure `registerWorkspace` precedes `updateJobState` and `bootstrapState` persist precedes `updateJobState`
-- [ ] Implement `new-run` arm; ensure `registerWorkspace` precedes `updateJobState`, `bootstrapState` persist precedes `updateJobState`, and failure-path cleanup (`manager.remove` + `manager.prune`) precedes throw
-- [ ] Add inline comments preserving the `T-02`, `T-03`, `D2` markers from local.ts to document ordering rationale
-- [ ] Add all required imports to `workspace-materializer.ts`
+- [x] Implement `resume-existing` arm in `WorkspaceMaterializer.materialize()` using host seam
+- [x] Implement `resume-recreated` / `resume-without-recorded-worktree` arm; ensure `registerWorkspace` precedes `updateJobState` and `bootstrapState` persist precedes `updateJobState`
+- [x] Implement `new-run` arm; ensure `registerWorkspace` precedes `updateJobState`, `bootstrapState` persist precedes `updateJobState`, and failure-path cleanup (`manager.remove` + `manager.prune`) precedes throw
+- [x] Add inline comments preserving the `T-02`, `T-03`, `D2` markers from local.ts to document ordering rationale
+- [x] Add all required imports to `workspace-materializer.ts`
 
 **Acceptance Criteria**:
 - `WorkspaceMaterializer.materialize()` handles all four arms with correct host-seam substitutions
@@ -107,26 +107,26 @@ Required additional imports in `workspace-materializer.ts`:
 Wire `LocalRuntime` to implement `MaterializerHost` and delegate to `WorkspaceMaterializer`. This is the step that removes `manager.create` from `local.ts`.
 
 Sub-tasks:
-- [ ] Add `import { WorkspaceMaterializer, type MaterializerHost } from "./workspace-materializer.js"` to `local.ts`
-- [ ] Change `writeLivenessSidecar` visibility from `private` to no access modifier (or keep as `private` and add a thin `writeLivenessSidecar`-implementing method that satisfies `MaterializerHost`)
+- [x] Add `import { WorkspaceMaterializer, type MaterializerHost } from "./workspace-materializer.js"` to `local.ts`
+- [x] Change `writeLivenessSidecar` visibility from `private` to no access modifier (or keep as `private` and add a thin `writeLivenessSidecar`-implementing method that satisfies `MaterializerHost`)
 
   Concrete approach: rename or alias the private method so that `LocalRuntime` can satisfy the interface. Simplest: remove `private` keyword from `writeLivenessSidecar`. This is an internal class; the only callers are LocalRuntime itself and the materializer (via seam).
 
-- [ ] Add `registerWorkspace(workspace: WorkspaceContext): void` method to `LocalRuntime`:
+- [x] Add `registerWorkspace(workspace: WorkspaceContext): void` method to `LocalRuntime`:
   ```typescript
   registerWorkspace(workspace: WorkspaceContext): void {
     this.workspace = workspace;
   }
   ```
 
-- [ ] Add `readonly materializer: WorkspaceMaterializer` to `LocalRuntime` (initialized in constructor):
+- [x] Add `readonly materializer: WorkspaceMaterializer` to `LocalRuntime` (initialized in constructor):
   ```typescript
   this.materializer = new WorkspaceMaterializer(this);
   ```
 
-- [ ] Add `implements MaterializerHost` to `LocalRuntime` class declaration to get compiler enforcement
+- [x] Add `implements MaterializerHost` to `LocalRuntime` class declaration to get compiler enforcement
 
-- [ ] Replace the body of `LocalRuntime.materializeWorktree()` with delegation:
+- [x] Replace the body of `LocalRuntime.materializeWorktree()` with delegation:
   ```typescript
   private async materializeWorktree(
     slug: string,
@@ -141,11 +141,11 @@ Sub-tasks:
   }
   ```
 
-- [ ] Remove all four arm case blocks from `LocalRuntime.materializeWorktree()` (after verifying T-02 is complete and tests pass)
+- [x] Remove all four arm case blocks from `LocalRuntime.materializeWorktree()` (after verifying T-02 is complete and tests pass)
 
-- [ ] Confirm `local.ts` contains zero occurrences of `manager.create(`
+- [x] Confirm `local.ts` contains zero occurrences of `manager.create(`
 
-- [ ] Confirm `workspace-materializer.ts` contains the two `manager.create(` call sites
+- [x] Confirm `workspace-materializer.ts` contains the two `manager.create(` call sites
 
 **Acceptance Criteria**:
 - `LocalRuntime` class declaration includes `implements MaterializerHost`
@@ -217,8 +217,8 @@ describe("Structural ownership: registerWorkspace", () => {
 });
 ```
 
-- [ ] Create `src/core/runtime/__tests__/workspace-materializer-structure.test.ts` with the content above
-- [ ] Confirm `bun test workspace-materializer-structure` runs and passes
+- [x] Create `src/core/runtime/__tests__/workspace-materializer-structure.test.ts` with the content above
+- [x] Confirm `bun test workspace-materializer-structure` runs and passes
 
 **Acceptance Criteria**:
 - The structure gate test file exists at the path above

@@ -54,6 +54,7 @@ import { stripSecrets } from "../../util/env-filter.js";
 import { resolveWorkspaceSetupPlan } from "../worktree/setup.js";
 import type { WorkspaceSetupPlan } from "../worktree/setup.js";
 import { hasJsDependencyTraces } from "../../util/detect-pm.js";
+import { WorkspaceMaterializer, type MaterializerHost } from "./workspace-materializer.js";
 import type { WorktreeMaterializationPlan } from "./workspace-materializer.js";
 
 // Internal structure stored inside CleanupHandle
@@ -98,14 +99,14 @@ export interface LocalRuntimeOptions {
   platform?: NodeJS.Platform;
 }
 
-export class LocalRuntime implements RealRuntimeStrategy {
-  private readonly cwd: string;
+export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
+  readonly cwd: string;
   private readonly githubClient: GitHubClient;
   private readonly githubToken: string;
   private readonly owner: string;
   private readonly repo: string;
-  private readonly manager: ReturnType<typeof createWorktreeManager>;
-  private readonly spawnFn: SpawnFn;
+  readonly manager: ReturnType<typeof createWorktreeManager>;
+  readonly spawnFn: SpawnFn;
   private readonly queryFn: QueryFn;
   private readonly transportAuth: ReturnType<typeof createTransportAuth>;
   /** util/spawn.ts SpawnFn wrapped with transport auth injection. */
@@ -116,6 +117,9 @@ export class LocalRuntime implements RealRuntimeStrategy {
   private readonly spawnBackgroundFn: SpawnBackgroundFn;
   /** Platform for power assertion (injectable for tests). */
   private readonly platform: NodeJS.Platform;
+
+  /** WorkspaceMaterializer delegated to for worktree create/registration/liveness (T-03). */
+  private readonly materializer: WorkspaceMaterializer;
 
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
@@ -139,13 +143,14 @@ export class LocalRuntime implements RealRuntimeStrategy {
     // at the composition root (createRuntime) for production job execution.
     this.spawnBackgroundFn = opts.spawnBackgroundFn ?? noopSpawnBackground;
     this.platform = opts.platform ?? process.platform;
+    this.materializer = new WorkspaceMaterializer(this);
   }
 
   /**
    * Resolve the workspace setup plan from config and JS dependency traces in the repo root.
    * Called once before each worktree creation.
    */
-  private resolveSetupPlan(): WorkspaceSetupPlan {
+  resolveSetupPlan(): WorkspaceSetupPlan {
     return resolveWorkspaceSetupPlan(this.workspaceSetup, hasJsDependencyTraces(this.cwd));
   }
 
@@ -156,7 +161,7 @@ export class LocalRuntime implements RealRuntimeStrategy {
    * All callers must explicitly pass slugOpts; the slug store must exist (seeded by
    * setupWorkspace before the first updateJobState call).
    */
-  private async updateJobState(
+  async updateJobState(
     jobId: string,
     mutator: (s: JobState) => JobState,
     slugOpts: { slug: string; stateRoot: string },
@@ -165,6 +170,14 @@ export class LocalRuntime implements RealRuntimeStrategy {
     const current = (await slugStore.load()) as JobState;
     const updated = mutator(current);
     await slugStore.persist(updated);
+  }
+
+  /**
+   * Register the resolved workspace as the active workspace context (MaterializerHost seam).
+   * Called by WorkspaceMaterializer before updateJobState so slugStoreOpts() can resolve.
+   */
+  registerWorkspace(workspace: WorkspaceContext): void {
+    this.workspace = workspace;
   }
 
   /** Build slug-based store opts if workspace and slug are available. */
@@ -484,11 +497,9 @@ export class LocalRuntime implements RealRuntimeStrategy {
   }
 
   /**
-   * Materialize a worktree according to the given plan and register it as the
-   * active workspace (this.workspace). This consolidates the "create → set
-   * this.workspace → seed slug store → updateJobState → liveness sidecar →
-   * recopy" sequence that was previously duplicated across the five arms of
-   * setupWorkspace().
+   * Materialize a worktree according to the given plan.
+   * Delegates to WorkspaceMaterializer for all non-no-worktree arms; the
+   * materializer owns worktree creation, workspace registration, seed, and liveness.
    */
   private async materializeWorktree(
     slug: string,
@@ -496,134 +507,10 @@ export class LocalRuntime implements RealRuntimeStrategy {
     plan: WorktreeMaterializationPlan,
     opts?: WorkspaceOptions,
   ): Promise<WorkspaceContext> {
-    switch (plan.kind) {
-      case "no-worktree":
-        return this.setupWorkspaceNoWorktree(slug, jobId, opts);
-
-      case "resume-existing": {
-        const workspace: WorkspaceContext = {
-          cwd: plan.worktreePath,
-          worktreePath: plan.worktreePath,
-        };
-        this.workspace = workspace;
-        // Refresh sidecar pid for the resuming process (T-03)
-        await this.writeLivenessSidecar(slug, jobId, plan.worktreePath);
-        // Resume: recopy draft request.md into change folder (copy semantics)
-        await recopyDraftToChangeFolder(this.cwd, workspace.cwd, slug, this.spawnFn);
-        return workspace;
-      }
-
-      case "resume-recreated":
-      case "resume-without-recorded-worktree": {
-        // Worktree was deleted or was never recorded — create a new one.
-        // (fetch already ran during the original run)
-        const setupPlan = this.resolveSetupPlan();
-        const newWorktreePath = await this.manager.create(
-          this.cwd, slug, jobId, plan.remoteBaseRef, undefined, setupPlan,
-        );
-        const workspace: WorkspaceContext = {
-          cwd: newWorktreePath,
-          worktreePath: newWorktreePath,
-        };
-        this.workspace = workspace;
-        const slugOpts = { slug, stateRoot: newWorktreePath };
-        // Seed slug store with bootstrap state before updateJobState (T-02)
-        if (opts?.bootstrapState) {
-          await new JobStateStore(jobId, this.cwd, slugOpts).persist(opts.bootstrapState);
-        }
-        await this.updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }), slugOpts);
-        await this.writeLivenessSidecar(slug, jobId, newWorktreePath);
-        // Resume: recopy draft request.md into change folder (copy semantics)
-        await recopyDraftToChangeFolder(this.cwd, workspace.cwd, slug, this.spawnFn);
-        return workspace;
-      }
-
-      case "new-run": {
-        // Pass branchName so manager creates the branch in the worktree (D1)
-        const setupPlan = this.resolveSetupPlan();
-        const worktreePath = await this.manager.create(
-          this.cwd, slug, jobId, plan.remoteBaseRef, plan.branchName, setupPlan,
-        );
-
-        // workspace must be set before updateJobState so slugStoreOpts() works
-        const workspaceCtx: WorkspaceContext = {
-          cwd: worktreePath,
-          worktreePath,
-          branch: plan.branchName,
-        };
-        this.workspace = workspaceCtx;
-
-        // Seed slug store with bootstrap state before updateJobState (T-02)
-        const slugOpts = { slug, stateRoot: worktreePath };
-        if (opts?.bootstrapState) {
-          await new JobStateStore(jobId, this.cwd, slugOpts).persist(opts.bootstrapState);
-        }
-
-        // Record worktreePath in state (slug-based store) and write liveness sidecar
-        await this.updateJobState(jobId, (s) => ({ ...s, worktreePath }), slugOpts);
-        await this.writeLivenessSidecar(slug, jobId, worktreePath);
-
-        // Copy request.md into the change folder so the agent can read it
-        if (opts?.requestFilePath) {
-          // Only copy request.md into the change folder (no canonical path copy)
-          const changeFolderRequestPath = path.join(worktreePath, changeFolderPath(slug), "request.md");
-          await fs.mkdir(path.dirname(changeFolderRequestPath), { recursive: true });
-          await rejectSymlink(opts.requestFilePath);
-          await fs.cp(opts.requestFilePath, changeFolderRequestPath);
-
-          // Stage the change folder request.md
-          const gitAddChangeFolderResult = await this.spawnFn(
-            "git",
-            ["add", path.join(changeFolderPath(slug), "request.md")],
-            { cwd: worktreePath },
-          );
-          if (gitAddChangeFolderResult.exitCode !== 0) {
-            // Cleanup worktree before propagating error
-            await this.manager.remove(worktreePath, this.cwd).catch(() => {});
-            await this.manager.prune(this.cwd).catch(() => {});
-            throw new Error(`Failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}`);
-          }
-
-          // Copy draft's usage.json into the change folder (silent no-op if absent)
-          await copyDraftUsageToChangeFolder(opts.requestFilePath, worktreePath, slug, this.spawnFn);
-
-          // Also copy rules.md into the change folder so agents can read project disciplines
-          await copyRulesToChangeFolder(worktreePath, slug, this.spawnFn);
-
-          // Update state.request.path to point to the permanent copy (not the draft)
-          // In slug mode, request.path is derived from convention at load time — this persist is a no-op for path field.
-          await this.updateJobState(jobId, (s) => ({
-            ...s,
-            request: { ...s.request, path: changeFolderRequestPath },
-          }), { slug, stateRoot: worktreePath });
-
-          // Commit change folder request.md and rules.md as the first commit on the feature branch (D2)
-          const gitCommitResult = await this.spawnFn(
-            "git",
-            ["commit", "-m", `add request.md for ${slug}`],
-            { cwd: worktreePath },
-          );
-          if (gitCommitResult.exitCode !== 0) {
-            // Cleanup worktree before propagating error
-            await this.manager.remove(worktreePath, this.cwd).catch(() => {});
-            await this.manager.prune(this.cwd).catch(() => {});
-            throw new Error(`Failed to commit request file: ${gitCommitResult.stderr.trim()}`);
-          }
-        }
-
-        // Record branchName in state so downstream steps can use it (D3)
-        const branchName = plan.branchName;
-        if (branchName) {
-          await this.updateJobState(
-            jobId,
-            (s) => ({ ...s, branch: branchName }),
-            { slug, stateRoot: worktreePath },
-          );
-        }
-
-        return workspaceCtx;
-      }
+    if (plan.kind === "no-worktree") {
+      return this.setupWorkspaceNoWorktree(slug, jobId, opts);
     }
+    return this.materializer.materialize(slug, jobId, plan, opts);
   }
 
   buildDeps(
@@ -1008,7 +895,7 @@ export class LocalRuntime implements RealRuntimeStrategy {
    * worktreePath may be null for no-worktree mode.
    * Best-effort: silently swallows errors to avoid blocking workspace setup.
    */
-  private async writeLivenessSidecar(slug: string, jobId: string, worktreePath: string | null): Promise<void> {
+  async writeLivenessSidecar(slug: string, jobId: string, worktreePath: string | null): Promise<void> {
     try {
       const sidecarAbsPath = path.join(this.cwd, livenessJsonPath(slug));
       await fs.mkdir(path.dirname(sidecarAbsPath), { recursive: true });

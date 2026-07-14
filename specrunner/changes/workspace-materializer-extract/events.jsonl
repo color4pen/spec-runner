@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-07-14T04:33:26.055Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-14T04:33:26.055Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-07-14T04:33:26.058Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-07-14T04:35:27.881Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"dc17cdc6-1a05-4f2d-9f27-f9171773e611","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-14T04:33:26.124Z","endedAt":"2026-07-14T04:35:26.265Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-07-14T04:35:26.265Z","outputs":[{"path":"specrunner/changes/workspace-materializer-extract/test-cases.md","hash":"sha256:c4a809953c4c176cd54821074f4633abb5feaacf3383aada47bd1e1b5113d9ed"}],"inputs":[{"path":"specrunner/changes/workspace-materializer-extract/design.md","hash":"sha256:c68f716fb3079cabb99bb7d2820baa013b9ebea8af967c768b09fd4683c4cd0c"},{"path":"specrunner/changes/workspace-materializer-extract/tasks.md","hash":"sha256:9417d0ed1bbcf70c606f44dc460a474a33a65c0a9623bf9f09661d1057fb35ba"}]}
+{"type":"transition","ts":"2026-07-14T04:35:27.889Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-07-14T04:35:27.892Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
