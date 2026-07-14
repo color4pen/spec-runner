@@ -190,7 +190,8 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
   it("has correct number of rows (+2 for post-fixer reverification when-guards)", () => {
     // 35 previous + 2 (conformance approved→verification when, verification passed→adr-gen when)
-    expect(STANDARD_TRANSITIONS.length).toBe(37);
+    // + 1 (adr-gen skipped → pr-create, T-03 reduce-added-agent-turns)
+    expect(STANDARD_TRANSITIONS.length).toBe(38);
   });
 });
 

@@ -284,6 +284,19 @@ export class StepExecutor {
     }
 
     // ---------------------------------------------------------------------------
+    // skipWhen gate (reduce-added-agent-turns T-02)
+    // Separate axis from activation: evaluates state/deps-dependent predicates for
+    // steps whose outcome is deterministically fixed before the agent runs.
+    // Short-circuits before buildStepContext / prepareStepArtifacts (no side effects).
+    // ---------------------------------------------------------------------------
+    if (step.skipWhen) {
+      const skipReason = step.skipWhen(state, deps);
+      if (skipReason !== null) {
+        return { kind: "skipped", skipReason };
+      }
+    }
+
+    // ---------------------------------------------------------------------------
     // Build agent run context — pure assembly, no control flow, no exceptions.
     // ---------------------------------------------------------------------------
     const ctx = await buildStepContext(step, state, deps, cwd, (event: DomainEvent, payload: Record<string, unknown>) => {
@@ -476,6 +489,7 @@ export class StepExecutor {
       followUpAttempts: runResult.followUpAttempts,
       transientRetryAttempts: runResult.transientRetryAttempts,
       completionReportDiagnostics: runResult.completionReportDiagnostics,
+      addedTurns: runResult.addedTurns,
     };
   }
 

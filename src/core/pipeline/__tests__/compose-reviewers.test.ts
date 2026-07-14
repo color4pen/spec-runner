@@ -146,6 +146,19 @@ describe("composeReviewerDescriptor — 2 reviewers", () => {
     expect(row).toBeDefined();
   });
 
+  it("has regression-gate → conformance transition on skipped (empty-ledger skipWhen path)", () => {
+    // regression-gate.skipWhen returns a reason when the findings ledger is empty, producing a
+    // "skipped" verdict. The composed pipeline MUST route regression-gate 'skipped' to conformance,
+    // otherwise an empty-ledger run halts with no matching transition. This transition row is
+    // pre-existing but was dormant until skipWhen made it reachable — lock it so a future refactor
+    // of buildParallelReviewerTransitions cannot silently drop it.
+    const desc = composeReviewerDescriptor(STANDARD_DESCRIPTOR, snapshots);
+    const row = desc.transitions.find(
+      (t) => t.step === REGRESSION_GATE_STEP_NAME && t.on === "skipped" && t.to === STEP_NAMES.CONFORMANCE,
+    );
+    expect(row).toBeDefined();
+  });
+
   it("has regression-gate → code-fixer on needs-fix", () => {
     const desc = composeReviewerDescriptor(STANDARD_DESCRIPTOR, snapshots);
     const row = desc.transitions.find(

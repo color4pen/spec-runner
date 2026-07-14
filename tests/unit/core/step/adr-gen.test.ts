@@ -109,6 +109,36 @@ describe("AdrGenStep — getFollowUpPrompt", () => {
   });
 });
 
+// TC-ADR-SKIP-01: skipWhen returns non-null when adr is false
+describe("AdrGenStep.skipWhen — adr: false → skip", () => {
+  it("skipWhen returns a non-null string when adr is false", () => {
+    const result = AdrGenStep.skipWhen!(buildState(), buildDeps(false));
+    expect(result).not.toBeNull();
+    expect(typeof result).toBe("string");
+    expect((result as string).length).toBeGreaterThan(0);
+  });
+
+  it("skipWhen return value contains 'adr: false'", () => {
+    const result = AdrGenStep.skipWhen!(buildState(), buildDeps(false));
+    expect(result).toContain("adr: false");
+  });
+});
+
+// TC-ADR-SKIP-02: skipWhen returns null when adr is true
+describe("AdrGenStep.skipWhen — adr: true → no skip", () => {
+  it("skipWhen returns null when adr is true (agent should run)", () => {
+    const result = AdrGenStep.skipWhen!(buildState(), buildDeps(true));
+    expect(result).toBeNull();
+  });
+});
+
+// TC-ADR-SKIP-03: skipWhen is defined on AdrGenStep
+describe("AdrGenStep.skipWhen — property exists", () => {
+  it("skipWhen is defined as a function", () => {
+    expect(typeof AdrGenStep.skipWhen).toBe("function");
+  });
+});
+
 // TC-ADR-STEP-02: request.adr === true → buildMessage returns judge+generate instructions
 describe("buildAdrGenInitialMessage — adr: true", () => {
   it("TC-ADR-STEP-02: returns judge+generate instruction when adr is true", () => {

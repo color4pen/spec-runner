@@ -39,6 +39,7 @@ import type { StepContext } from "../../core/port/step-context.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { resolveTransientRetryConfig } from "../../config/schema.js";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
+import { buildReportToolCompletionDirective } from "./completion-directive.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { logVerbose, stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../../logger/diagnostic.js";
@@ -330,9 +331,28 @@ export class ClaudeCodeRunner implements AgentRunner {
     const resumeSection = ctx.session.resumePrompt
       ? `\n\n<resume-context>\n${ctx.session.resumePrompt}\n</resume-context>`
       : "";
-    const fullPrompt = additionalInstructions
+    const baseFullPrompt = additionalInstructions
       ? `${baseMessage}${resumeSection}\n\n${additionalInstructions}`
       : `${baseMessage}${resumeSection}`;
+
+    // write-scope-guard-redo D3: single-sourced MCP server name used in both createSdkMcpServer
+    // (mcpServers key / name field) and the allowedTools MCP pre-approval entry.
+    // Declared here (above fullPrompt) so T-01 completion directive can reference it.
+    const REPORT_MCP_SERVER_NAME = "specrunner_report";
+
+    // T-01 (reduce-added-agent-turns): inject completion directive for the first-turn prompt.
+    // Provider-specific: builds mcp__<serverName>__<toolName> from the same sources as allowedTools.
+    // Only injected when reportTool is configured (MCP tool exists). Adapter-local: does NOT touch
+    // buildAdditionalInstructions or core prompts (provider-neutral contract preserved).
+    const firstTurnCompletionDirective =
+      ctx.policy?.reportTool
+        ? buildReportToolCompletionDirective(
+            `mcp__${REPORT_MCP_SERVER_NAME}__${ctx.policy.reportTool.name}`,
+          )
+        : "";
+    const fullPrompt = firstTurnCompletionDirective
+      ? `${baseFullPrompt}${firstTurnCompletionDirective}`
+      : baseFullPrompt;
 
     // Resolve execution config: step-level > config defaults > step hardcoded > SDK default
     // D2/D3 (design.md): getStepExecutionConfig() resolves model, maxTurns, timeoutMs
@@ -366,10 +386,6 @@ export class ClaudeCodeRunner implements AgentRunner {
     // The tool result is captured via closure and accessed after the query loop.
     let capturedToolResult: BaseReportResult | null = null;
     let reportMcpServer: ReturnType<CreateMcpServerFn> | null = null;
-
-    // write-scope-guard-redo D3: single-sourced MCP server name used in both createSdkMcpServer
-    // (mcpServers key / name field) and the allowedTools MCP pre-approval entry.
-    const REPORT_MCP_SERVER_NAME = "specrunner_report";
 
     const reportTool: ReportToolSpec | undefined = ctx.policy?.reportTool;
     if (reportTool) {
@@ -700,7 +716,12 @@ export class ClaudeCodeRunner implements AgentRunner {
 
       // --- report_result follow-up retry (main work turn only) ---
       // If reportTool is configured and the agent didn't call it, retry up to maxAttempts.
+      // T-06 (reduce-added-agent-turns): track per-type added-turn counters.
+      // reportRetry + outputRepair === followUpAttempts (invariant); postWork is separate.
       let followUpAttempts = 0;
+      let reportRetry = 0;
+      let postWork = 0;
+      let outputRepair = 0;
       if (reportTool && capturedToolResult === null && extractedSessionId) {
         const retryPolicy = ctx.policy?.toolReportRetry ?? DEFAULT_TOOL_RETRY;
         for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++) {
@@ -713,6 +734,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           // (the closure is still active so tool calls will be captured)
           await runFollowUpQueryWithRetry(retryPrompt, retryOptions);
           followUpAttempts++;
+          reportRetry++;
 
           if (capturedToolResult !== null) break;
 
@@ -723,6 +745,7 @@ export class ClaudeCodeRunner implements AgentRunner {
 
       // postWorkPrompts turns (after main work and report_result detection)
       // tool calls in postWorkPrompts turns are intentionally NOT detected
+      // T-06 (reduce-added-agent-turns): count postWork turns; NOT included in followUpAttempts.
       if (shouldRunFollowUp(ctx, "success") && extractedSessionId) {
         for (const followPrompt of ctx.policy.postWorkPrompts!) {
           const followUpOptions: Record<string, unknown> = {
@@ -745,12 +768,15 @@ export class ClaudeCodeRunner implements AgentRunner {
               toolResult: capturedToolResult,
               followUpAttempts,
               ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
+              addedTurns: { reportRetry, postWork, outputRepair },
               error: Object.assign(
                 new Error(`Claude Code SDK follow-up query failed: ${followErrorResult.subtype}`),
                 { code: "CLAUDE_CODE_QUERY_FAILED" },
               ),
             };
           }
+
+          postWork++;
 
           if (followLastResult && followLastResult.subtype === "success") {
             const followSuccessResult = followLastResult as SDKResultSuccess;
@@ -828,6 +854,7 @@ export class ClaudeCodeRunner implements AgentRunner {
             );
           }
           followUpAttempts++;
+          outputRepair++;
         }
       }
 
@@ -876,6 +903,9 @@ export class ClaudeCodeRunner implements AgentRunner {
         ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
         modelUsage: extractedModelUsage,
         sessionId: extractedSessionId,
+        // T-06 (reduce-added-agent-turns): per-type added-turn metrics.
+        // Invariant: reportRetry + outputRepair === followUpAttempts.
+        addedTurns: { reportRetry, postWork, outputRepair },
       };
       return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {

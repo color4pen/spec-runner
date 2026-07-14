@@ -186,6 +186,21 @@ export const AdrGenStep: AgentStep = {
     return NULL_PARSE_RESULT;
   },
 
+  /**
+   * Skip gate (reduce-added-agent-turns T-03): when request.adr === false, the agent
+   * would only emit a no-op message and exit immediately. Skip the agent entirely and
+   * record verdict "skipped" via the existing commitSkipped path.
+   *
+   * The buildMessage adr:false branch is kept as a defensive fallback (no change to
+   * buildMessage contract and TC-ADR-STEP-01 tests remain valid).
+   */
+  skipWhen(_state: JobState, deps: StepDeps): string | null {
+    if (deps.request.adr === false) {
+      return "adr: false — ADR generation is disabled for this request";
+    }
+    return null;
+  },
+
   getFollowUpPrompt(_state: JobState, deps: StepDeps): string | undefined {
     if (!deps.request.adr) return undefined;
     return ADR_FOLLOWUP_PROMPT;

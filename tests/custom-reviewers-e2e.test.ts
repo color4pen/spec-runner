@@ -841,7 +841,9 @@ describe("TC-RG-01: regression-gate detects regression → code-fixer → approv
 
     const { client } = buildCustomMockClient({
       codeReviewVerdicts: ["approved"],
-      reviewerVerdicts: { security: ["approved"] },
+      // security gives needs-fix first (produces a fixable finding → non-empty ledger),
+      // then approved after code-fixer runs. Ledger must be non-empty for regression-gate to run.
+      reviewerVerdicts: { security: ["needs-fix", "approved"] },
       // gate: needs-fix (regression) on first call, approved on second
       regressionGateVerdicts: ["needs-fix", "approved"],
     });
@@ -889,7 +891,9 @@ describe("TC-RG-02: regression-gate decision-needed → escalation", () => {
 
     const { client } = buildCustomMockClient({
       codeReviewVerdicts: ["approved"],
-      reviewerVerdicts: { security: ["approved"] },
+      // security gives needs-fix first to populate the findings ledger,
+      // then approved — required so regression-gate skipWhen does not fire.
+      reviewerVerdicts: { security: ["needs-fix", "approved"] },
       regressionGateVerdicts: ["decision-needed"],
     });
     const githubClient = buildMockGithubClient();
@@ -925,7 +929,9 @@ describe("TC-RG-03: regression-gate exhaustion → awaiting-resume", () => {
 
     const { client } = buildCustomMockClient({
       codeReviewVerdicts: ["approved"],
-      reviewerVerdicts: { security: ["approved"] },
+      // security gives needs-fix first to populate the findings ledger,
+      // then approved — required so regression-gate skipWhen does not fire.
+      reviewerVerdicts: { security: ["needs-fix", "approved"] },
       // gate always returns needs-fix → should exhaust at REGRESSION_GATE_MAX_ITERATIONS (3)
       regressionGateVerdicts: ["needs-fix", "needs-fix", "needs-fix", "needs-fix"],
     });

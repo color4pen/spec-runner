@@ -2949,3 +2949,279 @@ describe("report_result follow-up — transient SDK exception triggers retry", (
     expect(typeof retryEvents[0]!["delayMs"]).toBe("number");
   });
 });
+
+// ---------------------------------------------------------------------------
+// T-01 (reduce-added-agent-turns): completion directive injection in first-turn prompt
+// ---------------------------------------------------------------------------
+
+describe("T-01: first-turn prompt contains completion directive when reportTool is set", () => {
+  it("prompt contains mcp__specrunner_report__report_result when reportTool is set", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    // Capture only the FIRST query call (subsequent calls are report_result retries)
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { if (!capturedParams) capturedParams = params; },
+    });
+
+    const { mockFn } = makeMockCreateMcpServerFn();
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: mockFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("t01-directive-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { reportTool: makeReportTool() },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedParams).toBeDefined();
+    expect(capturedParams!.prompt).toContain("mcp__specrunner_report__report_result");
+  });
+
+  it("prompt does NOT contain MCP directive when reportTool is absent", async () => {
+    let capturedParams: { prompt: string; options?: Record<string, unknown> } | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => { capturedParams = params; },
+    });
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("t01-no-directive-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedParams).toBeDefined();
+    expect(capturedParams!.prompt).not.toContain("mcp__specrunner_report__");
+  });
+
+  it("directive is injected only on the first turn (not follow-up retry turns)", async () => {
+    const promptCaptures: string[] = [];
+
+    // A query function that records each prompt and yields success immediately.
+    // Since the agent does not call report_result in this mock, the runner will
+    // issue up to DEFAULT_MAX_TOOL_RETRY_ATTEMPTS retry turns — each with a
+    // different "You did not call report_result" message that must NOT contain the directive.
+    const queryFn: QueryFn = async function* (params) {
+      promptCaptures.push(params.prompt as string);
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        session_id: "sess-t01-directive",
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+      } as unknown;
+    };
+
+    const { mockFn } = makeMockCreateMcpServerFn();
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn, _createMcpServerFn: mockFn });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("t01-firstturn-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "my task" },
+      session: {},
+      policy: { reportTool: makeReportTool() },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    // First-turn prompt contains the MCP tool directive
+    expect(promptCaptures.length).toBeGreaterThan(0);
+    expect(promptCaptures[0]).toContain("mcp__specrunner_report__report_result");
+    // Follow-up retry prompts do NOT contain the directive (it is first-turn only)
+    for (const retryPrompt of promptCaptures.slice(1)) {
+      expect(retryPrompt).not.toContain("mcp__specrunner_report__report_result");
+    }
+  });
+
+  it("report_result retry fallback is still present (agent-runner.ts has retry loop)", async () => {
+    // AC: existing retry loop must not be deleted
+    const filePath = path.resolve(__dirname, "../../../../src/adapter/claude-code/agent-runner.ts");
+    const content = await fs.readFile(filePath, "utf-8");
+    // The retry loop references DEFAULT_TOOL_RETRY
+    expect(content).toContain("DEFAULT_TOOL_RETRY");
+    // The retry loop increments followUpAttempts
+    expect(content).toContain("followUpAttempts++");
+  });
+
+  it("src/adapter/shared/prompt-builder.ts does not contain MCP tool names", async () => {
+    const filePath = path.resolve(__dirname, "../../../../src/adapter/shared/prompt-builder.ts");
+    const content = await fs.readFile(filePath, "utf-8");
+    expect(content).not.toContain("mcp__specrunner_report");
+    expect(content).not.toContain("mcp__");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06 (reduce-added-agent-turns): addedTurns per-type metrics
+// ---------------------------------------------------------------------------
+
+describe("T-06: addedTurns per-type metrics", () => {
+  it("addedTurns.reportRetry increments when agent fails to call report_result on first turn", async () => {
+    // Simulate: agent does NOT call report_result on first turn → retry fires.
+    // Tool is never called → retryPolicy.maxAttempts retries fire.
+    let _callCount = 0;
+    const queryFn: QueryFn = async function* (params) {
+      _callCount++;
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        session_id: "sess-addedturns-retry",
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+        prompt: params.prompt,
+      } as unknown;
+    };
+
+    const { mockFn } = makeMockCreateMcpServerFn();
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn, _createMcpServerFn: mockFn });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("t06-retry-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: {
+        reportTool: makeReportTool(),
+        // maxAttempts: 1 → exactly 1 retry after the main turn
+        toolReportRetry: { maxAttempts: 1, buildPrompt: () => "retry prompt" },
+      },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.addedTurns).toBeDefined();
+    expect(result.addedTurns!.reportRetry).toBe(1);
+    // Invariant: reportRetry + outputRepair === followUpAttempts
+    expect(result.addedTurns!.reportRetry + result.addedTurns!.outputRepair).toBe(result.followUpAttempts);
+  });
+
+  it("addedTurns.postWork increments for each postWorkPrompts turn", async () => {
+    // Simulate a step with two postWorkPrompts.
+    const queryFn: QueryFn = async function* (_params) {
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        session_id: "sess-postwork",
+        duration_ms: 100,
+        duration_api_ms: 80,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+      } as unknown;
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("t06-postwork-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: {
+        postWorkPrompts: ["follow-up prompt 1", "follow-up prompt 2"],
+      },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.addedTurns).toBeDefined();
+    expect(result.addedTurns!.postWork).toBe(2);
+    // postWork is NOT counted in followUpAttempts
+    expect(result.followUpAttempts).toBe(0);
+    // Invariant must still hold
+    expect(result.addedTurns!.reportRetry + result.addedTurns!.outputRepair).toBe(result.followUpAttempts);
+  });
+
+  it("addedTurns all zero when no retry / postWork / outputRepair occurs", async () => {
+    const queryFn = makeQueryFn();
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("t06-zero-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: {},
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.addedTurns).toBeDefined();
+    expect(result.addedTurns!.reportRetry).toBe(0);
+    expect(result.addedTurns!.postWork).toBe(0);
+    expect(result.addedTurns!.outputRepair).toBe(0);
+    // Invariant
+    expect(result.addedTurns!.reportRetry + result.addedTurns!.outputRepair).toBe(result.followUpAttempts);
+  });
+});

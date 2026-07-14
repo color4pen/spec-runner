@@ -99,6 +99,23 @@ export function createRegressionGateStep(): AgentStep {
     // maxTurns: ledger-based verification; no open-ended review. 20 matches custom-reviewer default.
     maxTurns: 20,
 
+    /**
+     * Skip gate (reduce-added-agent-turns T-04): when the findings ledger is empty,
+     * there are no fixable findings to verify. Skip the agent entirely and record
+     * verdict "skipped" via the existing commitSkipped path.
+     *
+     * Uses the same ledger computation as buildMessage to stay consistent:
+     * deriveImplReviewerChain(state) + collectFindingsLedger(state, chain).
+     */
+    skipWhen(state: JobState): string | null {
+      const reviewerChain = deriveImplReviewerChain(state);
+      const ledger = collectFindingsLedger(state, reviewerChain);
+      if (ledger.length === 0) {
+        return "findings ledger is empty — no fixable findings to verify";
+      }
+      return null;
+    },
+
     reads(_state: JobState, _deps: StepDeps): IoRef[] {
       // Ledger is embedded from state in buildMessage; no required file inputs.
       return [

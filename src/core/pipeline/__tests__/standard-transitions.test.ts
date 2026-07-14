@@ -48,3 +48,27 @@ describe("STANDARD_TRANSITIONS — code-review rows from buildReviewerChainTrans
     }
   });
 });
+
+// T-03 (reduce-added-agent-turns): adr-gen skipped transition
+describe("STANDARD_TRANSITIONS — adr-gen skipped → pr-create", () => {
+  it("adr-gen on 'skipped' transitions to pr-create", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === STEP_NAMES.ADR_GEN && t.on === "skipped" && t.to === STEP_NAMES.PR_CREATE,
+    );
+    expect(row).toBeDefined();
+  });
+
+  it("adr-gen on 'success' still transitions to pr-create (unchanged)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === STEP_NAMES.ADR_GEN && t.on === "success" && t.to === STEP_NAMES.PR_CREATE,
+    );
+    expect(row).toBeDefined();
+  });
+
+  it("adr-gen on 'error' still escalates (unchanged)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === STEP_NAMES.ADR_GEN && t.on === "error" && t.to === "escalate",
+    );
+    expect(row).toBeDefined();
+  });
+});

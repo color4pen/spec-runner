@@ -91,6 +91,13 @@ export interface StepResultInput {
    * Added in codex-completion-contract-injection.
    */
   completionReportDiagnostics?: CompletionReportDiagnostic[];
+  /**
+   * Added-turn metrics broken down by type (local runtime only).
+   * reportRetry + outputRepair === followUpAttempts (invariant).
+   * postWork is NOT counted in followUpAttempts.
+   * Added in reduce-added-agent-turns.
+   */
+  addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
 }
 
 /**
@@ -121,6 +128,7 @@ export function pushStepResult(
       ...(partial.transientRetryAttempts !== undefined ? { transientRetryAttempts: partial.transientRetryAttempts } : {}),
       ...(partial.skipReason !== undefined ? { skipReason: partial.skipReason } : {}),
       ...(partial.completionReportDiagnostics !== undefined ? { completionReportDiagnostics: partial.completionReportDiagnostics } : {}),
+      ...(partial.addedTurns !== undefined ? { addedTurns: partial.addedTurns } : {}),
     },
     startedAt: partial.startedAt ?? now,
     endedAt: partial.completedAt ?? now,

@@ -197,6 +197,20 @@ export interface AgentRunResult {
    * Added in codex-completion-contract-injection.
    */
   completionReportDiagnostics?: CompletionReportDiagnostic[];
+  /**
+   * Added-turn metrics broken down by type.
+   * - reportRetry: turns spent retrying the report_result tool call (the agent did not call it on
+   *   the first turn, so the adapter prompted again up to policy.maxAttempts times).
+   * - postWork: turns spent on postWorkPrompts (same-session follow-up prompts run after the main
+   *   work turn; NOT included in followUpAttempts).
+   * - outputRepair: turns spent repairing output-contract violations detected by outputVerification.
+   *
+   * Invariant: addedTurns.reportRetry + addedTurns.outputRepair === followUpAttempts.
+   *
+   * Only populated by ClaudeCodeRunner. ManagedAgentRunner and CodexAgentRunner leave it undefined.
+   * Added in reduce-added-agent-turns.
+   */
+  addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
 }
 
 /**
@@ -214,3 +228,18 @@ export interface AgentRunResult {
 export interface AgentRunner {
   run(context: AgentRunContext): Promise<AgentRunResult>;
 }
+
+/**
+ * Zero-initialised addedTurns counter for use by AgentRunner adapters.
+ *
+ * Adapters that track per-type added turns (ClaudeCodeRunner) should start
+ * from this value so they always return a structurally complete object even
+ * when no extra turns were consumed.
+ *
+ * Added in reduce-added-agent-turns.
+ */
+export const ADDED_TURNS_ZERO: Readonly<Required<NonNullable<AgentRunResult["addedTurns"]>>> = Object.freeze({
+  reportRetry: 0,
+  postWork: 0,
+  outputRepair: 0,
+});
