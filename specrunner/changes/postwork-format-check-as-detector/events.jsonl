@@ -34,3 +34,16 @@
 {"type":"transition","ts":"2026-07-14T10:23:53.062Z","step":"verification","status":"warning","message":"verification iteration 1 completed with verdict: failed"}
 {"type":"transition","ts":"2026-07-14T10:23:53.063Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
 {"type":"transition","ts":"2026-07-14T10:23:53.067Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-07-14T10:27:33.026Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"34b62db0-009e-4932-a310-7774394d43e0","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"reason":"Added src/core/port/output-contract.ts to the coverage exclude list in .specrunner/config.json. The file is type-only (all exports are TypeScript type/interface declarations, no runtime values), so it never appears in lcov. This is consistent with the existing treatment of runtime-strategy.ts and other type-only port files already in the exclude list.","status":"success"},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-07-14T10:23:53.136Z","endedAt":"2026-07-14T10:27:31.381Z"}
+{"type":"lineage","step":"build-fixer","ts":"2026-07-14T10:27:31.381Z","outputs":[{"path":"specrunner/changes/postwork-format-check-as-detector","hash":null}],"inputs":[{"path":"specrunner/changes/postwork-format-check-as-detector/verification-result.md","hash":"sha256:5ce8fce2a0a98c80967fc17273e8f586ce528c6ea562a2f6f1b7216b8ec636cb"}]}
+{"type":"transition","ts":"2026-07-14T10:27:33.036Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-07-14T10:27:33.041Z","step":"verification","status":"started","message":"verification iteration 2 started"}
+{"type":"transition","ts":"2026-07-14T10:27:33.043Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-07-14T10:28:27.269Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/postwork-format-check-as-detector/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-14T10:27:33.047Z","endedAt":"2026-07-14T10:28:27.268Z"}
+{"type":"lineage","step":"verification","ts":"2026-07-14T10:28:27.268Z","outputs":[{"path":"specrunner/changes/postwork-format-check-as-detector/verification-result.md","hash":"sha256:3f653fa564c41e56a0ddd963225b0dc65c1b3034cd4ce61b53e5ec09d2636c29"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-14T10:28:27.277Z","step":"verification","status":"ok","message":"verification iteration 2 completed with verdict: passed"}
+{"type":"transition","ts":"2026-07-14T10:28:27.278Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-07-14T10:28:27.281Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-14T10:28:27.283Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
