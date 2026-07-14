@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "13eaff15-1f57-4713-9ff6-40ff72b625b8",
   "createdAt": "2026-07-14T08:02:28.700Z",
-  "updatedAt": "2026-07-14T08:40:38.475Z",
+  "updatedAt": "2026-07-14T08:41:09.998Z",
   "request": {
     "title": "code-review の post-work self-check が捕捉されない report_result 修正を指示する不整合を解消する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/postwork-no-tool-fix-13eaff15",
   "error": null,
@@ -76,7 +76,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 37,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -87,7 +87,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
