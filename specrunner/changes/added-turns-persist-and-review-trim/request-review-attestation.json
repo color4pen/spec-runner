@@ -1,0 +1,22 @@
+{
+  "requestHash": "sha256:b1b08a1102c505dd6992ae01c041acf573cddc9ed971dd90f562bc3e4a694939",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/state/schema/types.ts:165 — addedTurns?: { reportRetry: number; postWork: number; outputRepair: number } in StepOutcome",
+    "src/store/event-journal.ts:36-50 — StepAttemptRecord.outcome has no addedTurns field",
+    "src/store/event-journal.ts:350-358 — stepRunToRecord does not write addedTurns",
+    "src/store/event-journal.ts:278-286 — fold does not restore addedTurns",
+    "src/store/event-journal.ts:332 — JSON.stringify(record) append-only journal",
+    "src/adapter/claude-code/agent-runner.ts:763-776 — post-work failure early-return includes addedTurns with unincremented postWork",
+    "src/adapter/claude-code/agent-runner.ts:779 — postWork++ is after the early-return",
+    "src/adapter/claude-code/agent-runner.ts:771 — early-return includes addedTurns: { reportRetry, postWork, outputRepair }",
+    "src/adapter/claude-code/agent-runner.ts:908 — success return includes addedTurns: { reportRetry, postWork, outputRepair }",
+    "src/core/port/agent-runner.ts:208 — invariant: addedTurns.reportRetry + addedTurns.outputRepair === followUpAttempts",
+    "src/core/step/code-review.ts:139-158 — content-format outputContract checks separator row and 7-column header",
+    "src/core/step/code-review.ts:161-175 — followUpPrompt exists (Fix column and severity self-check)",
+    "src/core/step/code-review.ts:86 — main turn receives severity definitions via system prompt",
+    "src/core/step/report-tool.ts:95 — severity union([critical, high, medium, low])",
+    "src/core/step/judge-verdict.ts:38 — critical|high → needs-fix",
+    "src/core/step/code-fixer.ts:323 — .md fallback only for legacy resume jobs without toolResult"
+  ]
+}
