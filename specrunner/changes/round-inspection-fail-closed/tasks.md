@@ -27,7 +27,7 @@
 ## T-02: local 実装を DU に追随させ、git 失敗を検査不能にする（D2）
 
 - [x] `src/core/runtime/local.ts:845` `listWorktreeChanges`:
-  - `git status --porcelain -z --no-renames` exit 0 → 従来の NUL パース（3 文字未満 skip、`slice(3)`）で `paths` を組み、`{kind:"success", paths}` を返す。
+  - `git status --porcelain -z --no-renames` exit 0 → 従来の NUL パース（`part.length < 4` = 4 文字未満のエントリを skip、`slice(3)` で path を取り出す）で `paths` を組み、`{kind:"success", paths}` を返す。
   - exit 非ゼロ → `{kind:"unavailable", reason}`（reason に exit code を含める。例: `git status exited with code ${result.exitCode}`）。
   - catch（spawn 例外・その他例外）→ `{kind:"unavailable", reason}`（reason にエラー概要を含める）。
   - パースロジック自体は不変。戻り値の wrap のみ変える。
