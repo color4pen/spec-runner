@@ -19,7 +19,7 @@ import {
 } from "../../../src/core/pipeline/registry.js";
 
 const REGISTRY_PATH   = path.resolve(process.cwd(), "src/core/pipeline/registry.ts");
-const SCHEMA_PATH     = path.resolve(process.cwd(), "src/state/schema.ts");
+const SCHEMA_PATH     = path.resolve(process.cwd(), "src/state/schema/types.ts");
 const DOMAIN_MODEL_PATH = path.resolve(process.cwd(), "architecture/domain-model.md");
 
 // ---------------------------------------------------------------------------
