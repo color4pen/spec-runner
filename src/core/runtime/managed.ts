@@ -23,7 +23,7 @@ import { createTransportAuth } from "../../git/transport-auth.js";
 import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
 import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
 import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, recopyDraftToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
-import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot } from "../port/runtime-strategy.js";
+import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels } from "../step/output-verify.js";
@@ -550,15 +550,17 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   }
 
   /**
-   * No local worktree available — always returns [].
+   * No local worktree available — always returns success with empty paths.
    * Parallel custom reviewer managed support is a known Non-Goal; no local git
-   * state means the coordinator cannot detect worktree changes.
-   * Consistent with the fail-safe pattern of listChangedFiles (managed = []).
+   * state means the coordinator cannot detect worktree changes. Returning
+   * success:[] (not unavailable) reflects the structural fact that managed
+   * members do not write to a local worktree — worktree absence is not a
+   * failure, it is the known design constraint for managed runtime.
    *
-   * D3 (round-owned-git-effects): fail-safe for managed runtime.
+   * D3 (round-owned-git-effects): managed parallel is Non-Goal; worktree is absent by design.
    */
-  async listWorktreeChanges(_cwd: string): Promise<string[]> {
-    return [];
+  async listWorktreeChanges(_cwd: string): Promise<WorktreeInspectionResult> {
+    return { kind: "success", paths: [] };
   }
 
   /**

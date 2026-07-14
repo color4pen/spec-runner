@@ -132,17 +132,21 @@ function makeFakeExecutor(): {
 
 /**
  * Build a runtimeStrategy fake with spied listWorktreeChanges and commitRoundArtifacts.
+ * worktreeChanges: string[] → listWorktreeChanges returns {kind:"success", paths}
+ * inspectionResult: WorktreeInspectionResult → listWorktreeChanges returns the given DU directly
  */
 function makeRuntimeStrategy(opts: {
-  worktreeChanges: string[];
+  worktreeChanges?: string[];
+  inspectionResult?: { kind: "success"; paths: string[] } | { kind: "unavailable"; reason: string };
 }) {
+  const inspectionResult = opts.inspectionResult ?? { kind: "success" as const, paths: opts.worktreeChanges ?? [] };
   return {
     captureHeadSha: vi.fn(async () => "abc123"),
     listChangedFiles: vi.fn(async () => [] as string[]),
     finalizeStepArtifacts: vi.fn(async () => {}),
     validateStepInputs: vi.fn(async () => {}),
     validateStepOutputs: vi.fn(async () => ({ violations: [] })),
-    listWorktreeChanges: vi.fn(async (_cwd: string) => opts.worktreeChanges),
+    listWorktreeChanges: vi.fn(async (_cwd: string) => inspectionResult),
     commitRoundArtifacts: vi.fn(
       async (
         _stagePaths: string[],
@@ -440,5 +444,163 @@ describe("ParallelReviewRound git effects — fake without listWorktreeChanges s
 
     // Round should complete as approved (git ops skipped, no halt)
     expect(result.outcome).toBe("approved");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scenario 7: listWorktreeChanges returns unavailable → escalation (fail-closed)
+// ---------------------------------------------------------------------------
+
+describe("ParallelReviewRound git effects — inspection unavailable → fail-closed escalation", () => {
+  it("outcome is escalation when inspection returns unavailable", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({
+      inspectionResult: { kind: "unavailable", reason: "git status exited with code 128" },
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(result.outcome).toBe("escalation");
+  });
+
+  it("state.error.code is ROUND_INSPECTION_UNAVAILABLE when inspection unavailable", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({
+      inspectionResult: { kind: "unavailable", reason: "spawn ENOENT" },
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(result.state.error).not.toBeNull();
+    expect(result.state.error?.code).toBe("ROUND_INSPECTION_UNAVAILABLE");
+    expect(result.state.error?.message).toContain("spawn ENOENT");
+  });
+
+  it("commitRoundArtifacts is NOT called when inspection is unavailable", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({
+      inspectionResult: { kind: "unavailable", reason: "git status exited with code 1" },
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(runtimeStrategy.commitRoundArtifacts).not.toHaveBeenCalled();
+  });
+
+  it("synthetic coordinator StepRun has escalation verdict and ROUND_INSPECTION_UNAVAILABLE error", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({
+      inspectionResult: { kind: "unavailable", reason: "git not found" },
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    const coordinatorRuns = result.state.steps?.[COORDINATOR] ?? [];
+    const lastRun = coordinatorRuns[coordinatorRuns.length - 1];
+    expect(lastRun?.outcome.verdict).toBe("escalation");
+    expect(lastRun?.outcome.error?.code).toBe("ROUND_INSPECTION_UNAVAILABLE");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scenario 8: inspection escalation keeps members pending (fail-closed on resume)
+// ---------------------------------------------------------------------------
+// Regression guard for the resume bypass: when the round escalates because the
+// worktree could not be inspected (unavailable) or produced undeclared changes
+// (offending), member reviewer statuses MUST NOT be persisted as approved. They
+// stay pending so resume re-runs the fan-out and re-inspects. Otherwise
+// selectPendingMembers would return empty on resume and the all-approved fast
+// path would finalize the round as approved without ever passing inspection.
+
+function memberStatus(state: JobState, name: string): string | undefined {
+  return state.reviewerStatuses?.find((s) => s.name === name)?.status;
+}
+
+describe("ParallelReviewRound git effects — inspection escalation keeps members pending", () => {
+  it("member statuses stay pending (not approved) when inspection is unavailable", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({
+      inspectionResult: { kind: "unavailable", reason: "git status exited with code 128" },
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    // Members approved in-round, but the worktree could not be inspected → not approved.
+    expect(result.outcome).toBe("escalation");
+    expect(memberStatus(result.state, MEMBER_A)).toBe("pending");
+    expect(memberStatus(result.state, MEMBER_B)).toBe("pending");
+  });
+
+  it("member statuses stay pending (not approved) when there are undeclared changes", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({
+      worktreeChanges: [DECLARED_A, UNDECLARED],
+    });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(result.outcome).toBe("escalation");
+    expect(memberStatus(result.state, MEMBER_A)).toBe("pending");
+    expect(memberStatus(result.state, MEMBER_B)).toBe("pending");
+  });
+
+  it("member statuses ARE approved when inspection succeeds (positive control)", async () => {
+    const runtimeStrategy = makeRuntimeStrategy({ worktreeChanges: [DECLARED_A, DECLARED_B] });
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(result.outcome).toBe("approved");
+    expect(memberStatus(result.state, MEMBER_A)).toBe("approved");
+    expect(memberStatus(result.state, MEMBER_B)).toBe("approved");
   });
 });

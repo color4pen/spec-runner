@@ -54,6 +54,17 @@ export interface RequiredInput {
 }
 
 /**
+ * Discriminated union returned by listWorktreeChanges.
+ *
+ * - success:     git status ran cleanly; paths contains worktree-relative changed files.
+ * - unavailable: git status could not be run (non-zero exit, spawn error, etc.);
+ *               reason carries exit code or error summary. Never throws — uses DU instead.
+ */
+export type WorktreeInspectionResult =
+  | { kind: "success"; paths: string[] }
+  | { kind: "unavailable"; reason: string };
+
+/**
  * Port DTO for a finding reference to be verified for existence.
  * Used by verifyFindingRefs to check that referenced files/lines actually exist.
  */
@@ -409,19 +420,24 @@ export interface RuntimeStrategy {
    * were changed by the round members (who did not commit under roundOwnsGitEffects).
    *
    * Contract:
-   * - Never throws — returns [] on any error (git unavailable, non-zero exit, etc.).
-   * - Returns worktree-relative paths (e.g. "specrunner/changes/foo/spec-result-001.md").
-   * - Includes added, modified, and deleted files (including untracked new files).
+   * - Never throws — returns a WorktreeInspectionResult discriminated union instead.
+   * - success: git status ran cleanly; paths contains worktree-relative changed files
+   *   (e.g. "specrunner/changes/foo/spec-result-001.md"), including added, modified,
+   *   deleted, and untracked files.
+   * - unavailable: git status could not be run (non-zero exit, spawn error, or any
+   *   other exception); reason carries exit code or error summary.
    *
-   * - local:   `git status --porcelain -z --no-renames` in cwd; parses NUL-separated output.
-   * - managed: returns [] (no local worktree; known Non-Goal for managed runtime).
+   * - local:   `git status --porcelain -z --no-renames` in cwd; exit 0 → success,
+   *            non-zero exit / spawn exception → unavailable.
+   * - managed: always returns success with empty paths (no local worktree;
+   *            known Non-Goal for managed runtime — worktree absence is not a failure).
    *
    * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
    * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
    *
    * @param cwd - Working directory (the worktree in which to run git status).
    */
-  listWorktreeChanges?(cwd: string): Promise<string[]>;
+  listWorktreeChanges?(cwd: string): Promise<WorktreeInspectionResult>;
 
   /**
    * Stage only the declared paths and commit+push (scoped staging for coordinator rounds).
@@ -531,7 +547,7 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
   canDeriveChangedFiles(): boolean;
   assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>;
   snapshotMainCheckoutGuard(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
-  listWorktreeChanges(cwd: string): Promise<string[]>;
+  listWorktreeChanges(cwd: string): Promise<WorktreeInspectionResult>;
   commitRoundArtifacts(
     stagePaths: string[],
     cwd: string,

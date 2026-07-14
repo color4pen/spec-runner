@@ -59,31 +59,37 @@ const CWD = "/tmp/fake-worktree";
 // ---------------------------------------------------------------------------
 
 describe("LocalRuntime.listWorktreeChanges — git fails", () => {
-  it("git status exits non-zero → returns []", async () => {
+  it("git status exits non-zero → returns {kind:'unavailable'} with exit code in reason", async () => {
     const runtime = makeRuntime(makeUtilSpawnFn(1, ""));
     const result = await runtime.listWorktreeChanges(CWD);
-    expect(result).toEqual([]);
+    expect(result.kind).toBe("unavailable");
+    if (result.kind === "unavailable") {
+      expect(result.reason).toContain("1");
+    }
   });
 
-  it("spawnFn throws → catch → returns []", async () => {
+  it("spawnFn throws → catch → returns {kind:'unavailable'} with error message in reason", async () => {
     const runtime = makeRuntime(makeThrowingUtilSpawnFn());
     const result = await runtime.listWorktreeChanges(CWD);
-    expect(result).toEqual([]);
+    expect(result.kind).toBe("unavailable");
+    if (result.kind === "unavailable") {
+      expect(result.reason).toContain("spawn ENOENT");
+    }
   });
 });
 
 describe("LocalRuntime.listWorktreeChanges — git succeeds", () => {
-  it("empty output → returns []", async () => {
+  it("empty output → returns {kind:'success', paths:[]}", async () => {
     const runtime = makeRuntime(makeUtilSpawnFn(0, ""));
     const result = await runtime.listWorktreeChanges(CWD);
-    expect(result).toEqual([]);
+    expect(result).toEqual({ kind: "success", paths: [] });
   });
 
   it("single modified file → parsed correctly", async () => {
     // NUL-separated: " M path/to/file.ts\0"
     const runtime = makeRuntime(makeUtilSpawnFn(0, " M path/to/file.ts\0"));
     const result = await runtime.listWorktreeChanges(CWD);
-    expect(result).toEqual(["path/to/file.ts"]);
+    expect(result).toEqual({ kind: "success", paths: ["path/to/file.ts"] });
   });
 
   it("multiple entries → all paths returned", async () => {
@@ -93,9 +99,12 @@ describe("LocalRuntime.listWorktreeChanges — git succeeds", () => {
     ].join("\0") + "\0";
     const runtime = makeRuntime(makeUtilSpawnFn(0, stdout));
     const result = await runtime.listWorktreeChanges(CWD);
-    expect(result).toContain("specrunner/changes/x/result.md");
-    expect(result).toContain("untracked.ts");
-    expect(result).toHaveLength(2);
+    expect(result.kind).toBe("success");
+    if (result.kind === "success") {
+      expect(result.paths).toContain("specrunner/changes/x/result.md");
+      expect(result.paths).toContain("untracked.ts");
+      expect(result.paths).toHaveLength(2);
+    }
   });
 
   it("entry shorter than 4 chars → skipped", async () => {
@@ -103,14 +112,14 @@ describe("LocalRuntime.listWorktreeChanges — git succeeds", () => {
     const stdout = "M\0 M src/foo.ts\0";
     const runtime = makeRuntime(makeUtilSpawnFn(0, stdout));
     const result = await runtime.listWorktreeChanges(CWD);
-    expect(result).toEqual(["src/foo.ts"]);
+    expect(result).toEqual({ kind: "success", paths: ["src/foo.ts"] });
   });
 
   it("deleted file entry → path returned", async () => {
     const stdout = "D  specrunner/changes/x/old.md\0";
     const runtime = makeRuntime(makeUtilSpawnFn(0, stdout));
     const result = await runtime.listWorktreeChanges(CWD);
-    expect(result).toEqual(["specrunner/changes/x/old.md"]);
+    expect(result).toEqual({ kind: "success", paths: ["specrunner/changes/x/old.md"] });
   });
 });
 

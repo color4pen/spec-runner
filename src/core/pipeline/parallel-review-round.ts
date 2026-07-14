@@ -209,8 +209,9 @@ export class ParallelReviewRound {
         }
       }
 
-      // --- 7. Apply round results and compute aggregate ---
-      statuses = applyRoundResults(statuses, memberVerdicts, headSha);
+      // --- 7. Compute aggregate verdict from member results ---
+      // Member statuses are applied AFTER git-effects inspection (step 7c) so that a
+      // fail-closed inspection escalation leaves members pending rather than approved.
       aggregateVerdictResult = aggregateVerdict([...memberVerdicts.values()]);
 
       // --- 7b. Round-owned git effects: detect non-declared changes, then stage+commit ---
@@ -219,6 +220,10 @@ export class ParallelReviewRound {
       // declared outputs union. Undeclared changes (excluding pipeline-managed paths) halt
       // the round; declared changes are committed via scoped staging.
       // roundError is passed to commitRound (not applied to state directly).
+      // inspectionEscalated: true when the round is halted by a fail-closed inspection
+      // outcome (git status unavailable, or undeclared changes). Consumed at step 7c to
+      // keep members pending so resume re-runs the fan-out and re-inspects.
+      let inspectionEscalated = false;
       if (deps.runtimeStrategy?.listWorktreeChanges) {
         const branch = state.branch ?? "";
         const defaultSleepFn = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -228,35 +233,63 @@ export class ParallelReviewRound {
           events: this.events,
         };
 
-        const changed = await deps.runtimeStrategy.listWorktreeChanges(cwd);
-        const { toStage, offending } = partitionRoundChanges({ changed, declared, slug: deps.slug });
+        const inspection = await deps.runtimeStrategy.listWorktreeChanges(cwd);
 
-        if (offending.length > 0) {
-          // Non-declared changes detected — halt the entire round.
+        if (inspection.kind === "unavailable") {
+          // Worktree inspection failed — fail-closed: do not approve an uninspected worktree.
           aggregateVerdictResult = "escalation";
+          inspectionEscalated = true;
           roundError = {
-            code: "ROUND_NONDECLARED_CHANGE",
-            message: `Round produced undeclared file changes: ${offending.join(", ")}`,
-            hint: "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration.",
+            code: "ROUND_INSPECTION_UNAVAILABLE",
+            message: `Worktree inspection unavailable: ${inspection.reason}`,
+            hint: "Check that git is available in the worktree and that the working directory is a valid git repository. Retry the round after resolving the git issue.",
           };
           logPipelineDiag(
             "pipeline:coordinator:round-halt",
-            `coordinator=${coordinatorName}, offending=[${offending.join(",")}]`,
+            `coordinator=${coordinatorName}, reason=${inspection.reason}`,
           );
-        } else if (toStage.length > 0) {
-          // All changes are within declared outputs — scoped stage + commit + push.
-          await deps.runtimeStrategy.commitRoundArtifacts?.(
-            toStage,
-            cwd,
-            branch,
-            coordinatorName,
-            deps.slug,
-            infra,
-          );
+        } else {
+          // inspection.kind === "success"
+          const { toStage, offending } = partitionRoundChanges({ changed: inspection.paths, declared, slug: deps.slug });
+
+          if (offending.length > 0) {
+            // Non-declared changes detected — halt the entire round.
+            aggregateVerdictResult = "escalation";
+            inspectionEscalated = true;
+            roundError = {
+              code: "ROUND_NONDECLARED_CHANGE",
+              message: `Round produced undeclared file changes: ${offending.join(", ")}`,
+              hint: "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration.",
+            };
+            logPipelineDiag(
+              "pipeline:coordinator:round-halt",
+              `coordinator=${coordinatorName}, offending=[${offending.join(",")}]`,
+            );
+          } else if (toStage.length > 0) {
+            // All changes are within declared outputs — scoped stage + commit + push.
+            await deps.runtimeStrategy.commitRoundArtifacts?.(
+              toStage,
+              cwd,
+              branch,
+              coordinatorName,
+              deps.slug,
+              infra,
+            );
+          }
+          // toStage empty and no offending → nothing changed in declared paths; no-op.
         }
-        // toStage empty and no offending → nothing changed in declared paths; no-op.
       }
       // listWorktreeChanges absent (test fake without the method) → skip detection + commit.
+
+      // --- 7c. Apply member results (fail-closed) ---
+      // Apply approved/skipped member statuses ONLY if the round was not halted by a
+      // fail-closed inspection escalation. On inspection escalation, members stay pending
+      // (as selected at step 3) so resume re-runs the fan-out and re-inspects — a round
+      // must never finalize approved without a successful worktree inspection. This also
+      // closes the resume bypass for ROUND_NONDECLARED_CHANGE.
+      if (!inspectionEscalated) {
+        statuses = applyRoundResults(statuses, memberVerdicts, headSha);
+      }
     }
 
     // --- 8. Build synthetic coordinator StepRun ---
