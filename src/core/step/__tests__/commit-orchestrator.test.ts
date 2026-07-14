@@ -206,13 +206,12 @@ describe("CommitOrchestrator — commitSuccess (TC-015-B)", () => {
 
     await orchestrator.commitSuccess(step, state, deps, result);
 
-    // persist is called twice (projection persist + branch/PR patch persist)
-    expect(store.persist).toHaveBeenCalledTimes(2);
-    // appendHistory is NOT called for verdict entry (pure appendHistoryEntry instead)
-    expect(store.appendHistory).not.toHaveBeenCalled();
-    // verdict entry IS in the first persisted state's history
-    const firstPersistedState = store.persist.mock.calls[0]?.[0] as { history: Array<{ step: string }> };
-    expect(firstPersistedState?.history.some((e) => e.step === "spec-review-verdict")).toBe(true);
+    // persist is called
+    expect(store.persist).toHaveBeenCalledOnce();
+    // appendHistory called for verdict entry
+    expect(store.appendHistory).toHaveBeenCalledOnce();
+    const histEntry = store.appendHistory.mock.calls[0]?.[1] as Record<string, string>;
+    expect(histEntry.step).toBe("spec-review-verdict");
     // event emitted
     expect(emitted).toHaveLength(1);
     expect(emitted[0]?.step).toBe("spec-review");
@@ -338,13 +337,10 @@ describe("CommitOrchestrator — commitSkipped (TC-015-E)", () => {
     await orchestrator.commitSkipped(step, state, "activation-condition-not-met");
 
     expect(store.persist).toHaveBeenCalledOnce();
-    // appendHistory is NOT called for skipped entry (pure appendHistoryEntry instead)
-    expect(store.appendHistory).not.toHaveBeenCalled();
-    // skipped entry IS in the persisted state's history
-    const persistedState = store.persist.mock.calls[0]?.[0] as { history: Array<{ step: string; status: string }> };
-    const skippedEntry = persistedState?.history.find((e) => e.step === "verification-skipped");
-    expect(skippedEntry).toBeDefined();
-    expect(skippedEntry?.status).toBe("warning");
+    expect(store.appendHistory).toHaveBeenCalledOnce();
+    const histEntry = store.appendHistory.mock.calls[0]?.[1] as Record<string, string>;
+    expect(histEntry.step).toBe("verification-skipped");
+    expect(histEntry.status).toBe("warning");
 
     expect(emitted).toHaveLength(1);
     expect(emitted[0]?.verdict).toBe("skipped");
@@ -367,8 +363,7 @@ describe("CommitOrchestrator — apply dispatch (TC-015-F)", () => {
 
     const out = await orchestrator.apply(step, state, deps, result);
 
-    // apply dispatches to commitSuccess which calls persist twice
-    expect(store.persist).toHaveBeenCalledTimes(2);
+    expect(store.persist).toHaveBeenCalledOnce();
     expect(out).toMatchObject({ jobId: "co-test-job" });
   });
 

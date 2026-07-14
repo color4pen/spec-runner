@@ -5,11 +5,11 @@
 `src/core/step/commit-orchestrator.ts` contains `CommitOrchestrator`, the single-writer for sequential and parallel round step commits. The parallel round path (`commitRound`) inlines duplicates of the sequential projection logic from `commitSuccess` / `commitSkipped`, annotated with "mirrors commit\*" / "matches commit\*" comments at eight locations.
 
 The projection logic falls into two categories:
-1. **In-memory projection**: `pushStepResult` + history `appendHistoryEntry` — pure state fold, no I/O.
+1. **In-memory projection**: `pushStepResult` (the success/skip field mapping) — pure state fold, no I/O. The `{step}-verdict` / `{step}-skipped` history entries are produced by shared pure builders and applied by each path via its own write (durable `store.appendHistory` for sequential, in-memory `appendHistoryEntry` for round).
 2. **Post-persist effects**: usage `appendInvocation` + lineage `appendLineage` + `verdict:parsed` emit — best-effort async I/O, called after `store.persist`.
 
 Structural differences that must be preserved:
-- Sequential: two `store.persist` calls per success (one after history, one after branch/pullRequest reflection); one per skip.
+- Sequential: `store.appendHistory({step}-verdict)` then `store.persist` (after branch/pullRequest reflection) per success; `store.appendHistory({step}-skipped)` then `store.persist` per skip — identical to the pre-refactor call pattern.
 - Round: single `store.persist` for all members; post-persist effects batched per member after the one persist.
 - Round only: `{step}-started` history per member (sequential covered by `begin()`).
 - Round halt: `recordFailedStepResult` only — no `store.fail` / `transitionJob`.
@@ -35,7 +35,7 @@ Structural differences that must be preserved:
 
 ### D1: Module-level pure functions for projectors (not class methods)
 
-`projectSuccess` and `projectSkip` are module-level, non-exported functions in `commit-orchestrator.ts`. They take `(state, step, result/skipReason, findingsPath, now, startedAt)` as plain data and return a new `JobState` — no `store` calls, no `await`, no `this`.
+`projectSuccess` and `projectSkip` are module-level, non-exported functions in `commit-orchestrator.ts`. They apply only `pushStepResult` (the success/skip field mapping) and return a new `JobState` — no `store` calls, no `await`, no `this`. The shared history entries are produced by the pure builders `verdictHistoryEntry` / `skipHistoryEntry` (also module-level, non-exported), applied by each caller.
 
 **Rationale**: pure functions are verifiable without mocking; same-file placement avoids creating a new module for a refactoring-only change.
 
@@ -65,16 +65,16 @@ For skipped members, only `verdict:parsed` emit is needed — kept inline (one l
 - Module-level function with `events` parameter — workable but slightly more verbose at each call site.
 - Inline in both callers — status quo; this is what we are replacing.
 
-### D4: Replace `store.appendHistory` with `appendHistoryEntry` + `store.persist` in `commitSuccess`
+### D4: Keep `store.appendHistory` in the sequential path; share the history entry via a pure builder
 
-`store.appendHistory(state, entry)` is semantically `appendHistoryEntry(state, entry)` (pure) + `store.persist(updated)`. After refactoring, `commitSuccess` calls `projectSuccess` (which uses `appendHistoryEntry` internally) then `store.persist(s)` — equivalent sequence, same persist count of 2.
+The sequential `commitSuccess` / `commitSkipped` keep using `store.appendHistory` to durably record the `{step}-verdict` / `{step}-skipped` entry, preserving the exact pre-refactor store-call pattern (`store.appendHistory` then `store.persist`; persist count unchanged). Sharing is achieved by extracting the *entry content* into pure builders (`verdictHistoryEntry` / `skipHistoryEntry`) used by both the sequential `store.appendHistory` call and the round in-memory `appendHistoryEntry` fold — so `pushStepResult` (projector) and the history-entry content (builder) are both shared without altering persist semantics.
 
 Usage `appendInvocation` moves from before the final `store.persist` to after it (inside `applySuccessPostPersistEffects`). Since usage is explicitly best-effort (failure swallowed), this reordering has no observable effect.
 
-**Rationale**: the pure projector uses `appendHistoryEntry` directly; the caller owns persist timing, consistent with the contract.
+**Rationale**: keeping `store.appendHistory` makes the sequential observable behavior byte-identical to the pre-refactor path — no persist-count change, no existing test-expectation changes — while the full projection (field mapping + history entry + post-persist effects) is still shared.
 
 **Alternatives considered**:
-- Keep `store.appendHistory` in `commitSuccess` and call projector only partially — rejected: would leave the projector covering only `pushStepResult`, not the verdict history, making the "shared" claim weaker.
+- Fold the history into the projector and replace `store.appendHistory` with `appendHistoryEntry` + `store.persist` — rejected: changes the sequential persist-call pattern (surfaced as a persist-count change in existing tests) for no behavioral benefit.
 
 ### D5: Structural gate tests in `core-invariants.test.ts`
 
@@ -92,8 +92,8 @@ Four new tests are added to the existing architecture test file (same `grepE` / 
 
 ## Risks / Trade-offs
 
-[Risk] `store.appendHistory` replaced by `appendHistoryEntry` + `store.persist` — different atomicity surface.
-→ Mitigation: `store.appendHistory` itself does `appendHistoryEntry` + `persist` with no additional transaction semantics. The refactored two-operation sequence is identical. No new failure modes introduced.
+[Risk] History-entry content duplicated between the sequential `store.appendHistory` call and the round `appendHistoryEntry` fold.
+→ Mitigation: the entry content is produced by a single shared builder (`verdictHistoryEntry` / `skipHistoryEntry`); only the write mechanism (durable vs in-memory) differs per path — the intended structural difference between sequential and round.
 
 [Risk] Usage `appendInvocation` reordered from before final persist to after in `commitSuccess`.
 → Mitigation: usage is already wrapped in `try { ... } catch {}` (best-effort). The ordering within the "post-first-persist" window has no observable effect.

@@ -4,31 +4,31 @@
 
 ### Requirement: Shared projectors unify success/skip in-memory projection
 
-`projectSuccess` and `projectSkip` SHALL be non-exported, synchronous, module-level functions in `commit-orchestrator.ts`. They SHALL accept job state and step result inputs, perform in-memory state transformation using `pushStepResult` and `appendHistoryEntry`, and return the new state — with no store calls, no async operations, and no side effects.
+`projectSuccess` and `projectSkip` SHALL be non-exported, synchronous, module-level functions in `commit-orchestrator.ts`. They SHALL accept job state and step result inputs, perform the in-memory step-result projection using `pushStepResult`, and return the new state — with no store calls, no async operations, and no side effects. The `{step}-verdict` / `{step}-skipped` history entries SHALL be produced by shared non-exported pure builders (`verdictHistoryEntry` / `skipHistoryEntry`) and applied by each caller.
 
 #### Scenario: commitSuccess uses projectSuccess projector
 
 **Given** `commitSuccess` is called with a successful step result
 **When** the in-memory state projection runs
-**Then** `projectSuccess` is invoked to produce updated state containing the step result (`pushStepResult`) and `{step}-verdict` history entry
+**Then** `projectSuccess` applies the step result (`pushStepResult`), and the `{step}-verdict` entry from `verdictHistoryEntry` is durably recorded via `store.appendHistory`
 
 #### Scenario: commitRound uses projectSuccess projector in the member fold
 
 **Given** `commitRound` is called with one or more success member results
 **When** the in-memory member fold runs
-**Then** for each success member: `appendHistoryEntry` is called first with `{step}-started` (round-only), then `projectSuccess` is called to apply the step result and `{step}-verdict` history
+**Then** for each success member: `appendHistoryEntry` is called first with `{step}-started` (round-only), then `projectSuccess` applies the step result, then the `{step}-verdict` entry from `verdictHistoryEntry` is appended in-memory via `appendHistoryEntry`
 
 #### Scenario: commitSkipped uses projectSkip projector
 
 **Given** `commitSkipped` is called with a skip reason
 **When** the in-memory state projection runs
-**Then** `projectSkip` is invoked to produce updated state containing the skipped step result and `{step}-skipped` history entry
+**Then** `projectSkip` applies the skipped step result (`pushStepResult`), and the `{step}-skipped` entry from `skipHistoryEntry` is durably recorded via `store.appendHistory`
 
 #### Scenario: commitRound uses projectSkip projector in the member fold
 
 **Given** `commitRound` is called with one or more skipped member results
 **When** the in-memory member fold runs
-**Then** for each skipped member: `appendHistoryEntry` is called first with `{step}-started` (round-only), then `projectSkip` is called to apply the skip result and `{step}-skipped` history
+**Then** for each skipped member: `appendHistoryEntry` is called first with `{step}-started` (round-only), then `projectSkip` applies the skip result, then the `{step}-skipped` entry from `skipHistoryEntry` is appended in-memory via `appendHistoryEntry`
 
 ### Requirement: Post-persist effects are shared via a common helper
 
@@ -69,7 +69,7 @@ The strings `"mirrors commit"` and `"matches commit"` SHALL NOT appear anywhere 
 ### Requirement: Behavioral invariants preserved
 
 The refactoring SHALL NOT change observable behavior of sequential or round commits:
-- **Persist count**: 2 for sequential success (history persist + final state persist); 1 for sequential skip; 1 for round.
+- **Store-call pattern**: sequential success = `store.appendHistory({step}-verdict)` then one `store.persist` (after branch/pullRequest reflection); sequential skip = `store.appendHistory({step}-skipped)` then one `store.persist`; round = one `store.persist`. This is identical to the pre-refactor call pattern (`store.persist` called once per sequential commit).
 - **`{step}-started` history**: emitted only for round members, by the round fold calling `appendHistoryEntry` before the projector. Sequential gets it from `begin()`.
 - **History order**: `{step}-started` appears before `{step}-verdict` / `{step}-skipped` for round members.
 - **Sequential skip emit order**: `verdict:parsed` emitted before `store.persist` in `commitSkipped`.

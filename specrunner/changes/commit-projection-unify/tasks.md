@@ -2,8 +2,9 @@
 
 ## T-01: Extract `projectSuccess` pure projector
 
-- [x] Add `import { appendHistoryEntry } from "../../state/schema.js"` to `commit-orchestrator.ts` (alongside the existing `pushStepResult` import)
-- [x] Add module-level (non-exported) function `projectSuccess(state: JobState, step: Step, result: StepExecutionResult & { kind: "success" }, findingsPath: string | null, now: string): JobState` — body: `pushStepResult(...)` then `appendHistoryEntry(...)` for `{step.name}-verdict`, return new state
+- [x] Add `import { appendHistoryEntry } from "../../state/schema.js"` and the `HistoryEntry` type to `commit-orchestrator.ts` (alongside the existing `pushStepResult` import)
+- [x] Add module-level (non-exported) function `projectSuccess(state: JobState, step: Step, result: StepExecutionResult & { kind: "success" }, findingsPath: string | null): JobState` — body: `pushStepResult(...)` only, return new state
+- [x] Add module-level (non-exported) pure builder `verdictHistoryEntry(step: Step, verdict: Verdict | null, now: string): HistoryEntry` returning the `{step.name}-verdict` `ok` entry (shared by sequential + round)
 - [x] Verify the function is synchronous, contains no `await`, no `store.` references, and no `this`
 
 **Acceptance Criteria**:
@@ -13,7 +14,8 @@
 
 ## T-02: Extract `projectSkip` pure projector
 
-- [x] Add module-level (non-exported) function `projectSkip(state: JobState, step: AgentStep, skipReason: string, startedAt: string, now: string): JobState` — body: `pushStepResult(...)` with `verdict: "skipped" as Verdict` and `startedAt`/`completedAt: now`, then `appendHistoryEntry(...)` for `{step.name}-skipped` warning, return new state
+- [x] Add module-level (non-exported) function `projectSkip(state: JobState, step: AgentStep, skipReason: string, startedAt: string, now: string): JobState` — body: `pushStepResult(...)` only, with `verdict: "skipped" as Verdict` and `startedAt`/`completedAt: now`, return new state
+- [x] Add module-level (non-exported) pure builder `skipHistoryEntry(step: Step | AgentStep, skipReason: string, now: string): HistoryEntry` returning the `{step.name}-skipped` `warning` entry (shared by sequential + round)
 - [x] Verify the function is synchronous, contains no `await`, no `store.` references, and no `this`
 
 **Acceptance Criteria**:
@@ -37,27 +39,26 @@
 ## T-04: Refactor `commitSuccess` to use shared projector and helper
 
 - [x] Compute `findingsPath` and `now` before the projection call (as they currently are)
-- [x] Replace `pushStepResult(...)` + `await store.appendHistory(s, {...})` with `projectSuccess(state, step, result, findingsPath, now)` + `await store.persist(s)` (persist #1)
-- [x] Retain branch/pullRequest reflection (`agentBranch`, `setsBranch`, `completion.pullRequest`) unchanged after persist #1
-- [x] Replace inline usage / lineage / emit with `await this.applySuccessPostPersistEffects(store, s, step, result, deps)` — placed after the final `store.persist(s)` (persist #2)
-- [x] Remove the "Mirrors finalizeStep" comment from the method docstring; replace with a description of the actual call sequence (projectSuccess → persist #1 → branch/pullRequest → persist #2 → applySuccessPostPersistEffects)
+- [x] Replace inline `pushStepResult(...)` with `projectSuccess(state, step, result, findingsPath)`, then `s = await store.appendHistory(s, verdictHistoryEntry(step, verdict, now))` (durable verdict history — preserves the pre-refactor call pattern)
+- [x] Retain branch/pullRequest reflection (`agentBranch`, `setsBranch`, `completion.pullRequest`) unchanged, followed by the single `await store.persist(s)`
+- [x] Replace inline usage / lineage / emit with `await this.applySuccessPostPersistEffects(store, s, step, result, deps)` — placed after `store.persist(s)`
+- [x] Remove the "Mirrors finalizeStep" comment from the method docstring; replace with a description of the actual call sequence (projectSuccess → store.appendHistory → branch/pullRequest → store.persist → applySuccessPostPersistEffects)
 
 **Acceptance Criteria**:
 - `commitSuccess` calls `projectSuccess(` and `this.applySuccessPostPersistEffects(`
-- `store.appendHistory` is not called in `commitSuccess`
-- Exactly two `store.persist` calls remain in `commitSuccess`
+- `store.appendHistory` is called once (for the verdict history), and `store.persist` is called once (after branch/pullRequest) — identical to the pre-refactor pattern
 - No "mirrors" or "matches" comment strings in `commitSuccess`
 - `bun run typecheck` passes
 
 ## T-05: Refactor `commitSkipped` to use shared projector
 
-- [x] Replace inline `pushStepResult(...)` + `await store.appendHistory(s, {...})` with `projectSkip(state, step, skipReason, now, now)` (both `startedAt` and `completedAt` are `now` for sequential skip)
+- [x] Replace inline `pushStepResult(...)` with `projectSkip(state, step, skipReason, now, now)` (both `startedAt` and `completedAt` are `now` for sequential skip), then `s = await store.appendHistory(s, skipHistoryEntry(step, skipReason, now))` (durable skip history — preserves the pre-refactor call pattern)
 - [x] Retain `this.events.emit("verdict:parsed", {...})` for skipped verdict **before** `store.persist(s)` (preserves sequential emit-before-persist order)
-- [x] Remove the "Mirrors finalizeSkippedStep" comment from the method docstring; replace with a description of the actual call sequence (projectSkip → emit → persist)
+- [x] Remove the "Mirrors finalizeSkippedStep" comment from the method docstring; replace with a description of the actual call sequence (projectSkip → store.appendHistory → emit → persist)
 
 **Acceptance Criteria**:
 - `commitSkipped` calls `projectSkip(`
-- `store.appendHistory` is not called in `commitSkipped`
+- `store.appendHistory` is called once (for the skip history) in `commitSkipped`
 - `events.emit("verdict:parsed", ...)` is called before `store.persist(s)` in `commitSkipped`
 - No "mirrors" or "matches" comment strings in `commitSkipped`
 - `bun run typecheck` passes
@@ -67,11 +68,13 @@
 - [x] In the success arm (`result.kind === "success"`):
   - Remove inline `pushStepResult(...)` and in-memory history spread for `{step}-started` and `{step}-verdict`
   - Add `state = appendHistoryEntry(state, { ts: startedAt, step: \`${step.name}-started\`, status: "started", message: \`Starting ${step.name} step\` })` (round-only, before projector)
-  - Add `state = projectSuccess(state, step, result, findingsPath, now)` (shared projector; compute `findingsPath` from `step.resultFilePath(base, deps)` as before)
+  - Add `state = projectSuccess(state, step, result, findingsPath)` (shared projector; compute `findingsPath` from `step.resultFilePath(base, deps)` as before)
+  - Add `state = appendHistoryEntry(state, verdictHistoryEntry(step, result.completion.verdict, now))` (in-memory verdict history via the shared builder; round batches into a single persist)
 - [x] In the skipped arm (`result.kind === "skipped"`):
   - Remove inline `pushStepResult(...)` and in-memory history spreads for `{step}-started` and `{step}-skipped`
   - Add `state = appendHistoryEntry(state, { ts: startedAt, step: \`${step.name}-started\`, status: "started", message: \`Starting ${step.name} step\` })` (round-only, before projector)
   - Add `state = projectSkip(state, step, result.skipReason, startedAt, now)` (shared projector)
+  - Add `state = appendHistoryEntry(state, skipHistoryEntry(step, result.skipReason, now))` (in-memory skip history via the shared builder; round batches into a single persist)
 - [x] In the halt arm (`result.kind === "halt"`): leave `recordFailedStepResult` + in-memory `appendHistoryEntry` for `halt.history` unchanged
 - [x] Remove all "mirrors commit\*" and "matches commit\*" inline comments from the fold block
 

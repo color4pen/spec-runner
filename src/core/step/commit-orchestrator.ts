@@ -15,7 +15,7 @@
 
 import * as path from "node:path";
 import type { Step, AgentStep } from "./types.js";
-import type { JobState, Verdict, ModelUsage, StepRun, ErrorInfo } from "../../state/schema.js";
+import type { JobState, Verdict, ModelUsage, StepRun, ErrorInfo, HistoryEntry } from "../../state/schema.js";
 import type { ReviewerStatus } from "../../kernel/reviewer-snapshot.js";
 import type { PipelineDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
@@ -72,8 +72,10 @@ export type StepExecutionResult =
 // ---------------------------------------------------------------------------
 
 /**
- * Pure in-memory projection for a successful step result.
- * Applies pushStepResult and appends the {step}-verdict history entry.
+ * Pure in-memory projection for a successful step result: applies pushStepResult.
+ * The {step}-verdict history entry is applied separately by the caller via
+ * verdictHistoryEntry() — durably (store.appendHistory) in the sequential path,
+ * in-memory (appendHistoryEntry) in the round path.
  * No store calls, no side effects.
  */
 function projectSuccess(
@@ -81,12 +83,11 @@ function projectSuccess(
   step: Step,
   result: StepExecutionResult & { kind: "success" },
   findingsPath: string | null,
-  now: string,
 ): JobState {
   const { completion, completedAt, startedAt, session, followUpAttempts, transientRetryAttempts, completionReportDiagnostics } = result;
   const { verdict, persistToolResult } = completion;
 
-  let s = pushStepResult(state, step.name, {
+  return pushStepResult(state, step.name, {
     session,
     verdict: verdict as Verdict | null,
     findingsPath,
@@ -98,20 +99,22 @@ function projectSuccess(
     transientRetryAttempts,
     completionReportDiagnostics,
   });
+}
 
-  s = appendHistoryEntry(s, {
+/** Pure builder for the {step}-verdict history entry (shared by sequential + round). */
+function verdictHistoryEntry(step: Step, verdict: Verdict | null, now: string): HistoryEntry {
+  return {
     ts: now,
     step: `${step.name}-verdict`,
     status: "ok",
     message: `${step.name} verdict: ${verdict}`,
-  });
-
-  return s;
+  };
 }
 
 /**
- * Pure in-memory projection for a skipped step result.
- * Applies pushStepResult(verdict:"skipped") and appends the {step}-skipped history entry.
+ * Pure in-memory projection for a skipped step result: applies pushStepResult(verdict:"skipped").
+ * The {step}-skipped history entry is applied separately by the caller via skipHistoryEntry()
+ * — durably (store.appendHistory) in the sequential path, in-memory in the round path.
  * No store calls, no side effects.
  */
 function projectSkip(
@@ -121,7 +124,7 @@ function projectSkip(
   startedAt: string,
   now: string,
 ): JobState {
-  let s = pushStepResult(state, step.name, {
+  return pushStepResult(state, step.name, {
     session: null,
     verdict: "skipped" as Verdict,
     findingsPath: null,
@@ -130,15 +133,16 @@ function projectSkip(
     error: null,
     skipReason,
   });
+}
 
-  s = appendHistoryEntry(s, {
+/** Pure builder for the {step}-skipped history entry (shared by sequential + round). */
+function skipHistoryEntry(step: Step | AgentStep, skipReason: string, now: string): HistoryEntry {
+  return {
     ts: now,
     step: `${step.name}-skipped`,
     status: "warning",
     message: `${step.name} skipped: ${skipReason}`,
-  });
-
-  return s;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -281,8 +285,8 @@ export class CommitOrchestrator {
 
   /**
    * Apply a successful step result to state and persist.
-   * Sequence: projectSuccess → persist #1 → branch/pullRequest → persist #2
-   *           → applySuccessPostPersistEffects (usage + lineage + verdict:parsed emit).
+   * Sequence: projectSuccess → store.appendHistory({step}-verdict) → branch/pullRequest
+   *           → store.persist → applySuccessPostPersistEffects (usage + lineage + verdict:parsed emit).
    */
   async commitSuccess(
     step: Step,
@@ -298,11 +302,11 @@ export class CommitOrchestrator {
 
     logVerbose("step", "verdict parsed", { step: step.name, verdict });
 
-    // In-memory projection: pushStepResult + {step}-verdict history
-    let s = projectSuccess(state, step, result, findingsPath, now);
+    // In-memory projection: pushStepResult
+    let s = projectSuccess(state, step, result, findingsPath);
 
-    // Persist #1 (projection committed)
-    await store.persist(s);
+    // Durably record {step}-verdict history (write 1)
+    s = await store.appendHistory(s, verdictHistoryEntry(step, verdict as Verdict | null, now));
 
     // Branch setting (agent-branch or setsBranch flag)
     if (agentBranch && !s.branch) {
@@ -318,7 +322,7 @@ export class CommitOrchestrator {
       s = { ...s, pullRequest: completion.pullRequest };
     }
 
-    // Persist #2 (branch/pullRequest patch committed)
+    // Persist branch/pullRequest patch (write 2)
     await store.persist(s);
 
     // Post-persist effects: usage + lineage + verdict:parsed emit
@@ -329,7 +333,7 @@ export class CommitOrchestrator {
 
   /**
    * Record a skipped step (activation conditions not met) and persist.
-   * Sequence: projectSkip → verdict:parsed emit → persist.
+   * Sequence: projectSkip → store.appendHistory({step}-skipped) → verdict:parsed emit → persist.
    */
   async commitSkipped(
     step: AgentStep,
@@ -339,10 +343,13 @@ export class CommitOrchestrator {
     const store = this.getStore(state.jobId);
     const now = new Date().toISOString();
 
-    // In-memory projection: pushStepResult(verdict:"skipped") + {step}-skipped history
-    const s = projectSkip(state, step, skipReason, now, now);
+    // In-memory projection: pushStepResult(verdict:"skipped")
+    let s = projectSkip(state, step, skipReason, now, now);
 
-    // Emit before persist (sequential emit-before-persist order)
+    // Durably record {step}-skipped history (matches sequential appendHistory semantics)
+    s = await store.appendHistory(s, skipHistoryEntry(step, skipReason, now));
+
+    // Emit before final persist (sequential emit-before-persist order)
     this.events.emit("verdict:parsed", {
       step: step.name,
       outcome: {
@@ -412,8 +419,8 @@ export class CommitOrchestrator {
    *
    * Sequence:
    *   1. Fold each member result into state in-memory (no store calls).
-   *      Success: appendHistoryEntry({step}-started) → projectSuccess (shared projector).
-   *      Skip:    appendHistoryEntry({step}-started) → projectSkip (shared projector).
+   *      Success: appendHistoryEntry({step}-started) → projectSuccess → appendHistoryEntry(verdictHistoryEntry).
+   *      Skip:    appendHistoryEntry({step}-started) → projectSkip → appendHistoryEntry(skipHistoryEntry).
    *      Halt:    recordFailedStepResult + halt.history (in-memory only).
    *   2. Apply coordinator patch: reviewerStatuses, coordinator StepRun, error, updatedAt.
    *   3. store.persist(state) — exactly once.
@@ -467,8 +474,10 @@ export class CommitOrchestrator {
           message: `Starting ${step.name} step`,
         });
 
-        // Shared projector: pushStepResult + {step}-verdict history
-        state = projectSuccess(state, step, result, findingsPath, now);
+        // Shared projector: pushStepResult
+        state = projectSuccess(state, step, result, findingsPath);
+        // {step}-verdict history (in-memory; round batches into a single persist)
+        state = appendHistoryEntry(state, verdictHistoryEntry(step, result.completion.verdict as Verdict | null, now));
 
         successEntries.push({ step, result });
       } else if (result.kind === "skipped") {
@@ -480,8 +489,10 @@ export class CommitOrchestrator {
           message: `Starting ${step.name} step`,
         });
 
-        // Shared projector: pushStepResult(skipped) + {step}-skipped history
+        // Shared projector: pushStepResult(skipped)
         state = projectSkip(state, step as AgentStep, result.skipReason, startedAt, now);
+        // {step}-skipped history (in-memory; round batches into a single persist)
+        state = appendHistoryEntry(state, skipHistoryEntry(step, result.skipReason, now));
 
         skippedEntries.push({ step, result });
       } else {
