@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f2aaa6c5-7a9e-4154-887f-59544f452758",
   "createdAt": "2026-07-14T11:46:51.820Z",
-  "updatedAt": "2026-07-14T11:46:54.313Z",
+  "updatedAt": "2026-07-14T11:50:55.503Z",
   "request": {
     "title": "added-turn 削減の仕上げ — 追加ターン metrics の journal 永続化と code-review post-work turn の除去",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/added-turns-persist-and-review-trim-f2aaa6c5",
   "error": null,
@@ -49,7 +49,9 @@
     }
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
