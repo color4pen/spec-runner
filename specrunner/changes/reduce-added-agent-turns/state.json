@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c4c7be87-ae87-40f8-acce-91db4c32938b",
   "createdAt": "2026-07-14T08:02:59.300Z",
-  "updatedAt": "2026-07-14T08:53:39.523Z",
+  "updatedAt": "2026-07-14T08:56:33.585Z",
   "request": {
     "title": "追加 AI ターンの構造的削減 — 完了契約の初回注入 / 決定論 skip / ターン種別 metrics",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/reduce-added-agent-turns-c4c7be87",
   "error": null,
@@ -49,15 +49,15 @@
     }
   ],
   "_journal": {
-    "historyCount": 32,
+    "historyCount": 41,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 2,
-      "build-fixer": 1
+      "verification": 3,
+      "build-fixer": 2
     }
   }
 }
