@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "85075d7a-db27-4352-b916-d6b5e797b588",
   "createdAt": "2026-07-14T08:03:26.178Z",
-  "updatedAt": "2026-07-14T09:06:07.295Z",
+  "updatedAt": "2026-07-14T09:10:05.764Z",
   "request": {
     "title": "request-review の code 断定 fact-check を attestation として記録し design の再検証重複をなくす",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/request-review-factcheck-attestation-85075d7a",
   "error": null,
@@ -76,7 +76,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 54,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -89,7 +89,8 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
