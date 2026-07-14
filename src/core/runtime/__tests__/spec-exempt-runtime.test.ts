@@ -154,7 +154,7 @@ describe("T-04: bug-fix design — spec.md violation when scaffold unchanged (re
     expect(specContract!.policy).toBe("halt");
   });
 
-  it("ManagedRuntime: spec.md violation when getRawFile returns SPEC_TEMPLATE scaffold", async () => {
+  it("ManagedRuntime: spec.md halt violation when getRawFile returns SPEC_TEMPLATE scaffold", async () => {
     const state = makeState("bug-fix");
     const deps = makeDeps("bug-fix");
     const contracts = buildAllOutputContracts(DesignStep, state, deps);
@@ -168,9 +168,13 @@ describe("T-04: bug-fix design — spec.md violation when scaffold unchanged (re
     });
 
     const result = await managedRuntime.validateStepOutputs(contracts, "/cwd", "test-branch");
+    // Spec-required types now have both a "produced" (halt) contract and a "content-format" (follow-up) contract.
+    // When the scaffold is unchanged, both contracts may produce violations.
+    // The critical invariant: a "halt" policy violation for spec.md must be present.
     const specViolations = result.violations.filter((v) => v.path === `${folder}/spec.md`);
-    expect(specViolations).toHaveLength(1);
-    expect(specViolations[0]!.policy).toBe("halt");
+    const haltViolation = specViolations.find((v) => v.policy === "halt");
+    expect(haltViolation).toBeDefined();
+    expect(haltViolation!.kind).toBe("produced");
   });
 
   it("ManagedRuntime: no spec.md violation when getRawFile returns non-scaffold content", async () => {

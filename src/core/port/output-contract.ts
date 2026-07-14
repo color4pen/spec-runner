@@ -14,8 +14,31 @@
  * - "produced":        A file declared in writes() must exist, be non-empty, and differ
  *                      from its scaffold template (if one was placed before the step ran).
  * - "tasks-complete":  A tasks.md file must have no unchecked `- [ ]` items.
+ * - "content-format":  A file at `path` is read (after HTML comment removal), and each
+ *                      declared check's `pattern` is tested against the content.
+ *                      Any check whose pattern does NOT match is a violation.
+ *                      `content === null` (file missing) means all checks fail.
+ *                      Only used with policy "follow-up".
  */
-export type OutputContractKind = "produced" | "tasks-complete";
+export type OutputContractKind = "produced" | "tasks-complete" | "content-format";
+
+/**
+ * A single declarative format check for a "content-format" contract.
+ *
+ * The check passes when `new RegExp(pattern, flags ?? "").test(content)` is true
+ * (where `content` is the file text after stripping HTML comments).
+ *
+ * `label` is used in repair prompts and violation detail arrays to identify which
+ * checks failed.
+ */
+export interface ContentFormatCheck {
+  /** Human-readable label identifying what this check verifies. */
+  label: string;
+  /** Regular expression pattern string to test against the (comment-stripped) content. */
+  pattern: string;
+  /** Optional regex flags (e.g. "m", "i"). Defaults to "" when omitted. */
+  flags?: string;
+}
 
 /**
  * Response policy when a contract violation is detected:
@@ -29,7 +52,7 @@ export type OutputPolicy = "halt" | "follow-up";
 
 /**
  * A single output contract declared by a step.
- * Produced from step.writes() (kind: "produced") or step.outputContracts() (kind: "tasks-complete").
+ * Produced from step.writes() (kind: "produced") or step.outputContracts() (kind: "tasks-complete" | "content-format").
  */
 export interface OutputContract {
   /** What kind of contract this is. */
@@ -45,6 +68,13 @@ export interface OutputContract {
    * Undefined means no scaffold check is applied.
    */
   scaffold?: string;
+  /**
+   * Declarative format checks for kind "content-format".
+   * Each check declares a regex pattern that must match the (comment-stripped) file content.
+   * A check fails when its pattern does NOT match.
+   * Ignored for other kinds.
+   */
+  checks?: ContentFormatCheck[];
 }
 
 /**
@@ -61,6 +91,7 @@ export interface OutputViolation {
    * Additional detail:
    * - "produced":       always []
    * - "tasks-complete": list of incomplete task labels extracted from the file
+   * - "content-format": list of failed check labels (checks whose pattern did not match)
    */
   detail: string[];
 }

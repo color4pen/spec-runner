@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1365b6b0-6a45-4f27-9bdb-3a2b6cb070c5",
   "createdAt": "2026-07-14T09:43:41.446Z",
-  "updatedAt": "2026-07-14T10:05:21.053Z",
+  "updatedAt": "2026-07-14T10:08:56.800Z",
   "request": {
     "title": "post-work の決定論的 self-check を無条件実行から outputContract（detect→repair）へ移す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "implementer",
   "status": "running",
   "branch": "change/postwork-format-check-as-detector-1365b6b0",
   "error": null,
@@ -49,11 +49,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }

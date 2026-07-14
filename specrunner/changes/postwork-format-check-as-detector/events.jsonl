@@ -17,3 +17,8 @@
 {"type":"transition","ts":"2026-07-14T10:05:21.050Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-14T10:05:21.050Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-07-14T10:05:21.053Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-07-14T10:08:56.785Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"a8c1291d-a397-4362-9df3-751653bc1a50","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-07-14T10:05:21.121Z","endedAt":"2026-07-14T10:08:55.367Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-07-14T10:08:55.367Z","outputs":[{"path":"specrunner/changes/postwork-format-check-as-detector/test-cases.md","hash":"sha256:689eba38131b33667b8706ffcd8a984c0c69c3953f9f384f035d26ac56082233"}],"inputs":[{"path":"specrunner/changes/postwork-format-check-as-detector/design.md","hash":"sha256:975e74825800609e05e9feb262cb9e45c8815df88e215f87255dcd4426d0940e"},{"path":"specrunner/changes/postwork-format-check-as-detector/tasks.md","hash":"sha256:e897b5dcb60773e6074e188a2d4a0139f708d80d71b917062764f68e5d7bc9a9"}]}
+{"type":"transition","ts":"2026-07-14T10:08:56.796Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-07-14T10:08:56.800Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
