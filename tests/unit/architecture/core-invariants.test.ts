@@ -1042,6 +1042,26 @@ describe("B-13 (arch pin): StepExecutor は store 永続化 API を CommitOrches
     const violations = injectedMatches.filter((m) => !isCommentLine(m.content));
     expect(violations).toHaveLength(1);
   });
+
+  // B-13 parallel extension: the same single-writer ownership applies to the
+  // fan-out round. Round members return immutable results and do not persist;
+  // the coordinator commits the whole round once via CommitOrchestrator.commitRound.
+  it("B-13 parallel: parallel-review-round.ts に store 永続化 API の直接呼び出しが存在しない", () => {
+    const raw = grepE(
+      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun)\\("`,
+      "src/core/pipeline/parallel-review-round.ts",
+    );
+    const matches = parseGrepOutput(raw);
+    const violations = matches.filter((m) => !isCommentLine(m.content));
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  it("B-13 parallel liveness: parallel-review-round.ts が CommitOrchestrator.commitRound で round state を一括 commit する", () => {
+    const raw = grepE(`"\\.commitRound\\("`, "src/core/pipeline/parallel-review-round.ts");
+    const matches = parseGrepOutput(raw);
+    const nonComment = matches.filter((m) => !isCommentLine(m.content));
+    expect(nonComment.length).toBeGreaterThan(0);
+  });
 });
 
 // ─── B-14: StepExecutor は transitionJob / attachStateAndRethrow を直接呼ばない ─
@@ -1083,6 +1103,83 @@ describe("B-14 (arch pin): StepExecutor は transitionJob / attachStateAndRethro
       },
     ];
     const violations = injectedMatches.filter((m) => !isCommentLine(m.content));
+    expect(violations).toHaveLength(1);
+  });
+});
+
+// ─── B-15: 並列 round の git 副作用は coordinator 所有・宣言出力に限定 ──────────
+
+describe("B-15 (arch pin): 並列 round の git staging は宣言出力に限定し member は indiscriminate commit しない", () => {
+  /**
+   * B-15 (round-owned git effects): the coordinator owns git side effects for a
+   * round. It partitions changed files into declared (staged) vs non-declared
+   * (offending → round halt) via partitionRoundChanges, and stages only declared
+   * outputs through commitScopedPaths (`git add -A -- <paths>`, never a bare
+   * indiscriminate `git add -A`). The coordinator must not invoke the sequential
+   * `commitAndPush`, which stages indiscriminately.
+   */
+  it("parallel-review-round.ts に indiscriminate な commitAndPush 呼び出しが存在しない", () => {
+    const raw = grepE(`"commitAndPush\\("`, "src/core/pipeline/parallel-review-round.ts");
+    const matches = parseGrepOutput(raw);
+    const violations = matches.filter((m) => !isCommentLine(m.content));
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  it("B-15 liveness: parallel-review-round.ts が partitionRoundChanges で宣言/非宣言を分離する", () => {
+    const raw = grepE(`"partitionRoundChanges\\("`, "src/core/pipeline/parallel-review-round.ts");
+    const matches = parseGrepOutput(raw);
+    const nonComment = matches.filter((m) => !isCommentLine(m.content));
+    expect(nonComment.length).toBeGreaterThan(0);
+  });
+
+  it("B-15 regression guard: parallel-review-round に commitAndPush があれば検出される", () => {
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/core/pipeline/parallel-review-round.ts",
+        line: 42,
+        content: "    await commitAndPush(branch, cwd, msg, infra);",
+      },
+    ];
+    const violations = injectedMatches.filter((m) => !isCommentLine(m.content));
+    expect(violations).toHaveLength(1);
+  });
+});
+
+// ─── B-16: 並列 round 実行は共有 deps を in-place 書き換えない ──────────────────
+
+describe("B-16 (arch pin): 並列 round 実行は共有 deps（orchestration 入力）を in-place で書き換えない", () => {
+  /**
+   * B-16 (immutable execution input): member execution reads a round-provided
+   * readonly input and must not mutate the shared `deps` object in place. Resume
+   * inputs are distributed as readonly execution input rather than consumed by
+   * clearing `deps.resumePrompt` / `deps.resumeContext`. Any `deps.<field> =`
+   * assignment in the executor or round coordinator is a violation. Comparisons
+   * (`==` / `===` / `!=` / `<=` / `>=`) are excluded from the assignment match.
+   */
+  const DEPS_ASSIGN = `"deps\\.[a-zA-Z_]+ *="`;
+  const isAssignment = (m: GrepMatch): boolean =>
+    !isCommentLine(m.content) && !/[=!<>]=/.test(m.content);
+
+  it("executor.ts / parallel-review-round.ts に deps フィールドへの代入が存在しない", () => {
+    for (const file of [
+      "src/core/step/executor.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+    ]) {
+      const raw = grepE(DEPS_ASSIGN, file);
+      const violations = parseGrepOutput(raw).filter(isAssignment);
+      expect(violationLines(violations)).toEqual([]);
+    }
+  });
+
+  it("B-16 regression guard: deps フィールドへの代入があれば検出される", () => {
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/core/step/executor.ts",
+        line: 42,
+        content: "    deps.resumePrompt = undefined;",
+      },
+    ];
+    const violations = injectedMatches.filter(isAssignment);
     expect(violations).toHaveLength(1);
   });
 });

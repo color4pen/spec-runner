@@ -88,8 +88,10 @@ composition-root ─→ (all)
 | **B-10** | GitHub token は紐づく host にしか送らない（github.com 用 token を非 github.com host へ、enterprise token を github.com へ送らない）| credential を誤った送信先 host へ漏らさない（published security advisory パターン）。B-6（subprocess への入口の封じ込め）と対をなす**送信先**の封じ込め |
 | **B-11** | `src/core/runtime/` の具象 runtime は `RealRuntimeStrategy`（`RuntimeStrategy` に `canDeriveChangedFiles` を必須化した交差型）を implements する。bare `implements RuntimeStrategy` を使わない | `permissionScope` を宣言する pipeline が要求する「changed-files 導出能力」を、将来の real runtime が実装し忘れて fail-open に戻ることを、コンパイル時（必須メソッド）＋ grep（bare implements 禁止）で構造的に封じる |
 | **B-12** | `node:child_process` の直接 import は seam モジュール（`util/spawn.ts` / `util/git-exec.ts`）と、call-site で `stripSecrets` する allowlist 済み composition-internal（`arch-allowlist.ts` の B-12 台帳）に限定。他ファイルからの直接 import を禁止 | env を省略した spawn（`stripSecrets` を通さない子プロセス生成）を構造的に封じる。B-6 の `process.env` grep が検出できない「env 参照を一切書かない env-omission spawn」を、import 面で捕捉する補完（B-6 と対をなす入口封じ込め）|
-| **B-13** | `StepExecutor` は `store.persist` / `store.fail` / `store.update` / `store.appendHistory` / `store.appendInterruption` / `store.appendLineage` / `store.appendStepRun` を直接呼ばない。状態永続化・履歴記録・イベント発火はすべて `CommitOrchestrator`（単一書き込みオーナー）が行う | producer（StepExecutor）と committer（CommitOrchestrator）の責務を分離し、sequential step の状態書き込みを1点に集約する。複数箇所からの並行書き込みを構造的に禁止し、状態整合性を保証する |
+| **B-13** | `StepExecutor` は `store.persist` / `store.fail` / `store.update` / `store.appendHistory` / `store.appendInterruption` / `store.appendLineage` / `store.appendStepRun` を直接呼ばない。状態永続化・履歴記録・イベント発火はすべて `CommitOrchestrator`（単一書き込みオーナー）が行う。並列 round も同一 — `ParallelReviewRound` の member は state を persist せず、coordinator が `CommitOrchestrator.commitRound` で round 結果を一括書き込みする | producer（StepExecutor / round member）と committer（CommitOrchestrator）の責務を分離し、逐次・並列の両経路で状態書き込みを単一オーナーに集約する。複数箇所からの並行書き込みを構造的に禁止し、状態整合性を保証する |
 | **B-14** | `StepExecutor` は `transitionJob` / `attachStateAndRethrow` を直接呼ばない。StepHalt の適用（FSM 遷移・rethrow）は `CommitOrchestrator.commitHalt` が一括担う | halt の適用経路を CommitOrchestrator に集約し、遷移漏れ・rethrow 漏れを構造的に防ぐ。B-13 の補完：persist と halt-apply を同一オーナーに置く |
+| **B-15** | 並列 round の git 副作用は coordinator が所有する。member 実行経路は git stage/commit を行わず、coordinator が round の宣言出力（declared outputs）だけを scoped stage（`git add -A -- <paths>`、bare `git add -A` を使わない）する。宣言外の変更は round 全体を halt する（`partitionRoundChanges` の offending 判定）| 共有 worktree では member 単位の commit 帰属が実行順依存になるため、git 副作用を round 単位の単一所有点へ集約する。非宣言変更を混ぜ込まず、attribution を出力ファイル名・`StepRun`・history 側に保持する |
+| **B-16** | 並列 round の member 実行は共有 `deps`（orchestration 入力）を in-place で書き換えない（`deps.<field> =` 代入をしない）。resume 入力は round ごとの readonly execution input として配布する | 実行 seam を跨ぐ入力の不変性を保証する。どの member が最初に resume 入力を消費するかという非決定な破壊的共有を構造的に排除し、round 実行を再現可能にする |
 
 ---
 
@@ -103,7 +105,7 @@ composition-root ─→ (all)
 
 ## 6. 強制（歯）と trust placement
 
-- **歯**: `tests/unit/architecture/core-invariants.test.ts` が §4 の B-1〜B-14 と §3 closure（DSM）を **src 全体**で grep / import 検査する。既知 divergence は `arch-allowlist.ts` に grandfather し、allowlist は**削除のみで縮む ratchet**（許可されない edge / seam 違反 / status 直書きを新たに足すと red）。`module-boundary.test.ts` も併存。
+- **歯**: `tests/unit/architecture/core-invariants.test.ts` が §4 の B-1〜B-16 と §3 closure（DSM）を **src 全体**で grep / import 検査する。既知 divergence は `arch-allowlist.ts` に grandfather し、allowlist は**削除のみで縮む ratchet**（許可されない edge / seam 違反 / status 直書きを新たに足すと red）。`module-boundary.test.ts` も併存。
 - **trust placement**: CI の required check に入れ、**merge は GitHub gate（branch protection）に委ね、CLI(archive) は merge を持たない**（`finish-respect-branch-protection` → `archive-command`）＋ **`CODEOWNERS` でこの model.md と歯をループ外固定**。
 - 現状の divergence・burn-down 履歴は構造でなく状況断面 → `divergence-status.md` を参照。
 
