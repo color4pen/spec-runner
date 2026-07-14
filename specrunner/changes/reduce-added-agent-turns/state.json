@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c4c7be87-ae87-40f8-acce-91db4c32938b",
   "createdAt": "2026-07-14T08:02:59.300Z",
-  "updatedAt": "2026-07-14T09:22:27.833Z",
+  "updatedAt": "2026-07-14T09:26:11.462Z",
   "request": {
     "title": "追加 AI ターンの構造的削減 — 完了契約の初回注入 / 決定論 skip / ターン種別 metrics",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/reduce-added-agent-turns-c4c7be87",
   "error": null,
   "pipelineId": "standard",
@@ -75,8 +75,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/823",
+    "number": 823,
+    "createdAt": "2026-07-14T09:26:10.762Z"
+  },
   "_journal": {
-    "historyCount": 70,
+    "historyCount": 75,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -91,7 +96,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
