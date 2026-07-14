@@ -262,6 +262,14 @@ export function usageJsonPath(slug: string): string {
 }
 
 /**
+ * Returns the relative path to the request-review fact-check attestation file for the given slug.
+ * Example: factCheckAttestationPath("my-change") → "specrunner/changes/my-change/request-review-attestation.json"
+ */
+export function factCheckAttestationPath(slug: string): string {
+  return `${CHANGES_DIR}/${slug}/request-review-attestation.json`;
+}
+
+/**
  * Returns the relative path to state.json for the slug-based split layout
  * (relative to worktreePath / stateRoot).
  * Example: slugStateJsonPath("foo") → "specrunner/changes/foo/state.json"

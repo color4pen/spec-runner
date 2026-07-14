@@ -181,7 +181,34 @@ ${VERDICT_BLOCKING_RULES}
 
 - Do NOT propose code implementations. Your role is request validation only.
 - Do NOT modify any files. This is a read-only review. Do NOT edit request.md or any source files.
-- 実装設計（クラス境界・API 契約・内部 trade-off）に関する指摘を findings に含めてはならない。`;
+- 実装設計（クラス境界・API 契約・内部 trade-off）に関する指摘を findings に含めてはならない。
+
+---
+
+## Fact-Check Attestation Output
+
+After completing Step 2 (Code Assertion Fact-Check), when instructed in the user message, write an attestation file to the path specified in the user message.
+
+The attestation is additional output that does NOT affect your verdict or the findings you report.
+
+### JSON shape
+
+\`\`\`json
+{
+  "requestHash": "<value provided verbatim in the user message>",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/foo.ts:42 — description of assertion verified",
+    "functionBar exists in src/bar.ts"
+  ]
+}
+\`\`\`
+
+- **requestHash**: Copy the exact string provided in the user message — do NOT recompute it.
+- **codeAssertionsVerified**: Always \`true\` when the attestation is written (indicates Step 2 completed).
+- **verifiedAssertions**: List the file:line / symbol / path assertions you verified in Step 2. Each entry is a brief description of the assertion you checked.
+
+The attestation is consumed by the design step to skip re-verification of already-verified assertions when request.md is unchanged. It does not alter your verdict or findings.`;
 
 export const REQUEST_REVIEW_SYSTEM_PROMPT = buildSystemPrompt(REQUEST_REVIEW_BASE, []);
 
@@ -191,6 +218,10 @@ export interface RequestReviewInitialMessageInput {
   branch: string | undefined;
   iteration: number;
   findingsPath: string;
+  /** Pre-computed SHA-256 hash of request.md content. When provided, the agent writes the attestation file. */
+  requestContentHash?: string;
+  /** Path where the attestation JSON should be written. Derived from factCheckAttestationPath(slug). */
+  attestationPath?: string;
 }
 
 /**
@@ -198,12 +229,24 @@ export interface RequestReviewInitialMessageInput {
  *
  * The agent is directed to Read the request.md from the change folder (not injected inline).
  * This ensures the agent works from the canonical change-folder copy at review time.
+ *
+ * When requestContentHash and attestationPath are provided, the message includes an explicit
+ * instruction to write the attestation file after Step 2. When absent (e.g. managed degradation),
+ * the attestation instruction is omitted.
  */
 export function buildRequestReviewInitialMessage(input: RequestReviewInitialMessageInput): string {
-  const { slug, iteration, findingsPath } = input;
+  const { slug, iteration, findingsPath, requestContentHash, attestationPath } = input;
   const changeFolder = `${_changesDir}/${slug}`;
   const requestMdInChangeFolder = `${changeFolder}/request.md`;
   const rulesPath = `${changeFolder}/rules.md`;
+
+  const hasAttestation = requestContentHash !== undefined && attestationPath !== undefined;
+
+  const attestationStep = hasAttestation
+    ? `\n6a. After completing Step 2 (Code Assertion Fact-Check), write the attestation file:\n    Path: ${attestationPath}\n    Content: JSON with these exact fields:\n    {\n      "requestHash": "${requestContentHash}",\n      "codeAssertionsVerified": true,\n      "verifiedAssertions": ["<each file:line/symbol/path assertion you verified>"]\n    }\n    (Copy requestHash verbatim from above — do NOT recompute it.)`
+    : "";
+
+  const stepCount = hasAttestation ? "7" : "6";
 
   return `<user-request>
 Please perform a request review for the following change:
@@ -218,11 +261,11 @@ Steps:
 3. Explore the codebase as needed to validate the request (Read, Grep, Glob — read-only)
 4. Read the template at ${findingsPath} to understand the required format
 5. Write your findings and verdict to: ${findingsPath}
-6. Report your completion result with { ok: true, verdict: "<approve|needs-discussion|reject>" }
+6. Report your completion result with { ok: true, verdict: "<approve|needs-discussion|reject>" }${attestationStep}
 
 The result file MUST contain a verdict line: \`- **verdict**: <approve|needs-discussion|reject>\`
 
-Do NOT modify any files other than the result file.
+Do NOT modify any files other than the result file${hasAttestation ? " and the attestation file" : ""}.
 Do NOT modify request.md.
 </user-request>
 

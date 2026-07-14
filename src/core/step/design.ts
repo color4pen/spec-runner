@@ -3,9 +3,11 @@ import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
+import type { DynamicContext } from "../../git/dynamic-context.js";
 import { buildInitialMessage, DESIGN_SYSTEM_PROMPT } from "../../prompts/design-system.js";
 import { getBranchPrefix, isSpecRequired } from "../../config/type-config.js";
-import { requestMdPath, changeFolderPath } from "../../util/paths.js";
+import { requestMdPath, changeFolderPath, factCheckAttestationPath } from "../../util/paths.js";
+import { evaluateFactCheckAttestation, buildFactCheckDirective } from "../factcheck-attestation.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
@@ -80,6 +82,32 @@ export const DesignStep: AgentStep = {
     ];
   },
 
+  async enrichContext(dynamicContext: DynamicContext, cwd: string, slug: string): Promise<DynamicContext> {
+    try {
+      const { readFile } = await import("node:fs/promises");
+      const { resolve } = await import("node:path");
+
+      // Read request.md — required to compute the hash for attestation evaluation.
+      // On any read failure, return dynamicContext unchanged (design will verify all).
+      const requestContent = await readFile(resolve(cwd, requestMdPath(slug)), "utf-8");
+
+      // Read attestation file — missing file is normal (absent → verify all).
+      let attestationRaw: string | null = null;
+      try {
+        attestationRaw = await readFile(resolve(cwd, factCheckAttestationPath(slug)), "utf-8");
+      } catch {
+        // absent is expected when request-review has not written one yet
+        attestationRaw = null;
+      }
+
+      const evaluation = evaluateFactCheckAttestation(attestationRaw, requestContent);
+      return { ...dynamicContext, factCheckAttestation: evaluation };
+    } catch {
+      // On any read failure of request.md, return unchanged (degradation: design verifies all).
+      return dynamicContext;
+    }
+  },
+
   writes(_state: JobState, deps: StepDeps): IoRef[] {
     const folder = changeFolderPath(deps.slug);
     return [
@@ -97,7 +125,14 @@ export const DesignStep: AgentStep = {
     const branch = state.branch
       ? state.branch
       : `${getBranchPrefix(deps.request.type)}${deps.slug}-${state.jobId.slice(0, 8)}`;
-    return buildInitialMessage(deps.request.content, deps.slug, branch, deps.dynamicContext, deps.request.type);
+
+    // Pre-compute the fact-check directive so design-system.ts (shared-kernel)
+    // does not need to import buildFactCheckDirective from domain (core/).
+    const factCheckDirective = deps.dynamicContext?.factCheckAttestation
+      ? buildFactCheckDirective(deps.dynamicContext.factCheckAttestation)
+      : undefined;
+
+    return buildInitialMessage(deps.request.content, deps.slug, branch, deps.dynamicContext, deps.request.type, factCheckDirective);
   },
 
   resultFilePath(_state: JobState, _deps: StepDeps): string | null {

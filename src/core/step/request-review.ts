@@ -2,11 +2,13 @@ import type { AgentStep, StepDeps, ParsedStepResult, IoRef } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
+import type { DynamicContext } from "../../git/dynamic-context.js";
 import {
   REQUEST_REVIEW_SYSTEM_PROMPT,
   buildRequestReviewInitialMessage,
 } from "../../prompts/request-review-system.js";
-import { requestReviewResultPath, requestMdPath } from "../../util/paths.js";
+import { requestReviewResultPath, requestMdPath, factCheckAttestationPath } from "../../util/paths.js";
+import { hashRequestContent } from "../factcheck-attestation.js";
 import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { REQUEST_REVIEW_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
@@ -70,7 +72,23 @@ export const RequestReviewStep: AgentStep = {
   writes(state: JobState, deps: StepDeps): IoRef[] {
     return [
       { path: requestReviewResultPath(deps.slug, nextIteration(state, STEP_NAMES.REQUEST_REVIEW)) },
+      // Attestation is additional output; verify: false so the output-contract gate
+      // does not halt when the agent omits it (e.g. degraded managed path).
+      { path: factCheckAttestationPath(deps.slug), verify: false },
     ];
+  },
+
+  async enrichContext(dynamicContext: DynamicContext, cwd: string, slug: string): Promise<DynamicContext> {
+    try {
+      const { readFile } = await import("node:fs/promises");
+      const { resolve } = await import("node:path");
+      const content = await readFile(resolve(cwd, requestMdPath(slug)), "utf-8");
+      const requestContentHash = hashRequestContent(content);
+      return { ...dynamicContext, requestContentHash };
+    } catch {
+      // On any read error, return the context unchanged (degradation pattern).
+      return dynamicContext;
+    }
   },
 
   buildMessage(state: JobState, deps: StepDeps): string {
@@ -82,6 +100,10 @@ export const RequestReviewStep: AgentStep = {
       branch: state.branch ?? undefined,
       iteration,
       findingsPath,
+      requestContentHash: deps.dynamicContext?.requestContentHash,
+      attestationPath: deps.dynamicContext?.requestContentHash !== undefined
+        ? factCheckAttestationPath(deps.slug)
+        : undefined,
     });
   },
 

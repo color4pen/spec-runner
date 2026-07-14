@@ -29,6 +29,23 @@ export interface DynamicContext {
    * Populated by BuildFixerStep.enrichContext(); absent for other steps.
    */
   verificationContent?: string;
+  /**
+   * SHA-256 hash of request.md content, computed by RequestReviewStep.enrichContext().
+   * Injected into the request-review message so the agent can write it verbatim into
+   * the fact-check attestation file. Absent for all other steps.
+   */
+  requestContentHash?: string;
+  /**
+   * Fact-check attestation evaluation result, computed by DesignStep.enrichContext().
+   * Declares whether the request-review attestation is valid, stale, or absent relative
+   * to the current request.md, and lists the already-verified assertions.
+   * Declared as an inline structural type to avoid cross-layer imports into src/git/.
+   * Absent for all steps other than design.
+   */
+  factCheckAttestation?: {
+    status: "valid" | "stale" | "absent";
+    verifiedAssertions: string[];
+  };
 }
 
 /**
