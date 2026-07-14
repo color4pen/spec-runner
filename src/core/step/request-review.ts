@@ -9,6 +9,7 @@ import {
 } from "../../prompts/request-review-system.js";
 import { requestReviewResultPath, requestMdPath, factCheckAttestationPath } from "../../util/paths.js";
 import { hashRequestContent } from "../factcheck-attestation.js";
+import { readSourceRevision } from "../../git/source-revision.js";
 import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { REQUEST_REVIEW_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
@@ -84,7 +85,14 @@ export const RequestReviewStep: AgentStep = {
       const { resolve } = await import("node:path");
       const content = await readFile(resolve(cwd, requestMdPath(slug)), "utf-8");
       const requestContentHash = hashRequestContent(content);
-      return { ...dynamicContext, requestContentHash };
+      // Read source revision in parallel with hash computation.
+      // readSourceRevision never throws; returns null when git is unavailable.
+      const sourceRevision = await readSourceRevision(cwd);
+      const enriched: DynamicContext = { ...dynamicContext, requestContentHash };
+      if (sourceRevision !== null) {
+        enriched.sourceRevision = sourceRevision;
+      }
+      return enriched;
     } catch {
       // On any read error, return the context unchanged (degradation pattern).
       return dynamicContext;
@@ -104,6 +112,7 @@ export const RequestReviewStep: AgentStep = {
       attestationPath: deps.dynamicContext?.requestContentHash !== undefined
         ? factCheckAttestationPath(deps.slug)
         : undefined,
+      sourceRevision: deps.dynamicContext?.sourceRevision,
     });
   },
 

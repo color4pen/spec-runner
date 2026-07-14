@@ -200,15 +200,17 @@ The attestation is additional output that does NOT affect your verdict or the fi
   "verifiedAssertions": [
     "src/foo.ts:42 — description of assertion verified",
     "functionBar exists in src/bar.ts"
-  ]
+  ],
+  "sourceRevision": "<value provided verbatim in the user message, if present>"
 }
 \`\`\`
 
 - **requestHash**: Copy the exact string provided in the user message — do NOT recompute it.
 - **codeAssertionsVerified**: Always \`true\` when the attestation is written (indicates Step 2 completed).
 - **verifiedAssertions**: List the file:line / symbol / path assertions you verified in Step 2. Each entry is a brief description of the assertion you checked.
+- **sourceRevision**: Copy verbatim from the user message — do NOT recompute it. Include this field only when the user message provides a sourceRevision value; omit entirely if not instructed.
 
-The attestation is consumed by the design step to skip re-verification of already-verified assertions when request.md is unchanged. It does not alter your verdict or findings.`;
+The attestation is consumed by the design step to skip re-verification of already-verified assertions when request.md and source are unchanged. It does not alter your verdict or findings.`;
 
 export const REQUEST_REVIEW_SYSTEM_PROMPT = buildSystemPrompt(REQUEST_REVIEW_BASE, []);
 
@@ -222,6 +224,13 @@ export interface RequestReviewInitialMessageInput {
   requestContentHash?: string;
   /** Path where the attestation JSON should be written. Derived from factCheckAttestationPath(slug). */
   attestationPath?: string;
+  /**
+   * Source revision (git SHA) for the most recent commit outside the change folder.
+   * When provided alongside requestContentHash and attestationPath, injected into the
+   * attestation JSON template so the agent copies it verbatim — do not recompute.
+   * Absent when git is unavailable (managed degradation path).
+   */
+  sourceRevision?: string;
 }
 
 /**
@@ -235,15 +244,21 @@ export interface RequestReviewInitialMessageInput {
  * the attestation instruction is omitted.
  */
 export function buildRequestReviewInitialMessage(input: RequestReviewInitialMessageInput): string {
-  const { slug, iteration, findingsPath, requestContentHash, attestationPath } = input;
+  const { slug, iteration, findingsPath, requestContentHash, attestationPath, sourceRevision } = input;
   const changeFolder = `${_changesDir}/${slug}`;
   const requestMdInChangeFolder = `${changeFolder}/request.md`;
   const rulesPath = `${changeFolder}/rules.md`;
 
   const hasAttestation = requestContentHash !== undefined && attestationPath !== undefined;
 
+  // Build the sourceRevision line for the attestation JSON template (only when provided).
+  const sourceRevisionLine =
+    hasAttestation && sourceRevision !== undefined
+      ? `,\n      "sourceRevision": "${sourceRevision}"`
+      : "";
+
   const attestationStep = hasAttestation
-    ? `\n6a. After completing Step 2 (Code Assertion Fact-Check), write the attestation file:\n    Path: ${attestationPath}\n    Content: JSON with these exact fields:\n    {\n      "requestHash": "${requestContentHash}",\n      "codeAssertionsVerified": true,\n      "verifiedAssertions": ["<each file:line/symbol/path assertion you verified>"]\n    }\n    (Copy requestHash verbatim from above — do NOT recompute it.)`
+    ? `\n6a. After completing Step 2 (Code Assertion Fact-Check), write the attestation file:\n    Path: ${attestationPath}\n    Content: JSON with these exact fields:\n    {\n      "requestHash": "${requestContentHash}",\n      "codeAssertionsVerified": true,\n      "verifiedAssertions": ["<each file:line/symbol/path assertion you verified>"]${sourceRevisionLine}\n    }\n    (Copy requestHash${sourceRevision !== undefined ? " and sourceRevision" : ""} verbatim from above — do NOT recompute.)`
     : "";
 
   return `<user-request>
