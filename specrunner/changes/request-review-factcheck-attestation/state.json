@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "85075d7a-db27-4352-b916-d6b5e797b588",
   "createdAt": "2026-07-14T08:03:26.178Z",
-  "updatedAt": "2026-07-14T08:48:42.430Z",
+  "updatedAt": "2026-07-14T09:00:45.983Z",
   "request": {
     "title": "request-review の code 断定 fact-check を attestation として記録し design の再検証重複をなくす",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/request-review-factcheck-attestation-85075d7a",
   "error": null,
@@ -48,8 +48,35 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "9099fa5b1fbbff100a13360b641d73de8ea2f3fe",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -57,7 +84,11 @@
       "test-case-gen": 1,
       "implementer": 1,
       "verification": 2,
-      "build-fixer": 1
+      "build-fixer": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
