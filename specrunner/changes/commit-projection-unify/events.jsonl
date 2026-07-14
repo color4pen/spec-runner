@@ -78,3 +78,11 @@
 {"type":"transition","ts":"2026-07-14T05:16:08.178Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
 {"type":"transition","ts":"2026-07-14T05:16:08.178Z","step":"step-transition","status":"ok","message":"verification → adr-gen"}
 {"type":"transition","ts":"2026-07-14T05:16:08.183Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-14T05:16:34.806Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"44a208b6-9fbb-43b9-82d6-46efa0e9de8e","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-14T05:16:08.693Z","endedAt":"2026-07-14T05:16:33.394Z"}
+{"type":"transition","ts":"2026-07-14T05:16:34.815Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-14T05:16:34.819Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-14T05:16:36.832Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/commit-projection-unify/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-14T05:16:34.821Z","endedAt":"2026-07-14T05:16:36.829Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-14T05:16:36.829Z","outputs":[{"path":"specrunner/changes/commit-projection-unify/pr-create-result.md","hash":"sha256:b87f97c305a7bf4a1bc4d81e25eb89059e4ee584549303f923ff979f232cf917"}],"inputs":[{"path":"refactor/commit-projection-unify-0b63881d","hash":null}]}
+{"type":"transition","ts":"2026-07-14T05:16:36.845Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
