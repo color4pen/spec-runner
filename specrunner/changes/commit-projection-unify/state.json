@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0b63881d-e23c-49bd-b764-360393fc07f3",
   "createdAt": "2026-07-14T04:22:15.175Z",
-  "updatedAt": "2026-07-14T05:09:43.063Z",
+  "updatedAt": "2026-07-14T05:12:39.214Z",
   "request": {
     "title": "CommitOrchestrator の逐次 / round projection を共通 projector に統合する（挙動不変）",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/commit-projection-unify-0b63881d",
   "error": null,
@@ -76,7 +76,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 40,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +88,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

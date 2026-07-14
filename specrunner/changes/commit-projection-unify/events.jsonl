@@ -58,3 +58,10 @@
 {"type":"transition","ts":"2026-07-14T05:09:43.058Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-07-14T05:09:43.060Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-07-14T05:09:43.063Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-14T05:12:39.198Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"56784b56-61b0-42f1-8cd5-c2a2adecdc03","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/commit-projection-unify/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"observations":[{"severity":"low","file":"specrunner/changes/commit-projection-unify/review-feedback-001.md","title":"3件の LOW findings は code-fixer がスキップ済み（Fix: no）","rationale":"code-review が approved を返した際の 3件の LOW findings（Gate 3/4 grep pattern、TC-017、TC-019）はすべて Fix: no であり、code-fixer が「LOW severity のため対応不要」として明示的にスキップした。fixes が適用されていないため regression は発生し得ない。"}]},"followUpAttempts":0,"transientRetryAttempts":0},"startedAt":"2026-07-14T05:09:43.123Z","endedAt":"2026-07-14T05:12:37.265Z"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-14T05:12:37.265Z","outputs":[{"path":"specrunner/changes/commit-projection-unify/regression-gate-result-002.md","hash":null}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-14T05:12:39.210Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-14T05:12:39.210Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-14T05:12:39.212Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-14T05:12:39.214Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
