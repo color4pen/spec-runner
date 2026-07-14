@@ -34,6 +34,7 @@ import { defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import { isToolUse } from "./message-types.js";
 import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader, type ClaudeSdkCreateMcpServer } from "./sdk-loader.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
+import { ADDED_TURNS_ZERO } from "../../core/port/agent-runner.js";
 import type { DomainEvent } from "../../kernel/event-types.js";
 import type { StepContext } from "../../core/port/step-context.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
@@ -670,6 +671,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           toolResult: null,
           followUpAttempts: 0,
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
+          addedTurns: ADDED_TURNS_ZERO,
           error: Object.assign(
             new Error(`Step '${step.name}': Agent/Task tool redirect limit exceeded (max 3)`),
             { code: "AGENT_REDIRECT_LIMIT_EXCEEDED" },
@@ -688,6 +690,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           toolResult: null,
           followUpAttempts: 0,
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
+          addedTurns: ADDED_TURNS_ZERO,
           error: Object.assign(
             new Error(`Claude Code SDK query failed: ${errorResult.subtype}`),
             { code: "CLAUDE_CODE_QUERY_FAILED" },
@@ -760,6 +763,9 @@ export class ClaudeCodeRunner implements AgentRunner {
             (msg) => emitToolProgress(msg, ctx.emit, step.name),
           );
 
+          // Count the turn immediately after it is consumed — even on failure.
+          postWork++;
+
           if (followLastResult && followLastResult.subtype !== "success") {
             const followErrorResult = followLastResult as SDKResultMessage & { errors?: string[] };
             return {
@@ -775,8 +781,6 @@ export class ClaudeCodeRunner implements AgentRunner {
               ),
             };
           }
-
-          postWork++;
 
           if (followLastResult && followLastResult.subtype === "success") {
             const followSuccessResult = followLastResult as SDKResultSuccess;
@@ -887,6 +891,7 @@ export class ClaudeCodeRunner implements AgentRunner {
             toolResult: capturedToolResult,
             followUpAttempts,
             ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
+            addedTurns: { reportRetry, postWork, outputRepair },
             error: Object.assign(
               new Error(`result file not found: ${resultFilePath}`),
               { code: "RESULT_FILE_NOT_FOUND" },
@@ -919,6 +924,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           toolResult: null,
           followUpAttempts: 0,
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
+          addedTurns: ADDED_TURNS_ZERO,
           error: Object.assign(
             new Error(`Step '${step.name}' timed out after ${resolvedConfig.timeoutMs}ms`),
             { code: "STEP_TIMEOUT" },
@@ -936,6 +942,7 @@ export class ClaudeCodeRunner implements AgentRunner {
         toolResult: null,
         followUpAttempts: 0,
         ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
+        addedTurns: ADDED_TURNS_ZERO,
         error: Object.assign(
           new Error(`Claude Code SDK query failed: ${cause.message}`),
           { code: "CLAUDE_CODE_QUERY_FAILED", cause },

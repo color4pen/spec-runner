@@ -18,8 +18,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { fold, appendEventRecord } from "../../src/store/event-journal.js";
+import { fold, appendEventRecord, stepRunToRecord } from "../../src/store/event-journal.js";
 import type { StepAttemptRecord, TransitionRecord, FoldCorruption } from "../../src/store/event-journal.js";
+import type { StepRun } from "../../src/state/schema.js";
 import { makeStoreFactory } from "../helpers/store-factory.js";
 import { resolveResumeStep } from "../../src/core/resume/resolve-step.js";
 import type { BaseReportResult } from "../../src/kernel/report-result.js";
@@ -366,7 +367,7 @@ describe("TC-030: delta-append crash recovery — no double-append after persist
     expect(await countEventLines(jobId)).toBe(2);
   });
 
-  it("persist() after crash recovery correctly appends only genuinely new records", async () => {
+  it("persist() after crash recovery correctly appends only genuinely new records (TC-030-2)", async () => {
     const jobId = "tc030-new-delta";
     const ep = eventsPath(jobId);
 
@@ -603,5 +604,111 @@ describe("TC-040: load() materializes resumePoint from last interruption record"
 
     expect(state.resumePoint).toBeDefined();
     expect(state.resumePoint!.reason).toBe("exhaustion");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-01 (added-turns-persist-and-review-trim): addedTurns journal round-trip
+// ---------------------------------------------------------------------------
+
+describe("addedTurns journal round-trip — fold restores addedTurns losslessly", () => {
+  it("addedTurns object survives append → fold (raw record path)", async () => {
+    const filePath = path.join(tempDir, "events.jsonl");
+    const addedTurns = { reportRetry: 2, postWork: 1, outputRepair: 3 };
+    const record = makeStepAttemptRecord("implementer", "approved", { addedTurns });
+    await appendEventRecord(filePath, record);
+
+    const content = await fs.readFile(filePath, "utf-8");
+    const result = fold(content);
+
+    const runs = result.steps["implementer"];
+    expect(runs).toHaveLength(1);
+    expect(runs![0]!.outcome.addedTurns).toEqual(addedTurns);
+  });
+
+  it("addedTurns survives round-trip via stepRunToRecord → appendEventRecord → fold", async () => {
+    const filePath = path.join(tempDir, "events.jsonl");
+    const addedTurns = { reportRetry: 1, postWork: 2, outputRepair: 0 };
+    const stepRun: StepRun = {
+      attempt: 1,
+      sessionId: "sess-abc",
+      outcome: {
+        verdict: "needs-fix",
+        findingsPath: "specrunner/changes/my-slug/review-feedback-001.md",
+        error: null,
+        addedTurns,
+      },
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:05:00.000Z",
+    };
+
+    const record = stepRunToRecord("code-review", stepRun);
+    await appendEventRecord(filePath, record);
+
+    const content = await fs.readFile(filePath, "utf-8");
+    const result = fold(content);
+
+    const runs = result.steps["code-review"];
+    expect(runs).toHaveLength(1);
+    expect(runs![0]!.outcome.addedTurns).toEqual(addedTurns);
+  });
+
+  it("all-zero addedTurns round-trips correctly", async () => {
+    const filePath = path.join(tempDir, "events.jsonl");
+    const addedTurns = { reportRetry: 0, postWork: 0, outputRepair: 0 };
+    const record = makeStepAttemptRecord("spec-review", "approved", { addedTurns });
+    await appendEventRecord(filePath, record);
+
+    const content = await fs.readFile(filePath, "utf-8");
+    const result = fold(content);
+
+    expect(result.steps["spec-review"]![0]!.outcome.addedTurns).toEqual(addedTurns);
+  });
+});
+
+describe("addedTurns backward compat — old records without addedTurns fold without exception", () => {
+  it("step-attempt record without addedTurns key → fold succeeds and outcome.addedTurns is undefined", () => {
+    // Simulate a legacy record (no addedTurns field)
+    const legacyRecord: StepAttemptRecord = {
+      type: "step-attempt",
+      step: "code-review",
+      sessionId: null,
+      outcome: {
+        verdict: "approved",
+        findingsPath: null,
+        error: null,
+        // addedTurns intentionally omitted
+      },
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:05:00.000Z",
+    };
+    const line = JSON.stringify(legacyRecord);
+    const result = fold(line);
+
+    const runs = result.steps["code-review"];
+    expect(runs).toHaveLength(1);
+    // addedTurns absent in legacy record → fold must not set it (undefined, not null or 0)
+    expect(runs![0]!.outcome.addedTurns).toBeUndefined();
+  });
+
+  it("raw JSON line without addedTurns → fold does not throw and outcome.addedTurns is undefined", () => {
+    const rawLine = JSON.stringify({
+      type: "step-attempt",
+      step: "spec-review",
+      sessionId: null,
+      outcome: {
+        verdict: "needs-fix",
+        findingsPath: "/some/path.md",
+        error: null,
+        followUpAttempts: 1,
+      },
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:05:00.000Z",
+    });
+
+    let result: ReturnType<typeof fold> | undefined;
+    expect(() => { result = fold(rawLine); }).not.toThrow();
+    const runs = result!.steps["spec-review"];
+    expect(runs![0]!.outcome.addedTurns).toBeUndefined();
   });
 });

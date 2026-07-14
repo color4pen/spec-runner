@@ -47,6 +47,12 @@ export interface StepAttemptRecord {
     skipReason?: string;
     /** Completion-report extraction diagnostics (Codex adapter only). Absent on success. */
     completionReportDiagnostics?: CompletionReportDiagnostic[];
+    /**
+     * Added-turn metrics broken down by type (local runtime only).
+     * addedTurns なしの旧 record は fold で undefined（後方互換）。
+     * Added in added-turns-persist-and-review-trim.
+     */
+    addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
   };
   startedAt: string;
   endedAt: string;
@@ -284,6 +290,7 @@ export function fold(content: string): FoldResult {
         ...(r.outcome.transientRetryAttempts !== undefined ? { transientRetryAttempts: r.outcome.transientRetryAttempts } : {}),
         ...(r.outcome.skipReason !== undefined ? { skipReason: r.outcome.skipReason } : {}),
         ...(r.outcome.completionReportDiagnostics !== undefined ? { completionReportDiagnostics: r.outcome.completionReportDiagnostics } : {}),
+        ...(r.outcome.addedTurns !== undefined ? { addedTurns: r.outcome.addedTurns } : {}),
       },
       startedAt: r.startedAt,
       endedAt: r.endedAt,
@@ -356,6 +363,7 @@ export function stepRunToRecord(step: string, run: StepRun): StepAttemptRecord {
       ...(outcome.transientRetryAttempts !== undefined ? { transientRetryAttempts: outcome.transientRetryAttempts } : {}),
       ...(outcome.skipReason !== undefined ? { skipReason: outcome.skipReason } : {}),
       ...(outcome.completionReportDiagnostics !== undefined ? { completionReportDiagnostics: outcome.completionReportDiagnostics } : {}),
+      ...(outcome.addedTurns !== undefined ? { addedTurns: outcome.addedTurns } : {}),
     },
     startedAt: run.startedAt,
     endedAt: run.endedAt,

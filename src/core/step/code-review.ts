@@ -158,21 +158,10 @@ export const CodeReviewStep: AgentStep = {
     ];
   },
 
-  followUpPrompt: [
-    "作業完了後の self-check pass です。",
-    "出力した review-feedback ファイルを Read tool で読み、以下を確認してください:",
-    "",
-    "1. Fix カラムが全 finding に対して yes / no のいずれかで記入されているか",
-    "   - 空欄や他の値は不可",
-    "2. 各 finding の severity が Severity 定義と一致しているか",
-    "   - critical: 本番障害、データ損失、セキュリティ侵害に直結",
-    "   - high: 機能不全、明確なバグ、回避策なし",
-    "   - medium: 品質低下、保守性問題、将来のリスク",
-    "   - low: 情報提供、スタイル、微小な改善",
-    "",
-    "違反があれば review-feedback ファイルを修正してください。",
-    "違反がなければ変更せず end_turn してください。",
-  ].join("\n"),
+  // followUpPrompt is intentionally absent: the unconditional post-work self-check
+  // turn has been removed (added-turns-persist-and-review-trim).
+  // Format (table + required columns) is enforced by the content-format outputContract above.
+  // Severity definitions are already injected via system prompt (step 4 of buildMessage).
 
   // maxTurns: code-review reads diff + writes findings; 20 is sufficient.
   // Design D3 (propose-openspec-cli-and-step-model-config).

@@ -3225,3 +3225,165 @@ describe("T-06: addedTurns per-type metrics", () => {
     expect(result.addedTurns!.reportRetry + result.addedTurns!.outputRepair).toBe(result.followUpAttempts);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T-02 (added-turns-persist-and-review-trim): post-work count-miss fix
+// ---------------------------------------------------------------------------
+
+describe("T-02: addedTurns.postWork counted even when post-work turn fails", () => {
+  it("post-work failure → completionReason=error and addedTurns.postWork===1", async () => {
+    // main turn succeeds; the single postWorkPrompt turn returns non-success subtype.
+    let callCount = 0;
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        // Main work turn: success with session_id so postWork can resume
+        yield {
+          type: "result" as const,
+          subtype: "success" as const,
+          result: "done",
+          session_id: "sess-postwork-fail",
+          duration_ms: 100,
+          duration_api_ms: 80,
+          is_error: false,
+          num_turns: 1,
+          stop_reason: "end_turn",
+          total_cost_usd: 0.01,
+          usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          uuid: "test-uuid",
+        } as unknown;
+      } else {
+        // Post-work turn: non-transient error (not retried by runFollowUpQueryWithRetry)
+        yield {
+          type: "result" as const,
+          subtype: "error_during_execution" as const,
+          duration_ms: 100,
+          duration_api_ms: 80,
+          is_error: true,
+          num_turns: 1,
+          stop_reason: null,
+          total_cost_usd: 0.01,
+          usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          errors: ["post-work turn failed"],
+          uuid: "test-uuid",
+          session_id: "sess-postwork-fail",
+        } as unknown;
+      }
+    } as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("t02-postwork-fail-job"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: {
+        postWorkPrompts: ["self-check: verify output"],
+      },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+
+    // The run fails because post-work turn failed
+    expect(result.completionReason).toBe("error");
+    expect(result.error?.code).toBe("CLAUDE_CODE_QUERY_FAILED");
+
+    // The turn was consumed → postWork must be 1 even though it failed
+    expect(result.addedTurns).toBeDefined();
+    expect(result.addedTurns!.postWork).toBe(1);
+  });
+
+  it("invariant: reportRetry + outputRepair === followUpAttempts across success and error paths", async () => {
+    // Path 1: success with no follow-up turns
+    {
+      const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: makeQueryFn() });
+      const ctx: AgentRunContext = {
+        step: makeAgentStep(),
+        state: makeJobState("t02-invariant-success"),
+        branch: "feat/test",
+        slug: "test-slug",
+        cwd: tempDir,
+        input: { requestContent: "content" },
+        session: {},
+        policy: {},
+        config: makeConfig(),
+        emit: vi.fn(),
+      };
+      const r = await runner.run(ctx);
+      expect(r.addedTurns!.reportRetry + r.addedTurns!.outputRepair).toBe(r.followUpAttempts);
+    }
+
+    // Path 2: error on main turn
+    {
+      const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: makeQueryFn({ result: "error" }) });
+      const ctx: AgentRunContext = {
+        step: makeAgentStep(),
+        state: makeJobState("t02-invariant-error"),
+        branch: "feat/test",
+        slug: "test-slug",
+        cwd: tempDir,
+        input: { requestContent: "content" },
+        session: {},
+        policy: {},
+        config: makeConfig(),
+        emit: vi.fn(),
+      };
+      const r = await runner.run(ctx);
+      // ADDED_TURNS_ZERO paths: all zero
+      expect(r.addedTurns!.reportRetry + r.addedTurns!.outputRepair).toBe(r.followUpAttempts);
+    }
+
+    // Path 3: success with postWork turns (postWork NOT in followUpAttempts)
+    {
+      let _callCount = 0;
+      const queryFnWithPostWork: QueryFn = async function* () {
+        _callCount++;
+        yield {
+          type: "result" as const,
+          subtype: "success" as const,
+          result: "done",
+          session_id: "sess-inv-postwork",
+          duration_ms: 100,
+          duration_api_ms: 80,
+          is_error: false,
+          num_turns: 1,
+          stop_reason: "end_turn",
+          total_cost_usd: 0.01,
+          usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+          modelUsage: {},
+          permission_denials: [],
+          uuid: "test-uuid",
+        } as unknown;
+      } as QueryFn;
+
+      const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFnWithPostWork });
+      const ctx: AgentRunContext = {
+        step: makeAgentStep(),
+        state: makeJobState("t02-invariant-postwork"),
+        branch: "feat/test",
+        slug: "test-slug",
+        cwd: tempDir,
+        input: { requestContent: "content" },
+        session: {},
+        policy: { postWorkPrompts: ["check output"] },
+        config: makeConfig(),
+        emit: vi.fn(),
+      };
+      const r = await runner.run(ctx);
+      expect(r.completionReason).toBe("success");
+      // postWork is separate from followUpAttempts invariant
+      expect(r.addedTurns!.postWork).toBe(1);
+      expect(r.addedTurns!.reportRetry + r.addedTurns!.outputRepair).toBe(r.followUpAttempts);
+    }
+  });
+});
