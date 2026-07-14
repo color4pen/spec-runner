@@ -65,3 +65,11 @@
 {"type":"transition","ts":"2026-07-14T04:55:24.293Z","step":"conformance","status":"ok","message":"conformance iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-14T04:55:24.293Z","step":"step-transition","status":"ok","message":"conformance → adr-gen"}
 {"type":"transition","ts":"2026-07-14T04:55:24.295Z","step":"adr-gen-started","status":"started","message":"Starting adr-gen step"}
+{"type":"transition","ts":"2026-07-14T04:55:49.614Z","step":"adr-gen-verdict","status":"ok","message":"adr-gen verdict: success"}
+{"type":"step-attempt","step":"adr-gen","sessionId":"3a351036-609f-4aea-8658-3e0e02d8eaa2","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":1,"transientRetryAttempts":0},"startedAt":"2026-07-14T04:55:24.354Z","endedAt":"2026-07-14T04:55:47.871Z"}
+{"type":"transition","ts":"2026-07-14T04:55:49.633Z","step":"step-transition","status":"ok","message":"adr-gen → pr-create"}
+{"type":"transition","ts":"2026-07-14T04:55:49.636Z","step":"step-transition","status":"ok","message":"Transitioning to pr-create step"}
+{"type":"transition","ts":"2026-07-14T04:55:51.917Z","step":"pr-create-verdict","status":"ok","message":"pr-create verdict: success"}
+{"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/workspace-materializer-extract/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-14T04:55:49.638Z","endedAt":"2026-07-14T04:55:51.906Z"}
+{"type":"lineage","step":"pr-create","ts":"2026-07-14T04:55:51.906Z","outputs":[{"path":"specrunner/changes/workspace-materializer-extract/pr-create-result.md","hash":"sha256:eb7bad3e5d4d556e2109a4dfa9229fc144d71ac957f92d23b5f1cb0bc1df5725"}],"inputs":[{"path":"refactor/workspace-materializer-extract-220f2dec","hash":null}]}
+{"type":"transition","ts":"2026-07-14T04:55:51.923Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
