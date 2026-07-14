@@ -15,7 +15,7 @@
 
 import * as path from "node:path";
 import type { Step, AgentStep } from "./types.js";
-import type { JobState, Verdict, ModelUsage, StepRun, ErrorInfo } from "../../state/schema.js";
+import type { JobState, Verdict, ModelUsage, StepRun, ErrorInfo, HistoryEntry } from "../../state/schema.js";
 import type { ReviewerStatus } from "../../kernel/reviewer-snapshot.js";
 import type { PipelineDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
@@ -26,6 +26,7 @@ import type { PermissionScope } from "../pipeline/types.js";
 import type { StepCompletion } from "./step-completion.js";
 import type { StepHalt } from "./step-halt.js";
 import { pushStepResult } from "../../state/helpers.js";
+import { appendHistoryEntry } from "../../state/schema.js";
 import {
   recordFailedStepResult,
   attachStateAndRethrow,
@@ -67,6 +68,84 @@ export type StepExecutionResult =
   | { kind: "skipped"; skipReason: string };
 
 // ---------------------------------------------------------------------------
+// Pure projectors (module-level, non-exported)
+// ---------------------------------------------------------------------------
+
+/**
+ * Pure in-memory projection for a successful step result: applies pushStepResult.
+ * The {step}-verdict history entry is applied separately by the caller via
+ * verdictHistoryEntry() — durably (store.appendHistory) in the sequential path,
+ * in-memory (appendHistoryEntry) in the round path.
+ * No store calls, no side effects.
+ */
+function projectSuccess(
+  state: JobState,
+  step: Step,
+  result: StepExecutionResult & { kind: "success" },
+  findingsPath: string | null,
+): JobState {
+  const { completion, completedAt, startedAt, session, followUpAttempts, transientRetryAttempts, completionReportDiagnostics } = result;
+  const { verdict, persistToolResult } = completion;
+
+  return pushStepResult(state, step.name, {
+    session,
+    verdict: verdict as Verdict | null,
+    findingsPath,
+    completedAt,
+    startedAt,
+    error: null,
+    toolResult: persistToolResult,
+    followUpAttempts: followUpAttempts ?? 0,
+    transientRetryAttempts,
+    completionReportDiagnostics,
+  });
+}
+
+/** Pure builder for the {step}-verdict history entry (shared by sequential + round). */
+function verdictHistoryEntry(step: Step, verdict: Verdict | null, now: string): HistoryEntry {
+  return {
+    ts: now,
+    step: `${step.name}-verdict`,
+    status: "ok",
+    message: `${step.name} verdict: ${verdict}`,
+  };
+}
+
+/**
+ * Pure in-memory projection for a skipped step result: applies pushStepResult(verdict:"skipped").
+ * The {step}-skipped history entry is applied separately by the caller via skipHistoryEntry()
+ * — durably (store.appendHistory) in the sequential path, in-memory in the round path.
+ * No store calls, no side effects.
+ */
+function projectSkip(
+  state: JobState,
+  step: AgentStep,
+  skipReason: string,
+  startedAt: string,
+  now: string,
+): JobState {
+  return pushStepResult(state, step.name, {
+    session: null,
+    verdict: "skipped" as Verdict,
+    findingsPath: null,
+    completedAt: now,
+    startedAt,
+    error: null,
+    skipReason,
+  });
+}
+
+/** Pure builder for the {step}-skipped history entry (shared by sequential + round). */
+function skipHistoryEntry(step: Step | AgentStep, skipReason: string, now: string): HistoryEntry {
+  return {
+    ts: now,
+    step: `${step.name}-skipped`,
+    status: "warning",
+    message: `${step.name} skipped: ${skipReason}`,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // CommitOrchestrator
 // ---------------------------------------------------------------------------
 
@@ -98,6 +177,79 @@ export class CommitOrchestrator {
       this.storeCacheJobId = jobId;
     }
     return this.storeCache;
+  }
+
+  /**
+   * Apply best-effort post-persist effects for a successful step result.
+   * Shared by commitSuccess (sequential) and commitRound (parallel round post-persist loop).
+   * Sequence: usage appendInvocation → lineage appendLineage → verdict:parsed emit.
+   * Each of usage and lineage is individually wrapped in try/catch (best-effort).
+   */
+  private async applySuccessPostPersistEffects(
+    store: JobStateStore,
+    state: JobState,
+    step: Step,
+    result: StepExecutionResult & { kind: "success" },
+    deps: PipelineDeps,
+  ): Promise<void> {
+    const { completion, completedAt, modelUsage, followUpAttempts } = result;
+    const { verdict, persistToolResult } = completion;
+
+    // usage (appendInvocation — best-effort)
+    if (modelUsage && deps.cwd && deps.slug) {
+      const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
+      try {
+        await appendInvocation(usageAbsPath, {
+          command: "job",
+          timestamp: completedAt,
+          modelUsage,
+          jobId: state.jobId,
+          stepName: step.name,
+        });
+      } catch {
+        // Best-effort: usage append failure must not block step completion
+      }
+    }
+
+    // lineage (appendLineage — best-effort)
+    if (deps.runtimeStrategy && step.writes && deps.cwd) {
+      try {
+        const cwd = deps.cwd;
+        const writes = step.writes(state, deps);
+        if (writes.length > 0) {
+          const reads = step.reads ? step.reads(state, deps) : [];
+          const [outputRefs, inputRefs] = await Promise.all([
+            deps.runtimeStrategy.digestArtifacts(writes.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+            deps.runtimeStrategy.digestArtifacts(reads.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+          ]);
+          const inputArtifactRefs = inputRefs.map((r, i) => {
+            const ioRef = reads[i];
+            if (ioRef?.required !== undefined) return { ...r, required: ioRef.required };
+            return r;
+          });
+          const lineageRecord: LineageRecord = {
+            type: "lineage",
+            step: step.name,
+            ts: completedAt,
+            outputs: outputRefs,
+            inputs: inputArtifactRefs,
+          };
+          await store.appendLineage(lineageRecord);
+        }
+      } catch {
+        // Best-effort: lineage recording failure must not affect step completion
+      }
+    }
+
+    // verdict:parsed emit (after persist — state is committed before handlers react)
+    this.events.emit("verdict:parsed", {
+      step: step.name,
+      outcome: {
+        verdict,
+        toolResult: persistToolResult,
+        followUpAttempts: followUpAttempts ?? 0,
+      },
+    });
   }
 
   /**
@@ -133,9 +285,8 @@ export class CommitOrchestrator {
 
   /**
    * Apply a successful step result to state and persist.
-   * Mirrors finalizeStep (:628-741) side-effect sequence:
-   *   pushStepResult → {step}-verdict history → branch → pullRequest →
-   *   usage → store.persist → lineage → verdict:parsed emit
+   * Sequence: projectSuccess → store.appendHistory({step}-verdict) → branch/pullRequest
+   *           → store.persist → applySuccessPostPersistEffects (usage + lineage + verdict:parsed emit).
    */
   async commitSuccess(
     step: Step,
@@ -145,42 +296,17 @@ export class CommitOrchestrator {
   ): Promise<JobState> {
     const store = this.getStore(state.jobId);
     const findingsPath = step.resultFilePath(state, deps);
-    const {
-      completion,
-      completedAt,
-      startedAt,
-      session,
-      agentBranch,
-      modelUsage,
-      followUpAttempts,
-      transientRetryAttempts,
-      completionReportDiagnostics,
-    } = result;
-    const { verdict, persistToolResult } = completion;
+    const now = new Date().toISOString();
+    const { agentBranch, completion } = result;
+    const { verdict } = completion;
 
     logVerbose("step", "verdict parsed", { step: step.name, verdict });
 
-    // pushStepResult
-    let s = pushStepResult(state, step.name, {
-      session,
-      verdict: verdict as Verdict | null,
-      findingsPath,
-      completedAt,
-      startedAt,
-      error: null,
-      toolResult: persistToolResult,
-      followUpAttempts: followUpAttempts ?? 0,
-      transientRetryAttempts,
-      completionReportDiagnostics,
-    });
+    // In-memory projection: pushStepResult
+    let s = projectSuccess(state, step, result, findingsPath);
 
-    // {step}-verdict history
-    s = await store.appendHistory(s, {
-      ts: new Date().toISOString(),
-      step: `${step.name}-verdict`,
-      status: "ok",
-      message: `${step.name} verdict: ${verdict}`,
-    });
+    // Durably record {step}-verdict history (write 1)
+    s = await store.appendHistory(s, verdictHistoryEntry(step, verdict as Verdict | null, now));
 
     // Branch setting (agent-branch or setsBranch flag)
     if (agentBranch && !s.branch) {
@@ -196,72 +322,18 @@ export class CommitOrchestrator {
       s = { ...s, pullRequest: completion.pullRequest };
     }
 
-    // T-10: Append per-step usage to changes/<slug>/usage.json (best-effort)
-    if (modelUsage && deps.cwd && deps.slug) {
-      const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
-      try {
-        await appendInvocation(usageAbsPath, {
-          command: "job",
-          timestamp: completedAt,
-          modelUsage,
-          jobId: s.jobId,
-          stepName: step.name,
-        });
-      } catch {
-        // Best-effort: usage append failure must not block step completion
-      }
-    }
-
-    // Persist state
+    // Persist branch/pullRequest patch (write 2)
     await store.persist(s);
 
-    // D1/D5 (artifact-observability): record lineage (best-effort)
-    if (deps.runtimeStrategy && step.writes && deps.cwd) {
-      try {
-        const cwd = deps.cwd;
-        const writes = step.writes(s, deps);
-        if (writes.length > 0) {
-          const reads = step.reads ? step.reads(s, deps) : [];
-          const [outputRefs, inputRefs] = await Promise.all([
-            deps.runtimeStrategy.digestArtifacts(writes.map((r) => ({ path: r.path })), cwd, s.branch ?? null),
-            deps.runtimeStrategy.digestArtifacts(reads.map((r) => ({ path: r.path })), cwd, s.branch ?? null),
-          ]);
-          const inputArtifactRefs = inputRefs.map((r, i) => {
-            const ioRef = reads[i];
-            if (ioRef?.required !== undefined) return { ...r, required: ioRef.required };
-            return r;
-          });
-          const lineageRecord: LineageRecord = {
-            type: "lineage",
-            step: step.name,
-            ts: completedAt,
-            outputs: outputRefs,
-            inputs: inputArtifactRefs,
-          };
-          await store.appendLineage(lineageRecord);
-        }
-      } catch {
-        // Best-effort: lineage recording failure must not affect step completion
-      }
-    }
-
-    // verdict:parsed emit (after persist — state is committed before handlers react)
-    this.events.emit("verdict:parsed", {
-      step: step.name,
-      outcome: {
-        verdict,
-        toolResult: persistToolResult,
-        followUpAttempts: followUpAttempts ?? 0,
-      },
-    });
+    // Post-persist effects: usage + lineage + verdict:parsed emit
+    await this.applySuccessPostPersistEffects(store, s, step, result, deps);
 
     return s;
   }
 
   /**
    * Record a skipped step (activation conditions not met) and persist.
-   * Mirrors finalizeSkippedStep (:518-554):
-   *   pushStepResult(verdict:"skipped") → {step}-skipped warning → verdict:parsed emit → persist
+   * Sequence: projectSkip → store.appendHistory({step}-skipped) → verdict:parsed emit → persist.
    */
   async commitSkipped(
     step: AgentStep,
@@ -271,23 +343,13 @@ export class CommitOrchestrator {
     const store = this.getStore(state.jobId);
     const now = new Date().toISOString();
 
-    let s = pushStepResult(state, step.name, {
-      session: null,
-      verdict: "skipped" as Verdict,
-      findingsPath: null,
-      completedAt: now,
-      startedAt: now,
-      error: null,
-      skipReason,
-    });
+    // In-memory projection: pushStepResult(verdict:"skipped")
+    let s = projectSkip(state, step, skipReason, now, now);
 
-    s = await store.appendHistory(s, {
-      ts: now,
-      step: `${step.name}-skipped`,
-      status: "warning",
-      message: `${step.name} skipped: ${skipReason}`,
-    });
+    // Durably record {step}-skipped history (matches sequential appendHistory semantics)
+    s = await store.appendHistory(s, skipHistoryEntry(step, skipReason, now));
 
+    // Emit before final persist (sequential emit-before-persist order)
     this.events.emit("verdict:parsed", {
       step: step.name,
       outcome: {
@@ -357,9 +419,13 @@ export class CommitOrchestrator {
    *
    * Sequence:
    *   1. Fold each member result into state in-memory (no store calls).
+   *      Success: appendHistoryEntry({step}-started) → projectSuccess → appendHistoryEntry(verdictHistoryEntry).
+   *      Skip:    appendHistoryEntry({step}-started) → projectSkip → appendHistoryEntry(skipHistoryEntry).
+   *      Halt:    recordFailedStepResult + halt.history (in-memory only).
    *   2. Apply coordinator patch: reviewerStatuses, coordinator StepRun, error, updatedAt.
    *   3. store.persist(state) — exactly once.
-   *   4. Best-effort post-persist: usage + lineage per success member + verdict:parsed emit.
+   *   4. Best-effort post-persist: applySuccessPostPersistEffects per success member
+   *      + verdict:parsed emit per skipped member.
    *
    * member halt: recordFailedStepResult only (records StepRun error in-memory).
    *   store.fail / transitionJob are NOT called — job lifecycle (failed transition)
@@ -398,87 +464,47 @@ export class CommitOrchestrator {
 
     for (const { step, startedAt, result } of members) {
       if (result.kind === "success") {
-        const { completion, completedAt, session, modelUsage: _modelUsage, followUpAttempts, transientRetryAttempts, completionReportDiagnostics } = result;
-        const { verdict, persistToolResult } = completion;
         const findingsPath = step.resultFilePath(base, deps);
 
-        // pushStepResult (mirrors commitSuccess)
-        state = pushStepResult(state, step.name, {
-          session,
-          verdict: verdict as Verdict | null,
-          findingsPath,
-          completedAt,
-          startedAt,
-          error: null,
-          toolResult: persistToolResult,
-          followUpAttempts: followUpAttempts ?? 0,
-          transientRetryAttempts,
-          completionReportDiagnostics,
+        // Round-only: {step}-started history (sequential path uses begin() instead)
+        state = appendHistoryEntry(state, {
+          ts: startedAt,
+          step: `${step.name}-started`,
+          status: "started",
+          message: `Starting ${step.name} step`,
         });
 
-        // history: {member}-started (matches CommitOrchestrator.begin agent path)
-        state = {
-          ...state,
-          history: [
-            ...state.history,
-            { ts: startedAt, step: `${step.name}-started`, status: "started" as const, message: `Starting ${step.name} step` },
-          ],
-        };
-
-        // history: {member}-verdict (matches commitSuccess appendHistory)
-        state = {
-          ...state,
-          history: [
-            ...state.history,
-            { ts: now, step: `${step.name}-verdict`, status: "ok" as const, message: `${step.name} verdict: ${verdict}` },
-          ],
-        };
+        // Shared projector: pushStepResult
+        state = projectSuccess(state, step, result, findingsPath);
+        // {step}-verdict history (in-memory; round batches into a single persist)
+        state = appendHistoryEntry(state, verdictHistoryEntry(step, result.completion.verdict as Verdict | null, now));
 
         successEntries.push({ step, result });
       } else if (result.kind === "skipped") {
-        // pushStepResult (mirrors commitSkipped)
-        state = pushStepResult(state, step.name, {
-          session: null,
-          verdict: "skipped" as Verdict,
-          findingsPath: null,
-          completedAt: now,
-          startedAt,
-          error: null,
-          skipReason: result.skipReason,
+        // Round-only: {step}-started history (sequential path uses begin() instead)
+        state = appendHistoryEntry(state, {
+          ts: startedAt,
+          step: `${step.name}-started`,
+          status: "started",
+          message: `Starting ${step.name} step`,
         });
 
-        // history: {member}-started
-        state = {
-          ...state,
-          history: [
-            ...state.history,
-            { ts: startedAt, step: `${step.name}-started`, status: "started" as const, message: `Starting ${step.name} step` },
-          ],
-        };
-
-        // history: {member}-skipped (matches commitSkipped appendHistory)
-        state = {
-          ...state,
-          history: [
-            ...state.history,
-            { ts: now, step: `${step.name}-skipped`, status: "warning" as const, message: `${step.name} skipped: ${result.skipReason}` },
-          ],
-        };
+        // Shared projector: pushStepResult(skipped)
+        state = projectSkip(state, step as AgentStep, result.skipReason, startedAt, now);
+        // {step}-skipped history (in-memory; round batches into a single persist)
+        state = appendHistoryEntry(state, skipHistoryEntry(step, result.skipReason, now));
 
         skippedEntries.push({ step, result });
       } else {
         // halt — recordFailedStepResult only (no store.fail / transitionJob)
         state = recordFailedStepResult(state, step.name, result.halt.error, result.halt.recordOpts ?? {});
 
-        // history from halt.history (in-memory append, matches commitHalt record phase)
+        // history from halt.history (in-memory append)
         if (result.halt.history) {
-          state = {
-            ...state,
-            history: [
-              ...state.history,
-              { ts: now, ...result.halt.history },
-            ],
-          };
+          state = appendHistoryEntry(state, {
+            ts: now,
+            ...result.halt.history,
+          });
         }
       }
     }
@@ -501,67 +527,10 @@ export class CommitOrchestrator {
 
     // --- 4. Best-effort post-persist: usage + lineage + verdict:parsed ---
     for (const { step, result } of successEntries) {
-      const { completion, completedAt, modelUsage } = result;
-      const { verdict, persistToolResult } = completion;
-
-      // usage (appendInvocation — mirrors commitSuccess)
-      if (modelUsage && deps.cwd && deps.slug) {
-        const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
-        try {
-          await appendInvocation(usageAbsPath, {
-            command: "job",
-            timestamp: completedAt,
-            modelUsage,
-            jobId: state.jobId,
-            stepName: step.name,
-          });
-        } catch {
-          // best-effort
-        }
-      }
-
-      // lineage (appendLineage — mirrors commitSuccess)
-      if (deps.runtimeStrategy && step.writes && deps.cwd) {
-        try {
-          const cwd = deps.cwd;
-          const writes = step.writes(state, deps);
-          if (writes.length > 0) {
-            const reads = step.reads ? step.reads(state, deps) : [];
-            const [outputRefs, inputRefs] = await Promise.all([
-              deps.runtimeStrategy.digestArtifacts(writes.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
-              deps.runtimeStrategy.digestArtifacts(reads.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
-            ]);
-            const inputArtifactRefs = inputRefs.map((r, i) => {
-              const ioRef = reads[i];
-              if (ioRef?.required !== undefined) return { ...r, required: ioRef.required };
-              return r;
-            });
-            const lineageRecord: LineageRecord = {
-              type: "lineage",
-              step: step.name,
-              ts: completedAt,
-              outputs: outputRefs,
-              inputs: inputArtifactRefs,
-            };
-            await store.appendLineage(lineageRecord);
-          }
-        } catch {
-          // best-effort
-        }
-      }
-
-      // verdict:parsed (mirrors commitSuccess, emitted after persist)
-      this.events.emit("verdict:parsed", {
-        step: step.name,
-        outcome: {
-          verdict,
-          toolResult: persistToolResult,
-          followUpAttempts: result.followUpAttempts ?? 0,
-        },
-      });
+      await this.applySuccessPostPersistEffects(store, state, step, result, deps);
     }
 
-    // verdict:parsed for skipped members (mirrors commitSkipped)
+    // verdict:parsed for skipped members (skipped entries have no usage or lineage)
     for (const { step } of skippedEntries) {
       this.events.emit("verdict:parsed", {
         step: step.name,
