@@ -246,8 +246,6 @@ export function buildRequestReviewInitialMessage(input: RequestReviewInitialMess
     ? `\n6a. After completing Step 2 (Code Assertion Fact-Check), write the attestation file:\n    Path: ${attestationPath}\n    Content: JSON with these exact fields:\n    {\n      "requestHash": "${requestContentHash}",\n      "codeAssertionsVerified": true,\n      "verifiedAssertions": ["<each file:line/symbol/path assertion you verified>"]\n    }\n    (Copy requestHash verbatim from above — do NOT recompute it.)`
     : "";
 
-  const stepCount = hasAttestation ? "7" : "6";
-
   return `<user-request>
 Please perform a request review for the following change:
 
