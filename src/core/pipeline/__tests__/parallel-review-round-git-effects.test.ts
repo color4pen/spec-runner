@@ -19,9 +19,10 @@ import { EventBus } from "../../event/event-bus.js";
 import { ParallelReviewRound } from "../parallel-review-round.js";
 import type { ParallelReviewConfig } from "../types.js";
 import type { Step } from "../../step/types.js";
-import type { JobState, StepRun } from "../../../state/schema.js";
+import type { JobState } from "../../../state/schema.js";
 import type { PipelineDeps } from "../../types.js";
 import type { StepExecutor } from "../../step/executor.js";
+import type { StepExecutionResult } from "../../step/commit-orchestrator.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -40,18 +41,22 @@ const EVENTS_JSONL = `specrunner/changes/${SLUG}/events.jsonl`;
 const USAGE_JSON = `specrunner/changes/${SLUG}/usage.json`;
 
 // ---------------------------------------------------------------------------
-// Fixtures
+// Success StepExecutionResult fixture
 // ---------------------------------------------------------------------------
 
-function makeApprovedRun(_name: string): StepRun {
+function makeApprovedResult(): StepExecutionResult {
   return {
-    attempt: 1,
-    sessionId: null,
-    outcome: { verdict: "approved", findingsPath: null, error: null, toolResult: null },
+    kind: "success",
+    completion: { verdict: "approved", persistToolResult: null },
+    completedAt: new Date().toISOString(),
     startedAt: new Date().toISOString(),
-    endedAt: new Date().toISOString(),
+    session: null,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
 
 function makeState(): JobState {
   return {
@@ -102,8 +107,9 @@ function makeStepWithWrites(name: string, declaredPaths: string[]): Step {
 }
 
 /**
- * Fake executor that immediately returns an approved state for each member.
- * Also captures the deps.roundOwnsGitEffects flag and any captured deps per member.
+ * Fake executor that immediately returns an approved StepExecutionResult for each member.
+ * Uses produceResult (not execute) — member does not persist state.
+ * Also captures the deps.roundOwnsGitEffects flag per member.
  */
 function makeFakeExecutor(): {
   executor: StepExecutor;
@@ -112,13 +118,9 @@ function makeFakeExecutor(): {
   const capturedFlags = new Map<string, boolean | undefined>();
 
   const executor = {
-    execute: async (step: Step, state: JobState, deps: PipelineDeps): Promise<JobState> => {
+    produceResult: async (step: Step, _state: JobState, deps: PipelineDeps): Promise<StepExecutionResult> => {
       capturedFlags.set(step.name, deps.roundOwnsGitEffects);
-      return {
-        ...state,
-        steps: { ...(state.steps ?? {}), [step.name]: [makeApprovedRun(step.name)] },
-        updatedAt: new Date().toISOString(),
-      };
+      return makeApprovedResult();
     },
   } as unknown as StepExecutor;
 

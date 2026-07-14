@@ -15,9 +15,11 @@ import {
   applyRoundResults,
   aggregateVerdict,
   computeInvalidations,
+  verdictOfResult,
 } from "../reviewer-status.js";
 import type { ReviewerStatus } from "../reviewer-status.js";
-import type { JobState } from "../../../state/schema.js";
+import type { StepExecutionResult } from "../../step/commit-orchestrator.js";
+import type { JobState, Verdict } from "../../../state/schema.js";
 import type { ReviewerSnapshot } from "../../reviewers/types.js";
 
 // ---------------------------------------------------------------------------
@@ -322,5 +324,73 @@ describe("computeInvalidations", () => {
     const original = { ...statuses[0] };
     computeInvalidations(statuses, ["src/feature.ts"], "bug-fix", "sha-def");
     expect(statuses[0]).toEqual(original); // unchanged
+  });
+});
+
+// ---------------------------------------------------------------------------
+// verdictOfResult — T-01 (round-owned-state-commit)
+// ---------------------------------------------------------------------------
+
+/**
+ * TC-T01: verdictOfResult derives member verdict from StepExecutionResult.
+ *
+ * Pure function — no executor, store, or git dependency.
+ * Equivalence with the old member verdict derivation:
+ *   fulfilled: lastRun?.outcome.verdict ?? "escalation"
+ *   rejected:  "escalation"
+ */
+describe("verdictOfResult (T-01)", () => {
+  it("success with verdict 'approved' → 'approved'", () => {
+    const result: StepExecutionResult = {
+      kind: "success",
+      completion: { verdict: "approved", persistToolResult: null },
+      completedAt: "2026-01-01T00:01:00.000Z",
+      startedAt: "2026-01-01T00:00:00.000Z",
+      session: null,
+    };
+    expect(verdictOfResult(result)).toBe("approved");
+  });
+
+  it("success with verdict 'needs-fix' → 'needs-fix'", () => {
+    const result: StepExecutionResult = {
+      kind: "success",
+      completion: { verdict: "needs-fix", persistToolResult: null },
+      completedAt: "2026-01-01T00:01:00.000Z",
+      startedAt: "2026-01-01T00:00:00.000Z",
+      session: null,
+    };
+    expect(verdictOfResult(result)).toBe("needs-fix");
+  });
+
+  it("success with verdict null → 'escalation' (null-coalesce mirrors old lastRun?.outcome.verdict ?? 'escalation')", () => {
+    // StepCompletion.verdict is typed as Verdict (non-null) but runtime edge cases (legacy state files,
+    // adapter quirks) can produce null at runtime. verdictOfResult's ?? "escalation" guards against this.
+    // Cast through unknown to bypass the type guard for this invariant test.
+    const result: StepExecutionResult = {
+      kind: "success",
+      completion: { verdict: null as unknown as Verdict, persistToolResult: null },
+      completedAt: "2026-01-01T00:01:00.000Z",
+      startedAt: "2026-01-01T00:00:00.000Z",
+      session: null,
+    };
+    expect(verdictOfResult(result)).toBe("escalation");
+  });
+
+  it("skipped → 'skipped'", () => {
+    const result: StepExecutionResult = { kind: "skipped", skipReason: "activation-not-matched" };
+    expect(verdictOfResult(result)).toBe("skipped");
+  });
+
+  it("halt → 'escalation' (mirrors old rejected path verdict)", () => {
+    const err = Object.assign(new Error("agent exploded"), { code: "AGENT_STEP_FAILED" });
+    const result: StepExecutionResult = {
+      kind: "halt",
+      halt: {
+        kind: "failed",
+        error: { code: "AGENT_STEP_FAILED", message: "agent exploded", hint: "" },
+        thrownErr: err,
+      },
+    };
+    expect(verdictOfResult(result)).toBe("escalation");
   });
 });

@@ -103,6 +103,60 @@ export class StepExecutor {
   }
 
   /**
+   * Execute a step in producer-only mode: run the step and return a StepExecutionResult
+   * WITHOUT persisting state. Called by ParallelReviewRound fan-out so that the
+   * coordinator (CommitOrchestrator.commitRound) can atomically commit all member
+   * results after the round completes.
+   *
+   * B-13: Does not call store.persist / store.update / store.appendHistory / store.fail.
+   * D1 (execution-ownership-model): coordinator owns all state persistence for the round.
+   *
+   * Event fidelity:
+   *   - step:start emitted before execution.
+   *   - step:complete emitted for success / skipped results.
+   *   - step:error emitted for halt results (including outer-throw normalization).
+   *   - payload.state uses the base state argument (no persisted state available).
+   *
+   * Outer throws (e.g. buildStepContext failure) are caught and normalized to
+   * { kind: "halt" } — this method never rejects.
+   */
+  async produceResult(
+    step: Step,
+    state: JobState,
+    deps: PipelineDeps,
+  ): Promise<StepExecutionResult> {
+    this.events.emit("step:start", { step: step.name, state });
+
+    try {
+      const result = await this.produce(step, state, deps);
+      if (result.kind === "halt") {
+        this.events.emit("step:error", {
+          step: step.name,
+          error: result.halt.thrownErr,
+          state,
+        });
+      } else {
+        // success or skipped
+        this.events.emit("step:complete", { step: step.name, state });
+      }
+      return result;
+    } catch (err) {
+      // Outer throw (e.g. buildStepContext failure) — normalize to halt, never reject
+      const halt = makeAgentThrowHalt(
+        err as Error & { code?: string; hint?: string },
+        step.name,
+        {},
+      );
+      this.events.emit("step:error", {
+        step: step.name,
+        error: err as Error,
+        state,
+      });
+      return { kind: "halt", halt };
+    }
+  }
+
+  /**
    * Execute a single step, driving the full I/O lifecycle:
    * 1. emit step:start
    * 2. begin (record start in state via CommitOrchestrator)

@@ -12,6 +12,8 @@ import type { JobState, StepRun, ErrorInfo } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
+import type { StepExecutionResult } from "../step/commit-orchestrator.js";
+import { CommitOrchestrator } from "../step/commit-orchestrator.js";
 import { StepExecutor } from "../step/executor.js";
 import { defaultSpawnFn } from "../../util/git-exec.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
@@ -21,64 +23,9 @@ import {
   applyRoundResults,
   aggregateVerdict,
   computeInvalidations,
+  verdictOfResult,
 } from "./reviewer-status.js";
 import { partitionRoundChanges } from "./round-git-scope.js";
-
-/**
- * Merge parallel reviewer result states into a base state.
- *
- * Design D3 (reviewer-parallel-execution): each parallel member execution returns a
- * state with its own `steps[member]` updated and history delta appended. This function
- * merges all member states into base by:
- * - Updating each known member's StepRun array from the result (always overwrite,
- *   since result was built on top of base and contains the full up-to-date array)
- * - Adding any other new step keys not present in base
- * - Appending each member's history delta (entries added since base.history.length)
- *   in completion order (allSettled returns in submission order)
- *
- * Member step keys must always be copied from results because on re-runs (coordinator
- * iteration 2+) the member key already exists in base from the prior round. The result
- * state's version supersedes the base's version for that member.
- *
- * @param base        - Base state before parallel execution.
- * @param results     - Array of fulfilled member result states (from allSettled).
- * @param memberNames - Names of the pending member steps that ran in this round.
- *   Their step arrays are always copied from results regardless of base content.
- */
-function mergeParallelReviewerStates(
-  base: JobState,
-  results: JobState[],
-  memberNames: string[],
-): JobState {
-  const memberSet = new Set(memberNames);
-  const baseHistoryLen = base.history.length;
-  let merged = base;
-
-  for (const result of results) {
-    // Merge each member's steps into the accumulated state
-    const mergedSteps = { ...(merged.steps ?? {}) };
-    for (const [key, runs] of Object.entries(result.steps ?? {})) {
-      // Known member steps: always copy (result has the full updated array for this member,
-      // even when the key already existed in base from a prior coordinator round).
-      // Other keys: only copy if absent from base (preserve base steps unchanged).
-      if (memberSet.has(key) || !(key in (base.steps ?? {}))) {
-        mergedSteps[key] = runs;
-      }
-    }
-
-    // Append history delta from this result (entries added since base)
-    const historyDelta = result.history.slice(baseHistoryLen);
-
-    merged = {
-      ...merged,
-      steps: mergedSteps,
-      history: [...merged.history, ...historyDelta],
-      updatedAt: result.updatedAt,
-    };
-  }
-
-  return merged;
-}
 
 export class ParallelReviewRound {
   private readonly executor: StepExecutor;
@@ -102,18 +49,22 @@ export class ParallelReviewRound {
    * Coordinator fan-out: execute pending member steps in parallel and produce an
    * aggregate verdict as a synthetic coordinator StepRun.
    *
-   * Design D3 / D4 / D5 / D6 / D8 (reviewer-parallel-execution):
+   * Design D1/D3/D4/D5/D6/D8 (round-owned-state-commit / reviewer-parallel-execution):
    *
    * 1. Derive/init reviewer statuses from state.
    * 2. Compute invalidations: for each approved member, check if fixer touched
    *    their activation paths (listChangedFiles from approvedAtCommit to HEAD).
    * 3. Select pending members (approved/skipped are excluded → resume skip D8).
-   * 4. If no pending → all approved → synthetic "approved" StepRun (fast path).
-   * 5. Fan-out: execute each pending member step via Promise.allSettled.
-   * 6. Merge results (mergeParallelReviewerStates).
+   * 4. If no pending → all approved → synthetic "approved" coordinator StepRun (fast path).
+   * 5. Fan-out: execute each pending member via executor.produceResult (no persist).
+   * 6. Derive per-member verdicts from StepExecutionResult via verdictOfResult (T-01).
    * 7. Update reviewerStatuses (applyRoundResults) + compute aggregate verdict.
-   * 8. Push synthetic coordinator StepRun with aggregate verdict.
-   * 9. Persist merged state authoritatively.
+   * 7b. Round-owned git effects: detect non-declared changes, then stage+commit.
+   * 8. Build synthetic coordinator StepRun with aggregate verdict.
+   * 9. commitRound: coordinator persists all member results + coordinator patch in one write.
+   *
+   * State commit ownership (D1): CommitOrchestrator.commitRound is the single writer.
+   * Members do not persist state (produceResult, not execute). Round boundary is atomic.
    *
    * NOTE: coordinator is NOT in the steps Map (it's a virtual node).
    * NOTE: --from coordinator is not supported for explicit resume (coordinator is
@@ -124,9 +75,9 @@ export class ParallelReviewRound {
    * Parallel custom reviewer managed support is a known limitation (Non-Goal).
    *
    * @param coordinatorName - Coordinator step name.
-   * @param state           - Current job state.
+   * @param state           - Current job state (base; not mutated during fan-out).
    * @param deps            - Pipeline dependencies.
-   * @returns Aggregate verdict and updated state.
+   * @returns Aggregate verdict and updated state (post-commitRound).
    */
   async run(
     coordinatorName: string,
@@ -137,6 +88,10 @@ export class ParallelReviewRound {
     const memberNames = [...parallelReview.members];
     const cwd = deps.cwd ?? process.cwd();
     const requestType = deps.request.type;
+
+    // D4: coordinator constructs its own CommitOrchestrator for single-writer round commit.
+    // Pipeline / executor constructors are not changed.
+    const orchestrator = new CommitOrchestrator(deps.storeFactory, this.events);
 
     // --- 1. Derive / initialize reviewer statuses ---
     const snapshots = (state.reviewers ?? []).filter((s) => memberNames.includes(s.name));
@@ -179,20 +134,25 @@ export class ParallelReviewRound {
     // --- 4. All approved fast path ---
     const now = new Date().toISOString();
     let aggregateVerdictResult: "approved" | "needs-fix" | "escalation";
+    // Member results for commitRound (empty for fast path)
+    const members: Array<{ step: Step; startedAt: string; result: StepExecutionResult }> = [];
+    // Round error (set when git effects detect non-declared changes)
+    let roundError: ErrorInfo | null = null;
 
     if (pending.length === 0) {
       // All approved / skipped → synthetic approved, skip to gate
       logPipelineDiag("pipeline:coordinator:all-approved", `coordinator=${coordinatorName}`);
       aggregateVerdictResult = "approved";
+      // members stays []
     } else {
-      // --- 5. Fan-out: execute each pending member step in parallel ---
+      // --- 5. Fan-out: execute each pending member via produceResult (no persist) ---
       // D4: construct a per-round readonly execution input from the received deps.
       // This shallow clone is what all members receive; the shared orchestration
-      // deps object is never passed to member executors.
+      // deps object is never mutated in-place (B-16).
       //
-      // D3 (round-owned-git-effects): set roundOwnsGitEffects so the executor skips
-      // finalizeStepArtifacts (git stage/commit/push) for each member step.
-      // The coordinator owns all git side effects for this round via commitRoundArtifacts.
+      // D3 (round-owned-git-effects): roundOwnsGitEffects=true skips finalizeStepArtifacts
+      // (git stage/commit/push) in the executor. Coordinator owns all git effects via
+      // commitRoundArtifacts after the fan-out.
       const roundDeps: PipelineDeps = { ...deps, roundOwnsGitEffects: true };
 
       // Compute declared output union from pending members BEFORE fan-out
@@ -205,19 +165,22 @@ export class ParallelReviewRound {
       }
       const declared = [...declaredSet];
 
+      // Capture per-member startedAt before allSettled (used for history entries in commitRound)
+      const memberStartTimes = new Map<string, string>();
+
       const memberResults = await Promise.allSettled(
         pending.map(async (name) => {
           const memberStep = this.steps.get(name);
           if (!memberStep) {
             throw new Error(`Member step not found in pipeline: ${name}`);
           }
-          return this.executor.execute(memberStep, state, roundDeps);
+          memberStartTimes.set(name, new Date().toISOString());
+          // produceResult: run the member without persisting state (D1 / T-02)
+          return this.executor.produceResult(memberStep, state, roundDeps);
         }),
       );
 
-      // --- 6. Merge results ---
-      const fulfilledStates: JobState[] = [];
-      const memberVerdicts = new Map<string, string>();
+      // --- 6. Derive per-member verdicts (no state merge needed) ---
       // Capture HEAD SHA after all members have run (for approvedAtCommit).
       // Under roundOwnsGitEffects, members do not commit, so HEAD should not have
       // advanced — but we capture it here for consistency with the non-round path.
@@ -225,29 +188,26 @@ export class ParallelReviewRound {
         ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? now
         : now;
 
+      const memberVerdicts = new Map<string, string>();
+
       for (let i = 0; i < pending.length; i++) {
         const name = pending[i]!;
         const result = memberResults[i]!;
+        const memberStep = this.steps.get(name);
+        const startedAt = memberStartTimes.get(name) ?? now;
 
         if (result.status === "fulfilled") {
-          fulfilledStates.push(result.value);
-          const memberRuns = result.value.steps?.[name] ?? [];
-          const lastRun = memberRuns[memberRuns.length - 1];
-          memberVerdicts.set(name, lastRun?.outcome.verdict ?? "escalation");
-        } else {
-          // Rejected: extract state from attached error if available
-          const errWithState = result.reason as { state?: JobState };
-          if (errWithState.state) {
-            fulfilledStates.push(errWithState.state);
+          // verdictOfResult: pure derivation from StepExecutionResult (T-01)
+          memberVerdicts.set(name, verdictOfResult(result.value));
+          if (memberStep) {
+            members.push({ step: memberStep, startedAt, result: result.value });
           }
+        } else {
+          // produceResult normalizes all throws to halt, so rejection is only possible
+          // if the step was not found (pre-produceResult throw). Treat as escalation.
           memberVerdicts.set(name, "escalation");
         }
       }
-
-      // Merge all fulfilled states (including error states) into base.
-      // Pass `pending` so mergeParallelReviewerStates always copies member step arrays
-      // (needed for re-runs where the member key already exists in base from prior rounds).
-      state = mergeParallelReviewerStates(state, fulfilledStates, pending);
 
       // --- 7. Apply round results and compute aggregate ---
       statuses = applyRoundResults(statuses, memberVerdicts, headSha);
@@ -258,6 +218,7 @@ export class ParallelReviewRound {
       // the coordinator checks what changed in the worktree and compares against the
       // declared outputs union. Undeclared changes (excluding pipeline-managed paths) halt
       // the round; declared changes are committed via scoped staging.
+      // roundError is passed to commitRound (not applied to state directly).
       if (deps.runtimeStrategy?.listWorktreeChanges) {
         const branch = state.branch ?? "";
         const defaultSleepFn = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -273,12 +234,11 @@ export class ParallelReviewRound {
         if (offending.length > 0) {
           // Non-declared changes detected — halt the entire round.
           aggregateVerdictResult = "escalation";
-          const roundError: ErrorInfo = {
+          roundError = {
             code: "ROUND_NONDECLARED_CHANGE",
             message: `Round produced undeclared file changes: ${offending.join(", ")}`,
             hint: "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration.",
           };
-          state = { ...state, error: roundError };
           logPipelineDiag(
             "pipeline:coordinator:round-halt",
             `coordinator=${coordinatorName}, offending=[${offending.join(",")}]`,
@@ -299,8 +259,9 @@ export class ParallelReviewRound {
       // listWorktreeChanges absent (test fake without the method) → skip detection + commit.
     }
 
-    // --- 8. Push synthetic coordinator StepRun ---
-    // Built after git operations so that the verdict and error reflect the final outcome.
+    // --- 8. Build synthetic coordinator StepRun ---
+    // Built after git operations so that the verdict reflects the final outcome.
+    // Uses base state for coordinator runs count (members did not modify coordinator).
     const coordinatorRuns = state.steps?.[coordinatorName] ?? [];
     const syntheticRun: StepRun = {
       attempt: coordinatorRuns.length + 1,
@@ -308,25 +269,24 @@ export class ParallelReviewRound {
       outcome: {
         verdict: aggregateVerdictResult,
         findingsPath: null,
-        error: aggregateVerdictResult === "escalation" ? (state.error ?? null) : null,
+        error: aggregateVerdictResult === "escalation" ? roundError : null,
       },
       startedAt: now,
       endedAt: new Date().toISOString(),
     };
 
-    state = {
-      ...state,
+    // --- 9. Commit round: single atomic persist via CommitOrchestrator ---
+    // D1 (round-owned-state-commit): coordinator is the sole writer for this round.
+    // All member results + coordinator patch are applied in-memory and persisted once.
+    state = await orchestrator.commitRound({
+      coordinatorName,
+      base: state,
+      deps,
+      members,
       reviewerStatuses: statuses,
-      steps: {
-        ...(state.steps ?? {}),
-        [coordinatorName]: [...coordinatorRuns, syntheticRun],
-      },
-      updatedAt: new Date().toISOString(),
-    };
-
-    // --- 9. Persist merged state authoritatively ---
-    const store = deps.storeFactory(state.jobId);
-    await store.persist(state);
+      coordinatorRun: syntheticRun,
+      roundError,
+    });
 
     return { outcome: aggregateVerdictResult, state };
   }

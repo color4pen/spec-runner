@@ -17,9 +17,10 @@ import { EventBus } from "../../event/event-bus.js";
 import { ParallelReviewRound } from "../parallel-review-round.js";
 import type { ParallelReviewConfig } from "../types.js";
 import type { Step } from "../../step/types.js";
-import type { JobState, StepRun } from "../../../state/schema.js";
+import type { JobState } from "../../../state/schema.js";
 import type { PipelineDeps } from "../../types.js";
 import type { StepExecutor } from "../../step/executor.js";
+import type { StepExecutionResult } from "../../step/commit-orchestrator.js";
 import type { ResumeContextSnapshot } from "../../resume/resume-context.js";
 import { buildResumePrompt } from "../../resume/resume-context.js";
 
@@ -46,13 +47,13 @@ function makeStep(name: string): Step {
   } as unknown as Step;
 }
 
-function makeApprovedStepRun(): StepRun {
+function makeApprovedResult(): StepExecutionResult {
   return {
-    attempt: 1,
-    sessionId: null,
-    outcome: { verdict: "approved", findingsPath: null, error: null, toolResult: null },
+    kind: "success",
+    completion: { verdict: "approved", persistToolResult: null },
+    completedAt: new Date().toISOString(),
     startedAt: new Date().toISOString(),
-    endedAt: new Date().toISOString(),
+    session: null,
   };
 }
 
@@ -134,14 +135,14 @@ function makeRound(fakeExecutor: StepExecutor): ParallelReviewRound {
 
 /**
  * Fake executor that:
- * - Captures deps and effective resume prompt at execute time (via buildResumePrompt).
+ * - Captures deps and effective resume prompt at produceResult time (via buildResumePrompt).
  * - Simulates the CURRENT in-place clearing behavior ONLY when it receives the
  *   original orchestration deps (same reference === check).
  *
  * RED/GREEN contract:
- *   - Before T-03: round.run passes the shared `deps` object to all members
+ *   - Before T-04: round.run passes the shared `deps` object to all members
  *     → `deps === orchestrationDeps` is true → clearing fires → second member loses input
- *   - After T-03: round.run creates `roundDeps = { ...deps }` and passes that
+ *   - After T-04: round.run creates `roundDeps = { ...deps }` and passes that
  *     → `roundDeps !== orchestrationDeps` → clearing does NOT fire → all members retain input
  */
 function makeCapturingFakeExecutor(orchestrationDeps: PipelineDeps): {
@@ -153,7 +154,7 @@ function makeCapturingFakeExecutor(orchestrationDeps: PipelineDeps): {
   const capturedPrompts = new Map<string, string | undefined>();
 
   const executor = {
-    execute: async (step: Step, state: JobState, deps: PipelineDeps): Promise<JobState> => {
+    produceResult: async (step: Step, state: JobState, deps: PipelineDeps): Promise<StepExecutionResult> => {
       // Capture effective prompt BEFORE any mutation (mirrors buildStepContext behavior)
       const prompt = buildResumePrompt({
         state,
@@ -165,19 +166,15 @@ function makeCapturingFakeExecutor(orchestrationDeps: PipelineDeps): {
       capturedPrompts.set(step.name, prompt);
 
       // Simulate the CURRENT executor's in-place clearing.
-      // This fires only when receiving the shared orchestration deps (before T-03).
-      // After T-03, roundDeps (a clone) is passed, so this condition is false.
+      // This fires only when receiving the shared orchestration deps (before T-04).
+      // After T-04, roundDeps (a clone) is passed, so this condition is false.
       if (deps === orchestrationDeps) {
         deps.resumePrompt = undefined;
         deps.resumeContext = undefined;
       }
 
-      // Return a state with "approved" verdict for this member
-      return {
-        ...state,
-        steps: { ...(state.steps ?? {}), [step.name]: [makeApprovedStepRun()] },
-        updatedAt: new Date().toISOString(),
-      };
+      // Return an approved StepExecutionResult (no state mutation)
+      return makeApprovedResult();
     },
   } as unknown as StepExecutor;
 
