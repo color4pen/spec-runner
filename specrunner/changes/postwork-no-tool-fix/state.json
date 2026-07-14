@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "13eaff15-1f57-4713-9ff6-40ff72b625b8",
   "createdAt": "2026-07-14T08:02:28.700Z",
-  "updatedAt": "2026-07-14T08:44:32.916Z",
+  "updatedAt": "2026-07-14T08:44:59.053Z",
   "request": {
     "title": "code-review の post-work self-check が捕捉されない report_result 修正を指示する不整合を解消する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/postwork-no-tool-fix-13eaff15",
   "error": null,
   "pipelineId": "standard",
@@ -75,8 +75,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/821",
+    "number": 821,
+    "createdAt": "2026-07-14T08:44:58.359Z"
+  },
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -89,7 +94,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
