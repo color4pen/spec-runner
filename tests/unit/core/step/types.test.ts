@@ -1,6 +1,7 @@
 /**
  * TC-010: NULL_PARSE_RESULT 定数の共有 — 4 step 適合性
- * TC-43, TC-44, TC-45, TC-46: DesignStep.followUpPrompt wiring
+ * TC-43, TC-44, TC-45, TC-46: DesignStep.outputContracts wiring (移設後)
+ *   (以前は followUpPrompt に spec.md 形式検査が含まれていたが、outputContracts に移設済み)
  * TC-47: followUpPrompt 指定時に wall-clock timeout が 2 turn 合算で 1 本 (AbortController 1 本)
  * TC-48: AbortController abort が作業 turn と follow turn の両方に伝搬する
  * TC-52: step 遷移の state machine に変更がない (pipeline 無改修)
@@ -16,6 +17,7 @@ import { SpecFixerStep } from "../../../../src/core/step/spec-fixer.js";
 import { ImplementerStep } from "../../../../src/core/step/implementer.js";
 import { BuildFixerStep } from "../../../../src/core/step/build-fixer.js";
 import type { StepDeps } from "../../../../src/core/step/types.js";
+import type { JobState } from "../../../../src/state/schema.js";
 
 function makeMinimalDeps(): StepDeps {
   return {
@@ -24,47 +26,89 @@ function makeMinimalDeps(): StepDeps {
       agents: {},
       environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
     },
-    request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
+    request: { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
     slug: "test-slug",
   };
 }
 
+function makeMinimalState(): JobState {
+  return {
+    version: 1,
+    jobId: "test-job-id",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    request: { path: "/req.md", title: "Test", type: "new-feature" },
+    repository: { owner: "testowner", name: "testrepo" },
+    session: null,
+    step: "design",
+    status: "running",
+    branch: null,
+    history: [],
+    error: null,
+    steps: {},
+  };
+}
+
 // ---------------------------------------------------------------------------
-// TC-43〜TC-46: DesignStep.followUpPrompt wiring
+// TC-43〜TC-46: DesignStep.outputContracts wiring（移設後）
+// 決定論的 spec.md 形式検査は followUpPrompt から outputContracts に移設済み
 // ---------------------------------------------------------------------------
 
-describe("TC-43: DesignStep.followUpPrompt が非 undefined の string", () => {
-  it("TC-43: DesignStep.followUpPrompt は非 undefined の非空文字列", () => {
-    expect(typeof DesignStep.followUpPrompt).toBe("string");
-    expect(DesignStep.followUpPrompt).toBeTruthy();
+describe("TC-43: DesignStep.followUpPrompt は undefined（形式検査は outputContracts に移設済み）", () => {
+  it("TC-43: DesignStep.followUpPrompt は undefined", () => {
+    expect(DesignStep.followUpPrompt).toBeUndefined();
+  });
+
+  it("TC-43: DesignStep.outputContracts が定義されている", () => {
+    expect(typeof DesignStep.outputContracts).toBe("function");
   });
 });
 
-describe("TC-44: DesignStep.followUpPrompt に spec.md の self-check 指示が含まれる", () => {
-  it("TC-44: followUpPrompt 文面に spec.md のチェック指示が含まれる", () => {
-    const prompt = DesignStep.followUpPrompt ?? "";
-    expect(prompt).toContain("spec.md");
+describe("TC-44: DesignStep.outputContracts に spec.md の content-format 契約が含まれる", () => {
+  it("TC-44: outputContracts が spec.md を対象とする content-format 契約を返す", () => {
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    const contracts = DesignStep.outputContracts!(state, deps);
+    expect(contracts.length).toBeGreaterThan(0);
+    const specContract = contracts.find((c) => c.path.includes("spec.md"));
+    expect(specContract).toBeDefined();
+    expect(specContract?.kind).toBe("content-format");
   });
 });
 
-describe("TC-45: DesignStep.followUpPrompt に delta spec 記法規律が列挙されている", () => {
-  it("TC-45: followUpPrompt 文面に ## Removed 等の具体規律が含まれる", () => {
-    const prompt = DesignStep.followUpPrompt ?? "";
-    // At least one concrete format rule should be present
-    const hasFormatRule = prompt.includes("## Removed") || prompt.includes("## Renamed") || prompt.includes("SHALL") || prompt.includes("Scenario");
-    expect(hasFormatRule).toBe(true);
+describe("TC-45: DesignStep.outputContracts の checks に spec 記法規律が列挙されている", () => {
+  it("TC-45: checks に Requirement / Scenario / normative keyword (SHALL|MUST) の規律が含まれる", () => {
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+    const contracts = DesignStep.outputContracts!(state, deps);
+    const specContract = contracts.find((c) => c.path.includes("spec.md"));
+    const checks = specContract?.checks ?? [];
+
+    const labels = checks.map((c) => c.label);
+    const patterns = checks.map((c) => c.pattern);
+
+    // Requirement check
+    const hasRequirement = labels.join(" ").includes("Requirement") || patterns.join(" ").includes("Requirement");
+    expect(hasRequirement).toBe(true);
+    // Scenario check
+    const hasScenario = labels.join(" ").includes("Scenario") || patterns.join(" ").includes("Scenario");
+    expect(hasScenario).toBe(true);
+    // Normative keyword check
+    const hasNormative = patterns.join(" ").includes("SHALL") || patterns.join(" ").includes("MUST");
+    expect(hasNormative).toBe(true);
   });
 });
 
-describe("TC-46: DesignStep.followUpPrompt が action 指示 (self-fix) であって検出ゲートではない", () => {
-  it("TC-46: followUpPrompt 文面に修正 action 指示が含まれ、self-review 的表現が含まれない", () => {
-    const prompt = DesignStep.followUpPrompt ?? "";
-    // Must contain action words
-    const hasAction = prompt.includes("修正") || prompt.includes("fix") || prompt.includes("直して");
-    expect(hasAction).toBe(true);
-    // Must NOT be a detection gate (self-review expressions)
-    const hasSelfReview = prompt.includes("違反していないか確認") || prompt.includes("判定して");
-    expect(hasSelfReview).toBe(false);
+describe("TC-46: DesignStep.outputContracts は spec-exempt type では spec.md 契約を返さない", () => {
+  it("TC-46: chore type で outputContracts は空配列", () => {
+    const state = makeMinimalState();
+    const deps: StepDeps = {
+      ...makeMinimalDeps(),
+      request: { ...makeMinimalDeps().request, type: "chore" },
+    };
+    const contracts = DesignStep.outputContracts!(state, deps);
+    const specContract = contracts.find((c) => c.path.includes("spec.md") && c.kind === "content-format");
+    expect(specContract).toBeUndefined();
   });
 });
 

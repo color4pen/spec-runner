@@ -26,7 +26,7 @@ import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, recopyDraftToCha
 import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
-import { parseIncompleteTaskLabels } from "../step/output-verify.js";
+import { parseIncompleteTaskLabels, evaluateContentFormatChecks } from "../step/output-verify.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
@@ -446,6 +446,15 @@ export class ManagedRuntime implements RealRuntimeStrategy {
         const incomplete = parseIncompleteTaskLabels(content);
         if (incomplete.length > 0) {
           violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: incomplete });
+        }
+      } else if (contract.kind === "content-format") {
+        const content = await this.githubClient.getRawFile(
+          this.repo.owner, this.repo.name, branch, contract.path,
+        );
+        // content === null means file missing — evaluateContentFormatChecks will fail all checks
+        const failedLabels = evaluateContentFormatChecks(content, contract.checks ?? []);
+        if (failedLabels.length > 0) {
+          violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: failedLabels });
         }
       }
     }

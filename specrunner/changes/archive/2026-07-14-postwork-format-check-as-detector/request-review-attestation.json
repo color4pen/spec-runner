@@ -1,0 +1,15 @@
+{
+  "requestHash": "sha256:0f1fa993788b119f2d2bfa3ed16a0a7c85f459b71b212d275eefa178800ad34d",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/adapter/claude-code/agent-runner.ts: post-work loop runs unconditionally on success via shouldRunFollowUp(ctx, 'success') and iterates ctx.policy.postWorkPrompts (lines 749-803)",
+    "src/core/step/design.ts:72-74: followUpPrompt contains ### Requirement: / #### Scenario: / SHALL・MUST check (lines 67-77)",
+    "src/core/step/code-review.ts:143: followUpPrompt contains Markdown table format / required columns / Fix column check (lines 138-156)",
+    "src/core/port/output-contract.ts: OutputContractKind = 'produced' | 'tasks-complete' at line 18",
+    "src/core/step/implementer.ts:144: outputContracts() returns tasks-complete contract with policy 'follow-up' at line 144",
+    "src/core/runtime/local.ts:819: validateStepOutputs defined at line 819",
+    "src/core/runtime/managed.ts:407: validateStepOutputs defined at line 407",
+    "src/core/step/output-verify.ts:92: buildOutputFollowUpPrompt defined at line 92",
+    "src/core/step/output-verify.ts:24: OUTPUT_FOLLOWUP_MAX_ATTEMPTS = 2 at line 24"
+  ]
+}

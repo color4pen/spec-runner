@@ -263,7 +263,9 @@ export function makeOutputGateHalt(
   const violationPaths = violations.map((v) =>
     v.kind === "tasks-complete"
       ? `${v.path} (incomplete tasks: ${v.detail.join(", ") || "see file"})`
-      : v.path,
+      : v.kind === "content-format"
+        ? `${v.path} (format violations: ${v.detail.join(", ") || "see file"})`
+        : v.path,
   );
   const pathList = violationPaths.map((p) => `  - ${p}`).join("\n");
   const branchNote = branch ? ` on branch '${branch}'` : "";

@@ -77,7 +77,7 @@ function makeMinimalDeps(adr = false): StepDeps {
 // T-02: code-review post-work self-check の固定テスト
 // ---------------------------------------------------------------------------
 
-describe("T-02: CodeReviewStep.followUpPrompt — report_result 非包含", () => {
+describe("T-02: CodeReviewStep.followUpPrompt — report_result 非包含・移設済み形式検査の不在", () => {
   const prompt = CodeReviewStep.followUpPrompt ?? "";
 
   it("followUpPrompt が非空文字列として定義されている", () => {
@@ -101,14 +101,12 @@ describe("T-02: CodeReviewStep.followUpPrompt — report_result 非包含", () =
     expect(prompt).toContain("Read tool");
   });
 
-  it("followUpPrompt の検査項目番号が連番で欠番なし（1〜4）", () => {
-    // 現行は 4 項目（Markdown テーブル形式・必須カラム・Fix カラム・severity 定義）
+  it("followUpPrompt の検査項目番号が連番で欠番なし（1〜2）", () => {
+    // テーブル形式・必須カラムは outputContracts に移設済み。残余は 2 項目（Fix カラム・severity 定義）
     expect(prompt).toContain("1.");
     expect(prompt).toContain("2.");
-    expect(prompt).toContain("3.");
-    expect(prompt).toContain("4.");
-    // 5 番目以降がないこと（旧 item 5 は 4 に繰り上がり済み）
-    expect(prompt).not.toContain("5.");
+    // 3 番目以降がないこと（決定論的形式検査は outputContracts に移設済み）
+    expect(prompt).not.toContain("3.");
   });
 
   it("followUpPrompt が review-feedback ファイルの修正指示を保持している（Markdown 検査の action）", () => {
@@ -117,6 +115,19 @@ describe("T-02: CodeReviewStep.followUpPrompt — report_result 非包含", () =
 
   it("followUpPrompt が 'report_result findings を修正' という旧記述を含まない", () => {
     expect(prompt).not.toContain("report_result findings を修正");
+  });
+
+  it("followUpPrompt に移設済みのテーブル形式検査の記述が含まれない（outputContracts に移設）", () => {
+    // 「テーブル形式」指示は outputContracts に移設済み — followUpPrompt には残らない
+    expect(prompt).not.toMatch(/テーブル形式/);
+    expect(prompt).not.toMatch(/Markdown テーブル/);
+  });
+
+  it("followUpPrompt に移設済みの 7 カラム列挙が含まれない（outputContracts に移設）", () => {
+    // 必須カラム列挙は outputContracts に移設済み — followUpPrompt には残らない
+    expect(prompt).not.toMatch(/7\s*カラム/);
+    expect(prompt).not.toMatch(/必須カラム/);
+    expect(prompt).not.toMatch(/# \| Severity \| Category \| File/);
   });
 });
 

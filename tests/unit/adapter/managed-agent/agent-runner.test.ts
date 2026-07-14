@@ -401,6 +401,88 @@ describe("TC-018: design role — register_branch not in toolHandlers (D4: tool 
 });
 
 // ---------------------------------------------------------------------------
+// TC-OV-DESIGN: managed design (SSE) path runs the outputVerification follow-up loop.
+// Regression guard for the cross-boundary defect where runDesignStyle lacked the
+// outputVerification loop that runPollingStyle had, silently degrading a
+// policy:"follow-up" OutputContract to halt for the design step in managed mode.
+// If the loop is absent from the SSE path, detect() is never called and this fails.
+// ---------------------------------------------------------------------------
+
+describe("TC-OV-DESIGN: managed design (SSE) path runs outputVerification follow-up loop", () => {
+  it("calls outputVerification.detect and buildPrompt when a follow-up violation is present", async () => {
+    const jobId = "ov-design-job";
+    const state = makeJobState(jobId, "feat/test-slug-ovdesign");
+    await persistState(state);
+
+    const sessionClient = makeMockSessionClient();
+    const githubClient = makeMockGithubClient();
+    const runner = new ManagedAgentRunner({
+      sessionClient,
+      githubClient,
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "ghp_test",
+    });
+
+    const designStep: AgentStep = {
+      kind: "agent",
+      name: "design",
+      agent: {
+        name: "specrunner-design",
+        role: "design",
+        model: "claude-sonnet-4-5",
+        system: "design system",
+        tools: [],
+      },
+      toolHandlers: undefined,
+      buildMessage: () => "design message",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: null, findingsPath: null }),
+    };
+
+    // detect returns one follow-up violation on the first attempt, then clean → loop repairs once and stops.
+    const detect = vi
+      .fn()
+      .mockResolvedValueOnce({
+        violations: [
+          {
+            kind: "content-format" as const,
+            path: "specrunner/changes/test-slug/spec.md",
+            policy: "follow-up" as const,
+            detail: ["#### Scenario: present"],
+          },
+        ],
+      })
+      .mockResolvedValue({ violations: [] });
+    const buildPrompt = vi.fn().mockReturnValue("Fix the format issues in spec.md");
+    const outputVerification = { detect, buildPrompt, maxAttempts: 2 };
+
+    const ctx: AgentRunContext = {
+      step: designStep,
+      state,
+      branch: "feat/test-slug-ovdesign",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "request content" },
+      session: {},
+      policy: { outputVerification },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    try {
+      await runner.run(ctx);
+    } catch {
+      // run() may throw during post-loop design artifact verification (verifyDesignArtifacts);
+      // the outputVerification loop runs before that, so the assertions below still hold.
+    }
+
+    // The SSE/design path MUST run the outputVerification loop. Absent it (F-01), detect is never called.
+    expect(detect).toHaveBeenCalled();
+    expect(buildPrompt).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-019: register_branch tool removed — adapter does not import it
 // ---------------------------------------------------------------------------
 

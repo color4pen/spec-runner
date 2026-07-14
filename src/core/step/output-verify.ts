@@ -14,6 +14,7 @@ import type {
   OutputContract,
   OutputViolation,
   OutputCheckResult,
+  ContentFormatCheck,
 } from "../port/output-contract.js";
 import { getOutputTemplates } from "../../templates/step-output-templates.js";
 
@@ -44,6 +45,47 @@ export function parseIncompleteTaskLabels(tasksMd: string): string[] {
     }
   }
   return labels;
+}
+
+/**
+ * Remove HTML comments (`<!-- ... -->`) from a Markdown string.
+ *
+ * Handles single-line and multi-line comments (non-greedy).
+ * Returns the comment-stripped text with comment positions collapsed to empty string.
+ *
+ * Pure function — no I/O.
+ */
+export function stripHtmlComments(md: string): string {
+  return md.replace(/<!--[\s\S]*?-->/g, "");
+}
+
+/**
+ * Evaluate a set of ContentFormatChecks against the given file content.
+ *
+ * - `content === null` (file missing): all checks fail — returns all labels.
+ * - Otherwise: strips HTML comments, then tests each check's pattern.
+ *   Returns an array of labels whose patterns did NOT match.
+ *
+ * Pure function — no I/O.
+ */
+export function evaluateContentFormatChecks(
+  content: string | null,
+  checks: ContentFormatCheck[],
+): string[] {
+  if (checks.length === 0) return [];
+  if (content === null) {
+    // File missing — all checks fail
+    return checks.map((c) => c.label);
+  }
+  const stripped = stripHtmlComments(content);
+  const failed: string[] = [];
+  for (const check of checks) {
+    const re = new RegExp(check.pattern, check.flags ?? "");
+    if (!re.test(stripped)) {
+      failed.push(check.label);
+    }
+  }
+  return failed;
 }
 
 /**
@@ -97,6 +139,7 @@ export function buildOutputFollowUpPrompt(violations: OutputViolation[]): string
 
   const tasksViolations = violations.filter((v) => v.kind === "tasks-complete");
   const producedViolations = violations.filter((v) => v.kind === "produced");
+  const contentFormatViolations = violations.filter((v) => v.kind === "content-format");
 
   if (tasksViolations.length > 0) {
     lines.push("## Incomplete tasks (tasks.md)");
@@ -123,6 +166,20 @@ export function buildOutputFollowUpPrompt(violations: OutputViolation[]): string
     for (const v of producedViolations) {
       lines.push(`- ${v.path}`);
     }
+    lines.push("");
+  }
+
+  if (contentFormatViolations.length > 0) {
+    lines.push("## Format violations in output files");
+    lines.push("");
+    lines.push("The following files have format violations. Use the Read tool to read each file and fix the listed issues:");
+    lines.push("");
+    for (const v of contentFormatViolations) {
+      const labelList = v.detail.length > 0 ? v.detail.join(", ") : "see file";
+      lines.push(`- ${v.path} (failed checks: ${labelList})`);
+    }
+    lines.push("");
+    lines.push("Fix the format issues in the file(s) listed above. Do not use tool calls to submit results.");
     lines.push("");
   }
 

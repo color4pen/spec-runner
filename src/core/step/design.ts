@@ -10,6 +10,7 @@ import { requestMdPath, changeFolderPath, factCheckAttestationPath } from "../..
 import { evaluateFactCheckAttestation, buildFactCheckDirective } from "../factcheck-attestation.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import type { OutputContract } from "../port/output-contract.js";
 
 const DESIGN_AGENT_MODEL = "claude-opus-4-6[1m]";
 
@@ -64,17 +65,34 @@ export const DesignStep: AgentStep = {
   needsProjectContext: true,
   reportTool: PRODUCER_REPORT_TOOL,
 
-  followUpPrompt: [
-    "作業完了後の self-fix pass です。",
-    "",
-    "1. spec.md を作成した場合は Read tool で読んでください",
-    "2. 「spec 記法」の以下の指針を確認してください:",
-    "   - 各 Requirement は ### Requirement: で始まる header を持つ",
-    "   - 各 Requirement は少なくとも 1 つの #### Scenario: を含む",
-    "   - Requirement 本文に英語の SHALL または MUST が含まれる",
-    "3. 違反があれば修正してください",
-    "4. 違反がなければ変更せず end_turn してください",
-  ].join("\n"),
+  outputContracts(_state: JobState, deps: StepDeps): OutputContract[] {
+    if (!isSpecRequired(deps.request.type)) {
+      return [];
+    }
+    return [
+      {
+        kind: "content-format",
+        path: `${changeFolderPath(deps.slug)}/spec.md`,
+        policy: "follow-up",
+        checks: [
+          {
+            label: "### Requirement: header present",
+            pattern: "^###\\s+Requirement:",
+            flags: "m",
+          },
+          {
+            label: "#### Scenario: present",
+            pattern: "^####\\s+Scenario:",
+            flags: "m",
+          },
+          {
+            label: "normative keyword (SHALL or MUST) present",
+            pattern: "\\b(SHALL|MUST)\\b",
+          },
+        ],
+      },
+    ];
+  },
 
   reads(_state: JobState, deps: StepDeps): IoRef[] {
     return [

@@ -9,6 +9,7 @@ import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { buildRequestConstraintsBlock } from "../../parser/extract-section.js";
 import { CODE_REVIEW_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import type { OutputContract } from "../port/output-contract.js";
 
 const CODE_REVIEW_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -135,17 +136,35 @@ export const CodeReviewStep: AgentStep = {
     ];
   },
 
+  outputContracts(state: JobState, deps: StepDeps): OutputContract[] {
+    const iteration = nextIteration(state, STEP_NAMES.CODE_REVIEW);
+    const feedbackPath = reviewFeedbackPath(deps.slug, iteration);
+    return [
+      {
+        kind: "content-format",
+        path: feedbackPath,
+        policy: "follow-up",
+        checks: [
+          {
+            label: "Findings in Markdown table format (separator row present)",
+            pattern: "\\|[-:]+\\|",
+          },
+          {
+            label: "Required 7 columns header present (# / Severity / Category / File / Description / How to Fix / Fix)",
+            pattern: "\\|\\s*#\\s*\\|\\s*Severity\\s*\\|\\s*Category\\s*\\|\\s*File\\s*\\|\\s*Description\\s*\\|\\s*How to Fix\\s*\\|\\s*Fix\\s*\\|",
+          },
+        ],
+      },
+    ];
+  },
+
   followUpPrompt: [
     "作業完了後の self-check pass です。",
     "出力した review-feedback ファイルを Read tool で読み、以下を確認してください:",
     "",
-    "1. Findings セクションがテーブル形式（`| # | Severity | Category | File | Description | How to Fix | Fix |`）で記述されているか",
-    "   - 散文形式やリスト形式は不可。必ず Markdown テーブルであること",
-    "2. 必須カラム（#, Severity, Category, File, Description, How to Fix, Fix）が全て存在するか",
-    "   - ヘッダー行にこの 7 カラムが揃っていること",
-    "3. Fix カラムが全 finding に対して yes / no のいずれかで記入されているか",
+    "1. Fix カラムが全 finding に対して yes / no のいずれかで記入されているか",
     "   - 空欄や他の値は不可",
-    "4. 各 finding の severity が Severity 定義と一致しているか",
+    "2. 各 finding の severity が Severity 定義と一致しているか",
     "   - critical: 本番障害、データ損失、セキュリティ侵害に直結",
     "   - high: 機能不全、明確なバグ、回避策なし",
     "   - medium: 品質低下、保守性問題、将来のリスク",

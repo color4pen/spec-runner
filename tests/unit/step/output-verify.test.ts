@@ -5,6 +5,9 @@
  * TC-OV-002: buildOutputFollowUpPrompt — lists task labels and paths
  * TC-OV-003: producedContractsFromWrites — filters gitState and verify:false
  * TC-OV-004: partitionByPolicy — separates halt and follow-up violations
+ * TC-OV-005: stripHtmlComments — removes HTML comments, preserves other text
+ * TC-OV-006: evaluateContentFormatChecks — valid → [], invalid → failed labels, null → all labels
+ * TC-OV-007: buildOutputFollowUpPrompt — content-format violation case
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -13,8 +16,11 @@ import {
   producedContractsFromWrites,
   partitionByPolicy,
   OUTPUT_FOLLOWUP_MAX_ATTEMPTS,
+  stripHtmlComments,
+  evaluateContentFormatChecks,
 } from "../../../src/core/step/output-verify.js";
 import type { OutputViolation, OutputCheckResult } from "../../../src/core/port/output-contract.js";
+import type { ContentFormatCheck } from "../../../src/core/port/output-contract.js";
 import type { IoRef } from "../../../src/core/port/step-types.js";
 
 // ---------------------------------------------------------------------------
@@ -250,5 +256,193 @@ describe("OUTPUT_FOLLOWUP_MAX_ATTEMPTS", () => {
   it("is a positive integer", () => {
     expect(OUTPUT_FOLLOWUP_MAX_ATTEMPTS).toBeGreaterThan(0);
     expect(Number.isInteger(OUTPUT_FOLLOWUP_MAX_ATTEMPTS)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-OV-005: stripHtmlComments
+// ---------------------------------------------------------------------------
+
+describe("stripHtmlComments", () => {
+  it("removes a single-line HTML comment", () => {
+    const md = "Before <!-- comment --> after";
+    expect(stripHtmlComments(md)).toBe("Before  after");
+  });
+
+  it("removes a multi-line HTML comment", () => {
+    const md = "Before\n<!-- multi\nline\ncomment -->\nAfter";
+    expect(stripHtmlComments(md)).toBe("Before\n\nAfter");
+  });
+
+  it("preserves text outside comments", () => {
+    const md = "### Requirement: foo\n<!-- ignore this -->\n#### Scenario: bar";
+    const result = stripHtmlComments(md);
+    expect(result).toContain("### Requirement: foo");
+    expect(result).toContain("#### Scenario: bar");
+    expect(result).not.toContain("ignore this");
+  });
+
+  it("removes multiple HTML comments", () => {
+    const md = "<!-- first --> text <!-- second --> more";
+    expect(stripHtmlComments(md)).toBe(" text  more");
+  });
+
+  it("returns unchanged string when no comments present", () => {
+    const md = "### Requirement: test\n#### Scenario: case\nThe system SHALL do it.";
+    expect(stripHtmlComments(md)).toBe(md);
+  });
+
+  it("returns empty string for comment-only input", () => {
+    expect(stripHtmlComments("<!-- everything is a comment -->")).toBe("");
+  });
+
+  it("returns empty string for empty input", () => {
+    expect(stripHtmlComments("")).toBe("");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-OV-006: evaluateContentFormatChecks
+// ---------------------------------------------------------------------------
+
+describe("evaluateContentFormatChecks", () => {
+  const specChecks: ContentFormatCheck[] = [
+    { label: "requirement header", pattern: "^###\\s+Requirement:", flags: "m" },
+    { label: "scenario header", pattern: "^####\\s+Scenario:", flags: "m" },
+    { label: "normative keyword", pattern: "\\b(SHALL|MUST)\\b" },
+  ];
+
+  it("returns [] for valid content that passes all checks", () => {
+    const content = [
+      "### Requirement: Authentication",
+      "",
+      "The system SHALL enforce authentication.",
+      "",
+      "#### Scenario: Login success",
+      "Given a valid user...",
+    ].join("\n");
+    expect(evaluateContentFormatChecks(content, specChecks)).toEqual([]);
+  });
+
+  it("returns [] for empty checks array regardless of content", () => {
+    expect(evaluateContentFormatChecks("anything", [])).toEqual([]);
+    expect(evaluateContentFormatChecks(null, [])).toEqual([]);
+  });
+
+  it("returns all labels when content is null (file missing)", () => {
+    const result = evaluateContentFormatChecks(null, specChecks);
+    expect(result).toEqual(["requirement header", "scenario header", "normative keyword"]);
+  });
+
+  it("returns only failed check labels for content missing one check", () => {
+    // Missing #### Scenario: header
+    const content = [
+      "### Requirement: Authentication",
+      "The system SHALL enforce authentication.",
+    ].join("\n");
+    const result = evaluateContentFormatChecks(content, specChecks);
+    expect(result).toEqual(["scenario header"]);
+  });
+
+  it("strips HTML comments before evaluating patterns", () => {
+    // Requirement header only in comment — should fail
+    const content = "<!-- ### Requirement: hidden -->\nThe system SHALL do it.";
+    const result = evaluateContentFormatChecks(content, [
+      { label: "requirement header", pattern: "^###\\s+Requirement:", flags: "m" },
+    ]);
+    expect(result).toEqual(["requirement header"]);
+  });
+
+  it("uses regex flags correctly (multiline)", () => {
+    const content = "line1\n### Requirement: foo\nline3";
+    // Without 'm' flag, ^ would not match after newline
+    const withFlag = evaluateContentFormatChecks(content, [
+      { label: "req", pattern: "^###\\s+Requirement:", flags: "m" },
+    ]);
+    expect(withFlag).toEqual([]);
+
+    const withoutFlag = evaluateContentFormatChecks(content, [
+      { label: "req", pattern: "^###\\s+Requirement:" },
+    ]);
+    // Without 'm' flag, shouldn't match mid-string
+    expect(withoutFlag).toEqual(["req"]);
+  });
+
+  it("returns multiple failed labels when multiple checks fail", () => {
+    const content = "# Just a heading\nSome content without normative keywords.";
+    const result = evaluateContentFormatChecks(content, specChecks);
+    expect(result).toContain("requirement header");
+    expect(result).toContain("scenario header");
+    expect(result).toContain("normative keyword");
+    expect(result).toHaveLength(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-OV-007: buildOutputFollowUpPrompt — content-format violation case
+// ---------------------------------------------------------------------------
+
+describe("buildOutputFollowUpPrompt — content-format violations", () => {
+  it("includes path and failed labels for content-format violation", () => {
+    const violations: OutputViolation[] = [
+      {
+        kind: "content-format",
+        path: "specrunner/changes/test-slug/spec.md",
+        policy: "follow-up",
+        detail: ["requirement header", "normative keyword"],
+      },
+    ];
+    const prompt = buildOutputFollowUpPrompt(violations);
+    expect(prompt).toContain("specrunner/changes/test-slug/spec.md");
+    expect(prompt).toContain("requirement header");
+    expect(prompt).toContain("normative keyword");
+  });
+
+  it("includes fallback 'see file' when detail is empty", () => {
+    const violations: OutputViolation[] = [
+      {
+        kind: "content-format",
+        path: "specrunner/changes/test-slug/spec.md",
+        policy: "follow-up",
+        detail: [],
+      },
+    ];
+    const prompt = buildOutputFollowUpPrompt(violations);
+    expect(prompt).toContain("see file");
+  });
+
+  it("does not include report_result in content-format repair prompt (crossing invariant)", () => {
+    const violations: OutputViolation[] = [
+      {
+        kind: "content-format",
+        path: "specrunner/changes/test-slug/spec.md",
+        policy: "follow-up",
+        detail: ["some check"],
+      },
+    ];
+    const prompt = buildOutputFollowUpPrompt(violations);
+    expect(prompt.toLowerCase()).not.toContain("report_result");
+  });
+
+  it("handles mixed violation types including content-format", () => {
+    const violations: OutputViolation[] = [
+      {
+        kind: "tasks-complete",
+        path: "specrunner/changes/test-slug/tasks.md",
+        policy: "follow-up",
+        detail: ["Write tests"],
+      },
+      {
+        kind: "content-format",
+        path: "specrunner/changes/test-slug/spec.md",
+        policy: "follow-up",
+        detail: ["scenario header"],
+      },
+    ];
+    const prompt = buildOutputFollowUpPrompt(violations);
+    expect(prompt).toContain("Write tests");
+    expect(prompt).toContain("scenario header");
+    expect(prompt).toContain("tasks.md");
+    expect(prompt).toContain("spec.md");
   });
 });
