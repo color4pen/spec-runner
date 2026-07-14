@@ -10,6 +10,9 @@
  */
 import { describe, it, expect } from "vitest";
 import { CodeReviewStep, buildReviewFeedbackPath, buildCodeReviewInitialMessage } from "../../../src/core/step/code-review.js";
+import { evaluateContentFormatChecks } from "../../../src/core/step/output-verify.js";
+import { deriveJudgeVerdict } from "../../../src/core/step/judge-verdict.js";
+import type { Finding } from "../../../src/kernel/report-result.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/code-review-system.js";
 import { AGENT_TOOLSET_TYPE } from "../../../src/core/agent/definition.js";
 import type { JobState } from "../../../src/state/schema.js";
@@ -301,5 +304,129 @@ describe("TC-23: Request Constraints は </user-request> タグ外に存在す�
     const closeTagIdx = message.indexOf("</user-request>");
     const constraintsIdx = message.indexOf("## Request Constraints (CLI-injected)");
     expect(constraintsIdx).toBeGreaterThan(closeTagIdx);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-03 (added-turns-persist-and-review-trim): followUpPrompt removal
+// ---------------------------------------------------------------------------
+
+describe("T-03: CodeReviewStep.followUpPrompt / getFollowUpPrompt are absent (unconditional post-work turn removed)", () => {
+  it("CodeReviewStep.followUpPrompt is undefined", () => {
+    expect((CodeReviewStep as unknown as Record<string, unknown>)["followUpPrompt"]).toBeUndefined();
+  });
+
+  it("CodeReviewStep.getFollowUpPrompt is undefined", () => {
+    expect((CodeReviewStep as unknown as Record<string, unknown>)["getFollowUpPrompt"]).toBeUndefined();
+  });
+});
+
+// A well-formed review-feedback table (separator row + 7-column header)
+const VALID_REVIEW_FEEDBACK = [
+  "# Review Feedback",
+  "",
+  "- **verdict**: approved",
+  "",
+  "| # | Severity | Category | File | Description | How to Fix | Fix |",
+  "|---|----------|----------|------|-------------|------------|-----|",
+  "| 1 | low | style | src/foo.ts | Minor naming | Rename to bar | no |",
+  "",
+].join("\n");
+
+// A malformed review-feedback (no separator row, no required header)
+const INVALID_REVIEW_FEEDBACK = [
+  "# Review Feedback",
+  "",
+  "- **verdict**: needs-fix",
+  "",
+  "Just some text without a proper table.",
+  "",
+].join("\n");
+
+describe("T-03: content-format contract — format-conformant feedback produces no violations", () => {
+  it("valid format → evaluateContentFormatChecks returns empty failed list (no repair turn fires)", () => {
+    const state = makeMinimalState({ steps: {} });
+    const deps = makeMinimalDeps("my-slug");
+    const contracts = CodeReviewStep.outputContracts!(state, deps);
+    expect(contracts).toHaveLength(1);
+
+    const contentFormatContract = contracts[0]!;
+    expect(contentFormatContract.kind).toBe("content-format");
+
+    const failedChecks = evaluateContentFormatChecks(VALID_REVIEW_FEEDBACK, contentFormatContract.checks!);
+    expect(failedChecks).toHaveLength(0);
+  });
+});
+
+describe("T-03: content-format contract — format-violating feedback fires repair", () => {
+  it("invalid format → evaluateContentFormatChecks returns non-empty failed list (repair turn fires)", () => {
+    const state = makeMinimalState({ steps: {} });
+    const deps = makeMinimalDeps("my-slug");
+    const contracts = CodeReviewStep.outputContracts!(state, deps);
+
+    const contentFormatContract = contracts[0]!;
+    const failedChecks = evaluateContentFormatChecks(INVALID_REVIEW_FEEDBACK, contentFormatContract.checks!);
+    expect(failedChecks.length).toBeGreaterThan(0);
+  });
+
+  it("missing content (null) → all checks fail (repair turn fires)", () => {
+    const state = makeMinimalState({ steps: {} });
+    const deps = makeMinimalDeps("my-slug");
+    const contracts = CodeReviewStep.outputContracts!(state, deps);
+
+    const contentFormatContract = contracts[0]!;
+    const failedChecks = evaluateContentFormatChecks(null, contentFormatContract.checks!);
+    expect(failedChecks).toHaveLength(contentFormatContract.checks!.length);
+  });
+});
+
+describe("T-03: routing lock — deriveJudgeVerdict uses structured findings (not .md content)", () => {
+  it("critical finding + ok=true → needs-fix regardless of .md content", () => {
+    const findings: Finding[] = [
+      {
+        severity: "critical",
+        resolution: "fixable",
+        file: "src/foo.ts",
+        title: "Critical bug",
+        rationale: "Causes data loss",
+      },
+    ];
+    // Routing verdict derived purely from structured findings — .md is irrelevant
+    const verdict = deriveJudgeVerdict(findings, true);
+    expect(verdict).toBe("needs-fix");
+  });
+
+  it("high finding + ok=true → needs-fix regardless of .md content", () => {
+    const findings: Finding[] = [
+      {
+        severity: "high",
+        resolution: "fixable",
+        file: "src/bar.ts",
+        title: "High severity bug",
+        rationale: "Functional failure",
+      },
+    ];
+    const verdict = deriveJudgeVerdict(findings, true);
+    expect(verdict).toBe("needs-fix");
+  });
+
+  it("approved verdict when no critical/high findings and ok=true — md self-check removal does not affect routing", () => {
+    // With no critical/high findings, verdict is approved even without the .md self-check
+    const findings: Finding[] = [
+      {
+        severity: "low",
+        resolution: "fixable",
+        file: "src/baz.ts",
+        title: "Low severity suggestion",
+        rationale: "Style issue",
+      },
+    ];
+    const verdict = deriveJudgeVerdict(findings, true);
+    expect(verdict).toBe("approved");
+  });
+
+  it("no findings and ok=true → approved — pipeline transition is unaffected by .md removal", () => {
+    const verdict = deriveJudgeVerdict([], true);
+    expect(verdict).toBe("approved");
   });
 });

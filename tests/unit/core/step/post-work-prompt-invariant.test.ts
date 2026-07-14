@@ -75,59 +75,44 @@ function makeMinimalDeps(adr = false): StepDeps {
 
 // ---------------------------------------------------------------------------
 // T-02: code-review post-work self-check の固定テスト
+// updated by added-turns-persist-and-review-trim: followUpPrompt 撤去後の期待値
 // ---------------------------------------------------------------------------
 
-describe("T-02: CodeReviewStep.followUpPrompt — report_result 非包含・移設済み形式検査の不在", () => {
-  const prompt = CodeReviewStep.followUpPrompt ?? "";
-
-  it("followUpPrompt が非空文字列として定義されている", () => {
-    expect(typeof prompt).toBe("string");
-    expect(prompt.length).toBeGreaterThan(0);
+describe("T-02: CodeReviewStep.followUpPrompt — 撤去済み（added-turns-persist-and-review-trim）", () => {
+  it("followUpPrompt が undefined（post-work self-check turn が除去されている）", () => {
+    // followUpPrompt を撤去し、無条件 self-check turn を完全除去した。
+    // 形式担保は outputContracts の content-format contract が引き続き行う。
+    expect(CodeReviewStep.followUpPrompt).toBeUndefined();
   });
 
-  it("followUpPrompt が report_result を含まない（大文字小文字無視）", () => {
-    expect(containsForbiddenMarker(prompt)).toBe(false);
+  it("getFollowUpPrompt も undefined（動的 post-work turn も存在しない）", () => {
+    expect(CodeReviewStep.getFollowUpPrompt).toBeUndefined();
   });
 
-  it("followUpPrompt が typed findings 提出・修正指示を含まない（findings 配列語）", () => {
-    // typed-result 提出語: "findings 配列" / "[] を渡し" のいずれも含まれない
-    expect(prompt).not.toMatch(/findings\s*配列/);
-    expect(prompt).not.toMatch(/\[\]\s*を渡し/);
-  });
-
-  it("followUpPrompt が Markdown result file の Read 指示を保持している", () => {
-    // Markdown 検査の観測挙動: review-feedback ファイルを Read tool で読む指示が残る
-    expect(prompt).toContain("review-feedback");
-    expect(prompt).toContain("Read tool");
-  });
-
-  it("followUpPrompt の検査項目番号が連番で欠番なし（1〜2）", () => {
-    // テーブル形式・必須カラムは outputContracts に移設済み。残余は 2 項目（Fix カラム・severity 定義）
-    expect(prompt).toContain("1.");
-    expect(prompt).toContain("2.");
-    // 3 番目以降がないこと（決定論的形式検査は outputContracts に移設済み）
-    expect(prompt).not.toContain("3.");
-  });
-
-  it("followUpPrompt が review-feedback ファイルの修正指示を保持している（Markdown 検査の action）", () => {
-    expect(prompt).toContain("review-feedback ファイルを修正してください");
-  });
-
-  it("followUpPrompt が 'report_result findings を修正' という旧記述を含まない", () => {
-    expect(prompt).not.toContain("report_result findings を修正");
-  });
-
-  it("followUpPrompt に移設済みのテーブル形式検査の記述が含まれない（outputContracts に移設）", () => {
-    // 「テーブル形式」指示は outputContracts に移設済み — followUpPrompt には残らない
-    expect(prompt).not.toMatch(/テーブル形式/);
-    expect(prompt).not.toMatch(/Markdown テーブル/);
-  });
-
-  it("followUpPrompt に移設済みの 7 カラム列挙が含まれない（outputContracts に移設）", () => {
-    // 必須カラム列挙は outputContracts に移設済み — followUpPrompt には残らない
-    expect(prompt).not.toMatch(/7\s*カラム/);
-    expect(prompt).not.toMatch(/必須カラム/);
-    expect(prompt).not.toMatch(/# \| Severity \| Category \| File/);
+  it("outputContracts が content-format contract を持つ（形式担保は content-format seam に委ねられている）", () => {
+    // followUpPrompt 撤去後も outputContracts が形式検査を担保している
+    const state: import("../../../../src/state/schema.js").JobState = {
+      version: 1,
+      jobId: "test-job",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: { path: "/req.md", title: "Test", type: "feature" },
+      repository: { owner: "testowner", name: "testrepo" },
+      session: null,
+      step: "code-review",
+      status: "running",
+      branch: "feat/test",
+      history: [],
+      error: null,
+      steps: {},
+    };
+    const deps = makeMinimalDeps(false);
+    const contracts = CodeReviewStep.outputContracts!(state, deps);
+    const contentFormatContracts = contracts.filter((c) => c.kind === "content-format");
+    expect(contentFormatContracts.length).toBeGreaterThan(0);
+    // The contract has checks for separator row and 7-column header
+    const checks = contentFormatContracts[0]!.checks ?? [];
+    expect(checks.length).toBeGreaterThan(0);
   });
 });
 

@@ -535,26 +535,38 @@ describe("T-06: CodeReviewStep.outputContracts", () => {
     expect(result.violations).toHaveLength(0);
   });
 
-  it("followUpPrompt does not contain moved deterministic checks (table format / 7 column listing)", () => {
-    const prompt = CodeReviewStep.followUpPrompt ?? "";
-    // Table format reference removed
-    expect(prompt).not.toMatch(/テーブル形式/);
-    expect(prompt).not.toMatch(/Markdown テーブル/);
-    // 7 カラム listing removed
-    expect(prompt).not.toMatch(/7\s*カラム/);
-    expect(prompt).not.toMatch(/必須カラム/);
+  it("followUpPrompt is absent (post-work self-check turn removed in added-turns-persist-and-review-trim)", () => {
+    // followUpPrompt was removed; format and Fix/severity checks moved to outputContracts content-format.
+    // The unconditional self-check turn no longer fires.
+    expect(CodeReviewStep.followUpPrompt).toBeUndefined();
   });
 
-  it("followUpPrompt retains Fix column and severity checks", () => {
-    const prompt = CodeReviewStep.followUpPrompt ?? "";
-    expect(prompt).toContain("Fix");
-    expect(prompt).toContain("severity");
-  });
-
-  it("followUpPrompt still has Read tool instruction and review-feedback reference", () => {
-    const prompt = CodeReviewStep.followUpPrompt ?? "";
-    expect(prompt).toContain("review-feedback");
-    expect(prompt).toContain("Read tool");
+  it("outputContracts content-format checks cover table format (replaces old followUpPrompt checks)", () => {
+    // Verify that the content-format contract now carries the checks that were previously in followUpPrompt.
+    // This is the contract that enforces table format via the repair-turn mechanism.
+    const state: import("../../../src/state/schema.js").JobState = {
+      version: 1,
+      jobId: "test-job",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: { path: "/req.md", title: "Test", type: "feature" },
+      repository: { owner: "testowner", name: "testrepo" },
+      session: null,
+      step: "code-review",
+      status: "running",
+      branch: "feat/test",
+      history: [],
+      error: null,
+      steps: {},
+    };
+    const contracts = CodeReviewStep.outputContracts!(state, { config: { version: 1, agents: {}, environment: { id: "env", lastSyncedAt: "2026" } }, request: { type: "feature", title: "T", slug: "new-feature", baseBranch: "main", content: "c", adr: false }, slug: "new-feature" });
+    const cf = contracts.find((c) => c.kind === "content-format");
+    expect(cf).toBeDefined();
+    const labels = (cf!.checks ?? []).map((c) => c.label);
+    // Separator row check
+    expect(labels.some((l) => l.toLowerCase().includes("separator"))).toBe(true);
+    // 7-column header check
+    expect(labels.some((l) => l.includes("7 columns"))).toBe(true);
   });
 });
 
