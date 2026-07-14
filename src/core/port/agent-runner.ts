@@ -228,3 +228,18 @@ export interface AgentRunResult {
 export interface AgentRunner {
   run(context: AgentRunContext): Promise<AgentRunResult>;
 }
+
+/**
+ * Zero-initialised addedTurns counter for use by AgentRunner adapters.
+ *
+ * Adapters that track per-type added turns (ClaudeCodeRunner) should start
+ * from this value so they always return a structurally complete object even
+ * when no extra turns were consumed.
+ *
+ * Added in reduce-added-agent-turns.
+ */
+export const ADDED_TURNS_ZERO: Readonly<Required<NonNullable<AgentRunResult["addedTurns"]>>> = Object.freeze({
+  reportRetry: 0,
+  postWork: 0,
+  outputRepair: 0,
+});
