@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1365b6b0-6a45-4f27-9bdb-3a2b6cb070c5",
   "createdAt": "2026-07-14T09:43:41.446Z",
-  "updatedAt": "2026-07-14T10:55:46.047Z",
+  "updatedAt": "2026-07-14T11:01:53.339Z",
   "request": {
     "title": "post-work の決定論的 self-check を無条件実行から outputContract（detect→repair）へ移す",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/postwork-format-check-as-detector-1365b6b0",
   "error": null,
   "pipelineId": "standard",
@@ -75,22 +75,30 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/824",
+    "number": 824,
+    "createdAt": "2026-07-14T11:01:52.528Z"
+  },
   "_journal": {
-    "historyCount": 61,
+    "historyCount": 75,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
