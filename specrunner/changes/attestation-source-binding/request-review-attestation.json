@@ -1,0 +1,12 @@
+{
+  "requestHash": "sha256:444df2204f68a6c7dfb286f913d2ba749c681ac763de78ccd431a5aaf608d64d",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/factcheck-attestation.ts:19 — FactCheckAttestation.requestHash: string",
+    "src/core/factcheck-attestation.ts:20 — FactCheckAttestation.codeAssertionsVerified: boolean",
+    "src/core/factcheck-attestation.ts:21 — FactCheckAttestation.verifiedAssertions: string[]",
+    "src/core/factcheck-attestation.ts:91 — parseFactCheckAttestation returns requestHash: obj[\"requestHash\"] as string",
+    "src/core/factcheck-attestation.ts:92 — parseFactCheckAttestation returns codeAssertionsVerified: obj[\"codeAssertionsVerified\"] as boolean",
+    "src/core/factcheck-attestation.ts:124 — evaluateFactCheckAttestation stale判定: !parsed.codeAssertionsVerified || parsed.requestHash !== hashRequestContent(currentRequestContent)"
+  ]
+}
