@@ -41,7 +41,7 @@ import {
 import { commitAndPush, commitFinalState, commitScopedPaths } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
-import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot } from "../port/runtime-strategy.js";
+import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels } from "../step/output-verify.js";
@@ -837,19 +837,24 @@ export class LocalRuntime implements RealRuntimeStrategy {
    * paths for all changed entries (added, modified, deleted, untracked).
    * Uses the same NUL-separator parsing as snapshotMainCheckoutGuard.
    *
-   * Never throws — returns [] on any error.
+   * Returns a WorktreeInspectionResult discriminated union.
+   * - success: git status ran cleanly; paths contains worktree-relative changed files.
+   * - unavailable: git status could not be run (non-zero exit, spawn error, etc.).
+   * Never throws — uses DU to express failure instead.
    *
    * D3 (round-owned-git-effects): used by ParallelReviewRound after fan-out to detect
    * uncommitted changes left by round members (who did not commit under roundOwnsGitEffects).
    */
-  async listWorktreeChanges(cwd: string): Promise<string[]> {
+  async listWorktreeChanges(cwd: string): Promise<WorktreeInspectionResult> {
     try {
       const result = await this.spawnFn(
         "git",
         ["status", "--porcelain", "-z", "--no-renames"],
         { cwd },
       );
-      if (result.exitCode !== 0) return [];
+      if (result.exitCode !== 0) {
+        return { kind: "unavailable", reason: `git status exited with code ${result.exitCode}` };
+      }
 
       // Parse NUL-separated entries: each entry is "XY PATH" (3+ chars, status 2 + space + path)
       const raw = result.stdout;
@@ -863,9 +868,10 @@ export class LocalRuntime implements RealRuntimeStrategy {
         if (filePath) paths.push(filePath);
       }
 
-      return paths;
-    } catch {
-      return [];
+      return { kind: "success", paths };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      return { kind: "unavailable", reason };
     }
   }
 

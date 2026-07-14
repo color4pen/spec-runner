@@ -31,20 +31,20 @@ function makeManagedRuntime(): ManagedRuntime {
 }
 
 // ---------------------------------------------------------------------------
-// listWorktreeChanges — always returns []
+// listWorktreeChanges — always returns {kind:"success", paths:[]}
 // ---------------------------------------------------------------------------
 
-describe("ManagedRuntime.listWorktreeChanges — always returns []", () => {
-  it("returns empty array regardless of cwd", async () => {
+describe("ManagedRuntime.listWorktreeChanges — always returns success with empty paths", () => {
+  it("returns {kind:'success', paths:[]} regardless of cwd", async () => {
     const runtime = makeManagedRuntime();
     const result = await runtime.listWorktreeChanges("/any/path");
-    expect(result).toEqual([]);
+    expect(result).toEqual({ kind: "success", paths: [] });
   });
 
-  it("returns [] for empty string cwd", async () => {
+  it("returns {kind:'success', paths:[]} for empty string cwd", async () => {
     const runtime = makeManagedRuntime();
     const result = await runtime.listWorktreeChanges("");
-    expect(result).toEqual([]);
+    expect(result).toEqual({ kind: "success", paths: [] });
   });
 });
 

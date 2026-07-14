@@ -228,33 +228,49 @@ export class ParallelReviewRound {
           events: this.events,
         };
 
-        const changed = await deps.runtimeStrategy.listWorktreeChanges(cwd);
-        const { toStage, offending } = partitionRoundChanges({ changed, declared, slug: deps.slug });
+        const inspection = await deps.runtimeStrategy.listWorktreeChanges(cwd);
 
-        if (offending.length > 0) {
-          // Non-declared changes detected — halt the entire round.
+        if (inspection.kind === "unavailable") {
+          // Worktree inspection failed — fail-closed: do not approve an uninspected worktree.
           aggregateVerdictResult = "escalation";
           roundError = {
-            code: "ROUND_NONDECLARED_CHANGE",
-            message: `Round produced undeclared file changes: ${offending.join(", ")}`,
-            hint: "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration.",
+            code: "ROUND_INSPECTION_UNAVAILABLE",
+            message: `Worktree inspection unavailable: ${inspection.reason}`,
+            hint: "Check that git is available in the worktree and that the working directory is a valid git repository. Retry the round after resolving the git issue.",
           };
           logPipelineDiag(
             "pipeline:coordinator:round-halt",
-            `coordinator=${coordinatorName}, offending=[${offending.join(",")}]`,
+            `coordinator=${coordinatorName}, reason=${inspection.reason}`,
           );
-        } else if (toStage.length > 0) {
-          // All changes are within declared outputs — scoped stage + commit + push.
-          await deps.runtimeStrategy.commitRoundArtifacts?.(
-            toStage,
-            cwd,
-            branch,
-            coordinatorName,
-            deps.slug,
-            infra,
-          );
+        } else {
+          // inspection.kind === "success"
+          const { toStage, offending } = partitionRoundChanges({ changed: inspection.paths, declared, slug: deps.slug });
+
+          if (offending.length > 0) {
+            // Non-declared changes detected — halt the entire round.
+            aggregateVerdictResult = "escalation";
+            roundError = {
+              code: "ROUND_NONDECLARED_CHANGE",
+              message: `Round produced undeclared file changes: ${offending.join(", ")}`,
+              hint: "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration.",
+            };
+            logPipelineDiag(
+              "pipeline:coordinator:round-halt",
+              `coordinator=${coordinatorName}, offending=[${offending.join(",")}]`,
+            );
+          } else if (toStage.length > 0) {
+            // All changes are within declared outputs — scoped stage + commit + push.
+            await deps.runtimeStrategy.commitRoundArtifacts?.(
+              toStage,
+              cwd,
+              branch,
+              coordinatorName,
+              deps.slug,
+              infra,
+            );
+          }
+          // toStage empty and no offending → nothing changed in declared paths; no-op.
         }
-        // toStage empty and no offending → nothing changed in declared paths; no-op.
       }
       // listWorktreeChanges absent (test fake without the method) → skip detection + commit.
     }
