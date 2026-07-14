@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "57d8fbcf-bd92-42be-bb23-c16742b114d4",
   "createdAt": "2026-07-14T02:23:38.882Z",
-  "updatedAt": "2026-07-14T03:30:20.638Z",
+  "updatedAt": "2026-07-14T03:38:57.137Z",
   "request": {
     "title": "並列 round の worktree 検査を fail-closed 化する（検査不能を clean と区別し escalation）",
     "type": "spec-change",
@@ -78,7 +78,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 54,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -90,7 +90,8 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
