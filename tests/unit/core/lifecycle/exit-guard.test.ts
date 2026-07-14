@@ -110,9 +110,31 @@ async function writeSlugState(
 
 /**
  * Wait for the async void IIFE inside the handler to complete.
+ * Used by tests that assert a status is UNCHANGED (a bounded wait during which
+ * the guard is given the chance to — but must not — act).
  */
 function waitForHandler(): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, 150));
+}
+
+/**
+ * Poll the store until the job reaches `expected` (or `maxMs` elapses), then
+ * return the loaded state. The exit guard transitions state in a fire-and-forget
+ * async task, so a fixed delay is flaky under full-suite load; polling waits
+ * exactly until the transition lands.
+ */
+async function loadUntilStatus(
+  store: JobStateStore,
+  expected: string,
+  maxMs = 2000,
+) {
+  const deadline = Date.now() + maxMs;
+  let state = await store.load();
+  while (state.status !== expected && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    state = await store.load();
+  }
+  return state;
 }
 
 // ---------------------------------------------------------------------------
@@ -135,11 +157,10 @@ describe("TC-037-1: per-job exit guard — only target job transitions to awaiti
     // Fire the per-job handler
     const handler = createExitGuardHandler(tempDir, targetJobId);
     handler();
-    await waitForHandler();
 
     // Target job must be awaiting-resume
     const targetStore = new JobStateStore(targetJobId, tempDir, { slug, stateRoot: worktreeDir });
-    const targetState = await targetStore.load();
+    const targetState = await loadUntilStatus(targetStore, "awaiting-resume");
     expect(targetState.status).toBe("awaiting-resume");
 
     // Other job must be unchanged (still running)
@@ -184,13 +205,12 @@ describe("TC-037-2: per-job exit guard — global scan fallback when worktree no
     const unknownJobId = "ffffffff-0000-0000-0000-000000000099";
     const handler = createExitGuardHandler(tempDir, unknownJobId);
     handler();
-    await waitForHandler();
 
     // Global scan: both running jobs → awaiting-resume
     const store1 = new JobStateStore(jobId1, tempDir, { slug: slug1, stateRoot: tempDir });
     const store2 = new JobStateStore(jobId2, tempDir, { slug: slug2, stateRoot: tempDir });
-    const state1 = await store1.load();
-    const state2 = await store2.load();
+    const state1 = await loadUntilStatus(store1, "awaiting-resume");
+    const state2 = await loadUntilStatus(store2, "awaiting-resume");
     expect(state1.status).toBe("awaiting-resume");
     expect(state2.status).toBe("awaiting-resume");
   });
@@ -210,11 +230,10 @@ describe("TC-037-2: per-job exit guard — global scan fallback when worktree no
     // Fire with targetJobId (no matching worktree)
     const handler = createExitGuardHandler(tempDir, targetJobId);
     handler();
-    await waitForHandler();
 
     // Global scan: legacy running job → awaiting-resume
     const otherStore = new JobStateStore(otherLegacyJobId, tempDir, { slug: otherSlug, stateRoot: tempDir });
-    const otherState = await otherStore.load();
+    const otherState = await loadUntilStatus(otherStore, "awaiting-resume");
     expect(otherState.status).toBe("awaiting-resume");
   });
 
