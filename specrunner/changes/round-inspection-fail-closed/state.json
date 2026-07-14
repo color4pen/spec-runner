@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "57d8fbcf-bd92-42be-bb23-c16742b114d4",
   "createdAt": "2026-07-14T02:23:38.882Z",
-  "updatedAt": "2026-07-14T02:46:04.885Z",
+  "updatedAt": "2026-07-14T03:29:47.606Z",
   "request": {
     "title": "並列 round の worktree 検査を fail-closed 化する（検査不能を clean と区別し escalation）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/round-inspection-fail-closed-57d8fbcf",
   "error": null,
@@ -48,15 +48,48 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "d9ca29703ad5c7a02168f8838c7ce263c41f7583",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 25,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 1,
+      "custom-reviewers": 2
     }
   }
 }
