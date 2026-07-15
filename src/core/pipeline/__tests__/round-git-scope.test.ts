@@ -13,7 +13,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { pipelineManagedPaths, partitionRoundChanges } from "../round-git-scope.js";
+import { pipelineManagedPaths, partitionRoundChanges, excludeChangeFolderPaths } from "../round-git-scope.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -221,5 +221,114 @@ describe("partitionRoundChanges — declared file absent from changed", () => {
     });
     expect(toStage).toHaveLength(0);
     expect(offending).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// excludeChangeFolderPaths — intended-invariant tests (T-01)
+//
+// Acceptance criteria:
+//   - change folder paths (specrunner/changes/... ) are excluded
+//   - source paths outside the change folder are retained
+//   - boundary: paths with the same prefix but NOT under the change folder
+//     are retained (e.g., "specrunner/changes-not-a-child/file.ts")
+//   - order is preserved; function is pure (no I/O)
+// ---------------------------------------------------------------------------
+
+const CHANGE_FOLDER_FINDINGS = `specrunner/changes/${SLUG}/${SLUG}-result-001.md`;
+const CHANGE_FOLDER_FEEDBACK = `specrunner/changes/${SLUG}/review-feedback-001.md`;
+const CHANGE_FOLDER_STATE = `specrunner/changes/${SLUG}/state.json`;
+const SOURCE_TS = "src/foo.ts";
+const REVIEWERS_MD = "specrunner/reviewers/x.md";
+const PROJECT_MD = "specrunner/project.md";
+const SAME_PREFIX_DIFFERENT_DIR = "specrunner/changes-not-a-child/file.ts";
+
+describe("excludeChangeFolderPaths — change folder paths are excluded", () => {
+  it("findings file under change folder is excluded", () => {
+    const result = excludeChangeFolderPaths([CHANGE_FOLDER_FINDINGS]);
+    expect(result).toHaveLength(0);
+  });
+
+  it("review-feedback file under change folder is excluded", () => {
+    const result = excludeChangeFolderPaths([CHANGE_FOLDER_FEEDBACK]);
+    expect(result).toHaveLength(0);
+  });
+
+  it("state.json under change folder is excluded", () => {
+    const result = excludeChangeFolderPaths([CHANGE_FOLDER_STATE]);
+    expect(result).toHaveLength(0);
+  });
+
+  it("multiple change folder files are all excluded", () => {
+    const result = excludeChangeFolderPaths([
+      CHANGE_FOLDER_FINDINGS,
+      CHANGE_FOLDER_FEEDBACK,
+      CHANGE_FOLDER_STATE,
+    ]);
+    expect(result).toHaveLength(0);
+  });
+});
+
+describe("excludeChangeFolderPaths — source paths outside change folder are retained", () => {
+  it("src/foo.ts is retained", () => {
+    const result = excludeChangeFolderPaths([SOURCE_TS]);
+    expect(result).toEqual([SOURCE_TS]);
+  });
+
+  it("specrunner/reviewers/x.md is retained", () => {
+    const result = excludeChangeFolderPaths([REVIEWERS_MD]);
+    expect(result).toEqual([REVIEWERS_MD]);
+  });
+
+  it("specrunner/project.md is retained", () => {
+    const result = excludeChangeFolderPaths([PROJECT_MD]);
+    expect(result).toEqual([PROJECT_MD]);
+  });
+
+  it("all source paths retained in order", () => {
+    const result = excludeChangeFolderPaths([SOURCE_TS, REVIEWERS_MD, PROJECT_MD]);
+    expect(result).toEqual([SOURCE_TS, REVIEWERS_MD, PROJECT_MD]);
+  });
+});
+
+describe("excludeChangeFolderPaths — boundary: same prefix but different directory is retained", () => {
+  it("specrunner/changes-not-a-child/file.ts is NOT excluded (different dir)", () => {
+    const result = excludeChangeFolderPaths([SAME_PREFIX_DIFFERENT_DIR]);
+    expect(result).toEqual([SAME_PREFIX_DIFFERENT_DIR]);
+  });
+
+  it("mix of change folder and same-prefix-different-dir: only change folder excluded", () => {
+    const result = excludeChangeFolderPaths([CHANGE_FOLDER_FINDINGS, SAME_PREFIX_DIFFERENT_DIR]);
+    expect(result).toEqual([SAME_PREFIX_DIFFERENT_DIR]);
+  });
+});
+
+describe("excludeChangeFolderPaths — edge cases", () => {
+  it("empty array → empty array", () => {
+    expect(excludeChangeFolderPaths([])).toEqual([]);
+  });
+
+  it("all change folder → []", () => {
+    expect(excludeChangeFolderPaths([
+      CHANGE_FOLDER_FINDINGS,
+      CHANGE_FOLDER_FEEDBACK,
+      CHANGE_FOLDER_STATE,
+    ])).toEqual([]);
+  });
+
+  it("all source → input preserved in order", () => {
+    const input = [SOURCE_TS, REVIEWERS_MD, PROJECT_MD];
+    expect(excludeChangeFolderPaths(input)).toEqual(input);
+  });
+
+  it("mix of source and change folder → only source retained, order preserved", () => {
+    const result = excludeChangeFolderPaths([
+      SOURCE_TS,
+      CHANGE_FOLDER_FINDINGS,
+      REVIEWERS_MD,
+      CHANGE_FOLDER_FEEDBACK,
+      PROJECT_MD,
+    ]);
+    expect(result).toEqual([SOURCE_TS, REVIEWERS_MD, PROJECT_MD]);
   });
 });

@@ -25,7 +25,7 @@ import {
   computeInvalidations,
   verdictOfResult,
 } from "./reviewer-status.js";
-import { partitionRoundChanges } from "./round-git-scope.js";
+import { partitionRoundChanges, excludeChangeFolderPaths } from "./round-git-scope.js";
 
 export class ParallelReviewRound {
   private readonly executor: StepExecutor;
@@ -119,9 +119,15 @@ export class ParallelReviewRound {
           state.branch ?? null,
         );
 
+        // Exclude pipeline-managed change folder paths (specrunner/changes/...) from
+        // the invalidation diff. A reviewer's own findings commit must not spuriously
+        // invalidate it. Filter is applied here (invalidation site only) so the
+        // listChangedFiles seam is unchanged for scope.ts / runtime-capability-gate.ts.
+        const sourceTouched = excludeChangeFolderPaths(touched);
+
         // computeInvalidations evaluates a single member's touched files against its activation paths
         // We compute per-member by passing a single-element statuses array
-        const [invalidated] = computeInvalidations([s], touched, requestType, currentHeadSha);
+        const [invalidated] = computeInvalidations([s], sourceTouched, requestType, currentHeadSha);
         if (invalidated) updatedStatuses[i] = invalidated;
       }
       statuses = updatedStatuses;
