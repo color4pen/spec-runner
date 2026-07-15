@@ -30,7 +30,8 @@ export type WorktreeMaterializationPlan =
   | { kind: "resume-existing"; worktreePath: string }
   | { kind: "resume-recreated"; remoteBaseRef: string }
   | { kind: "resume-without-recorded-worktree"; remoteBaseRef: string }
-  | { kind: "new-run"; remoteBaseRef: string; branchName?: string };
+  | { kind: "new-run"; remoteBaseRef: string; branchName?: string }
+  | { kind: "attach-from-checkpoint"; checkpointRef: string; branchName: string };
 
 /**
  * Host seam: the capabilities WorkspaceMaterializer needs from LocalRuntime.
@@ -48,7 +49,7 @@ export interface MaterializerHost {
     mutator: (s: JobState) => JobState,
     slugOpts: { slug: string; stateRoot: string },
   ): Promise<void>;
-  writeLivenessSidecar(slug: string, jobId: string, worktreePath: string | null): Promise<void>;
+  writeLivenessSidecar(slug: string, jobId: string, worktreePath: string | null, pid?: number | null): Promise<void>;
 }
 
 /**
@@ -115,6 +116,28 @@ export class WorkspaceMaterializer {
         await this.host.writeLivenessSidecar(slug, jobId, newWorktreePath);
         // Resume: recopy draft request.md into change folder (copy semantics)
         await recopyDraftToChangeFolder(this.host.cwd, workspace.cwd, slug, this.host.spawnFn);
+        return workspace;
+      }
+
+      case "attach-from-checkpoint": {
+        // Materialize a worktree from the checkpoint commit on the remote feature branch.
+        // The checkpoint tree already contains state.json / events.jsonl / request.md —
+        // do NOT seed, updateJobState, or recopy (would overwrite the branch-borne truth).
+        const setupPlan = this.host.resolveSetupPlan();
+        const worktreePath = await this.host.manager.create(
+          this.host.cwd, slug, jobId, plan.checkpointRef, plan.branchName, setupPlan,
+        );
+
+        const workspace: WorkspaceContext = {
+          cwd: worktreePath,
+          worktreePath,
+          branch: plan.branchName,
+        };
+        this.host.registerWorkspace(workspace);
+
+        // Write liveness sidecar with pid=null (attach does not own the process)
+        await this.host.writeLivenessSidecar(slug, jobId, worktreePath, null);
+
         return workspace;
       }
 

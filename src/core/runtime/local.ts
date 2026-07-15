@@ -419,6 +419,16 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     // auth args before any StepExecutor push calls. Best-effort: suppressed on failure.
     await this.transportAuth.authArgs().catch(() => {});
 
+    // Attach path: materialize from a remote checkpoint ref (fetch already done by orchestrator)
+    if (opts?.attachCheckpoint) {
+      const plan = {
+        kind: "attach-from-checkpoint",
+        checkpointRef: opts.attachCheckpoint.checkpointRef,
+        branchName: opts.attachCheckpoint.branch,
+      } as const;
+      return this.materializeWorktree(slug, jobId, plan, opts);
+    }
+
     const baseBranch = opts?.baseBranch ?? "main";
     const remoteBaseRef = `origin/${baseBranch}`;
     const existingWorktreePath = opts?.existingWorktreePath;
@@ -913,15 +923,16 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    * Write the machine-local liveness sidecar to .specrunner/local/<slug>/liveness.json.
    * Contains: { pid, session: null, worktreePath, jobId }
    * worktreePath may be null for no-worktree mode.
+   * pid defaults to process.pid; pass null for attach (not yet running).
    * Best-effort: silently swallows errors to avoid blocking workspace setup.
    */
-  async writeLivenessSidecar(slug: string, jobId: string, worktreePath: string | null): Promise<void> {
+  async writeLivenessSidecar(slug: string, jobId: string, worktreePath: string | null, pid: number | null = process.pid): Promise<void> {
     try {
       const sidecarAbsPath = path.join(this.cwd, livenessJsonPath(slug));
       await fs.mkdir(path.dirname(sidecarAbsPath), { recursive: true });
       await fs.writeFile(
         sidecarAbsPath,
-        JSON.stringify({ pid: process.pid, session: null, worktreePath, jobId }, null, 2),
+        JSON.stringify({ pid, session: null, worktreePath, jobId }, null, 2),
         "utf-8",
       );
     } catch {

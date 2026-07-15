@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:c198ccc3291f45bbdeebf41f3a08f419c9a61e2bfeee49557917ea17e8033fdf",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/command-registry.ts: job subcommands (start/ls/show/cancel/resume/archive/prune/stats) — no 'attach' present",
+    "src/core/resume/resolve-job.ts:18-19: resolveJobStateBySlug delegates to JobStateStore.list(repoRoot, { includeArchived: true }), no origin/* fetch",
+    "src/core/runtime/workspace-materializer.ts:28-33: WorktreeMaterializationPlan discriminated union — resume-recreated and resume-without-recorded-worktree both hold remoteBaseRef: string",
+    "src/core/runtime/workspace-materializer.ts:100-101: manager.create(this.host.cwd, slug, jobId, plan.remoteBaseRef, undefined, setupPlan)",
+    "src/store/local-job-index.ts: liveness.json path is .specrunner/local/<slug>/liveness.json with jobId and worktreePath fields",
+    "src/core/worktree/manager.ts:54-57: buildWorktreePath uses jobId.slice(0,8) to produce .git/specrunner-worktrees/<slug>-<jobIdShort> naming"
+  ],
+  "sourceRevision": "54dd735076af0aa6b2764c08e58ee0a7f7251105"
+}

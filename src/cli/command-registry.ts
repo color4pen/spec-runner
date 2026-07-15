@@ -13,6 +13,7 @@ import { runRun } from "./run.js";
 import { runPs } from "./ps.js";
 import { runDoctor } from "./doctor.js";
 import { runArchive } from "./archive.js";
+import { runAttach } from "./attach.js";
 import { runCancel } from "./cancel.js";
 import { runPrune } from "./prune.js";
 import { runResume } from "./resume.js";
@@ -76,6 +77,7 @@ Job commands:
   job show <jobId|slug>           job state 詳細
   job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)
   job resume <slug>               halted job を再開
+  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する
   job archive <slug>              change folder 移動・worktree 撤去・status 更新
   job prune [--force]             orphan worktree を列挙（--force で削除）
   job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計
@@ -398,7 +400,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   job: {
-    guardedSubcommands: new Set(["start", "resume", "archive", "prune"]),
+    guardedSubcommands: new Set(["start", "resume", "attach", "archive", "prune"]),
     subcommands: {
       start: {
         flags: {
@@ -562,6 +564,42 @@ export const COMMANDS: Record<string, CommandEntry> = {
               json: !!parsed.flags["json"],
               noWorktree: !!parsed.flags["no-worktree"],
             });
+          } catch (err: unknown) {
+            if (err instanceof SpecRunnerError) {
+              stderrWrite(`Error: ${err.message}`);
+              stderrWrite(`Hint: ${err.hint}`);
+              process.exit(err.exitCode);
+            }
+            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
+            process.exit(1);
+          }
+        },
+      },
+      attach: {
+        flags: {
+          branch: { type: "string" },
+          verbose: { type: "boolean" },
+          quiet: { type: "boolean" },
+        },
+        handler: async (parsed) => {
+          const branch = parsed.flags["branch"] as string | undefined;
+          if (!branch) {
+            logError("--branch <branch> is required for 'job attach'.");
+            process.exit(EXIT_CODE.ARG_ERROR);
+          }
+          const logLevel = resolveLogLevel({
+            quiet: !!parsed.flags["quiet"],
+            verbose: !!parsed.flags["verbose"],
+            debug: !!parsed.flags["debug"],
+          });
+          try {
+            process.exit(
+              await runAttach({
+                branch,
+                cwd: process.cwd(),
+                logLevel,
+              }),
+            );
           } catch (err: unknown) {
             if (err instanceof SpecRunnerError) {
               stderrWrite(`Error: ${err.message}`);
