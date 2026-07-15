@@ -6,9 +6,11 @@
  *
  * Branches under test:
  *   1. stagePaths empty → no-op (no git calls)
- *   2. git add exits non-zero → silent return (git non-functional)
+ *   2. git add exits non-zero → throws commitEffectFailedError (COMMIT_AND_PUSH_FAILED)
  *   3. git add succeeds, no staged changes (diff exit 0) → return without commit
  *   4. git add succeeds, staged changes (diff exit 1) → commit + push
+ *   5. git diff exits ≥2 → throws COMMIT_AND_PUSH_FAILED (not treated as "no changes")
+ *   6. git commit exits non-zero → throws COMMIT_AND_PUSH_FAILED, push NOT called
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -80,15 +82,17 @@ describe("commitScopedPaths — empty stagePaths → no git calls", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Branch 2: git add exits non-zero → silent return
+// Branch 2: git add exits non-zero → throws COMMIT_AND_PUSH_FAILED
 // ---------------------------------------------------------------------------
 
-describe("commitScopedPaths — git add fails → silent return", () => {
-  it("exits non-zero on add → no diff, no commit, no push", async () => {
+describe("commitScopedPaths — git add fails → throws COMMIT_AND_PUSH_FAILED", () => {
+  it("exits non-zero on add → throws, no diff, no commit, no push", async () => {
     const { fn, calls } = makeGitSpawnFn([
       { exitCode: 128 }, // git add -A -- <paths> fails
     ]);
-    await commitScopedPaths([PATH_A], CWD, BRANCH, COMMIT_MSG, makeInfra(fn));
+    await expect(
+      commitScopedPaths([PATH_A], CWD, BRANCH, COMMIT_MSG, makeInfra(fn)),
+    ).rejects.toMatchObject({ code: "COMMIT_AND_PUSH_FAILED" });
     // Only the add call should have been made
     expect(calls).toHaveLength(1);
     expect(calls[0]).toContain("add");
@@ -97,7 +101,9 @@ describe("commitScopedPaths — git add fails → silent return", () => {
 
   it("add args include -- pathspec separator (not git add -A without pathspec)", async () => {
     const { fn, calls } = makeGitSpawnFn([{ exitCode: 128 }]);
-    await commitScopedPaths([PATH_A, PATH_B], CWD, BRANCH, COMMIT_MSG, makeInfra(fn));
+    await expect(
+      commitScopedPaths([PATH_A, PATH_B], CWD, BRANCH, COMMIT_MSG, makeInfra(fn)),
+    ).rejects.toMatchObject({ code: "COMMIT_AND_PUSH_FAILED" });
     const addCall = calls[0]!;
     // Must have: ["add", "-A", "--", PATH_A, PATH_B]
     expect(addCall[0]).toBe("add");
@@ -178,5 +184,63 @@ describe("commitScopedPaths — staged changes → commit and push", () => {
     const addCall = calls[0]!;
     // add -A -- PATH_A PATH_B (pathspec-limited)
     expect(addCall).toEqual(["add", "-A", "--", PATH_A, PATH_B]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Branch 5: git diff exits ≥2 → throws COMMIT_AND_PUSH_FAILED
+// ---------------------------------------------------------------------------
+
+describe("commitScopedPaths — git diff exits ≥2 → throws COMMIT_AND_PUSH_FAILED", () => {
+  it("diff exit 128 → throws, does not proceed to commit or push", async () => {
+    const { fn, calls } = makeGitSpawnFn([
+      { exitCode: 0 },   // git add succeeds
+      { exitCode: 128 }, // git diff --cached --quiet: git error (not 0 or 1)
+    ]);
+    await expect(
+      commitScopedPaths([PATH_A], CWD, BRANCH, COMMIT_MSG, makeInfra(fn)),
+    ).rejects.toMatchObject({ code: "COMMIT_AND_PUSH_FAILED" });
+
+    // Two git calls: add + diff; commit and push must NOT have been called
+    expect(calls).toHaveLength(2);
+    expect(calls[0]![0]).toBe("add");
+    expect(calls[1]).toContain("diff");
+    const subcommands = calls.map((c) => c[0]);
+    expect(subcommands).not.toContain("commit");
+    expect(subcommands).not.toContain("push");
+  });
+
+  it("diff exit 2 → throws (minimum ≥2 boundary)", async () => {
+    const { fn } = makeGitSpawnFn([
+      { exitCode: 0 }, // add
+      { exitCode: 2 }, // diff: exit 2 = error (not 0=no-change, not 1=has-changes)
+    ]);
+    await expect(
+      commitScopedPaths([PATH_A], CWD, BRANCH, COMMIT_MSG, makeInfra(fn)),
+    ).rejects.toMatchObject({ code: "COMMIT_AND_PUSH_FAILED" });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Branch 6: git commit exits non-zero → throws COMMIT_AND_PUSH_FAILED, push NOT called
+// ---------------------------------------------------------------------------
+
+describe("commitScopedPaths — git commit fails → throws COMMIT_AND_PUSH_FAILED, push not called", () => {
+  it("commit exit non-zero → throws, push is NOT called", async () => {
+    const { fn, calls } = makeGitSpawnFn([
+      { exitCode: 0 }, // git add succeeds
+      { exitCode: 1 }, // git diff: staged changes present
+      { exitCode: 1 }, // git commit fails
+    ]);
+    await expect(
+      commitScopedPaths([PATH_A], CWD, BRANCH, COMMIT_MSG, makeInfra(fn)),
+    ).rejects.toMatchObject({ code: "COMMIT_AND_PUSH_FAILED" });
+
+    const subcommands = calls.map((c) => c[0]);
+    // add, diff, commit were called; push must NOT have been called
+    expect(subcommands).toContain("add");
+    expect(subcommands).toContain("diff");
+    expect(subcommands).toContain("commit");
+    expect(subcommands).not.toContain("push");
   });
 });

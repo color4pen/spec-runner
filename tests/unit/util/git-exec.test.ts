@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { SpawnOptions, ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { gitExec, gitExecExitCode } from "../../../src/util/git-exec.js";
+import { gitExec, gitExecExitCode, gitExecResult } from "../../../src/util/git-exec.js";
 
 /**
  * Create a spy SpawnFn that records the options it was called with and resolves
@@ -127,6 +127,105 @@ describe("gitExec env stripping", () => {
 
     await gitExecExitCode(spyFn, "/tmp", ["status"]);
 
+    expect(capturedOpts.env?.["PATH"]).toBe(process.env["PATH"]);
+  });
+});
+
+describe("gitExecResult — spawn success / failure separation", () => {
+  it("returns { ok: true, exitCode } on spawn success with exit code 0", async () => {
+    const spawnFn = (_bin: string, _args: string[], _opts: SpawnOptions): ChildProcess => {
+      const child = new EventEmitter() as NodeJS.EventEmitter & {
+        stdout: EventEmitter;
+        stderr: EventEmitter;
+        stdin: { end: () => void };
+      };
+      child.stdout = new EventEmitter();
+      child.stderr = new EventEmitter();
+      child.stdin = { end: () => {} };
+      setImmediate(() => { child.emit("close", 0); });
+      return child as unknown as ChildProcess;
+    };
+
+    const result = await gitExecResult(spawnFn, "/tmp", ["status"]);
+    expect(result).toEqual({ ok: true, exitCode: 0 });
+  });
+
+  it("returns { ok: true, exitCode: 1 } on spawn success with exit code 1", async () => {
+    const spawnFn = (_bin: string, _args: string[], _opts: SpawnOptions): ChildProcess => {
+      const child = new EventEmitter() as NodeJS.EventEmitter & {
+        stdout: EventEmitter;
+        stderr: EventEmitter;
+        stdin: { end: () => void };
+      };
+      child.stdout = new EventEmitter();
+      child.stderr = new EventEmitter();
+      child.stdin = { end: () => {} };
+      setImmediate(() => { child.emit("close", 1); });
+      return child as unknown as ChildProcess;
+    };
+
+    const result = await gitExecResult(spawnFn, "/tmp", ["diff", "--cached", "--quiet"]);
+    expect(result).toEqual({ ok: true, exitCode: 1 });
+  });
+
+  it("returns { ok: true, exitCode: 128 } on spawn success with exit code 128", async () => {
+    const spawnFn = (_bin: string, _args: string[], _opts: SpawnOptions): ChildProcess => {
+      const child = new EventEmitter() as NodeJS.EventEmitter & {
+        stdout: EventEmitter;
+        stderr: EventEmitter;
+        stdin: { end: () => void };
+      };
+      child.stdout = new EventEmitter();
+      child.stderr = new EventEmitter();
+      child.stdin = { end: () => {} };
+      setImmediate(() => { child.emit("close", 128); });
+      return child as unknown as ChildProcess;
+    };
+
+    const result = await gitExecResult(spawnFn, "/tmp", ["add", "-A"]);
+    expect(result).toEqual({ ok: true, exitCode: 128 });
+  });
+
+  it("returns { ok: false, exitCode: -1 } on spawn error (does not throw)", async () => {
+    const spawnFn = (_bin: string, _args: string[], _opts: SpawnOptions): ChildProcess => {
+      const child = new EventEmitter() as NodeJS.EventEmitter & {
+        stdout: EventEmitter;
+        stderr: EventEmitter;
+        stdin: { end: () => void };
+      };
+      child.stdout = new EventEmitter();
+      child.stderr = new EventEmitter();
+      child.stdin = { end: () => {} };
+      setImmediate(() => { child.emit("error", new Error("ENOENT: git not found")); });
+      return child as unknown as ChildProcess;
+    };
+
+    // Must not throw
+    const result = await gitExecResult(spawnFn, "/tmp", ["status"]);
+    expect(result).toEqual({ ok: false, exitCode: -1 });
+  });
+
+  it("gitExecResult: opts.env does not contain GH_TOKEN (env stripping regression)", async () => {
+    const capturedOpts: { env?: NodeJS.ProcessEnv } = {};
+    const spyFn = (_bin: string, _args: string[], opts: SpawnOptions): ChildProcess => {
+      capturedOpts.env = opts.env as NodeJS.ProcessEnv | undefined;
+      const child = new EventEmitter() as NodeJS.EventEmitter & {
+        stdout: EventEmitter;
+        stderr: EventEmitter;
+        stdin: { end: () => void };
+      };
+      child.stdout = new EventEmitter();
+      child.stderr = new EventEmitter();
+      child.stdin = { end: () => {} };
+      setImmediate(() => {
+        child.stdout.emit("data", Buffer.from(""));
+        child.emit("close", 0);
+      });
+      return child as unknown as ChildProcess;
+    };
+
+    await gitExecResult(spyFn, "/tmp", ["status"]);
+    expect(capturedOpts.env?.["GH_TOKEN"]).toBeUndefined();
     expect(capturedOpts.env?.["PATH"]).toBe(process.env["PATH"]);
   });
 });

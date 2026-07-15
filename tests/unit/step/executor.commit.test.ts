@@ -654,6 +654,34 @@ describe("TC-001: finalizeStep records lineage when step declares writes()", () 
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// TC-CAP-NEW-HALT-001: git add failure → executor.execute rejects (halt path)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-CAP-NEW-HALT-001: git add failure → executor.execute rejects with COMMIT_AND_PUSH_FAILED", () => {
+  it("rejects with COMMIT_AND_PUSH_FAILED when git add exits non-zero", async () => {
+    const jobId = "tc-cap-new-halt-001-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
+      {
+        add: { exitCode: 128 }, // git add operational failure
+      },
+      ["abc123before"], // only pre-step rev-parse
+    );
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
+
+    const step = makeAgentStep({ name: "implementer" });
+    await expect(
+      executor.execute(step, state, makeLocalDeps({}, spawnFn)),
+    ).rejects.toMatchObject({ code: "COMMIT_AND_PUSH_FAILED" });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TC-CAP-NEW-008: commit:push event emitted on agent self-commit push path
 // ─────────────────────────────────────────────────────────────────────────────
 
