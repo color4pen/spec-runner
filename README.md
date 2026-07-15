@@ -2,32 +2,9 @@
 
 **request.md in, pull request out** — a self-hosted AI CI/CD runner powered by Anthropic Claude.
 
+Full documentation: [`docs/`](docs/README.md).
+
 ## Quick Start
-
-### Unattended Loop (Recommended)
-
-```bash
-# 1. Install & set up
-npm install -D @color4pen/specrunner
-npx specrunner init
-npx specrunner login
-
-# 2. Write your request as a GitHub issue
-#    Run `npx specrunner request template` to see the required format
-#    Issue body must follow the request.md format
-
-# 3. Apply the approval label to the issue (default: specrunner-approved)
-
-# 4. Start the inbox — run on a schedule via cron or GitHub Actions
-npx specrunner inbox run
-
-# 5. When a job escalates, reply with a /resume comment in the issue
-#    /resume <instructions>  → picked up on the next inbox run
-```
-
-For scheduler setup (crontab / GitHub Actions), see [docs/operations.md](docs/operations.md).
-
-### Alternative: Attended Flow (small-scale / one-shot)
 
 ```bash
 npm install -D @color4pen/specrunner
@@ -48,6 +25,8 @@ When a job escalates (ambiguous request, unresolvable findings, unfixable build)
 ```bash
 specrunner job resume my-feature
 ```
+
+Running SpecRunner on a schedule against approved GitHub issues is an operational option — see [Automation with GitHub Issues](#automation-with-github-issues) below and the [operations runbook](docs/operations.md).
 
 ## How the Pipeline Works
 

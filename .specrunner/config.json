@@ -24,7 +24,7 @@
     "fast": {
       "forbiddenSurfaces": [
         { "id": "public-types",      "paths": ["src/core/port/**"] },
-        { "id": "persisted-format",  "paths": ["src/state/schema.ts"] },
+        { "id": "persisted-format",  "paths": ["src/state/schema.ts", "src/state/schema/**"] },
         { "id": "state-transitions", "paths": ["src/state/lifecycle.ts"] },
         { "id": "guard-config",      "paths": [".specrunner/config.json"] }
       ]

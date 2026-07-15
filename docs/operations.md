@@ -106,6 +106,8 @@ tick 内の起動は逐次（1 つの tick プロセスが pipeline を完走ま
 
 `GITHUB_TOKEN` は GitHub Actions が run ごとに自動注入するため、手動の secret 設定は不要。ただし、リポジトリのデフォルト設定では `GITHUB_TOKEN` が read-only になる場合があるため、`permissions:` の明示宣言が必要になる（詳細は後述）。
 
+一方、agent 実行のクレデンシャルは自動注入されない。Actions の runner は headless で keychain を持たないため、`claude setup-token` で発行した長期トークンをリポジトリ secret に登録し、`env:` の `CLAUDE_CODE_OAUTH_TOKEN` として渡す（local runtime の場合。managed runtime を使うなら代わりに `SPECRUNNER_API_KEY`）。これは crontab 運用でトークンを環境変数で渡すのと同じ理由による。
+
 ```yaml
 name: SpecRunner Inbox
 
@@ -134,6 +136,7 @@ jobs:
       - name: Run inbox
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: npx specrunner inbox run
 ```
 
