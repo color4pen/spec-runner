@@ -14,7 +14,6 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { Pipeline } from "../../../src/core/pipeline/pipeline.js";
-import { STANDARD_TRANSITIONS } from "../../../src/core/pipeline/types.js";
 import { CUSTOM_REVIEWERS_STEP_NAME } from "../../../src/core/pipeline/types.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
