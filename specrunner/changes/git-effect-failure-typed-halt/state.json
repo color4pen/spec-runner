@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9c092a0b-89ad-4844-abe7-69254fc923a1",
   "createdAt": "2026-07-15T05:46:32.343Z",
-  "updatedAt": "2026-07-15T05:46:34.983Z",
+  "updatedAt": "2026-07-15T05:54:21.305Z",
   "request": {
     "title": "git 書き込み副作用の失敗を typed halt 化する（`commitAndPush` / `commitScopedPaths` の silent fail-open を StepHalt へ）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/git-effect-failure-typed-halt-9c092a0b",
   "error": null,
@@ -49,7 +49,9 @@
     }
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
