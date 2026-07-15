@@ -7,9 +7,11 @@
  *
  * TC-INT-001: status=running checkpoint rejected (no worktree/sidecar created)
  * TC-INT-002: missing request.md in tree rejected (no worktree/sidecar created)
- * TC-INT-003: valid checkpoint → worktree created at feature branch HEAD
+ * TC-INT-003: valid checkpoint → worktree created at feature branch HEAD using verified OID
  * TC-INT-004: sidecar has pid=null, correct jobId and worktreePath
  * TC-INT-005: after attach, resolveJobStateBySlug finds awaiting-resume state
+ * TC-INT-006: publish → same OID attach (D1/D5 symmetry) — verify + materialize
+ * TC-010:     origin advances after verify → materialize uses pre-advance verified OID
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -271,12 +273,12 @@ describe("TC-INT-003: valid checkpoint → worktree at feature branch HEAD with 
     expect(verified.branch).toBe(BRANCH);
     expect(verified.state.status).toBe("awaiting-resume");
 
-    // Step 2: materialize worktree
+    // Step 2: materialize worktree using the resolved OID (D1: no TOCTOU re-evaluation)
     const host = makeRealHost(targetDir);
     const materializer = new WorkspaceMaterializer(host);
     const workspace = await materializer.materialize(SLUG, JOB_ID, {
       kind: "attach-from-checkpoint",
-      checkpointRef: `origin/${BRANCH}`,
+      checkpointRef: verified.checkpointOid,
       branchName: BRANCH,
     });
 
@@ -328,7 +330,7 @@ describe("TC-INT-004: sidecar has pid=null, correct jobId and worktreePath", () 
     const materializer = new WorkspaceMaterializer(host);
     const workspace = await materializer.materialize(SLUG, JOB_ID, {
       kind: "attach-from-checkpoint",
-      checkpointRef: `origin/${BRANCH}`,
+      checkpointRef: verified.checkpointOid,
       branchName: verified.branch,
     });
 
@@ -366,7 +368,7 @@ describe("TC-INT-005: attach → resolveJobStateBySlug finds the attached state"
     const materializer = new WorkspaceMaterializer(host);
     const workspace = await materializer.materialize(SLUG, JOB_ID, {
       kind: "attach-from-checkpoint",
-      checkpointRef: `origin/${BRANCH}`,
+      checkpointRef: verified.checkpointOid,
       branchName: verified.branch,
     });
 
@@ -457,5 +459,109 @@ describe("TC-INT-006: publish → same OID attach (D1/D5 symmetry)", () => {
     expect(verified.slug).toBe(SLUG);
     expect(verified.jobId).toBe(JOB_ID);
     expect(verified.state.status).toBe("awaiting-resume");
+
+    // 9. T-09 acceptance: materialize using the verified OID and confirm worktree HEAD matches
+    const host = makeRealHost(targetDir);
+    const materializer = new WorkspaceMaterializer(host);
+    const workspace = await materializer.materialize(SLUG, JOB_ID, {
+      kind: "attach-from-checkpoint",
+      checkpointRef: verified.checkpointOid,
+      branchName: BRANCH,
+    });
+
+    // T-09: "publish された checkpoint の commit OID と materialize した commit OID が一致する"
+    const worktreeHead = (await git(workspace.worktreePath!, "rev-parse", "HEAD")).trim();
+    expect(worktreeHead).toBe(sourceOid);
+
+    // Clean up worktree
+    await spawnCommand("git", ["worktree", "remove", "--force", workspace.worktreePath!], { cwd: targetDir }).catch(() => undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-010: origin advances after verify → materialize still uses verified OID
+// ---------------------------------------------------------------------------
+describe("TC-010: origin advances after verify — materialize uses pre-advance verified OID", () => {
+  it("worktree HEAD is the pre-advance OID even when origin branch moved after runAttachVerification", async () => {
+    const originDir = path.join(tmpDir, "origin");
+    const sourceDir = path.join(tmpDir, "source");
+    const targetDir = path.join(tmpDir, "target");
+
+    // 1. Create bare origin
+    await fs.mkdir(originDir, { recursive: true });
+    await git(originDir, "init", "--bare", "--initial-branch=main");
+
+    // 2. Create source clone (simulates Machine A)
+    await git(tmpDir, "clone", originDir, "source");
+    await git(sourceDir, "config", "user.email", "test@test.com");
+    await git(sourceDir, "config", "user.name", "Test");
+
+    // 3. Initial commit on main
+    await fs.writeFile(path.join(sourceDir, "README.md"), "# Test\n");
+    await git(sourceDir, "add", "README.md");
+    await git(sourceDir, "commit", "-m", "initial");
+    await git(sourceDir, "push", "origin", "main");
+
+    // 4. Machine A: create feature branch + checkpoint files and push
+    await git(sourceDir, "checkout", "-b", BRANCH);
+    const changeDir = path.join(sourceDir, "specrunner", "changes", SLUG);
+    await fs.mkdir(changeDir, { recursive: true });
+    await fs.writeFile(path.join(changeDir, "state.json"), makeStateJson(), "utf-8");
+    await fs.writeFile(path.join(changeDir, "events.jsonl"), EVENTS_JSONL, "utf-8");
+    await fs.writeFile(
+      path.join(changeDir, "request.md"),
+      `# Test feature request\n\n## Meta\n\n- **type**: new-feature\n- **slug**: ${SLUG}\n`,
+      "utf-8",
+    );
+    await fs.writeFile(path.join(changeDir, "tasks.md"), `# Tasks\n\n- [ ] task 1\n`, "utf-8");
+    await fs.writeFile(path.join(changeDir, "spec.md"), `# Spec\n\nTest.\n`, "utf-8");
+    await git(sourceDir, "add", "-A");
+    await git(sourceDir, "commit", "-m", `feat: checkpoint for ${SLUG}`);
+    await git(sourceDir, "push", "origin", BRANCH);
+
+    // 5. Machine B: clone origin and verify — locks in the pre-advance OID
+    await git(tmpDir, "clone", originDir, "target");
+    await git(targetDir, "config", "user.email", "test@test.com");
+    await git(targetDir, "config", "user.name", "Test");
+
+    const verified = await runAttachVerification({
+      cwd: targetDir,
+      branch: BRANCH,
+      spawnFn: spawnCommand,
+      expectedRepo: EXPECTED_REPO,
+    });
+    const preAdvanceOid = verified.checkpointOid;
+    expect(preAdvanceOid).toMatch(/^[0-9a-f]{40}$/);
+
+    // 6. Machine A pushes another commit AFTER Machine B already verified
+    await fs.writeFile(path.join(changeDir, "extra.md"), "# Extra\n", "utf-8");
+    await git(sourceDir, "add", "-A");
+    await git(sourceDir, "commit", "-m", "advance: post-verify commit");
+    await git(sourceDir, "push", "origin", BRANCH);
+
+    // 6b. Machine B fetches again — origin/BRANCH in targetDir now points to the advanced OID.
+    // This opens the TOCTOU window: if materialize re-evaluated origin/BRANCH it would get
+    // the wrong (advanced) commit. Since materialize uses verified.checkpointOid instead,
+    // the pre-advance OID is used.
+    await git(targetDir, "fetch", "origin", BRANCH);
+    const advancedOid = (await git(targetDir, "rev-parse", `origin/${BRANCH}`)).trim();
+    expect(advancedOid).not.toBe(preAdvanceOid);
+
+    // 7. Machine B: materialize using the verified OID (NOT the re-evaluated symbolic ref)
+    const host = makeRealHost(targetDir);
+    const materializer = new WorkspaceMaterializer(host);
+    const workspace = await materializer.materialize(SLUG, JOB_ID, {
+      kind: "attach-from-checkpoint",
+      checkpointRef: verified.checkpointOid,
+      branchName: BRANCH,
+    });
+
+    // TC-010: worktree HEAD is the pre-advance OID, not the advanced one
+    const worktreeHeadTc010 = (await git(workspace.worktreePath!, "rev-parse", "HEAD")).trim();
+    expect(worktreeHeadTc010).toBe(preAdvanceOid);
+    expect(worktreeHeadTc010).not.toBe(advancedOid);
+
+    // Clean up
+    await spawnCommand("git", ["worktree", "remove", "--force", workspace.worktreePath!], { cwd: targetDir }).catch(() => undefined);
   });
 });
