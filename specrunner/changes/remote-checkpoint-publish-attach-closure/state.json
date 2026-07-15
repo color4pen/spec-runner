@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a5425449-6f6b-49c1-bac8-d3004b3d22d2",
   "createdAt": "2026-07-15T13:06:45.467Z",
-  "updatedAt": "2026-07-15T15:04:35.240Z",
+  "updatedAt": "2026-07-15T15:14:17.347Z",
   "request": {
     "title": "remote checkpoint publish/attach correctness closure",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/remote-checkpoint-publish-attach-closure-a5425449",
   "error": null,
   "pipelineId": "standard",
@@ -77,22 +77,30 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/837",
+    "number": 837,
+    "createdAt": "2026-07-15T15:14:16.440Z"
+  },
   "_journal": {
-    "historyCount": 77,
+    "historyCount": 91,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 3,
+      "verification": 4,
       "build-fixer": 2,
       "code-review": 2,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
