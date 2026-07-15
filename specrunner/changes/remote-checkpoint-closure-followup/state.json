@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "76e60391-af33-420e-9793-fa3b09d2588d",
   "createdAt": "2026-07-15T15:41:28.700Z",
-  "updatedAt": "2026-07-15T16:48:16.585Z",
+  "updatedAt": "2026-07-15T16:49:49.876Z",
   "request": {
     "title": "awaiting-resume guard-halt を制御出口にし、attach 硬化を完了する（closure follow-up）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/remote-checkpoint-closure-followup-76e60391",
   "error": null,
@@ -49,14 +49,15 @@
     }
   ],
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 33,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
