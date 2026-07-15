@@ -19,7 +19,7 @@ import { spawnCommand } from "../../src/util/spawn.js";
 import { runAttachVerification } from "../../src/core/attach/orchestrator.js";
 import { WorkspaceMaterializer } from "../../src/core/runtime/workspace-materializer.js";
 import type { MaterializerHost } from "../../src/core/runtime/workspace-materializer.js";
-import { createWorktreeManager, buildWorktreePath } from "../../src/core/worktree/manager.js";
+import { createWorktreeManager } from "../../src/core/worktree/manager.js";
 import { ERROR_CODES } from "../../src/errors.js";
 
 // ---------------------------------------------------------------------------

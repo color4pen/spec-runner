@@ -9,7 +9,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { WorkspaceMaterializer } from "../../src/core/runtime/workspace-materializer.js";
 import type { MaterializerHost } from "../../src/core/runtime/workspace-materializer.js";
-import type { WorkspaceContext } from "../../src/core/port/runtime-strategy.js";
 import type { WorkspaceSetupPlan } from "../../src/core/worktree/setup.js";
 
 // ---------------------------------------------------------------------------

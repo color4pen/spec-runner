@@ -11,7 +11,7 @@ import { describe, it, expect } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { composeSplitLayoutFromContent, composeSplitLayout, loadSplitLayout } from "../../src/store/job-state-projection.js";
+import { composeSplitLayoutFromContent, composeSplitLayout } from "../../src/store/job-state-projection.js";
 
 // ---------------------------------------------------------------------------
 // Fixtures
