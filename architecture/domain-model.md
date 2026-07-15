@@ -16,6 +16,7 @@
 - **不変条件**:
   - `events.jsonl` は append-only ＝ truth。projection は journal の fold で再構成可能な cache（truth ではない）。
   - state は branch-borne（step ごと commit）＝ **git が唯一の durable source**（clone / CI checkout で完全）。
+  - **remote-resumable** は送信側フラグではなく `origin/<branch>` HEAD tree に対する検証可能述語 ―― `state.status` が quiescent ∧ journal / projection / 必須成果物が**同一 tree で自己整合**。単一 commit の atomic 更新で保証し、二相コミットを要さない（ADR-20260715）。
   - resume・routing が読む `verdict`・`toolResult` は journal の fold で保持される。
   - `version` は `1 | 2`（新規 state は 2、旧 version 1 は read 時に 2 へ normalize）。`status` は `JobStatus` の列挙内（validateJobState が強制）。
 - → `src/state/schema.ts`（正確なフィールドはコードが正典）

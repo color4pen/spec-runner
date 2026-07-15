@@ -45,8 +45,15 @@
 - **寿命**: run 開始で establish、resume で再利用 or 再 establish。**branch-borne state（truth）には載せず**、machine-local sidecar（`.specrunner/local/<slug>/`、gitignore・regenerable）に metadata として持つ。
 - **再導出**: `worktreePath` は規約 `.git/specrunner-worktrees/<slug>-<jobId8>` から、`pid` / `session` は run ごと新規。
 - **binder**: runtime ＋ `WorktreeManager`（worktree）。
-- **不変条件**: liveness は Aggregate に属さない。失っても（別マシン・CI・掃除）git から論理ジョブを復元でき、束縛は再 establish される。
+- **不変条件**: liveness は Aggregate に属さない。失っても（別マシン・CI・掃除）git から論理ジョブを復元でき、束縛は再 establish される。**reconstruction contract**: machine-local state は branch-borne checkpoint から**導出可能**、または**意味的連続性を失わず新規割当可能**でなければならない ―― 実行継続に必要な durable fact を machine-local にのみ持たない。`worktreePath` は規約導出、`pid` / `session` は attach 時の新規割当（導出ではなく連続性を保つ再割当）（ADR-20260715）。
 - → 確立・撤去・再導出の手順は behavior（spec / in-loop change）。
+
+### reattachment — remote branch から quiescent job を materialize する束縛
+- **束縛**: `origin/<branch>` HEAD の checkpoint tree ↔ ローカル実行コンテキスト。**attach → validate → materialize → rebind** の順で、tree の自己整合を検証してから liveness を再 establish する。materialize（tree → 実行環境）と FSM 再開（resume）は責務が別。
+- **寿命**: quiescent job（owner が checkpoint で手放した状態。attach-then-resume では `awaiting-resume`）に対する再開前の一回。`running` job の takeover は対象外（lease / epoch を持つ別束縛）。
+- **不変条件**: フラグ信頼ではなく tree の性質検証（journal / projection 整合・`status` quiescent・resume point 解決可能・必須成果物存在・repository / job / branch identity 一致）が閉じて初めて liveness を生成する。branch は明示指定（`origin/*` の暗黙走査はしない）。
+- **binder**: attach 経路（behavior 相で実装）＋ `WorktreeManager`。
+- → 発見・fetch 戦略・エラー分類・attach 後の自動 resume 可否は behavior（spec / `specrunner/adr/`）。
 
 ### resume context — 再開時の文脈注入の束縛
 - **束縛**: resume 実行で、`ResumeContextSnapshot`（`resumePoint` の写し）＋ 人間の `--prompt` を、最初の agent step の prompt（`AgentRunContext.session.resumePrompt`）へ注入する束縛。自動文脈は state から決定的に生成する（attempt 数 / 前回 verdict / 停止理由 / 「worktree の前 attempt 成果物は完了を意味しない」の再開意味論）。
