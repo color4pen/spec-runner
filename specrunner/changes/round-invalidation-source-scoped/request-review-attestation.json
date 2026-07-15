@@ -1,0 +1,15 @@
+{
+  "requestHash": "sha256:6f77bd512464e1bf3d0343da833d45af2f4ec71ac79f8a04ee1f94852a5785d7",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/reviewer-status.ts:119 — approvedAtCommit: headSha (approve 時に headSha を保存)",
+    "src/core/pipeline/parallel-review-round.ts:187-189 — headSha を members 実行後・round findings commit 前に capture",
+    "src/core/pipeline/parallel-review-round.ts:112-127 — listChangedFiles(approvedAtCommit) → computeInvalidations の invalidation ループ",
+    "src/core/runtime/local.ts:695-699 — listChangedFiles は git diff --name-only <baseBranch>...HEAD で pipeline 管理 path を除外しない",
+    "src/core/pipeline/reviewer-status.ts:196-223 — computeInvalidations 関数: evaluateActivation({paths: activationPaths}, {changedFiles: touchedFiles, requestType})",
+    "src/util/paths.ts:91 — changesDirRel() → 'specrunner/changes'",
+    "src/core/reviewers/activation.ts:62 — paths undefined (always-activate) → evaluateActivation が activated: true を返す（touchedFiles 非依存）",
+    "computeInvalidations の呼び出し元は parallel-review-round.ts のみ（invalidation は round 限定）"
+  ],
+  "sourceRevision": "b8e91a1d73cfae912536955412a5cb6e685b578e"
+}
