@@ -109,7 +109,7 @@ function makeMinimalRuntimeStrategy(): RuntimeStrategy {
     async persistJobState() {},
     async verifyFindingRefs() { return []; },
     async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
-    listChangedFiles: vi.fn().mockResolvedValue([]),
+    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
   };
 }
 

@@ -65,6 +65,18 @@ export type WorktreeInspectionResult =
   | { kind: "unavailable"; reason: string };
 
 /**
+ * Discriminated union returned by listChangedFiles.
+ *
+ * - success:     git diff ran cleanly; files contains repo-relative changed file paths.
+ *               files may be empty — empty means "no changes" (not a failure).
+ * - unavailable: derivation failed at call time (non-zero exit, spawn error, etc.);
+ *               reason carries exit code or error summary. Never throws — uses DU instead.
+ */
+export type ChangedFilesResult =
+  | { kind: "success"; files: string[] }
+  | { kind: "unavailable"; reason: string };
+
+/**
  * Port DTO for a finding reference to be verified for existence.
  * Used by verifyFindingRefs to check that referenced files/lines actually exist.
  */
@@ -394,20 +406,24 @@ export interface RuntimeStrategy {
   /**
    * List files changed between baseBranch and the current HEAD (or the given branch).
    *
-   * Used by the reviewer activation gate to evaluate `paths` conditions.
+   * Used by the reviewer activation gate and scope-check to evaluate changed files.
    *
    * Contract:
-   * - Never throws. Returns [] on any error (git unavailable, non-zero exit, etc.).
-   * - Returns repo-relative paths (e.g. "src/auth/login.ts").
+   * - Never throws — returns a ChangedFilesResult discriminated union instead.
+   * - success: derivation succeeded; files contains repo-relative changed paths
+   *   (e.g. "src/auth/login.ts"). files may be empty — empty means "no changes".
+   * - unavailable: derivation failed at call time (non-zero exit, spawn error, etc.);
+   *   reason carries exit code or error summary.
    *
    * - local:   `git diff --name-only <baseBranch>...HEAD` executed in cwd.
-   * - managed: returns [] (custom reviewer activation not supported in managed runtime).
+   *            exit 0 → success (files may be empty); non-zero exit / spawn error → unavailable.
+   * - managed: always returns unavailable (no local worktree; structural limitation).
    *
    * @param baseBranch - Base branch name (e.g. "main").
    * @param cwd        - Working directory for the git command.
    * @param branch     - Current branch (informational; local impl uses HEAD directly).
    */
-  listChangedFiles(baseBranch: string, cwd: string, branch: string | null): Promise<string[]>;
+  listChangedFiles(baseBranch: string, cwd: string, branch: string | null): Promise<ChangedFilesResult>;
 
   // ---------------------------------------------------------------------------
   // Round-owned git effects (D3, round-owned-git-effects)
@@ -477,24 +493,30 @@ export interface RuntimeStrategy {
   ): Promise<void>;
 
   /**
-   * Seam meta-information: whether this runtime can mechanically derive changed files.
+   * Seam meta-information: whether this runtime can structurally derive changed files.
    *
-   * Consumed by both scope-check and the reviewer activation gate as fail-closed signals:
-   *   - scope-check: `false` → synthesize an UNKNOWN finding instead of calling
-   *     `listChangedFiles` (which would silently return [] and appear as "no scope breach").
+   * Consumed by scope-check and the reviewer activation gate as fail-closed short-circuits
+   * for runtimes that structurally cannot derive changed files (e.g. managed, no worktree):
+   *   - scope-check: `false` → synthesize an UNKNOWN finding instead of calling listChangedFiles.
    *   - Reviewer activation gate: `false` → activate `paths`-conditioned reviewers
-   *     (fail-closed) rather than silently skipping them on an unverifiable path condition.
+   *     (fail-closed) without calling listChangedFiles.
+   *
+   * This predicate covers **structural non-derivability** (e.g. managed runtime has no
+   * local git worktree at all). Per-call derivation failures (non-zero exit, spawn error)
+   * on an otherwise capable runtime are expressed via the `unavailable` arm of the
+   * ChangedFilesResult DU returned by listChangedFiles, which consumers handle the same
+   * way as predicate=false (fail-closed routing). The two mechanisms are complementary:
+   * canDeriveChangedFiles short-circuits before the call; DU unavailable handles call-time
+   * failures on an otherwise capable runtime.
    *
    * - `true`  — runtime can derive changed files (e.g. LocalRuntime with git worktree).
    * - `false` — runtime cannot derive changed files (e.g. ManagedRuntime, no local worktree).
-   * - absent  — treated as derivable: the existing `listChangedFiles` path is used, and
+   * - absent  — treated as derivable: the listChangedFiles path is used, and
    *             fail-closed behavior does NOT fire for runtimes without this predicate.
    *
    * Optional to preserve backward compatibility with test fakes typed as RuntimeStrategy:
    * absent is treated as "evaluate via listChangedFiles" (not as "cannot derive").
-   * Only predicate=false triggers fail-closed behavior in both consumers.
-   *
-   * listChangedFiles contract (return type, Never-throws, [] on error) is unaffected.
+   * Only predicate=false triggers the short-circuit in both consumers.
    */
   canDeriveChangedFiles?(): boolean;
 

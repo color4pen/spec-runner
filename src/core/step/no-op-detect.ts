@@ -51,11 +51,15 @@ export async function detectNoOp(
   if (!step.noOpDetect) return undefined;
   if (params.completionReason !== "success") return undefined;
 
-  const changedFiles = await runtimeStrategy.listChangedFiles(
+  const result = await runtimeStrategy.listChangedFiles(
     params.headBeforeStep,
     params.cwd,
     params.branch,
   );
+
+  // Behavior preservation: unavailable (managed runtime, local transient failure) is
+  // treated as empty (no-signal). This keeps the no-op escalation direction safe.
+  const changedFiles = result.kind === "success" ? result.files : [];
 
   // Filter out artifact files — only source file changes count as real work.
   const sourceFiles = changedFiles.filter(

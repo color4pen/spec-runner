@@ -52,11 +52,18 @@ export async function computeExtraScopeFindings(
 
   const baseBranch = deps.request.baseBranch ?? "main";
   const cwd = deps.cwd ?? process.cwd();
-  const changedFiles = await deps.runtimeStrategy.listChangedFiles(
+  const result = await deps.runtimeStrategy.listChangedFiles(
     baseBranch, cwd, state.branch ?? null,
   );
 
-  const breach = deriveScopeBreach({ scope: permissionScope, changedFiles, state });
+  // Fail-closed: per-call derivation failure (unavailable) is treated the same as
+  // structural non-derivability — synthesize UNKNOWN instead of falling through to
+  // deriveScopeBreach with an empty list (which would silently appear as "no breach").
+  if (result.kind !== "success") {
+    return synthesizeScopeUnverifiableFinding({ slug: deps.slug });
+  }
+
+  const breach = deriveScopeBreach({ scope: permissionScope, changedFiles: result.files, state });
   if (!breach.breached) return [];
 
   return synthesizeScopeFindings(breach, { slug: deps.slug });

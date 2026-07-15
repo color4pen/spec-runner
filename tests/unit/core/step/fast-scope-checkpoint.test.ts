@@ -145,7 +145,7 @@ function makeEvaluableStrategy(changedFiles: string[]): RuntimeStrategy {
     async persistJobState() {},
     async verifyFindingRefs() { return []; },
     async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
-    async listChangedFiles() { return changedFiles; },
+    async listChangedFiles() { return { kind: "success" as const, files: changedFiles }; },
     canDeriveChangedFiles: () => true,
   };
 }
@@ -153,7 +153,7 @@ function makeEvaluableStrategy(changedFiles: string[]): RuntimeStrategy {
 /** Build a spy-wrapped evaluable strategy so listChangedFiles calls can be counted. */
 function makeEvaluableStrategyWithSpy(changedFiles: string[]): RuntimeStrategy & { listChangedFiles: ReturnType<typeof vi.fn> } {
   const base = makeEvaluableStrategy(changedFiles);
-  const listFn = vi.fn().mockResolvedValue(changedFiles);
+  const listFn = vi.fn().mockResolvedValue({ kind: "success" as const, files: changedFiles });
   return { ...base, listChangedFiles: listFn };
 }
 

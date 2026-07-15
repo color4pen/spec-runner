@@ -1071,7 +1071,7 @@ describe("TC-051: invalidation — approved reviewer re-runs when fixer touched 
       digestArtifacts: vitest.fn().mockResolvedValue([]),
       commitFinalState: vitest.fn().mockResolvedValue(undefined),
       // Returns src/feature.ts — matches ["src/**"] activation paths → invalidation fires
-      listChangedFiles: vitest.fn().mockResolvedValue(["src/feature.ts"]),
+      listChangedFiles: vitest.fn().mockResolvedValue({ kind: "success" as const, files: ["src/feature.ts"] }),
     };
 
     const deps = {

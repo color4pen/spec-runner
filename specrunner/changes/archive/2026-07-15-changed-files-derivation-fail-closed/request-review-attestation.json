@@ -1,0 +1,23 @@
+{
+  "requestHash": "sha256:bc4cef519f24221693a48a01262ea0942e9787b87b7f7d63282977a4547c56ea",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/runtime/local.ts:695 — listChangedFiles method signature: async listChangedFiles(baseBranch, cwd, _branch): Promise<string[]>",
+    "src/core/runtime/local.ts:693 — docstring 'Never throws — returns [] on any error (git failure, non-zero exit, etc.)'",
+    "src/core/runtime/local.ts:702 — non-zero exit returns []: if (result.exitCode !== 0) return []",
+    "src/core/runtime/local.ts:707-708 — catch block returns []: catch { return []; }",
+    "src/core/port/runtime-strategy.ts:63-65 — WorktreeInspectionResult DU: {kind:'success';paths} | {kind:'unavailable';reason}",
+    "src/core/port/runtime-strategy.ts:410 — port signature: listChangedFiles(baseBranch, cwd, branch): Promise<string[]>",
+    "src/core/step/scope-check.ts:55 — listChangedFiles call site in computeExtraScopeFindings",
+    "src/core/step/scope-check.ts:49-51 — canDeriveChangedFiles()===false guard synthesizes UNKNOWN finding before call",
+    "src/core/step/executor.ts:274 — activation gate listChangedFiles call site",
+    "src/core/step/executor.ts:270-271 — changedFilesDerivable guard: canDeriveChangedFiles()!==false",
+    "src/core/pipeline/parallel-review-round.ts:116 — round-invalidation listChangedFiles call site",
+    "src/core/pipeline/parallel-review-round.ts:104 — comment: 'Managed runtime: listChangedFiles returns [] → invalidation not fired (fail-safe)'",
+    "src/core/step/no-op-detect.ts:54 — no-op-detect listChangedFiles call site",
+    "src/core/runtime/managed.ts:536-541 — ManagedRuntime.listChangedFiles returns []",
+    "src/core/runtime/managed.ts:552-554 — ManagedRuntime.canDeriveChangedFiles() returns false",
+    "architecture/dynamic-model.md:61 — fail-closed 不変条件 for capability gate (canDeriveChangedFiles===false only)"
+  ],
+  "sourceRevision": "ad9b1cbcfbc01b5efeb19eb92fcf075be4178152"
+}

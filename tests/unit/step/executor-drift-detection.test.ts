@@ -113,7 +113,7 @@ function makeStrategy(opts: {
     async verifyFindingRefs() { return []; },
     async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
     async validateStepOutputs() { return { violations: [] }; },
-    async listChangedFiles() { return []; },
+    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
     async snapshotMainCheckoutGuard(_cwd, _config): Promise<MainCheckoutGuardSnapshot | null> {
       return callCount++ === 0 ? opts.snapshotBefore : opts.snapshotAfter;
     },
