@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "77a4c547-e873-49ab-abf9-ac809f2478ba",
   "createdAt": "2026-07-15T10:56:58.691Z",
-  "updatedAt": "2026-07-15T10:57:01.173Z",
+  "updatedAt": "2026-07-15T11:03:09.384Z",
   "request": {
     "title": "remote branch から quiescent job を attach する（`job attach --branch`）",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/remote-branch-job-attach-77a4c547",
   "error": null,
@@ -49,7 +49,9 @@
     }
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
