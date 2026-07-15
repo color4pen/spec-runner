@@ -2,14 +2,17 @@
  * Unit tests for StepExecutor.commitAndPush() — local runtime git operations.
  *
  * TC-CAP-001: add → diff → commit → push call sequence
- * TC-CAP-002: requiresCommit:true + no staged changes → NO_COMMIT_DETECTED
- * TC-CAP-003: requiresCommit:false + no staged changes → silent skip (no error)
+ * TC-CAP-002: no staged changes (diff exit 0) + HEAD no advance → silent skip (no error)
+ * TC-CAP-003: no staged changes (diff exit 0) + HEAD no advance → silent skip (requiresCommit:false)
  * TC-CAP-004: push failure → retry once → success on second attempt
  * TC-CAP-005: push failure → retry once → second failure → PUSH_FAILED
  * TC-CAP-006: commit message format is "${step.name}: ${slug}"
  * TC-CAP-007: successful push emits commit:push event
- * TC-CAP-008: git add failure (not a git repo) + requiresCommit:true → NO_COMMIT_DETECTED
- * TC-CAP-009: git add failure (not a git repo) + requiresCommit:false → silent skip
+ * TC-CAP-008: git add failure (exit 128) → COMMIT_AND_PUSH_FAILED halt (fail-closed)
+ * TC-CAP-009: git add failure (any step) → COMMIT_AND_PUSH_FAILED halt (fail-closed)
+ * TC-CAP-010: git commit failure → COMMIT_AND_PUSH_FAILED halt, push NOT called
+ * TC-CAP-011: git diff exit≥2 → COMMIT_AND_PUSH_FAILED halt (not treated as "no changes")
+ * TC-CAP-016: git add spawn failure (ChildProcess error event → ok:false, exitCode:-1) → COMMIT_AND_PUSH_FAILED halt
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -198,12 +201,6 @@ function makeSuccessRunner(): AgentRunner {
 }
 
 /**
- * TC-CAP-001 through TC-CAP-009 comments updated to reflect new behavior:
- * - requiresCommit removed from AgentStep interface (T-05)
- * - No staged changes + no HEAD advance → silently skip (no error)
- * - No staged changes + HEAD advanced → push-only path
- * - git add fail → silently return (no error)
- *
  * Build a mock SpawnFn that simulates git commands.
  *
  * The `calls` array records each git invocation for assertion.
@@ -277,6 +274,48 @@ function makePushSequenceSpawnFn(
 
     return baseFn(_bin, args, _opts);
   };
+}
+
+/**
+ * Build a SpawnFn that simulates a spawn failure (ChildProcess error event) for
+ * the specified git subcommand. All other commands default to exit 0 (success).
+ *
+ * When the targeted subcommand is spawned, the returned ChildProcess emits an
+ * `error` event instead of a `close` event. This causes `runSubprocess` in
+ * git-exec.ts to reject, which `gitExecResult` catches and converts to
+ * `{ ok: false, exitCode: -1 }` — the !addResult.ok branch in commitAndPush.
+ */
+function makeGitSpawnFnWithSpawnError(opts: {
+  errorOnSubcommand: string;
+}): { spawnFn: SpawnFn; calls: GitCallRecord[] } {
+  const calls: GitCallRecord[] = [];
+  const { errorOnSubcommand } = opts;
+
+  const spawnFn: SpawnFn = (_bin: string, args: string[], _opts: SpawnOptions): ChildProcess => {
+    calls.push({ args: [...args] });
+    const subcommand = args[0] ?? "";
+
+    const procEm = new EventEmitter();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const procAny = procEm as any;
+    procAny.stdout = new EventEmitter();
+    procAny.stderr = new EventEmitter();
+    procAny.stdin = { write: () => true, end: () => {} };
+
+    if (subcommand === errorOnSubcommand) {
+      // Emit error event → runSubprocess rejects → gitExecResult returns {ok:false, exitCode:-1}
+      setImmediate(() => {
+        procEm.emit("error", new Error(`Simulated spawn failure for git ${subcommand}`));
+      });
+    } else {
+      // All other commands succeed
+      setImmediate(() => { procEm.emit("close", 0); });
+    }
+
+    return procEm as unknown as ChildProcess;
+  };
+
+  return { spawnFn, calls };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -557,18 +596,18 @@ describe("TC-CAP-007: successful push emits commit:push event", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-CAP-008: git add failure → silent skip (new behavior)
+// TC-CAP-008: git add failure → COMMIT_AND_PUSH_FAILED halt (fail-closed)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-CAP-008: git add failure → silent skip", () => {
-  it("does not throw when git add fails (silently skips commit+push)", async () => {
+describe("TC-CAP-008: git add failure → COMMIT_AND_PUSH_FAILED halt", () => {
+  it("rejects with COMMIT_AND_PUSH_FAILED when git add fails (exit 128)", async () => {
     const jobId = "tc-cap-008-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
     const { spawnFn, calls } = makeGitSpawnFn({
       responses: {
-        "add": { exitCode: 128 }, // not a git repo
+        "add": { exitCode: 128 }, // git operational failure
       },
     });
 
@@ -577,7 +616,9 @@ describe("TC-CAP-008: git add failure → silent skip", () => {
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer" });
-    await expect(executor.execute(step, state, makeLocalDeps({}, spawnFn))).resolves.toBeDefined();
+    await expect(executor.execute(step, state, makeLocalDeps({}, spawnFn))).rejects.toMatchObject({
+      code: "COMMIT_AND_PUSH_FAILED",
+    });
 
     // commit and push must NOT have been attempted
     expect(calls.map((c) => c.args[0])).not.toContain("commit");
@@ -586,18 +627,18 @@ describe("TC-CAP-008: git add failure → silent skip", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-CAP-009: git add failure (any step) → silent skip
+// TC-CAP-009: git add failure (any step) → COMMIT_AND_PUSH_FAILED halt
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-CAP-009: git add failure (any step) → silent skip", () => {
-  it("does not throw when git add fails regardless of step name", async () => {
+describe("TC-CAP-009: git add failure (any step) → COMMIT_AND_PUSH_FAILED halt", () => {
+  it("rejects with COMMIT_AND_PUSH_FAILED when git add fails regardless of step name", async () => {
     const jobId = "tc-cap-009-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
     const { spawnFn, calls } = makeGitSpawnFn({
       responses: {
-        "add": { exitCode: 128 }, // not a git repo
+        "add": { exitCode: 128 }, // git operational failure
       },
     });
 
@@ -605,11 +646,115 @@ describe("TC-CAP-009: git add failure (any step) → silent skip", () => {
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
-    const step = makeAgentStep({ name: "spec-review" }); // requiresCommit not set
-    await expect(executor.execute(step, state, makeLocalDeps({}, spawnFn))).resolves.toBeDefined();
+    const step = makeAgentStep({ name: "spec-review" });
+    await expect(executor.execute(step, state, makeLocalDeps({}, spawnFn))).rejects.toMatchObject({
+      code: "COMMIT_AND_PUSH_FAILED",
+    });
 
     // commit and push must NOT have been attempted
     expect(calls.map((c) => c.args[0])).not.toContain("commit");
     expect(calls.map((c) => c.args[0])).not.toContain("push");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-CAP-010: git commit failure → COMMIT_AND_PUSH_FAILED halt, push NOT called
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-CAP-010: git commit failure → COMMIT_AND_PUSH_FAILED halt, push not called", () => {
+  it("rejects with COMMIT_AND_PUSH_FAILED when git commit fails, without calling push", async () => {
+    const jobId = "tc-cap-010-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "add": { exitCode: 0 },
+        "diff": { exitCode: 1 }, // staged changes present
+        "commit": { exitCode: 1 }, // commit fails
+      },
+    });
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
+
+    const step = makeAgentStep({ name: "implementer" });
+    await expect(executor.execute(step, state, makeLocalDeps({}, spawnFn))).rejects.toMatchObject({
+      code: "COMMIT_AND_PUSH_FAILED",
+    });
+
+    // push must NOT have been called after commit failure
+    expect(calls.map((c) => c.args[0])).not.toContain("push");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-CAP-011: git diff exit≥2 → COMMIT_AND_PUSH_FAILED halt (not "no changes")
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-CAP-011: git diff --cached exit≥2 → COMMIT_AND_PUSH_FAILED halt", () => {
+  it("rejects with COMMIT_AND_PUSH_FAILED when git diff exits with ≥2 (git error)", async () => {
+    const jobId = "tc-cap-011-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "add": { exitCode: 0 },
+        "diff": { exitCode: 128 }, // git error (not "no changes" nor "has changes")
+      },
+    });
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
+
+    const step = makeAgentStep({ name: "implementer" });
+    await expect(executor.execute(step, state, makeLocalDeps({}, spawnFn))).rejects.toMatchObject({
+      code: "COMMIT_AND_PUSH_FAILED",
+    });
+
+    // commit and push must NOT have been called
+    expect(calls.map((c) => c.args[0])).not.toContain("commit");
+    expect(calls.map((c) => c.args[0])).not.toContain("push");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-CAP-016: git add spawn failure (ok:false, exitCode:-1) → COMMIT_AND_PUSH_FAILED
+//
+// TC-016 (test-cases.md, priority: must): verifies the !addResult.ok branch
+// in commitAndPush that handles ChildProcess error events (spawn failure), not
+// just non-zero exit codes. makeGitSpawnFn only emits close events; this test
+// uses makeGitSpawnFnWithSpawnError to emit an error event so runSubprocess
+// rejects and gitExecResult returns {ok:false, exitCode:-1}.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-CAP-016: git add spawn failure (ChildProcess error event) → COMMIT_AND_PUSH_FAILED halt", () => {
+  it("rejects with COMMIT_AND_PUSH_FAILED when git add spawn fails (ok:false, exitCode:-1)", async () => {
+    const jobId = "tc-cap-016-job";
+    const state = makeJobState(jobId);
+    await seedJobState(jobId, state);
+
+    // Simulates spawn-level failure for `git add`:
+    // ChildProcess emits error event → runSubprocess rejects →
+    // gitExecResult returns {ok:false, exitCode:-1} → !addResult.ok branch throws.
+    const { spawnFn, calls } = makeGitSpawnFnWithSpawnError({ errorOnSubcommand: "add" });
+
+    const runner = makeSuccessRunner();
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
+
+    const step = makeAgentStep({ name: "implementer" });
+    await expect(executor.execute(step, state, makeLocalDeps({}, spawnFn))).rejects.toMatchObject({
+      code: "COMMIT_AND_PUSH_FAILED",
+    });
+
+    // diff, commit, and push must NOT have been attempted after spawn failure
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands).not.toContain("diff");
+    expect(subcommands).not.toContain("commit");
+    expect(subcommands).not.toContain("push");
   });
 });

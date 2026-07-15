@@ -2,10 +2,10 @@ import type { AgentStep } from "./types.js";
 import type { JobState } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
-import { gitExec, gitExecExitCode, type SpawnFn } from "../../util/git-exec.js";
+import { gitExec, gitExecExitCode, gitExecResult, type SpawnFn } from "../../util/git-exec.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../util/spawn.js";
 import { stderrWrite } from "../../logger/stdout.js";
-import { pushFailedError } from "../../errors.js";
+import { pushFailedError, commitEffectFailedError } from "../../errors.js";
 
 /** Infrastructure deps for commit/push operations. */
 export interface CommitPushInfra {
@@ -19,13 +19,16 @@ export interface CommitPushInfra {
  *
  * tool-driven-step-completion: requiresCommit guard removed.
  * New behavior:
- * - git add -A
- * - git diff --cached --quiet (exit 0 = no changes)
+ * - git add -A: failure throws commitEffectFailedError("stage") → halt path
+ * - git diff --cached --quiet:
+ *   - exit 0 = no staged changes → check HEAD advance
+ *   - exit 1 = staged changes present → commit
+ *   - exit ≥2 or spawn failure → throws commitEffectFailedError("diff") → halt path
  * - if no changes:
  *   - compare headBeforeStep with current HEAD
  *   - if HEAD advanced (agent self-committed): push only, log detection message
  *   - otherwise: silently return (no commit needed, step completed via tool)
- * - git commit -m "${step.name}: ${slug}"
+ * - git commit -m "${step.name}: ${slug}": failure throws commitEffectFailedError("commit") → halt path
  * - git push origin ${branch} — retry once after 5s on failure
  * - if second push fails: throw pushFailedError
  * - emit commit:push on success
@@ -41,18 +44,20 @@ export async function commitAndPush(
   const branch = state.branch ?? "";
   const slug = deps.slug;
 
-  // Stage all changes. If git add fails (not a git repo, exit 128, etc.), silently skip.
-  const addExitCode = await gitExecExitCode(infra.spawnFn, cwd, ["add", "-A"]);
-  if (addExitCode !== 0) {
-    // git is non-functional in this directory (e.g., not a git repo).
-    // Silently skip — no requiresCommit guard anymore.
-    return;
+  // Stage all changes. Failure (spawn error or exit≠0) throws typed error → halt path.
+  const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A"]);
+  if (!addResult.ok || addResult.exitCode !== 0) {
+    throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
   }
 
   // Check if there are staged changes.
-  // `git diff --cached --quiet` exits 0 when no staged changes, 1 when there are staged changes.
-  const diffExitCode = await gitExecExitCode(infra.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
-  const hasChanges = diffExitCode === 1;
+  // `git diff --cached --quiet` exits 0 when no staged changes, 1 when there are staged changes,
+  // ≥2 on git error (spawn failure or error exit code) → throws typed error → halt path.
+  const diffResult = await gitExecResult(infra.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
+  if (!diffResult.ok || diffResult.exitCode >= 2) {
+    throw commitEffectFailedError(step.name, branch, "diff", `exit code ${diffResult.exitCode}`);
+  }
+  const hasChanges = diffResult.exitCode === 1;
 
   if (!hasChanges) {
     // Check if HEAD advanced (agent self-committed before pipeline commit).
@@ -67,9 +72,12 @@ export async function commitAndPush(
     return;
   }
 
-  // Commit
+  // Commit. Failure (spawn error or exit≠0) throws typed error → never falls through to push.
   const commitMessage = `${step.name}: ${slug}`;
-  await gitExec(infra.spawnFn, cwd, ["commit", "-m", commitMessage]);
+  const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage]);
+  if (!commitResult.ok || commitResult.exitCode !== 0) {
+    throw commitEffectFailedError(step.name, branch, "commit", `exit code ${commitResult.exitCode}`);
+  }
 
   // Push with one retry
   await pushOnly(branch, cwd, step.name, infra);
@@ -140,11 +148,13 @@ export async function commitFinalState(params: {
  * Workflow:
  *   1. stagePaths empty → no-op (nothing to stage or commit).
  *   2. `git add -A -- <stagePaths...>` (pathspec-limited; also stages deletions for listed paths).
- *   3. If add exits non-zero → git non-functional; silent return.
- *   4. `git diff --cached --quiet`:
+ *      If add fails (spawn error or exit≠0) → throws commitEffectFailedError("stage").
+ *   3. `git diff --cached --quiet`:
  *      - exit 0 → no staged changes → no-op (nothing was changed in the declared paths).
  *      - exit 1 → staged changes → commit then push.
- *   5. `git commit -m <commitMessage>` then `pushOnly` (one retry on failure).
+ *      - ≥2 or spawn failure → throws commitEffectFailedError("diff").
+ *   4. `git commit -m <commitMessage>`: failure throws commitEffectFailedError("commit").
+ *   5. `pushOnly` (one retry on failure, throws pushFailedError on double failure).
  *
  * @param stagePaths    - Worktree-relative paths to stage (must all be declared outputs).
  * @param cwd           - Working directory for git commands.
@@ -162,20 +172,27 @@ export async function commitScopedPaths(
   if (stagePaths.length === 0) return;
 
   // Stage only the declared paths (pathspec-limited; never `git add -A` without pathspec).
-  const addExitCode = await gitExecExitCode(infra.spawnFn, cwd, ["add", "-A", "--", ...stagePaths]);
-  if (addExitCode !== 0) {
-    // git is non-functional in this directory — silently skip.
-    return;
+  // Failure (spawn error or exit≠0) throws typed error → halt path.
+  const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ...stagePaths]);
+  if (!addResult.ok || addResult.exitCode !== 0) {
+    throw commitEffectFailedError(commitMessage, branch, "stage", `exit code ${addResult.exitCode}`);
   }
 
   // Check if there are staged changes.
-  // exit 0 = no staged changes; exit 1 = staged changes present.
-  const diffExitCode = await gitExecExitCode(infra.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
-  const hasChanges = diffExitCode === 1;
+  // exit 0 = no staged changes; exit 1 = staged changes present;
+  // ≥2 (or spawn failure) = git error → throws typed error → halt path.
+  const diffResult = await gitExecResult(infra.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
+  if (!diffResult.ok || diffResult.exitCode >= 2) {
+    throw commitEffectFailedError(commitMessage, branch, "diff", `exit code ${diffResult.exitCode}`);
+  }
+  const hasChanges = diffResult.exitCode === 1;
   if (!hasChanges) return;
 
-  // Commit
-  await gitExec(infra.spawnFn, cwd, ["commit", "-m", commitMessage]);
+  // Commit. Failure (spawn error or exit≠0) throws typed error → never falls through to push.
+  const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage]);
+  if (!commitResult.ok || commitResult.exitCode !== 0) {
+    throw commitEffectFailedError(commitMessage, branch, "commit", `exit code ${commitResult.exitCode}`);
+  }
 
   // Push with one retry (uses commitMessage as step label for the event)
   await pushOnly(branch, cwd, commitMessage, infra);

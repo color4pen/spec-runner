@@ -100,6 +100,7 @@ export const ERROR_CODES = {
   DESIGN_LAYER_CHECK_FAILED: "DESIGN_LAYER_CHECK_FAILED",
   DUPLICATE_LIVE_JOB: "DUPLICATE_LIVE_JOB",
   JOURNAL_CORRUPTED: "JOURNAL_CORRUPTED",
+  COMMIT_AND_PUSH_FAILED: "COMMIT_AND_PUSH_FAILED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -366,5 +367,18 @@ export function journalCorruptedError(eventsPath: string, detail: string): SpecR
     `hand-edited or truncated. Restore it from git history (e.g. ` +
     `\`git restore --source=<good-ref> -- ${eventsPath}\`) before re-running.`,
     `Event journal integrity check failed at ${eventsPath}: ${detail}`,
+  );
+}
+
+export function commitEffectFailedError(
+  label: string,
+  branch: string,
+  operation: "stage" | "diff" | "commit",
+  detail: string,
+): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.COMMIT_AND_PUSH_FAILED,
+    `Check for index.lock conflicts, disk issues, or worktree corruption. Retry with 'specrunner job resume'.`,
+    `${label}: git ${operation} failed on branch '${branch}': ${detail}`,
   );
 }

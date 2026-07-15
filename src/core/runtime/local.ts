@@ -774,7 +774,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    * Stage only the declared paths and commit+push (scoped staging for coordinator rounds).
    *
    * Delegates to commitScopedPaths with a commit message of "<coordinatorName>: <slug>".
-   * Never throws — errors propagate from commitScopedPaths / pushOnly.
+   * Stage / commit / push failures are thrown and caught by the pipeline safety net (→ awaiting-resume).
    *
    * D3 (round-owned-git-effects): coordinator round ownership seam.
    */

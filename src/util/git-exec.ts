@@ -66,3 +66,25 @@ export async function gitExecExitCode(
     return 1;
   }
 }
+
+/**
+ * Run a git command and return spawn success status and exit code as a plain object.
+ * Separates spawn errors (ok: false, exitCode: -1) from git command exit codes
+ * (ok: true, exitCode: n). Never throws.
+ *
+ * Use this instead of gitExecExitCode when the caller needs to distinguish between
+ * a spawn failure and a non-zero git exit code (e.g. `git diff --cached --quiet`
+ * where exit 1 means "changes present" and exit ≥2 means "git error").
+ */
+export async function gitExecResult(
+  spawnFn: SpawnFn,
+  cwd: string,
+  args: string[],
+): Promise<{ ok: boolean; exitCode: number }> {
+  try {
+    const { exitCode } = await runSubprocess(spawnFn, "git", args, { cwd });
+    return { ok: true, exitCode };
+  } catch {
+    return { ok: false, exitCode: -1 };
+  }
+}
