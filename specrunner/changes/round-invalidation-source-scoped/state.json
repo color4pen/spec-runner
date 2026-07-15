@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b69f41a6-4dd4-4a21-a3ff-ef64580f23f6",
   "createdAt": "2026-07-15T02:03:28.965Z",
-  "updatedAt": "2026-07-15T02:39:49.022Z",
+  "updatedAt": "2026-07-15T02:42:57.613Z",
   "request": {
     "title": "approvedAtCommit を「レビュー対象 source revision」として contract test で固定し、round invalidation から pipeline 管理 path を除外する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/round-invalidation-source-scoped-b69f41a6",
   "error": null,
   "pipelineId": "standard",
@@ -75,8 +75,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/829",
+    "number": 829,
+    "createdAt": "2026-07-15T02:42:56.892Z"
+  },
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +93,10 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
