@@ -1,5 +1,7 @@
 # SpecRunner
 
+[![npm version](https://img.shields.io/npm/v/@color4pen/specrunner)](https://www.npmjs.com/package/@color4pen/specrunner)
+
 **request.md in, pull request out** — a self-hosted AI CI/CD runner powered by Anthropic Claude.
 
 Full documentation: [`docs/`](docs/README.md).
