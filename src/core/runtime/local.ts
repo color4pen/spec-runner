@@ -690,22 +690,30 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   /**
    * List files changed between baseBranch and the current HEAD.
    * Runs `git diff --name-only <baseBranch>...HEAD` in cwd.
-   * Never throws — returns [] on any error (git failure, non-zero exit, etc.).
+   *
+   * Never throws — returns a ChangedFilesResult discriminated union instead.
+   * - exit 0:         {kind:"success", files} (files may be empty = no changes).
+   * - non-zero exit:  {kind:"unavailable", reason} (reason includes exit code).
+   * - spawn error:    {kind:"unavailable", reason} (reason includes error message).
    */
-  async listChangedFiles(baseBranch: string, cwd: string, _branch: string | null): Promise<string[]> {
+  async listChangedFiles(baseBranch: string, cwd: string, _branch: string | null): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
     try {
       const result = await this.spawnFn(
         "git",
         ["diff", "--name-only", `${baseBranch}...HEAD`],
         { cwd },
       );
-      if (result.exitCode !== 0) return [];
-      return result.stdout
+      if (result.exitCode !== 0) {
+        return { kind: "unavailable", reason: `git diff exited with code ${result.exitCode}` };
+      }
+      const files = result.stdout
         .split("\n")
         .map((line) => line.trim())
         .filter((line) => line.length > 0);
-    } catch {
-      return [];
+      return { kind: "success", files };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      return { kind: "unavailable", reason };
     }
   }
 

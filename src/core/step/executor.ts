@@ -267,12 +267,21 @@ export class StepExecutor {
     // ---------------------------------------------------------------------------
     if (step.activation) {
       const baseBranch = deps.request.baseBranch ?? "main";
-      const changedFilesDerivable =
+      // Structural short-circuit: if the runtime explicitly declares it cannot derive
+      // changed files, skip listChangedFiles entirely and activate fail-closed.
+      const structurallyDerivable =
         deps.runtimeStrategy?.canDeriveChangedFiles?.() !== false;
-      const changedFiles =
-        deps.runtimeStrategy && changedFilesDerivable
-          ? await deps.runtimeStrategy.listChangedFiles(baseBranch, cwd, state.branch ?? null)
-          : [];
+      let changedFiles: string[] = [];
+      let changedFilesDerivable = structurallyDerivable;
+      if (deps.runtimeStrategy && structurallyDerivable) {
+        const result = await deps.runtimeStrategy.listChangedFiles(baseBranch, cwd, state.branch ?? null);
+        if (result.kind === "success") {
+          changedFiles = result.files;
+        } else {
+          // Per-call derivation failure: treat same as structural non-derivability.
+          changedFilesDerivable = false;
+        }
+      }
       const decision = evaluateActivation(step.activation, {
         changedFiles,
         requestType: deps.request.type,

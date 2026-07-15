@@ -105,7 +105,7 @@ function makeFakeRuntime(
     commitFinalState: vi.fn().mockResolvedValue(undefined),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
-    listChangedFiles: vi.fn().mockResolvedValue([]),
+    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
     canDeriveChangedFiles: () => true,
   };
 

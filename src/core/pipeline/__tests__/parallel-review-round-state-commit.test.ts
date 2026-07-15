@@ -171,7 +171,7 @@ function makeDeps(store: ReturnType<typeof makeSpyStore>, overrides: Partial<Pip
     storeFactory: () => store as never,
     runtimeStrategy: {
       captureHeadSha: async () => "sha123",
-      listChangedFiles: async () => [],
+      listChangedFiles: async () => ({ kind: "success" as const, files: [] }),
       finalizeStepArtifacts: async () => undefined,
       validateStepInputs: async () => undefined,
       validateStepOutputs: async () => ({ violations: [] }),

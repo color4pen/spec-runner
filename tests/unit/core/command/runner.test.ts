@@ -126,7 +126,7 @@ function buildMockRuntime(opts: {
     persistJobState: vi.fn().mockResolvedValue(undefined),
     verifyFindingRefs: vi.fn().mockResolvedValue([]),
     digestArtifacts: vi.fn().mockResolvedValue([]),
-    listChangedFiles: vi.fn().mockResolvedValue([]),
+    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
     validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
   };
 }

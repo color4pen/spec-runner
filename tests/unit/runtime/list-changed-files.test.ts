@@ -1,9 +1,10 @@
 /**
  * T-06: listChangedFiles unit tests.
  *
- * - LocalRuntime: `git diff --name-only <base>...HEAD` output → string[]
- * - LocalRuntime: spawn failure / non-zero exit → []
- * - ManagedRuntime: always returns []
+ * - LocalRuntime: `git diff --name-only <base>...HEAD` output → {kind:"success", files}
+ * - LocalRuntime: non-zero exit → {kind:"unavailable"} (NOT success-empty)
+ * - LocalRuntime: spawn throw → {kind:"unavailable"} (NOT success-empty)
+ * - ManagedRuntime: always returns {kind:"unavailable"}
  */
 import { describe, it, expect } from "vitest";
 import type { SpawnFn } from "../../../src/util/spawn.js";
@@ -30,11 +31,11 @@ function makeLocalRuntime(spawnFn: SpawnFn): LocalRuntime {
 }
 
 // ---------------------------------------------------------------------------
-// LocalRuntime.listChangedFiles
+// LocalRuntime.listChangedFiles — success path
 // ---------------------------------------------------------------------------
 
-describe("LocalRuntime.listChangedFiles", () => {
-  it("parses git diff --name-only output into a path array", async () => {
+describe("LocalRuntime.listChangedFiles — success", () => {
+  it("parses git diff --name-only output into {kind:'success', files} DU", async () => {
     const spawnFn: SpawnFn = async (_cmd, args, _opts) => {
       if (args[0] === "diff" && args[1] === "--name-only") {
         return {
@@ -46,8 +47,10 @@ describe("LocalRuntime.listChangedFiles", () => {
       return { exitCode: 0, stdout: "", stderr: "" };
     };
     const runtime = makeLocalRuntime(spawnFn);
-    const files = await runtime.listChangedFiles("main", "/repo", null);
-    expect(files).toEqual(["src/auth/login.ts", "lib/util.ts"]);
+    const result = await runtime.listChangedFiles("main", "/repo", null);
+    expect(result.kind).toBe("success");
+    if (result.kind !== "success") throw new Error("unreachable");
+    expect(result.files).toEqual(["src/auth/login.ts", "lib/util.ts"]);
   });
 
   it("passes <base>...HEAD to git diff", async () => {
@@ -61,26 +64,6 @@ describe("LocalRuntime.listChangedFiles", () => {
     expect(capturedArgs).toContain("develop...HEAD");
   });
 
-  it("returns [] when git exits non-zero", async () => {
-    const spawnFn: SpawnFn = async () => ({
-      exitCode: 128,
-      stdout: "",
-      stderr: "fatal: not a git repository",
-    });
-    const runtime = makeLocalRuntime(spawnFn);
-    const files = await runtime.listChangedFiles("main", "/repo", null);
-    expect(files).toEqual([]);
-  });
-
-  it("returns [] when spawn throws", async () => {
-    const spawnFn: SpawnFn = async () => {
-      throw new Error("spawn failed");
-    };
-    const runtime = makeLocalRuntime(spawnFn);
-    const files = await runtime.listChangedFiles("main", "/repo", null);
-    expect(files).toEqual([]);
-  });
-
   it("filters empty lines from output", async () => {
     const spawnFn: SpawnFn = async () => ({
       exitCode: 0,
@@ -88,17 +71,103 @@ describe("LocalRuntime.listChangedFiles", () => {
       stderr: "",
     });
     const runtime = makeLocalRuntime(spawnFn);
-    const files = await runtime.listChangedFiles("main", "/repo", null);
-    expect(files).toEqual(["src/auth.ts", "lib/util.ts"]);
+    const result = await runtime.listChangedFiles("main", "/repo", null);
+    expect(result.kind).toBe("success");
+    if (result.kind !== "success") throw new Error("unreachable");
+    expect(result.files).toEqual(["src/auth.ts", "lib/util.ts"]);
+  });
+
+  it("empty output → {kind:'success', files:[]} (not unavailable)", async () => {
+    const spawnFn: SpawnFn = async () => ({
+      exitCode: 0,
+      stdout: "",
+      stderr: "",
+    });
+    const runtime = makeLocalRuntime(spawnFn);
+    const result = await runtime.listChangedFiles("main", "/repo", null);
+    expect(result.kind).toBe("success");
+    if (result.kind !== "success") throw new Error("unreachable");
+    expect(result.files).toEqual([]);
   });
 });
 
 // ---------------------------------------------------------------------------
-// ManagedRuntime.listChangedFiles
+// LocalRuntime.listChangedFiles — failure paths (new: unavailable, NOT success-empty)
 // ---------------------------------------------------------------------------
 
-describe("ManagedRuntime.listChangedFiles", () => {
-  it("always returns []", async () => {
+describe("LocalRuntime.listChangedFiles — non-zero exit → unavailable (fail-closed)", () => {
+  it("returns {kind:'unavailable'} when git exits non-zero (was: returns [])", async () => {
+    const spawnFn: SpawnFn = async () => ({
+      exitCode: 128,
+      stdout: "",
+      stderr: "fatal: not a git repository",
+    });
+    const runtime = makeLocalRuntime(spawnFn);
+    const result = await runtime.listChangedFiles("main", "/repo", null);
+    expect(result.kind).toBe("unavailable");
+  });
+
+  it("reason includes exit code on non-zero exit", async () => {
+    const spawnFn: SpawnFn = async () => ({
+      exitCode: 128,
+      stdout: "",
+      stderr: "fatal: not a git repository",
+    });
+    const runtime = makeLocalRuntime(spawnFn);
+    const result = await runtime.listChangedFiles("main", "/repo", null);
+    if (result.kind !== "unavailable") throw new Error("expected unavailable");
+    expect(result.reason).toContain("128");
+  });
+
+  it("does NOT return success-empty on non-zero exit (key regression guard)", async () => {
+    const spawnFn: SpawnFn = async () => ({
+      exitCode: 1,
+      stdout: "",
+      stderr: "error",
+    });
+    const runtime = makeLocalRuntime(spawnFn);
+    const result = await runtime.listChangedFiles("main", "/repo", null);
+    // Must NOT be success — that would be the old fail-open behaviour
+    expect(result.kind).not.toBe("success");
+  });
+});
+
+describe("LocalRuntime.listChangedFiles — spawn throw → unavailable (fail-closed)", () => {
+  it("returns {kind:'unavailable'} when spawn throws (was: returns [])", async () => {
+    const spawnFn: SpawnFn = async () => {
+      throw new Error("spawn failed");
+    };
+    const runtime = makeLocalRuntime(spawnFn);
+    const result = await runtime.listChangedFiles("main", "/repo", null);
+    expect(result.kind).toBe("unavailable");
+  });
+
+  it("reason includes error message on spawn throw", async () => {
+    const spawnFn: SpawnFn = async () => {
+      throw new Error("spawn failed");
+    };
+    const runtime = makeLocalRuntime(spawnFn);
+    const result = await runtime.listChangedFiles("main", "/repo", null);
+    if (result.kind !== "unavailable") throw new Error("expected unavailable");
+    expect(result.reason).toContain("spawn failed");
+  });
+
+  it("does NOT return success-empty on spawn throw (key regression guard)", async () => {
+    const spawnFn: SpawnFn = async () => {
+      throw new Error("unexpected error");
+    };
+    const runtime = makeLocalRuntime(spawnFn);
+    const result = await runtime.listChangedFiles("main", "/repo", null);
+    expect(result.kind).not.toBe("success");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ManagedRuntime.listChangedFiles — always unavailable (new: not [])
+// ---------------------------------------------------------------------------
+
+describe("ManagedRuntime.listChangedFiles — always unavailable", () => {
+  it("returns {kind:'unavailable'} (was: always returns [])", async () => {
     const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
     const runtime = new ManagedRuntime(
       "/repo",
@@ -108,13 +177,42 @@ describe("ManagedRuntime.listChangedFiles", () => {
       noopSpawn,
       "token",
     );
-    const files = await runtime.listChangedFiles("main", "/repo", "feat/test");
-    expect(files).toEqual([]);
+    const result = await runtime.listChangedFiles("main", "/repo", "feat/test");
+    expect(result.kind).toBe("unavailable");
+  });
+
+  it("reason mentions no local worktree", async () => {
+    const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
+    const runtime = new ManagedRuntime(
+      "/repo",
+      stubSession,
+      stubGithub,
+      { owner: "owner", name: "repo" },
+      noopSpawn,
+      "token",
+    );
+    const result = await runtime.listChangedFiles("main", "/repo", "feat/test");
+    if (result.kind !== "unavailable") throw new Error("expected unavailable");
+    expect(result.reason).toContain("managed");
+  });
+
+  it("does NOT return success-empty (key regression guard)", async () => {
+    const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
+    const runtime = new ManagedRuntime(
+      "/repo",
+      stubSession,
+      stubGithub,
+      { owner: "owner", name: "repo" },
+      noopSpawn,
+      "token",
+    );
+    const result = await runtime.listChangedFiles("main", "/repo", "feat/test");
+    expect(result.kind).not.toBe("success");
   });
 });
 
 // ---------------------------------------------------------------------------
-// T-02: canDeriveChangedFiles predicate
+// T-02: canDeriveChangedFiles predicate (unchanged)
 // ---------------------------------------------------------------------------
 
 describe("LocalRuntime.canDeriveChangedFiles", () => {

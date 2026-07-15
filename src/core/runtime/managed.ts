@@ -520,25 +520,23 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   }
 
   /**
-   * Managed runtime has no local git worktree, so it cannot derive changed files.
+   * Managed runtime has no local git worktree — changed files cannot be derived.
    *
-   * Returns [] as a structural limitation — NOT a signal that nothing changed. The `[]`
-   * return MUST NOT be interpreted as "no changes"; it reflects the absence of a local
-   * worktree, not the absence of file changes.
+   * Returns {kind:"unavailable"} as a structural limitation: the absence of a local
+   * worktree means git diff cannot be run, not that nothing changed.
    *
-   * The reviewer activation gate consults `canDeriveChangedFiles()` before calling this
-   * method. When `canDeriveChangedFiles()` returns `false`, the gate short-circuits and
-   * does NOT call `listChangedFiles`. Instead, it activates `paths`-conditioned reviewers
-   * (fail-closed) — they review the whole change rather than being silently skipped.
-   *
-   * Reviewers without `paths` conditions are unaffected and activate normally.
+   * The reviewer activation gate and scope-check consult `canDeriveChangedFiles()` before
+   * calling this method. When `canDeriveChangedFiles()` returns `false`, both short-circuit
+   * and do NOT call `listChangedFiles`. The `unavailable` result is returned here for
+   * completeness and for consumers that do not check the predicate (e.g. round-invalidation,
+   * no-op-detect treat unavailable as empty for behavior-preservation).
    */
   async listChangedFiles(
     _baseBranch: string,
     _cwd: string,
     _branch: string | null,
-  ): Promise<string[]> {
-    return [];
+  ): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
+    return { kind: "unavailable", reason: "managed runtime cannot derive changed files (no local worktree)" };
   }
 
   /**

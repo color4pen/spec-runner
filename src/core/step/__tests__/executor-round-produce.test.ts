@@ -184,7 +184,7 @@ describe("StepExecutor.produceResult — store mutation APIs never called (AC #1
 
     const runtimeStrategy = {
       ...makeRuntimeStrategy(),
-      listChangedFiles: vi.fn(async () => [] as string[]),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [] })),
       canDeriveChangedFiles: () => true,
     };
 

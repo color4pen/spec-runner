@@ -58,7 +58,7 @@
 ### capability gate — pipeline profile ↔ runtime 能力の着手前束縛
 - **束縛**: job 生成時、解決した descriptor が `permissionScope` を宣言し、かつ runtime が changed-files を導出できない（`canDeriveChangedFiles?.() === false`）場合、**`bootstrapJob` の前に** typed error で拒否する。判定は `permissionScope` の有無から導出し profile 名でハードコードしない（将来の宣言 profile も同じ gate を継承）。
 - **寿命**: 着手前 preflight。`validateReviewerDefinitions` と同じ「検査して throw＝状態を作らない」前例位置に並ぶ。発火時 **job state / worktree は一切作られない**。
-- **不変条件**: scope を検証できない runtime では「黙って通す（fail-open）」を選ばず**着手前に止める**（fail-closed）。これは多層防御の front であり、front をすり抜けた場合の back が scope checkpoint の escalation。resume 経路は本 gate を持たない（着手前 preflight の設計、back が担保）。
+- **不変条件**: scope を検証できない runtime では「黙って通す（fail-open）」を選ばず**着手前に止める**（fail-closed）。これは多層防御の front であり、front をすり抜けた場合の back が scope checkpoint の escalation。back（scope checkpoint）は front（構造的非導出 = `canDeriveChangedFiles()===false`）だけでなく、**per-call 導出失敗（`listChangedFiles` の `unavailable`）**も UNKNOWN finding 合成で捕捉する（`canDerive===true` でも呼び出し時に git diff が失敗した場合）。これにより `[]`=「変更なし」への暗黙 fold が runtime 実装レベルでも型レベルでも封じられる。resume 経路は本 gate を持たない（着手前 preflight の設計、back が担保）。
 - **binder**: `PipelineRunCommand.prepare`（`assertRuntimeSupportsScope`）。real runtime 側が能力 interface を実装していることは B-11 が固定。
 - → `src/core/pipeline/runtime-capability-gate.ts`（gate）／ `src/core/command/pipeline-run.ts`（着手前呼び出し）
 

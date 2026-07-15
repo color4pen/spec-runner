@@ -107,7 +107,7 @@ function makeStrategy(opts: {
     async verifyFindingRefs() { return []; },
     async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
     async validateStepOutputs() { return { violations: [] }; },
-    async listChangedFiles(_base, _cwd, _branch) { return opts.changedSourceFiles; },
+    async listChangedFiles(_base, _cwd, _branch) { return { kind: "success" as const, files: opts.changedSourceFiles }; },
   };
 }
 

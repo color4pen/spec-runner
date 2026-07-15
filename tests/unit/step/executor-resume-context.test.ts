@@ -151,7 +151,7 @@ function makeBaseStrategy(): RuntimeStrategy {
     async verifyFindingRefs() { return []; },
     async digestArtifacts(refs: { path: string }[]) { return refs.map((r) => ({ path: r.path, hash: null })); },
     async validateStepOutputs() { return { violations: [] }; },
-    async listChangedFiles() { return []; },
+    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
   };
 }
 

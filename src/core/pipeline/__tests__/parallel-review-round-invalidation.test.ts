@@ -194,7 +194,7 @@ describe("ParallelReviewRound — approvedAtCommit is reviewed source revision (
 
     const runtimeStrategy = {
       captureHeadSha: vi.fn(async () => currentHead),
-      listChangedFiles: vi.fn(async () => [] as string[]),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [] })),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -249,7 +249,7 @@ describe("ParallelReviewRound — change-folder-only diff does not invalidate br
     const runtimeStrategy = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       // listChangedFiles returns ONLY a change folder path
-      listChangedFiles: vi.fn(async () => [CHANGE_FOLDER_PATH]),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -275,7 +275,7 @@ describe("ParallelReviewRound — change-folder-only diff does not invalidate br
 
     const runtimeStrategy = {
       captureHeadSha: vi.fn(async () => "current-sha"),
-      listChangedFiles: vi.fn(async () => [CHANGE_FOLDER_PATH]),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -306,7 +306,7 @@ describe("ParallelReviewRound — change-folder-only diff does not invalidate **
 
     const runtimeStrategy = {
       captureHeadSha: vi.fn(async () => "current-sha"),
-      listChangedFiles: vi.fn(async () => [CHANGE_FOLDER_PATH]),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -342,7 +342,7 @@ describe("ParallelReviewRound — source path change invalidates path-constraine
     const runtimeStrategy = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       // listChangedFiles returns source path + change folder path
-      listChangedFiles: vi.fn(async () => [SOURCE_PATH, CHANGE_FOLDER_PATH]),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [SOURCE_PATH, CHANGE_FOLDER_PATH] })),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -367,7 +367,7 @@ describe("ParallelReviewRound — source path change invalidates path-constraine
 
     const runtimeStrategy = {
       captureHeadSha: vi.fn(async () => "current-sha"),
-      listChangedFiles: vi.fn(async () => [SOURCE_PATH, CHANGE_FOLDER_PATH]),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [SOURCE_PATH, CHANGE_FOLDER_PATH] })),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -401,7 +401,7 @@ describe("ParallelReviewRound — always-activate reviewer is always re-run (T-0
     const runtimeStrategy = {
       captureHeadSha: vi.fn(async () => "current-sha"),
       // listChangedFiles returns ONLY a change folder path (sourceTouched = [] after filter)
-      listChangedFiles: vi.fn(async () => [CHANGE_FOLDER_PATH]),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -427,7 +427,7 @@ describe("ParallelReviewRound — always-activate reviewer is always re-run (T-0
 
     const runtimeStrategy = {
       captureHeadSha: vi.fn(async () => "current-sha"),
-      listChangedFiles: vi.fn(async () => [CHANGE_FOLDER_PATH]),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),

@@ -111,7 +111,7 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     storeFactory: () => makeStore() as never,
     runtimeStrategy: {
       captureHeadSha: async () => "abc123",
-      listChangedFiles: async () => [],
+      listChangedFiles: async () => ({ kind: "success" as const, files: [] }),
       finalizeStepArtifacts: async () => undefined,
       validateStepInputs: async () => undefined,
       validateStepOutputs: async () => ({ violations: [] }),

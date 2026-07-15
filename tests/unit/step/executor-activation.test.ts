@@ -17,7 +17,7 @@ import type { PipelineDeps } from "../../../src/core/types.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { AgentRunner } from "../../../src/core/port/agent-runner.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
-import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
+import type { RuntimeStrategy, ChangedFilesResult } from "../../../src/core/port/runtime-strategy.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 
@@ -113,7 +113,7 @@ function makeAgentStep(overrides: Partial<AgentStep> = {}): AgentStep {
 }
 
 function makeRuntimeStrategy(
-  listChangedFiles: (base: string, cwd: string, branch: string | null) => Promise<string[]>,
+  listChangedFiles: (base: string, cwd: string, branch: string | null) => Promise<ChangedFilesResult>,
   canDeriveChangedFilesImpl?: () => boolean,
 ): RuntimeStrategy {
   const base: RuntimeStrategy = {
@@ -154,7 +154,7 @@ describe("executor activation gate — skip when conditions not met", () => {
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const listChangedFiles = vi.fn().mockResolvedValue([]);
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "success" as const, files: [] });
     const strategy = makeRuntimeStrategy(listChangedFiles);
 
     const events = new EventBus();
@@ -186,7 +186,7 @@ describe("executor activation gate — skip when conditions not met", () => {
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const strategy = makeRuntimeStrategy(vi.fn().mockResolvedValue([]));
+    const strategy = makeRuntimeStrategy(vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }));
 
     const events = new EventBus();
     const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
@@ -218,7 +218,7 @@ describe("executor activation gate — proceed when conditions met", () => {
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const listChangedFiles = vi.fn().mockResolvedValue([]);
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "success" as const, files: [] });
     const strategy = makeRuntimeStrategy(listChangedFiles);
 
     const events = new EventBus();
@@ -243,7 +243,7 @@ describe("executor activation gate — proceed when conditions met", () => {
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const listChangedFiles = vi.fn().mockResolvedValue(["src/auth/login.ts"]);
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "success" as const, files: ["src/auth/login.ts"] });
     const strategy = makeRuntimeStrategy(listChangedFiles);
 
     const events = new EventBus();
@@ -274,7 +274,7 @@ describe("executor activation gate — no-op for steps without activation", () =
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const listChangedFiles = vi.fn().mockResolvedValue([]);
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "success" as const, files: [] });
     const strategy = makeRuntimeStrategy(listChangedFiles);
 
     const events = new EventBus();
@@ -305,7 +305,7 @@ describe("executor activation gate — non-derivable runtime (fail-closed)", () 
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const listChangedFiles = vi.fn().mockResolvedValue([]);
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "success" as const, files: [] });
     const strategy = makeRuntimeStrategy(listChangedFiles, () => false);
 
     const events = new EventBus();
@@ -336,7 +336,7 @@ describe("executor activation gate — non-derivable runtime (fail-closed)", () 
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const listChangedFiles = vi.fn().mockResolvedValue([]);
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "success" as const, files: [] });
     const strategy = makeRuntimeStrategy(listChangedFiles, () => false);
 
     const events = new EventBus();
@@ -369,7 +369,7 @@ describe("executor activation gate — non-derivable runtime (fail-closed)", () 
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const listChangedFiles = vi.fn().mockResolvedValue(["src/auth/login.ts"]);
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "success" as const, files: ["src/auth/login.ts"] });
     const strategy = makeRuntimeStrategy(listChangedFiles, () => true);
 
     const events = new EventBus();
@@ -395,7 +395,7 @@ describe("executor activation gate — non-derivable runtime (fail-closed)", () 
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const listChangedFiles = vi.fn().mockResolvedValue(["src/util/helper.ts"]);
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "success" as const, files: ["src/util/helper.ts"] });
     const strategy = makeRuntimeStrategy(listChangedFiles, () => true);
 
     const events = new EventBus();
@@ -423,7 +423,7 @@ describe("executor activation gate — non-derivable runtime (fail-closed)", () 
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const listChangedFiles = vi.fn().mockResolvedValue([]);
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "success" as const, files: [] });
     const strategy = makeRuntimeStrategy(listChangedFiles, () => false);
 
     const events = new EventBus();
@@ -450,7 +450,7 @@ describe("executor activation gate — non-derivable runtime (fail-closed)", () 
       followUpAttempts: 0,
     });
     const mockRunner: AgentRunner = { run: runMock };
-    const listChangedFiles = vi.fn().mockResolvedValue([]);
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "success" as const, files: [] });
     const strategy = makeRuntimeStrategy(listChangedFiles, () => false);
 
     const events = new EventBus();
@@ -465,5 +465,73 @@ describe("executor activation gate — non-derivable runtime (fail-closed)", () 
 
     expect(runMock).toHaveBeenCalledOnce();
     expect(listChangedFiles).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test: canDerive===true but listChangedFiles returns unavailable → fail-closed activate
+// ---------------------------------------------------------------------------
+
+describe("executor activation gate — per-call unavailable (canDerive=true) → fail-closed", () => {
+  it("canDerive=true + unavailable result + paths reviewer: agent IS called, listChangedFiles WAS called", async () => {
+    const runMock = vi.fn().mockResolvedValue({
+      completionReason: "success" as const,
+      resultContent: null,
+      toolResult: null,
+      followUpAttempts: 0,
+    });
+    const mockRunner: AgentRunner = { run: runMock };
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "git diff exited with code 128" });
+    // canDerive=true (structurally capable, but per-call fails)
+    const strategy = makeRuntimeStrategy(listChangedFiles, () => true);
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
+
+    const step = makeAgentStep({
+      activation: { paths: ["src/auth/**"] },
+    });
+    const state = makeMinimalState();
+    await makeStoreFactory(tempDir)(state.jobId).persist(state);
+
+    const result = await executor.execute(step, state, makeMinimalDeps(strategy));
+
+    // Agent MUST be called (fail-closed: unavailable → activate, not skip)
+    expect(runMock).toHaveBeenCalledOnce();
+    // listChangedFiles MUST have been called (canDerive=true, so we try before getting unavailable)
+    expect(listChangedFiles).toHaveBeenCalledOnce();
+    // Step result must NOT be a skipped verdict
+    const run = result.steps?.["security"]?.[0];
+    expect(run?.outcome.verdict).not.toBe("skipped");
+  });
+
+  it("canDerive=true + unavailable result: no 'no changed files matched' skip reason", async () => {
+    const runMock = vi.fn().mockResolvedValue({
+      completionReason: "success" as const,
+      resultContent: null,
+      toolResult: null,
+      followUpAttempts: 0,
+    });
+    const mockRunner: AgentRunner = { run: runMock };
+    const listChangedFiles = vi.fn().mockResolvedValue({ kind: "unavailable" as const, reason: "spawn failed" });
+    const strategy = makeRuntimeStrategy(listChangedFiles, () => true);
+
+    const events = new EventBus();
+    const executor = new StepExecutor(events, mockRunner, makeStoreFactory(tempDir));
+
+    const step = makeAgentStep({
+      activation: { paths: ["src/auth/**"] },
+    });
+    const state = makeMinimalState();
+    await makeStoreFactory(tempDir)(state.jobId).persist(state);
+
+    const result = await executor.execute(step, state, makeMinimalDeps(strategy));
+
+    const run = result.steps?.["security"]?.[0];
+    expect(run?.outcome.verdict).not.toBe("skipped");
+    const skipReason = run?.outcome.skipReason;
+    if (skipReason !== undefined) {
+      expect(skipReason).not.toContain("no changed files matched");
+    }
   });
 });

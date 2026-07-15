@@ -113,11 +113,17 @@ export class ParallelReviewRound {
         const s = updatedStatuses[i]!;
         if (s.status !== "approved" || !s.approvedAtCommit) continue;
 
-        const touched = await deps.runtimeStrategy.listChangedFiles(
+        const result = await deps.runtimeStrategy.listChangedFiles(
           s.approvedAtCommit,
           cwd,
           state.branch ?? null,
         );
+
+        // Behavior preservation: unavailable (managed runtime, local transient failure) is
+        // treated as empty (no-signal). This keeps managed invalidation non-firing (Non-Goal).
+        // managed runtime: canDeriveChangedFiles()=false → unavailable → empty → invalidation
+        // not fired. This is intentional fail-safe behavior for managed, not a bug.
+        const touched = result.kind === "success" ? result.files : [];
 
         // Exclude pipeline-managed change folder paths (specrunner/changes/...) from
         // the invalidation diff. A reviewer's own findings commit must not spuriously

@@ -196,7 +196,7 @@ function makeRuntimeStrategy(changedFiles: string[]): RuntimeStrategy {
     async persistJobState() {},
     async verifyFindingRefs() { return []; },
     async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
-    async listChangedFiles() { return changedFiles; },
+    async listChangedFiles() { return { kind: "success" as const, files: changedFiles }; },
   };
 }
 
@@ -340,7 +340,7 @@ describe("T-08: FindingResolution union is fixable | decision-needed only", () =
 describe("T-04: permissionScope absent → executor behaves identically to previous", () => {
   it("no scope check when permissionScope is undefined", async () => {
     const jobState = await createRunningJobState();
-    const listFn = vi.fn().mockResolvedValue([]);
+    const listFn = vi.fn().mockResolvedValue({ kind: "success" as const, files: [] });
     const strategy = makeRuntimeStrategy([]);
     strategy.listChangedFiles = listFn;
 
@@ -437,7 +437,7 @@ describe("T-04: scope breach at checkpoint → verdict escalation", () => {
 describe("T-04: step is not the checkpoint → no scope synthesis", () => {
   it("non-checkpoint judge step → no scope synthesis even when permissionScope is set", async () => {
     const jobState = await createRunningJobState();
-    const listFn = vi.fn().mockResolvedValue(["src/auth/login.ts"]);
+    const listFn = vi.fn().mockResolvedValue({ kind: "success" as const, files: ["src/auth/login.ts"] });
     const strategy = makeRuntimeStrategy(["src/auth/login.ts"]);
     strategy.listChangedFiles = listFn;
 
@@ -866,7 +866,7 @@ describe("T-04: synthesizeScopeUnverifiableFinding — UNKNOWN finding determini
  * listChangedFiles is a spy so tests can verify it is never called.
  */
 function makeUnevaluableRuntimeStrategy(): RuntimeStrategy & { listChangedFiles: ReturnType<typeof vi.fn> } {
-  const listFn = vi.fn().mockResolvedValue([]);
+  const listFn = vi.fn().mockResolvedValue({ kind: "success" as const, files: [] });
   return {
     async *query() {},
     createAgentRunner() {
@@ -1196,6 +1196,129 @@ describe("T-07: canDeriveChangedFiles=true → #689 breach parity", () => {
     expect(scopeFindings[0]!.title).toContain("Scope exceeded");
     // NOT an UNKNOWN finding
     expect(scopeFindings[0]!.title).not.toContain("UNKNOWN");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06-NEW: canDerive===true but listChangedFiles returns unavailable → fail-closed UNKNOWN
+// This is the new behaviour closed by the DU refactor (per-call failure → UNKNOWN, not []→pass)
+// ---------------------------------------------------------------------------
+
+describe("T-06-NEW: canDerive=true + listChangedFiles unavailable → UNKNOWN finding escalation (fail-closed)", () => {
+  /**
+   * Make a RuntimeStrategy with canDeriveChangedFiles=true but listChangedFiles returns unavailable.
+   * Simulates a local runtime where git diff fails at call time (e.g. repo corruption).
+   */
+  function makeUnavailableRuntimeStrategy(): RuntimeStrategy {
+    return {
+      async *query() {},
+      createAgentRunner() {
+        return {
+          async run() {
+            return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
+          },
+        };
+      },
+      async setupWorkspace() { return { cwd: "" }; },
+      buildDeps() { return {} as never; },
+      registerCleanup() { return {} as never; },
+      async teardown() {},
+      async captureHeadSha() { return null; },
+      async prepareStepArtifacts() {},
+      async finalizeStepArtifacts() {},
+      async validateStepInputs() {},
+      async validateStepOutputs() { return { violations: [] }; },
+      async commitFinalState() {},
+      async bootstrapJob(): Promise<JobState> { throw new Error("not implemented"); },
+      async persistJobState() {},
+      async verifyFindingRefs() { return []; },
+      async digestArtifacts(refs) { return refs.map((r) => ({ path: r.path, hash: null })); },
+      async listChangedFiles() { return { kind: "unavailable", reason: "git diff exited with code 128" }; },
+      canDeriveChangedFiles: () => true, // structurally capable, but call fails
+    };
+  }
+
+  it("canDerive=true + unavailable → verdict escalation (fail-closed, not fail-open pass)", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeUnavailableRuntimeStrategy();
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    // Per-call failure must NOT pass through as "no breach" — must escalate (fail-closed)
+    expect(outcome?.verdict).toBe("escalation");
+  });
+
+  it("canDerive=true + unavailable → UNKNOWN finding (origin:scope, resolution:decision-needed)", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeUnavailableRuntimeStrategy();
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    const tr = outcome?.toolResult as { findings?: Finding[] } | null;
+    const scopeFindings = (tr?.findings ?? []).filter((f) => f.origin === "scope");
+    expect(scopeFindings).toHaveLength(1);
+    expect(scopeFindings[0]!.resolution).toBe("decision-needed");
+    expect(scopeFindings[0]!.severity).toBe("high");
+  });
+
+  it("canDerive=true + unavailable → UNKNOWN finding has ≥2 options", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeUnavailableRuntimeStrategy();
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    const tr = outcome?.toolResult as { findings?: Finding[] } | null;
+    const scopeFindings = (tr?.findings ?? []).filter((f) => f.origin === "scope");
+    expect(scopeFindings[0]!.options?.length ?? 0).toBeGreaterThanOrEqual(2);
+  });
+
+  it("canDerive=true + unavailable → NOT a breach finding (title contains UNKNOWN, not 'Scope exceeded')", async () => {
+    const jobState = await createRunningJobState();
+    const strategy = makeUnavailableRuntimeStrategy();
+
+    const runner = makeRunnerWithToolResult({ ok: true, findings: [] });
+    const executor = new StepExecutor(
+      new EventBus(), runner, makeStoreFactory(tempDir),
+      undefined, undefined,
+      FORBIDDEN_SCOPE,
+    );
+
+    const step = makeJudgeStep("spec-review");
+    const finalState = await executor.execute(step, jobState, makeDeps(strategy));
+
+    const outcome = getLastOutcome(finalState, "spec-review");
+    const tr = outcome?.toolResult as { findings?: Finding[] } | null;
+    const scopeFindings = (tr?.findings ?? []).filter((f) => f.origin === "scope");
+    // Should be an UNKNOWN finding — NOT a breach finding
+    expect(scopeFindings[0]!.title).not.toContain("Scope exceeded");
+    expect(scopeFindings[0]!.title).toContain("UNKNOWN");
   });
 });
 

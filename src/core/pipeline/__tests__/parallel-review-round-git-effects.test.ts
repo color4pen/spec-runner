@@ -142,7 +142,7 @@ function makeRuntimeStrategy(opts: {
   const inspectionResult = opts.inspectionResult ?? { kind: "success" as const, paths: opts.worktreeChanges ?? [] };
   return {
     captureHeadSha: vi.fn(async () => "abc123"),
-    listChangedFiles: vi.fn(async () => [] as string[]),
+    listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [] })),
     finalizeStepArtifacts: vi.fn(async () => {}),
     validateStepInputs: vi.fn(async () => {}),
     validateStepOutputs: vi.fn(async () => ({ violations: [] })),
@@ -424,7 +424,7 @@ describe("ParallelReviewRound git effects — fake without listWorktreeChanges s
     // Simulate the existing test pattern where the fake has no listWorktreeChanges
     const minimalRuntimeStrategy = {
       captureHeadSha: vi.fn(async () => "abc123"),
-      listChangedFiles: vi.fn(async () => [] as string[]),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [] })),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
       validateStepOutputs: vi.fn(async () => ({ violations: [] })),

@@ -153,7 +153,7 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn): RuntimeStrategy {
     async digestArtifacts(refs: { path: string }[]): Promise<import("../src/store/event-journal.js").ArtifactRef[]> {
       return refs.map((r) => ({ path: r.path, hash: null }));
     },
-    async listChangedFiles(): Promise<string[]> { return []; },
+    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
     async validateStepOutputs(): Promise<import("../src/core/port/output-contract.js").OutputCheckResult> {
       return { violations: [] };
     },

@@ -84,7 +84,7 @@ function makeRuntimeStrategy(changedFiles: string[]) {
     finalizeStepArtifacts: vi.fn(async () => {}),
     validateStepInputs: vi.fn(async () => {}),
     validateStepOutputs: vi.fn(async () => [] as never[]),
-    listChangedFiles: vi.fn(async () => changedFiles),
+    listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: changedFiles })),
   };
 }
 
