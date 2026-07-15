@@ -192,8 +192,16 @@ export async function verifyCheckpoint(input: {
     let readsRefs: import("../step/types.js").IoRef[] = [];
     try {
       readsRefs = resumeStep.reads(state as import("../../state/schema.js").JobState, minDeps);
-    } catch {
-      // reads() threw — skip the tree-precheck (defensive)
+    } catch (err: unknown) {
+      // reads() threw — scope unevaluable → fail-closed (scope-unevaluable → reject).
+      // Cannot prove the resume step's required inputs will be present in the checkpoint tree.
+      // Allowing attach when attachability cannot be proven creates a fail-open vulnerability
+      // (B-11: scope-unevaluable → reject). The operator must fix the checkpoint or step
+      // definition before attaching.
+      throw checkpointNotAttachableError(
+        "resume-reads-unevaluable",
+        `Cannot evaluate reads() for resume step '${resolvedStepName}': ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
     for (const ref of readsRefs) {
       if (ref.required !== false && ref.artifact !== "gitState") {

@@ -1,5 +1,5 @@
 /**
- * Tests for src/core/attach/verify-checkpoint.ts (T-04).
+ * Tests for src/core/attach/verify-checkpoint.ts (T-04, T-06).
  *
  * TC-VC-001: status not awaiting-resume → CHECKPOINT_NOT_ATTACHABLE
  * TC-VC-002: request.md absent from treeFiles → CHECKPOINT_NOT_ATTACHABLE
@@ -11,10 +11,26 @@
  * TC-VC-008: valid checkpoint → VerifiedCheckpoint returned
  * TC-VC-009: running status → CHECKPOINT_NOT_ATTACHABLE
  * TC-VC-010: no filesystem writes in any path
+ * TC-VC-014: reads() throws → CHECKPOINT_NOT_ATTACHABLE (resume-reads-unevaluable, fail-closed)
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { verifyCheckpoint } from "../../src/core/attach/verify-checkpoint.js";
 import { ERROR_CODES } from "../../src/errors.js";
+
+// ---------------------------------------------------------------------------
+// Module-level mock for TC-VC-014: inject a descriptor with a throwing reads().
+// vi.mock is hoisted and applies to the whole module. To avoid interfering with
+// other tests, we default to the real implementation and override only in TC-VC-014.
+// ---------------------------------------------------------------------------
+vi.mock("../../src/core/pipeline/registry.js", async (importOriginal) => {
+  const original = await importOriginal<typeof import("../../src/core/pipeline/registry.js")>();
+  return {
+    ...original,
+    getPipelineDescriptor: vi.fn().mockImplementation((...args: Parameters<typeof original.getPipelineDescriptor>) => {
+      return original.getPipelineDescriptor(...args);
+    }),
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -340,5 +356,104 @@ describe("TC-VC-010: verifyCheckpoint has no filesystem side effects", () => {
     }
     expect(threw).toBe(true);
     // If we reach here without fs errors, the function is not doing filesystem writes
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-VC-014: reads() throws → CHECKPOINT_NOT_ATTACHABLE (resume-reads-unevaluable, fail-closed)
+// T-06: reads() fail-closed — scope unevaluable → reject
+// ---------------------------------------------------------------------------
+describe("TC-VC-014: reads() throws → CHECKPOINT_NOT_ATTACHABLE (resume-reads-unevaluable)", () => {
+  it("rejects with resume-reads-unevaluable when the resume step reads() throws", async () => {
+    // Inject a descriptor with a step whose reads() throws.
+    // verifyCheckpoint calls getPipelineDescriptor → gets descriptor → finds the resume step →
+    // calls reads() → reads() throws → fail-closed: CHECKPOINT_NOT_ATTACHABLE.
+    //
+    // no-side-effects guarantee: verifyCheckpoint runs before materialize (see orchestrator.ts),
+    // so if it throws here, no job state / worktree / sidecar is created. This is documented
+    // here rather than asserted separately since verifyCheckpoint has no I/O of its own.
+    const { getPipelineDescriptor } = await import("../../src/core/pipeline/registry.js");
+    const mockedGetPipelineDescriptor = vi.mocked(getPipelineDescriptor);
+
+    // Build a descriptor that has "implementer" with a throwing reads()
+    const { STANDARD_DESCRIPTOR } = await import("../../src/core/pipeline/registry.js");
+    const throwingDescriptor = {
+      ...STANDARD_DESCRIPTOR,
+      steps: STANDARD_DESCRIPTOR.steps.map(([name, step]) => {
+        if (name === "implementer") {
+          return [name, {
+            ...step,
+            reads: () => { throw new Error("reads() failed: config unavailable"); },
+          }] as typeof STANDARD_DESCRIPTOR.steps[0];
+        }
+        return [name, step] as typeof STANDARD_DESCRIPTOR.steps[0];
+      }),
+    };
+
+    mockedGetPipelineDescriptor.mockImplementationOnce(() => throwingDescriptor);
+
+    try {
+      await expect(
+        verifyCheckpoint({
+          slug: SLUG,
+          stateJson: VALID_STATE_JSON,
+          eventsJsonl: VALID_EVENTS_JSONL,
+          treeFiles: VALID_TREE_FILES,
+          branch: BRANCH,
+          expectedRepo: EXPECTED_REPO,
+          checkpointOid: CHECKPOINT_OID,
+        }),
+      ).rejects.toMatchObject({
+        code: ERROR_CODES.CHECKPOINT_NOT_ATTACHABLE,
+        // hint contains the reason code "resume-reads-unevaluable"
+        hint: expect.stringContaining("resume-reads-unevaluable"),
+      });
+    } finally {
+      mockedGetPipelineDescriptor.mockRestore();
+    }
+  });
+
+  it("error detail contains the step name and cause message", async () => {
+    const { getPipelineDescriptor } = await import("../../src/core/pipeline/registry.js");
+    const mockedGetPipelineDescriptor = vi.mocked(getPipelineDescriptor);
+    const { STANDARD_DESCRIPTOR } = await import("../../src/core/pipeline/registry.js");
+
+    const causeMessage = "reads() evaluation failure: simulated";
+    const throwingDescriptor = {
+      ...STANDARD_DESCRIPTOR,
+      steps: STANDARD_DESCRIPTOR.steps.map(([name, step]) => {
+        if (name === "implementer") {
+          return [name, { ...step, reads: () => { throw new Error(causeMessage); } }] as typeof STANDARD_DESCRIPTOR.steps[0];
+        }
+        return [name, step] as typeof STANDARD_DESCRIPTOR.steps[0];
+      }),
+    };
+
+    mockedGetPipelineDescriptor.mockImplementationOnce(() => throwingDescriptor);
+
+    try {
+      let caughtErr: unknown;
+      try {
+        await verifyCheckpoint({
+          slug: SLUG,
+          stateJson: VALID_STATE_JSON,
+          eventsJsonl: VALID_EVENTS_JSONL,
+          treeFiles: VALID_TREE_FILES,
+          branch: BRANCH,
+          expectedRepo: EXPECTED_REPO,
+          checkpointOid: CHECKPOINT_OID,
+        });
+      } catch (e) {
+        caughtErr = e;
+      }
+      // Code must be CHECKPOINT_NOT_ATTACHABLE
+      expect(caughtErr).toMatchObject({ code: ERROR_CODES.CHECKPOINT_NOT_ATTACHABLE });
+      // Error message must contain the step name (from "resume step '...'") and the cause
+      // message: "Checkpoint is not attachable: Cannot evaluate reads() for resume step 'implementer': <cause>"
+      expect((caughtErr as Error).message).toContain("implementer");
+      expect((caughtErr as Error).message).toContain(causeMessage);
+    } finally {
+      mockedGetPipelineDescriptor.mockRestore();
+    }
   });
 });

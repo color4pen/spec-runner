@@ -60,7 +60,7 @@ describe("TC-MA-001: attach-from-checkpoint → manager.create with checkpointRe
       CHECKPOINT_REF,
       BRANCH_NAME,
       { kind: "skip" },
-      true, // branchWasPreExisting=true: spawnFn returns exitCode 0 for rev-parse
+      true, // preserveBranchOnFailure=true: attach cannot prove ownership, never deletes branch
     );
   });
 });
@@ -103,6 +103,54 @@ describe("TC-MA-003: attach-from-checkpoint → updateJobState/bootstrap not cal
     });
 
     expect(host.updateJobState).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-MA-005: attach arm does NOT call rev-parse (ownership proof via pre-check removed)
+// ---------------------------------------------------------------------------
+describe("TC-MA-005: attach-from-checkpoint → no ownership-proof rev-parse", () => {
+  it("does not call spawnFn with rev-parse args for the branch before create", async () => {
+    const host = makeStubHost();
+    const materializer = new WorkspaceMaterializer(host);
+
+    await materializer.materialize(SLUG, JOB_ID, {
+      kind: "attach-from-checkpoint",
+      checkpointRef: CHECKPOINT_REF,
+      branchName: BRANCH_NAME,
+    });
+
+    // spawnFn must NOT have been called with rev-parse (ownership proof via pre-check is removed)
+    const spawnCalls = vi.mocked(host.spawnFn).mock.calls;
+    const revParseCall = spawnCalls.find(
+      ([_cmd, args]) => Array.isArray(args) && args.some((a: string) => a.includes("rev-parse")),
+    );
+    expect(revParseCall).toBeUndefined();
+  });
+
+  it("passes preserveBranchOnFailure=true as 7th arg to manager.create unconditionally", async () => {
+    // Even if spawnFn returns exitCode 1 (branch does not exist), preserveBranchOnFailure is still true.
+    const hostNoBranch = makeStubHost({
+      spawnFn: vi.fn().mockResolvedValue({ exitCode: 1, stdout: "", stderr: "" }),
+    });
+    const materializer = new WorkspaceMaterializer(hostNoBranch);
+
+    await materializer.materialize(SLUG, JOB_ID, {
+      kind: "attach-from-checkpoint",
+      checkpointRef: CHECKPOINT_REF,
+      branchName: BRANCH_NAME,
+    });
+
+    // 7th arg must be true regardless of any rev-parse outcome
+    expect(hostNoBranch.manager.create).toHaveBeenCalledWith(
+      expect.any(String), // repoRoot
+      SLUG,
+      JOB_ID,
+      CHECKPOINT_REF,
+      BRANCH_NAME,
+      expect.any(Object), // setupPlan
+      true, // preserveBranchOnFailure — always true for attach
+    );
   });
 });
 

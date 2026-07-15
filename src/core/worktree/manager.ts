@@ -34,12 +34,17 @@ export interface WorktreeManager {
    * On setup failure, the worktree is cleaned up (git worktree remove --force + rm -rf) and an error is thrown.
    * Returns the worktree path.
    *
-   * @param branchWasPreExisting - When true, this branch existed before this call was made.
-   *   On `git worktree add` failure, the branch will NOT be deleted (it was not created here).
-   *   When false/absent, the branch is treated as created by this call and may be cleaned up
-   *   on failure (original new-run behavior). Defaults to false (cleanup on failure).
+   * @param preserveBranchOnFailure - When true, this call does NOT delete the branch on
+   *   `git worktree add` failure. Only branches that this call can prove it created should
+   *   be deleted (ownership proof). When false/absent, the branch may be cleaned up on failure
+   *   (original new-run behavior: this call created the branch and is responsible for cleanup).
+   *   Defaults to false (cleanup on failure).
+   *
+   *   attach-from-checkpoint passes true unconditionally: combined `git worktree add -b`
+   *   cannot atomically prove creation ownership, so cleanup is never attempted.
+   *   new-run passes false (default): the branch did not exist before, so cleanup is safe.
    */
-  create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string, plan?: WorkspaceSetupPlan, branchWasPreExisting?: boolean): Promise<string>;
+  create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string, plan?: WorkspaceSetupPlan, preserveBranchOnFailure?: boolean): Promise<string>;
 
   /**
    * Remove a worktree: git worktree remove --force + rm -rf.
@@ -98,7 +103,7 @@ export function createWorktreeManager(
   }
 
   return {
-    async create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string, plan: WorkspaceSetupPlan = { kind: "detect-install" }, branchWasPreExisting = false): Promise<string> {
+    async create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string, plan: WorkspaceSetupPlan = { kind: "detect-install" }, preserveBranchOnFailure = false): Promise<string> {
       const worktreePath = buildWorktreePath(repoRoot, slug, jobId);
       const ref = baseRef ?? "HEAD";
 
@@ -115,10 +120,12 @@ export function createWorktreeManager(
         const isLockContention = wtResult.stderr.includes("could not lock config file");
         if (!isLockContention || attempt === MAX_RETRIES) {
           // Best-effort branch cleanup to prevent collision on next run.
-          // Only clean up branches that were created by this invocation (not pre-existing).
-          // D4: branchWasPreExisting=true means the branch existed before this call —
-          // deleting it would destroy existing commits that belong to the caller.
-          if (branchName && !branchWasPreExisting) {
+          // Only clean up branches that this call can prove it created (ownership proof).
+          // preserveBranchOnFailure=true means we cannot prove ownership (e.g. attach-from-checkpoint
+          // uses combined `git worktree add -b` which cannot atomically prove creation), so we
+          // never delete the branch — deleting it could destroy existing commits that belong to
+          // another invocation (race condition protection).
+          if (branchName && !preserveBranchOnFailure) {
             await spawn("git", ["branch", "-D", branchName], { cwd: repoRoot });
           }
           throw new Error(

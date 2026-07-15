@@ -314,6 +314,30 @@ export class Pipeline {
       // D4: mark first unit as executed so subsequent units receive depsWithoutResume.
       firstUnitExecuted = true;
 
+      // guard-halt honored: terminal control exit.
+      // When a step's guard-halt (timeout / drift) sets state.status="awaiting-resume",
+      // the pipeline must stop immediately and NOT execute any subsequent steps.
+      //
+      // This is the convergence point for both sequential and coordinator paths:
+      //   - Sequential: executor.execute throws (commitHalt → attachStateAndRethrow), catch
+      //     block sets state = errWithState.state (awaiting-resume), store.persist runs.
+      //   - Coordinator: commitRound does NOT set awaiting-resume (halt members are recorded
+      //     in-memory only); state remains "running" and outcome is "escalation". The escalation
+      //     terminal below handles it — this guard does NOT fire for the coordinator path.
+      //
+      // Why break here instead of routing via escalate terminal:
+      //   The escalate terminal calls transitionJob("awaiting-resume") again, which would clobber
+      //   resumePoint.step and error already written by commitHalt / executor. Double transition
+      //   corrupts the resume anchor. Breaking here preserves the commitHalt-written state intact.
+      //
+      // Publisher seam (pipeline.ts:504): reached unconditionally after break.
+      // getStepOutcome hardening (below) is a defensive fail-safe for this guard.
+      if (state.status === "awaiting-resume") {
+        // guard-halt honored: terminal control exit → publisher seam
+        this.printPipelineFinished(state);
+        break;
+      }
+
       const loopIter = budget.getLoopIter(currentStep);
 
       // --- Loop step exit bookkeeping ---
@@ -577,6 +601,17 @@ export class Pipeline {
   ): string {
     if (state.status === "failed") {
       return "error";
+    }
+
+    // guard-halt source of truth (fail-safe / defensive hardening).
+    // The primary guard is the status check inserted after firstUnitExecuted = true (above).
+    // This secondary check prevents awaiting-resume from being inadvertently treated as a
+    // legitimate step verdict and routed to the next step if the primary guard is ever bypassed
+    // (e.g. in future refactors). NOT used to initiate awaiting-resume transitions — that is
+    // owned by the escalate terminal. Does NOT share the escalate terminal to avoid
+    // double transitionJob(awaiting-resume) that would clobber resumePoint/error.
+    if (state.status === "awaiting-resume") {
+      return "awaiting-resume";
     }
 
     const verdict = getLatestStepResult(state, stepName)?.verdict;
