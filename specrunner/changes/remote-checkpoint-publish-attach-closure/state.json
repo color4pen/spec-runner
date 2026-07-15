@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a5425449-6f6b-49c1-bac8-d3004b3d22d2",
   "createdAt": "2026-07-15T13:06:45.467Z",
-  "updatedAt": "2026-07-15T13:06:48.064Z",
+  "updatedAt": "2026-07-15T13:11:06.597Z",
   "request": {
     "title": "remote checkpoint publish/attach correctness closure",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/remote-checkpoint-publish-attach-closure-a5425449",
   "error": null,
@@ -49,7 +49,9 @@
     }
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
