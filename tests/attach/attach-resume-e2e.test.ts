@@ -403,6 +403,7 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
         let machineBRunnerCallCount = 0;
         let machineBRunnerCalledAtStep: string | undefined;
         let machineBRunnerCalledJobId: string | undefined;
+        let machineBRunnerCalledSlug: string | undefined;
         let machineBRunnerCwd: string | undefined;
         let machineBDiskStatusAtRunnerCall: string | undefined;
 
@@ -411,6 +412,7 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
             machineBRunnerCallCount++;
             machineBRunnerCalledAtStep = ctx.step.name;
             machineBRunnerCalledJobId = ctx.state.jobId;
+            machineBRunnerCalledSlug = ctx.slug;
             machineBRunnerCwd = ctx.cwd;
             // T-04 running persistence: read state.json from disk at runner call time
             const stateJsonPath = path.join(ctx.cwd, "specrunner", "changes", SLUG, "state.json");
@@ -475,6 +477,7 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
         // (1) Attached state resolution: resume resolved the correct jobId and slug
         expect(machineBRunnerCallCount).toBe(1);
         expect(machineBRunnerCalledJobId).toBe(jobId);
+        expect(machineBRunnerCalledSlug).toBe(SLUG);
 
         // (2) startStep resolution: resolved step === resumePoint.step
         expect(machineBRunnerCalledAtStep).toBe(STEP_NAMES.IMPLEMENTER);
