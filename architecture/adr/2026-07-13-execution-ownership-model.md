@@ -6,7 +6,7 @@ accepted。
 
 本 ADR の構造判断（D1〜D4 の所有権配置）は**採用済み** ― 「実行 seam を跨いだ副作用を誰が確定させるか」を構造判断として確定する（実装の有無とは独立）。後続 PR で「この所有権モデル自体を採用するか」を再審議しない。
 
-**Invariant B-13〜B-16 は proposed のまま**とし、各 invariant は対応する実装・architecture test（歯）・contract test が landing した時点で個別に ratify する。ratify までは `model.md` §4 ＋ `conformance.md` (A) へ昇格しない（歯を一括採択しない）。依存順の目安: B-16 → B-15 → B-13（B-14 は B-13 の失敗経路スライスとして同時 ratify 可）。
+**Invariant B-13〜B-16 は ratify 済み** ― `model.md` §4 ＋ `conformance.md` (A) ＋ `core-invariants.test.ts` へ昇格済みで、ratify 状態の正本は `divergence-status.md`。採択時は proposed とし、各 invariant を対応する実装・architecture test（歯）・contract test が landing した時点で個別に ratify する段階方針を採った（依存順の目安: B-16 → B-15 → B-13、B-14 は B-13 の失敗経路スライスとして同時 ratify）。この段階採択は全件完了しており、以降の本文中の「（提案）」表記は採択時点の計画を示す。
 
 実装手順・staging 機構・resume 配布・出力排他契約の振る舞いは behavior（spec `specrunner/changes/` ＋ request、または `specrunner/adr/`）が担う。
 
