@@ -1,0 +1,27 @@
+{
+  "requestHash": "sha256:41c918266bda03b901c404898ac54cc19611966bfe1718d49efd93d719345361",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/commit-push.ts:33-76 — commitAndPush function bounds",
+    "src/core/step/commit-push.ts:44-50 — git add exit≠0 → silent return",
+    "src/core/step/commit-push.ts:54-55 — hasChanges = (diffExitCode === 1)",
+    "src/core/step/commit-push.ts:57-68 — exit≥2 → hasChanges=false (no-op/push-only path)",
+    "src/core/step/commit-push.ts:72 — git commit uses gitExec (result unchecked, failure returns null)",
+    "src/core/step/commit-push.ts:155-182 — commitScopedPaths same pattern (add 165-169 / diff 173-175 / commit 178)",
+    "src/core/step/commit-push.ts:189-207 — pushOnly throws pushFailedError on second push failure",
+    "src/util/git-exec.ts:39-51 — gitExec returns null on failure (no throw)",
+    "src/util/git-exec.ts:57-68 — gitExecExitCode spawn error → returns 1",
+    "src/core/step/step-halt.ts:305 — makeCommitFailHalt, code COMMIT_AND_PUSH_FAILED, kind 'failed'",
+    "src/core/step/executor.ts:449 — makeCommitFailHalt called in finalizeStepArtifacts catch",
+    "src/core/runtime/local.ts:643 — commitAndPush called from finalizeStepArtifacts",
+    "src/core/runtime/local.ts:791 — commitScopedPaths called from commitRoundArtifacts",
+    "src/core/port/runtime-strategy.ts:300 — comment: commitAndPush errors are re-thrown; the executor's .catch()",
+    "src/adapter/managed-agent/agent-runner.ts:629 — comment: managed agents commit+push themselves",
+    "src/errors.ts — pushFailedError, notGitRepoError, noCommitDetectedError factories all exist",
+    "tests/unit/step/commit-and-push.test.ts:TC-CAP-008 — git add failure currently expects silent skip",
+    "tests/unit/step/commit-and-push.test.ts:TC-CAP-009 — git add failure currently expects silent skip",
+    "src/core/step/__tests__/commit-scoped-paths.test.ts:Branch-2 — add failure currently expects silent return",
+    "src/core/step/commit-push.ts:91-131 — commitFinalState best-effort, does not throw"
+  ],
+  "sourceRevision": "85a797d9bd2bb471f7a4d5c54767067d7fcc01b6"
+}
