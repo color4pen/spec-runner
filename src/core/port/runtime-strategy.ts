@@ -137,6 +137,19 @@ export interface WorkspaceOptions {
    * resume path must not set this field (ahead detection is run-only).
    */
   designLayerEnabled?: boolean;
+  /**
+   * Attach path only. When set, setupWorkspace materializes a worktree from the given
+   * remote checkpoint ref (feature branch HEAD) instead of the base branch.
+   * The checkpoint ref must already be fetched (fetch is orchestrator responsibility).
+   * Skips bootstrap seed, updateJobState, and request.md copy — the checkpoint tree
+   * already contains these files.
+   */
+  attachCheckpoint?: {
+    /** Feature branch name (local branch to create in the worktree). */
+    branch: string;
+    /** Fully-qualified git ref to checkout (e.g. "origin/<branch>"). */
+    checkpointRef: string;
+  };
 }
 
 /**

@@ -101,6 +101,10 @@ export const ERROR_CODES = {
   DUPLICATE_LIVE_JOB: "DUPLICATE_LIVE_JOB",
   JOURNAL_CORRUPTED: "JOURNAL_CORRUPTED",
   COMMIT_AND_PUSH_FAILED: "COMMIT_AND_PUSH_FAILED",
+  CHECKPOINT_NOT_FOUND: "CHECKPOINT_NOT_FOUND",
+  CHECKPOINT_NOT_ATTACHABLE: "CHECKPOINT_NOT_ATTACHABLE",
+  ATTACH_FETCH_FAILED: "ATTACH_FETCH_FAILED",
+  ATTACH_RUNTIME_UNSUPPORTED: "ATTACH_RUNTIME_UNSUPPORTED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -367,6 +371,38 @@ export function journalCorruptedError(eventsPath: string, detail: string): SpecR
     `hand-edited or truncated. Restore it from git history (e.g. ` +
     `\`git restore --source=<good-ref> -- ${eventsPath}\`) before re-running.`,
     `Event journal integrity check failed at ${eventsPath}: ${detail}`,
+  );
+}
+
+export function checkpointNotFoundError(branch: string, detail: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.CHECKPOINT_NOT_FOUND,
+    `Verify that '${branch}' has exactly one active change folder with state.json (not archived or canceled).`,
+    `Checkpoint not found on branch '${branch}': ${detail}`,
+  );
+}
+
+export function checkpointNotAttachableError(reason: string, detail: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.CHECKPOINT_NOT_ATTACHABLE,
+    `Reason: ${reason}. Ensure the remote checkpoint is quiescent (awaiting-resume), self-consistent, and matches this repository.`,
+    `Checkpoint is not attachable: ${detail}`,
+  );
+}
+
+export function attachFetchFailedError(branch: string, detail: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.ATTACH_FETCH_FAILED,
+    `Check network connectivity, authentication, and that branch '${branch}' exists on origin.`,
+    `git fetch origin ${branch} failed: ${detail}`,
+  );
+}
+
+export function attachRuntimeUnsupportedError(runtime: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.ATTACH_RUNTIME_UNSUPPORTED,
+    `'job attach' is only supported for local runtime. Switch to local runtime or use the managed-specific attach workflow.`,
+    `'job attach' is not supported for runtime '${runtime}'.`,
   );
 }
 

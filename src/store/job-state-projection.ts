@@ -24,25 +24,27 @@ export interface SlugInjectOptions {
 }
 
 // ---------------------------------------------------------------------------
-// composeSplitLayout
+// composeSplitLayoutFromContent
 // ---------------------------------------------------------------------------
 
 /**
- * Compose a split-layout job state from state.json + events.jsonl.
+ * Compose a split-layout job state from raw string content (not file paths).
  * Returns both the composed NormalizedJobState and the fold's corruption field
  * (null when clean). Does NOT throw on journal corruption; still throws on
- * missing/invalid state.json exactly as before.
+ * invalid state.json content.
  *
- * Used by list() (tolerant) and loadSplitLayout() (fail-closed wrapper).
+ * Used by composeSplitLayout (file-path wrapper) and verifyCheckpoint (attach path).
+ *
+ * @param stateJson    - Raw contents of state.json (must be non-empty valid JSON).
+ * @param eventsJsonl  - Raw contents of events.jsonl; empty string means "no events" (empty fold).
+ * @param slugInject   - Optional slug injection to derive request.slug / request.path from convention.
  */
-export async function composeSplitLayout(
-  stateJsonPath: string,
-  eventsPath: string,
+export async function composeSplitLayoutFromContent(
+  stateJson: string,
+  eventsJsonl: string,
   slugInject?: SlugInjectOptions,
 ): Promise<{ state: NormalizedJobState; corruption: FoldCorruption | null }> {
-  // Read state.json
-  const rawState = await fs.readFile(stateJsonPath, "utf-8");
-  const parsedState = JSON.parse(rawState) as Record<string, unknown>;
+  const parsedState = JSON.parse(stateJson) as Record<string, unknown>;
 
   // Extract journal counters (internal — not part of JobState)
   let storedCounters: JournalCounters = {
@@ -68,15 +70,10 @@ export async function composeSplitLayout(
     }
   }
 
-  // Fold events.jsonl
+  // Fold events.jsonl — empty string means "no events" (empty fold)
   let foldResult: FoldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0, lineage: [] };
-  try {
-    const eventsContent = await fs.readFile(eventsPath, "utf-8");
-    foldResult = fold(eventsContent);
-  } catch (err: unknown) {
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code !== "ENOENT") throw err;
-    // No events.jsonl yet — start with empty fold result
+  if (eventsJsonl.length > 0) {
+    foldResult = fold(eventsJsonl);
   }
 
   // Crash recovery (D3): if fold count > stored counter, journal has more data
@@ -117,6 +114,40 @@ export async function composeSplitLayout(
   };
 
   return { state: composed, corruption: foldResult.corruption ?? null };
+}
+
+// ---------------------------------------------------------------------------
+// composeSplitLayout
+// ---------------------------------------------------------------------------
+
+/**
+ * Compose a split-layout job state from state.json + events.jsonl.
+ * Returns both the composed NormalizedJobState and the fold's corruption field
+ * (null when clean). Does NOT throw on journal corruption; still throws on
+ * missing/invalid state.json exactly as before.
+ *
+ * Used by list() (tolerant) and loadSplitLayout() (fail-closed wrapper).
+ * Delegates to composeSplitLayoutFromContent after reading files.
+ */
+export async function composeSplitLayout(
+  stateJsonPath: string,
+  eventsPath: string,
+  slugInject?: SlugInjectOptions,
+): Promise<{ state: NormalizedJobState; corruption: FoldCorruption | null }> {
+  // Read state.json (throws on ENOENT — unchanged behaviour)
+  const rawState = await fs.readFile(stateJsonPath, "utf-8");
+
+  // Read events.jsonl; ENOENT is "no events" (empty string)
+  let eventsJsonl = "";
+  try {
+    eventsJsonl = await fs.readFile(eventsPath, "utf-8");
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== "ENOENT") throw err;
+    // No events.jsonl yet — treat as empty
+  }
+
+  return composeSplitLayoutFromContent(rawState, eventsJsonl, slugInject);
 }
 
 // ---------------------------------------------------------------------------
