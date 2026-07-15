@@ -22,7 +22,8 @@ import type { SpawnFn, SpawnResult } from "../../src/util/spawn.js";
 const BRANCH = "feat/my-feature-1234abcd";
 const SLUG = "my-feature";
 const JOB_ID = "test-job-id-12345678";
-const REF = `origin/${BRANCH}`;
+const CHECKPOINT_OID = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
+const _REF = CHECKPOINT_OID; // After T-01: OID is used as ref for read operations
 const EXPECTED_REPO = { owner: "acme", name: "repo" };
 
 const VALID_STATE_JSON = JSON.stringify({
@@ -88,25 +89,30 @@ function makeValidSpawn(): SpawnFn {
   return makeStubSpawn(
     new Map<string, Partial<SpawnResult>>([
       [`git fetch origin ${BRANCH}`, { exitCode: 0, stdout: "", stderr: "" }],
-      [`git ls-tree --name-only ${REF} specrunner/changes/`, {
+      // T-01: OID resolution immediately after fetch
+      [`git rev-parse origin/${BRANCH}^{commit}`, { exitCode: 0, stdout: CHECKPOINT_OID + "\n" }],
+      // All subsequent read operations use OID (not symbolic origin/<branch>)
+      [`git ls-tree --name-only ${CHECKPOINT_OID} specrunner/changes/`, {
         exitCode: 0,
         stdout: `specrunner/changes/${SLUG}\n`,
       }],
-      [`git cat-file -e ${REF}:specrunner/changes/${SLUG}/state.json`, { exitCode: 0 }],
-      [`git show ${REF}:specrunner/changes/${SLUG}/state.json`, {
+      [`git cat-file -e ${CHECKPOINT_OID}:specrunner/changes/${SLUG}/state.json`, { exitCode: 0 }],
+      [`git show ${CHECKPOINT_OID}:specrunner/changes/${SLUG}/state.json`, {
         exitCode: 0,
         stdout: VALID_STATE_JSON,
       }],
-      [`git show ${REF}:specrunner/changes/${SLUG}/events.jsonl`, {
+      [`git show ${CHECKPOINT_OID}:specrunner/changes/${SLUG}/events.jsonl`, {
         exitCode: 0,
         stdout: VALID_EVENTS_JSONL,
       }],
-      [`git ls-tree -r --name-only ${REF} -- specrunner/changes/${SLUG}/`, {
+      [`git ls-tree -r --name-only ${CHECKPOINT_OID} -- specrunner/changes/${SLUG}/`, {
         exitCode: 0,
         stdout: [
           `specrunner/changes/${SLUG}/state.json`,
           `specrunner/changes/${SLUG}/events.jsonl`,
           `specrunner/changes/${SLUG}/request.md`,
+          `specrunner/changes/${SLUG}/tasks.md`,
+          `specrunner/changes/${SLUG}/spec.md`,
         ].join("\n") + "\n",
       }],
     ]),
@@ -142,7 +148,8 @@ describe("TC-ORC-002: checkpoint not found → CHECKPOINT_NOT_FOUND", () => {
     const spawnFn = makeStubSpawn(
       new Map<string, Partial<SpawnResult>>([
         [`git fetch origin ${BRANCH}`, { exitCode: 0 }],
-        [`git ls-tree --name-only ${REF} specrunner/changes/`, {
+        [`git rev-parse origin/${BRANCH}^{commit}`, { exitCode: 0, stdout: CHECKPOINT_OID + "\n" }],
+        [`git ls-tree --name-only ${CHECKPOINT_OID} specrunner/changes/`, {
           exitCode: 0,
           stdout: "specrunner/changes/archive\n",
         }],
@@ -163,20 +170,21 @@ describe("TC-ORC-003: verify failure → CHECKPOINT_NOT_ATTACHABLE", () => {
     const spawnFn = makeStubSpawn(
       new Map<string, Partial<SpawnResult>>([
         [`git fetch origin ${BRANCH}`, { exitCode: 0 }],
-        [`git ls-tree --name-only ${REF} specrunner/changes/`, {
+        [`git rev-parse origin/${BRANCH}^{commit}`, { exitCode: 0, stdout: CHECKPOINT_OID + "\n" }],
+        [`git ls-tree --name-only ${CHECKPOINT_OID} specrunner/changes/`, {
           exitCode: 0,
           stdout: `specrunner/changes/${SLUG}\n`,
         }],
-        [`git cat-file -e ${REF}:specrunner/changes/${SLUG}/state.json`, { exitCode: 0 }],
-        [`git show ${REF}:specrunner/changes/${SLUG}/state.json`, {
+        [`git cat-file -e ${CHECKPOINT_OID}:specrunner/changes/${SLUG}/state.json`, { exitCode: 0 }],
+        [`git show ${CHECKPOINT_OID}:specrunner/changes/${SLUG}/state.json`, {
           exitCode: 0,
           stdout: RUNNING_STATE_JSON,
         }],
-        [`git show ${REF}:specrunner/changes/${SLUG}/events.jsonl`, {
+        [`git show ${CHECKPOINT_OID}:specrunner/changes/${SLUG}/events.jsonl`, {
           exitCode: 0,
           stdout: VALID_EVENTS_JSONL,
         }],
-        [`git ls-tree -r --name-only ${REF} -- specrunner/changes/${SLUG}/`, {
+        [`git ls-tree -r --name-only ${CHECKPOINT_OID} -- specrunner/changes/${SLUG}/`, {
           exitCode: 0,
           stdout: [
             `specrunner/changes/${SLUG}/state.json`,
@@ -209,6 +217,51 @@ describe("TC-ORC-004: valid checkpoint → VerifiedCheckpoint", () => {
     expect(result.jobId).toBe(JOB_ID);
     expect(result.branch).toBe(BRANCH);
     expect(result.state.status).toBe("awaiting-resume");
+    expect(result.checkpointOid).toBe(CHECKPOINT_OID);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-ORC-006: OID fixation — read commands use resolved OID, not symbolic origin/<branch>
+// ---------------------------------------------------------------------------
+describe("TC-ORC-006: OID fixation — git read commands use resolved OID, not symbolic ref", () => {
+  it("uses resolved OID for ls-tree / cat-file / show — never symbolic origin/<branch> after rev-parse", async () => {
+    const spawnFn = makeValidSpawn();
+    const result = await runAttachVerification({
+      cwd: "/repo",
+      branch: BRANCH,
+      spawnFn,
+      expectedRepo: EXPECTED_REPO,
+    });
+
+    // Verify checkpointOid is the OID from rev-parse (not a symbolic ref)
+    expect(result.checkpointOid).toBe(CHECKPOINT_OID);
+
+    const calls = (spawnFn as ReturnType<typeof vi.fn>).mock.calls as [string, string[], unknown][];
+
+    // The symbolic origin/<branch> should appear ONLY in fetch and rev-parse args
+    const symbolicRef = `origin/${BRANCH}`;
+    const callsUsingSymbolic = calls.filter(
+      ([_cmd, args]) =>
+        args.some((a) => a === symbolicRef || a.includes(symbolicRef)) &&
+        args[0] !== "fetch" &&
+        !(args[0] === "rev-parse" && args.some((a) => a.includes("^{commit}"))),
+    );
+    // After fetch + rev-parse, NO command should use the symbolic ref
+    expect(callsUsingSymbolic).toHaveLength(0);
+  });
+
+  it("VerifiedCheckpoint.checkpointOid matches rev-parse output (immutable OID fixation)", async () => {
+    const spawnFn = makeValidSpawn();
+    const result = await runAttachVerification({
+      cwd: "/repo",
+      branch: BRANCH,
+      spawnFn,
+      expectedRepo: EXPECTED_REPO,
+    });
+    // The OID in result must be the one from rev-parse, not re-evaluated
+    expect(result.checkpointOid).toBe(CHECKPOINT_OID);
+    expect(result.checkpointOid).toMatch(/^[0-9a-f]{40}$/);
   });
 });
 
@@ -223,20 +276,21 @@ describe("TC-ORC-005: verify failure → no filesystem side effects", () => {
       const spawnFn = makeStubSpawn(
         new Map<string, Partial<SpawnResult>>([
           [`git fetch origin ${BRANCH}`, { exitCode: 0 }],
-          [`git ls-tree --name-only ${REF} specrunner/changes/`, {
+          [`git rev-parse origin/${BRANCH}^{commit}`, { exitCode: 0, stdout: CHECKPOINT_OID + "\n" }],
+          [`git ls-tree --name-only ${CHECKPOINT_OID} specrunner/changes/`, {
             exitCode: 0,
             stdout: `specrunner/changes/${SLUG}\n`,
           }],
-          [`git cat-file -e ${REF}:specrunner/changes/${SLUG}/state.json`, { exitCode: 0 }],
-          [`git show ${REF}:specrunner/changes/${SLUG}/state.json`, {
+          [`git cat-file -e ${CHECKPOINT_OID}:specrunner/changes/${SLUG}/state.json`, { exitCode: 0 }],
+          [`git show ${CHECKPOINT_OID}:specrunner/changes/${SLUG}/state.json`, {
             exitCode: 0,
             stdout: RUNNING_STATE_JSON,
           }],
-          [`git show ${REF}:specrunner/changes/${SLUG}/events.jsonl`, {
+          [`git show ${CHECKPOINT_OID}:specrunner/changes/${SLUG}/events.jsonl`, {
             exitCode: 0,
             stdout: VALID_EVENTS_JSONL,
           }],
-          [`git ls-tree -r --name-only ${REF} -- specrunner/changes/${SLUG}/`, {
+          [`git ls-tree -r --name-only ${CHECKPOINT_OID} -- specrunner/changes/${SLUG}/`, {
             exitCode: 0,
             stdout: [
               `specrunner/changes/${SLUG}/state.json`,

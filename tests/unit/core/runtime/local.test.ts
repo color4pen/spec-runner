@@ -1127,3 +1127,62 @@ describe("TC-LR-013: query() passthroughs sessionId/continue/resume/includeParti
   });
 });
 
+// TC-LR-020: commitFinalState uses messageLabel derived from state.status
+describe("TC-LR-020: commitFinalState uses messageLabel derived from state.status", () => {
+  it("uses 'checkpoint: <slug>' when state.status === 'awaiting-resume'", async () => {
+    const { manager } = buildMockManager();
+    const githubClient = buildMockGitHubClient();
+
+    const calls: Array<{ cmd: string; args: string[] }> = [];
+    const spawnFn = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
+      calls.push({ cmd: _cmd, args: [...args] });
+      if (args[0] === "add") return { exitCode: 0, stdout: "", stderr: "" };
+      if (args[0] === "diff") return { exitCode: 1, stdout: "", stderr: "" }; // staged changes present
+      if (args[0] === "commit") return { exitCode: 0, stdout: "", stderr: "" };
+      if (args[0] === "push") return { exitCode: 0, stdout: "", stderr: "" };
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as import("../../../../src/util/spawn.js").SpawnFn;
+
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const jobState = await makeJobState("my-slug");
+    const deps = { slug: "my-slug", cwd: tempDir } as import("../../../../src/core/types.js").PipelineDeps;
+    const state = { ...jobState, status: "awaiting-resume" as const, branch: "feat/my-slug-abc" };
+
+    await runtime.commitFinalState(deps, state);
+
+    const commitCall = calls.find((c) => c.cmd === "git" && c.args[0] === "commit");
+    expect(commitCall).toBeDefined();
+    expect(commitCall!.args.join(" ")).toContain("checkpoint: my-slug");
+    expect(commitCall!.args.join(" ")).not.toContain("finalize:");
+  });
+
+  it("uses 'finalize: <slug>' when state.status !== 'awaiting-resume'", async () => {
+    const { manager } = buildMockManager();
+    const githubClient = buildMockGitHubClient();
+
+    const calls: Array<{ cmd: string; args: string[] }> = [];
+    const spawnFn = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
+      calls.push({ cmd: _cmd, args: [...args] });
+      if (args[0] === "add") return { exitCode: 0, stdout: "", stderr: "" };
+      if (args[0] === "diff") return { exitCode: 1, stdout: "", stderr: "" }; // staged changes present
+      if (args[0] === "commit") return { exitCode: 0, stdout: "", stderr: "" };
+      if (args[0] === "push") return { exitCode: 0, stdout: "", stderr: "" };
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as import("../../../../src/util/spawn.js").SpawnFn;
+
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const jobState = await makeJobState("my-slug");
+    const deps = { slug: "my-slug", cwd: tempDir } as import("../../../../src/core/types.js").PipelineDeps;
+    const state = { ...jobState, status: "awaiting-archive" as const, branch: "feat/my-slug-abc" };
+
+    await runtime.commitFinalState(deps, state);
+
+    const commitCall = calls.find((c) => c.cmd === "git" && c.args[0] === "commit");
+    expect(commitCall).toBeDefined();
+    expect(commitCall!.args.join(" ")).toContain("finalize: my-slug");
+    expect(commitCall!.args.join(" ")).not.toContain("checkpoint:");
+  });
+});
+

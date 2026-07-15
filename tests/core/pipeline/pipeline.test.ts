@@ -642,6 +642,139 @@ describe("TC-068: Pipeline stdout — iter format bit-for-bit preserved", () => 
   });
 });
 
+// TC-PUB-001: awaiting-resume exit → runtimeStrategy.commitFinalState called once (D5 seam)
+describe("TC-PUB-001: awaiting-resume exit → commitFinalState called once at loop-end seam", () => {
+  it("calls runtimeStrategy.commitFinalState exactly once when pipeline exits with awaiting-resume", async () => {
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+
+    // A failed design result with a non-fatal error triggers awaiting-resume via escalation
+    const designResult: JobState = {
+      ...state,
+      status: "failed",
+      error: { code: "BRANCH_NOT_REGISTERED", message: "Branch not found", hint: "" },
+    };
+
+    const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
+    deps.runtimeStrategy = {
+      commitFinalState: commitFinalStateSpy,
+    } as unknown as typeof deps.runtimeStrategy;
+
+    const { pipeline } = buildMockPipeline({ designResult, maxIterations: 2 });
+    const result = await pipeline.run("design", state, deps);
+
+    expect(result.status).toBe("awaiting-resume");
+    // The single-seam publisher (D5) must call commitFinalState exactly once
+    expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
+    // commitFinalState is called with (deps, state) where state.status === "awaiting-resume"
+    const [calledDeps, calledState] = commitFinalStateSpy.mock.calls[0] as [typeof deps, JobState];
+    expect(calledDeps).toBe(deps);
+    expect((calledState as JobState).status).toBe("awaiting-resume");
+  });
+
+  it("calls commitFinalState once for exhaustion-triggered awaiting-resume", async () => {
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
+    // All spec-review calls return needs-fix → loop exhausts → awaiting-resume
+    const specReviewNeedsFix = (s: JobState, n: number): JobState => ({
+      ...s,
+      steps: {
+        ...s.steps,
+        "spec-review": [
+          ...(s.steps?.["spec-review"] ?? []),
+          { attempt: n, sessionId: null, outcome: { verdict: "needs-fix" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" },
+        ],
+      },
+    });
+    const specFixerResult: JobState = { ...designResult };
+
+    const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
+    deps.runtimeStrategy = {
+      commitFinalState: commitFinalStateSpy,
+    } as unknown as typeof deps.runtimeStrategy;
+
+    const { pipeline } = buildMockPipeline({
+      designResult,
+      specReviewResults: [specReviewNeedsFix(designResult, 1), specReviewNeedsFix(designResult, 2)],
+      specFixerResults: [specFixerResult],
+      maxIterations: 2,
+    });
+    const result = await pipeline.run("design", state, deps);
+
+    expect(result.status).toBe("awaiting-resume");
+    expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");
+    // Exactly one commitFinalState call from the loop-end seam
+    expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+// TC-PUB-002: commitFinalState does NOT throw → pipeline result stays awaiting-resume
+describe("TC-PUB-002: commitFinalState is best-effort — pipeline result unaffected by it", () => {
+  it("pipeline result is awaiting-resume even when commitFinalState is a no-op (best-effort contract)", async () => {
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+
+    const designResult: JobState = {
+      ...state,
+      status: "failed",
+      error: { code: "BRANCH_NOT_REGISTERED", message: "Branch not found", hint: "" },
+    };
+
+    // commitFinalState does nothing (e.g., git push silently failed internally)
+    deps.runtimeStrategy = {
+      commitFinalState: vi.fn().mockResolvedValue(undefined),
+    } as unknown as typeof deps.runtimeStrategy;
+
+    const { pipeline } = buildMockPipeline({ designResult, maxIterations: 2 });
+    const result = await pipeline.run("design", state, deps);
+
+    // Pipeline still returns awaiting-resume — local resumability is preserved
+    expect(result.status).toBe("awaiting-resume");
+  });
+
+  it("loop-end seam does NOT call commitFinalState when status is not awaiting-resume", async () => {
+    // When the pipeline ends in awaiting-archive (successful run), the in-loop publish fires
+    // (line ~370 in pipeline.ts), but the loop-end seam (lines 504-506) must NOT fire again
+    // because state.status !== "awaiting-resume"
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps();
+
+    const commitFinalStateSpy = vi.fn().mockResolvedValue(undefined);
+    deps.runtimeStrategy = {
+      commitFinalState: commitFinalStateSpy,
+    } as unknown as typeof deps.runtimeStrategy;
+
+    // A successful design run → eventually awaiting-archive
+    // buildMockPipeline handles the full standard pipeline with all step defaults
+    const designResult: JobState = { ...state, status: "running", branch: "feat/test" };
+    // spec-review approves on first try
+    const makeApproved = (s: JobState): JobState => ({
+      ...s,
+      steps: {
+        ...s.steps,
+        "spec-review": [{ attempt: 1, sessionId: null, outcome: { verdict: "approved" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }],
+      },
+    });
+
+    const { pipeline } = buildMockPipeline({
+      designResult,
+      specReviewResults: [makeApproved(designResult)],
+      maxIterations: 2,
+    });
+    const result = await pipeline.run("design", state, deps);
+
+    expect(result.status).toBe("awaiting-archive");
+    // commitFinalState is called from in-loop publish (awaiting-archive), NOT from the seam
+    // Total calls should be exactly 1 (in-loop publish)
+    expect(commitFinalStateSpy).toHaveBeenCalledTimes(1);
+    // The call was made with state.status === "awaiting-archive"
+    const [, calledState] = commitFinalStateSpy.mock.calls[0] as [unknown, JobState];
+    expect((calledState as JobState).status).toBe("awaiting-archive");
+  });
+});
+
 // TC-069: Pipeline — loop step without paired fixer exhausts at maxIterations (no bypass)
 describe("TC-069: Pipeline — loop step without paired fixer retains conventional exhaustion", () => {
   it("exhausts at maxIterations with no bypass when loopFixerPairs is empty", async () => {

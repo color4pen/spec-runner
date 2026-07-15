@@ -1,0 +1,18 @@
+{
+  "requestHash": "sha256:d219cf70719738fd2a4478c8a629f332686e6eee7a7415a428a4515d5cc8fa78",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/pipeline.ts:370 — commitFinalState called on normal end (running→awaiting-archive)",
+    "src/core/pipeline/pipeline.ts:388 — escalation path: persist only, no commit/push",
+    "src/core/pipeline/pipeline.ts:648 — exhaustion path: persist only, no commit/push",
+    "src/core/step/commit-orchestrator.ts:377 — commitHalt: transitionJob + appendInterruption + persist, no commit/push in awaiting-resume branch",
+    "src/core/worktree/manager.ts:113-114 — git branch -D <branchName> unconditionally on non-lock-contention failure",
+    "src/core/attach/orchestrator.ts:58 — const ref = `origin/${branch}` (symbolic ref, not fixed OID)",
+    "src/git/checkpoint-ref.ts:164-171 — events.jsonl treated as optional (empty string if absent)",
+    "src/cli/attach.ts:135 — checkpointRef: `origin/${verified.branch}` passed to setupWorkspace (symbolic ref re-evaluation)",
+    "src/core/step/executor.ts:213-227 — validateRequiredInputs / reads() contract exists and checks required inputs",
+    "src/store/journal-integrity.ts:53 — detectCounterReversal function exists",
+    "architecture/adr/2026-07-15-remote-checkpoint-reattachment-boundary.md — ADR-20260715 exists (D1–D4, no D7)"
+  ],
+  "sourceRevision": "b33f6667736b2c25903101753fc7c912fb610ac5"
+}

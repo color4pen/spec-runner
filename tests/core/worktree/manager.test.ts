@@ -751,6 +751,62 @@ describe("TC-WTM-023: create — commands plan with empty array runs nothing", (
   });
 });
 
+// TC-WTM-025: branchWasPreExisting=true + worktree add fails → no git branch -D (D4)
+describe("TC-WTM-025: branchWasPreExisting=true + worktree add fails → no branch cleanup", () => {
+  it("does NOT call git branch -D when branchWasPreExisting is true", async () => {
+    // Non-lock-contention failure so it fails on first attempt without retry
+    const spawn = makeSpawn([
+      { exitCode: 1, stderr: "fatal: worktree at path already registered" }, // immediate fail
+    ]);
+
+    const manager = createWorktreeManager(spawn, undefined, vi.fn().mockResolvedValue(undefined));
+    await expect(
+      manager.create(
+        "/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch",
+        { kind: "skip" },
+        true, // branchWasPreExisting: branch existed before this call → must NOT be deleted
+      ),
+    ).rejects.toThrow("git worktree add failed");
+
+    // Verify git branch -D was NOT called (D4: pre-existing branches must not be destroyed)
+    const cleanupCall = spawn.calls.find((c) => c.cmd === "git" && c.args.includes("-D"));
+    expect(cleanupCall).toBeUndefined();
+  });
+
+  it("still throws the original worktree add error with branchWasPreExisting=true", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 128, stderr: "fatal: not a git repository" },
+    ]);
+    const manager = createWorktreeManager(spawn, undefined, vi.fn().mockResolvedValue(undefined));
+    await expect(
+      manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch", { kind: "skip" }, true),
+    ).rejects.toThrow("git worktree add failed");
+  });
+});
+
+// TC-WTM-026: branchWasPreExisting=false (default) + worktree add fails → branch -D IS called
+describe("TC-WTM-026: branchWasPreExisting=false + worktree add fails → branch cleanup called", () => {
+  it("calls git branch -D when branchWasPreExisting is false (default new-run behavior)", async () => {
+    const spawn = makeSpawn([
+      { exitCode: 1, stderr: "fatal: worktree add failed" }, // immediate non-lock fail
+      { exitCode: 0 }, // git branch -D (cleanup)
+    ]);
+
+    const manager = createWorktreeManager(spawn, undefined, vi.fn().mockResolvedValue(undefined));
+    await expect(
+      manager.create(
+        "/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch",
+        { kind: "skip" },
+        false, // branchWasPreExisting=false: manager created this branch, may clean up
+      ),
+    ).rejects.toThrow("git worktree add failed");
+
+    const cleanupCall = spawn.calls.find((c) => c.cmd === "git" && c.args.includes("-D"));
+    expect(cleanupCall).toBeDefined();
+    expect(cleanupCall?.args).toContain("feat/my-branch");
+  });
+});
+
 // TC-WTM-024: no plan argument → detect-install (backward compat)
 describe("TC-WTM-024: create — no plan argument uses detect-install (backward compat)", () => {
   it("runs bun install when no plan is passed (existing behavior preserved)", async () => {

@@ -495,6 +495,16 @@ export class Pipeline {
       currentStep = nextStep as string;
     }
 
+    // D5 (remote-checkpoint-publish-attach-closure/design.md): single-seam awaiting-resume
+    // checkpoint publisher. All controlled awaiting-resume exits (escalation / exhaustion /
+    // guard halt) converge here after local persist. Publish is best-effort — commitFinalState
+    // does NOT throw, so local resume possibility is never broken by a push failure.
+    // The awaiting-archive publish is handled earlier (running → awaiting-archive transition);
+    // that seam is intentionally NOT moved here to preserve existing test coverage.
+    if (state.status === "awaiting-resume") {
+      await deps.runtimeStrategy?.commitFinalState(deps, state);
+    }
+
     // Best-effort: notify linked issue of terminal state (awaiting-resume / awaiting-archive).
     // Runs after all state transitions and persistence are complete.
     // Failures are caught inside notifyJobTerminal and logged as warnings only.

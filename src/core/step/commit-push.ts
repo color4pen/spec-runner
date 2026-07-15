@@ -84,25 +84,32 @@ export async function commitAndPush(
 }
 
 /**
- * Commit final pipeline state (awaiting-archive) to the feature branch.
+ * Commit final pipeline state to the feature branch.
  *
- * D5: called after the running → awaiting-archive transition in pipeline.ts.
+ * D5 (remote-checkpoint-publish-attach-closure): called after terminal transitions.
+ * - awaiting-archive: messageLabel = "finalize" (existing behavior, unchanged).
+ * - awaiting-resume:  messageLabel = "checkpoint" (new seam in pipeline.ts).
+ *
  * Stages all changes (git add -A), commits if there are staged changes
- * (message: "finalize: <slug>"), and pushes with one retry.
+ * (message: "<messageLabel>: <slug>"), and pushes with one retry.
  *
  * Idempotent: if no staged changes, returns immediately (no-op).
- * Push failures: warns on stderr but does NOT throw — run is already complete.
+ * Push failures: warns on stderr but does NOT throw — local resume is preserved.
  *
  * Uses `spawn.ts` SpawnFn (same as LocalRuntime.spawnFn) so the same injection
  * point works without any adapter.
+ *
+ * @param params.messageLabel - Optional commit message label. Defaults to "finalize".
+ *   awaiting-resume publish passes "checkpoint"; awaiting-archive passes "finalize".
  */
 export async function commitFinalState(params: {
   cwd: string;
   branch: string;
   slug: string;
   spawnFn: PipelineSpawnFn;
+  messageLabel?: string;
 }): Promise<void> {
-  const { cwd, branch, slug, spawnFn } = params;
+  const { cwd, branch, slug, spawnFn, messageLabel = "finalize" } = params;
 
   // Stage all changes
   const addResult = await spawnFn("git", ["add", "-A"], { cwd });
@@ -119,9 +126,9 @@ export async function commitFinalState(params: {
   }
 
   // Commit
-  const commitResult = await spawnFn("git", ["commit", "-m", `finalize: ${slug}`], { cwd });
+  const commitResult = await spawnFn("git", ["commit", "-m", `${messageLabel}: ${slug}`], { cwd });
   if ((commitResult.exitCode ?? 1) !== 0) {
-    stderrWrite(`Warning: finalize commit failed for ${slug}. Push manually to ensure state is on the branch.`);
+    stderrWrite(`Warning: ${messageLabel} commit failed for ${slug}. Push manually to ensure state is on the branch.`);
     return;
   }
 
@@ -133,7 +140,7 @@ export async function commitFinalState(params: {
   if ((push2.exitCode ?? 1) === 0) return;
 
   stderrWrite(
-    `Warning: failed to push finalize commit for ${slug} to origin/${branch}. ` +
+    `Warning: failed to push ${messageLabel} commit for ${slug} to origin/${branch}. ` +
       `Push manually to ensure state is on the branch.`,
   );
 }

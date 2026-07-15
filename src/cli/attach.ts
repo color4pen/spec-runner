@@ -1,12 +1,14 @@
 /**
  * CLI entry point for `specrunner job attach --branch <branch>`.
  *
- * Flow (ADR-20260715 D7):
+ * Flow (design.md D1–D2 / remote-checkpoint-publish-attach-closure):
  *   1. Worktree guard (reject if running from inside a specrunner worktree).
  *   2. Config / token / repo resolution.
  *   3. Runtime check (local only).
- *   4. runAttachVerification: fetch → read → verify (no local state created yet).
- *   5. On success: setupWorkspace with attachCheckpoint (creates worktree + sidecar).
+ *   4. runAttachVerification: fetch → OID resolution → read(OID) → verify(OID).
+ *      No local state is created in this phase.
+ *   5. On success: setupWorkspace with attachCheckpoint using verified.checkpointOid
+ *      (the OID that was verified — never re-evaluates origin/<branch>).
  *   6. Print success and next-step hint (does NOT start pipeline).
  */
 import * as path from "node:path";
@@ -129,10 +131,13 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
   const baseBranch = verified.state.request.baseBranch ?? "main";
 
   try {
+    // D2: use verified.checkpointOid (the OID resolved during verification)
+    // so materialize checks out the exact commit — not the symbolic origin/<branch>
+    // which could have advanced since verification.
     await runtime.setupWorkspace(verified.slug, verified.jobId, {
       attachCheckpoint: {
         branch: verified.branch,
-        checkpointRef: `origin/${verified.branch}`,
+        checkpointRef: verified.checkpointOid,
       },
       baseBranch,
     });

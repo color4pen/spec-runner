@@ -655,15 +655,20 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
-   * D5: commit and push slug canonical state after pipeline running → awaiting-archive transition.
-   * - git add -A → commit "finalize: <slug>" → push origin <branch> (1 retry)
-   * - Push failures warn on stderr but do not throw.
+   * D5 (remote-checkpoint-publish-attach-closure): commit and push slug canonical state
+   * after a terminal pipeline transition.
+   *
+   * - awaiting-archive: messageLabel = "finalize" (commit "finalize: <slug>").
+   * - awaiting-resume: messageLabel = "checkpoint" (commit "checkpoint: <slug>").
+   * - git add -A → commit → push origin <branch> (1 retry).
+   * - Push failures warn on stderr but do not throw (local resume is preserved).
    */
   async commitFinalState(deps: PipelineDeps, state: JobState): Promise<void> {
     const cwd = deps.cwd ?? process.cwd();
     const branch = state.branch ?? "";
     const slug = deps.slug;
-    await commitFinalState({ cwd, branch, slug, spawnFn: this.wrappedSpawnFn });
+    const messageLabel = state.status === "awaiting-resume" ? "checkpoint" : "finalize";
+    await commitFinalState({ cwd, branch, slug, spawnFn: this.wrappedSpawnFn, messageLabel });
   }
 
   async verifyFindingRefs(refs: FindingRef[], cwd: string, _branch: string | null): Promise<FindingRef[]> {
