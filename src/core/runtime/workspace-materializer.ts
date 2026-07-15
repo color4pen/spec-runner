@@ -125,18 +125,16 @@ export class WorkspaceMaterializer {
         // do NOT seed, updateJobState, or recopy (would overwrite the branch-borne truth).
         const setupPlan = this.host.resolveSetupPlan();
 
-        // D4: check whether the local branch already existed BEFORE this call.
-        // If it did, we must NOT delete it on failure (it has commits that predate this attach).
-        // Only branches that did NOT exist before (created by manager.create itself) may be cleaned up.
-        const branchExistResult = await this.host.spawnFn(
-          "git",
-          ["rev-parse", "--verify", "--quiet", `refs/heads/${plan.branchName}`],
-          { cwd: this.host.cwd },
-        );
-        const branchWasPreExisting = (branchExistResult.exitCode ?? 1) === 0;
-
+        // Ownership proof for branch cleanup: always pass preserveBranchOnFailure=true.
+        // The combined `git worktree add -b` operation cannot atomically prove that this
+        // invocation created the branch (a race between check-then-create would allow another
+        // process to create the branch in between, then have it deleted here). Rather than
+        // risking deleting a branch we did not create — which would destroy existing commits —
+        // we unconditionally skip branch cleanup on failure. The branch either did not exist
+        // (no loss) or existed before (must be preserved).
         const worktreePath = await this.host.manager.create(
-          this.host.cwd, slug, jobId, plan.checkpointRef, plan.branchName, setupPlan, branchWasPreExisting,
+          this.host.cwd, slug, jobId, plan.checkpointRef, plan.branchName, setupPlan,
+          /* preserveBranchOnFailure */ true,
         );
 
         const workspace: WorkspaceContext = {

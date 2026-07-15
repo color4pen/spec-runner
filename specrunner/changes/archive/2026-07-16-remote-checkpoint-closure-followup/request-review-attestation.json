@@ -1,0 +1,18 @@
+{
+  "requestHash": "sha256:5b026d6d44a13caa35211c70cb1188d2ada32a686427c228ad7a26ef2b3ce319",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/pipeline.ts:578 — getStepOutcome checks state.status === 'failed' only; awaiting-resume is not caught",
+    "src/core/step/step-halt.ts:119 — makeTimeoutHalt produces kind:'awaiting-resume' halt",
+    "src/core/step/step-halt.ts:195 — makeDriftHalt produces kind:'awaiting-resume' halt",
+    "src/core/step/executor.ts:360-362 — poll timeout path calls makeTimeoutHalt",
+    "src/core/pipeline/pipeline.ts:279-282 — catch clause extracts errWithState.state (awaiting-resume) and continues loop",
+    "src/core/pipeline/pipeline.ts:504-506 — publisher seam checks state.status === 'awaiting-resume' AFTER the while loop (never reached on guard-halt)",
+    "src/core/runtime/workspace-materializer.ts:131-140 — non-atomic rev-parse check then manager.create in attach-from-checkpoint arm",
+    "src/core/worktree/manager.ts:121-123 — branch -D runs only when !branchWasPreExisting, but ownership is determined from the pre-create rev-parse, not from create atomicity",
+    "tests/attach/attach-integration.test.ts TC-INT-006 — calls commitFinalState() directly (line 433), does not run Pipeline.run()",
+    "tests/attach/attach-integration.test.ts TC-INT-005 — calls resolveJobStateBySlug only; does not call job resume / Pipeline.run()",
+    "src/core/attach/verify-checkpoint.ts:193-197 — reads() catch block skips precheck (fail-open)"
+  ],
+  "sourceRevision": "8b8785f40ed78245dd2bb8140fe4e0475b6fdf1d"
+}

@@ -751,9 +751,9 @@ describe("TC-WTM-023: create — commands plan with empty array runs nothing", (
   });
 });
 
-// TC-WTM-025: branchWasPreExisting=true + worktree add fails → no git branch -D (D4)
-describe("TC-WTM-025: branchWasPreExisting=true + worktree add fails → no branch cleanup", () => {
-  it("does NOT call git branch -D when branchWasPreExisting is true", async () => {
+// TC-WTM-025: preserveBranchOnFailure=true + worktree add fails → no git branch -D
+describe("TC-WTM-025: preserveBranchOnFailure=true + worktree add fails → no branch cleanup", () => {
+  it("does NOT call git branch -D when preserveBranchOnFailure is true", async () => {
     // Non-lock-contention failure so it fails on first attempt without retry
     const spawn = makeSpawn([
       { exitCode: 1, stderr: "fatal: worktree at path already registered" }, // immediate fail
@@ -764,16 +764,16 @@ describe("TC-WTM-025: branchWasPreExisting=true + worktree add fails → no bran
       manager.create(
         "/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch",
         { kind: "skip" },
-        true, // branchWasPreExisting: branch existed before this call → must NOT be deleted
+        true, // preserveBranchOnFailure: cannot prove ownership → must NOT delete branch
       ),
     ).rejects.toThrow("git worktree add failed");
 
-    // Verify git branch -D was NOT called (D4: pre-existing branches must not be destroyed)
+    // Verify git branch -D was NOT called (branch ownership cannot be proven)
     const cleanupCall = spawn.calls.find((c) => c.cmd === "git" && c.args.includes("-D"));
     expect(cleanupCall).toBeUndefined();
   });
 
-  it("still throws the original worktree add error with branchWasPreExisting=true", async () => {
+  it("still throws the original worktree add error with preserveBranchOnFailure=true", async () => {
     const spawn = makeSpawn([
       { exitCode: 128, stderr: "fatal: not a git repository" },
     ]);
@@ -784,9 +784,9 @@ describe("TC-WTM-025: branchWasPreExisting=true + worktree add fails → no bran
   });
 });
 
-// TC-WTM-026: branchWasPreExisting=false (default) + worktree add fails → branch -D IS called
-describe("TC-WTM-026: branchWasPreExisting=false + worktree add fails → branch cleanup called", () => {
-  it("calls git branch -D when branchWasPreExisting is false (default new-run behavior)", async () => {
+// TC-WTM-026: preserveBranchOnFailure=false (default) + worktree add fails → branch -D IS called
+describe("TC-WTM-026: preserveBranchOnFailure=false + worktree add fails → branch cleanup called", () => {
+  it("calls git branch -D when preserveBranchOnFailure is false (default new-run behavior)", async () => {
     const spawn = makeSpawn([
       { exitCode: 1, stderr: "fatal: worktree add failed" }, // immediate non-lock fail
       { exitCode: 0 }, // git branch -D (cleanup)
@@ -797,13 +797,72 @@ describe("TC-WTM-026: branchWasPreExisting=false + worktree add fails → branch
       manager.create(
         "/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch",
         { kind: "skip" },
-        false, // branchWasPreExisting=false: manager created this branch, may clean up
+        false, // preserveBranchOnFailure=false: new-run owns this branch, may clean up
       ),
     ).rejects.toThrow("git worktree add failed");
 
     const cleanupCall = spawn.calls.find((c) => c.cmd === "git" && c.args.includes("-D"));
     expect(cleanupCall).toBeDefined();
     expect(cleanupCall?.args).toContain("feat/my-branch");
+  });
+});
+
+// TC-WTM-027: preserveBranchOnFailure=true + race (branch created between check and create)
+// → no git branch -D even though the branch now exists (we don't own it)
+describe("TC-WTM-027: preserveBranchOnFailure=true race scenario → no branch cleanup", () => {
+  it("does NOT call git branch -D when a race causes worktree add to fail with branch pre-existing", async () => {
+    // Simulate the race condition: another process created the branch between check and create.
+    // git worktree add -b <branch> fails because the branch now exists.
+    // With preserveBranchOnFailure=true, we must NOT delete the branch.
+    const spawn = makeSpawn([
+      { exitCode: 128, stderr: "fatal: A branch named 'feat/my-branch' already exists" }, // race: branch exists
+      // Note: no rev-parse here — with new ownership proof model, materializer no longer calls rev-parse
+    ]);
+
+    const manager = createWorktreeManager(spawn, undefined, vi.fn().mockResolvedValue(undefined));
+    await expect(
+      manager.create(
+        "/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch",
+        { kind: "skip" },
+        true, // preserveBranchOnFailure=true: cannot prove we created it → must NOT delete
+      ),
+    ).rejects.toThrow("git worktree add failed");
+
+    // The branch was created by another process — must NOT be deleted
+    const cleanupCall = spawn.calls.find((c) => c.cmd === "git" && c.args.includes("-D"));
+    expect(cleanupCall).toBeUndefined();
+
+    // Should NOT have called rev-parse (ownership proof via pre-check is no longer used)
+    const revParseCall = spawn.calls.find(
+      (c) => c.cmd === "git" && c.args.some((a) => a.includes("rev-parse")),
+    );
+    expect(revParseCall).toBeUndefined();
+  });
+
+  it("does NOT call git branch -D on lock-contention exhaustion with preserveBranchOnFailure=true", async () => {
+    // Lock contention with preserveBranchOnFailure=true: even after all retries, branch is not deleted.
+    const lockErr = "error: could not lock config file .git/config: File exists";
+    const spawn = makeSpawn([
+      { exitCode: 128, stderr: lockErr },  // attempt 1 lock contention
+      { exitCode: 0 },                      // rev-parse (internal retry check; branch exists)
+      { exitCode: 128, stderr: lockErr },  // attempt 2 lock contention
+      { exitCode: 0 },                      // rev-parse
+      { exitCode: 128, stderr: lockErr },  // attempt 3 (MAX_RETRIES) → fail
+    ]);
+    const sleepFn = vi.fn().mockResolvedValue(undefined);
+
+    const manager = createWorktreeManager(spawn, undefined, sleepFn);
+    await expect(
+      manager.create(
+        "/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-branch",
+        { kind: "skip" },
+        true, // preserveBranchOnFailure=true: never delete
+      ),
+    ).rejects.toThrow("git worktree add failed");
+
+    // Branch must NOT be deleted
+    const cleanupCall = spawn.calls.find((c) => c.cmd === "git" && c.args.includes("-D"));
+    expect(cleanupCall).toBeUndefined();
   });
 });
 
