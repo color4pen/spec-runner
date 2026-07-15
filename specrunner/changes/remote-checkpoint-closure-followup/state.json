@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "76e60391-af33-420e-9793-fa3b09d2588d",
   "createdAt": "2026-07-15T15:41:28.700Z",
-  "updatedAt": "2026-07-15T16:49:49.876Z",
+  "updatedAt": "2026-07-15T17:05:07.381Z",
   "request": {
     "title": "awaiting-resume guard-halt を制御出口にし、attach 硬化を完了する（closure follow-up）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/remote-checkpoint-closure-followup-76e60391",
   "error": null,
@@ -48,8 +48,35 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "8000686fc2653e6381e59adf8eaca3d31a496933",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -57,7 +84,11 @@
       "test-case-gen": 1,
       "implementer": 1,
       "verification": 2,
-      "build-fixer": 1
+      "build-fixer": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
