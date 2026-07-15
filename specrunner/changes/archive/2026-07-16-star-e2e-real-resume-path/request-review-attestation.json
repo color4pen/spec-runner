@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:c291a4d52854db95babf44320af5f3bb32b7595c0f3ccbc62c21e0fa0525a57c",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/command/runner.ts:215 — buildPipelineForJob(jobState, deps, this.events) call inside execute()",
+    "src/core/command/resume.ts — ResumeCommand(runtime, events, slug, options) constructor signature",
+    "src/core/command/resume.ts — prepare() calls resolveJobStateBySlug(this.slug, cwd)",
+    "src/core/command/resume.ts:214 — resolveStateStoreByJobId(cwd, state.jobId) for running transition persist",
+    "src/core/command/resume.ts — worktreePath resolution: state.worktreePath ?? liveness sidecar fallback",
+    "src/core/resume/resolve-job.ts:19 — resolveJobStateBySlug calls JobStateStore.list(repoRoot, {includeArchived:true})",
+    "src/store/local-job-index.ts — resolveJobIdToSlug / listLocalSidecars read from .specrunner/local/<slug>/liveness.json",
+    "src/core/runtime/workspace-materializer.ts:122-151 — case 'attach-from-checkpoint': worktree create + workspace register + liveness sidecar (pid=null)",
+    "src/store/job-catalog.ts — JobStateStore.list() scans current checkout + .git/specrunner-worktrees/ + sidecar supplement",
+    "tests/unit/core/command/resume.test.ts:183 — buildPipelineForJob mocked with vi.mock",
+    "tests/attach/attach-resume-e2e.test.ts:426-430 — current Machine B manually calls transitionJob(verified.state, 'running')",
+    "tests/attach/attach-resume-e2e.test.ts:470 — current Machine B uses IMPLEMENTER_ONLY_DESCRIPTOR + direct buildPipeline call"
+  ],
+  "sourceRevision": "33c9aeaab7e3afdf517494c7558978048f088700"
+}

@@ -7,8 +7,10 @@
  * TC-E2E-001: Machine A — real Pipeline.run() + fake AgentRunner (implementer returns
  *   "timeout") → state.status === "awaiting-resume" → commitFinalState pushes checkpoint
  *   commit to origin/BRANCH
- * TC-E2E-002: Machine B — fresh clone → runAttachVerification → materialize →
- *   real Pipeline.run() from resumePoint.step → fake AgentRunner called at that step
+ * TC-E2E-002: Machine B — fresh clone → runAttachVerification →
+ *   real LocalRuntime.setupWorkspace({attachCheckpoint}) → real ResumeCommand.execute()
+ *   (prepare() + buildPipelineForJob() non-mock) → real Pipeline.run() from resumePoint.step
+ *   → fake AgentRunner called at that step
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
@@ -17,27 +19,25 @@ import * as os from "node:os";
 
 import { spawnCommand } from "../../src/util/spawn.js";
 import { runAttachVerification } from "../../src/core/attach/orchestrator.js";
-import { WorkspaceMaterializer } from "../../src/core/runtime/workspace-materializer.js";
-import type { MaterializerHost } from "../../src/core/runtime/workspace-materializer.js";
 import { createWorktreeManager } from "../../src/core/worktree/manager.js";
 import { buildPipeline } from "../../src/core/pipeline/run.js";
 import { STANDARD_DESCRIPTOR } from "../../src/core/pipeline/registry.js";
 import { JobStateStore, buildInitialJobState } from "../../src/store/job-state-store.js";
 import { commitFinalState } from "../../src/core/step/commit-push.js";
 import { EventBus } from "../../src/core/event/event-bus.js";
-import { ImplementerStep } from "../../src/core/step/implementer.js";
 import { STEP_NAMES } from "../../src/core/step/step-names.js";
-import { transitionJob } from "../../src/state/lifecycle.js";
 import { defaultSpawnFn, gitExec } from "../../src/util/git-exec.js";
 import type { AgentRunContext, AgentRunResult } from "../../src/core/port/agent-runner.js";
+import type { AgentRunner } from "../../src/core/port/agent-runner.js";
 import type { PipelineDeps } from "../../src/core/types.js";
 import type { JobState } from "../../src/state/schema.js";
 import type { RuntimeStrategy } from "../../src/core/port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../src/config/schema.js";
 import type { ParsedRequest } from "../../src/parser/request-md.js";
 import type { GitHubClient } from "../../src/core/port/github-client.js";
-import type { PipelineDescriptor } from "../../src/core/pipeline/types.js";
-import { makeStoreFactory } from "../helpers/store-factory.js";
+import { LocalRuntime } from "../../src/core/runtime/local.js";
+import type { LocalRuntimeOptions } from "../../src/core/runtime/local.js";
+import { ResumeCommand } from "../../src/core/command/resume.js";
 
 // ---------------------------------------------------------------------------
 // Silence stdout/stderr from pipeline internals in tests
@@ -172,58 +172,6 @@ function makeMachineAStrategy(machineADir: string, slug: string): RuntimeStrateg
 }
 
 // ---------------------------------------------------------------------------
-// Minimal pipeline descriptor: implementer → end (Machine B resume)
-// ---------------------------------------------------------------------------
-
-const IMPLEMENTER_ONLY_DESCRIPTOR: PipelineDescriptor = {
-  id: "implementer-only",
-  steps: [
-    [STEP_NAMES.IMPLEMENTER, ImplementerStep],
-  ],
-  transitions: [
-    { step: STEP_NAMES.IMPLEMENTER, on: "success", to: "end" },
-    { step: STEP_NAMES.IMPLEMENTER, on: "error",   to: "escalate" },
-  ],
-  loopName: STEP_NAMES.IMPLEMENTER,
-  loopNames: [STEP_NAMES.IMPLEMENTER],
-  loopFixerPairs: {},
-  startStep: STEP_NAMES.IMPLEMENTER,
-  maxIterations: 1,
-  roles: { [STEP_NAMES.IMPLEMENTER]: { role: "creator", phase: "impl" } },
-};
-
-// ---------------------------------------------------------------------------
-// MaterializerHost for Machine B (real git worktree creation)
-// ---------------------------------------------------------------------------
-
-function makeRealMaterializerHost(cwd: string): MaterializerHost {
-  const manager = createWorktreeManager(
-    spawnCommand,
-    undefined,
-    (ms) => new Promise((r) => setTimeout(r, ms)),
-    async () => "bun" as const,
-  );
-
-  return {
-    cwd,
-    manager,
-    spawnFn: spawnCommand,
-    resolveSetupPlan: () => ({ kind: "skip" } as const),
-    registerWorkspace: () => undefined,
-    updateJobState: async () => undefined,
-    writeLivenessSidecar: async (slug, jobId, worktreePath, pid) => {
-      const sidecarDir = path.join(cwd, ".specrunner", "local", slug);
-      await fs.mkdir(sidecarDir, { recursive: true });
-      await fs.writeFile(
-        path.join(sidecarDir, "liveness.json"),
-        JSON.stringify({ pid: pid ?? null, session: null, worktreePath, jobId }, null, 2),
-        "utf-8",
-      );
-    },
-  };
-}
-
-// ---------------------------------------------------------------------------
 // Setup / teardown
 // ---------------------------------------------------------------------------
 
@@ -243,7 +191,7 @@ afterEach(async () => {
 
 describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resumes from it", () => {
   it(
-    "Machine A creates awaiting-resume checkpoint on origin; Machine B attaches and resumes implementer",
+    "Machine A creates awaiting-resume checkpoint on origin; Machine B attaches and resumes implementer via real ResumeCommand",
     async () => {
       // =======================================================================
       // GIT FIXTURE SETUP
@@ -280,7 +228,7 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
       await fs.mkdir(changeDir, { recursive: true });
       await fs.writeFile(
         path.join(changeDir, "request.md"),
-        `# E2E test feature\n\n## Meta\n\n- **type**: new-feature\n- **slug**: ${SLUG}\n- **adr**: false\n\nDo something.\n`,
+        `# E2E test feature\n\n## Meta\n\n- **type**: new-feature\n- **slug**: ${SLUG}\n- **base-branch**: main\n- **adr**: false\n\nDo something.\n`,
         "utf-8",
       );
       await fs.writeFile(
@@ -303,7 +251,9 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
       // TC-E2E-001: MACHINE A — Pipeline guard-halt → checkpoint published
       // =======================================================================
 
-      // Build initial state for Machine A
+      // Build initial state for Machine A.
+      // request.path is stripped from state.json in slug mode and re-derived from the
+      // worktree's change folder at load time; the stored value is not used by ResumeCommand.
       const machineAInitialState: JobState = {
         ...buildInitialJobState({
           request: {
@@ -380,7 +330,7 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
       expect(treeFiles).toContain(`specrunner/changes/${SLUG}/request.md`);
 
       // =======================================================================
-      // TC-E2E-002: MACHINE B — Clone origin → attach → resume starts
+      // TC-E2E-002: MACHINE B — Clone origin → attach → real ResumeCommand
       // =======================================================================
 
       // 1. Clone origin to Machine B
@@ -401,87 +351,170 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
       expect(verified.state.status).toBe("awaiting-resume");
       expect(verified.state.resumePoint?.step).toBe("implementer");
 
-      // 3. WorkspaceMaterializer.materialize — create worktree from checkpoint OID
-      const materializerHost = makeRealMaterializerHost(machineBDir);
-      const materializer = new WorkspaceMaterializer(materializerHost);
-      const workspace = await materializer.materialize(SLUG, jobId, {
-        kind: "attach-from-checkpoint",
-        checkpointRef: verified.checkpointOid,
-        branchName: BRANCH,
-      });
-
-      expect(workspace.worktreePath).toBeDefined();
-      const worktreePath = workspace.worktreePath!;
-
-      // Verify the worktree has the checkpoint files
-      const stateJsonInWorktree = await fs.readFile(
-        path.join(worktreePath, "specrunner", "changes", SLUG, "state.json"),
+      // 3. Write minimal project-local config for Machine B
+      //    (ResumeCommand.prepare() calls loadConfig(repoRoot) which needs this)
+      await fs.mkdir(path.join(machineBDir, ".specrunner"), { recursive: true });
+      await fs.writeFile(
+        path.join(machineBDir, ".specrunner", "config.json"),
+        JSON.stringify({ version: 1, agents: {} }),
         "utf-8",
       );
-      const checkpointState = JSON.parse(stateJsonInWorktree);
-      expect(checkpointState.status).toBe("awaiting-resume");
-      expect(checkpointState.jobId).toBe(jobId);
 
-      // 4. Transition state to "running" for resume (as the resume command would do)
-      const { state: runningState } = transitionJob(verified.state, "running", {
-        trigger: "test-resume",
-        reason: "resuming from checkpoint",
-      });
-      expect(runningState.status).toBe("running");
+      // 4. Isolate XDG_CONFIG_HOME so user global config is absent (ENOENT)
+      //    This ensures loadConfig reads only the project-local config.
+      const savedXdgConfigHome = process.env["XDG_CONFIG_HOME"];
+      const xdgIsolateDir = path.join(tmpDir, "xdg-isolated");
+      await fs.mkdir(xdgIsolateDir, { recursive: true });
+      process.env["XDG_CONFIG_HOME"] = xdgIsolateDir;
 
-      // 5. Build fake AgentRunner for Machine B — returns "success" for implementer
-      let machineBRunnerCallCount = 0;
-      let machineBRunnerCalledAtStep: string | undefined;
-      const machineBRunner = {
-        async run(ctx: AgentRunContext): Promise<AgentRunResult> {
-          machineBRunnerCallCount++;
-          machineBRunnerCalledAtStep = ctx.step.name;
-          return {
-            completionReason: "success" as const,
-            resultContent: null,
-            toolResult: null,
-            followUpAttempts: 0,
-          };
-        },
-      };
+      // Track worktree path for cleanup
+      let attachWorktreePath: string | undefined;
 
-      // 6. Build Machine B's PipelineDeps (no runtimeStrategy — skips git commit/push,
-      //    validateStepInputs, finalizeStepArtifacts; keeps the test self-contained)
-      const machineBStoreFactory = makeStoreFactory(tmpDir);
-      // Seed the initial state in the changeDir store so begin() can persist
-      await machineBStoreFactory(jobId).persist(runningState);
+      try {
+        // 5. T-01: Attach via real LocalRuntime.setupWorkspace({attachCheckpoint})
+        //    This creates a worktree from the checkpoint OID and writes a liveness sidecar.
+        const attachRuntime = new LocalRuntime({
+          cwd: machineBDir,
+          githubClient: makeStubGithubClient(),
+          owner: EXPECTED_REPO.owner,
+          repo: EXPECTED_REPO.name,
+          spawnFn: spawnCommand,
+        });
 
-      const machineBDeps: PipelineDeps = {
-        config: MINIMAL_CONFIG,
-        slug: SLUG,
-        cwd: worktreePath,
-        request: makeRequest(SLUG),
-        githubClient: makeStubGithubClient(),
-        owner: EXPECTED_REPO.owner,
-        repo: EXPECTED_REPO.name,
-        spawn: spawnCommand,
-        storeFactory: machineBStoreFactory,
-        runner: machineBRunner,
-        // No runtimeStrategy: validateStepInputs/finalizeStepArtifacts/commitFinalState skipped
-      };
+        const attachWorkspace = await attachRuntime.setupWorkspace(SLUG, jobId, {
+          attachCheckpoint: { branch: BRANCH, checkpointRef: verified.checkpointOid },
+          baseBranch: "main",
+        });
 
-      // 7. Build minimal pipeline for Machine B: implementer → end
-      const machineBEvents = new EventBus();
-      const machineBPipeline = buildPipeline(IMPLEMENTER_ONLY_DESCRIPTOR, machineBDeps, machineBEvents);
+        expect(attachWorkspace.worktreePath).toBeDefined();
+        attachWorktreePath = attachWorkspace.worktreePath!;
 
-      // 8. Run Machine B pipeline from resumePoint.step
-      const resumeStep = verified.state.resumePoint!.step;
-      const machineBFinalState = await machineBPipeline.run(resumeStep, runningState, machineBDeps);
+        // T-01 acceptance: verify the worktree state.json is awaiting-resume and jobId matches
+        const attachStateJsonPath = path.join(attachWorktreePath, "specrunner", "changes", SLUG, "state.json");
+        const attachStateRaw = JSON.parse(await fs.readFile(attachStateJsonPath, "utf-8"));
+        expect(attachStateRaw.status).toBe("awaiting-resume");
+        expect(attachStateRaw.jobId).toBe(jobId);
 
-      // --- Assert (c): fake AgentRunner called exactly once at resumePoint.step ---
-      expect(machineBRunnerCallCount).toBe(1);
-      expect(machineBRunnerCalledAtStep).toBe(STEP_NAMES.IMPLEMENTER);
+        // 6. T-04: Verify disk state BEFORE resume is awaiting-resume (pre-condition)
+        const beforeResumeState = JSON.parse(await fs.readFile(attachStateJsonPath, "utf-8"));
+        expect(beforeResumeState.status).toBe("awaiting-resume");
 
-      // --- Assert (d): pipeline completed normally (implementer → end → awaiting-archive) ---
-      expect(machineBFinalState.status).toBe("awaiting-archive");
+        // 7. T-03: Setup fake AgentRunner that captures call context and reads disk state
+        let machineBRunnerCallCount = 0;
+        let machineBRunnerCalledAtStep: string | undefined;
+        let machineBRunnerCalledJobId: string | undefined;
+        let machineBRunnerCwd: string | undefined;
+        let machineBDiskStatusAtRunnerCall: string | undefined;
 
-      // Clean up worktree
-      await spawnCommand("git", ["worktree", "remove", "--force", worktreePath], { cwd: machineBDir }).catch(() => undefined);
+        const machineBRunner: AgentRunner = {
+          async run(ctx: AgentRunContext): Promise<AgentRunResult> {
+            machineBRunnerCallCount++;
+            machineBRunnerCalledAtStep = ctx.step.name;
+            machineBRunnerCalledJobId = ctx.state.jobId;
+            machineBRunnerCwd = ctx.cwd;
+            // T-04 running persistence: read state.json from disk at runner call time
+            const stateJsonPath = path.join(ctx.cwd, "specrunner", "changes", SLUG, "state.json");
+            const diskState = JSON.parse(await fs.readFile(stateJsonPath, "utf-8"));
+            machineBDiskStatusAtRunnerCall = diskState.status;
+            return {
+              completionReason: "timeout" as const,
+              resultContent: null,
+              toolResult: null,
+              followUpAttempts: 0,
+            };
+          },
+        };
+
+        // 8. T-03: Create resume runtime with spied worktree manager
+        //    Only createAgentRunner() is overridden; all other methods are real LocalRuntime.
+        //
+        // NOTE: ResumeLocalRuntime is defined HERE (inside the test body) rather than at
+        // module level to avoid a vitest mock collision: attach-cli.test.ts uses
+        // vi.mock('../../src/core/runtime/local.js') which replaces LocalRuntime with a mock
+        // object. If ResumeLocalRuntime extends LocalRuntime at module evaluation time and
+        // local.js is already mocked, `extends` receives a non-class and throws
+        // "The value of the superclass's prototype property is not an object or null".
+        // Defining the class lazily (at runtime inside the test) ensures LocalRuntime is
+        // the real class when this line executes.
+        class ResumeLocalRuntime extends LocalRuntime {
+          private readonly _fakeAgent: AgentRunner;
+          constructor(opts: LocalRuntimeOptions, fakeAgent: AgentRunner) {
+            super(opts);
+            this._fakeAgent = fakeAgent;
+          }
+          override createAgentRunner(): AgentRunner {
+            return this._fakeAgent;
+          }
+        }
+
+        const resumeManager = createWorktreeManager(spawnCommand);
+        const createSpy = vi.spyOn(resumeManager, "create");
+
+        const resumeRuntime = new ResumeLocalRuntime({
+          cwd: machineBDir,
+          githubClient: makeStubGithubClient(),
+          owner: EXPECTED_REPO.owner,
+          repo: EXPECTED_REPO.name,
+          spawnFn: spawnCommand,
+          manager: resumeManager,
+        }, machineBRunner);
+
+        // 9. Execute real ResumeCommand (prepare() + buildPipelineForJob() non-mock)
+        const machineBEvents = new EventBus();
+        const exitCode = await new ResumeCommand(
+          resumeRuntime,
+          machineBEvents,
+          SLUG,
+          { cwd: machineBDir },
+        ).execute();
+
+        // ===================================================================
+        // T-04: 6 observable assertions
+        // ===================================================================
+
+        // (1) Attached state resolution: resume resolved the correct jobId and slug
+        expect(machineBRunnerCallCount).toBe(1);
+        expect(machineBRunnerCalledJobId).toBe(jobId);
+
+        // (2) startStep resolution: resolved step === resumePoint.step
+        expect(machineBRunnerCalledAtStep).toBe(STEP_NAMES.IMPLEMENTER);
+        expect(machineBRunnerCalledAtStep).toBe(verified.state.resumePoint!.step);
+
+        // (3) Running persistence: disk state.json was "running" when runner was called
+        expect(machineBDiskStatusAtRunnerCall).toBe("running");
+
+        // (4) Worktree reuse: no new worktree created by resume, cwd equals attach worktree
+        expect(createSpy).not.toHaveBeenCalled();
+        expect(machineBRunnerCwd).toBe(attachWorktreePath);
+
+        // (5) Descriptor real selection: final disk state is awaiting-resume with
+        //     resumePoint.step === implementer (behavioral signature of STANDARD_DESCRIPTOR
+        //     selected by buildPipelineForJob(), guard-halt after fake runner timeout)
+        const finalDiskState = JSON.parse(await fs.readFile(attachStateJsonPath, "utf-8"));
+        expect(finalDiskState.status).toBe("awaiting-resume");
+        expect(finalDiskState.resumePoint?.step).toBe(STEP_NAMES.IMPLEMENTER);
+
+        // (6) Resume started: fake runner called exactly once at implementer step
+        //     (already verified above, exit code confirms awaiting-resume halted pipeline)
+        expect(exitCode).toBe(1);
+
+      } finally {
+        // Restore XDG_CONFIG_HOME
+        if (savedXdgConfigHome !== undefined) {
+          process.env["XDG_CONFIG_HOME"] = savedXdgConfigHome;
+        } else {
+          delete process.env["XDG_CONFIG_HOME"];
+        }
+
+        // Best-effort worktree cleanup (rm -rf tmpDir in afterEach also covers this)
+        if (attachWorktreePath) {
+          await spawnCommand(
+            "git",
+            ["worktree", "remove", "--force", attachWorktreePath],
+            { cwd: machineBDir },
+          ).catch(() => undefined);
+        }
+      }
     },
     // Long timeout — real git operations can be slow
     60_000,
