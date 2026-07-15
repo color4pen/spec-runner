@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9c092a0b-89ad-4844-abe7-69254fc923a1",
   "createdAt": "2026-07-15T05:46:32.343Z",
-  "updatedAt": "2026-07-15T06:36:43.367Z",
+  "updatedAt": "2026-07-15T06:43:36.288Z",
   "request": {
     "title": "git 書き込み副作用の失敗を typed halt 化する（`commitAndPush` / `commitScopedPaths` の silent fail-open を StepHalt へ）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/git-effect-failure-typed-halt-9c092a0b",
   "error": null,
@@ -50,8 +50,35 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "663f8f9cea690d11c21b25725c6cc5acd801a93f",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 32,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -59,7 +86,11 @@
       "test-case-gen": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
