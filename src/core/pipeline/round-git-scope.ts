@@ -9,7 +9,36 @@
  *   2. Detect undeclared file changes that trigger a round halt (offending).
  */
 
-import { slugStateJsonPath, slugEventsPath, usageJsonPath } from "../../util/paths.js";
+import { slugStateJsonPath, slugEventsPath, usageJsonPath, changesDirRel } from "../../util/paths.js";
+
+/**
+ * Filter out pipeline-managed change folder paths from a list of files.
+ *
+ * Used by the round invalidation logic to exclude findings commits
+ * (specrunner/changes/<slug>/...) from the "touched" file list before
+ * evaluating reviewer activation paths. This ensures that a reviewer's
+ * own findings commit does not spuriously invalidate it in the next round.
+ *
+ * Excludes:
+ *   - The change folder root itself ("specrunner/changes")
+ *   - Any path under the change folder ("specrunner/changes/...")
+ *
+ * Does NOT exclude paths that merely share a prefix with the change folder
+ * root (e.g., "specrunner/changes-not-a-child/file.ts" is retained).
+ *
+ * This is intentionally separate from `pipelineManagedPaths` (which covers
+ * only state.json / events.jsonl / usage.json). Invalidation must exclude the
+ * entire change folder because findings files (<name>-result-NNN.md, etc.)
+ * are also pipeline-managed from the perspective of source diff.
+ *
+ * @param files - Worktree-relative file paths (e.g. from listChangedFiles).
+ * @returns Files that are not under the pipeline-managed change folder.
+ */
+export function excludeChangeFolderPaths(files: string[]): string[] {
+  const root = changesDirRel();
+  const prefix = `${root}/`;
+  return files.filter((f) => f !== root && !f.startsWith(prefix));
+}
 
 /**
  * Returns the set of pipeline-managed paths for a given slug.
