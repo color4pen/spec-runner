@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a5425449-6f6b-49c1-bac8-d3004b3d22d2",
   "createdAt": "2026-07-15T13:06:45.467Z",
-  "updatedAt": "2026-07-15T14:16:23.633Z",
+  "updatedAt": "2026-07-15T14:18:18.084Z",
   "request": {
     "title": "remote checkpoint publish/attach correctness closure",
     "type": "spec-change",
@@ -51,14 +51,15 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 35,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
