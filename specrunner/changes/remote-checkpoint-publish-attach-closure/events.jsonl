@@ -81,3 +81,11 @@
 {"type":"transition","ts":"2026-07-15T14:44:34.120Z","step":"code-review","status":"ok","message":"code-review iteration 2 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-15T14:44:34.121Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-07-15T14:44:34.123Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-07-15T14:45:00.000Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"e9dc092f-ec23-494b-95d7-17e457f7852f","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"reason":"両 findings が LOW 重大度のため、コードフィクサープロトコル（LOW は無視）に従い修正なし。Finding #2 は review 内で「対処不要」と明示済み。Finding #1（TC-003 guard halt 専用テスト不在）は LOW かつ non-blocking のため対象外。変更ファイルなし。","status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-15T14:44:34.182Z","endedAt":"2026-07-15T14:44:58.528Z"}
+{"type":"lineage","step":"code-fixer","ts":"2026-07-15T14:44:58.528Z","outputs":[{"path":"specrunner/changes/remote-checkpoint-publish-attach-closure","hash":null}],"inputs":[{"path":"specrunner/changes/remote-checkpoint-publish-attach-closure/review-feedback-002.md","hash":"sha256:d29636eb7cc880cdccef820cd23af428f873eb811c3bca629868ef2ef36fc59c"}]}
+{"type":"transition","ts":"2026-07-15T14:45:00.006Z","step":"step-transition","status":"ok","message":"code-fixer → custom-reviewers"}
+{"type":"interruption","reason":"signal","ts":"2026-07-15T14:47:10.576Z"}
+{"type":"transition","ts":"2026-07-15T14:47:10.576Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-15T14:48:22.442Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-fixer'"}
+{"type":"transition","ts":"2026-07-15T14:48:22.541Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
