@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bc47c49c-2dbc-4c43-ad28-a3f47069d3db",
   "createdAt": "2026-07-15T22:32:32.273Z",
-  "updatedAt": "2026-07-15T22:59:14.123Z",
+  "updatedAt": "2026-07-15T23:21:36.054Z",
   "request": {
     "title": "主役 E2E の Machine B を実 `job resume` 経路（ResumeCommand + buildPipelineForJob）で通す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "build-fixer",
   "status": "running",
   "branch": "change/star-e2e-real-resume-path-bc47c49c",
   "error": null,
@@ -49,12 +49,14 @@
     }
   ],
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }

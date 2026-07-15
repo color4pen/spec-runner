@@ -437,7 +437,6 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
         // Defining the class lazily (at runtime inside the test) ensures LocalRuntime is
         // the real class when this line executes.
         class ResumeLocalRuntime extends LocalRuntime {
-          // eslint-disable-next-line no-invalid-this
           private readonly _fakeAgent: AgentRunner;
           constructor(opts: LocalRuntimeOptions, fakeAgent: AgentRunner) {
             super(opts);
