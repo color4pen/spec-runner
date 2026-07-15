@@ -20,6 +20,7 @@ import { runAttachVerification } from "../../src/core/attach/orchestrator.js";
 import { WorkspaceMaterializer } from "../../src/core/runtime/workspace-materializer.js";
 import type { MaterializerHost } from "../../src/core/runtime/workspace-materializer.js";
 import { createWorktreeManager } from "../../src/core/worktree/manager.js";
+import { resolveJobStateBySlug } from "../../src/core/resume/resolve-job.js";
 import { ERROR_CODES } from "../../src/errors.js";
 
 // ---------------------------------------------------------------------------
@@ -365,22 +366,15 @@ describe("TC-INT-005: attach → resolveJobStateBySlug finds the attached state"
       branchName: verified.branch,
     });
 
-    // resolveJobStateBySlug should find the state in the worktree
-    // (The state is at <targetDir>/specrunner/changes/<slug>/state.json in the main checkout
-    //  OR in the worktree. Since the worktree is a separate directory, main checkout
-    //  doesn't have state.json yet. But the worktree path is recorded in liveness.json.)
-    //
-    // The attach flow does NOT copy state.json to the main checkout.
-    // resolveJobStateBySlug uses list() which scans the main checkout's specrunner/changes/.
-    // Since attach leaves state in the worktree only, we verify the worktree has the state.
+    // resolveJobStateBySlug is the exact discovery path `job resume <slug>` uses.
+    // JobCatalog.list scans local worktrees (.git/specrunner-worktrees/*) AND the
+    // machine-local sidecar supplement — both populated by attach — so the attached
+    // awaiting-resume job must be discoverable by slug (acceptance criterion #5).
     const worktreePath5 = workspace.worktreePath!;
-    const stateInWorktree = await fs.readFile(
-      path.join(worktreePath5, "specrunner", "changes", SLUG, "state.json"),
-      "utf-8",
-    );
-    const state = JSON.parse(stateInWorktree);
-    expect(state.status).toBe("awaiting-resume");
-    expect(state.jobId).toBe(JOB_ID);
+    const resolved = await resolveJobStateBySlug(SLUG, targetDir);
+    expect(resolved).not.toBeNull();
+    expect(resolved!.status).toBe("awaiting-resume");
+    expect(resolved!.jobId).toBe(JOB_ID);
 
     // Sidecar records the worktree path for resume to use
     const sidecarPath = path.join(targetDir, ".specrunner", "local", SLUG, "liveness.json");
