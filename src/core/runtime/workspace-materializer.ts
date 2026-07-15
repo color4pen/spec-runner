@@ -124,8 +124,19 @@ export class WorkspaceMaterializer {
         // The checkpoint tree already contains state.json / events.jsonl / request.md —
         // do NOT seed, updateJobState, or recopy (would overwrite the branch-borne truth).
         const setupPlan = this.host.resolveSetupPlan();
+
+        // D4: check whether the local branch already existed BEFORE this call.
+        // If it did, we must NOT delete it on failure (it has commits that predate this attach).
+        // Only branches that did NOT exist before (created by manager.create itself) may be cleaned up.
+        const branchExistResult = await this.host.spawnFn(
+          "git",
+          ["rev-parse", "--verify", "--quiet", `refs/heads/${plan.branchName}`],
+          { cwd: this.host.cwd },
+        );
+        const branchWasPreExisting = (branchExistResult.exitCode ?? 1) === 0;
+
         const worktreePath = await this.host.manager.create(
-          this.host.cwd, slug, jobId, plan.checkpointRef, plan.branchName, setupPlan,
+          this.host.cwd, slug, jobId, plan.checkpointRef, plan.branchName, setupPlan, branchWasPreExisting,
         );
 
         const workspace: WorkspaceContext = {

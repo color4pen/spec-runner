@@ -33,8 +33,13 @@ export interface WorktreeManager {
    *
    * On setup failure, the worktree is cleaned up (git worktree remove --force + rm -rf) and an error is thrown.
    * Returns the worktree path.
+   *
+   * @param branchWasPreExisting - When true, this branch existed before this call was made.
+   *   On `git worktree add` failure, the branch will NOT be deleted (it was not created here).
+   *   When false/absent, the branch is treated as created by this call and may be cleaned up
+   *   on failure (original new-run behavior). Defaults to false (cleanup on failure).
    */
-  create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string, plan?: WorkspaceSetupPlan): Promise<string>;
+  create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string, plan?: WorkspaceSetupPlan, branchWasPreExisting?: boolean): Promise<string>;
 
   /**
    * Remove a worktree: git worktree remove --force + rm -rf.
@@ -93,7 +98,7 @@ export function createWorktreeManager(
   }
 
   return {
-    async create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string, plan: WorkspaceSetupPlan = { kind: "detect-install" }): Promise<string> {
+    async create(repoRoot: string, slug: string, jobId: string, baseRef?: string, branchName?: string, plan: WorkspaceSetupPlan = { kind: "detect-install" }, branchWasPreExisting = false): Promise<string> {
       const worktreePath = buildWorktreePath(repoRoot, slug, jobId);
       const ref = baseRef ?? "HEAD";
 
@@ -109,8 +114,11 @@ export function createWorktreeManager(
 
         const isLockContention = wtResult.stderr.includes("could not lock config file");
         if (!isLockContention || attempt === MAX_RETRIES) {
-          // Best-effort branch cleanup to prevent collision on next run
-          if (branchName) {
+          // Best-effort branch cleanup to prevent collision on next run.
+          // Only clean up branches that were created by this invocation (not pre-existing).
+          // D4: branchWasPreExisting=true means the branch existed before this call —
+          // deleting it would destroy existing commits that belong to the caller.
+          if (branchName && !branchWasPreExisting) {
             await spawn("git", ["branch", "-D", branchName], { cwd: repoRoot });
           }
           throw new Error(

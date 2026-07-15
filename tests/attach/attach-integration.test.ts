@@ -21,6 +21,7 @@ import { WorkspaceMaterializer } from "../../src/core/runtime/workspace-material
 import type { MaterializerHost } from "../../src/core/runtime/workspace-materializer.js";
 import { createWorktreeManager } from "../../src/core/worktree/manager.js";
 import { resolveJobStateBySlug } from "../../src/core/resume/resolve-job.js";
+import { commitFinalState } from "../../src/core/step/commit-push.js";
 import { ERROR_CODES } from "../../src/errors.js";
 
 // ---------------------------------------------------------------------------
@@ -125,6 +126,9 @@ async function setupGitFixture(
       "utf-8",
     );
   }
+  // T-03 predicate closure: implementer.reads() requires tasks.md and spec.md
+  await fs.writeFile(path.join(changeDir, "tasks.md"), `# Tasks\n\n- [ ] task 1\n`, "utf-8");
+  await fs.writeFile(path.join(changeDir, "spec.md"), `# Spec\n\n## Overview\n\nTest spec.\n`, "utf-8");
 
   await git(sourceDir, "add", "-A");
   await git(sourceDir, "commit", "-m", `feat: checkpoint for ${SLUG}`);
@@ -384,5 +388,74 @@ describe("TC-INT-005: attach → resolveJobStateBySlug finds the attached state"
 
     // Clean up
     await spawnCommand("git", ["worktree", "remove", "--force", worktreePath5], { cwd: targetDir }).catch(() => undefined);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-INT-006: T-09 publish → OID match — commitFinalState produces the OID that attach verifies
+// ---------------------------------------------------------------------------
+describe("TC-INT-006: publish → same OID attach (D1/D5 symmetry)", () => {
+  it("checkpointOid from runAttachVerification matches the commit OID that commitFinalState pushed", async () => {
+    const originDir = path.join(tmpDir, "origin");
+    const sourceDir = path.join(tmpDir, "source");
+    const targetDir = path.join(tmpDir, "target");
+
+    // 1. Create bare origin
+    await fs.mkdir(originDir, { recursive: true });
+    await git(originDir, "init", "--bare", "--initial-branch=main");
+
+    // 2. Create source clone (simulates Machine A)
+    await git(tmpDir, "clone", originDir, "source");
+    await git(sourceDir, "config", "user.email", "test@test.com");
+    await git(sourceDir, "config", "user.name", "Test");
+
+    // 3. Initial commit on main so origin has a HEAD
+    await fs.writeFile(path.join(sourceDir, "README.md"), "# Test\n");
+    await git(sourceDir, "add", "README.md");
+    await git(sourceDir, "commit", "-m", "initial");
+    await git(sourceDir, "push", "origin", "main");
+
+    // 4. Machine A: create feature branch + checkpoint files (uncommitted, in working tree)
+    await git(sourceDir, "checkout", "-b", BRANCH);
+    const changeDir = path.join(sourceDir, "specrunner", "changes", SLUG);
+    await fs.mkdir(changeDir, { recursive: true });
+    await fs.writeFile(path.join(changeDir, "state.json"), makeStateJson(), "utf-8");
+    await fs.writeFile(path.join(changeDir, "events.jsonl"), EVENTS_JSONL, "utf-8");
+    await fs.writeFile(path.join(changeDir, "request.md"),
+      `# Test feature request\n\n## Meta\n\n- **type**: new-feature\n- **slug**: ${SLUG}\n`, "utf-8");
+    await fs.writeFile(path.join(changeDir, "tasks.md"), `# Tasks\n\n- [ ] task 1\n`, "utf-8");
+    await fs.writeFile(path.join(changeDir, "spec.md"), `# Spec\n\nTest.\n`, "utf-8");
+
+    // 5. Machine A: publish checkpoint via commitFinalState (simulates the D5 publisher seam)
+    // This is the single-seam awaiting-resume publish from pipeline.ts after the while loop.
+    await commitFinalState({
+      cwd: sourceDir,
+      branch: BRANCH,
+      slug: SLUG,
+      spawnFn: spawnCommand,
+      messageLabel: "checkpoint",
+    });
+
+    // 6. Capture the OID that commitFinalState pushed (HEAD of feature branch in source)
+    const sourceOid = (await git(sourceDir, "rev-parse", "HEAD")).trim();
+    expect(sourceOid).toMatch(/^[0-9a-f]{40}$/);
+
+    // 7. Machine B: clone origin and run runAttachVerification
+    await git(tmpDir, "clone", originDir, "target");
+    await git(targetDir, "config", "user.email", "test@test.com");
+    await git(targetDir, "config", "user.name", "Test");
+
+    const verified = await runAttachVerification({
+      cwd: targetDir,
+      branch: BRANCH,
+      spawnFn: spawnCommand,
+      expectedRepo: EXPECTED_REPO,
+    });
+
+    // 8. D1/D5 symmetry: Machine B must verify + materialize the EXACT OID Machine A published
+    expect(verified.checkpointOid).toBe(sourceOid);
+    expect(verified.slug).toBe(SLUG);
+    expect(verified.jobId).toBe(JOB_ID);
+    expect(verified.state.status).toBe("awaiting-resume");
   });
 });

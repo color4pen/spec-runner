@@ -6,12 +6,15 @@
  * Worktree creation and sidecar writing are NOT done here — they are done by
  * the CLI caller (attach.ts) after this function returns a VerifiedCheckpoint.
  *
- * ADR-20260715 D7: fetch → readCheckpointFromRef → verifyCheckpoint.
+ * Design D1–D2 (remote-checkpoint-publish-attach-closure/design.md):
+ *   fetch → rev-parse OID (once) → readCheckpointFromRef(OID) → verifyCheckpoint(OID).
+ * The resolved OID is used for all subsequent operations so symbolic origin/<branch>
+ * is never re-evaluated after this point.
  */
 import type { SpawnFn } from "../../util/spawn.js";
 import { readCheckpointFromRef } from "../../git/checkpoint-ref.js";
 import { verifyCheckpoint } from "./verify-checkpoint.js";
-import { attachFetchFailedError } from "../../errors.js";
+import { attachFetchFailedError, checkpointNotFoundError } from "../../errors.js";
 import type { VerifiedCheckpoint } from "./verify-checkpoint.js";
 
 // ---------------------------------------------------------------------------
@@ -54,14 +57,29 @@ export async function runAttachVerification(
     );
   }
 
-  // Read checkpoint from the now-updated remote-tracking ref
-  const ref = `origin/${branch}`;
+  // D1: resolve checkpoint commit OID once, immediately after fetch.
+  // All subsequent operations (read, verify, materialize) use this OID —
+  // symbolic origin/<branch> is never re-evaluated (no TOCTOU window).
+  const revParseResult = await spawnFn(
+    "git",
+    ["rev-parse", `origin/${branch}^{commit}`],
+    { cwd },
+  );
+  if (revParseResult.exitCode !== 0) {
+    throw checkpointNotFoundError(
+      branch,
+      `git rev-parse origin/${branch}^{commit} failed (exit ${revParseResult.exitCode}): ${revParseResult.stderr.trim()}`,
+    );
+  }
+  const checkpointOid = revParseResult.stdout.trim();
+
+  // Read checkpoint using the resolved OID (not the symbolic ref)
   const { slug, stateJson, eventsJsonl, treeFiles } = await readCheckpointFromRef(
     spawnFn,
     cwd,
-    ref,
+    checkpointOid,
   );
 
   // Verify self-consistency (pure predicate — no I/O side effects)
-  return verifyCheckpoint({ slug, stateJson, eventsJsonl, treeFiles, branch, expectedRepo });
+  return verifyCheckpoint({ slug, stateJson, eventsJsonl, treeFiles, branch, expectedRepo, checkpointOid });
 }

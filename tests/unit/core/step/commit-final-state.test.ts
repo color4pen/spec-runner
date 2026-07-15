@@ -129,6 +129,44 @@ describe("TC-CFS-004: push fails twice → warns, does NOT throw", () => {
   });
 });
 
+// TC-CFS-006
+describe("TC-CFS-006: messageLabel='checkpoint' → commit message 'checkpoint: <slug>'", () => {
+  it("uses 'checkpoint: my-slug' as commit message when messageLabel is 'checkpoint'", async () => {
+    const spawn = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
+      if (args[0] === "add") return { exitCode: 0, stdout: "", stderr: "" };
+      if (args[0] === "diff") return { exitCode: 1, stdout: "", stderr: "" }; // staged changes present
+      if (args[0] === "commit") return { exitCode: 0, stdout: "ok", stderr: "" };
+      if (args[0] === "push") return { exitCode: 0, stdout: "", stderr: "" };
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    await commitFinalState({ ...PARAMS, spawnFn: spawn, messageLabel: "checkpoint" });
+
+    const calls = (spawn as ReturnType<typeof vi.fn>).mock.calls;
+    const commitCall = calls.find((c: unknown[]) => Array.isArray(c[1]) && (c[1] as string[])[0] === "commit");
+    expect(commitCall).toBeDefined();
+    expect((commitCall![1] as string[]).join(" ")).toContain("checkpoint: my-slug");
+    expect((commitCall![1] as string[]).join(" ")).not.toContain("finalize:");
+  });
+
+  it("defaults to 'finalize: <slug>' when messageLabel is omitted", async () => {
+    const spawn = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
+      if (args[0] === "add") return { exitCode: 0, stdout: "", stderr: "" };
+      if (args[0] === "diff") return { exitCode: 1, stdout: "", stderr: "" };
+      if (args[0] === "commit") return { exitCode: 0, stdout: "ok", stderr: "" };
+      if (args[0] === "push") return { exitCode: 0, stdout: "", stderr: "" };
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    await commitFinalState({ ...PARAMS, spawnFn: spawn }); // no messageLabel
+
+    const calls = (spawn as ReturnType<typeof vi.fn>).mock.calls;
+    const commitCall = calls.find((c: unknown[]) => Array.isArray(c[1]) && (c[1] as string[])[0] === "commit");
+    expect(commitCall).toBeDefined();
+    expect((commitCall![1] as string[]).join(" ")).toContain("finalize: my-slug");
+  });
+});
+
 // TC-CFS-005
 describe("TC-CFS-005: commit fails → warns, does NOT throw", () => {
   it("warns on stderr and resolves when git commit fails", async () => {

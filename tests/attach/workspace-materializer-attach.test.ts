@@ -60,6 +60,7 @@ describe("TC-MA-001: attach-from-checkpoint → manager.create with checkpointRe
       CHECKPOINT_REF,
       BRANCH_NAME,
       { kind: "skip" },
+      true, // branchWasPreExisting=true: spawnFn returns exitCode 0 for rev-parse
     );
   });
 });

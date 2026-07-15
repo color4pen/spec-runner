@@ -17,3 +17,12 @@
 {"type":"transition","ts":"2026-07-15T13:36:53.581Z","step":"spec-review","status":"ok","message":"spec-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-15T13:36:53.582Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-07-15T13:36:53.584Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-07-15T13:38:55.075Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"60bdb3c9-4c35-4e91-bf07-6d68fb9c2465","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-15T13:36:53.653Z","endedAt":"2026-07-15T13:38:53.354Z"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-07-15T13:38:53.354Z","outputs":[{"path":"specrunner/changes/remote-checkpoint-publish-attach-closure/test-cases.md","hash":"sha256:6fa6c4d66baa6eeaf8cc223b01c1e3a2889c076eb823e2222c0c1377bb5b5673"}],"inputs":[{"path":"specrunner/changes/remote-checkpoint-publish-attach-closure/design.md","hash":"sha256:0f07a55065b95b60f62dd6a3e407cf2368fb62e21979455cfec21af7333a484b"},{"path":"specrunner/changes/remote-checkpoint-publish-attach-closure/tasks.md","hash":"sha256:b08af5d61df3f22c8570d060a4c332eb5245945808652fc9fae43cdf26b7c38e"}]}
+{"type":"transition","ts":"2026-07-15T13:38:55.082Z","step":"step-transition","status":"ok","message":"spec-review complete → implementer (iter 1)"}
+{"type":"transition","ts":"2026-07-15T13:38:55.086Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
+{"type":"interruption","reason":"signal","ts":"2026-07-15T13:45:07.334Z"}
+{"type":"transition","ts":"2026-07-15T13:45:07.335Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-15T13:47:59.177Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'implementer'"}
+{"type":"transition","ts":"2026-07-15T13:47:59.261Z","step":"implementer-started","status":"started","message":"Starting implementer step"}
