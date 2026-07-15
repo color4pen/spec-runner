@@ -10,7 +10,7 @@
  *   - B-13: StepExecutor never calls store mutation APIs directly.
  *   - B-14: StepHalt application (transitionJob / attachStateAndRethrow) happens only here.
  *
- * Parallel round commits (R6) will reuse this orchestrator in a future request.
+ * Parallel round commits also flow through this orchestrator via commitRound (B-13 parallel extension).
  */
 
 import * as path from "node:path";
