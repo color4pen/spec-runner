@@ -65,3 +65,10 @@
 {"type":"transition","ts":"2026-07-15T17:05:07.378Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-07-15T17:05:07.380Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-07-15T17:05:07.381Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-15T17:07:31.435Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"102fe810-44ac-49bb-849c-ad5195b9e6bd","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/remote-checkpoint-closure-followup/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[]},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-15T17:05:07.442Z","endedAt":"2026-07-15T17:07:29.290Z"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-15T17:07:29.290Z","outputs":[{"path":"specrunner/changes/remote-checkpoint-closure-followup/regression-gate-result-002.md","hash":null}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-15T17:07:31.445Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-15T17:07:31.446Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-15T17:07:31.448Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-15T17:07:31.449Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
