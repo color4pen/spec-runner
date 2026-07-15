@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b69f41a6-4dd4-4a21-a3ff-ef64580f23f6",
   "createdAt": "2026-07-15T02:03:28.965Z",
-  "updatedAt": "2026-07-15T02:32:48.762Z",
+  "updatedAt": "2026-07-15T02:39:49.022Z",
   "request": {
     "title": "approvedAtCommit を「レビュー対象 source revision」として contract test で固定し、round invalidation から pipeline 管理 path を除外する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "change/round-invalidation-source-scoped-b69f41a6",
   "error": null,
@@ -48,15 +48,47 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "f2b1cc7020865d02808e8a235d98f0642ca7a1c9",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 25,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
