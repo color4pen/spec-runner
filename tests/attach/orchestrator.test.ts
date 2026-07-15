@@ -23,7 +23,7 @@ const BRANCH = "feat/my-feature-1234abcd";
 const SLUG = "my-feature";
 const JOB_ID = "test-job-id-12345678";
 const CHECKPOINT_OID = "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2";
-const REF = CHECKPOINT_OID; // After T-01: OID is used as ref for read operations
+const _REF = CHECKPOINT_OID; // After T-01: OID is used as ref for read operations
 const EXPECTED_REPO = { owner: "acme", name: "repo" };
 
 const VALID_STATE_JSON = JSON.stringify({
