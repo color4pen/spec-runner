@@ -269,10 +269,45 @@ export interface DecisionRecord {
 export type ProfileBudget = Readonly<Record<string, unknown>>;
 
 /**
- * Opaque recorded structure for the assurance component of an effective profile.
- * R1: treated as opaque by the runtime (value-based enforcement is R3–R4).
+ * Lattice levels for the testDerivation assurance field.
+ * Ordered from weakest (coupled) to strongest (frozen).
  */
-export type ProfileAssurance = Readonly<Record<string, unknown>>;
+export type TestDerivationLevel = "coupled" | "frozen";
+
+/**
+ * Lattice levels for the biteEvidence assurance field.
+ * Ordered from weakest (optional) to strongest (required).
+ */
+export type BiteEvidenceLevel = "optional" | "required";
+
+/**
+ * Lattice levels for the specReview assurance field.
+ * Ordered from weakest (omitted) to strongest (required).
+ */
+export type SpecReviewLevel = "omitted" | "required";
+
+/**
+ * Assurance component of an effective profile.
+ * R1 opaque record からの widening。named typed フィールドは floor 比較用、
+ * index signature は R1 記録値との後方互換用。
+ *
+ * The index signature covers all fields (including testDerivation, biteEvidence,
+ * specReview) so that any string value — including unrecognized runtime values —
+ * is assignable. Floor comparison uses runtime rank maps in satisfiesFloor(),
+ * not TypeScript field types, to fail-closed on unknown values.
+ */
+export interface ProfileAssurance {
+  /** Index signature for R1 backward compatibility and runtime flexibility.
+   * Floor-comparable named keys: testDerivation, biteEvidence, specReview.
+   * These are read as unknown and evaluated via rank maps in satisfiesFloor. */
+  readonly [key: string]: unknown;
+  /** Level of test derivation assurance. Ordered: coupled < frozen. */
+  readonly testDerivation?: TestDerivationLevel;
+  /** Level of bite evidence assurance. Ordered: optional < required. */
+  readonly biteEvidence?: BiteEvidenceLevel;
+  /** Level of spec review assurance. Ordered: omitted < required. */
+  readonly specReview?: SpecReviewLevel;
+}
 
 /**
  * Effective profile: the branch-borne execution guarantee declaration for a job.

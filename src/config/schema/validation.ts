@@ -369,6 +369,28 @@ export const configSchema = object({
           ),
         ),
         postMergeVerify: optional(array(shellCommandSchema, "must be an array.")),
+        minimumAssurance: optional(
+          object(
+            {
+              protectedPaths: array(
+                string("must be a non-empty string.").check(
+                  minLength(1, "must be a non-empty string."),
+                ),
+                "must be an array.",
+              ),
+              testDerivation: optional(
+                union([literal("coupled"), literal("frozen")]),
+              ),
+              biteEvidence: optional(
+                union([literal("optional"), literal("required")]),
+              ),
+              specReview: optional(
+                union([literal("omitted"), literal("required")]),
+              ),
+            },
+            "must be an object.",
+          ),
+        ),
       },
       "must be an object.",
     ),

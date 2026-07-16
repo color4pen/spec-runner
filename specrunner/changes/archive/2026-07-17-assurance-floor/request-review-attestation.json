@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:cd4533ee5ff8136961862d8c67c4c36b49f0b180429dbf1cc6d201c85ee670f7",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/state/schema/types.ts:275 — ProfileAssurance = Readonly<Record<string, unknown>>",
+    "src/state/profile.ts:41-46 — STANDARD_PROFILE._standardBody.assurance = {}",
+    "src/state/profile.ts:28-36 — computePolicyDigest hashes {id, schemaVersion, budget, assurance}",
+    "src/state/profile.ts:65-67 — getProfile(state) returns state.profile ?? STANDARD_PROFILE",
+    "src/core/archive/protected-paths.ts — evaluateProtectedPaths function exists",
+    "src/core/archive/merge-then-archive.ts:262-321 — protected-paths gate (Step 3.5) uses formatEscalation + exitCode 1",
+    "src/config/schema/types.ts:308-344 — ArchiveConfig with protectedPaths?: string[]",
+    "src/cli/archive.ts:151-175 — archive CLI reads loadConfig() (main config, out-of-loop) and passes protectedPaths to runMergeThenArchive",
+    "src/core/archive/merge-then-archive.ts:153-186 — Step 1 loads job state from JobStateStore (profile is in state)",
+    "src/config/schema/validation.ts:346-375 — archive config validation includes protectedPaths array check"
+  ],
+  "sourceRevision": "6283bb1e4c83ec58e1eb0575a6a9c9f629cf8142"
+}

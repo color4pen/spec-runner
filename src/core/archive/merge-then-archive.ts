@@ -26,9 +26,11 @@ import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";
 import type { GitHubClient } from "../port/github-client.js";
 import type { WorktreeManager } from "../worktree/manager.js";
-import type { ResolvedDesignLayer, ShellCommand } from "../../config/schema.js";
+import type { ResolvedDesignLayer, ShellCommand, MinimumAssuranceConfig } from "../../config/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { getJobSlug } from "../../state/job-slug.js";
+import { getProfile, satisfiesFloor } from "../../state/profile.js";
+import type { ProfileAssurance } from "../../state/schema.js";
 import { runArchiveOrchestrator, resolveWorktreePathForArchive } from "./orchestrator.js";
 import type { ArchiveResult } from "./orchestrator.js";
 import { runPostMergeCleanup } from "./post-merge-cleanup.js";
@@ -101,6 +103,12 @@ export interface MergeThenArchiveInput {
    * Absent or empty = no integrity check (backward compatible).
    */
   postMergeVerify?: ShellCommand[];
+  /**
+   * Minimum assurance floor for auto-merge of changes to protected paths.
+   * When set and non-empty protectedPaths, the job's effective profile assurance
+   * is evaluated against the floor for matched files. Absent = no floor gate.
+   */
+  minimumAssurance?: MinimumAssuranceConfig;
 }
 
 export type MergeThenArchiveResult = ArchiveResult;
@@ -132,6 +140,7 @@ export async function runMergeThenArchive(
     protectedPaths,
     designLayer,
     postMergeVerify,
+    minimumAssurance,
   } = input;
 
   // Resolve effective timeout: undefined → default, null → unlimited, number → as-is
@@ -149,6 +158,8 @@ export async function runMergeThenArchive(
   let archiveRecorded = false;
   /** Working tree where the archive-record commit was (or will be) made. */
   let recordDir: string;
+  /** Effective assurance of the job's profile, captured for Step 3.6 floor check. */
+  let jobAssurance: ProfileAssurance;
 
   try {
     const allEntries = await JobStateStore.listWithSourceDirs(cwd, { includeArchived: true });
@@ -180,6 +191,9 @@ export async function runMergeThenArchive(
 
     // D3: recordDir — the working tree where the archive-record commit was/will be made.
     recordDir = noWorktree ? cwd : (worktreePath ?? cwd);
+
+    // Capture effective assurance for the minimumAssurance floor check (Step 3.6).
+    jobAssurance = getProfile(state).assurance;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return { exitCode: 2, message };
@@ -317,6 +331,82 @@ export async function runMergeThenArchive(
           resumeCommand: `specrunner job archive --with-merge ${slug}`,
         }),
       };
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Step 3.6: minimumAssurance floor gate (out-of-loop, fail-closed)
+  // ---------------------------------------------------------------------------
+  if (minimumAssurance && minimumAssurance.protectedPaths.length > 0) {
+    let floorFilesResult: { files: string[]; truncated: boolean };
+    try {
+      floorFilesResult = await githubClient.listPullRequestFiles(owner, repo, prNumber);
+    } catch (err: unknown) {
+      const detail = err instanceof Error ? err.message : String(err);
+      return {
+        exitCode: 1,
+        escalation: formatEscalation({
+          failedStep: "merge gate (minimumAssurance floor — file list fetch)",
+          detectedState: `listPullRequestFiles #${prNumber} failed: ${detail}`,
+          recommendedAction: `Check GitHub token: specrunner login. Then re-run: specrunner job archive --with-merge ${slug}`,
+          resumeCommand: `specrunner job archive --with-merge ${slug}`,
+        }),
+      };
+    }
+
+    const floorDecision = evaluateProtectedPaths({
+      changedFiles: floorFilesResult.files,
+      truncated: floorFilesResult.truncated,
+      patterns: minimumAssurance.protectedPaths,
+    });
+
+    if (floorDecision.blocked) {
+      if (floorDecision.reason === "truncated") {
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "merge gate (minimumAssurance floor — file list truncated)",
+            detectedState:
+              `The PR's changed file list exceeded the GitHub API cap (3000 files) and was truncated. ` +
+              `minimumAssurance floor matching cannot be performed reliably on an incomplete list.`,
+            recommendedAction:
+              `Review the PR manually to ensure the assurance floor is met, then merge by hand:\n` +
+              `  1. Open the PR on GitHub and review all changed files.\n` +
+              `  2. If the changes satisfy the assurance floor, squash-merge the PR on GitHub.\n` +
+              `  3. Run: specrunner job archive --with-merge ${slug}`,
+            resumeCommand: `specrunner job archive --with-merge ${slug}`,
+          }),
+        };
+      }
+
+      // reason === "match" — evaluate assurance floor
+      const { protectedPaths: _pp, ...floor } = minimumAssurance;
+      if (!satisfiesFloor(jobAssurance, floor)) {
+        const matchedList = floorDecision.matched.map((f) => `  - ${f}`).join("\n");
+        const effectiveAssuranceStr = JSON.stringify(jobAssurance);
+        const floorStr = JSON.stringify(floor);
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "merge gate (minimumAssurance floor)",
+            detectedState:
+              `The following changed files match a minimumAssurance protected path, ` +
+              `but the job's effective assurance does not meet the required floor.\n` +
+              `Matched files:\n${matchedList}\n` +
+              `Effective assurance: ${effectiveAssuranceStr}\n` +
+              `Required floor: ${floorStr}`,
+            recommendedAction:
+              `The job's assurance does not satisfy the configured minimumAssurance floor. ` +
+              `Manual review is required:\n` +
+              `  1. Open the PR on GitHub and review the flagged files.\n` +
+              `  2. Ensure assurance requirements are satisfied (see floor: ${floorStr}).\n` +
+              `  3. If satisfied after manual review, squash-merge the PR on GitHub.\n` +
+              `  4. Run: specrunner job archive --with-merge ${slug}`,
+            resumeCommand: `specrunner job archive --with-merge ${slug}`,
+          }),
+        };
+      }
+      // Floor satisfied — proceed to CI wait
     }
   }
 

@@ -147,6 +147,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
       let pollIntervalMs: number | undefined = undefined;
       let protectedPaths: string[] | undefined = undefined;
       let postMergeVerify: ShellCommand[] | undefined = undefined;
+      let minimumAssurance: import("../config/schema.js").MinimumAssuranceConfig | undefined = undefined;
       let designLayerWithMerge: ResolvedDesignLayer = disabledDesignLayer;
       try {
         const config = await loadConfig();
@@ -163,6 +164,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
         pollIntervalMs = config.archive?.mergeWaitPollIntervalMs ?? DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS;
         protectedPaths = config.archive?.protectedPaths;
         postMergeVerify = config.archive?.postMergeVerify;
+        minimumAssurance = config.archive?.minimumAssurance;
         designLayerWithMerge = resolveDesignLayerConfig(config);
       } catch {
         // Config not available — use defaults (no guard applied; no integrity check)
@@ -222,6 +224,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           pollIntervalMs,
           protectedPaths,
           postMergeVerify,
+          minimumAssurance,
           designLayer: designLayerWithMerge,
         },
         logResult,
