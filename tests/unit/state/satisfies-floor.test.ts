@@ -114,8 +114,10 @@ describe("TC-003: satisfiesFloor — assurance にフィールドが欠落 / 未
   });
 
   it("returns false when assurance value is not a recognized rank (unknown value)", () => {
-    // An unknown/unrecognized value should fail-closed
-    const assurance: ProfileAssurance = { testDerivation: "unknown-value" };
+    // An unknown/unrecognized value should fail-closed.
+    // Cast required: intentionally supplying an invalid runtime value to test
+    // the fail-closed behavior of satisfiesFloor's rank-map lookup.
+    const assurance: ProfileAssurance = { testDerivation: "unknown-value" as import("../../../src/state/schema/types.js").TestDerivationLevel };
     const floor: AssuranceFloor = { testDerivation: "coupled" };
     expect(satisfiesFloor(assurance, floor)).toBe(false);
   });

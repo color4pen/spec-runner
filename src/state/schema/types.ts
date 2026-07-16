@@ -301,6 +301,12 @@ export interface ProfileAssurance {
    * Floor-comparable named keys: testDerivation, biteEvidence, specReview.
    * These are read as unknown and evaluated via rank maps in satisfiesFloor. */
   readonly [key: string]: unknown;
+  /** Level of test derivation assurance. Ordered: coupled < frozen. */
+  readonly testDerivation?: TestDerivationLevel;
+  /** Level of bite evidence assurance. Ordered: optional < required. */
+  readonly biteEvidence?: BiteEvidenceLevel;
+  /** Level of spec review assurance. Ordered: omitted < required. */
+  readonly specReview?: SpecReviewLevel;
 }
 
 /**
