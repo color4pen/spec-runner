@@ -21,7 +21,7 @@ import { EventEmitter } from "node:events";
 import type { ChildProcess } from "node:child_process";
 import { EventBus } from "../../event/event-bus.js";
 import { StepExecutor } from "../executor.js";
-import type { SpawnFn as GitSpawnFn } from "../git-exec.js";
+import type { SpawnFn as GitSpawnFn } from "../../../util/git-exec.js";
 import type { AgentStep } from "../../port/step-types.js";
 import type { PipelineDeps } from "../../types.js";
 import type { JobState } from "../../../state/schema.js";
