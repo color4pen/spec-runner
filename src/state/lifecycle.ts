@@ -21,7 +21,7 @@ import type { JobState, JobStatus } from "./schema.js";
 export interface TransitionContext {
   trigger: string;   // "pipeline", "signal-handler", "finish" etc.
   reason: string;    // human-readable transition reason
-  patch?: Partial<Omit<JobState, "version" | "jobId" | "createdAt" | "status" | "history">>;
+  patch?: Partial<Omit<JobState, "version" | "jobId" | "createdAt" | "status" | "history" | "profile">>;
 }
 
 export interface TransitionResult {

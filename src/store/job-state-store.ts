@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
-import type { JobState, StepRun, ErrorInfo, HistoryEntry, RequestInfo, RepositoryInfo } from "../state/schema.js";
+import type { JobState, StepRun, ErrorInfo, HistoryEntry, RequestInfo, RepositoryInfo, EffectiveProfile } from "../state/schema.js";
 import { STANDARD_PIPELINE_ID } from "../kernel/pipeline-ids.js";
+import { STANDARD_PROFILE } from "../state/profile.js";
 import { transitionJob } from "../state/lifecycle.js";
 import type { InterruptionRecord, LineageRecord } from "./event-journal.js";
 import { JobLocationResolver } from "./job-location-resolver.js";
@@ -47,6 +48,8 @@ export function buildInitialJobState(params: {
   request: RequestInfo;
   repository: RepositoryInfo;
   pipelineId?: string;
+  /** Effective profile for this job. Absent = STANDARD_PROFILE. R1: always standard. */
+  profile?: EffectiveProfile;
   /** Reviewer snapshots loaded and validated at job start. Absent = no custom reviewers. */
   reviewers?: import("../core/reviewers/types.js").ReviewerSnapshot[];
 }): JobState {
@@ -78,6 +81,7 @@ export function buildInitialJobState(params: {
     history: [initialHistoryEntry],
     error: null,
     pipelineId: params.pipelineId ?? STANDARD_PIPELINE_ID,
+    profile: params.profile ?? STANDARD_PROFILE,
   };
 
   if (params.reviewers && params.reviewers.length > 0) {
@@ -270,10 +274,11 @@ export class JobStateStore {
 
   /**
    * Update job state fields and persist atomically.
+   * profile is excluded from patch: it is immutable-per-job (set at creation only).
    */
   async update(
     state: JobState,
-    patch: Partial<Omit<JobState, "version" | "jobId" | "createdAt">>,
+    patch: Partial<Omit<JobState, "version" | "jobId" | "createdAt" | "profile">>,
   ): Promise<JobState> {
     const updated: JobState = {
       ...state,

@@ -17,6 +17,7 @@
 import { composeSplitLayoutFromContent } from "../../store/job-state-projection.js";
 import { getPipelineDescriptor } from "../pipeline/registry.js";
 import { getPipelineId } from "../../state/pipeline-id.js";
+import { computePolicyDigest, SUPPORTED_PROFILE_SCHEMA_VERSION } from "../../state/profile.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import { resolveResumeStep, buildAllowedStepSet } from "../resume/resolve-step.js";
 import { requestMdPath, slugEventsPath } from "../../util/paths.js";
@@ -144,6 +145,27 @@ export async function verifyCheckpoint(input: {
   } catch (err: unknown) {
     // Re-throw only SpecRunnerError (our typed error); ignore JSON parse errors.
     if (err instanceof Error && "code" in err) throw err;
+  }
+
+  // (profile) Stored profile self-consistency (ADR-20260716 D1/D6).
+  // Only verified when profile is present; absent profile is backward-compat (resolves to standard).
+  // Use raw state.profile presence — do not call getProfile() here to avoid confusing absent with present.
+  if (state.profile !== undefined) {
+    // Verify policyDigest matches the profile body (stored self-consistency, not re-resolution).
+    const expectedDigest = computePolicyDigest(state.profile);
+    if (expectedDigest !== state.profile.policyDigest) {
+      throw checkpointNotAttachableError(
+        "profile-inconsistent",
+        `Profile '${state.profile.id}' policyDigest mismatch: stored '${state.profile.policyDigest}', computed '${expectedDigest}'.`,
+      );
+    }
+    // Verify schemaVersion is interpretable by this runtime.
+    if (state.profile.schemaVersion > SUPPORTED_PROFILE_SCHEMA_VERSION) {
+      throw checkpointNotAttachableError(
+        "profile-uninterpretable",
+        `Profile '${state.profile.id}' schemaVersion ${state.profile.schemaVersion} exceeds supported version ${SUPPORTED_PROFILE_SCHEMA_VERSION}.`,
+      );
+    }
   }
 
   // (a) Status must be awaiting-resume (quiescent — currently only awaiting-resume is supported)
