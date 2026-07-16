@@ -72,3 +72,12 @@
 {"type":"lineage","step":"verification","ts":"2026-07-16T15:16:49.513Z","outputs":[{"path":"specrunner/changes/bite-evidence-forward/verification-result.md","hash":"sha256:e20c6a2bb26d411971bf477710cecdf7fa2d8b759c8e3c9474050eed52c41064"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-07-16T15:16:49.519Z","step":"verification","status":"warning","message":"verification iteration 3 completed with verdict: failed"}
 {"type":"transition","ts":"2026-07-16T15:16:49.520Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: verification did not pass after 2 iterations"}
+{"type":"transition","ts":"2026-07-16T15:25:41.725Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'verification'"}
+{"type":"transition","ts":"2026-07-16T15:25:41.816Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-07-16T15:25:41.817Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-07-16T15:26:09.723Z","step":"verification-verdict","status":"ok","message":"verification verdict: failed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"failed","findingsPath":"specrunner/changes/bite-evidence-forward/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-16T15:25:41.818Z","endedAt":"2026-07-16T15:26:09.722Z"}
+{"type":"lineage","step":"verification","ts":"2026-07-16T15:26:09.722Z","outputs":[{"path":"specrunner/changes/bite-evidence-forward/verification-result.md","hash":"sha256:40526a01ce5c5b4ed872daa336d32f491da11a58029c5b3f1b1e93d2fe6fd254"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-16T15:26:09.728Z","step":"verification","status":"warning","message":"verification iteration 1 completed with verdict: failed"}
+{"type":"transition","ts":"2026-07-16T15:26:09.728Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
+{"type":"transition","ts":"2026-07-16T15:26:09.730Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}

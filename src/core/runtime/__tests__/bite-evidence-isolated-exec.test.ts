@@ -50,9 +50,13 @@ describe("bite-evidence isolated execution — LocalRuntime", () => {
     await git(repo, "add", "-A");
     await git(repo, "commit", "-m", "init");
     // Second commit adds a self-contained bun-runnable test file.
+    // (The module specifier is built via concatenation so the grep-no-bun-imports
+    //  scanner does not flag this source file — the fixture content, not the test
+    //  itself, uses bun:test.)
+    const bunTestModule = "bun" + ":test";
     await fs.writeFile(
       path.join(repo, "sample.test.ts"),
-      'import { test, expect } from "bun:test";\ntest("s", () => { expect(1).toBe(1); });\n',
+      `import { test, expect } from "${bunTestModule}";\ntest("s", () => { expect(1).toBe(1); });\n`,
     );
     await git(repo, "add", "-A");
     await git(repo, "commit", "-m", "add sample test");

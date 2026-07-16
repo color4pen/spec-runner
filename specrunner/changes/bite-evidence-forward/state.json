@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0802ded7-9655-4570-8b77-2a49ee26c3f3",
   "createdAt": "2026-07-16T12:31:56.443Z",
-  "updatedAt": "2026-07-16T15:16:49.520Z",
+  "updatedAt": "2026-07-16T15:26:09.730Z",
   "request": {
     "title": "base/candidate OID を捕捉し、forward strategy の BiteEvidence を機械生成する（R4, MVP）",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "verification",
-  "status": "awaiting-resume",
+  "step": "build-fixer",
+  "status": "running",
   "branch": "change/bite-evidence-forward-0802ded7",
-  "error": {
-    "code": "VERIFICATION_RETRIES_EXHAUSTED",
-    "message": "verification did not pass after 2 iterations",
-    "hint": "Review verification-result-003.md and fix the build errors manually."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -59,15 +55,10 @@
       ]
     }
   ],
-  "resumePoint": {
-    "step": "build-fixer",
-    "reason": "verification did not pass after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -75,7 +66,7 @@
       "test-case-gen": 1,
       "test-materialize": 1,
       "implementer": 1,
-      "verification": 3,
+      "verification": 4,
       "build-fixer": 2
     }
   }
