@@ -13,7 +13,7 @@
  * TC-VC-010: no filesystem writes in any path
  * TC-VC-014: reads() throws → CHECKPOINT_NOT_ATTACHABLE (resume-reads-unevaluable, fail-closed)
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { verifyCheckpoint } from "../../src/core/attach/verify-checkpoint.js";
 import { ERROR_CODES } from "../../src/errors.js";
 
@@ -455,5 +455,140 @@ describe("TC-VC-014: reads() throws → CHECKPOINT_NOT_ATTACHABLE (resume-reads-
     } finally {
       mockedGetPipelineDescriptor.mockRestore();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-VC-015: profile present + digest mismatch → CHECKPOINT_NOT_ATTACHABLE (profile-inconsistent)
+// ---------------------------------------------------------------------------
+describe("TC-VC-015: profile policyDigest mismatch → CHECKPOINT_NOT_ATTACHABLE (profile-inconsistent)", () => {
+  it("rejects checkpoint when profile.policyDigest does not match the computed digest", async () => {
+    const stateJson = makeValidStateJson({
+      profile: {
+        id: "standard",
+        schemaVersion: 1,
+        policyDigest: "sha256:deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+        budget: {},
+        assurance: {},
+      },
+    });
+    const err = await verifyCheckpoint({
+      slug: SLUG, stateJson, eventsJsonl: VALID_EVENTS_JSONL,
+      treeFiles: VALID_TREE_FILES, branch: BRANCH, expectedRepo: EXPECTED_REPO, checkpointOid: CHECKPOINT_OID,
+    }).catch((e) => e);
+    expect(err).toMatchObject({ code: ERROR_CODES.CHECKPOINT_NOT_ATTACHABLE });
+    // The reason code appears in the hint field (set by checkpointNotAttachableError)
+    expect((err as { hint?: string }).hint).toContain("profile-inconsistent");
+  });
+
+  it("hint contains 'profile-inconsistent' reason string", async () => {
+    const stateJson = makeValidStateJson({
+      profile: {
+        id: "standard",
+        schemaVersion: 1,
+        policyDigest: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+        budget: {},
+        assurance: {},
+      },
+    });
+    const err = await verifyCheckpoint({
+      slug: SLUG, stateJson, eventsJsonl: VALID_EVENTS_JSONL,
+      treeFiles: VALID_TREE_FILES, branch: BRANCH, expectedRepo: EXPECTED_REPO, checkpointOid: CHECKPOINT_OID,
+    }).catch((e) => e);
+    // hint is "Reason: profile-inconsistent. ..."
+    expect((err as { hint?: string }).hint).toContain("profile-inconsistent");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-VC-016: profile present + schemaVersion too high → CHECKPOINT_NOT_ATTACHABLE (profile-uninterpretable)
+// ---------------------------------------------------------------------------
+describe("TC-VC-016: profile schemaVersion too high → CHECKPOINT_NOT_ATTACHABLE (profile-uninterpretable)", () => {
+  it("rejects checkpoint when profile.schemaVersion exceeds SUPPORTED_PROFILE_SCHEMA_VERSION", async () => {
+    // Build a profile with schemaVersion=999 and a correct digest for that body
+    // (so digest check passes, but schemaVersion check should fail)
+    const { computePolicyDigest } = await import("../../src/state/profile.js");
+    const body = { id: "standard", schemaVersion: 999, budget: {}, assurance: {} };
+    const stateJson = makeValidStateJson({
+      profile: {
+        ...body,
+        policyDigest: computePolicyDigest(body),
+      },
+    });
+    const err = await verifyCheckpoint({
+      slug: SLUG, stateJson, eventsJsonl: VALID_EVENTS_JSONL,
+      treeFiles: VALID_TREE_FILES, branch: BRANCH, expectedRepo: EXPECTED_REPO, checkpointOid: CHECKPOINT_OID,
+    }).catch((e) => e);
+    expect(err).toMatchObject({ code: ERROR_CODES.CHECKPOINT_NOT_ATTACHABLE });
+    // The reason code appears in the hint field
+    expect((err as { hint?: string }).hint).toContain("profile-uninterpretable");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-VC-017: profile present + self-consistent → VerifiedCheckpoint
+// ---------------------------------------------------------------------------
+describe("TC-VC-017: profile present + self-consistent → VerifiedCheckpoint", () => {
+  // Re-establish the getPipelineDescriptor mock in case a previous test (TC-VC-014)
+  // called mockRestore() and removed the default implementation.
+  beforeEach(async () => {
+    const { getPipelineDescriptor, STANDARD_DESCRIPTOR } = await import("../../src/core/pipeline/registry.js");
+    vi.mocked(getPipelineDescriptor).mockImplementation(() => STANDARD_DESCRIPTOR);
+  });
+  afterEach(async () => {
+    const { getPipelineDescriptor } = await import("../../src/core/pipeline/registry.js");
+    vi.mocked(getPipelineDescriptor).mockReset();
+    // Restore to passthrough so other tests aren't broken
+    const { STANDARD_DESCRIPTOR } = await import("../../src/core/pipeline/registry.js");
+    vi.mocked(getPipelineDescriptor).mockImplementation(() => STANDARD_DESCRIPTOR);
+  });
+
+  it("accepts checkpoint when profile is self-consistent (digest matches body)", async () => {
+    const { STANDARD_PROFILE } = await import("../../src/state/profile.js");
+    const stateJson = makeValidStateJson({
+      profile: STANDARD_PROFILE,
+    });
+    const result = await verifyCheckpoint({
+      slug: SLUG, stateJson, eventsJsonl: VALID_EVENTS_JSONL,
+      treeFiles: VALID_TREE_FILES, branch: BRANCH, expectedRepo: EXPECTED_REPO, checkpointOid: CHECKPOINT_OID,
+    });
+    expect(result.slug).toBe(SLUG);
+    expect(result.jobId).toBe(JOB_ID);
+    expect(result.state.profile).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-VC-018: profile absent → verification skipped, attach succeeds (backward compat)
+// ---------------------------------------------------------------------------
+describe("TC-VC-018: profile absent → verification skipped, attach succeeds (backward compat)", () => {
+  // Re-establish the getPipelineDescriptor mock in case a previous test (TC-VC-014)
+  // called mockRestore() and removed the default implementation.
+  beforeEach(async () => {
+    const { getPipelineDescriptor, STANDARD_DESCRIPTOR } = await import("../../src/core/pipeline/registry.js");
+    vi.mocked(getPipelineDescriptor).mockImplementation(() => STANDARD_DESCRIPTOR);
+  });
+  afterEach(async () => {
+    const { getPipelineDescriptor } = await import("../../src/core/pipeline/registry.js");
+    vi.mocked(getPipelineDescriptor).mockReset();
+    const { STANDARD_DESCRIPTOR } = await import("../../src/core/pipeline/registry.js");
+    vi.mocked(getPipelineDescriptor).mockImplementation(() => STANDARD_DESCRIPTOR);
+  });
+
+  it("accepts checkpoint when profile is absent (makeValidStateJson has no profile)", async () => {
+    // TC-VC-008 already verifies this, but we add an explicit profile-specific TC for clarity.
+    const result = await verifyCheckpoint({
+      slug: SLUG,
+      stateJson: VALID_STATE_JSON,  // makeValidStateJson() has no profile field
+      eventsJsonl: VALID_EVENTS_JSONL,
+      treeFiles: VALID_TREE_FILES,
+      branch: BRANCH,
+      expectedRepo: EXPECTED_REPO,
+      checkpointOid: CHECKPOINT_OID,
+    });
+    expect(result.slug).toBe(SLUG);
+    expect(result.jobId).toBe(JOB_ID);
+    // state.profile is absent (undefined) — backward compat
+    expect(result.state.profile).toBeUndefined();
   });
 });

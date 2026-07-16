@@ -249,6 +249,37 @@ export interface DecisionRecord {
   source: "issue-comment";
 }
 
+/**
+ * Opaque recorded structure for the budget component of an effective profile.
+ * R1: treated as opaque by the runtime (value-based enforcement is R2–R6).
+ */
+export type ProfileBudget = Readonly<Record<string, unknown>>;
+
+/**
+ * Opaque recorded structure for the assurance component of an effective profile.
+ * R1: treated as opaque by the runtime (value-based enforcement is R3–R4).
+ */
+export type ProfileAssurance = Readonly<Record<string, unknown>>;
+
+/**
+ * Effective profile: the branch-borne execution guarantee declaration for a job.
+ * Recorded at job creation; immutable for the job's lifetime.
+ *
+ * - id: human-readable profile identifier (e.g. "standard").
+ * - schemaVersion: version of the profile schema. Must be ≤ SUPPORTED_PROFILE_SCHEMA_VERSION.
+ * - policyDigest: SHA-256 hash of the profile body (id, schemaVersion, budget, assurance).
+ *   Verified at attach time for self-consistency.
+ * - budget: opaque recorded budget structure (R1: not interpreted by runtime).
+ * - assurance: opaque recorded assurance structure (R1: not interpreted by runtime).
+ */
+export interface EffectiveProfile {
+  id: string;
+  schemaVersion: number;
+  policyDigest: string;
+  budget: ProfileBudget;
+  assurance: ProfileAssurance;
+}
+
 export interface JobState {
   /**
    * Schema version.
@@ -286,6 +317,13 @@ export interface JobState {
    * Optional for backward compat — absent in legacy state is valid.
    */
   pipelineId?: string;
+  /**
+   * Effective profile: the branch-borne execution guarantee declaration for this job.
+   * Recorded at job creation; immutable for the job's lifetime.
+   * Absent in legacy state files — getProfile() resolves absent to STANDARD_PROFILE.
+   * Optional for backward compat — absent in legacy state is valid.
+   */
+  profile?: EffectiveProfile;
   resumePoint?: ResumePoint | null;
   /** PID of the process that set status to "running". Optional for backward compat. */
   pid?: number | null;
