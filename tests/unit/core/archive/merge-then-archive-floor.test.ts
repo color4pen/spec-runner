@@ -424,7 +424,7 @@ describe("TC-013: minimumAssurance 未設定の config では gate が何もし�
       owner: "user",
       repo: "repo",
       waitTimeoutMs: 60_000,
-      minimumAssurance: { protectedPaths: [] } as any,
+      minimumAssurance: { protectedPaths: [] },
     });
 
     expect(result).toMatchObject({ exitCode: 0 });
