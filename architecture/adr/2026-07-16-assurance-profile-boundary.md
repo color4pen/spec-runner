@@ -2,9 +2,9 @@
 
 ## ステータス
 
-proposed。構造判断のみを定める。ADR-20260713（execution ownership）・ADR-20260715（remote checkpoint 境界）の隣に位置し、pipeline が「どの品質工程を、どの保証水準で走らせたか」を宣言的かつ検証可能にする境界を定める。
+accepted。構造判断のみを定める。ADR-20260713（execution ownership）・ADR-20260715（remote checkpoint 境界）の隣に位置し、pipeline が「どの品質工程を、どの保証水準で走らせたか」を宣言的かつ検証可能にする境界を定める。
 
-proposed は decision（構造判断）が未 ratify であることを意味する。profile カタログ・fast の工程構成・CLI・`verify` の振る舞いは後続 behavior（spec ＋ `specrunner/adr/`）が担い、本 ADR は提供済み機能を主張しない。
+accepted は decision（構造判断）が accepted であることを意味する。profile カタログ・fast の工程構成・CLI・`verify` の振る舞いは後続 behavior（spec ＋ `specrunner/adr/`）が担い、本 ADR は提供済み機能を主張しない。
 
 ## コンテキスト
 
