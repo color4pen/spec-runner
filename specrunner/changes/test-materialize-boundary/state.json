@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0273f484-11a6-43ee-881d-96eb8a526faf",
   "createdAt": "2026-07-16T10:16:35.776Z",
-  "updatedAt": "2026-07-16T10:22:21.269Z",
+  "updatedAt": "2026-07-16T10:37:20.153Z",
   "request": {
     "title": "scenario freeze と test-materialize→implement の commit 境界を作る（R3, Option A 二ノード分割）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/test-materialize-boundary-0273f484",
   "error": null,
@@ -56,9 +56,10 @@
     }
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
