@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a319d289-3f19-4215-81b5-a33bba4f2128",
   "createdAt": "2026-07-16T16:18:16.018Z",
-  "updatedAt": "2026-07-16T17:32:58.244Z",
+  "updatedAt": "2026-07-16T17:37:01.331Z",
   "request": {
     "title": "assurance を構造化し、archive 時に minimumAssurance floor を out-of-loop で強制する（R2 spine）",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/assurance-floor-a319d289",
   "error": null,
   "pipelineId": "standard",
@@ -84,8 +84,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/846",
+    "number": 846,
+    "createdAt": "2026-07-16T17:37:00.507Z"
+  },
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 76,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -94,14 +99,17 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
