@@ -189,7 +189,7 @@ export interface AgentStep {
    * Pure function — no I/O allowed (invariant B-5).
    * Returns resolved worktree-relative paths (util/paths functions, {n} resolved via io-iteration helpers).
    * Required inputs (required !== false) are validated before the step executes.
-   * Optional for type compatibility; all 12 standard pipeline steps implement this.
+   * Optional for type compatibility; all standard pipeline steps implement this.
    *
    * D1 (step-io-contracts): machine-readable declaration replaces prompt-prose data dependencies.
    */
@@ -200,7 +200,7 @@ export interface AgentStep {
    * Pure function — no I/O allowed (invariant B-5).
    * Returns resolved worktree-relative paths (util/paths functions, {n} resolved via io-iteration helpers).
    * Declaration only — writes are not validated (only reads are pre-validated).
-   * Optional for type compatibility; all 12 standard pipeline steps implement this.
+   * Optional for type compatibility; all standard pipeline steps implement this.
    *
    * D1 (step-io-contracts): machine-readable declaration makes data flow explicit.
    */
@@ -310,7 +310,7 @@ export interface CliStep {
    * Declare the input files this step reads (I/O contract).
    * Pure function — no I/O allowed (invariant B-5).
    * Returns resolved worktree-relative paths; required inputs are pre-validated.
-   * Optional for type compatibility; all 12 standard pipeline steps implement this.
+   * Optional for type compatibility; all standard pipeline steps implement this.
    *
    * D1 (step-io-contracts): machine-readable declaration replaces prompt-prose data dependencies.
    */
@@ -320,7 +320,7 @@ export interface CliStep {
    * Declare the output files this step writes (I/O contract).
    * Pure function — no I/O allowed (invariant B-5).
    * Returns resolved worktree-relative paths. Declaration only — not pre-validated.
-   * Optional for type compatibility; all 12 standard pipeline steps implement this.
+   * Optional for type compatibility; all standard pipeline steps implement this.
    *
    * D1 (step-io-contracts): machine-readable declaration makes data flow explicit.
    */

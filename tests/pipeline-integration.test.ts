@@ -181,6 +181,7 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:ghi", lastSyncedAt: new Date().toISOString() },
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:def", lastSyncedAt: new Date().toISOString() },
       "test-case-gen": { agentId: "test-case-gen-agent-id", definitionHash: "sha256:tcg", lastSyncedAt: new Date().toISOString() },
+      "test-materialize": { agentId: "test-materialize-agent-id", definitionHash: "sha256:tmt", lastSyncedAt: new Date().toISOString() },
       "implementer": { agentId: "implementer-agent-id", definitionHash: "sha256:imp", lastSyncedAt: new Date().toISOString() },
       "build-fixer": { agentId: "build-fixer-agent-id", definitionHash: "sha256:bfx", lastSyncedAt: new Date().toISOString() },
       "code-review": { agentId: "code-review-agent-id", definitionHash: "sha256:crv", lastSyncedAt: new Date().toISOString() },
@@ -254,11 +255,11 @@ describe("TC-010: runPipeline — iter=1 approved: spec-fixer not invoked", () =
     expect(result.steps?.["spec-fixer"]).toBeUndefined();
 
     // After spec-review approved, pipeline continues:
-    // request-review(1) + design(1) + spec-review(1) + test-case-gen(1) + implementer(1) + code-review(1) + conformance(1) = 7 sessions
+    // request-review(1) + design(1) + spec-review(1) + test-case-gen(1) + test-materialize(1) + implementer(1) + code-review(1) + conformance(1) = 8 sessions
     // adr-gen is SKIPPED (request.adr === false) — no session created.
-    // VerificationStep is CLI (no session). Total = 7 createSession calls.
+    // VerificationStep is CLI (no session). Total = 8 createSession calls.
     const createCalls = (client.createSession as ReturnType<typeof vi.fn>).mock.calls;
-    expect(createCalls.length).toBe(7);
+    expect(createCalls.length).toBe(8);
 
     // adr-gen should be recorded with verdict "skipped"
     const adrGenArr = result.steps?.["adr-gen"];

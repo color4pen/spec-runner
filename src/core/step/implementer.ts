@@ -47,6 +47,12 @@ const implementerAgentDefinition: AgentDefinition = {
  * When placement is provided, a deterministic test file placement directive is
  * appended, overriding the default "follow existing placement pattern" guidance.
  * When placement is absent, the message is identical to the pre-change behavior.
+ *
+ * When testsMaterialized is true (standard pipeline: test-materialize ran before this step),
+ * the instructions are changed to implementation-only mode: the agent does NOT write tests
+ * (they are already in the worktree from the test-materialize commit) and instead focuses
+ * on writing implementation code to make the existing tests green.
+ * When testsMaterialized is false/undefined, behavior is identical to the pre-change version.
  */
 export function buildImplementerInitialMessage(opts: {
   slug: string;
@@ -54,8 +60,9 @@ export function buildImplementerInitialMessage(opts: {
   requestContent: string;
   dynamicContext?: DynamicContext;
   placement?: TestPlacement;
+  testsMaterialized?: boolean;
 }): string {
-  const { slug, branch, requestContent, dynamicContext, placement } = opts;
+  const { slug, branch, requestContent, dynamicContext, placement, testsMaterialized } = opts;
 
   const contextLines: string[] = [];
   if (dynamicContext?.gitLog) {
@@ -72,6 +79,32 @@ export function buildImplementerInitialMessage(opts: {
     ? `\n\n${renderTestPlacementInstruction(placement)}`
     : "";
 
+  if (testsMaterialized) {
+    // Standard pipeline post-test-materialize: implementation-only mode.
+    // Tests already exist in the worktree (materialized by the previous step).
+    // The implementer writes production code only — test files must NOT be created or modified.
+    return `<user-request>
+You are the implementer for the following change:
+
+Change folder: ${changeFolderPath(slug)}
+Branch: ${branch}
+
+The test-materialize step has already written test code to the worktree.
+Your role is to write ONLY the implementation (production) code to make those tests pass.
+
+Please:
+1. Read ${changeFolderPath(slug)}/tasks.md to understand what needs to be implemented
+2. Read ${changeFolderPath(slug)}/test-cases.md and the existing test files to understand the expected behavior
+3. Implement all tasks in tasks.md — write production code only, do NOT create or modify test files
+4. Update tasks.md: mark completed tasks with [x]
+5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+
+Original request:
+${requestContent}
+</user-request>${contextSection}`;
+  }
+
+  // Default (fast pipeline or no test-materialize): TDD mode, unchanged behavior.
   return `<user-request>
 You are the implementer for the following change:
 
@@ -119,6 +152,9 @@ export const ImplementerStep: AgentStep = {
     const baseReads: IoRef[] = [
       { path: `${folder}/tasks.md` },
       { path: `${folder}/spec.md` },
+      // test-cases.md is optional (soft): present in standard pipeline after test-case-gen,
+      // absent in fast pipeline. required:false preserves fast input-completeness.
+      { path: `${folder}/test-cases.md`, required: false },
     ];
     // Conformance-triggered entry: also read conformance result file
     const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.IMPLEMENTER);
@@ -154,6 +190,11 @@ export const ImplementerStep: AgentStep = {
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.IMPLEMENTER);
 
+    // Detect whether test-materialize ran before this implementer entry.
+    // When true: standard pipeline — tests already materialized; implement-only mode.
+    // When false: fast pipeline or conformance re-entry without prior test-materialize.
+    const testsMaterialized = Boolean(state.steps?.[STEP_NAMES.TEST_MATERIALIZE]?.length);
+
     // Conformance-triggered entry: append conformance non-conformities section
     const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.IMPLEMENTER);
     if (conformanceFindings !== null && conformanceFindings.length > 0) {
@@ -162,6 +203,7 @@ export const ImplementerStep: AgentStep = {
         branch: state.branch,
         requestContent: deps.request.content,
         dynamicContext: deps.dynamicContext,
+        testsMaterialized,
       });
       const findingsBlock = buildFindingsBlock(conformanceFindings, "conformance");
       // Append the conformance section before the closing tag
@@ -180,6 +222,7 @@ export const ImplementerStep: AgentStep = {
       requestContent: deps.request.content,
       dynamicContext: deps.dynamicContext,
       placement: deps.config.tests?.placement,
+      testsMaterialized,
     });
   },
 

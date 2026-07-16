@@ -188,10 +188,10 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // TC-WHEN-02: STANDARD_TRANSITIONS has expected row count
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has correct number of rows (+2 for post-fixer reverification when-guards)", () => {
-    // 35 previous + 2 (conformance approved→verification when, verification passed→adr-gen when)
-    // + 1 (adr-gen skipped → pr-create, T-03 reduce-added-agent-turns)
-    expect(STANDARD_TRANSITIONS.length).toBe(38);
+  it("has correct number of rows (+2 for post-fixer reverification when-guards, +2 test-materialize)", () => {
+    // 38 previous + 2 (test-case-gen→test-materialize on success, test-materialize→implementer on success/error)
+    // Note: test-case-gen now routes to test-materialize instead of directly to implementer
+    expect(STANDARD_TRANSITIONS.length).toBe(40);
   });
 });
 

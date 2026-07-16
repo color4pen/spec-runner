@@ -129,9 +129,11 @@ describe("TC-012: STANDARD_TRANSITIONS に必要なエッジが存在する", ()
     { step: "request-review", on: "needs-discussion",  to: "escalate" },
     { step: "request-review", on: "reject",            to: "escalate" },
     { step: "request-review", on: "error",             to: "escalate" },
-    { step: "spec-review",   on: "approved",   to: "test-case-gen" },
-    { step: "test-case-gen", on: "success",    to: "implementer" },
-    { step: "test-case-gen", on: "error",      to: "escalate" },
+    { step: "spec-review",      on: "approved",   to: "test-case-gen" },
+    { step: "test-case-gen",    on: "success",    to: "test-materialize" },
+    { step: "test-case-gen",    on: "error",      to: "escalate" },
+    { step: "test-materialize", on: "success",    to: "implementer" },
+    { step: "test-materialize", on: "error",      to: "escalate" },
     { step: "implementer",  on: "success",     to: "verification" },
     { step: "implementer",  on: "error",       to: "escalate" },
     { step: "verification", on: "passed",      to: "code-review" },
@@ -267,10 +269,10 @@ describe("TC-001/002/005/006/007/015: conformance transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 38 rows total (+2 for post-fixer reverification when-guards, +1 adr-gen skipped)", () => {
-    // 35 previous + 2 (conformance approved→verification when, verification passed→adr-gen when)
-    // + 1 (adr-gen skipped → pr-create, T-03 reduce-added-agent-turns)
-    expect(STANDARD_TRANSITIONS.length).toBe(38);
+  it("has 40 rows total (+2 for post-fixer reverification when-guards, +1 adr-gen skipped, +2 test-materialize)", () => {
+    // 38 previous + 2 (test-case-gen→test-materialize on success, test-materialize→implementer on success/error)
+    // Note: test-case-gen now routes to test-materialize instead of directly to implementer
+    expect(STANDARD_TRANSITIONS.length).toBe(40);
   });
 
   it("verification --passed→ end does NOT exist", () => {

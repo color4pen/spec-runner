@@ -1,7 +1,7 @@
 /**
  * Unit tests for step reads/writes declarations (T-03, T-07)
  * Verifies:
- * - All 12 standard steps implement reads/writes
+ * - All standard steps implement reads/writes
  * - Paths are derived from util/paths (no hardcoded new path strings)
  * - Fixer reads match producer resultFilePath
  * - Iteration resolution correctness
@@ -11,6 +11,7 @@ import { DesignStep } from "../../../src/core/step/design.js";
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 import { SpecFixerStep } from "../../../src/core/step/spec-fixer.js";
 import { TestCaseGenStep } from "../../../src/core/step/test-case-gen.js";
+import { TestMaterializeStep } from "../../../src/core/step/test-materialize.js";
 import { ImplementerStep } from "../../../src/core/step/implementer.js";
 import { VerificationStep } from "../../../src/core/step/verification.js";
 import { BuildFixerStep } from "../../../src/core/step/build-fixer.js";
@@ -37,6 +38,7 @@ const ALL_STEPS: Step[] = [
   SpecReviewStep,
   SpecFixerStep,
   TestCaseGenStep,
+  TestMaterializeStep,
   ImplementerStep,
   VerificationStep,
   BuildFixerStep,
