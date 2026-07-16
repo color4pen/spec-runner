@@ -7,10 +7,10 @@
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
 | 1 | build | passed | 0.3s | 0 |
-| 2 | typecheck | passed | 4.1s | 0 |
-| 3 | test | passed | 21.7s | 0 |
+| 2 | typecheck | passed | 4.0s | 0 |
+| 3 | test | passed | 21.6s | 0 |
 | 4 | lint | passed | 4.4s | 0 |
-| 5 | changed-line-coverage | passed | 26.9s | 0 |
+| 5 | changed-line-coverage | passed | 27.1s | 0 |
 
 ## Phase: build
 
@@ -53,8 +53,8 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	196d
 
  Test Files  526 passed (526)
       Tests  7235 passed (7235)
-   Start at  02:18:09
-   Duration  21.42s (transform 4.66s, setup 0ms, import 18.71s, tests 27.01s, environment 25ms)
+   Start at  02:36:04
+   Duration  21.30s (transform 4.61s, setup 0ms, import 18.55s, tests 26.95s, environment 25ms)
 
 
 $ vitest run
@@ -67,23 +67,14 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-fhNV0W/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-8B9DKA/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-j8ZtNK/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-mFfs9Z/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
@@ -127,11 +118,20 @@ Retrying worktree add: lock contention (attempt 2/3)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=old-feature (issue#50)
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -159,13 +159,13 @@ GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
+Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 ERROR: file not found
 spawn ENOENT
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
-Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
@@ -183,6 +183,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (25 changed files checked, 19 skipped)
-  Skipped (not in coverage surface): specrunner/changes/assurance-floor/bite-evidence-result.md, specrunner/changes/assurance-floor/design.md, specrunner/changes/assurance-floor/events.jsonl, specrunner/changes/assurance-floor/request-review-attestation.json, specrunner/changes/assurance-floor/request-review-result-001.md, specrunner/changes/assurance-floor/request.md, specrunner/changes/assurance-floor/rules.md, specrunner/changes/assurance-floor/spec-review-result-001.md, specrunner/changes/assurance-floor/spec.md, specrunner/changes/assurance-floor/state.json, specrunner/changes/assurance-floor/tasks.md, specrunner/changes/assurance-floor/test-cases.md, specrunner/changes/assurance-floor/usage.json, specrunner/changes/assurance-floor/verification-result.md, tests/attach/verify-checkpoint-r1-assurance.test.ts, tests/unit/cli/archive-minimum-assurance.test.ts, tests/unit/config/schema-minimum-assurance.test.ts, tests/unit/core/archive/merge-then-archive-floor.test.ts, tests/unit/state/satisfies-floor.test.ts
+changed-line-coverage: passed (29 changed files checked, 23 skipped)
+  Skipped (not in coverage surface): specrunner/changes/assurance-floor/bite-evidence-result.md, specrunner/changes/assurance-floor/conformance-result-001.md, specrunner/changes/assurance-floor/cross-boundary-invariants-result-001.md, specrunner/changes/assurance-floor/design.md, specrunner/changes/assurance-floor/events.jsonl, specrunner/changes/assurance-floor/regression-gate-result-001.md, specrunner/changes/assurance-floor/request-review-attestation.json, specrunner/changes/assurance-floor/request-review-result-001.md, specrunner/changes/assurance-floor/request.md, specrunner/changes/assurance-floor/review-feedback-001.md, specrunner/changes/assurance-floor/rules.md, specrunner/changes/assurance-floor/spec-review-result-001.md, specrunner/changes/assurance-floor/spec.md, specrunner/changes/assurance-floor/state.json, specrunner/changes/assurance-floor/tasks.md, specrunner/changes/assurance-floor/test-cases.md, specrunner/changes/assurance-floor/usage.json, specrunner/changes/assurance-floor/verification-result.md, tests/attach/verify-checkpoint-r1-assurance.test.ts, tests/unit/cli/archive-minimum-assurance.test.ts, tests/unit/config/schema-minimum-assurance.test.ts, tests/unit/core/archive/merge-then-archive-floor.test.ts, tests/unit/state/satisfies-floor.test.ts
 ```
