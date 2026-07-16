@@ -9,7 +9,8 @@
  * TC-PROF-003: getProfile({ profile: P }) → P
  * TC-PROF-004: computePolicyDigest ignores policyDigest field; sensitive to body fields
  */
-import type { JobState, EffectiveProfile } from "./schema.js";
+import type { JobState, EffectiveProfile, ProfileAssurance } from "./schema.js";
+import type { TestDerivationLevel, BiteEvidenceLevel, SpecReviewLevel } from "./schema/types.js";
 import { hashObject } from "../util/hash.js";
 
 /**
@@ -36,13 +37,89 @@ export function computePolicyDigest(
   });
 }
 
+/**
+ * Floor definition for assurance comparison.
+ * Each field is optional — absent fields are unconstrained.
+ * Used by satisfiesFloor to compare an effective assurance against a required minimum.
+ */
+export interface AssuranceFloor {
+  testDerivation?: TestDerivationLevel;
+  biteEvidence?: BiteEvidenceLevel;
+  specReview?: SpecReviewLevel;
+}
+
+/**
+ * Lattice rank maps for each assurance field.
+ * Lower number = weaker assurance.
+ */
+const TEST_DERIVATION_RANK: Record<TestDerivationLevel, number> = {
+  coupled: 0,
+  frozen: 1,
+};
+
+const BITE_EVIDENCE_RANK: Record<BiteEvidenceLevel, number> = {
+  optional: 0,
+  required: 1,
+};
+
+const SPEC_REVIEW_RANK: Record<SpecReviewLevel, number> = {
+  omitted: 0,
+  required: 1,
+};
+
+/**
+ * Determine whether an effective assurance satisfies a floor.
+ *
+ * Decision order (fail-closed):
+ * - Floor fields that are undefined are unconstrained (always pass).
+ * - If the assurance value for a constrained field is absent or not a recognized rank → false.
+ * - If the assurance rank < floor rank → false.
+ * - All fields pass → true.
+ *
+ * Empty floor {} is satisfied by any assurance (vacuously true).
+ */
+export function satisfiesFloor(assurance: ProfileAssurance, floor: AssuranceFloor): boolean {
+  if (floor.testDerivation !== undefined) {
+    const assuranceValue = assurance["testDerivation"];
+    const assuranceRank = typeof assuranceValue === "string" ? TEST_DERIVATION_RANK[assuranceValue as TestDerivationLevel] : undefined;
+    const floorRank = TEST_DERIVATION_RANK[floor.testDerivation];
+    if (assuranceRank === undefined || assuranceRank < floorRank) {
+      return false;
+    }
+  }
+
+  if (floor.biteEvidence !== undefined) {
+    const assuranceValue = assurance["biteEvidence"];
+    const assuranceRank = typeof assuranceValue === "string" ? BITE_EVIDENCE_RANK[assuranceValue as BiteEvidenceLevel] : undefined;
+    const floorRank = BITE_EVIDENCE_RANK[floor.biteEvidence];
+    if (assuranceRank === undefined || assuranceRank < floorRank) {
+      return false;
+    }
+  }
+
+  if (floor.specReview !== undefined) {
+    const assuranceValue = assurance["specReview"];
+    const assuranceRank = typeof assuranceValue === "string" ? SPEC_REVIEW_RANK[assuranceValue as SpecReviewLevel] : undefined;
+    const floorRank = SPEC_REVIEW_RANK[floor.specReview];
+    if (assuranceRank === undefined || assuranceRank < floorRank) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 // Build STANDARD_PROFILE: define the body first, then compute its digest.
 // This guarantees self-consistency at module load time.
 const _standardBody = {
   id: "standard",
   schemaVersion: SUPPORTED_PROFILE_SCHEMA_VERSION,
   budget: {} as Readonly<Record<string, unknown>>,
-  assurance: {} as Readonly<Record<string, unknown>>,
+  assurance: {
+    testDerivation: "frozen",
+    biteEvidence: "required",
+    specReview: "required",
+  } as ProfileAssurance,
 };
 
 /**

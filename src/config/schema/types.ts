@@ -3,6 +3,7 @@
  * Pure declarations — no validation logic, no resolvers.
  */
 import type { AgentStepName } from "../../state/schema.js";
+import type { TestDerivationLevel, BiteEvidenceLevel, SpecReviewLevel } from "../../state/schema/types.js";
 
 /**
  * Per-step execution config: model, maxTurns, timeoutMs.
@@ -341,6 +342,38 @@ export interface ArchiveConfig {
    * Example: ["bun install --frozen-lockfile"]
    */
   postMergeVerify?: ShellCommand[];
+  /**
+   * Minimum assurance floor for auto-merge of changes to protected paths.
+   * When set, PRs that touch `protectedPaths` are gated on the job's effective
+   * profile assurance meeting the specified floor. Uses the same glob semantics
+   * as the existing `protectedPaths` guard.
+   *
+   * Absent = no floor gate (backward compatible).
+   */
+  minimumAssurance?: MinimumAssuranceConfig;
+}
+
+/**
+ * Minimum assurance floor configuration for the archive merge gate.
+ * `protectedPaths` is required; level fields are optional (unconstrained fields
+ * are always satisfied).
+ *
+ * Semantics: a PR that touches `protectedPaths` must come from a job whose
+ * effective profile assurance satisfies the specified floor. Standard profile
+ * (strongest assurance) always satisfies any floor.
+ */
+export interface MinimumAssuranceConfig {
+  /**
+   * Glob patterns for files that trigger the floor check. Same glob semantics
+   * as `archive.protectedPaths`. Required (the floor has no effect without paths).
+   */
+  protectedPaths: string[];
+  /** Floor requirement for testDerivation. Absent = unconstrained. */
+  testDerivation?: TestDerivationLevel;
+  /** Floor requirement for biteEvidence. Absent = unconstrained. */
+  biteEvidence?: BiteEvidenceLevel;
+  /** Floor requirement for specReview. Absent = unconstrained. */
+  specReview?: SpecReviewLevel;
 }
 
 /** GitHub host and API base URL configuration. */
