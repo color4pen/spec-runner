@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0273f484-11a6-43ee-881d-96eb8a526faf",
   "createdAt": "2026-07-16T10:16:35.776Z",
-  "updatedAt": "2026-07-16T12:18:01.704Z",
+  "updatedAt": "2026-07-16T12:24:21.156Z",
   "request": {
     "title": "scenario freeze と test-materialize→implement の commit 境界を作る（R3, Option A 二ノード分割）",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/test-materialize-boundary-0273f484",
   "error": null,
   "pipelineId": "standard",
@@ -84,21 +84,29 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/844",
+    "number": 844,
+    "createdAt": "2026-07-16T12:24:20.460Z"
+  },
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 76,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 3,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
