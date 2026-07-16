@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a319d289-3f19-4215-81b5-a33bba4f2128",
   "createdAt": "2026-07-16T16:18:16.018Z",
-  "updatedAt": "2026-07-16T17:16:54.749Z",
+  "updatedAt": "2026-07-16T17:19:03.977Z",
   "request": {
     "title": "assurance を構造化し、archive 時に minimumAssurance floor を out-of-loop で強制する（R2 spine）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/assurance-floor-a319d289",
   "error": null,
@@ -58,7 +58,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -67,7 +67,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
