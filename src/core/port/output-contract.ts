@@ -19,8 +19,14 @@
  *                      Any check whose pattern does NOT match is a violation.
  *                      `content === null` (file missing) means all checks fail.
  *                      Only used with policy "follow-up".
+ * - "test-coverage":   test-cases.md at `path` is read, and each must TC ID (Priority: must)
+ *                      must appear in at least one test file (*.test.ts / *.spec.ts etc.)
+ *                      with at least one substantive assertion (expect( / assert( / assert.).
+ *                      Test execution is NOT performed — red tests (implementation absent)
+ *                      are accepted. Used by test-materialize to verify that each must TC
+ *                      was materialized into test code before the base OID commit.
  */
-export type OutputContractKind = "produced" | "tasks-complete" | "content-format";
+export type OutputContractKind = "produced" | "tasks-complete" | "content-format" | "test-coverage";
 
 /**
  * A single declarative format check for a "content-format" contract.
@@ -92,6 +98,7 @@ export interface OutputViolation {
    * - "produced":       always []
    * - "tasks-complete": list of incomplete task labels extracted from the file
    * - "content-format": list of failed check labels (checks whose pattern did not match)
+   * - "test-coverage":  list of missing/assertionless TC IDs (union of missingTcIds and assertionlessTcIds)
    */
   detail: string[];
 }

@@ -197,3 +197,22 @@ describe("TC-006: TEST_CASE_GEN_SYSTEM_PROMPT — Scenario-derived TC GWT omit i
     expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("mixed format");
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-025 (should): TC ID freeze note — subsequent nodes must NOT renumber IDs
+// Source: test-case-gen-system.ts L160-161 freeze note
+//         Design D2: TC IDs are frozen at test-case-gen boundary; stable grep anchors.
+// ---------------------------------------------------------------------------
+describe("TC-025: TEST_CASE_GEN_SYSTEM_PROMPT — TC ID freeze note for downstream nodes", () => {
+  it("prompt states TC IDs assigned here are frozen scenario IDs", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("frozen scenario IDs");
+  });
+
+  it("prompt instructs subsequent nodes must NOT renumber or reassign TC IDs", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("must NOT renumber or reassign");
+  });
+
+  it("prompt mentions downstream nodes using IDs as stable grep anchors", () => {
+    expect(TEST_CASE_GEN_SYSTEM_PROMPT).toContain("stable grep anchors");
+  });
+});

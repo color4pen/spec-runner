@@ -156,8 +156,9 @@ function makeStandardSteps(): Map<string, Step> {
     ["code-fixer",    makeAgentStep("code-fixer", "approved")],
     ["spec-fixer",    makeAgentStep("spec-fixer", "approved")],
     ["spec-review",   makeAgentStep("spec-review")],
-    ["test-case-gen", makeAgentStep("test-case-gen", "success")],
-    ["conformance",   makeAgentStep("conformance")],
+    ["test-case-gen",    makeAgentStep("test-case-gen", "success")],
+    ["test-materialize", makeAgentStep("test-materialize", "success")],
+    ["conformance",      makeAgentStep("conformance")],
     ["adr-gen",       makeAgentStep("adr-gen", "success")],
     ["pr-create",     {
       kind: "cli",
@@ -271,6 +272,7 @@ describe("TC-CONFRT-03: conformance needs-fix:spec-fixer → spec-fixer", () => 
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "test-case-gen") return appendStepResult(currentState, "test-case-gen", "success");
+      if (step.name === "test-materialize") return appendStepResult(currentState, "test-materialize", "success");
       if (step.name === "spec-fixer") {
         specFixerCallCount++;
         return appendStepResult(currentState, "spec-fixer", "approved");
@@ -387,6 +389,7 @@ describe("TC-CONFRT-05: CONFORMANCE_RETRIES_EXHAUSTED fires for all routing dire
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "test-case-gen") return appendStepResult(currentState, "test-case-gen", "success");
+      if (step.name === "test-materialize") return appendStepResult(currentState, "test-materialize", "success");
       if (step.name === "spec-fixer") return appendStepResult(currentState, "spec-fixer", "approved");
       if (step.name === "spec-review") return appendStepResult(currentState, "spec-review", "approved");
       if (step.name === "conformance") return appendStepResult(currentState, "conformance", "needs-fix:spec-fixer");
@@ -486,6 +489,7 @@ describe("TC-CONFRT-07: conformance → spec-fixer budget resets (no immediate e
         return appendStepResult(currentState, "spec-fixer", "approved");
       }
       if (step.name === "test-case-gen") return appendStepResult(currentState, "test-case-gen", "success");
+      if (step.name === "test-materialize") return appendStepResult(currentState, "test-materialize", "success");
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");

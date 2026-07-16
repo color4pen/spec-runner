@@ -38,17 +38,21 @@ change folder の tasks.md に記載されたタスクを実装します。
 1. change folder の tasks.md を読み込む
    - change folder の test-cases.md を読み込む（存在する場合）
 2. 関連する specs/ ファイルを読み込んで仕様を理解する
-3. 各タスクを実装する（TDD: テストを先に書く）
-   - test-cases.md が存在する場合、must のテストケースは全て実装する
-   - test-cases.md の各 TC を以下のルールでテストコードに変換する（混在形式）:
-     - **Scenario 由来 TC**（Source フィールドが \`specs/<capability>/spec.md > ...\` 形式）:
-       test-cases.md に GWT が記載されていない。Source フィールドのパス（\`specs/<capability>/spec.md\`）を Read tool で開き、対応する Scenario の GIVEN/WHEN/THEN を読んでテストコードに変換する。
-     - **非 Scenario 由来 TC**（Source フィールドが design.md / tasks.md セクション参照）:
-       従来通り test-cases.md に記載された GIVEN/WHEN/THEN をテストコードに変換する。
-   - テストフレームワークやモック方法はプロジェクトの既存テストに合わせる
-   - **テストの配置先はプロジェクトの既存テストの配置パターンに従う**（特定ディレクトリを指定しない。既存テストの import パス・ディレクトリ構造を見て判断する）
-   - test-cases.md が存在しない場合は従来通り tasks.md ベースで TDD を行う
-   - **test 関数名または直前のコメントに TC ID を必ず記載する**
+3. 各タスクを実装する（テストの扱いは user message の指示に従う）
+   - **test-materialize 済み（standard pipeline）の場合**: worktree に既にテストファイルが存在する。
+     テストファイルを新規作成・変更せず、実装コードのみを書いて既存テストを green にする。
+     test-cases.md と materialize 済みテストを読んで契約を理解してから実装する。
+   - **未 materialize（fast pipeline 等）の場合**: TDD でテストを先に書く。
+     test-cases.md が存在する場合、must のテストケースは全て実装する。
+     test-cases.md の各 TC を以下のルールでテストコードに変換する（混在形式）:
+       - **Scenario 由来 TC**（Source フィールドが \`specs/<capability>/spec.md > ...\` 形式）:
+         Source フィールドのパス（\`specs/<capability>/spec.md\`）を Read tool で開き、対応する Scenario の GIVEN/WHEN/THEN を読んでテストコードに変換する。
+       - **非 Scenario 由来 TC**（Source フィールドが design.md / tasks.md セクション参照）:
+         test-cases.md に記載された GIVEN/WHEN/THEN をテストコードに変換する。
+     test-cases.md が存在しない場合は tasks.md ベースで TDD を行う。
+     テストフレームワークやモック方法はプロジェクトの既存テストに合わせる。
+     **テストの配置先はプロジェクトの既存テストの配置パターンに従う**（特定ディレクトリを指定しない）。
+   - **test 関数名または直前のコメントに TC ID を必ず記載する**（未 materialize 経路でテストを書く場合）
      - 例: \`it("TC-070: Agent 定義ハッシュ — 同一定義は同一ハッシュ", ...)\`
      - 後続の verification step がプロジェクト内の \`*.test.ts\` / \`*.spec.ts\` に対する grep で TC ID の存在を機械的に検証する
      - TC ID を記載せず暗黙的にスキップすることは禁止。must TC を実装しない場合は \`test_cases_skipped\` フォーマットで明示的に報告すること

@@ -1,0 +1,28 @@
+{
+  "requestHash": "sha256:708ffffa688dab13e72500eb01931077cfdb6054883895513f728b9d854b058e",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/prompts/implementer-system.ts: TDD テストを先に書く（line 42: '各タスクを実装する（TDD: テストを先に書く）'）",
+    "src/core/step/executor.ts:433: if (!deps.roundOwnsGitEffects) { — 1ノード1コミット guard block",
+    "src/core/step/executor.ts:442: finalizeStepArtifacts call inside the guard block",
+    "src/core/step/commit-push.ts:36: commitAndPush function definition",
+    "src/core/step/commit-push.ts:48: git add -A → diff --cached → commit → push pattern",
+    "src/core/step/test-case-gen.ts: writes() returns [{path: changeFolder/test-cases.md}]",
+    "src/core/step/test-case-gen.ts: resultFilePath() returns null (completionVerdict:'success')",
+    "src/prompts/test-case-gen-system.ts:147: 'Write test SCENARIOS only. Do NOT write test code.'",
+    "src/core/pipeline/types.ts:233: { step: SPEC_REVIEW, on: 'approved', to: TEST_CASE_GEN }",
+    "src/core/pipeline/types.ts:236: { step: TEST_CASE_GEN, on: 'success', to: IMPLEMENTER }",
+    "src/core/pipeline/types.ts:241: { step: IMPLEMENTER, on: 'success', to: VERIFICATION }",
+    "src/core/pipeline/types.ts:243-246: VERIFICATION passed/failed/escalation transitions",
+    "src/core/pipeline/types.ts:259-263: CONFORMANCE needs-fix:implementer and plain needs-fix → IMPLEMENTER",
+    "src/core/runtime/local.ts:822: digestArtifacts function (sha256 hash for artifact refs)",
+    "src/store/event-journal.ts:93: LineageRecord interface with type/step/ts/outputs/inputs fields",
+    "src/core/pipeline/registry.ts:30: STANDARD_DESCRIPTOR with [STEP_NAMES.X, XStep] pairs",
+    "src/core/pipeline/registry.ts:61-75: roles mapping per step",
+    "src/kernel/step-names.ts: STEP_NAMES constants and AGENT_STEP_NAMES/CLI_STEP_NAMES arrays",
+    "src/core/step/implementer.ts:134-141: writes() = [{path: changeFolder, artifact:'gitState'}, {path: tasks.md, verify:false}]",
+    "src/core/step/implementer.ts:109: completionVerdict: 'success'",
+    "src/core/step/implementer.ts:117-131: reads() = tasks.md + spec.md (+ conformance result if triggered)"
+  ],
+  "sourceRevision": "3a4c59e5abc0ac617b80d47d8e37af9db0ac52a3"
+}

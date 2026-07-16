@@ -97,10 +97,10 @@ function makeMinimalDeps(): PipelineDeps {
 // ---------------------------------------------------------------------------
 
 describe("TC-001: STANDARD_DESCRIPTOR.roles matches design.md D1 table", () => {
-  it("has roles for all 13 steps", () => {
+  it("has roles for all 14 steps", () => {
     const steps = [
       "request-review",
-      "design", "spec-review", "spec-fixer", "test-case-gen",
+      "design", "spec-review", "spec-fixer", "test-case-gen", "test-materialize",
       "implementer", "verification", "build-fixer", "code-review",
       "code-fixer", "conformance", "adr-gen", "pr-create",
     ];
@@ -111,19 +111,20 @@ describe("TC-001: STANDARD_DESCRIPTOR.roles matches design.md D1 table", () => {
 
   it("has correct role/phase for each step", () => {
     const expected: Record<string, { role: string; phase: string }> = {
-      "request-review": { role: "gate",     phase: "spec" },
-      "design":       { role: "creator",  phase: "spec" },
-      "spec-review":  { role: "reviewer", phase: "spec" },
-      "spec-fixer":   { role: "fixer",    phase: "spec" },
-      "test-case-gen":{ role: "gate",     phase: "impl" },
-      "implementer":  { role: "creator",  phase: "impl" },
-      "verification": { role: "gate",     phase: "impl" },
-      "build-fixer":  { role: "fixer",    phase: "impl" },
-      "code-review":  { role: "reviewer", phase: "impl" },
-      "code-fixer":   { role: "fixer",    phase: "impl" },
-      "conformance":  { role: "gate",     phase: "impl" },
-      "adr-gen":      { role: "gate",     phase: "impl" },
-      "pr-create":    { role: "gate",     phase: "impl" },
+      "request-review":   { role: "gate",     phase: "spec" },
+      "design":           { role: "creator",  phase: "spec" },
+      "spec-review":      { role: "reviewer", phase: "spec" },
+      "spec-fixer":       { role: "fixer",    phase: "spec" },
+      "test-case-gen":    { role: "gate",     phase: "impl" },
+      "test-materialize": { role: "gate",     phase: "impl" },
+      "implementer":      { role: "creator",  phase: "impl" },
+      "verification":     { role: "gate",     phase: "impl" },
+      "build-fixer":      { role: "fixer",    phase: "impl" },
+      "code-review":      { role: "reviewer", phase: "impl" },
+      "code-fixer":       { role: "fixer",    phase: "impl" },
+      "conformance":      { role: "gate",     phase: "impl" },
+      "adr-gen":          { role: "gate",     phase: "impl" },
+      "pr-create":        { role: "gate",     phase: "impl" },
     };
     for (const [step, exp] of Object.entries(expected)) {
       const entry = STANDARD_DESCRIPTOR.roles[step];

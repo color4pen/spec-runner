@@ -152,11 +152,13 @@ Result determination:
 - LLM calls, real external API calls, and real GitHub repository dependencies MUST NOT be
   expressed as vitest test cases. These scenarios are verified through dogfood runs
   (actual \`specrunner run\` executions).
-- **TC ID downstream reference**: TC IDs are referenced by the implementer (who writes the TC ID
-  in test function names / comments) and by the verification step (which greps the project's test
+- **TC ID downstream reference**: TC IDs are referenced by the test-materialize step (which
+  converts them to test code) and by the verification step (which greps the project's test
   files (\`*.test.ts\` / \`*.spec.ts\`) for each must TC ID). TC IDs MUST be unique within
   test-cases.md and stable enough to grep reliably (i.e. must not accidentally match unrelated
   strings). Use the \`TC-{NNN}\` flat format with zero-padded 3-digit numbers as the canonical form.
+  **TC IDs assigned here are frozen scenario IDs — subsequent nodes (test-materialize / implementer)
+  must NOT renumber or reassign them.** Downstream nodes use these IDs as stable grep anchors.
 
 ## Delivery
 

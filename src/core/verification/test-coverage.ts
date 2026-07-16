@@ -135,17 +135,137 @@ export function extractMustTcIds(content: string): string[] {
 }
 
 /**
+ * Build a RegExp that matches tcId at ID boundaries.
+ * Ensures:
+ *   - Lookbehind: not preceded by [A-Za-z0-9]
+ *   - Lookahead: not followed by [0-9] or -[0-9]
+ *
+ * Exported for use by evaluateTestCoverage and validateStepOutputs (test-coverage contract).
+ */
+export function tcIdBoundaryRe(tcId: string): RegExp {
+  // Escape regex special chars in tcId (e.g. TC-1 → TC\-1)
+  const escaped = tcId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  // (?<![A-Za-z0-9]): not preceded by alphanumeric
+  // (?![0-9]|-[0-9]): not followed by digit or "-digit"
+  return new RegExp(`(?<![A-Za-z0-9])${escaped}(?![0-9]|-[0-9])`);
+}
+
+/**
+ * Evaluate test coverage for a given test-cases.md content and working directory.
+ *
+ * Core evaluation logic extracted from runTestCoveragePhase for reuse by:
+ * - verification step (runTestCoveragePhase wrapper)
+ * - test-materialize output contract (LocalRuntime.validateStepOutputs "test-coverage" branch)
+ *
+ * Contract: does NOT run tests. Red tests (assertions present, implementation absent)
+ * are accepted — the "test-coverage" contract only verifies that TC IDs exist in test
+ * files with at least one assertion. This is the correct state after test-materialize.
+ *
+ * @param content - Content of test-cases.md (already read by the caller)
+ * @param cwd     - Working directory (root of the target project)
+ */
+export async function evaluateTestCoverage(
+  content: string,
+  cwd: string,
+): Promise<TestCoverageResult> {
+  // Step 1: Extract must TC IDs
+  const mustTcIds = extractMustTcIds(content);
+
+  if (mustTcIds.length === 0) {
+    return {
+      status: "passed",
+      missingTcIds: [],
+      assertionlessTcIds: [],
+      totalMustTcs: 0,
+      foundTcIds: [],
+      stdout: "test-coverage: 0/0 must TCs covered (no must TCs defined)",
+    };
+  }
+
+  // Step 2: Collect test files from the project root
+  const testFiles = await collectProjectTestFiles(cwd);
+
+  // Step 3: Read all test files into memory
+  const fileContents: string[] = [];
+  for (const file of testFiles) {
+    try {
+      const text = await fs.readFile(file, "utf-8");
+      fileContents.push(text);
+    } catch {
+      // Skip unreadable files
+    }
+  }
+
+  // Step 4: Check each must TC ID against all file contents using boundary-exact matching.
+  // Boundary rule: TC-1 must NOT match TC-10 (trailing digit) or TC-1-2 (trailing -digit).
+  // A match is valid only when:
+  //   - The preceding character is not alphanumeric (or it's the start of the string).
+  //   - The following character is not a digit and not "-" followed by a digit.
+  const foundTcIds: string[] = [];
+  const missingTcIds: string[] = [];
+
+  for (const tcId of mustTcIds) {
+    const re = tcIdBoundaryRe(tcId);
+    const found = fileContents.some((text) => re.test(text));
+    if (found) {
+      foundTcIds.push(tcId);
+    } else {
+      missingTcIds.push(tcId);
+    }
+  }
+
+  // Step 4b: Assertion existence check — found TC IDs must have at least one
+  // file containing a substantive assertion (expect( / assert( / assert.)
+  const ASSERTION_RE = /expect\(|assert\(|assert\./;
+  const assertionlessTcIds: string[] = [];
+
+  for (const tcId of foundTcIds) {
+    const re = tcIdBoundaryRe(tcId);
+    const filesWithTc = fileContents.filter((text) => re.test(text));
+    const hasAssertion = filesWithTc.some((text) => ASSERTION_RE.test(text));
+    if (!hasAssertion) {
+      assertionlessTcIds.push(tcId);
+    }
+  }
+
+  // Step 5: Build human-readable stdout summary
+  const total = mustTcIds.length;
+  const foundCount = foundTcIds.length;
+  const status =
+    missingTcIds.length === 0 && assertionlessTcIds.length === 0
+      ? "passed"
+      : "failed";
+
+  let stdout = `test-coverage: ${foundCount}/${total} must TCs covered`;
+  if (missingTcIds.length > 0) {
+    stdout += `\nMissing: ${missingTcIds.join(", ")}`;
+  }
+  if (assertionlessTcIds.length > 0) {
+    stdout += `\nAssertionless: ${assertionlessTcIds.join(", ")}`;
+  }
+
+  return {
+    status,
+    missingTcIds,
+    assertionlessTcIds,
+    totalMustTcs: total,
+    foundTcIds,
+    stdout,
+  };
+}
+
+/**
  * TC-004, TC-006, TC-007, TC-008, TC-009, TC-010, TC-011:
  * Run the test-coverage phase for the given slug.
+ *
+ * Thin wrapper around evaluateTestCoverage — reads test-cases.md from disk
+ * and delegates evaluation to evaluateTestCoverage. Existing skip/passed/failed
+ * behavior is fully preserved.
  *
  * Steps:
  * 1. Read specrunner/changes/<slug>/test-cases.md
  *    → if absent, return status: "skipped" with skip reason in stdout
- * 2. Extract Priority: must TC IDs
- *    → if 0 must TCs, return status: "passed"
- * 3. Collect all *.test.ts / *.spec.ts files from the project root
- * 4. Check each must TC ID appears in at least one file
- * 5. Return status: "passed" or "failed" with coverage summary
+ * 2. Delegate to evaluateTestCoverage(content, cwd)
  *
  * @param slug - Change slug (e.g. "my-feature")
  * @param cwd  - Working directory (root of the target project)
@@ -172,102 +292,6 @@ export async function runTestCoveragePhase(
     };
   }
 
-  // Step 2: Extract must TC IDs
-  const mustTcIds = extractMustTcIds(content);
-
-  if (mustTcIds.length === 0) {
-    return {
-      status: "passed",
-      missingTcIds: [],
-      assertionlessTcIds: [],
-      totalMustTcs: 0,
-      foundTcIds: [],
-      stdout: "test-coverage: 0/0 must TCs covered (no must TCs defined)",
-    };
-  }
-
-  // Step 3: Collect test files from the project root
-  const testFiles = await collectProjectTestFiles(cwd);
-
-  // Step 4: Read all test files into memory
-  const fileContents: string[] = [];
-  for (const file of testFiles) {
-    try {
-      const text = await fs.readFile(file, "utf-8");
-      fileContents.push(text);
-    } catch {
-      // Skip unreadable files
-    }
-  }
-
-  // Step 5: Check each must TC ID against all file contents using boundary-exact matching.
-  // Boundary rule: TC-1 must NOT match TC-10 (trailing digit) or TC-1-2 (trailing -digit).
-  // A match is valid only when:
-  //   - The preceding character is not alphanumeric (or it's the start of the string).
-  //   - The following character is not a digit and not "-" followed by a digit.
-  const foundTcIds: string[] = [];
-  const missingTcIds: string[] = [];
-
-  /**
-   * Build a RegExp that matches tcId at ID boundaries.
-   * Ensures:
-   *   - Lookbehind: not preceded by [A-Za-z0-9]
-   *   - Lookahead: not followed by [0-9] or -[0-9]
-   */
-  function tcIdBoundaryRe(tcId: string): RegExp {
-    // Escape regex special chars in tcId (e.g. TC-1 → TC\-1)
-    const escaped = tcId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    // (?<![A-Za-z0-9]): not preceded by alphanumeric
-    // (?![0-9]|-[0-9]): not followed by digit or "-digit"
-    return new RegExp(`(?<![A-Za-z0-9])${escaped}(?![0-9]|-[0-9])`);
-  }
-
-  for (const tcId of mustTcIds) {
-    const re = tcIdBoundaryRe(tcId);
-    const found = fileContents.some((text) => re.test(text));
-    if (found) {
-      foundTcIds.push(tcId);
-    } else {
-      missingTcIds.push(tcId);
-    }
-  }
-
-  // Step 5b: Assertion existence check — found TC IDs must have at least one
-  // file containing a substantive assertion (expect( / assert( / assert.)
-  const ASSERTION_RE = /expect\(|assert\(|assert\./;
-  const assertionlessTcIds: string[] = [];
-
-  for (const tcId of foundTcIds) {
-    const re = tcIdBoundaryRe(tcId);
-    const filesWithTc = fileContents.filter((text) => re.test(text));
-    const hasAssertion = filesWithTc.some((text) => ASSERTION_RE.test(text));
-    if (!hasAssertion) {
-      assertionlessTcIds.push(tcId);
-    }
-  }
-
-  // Step 6: Build human-readable stdout summary
-  const total = mustTcIds.length;
-  const foundCount = foundTcIds.length;
-  const status =
-    missingTcIds.length === 0 && assertionlessTcIds.length === 0
-      ? "passed"
-      : "failed";
-
-  let stdout = `test-coverage: ${foundCount}/${total} must TCs covered`;
-  if (missingTcIds.length > 0) {
-    stdout += `\nMissing: ${missingTcIds.join(", ")}`;
-  }
-  if (assertionlessTcIds.length > 0) {
-    stdout += `\nAssertionless: ${assertionlessTcIds.join(", ")}`;
-  }
-
-  return {
-    status,
-    missingTcIds,
-    assertionlessTcIds,
-    totalMustTcs: total,
-    foundTcIds,
-    stdout,
-  };
+  // Step 2: Evaluate coverage
+  return evaluateTestCoverage(content, cwd);
 }

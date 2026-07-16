@@ -14,6 +14,7 @@ import { DesignStep } from "../step/design.js";
 import { SpecReviewStep } from "../step/spec-review.js";
 import { SpecFixerStep } from "../step/spec-fixer.js";
 import { TestCaseGenStep } from "../step/test-case-gen.js";
+import { TestMaterializeStep } from "../step/test-materialize.js";
 import { ImplementerStep } from "../step/implementer.js";
 import { VerificationStep } from "../step/verification.js";
 import { BuildFixerStep } from "../step/build-fixer.js";
@@ -24,25 +25,30 @@ import { AdrGenStep } from "../step/adr-gen.js";
 import { PrCreateStep } from "../step/pr-create.js";
 
 /**
- * Standard 13-step pipeline descriptor.
+ * Standard 14-step pipeline descriptor.
  * All fields match the current createStandardPipeline / STANDARD_* constants exactly.
+ *
+ * Step order: request-review → design → spec-review → spec-fixer → test-case-gen →
+ *   test-materialize → implementer → verification → build-fixer → code-review →
+ *   code-fixer → conformance → adr-gen → pr-create
  */
 export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
   id: PIPELINE_IDS.STANDARD,
   steps: [
-    [STEP_NAMES.REQUEST_REVIEW, RequestReviewStep],
-    [STEP_NAMES.DESIGN,       DesignStep],
-    [STEP_NAMES.SPEC_REVIEW,  SpecReviewStep],
-    [STEP_NAMES.SPEC_FIXER,   SpecFixerStep],
-    [STEP_NAMES.TEST_CASE_GEN, TestCaseGenStep],
-    [STEP_NAMES.IMPLEMENTER,  ImplementerStep],
-    [STEP_NAMES.VERIFICATION, VerificationStep],
-    [STEP_NAMES.BUILD_FIXER,  BuildFixerStep],
-    [STEP_NAMES.CODE_REVIEW,  CodeReviewStep],
-    [STEP_NAMES.CODE_FIXER,   CodeFixerStep],
-    [STEP_NAMES.CONFORMANCE,  ConformanceStep],
-    [STEP_NAMES.ADR_GEN,      AdrGenStep],
-    [STEP_NAMES.PR_CREATE,    PrCreateStep],
+    [STEP_NAMES.REQUEST_REVIEW,   RequestReviewStep],
+    [STEP_NAMES.DESIGN,           DesignStep],
+    [STEP_NAMES.SPEC_REVIEW,      SpecReviewStep],
+    [STEP_NAMES.SPEC_FIXER,       SpecFixerStep],
+    [STEP_NAMES.TEST_CASE_GEN,    TestCaseGenStep],
+    [STEP_NAMES.TEST_MATERIALIZE, TestMaterializeStep],
+    [STEP_NAMES.IMPLEMENTER,      ImplementerStep],
+    [STEP_NAMES.VERIFICATION,     VerificationStep],
+    [STEP_NAMES.BUILD_FIXER,      BuildFixerStep],
+    [STEP_NAMES.CODE_REVIEW,      CodeReviewStep],
+    [STEP_NAMES.CODE_FIXER,       CodeFixerStep],
+    [STEP_NAMES.CONFORMANCE,      ConformanceStep],
+    [STEP_NAMES.ADR_GEN,          AdrGenStep],
+    [STEP_NAMES.PR_CREATE,        PrCreateStep],
   ],
   transitions: STANDARD_TRANSITIONS,
   loopName: STEP_NAMES.SPEC_REVIEW,
@@ -59,19 +65,20 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
   },
   startStep: STEP_NAMES.REQUEST_REVIEW,
   roles: {
-    [STEP_NAMES.REQUEST_REVIEW]: { role: "gate",     phase: "spec" },
-    [STEP_NAMES.DESIGN]:       { role: "creator",  phase: "spec" },
-    [STEP_NAMES.SPEC_REVIEW]:  { role: "reviewer", phase: "spec" },
-    [STEP_NAMES.SPEC_FIXER]:   { role: "fixer",    phase: "spec" },
-    [STEP_NAMES.TEST_CASE_GEN]:{ role: "gate",     phase: "impl" },
-    [STEP_NAMES.IMPLEMENTER]:  { role: "creator",  phase: "impl" },
-    [STEP_NAMES.VERIFICATION]: { role: "gate",     phase: "impl" },
-    [STEP_NAMES.BUILD_FIXER]:  { role: "fixer",    phase: "impl" },
-    [STEP_NAMES.CODE_REVIEW]:  { role: "reviewer", phase: "impl" },
-    [STEP_NAMES.CODE_FIXER]:   { role: "fixer",    phase: "impl" },
-    [STEP_NAMES.CONFORMANCE]:  { role: "gate",     phase: "impl" },
-    [STEP_NAMES.ADR_GEN]:      { role: "gate",     phase: "impl" },
-    [STEP_NAMES.PR_CREATE]:    { role: "gate",     phase: "impl" },
+    [STEP_NAMES.REQUEST_REVIEW]:   { role: "gate",     phase: "spec" },
+    [STEP_NAMES.DESIGN]:           { role: "creator",  phase: "spec" },
+    [STEP_NAMES.SPEC_REVIEW]:      { role: "reviewer", phase: "spec" },
+    [STEP_NAMES.SPEC_FIXER]:       { role: "fixer",    phase: "spec" },
+    [STEP_NAMES.TEST_CASE_GEN]:    { role: "gate",     phase: "impl" },
+    [STEP_NAMES.TEST_MATERIALIZE]: { role: "gate",     phase: "impl" },
+    [STEP_NAMES.IMPLEMENTER]:      { role: "creator",  phase: "impl" },
+    [STEP_NAMES.VERIFICATION]:     { role: "gate",     phase: "impl" },
+    [STEP_NAMES.BUILD_FIXER]:      { role: "fixer",    phase: "impl" },
+    [STEP_NAMES.CODE_REVIEW]:      { role: "reviewer", phase: "impl" },
+    [STEP_NAMES.CODE_FIXER]:       { role: "fixer",    phase: "impl" },
+    [STEP_NAMES.CONFORMANCE]:      { role: "gate",     phase: "impl" },
+    [STEP_NAMES.ADR_GEN]:          { role: "gate",     phase: "impl" },
+    [STEP_NAMES.PR_CREATE]:        { role: "gate",     phase: "impl" },
   },
   summaryStep: STEP_NAMES.SPEC_REVIEW,
 };
@@ -163,7 +170,7 @@ export const FAST_DESCRIPTOR: PipelineDescriptor = {
 
 /**
  * Registry mapping pipeline ids to their descriptors.
- * Three entries: standard (13-step), design-only (1-step), fast (9-step slim with scope).
+ * Three entries: standard (14-step), design-only (1-step), fast (9-step slim with scope).
  */
 export const PIPELINE_REGISTRY: Record<string, PipelineDescriptor> = {
   [PIPELINE_IDS.STANDARD]:    STANDARD_DESCRIPTOR,

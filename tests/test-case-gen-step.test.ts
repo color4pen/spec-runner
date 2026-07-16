@@ -178,13 +178,21 @@ describe("TC-004: STANDARD_TRANSITIONS に spec-review:approved → test-case-ge
   });
 });
 
-// TC-005: STANDARD_TRANSITIONS に test-case-gen:success → implementer が存在する
-describe("TC-005: STANDARD_TRANSITIONS に test-case-gen:success → implementer が存在する", () => {
-  it("test-case-gen --success→ implementer が存在する", () => {
+// TC-005: STANDARD_TRANSITIONS に test-case-gen:success → test-materialize が存在する
+// (ADR-20260716 R3 Option A: test-materialize step inserted between test-case-gen and implementer)
+describe("TC-005: STANDARD_TRANSITIONS に test-case-gen:success → test-materialize が存在する", () => {
+  it("test-case-gen --success→ test-materialize が存在する", () => {
     const found = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "test-case-gen" && t.on === "success" && t.to === "implementer",
+      (t) => t.step === "test-case-gen" && t.on === "success" && t.to === "test-materialize",
     );
     expect(found).toBeDefined();
+  });
+
+  it("test-case-gen --success→ implementer は存在しない（旧 transition が削除されている）", () => {
+    const old = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "test-case-gen" && t.on === "success" && t.to === "implementer",
+    );
+    expect(old).toBeUndefined();
   });
 });
 

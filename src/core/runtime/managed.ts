@@ -456,6 +456,11 @@ export class ManagedRuntime implements RealRuntimeStrategy {
         if (failedLabels.length > 0) {
           violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: failedLabels });
         }
+      } else if (contract.kind === "test-coverage") {
+        // ManagedRuntime does not have access to a local worktree for running file-system
+        // scans (collectProjectTestFiles requires local fs). Skip without violation,
+        // consistent with digestArtifacts returning hash: null for managed (best-effort only).
+        // The local runtime enforces this contract authoritatively.
       }
     }
     return { violations };

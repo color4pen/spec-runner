@@ -233,8 +233,10 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.TEST_CASE_GEN },
   { step: STEP_NAMES.SPEC_REVIEW, on: "needs-fix", to: STEP_NAMES.SPEC_FIXER },
   // spec-review escalation removed (R3 cutover): judge halt via loop exhaustion only
-  { step: STEP_NAMES.TEST_CASE_GEN, on: "success", to: STEP_NAMES.IMPLEMENTER },
-  { step: STEP_NAMES.TEST_CASE_GEN, on: "error",   to: "escalate" },
+  { step: STEP_NAMES.TEST_CASE_GEN,    on: "success", to: STEP_NAMES.TEST_MATERIALIZE },
+  { step: STEP_NAMES.TEST_CASE_GEN,    on: "error",   to: "escalate" },
+  { step: STEP_NAMES.TEST_MATERIALIZE, on: "success", to: STEP_NAMES.IMPLEMENTER },
+  { step: STEP_NAMES.TEST_MATERIALIZE, on: "error",   to: "escalate" },
   // spec-fixer → spec-review (direct)
   { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.SPEC_REVIEW },
   { step: STEP_NAMES.SPEC_FIXER,  on: "error",     to: "escalate" },

@@ -9,6 +9,7 @@ import { DesignStep } from "../core/step/design.js";
 import { SpecReviewStep } from "../core/step/spec-review.js";
 import { SpecFixerStep } from "../core/step/spec-fixer.js";
 import { TestCaseGenStep } from "../core/step/test-case-gen.js";
+import { TestMaterializeStep } from "../core/step/test-materialize.js";
 import { ImplementerStep } from "../core/step/implementer.js";
 import { BuildFixerStep } from "../core/step/build-fixer.js";
 import { CodeReviewStep } from "../core/step/code-review.js";
@@ -43,6 +44,7 @@ const STANDARD_AGENT_STEPS: Record<string, AgentStep> = {
   [STEP_NAMES.SPEC_REVIEW]: SpecReviewStep,
   [STEP_NAMES.SPEC_FIXER]: SpecFixerStep,
   [STEP_NAMES.TEST_CASE_GEN]: TestCaseGenStep,
+  [STEP_NAMES.TEST_MATERIALIZE]: TestMaterializeStep,
   [STEP_NAMES.IMPLEMENTER]: ImplementerStep,
   [STEP_NAMES.BUILD_FIXER]: BuildFixerStep,
   [STEP_NAMES.CODE_REVIEW]: CodeReviewStep,
