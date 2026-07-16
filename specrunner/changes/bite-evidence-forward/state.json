@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0802ded7-9655-4570-8b77-2a49ee26c3f3",
   "createdAt": "2026-07-16T12:31:56.443Z",
-  "updatedAt": "2026-07-16T16:03:35.703Z",
+  "updatedAt": "2026-07-16T16:11:11.741Z",
   "request": {
     "title": "base/candidate OID を捕捉し、forward strategy の BiteEvidence を機械生成する（R4, MVP）",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/bite-evidence-forward-0802ded7",
   "error": null,
   "pipelineId": "standard",
@@ -84,8 +84,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/845",
+    "number": 845,
+    "createdAt": "2026-07-16T16:11:10.717Z"
+  },
   "_journal": {
-    "historyCount": 91,
+    "historyCount": 100,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -99,7 +104,10 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
