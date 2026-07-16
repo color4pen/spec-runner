@@ -8,9 +8,9 @@
 |---|-------|--------|----------|-----------|
 | 1 | build | passed | 0.3s | 0 |
 | 2 | typecheck | passed | 4.0s | 0 |
-| 3 | test | passed | 21.6s | 0 |
-| 4 | lint | failed | 5.0s | 1 |
-| 5 | changed-line-coverage | skipped | — | — |
+| 3 | test | passed | 21.5s | 0 |
+| 4 | lint | passed | 4.3s | 0 |
+| 5 | changed-line-coverage | failed | 27.2s | 1 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.20 MB
-ESM ⚡️ Build success in 61ms
+ESM ⚡️ Build success in 62ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -53,8 +53,8 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	196d
 
  Test Files  520 passed (520)
       Tests  7164 passed (7164)
-   Start at  00:14:42
-   Duration  21.29s (transform 4.57s, setup 0ms, import 18.60s, tests 26.77s, environment 25ms)
+   Start at  00:15:55
+   Duration  21.18s (transform 4.59s, setup 0ms, import 18.54s, tests 26.56s, environment 25ms)
 
 
 $ vitest run
@@ -67,24 +67,37 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-LD7XoJ/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-gei6jY/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Cvic9N/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-AmWqVr/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -94,19 +107,10 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -153,10 +157,6 @@ GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
 ERROR: file not found
@@ -175,22 +175,18 @@ Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → co
 
 ## Phase: lint
 
-Step 'lint' failed
-
 ```
-
-src/core/runtime/local.ts
-  917:18  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
-
-✖ 1 problem (0 errors, 1 warning)
-
-
 $ eslint ./src ./tests --max-warnings 0
-ESLint found too many warnings (maximum: 0).
-error: script "lint" exited with code 1
 
 ```
 
 ## Phase: changed-line-coverage
 
-_(skipped — previous command failed)_
+Step 'changed-line-coverage' failed
+
+```
+changed-line-coverage: failed — 2 file(s) did not meet coverage requirements
+  - src/core/runtime/local.ts: changed DA lines were not executed
+  - src/core/runtime/managed.ts: changed DA lines were not executed
+  Skipped (not in coverage surface): README.md, specrunner/changes/bite-evidence-forward/design.md, specrunner/changes/bite-evidence-forward/events.jsonl, specrunner/changes/bite-evidence-forward/request-review-attestation.json, specrunner/changes/bite-evidence-forward/request-review-result-001.md, specrunner/changes/bite-evidence-forward/request.md, specrunner/changes/bite-evidence-forward/rules.md, specrunner/changes/bite-evidence-forward/spec-review-result-001.md, specrunner/changes/bite-evidence-forward/spec.md, specrunner/changes/bite-evidence-forward/state.json, specrunner/changes/bite-evidence-forward/tasks.md, specrunner/changes/bite-evidence-forward/test-cases.md, specrunner/changes/bite-evidence-forward/usage.json, specrunner/changes/bite-evidence-forward/verification-result.md, src/core/pipeline/__tests__/bite-evidence-pipeline.test.ts, src/core/port/runtime-strategy.ts, src/core/step/__tests__/executor-no-op.test.ts, src/core/step/__tests__/executor-oid-capture.test.ts, src/core/step/bite-evidence/__tests__/gate.test.ts, src/core/step/bite-evidence/__tests__/oid-capture.test.ts, src/state/__tests__/bite-evidence-schema.test.ts, tests/core/pipeline/pipeline.test.ts, tests/unit/core/pipeline/pipeline.conformance-routing.test.ts, tests/unit/core/pipeline/pipeline.episode-reset.test.ts, tests/unit/core/pipeline/pipeline.reverification.test.ts, tests/unit/core/pipeline/pipeline.transitions.test.ts, tests/unit/pipeline/transition-when.test.ts, tests/unit/step/executor-no-op.test.ts, tests/unit/step/executor.commit.test.ts
+```
