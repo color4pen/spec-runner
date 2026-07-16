@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ba78707d-7155-44ff-8483-ae4e9ed98efe",
   "createdAt": "2026-07-16T08:49:29.426Z",
-  "updatedAt": "2026-07-16T09:10:54.053Z",
+  "updatedAt": "2026-07-16T09:24:57.660Z",
   "request": {
     "title": "assurance profile を branch-borne immutable 属性として JobState に載せ、attach で digest 検証する（R1 背骨）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/assurance-profile-spine-ba78707d",
   "error": null,
@@ -48,13 +48,17 @@
       ]
     }
   ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 30,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "implementer": 1,
+      "verification": 1
     }
   }
 }
