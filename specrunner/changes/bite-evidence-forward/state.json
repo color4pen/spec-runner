@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0802ded7-9655-4570-8b77-2a49ee26c3f3",
   "createdAt": "2026-07-16T12:31:56.443Z",
-  "updatedAt": "2026-07-16T15:53:03.571Z",
+  "updatedAt": "2026-07-16T16:03:35.703Z",
   "request": {
     "title": "base/candidate OID を捕捉し、forward strategy の BiteEvidence を機械生成する（R4, MVP）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/bite-evidence-forward-0802ded7",
   "error": null,
@@ -85,7 +85,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 81,
+    "historyCount": 91,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -98,7 +98,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
