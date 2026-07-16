@@ -17,8 +17,11 @@
  * - Req 4: conformance-triggered no-op IS escalated (conformance is not findings-routing)
  */
 import { describe, it, expect, vi } from "vitest";
+import { EventEmitter } from "node:events";
+import type { ChildProcess } from "node:child_process";
 import { EventBus } from "../../event/event-bus.js";
 import { StepExecutor } from "../executor.js";
+import type { SpawnFn as GitSpawnFn } from "../../../util/git-exec.js";
 import type { AgentStep } from "../../port/step-types.js";
 import type { PipelineDeps } from "../../types.js";
 import type { JobState } from "../../../state/schema.js";
@@ -129,6 +132,29 @@ function makeDeps(runtimeStrategy?: ReturnType<typeof makeRuntimeStrategy>): Pip
   } as PipelineDeps;
 }
 
+/**
+ * Returns a GitSpawnFn that satisfies the git-exec ChildProcess interface.
+ * Emits the given headSha on stdout when called with `git rev-parse HEAD`,
+ * so that gitExec() in runAgentStep returns a non-null headBeforeStep.
+ */
+function makeGitRevParseSpawnFn(headSha: string): GitSpawnFn {
+  return (_bin: string, args: string[], _opts): ChildProcess => {
+    const child = new EventEmitter();
+    const stdoutEE = new EventEmitter();
+    const stderrEE = new EventEmitter();
+    Object.assign(child, { stdout: stdoutEE, stderr: stderrEE, stdin: { end: () => {} } });
+    setImmediate(() => {
+      if (args[0] === "rev-parse" && args[1] === "HEAD") {
+        stdoutEE.emit("data", Buffer.from(`${headSha}\n`));
+        child.emit("close", 0);
+      } else {
+        child.emit("close", 128);
+      }
+    });
+    return child as unknown as ChildProcess;
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Tests
 // ---------------------------------------------------------------------------
@@ -139,7 +165,7 @@ describe("StepExecutor — T-03: no-op detection", () => {
     const runtimeStrategy = makeRuntimeStrategy([]);  // no changed files
     const store = makeStore();
     const storeFactory = () => store as never;
-    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
 
     const step = makeStep(true);  // noOpDetect: true
     const state = makeState();
@@ -171,7 +197,7 @@ describe("StepExecutor — T-03: no-op detection", () => {
     ]);
     const store = makeStore();
     const storeFactory = () => store as never;
-    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
 
     const step = makeStep(true);
     const state = makeState();
@@ -194,7 +220,7 @@ describe("StepExecutor — T-03: no-op detection", () => {
     ]);
     const store = makeStore();
     const storeFactory = () => store as never;
-    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
 
     const step = makeStep(true);
     const state = makeState();
@@ -213,7 +239,7 @@ describe("StepExecutor — T-03: no-op detection", () => {
     const runtimeStrategy = makeRuntimeStrategy([]);
     const store = makeStore();
     const storeFactory = () => store as never;
-    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
 
     const step = makeStep(false);  // noOpDetect: false
     const state = makeState();
@@ -234,7 +260,7 @@ describe("StepExecutor — T-03: no-op detection", () => {
     const runtimeStrategy = makeRuntimeStrategy([]);
     const store = makeStore();
     const storeFactory = () => store as never;
-    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
 
     const step = makeStep(undefined);  // noOpDetect: undefined
     const state = makeState();
@@ -254,7 +280,7 @@ describe("StepExecutor — T-03: no-op detection", () => {
     const runner = makeRunner();
     const store = makeStore();
     const storeFactory = () => store as never;
-    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
 
     const step = makeStep(true);  // noOpDetect: true
     const state = makeState();
@@ -323,7 +349,7 @@ describe("StepExecutor — approved-fixer-noop-proceeds requirements", () => {
     ]);
     const store = makeStore();
     const storeFactory = () => store as never;
-    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
 
     const step = makeStep(true);  // noOpDetect: true
     // State: code-review approved + low fixable finding → findings-routing path
@@ -349,7 +375,7 @@ describe("StepExecutor — approved-fixer-noop-proceeds requirements", () => {
     const runtimeStrategy = makeRuntimeStrategy([]);  // no changed files
     const store = makeStore();
     const storeFactory = () => store as never;
-    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
 
     const step = makeStep(true);  // noOpDetect: true
     // State: code-review needs-fix → fixer must work, no-op is a genuine failure
@@ -377,7 +403,7 @@ describe("StepExecutor — approved-fixer-noop-proceeds requirements", () => {
     ]);
     const store = makeStore();
     const storeFactory = () => store as never;
-    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
 
     const step = makeStep(true);  // noOpDetect: true
     const state = makeStateWithCodeReview("approved", [
@@ -402,7 +428,7 @@ describe("StepExecutor — approved-fixer-noop-proceeds requirements", () => {
     const runtimeStrategy = makeRuntimeStrategy([]);  // no source changes
     const store = makeStore();
     const storeFactory = () => store as never;
-    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
 
     const step = makeStep(true);  // noOpDetect: true
     // State: code-review approved + fixable, BUT conformance ran later with needs-fix:code-fixer

@@ -23,14 +23,15 @@ import { CodeFixerStep } from "../step/code-fixer.js";
 import { ConformanceStep } from "../step/conformance.js";
 import { AdrGenStep } from "../step/adr-gen.js";
 import { PrCreateStep } from "../step/pr-create.js";
+import { BiteEvidenceStep } from "../step/bite-evidence/step.js";
 
 /**
- * Standard 14-step pipeline descriptor.
+ * Standard 15-step pipeline descriptor.
  * All fields match the current createStandardPipeline / STANDARD_* constants exactly.
  *
  * Step order: request-review → design → spec-review → spec-fixer → test-case-gen →
- *   test-materialize → implementer → verification → build-fixer → code-review →
- *   code-fixer → conformance → adr-gen → pr-create
+ *   test-materialize → implementer → bite-evidence → verification → build-fixer →
+ *   code-review → code-fixer → conformance → adr-gen → pr-create
  */
 export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
   id: PIPELINE_IDS.STANDARD,
@@ -42,6 +43,7 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.TEST_CASE_GEN,    TestCaseGenStep],
     [STEP_NAMES.TEST_MATERIALIZE, TestMaterializeStep],
     [STEP_NAMES.IMPLEMENTER,      ImplementerStep],
+    [STEP_NAMES.BITE_EVIDENCE,    BiteEvidenceStep],
     [STEP_NAMES.VERIFICATION,     VerificationStep],
     [STEP_NAMES.BUILD_FIXER,      BuildFixerStep],
     [STEP_NAMES.CODE_REVIEW,      CodeReviewStep],
@@ -72,6 +74,7 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.TEST_CASE_GEN]:    { role: "gate",     phase: "impl" },
     [STEP_NAMES.TEST_MATERIALIZE]: { role: "gate",     phase: "impl" },
     [STEP_NAMES.IMPLEMENTER]:      { role: "creator",  phase: "impl" },
+    [STEP_NAMES.BITE_EVIDENCE]:    { role: "gate",     phase: "impl" },
     [STEP_NAMES.VERIFICATION]:     { role: "gate",     phase: "impl" },
     [STEP_NAMES.BUILD_FIXER]:      { role: "fixer",    phase: "impl" },
     [STEP_NAMES.CODE_REVIEW]:      { role: "reviewer", phase: "impl" },
@@ -170,7 +173,7 @@ export const FAST_DESCRIPTOR: PipelineDescriptor = {
 
 /**
  * Registry mapping pipeline ids to their descriptors.
- * Three entries: standard (14-step), design-only (1-step), fast (9-step slim with scope).
+ * Three entries: standard (15-step), design-only (1-step), fast (9-step slim with scope).
  */
 export const PIPELINE_REGISTRY: Record<string, PipelineDescriptor> = {
   [PIPELINE_IDS.STANDARD]:    STANDARD_DESCRIPTOR,

@@ -98,6 +98,12 @@ export interface StepResultInput {
    * Added in reduce-added-agent-turns.
    */
   addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
+  /**
+   * Commit OID captured after this step's per-node commit.
+   * Set only for sequential steps that own their own git commit (not round members).
+   * Added in bite-evidence-forward (R4).
+   */
+  commitOid?: string;
 }
 
 /**
@@ -133,6 +139,7 @@ export function pushStepResult(
     startedAt: partial.startedAt ?? now,
     endedAt: partial.completedAt ?? now,
     ...(partial.modelUsage !== undefined ? { modelUsage: partial.modelUsage } : {}),
+    ...(partial.commitOid !== undefined ? { commitOid: partial.commitOid } : {}),
   };
   return {
     ...state,

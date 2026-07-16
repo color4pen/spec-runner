@@ -69,6 +69,14 @@ export function verificationResultPath(slug: string): string {
 }
 
 /**
+ * Returns the relative path to the bite-evidence result file for the given slug.
+ * Example: biteEvidenceResultPath("my-change") → "specrunner/changes/my-change/bite-evidence-result.md"
+ */
+export function biteEvidenceResultPath(slug: string): string {
+  return `${CHANGES_DIR}/${slug}/bite-evidence-result.md`;
+}
+
+/**
  * Returns the relative path to the pr-create result file for the given slug.
  * Example: prCreateResultPath("my-change") → "specrunner/changes/my-change/pr-create-result.md"
  */

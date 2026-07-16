@@ -7,6 +7,7 @@ import type { DynamicContext } from "../../git/dynamic-context.js";
 import type { ReportToolSpec, BaseReportResult } from "./report-result.js";
 import type { ReviewerActivation } from "../../kernel/reviewer-snapshot.js";
 import type { OutputContract } from "./output-contract.js";
+import type { RuntimeStrategy } from "./runtime-strategy.js";
 
 // Re-export AgentDefinition for convenience
 export type { AgentDefinition };
@@ -58,9 +59,14 @@ export type StepDeps = StepContext;
  *
  * Design D2 (require-spawn-injection): compile-time guarantee that CLI steps
  * receive an injected spawn function rather than falling back to a default.
+ *
+ * runtimeStrategy is optional — provided at runtime by PipelineDeps; may be absent in tests.
+ * CLI steps that need runtime ports (e.g. BiteEvidenceStep) access it via this field.
  */
 export interface CliStepDeps extends StepDeps {
   spawn: SpawnFn;
+  /** Runtime strategy for artifact lifecycle and git operations. Optional in tests. */
+  runtimeStrategy?: RuntimeStrategy | null;
 }
 
 /**
@@ -75,6 +81,11 @@ export interface ParsedStepResult {
    * StepExecutor.finalizeStep() reflects this into state.pullRequest when present.
    */
   pullRequest?: { url: string; number: number; createdAt: string };
+  /**
+   * Bite-evidence records extracted by BiteEvidenceStep. Other steps leave this undefined.
+   * commitSuccess() reflects this into state.biteEvidence when present (T-08, R4).
+   */
+  biteEvidence?: import("../../state/schema.js").BiteEvidenceRecord[];
 }
 
 /**

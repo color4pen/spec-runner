@@ -14,7 +14,7 @@ import {
 import { logVerbose } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { evaluateActivation } from "../reviewers/activation.js";
-import { defaultSpawnFn, type SpawnFn } from "../../util/git-exec.js";
+import { defaultSpawnFn, gitExec, type SpawnFn } from "../../util/git-exec.js";
 import { detectNoOp } from "./no-op-detect.js";
 import { codeReviewFindingsRoutingActive } from "../pipeline/reviewer-chain.js";
 import type { CommitPushInfra } from "./commit-push.js";
@@ -321,9 +321,12 @@ export class StepExecutor {
         ? await deps.runtimeStrategy.snapshotMainCheckoutGuard(cwd, deps.config)
         : null;
 
-    // Capture HEAD SHA before agent executes.
+    // Capture HEAD SHA before agent executes (for no-op detection and finalize).
+    // Uses raw git spawn rather than runtimeStrategy.captureHeadSha so that only the
+    // post-finalize captureHeadSha call (for commitOid, below) goes through the port.
+    // TC-012: the ordering invariant is asserted in executor-oid-capture.test.ts.
     const headBeforeStep: string | null = deps.runtimeStrategy
-      ? await deps.runtimeStrategy.captureHeadSha(cwd)
+      ? await gitExec(this.spawnFn, cwd, ["rev-parse", "HEAD"])
       : null;
 
     // Place step output templates in the change folder before the agent runs.
@@ -455,6 +458,13 @@ export class StepExecutor {
       }
     }
 
+    // Capture HEAD OID after the per-node commit (bite-evidence-forward R4, T-02).
+    // Only for sequential steps that own their own git commit (roundOwnsGitEffects === false).
+    const commitOid: string | undefined =
+      !deps.roundOwnsGitEffects && deps.runtimeStrategy
+        ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? undefined
+        : undefined;
+
     // T-03 (no-op detection): delegate to sibling no-op-detect.ts.
     const noOpVerdictOverride: Verdict | undefined =
       deps.runtimeStrategy && headBeforeStep !== null
@@ -499,6 +509,7 @@ export class StepExecutor {
       transientRetryAttempts: runResult.transientRetryAttempts,
       completionReportDiagnostics: runResult.completionReportDiagnostics,
       addedTurns: runResult.addedTurns,
+      ...(commitOid !== undefined ? { commitOid } : {}),
     };
   }
 

@@ -261,6 +261,36 @@ export function validateJobState(raw: unknown): JobState {
     }
   }
 
+  // Validate biteEvidence when present (backward compat: absence is OK → treated as undefined)
+  // Design (bite-evidence-forward R4): lightweight check — array with expected fields per entry.
+  if ("biteEvidence" in obj && obj["biteEvidence"] !== null && obj["biteEvidence"] !== undefined) {
+    if (!Array.isArray(obj["biteEvidence"])) {
+      throw new Error("biteEvidence must be an array when present.");
+    }
+    const VALID_RESULTS: Set<string> = new Set(["red", "green"]);
+    for (const be of obj["biteEvidence"] as unknown[]) {
+      if (typeof be !== "object" || be === null) {
+        throw new Error("Each entry in biteEvidence must be an object.");
+      }
+      const beObj = be as Record<string, unknown>;
+      if (typeof beObj["testId"] !== "string" || !beObj["testId"]) {
+        throw new Error("Each biteEvidence entry must have a non-empty string 'testId'.");
+      }
+      if (beObj["strategy"] !== "forward") {
+        throw new Error(`biteEvidence entry "${beObj["testId"]}" has invalid strategy: ${JSON.stringify(beObj["strategy"])}. Must be "forward".`);
+      }
+      if (typeof beObj["baseResult"] !== "string" || !VALID_RESULTS.has(beObj["baseResult"] as string)) {
+        throw new Error(`biteEvidence entry "${beObj["testId"]}" has invalid baseResult: ${JSON.stringify(beObj["baseResult"])}. Must be "red" or "green".`);
+      }
+      if (typeof beObj["candidateResult"] !== "string" || !VALID_RESULTS.has(beObj["candidateResult"] as string)) {
+        throw new Error(`biteEvidence entry "${beObj["testId"]}" has invalid candidateResult: ${JSON.stringify(beObj["candidateResult"])}. Must be "red" or "green".`);
+      }
+      if (typeof beObj["verified"] !== "boolean") {
+        throw new Error(`biteEvidence entry "${beObj["testId"]}" must have a boolean 'verified' field.`);
+      }
+    }
+  }
+
   return raw as JobState;
 }
 

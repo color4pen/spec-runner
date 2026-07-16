@@ -330,9 +330,10 @@ describe("TC-CAP-NEW-001: staged changes → commit + push (requiresCommit:true,
     expect(subcommands).toContain("diff");
     expect(subcommands).toContain("commit");
     expect(subcommands).toContain("push");
-    // rev-parse should NOT be called a second time inside commitAndPush (hasChanges=true)
+    // rev-parse is called twice: once before step (headBeforeStep) + once after finalize (commitOid capture)
+    // commitAndPush skips HEAD comparison when hasChanges=true (staged changes present)
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(1); // only the pre-step capture
+    expect(revParseCalls.length).toBe(2);
   });
 });
 
@@ -404,9 +405,9 @@ describe("TC-CAP-NEW-003: staged 0 + HEAD advance + requiresCommit:true → push
     expect(subcommands).toContain("push");
     // commit must NOT have been called (push-only path)
     expect(subcommands).not.toContain("commit");
-    // Two rev-parse calls: one before step, one inside commitAndPush
+    // Three rev-parse calls: before step (headBeforeStep) + inside commitAndPush (HEAD comparison) + after finalize (commitOid)
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(2);
+    expect(revParseCalls.length).toBe(3);
   });
 });
 
@@ -442,9 +443,10 @@ describe("TC-CAP-NEW-004: staged changes + HEAD advance → commit staged + push
     // Both commit and push should be called (staged changes take precedence path)
     expect(subcommands).toContain("commit");
     expect(subcommands).toContain("push");
-    // Only one rev-parse (before step) — hasChanges=true skips the HEAD comparison
+    // Two rev-parse calls: before step (headBeforeStep) + after finalize (commitOid capture)
+    // hasChanges=true skips the HEAD comparison inside commitAndPush
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(1);
+    expect(revParseCalls.length).toBe(2);
   });
 });
 
@@ -463,7 +465,7 @@ describe("TC-CAP-NEW-005: staged 0 + HEAD no advance + requiresCommit:false → 
         add: { exitCode: 0 },
         diff: { exitCode: 0 }, // no staged changes
       },
-      ["abc123"], // only one rev-parse call (before step)
+      ["abc123"], // all three rev-parse calls return same SHA (no HEAD advance)
     );
 
     const runner = makeSuccessRunner();
@@ -478,9 +480,9 @@ describe("TC-CAP-NEW-005: staged 0 + HEAD no advance + requiresCommit:false → 
     const subcommands = calls.map((c) => c.args[0]);
     expect(subcommands).not.toContain("commit");
     expect(subcommands).not.toContain("push");
-    // Two rev-parse calls: one before step, one inside commitAndPush (HEAD comparison always runs)
+    // Three rev-parse calls: before step (headBeforeStep) + inside commitAndPush (HEAD comparison) + after finalize (commitOid)
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(2);
+    expect(revParseCalls.length).toBe(3);
   });
 });
 
@@ -517,9 +519,9 @@ describe("TC-CAP-NEW-006: staged 0 + HEAD advance → push only (requiresCommit 
     // HEAD advanced → push-only path (no staged, agent self-commit)
     expect(subcommands).not.toContain("commit");
     expect(subcommands).toContain("push");
-    // Two rev-parse calls: one before step, one inside commitAndPush
+    // Three rev-parse calls: before step (headBeforeStep) + inside commitAndPush (HEAD comparison) + after finalize (commitOid)
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(2);
+    expect(revParseCalls.length).toBe(3);
   });
 });
 

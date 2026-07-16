@@ -1,0 +1,15 @@
+{
+  "requestHash": "sha256:51701b6c718cf438cac967295ebabd56dd7c421825b334ec454da269ac1f488f",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/state/schema/types.ts:172 — StepRun interface starts at line 172, no commit OID field present",
+    "src/core/runtime/local.ts — captureHeadSha at line 559, uses git rev-parse HEAD",
+    "src/kernel/reviewer-snapshot.ts:51 — approvedAtCommit field exists (SHA precedent)",
+    "src/core/step/executor.ts:433 — if (!deps.roundOwnsGitEffects) gates finalizeStepArtifacts → commitAndPush",
+    "src/core/step/commit-orchestrator.ts:217-245 — digestArtifacts → appendLineage → events.jsonl (store.appendLineage)",
+    "src/core/step/test-materialize.ts — exists; base OID concept documented in comments",
+    "src/config/type-config.ts — request types: bug-fix / new-feature / spec-change / refactoring / chore",
+    "src/core/step/commit-push.ts:36 — commitAndPush function starts at line 36"
+  ],
+  "sourceRevision": "b2d824b70c17030183b2120317163ed07d4bc7ab"
+}
