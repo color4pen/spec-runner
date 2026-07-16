@@ -2,7 +2,7 @@
 
 ## ステータス
 
-proposed。構造判断のみを定める。ADR-20260716（assurance profile 境界）の D5（floor）を補正し、D3（BiteEvidence）を精緻化する。本 ADR は境界のみを定め、提供済み機能を主張しない。
+accepted。構造判断のみを定める。ADR-20260716（assurance profile 境界）の D5（floor）を補正し、D3（BiteEvidence）を精緻化する。本 ADR は境界のみを定め、提供済み機能を主張しない。
 
 補正の対象は「floor が**何を**評価するか」である。ADR-20260716 は assurance を宣言的 branch-borne 属性として確立した（D1）が、floor がその**宣言**を評価するか、pipeline が**達成**した provenance を評価するかを分けていなかった。本 ADR は後者に確定する。
 
