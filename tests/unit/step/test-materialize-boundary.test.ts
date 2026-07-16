@@ -28,6 +28,7 @@ import * as os from "node:os";
 import { spawn as nodeSpawn, spawnSync } from "node:child_process";
 import type { SpawnOptions, ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
+import { createHash } from "node:crypto";
 import { TestMaterializeStep } from "../../../src/core/step/test-materialize.js";
 import { buildImplementerInitialMessage, ImplementerStep } from "../../../src/core/step/implementer.js";
 import { evaluateTestCoverage } from "../../../src/core/verification/test-coverage.js";
@@ -41,6 +42,8 @@ import type { StepDeps, AgentStep } from "../../../src/core/step/types.js";
 import type { OutputContract } from "../../../src/core/port/output-contract.js";
 import { changeFolderPath } from "../../../src/util/paths.js";
 import { STEP_NAMES } from "../../../src/core/step/step-names.js";
+import { TestCaseGenStep } from "../../../src/core/step/test-case-gen.js";
+import { fold } from "../../../src/store/event-journal.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
@@ -531,6 +534,244 @@ describe("TC-TMB-19: FAST_DESCRIPTOR steps do not include test-materialize", () 
     const implIdx = standardStepNames.indexOf("implementer");
     expect(tmIdx).toBeGreaterThan(tcgIdx);
     expect(implIdx).toBeGreaterThan(tmIdx);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-A1: AC-1 — test-case-gen lineage records test-cases.md with real sha256 hash
+//
+// Fix for HIGH finding: test that executor.execute(TestCaseGenStep) records a lineage
+// entry in events.jsonl with step="test-case-gen", path ending in "test-cases.md",
+// and hash="sha256:<hex>" (non-null).
+//
+// Uses mock git (no real repo needed) + real sha256 digestArtifacts to lock
+// the test-case-gen → lineage boundary required by AC-1.
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a mock SpawnFn for the AC-1 lineage test.
+ * Simulates successful git add + staged changes (exit 1) + commit + push.
+ * No real git repo is needed — all responses are in-process mocks.
+ */
+function makeMockGitSpawnFnForLineage(): SpawnFn {
+  return (_bin: string, args: string[], _opts: SpawnOptions): ChildProcess => {
+    const subcommand = args[0] ?? "";
+    let exitCode = 0;
+    let stdout = "";
+
+    if (subcommand === "rev-parse") {
+      stdout = "abc123sha";         // any non-empty SHA
+    } else if (subcommand === "diff") {
+      exitCode = 1;                 // staged changes present → triggers commit path
+    }
+    // add, commit, push: exitCode = 0 (default)
+
+    const em = new EventEmitter();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const emAny = em as any;
+    emAny.stdout = new EventEmitter();
+    emAny.stderr = new EventEmitter();
+    emAny.stdin = { write: () => true, end: () => {} };
+    setImmediate(() => {
+      if (stdout) emAny.stdout.emit("data", Buffer.from(stdout));
+      em.emit("close", exitCode);
+    });
+    return em as unknown as ChildProcess;
+  };
+}
+
+/**
+ * Build a RuntimeStrategy that uses real sha256 file hashing in digestArtifacts
+ * but no-ops git and all other lifecycle methods.
+ * cwd: directory where artifact files (e.g. test-cases.md) are located.
+ */
+function makeLineageTestRuntimeStrategy(spawnFn: SpawnFn, cwd: string): RuntimeStrategy {
+  return {
+    async *query() {},
+    createAgentRunner(): AgentRunner {
+      return {
+        async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
+          return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
+        },
+      };
+    },
+    async setupWorkspace() { return { cwd: "" }; },
+    buildDeps() { return {} as PipelineDeps; },
+    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
+    async teardown() {},
+    async captureHeadSha(repoCwd: string): Promise<string | null> {
+      return gitExec(spawnFn, repoCwd, ["rev-parse", "HEAD"]);
+    },
+    async prepareStepArtifacts(): Promise<void> {},
+    async finalizeStepArtifacts(
+      step: AgentStep,
+      state: JobState,
+      deps: PipelineDeps,
+      headBeforeStep: string | null,
+      infra: CommitPushInfra,
+    ): Promise<void> {
+      const repoCwd = deps.cwd ?? process.cwd();
+      await cleanupOutputTemplates(repoCwd, deps.slug, step.name, state);
+      await commitAndPush(step, state, deps, headBeforeStep, infra);
+    },
+    async validateStepInputs(): Promise<void> {},
+    async commitFinalState(): Promise<void> {},
+    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented in test"); },
+    async persistJobState(): Promise<void> {},
+    async verifyFindingRefs(): Promise<[]> { return []; },
+    // Real sha256 computation — the key difference from the mock in executor.commit.test.ts TC-001
+    async digestArtifacts(refs: { path: string }[]) {
+      const results: Array<{ path: string; hash: string | null }> = [];
+      for (const ref of refs) {
+        const absPath = path.join(cwd, ref.path);
+        try {
+          const content = await fs.readFile(absPath);
+          const hex = createHash("sha256").update(content).digest("hex");
+          results.push({ path: ref.path, hash: `sha256:${hex}` });
+        } catch {
+          results.push({ path: ref.path, hash: null });
+        }
+      }
+      return results;
+    },
+    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
+    async validateStepOutputs() { return { violations: [] }; },
+  } as RuntimeStrategy;
+}
+
+describe("TC-A1: AC-1 — test-case-gen lineage records test-cases.md sha256 hash", () => {
+  let tempDir: string;
+  let savedXdgDataHome: string | undefined;
+
+  beforeEach(async () => {
+    tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "tmb-a1-"));
+    savedXdgDataHome = process.env["XDG_DATA_HOME"];
+    process.env["XDG_DATA_HOME"] = tempDir;
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  });
+
+  afterEach(async () => {
+    if (savedXdgDataHome !== undefined) {
+      process.env["XDG_DATA_HOME"] = savedXdgDataHome;
+    } else {
+      delete process.env["XDG_DATA_HOME"];
+    }
+    await fs.rm(tempDir, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it("events.jsonl lineage: step=test-case-gen, path=test-cases.md, hash=sha256:<hex>", async () => {
+    const testCasesMdRelPath = `${changeFolderPath("test-slug")}/test-cases.md`;
+    const testCasesMdAbsPath = path.join(tempDir, testCasesMdRelPath);
+    const testCasesMdContent = [
+      "## TC-001: Feature works",
+      "- **Priority**: must",
+      "- Summary: ensures feature X works end-to-end",
+      "",
+    ].join("\n");
+
+    // Create test-cases.md before running — simulates the file the test-case-gen agent wrote
+    await fs.mkdir(path.dirname(testCasesMdAbsPath), { recursive: true });
+    await fs.writeFile(testCasesMdAbsPath, testCasesMdContent, "utf-8");
+
+    // Compute expected sha256 to assert against
+    const expectedHash = `sha256:${createHash("sha256").update(Buffer.from(testCasesMdContent, "utf-8")).digest("hex")}`;
+
+    const mockSpawnFn = makeMockGitSpawnFnForLineage();
+    const runtimeStrategy = makeLineageTestRuntimeStrategy(mockSpawnFn, tempDir);
+
+    const jobId = "tc-a1-lineage-job";
+    const state: JobState = {
+      version: 1,
+      jobId,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: { path: "/req.md", title: "Test", type: "spec-change" },
+      repository: { owner: "testowner", name: "testrepo" },
+      session: null,
+      step: "test-case-gen",
+      status: "running",
+      branch: "feat/test-slug",
+      history: [],
+      error: null,
+      steps: {},
+    };
+
+    const deps: PipelineDeps = {
+      config: { version: 1, runtime: "local", agents: {} },
+      request: {
+        type: "spec-change",
+        title: "Test",
+        slug: "test-slug",
+        baseBranch: "main",
+        content: "Add feature X",
+        adr: false,
+      },
+      slug: "test-slug",
+      cwd: tempDir,
+      githubClient: {
+        verifyBranch: vi.fn(),
+        getRawFile: vi.fn(),
+        verifyPath: vi.fn(),
+        verifyTokenScopes: vi.fn(),
+        getRefSha: vi.fn(),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({
+          state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE",
+        }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+        getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
+        listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
+        createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://github.com/o/r/issues/1#issuecomment-1" }),
+        searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+        listIssueComments: vi.fn().mockResolvedValue([]),
+        removeLabel: vi.fn().mockResolvedValue(undefined),
+      },
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+      storeFactory: makeStoreFactory(tempDir),
+      runtimeStrategy,
+    };
+
+    // Agent runner: no-op — test-cases.md already exists (simulates post-agent state)
+    const agentRunner: AgentRunner = {
+      async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
+        return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
+      },
+    };
+
+    const noopSleep = async (_ms: number) => {};
+    const events = new EventBus();
+    const executor = new StepExecutor(
+      events,
+      agentRunner,
+      makeStoreFactory(tempDir),
+      mockSpawnFn,
+      noopSleep,
+    );
+
+    await executor.execute(TestCaseGenStep, state, deps);
+
+    // Read and fold events.jsonl to inspect lineage
+    const eventsPath = path.join(tempDir, ".specrunner", "test-jobs", jobId, "events.jsonl");
+    const content = await fs.readFile(eventsPath, "utf-8");
+    const foldResult = fold(content);
+
+    // AC-1: lineage record must exist for test-case-gen
+    expect(foldResult.lineage).toHaveLength(1);
+    const lineageRecord = foldResult.lineage[0]!;
+    expect(lineageRecord.step).toBe("test-case-gen");
+
+    // AC-1: outputs must include test-cases.md with real sha256 hash (non-null)
+    const testCasesRef = lineageRecord.outputs.find((o) => o.path.endsWith("test-cases.md"));
+    expect(testCasesRef, "Expected test-cases.md in lineage outputs").toBeDefined();
+    expect(testCasesRef!.hash, "Expected non-null sha256 hash — not mock null").not.toBeNull();
+    expect(testCasesRef!.hash).toMatch(/^sha256:[0-9a-f]{64}$/);
+    // Verify the hash matches the actual file content
+    expect(testCasesRef!.hash).toBe(expectedHash);
   });
 });
 
