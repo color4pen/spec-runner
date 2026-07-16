@@ -914,7 +914,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
             { cwd: tmpBase },
           );
           results.push({ file: testFile, passed: testResult.exitCode === 0 });
-        } catch (err) {
+        } catch {
           // Per-file spawn error → treat as failed
           results.push({ file: testFile, passed: false });
         }
