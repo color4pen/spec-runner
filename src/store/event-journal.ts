@@ -56,6 +56,13 @@ export interface StepAttemptRecord {
   };
   startedAt: string;
   endedAt: string;
+  /**
+   * Commit OID (SHA) captured immediately after this node's per-node commit.
+   * Set only for sequential steps that own their own git commit.
+   * Absent for round (parallel reviewer) members and legacy records (backward compat).
+   * Added in bite-evidence-forward (R4).
+   */
+  commitOid?: string;
 }
 
 /**
@@ -294,6 +301,7 @@ export function fold(content: string): FoldResult {
       },
       startedAt: r.startedAt,
       endedAt: r.endedAt,
+      ...(r.commitOid !== undefined ? { commitOid: r.commitOid } : {}),
     }));
     stepCounts[stepName] = records.length;
     stepsTotal += records.length;
@@ -348,7 +356,7 @@ export async function appendEventRecord(
  * Convert a StepRun to a StepAttemptRecord for journal append.
  * Note: `attempt` is NOT stored in the record — it is derived from fold position.
  */
-export function stepRunToRecord(step: string, run: StepRun): StepAttemptRecord {
+export function stepRunToRecord(step: string, run: StepRun): StepAttemptRecord & Record<string, unknown> {
   const outcome = run.outcome ?? { verdict: null, findingsPath: null, error: null };
   return {
     type: "step-attempt",
@@ -367,6 +375,7 @@ export function stepRunToRecord(step: string, run: StepRun): StepAttemptRecord {
     },
     startedAt: run.startedAt,
     endedAt: run.endedAt,
+    ...(run.commitOid !== undefined ? { commitOid: run.commitOid } : {}),
   };
 }
 

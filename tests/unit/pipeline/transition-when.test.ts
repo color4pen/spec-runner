@@ -162,9 +162,9 @@ describe("TC-4: existing transitions without `when` still work (regression)", ()
     expect(found!.when).toBeUndefined();
   });
 
-  it("implementer --success→ verification has no `when` and is found", () => {
+  it("implementer --success→ bite-evidence has no `when` and is found", () => {
     const found = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "implementer" && t.on === "success" && t.to === "verification",
+      (t) => t.step === "implementer" && t.on === "success" && t.to === "bite-evidence",
     );
     expect(found).toBeDefined();
     expect(found!.when).toBeUndefined();
@@ -188,10 +188,10 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // TC-WHEN-02: STANDARD_TRANSITIONS has expected row count
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has correct number of rows (+2 for post-fixer reverification when-guards, +2 test-materialize)", () => {
-    // 38 previous + 2 (test-case-gen→test-materialize on success, test-materialize→implementer on success/error)
-    // Note: test-case-gen now routes to test-materialize instead of directly to implementer
-    expect(STANDARD_TRANSITIONS.length).toBe(40);
+  it("has correct number of rows (+4 for bite-evidence gate transitions)", () => {
+    // 40 previous + 4 (bite-evidence: passed→verification, strategy-deferred→verification, failed→escalate, error→escalate)
+    // Note: implementer→verification row replaced by implementer→bite-evidence (same count), plus 4 new bite-evidence rows
+    expect(STANDARD_TRANSITIONS.length).toBe(44);
   });
 });
 

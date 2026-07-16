@@ -38,11 +38,12 @@ Running SpecRunner on a schedule against approved GitHub issues is an operationa
 4. **test-case-gen** — generates test case definitions
 5. **test-materialize** — converts test scenarios to test code (standard pipeline only)
 6. **implementer** — writes the implementation
-7. **verification** / **build-fixer** — runs build/typecheck/test/lint; loops until passed
-8. **code-review** / **code-fixer** — reviews the code; loops until approved
-9. **conformance** — checks architecture conformance; returns to implementer if needed
-10. **adr-gen** — generates an ADR when `request.adr` is `true`
-11. **pr-create** — opens the GitHub PR
+7. **bite-evidence** — verifies tests are base-red / candidate-green (standard pipeline only)
+8. **verification** / **build-fixer** — runs build/typecheck/test/lint; loops until passed
+9. **code-review** / **code-fixer** — reviews the code; loops until approved
+10. **conformance** — checks architecture conformance; returns to implementer if needed
+11. **adr-gen** — generates an ADR when `request.adr` is `true`
+12. **pr-create** — opens the GitHub PR
 
 Each judge step returns `approved` or `needs-fix`. Verdicts are derived by the CLI from agent findings — agents never judge their own work. When iteration budgets are exhausted, the job escalates for human input.
 

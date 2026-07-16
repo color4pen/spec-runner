@@ -172,6 +172,13 @@ function makeAgentStep(name: string, completionVerdict?: string): Step {
 function makeStandardSteps(): Map<string, Step> {
   return new Map<string, Step>([
     ["implementer",  makeAgentStep("implementer", "success")],
+    ["bite-evidence", {
+      kind: "cli",
+      name: "bite-evidence",
+      run: async () => {},
+      resultFilePath: () => "/tmp/bite-evidence-result.md",
+      parseResult: () => ({ verdict: "strategy-deferred" as const, findingsPath: null }),
+    }],
     ["verification", {
       kind: "cli",
       name: "verification",
@@ -231,6 +238,7 @@ describe("TC-001: code-fixer ran after verification → re-verification before p
       const ts = tick();
       stepsOrder.push(step.name);
       if (step.name === "implementer") return appendRun(s, "implementer", "success", ts);
+      if (step.name === "bite-evidence") return appendRun(s, "bite-evidence", "strategy-deferred", ts);
       if (step.name === "verification") {
         verificationCallCount++;
         return appendRun(s, "verification", "passed", ts);
@@ -298,6 +306,7 @@ describe("TC-002: conformance needs-fix:code-fixer path also triggers re-verific
       const ts = tick();
       stepsOrder.push(step.name);
       if (step.name === "implementer") return appendRun(s, "implementer", "success", ts);
+      if (step.name === "bite-evidence") return appendRun(s, "bite-evidence", "strategy-deferred", ts);
       if (step.name === "verification") {
         verificationCallCount++;
         return appendRun(s, "verification", "passed", ts);
@@ -366,6 +375,7 @@ describe("TC-003: re-verification failed → build-fixer (not pr-create)", () =>
       const ts = tick();
       stepsOrder.push(step.name);
       if (step.name === "implementer") return appendRun(s, "implementer", "success", ts);
+      if (step.name === "bite-evidence") return appendRun(s, "bite-evidence", "strategy-deferred", ts);
       if (step.name === "verification") {
         const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
         verificationCallCount++;
@@ -428,6 +438,7 @@ describe("TC-004: build-fixer recovery → re-verification passes → adr-gen (n
       const ts = tick();
       stepsOrder.push(step.name);
       if (step.name === "implementer") return appendRun(s, "implementer", "success", ts);
+      if (step.name === "bite-evidence") return appendRun(s, "bite-evidence", "strategy-deferred", ts);
       if (step.name === "verification") {
         const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
         verificationCallCount++;
@@ -474,6 +485,7 @@ describe("TC-005: clean run (no fixer) → verification runs exactly once", () =
     const executeSpy = vi.fn().mockImplementation(async (step: Step, s: JobState) => {
       const ts = tick();
       if (step.name === "implementer") return appendRun(s, "implementer", "success", ts);
+      if (step.name === "bite-evidence") return appendRun(s, "bite-evidence", "strategy-deferred", ts);
       if (step.name === "verification") {
         verificationCallCount++;
         return appendRun(s, "verification", "passed", ts);
@@ -512,6 +524,7 @@ describe("TC-006: initial verification passed → code-review (conformance not y
       const ts = tick();
       stepsOrder.push(step.name);
       if (step.name === "implementer") return appendRun(s, "implementer", "success", ts);
+      if (step.name === "bite-evidence") return appendRun(s, "bite-evidence", "strategy-deferred", ts);
       if (step.name === "verification") return appendRun(s, "verification", "passed", ts);
       if (step.name === "code-review") return appendRun(s, "code-review", "approved", ts);
       if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts);
@@ -569,6 +582,7 @@ describe("TC-019: conformance → verification re-entry gives fresh verification
     const executeSpy = vi.fn().mockImplementation(async (step: Step, s: JobState) => {
       const ts = tick();
       if (step.name === "implementer") return appendRun(s, "implementer", "success", ts);
+      if (step.name === "bite-evidence") return appendRun(s, "bite-evidence", "strategy-deferred", ts);
       if (step.name === "verification") {
         const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
         verificationCallCount++;

@@ -592,6 +592,27 @@ export class ManagedRuntime implements RealRuntimeStrategy {
     // no-op: no local worktree
   }
 
+  /**
+   * ManagedRuntime has no local worktree — always returns unavailable.
+   * Structural limitation: bite-evidence isolated execution requires a local git worktree.
+   */
+  async listCommitChangedFiles(_oid: string, _cwd: string): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
+    return { kind: "unavailable", reason: "managed runtime has no local worktree for listCommitChangedFiles" };
+  }
+
+  /**
+   * ManagedRuntime has no local worktree — always returns unavailable.
+   * Structural limitation: bite-evidence isolated execution requires a local git worktree.
+   */
+  async runTestsAtCommit(
+    _oid: string,
+    _testFiles: string[],
+    _cwd: string,
+    _config: import("../../config/schema.js").SpecRunnerConfig,
+  ): Promise<import("../port/runtime-strategy.js").IsolatedTestResult> {
+    return { kind: "unavailable", reason: "managed runtime has no local worktree for runTestsAtCommit" };
+  }
+
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
     const slug = this.currentSlug;
 

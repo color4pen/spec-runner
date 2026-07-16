@@ -10,6 +10,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import { EventEmitter } from "node:events";
+import type { ChildProcess } from "node:child_process";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
@@ -19,6 +21,7 @@ import type { AgentRunResult } from "../../../src/core/port/agent-runner.js";
 import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
+import type { SpawnFn as GitSpawnFn } from "../../../src/util/git-exec.js";
 import { makeStoreFactory } from "../../helpers/store-factory.js";
 import { PRODUCER_REPORT_TOOL } from "../../../src/core/step/report-tool.js";
 
@@ -179,6 +182,29 @@ function makeImplementerStep(): AgentStep {
   };
 }
 
+/**
+ * Returns a GitSpawnFn that satisfies the git-exec ChildProcess interface.
+ * Emits the given headSha on stdout when called with `git rev-parse HEAD`,
+ * and exits non-zero for all other git commands.
+ */
+function makeGitRevParseSpawnFn(headSha: string): GitSpawnFn {
+  return (_bin: string, args: string[], _opts): ChildProcess => {
+    const child = new EventEmitter();
+    const stdoutEE = new EventEmitter();
+    const stderrEE = new EventEmitter();
+    Object.assign(child, { stdout: stdoutEE, stderr: stderrEE, stdin: { end: () => {} } });
+    setImmediate(() => {
+      if (args[0] === "rev-parse" && args[1] === "HEAD") {
+        stdoutEE.emit("data", Buffer.from(`${headSha}\n`));
+        child.emit("close", 0);
+      } else {
+        child.emit("close", 128);
+      }
+    });
+    return child as unknown as ChildProcess;
+  };
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // TC-NOP-001: noOpDetect + no source changes → verdict "needs-fix"
 // ─────────────────────────────────────────────────────────────────────────────
@@ -198,9 +224,12 @@ describe("TC-NOP-001: no-op detected → verdict overridden to needs-fix", () =>
       verdicts.push((payload as { outcome: { verdict: string } }).outcome.verdict);
     });
 
+    // Pass a custom GitSpawnFn so that gitExec("rev-parse","HEAD") returns a non-null SHA,
+    // enabling headBeforeStep capture and thus no-op detection in runAgentStep.
+    const gitSpawnFn = makeGitRevParseSpawnFn("abc123def");
     const executor = new StepExecutor(events, { async run(): Promise<AgentRunResult> {
       return { completionReason: "success", resultContent: null, toolResult: { ok: true }, followUpAttempts: 0 };
-    } }, makeStoreFactory(tempDir));
+    } }, makeStoreFactory(tempDir), gitSpawnFn);
 
     const result = await executor.execute(makeCodeFixerStep(), state, makeDeps(strategy));
     expect(result.steps?.["code-fixer"]?.at(-1)?.outcome.verdict).toBe("needs-fix");

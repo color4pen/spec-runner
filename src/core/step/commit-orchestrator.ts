@@ -65,6 +65,12 @@ export type StepExecutionResult =
       completionReportDiagnostics?: CompletionReportDiagnostic[];
       /** Added-turn metrics by type. Only populated by ClaudeCodeRunner. */
       addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
+      /**
+       * Commit OID captured after this step's per-node commit (bite-evidence-forward R4).
+       * Set only for sequential steps with roundOwnsGitEffects === false.
+       * Absent for round (parallel reviewer) members and managed-runtime steps.
+       */
+      commitOid?: string;
     }
   | { kind: "halt"; halt: StepHalt }
   | { kind: "skipped"; skipReason: string };
@@ -86,7 +92,7 @@ function projectSuccess(
   result: StepExecutionResult & { kind: "success" },
   findingsPath: string | null,
 ): JobState {
-  const { completion, completedAt, startedAt, session, followUpAttempts, transientRetryAttempts, completionReportDiagnostics, addedTurns } = result;
+  const { completion, completedAt, startedAt, session, followUpAttempts, transientRetryAttempts, completionReportDiagnostics, addedTurns, commitOid } = result;
   const { verdict, persistToolResult } = completion;
 
   return pushStepResult(state, step.name, {
@@ -101,6 +107,7 @@ function projectSuccess(
     transientRetryAttempts,
     completionReportDiagnostics,
     addedTurns,
+    ...(commitOid !== undefined ? { commitOid } : {}),
   });
 }
 
@@ -325,7 +332,12 @@ export class CommitOrchestrator {
       s = { ...s, pullRequest: completion.pullRequest };
     }
 
-    // Persist branch/pullRequest patch (write 2)
+    // biteEvidence reflection (T-08, bite-evidence-forward R4)
+    if (completion.biteEvidence && completion.biteEvidence.length > 0) {
+      s = { ...s, biteEvidence: completion.biteEvidence };
+    }
+
+    // Persist branch/pullRequest/biteEvidence patch (write 2)
     await store.persist(s);
 
     // Post-persist effects: usage + lineage + verdict:parsed emit

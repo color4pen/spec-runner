@@ -220,6 +220,15 @@ function buildMockPipeline(opts: {
         },
       };
     }
+    if (step.name === "bite-evidence") {
+      return {
+        ...currentState,
+        steps: {
+          ...currentState.steps,
+          "bite-evidence": [{ attempt: 1, sessionId: null, outcome: { verdict: "strategy-deferred" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }],
+        },
+      };
+    }
     if (step.name === "implementer") {
       if (opts.implementerResult instanceof Error) throw opts.implementerResult;
       return opts.implementerResult ?? defaultImplementerResult(currentState);
@@ -289,6 +298,7 @@ function buildMockPipeline(opts: {
     ["test-case-gen",    { kind: "agent", name: "test-case-gen",    agent: { name: "test", role: "test-case-gen",    model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["test-materialize", { kind: "agent", name: "test-materialize", agent: { name: "test", role: "test-materialize", model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["implementer",      { kind: "agent", name: "implementer",      agent: { name: "test", role: "implementer",      model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+    ["bite-evidence",    { kind: "cli",   name: "bite-evidence",    run: async () => {}, resultFilePath: () => "/tmp/bite-evidence-result.md", parseResult: () => ({ verdict: "strategy-deferred" as const, findingsPath: null }) }],
     ["verification", { kind: "cli",   name: "verification", run: async () => {}, resultFilePath: () => verificationResultPath("test"), parseResult: () => ({ verdict: "passed" as const, findingsPath: null }) }],
     ["build-fixer",  { kind: "agent", name: "build-fixer",  agent: { name: "test", role: "build-fixer",  model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ["code-review",  { kind: "agent", name: "code-review",  agent: { name: "test", role: "code-review",  model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => reviewFeedbackPath("test", 1), parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],
@@ -585,7 +595,7 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     const findWithTo = (step: string, on: string, to: string) =>
       STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on && t.to === to);
 
-    expect(find("implementer",  "success")).toMatchObject({ to: "verification" });
+    expect(find("implementer",  "success")).toMatchObject({ to: "bite-evidence" });
     expect(find("implementer",  "error")).toMatchObject({ to: "escalate" });
     // verification passed has two rows: conditional (conformanceApproved → adr-gen) + fallback (→ code-review)
     expect(findWithTo("verification", "passed", "code-review")).toBeDefined(); // fallback (initial path)

@@ -77,6 +77,17 @@ export type ChangedFilesResult =
   | { kind: "unavailable"; reason: string };
 
 /**
+ * Port DTO for isolated per-file test execution results (bite-evidence-forward R4, T-04).
+ *
+ * - ran:         tests executed; results contains per-file pass/fail.
+ * - unavailable: isolated execution could not be performed (spawn error, unsupported command,
+ *               non-existent OID, etc.). Never throws — uses DU instead.
+ */
+export type IsolatedTestResult =
+  | { kind: "ran"; results: { file: string; passed: boolean }[] }
+  | { kind: "unavailable"; reason: string };
+
+/**
  * Port DTO for a finding reference to be verified for existence.
  * Used by verifyFindingRefs to check that referenced files/lines actually exist.
  */
@@ -544,6 +555,58 @@ export interface RuntimeStrategy {
    */
   assertNoDuplicateLiveJob?(repoRoot: string, slug: string): Promise<void>;
 
+  // ---------------------------------------------------------------------------
+  // Isolated test execution for bite-evidence gate (R4, bite-evidence-forward T-04)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List files changed by a specific commit vs its first parent.
+   *
+   * Used by the bite-evidence gate to identify the materialized test files from
+   * the test-materialize commit.
+   *
+   * Contract:
+   * - Never throws — returns a ChangedFilesResult discriminated union instead.
+   * - success: git diff ran; files contains repo-relative paths changed by `oid`.
+   * - unavailable: git command failed or `oid` is non-existent (non-zero exit, spawn error).
+   *
+   * - local:   `git diff --name-only <oid>^ <oid>` executed in cwd.
+   * - managed: always returns unavailable (no local worktree; structural limitation).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
+   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
+   */
+  listCommitChangedFiles?(oid: string, cwd: string): Promise<ChangedFilesResult>;
+
+  /**
+   * Run only the provided test files against the worktree at a specific commit OID
+   * using an isolated detached worktree.
+   *
+   * Used by the bite-evidence gate to verify base-red / candidate-green for each
+   * materialized test file.
+   *
+   * Contract:
+   * - Never throws — returns an IsolatedTestResult discriminated union instead.
+   * - ran: tests executed; results contains per-file pass/fail (true=passed, false=failed).
+   * - unavailable: isolated execution could not be performed (spawn error, non-existent OID,
+   *   unsupported command, etc.).
+   * - Cleans up the isolated worktree in a finally-style block (even when tests fail).
+   * - MUST NOT run the full suite — returns unavailable if the resolved command cannot be
+   *   scoped to the provided testFiles.
+   *
+   * - local:   `git worktree add --detach <tmp> <oid>` → run only testFiles → remove worktree.
+   * - managed: always returns unavailable (no local worktree; structural limitation).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
+   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
+   */
+  runTestsAtCommit?(
+    oid: string,
+    testFiles: string[],
+    cwd: string,
+    config: SpecRunnerConfig,
+  ): Promise<IsolatedTestResult>;
+
   /**
    * Snapshot the state of guarded main-checkout paths at a moment in time.
    *
@@ -591,4 +654,11 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
     slug: string,
     commitPushInfra: unknown,
   ): Promise<void>;
+  listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
+  runTestsAtCommit(
+    oid: string,
+    testFiles: string[],
+    cwd: string,
+    config: SpecRunnerConfig,
+  ): Promise<IsolatedTestResult>;
 };

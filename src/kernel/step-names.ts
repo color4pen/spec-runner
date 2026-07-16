@@ -31,6 +31,7 @@ export const AGENT_STEP_NAMES = [
  */
 export const CLI_STEP_NAMES = [
   "verification",
+  "bite-evidence",
   "pr-create",
 ] as const;
 
@@ -42,6 +43,7 @@ export const STEP_NAMES = {
   TEST_CASE_GEN: "test-case-gen",
   TEST_MATERIALIZE: "test-materialize",
   IMPLEMENTER: "implementer",
+  BITE_EVIDENCE: "bite-evidence",
   VERIFICATION: "verification",
   BUILD_FIXER: "build-fixer",
   CODE_REVIEW: "code-review",

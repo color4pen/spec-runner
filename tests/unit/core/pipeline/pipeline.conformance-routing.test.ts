@@ -144,6 +144,13 @@ function makeAgentStep(name: string, completionVerdict?: string): Step {
 function makeStandardSteps(): Map<string, Step> {
   return new Map<string, Step>([
     ["implementer",   makeAgentStep("implementer", "success")],
+    ["bite-evidence", {
+      kind: "cli",
+      name: "bite-evidence",
+      run: async () => {},
+      resultFilePath: () => "/tmp/bite-evidence-result.md",
+      parseResult: () => ({ verdict: "strategy-deferred" as const, findingsPath: null }),
+    }],
     ["verification",  {
       kind: "cli",
       name: "verification",
@@ -195,6 +202,7 @@ describe("TC-CONFRT-01: conformance needs-fix:implementer → implementer", () =
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       stepsVisited.push(step.name);
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
+      if (step.name === "bite-evidence") return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "conformance") {
@@ -230,6 +238,7 @@ describe("TC-CONFRT-02: conformance needs-fix:code-fixer → code-fixer", () => 
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       stepsVisited.push(step.name);
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
+      if (step.name === "bite-evidence") return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "code-fixer") {
@@ -269,6 +278,7 @@ describe("TC-CONFRT-03: conformance needs-fix:spec-fixer → spec-fixer", () => 
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       stepsVisited.push(step.name);
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
+      if (step.name === "bite-evidence") return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "test-case-gen") return appendStepResult(currentState, "test-case-gen", "success");
@@ -310,6 +320,7 @@ describe("TC-CONFRT-04: conformance plain needs-fix → implementer (backward co
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       stepsVisited.push(step.name);
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
+      if (step.name === "bite-evidence") return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "conformance") {
@@ -343,6 +354,7 @@ describe("TC-CONFRT-05: CONFORMANCE_RETRIES_EXHAUSTED fires for all routing dire
 
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
+      if (step.name === "bite-evidence") return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "conformance") return appendStepResult(currentState, "conformance", "needs-fix:implementer");
@@ -364,6 +376,7 @@ describe("TC-CONFRT-05: CONFORMANCE_RETRIES_EXHAUSTED fires for all routing dire
 
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
+      if (step.name === "bite-evidence") return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "code-fixer") return appendStepResult(currentState, "code-fixer", "approved");
@@ -386,6 +399,7 @@ describe("TC-CONFRT-05: CONFORMANCE_RETRIES_EXHAUSTED fires for all routing dire
 
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
+      if (step.name === "bite-evidence") return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "test-case-gen") return appendStepResult(currentState, "test-case-gen", "success");
@@ -425,6 +439,7 @@ describe("TC-CONFRT-06: conformance → code-fixer budget resets (no immediate e
     // → code-review(approved) → conformance(approved) → adr-gen → pr-create → end
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
+      if (step.name === "bite-evidence") return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") {
         codeReviewCallCount++;
@@ -476,6 +491,7 @@ describe("TC-CONFRT-07: conformance → spec-fixer budget resets (no immediate e
     // → spec-review(approved) → … → conformance(approved) → end
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
+      if (step.name === "bite-evidence") return appendStepResult(currentState, "bite-evidence", "strategy-deferred");
       if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
       if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "spec-review") {
@@ -490,9 +506,6 @@ describe("TC-CONFRT-07: conformance → spec-fixer budget resets (no immediate e
       }
       if (step.name === "test-case-gen") return appendStepResult(currentState, "test-case-gen", "success");
       if (step.name === "test-materialize") return appendStepResult(currentState, "test-materialize", "success");
-      if (step.name === "implementer") return appendStepResult(currentState, "implementer", "success");
-      if (step.name === "verification") return appendStepResult(currentState, "verification", "passed");
-      if (step.name === "code-review") return appendStepResult(currentState, "code-review", "approved");
       if (step.name === "conformance") {
         conformanceCallCount++;
         if (conformanceCallCount === 1) return appendStepResult(currentState, "conformance", "needs-fix:spec-fixer");

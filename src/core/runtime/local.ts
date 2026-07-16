@@ -815,6 +815,136 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     await checkDuplicateLiveJob(repoRoot, slug);
   }
 
+  // ---------------------------------------------------------------------------
+  // Isolated test execution for bite-evidence gate (R4, bite-evidence-forward T-04)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List files changed by a specific commit vs its first parent.
+   * Runs `git diff --name-only <oid>^ <oid>` in cwd.
+   *
+   * Never throws — returns ChangedFilesResult DU instead.
+   * - exit 0:         {kind:"success", files}
+   * - non-zero exit:  {kind:"unavailable", reason}
+   * - spawn error:    {kind:"unavailable", reason}
+   */
+  async listCommitChangedFiles(oid: string, cwd: string): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
+    try {
+      const result = await this.spawnFn(
+        "git",
+        ["diff", "--name-only", `${oid}^`, oid],
+        { cwd },
+      );
+      if (result.exitCode !== 0) {
+        return { kind: "unavailable", reason: `git diff exited with code ${result.exitCode}` };
+      }
+      const files = result.stdout
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      return { kind: "success", files };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      return { kind: "unavailable", reason };
+    }
+  }
+
+  /**
+   * Run only the provided test files against an isolated detached worktree at `oid`.
+   *
+   * Workflow:
+   *   1. Create a detached isolated worktree at `oid` (`git worktree add --detach <tmp> <oid>`).
+   *   2. Run only the provided `testFiles` via the resolved scoped test command.
+   *   3. Collect per-file pass/fail results.
+   *   4. Remove the isolated worktree in a finally-style cleanup.
+   *
+   * Never throws — returns IsolatedTestResult DU instead.
+   * Returns `unavailable` on any failure (spawn error, non-existent OID, etc.).
+   * Returns `unavailable` if the test command cannot be scoped to specific files.
+   */
+  async runTestsAtCommit(
+    oid: string,
+    testFiles: string[],
+    cwd: string,
+    config: import("../../config/schema.js").SpecRunnerConfig,
+  ): Promise<import("../port/runtime-strategy.js").IsolatedTestResult> {
+    if (testFiles.length === 0) {
+      return { kind: "ran", results: [] };
+    }
+
+    // Create a unique temp directory for the isolated worktree
+    const os = await import("node:os");
+    const tmpBase = path.join(os.tmpdir(), `specrunner-bite-evidence-${oid.slice(0, 8)}-${Date.now()}`);
+    let worktreeCreated = false;
+
+    try {
+      // Create isolated detached worktree at the given OID
+      const addResult = await this.spawnFn(
+        "git",
+        ["worktree", "add", "--detach", tmpBase, oid],
+        { cwd },
+      );
+      if (addResult.exitCode !== 0) {
+        return {
+          kind: "unavailable",
+          reason: `git worktree add failed (exit ${addResult.exitCode}): ${addResult.stderr ?? ""}`,
+        };
+      }
+      worktreeCreated = true;
+
+      // Run each test file individually and collect results
+      const results: { file: string; passed: boolean }[] = [];
+
+      // Determine the test command (use "bun test" as the default scoped command)
+      // For each test file, run: bun test <file>
+      // If verification.commands is set, we skip scoped execution (unavailable)
+      // since we can't reliably scope arbitrary commands to specific files.
+      if (config.verification?.commands && (config.verification.commands as unknown[]).length > 0) {
+        return {
+          kind: "unavailable",
+          reason: "Cannot scope custom verification.commands to individual test files",
+        };
+      }
+
+      for (const testFile of testFiles) {
+        try {
+          const testResult = await this.spawnFn(
+            "bun",
+            ["test", testFile],
+            { cwd: tmpBase },
+          );
+          results.push({ file: testFile, passed: testResult.exitCode === 0 });
+        } catch (err) {
+          // Per-file spawn error → treat as failed
+          results.push({ file: testFile, passed: false });
+        }
+      }
+
+      return { kind: "ran", results };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      return { kind: "unavailable", reason };
+    } finally {
+      // Always clean up the isolated worktree (finally-style)
+      if (worktreeCreated) {
+        try {
+          await this.spawnFn(
+            "git",
+            ["worktree", "remove", "--force", tmpBase],
+            { cwd },
+          );
+        } catch {
+          // Best-effort cleanup — failure here is non-fatal
+          try {
+            await fs.rm(tmpBase, { recursive: true, force: true });
+          } catch {
+            // Silently ignore double-failure
+          }
+        }
+      }
+    }
+  }
+
   /**
    * Compute sha256 content hashes for a list of artifact paths (D4, artifact-observability).
    * Reads each file from disk; returns hash: null for missing/unreadable files.

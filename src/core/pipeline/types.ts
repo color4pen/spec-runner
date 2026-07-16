@@ -240,8 +240,13 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   // spec-fixer → spec-review (direct)
   { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.SPEC_REVIEW },
   { step: STEP_NAMES.SPEC_FIXER,  on: "error",     to: "escalate" },
-  { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.VERIFICATION },
+  { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.BITE_EVIDENCE },
   { step: STEP_NAMES.IMPLEMENTER, on: "error",     to: "escalate" },
+  // --- bite-evidence gate (R4, forward strategy) ---
+  { step: STEP_NAMES.BITE_EVIDENCE, on: "passed",            to: STEP_NAMES.VERIFICATION },
+  { step: STEP_NAMES.BITE_EVIDENCE, on: "strategy-deferred", to: STEP_NAMES.VERIFICATION },
+  { step: STEP_NAMES.BITE_EVIDENCE, on: "failed",            to: "escalate" },
+  { step: STEP_NAMES.BITE_EVIDENCE, on: "error",             to: "escalate" },
   { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.ADR_GEN,    when: conformanceApprovedLatest },
   { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.CODE_REVIEW },
   { step: STEP_NAMES.VERIFICATION, on: "failed",   to: STEP_NAMES.BUILD_FIXER },
