@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0273f484-11a6-43ee-881d-96eb8a526faf",
   "createdAt": "2026-07-16T10:16:35.776Z",
-  "updatedAt": "2026-07-16T12:01:12.016Z",
+  "updatedAt": "2026-07-16T12:16:00.695Z",
   "request": {
     "title": "scenario freeze と test-materialize→implement の commit 境界を作る（R3, Option A 二ノード分割）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/test-materialize-boundary-0273f484",
   "error": null,
@@ -57,8 +57,35 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "2c6c88533263099baadbef931d7c9c84ebccda3f",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 45,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -66,8 +93,11 @@
       "test-case-gen": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 2,
-      "code-fixer": 2
+      "code-review": 3,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
