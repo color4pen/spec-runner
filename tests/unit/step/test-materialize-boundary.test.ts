@@ -25,6 +25,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
+import { spawn as nodeSpawn, spawnSync } from "node:child_process";
+import type { SpawnOptions, ChildProcess } from "node:child_process";
+import { EventEmitter } from "node:events";
 import { TestMaterializeStep } from "../../../src/core/step/test-materialize.js";
 import { buildImplementerInitialMessage, ImplementerStep } from "../../../src/core/step/implementer.js";
 import { evaluateTestCoverage } from "../../../src/core/verification/test-coverage.js";
@@ -34,10 +37,21 @@ import { resolveResumeStep } from "../../../src/core/resume/resolve-step.js";
 import { STANDARD_TRANSITIONS } from "../../../src/core/pipeline/types.js";
 import { STANDARD_DESCRIPTOR, FAST_DESCRIPTOR } from "../../../src/core/pipeline/registry.js";
 import type { JobState } from "../../../src/state/schema.js";
-import type { StepDeps } from "../../../src/core/step/types.js";
+import type { StepDeps, AgentStep } from "../../../src/core/step/types.js";
 import type { OutputContract } from "../../../src/core/port/output-contract.js";
 import { changeFolderPath } from "../../../src/util/paths.js";
 import { STEP_NAMES } from "../../../src/core/step/step-names.js";
+import { StepExecutor } from "../../../src/core/step/executor.js";
+import { EventBus } from "../../../src/core/event/event-bus.js";
+import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../../src/core/port/agent-runner.js";
+import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js";
+import type { PipelineDeps } from "../../../src/core/types.js";
+import type { SpawnFn } from "../../../src/util/git-exec.js";
+import { gitExec } from "../../../src/util/git-exec.js";
+import { makeStoreFactory } from "../../helpers/store-factory.js";
+import type { CommitPushInfra } from "../../../src/core/step/commit-push.js";
+import { commitAndPush } from "../../../src/core/step/commit-push.js";
+import { cleanupOutputTemplates } from "../../../src/core/artifact/copy-artifacts.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -517,5 +531,235 @@ describe("TC-TMB-19: FAST_DESCRIPTOR steps do not include test-materialize", () 
     const implIdx = standardStepNames.indexOf("implementer");
     expect(tmIdx).toBeGreaterThan(tcgIdx);
     expect(implIdx).toBeGreaterThan(tmIdx);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-F1: AC-3 — commit tree after test-materialize: *.test.ts ≥1, src/*.ts = 0
+//
+// Fix for HIGH finding: test that the commit produced by executor.execute(TestMaterializeStep)
+// contains ≥1 test files and zero src/*.ts implementation files, verified via
+// `git diff HEAD~1 HEAD --name-only` on the real commit tree.
+//
+// Uses real git operations (spawnFn + temp dir) following the executor.commit.test.ts harness.
+// Mock agent writes only *.test.ts files; push is intercepted (no remote needed).
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a SpawnFn that delegates all git commands to real git EXCEPT push.
+ * Push is intercepted and returns exit 0 immediately (no remote needed in test).
+ */
+function makeRealGitNoPushSpawnFn(): SpawnFn {
+  return (bin: string, args: string[], opts: SpawnOptions): ChildProcess => {
+    if (bin === "git" && args[0] === "push") {
+      const em = new EventEmitter();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const emAny = em as any;
+      emAny.stdout = new EventEmitter();
+      emAny.stderr = new EventEmitter();
+      emAny.stdin = { write: () => true, end: () => {} };
+      setImmediate(() => em.emit("close", 0));
+      return em as unknown as ChildProcess;
+    }
+    return nodeSpawn(bin, args, opts);
+  };
+}
+
+/**
+ * Build a RuntimeStrategy that uses real git (via spawnFn) for HEAD capture and
+ * commit/push, but no-ops all other lifecycle methods.
+ * Mirrors makeTestRuntimeStrategy from executor.commit.test.ts.
+ */
+function makeRealGitRuntimeStrategy(spawnFn: SpawnFn): RuntimeStrategy {
+  return {
+    async *query() {},
+    createAgentRunner(): AgentRunner {
+      return {
+        async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
+          return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
+        },
+      };
+    },
+    async setupWorkspace() { return { cwd: "" }; },
+    buildDeps() { return {} as PipelineDeps; },
+    registerCleanup() { return {} as ReturnType<RuntimeStrategy["registerCleanup"]>; },
+    async teardown() {},
+    async captureHeadSha(cwd: string): Promise<string | null> {
+      return gitExec(spawnFn, cwd, ["rev-parse", "HEAD"]);
+    },
+    async prepareStepArtifacts(): Promise<void> {},
+    async finalizeStepArtifacts(
+      step: AgentStep,
+      state: JobState,
+      deps: PipelineDeps,
+      headBeforeStep: string | null,
+      infra: CommitPushInfra,
+    ): Promise<void> {
+      const cwd = deps.cwd ?? process.cwd();
+      await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
+      await commitAndPush(step, state, deps, headBeforeStep, infra);
+    },
+    async validateStepInputs(): Promise<void> {},
+    async commitFinalState(): Promise<void> {},
+    async bootstrapJob(): Promise<JobState> { throw new Error("not implemented in test"); },
+    async persistJobState(): Promise<void> {},
+    async verifyFindingRefs(): Promise<[]> { return []; },
+    async digestArtifacts(refs: { path: string }[]) {
+      return refs.map((r) => ({ path: r.path, hash: null }));
+    },
+    async listChangedFiles() { return { kind: "success" as const, files: [] }; },
+    async validateStepOutputs() { return { violations: [] }; },
+  } as RuntimeStrategy;
+}
+
+describe("TC-F1: AC-3 — test-materialize commit tree: *.test.ts ≥1, src/*.ts = 0", () => {
+  let gitDir: string;
+  let storeDir: string;
+  let savedXdgDataHome: string | undefined;
+
+  beforeEach(async () => {
+    gitDir = await fs.mkdtemp(path.join(os.tmpdir(), "tmb-f1-git-"));
+    storeDir = await fs.mkdtemp(path.join(os.tmpdir(), "tmb-f1-store-"));
+    savedXdgDataHome = process.env["XDG_DATA_HOME"];
+    process.env["XDG_DATA_HOME"] = storeDir;
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+    vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+
+    // Initialize a real local git repo and make the initial (parent) commit.
+    spawnSync("git", ["init"], { cwd: gitDir });
+    spawnSync("git", ["config", "user.email", "test@example.com"], { cwd: gitDir });
+    spawnSync("git", ["config", "user.name", "TC-F1 Test"], { cwd: gitDir });
+    spawnSync("git", ["commit", "--allow-empty", "-m", "init: initial commit"], { cwd: gitDir });
+  });
+
+  afterEach(async () => {
+    if (savedXdgDataHome !== undefined) {
+      process.env["XDG_DATA_HOME"] = savedXdgDataHome;
+    } else {
+      delete process.env["XDG_DATA_HOME"];
+    }
+    await fs.rm(gitDir, { recursive: true, force: true });
+    await fs.rm(storeDir, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it("git diff HEAD~1 HEAD --name-only: ≥1 *.test.ts, 0 src/*.ts files", async () => {
+    const realGitNoPushSpawnFn = makeRealGitNoPushSpawnFn();
+    const runtimeStrategy = makeRealGitRuntimeStrategy(realGitNoPushSpawnFn);
+
+    // Mock agent: write only test files, no src implementation files.
+    // This simulates what the test-materialize agent produces.
+    const fileWritingRunner: AgentRunner = {
+      async run(_ctx: AgentRunContext): Promise<AgentRunResult> {
+        const testsDir = path.join(gitDir, "tests", "unit");
+        await fs.mkdir(testsDir, { recursive: true });
+        await fs.writeFile(
+          path.join(testsDir, "feature.test.ts"),
+          [
+            'it("TC-001: feature works", () => { expect(notYetImplemented()).toBe(true); });',
+            'it("TC-002: edge case", () => { expect(edgeFn()).toBe(42); });',
+          ].join("\n"),
+        );
+        // No src/*.ts files written — base commit must contain only tests
+        return { completionReason: "success", resultContent: null, toolResult: null, followUpAttempts: 0 };
+      },
+    };
+
+    const jobId = "tc-f1-real-git-job";
+    const state: JobState = {
+      version: 1,
+      jobId,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: { path: "/req.md", title: "Test", type: "spec-change" },
+      repository: { owner: "testowner", name: "testrepo" },
+      session: null,
+      step: "test-materialize",
+      status: "running",
+      branch: "feat/test-slug",
+      history: [],
+      error: null,
+      steps: {},
+    };
+
+    const deps: PipelineDeps = {
+      config: {
+        version: 1,
+        runtime: "local",
+        agents: {},
+      },
+      request: {
+        type: "spec-change",
+        title: "Test",
+        slug: "test-slug",
+        baseBranch: "main",
+        content: "Add feature X via test-materialize",
+        adr: false,
+      },
+      slug: "test-slug",
+      cwd: gitDir,
+      githubClient: {
+        verifyBranch: vi.fn(),
+        getRawFile: vi.fn(),
+        verifyPath: vi.fn(),
+        verifyTokenScopes: vi.fn(),
+        getRefSha: vi.fn(),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({
+          state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE",
+        }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+        getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
+        listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
+        createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://github.com/o/r/issues/1#issuecomment-1" }),
+        searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+        listIssueComments: vi.fn().mockResolvedValue([]),
+        removeLabel: vi.fn().mockResolvedValue(undefined),
+      },
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),
+      storeFactory: makeStoreFactory(storeDir),
+      runtimeStrategy,
+    };
+
+    const noopSleep = async (_ms: number) => {};
+    const events = new EventBus();
+    const executor = new StepExecutor(
+      events,
+      fileWritingRunner,
+      makeStoreFactory(storeDir),
+      realGitNoPushSpawnFn,
+      noopSleep,
+    );
+
+    // Execute TestMaterializeStep — this creates the base OID commit
+    await executor.execute(TestMaterializeStep, state, deps);
+
+    // Verify the commit tree: check which files changed between HEAD~1 and HEAD
+    const diffResult = spawnSync(
+      "git",
+      ["diff", "HEAD~1", "HEAD", "--name-only"],
+      { cwd: gitDir },
+    );
+    const diffStdout = diffResult.stdout.toString().trim();
+    const changedFiles = diffStdout.split("\n").filter(Boolean);
+
+    // AC-3 assertion 1: ≥1 *.test.ts files must be present in the commit
+    const testFiles = changedFiles.filter((f) => f.endsWith(".test.ts"));
+    expect(
+      testFiles.length,
+      `Expected ≥1 *.test.ts files in commit tree but got: ${JSON.stringify(changedFiles)}`,
+    ).toBeGreaterThanOrEqual(1);
+
+    // AC-3 assertion 2: 0 src/*.ts implementation files allowed in the commit
+    const srcImplFiles = changedFiles.filter(
+      (f) => f.startsWith("src/") && f.endsWith(".ts") && !f.endsWith(".test.ts"),
+    );
+    expect(
+      srcImplFiles,
+      `Expected 0 src/*.ts implementation files in commit tree but got: ${JSON.stringify(srcImplFiles)}`,
+    ).toHaveLength(0);
   });
 });
