@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:de232e8ce11f0509c4faf8e0a48edcea3d5d0fd2a4bf5e205de27c77cf52e051",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/state/schema/types.ts:288 — pipelineId?: string (present at line 288 with matching JSDoc)",
+    "src/state/pipeline-id.ts:19 — getPipelineId(state): string = state.pipelineId ?? STANDARD_PIPELINE_ID",
+    "src/store/job-state-store.ts — buildInitialJobState sets pipelineId: params.pipelineId ?? STANDARD_PIPELINE_ID (line 80)",
+    "src/core/agent/hash.ts — hashObject(obj) returns sha256: prefixed hex from canonicalJson (key-sorted, undefined-stripped)",
+    "src/core/attach/verify-checkpoint.ts — verifyCheckpoint already imports getPipelineId and uses it at line 160",
+    "src/errors.ts:385 — checkpointNotAttachableError(reason, detail) exists with code CHECKPOINT_NOT_ATTACHABLE"
+  ],
+  "sourceRevision": "ee6e6fc037ec4211d09713869799315bee2a815c"
+}
