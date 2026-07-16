@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0802ded7-9655-4570-8b77-2a49ee26c3f3",
   "createdAt": "2026-07-16T12:31:56.443Z",
-  "updatedAt": "2026-07-16T15:33:47.034Z",
+  "updatedAt": "2026-07-16T15:53:03.571Z",
   "request": {
     "title": "base/candidate OID を捕捉し、forward strategy の BiteEvidence を機械生成する（R4, MVP）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/bite-evidence-forward-0802ded7",
   "error": null,
@@ -57,8 +57,35 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "70c37bdb0e42500f6436aeb4f4beeb691212ca2e",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "70c37bdb0e42500f6436aeb4f4beeb691212ca2e",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 69,
+    "historyCount": 81,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -67,7 +94,11 @@
       "test-materialize": 1,
       "implementer": 1,
       "verification": 5,
-      "build-fixer": 3
+      "build-fixer": 3,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
