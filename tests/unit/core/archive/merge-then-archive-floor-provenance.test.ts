@@ -66,7 +66,7 @@ const FLOOR_BITE_EVIDENCE_REQUIRED: any = {
 };
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const FLOOR_BOTH_REQUIRED: any = {
+const _FLOOR_BOTH_REQUIRED: any = {
   protectedPaths: ["architecture/**"],
   testDerivation: "frozen",
   biteEvidence: "required",
@@ -294,7 +294,7 @@ describe("TC-001: custom verification.commands 環境で biteEvidence required f
         baseTestResults: "unavailable", // custom verification.commands → unavailable
       });
 
-      const result = await (runMergeThenArchive as Function)({
+      const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
         slug: SLUG,
         cwd: CWD,
         spawn: spawnFn,
@@ -359,7 +359,7 @@ describe("TC-003: 全 base-red かつ凍結 intact の job が floor を満た�
         baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
       });
 
-      const result = await (runMergeThenArchive as Function)({
+      const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
         slug: SLUG,
         cwd: CWD,
         spawn: spawnFn,
@@ -419,7 +419,7 @@ describe("TC-004: materialize 済み test が baseOid→HEAD 間で改変され�
         baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }], // base-red satisfied
       });
 
-      const result = await (runMergeThenArchive as Function)({
+      const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
         slug: SLUG,
         cwd: CWD,
         spawn: spawnFn,
@@ -478,7 +478,7 @@ describe("TC-005: baseOid で green の test（空洞）が base-red 要件を�
         baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: true }], // hollow (base-green)
       });
 
-      const result = await (runMergeThenArchive as Function)({
+      const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
         slug: SLUG,
         cwd: CWD,
         spawn: spawnFn,
@@ -540,7 +540,7 @@ describe("TC-006: 最終 HEAD OID undefined で constrained floor に対し fail
       baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
     });
 
-    const result = await (runMergeThenArchive as Function)({
+    const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
       slug: SLUG,
       cwd: CWD,
       spawn: spawnFn,
@@ -598,7 +598,7 @@ describe("TC-007: baseOid 欠落で constrained floor に対し fail-closed に�
       baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
     });
 
-    const result = await (runMergeThenArchive as Function)({
+    const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
       slug: SLUG,
       cwd: CWD,
       spawn: spawnFn,
@@ -648,7 +648,7 @@ describe("TC-008: listCommitChangedFiles unavailable で constrained floor に�
       baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
     });
 
-    const result = await (runMergeThenArchive as Function)({
+    const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
       slug: SLUG,
       cwd: CWD,
       spawn: spawnFn,
@@ -698,7 +698,7 @@ describe("TC-009: 二 OID diff unavailable で constrained floor に対し fail-
       baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
     });
 
-    const result = await (runMergeThenArchive as Function)({
+    const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
       slug: SLUG,
       cwd: CWD,
       spawn: spawnFn,
@@ -748,7 +748,7 @@ describe("TC-010: runTestsAtCommit unavailable で constrained floor に対し f
       baseTestResults: "unavailable", // runTestsAtCommit unavailable
     });
 
-    const result = await (runMergeThenArchive as Function)({
+    const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
       slug: SLUG,
       cwd: CWD,
       spawn: spawnFn,
@@ -798,7 +798,7 @@ describe("TC-011: materialized test 0 件で constrained floor に対し fail-cl
       baseTestResults: [],
     });
 
-    const result = await (runMergeThenArchive as Function)({
+    const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
       slug: SLUG,
       cwd: CWD,
       spawn: spawnFn,
@@ -857,7 +857,7 @@ describe("TC-019 (provenance subset): floor gate is no-op for non-matching paths
       baseTestResults: "unavailable",
     });
 
-    const result = await (runMergeThenArchive as Function)({
+    const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
       slug: SLUG,
       cwd: CWD,
       spawn: spawnFn,
