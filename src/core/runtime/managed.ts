@@ -602,6 +602,19 @@ export class ManagedRuntime implements RealRuntimeStrategy {
 
   /**
    * ManagedRuntime has no local worktree — always returns unavailable.
+   * Structural limitation: two-OID freeze check requires a local git worktree.
+   */
+  async diffPathsBetweenCommits(
+    _baseOid: string,
+    _headOid: string,
+    _paths: string[],
+    _cwd: string,
+  ): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
+    return { kind: "unavailable", reason: "managed runtime has no local worktree for diffPathsBetweenCommits" };
+  }
+
+  /**
+   * ManagedRuntime has no local worktree — always returns unavailable.
    * Structural limitation: bite-evidence isolated execution requires a local git worktree.
    */
   async runTestsAtCommit(

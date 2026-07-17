@@ -26,12 +26,14 @@ import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";
 import type { GitHubClient } from "../port/github-client.js";
 import type { WorktreeManager } from "../worktree/manager.js";
-import type { ResolvedDesignLayer, ShellCommand, MinimumAssuranceConfig } from "../../config/schema.js";
+import type { ResolvedDesignLayer, ShellCommand, MinimumAssuranceConfig, SpecRunnerConfig } from "../../config/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import { getProfile, satisfiesFloor } from "../../state/profile.js";
-import type { ProfileAssurance } from "../../state/schema.js";
+import type { ProfileAssurance, JobState } from "../../state/schema.js";
 import { runArchiveOrchestrator, resolveWorktreePathForArchive } from "./orchestrator.js";
+import { deriveAchievedAssurance } from "./achieved-assurance.js";
+import type { AssuranceProvenanceRuntime } from "./achieved-assurance.js";
 import type { ArchiveResult } from "./orchestrator.js";
 import { runPostMergeCleanup } from "./post-merge-cleanup.js";
 import { runPostMergeIntegrityCheck } from "./post-merge-integrity.js";
@@ -109,6 +111,18 @@ export interface MergeThenArchiveInput {
    * is evaluated against the floor for matched files. Absent = no floor gate.
    */
   minimumAssurance?: MinimumAssuranceConfig;
+  /**
+   * Runtime strategy providing git primitives for the achieved-assurance floor gate.
+   * Required for base-red + freeze provenance derivation at Step 3.6.
+   * When absent, the floor gate evaluates achieved = {} (all fields absent → fail-closed
+   * for any constrained floor field). Absent is safe: no provenance can be established.
+   */
+  assuranceRuntime?: AssuranceProvenanceRuntime;
+  /**
+   * Project config for runTestsAtCommit scoping in the floor gate.
+   * When absent, the floor gate treats runTestsAtCommit as unavailable → fail-closed.
+   */
+  config?: SpecRunnerConfig;
 }
 
 export type MergeThenArchiveResult = ArchiveResult;
@@ -141,6 +155,8 @@ export async function runMergeThenArchive(
     designLayer,
     postMergeVerify,
     minimumAssurance,
+    assuranceRuntime,
+    config,
   } = input;
 
   // Resolve effective timeout: undefined → default, null → unlimited, number → as-is
