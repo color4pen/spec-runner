@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b935c77c-7753-4c6e-a5d2-b3c4ebb3731d",
   "createdAt": "2026-07-17T00:10:18.274Z",
-  "updatedAt": "2026-07-17T00:15:44.621Z",
+  "updatedAt": "2026-07-17T00:28:32.114Z",
   "request": {
     "title": "minimumAssurance floor を「宣言」でなく「最終 HEAD で達成された provenance」で判定する（P0 fix-forward）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/assurance-provenance-floor-b935c77c",
   "error": null,
@@ -60,9 +60,10 @@
     }
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
