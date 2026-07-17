@@ -22,8 +22,12 @@ import { resolveBaseCandidateOids } from "./oids.js";
 /** Request types that use the forward strategy (base-red → candidate-green). */
 const FORWARD_TYPES: ReadonlySet<string> = new Set(["bug-fix", "new-feature"]);
 
-/** Paths to exclude from materialized test files (pipeline artifacts). */
-function isExcludedPath(filePath: string): boolean {
+/**
+ * Paths to exclude from materialized test files (pipeline artifacts).
+ * Exported so that the archive floor gate (achieved-assurance.ts) can use the
+ * same exclusion logic without duplicating the rule.
+ */
+export function isExcludedPath(filePath: string): boolean {
   return filePath.startsWith("specrunner/changes/") || filePath.startsWith(".specrunner/");
 }
 
@@ -38,13 +42,19 @@ export interface GateResult {
 /**
  * Parameters for `runBiteEvidenceGate`.
  * runtimeStrategy is typed as a partial subset to allow test fakes that omit the new ports.
+ *
+ * digestArtifacts is optional: when provided (on runtimes that support it), per-file
+ * content digests are embedded in BiteEvidenceRecord.testHash for archive freeze verification.
+ * When absent, testHash is omitted from the record (backward compat).
  */
 export interface GateDeps {
   state: JobState;
   cwd: string;
   slug: string;
   config: SpecRunnerConfig;
-  runtimeStrategy: Pick<RuntimeStrategy, "listCommitChangedFiles" | "runTestsAtCommit"> | null | undefined;
+  runtimeStrategy: Pick<RuntimeStrategy, "listCommitChangedFiles" | "runTestsAtCommit"> & {
+    digestArtifacts?: RuntimeStrategy["digestArtifacts"];
+  } | null | undefined;
   tamperStatus: TamperStatus;
 }
 
@@ -191,6 +201,24 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
   const baseResults = new Map(baseTestResult.results.map((r) => [r.file, r.passed]));
   const candidateResults = new Map(candidateTestResult.results.map((r) => [r.file, r.passed]));
 
+  // Compute per-file content digests when digestArtifacts is available.
+  // Used for archive freeze verification (testHash in BiteEvidenceRecord).
+  let testHashByFile: Map<string, string> | null = null;
+  if (runtimeStrategy && typeof runtimeStrategy.digestArtifacts === "function") {
+    try {
+      const artifactRefs = materializedTestFiles.map((f) => ({ path: f }));
+      const digestResults = await runtimeStrategy.digestArtifacts(artifactRefs, cwd, null);
+      testHashByFile = new Map(
+        digestResults
+          .filter((r) => r.hash !== null)
+          .map((r) => [r.path, r.hash as string]),
+      );
+    } catch {
+      // best-effort: testHash absent is valid (backward compat)
+      testHashByFile = null;
+    }
+  }
+
   const records: BiteEvidenceRecord[] = [];
   let allVerified = true;
 
@@ -207,13 +235,23 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
       allVerified = false;
     }
 
-    records.push({
+    const record: BiteEvidenceRecord = {
       testId: file,
       strategy: "forward",
       baseResult,
       candidateResult,
       verified,
-    });
+      baseOid,
+      candidateOid,
+    };
+
+    // Attach testHash when digestArtifacts was available and produced a hash for this file.
+    const hash = testHashByFile?.get(file);
+    if (hash !== undefined) {
+      record.testHash = hash;
+    }
+
+    records.push(record);
   }
 
   if (allVerified) {

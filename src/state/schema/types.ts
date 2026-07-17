@@ -344,6 +344,17 @@ export interface BiteEvidenceRecord {
   baseResult: "red" | "green";
   candidateResult: "red" | "green";
   verified: boolean;
+  /**
+   * Final HEAD binding fields for the archive floor gate (assurance-provenance-floor).
+   * All optional for backward compatibility — records without these fields remain valid.
+   * - baseOid:      commit OID of the test-materialize step (base boundary).
+   * - candidateOid: commit OID of the implementer step (candidate boundary).
+   * - testHash:     content digest of the test file at baseOid ("sha256:..." format).
+   *                 Used for freeze / tamper detection at the archive gate.
+   */
+  baseOid?: string;
+  candidateOid?: string;
+  testHash?: string;
 }
 
 export interface JobState {

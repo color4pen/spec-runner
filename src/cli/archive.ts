@@ -29,6 +29,8 @@ import { logResult, logError, stderrWrite } from "../logger/stdout.js";
 import { initPipelineLog, logPipelineEvent, closePipelineLog } from "../logger/pipeline-logger.js";
 import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
+import { LocalRuntime } from "../core/runtime/local.js";
+import type { SpecRunnerConfig } from "../config/schema.js";
 
 /**
  * Build a FinishFs from real fs modules.
@@ -149,8 +151,11 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
       let postMergeVerify: ShellCommand[] | undefined = undefined;
       let minimumAssurance: import("../config/schema.js").MinimumAssuranceConfig | undefined = undefined;
       let designLayerWithMerge: ResolvedDesignLayer = disabledDesignLayer;
+      /** Hoisted config for floor gate — undefined when config loading fails (gate is no-op). */
+      let mergeConfig: SpecRunnerConfig | undefined;
       try {
         const config = await loadConfig();
+        mergeConfig = config;
         githubHost = resolveGitHubHost(config.github);
         githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
         // Resolve wait timeout: flag override > config > default
@@ -168,6 +173,7 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
         designLayerWithMerge = resolveDesignLayerConfig(config);
       } catch {
         // Config not available — use defaults (no guard applied; no integrity check)
+        // mergeConfig remains undefined → floor gate will treat runtime as unavailable (safe).
         if (opts.mergeWaitMs !== undefined) {
           waitTimeoutMs = opts.mergeWaitMs;
         } else {
@@ -209,6 +215,14 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
 
       const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
 
+      // Construct LocalRuntime for the achieved-assurance floor gate (T-06).
+      // Only injected when config loaded successfully (mergeConfig defined).
+      // When config is absent, assuranceRuntime is undefined → floor gate is fail-closed for any
+      // constrained dimension (but minimumAssurance will also be undefined, so gate is no-op).
+      const assuranceRuntime = mergeConfig !== undefined
+        ? new LocalRuntime({ cwd: opts.cwd, githubClient, githubToken, spawnFn: spawnCommand })
+        : undefined;
+
       archiveResult = await runMergeThenArchive(
         {
           slug: opts.slug,
@@ -226,6 +240,8 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           postMergeVerify,
           minimumAssurance,
           designLayer: designLayerWithMerge,
+          assuranceRuntime,
+          config: mergeConfig,
         },
         logResult,
       );

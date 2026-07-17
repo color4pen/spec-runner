@@ -850,6 +850,42 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
+   * List files changed between two arbitrary commit OIDs, filtered to the given paths.
+   * Runs `git diff --name-only <baseOid> <headOid> -- <paths...>` in cwd.
+   *
+   * Used by the archive floor gate (assurance-provenance-floor) to verify freeze integrity.
+   *
+   * Never throws — returns ChangedFilesResult DU instead.
+   * - paths empty: short-circuit → {kind:"success", files:[]} (no git call).
+   * - exit 0: {kind:"success", files} (empty files = all paths frozen/intact).
+   * - non-zero exit / spawn error: {kind:"unavailable", reason}.
+   */
+  async diffPathsBetweenCommits(baseOid: string, headOid: string, paths: string[], cwd: string): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
+    // Short-circuit: empty paths → no diff possible, vacuously frozen.
+    if (paths.length === 0) {
+      return { kind: "success", files: [] };
+    }
+    try {
+      const result = await this.spawnFn(
+        "git",
+        ["diff", "--name-only", baseOid, headOid, "--", ...paths],
+        { cwd },
+      );
+      if (result.exitCode !== 0) {
+        return { kind: "unavailable", reason: `git diff exited with code ${result.exitCode}` };
+      }
+      const files = result.stdout
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      return { kind: "success", files };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      return { kind: "unavailable", reason };
+    }
+  }
+
+  /**
    * Run only the provided test files against an isolated detached worktree at `oid`.
    *
    * Workflow:
