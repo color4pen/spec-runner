@@ -1,0 +1,31 @@
+{
+  "requestHash": "sha256:55c9dfebd7009cad5dc40118221ff9eb99bc3f0c3f2c224bb6458daf72270b12",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/archive/achieved-assurance.ts:84 — deriveAchievedAssurance signature matches (state, finalHeadOid, cwd, config, floor, runtime)",
+    "src/core/archive/achieved-assurance.ts:96-99 — specReview checks run existence only (Array.isArray + length > 0), no verdict check",
+    "src/core/archive/achieved-assurance.ts:166-183 — materializedTestFiles via listCommitChangedFiles(baseOid) + isExcludedPath filter",
+    "src/core/archive/achieved-assurance.ts:190 — freeze: diffPathsBetweenCommits(baseOid, finalHeadOid, materializedTestFiles)",
+    "src/core/archive/achieved-assurance.ts:209-212 — testDerivation:'frozen' set when freezeIntact (no scenario hash check)",
+    "src/core/archive/achieved-assurance.ts:214-241 — base-red: runTestsAtCommit(baseOid, ...) all passed===false, fail-closed",
+    "src/core/archive/achieved-assurance.ts:241 — biteEvidence:'required' set after base-red only (no finalHeadOid test run)",
+    "src/core/archive/merge-then-archive.ts:52 — NONE_CHECK_GRACE_MS = 60_000",
+    "src/core/archive/merge-then-archive.ts:359 — Step 3.6 (minimumAssurance floor gate) before Step 4 (CI wait at L448)",
+    "src/core/step/bite-evidence/gate.ts:22-23 — FORWARD_TYPES is const (unexported): new Set(['bug-fix','new-feature'])",
+    "src/core/step/bite-evidence/gate.ts:30 — isExcludedPath IS exported (used by achieved-assurance.ts:20)",
+    "src/core/step/bite-evidence/gate.ts:78-84 — gate checks FORWARD_TYPES, non-forward → strategy-deferred",
+    "src/core/step/bite-evidence/tamper.ts:46-67 — inconclusive (no lineage / null hash) → proceed (not fail-closed)",
+    "src/core/step/bite-evidence/tamper.ts — archive achieved-assurance.ts does NOT import tamper.ts",
+    "src/store/event-journal.ts:100-110 — LineageRecord exports: type, step, ts, outputs: ArtifactRef[], inputs: ArtifactRef[]",
+    "src/store/event-journal.ts:157 — fold() returns lineage: LineageRecord[]",
+    "src/state/schema/types.ts:173-200 — StepRun.outcome: StepOutcome; StepOutcome.verdict: Verdict|string|null",
+    "src/core/step/judge-verdict.ts:32-40 — deriveJudgeVerdict returns 'approved' when ok=true and no high/critical/decision-needed",
+    "src/config/type-config.ts — 5 types: new-feature, spec-change, refactoring, bug-fix, chore",
+    "src/core/finish/archive-change-folder.ts:52 — git mv specrunner/changes/<slug> specrunner/changes/archive/<YYYY-MM-DD>-<slug>",
+    "src/core/runtime/local.ts:1044 — digestArtifacts reads working-tree (path.join(cwd, ref.path)), not git commit",
+    "src/git/checkpoint-ref.ts:152-170 — git show <ref>:<path> used for state.json and events.jsonl",
+    "src/core/verification/runner.ts:224 — git show origin/<branch>:package.json used ad-hoc",
+    "src/core/port/runtime-strategy.ts:628-633 — runTestsAtCommit(oid, testFiles, cwd, config) accepts arbitrary OID"
+  ],
+  "sourceRevision": "e917802c7f83bdab79ba9fe87939672c34b018c6"
+}
