@@ -1,0 +1,21 @@
+{
+  "requestHash": "sha256:4ad1c22cca78628b394a62a7c72a09b208b8eff51189fdad0d289a5020afa645",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/runtime/local.ts:934-943 — custom verification.commands bail returning unavailable",
+    "src/core/runtime/local.ts:901-982 — runTestsAtCommit full function (worktree add → per-file bun test → cleanup)",
+    "src/core/port/runtime-strategy.ts:86-88 — IsolatedTestResult type (ran | unavailable)",
+    "src/core/worktree/manager.ts:156-178 — WorktreeManager.create detect-install / commands plan (no install for isolated worktree)",
+    "src/core/verification/commands.ts:56-99 — spawnCommand prepends cwd/node_modules/.bin to PATH",
+    "src/config/schema/types.ts:142-158 — VerificationConfig has commands? and coverage? only (no scopedTestCommand)",
+    "src/config/schema/validation.ts:264-298 — verification validation schema (commands + coverage, no scopedTestCommand)",
+    "src/core/step/bite-evidence/gate.ts:161-163 — in-loop gate calls runTestsAtCommit and treats unavailable as strategy-deferred",
+    "src/core/archive/achieved-assurance.ts:218-220 — archive floor calls runTestsAtCommit and treats unavailable as no biteEvidence",
+    "src/core/runtime/managed.ts — ManagedRuntime.runTestsAtCommit always returns unavailable",
+    "src/core/runtime/__tests__/bite-evidence-isolated-exec.test.ts:103-105 — custom commands → unavailable test (to be updated to opt-in)",
+    "src/prompts/test-materialize-system.ts:56-78 — TC ID allowed in comment (not required in title)",
+    "src/core/verification/test-coverage.ts:204-215 — TC ID verification is file-level grep",
+    ".specrunner/config.json — has custom verification.commands (build/typecheck/test/lint), no scopedTestCommand"
+  ],
+  "sourceRevision": "fe725487a8654ccbf3b2b76a55dce719c9495632"
+}
