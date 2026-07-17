@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b935c77c-7753-4c6e-a5d2-b3c4ebb3731d",
   "createdAt": "2026-07-17T00:10:18.274Z",
-  "updatedAt": "2026-07-17T07:15:02.823Z",
+  "updatedAt": "2026-07-17T16:51:48.666Z",
   "request": {
     "title": "minimumAssurance floor を「宣言」でなく「最終 HEAD で達成された provenance」で判定する（P0 fix-forward）",
     "type": "spec-change",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "implementer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/assurance-provenance-floor-b935c77c",
-  "error": {
-    "code": "CLAUDE_CODE_QUERY_FAILED",
-    "message": "Claude Code SDK query failed: Claude Code returned an error result: API Error: Unable to connect to API (ConnectionRefused)",
-    "hint": ""
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -63,13 +59,10 @@
       ]
     }
   ],
-  "resumePoint": {
-    "step": "implementer",
-    "reason": "Claude Code SDK query failed: Claude Code returned an error result: API Error: Unable to connect to API (ConnectionRefused)",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 21,
+    "historyCount": 23,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

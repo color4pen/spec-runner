@@ -29,8 +29,8 @@ import type { WorktreeManager } from "../worktree/manager.js";
 import type { ResolvedDesignLayer, ShellCommand, MinimumAssuranceConfig, SpecRunnerConfig } from "../../config/schema.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { getJobSlug } from "../../state/job-slug.js";
-import { getProfile, satisfiesFloor } from "../../state/profile.js";
-import type { ProfileAssurance, JobState } from "../../state/schema.js";
+import { satisfiesFloor } from "../../state/profile.js";
+import type { JobState } from "../../state/schema.js";
 import { runArchiveOrchestrator, resolveWorktreePathForArchive } from "./orchestrator.js";
 import { deriveAchievedAssurance } from "./achieved-assurance.js";
 import type { AssuranceProvenanceRuntime } from "./achieved-assurance.js";
@@ -174,8 +174,11 @@ export async function runMergeThenArchive(
   let archiveRecorded = false;
   /** Working tree where the archive-record commit was (or will be) made. */
   let recordDir: string;
-  /** Effective assurance of the job's profile, captured for Step 3.6 floor check. */
-  let jobAssurance: ProfileAssurance;
+  /**
+   * Full job state hoisted for the achieved-assurance floor gate (Step 3.6).
+   * Populated in Step 1; guaranteed non-undefined by Step 3.6 (Step 1 returns early on error).
+   */
+  let jobStateForFloor: JobState | undefined;
 
   try {
     const allEntries = await JobStateStore.listWithSourceDirs(cwd, { includeArchived: true });
@@ -208,8 +211,8 @@ export async function runMergeThenArchive(
     // D3: recordDir — the working tree where the archive-record commit was/will be made.
     recordDir = noWorktree ? cwd : (worktreePath ?? cwd);
 
-    // Capture effective assurance for the minimumAssurance floor check (Step 3.6).
-    jobAssurance = getProfile(state).assurance;
+    // Capture full state for the achieved-assurance floor gate (Step 3.6).
+    jobStateForFloor = state;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return { exitCode: 2, message };
@@ -395,24 +398,37 @@ export async function runMergeThenArchive(
         };
       }
 
-      // reason === "match" — evaluate assurance floor
+      // reason === "match" — evaluate achieved assurance floor (assurance-provenance-floor)
+      // Derives achieved provenance from mechanical facts, not the declared profile assurance.
+      // fail-closed: any unavailability leaves the dimension absent → satisfiesFloor fails.
       const { protectedPaths: _pp, ...floor } = minimumAssurance;
-      if (!satisfiesFloor(jobAssurance, floor)) {
+      const { achieved, diagnostics: achievedDiagnostics } = await deriveAchievedAssurance({
+        state: jobStateForFloor!,
+        finalHeadOid: archiveSha,
+        cwd,
+        config,
+        floor,
+        runtime: assuranceRuntime,
+      });
+      if (!satisfiesFloor(achieved, floor)) {
         const matchedList = floorDecision.matched.map((f) => `  - ${f}`).join("\n");
-        const effectiveAssuranceStr = JSON.stringify(jobAssurance);
+        const effectiveAssuranceStr = JSON.stringify(achieved);
         const floorStr = JSON.stringify(floor);
+        const diagnosticsStr = achievedDiagnostics.length > 0
+          ? `\nProvenance diagnostics:\n${achievedDiagnostics.map((d) => `  - ${d}`).join("\n")}`
+          : "";
         return {
           exitCode: 1,
           escalation: formatEscalation({
             failedStep: "merge gate (minimumAssurance floor)",
             detectedState:
               `The following changed files match a minimumAssurance protected path, ` +
-              `but the job's effective assurance does not meet the required floor.\n` +
+              `but the achieved provenance does not meet the required floor.\n` +
               `Matched files:\n${matchedList}\n` +
-              `Effective assurance: ${effectiveAssuranceStr}\n` +
-              `Required floor: ${floorStr}`,
+              `Achieved assurance: ${effectiveAssuranceStr}\n` +
+              `Required floor: ${floorStr}${diagnosticsStr}`,
             recommendedAction:
-              `The job's assurance does not satisfy the configured minimumAssurance floor. ` +
+              `The achieved provenance does not satisfy the configured minimumAssurance floor. ` +
               `Manual review is required:\n` +
               `  1. Open the PR on GitHub and review the flagged files.\n` +
               `  2. Ensure assurance requirements are satisfied (see floor: ${floorStr}).\n` +
