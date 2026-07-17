@@ -243,13 +243,21 @@ describe("TC-010: sub-floor profile が protected path を touch するとき me
 });
 
 // ---------------------------------------------------------------------------
-// TC-011: standard profile が protected path を touch しても floor を満たし merge が進む
+// TC-011 (旧): standard profile が protected path を touch しても floor を満たし merge が進む
+// TC-002 (test-cases.md): profile 欠落（legacy）job が biteEvidence: required floor を素通りしない
+//
+// CHANGE (assurance-provenance-floor): 旧 TC-011 は exitCode: 0 を期待していたが、
+// 達成 provenance ベースの floor 判定では profile 欠落（= no test-materialize steps）の job は
+// achieved.biteEvidence が absent となり fail-closed（exitCode: 1）になる。
+// 期待値を exitCode: 1 に反転する（T2 — 宣言は authorize しない）。
 // ---------------------------------------------------------------------------
 
-describe("TC-011: standard profile が protected path を touch しても floor を満たし merge が進む", () => {
-  it("standard profile (profile absent → STANDARD_PROFILE) + floor path matched → merge proceeds", async () => {
+describe("TC-011 / TC-002: profile 欠落（legacy）job は宣言最強プロファイルで floor を素通りしない — fail-closed", () => {
+  it("TC-002: profile absent (no steps) + biteEvidence required floor + floor path matched → fail-closed (exitCode 1)", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    // No profile set → getProfile returns STANDARD_PROFILE (strongest assurance)
+    // No profile set AND no steps → getProfile returns STANDARD_PROFILE (declared strongest),
+    // but achieved provenance is absent (no test-materialize runs → baseOid null → biteEvidence absent).
+    // fail-closed: satisfiesFloor(absent, { biteEvidence: "required" }) === false.
     (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
       makeActiveEntry(makeJobState(42)),
     ]);
@@ -285,11 +293,15 @@ describe("TC-011: standard profile が protected path を touch しても floor 
       repo: "repo",
       waitTimeoutMs: 60_000,
       minimumAssurance: MINIMUM_ASSURANCE_CONFIG,
-    });
+      // No assuranceRuntime provided: baseOid cannot be resolved (no steps) → biteEvidence absent.
+      // Floor is not satisfied → fail-closed.
+    } as Parameters<typeof runMergeThenArchive>[0]);
 
-    expect(result).toMatchObject({ exitCode: 0 });
-    expect(client.mergePullRequest).toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    // TC-002: declaration (STANDARD_PROFILE) must NOT authorize merge.
+    // Achieved provenance is absent → exitCode 1.
+    expect(result.exitCode).toBe(1);
+    expect(client.mergePullRequest).not.toHaveBeenCalled();
+    expect(runPostMergeCleanup).not.toHaveBeenCalled();
   });
 });
 
