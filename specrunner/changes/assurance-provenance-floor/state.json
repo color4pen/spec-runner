@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b935c77c-7753-4c6e-a5d2-b3c4ebb3731d",
   "createdAt": "2026-07-17T00:10:18.274Z",
-  "updatedAt": "2026-07-17T17:12:22.491Z",
+  "updatedAt": "2026-07-17T17:31:44.470Z",
   "request": {
     "title": "minimumAssurance floor を「宣言」でなく「最終 HEAD で達成された provenance」で判定する（P0 fix-forward）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/assurance-provenance-floor-b935c77c",
   "error": null,
@@ -61,8 +61,35 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "59a1ddfe42952a1eb6f803daf7e6f3d113a503ad",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 55,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -72,7 +99,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "build-fixer": 1
+      "build-fixer": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
