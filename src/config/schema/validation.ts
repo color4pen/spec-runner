@@ -267,6 +267,7 @@ export const configSchema = object({
         commands: optional(
           array(shellCommandSchema, "must be an array."),
         ),
+        scopedTestCommand: optional(nonEmptyString("must be a non-empty string.")),
         coverage: optional(
           object(
             {

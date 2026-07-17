@@ -155,6 +155,11 @@ export interface VerificationConfig {
    * When absent, the gate is skipped (existing behaviour preserved).
    */
   coverage?: CoverageConfig;
+  /**
+   * Command that runs only the test files appended as trailing arguments (file-scopable). Opt-in;
+   * enables scoped isolated execution under custom `commands`. Provider-neutral.
+   */
+  scopedTestCommand?: string;
 }
 
 /**

@@ -21,6 +21,7 @@ import { createWorktreeManager } from "../worktree/manager.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 import { resolveMonitoredGuardGlobs, matchesMonitored } from "../step/main-checkout-guard.js";
 import { spawnCommand, noopSpawnBackground } from "../../util/spawn.js";
+import { spawnCommand as spawnScopedCommand } from "../verification/commands.js";
 import type { SpawnFn, SpawnBackgroundFn } from "../../util/spawn.js";
 import { acquirePowerAssertion } from "./power-assertion.js";
 import { createTransportAuth } from "../../git/transport-auth.js";
@@ -888,15 +889,22 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   /**
    * Run only the provided test files against an isolated detached worktree at `oid`.
    *
-   * Workflow:
-   *   1. Create a detached isolated worktree at `oid` (`git worktree add --detach <tmp> <oid>`).
-   *   2. Run only the provided `testFiles` via the resolved scoped test command.
-   *   3. Collect per-file pass/fail results.
-   *   4. Remove the isolated worktree in a finally-style cleanup.
+   * Branch selection (D3 precedence):
+   *   - **Scoped path**: `config.verification.scopedTestCommand` is a non-empty string.
+   *     Symlinks `<cwd>/node_modules` into the isolated worktree (D1), then runs each
+   *     test file individually via `<scopedTestCommand> '<file>'` using the verification
+   *     `spawnCommand` (which prepends `<tmpBase>/node_modules/.bin` to PATH).
+   *     Returns `unavailable` (fail-closed) if `<cwd>/node_modules` does not exist.
+   *   - **Bail path**: custom `verification.commands` are present but `scopedTestCommand`
+   *     is not set. Returns `{ kind: "unavailable" }` (backward-compat, opt-in not enabled).
+   *   - **Default path**: no custom commands and no `scopedTestCommand`. Runs each file
+   *     via `bun test <file>` using `this.spawnFn` with `cwd = tmpBase` (unchanged).
+   *
+   * Cleanup (D4): the `<tmpBase>/node_modules` symlink is removed first (never followed),
+   * then the isolated worktree itself, in the finally block.
    *
    * Never throws — returns IsolatedTestResult DU instead.
    * Returns `unavailable` on any failure (spawn error, non-existent OID, etc.).
-   * Returns `unavailable` if the test command cannot be scoped to specific files.
    */
   async runTestsAtCommit(
     oid: string,
@@ -912,6 +920,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     const os = await import("node:os");
     const tmpBase = path.join(os.tmpdir(), `specrunner-bite-evidence-${oid.slice(0, 8)}-${Date.now()}`);
     let worktreeCreated = false;
+    let symlinkCreated = false;
 
     try {
       // Create isolated detached worktree at the given OID
@@ -928,40 +937,86 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       }
       worktreeCreated = true;
 
-      // Run each test file individually and collect results
-      const results: { file: string; passed: boolean }[] = [];
+      // D3 precedence: determine execution branch.
+      const scopedTestCommand = config.verification?.scopedTestCommand?.trim();
+      const hasCustomCommands =
+        config.verification?.commands !== undefined &&
+        (config.verification.commands as unknown[]).length > 0;
 
-      // Determine the test command (use "bun test" as the default scoped command)
-      // For each test file, run: bun test <file>
-      // If verification.commands is set, we skip scoped execution (unavailable)
-      // since we can't reliably scope arbitrary commands to specific files.
-      if (config.verification?.commands && (config.verification.commands as unknown[]).length > 0) {
+      if (scopedTestCommand) {
+        // ── Scoped path ──────────────────────────────────────────────────────
+        // D1: verify <cwd>/node_modules exists (fail-closed if absent).
+        const nodeModulesSrc = path.join(cwd, "node_modules");
+        try {
+          await fs.access(nodeModulesSrc);
+        } catch {
+          return {
+            kind: "unavailable",
+            reason: `node_modules not found in cwd (${nodeModulesSrc}); cannot resolve dependencies for isolated execution`,
+          };
+        }
+
+        // Create symlink: <tmpBase>/node_modules → <cwd>/node_modules
+        const nodeModulesLink = path.join(tmpBase, "node_modules");
+        await fs.symlink(nodeModulesSrc, nodeModulesLink, "dir");
+        symlinkCreated = true;
+
+        // Run each test file individually via the scoped command.
+        const results: { file: string; passed: boolean }[] = [];
+        for (const testFile of testFiles) {
+          try {
+            // Single-quote-escape the file path so paths with spaces/special chars
+            // cannot mis-split under `sh -c`.
+            const escapedFile = testFile.replace(/'/g, "'\\''");
+            const shellCmd = `${scopedTestCommand} '${escapedFile}'`;
+            const result = await spawnScopedCommand(shellCmd, tmpBase, stripSecrets(process.env as Record<string, string | undefined>));
+            results.push({ file: testFile, passed: result.exitCode === 0 });
+          } catch {
+            // Per-file spawn error → treat as failed
+            results.push({ file: testFile, passed: false });
+          }
+        }
+        return { kind: "ran", results };
+
+      } else if (hasCustomCommands) {
+        // ── Bail path ────────────────────────────────────────────────────────
+        // scopedTestCommand not set + custom commands present → unavailable (opt-in not enabled).
         return {
           kind: "unavailable",
-          reason: "Cannot scope custom verification.commands to individual test files",
+          reason: "custom verification.commands present but no scopedTestCommand configured (scoped isolated execution is opt-in)",
         };
-      }
 
-      for (const testFile of testFiles) {
-        try {
-          const testResult = await this.spawnFn(
-            "bun",
-            ["test", testFile],
-            { cwd: tmpBase },
-          );
-          results.push({ file: testFile, passed: testResult.exitCode === 0 });
-        } catch {
-          // Per-file spawn error → treat as failed
-          results.push({ file: testFile, passed: false });
+      } else {
+        // ── Default path ─────────────────────────────────────────────────────
+        // No custom commands, no scopedTestCommand: run each file via `bun test <file>`.
+        const results: { file: string; passed: boolean }[] = [];
+        for (const testFile of testFiles) {
+          try {
+            const testResult = await this.spawnFn(
+              "bun",
+              ["test", testFile],
+              { cwd: tmpBase },
+            );
+            results.push({ file: testFile, passed: testResult.exitCode === 0 });
+          } catch {
+            // Per-file spawn error → treat as failed
+            results.push({ file: testFile, passed: false });
+          }
         }
+        return { kind: "ran", results };
       }
-
-      return { kind: "ran", results };
     } catch (err) {
       const reason = err instanceof Error ? err.message : String(err);
       return { kind: "unavailable", reason };
     } finally {
-      // Always clean up the isolated worktree (finally-style)
+      // D4: Clean up symlink first (never follows it), then the worktree.
+      if (symlinkCreated) {
+        try {
+          await fs.rm(path.join(tmpBase, "node_modules"), { force: true });
+        } catch {
+          // Best-effort — failure is non-fatal
+        }
+      }
       if (worktreeCreated) {
         try {
           await this.spawnFn(
