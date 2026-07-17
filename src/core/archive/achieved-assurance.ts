@@ -222,19 +222,22 @@ export async function deriveAchievedAssurance(
       return { achieved: achieved as ProfileAssurance, diagnostics };
     }
 
-    // Check that ALL tests are red (failed) at baseOid.
-    // Any passed = hollow test → biteEvidence absent.
-    const anyPassed = baseTestResult.results.some((r) => r.passed === true);
-    if (anyPassed) {
-      const hollowFiles = baseTestResult.results.filter((r) => r.passed).map((r) => r.file);
+    // Require base-red for EVERY materialized test file: complete coverage, non-empty, all failed.
+    // A missing/extra/empty result set must NOT vacuously satisfy base-red (fail-closed): any file
+    // without a recorded `passed === false` result (missing result, or hollow passed=true) leaves
+    // biteEvidence absent. `some(passed)` alone would fail-open on empty/partial results.
+    const passedByFile = new Map(baseTestResult.results.map((r) => [r.file, r.passed]));
+    const notRed = materializedTestFiles.filter((f) => passedByFile.get(f) !== false);
+    if (materializedTestFiles.length === 0 || notRed.length > 0) {
       diagnostics.push(
-        `biteEvidence: hollow test detected — the following tests passed at baseOid (not genuinely red): ${hollowFiles.join(", ")}`,
+        `biteEvidence: base-red not established for all materialized tests at baseOid ` +
+        `(missing result or hollow passed=true): ${notRed.join(", ") || "(no materialized tests)"}`,
       );
       // biteEvidence absent (testDerivation already set if freeze intact)
       return { achieved: achieved as ProfileAssurance, diagnostics };
     }
 
-    // All red at base — biteEvidence achieved.
+    // Every materialized test genuinely red at base — biteEvidence achieved.
     achieved["biteEvidence"] = "required";
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);

@@ -500,6 +500,72 @@ describe("TC-005: baseOid で green の test（空洞）が base-red 要件を�
 });
 
 // ---------------------------------------------------------------------------
+// TC-005b: base test results が空 / 部分的でも base-red を vacuous に満たさない
+//   (fail-open hardening): runTestsAtCommit が ran でも、materialized test 全件に
+//   passed=false が対応しない限り biteEvidence を達成扱いしない。
+// ---------------------------------------------------------------------------
+
+describe("TC-005b: base test results が空 / 部分的なら base-red を満たさず fail-closed になる", () => {
+  it("TC-005b: empty results (ran but zero) → base-red not established → fail-closed", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeActiveEntry(makeJobStateWithSteps(42)),
+    ]);
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: ARCHIVE_HEAD_SHA });
+    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const client = makeGitHubClient({
+      listPullRequestFiles: vi.fn().mockResolvedValue({ files: ["architecture/core/design.md"], truncated: false }),
+    });
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+    // ran but zero results — must NOT vacuously satisfy base-red
+    const assuranceRuntime = makeFakeRuntime({
+      changedFiles: ["tests/unit/foo.test.ts"],
+      diffFiles: [],
+      baseTestResults: [],
+    });
+    const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
+      slug: SLUG, cwd: CWD, spawn: spawnFn, fs: fsMock, githubClient: client,
+      owner: "user", repo: "repo", waitTimeoutMs: 60_000,
+      minimumAssurance: FLOOR_BITE_EVIDENCE_REQUIRED, assuranceRuntime,
+      config: { version: 1, agents: {} },
+    });
+    expect(result.exitCode).toBe(1);
+    expect(client.mergePullRequest).not.toHaveBeenCalled();
+  });
+
+  it("TC-005b: partial results (a materialized file has no red result) → fail-closed", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeActiveEntry(makeJobStateWithSteps(42)),
+    ]);
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({ exitCode: 0, headSha: ARCHIVE_HEAD_SHA });
+    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const client = makeGitHubClient({
+      listPullRequestFiles: vi.fn().mockResolvedValue({ files: ["architecture/core/design.md"], truncated: false }),
+    });
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+    // Two materialized files but only one has a red result; the other is unaccounted → fail-closed
+    const assuranceRuntime = makeFakeRuntime({
+      changedFiles: ["tests/unit/foo.test.ts", "tests/unit/bar.test.ts"],
+      diffFiles: [],
+      baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
+    });
+    const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
+      slug: SLUG, cwd: CWD, spawn: spawnFn, fs: fsMock, githubClient: client,
+      owner: "user", repo: "repo", waitTimeoutMs: 60_000,
+      minimumAssurance: FLOOR_BITE_EVIDENCE_REQUIRED, assuranceRuntime,
+      config: { version: 1, agents: {} },
+    });
+    expect(result.exitCode).toBe(1);
+    expect(client.mergePullRequest).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-006: 最終 HEAD OID undefined で constrained floor に対し fail-closed になる
 // TC-007: baseOid 欠落で constrained floor に対し fail-closed になる
 // TC-008: listCommitChangedFiles unavailable で constrained floor に対し fail-closed になる
