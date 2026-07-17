@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b935c77c-7753-4c6e-a5d2-b3c4ebb3731d",
   "createdAt": "2026-07-17T00:10:18.274Z",
-  "updatedAt": "2026-07-17T17:35:29.243Z",
+  "updatedAt": "2026-07-17T17:40:31.506Z",
   "request": {
     "title": "minimumAssurance floor を「宣言」でなく「最終 HEAD で達成された provenance」で判定する（P0 fix-forward）",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/assurance-provenance-floor-b935c77c",
   "error": null,
   "pipelineId": "standard",
@@ -88,8 +88,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/848",
+    "number": 848,
+    "createdAt": "2026-07-17T17:40:30.783Z"
+  },
   "_journal": {
-    "historyCount": 60,
+    "historyCount": 69,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -104,7 +109,10 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
