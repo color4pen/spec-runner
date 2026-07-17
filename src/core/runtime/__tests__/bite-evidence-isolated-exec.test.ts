@@ -100,11 +100,64 @@ describe("bite-evidence isolated execution — LocalRuntime", () => {
     expect(r.kind).toBe("unavailable");
   });
 
-  it("runTestsAtCommit with custom verification.commands → unavailable (cannot scope)", async () => {
+  // TC-006: custom commands without opt-in stay unavailable
+  // When custom verification.commands are present but scopedTestCommand is NOT set,
+  // runTestsAtCommit must return unavailable (backward-compat, fail-closed).
+  // Opt-in not enabled → cannot scope custom commands to individual files.
+  it("TC-006: custom verification.commands without scopedTestCommand → unavailable (opt-in not enabled)", async () => {
     const cfg = { version: 1, agents: {}, verification: { commands: ["echo x"] } } as unknown as SpecRunnerConfig;
     const r = await makeLocal(repo).runTestsAtCommit(oid, ["sample.test.ts"], repo, cfg);
     expect(r.kind).toBe("unavailable");
   });
+});
+
+// TC-005: opt-in enables scoped execution under custom commands
+// When scopedTestCommand IS set alongside custom verification.commands,
+// runTestsAtCommit must NOT bail and must return { kind: "ran" }.
+describe("TC-005: scopedTestCommand opt-in enables scoped execution under custom commands", () => {
+  let optInRepo: string;
+  let optInOid: string;
+
+  beforeAll(async () => {
+    optInRepo = await fs.mkdtemp(path.join(os.tmpdir(), "bite-iso-opt-in-"));
+    await git(optInRepo, "init", "--initial-branch=main");
+    await git(optInRepo, "config", "user.email", "t@t.co");
+    await git(optInRepo, "config", "user.name", "T");
+    await fs.writeFile(path.join(optInRepo, "README.md"), "# repo\n");
+    await git(optInRepo, "add", "-A");
+    await git(optInRepo, "commit", "-m", "init");
+    // Add a self-contained zero-dependency bun:test fixture.
+    const bunTestModule = "bun" + ":test";
+    await fs.writeFile(
+      path.join(optInRepo, "zero-dep.test.ts"),
+      `import { test, expect } from "${bunTestModule}";\ntest("zero", () => { expect(1).toBe(1); });\n`,
+    );
+    await git(optInRepo, "add", "-A");
+    await git(optInRepo, "commit", "-m", "add zero-dep test");
+    optInOid = await git(optInRepo, "rev-parse", "HEAD");
+    // Create an empty node_modules dir so the scoped path's existence check passes.
+    // (The test file itself uses only bun:test builtin — no real npm dep needed.)
+    await fs.mkdir(path.join(optInRepo, "node_modules"), { recursive: true });
+  }, 60_000);
+
+  afterAll(async () => {
+    await fs.rm(optInRepo, { recursive: true, force: true });
+  });
+
+  it("TC-005: custom commands + scopedTestCommand set → ran (opt-in unlocks scoped execution)", async () => {
+    const cfg = {
+      version: 1,
+      agents: {},
+      verification: { commands: ["echo x"], scopedTestCommand: "bun test" },
+    } as unknown as SpecRunnerConfig;
+    const r = await makeLocal(optInRepo).runTestsAtCommit(optInOid, ["zero-dep.test.ts"], optInRepo, cfg);
+    expect(r.kind).toBe("ran");
+    if (r.kind === "ran") {
+      expect(r.results.length).toBe(1);
+      expect(r.results[0]!.file).toBe("zero-dep.test.ts");
+      expect(r.results[0]!.passed).toBe(true);
+    }
+  }, 60_000);
 });
 
 describe("bite-evidence isolated execution — ManagedRuntime returns unavailable (no local worktree)", () => {
