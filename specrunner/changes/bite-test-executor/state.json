@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a58cc81e-77e4-4b62-8cdf-07bc8f789b08",
   "createdAt": "2026-07-17T18:21:58.049Z",
-  "updatedAt": "2026-07-17T18:40:19.273Z",
+  "updatedAt": "2026-07-17T18:41:57.363Z",
   "request": {
     "title": "bite executor — 隔離 worktree で materialize 済み test を repo の runner で実行可能にする（Phase 2）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/bite-test-executor-a58cc81e",
   "error": null,
@@ -60,11 +60,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }
