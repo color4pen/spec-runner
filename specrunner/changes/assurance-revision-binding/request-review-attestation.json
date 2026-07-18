@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:27f240c7e2eeb58be038e76c71d164be2c0e7a0d8ea497b7ff21dbff9cf30e58",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "achieved-assurance.ts:267 — readFileAtCommit(finalHeadOid, events.jsonl) — both reads at finalHeadOid",
+    "achieved-assurance.ts:297 — readFileAtCommit(finalHeadOid, test-cases.md) — both reads at finalHeadOid",
+    "achieved-assurance.ts:126-134 — specReview derivation checks only verdict, no content binding",
+    "achieved-assurance.ts:71-74 — computeContentHash returns sha256:<hex>",
+    "src/state/schema/types.ts:199 — StepRun.commitOid?: string",
+    "src/core/runtime/local.ts:1051-1109 — readFileAtCommit suffix resolution (endsWith / + suffix || endsWith - + suffix)",
+    "src/store/event-journal.ts:324 — fold() returns { lineage: lineageRecords, ... }",
+    "src/core/step/commit-push.ts:48 — commitAndPush uses git add -A",
+    "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts:113-136 — E2E test places events.jsonl and test-cases.md in same candidate commit",
+    "src/kernel/step-names.ts:43 — STEP_NAMES.TEST_CASE_GEN = 'test-case-gen'",
+    "src/kernel/step-names.ts:41 — STEP_NAMES.SPEC_REVIEW = 'spec-review'",
+    "src/config/type-config.ts:105 — isSpecRequired function exists"
+  ],
+  "sourceRevision": "ecca9a752b873119ea7ece0278fd7bc73e06c9f9"
+}
