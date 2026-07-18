@@ -18,6 +18,7 @@
  * TC-011: materialized test 0 件で constrained floor に対し fail-closed になる
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { createHash } from "node:crypto";
 import type { GitHubClient, CheckRollup } from "../../../../src/core/port/github-client.js";
 import type { StepRun } from "../../../../src/state/schema.js";
 
@@ -56,6 +57,24 @@ const BASE_OID = "base-commit-sha-prov-001";
 const CANDIDATE_OID = "candidate-commit-sha-prov-001";
 const ARCHIVE_HEAD_SHA = "archive-head-sha-prov-001";
 
+// Scenario two-layer freeze test data (for TC-003 positive path).
+const TEST_CASES_CONTENT = "# Test Cases\n\n## TC-001: sample\n";
+const TEST_CASES_HASH = "sha256:" + createHash("sha256")
+  .update(Buffer.from(TEST_CASES_CONTENT, "utf8"))
+  .digest("hex");
+
+function makeEventsJsonl(frozenHash: string | null): string {
+  return JSON.stringify({
+    type: "lineage",
+    step: "test-case-gen",
+    ts: "2026-01-01T00:00:00.000Z",
+    outputs: [
+      { path: `specrunner/changes/archive/2026-07-18-${SLUG}/test-cases.md`, hash: frozenHash },
+    ],
+    inputs: [],
+  }) + "\n";
+}
+
 /**
  * minimumAssurance config requiring both testDerivation:frozen and biteEvidence:required.
  */
@@ -84,32 +103,71 @@ type IsolatedTestResult =
   | { kind: "ran"; results: { file: string; passed: boolean }[] }
   | { kind: "unavailable"; reason: string };
 
+type CommitFileResult =
+  | { kind: "found"; path: string; content: string }
+  | { kind: "unavailable"; reason: string };
+
 interface FakeAssuranceRuntime {
   listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
   runTestsAtCommit(oid: string, testFiles: string[], cwd: string, config: unknown): Promise<IsolatedTestResult>;
   diffPathsBetweenCommits(baseOid: string, headOid: string, paths: string[], cwd: string): Promise<ChangedFilesResult>;
+  readFileAtCommit(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
 }
 
 /**
  * Build a fake assuranceRuntime with configurable responses.
  *
- * Defaults model a "fully achieved" job:
+ * Defaults model a "fully achieved" job (updated for achieved-assurance-completeness):
  *   - listCommitChangedFiles: returns one test file
  *   - diffPathsBetweenCommits: returns empty (frozen intact)
- *   - runTestsAtCommit(baseOid): returns all red (base-red satisfied)
+ *   - runTestsAtCommit(BASE_OID): returns all red (base-red satisfied)
+ *   - runTestsAtCommit(ARCHIVE_HEAD_SHA): returns all green (HEAD-green satisfied)
+ *   - readFileAtCommit: returns valid events.jsonl (matching scenario hash) and test-cases.md
+ *
+ * T-09 (backward-compat): existing fail-closed tests (TC-001/TC-004~TC-011) do not depend
+ * on readFileAtCommit or HEAD-green — the P3 check (readFileAtCommit required) causes both
+ * dimensions to be absent before these cases reach the base-red or HEAD-green checks.
+ * The updated TC-003 positive path exercises the full new behavior.
  */
 function makeFakeRuntime(options: {
   changedFiles?: string[] | "unavailable";
   diffFiles?: string[] | "unavailable";
   baseTestResults?: { file: string; passed: boolean }[] | "unavailable";
+  headTestResults?: IsolatedTestResult;
+  eventsJsonlResult?: CommitFileResult | "unavailable";
+  testCasesMdResult?: CommitFileResult | "unavailable";
+  includeReadFileAtCommit?: boolean;
 } = {}): FakeAssuranceRuntime {
   const {
     changedFiles = ["tests/unit/foo.test.ts"],
     diffFiles = [],
     baseTestResults = [{ file: "tests/unit/foo.test.ts", passed: false }],
+    headTestResults = { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
+    eventsJsonlResult,
+    testCasesMdResult,
+    includeReadFileAtCommit = true,
   } = options;
 
-  return {
+  const defaultEventsResult: CommitFileResult = {
+    kind: "found",
+    path: `specrunner/changes/archive/2026-07-18-${SLUG}/events.jsonl`,
+    content: makeEventsJsonl(TEST_CASES_HASH),
+  };
+  const defaultTestCasesMdResult: CommitFileResult = {
+    kind: "found",
+    path: `specrunner/changes/archive/2026-07-18-${SLUG}/test-cases.md`,
+    content: TEST_CASES_CONTENT,
+  };
+
+  const resolvedEvents = eventsJsonlResult === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake events.jsonl unavailable" }
+    : (eventsJsonlResult ?? defaultEventsResult);
+
+  const resolvedTestCasesMd = testCasesMdResult === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake test-cases.md unavailable" }
+    : (testCasesMdResult ?? defaultTestCasesMdResult);
+
+  const runtime: FakeAssuranceRuntime = {
     async listCommitChangedFiles(_oid: string, _cwd: string): Promise<ChangedFilesResult> {
       if (changedFiles === "unavailable") {
         return { kind: "unavailable", reason: "fake listCommitChangedFiles unavailable" };
@@ -128,17 +186,34 @@ function makeFakeRuntime(options: {
       return { kind: "success", files: diffFiles };
     },
     async runTestsAtCommit(
-      _oid: string,
+      oid: string,
       _testFiles: string[],
       _cwd: string,
       _config: unknown,
     ): Promise<IsolatedTestResult> {
+      if (oid === ARCHIVE_HEAD_SHA) {
+        return headTestResults;
+      }
       if (baseTestResults === "unavailable") {
         return { kind: "unavailable", reason: "Cannot scope custom verification.commands to individual test files" };
       }
       return { kind: "ran", results: baseTestResults };
     },
+    async readFileAtCommit(
+      _oid: string,
+      pathSuffix: string,
+      _cwd: string,
+    ): Promise<CommitFileResult> {
+      if (!includeReadFileAtCommit) {
+        return { kind: "unavailable", reason: "readFileAtCommit not available (includeReadFileAtCommit=false)" };
+      }
+      if (pathSuffix.endsWith("events.jsonl")) return resolvedEvents;
+      if (pathSuffix.endsWith("test-cases.md")) return resolvedTestCasesMd;
+      return { kind: "unavailable", reason: `fake readFileAtCommit: unknown suffix ${pathSuffix}` };
+    },
   };
+
+  return runtime;
 }
 
 // ---------------------------------------------------------------------------

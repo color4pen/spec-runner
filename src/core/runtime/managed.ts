@@ -60,6 +60,13 @@ export function isGitHubDirectoryListing(value: unknown): boolean {
 }
 
 export class ManagedRuntime implements RealRuntimeStrategy {
+  /**
+   * String index signature allowing dynamic property access (e.g., for test assertions
+   * that check method presence via prototype[key]). All class members are assignable to
+   * `unknown`, so this does not conflict with the typed method signatures.
+   */
+  [key: string]: unknown;
+
   private readonly spawnFn: SpawnFn;
   private readonly wrappedSpawnFn: SpawnFn;
   /** Current slug set by setupWorkspace(); used by registerCleanup() for marker management. */
@@ -624,6 +631,18 @@ export class ManagedRuntime implements RealRuntimeStrategy {
     _config: import("../../config/schema.js").SpecRunnerConfig,
   ): Promise<import("../port/runtime-strategy.js").IsolatedTestResult> {
     return { kind: "unavailable", reason: "managed runtime has no local worktree for runTestsAtCommit" };
+  }
+
+  /**
+   * ManagedRuntime has no local worktree — always returns unavailable.
+   * Structural limitation: commit-scoped file reads require a local git worktree.
+   */
+  async readFileAtCommit(
+    _oid: string,
+    _pathSuffix: string,
+    _cwd: string,
+  ): Promise<import("../port/runtime-strategy.js").CommitFileResult> {
+    return { kind: "unavailable", reason: "managed runtime has no local worktree for readFileAtCommit" };
   }
 
   registerCleanup(jobId: string, startStep: string): CleanupHandle {

@@ -1037,6 +1037,78 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
+   * Read a file from a specific commit OID using trailing-suffix path resolution.
+   *
+   * Algorithm (P0-2, achieved-assurance-completeness T-01):
+   *   1. `git ls-tree -r --name-only <oid>` in cwd (exit non-0 → unavailable).
+   *   2. Filter entries: `entry.endsWith("/" + pathSuffix) || entry.endsWith("-" + pathSuffix)`.
+   *   3. 0 entries → unavailable (not found). ≥2 entries → unavailable (ambiguous).
+   *   4. `git show <oid>:<resolvedPath>` → content (exit non-0 → unavailable).
+   *   5. Return `{ kind:"found", path: resolvedPath, content }`.
+   *
+   * Never throws — returns unavailable on any error or spawn exception.
+   */
+  async readFileAtCommit(
+    oid: string,
+    pathSuffix: string,
+    cwd: string,
+  ): Promise<import("../port/runtime-strategy.js").CommitFileResult> {
+    try {
+      const lsResult = await this.spawnFn(
+        "git",
+        ["ls-tree", "-r", "--name-only", oid],
+        { cwd },
+      );
+      if (lsResult.exitCode !== 0) {
+        return {
+          kind: "unavailable",
+          reason: `git ls-tree failed (exit ${lsResult.exitCode}): ${lsResult.stderr?.trim() ?? ""}`,
+        };
+      }
+
+      const entries = lsResult.stdout
+        .split("\n")
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0);
+
+      const candidates = entries.filter(
+        (e) => e.endsWith("/" + pathSuffix) || e.endsWith("-" + pathSuffix),
+      );
+
+      if (candidates.length === 0) {
+        return {
+          kind: "unavailable",
+          reason: `readFileAtCommit: no entry matching suffix "${pathSuffix}" in ${oid}`,
+        };
+      }
+      if (candidates.length >= 2) {
+        return {
+          kind: "unavailable",
+          reason: `readFileAtCommit: ambiguous suffix "${pathSuffix}" matches ${candidates.length} entries in ${oid}: ${candidates.join(", ")}`,
+        };
+      }
+
+      const resolvedPath = candidates[0]!;
+      const showResult = await this.spawnFn(
+        "git",
+        ["show", `${oid}:${resolvedPath}`],
+        { cwd },
+      );
+      if (showResult.exitCode !== 0) {
+        return {
+          kind: "unavailable",
+          reason: `git show failed (exit ${showResult.exitCode}) for ${oid}:${resolvedPath}`,
+        };
+      }
+
+      return { kind: "found", path: resolvedPath, content: showResult.stdout };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      return { kind: "unavailable", reason: `readFileAtCommit threw: ${reason}` };
+    }
+  }
+
+  /**
    * Compute sha256 content hashes for a list of artifact paths (D4, artifact-observability).
    * Reads each file from disk; returns hash: null for missing/unreadable files.
    * Never throws — errors are silently swallowed per the best-effort lineage contract.
