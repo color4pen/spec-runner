@@ -280,7 +280,6 @@ function makeFakeRuntime(options: {
 }
 
 const FLOOR_BITE_EVIDENCE_REQUIRED = { biteEvidence: "required" as const };
-const FLOOR_TEST_DERIVATION_REQUIRED = { testDerivation: "frozen" as const };
 const FLOOR_BOTH_REQUIRED = { testDerivation: "frozen" as const, biteEvidence: "required" as const };
 const FLOOR_SPEC_REVIEW_REQUIRED = { specReview: "required" as const };
 
