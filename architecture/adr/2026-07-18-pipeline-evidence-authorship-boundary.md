@@ -2,7 +2,7 @@
 
 ## ステータス
 
-proposed。構造判断のみを定める。ADR-20260713（execution ownership）・ADR-20260715（remote checkpoint 境界）・ADR-20260716（assurance profile）・ADR-20260717（assurance provenance floor）の trust-root に位置する。assurance の再導出が信頼する **pipeline-owned evidence（journal ＝ events.jsonl / state.json と、そこから fold される commit OID / verdict）を、agent が偽造できない**境界を定める。実装経路は後続 behavior（spec ＋ request）が担う。
+accepted。構造判断のみを定める。ADR-20260713（execution ownership）・ADR-20260715（remote checkpoint 境界）・ADR-20260716（assurance profile）・ADR-20260717（assurance provenance floor）の trust-root に位置する。assurance の再導出が信頼する **pipeline-owned evidence（journal ＝ events.jsonl / state.json と、そこから fold される commit OID / verdict）を、agent が偽造できない**境界を定める。実装経路は後続 behavior（spec ＋ request）が担う。
 
 ## コンテキスト
 
