@@ -23,6 +23,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as os from "node:os";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { createHash } from "node:crypto";
 import { LocalRuntime } from "../local.js";
 import { spawnCommand } from "../../../util/spawn.js";
 import type { GitHubClient } from "../../port/github-client.js";
@@ -31,6 +32,15 @@ import type { JobState, StepRun } from "../../../state/schema.js";
 import { runBiteEvidenceGate } from "../../step/bite-evidence/gate.js";
 import { deriveAchievedAssurance } from "../../archive/achieved-assurance.js";
 import type { AssuranceFloor } from "../../../state/profile.js";
+
+// Scenario freeze fixtures (for TC-010 floor — deriveAchievedAssurance P0-2 scenario two-layer check).
+// The events.jsonl lineage record's frozen hash must match test-cases.md content at candidateOid.
+const SCENARIO_TEST_CASES_CONTENT = "# Test Cases\n\n## TC-001: feature value is 42\n";
+const SCENARIO_TEST_CASES_HASH =
+  "sha256:" +
+  createHash("sha256")
+    .update(Buffer.from(SCENARIO_TEST_CASES_CONTENT, "utf8"))
+    .digest("hex");
 
 const GIT_ENV = {
   GIT_AUTHOR_NAME: "T",
@@ -99,12 +109,29 @@ beforeAll(async () => {
   await git(repo, "commit", "-m", "test-materialize: add feature test (impl absent → red)");
   baseOid = await git(repo, "rev-parse", "HEAD");
 
-  // Candidate commit: add feature-impl.ts so the test passes.
+  // Candidate commit: add feature-impl.ts so the test passes, plus scenario freeze fixtures.
+  // Scenario files are required for TC-010 (floor): deriveAchievedAssurance uses readFileAtCommit
+  // at finalHeadOid (= candidateOid) to verify scenario two-layer freeze (P0-2).
   await fs.writeFile(
     path.join(repo, IMPL_FILE),
     "export const value = 42;\n",
   );
-  await git(repo, "add", IMPL_FILE);
+  await fs.mkdir(path.join(repo, "specrunner", "changes", "example"), { recursive: true });
+  await fs.writeFile(
+    path.join(repo, "specrunner", "changes", "example", "test-cases.md"),
+    SCENARIO_TEST_CASES_CONTENT,
+  );
+  await fs.writeFile(
+    path.join(repo, "specrunner", "changes", "example", "events.jsonl"),
+    JSON.stringify({
+      type: "lineage",
+      step: "test-case-gen",
+      ts: "2026-01-01T00:00:00.000Z",
+      outputs: [{ path: "specrunner/changes/example/test-cases.md", hash: SCENARIO_TEST_CASES_HASH }],
+      inputs: [],
+    }) + "\n",
+  );
+  await git(repo, "add", IMPL_FILE, "specrunner");
   await git(repo, "commit", "-m", "implementer: add feature-impl.ts (test goes green)");
   candidateOid = await git(repo, "rev-parse", "HEAD");
 

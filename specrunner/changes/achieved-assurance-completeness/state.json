@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0142c731-5cd1-466e-b1b5-03b69388004a",
   "createdAt": "2026-07-17T23:33:54.336Z",
-  "updatedAt": "2026-07-18T00:03:31.321Z",
+  "updatedAt": "2026-07-18T00:32:05.008Z",
   "request": {
     "title": "achieved-assurance の達成判定を完成させる — HEAD-green 実測 / scenario 二層凍結 / type↔strategy / spec-review approved（P0 fix-forward）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-materialize",
+  "step": "implementer",
   "status": "running",
   "branch": "change/achieved-assurance-completeness-0142c731",
   "error": null,
@@ -59,13 +59,16 @@
       ]
     }
   ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 22,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "test-materialize": 1
     }
   }
 }

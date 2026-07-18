@@ -88,6 +88,20 @@ export type IsolatedTestResult =
   | { kind: "unavailable"; reason: string };
 
 /**
+ * Port DTO for a commit-scoped file read result (D5, achieved-assurance-completeness).
+ *
+ * Used by the archive floor gate to read events.jsonl / test-cases.md at the final
+ * archive HEAD OID for scenario two-layer freeze verification (P0-2).
+ *
+ * - found:       file resolved via trailing-suffix match; content is the raw utf-8 text.
+ * - unavailable: file not found, OID non-existent, ambiguous suffix, or structural
+ *               limitation (e.g. managed runtime, spawn error). Never throws.
+ */
+export type CommitFileResult =
+  | { kind: "found"; path: string; content: string }
+  | { kind: "unavailable"; reason: string };
+
+/**
  * Port DTO for a finding reference to be verified for existence.
  * Used by verifyFindingRefs to check that referenced files/lines actually exist.
  */
@@ -633,6 +647,31 @@ export interface RuntimeStrategy {
   ): Promise<IsolatedTestResult>;
 
   /**
+   * Read a file from a specific commit OID by trailing-suffix path resolution.
+   *
+   * Used by the archive floor gate (achieved-assurance-completeness P0-2) to read
+   * events.jsonl and test-cases.md at the final archive HEAD for scenario two-layer
+   * freeze verification.
+   *
+   * Algorithm:
+   *   1. `git ls-tree -r --name-only <oid>` (exit non-0 → unavailable).
+   *   2. Filter entries by: `entry.endsWith("/" + pathSuffix) || entry.endsWith("-" + pathSuffix)`.
+   *   3. 0 entries → unavailable (not found). ≥2 entries → unavailable (ambiguous).
+   *   4. `git show <oid>:<resolvedPath>` → content (exit non-0 → unavailable).
+   *   5. Return `{ kind:"found", path: resolvedPath, content }`.
+   *
+   * Contract:
+   * - Never throws — returns unavailable on any failure.
+   * - 0 or ≥2 suffix matches → unavailable (fail-closed; ambiguity not tolerated).
+   * - Non-existent OID / non-existent path → unavailable.
+   * - Managed runtime: always unavailable (no local worktree).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
+   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
+   */
+  readFileAtCommit?(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
+
+  /**
    * Snapshot the state of guarded main-checkout paths at a moment in time.
    *
    * Used by StepExecutor to compare before/after an agent step and detect
@@ -687,4 +726,5 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
     cwd: string,
     config: SpecRunnerConfig,
   ): Promise<IsolatedTestResult>;
+  readFileAtCommit(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
 };
