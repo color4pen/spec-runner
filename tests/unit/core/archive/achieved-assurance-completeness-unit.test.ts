@@ -20,7 +20,6 @@
  *   - TC-025: non-forward type + intact scenario → testDerivation frozen, biteEvidence absent
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { createHash } from "node:crypto";
 import { deriveAchievedAssurance } from "../../../../src/core/archive/achieved-assurance.js";
 import type { AssuranceProvenanceRuntime } from "../../../../src/core/archive/achieved-assurance.js";
 
@@ -52,55 +51,38 @@ const BASE_OID = "base-commit-sha-unit-001";
 const FINAL_HEAD_OID = "archive-head-sha-unit-001";
 const TEST_FILE = "tests/unit/foo.test.ts";
 
-// Predefined test-cases.md content and its canonical hash.
-// digestArtifacts uses sha256 over utf8 bytes of the file content.
-const TEST_CASES_CONTENT = "# Test Cases\n\n## TC-001: sample\n";
-const TEST_CASES_HASH = "sha256:" + createHash("sha256")
-  .update(Buffer.from(TEST_CASES_CONTENT, "utf8"))
-  .digest("hex");
+// Commit OID anchors for revision-binding checks (D1 / D2).
+const TEST_CASE_GEN_OID = "test-case-gen-commit-sha-unit-001";
+const SPEC_REVIEW_OID = "spec-review-commit-sha-unit-001";
 
-// A mismatched hash (different from TEST_CASES_HASH).
-const WRONG_HASH = "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+// Predefined test-cases.md content (anchor = S, head-tampered = S').
+const TEST_CASES_CONTENT = "# Test Cases\n\n## TC-001: sample\n";
+const TEST_CASES_CONTENT_MODIFIED = "# Test Cases MODIFIED\n\nWAS CHANGED AFTER TEST-CASE-GEN\n";
+
+// Predefined spec.md content for specReview blob binding tests.
+const SPEC_CONTENT = "# Spec\n\n## Requirement: foo\n";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 /**
- * Build a minimal events.jsonl content with a test-case-gen lineage record.
- * frozenHash: the hash value to embed in the test-cases.md output entry.
- */
-function makeEventsJsonl(frozenHash: string | null): string {
-  const lineageRecord = {
-    type: "lineage",
-    step: "test-case-gen",
-    ts: "2026-01-01T00:00:00.000Z",
-    outputs: [
-      {
-        path: `specrunner/changes/archive/2026-07-18-${SLUG}/test-cases.md`,
-        hash: frozenHash,
-      },
-    ],
-    inputs: [],
-  };
-  return JSON.stringify(lineageRecord) + "\n";
-}
-
-/**
  * Create a job state with configurable fields.
- * Defaults to a "new-feature" type with test-materialize and implementer steps set.
+ * Defaults to a "new-feature" type with test-case-gen, test-materialize and implementer steps set.
  */
 function makeJobState(overrides: {
   type?: string;
   slug?: string | null;
-  specReviewRuns?: Array<{ verdict: string | null }>;
+  specReviewRuns?: Array<{ verdict: string | null; commitOid?: string }>;
   includeTestMaterialize?: boolean;
+  includeTestCaseGen?: boolean;
 } = {}) {
   const {
     type = "new-feature",
     slug = SLUG,
     specReviewRuns,
     includeTestMaterialize = true,
+    includeTestCaseGen = true,
   } = overrides;
 
   const specReviewSteps = specReviewRuns
@@ -110,10 +92,24 @@ function makeJobState(overrides: {
         outcome: { verdict: r.verdict, findingsPath: null, error: null },
         startedAt: "2026-01-01T00:01:00.000Z",
         endedAt: "2026-01-01T00:02:00.000Z",
+        ...(r.commitOid !== undefined ? { commitOid: r.commitOid } : {}),
       }))
     : undefined;
 
   const steps: Record<string, unknown[]> = {};
+
+  if (includeTestCaseGen) {
+    steps["test-case-gen"] = [
+      {
+        attempt: 1,
+        sessionId: null,
+        outcome: { verdict: "success", findingsPath: null, error: null },
+        startedAt: "2026-01-01T00:00:00.000Z",
+        endedAt: "2026-01-01T00:00:30.000Z",
+        commitOid: TEST_CASE_GEN_OID,
+      },
+    ];
+  }
 
   if (includeTestMaterialize) {
     steps["test-materialize"] = [
@@ -172,58 +168,66 @@ function makeJobState(overrides: {
 }
 
 /**
- * Build a "fully achieved" fake runtime for the new implementation:
+ * Build a "fully achieved" fake runtime for the revision-binding implementation:
  * - base:red for BASE_OID
  * - HEAD:green for FINAL_HEAD_OID
- * - scenario two-layer freeze intact (events.jsonl frozen hash matches test-cases.md content hash)
+ * - scenario revision-binding intact (test-cases.md@testCaseGenOid === test-cases.md@finalHeadOid)
  * - blob freeze intact (no diff between base and HEAD)
+ * - specReview blob binding intact (spec.md@specReviewOid === spec.md@finalHeadOid)
  *
- * Options allow injecting failures at specific points to produce red tests.
+ * readFileAtCommit dispatches by OID + suffix:
+ *   test-cases.md: TEST_CASE_GEN_OID → testCasesMdAtAnchor; FINAL_HEAD_OID → testCasesMdAtHead
+ *   spec.md:       SPEC_REVIEW_OID   → specMdAtAnchor;     FINAL_HEAD_OID → specMdAtHead
+ *   Default (same content at anchor and HEAD) → both bindings intact.
  */
 function makeFakeRuntime(options: {
   changedFiles?: string[] | "unavailable";
   diffFiles?: string[] | "unavailable";
   baseTestResults?: IsolatedTestResult;
   headTestResults?: IsolatedTestResult;
-  eventsJsonlResult?: CommitFileResult | "unavailable";
-  testCasesMdResult?: CommitFileResult | "unavailable";
-  includeReadFileAtCommit?: boolean;
-} = {}): AssuranceProvenanceRuntime & {
-  readFileAtCommit?(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
-} {
+  testCasesMdAtAnchor?: CommitFileResult | "unavailable";
+  testCasesMdAtHead?: CommitFileResult | "unavailable";
+  specMdAtAnchor?: CommitFileResult | "unavailable";
+  specMdAtHead?: CommitFileResult | "unavailable";
+} = {}): AssuranceProvenanceRuntime {
   const {
     changedFiles = [TEST_FILE],
     diffFiles = [],
     baseTestResults = { kind: "ran", results: [{ file: TEST_FILE, passed: false }] },
     headTestResults = { kind: "ran", results: [{ file: TEST_FILE, passed: true }] },
-    eventsJsonlResult,
-    testCasesMdResult,
-    includeReadFileAtCommit = true,
+    testCasesMdAtAnchor,
+    testCasesMdAtHead,
+    specMdAtAnchor,
+    specMdAtHead,
   } = options;
 
-  // Default scenario freeze: events.jsonl with matching hash, test-cases.md with matching content.
-  const defaultEventsJsonlResult: CommitFileResult = {
-    kind: "found",
-    path: `specrunner/changes/archive/2026-07-18-${SLUG}/events.jsonl`,
-    content: makeEventsJsonl(TEST_CASES_HASH),
-  };
+  // Default: test-cases.md has same content at anchor and HEAD (scenario freeze intact).
   const defaultTestCasesMdResult: CommitFileResult = {
     kind: "found",
     path: `specrunner/changes/archive/2026-07-18-${SLUG}/test-cases.md`,
     content: TEST_CASES_CONTENT,
   };
+  // Default: spec.md has same content at anchor and HEAD (specReview binding intact).
+  const defaultSpecMdResult: CommitFileResult = {
+    kind: "found",
+    path: `specrunner/changes/archive/2026-07-18-${SLUG}/spec.md`,
+    content: SPEC_CONTENT,
+  };
 
-  const resolvedEventsResult = eventsJsonlResult === "unavailable"
-    ? { kind: "unavailable" as const, reason: "fake events.jsonl unavailable" }
-    : (eventsJsonlResult ?? defaultEventsJsonlResult);
+  const resolvedTcAtAnchor = testCasesMdAtAnchor === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake test-cases.md@anchor unavailable" }
+    : (testCasesMdAtAnchor ?? defaultTestCasesMdResult);
+  const resolvedTcAtHead = testCasesMdAtHead === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake test-cases.md@head unavailable" }
+    : (testCasesMdAtHead ?? defaultTestCasesMdResult);
+  const resolvedSpecAtAnchor = specMdAtAnchor === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake spec.md@anchor unavailable" }
+    : (specMdAtAnchor ?? defaultSpecMdResult);
+  const resolvedSpecAtHead = specMdAtHead === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake spec.md@head unavailable" }
+    : (specMdAtHead ?? defaultSpecMdResult);
 
-  const resolvedTestCasesMdResult = testCasesMdResult === "unavailable"
-    ? { kind: "unavailable" as const, reason: "fake test-cases.md unavailable" }
-    : (testCasesMdResult ?? defaultTestCasesMdResult);
-
-  const runtime: AssuranceProvenanceRuntime & {
-    readFileAtCommit?(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
-  } = {
+  const runtime: AssuranceProvenanceRuntime = {
     async listCommitChangedFiles(_oid: string, _cwd: string): Promise<ChangedFilesResult> {
       if (changedFiles === "unavailable") {
         return { kind: "unavailable", reason: "fake listCommitChangedFiles unavailable" };
@@ -252,29 +256,28 @@ function makeFakeRuntime(options: {
       if (oid === FINAL_HEAD_OID) {
         return headTestResults;
       }
-      // Default: base OID returns baseTestResults
       return baseTestResults;
     },
-  };
 
-  if (includeReadFileAtCommit) {
-    // TC-022, TC-023, TC-024, etc. require readFileAtCommit.
-    // The new implementation (T-04) will check this method in P3 and call it for scenario freeze.
-    // Tests that omit this will fail at P3 check (both dimensions absent).
-    runtime.readFileAtCommit = async (
-      _oid: string,
+    // OID-discriminated dispatch for revision-binding verification.
+    async readFileAtCommit(
+      oid: string,
       pathSuffix: string,
       _cwd: string,
-    ): Promise<CommitFileResult> => {
-      if (pathSuffix.endsWith("events.jsonl")) {
-        return resolvedEventsResult;
-      }
+    ): Promise<CommitFileResult> {
       if (pathSuffix.endsWith("test-cases.md")) {
-        return resolvedTestCasesMdResult;
+        if (oid === TEST_CASE_GEN_OID) return resolvedTcAtAnchor;
+        if (oid === FINAL_HEAD_OID) return resolvedTcAtHead;
+        return { kind: "unavailable", reason: `fake: unknown OID ${oid} for test-cases.md` };
+      }
+      if (pathSuffix.endsWith("spec.md")) {
+        if (oid === SPEC_REVIEW_OID) return resolvedSpecAtAnchor;
+        if (oid === FINAL_HEAD_OID) return resolvedSpecAtHead;
+        return { kind: "unavailable", reason: `fake: unknown OID ${oid} for spec.md` };
       }
       return { kind: "unavailable", reason: `fake readFileAtCommit: unknown suffix ${pathSuffix}` };
-    };
-  }
+    },
+  };
 
   return runtime;
 }
@@ -296,30 +299,26 @@ afterEach(() => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-003: lineage frozen hash null → testDerivation + biteEvidence absent
+// TC-003: testCaseGenOid absent → testDerivation + biteEvidence absent
 //
-// DESTRUCTIVE INVARIANT: if scenario hash check is removed, the current impl would
-// set testDerivation="frozen" even when frozen hash is null. TC-003 catches this.
+// Scenario revision binding (D1): if no test-case-gen step is recorded (or commitOid
+// is missing), deriveAchievedAssurance cannot verify the scenario freeze and
+// fail-closes both dimensions.
 // ---------------------------------------------------------------------------
 
-describe("TC-003: lineage frozen hash null → testDerivation + biteEvidence absent", () => {
+describe("TC-003: testCaseGenOid absent → testDerivation + biteEvidence absent", () => {
   it(
-    "TC-003: frozen hash null in lineage → testDerivation and biteEvidence absent (fail-closed)",
+    "TC-003: no test-case-gen step (commitOid absent) → both absent (fail-closed)",
     async () => {
-      // GIVEN: events.jsonl lineage has test-case-gen record with test-cases.md hash = null
+      // GIVEN: state has NO test-case-gen step (testCaseGenOid is absent).
       const runtime = makeFakeRuntime({
-        eventsJsonlResult: {
-          kind: "found",
-          path: `specrunner/changes/archive/2026-07-18-${SLUG}/events.jsonl`,
-          content: makeEventsJsonl(null), // frozen hash is null
-        },
         baseTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: false }] },
         headTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: true }] },
       });
 
       // WHEN: deriveAchievedAssurance with both dimensions constrained
       const { achieved } = await deriveAchievedAssurance({
-        state: makeJobState({ type: "new-feature" }) as never,
+        state: makeJobState({ type: "new-feature", includeTestCaseGen: false }) as never,
         finalHeadOid: FINAL_HEAD_OID,
         cwd: CWD,
         config: { version: 1 as const, agents: {} },
@@ -327,8 +326,7 @@ describe("TC-003: lineage frozen hash null → testDerivation + biteEvidence abs
         runtime: runtime as unknown as AssuranceProvenanceRuntime,
       });
 
-      // THEN: both testDerivation and biteEvidence must be absent (fail-closed)
-      // DESTRUCTIVE INVARIANT: removing scenario hash check would leave testDerivation="frozen"
+      // THEN: both absent (no anchor OID → cannot cross-commit compare → fail-closed)
       expect(achieved.testDerivation).toBeUndefined();
       expect(achieved.biteEvidence).toBeUndefined();
     },
@@ -336,33 +334,38 @@ describe("TC-003: lineage frozen hash null → testDerivation + biteEvidence abs
 });
 
 // ---------------------------------------------------------------------------
-// TC-004: test-cases.md hash mismatch → testDerivation + biteEvidence absent
+// TC-004 / T1: test-cases.md content mismatch between anchor and HEAD → both absent
 //
-// DESTRUCTIVE INVARIANT: removing hash comparison would cause testDerivation="frozen"
-// even when test-cases.md has been modified after test-case-gen.
+// scenario time-boundary (T1): if test-cases.md was modified after test-case-gen commit,
+// the cross-commit comparison (anchor OID vs HEAD OID) detects the mismatch → fail-closed.
+//
+// DESTRUCTIVE INVARIANT: if both readFileAtCommit calls used FINAL_HEAD_OID (same commit),
+// the hashes would match (S'===S') and the check would falsely succeed. Keeping the
+// cross-commit comparison (testCaseGenOid vs finalHeadOid) is essential.
 // ---------------------------------------------------------------------------
 
-describe("TC-004: test-cases.md hash mismatch → testDerivation + biteEvidence absent", () => {
+describe("TC-004 / T1: test-cases.md anchor≠HEAD → testDerivation + biteEvidence absent", () => {
   it(
-    "TC-004: frozen hash non-null but test-cases.md content hash does not match → both absent",
+    "TC-004: test-cases.md@testCaseGenOid=S, @finalHeadOid=S' → both absent (scenario tampered after gen)",
     async () => {
-      // GIVEN: lineage has frozen hash WRONG_HASH, but actual test-cases.md content hashes differently
+      // GIVEN: anchor (testCaseGenOid) has original content S; HEAD has modified content S'.
+      // DESTRUCTIVE INVARIANT: using finalHeadOid for BOTH reads makes S'===S' → false positive.
       const runtime = makeFakeRuntime({
-        eventsJsonlResult: {
+        testCasesMdAtAnchor: {
           kind: "found",
-          path: `specrunner/changes/archive/2026-07-18-${SLUG}/events.jsonl`,
-          content: makeEventsJsonl(WRONG_HASH), // frozen hash != actual content hash
+          path: `specrunner/changes/${SLUG}/test-cases.md`,
+          content: TEST_CASES_CONTENT,          // S — original
         },
-        testCasesMdResult: {
+        testCasesMdAtHead: {
           kind: "found",
-          path: `specrunner/changes/archive/2026-07-18-${SLUG}/test-cases.md`,
-          content: TEST_CASES_CONTENT, // hash = TEST_CASES_HASH ≠ WRONG_HASH
+          path: `specrunner/changes/${SLUG}/test-cases.md`,
+          content: TEST_CASES_CONTENT_MODIFIED, // S' — tampered after gen
         },
         baseTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: false }] },
         headTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: true }] },
       });
 
-      // WHEN: deriveAchievedAssurance
+      // WHEN
       const { achieved } = await deriveAchievedAssurance({
         state: makeJobState({ type: "new-feature" }) as never,
         finalHeadOid: FINAL_HEAD_OID,
@@ -372,8 +375,59 @@ describe("TC-004: test-cases.md hash mismatch → testDerivation + biteEvidence 
         runtime: runtime as unknown as AssuranceProvenanceRuntime,
       });
 
-      // THEN: both absent (hash mismatch = scenario tampered)
-      // DESTRUCTIVE INVARIANT: without hash comparison, mismatch would yield testDerivation="frozen"
+      // THEN: both absent (scenario tampered after test-case-gen → fail-closed)
+      expect(achieved.testDerivation).toBeUndefined();
+      expect(achieved.biteEvidence).toBeUndefined();
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// T2: cooperative tampering — events.jsonl also modified at HEAD, but
+// cross-commit OID binding detects via testCaseGenOid anchor.
+//
+// DESTRUCTIVE INVARIANT: with the OLD events.jsonl-based check (compare frozen hash in
+// events.jsonl@HEAD with test-cases.md@HEAD content), an attacker who rewrites BOTH
+// files at finalHeadOid can forge a matching hash and bypass the check. The new
+// cross-commit OID binding reads test-cases.md@testCaseGenOid (anchor) vs
+// test-cases.md@finalHeadOid (HEAD) — the anchor commit is immutable, so the
+// tampered HEAD content is detected regardless of what events.jsonl says.
+// ---------------------------------------------------------------------------
+
+describe("T2: cooperative tampering → cross-commit OID binding still detects mismatch", () => {
+  it(
+    "T2: test-cases.md@finalHeadOid=S' (tampered) — anchor comparison detects it → both absent",
+    async () => {
+      // GIVEN: test-cases.md@testCaseGenOid = S (original, immutable anchor).
+      // test-cases.md@finalHeadOid = S' (tampered). events.jsonl is irrelevant (not read).
+      // DESTRUCTIVE INVARIANT: reverting to events.jsonl-based check (hash@HEAD vs content@HEAD)
+      // would allow an attacker to make the tampered HEAD appear valid by rewriting events.jsonl too.
+      const runtime = makeFakeRuntime({
+        testCasesMdAtAnchor: {
+          kind: "found",
+          path: `specrunner/changes/${SLUG}/test-cases.md`,
+          content: TEST_CASES_CONTENT,          // S — original anchor content
+        },
+        testCasesMdAtHead: {
+          kind: "found",
+          path: `specrunner/changes/${SLUG}/test-cases.md`,
+          content: TEST_CASES_CONTENT_MODIFIED, // S' — tampered at HEAD
+        },
+        baseTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: false }] },
+        headTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: true }] },
+      });
+
+      // WHEN
+      const { achieved } = await deriveAchievedAssurance({
+        state: makeJobState({ type: "new-feature" }) as never,
+        finalHeadOid: FINAL_HEAD_OID,
+        cwd: CWD,
+        config: { version: 1 as const, agents: {} },
+        floor: FLOOR_BOTH_REQUIRED,
+        runtime: runtime as unknown as AssuranceProvenanceRuntime,
+      });
+
+      // THEN: both absent (cross-commit OID binding detects mismatch even if events.jsonl tampered)
       expect(achieved.testDerivation).toBeUndefined();
       expect(achieved.biteEvidence).toBeUndefined();
     },
@@ -386,14 +440,16 @@ describe("TC-004: test-cases.md hash mismatch → testDerivation + biteEvidence 
 
 describe("TC-007: spec-review approved → specReview:required", () => {
   it(
-    "TC-007: latest spec-review run verdict=approved → achieved.specReview=required",
+    "TC-007: latest spec-review run verdict=approved + commitOid + spec.md unchanged → specReview=required",
     async () => {
-      // GIVEN: latest spec-review run has verdict="approved"
+      // GIVEN: latest spec-review run has verdict="approved" with commitOid present.
+      // Runtime returns same spec.md content at specReviewOid (anchor) and finalHeadOid (HEAD).
       const state = makeJobState({
-        specReviewRuns: [{ verdict: "approved" }],
+        specReviewRuns: [{ verdict: "approved", commitOid: SPEC_REVIEW_OID }],
       });
 
       const runtime = makeFakeRuntime();
+      // Default: specMdAtAnchor and specMdAtHead both return SPEC_CONTENT → hashes match → binding intact.
 
       // WHEN
       const { achieved } = await deriveAchievedAssurance({
@@ -405,7 +461,7 @@ describe("TC-007: spec-review approved → specReview:required", () => {
         runtime: runtime as unknown as AssuranceProvenanceRuntime,
       });
 
-      // THEN: specReview must be "required"
+      // THEN: specReview must be "required" (approved + blob binding intact)
       expect(achieved.specReview).toBe("required");
     },
   );
@@ -727,16 +783,19 @@ describe("TC-021: HEAD partial green → biteEvidence absent", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-022: events.jsonl readFileAtCommit unavailable → testDerivation + biteEvidence absent
+// TC-022 / T5: test-cases.md@testCaseGenOid unavailable → testDerivation + biteEvidence absent
+//
+// If reading test-cases.md at the anchor commit (testCaseGenOid) returns unavailable,
+// the scenario freeze cannot be verified → fail-closed.
 // ---------------------------------------------------------------------------
 
-describe("TC-022: events.jsonl unavailable → testDerivation + biteEvidence absent", () => {
+describe("TC-022 / T5: test-cases.md@testCaseGenOid unavailable → both absent", () => {
   it(
-    "TC-022: readFileAtCommit(finalHeadOid, slug/events.jsonl) unavailable → both dimensions absent",
+    "TC-022: readFileAtCommit(testCaseGenOid, test-cases.md) unavailable → both dimensions absent",
     async () => {
-      // GIVEN: readFileAtCommit for events.jsonl returns unavailable
+      // GIVEN: reading test-cases.md at the anchor commit (testCaseGenOid) is unavailable.
       const runtime = makeFakeRuntime({
-        eventsJsonlResult: "unavailable",
+        testCasesMdAtAnchor: "unavailable",
         baseTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: false }] },
         headTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: true }] },
       });
@@ -751,7 +810,7 @@ describe("TC-022: events.jsonl unavailable → testDerivation + biteEvidence abs
         runtime: runtime as unknown as AssuranceProvenanceRuntime,
       });
 
-      // THEN: both absent (events.jsonl is required for scenario freeze)
+      // THEN: both absent (anchor unavailable → scenario freeze cannot be verified → fail-closed)
       expect(achieved.testDerivation).toBeUndefined();
       expect(achieved.biteEvidence).toBeUndefined();
     },
@@ -789,22 +848,24 @@ describe("TC-023: state.request.slug missing → testDerivation + biteEvidence a
 });
 
 // ---------------------------------------------------------------------------
-// TC-024: test-cases.md readFileAtCommit unavailable → testDerivation + biteEvidence absent
+// TC-024 / T5: test-cases.md@finalHeadOid unavailable → testDerivation + biteEvidence absent
+//
+// If the anchor read succeeds but reading test-cases.md at finalHeadOid returns unavailable,
+// the cross-commit hash comparison cannot complete → fail-closed.
 // ---------------------------------------------------------------------------
 
-describe("TC-024: test-cases.md readFileAtCommit unavailable → testDerivation + biteEvidence absent", () => {
+describe("TC-024 / T5: test-cases.md@finalHeadOid unavailable → both absent", () => {
   it(
-    "TC-024: events.jsonl found (frozen hash present) but test-cases.md unavailable → both absent",
+    "TC-024: test-cases.md@testCaseGenOid found but @finalHeadOid unavailable → both absent",
     async () => {
-      // GIVEN: events.jsonl returns valid lineage with non-null frozen hash,
-      // but reading test-cases.md returns unavailable
+      // GIVEN: anchor (testCaseGenOid) read succeeds; HEAD (finalHeadOid) read is unavailable.
       const runtime = makeFakeRuntime({
-        eventsJsonlResult: {
+        testCasesMdAtAnchor: {
           kind: "found",
-          path: `specrunner/changes/archive/2026-07-18-${SLUG}/events.jsonl`,
-          content: makeEventsJsonl(TEST_CASES_HASH), // frozen hash non-null and correct
+          path: `specrunner/changes/${SLUG}/test-cases.md`,
+          content: TEST_CASES_CONTENT,
         },
-        testCasesMdResult: "unavailable",
+        testCasesMdAtHead: "unavailable",
         baseTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: false }] },
         headTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: true }] },
       });
@@ -819,7 +880,7 @@ describe("TC-024: test-cases.md readFileAtCommit unavailable → testDerivation 
         runtime: runtime as unknown as AssuranceProvenanceRuntime,
       });
 
-      // THEN: both absent (cannot verify hash without test-cases.md content)
+      // THEN: both absent (HEAD unavailable → cannot compare hashes → fail-closed)
       expect(achieved.testDerivation).toBeUndefined();
       expect(achieved.biteEvidence).toBeUndefined();
     },
