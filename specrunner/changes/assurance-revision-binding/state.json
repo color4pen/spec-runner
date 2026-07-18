@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3c5f4052-38a6-4689-be46-c9932bf4b72e",
   "createdAt": "2026-07-18T12:05:50.159Z",
-  "updatedAt": "2026-07-18T12:11:55.379Z",
+  "updatedAt": "2026-07-18T12:25:01.905Z",
   "request": {
     "title": "scenario / spec の凍結・承認を revision（commit OID）に束縛する — 同一 commit 自己整合を廃す（P0 fix-forward）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/assurance-revision-binding-3c5f4052",
   "error": null,
@@ -60,9 +60,10 @@
     }
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
