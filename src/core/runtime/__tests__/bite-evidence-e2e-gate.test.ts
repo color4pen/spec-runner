@@ -12,18 +12,20 @@
  *   - deriveAchievedAssurance records biteEvidence as achieved for the same run.
  *
  * Repo structure:
- *   init commit         → README.md
- *   base commit (OID)   → feature.test.ts (imports ./feature-impl; fails at base — impl absent)
- *   candidate commit    → feature-impl.ts added (test passes; feature.test.ts unchanged)
+ *   init commit            → README.md
+ *   test-case-gen commit   → specrunner/changes/example/test-cases.md (scenario anchor; testCaseGenOid)
+ *   base commit (OID)      → feature.test.ts (imports ./feature-impl; fails at base — impl absent)
+ *   candidate commit (OID) → feature-impl.ts added (test passes; test-cases.md unchanged from anchor)
  *
  * The freeze check (diffPathsBetweenCommits) sees no diff on feature.test.ts between
  * base and candidate → testDerivation:frozen. The base-red check passes → biteEvidence:required.
+ * The scenario freeze check (readFileAtCommit) compares test-cases.md@testCaseGenOid vs
+ * @candidateOid — identical (unchanged) → scenario freeze intact.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as os from "node:os";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { createHash } from "node:crypto";
 import { LocalRuntime } from "../local.js";
 import { spawnCommand } from "../../../util/spawn.js";
 import type { GitHubClient } from "../../port/github-client.js";
@@ -33,14 +35,8 @@ import { runBiteEvidenceGate } from "../../step/bite-evidence/gate.js";
 import { deriveAchievedAssurance } from "../../archive/achieved-assurance.js";
 import type { AssuranceFloor } from "../../../state/profile.js";
 
-// Scenario freeze fixtures (for TC-010 floor — deriveAchievedAssurance P0-2 scenario two-layer check).
-// The events.jsonl lineage record's frozen hash must match test-cases.md content at candidateOid.
+// Scenario freeze fixture content for TC-010 (floor) — test-cases.md written at testCaseGenOid.
 const SCENARIO_TEST_CASES_CONTENT = "# Test Cases\n\n## TC-001: feature value is 42\n";
-const SCENARIO_TEST_CASES_HASH =
-  "sha256:" +
-  createHash("sha256")
-    .update(Buffer.from(SCENARIO_TEST_CASES_CONTENT, "utf8"))
-    .digest("hex");
 
 const GIT_ENV = {
   GIT_AUTHOR_NAME: "T",
@@ -64,8 +60,9 @@ function makeLocal(cwd: string): LocalRuntime {
 // ---------------------------------------------------------------------------
 
 let repo: string;
-let baseOid: string;      // test-materialize commit: feature.test.ts added, impl absent
-let candidateOid: string; // implementer commit: feature-impl.ts added
+let testCaseGenOid: string; // test-case-gen commit: test-cases.md added (scenario anchor)
+let baseOid: string;        // test-materialize commit: feature.test.ts added, impl absent
+let candidateOid: string;   // implementer commit: feature-impl.ts added
 
 const SCOPED_CONFIG = {
   version: 1,
@@ -90,6 +87,17 @@ beforeAll(async () => {
   await git(repo, "add", "-A");
   await git(repo, "commit", "-m", "init");
 
+  // Test-case-gen commit: add test-cases.md (scenario anchor).
+  // This commit becomes the OID anchor for scenario freeze binding.
+  await fs.mkdir(path.join(repo, "specrunner", "changes", "example"), { recursive: true });
+  await fs.writeFile(
+    path.join(repo, "specrunner", "changes", "example", "test-cases.md"),
+    SCENARIO_TEST_CASES_CONTENT,
+  );
+  await git(repo, "add", "-A");
+  await git(repo, "commit", "-m", "test-case-gen: add test-cases.md (scenario anchor)");
+  testCaseGenOid = await git(repo, "rev-parse", "HEAD");
+
   // Build the bun:test fixture via concatenation to avoid the grep-no-bun-imports scanner.
   const bunTest = "bun" + ":test";
 
@@ -109,29 +117,13 @@ beforeAll(async () => {
   await git(repo, "commit", "-m", "test-materialize: add feature test (impl absent → red)");
   baseOid = await git(repo, "rev-parse", "HEAD");
 
-  // Candidate commit: add feature-impl.ts so the test passes, plus scenario freeze fixtures.
-  // Scenario files are required for TC-010 (floor): deriveAchievedAssurance uses readFileAtCommit
-  // at finalHeadOid (= candidateOid) to verify scenario two-layer freeze (P0-2).
+  // Candidate commit: add feature-impl.ts so the test passes.
+  // test-cases.md is UNCHANGED from testCaseGenOid → scenario freeze intact at candidateOid.
   await fs.writeFile(
     path.join(repo, IMPL_FILE),
     "export const value = 42;\n",
   );
-  await fs.mkdir(path.join(repo, "specrunner", "changes", "example"), { recursive: true });
-  await fs.writeFile(
-    path.join(repo, "specrunner", "changes", "example", "test-cases.md"),
-    SCENARIO_TEST_CASES_CONTENT,
-  );
-  await fs.writeFile(
-    path.join(repo, "specrunner", "changes", "example", "events.jsonl"),
-    JSON.stringify({
-      type: "lineage",
-      step: "test-case-gen",
-      ts: "2026-01-01T00:00:00.000Z",
-      outputs: [{ path: "specrunner/changes/example/test-cases.md", hash: SCENARIO_TEST_CASES_HASH }],
-      inputs: [],
-    }) + "\n",
-  );
-  await git(repo, "add", IMPL_FILE, "specrunner");
+  await git(repo, "add", IMPL_FILE);
   await git(repo, "commit", "-m", "implementer: add feature-impl.ts (test goes green)");
   candidateOid = await git(repo, "rev-parse", "HEAD");
 
@@ -177,6 +169,7 @@ function makeState(baseOid: string, candidateOid: string): JobState {
     history: [],
     error: null,
     steps: {
+      "test-case-gen": [makeStepRun(testCaseGenOid)],
       "test-materialize": [makeStepRun(baseOid)],
       "implementer": [makeStepRun(candidateOid)],
     },

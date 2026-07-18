@@ -14,7 +14,6 @@
  *         (anti-regression: must not break #848 behavior)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createHash } from "node:crypto";
 import type { GitHubClient, CheckRollup } from "../../../../src/core/port/github-client.js";
 import type { StepRun } from "../../../../src/state/schema.js";
 
@@ -53,11 +52,13 @@ const BASE_OID = "base-commit-sha-aac-001";
 const CANDIDATE_OID = "candidate-commit-sha-aac-001";
 const ARCHIVE_HEAD_SHA = "archive-head-sha-aac-001";
 
-// Predefined test-cases.md content and hash for scenario freeze.
+// Commit OID anchors for revision-binding checks (D1 / D2).
+const TEST_CASE_GEN_OID = "test-case-gen-commit-sha-aac-001";
+const SPEC_REVIEW_OID = "spec-review-commit-sha-aac-001";
+
+// Predefined test-cases.md and spec.md content (same at anchor and HEAD = fully-achieved by default).
 const TEST_CASES_CONTENT = "# Test Cases\n\n## TC-001: sample\n";
-const TEST_CASES_HASH = "sha256:" + createHash("sha256")
-  .update(Buffer.from(TEST_CASES_CONTENT, "utf8"))
-  .digest("hex");
+const SPEC_CONTENT = "# Spec\n\n## Requirement: foo\n";
 
 // Floor configs
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -93,63 +94,58 @@ type CommitFileResult =
 // Helpers
 // ---------------------------------------------------------------------------
 
-function makeEventsJsonl(frozenHash: string | null): string {
-  return JSON.stringify({
-    type: "lineage",
-    step: "test-case-gen",
-    ts: "2026-01-01T00:00:00.000Z",
-    outputs: [
-      {
-        path: `specrunner/changes/archive/2026-07-18-${SLUG}/test-cases.md`,
-        hash: frozenHash,
-      },
-    ],
-    inputs: [],
-  }) + "\n";
-}
-
 /**
- * Fake AssuranceProvenanceRuntime with readFileAtCommit for scenario freeze checks.
+ * Fake AssuranceProvenanceRuntime with OID-discriminated readFileAtCommit.
  *
- * Per-OID runTestsAtCommit:
- *   - BASE_OID → baseTestResults
- *   - ARCHIVE_HEAD_SHA → headTestResults
+ * readFileAtCommit dispatches by OID + suffix:
+ *   test-cases.md: TEST_CASE_GEN_OID → testCasesMdAtAnchor; ARCHIVE_HEAD_SHA → testCasesMdAtHead
+ *   spec.md:       SPEC_REVIEW_OID   → specMdAtAnchor;     ARCHIVE_HEAD_SHA → specMdAtHead
+ *   Default (same content at anchor and HEAD) → both bindings intact (fully-achieved).
  */
 function makeFakeRuntime(options: {
   changedFiles?: string[] | "unavailable";
   diffFiles?: string[] | "unavailable";
   baseTestResults?: IsolatedTestResult;
   headTestResults?: IsolatedTestResult;
-  eventsJsonlResult?: CommitFileResult | "unavailable";
-  testCasesMdResult?: CommitFileResult | "unavailable";
+  testCasesMdAtAnchor?: CommitFileResult | "unavailable";
+  testCasesMdAtHead?: CommitFileResult | "unavailable";
+  specMdAtAnchor?: CommitFileResult | "unavailable";
+  specMdAtHead?: CommitFileResult | "unavailable";
 } = {}) {
   const {
     changedFiles = ["tests/unit/foo.test.ts"],
     diffFiles = [],
     baseTestResults = { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
     headTestResults = { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
-    eventsJsonlResult,
-    testCasesMdResult,
+    testCasesMdAtAnchor,
+    testCasesMdAtHead,
+    specMdAtAnchor,
+    specMdAtHead,
   } = options;
 
-  const defaultEventsResult: CommitFileResult = {
+  const defaultTcResult: CommitFileResult = {
     kind: "found",
-    path: `specrunner/changes/archive/2026-07-18-${SLUG}/events.jsonl`,
-    content: makeEventsJsonl(TEST_CASES_HASH),
-  };
-  const defaultTestCasesMdResult: CommitFileResult = {
-    kind: "found",
-    path: `specrunner/changes/archive/2026-07-18-${SLUG}/test-cases.md`,
+    path: `specrunner/changes/${SLUG}/test-cases.md`,
     content: TEST_CASES_CONTENT,
   };
+  const defaultSpecResult: CommitFileResult = {
+    kind: "found",
+    path: `specrunner/changes/${SLUG}/spec.md`,
+    content: SPEC_CONTENT,
+  };
 
-  const resolvedEvents = eventsJsonlResult === "unavailable"
-    ? { kind: "unavailable" as const, reason: "fake events.jsonl unavailable" }
-    : (eventsJsonlResult ?? defaultEventsResult);
-
-  const resolvedTestCasesMd = testCasesMdResult === "unavailable"
-    ? { kind: "unavailable" as const, reason: "fake test-cases.md unavailable" }
-    : (testCasesMdResult ?? defaultTestCasesMdResult);
+  const resolvedTcAtAnchor = testCasesMdAtAnchor === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake test-cases.md@anchor unavailable" }
+    : (testCasesMdAtAnchor ?? defaultTcResult);
+  const resolvedTcAtHead = testCasesMdAtHead === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake test-cases.md@head unavailable" }
+    : (testCasesMdAtHead ?? defaultTcResult);
+  const resolvedSpecAtAnchor = specMdAtAnchor === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake spec.md@anchor unavailable" }
+    : (specMdAtAnchor ?? defaultSpecResult);
+  const resolvedSpecAtHead = specMdAtHead === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake spec.md@head unavailable" }
+    : (specMdAtHead ?? defaultSpecResult);
 
   return {
     async listCommitChangedFiles(_oid: string, _cwd: string): Promise<ChangedFilesResult> {
@@ -174,13 +170,19 @@ function makeFakeRuntime(options: {
       }
       return baseTestResults;
     },
-    // TC-001/TC-002/TC-003: The new implementation calls readFileAtCommit for scenario freeze.
-    // Tests that supply this method simulate a properly-equipped runtime.
     async readFileAtCommit(
-      _oid: string, pathSuffix: string, _cwd: string,
+      oid: string, pathSuffix: string, _cwd: string,
     ): Promise<CommitFileResult> {
-      if (pathSuffix.endsWith("events.jsonl")) return resolvedEvents;
-      if (pathSuffix.endsWith("test-cases.md")) return resolvedTestCasesMd;
+      if (pathSuffix.endsWith("test-cases.md")) {
+        if (oid === TEST_CASE_GEN_OID) return resolvedTcAtAnchor;
+        if (oid === ARCHIVE_HEAD_SHA) return resolvedTcAtHead;
+        return { kind: "unavailable", reason: `fake: unknown OID ${oid} for test-cases.md` };
+      }
+      if (pathSuffix.endsWith("spec.md")) {
+        if (oid === SPEC_REVIEW_OID) return resolvedSpecAtAnchor;
+        if (oid === ARCHIVE_HEAD_SHA) return resolvedSpecAtHead;
+        return { kind: "unavailable", reason: `fake: unknown OID ${oid} for spec.md` };
+      }
       return { kind: "unavailable", reason: `unknown suffix: ${pathSuffix}` };
     },
   };
@@ -227,35 +229,38 @@ function makeStepRunWithOid(commitOid: string, attempt = 1): StepRun {
   } as StepRun & { commitOid: string };
 }
 
-function makeSpecReviewStepRun(verdict: string | null, attempt = 1): StepRun {
+function makeSpecReviewStepRun(verdict: string | null, attempt = 1, commitOid?: string): StepRun {
   return {
     attempt,
     sessionId: null,
     outcome: { verdict, findingsPath: null, error: null },
     startedAt: "2026-01-01T00:00:30.000Z",
     endedAt: "2026-01-01T00:01:00.000Z",
+    ...(commitOid !== undefined ? { commitOid } : {}),
   } as StepRun;
 }
 
 /**
  * Build a job state with configurable type, spec-review runs, and step history.
+ * Includes test-case-gen step by default (commitOid = TEST_CASE_GEN_OID) for D1 binding.
  */
 function makeJobStateWithSteps(options: {
   prNumber?: number;
   type?: string;
-  specReviewRuns?: Array<{ verdict: string | null }>;
+  specReviewRuns?: Array<{ verdict: string | null; commitOid?: string }>;
   overrides?: Record<string, unknown>;
 } = {}) {
   const { prNumber = 42, type = "new-feature", specReviewRuns, overrides = {} } = options;
 
   const steps: Record<string, StepRun[]> = {
+    "test-case-gen": [makeStepRunWithOid(TEST_CASE_GEN_OID)],
     "test-materialize": [makeStepRunWithOid(BASE_OID)],
     "implementer": [makeStepRunWithOid(CANDIDATE_OID)],
   };
 
   if (specReviewRuns !== undefined) {
     steps["spec-review"] = specReviewRuns.map((r, i) =>
-      makeSpecReviewStepRun(r.verdict, i + 1),
+      makeSpecReviewStepRun(r.verdict, i + 1, r.commitOid),
     );
   }
 
@@ -672,11 +677,11 @@ describe("TC-006: spec-review verdict not approved → specReview:required fail-
     expect(client.mergePullRequest).not.toHaveBeenCalled();
   });
 
-  it("TC-006/positive: spec-review verdict=approved → specReview achieved → floor satisfied", async () => {
+  it("TC-006/positive: spec-review verdict=approved + commitOid + spec.md unchanged → specReview achieved → floor satisfied", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
       makeActiveEntry(makeJobStateWithSteps({
-        specReviewRuns: [{ verdict: "approved" }],
+        specReviewRuns: [{ verdict: "approved", commitOid: SPEC_REVIEW_OID }],
       })),
     ]);
 

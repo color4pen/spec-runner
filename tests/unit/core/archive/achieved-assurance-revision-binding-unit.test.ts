@@ -111,10 +111,11 @@ function makeJobState(overrides: {
   const {
     type = "new-feature",
     slug = SLUG,
-    testCaseGenOid = TEST_CASE_GEN_OID,
     specReviewRuns,
     includeTestMaterialize = true,
   } = overrides;
+  // Use "in" check so explicit undefined means "no step" (destructuring default would override it).
+  const testCaseGenOid = "testCaseGenOid" in overrides ? overrides.testCaseGenOid : TEST_CASE_GEN_OID;
 
   const steps: Record<string, unknown[]> = {};
 

@@ -18,7 +18,6 @@
  * TC-011: materialized test 0 件で constrained floor に対し fail-closed になる
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { createHash } from "node:crypto";
 import type { GitHubClient, CheckRollup } from "../../../../src/core/port/github-client.js";
 import type { StepRun } from "../../../../src/state/schema.js";
 
@@ -57,23 +56,11 @@ const BASE_OID = "base-commit-sha-prov-001";
 const CANDIDATE_OID = "candidate-commit-sha-prov-001";
 const ARCHIVE_HEAD_SHA = "archive-head-sha-prov-001";
 
-// Scenario two-layer freeze test data (for TC-003 positive path).
-const TEST_CASES_CONTENT = "# Test Cases\n\n## TC-001: sample\n";
-const TEST_CASES_HASH = "sha256:" + createHash("sha256")
-  .update(Buffer.from(TEST_CASES_CONTENT, "utf8"))
-  .digest("hex");
+// Commit OID anchor for scenario revision-binding (D1).
+const TEST_CASE_GEN_OID = "test-case-gen-commit-sha-prov-001";
 
-function makeEventsJsonl(frozenHash: string | null): string {
-  return JSON.stringify({
-    type: "lineage",
-    step: "test-case-gen",
-    ts: "2026-01-01T00:00:00.000Z",
-    outputs: [
-      { path: `specrunner/changes/archive/2026-07-18-${SLUG}/test-cases.md`, hash: frozenHash },
-    ],
-    inputs: [],
-  }) + "\n";
-}
+// test-cases.md content (same at anchor and HEAD = scenario freeze intact by default).
+const TEST_CASES_CONTENT = "# Test Cases\n\n## TC-001: sample\n";
 
 /**
  * minimumAssurance config requiring both testDerivation:frozen and biteEvidence:required.
@@ -117,55 +104,48 @@ interface FakeAssuranceRuntime {
 /**
  * Build a fake assuranceRuntime with configurable responses.
  *
- * Defaults model a "fully achieved" job (updated for achieved-assurance-completeness):
+ * Defaults model a "fully achieved" job (revision-binding implementation):
  *   - listCommitChangedFiles: returns one test file
- *   - diffPathsBetweenCommits: returns empty (frozen intact)
+ *   - diffPathsBetweenCommits: returns empty (blob freeze intact)
  *   - runTestsAtCommit(BASE_OID): returns all red (base-red satisfied)
  *   - runTestsAtCommit(ARCHIVE_HEAD_SHA): returns all green (HEAD-green satisfied)
- *   - readFileAtCommit: returns valid events.jsonl (matching scenario hash) and test-cases.md
+ *   - readFileAtCommit: OID-discriminated; same test-cases.md content at anchor and HEAD
+ *     (scenario revision-binding intact by default)
  *
- * T-09 (backward-compat): existing fail-closed tests (TC-001/TC-004~TC-011) do not depend
- * on readFileAtCommit or HEAD-green — the P3 check (readFileAtCommit required) causes both
- * dimensions to be absent before these cases reach the base-red or HEAD-green checks.
- * The updated TC-003 positive path exercises the full new behavior.
+ * Fail-closed tests (TC-004~TC-011) exercise the blob-freeze / base-red / HEAD-green /
+ * listCommitChangedFiles checks, which run AFTER scenario revision-binding. Since the
+ * default runtime returns matching test-cases.md content at both OIDs, the scenario check
+ * passes and these tests reach their intended checks (assertion unchanged).
  */
 function makeFakeRuntime(options: {
   changedFiles?: string[] | "unavailable";
   diffFiles?: string[] | "unavailable";
   baseTestResults?: { file: string; passed: boolean }[] | "unavailable";
   headTestResults?: IsolatedTestResult;
-  eventsJsonlResult?: CommitFileResult | "unavailable";
-  testCasesMdResult?: CommitFileResult | "unavailable";
-  includeReadFileAtCommit?: boolean;
+  testCasesMdAtAnchor?: CommitFileResult | "unavailable";
+  testCasesMdAtHead?: CommitFileResult | "unavailable";
 } = {}): FakeAssuranceRuntime {
   const {
     changedFiles = ["tests/unit/foo.test.ts"],
     diffFiles = [],
     baseTestResults = [{ file: "tests/unit/foo.test.ts", passed: false }],
     headTestResults = { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
-    eventsJsonlResult,
-    testCasesMdResult,
-    includeReadFileAtCommit = true,
+    testCasesMdAtAnchor,
+    testCasesMdAtHead,
   } = options;
 
-  const defaultEventsResult: CommitFileResult = {
+  const defaultTcResult: CommitFileResult = {
     kind: "found",
-    path: `specrunner/changes/archive/2026-07-18-${SLUG}/events.jsonl`,
-    content: makeEventsJsonl(TEST_CASES_HASH),
-  };
-  const defaultTestCasesMdResult: CommitFileResult = {
-    kind: "found",
-    path: `specrunner/changes/archive/2026-07-18-${SLUG}/test-cases.md`,
+    path: `specrunner/changes/${SLUG}/test-cases.md`,
     content: TEST_CASES_CONTENT,
   };
 
-  const resolvedEvents = eventsJsonlResult === "unavailable"
-    ? { kind: "unavailable" as const, reason: "fake events.jsonl unavailable" }
-    : (eventsJsonlResult ?? defaultEventsResult);
-
-  const resolvedTestCasesMd = testCasesMdResult === "unavailable"
-    ? { kind: "unavailable" as const, reason: "fake test-cases.md unavailable" }
-    : (testCasesMdResult ?? defaultTestCasesMdResult);
+  const resolvedTcAtAnchor = testCasesMdAtAnchor === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake test-cases.md@anchor unavailable" }
+    : (testCasesMdAtAnchor ?? defaultTcResult);
+  const resolvedTcAtHead = testCasesMdAtHead === "unavailable"
+    ? { kind: "unavailable" as const, reason: "fake test-cases.md@head unavailable" }
+    : (testCasesMdAtHead ?? defaultTcResult);
 
   const runtime: FakeAssuranceRuntime = {
     async listCommitChangedFiles(_oid: string, _cwd: string): Promise<ChangedFilesResult> {
@@ -200,15 +180,15 @@ function makeFakeRuntime(options: {
       return { kind: "ran", results: baseTestResults };
     },
     async readFileAtCommit(
-      _oid: string,
+      oid: string,
       pathSuffix: string,
       _cwd: string,
     ): Promise<CommitFileResult> {
-      if (!includeReadFileAtCommit) {
-        return { kind: "unavailable", reason: "readFileAtCommit not available (includeReadFileAtCommit=false)" };
+      if (pathSuffix.endsWith("test-cases.md")) {
+        if (oid === TEST_CASE_GEN_OID) return resolvedTcAtAnchor;
+        if (oid === ARCHIVE_HEAD_SHA) return resolvedTcAtHead;
+        return { kind: "unavailable", reason: `fake: unknown OID ${oid} for test-cases.md` };
       }
-      if (pathSuffix.endsWith("events.jsonl")) return resolvedEvents;
-      if (pathSuffix.endsWith("test-cases.md")) return resolvedTestCasesMd;
       return { kind: "unavailable", reason: `fake readFileAtCommit: unknown suffix ${pathSuffix}` };
     },
   };
@@ -262,8 +242,8 @@ function makeStepRunWithOid(commitOid: string, attempt = 1): StepRun {
 }
 
 /**
- * Build a job state that has test-materialize and implementer steps with OIDs
- * (required for baseOid / candidateOid resolution in deriveAchievedAssurance).
+ * Build a job state that has test-case-gen, test-materialize and implementer steps with OIDs.
+ * test-case-gen step (commitOid = TEST_CASE_GEN_OID) is required for scenario revision-binding (D1).
  */
 function makeJobStateWithSteps(prNumber = 42, overrides: Record<string, unknown> = {}) {
   return {
@@ -284,6 +264,7 @@ function makeJobStateWithSteps(prNumber = 42, overrides: Record<string, unknown>
     history: [],
     error: null,
     steps: {
+      "test-case-gen": [makeStepRunWithOid(TEST_CASE_GEN_OID)],
       "test-materialize": [makeStepRunWithOid(BASE_OID)],
       "implementer": [makeStepRunWithOid(CANDIDATE_OID)],
     },

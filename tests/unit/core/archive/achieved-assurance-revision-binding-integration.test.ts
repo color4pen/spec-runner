@@ -313,10 +313,11 @@ function makeJobStateWithRevisionOids(options: {
   const {
     prNumber = 42,
     type = "new-feature",
-    testCaseGenOid = TEST_CASE_GEN_OID,
     specReviewRuns,
     overrides = {},
   } = options;
+  // Use "in" check so explicit undefined means "no step" (destructuring default would override it).
+  const testCaseGenOid = "testCaseGenOid" in options ? options.testCaseGenOid : TEST_CASE_GEN_OID;
 
   const steps: Record<string, StepRun[]> = {
     "test-materialize": [makeStepRunWithOid(BASE_OID)],

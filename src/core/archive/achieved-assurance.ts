@@ -20,13 +20,13 @@ import type { AssuranceFloor } from "../../state/profile.js";
 import { resolveBaseCandidateOids } from "../step/bite-evidence/oids.js";
 import { isExcludedPath, FORWARD_TYPES } from "../step/bite-evidence/gate.js";
 import { STEP_NAMES } from "../../kernel/step-names.js";
-import { fold } from "../../store/event-journal.js";
 
 /**
  * Narrow runtime interface required by the archive floor gate.
  * A subset of RuntimeStrategy — only the methods needed for provenance derivation.
  *
- * readFileAtCommit is required for scenario two-layer freeze verification (P0-2).
+ * readFileAtCommit is required for scenario revision-binding verification and
+ * specReview blob binding.
  */
 export type AssuranceProvenanceRuntime = Pick<
   RuntimeStrategy,
@@ -78,9 +78,13 @@ function computeContentHash(content: string): string {
  *
  * Rules (each dimension independent):
  *
- * **specReview**: the LATEST spec-review step run must have outcome.verdict === "approved".
- *   → "required" (achieved) only when approved, absent otherwise. Pure state lookup; no I/O.
- *   (ADR P1: run existence alone is insufficient — approved verdict is required.)
+ * **specReview**: only evaluated when floor.specReview is constrained.
+ *   Requires: latest spec-review run with verdict === "approved" AND commitOid present,
+ *   finalHeadOid defined, runtime with readFileAtCommit, slug resolved.
+ *   Then: readFileAtCommit(specReviewOid, "<slug>/spec.md") and readFileAtCommit(finalHeadOid, "<slug>/spec.md")
+ *   must both be "found" with identical content hashes.
+ *   → "required" (achieved) only when all conditions met, absent otherwise (fail-closed).
+ *   (Binds approval to the reviewed revision blob — prevents re-approval after spec.md changes.)
  *
  * **biteEvidence** / **testDerivation**: only evaluated when the floor constrains either.
  *   Requires: baseOid resolvable + finalHeadOid defined + runtime available with all required
@@ -88,12 +92,13 @@ function computeContentHash(content: string): string {
  *   (a) Enumerate materializedTestFiles via listCommitChangedFiles(baseOid) + isExcludedPath filter.
  *   (b) Blob freeze check: diffPathsBetweenCommits(baseOid, finalHeadOid, materializedTestFiles).
  *       → tamper (non-empty diff) → both absent.
- *   (c) Scenario two-layer freeze (P0-2):
- *       - readFileAtCommit(finalHeadOid, "<slug>/events.jsonl") → fold → test-case-gen lineage → frozen hash.
- *       - readFileAtCommit(finalHeadOid, "<slug>/test-cases.md") → compute hash.
- *       - frozen hash non-null AND matches actual hash → scenario intact.
- *       → fail on any step → both absent (fail-closed).
- *   testDerivation = "frozen" when (a) + (b) blob freeze intact + (c) scenario freeze intact.
+ *   (c) Scenario revision binding (P0):
+ *       - testCaseGenOid = state.steps["test-case-gen"].at(-1)?.commitOid
+ *       - readFileAtCommit(testCaseGenOid, "<slug>/test-cases.md") → content at anchor commit
+ *       - readFileAtCommit(finalHeadOid, "<slug>/test-cases.md") → content at HEAD
+ *       - Content hashes must match → scenario intact (proves test-cases.md unchanged since test-case-gen)
+ *       → fail on any step → both absent (fail-closed). events.jsonl is NOT used.
+ *   testDerivation = "frozen" when (a) + (b) blob freeze intact + (c) scenario intact.
  *
  *   biteEvidence is additionally constrained to forward types only (P0-3, ADR-20260716 D2):
  *   (d) Type gate: state.request.type must be in FORWARD_TYPES (bug-fix / new-feature).
@@ -120,18 +125,73 @@ export async function deriveAchievedAssurance(
   const achieved: Record<string, unknown> = {};
 
   // ---------------------------------------------------------------------------
-  // specReview: check latest run verdict === "approved" (P1)
+  // specReview: check latest run verdict === "approved" + blob binding (D2)
+  //
+  // Only runs when floor.specReview is constrained. Does NOT early-return —
+  // sets or leaves absent achieved.specReview, then continues to bite/derivation.
+  //
+  // Binds the approval to the reviewed revision blob:
+  //   1. specReviewOid = latest spec-review run's commitOid (must be present)
+  //   2. readFileAtCommit(specReviewOid, "<slug>/spec.md") → anchor blob
+  //   3. readFileAtCommit(finalHeadOid, "<slug>/spec.md") → HEAD blob
+  //   4. Content hashes must match → approval is still valid
+  //
+  // Fail-closed: any step failure → specReview absent.
   // ---------------------------------------------------------------------------
-  try {
-    const specReviewRuns = state.steps?.[STEP_NAMES.SPEC_REVIEW];
-    const latestRun = Array.isArray(specReviewRuns) ? specReviewRuns.at(-1) : undefined;
-    if (latestRun?.outcome?.verdict === "approved") {
-      achieved["specReview"] = "required";
+  if (floor.specReview !== undefined) {
+    try {
+      const specReviewRuns = state.steps?.[STEP_NAMES.SPEC_REVIEW];
+      const latestRun = Array.isArray(specReviewRuns) ? specReviewRuns.at(-1) : undefined;
+
+      if (latestRun?.outcome?.verdict === "approved") {
+        const specReviewOid = latestRun?.commitOid;
+
+        if (!specReviewOid) {
+          diagnostics.push(
+            "specReview: specReviewOid absent (no commitOid on spec-review run) — fail-closed",
+          );
+        } else if (!finalHeadOid) {
+          diagnostics.push("specReview: finalHeadOid undefined — fail-closed");
+        } else if (!runtime || typeof runtime.readFileAtCommit !== "function") {
+          diagnostics.push(
+            "specReview: runtime.readFileAtCommit unavailable — fail-closed",
+          );
+        } else {
+          const slug = state.request?.slug;
+          if (!slug) {
+            diagnostics.push("specReview: request.slug absent — fail-closed");
+          } else {
+            const specAtAnchor = await runtime.readFileAtCommit(specReviewOid, `${slug}/spec.md`, cwd);
+            const specAtHead = await runtime.readFileAtCommit(finalHeadOid, `${slug}/spec.md`, cwd);
+
+            if (specAtAnchor.kind === "unavailable") {
+              diagnostics.push(
+                `specReview: spec.md@specReviewOid unavailable: ${specAtAnchor.reason}`,
+              );
+            } else if (specAtHead.kind === "unavailable") {
+              diagnostics.push(
+                `specReview: spec.md@finalHeadOid unavailable: ${specAtHead.reason}`,
+              );
+            } else {
+              const anchorHash = computeContentHash(specAtAnchor.content);
+              const headHash = computeContentHash(specAtHead.content);
+              if (anchorHash === headHash) {
+                achieved["specReview"] = "required";
+              } else {
+                diagnostics.push(
+                  `specReview: spec.md hash mismatch — spec changed after review. ` +
+                  `anchor=${anchorHash} head=${headHash}`,
+                );
+              }
+            }
+          }
+        }
+      }
+      // else: not approved → specReview absent (no-op)
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      diagnostics.push(`specReview derivation error: ${reason}`);
     }
-    // else: absent (no spec-review run, or latest run verdict is not "approved")
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    diagnostics.push(`specReview derivation error: ${reason}`);
   }
 
   // ---------------------------------------------------------------------------
@@ -239,75 +299,78 @@ export async function deriveAchievedAssurance(
   }
 
   // ---------------------------------------------------------------------------
-  // (c) Scenario two-layer freeze check (P0-2, ADR D2)
+  // (c) Scenario revision binding (P0, ADR-20260717 D4 / D1)
   //
-  // Verifies that test-cases.md at finalHeadOid matches the frozen hash recorded
-  // in events.jsonl lineage by the test-case-gen step. This prevents archive authority
-  // from accepting a "frozen" testDerivation when the scenario was tampered post-generation.
+  // Binds the scenario freeze to the test-case-gen confirmation commit OID.
+  // Compares test-cases.md content at the anchor commit (testCaseGenOid) with
+  // the final HEAD (finalHeadOid). A mismatch means test-cases.md was changed
+  // after test-case-gen — the scenario is no longer frozen.
+  //
+  // This replaces the previous events.jsonl-based "two-layer freeze" check which
+  // compared the frozen hash from events.jsonl with test-cases.md@finalHeadOid
+  // (both read from the same commit — vulnerable to same-commit self-consistency
+  // attacks and cooperative tampering of both files).
   //
   // Steps:
-  //   1. Read events.jsonl at finalHeadOid (archived path suffix-resolved via readFileAtCommit).
-  //   2. fold() → extract test-case-gen lineage → frozen hash of test-cases.md.
-  //   3. Read test-cases.md at finalHeadOid → compute actual hash.
-  //   4. Compare: frozen hash === actual hash.
+  //   1. Resolve testCaseGenOid from state.steps["test-case-gen"].at(-1)?.commitOid.
+  //   2. Resolve slug from state.request.slug (required for suffix path resolution).
+  //   3. readFileAtCommit(testCaseGenOid, "<slug>/test-cases.md") → anchor content.
+  //   4. readFileAtCommit(finalHeadOid, "<slug>/test-cases.md") → HEAD content.
+  //   5. Compare content hashes: match → scenario intact; mismatch → fail-closed.
   //
-  // Fail-closed: any step failure (unavailable, missing, null hash, mismatch) → both absent.
+  // Fail-closed: any step failure (absent OID, absent slug, unavailable, mismatch) → both absent.
+  // events.jsonl is NOT read in this implementation.
   // ---------------------------------------------------------------------------
   let scenarioFreezeIntact = false;
   try {
+    // Step 1: Resolve testCaseGenOid
+    const testCaseGenRuns = state.steps?.[STEP_NAMES.TEST_CASE_GEN];
+    const latestTcgRun = Array.isArray(testCaseGenRuns) ? testCaseGenRuns.at(-1) : undefined;
+    const testCaseGenOid = latestTcgRun?.commitOid;
+
+    if (!testCaseGenOid) {
+      diagnostics.push(
+        "biteEvidence/testDerivation: test-case-gen commitOid absent — " +
+        "cannot verify scenario freeze without anchor commit OID (fail-closed)",
+      );
+      return { achieved: achieved as ProfileAssurance, diagnostics };
+    }
+
+    // Step 2: Resolve slug
     const slug = state.request?.slug;
     if (!slug) {
       diagnostics.push(
-        "biteEvidence/testDerivation: request.slug is null/undefined — cannot suffix-resolve archived path for scenario freeze",
+        "biteEvidence/testDerivation: request.slug absent — " +
+        "cannot suffix-resolve test-cases.md path (fail-closed)",
       );
       return { achieved: achieved as ProfileAssurance, diagnostics };
     }
 
-    // Step 1: Read events.jsonl at finalHeadOid (suffix: "<slug>/events.jsonl")
-    const eventsResult = await runtime.readFileAtCommit!(finalHeadOid, `${slug}/events.jsonl`, cwd);
-    if (eventsResult.kind === "unavailable") {
+    // Step 3: Read test-cases.md at anchor (testCaseGenOid)
+    const tcAtAnchor = await runtime.readFileAtCommit!(testCaseGenOid, `${slug}/test-cases.md`, cwd);
+    if (tcAtAnchor.kind === "unavailable") {
       diagnostics.push(
-        `biteEvidence/testDerivation: events.jsonl readFileAtCommit unavailable: ${eventsResult.reason}`,
+        `biteEvidence/testDerivation: test-cases.md@testCaseGenOid unavailable: ${tcAtAnchor.reason}`,
       );
       return { achieved: achieved as ProfileAssurance, diagnostics };
     }
 
-    // Step 2: fold() → extract test-case-gen lineage → frozen hash
-    const foldResult = fold(eventsResult.content);
-    const lineage = foldResult.lineage;
-
-    const testCaseGenRecord = [...lineage].reverse().find((r) => r.step === "test-case-gen");
-    if (!testCaseGenRecord) {
+    // Step 4: Read test-cases.md at HEAD (finalHeadOid)
+    const tcAtHead = await runtime.readFileAtCommit!(finalHeadOid, `${slug}/test-cases.md`, cwd);
+    if (tcAtHead.kind === "unavailable") {
       diagnostics.push(
-        "biteEvidence/testDerivation: no test-case-gen lineage record found in events.jsonl — scenario freeze inconclusive (fail-closed)",
+        `biteEvidence/testDerivation: test-cases.md@finalHeadOid unavailable: ${tcAtHead.reason}`,
       );
       return { achieved: achieved as ProfileAssurance, diagnostics };
     }
 
-    const testCasesOutput = testCaseGenRecord.outputs.find((o) => o.path.endsWith("test-cases.md"));
-    const frozenHash = testCasesOutput?.hash;
-    if (frozenHash === null || frozenHash === undefined) {
+    // Step 5: Compare hashes
+    const anchorHash = computeContentHash(tcAtAnchor.content);
+    const headHash = computeContentHash(tcAtHead.content);
+    if (anchorHash !== headHash) {
       diagnostics.push(
-        "biteEvidence/testDerivation: frozen hash is null/absent in test-case-gen lineage for test-cases.md — fail-closed",
-      );
-      return { achieved: achieved as ProfileAssurance, diagnostics };
-    }
-
-    // Step 3: Read test-cases.md at finalHeadOid (suffix: "<slug>/test-cases.md")
-    const testCasesMdResult = await runtime.readFileAtCommit!(finalHeadOid, `${slug}/test-cases.md`, cwd);
-    if (testCasesMdResult.kind === "unavailable") {
-      diagnostics.push(
-        `biteEvidence/testDerivation: test-cases.md readFileAtCommit unavailable: ${testCasesMdResult.reason}`,
-      );
-      return { achieved: achieved as ProfileAssurance, diagnostics };
-    }
-
-    // Step 4: Compare hashes
-    const actualHash = computeContentHash(testCasesMdResult.content);
-    if (actualHash !== frozenHash) {
-      diagnostics.push(
-        `biteEvidence/testDerivation: test-cases.md hash mismatch — scenario was tampered after test-case-gen. ` +
-        `frozen=${frozenHash} actual=${actualHash}`,
+        `biteEvidence/testDerivation: test-cases.md hash mismatch between testCaseGenOid and finalHeadOid — ` +
+        `scenario was tampered after test-case-gen. anchor=${anchorHash} head=${headHash}`,
       );
       return { achieved: achieved as ProfileAssurance, diagnostics };
     }
