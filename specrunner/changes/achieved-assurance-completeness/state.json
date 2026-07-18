@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0142c731-5cd1-466e-b1b5-03b69388004a",
   "createdAt": "2026-07-17T23:33:54.336Z",
-  "updatedAt": "2026-07-18T00:58:15.858Z",
+  "updatedAt": "2026-07-18T01:17:07.739Z",
   "request": {
     "title": "achieved-assurance の達成判定を完成させる — HEAD-green 実測 / scenario 二層凍結 / type↔strategy / spec-review approved（P0 fix-forward）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "change/achieved-assurance-completeness-0142c731",
   "error": null,
@@ -61,8 +61,35 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "05efe81d612ab1b529d4493d557610b01fb587b7",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -72,7 +99,12 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 2,
-      "build-fixer": 1
+      "build-fixer": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
