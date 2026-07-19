@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d294f4e0-bb83-494e-9613-4ef47a1c2454",
   "createdAt": "2026-07-19T05:55:01.314Z",
-  "updatedAt": "2026-07-19T10:39:05.663Z",
+  "updatedAt": "2026-07-19T10:42:30.225Z",
   "request": {
     "title": "reviewer の approved を fixer 予算切れで覆さない — 任意修正の省略を明示して次工程へ進む",
     "type": "spec-change",
@@ -60,7 +60,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 30,
+    "historyCount": 38,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -69,7 +69,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
