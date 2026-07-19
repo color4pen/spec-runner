@@ -1,5 +1,34 @@
 # Changelog
 
+## [0.4.1](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.0...specrunner-v0.4.1) (2026-07-19)
+
+
+### Features
+
+* achieved-assurance の達成判定を完成させる — HEAD-green 実測 / scenario 二層凍結 / type↔strategy / spec-review approved（P0 fix-forward） ([#850](https://github.com/color4pen/spec-runner/issues/850)) ([ecca9a7](https://github.com/color4pen/spec-runner/commit/ecca9a752b873119ea7ece0278fd7bc73e06c9f9))
+* added-turn 削減の仕上げ — 追加ターン metrics の journal 永続化と code-review post-work turn の除去 ([#827](https://github.com/color4pen/spec-runner/issues/827)) ([b681d42](https://github.com/color4pen/spec-runner/commit/b681d4259c60745052d9eaa61c0dcf942a52eabe))
+* approvedAtCommit を「レビュー対象 source revision」として contract test で固定し、round invalidation から pipeline 管理 path を除外する ([#829](https://github.com/color4pen/spec-runner/issues/829)) ([9e56c1f](https://github.com/color4pen/spec-runner/commit/9e56c1f841b9b6a82b2a3999643f09a54301ddc5))
+* assurance profile を branch-borne immutable 属性として JobState に載せ、attach で digest 検証する（R1 背骨） ([#843](https://github.com/color4pen/spec-runner/issues/843)) ([3a4c59e](https://github.com/color4pen/spec-runner/commit/3a4c59e5abc0ac617b80d47d8e37af9db0ac52a3))
+* assurance を構造化し、archive 時に minimumAssurance floor を out-of-loop で強制する（R2 spine） ([#846](https://github.com/color4pen/spec-runner/issues/846)) ([b3dd52b](https://github.com/color4pen/spec-runner/commit/b3dd52bcd7e906537d0d65fbb932b89071a161b4))
+* awaiting-resume guard-halt を制御出口にし、attach 硬化を完了する（closure follow-up） ([#838](https://github.com/color4pen/spec-runner/issues/838)) ([33c9aea](https://github.com/color4pen/spec-runner/commit/33c9aeaab7e3afdf517494c7558978048f088700))
+* base/candidate OID を捕捉し、forward strategy の BiteEvidence を機械生成する（R4, MVP） ([#845](https://github.com/color4pen/spec-runner/issues/845)) ([6283bb1](https://github.com/color4pen/spec-runner/commit/6283bb1e4c83ec58e1eb0575a6a9c9f629cf8142))
+* bite executor — 隔離 worktree で materialize 済み test を repo の runner で実行可能にする（Phase 2） ([#849](https://github.com/color4pen/spec-runner/issues/849)) ([e917802](https://github.com/color4pen/spec-runner/commit/e917802c7f83bdab79ba9fe87939672c34b018c6))
+* changed-files 導出失敗を fail-closed 化する（`listChangedFiles` を DU 化し「導出失敗」と「変更なし」を分離） ([#833](https://github.com/color4pen/spec-runner/issues/833)) ([85a797d](https://github.com/color4pen/spec-runner/commit/85a797d9bd2bb471f7a4d5c54767067d7fcc01b6))
+* code-review の post-work self-check が捕捉されない report_result 修正を指示する不整合を解消する ([#821](https://github.com/color4pen/spec-runner/issues/821)) ([084ca14](https://github.com/color4pen/spec-runner/commit/084ca148ff8a0845ff26adb8b19381fd7242d0f2))
+* fact-check attestation を source revision にも束縛し、request.md 不変でも source 変化で stale にする ([#826](https://github.com/color4pen/spec-runner/issues/826)) ([884033f](https://github.com/color4pen/spec-runner/commit/884033fc9093be921ad2630baa484e64682895e5))
+* git 書き込み副作用の失敗を typed halt 化する（`commitAndPush` / `commitScopedPaths` の silent fail-open を StepHalt へ） ([#834](https://github.com/color4pen/spec-runner/issues/834)) ([d19a6f5](https://github.com/color4pen/spec-runner/commit/d19a6f5610ee2e0cb77d7ea8e4aad46b4393cbf6))
+* minimumAssurance floor を「宣言」でなく「最終 HEAD で達成された provenance」で判定する（P0 fix-forward） ([#848](https://github.com/color4pen/spec-runner/issues/848)) ([fe72548](https://github.com/color4pen/spec-runner/commit/fe725487a8654ccbf3b2b76a55dce719c9495632))
+* post-work の決定論的 self-check を無条件実行から outputContract（detect→repair）へ移す ([#824](https://github.com/color4pen/spec-runner/issues/824)) ([90179c5](https://github.com/color4pen/spec-runner/commit/90179c5324769351cb4d0a0980c20fa6aca38e0c))
+* remote branch から quiescent job を attach する（`job attach --branch`） ([#836](https://github.com/color4pen/spec-runner/issues/836)) ([b33f666](https://github.com/color4pen/spec-runner/commit/b33f6667736b2c25903101753fc7c912fb610ac5))
+* remote checkpoint publish/attach correctness closure ([#837](https://github.com/color4pen/spec-runner/issues/837)) ([8b8785f](https://github.com/color4pen/spec-runner/commit/8b8785f40ed78245dd2bb8140fe4e0475b6fdf1d))
+* request-review の code 断定 fact-check を attestation として記録し design の再検証重複をなくす ([#822](https://github.com/color4pen/spec-runner/issues/822)) ([06749f1](https://github.com/color4pen/spec-runner/commit/06749f1f1dd48bcc405ab3794b6f733c6854d5ca))
+* reviewer の approved を fixer 予算切れで覆さない — 任意修正の省略を明示して次工程へ進む ([#854](https://github.com/color4pen/spec-runner/issues/854)) ([33e9288](https://github.com/color4pen/spec-runner/commit/33e9288997dd02e6c53aea509be3733ac769f54f))
+* scenario / spec の凍結・承認を revision（commit OID）に束縛する — 同一 commit 自己整合を廃す（P0 fix-forward） ([#851](https://github.com/color4pen/spec-runner/issues/851)) ([15dd2ed](https://github.com/color4pen/spec-runner/commit/15dd2ed9febc2942a2728bad93bb059d12d57a9e))
+* scenario freeze と test-materialize→implement の commit 境界を作る（R3, Option A 二ノード分割） ([#844](https://github.com/color4pen/spec-runner/issues/844)) ([b2d824b](https://github.com/color4pen/spec-runner/commit/b2d824b70c17030183b2120317163ed07d4bc7ab))
+* 並列 round の worktree 検査を fail-closed 化する（検査不能を clean と区別し escalation） ([#814](https://github.com/color4pen/spec-runner/issues/814)) ([33bbcac](https://github.com/color4pen/spec-runner/commit/33bbcac350e0a5c86da49315d3234a689a902415))
+* 主役 E2E の Machine B を実 `job resume` 経路（ResumeCommand + buildPipelineForJob）で通す ([#839](https://github.com/color4pen/spec-runner/issues/839)) ([a4a27ec](https://github.com/color4pen/spec-runner/commit/a4a27ec70900ec5b84eceef6edd60d5a21467667))
+* 追加 AI ターンの構造的削減 — 完了契約の初回注入 / 決定論 skip / ターン種別 metrics ([#823](https://github.com/color4pen/spec-runner/issues/823)) ([83acc2c](https://github.com/color4pen/spec-runner/commit/83acc2c48ce83b33eb89aa1f220ee9cf89d8ce9b))
+
 ## [0.4.0](https://github.com/color4pen/spec-runner/compare/specrunner-v0.3.8...specrunner-v0.4.0) (2026-07-14)
 
 
