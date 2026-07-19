@@ -14,7 +14,8 @@
 import type { SpawnFn } from "../../util/spawn.js";
 import { readCheckpointFromRef } from "../../git/checkpoint-ref.js";
 import { verifyCheckpoint } from "./verify-checkpoint.js";
-import { attachFetchFailedError, checkpointNotFoundError } from "../../errors.js";
+import { attachFetchFailedError, checkpointNotFoundError, checkpointNotAttachableError } from "../../errors.js";
+import { readEvidenceAnchor } from "../../git/evidence-anchor-ref.js";
 import type { VerifiedCheckpoint } from "./verify-checkpoint.js";
 
 // ---------------------------------------------------------------------------
@@ -80,6 +81,22 @@ export async function runAttachVerification(
     checkpointOid,
   );
 
-  // Verify self-consistency (pure predicate — no I/O side effects)
-  return verifyCheckpoint({ slug, stateJson, eventsJsonl, treeFiles, branch, expectedRepo, checkpointOid });
+  // T-08: read the durable evidence anchor to verify checkpoint authenticity.
+  // present → anchorDigest passed to verifyCheckpoint (authenticity enforced).
+  // absent  → anchorDigest omitted (backward-compat, self-consistency only).
+  // unavailable → fail-closed reject.
+  const anchorResult = await readEvidenceAnchor(spawnFn, cwd, branch);
+  let anchorDigest: string | undefined;
+  if (anchorResult.kind === "present") {
+    anchorDigest = anchorResult.digest;
+  } else if (anchorResult.kind === "unavailable") {
+    throw checkpointNotAttachableError(
+      "journal-authenticity",
+      `Evidence anchor fetch failed (fail-closed): ${anchorResult.reason}`,
+    );
+  }
+  // anchorResult.kind === "absent" → anchorDigest stays undefined (backward-compat)
+
+  // Verify self-consistency and authenticity (pure predicate — no I/O side effects)
+  return verifyCheckpoint({ slug, stateJson, eventsJsonl, treeFiles, branch, expectedRepo, checkpointOid, anchorDigest });
 }

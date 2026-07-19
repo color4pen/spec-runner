@@ -450,7 +450,7 @@ describe("TC-027: round member（roundOwnsGitEffects=true）が per-node 検証�
     // so per-node journal authorship verification is not applicable.
 
     const runtimeSpy = {
-      verifyNodeJournalAuthorship: vi.fn(async () => ({ kind: "ok" as const })),
+      verifyNodeJournalAuthorship: vi.fn(async (_input: unknown) => ({ kind: "ok" as const })),
     };
 
     // When roundOwnsGitEffects=true, the executor should NOT call verifyNodeJournalAuthorship

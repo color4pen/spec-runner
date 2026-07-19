@@ -21,6 +21,7 @@ import type { OutputViolation } from "../port/output-contract.js";
 import type { GuardDrift } from "./main-checkout-guard.js";
 import type { StepResultInput } from "../../state/helpers.js";
 import { toStepName } from "./step-names.js";
+import { journalAuthenticityViolationError } from "../../errors.js";
 
 /**
  * Type alias for the inline mainCheckoutDrift shape in JobState.
@@ -352,6 +353,63 @@ export function makeInputMissingHalt(
 // ---------------------------------------------------------------------------
 // Factory: CLI step fail halt (new — runCliStep step.run() failure)
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Factory: journal tamper halt
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a StepHalt for the journal authenticity violation path.
+ * Produces an awaiting-resume halt with JOURNAL_AUTHENTICITY_VIOLATION code.
+ * Callers must restore authentic bytes before calling this.
+ *
+ * kind: "awaiting-resume" — operator must inspect + resume after pipeline restores bytes.
+ * interruption.reason: "failure"
+ *
+ * history: `{step}-journal-tamper-detected` / error
+ *
+ * @param detail   - Human-readable description of the tamper (e.g. "on-disk digest mismatch").
+ * @param stepName - Name of the step during which tampering was detected.
+ * @param slug     - Job slug for the resume hint.
+ */
+export function makeJournalTamperHalt(
+  detail: string,
+  stepName: string,
+  slug: string,
+  recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
+): StepHalt & { kind: "awaiting-resume" } {
+  const err = journalAuthenticityViolationError(detail);
+  const error: ErrorInfo = {
+    code: err.code,
+    message: err.message,
+    hint: err.hint,
+  };
+  const thrownErr = Object.assign(new Error(error.message), {
+    code: error.code,
+    hint: error.hint,
+  });
+  return {
+    kind: "awaiting-resume",
+    error,
+    thrownErr,
+    resumePoint: {
+      step: toStepName(stepName),
+      reason: "journal authenticity violation",
+      iterationsExhausted: 0,
+    },
+    interruption: {
+      type: "interruption",
+      reason: "failure",
+      errorCode: "JOURNAL_AUTHENTICITY_VIOLATION",
+    },
+    recordOpts,
+    history: {
+      step: `${stepName}-journal-tamper-detected`,
+      status: "error",
+      message: `${stepName}: journal authenticity violation — ${detail}`,
+    },
+  };
+}
 
 /**
  * Build a StepHalt for the runCliStep step.run() throw path.

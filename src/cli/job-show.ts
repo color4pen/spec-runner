@@ -141,16 +141,18 @@ export async function printJobState(state: JobState, repoRoot: string = process.
     logResult(`\n${"─".repeat(40)}`);
     logResult("Lineage:");
     for (const rec of lineage) {
-      logResult(`  ${rec.step} (${rec.ts})`);
-      if (rec.outputs.length > 0) {
+      logResult(`  ${rec.stepName ?? rec.step ?? "(unknown)"} (${rec.ts})`);
+      const outputs = rec.outputs ?? rec.artifacts ?? [];
+      if (outputs.length > 0) {
         logResult("    outputs:");
-        for (const o of rec.outputs) {
+        for (const o of outputs) {
           logResult(`      ${o.path}  ${o.hash ?? "(hash unavailable)"}`);
         }
       }
-      if (rec.inputs.length > 0) {
+      const inputs = rec.inputs ?? [];
+      if (inputs.length > 0) {
         logResult("    inputs:");
-        for (const inp of rec.inputs) {
+        for (const inp of inputs) {
           logResult(`      ${inp.path}  ${inp.hash ?? "(hash unavailable)"}`);
         }
       }

@@ -17,6 +17,8 @@ export interface SpawnOptions {
   cwd: string;
   env?: Record<string, string | undefined>;
   timeoutMs?: number;
+  /** Optional string to write to the child process's stdin (then close). */
+  input?: string;
 }
 
 /**
@@ -165,5 +167,11 @@ export function spawnCommand(
       }
       resolve({ exitCode: code, stdout, stderr });
     });
+
+    // Write stdin input if provided, then close stdin
+    if (opts.input !== undefined && proc.stdin) {
+      proc.stdin.write(opts.input);
+      proc.stdin.end();
+    }
   });
 }

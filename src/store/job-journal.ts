@@ -1,19 +1,20 @@
 import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { JobLocationResolver } from "./job-location-resolver.js";
 import { stateToStateJson } from "./job-state-projection.js";
 import {
   fold,
-  appendEventRecord,
   stepRunToRecord,
   historyEntryToRecord,
 } from "./event-journal.js";
-import type { FoldResult, InterruptionRecord, LineageRecord } from "./event-journal.js";
+import type { FoldResult, InterruptionRecord, LineageRecord, LineageInput } from "./event-journal.js";
 import { detectCounterReversal, describeJournalIssue } from "./journal-integrity.js";
-import { atomicWriteJson } from "../util/atomic-write.js";
+import { atomicWriteString } from "../util/atomic-write.js";
 import { appendHistoryEntry } from "../state/schema.js";
 import type { JobState, StepRun, HistoryEntry } from "../state/schema.js";
 import { journalCorruptedError } from "../errors.js";
 import type { NormalizedJobState } from "./job-state-store.js";
+import type { JournalAnchorHolder } from "./journal-anchor.js";
 
 // ---------------------------------------------------------------------------
 // JournalCounters — exported so job-state-projection.ts can import it as a type
@@ -33,21 +34,6 @@ export interface JournalCounters {
 // ---------------------------------------------------------------------------
 // Module-level helpers
 // ---------------------------------------------------------------------------
-
-/**
- * Write ALL history entries and step runs to events.jsonl (used for fresh writes).
- */
-async function writeAllToJournal(eventsPath: string, state: JobState): Promise<void> {
-  for (const entry of state.history) {
-    await appendEventRecord(eventsPath, historyEntryToRecord(entry));
-  }
-  const steps = (state as NormalizedJobState).steps ?? {};
-  for (const [stepName, runs] of Object.entries(steps)) {
-    for (const run of runs) {
-      await appendEventRecord(eventsPath, stepRunToRecord(stepName, run));
-    }
-  }
-}
 
 /**
  * Build a stepCounts record from a steps object.
@@ -72,13 +58,60 @@ function buildStepCounts(
 /**
  * Manages journal append, delta computation, and state.json persistence for a job.
  * Delegates path resolution to a JobLocationResolver.
+ *
+ * When a JournalAnchorHolder is injected, all journal mutations are reflected
+ * in the holder so the pipeline can track the exact bytes it authored without
+ * re-reading disk (D1 — no re-read after write).
  */
 export class JobJournal {
   private readonly resolver: JobLocationResolver;
+  private readonly holder: JournalAnchorHolder | undefined;
 
-  constructor(resolver: JobLocationResolver) {
+  constructor(resolver: JobLocationResolver, holder?: JournalAnchorHolder) {
     this.resolver = resolver;
+    this.holder = holder;
   }
+
+  // ---------------------------------------------------------------------------
+  // Private helpers for holder tracking
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Append a JSON event line to events.jsonl AND to the holder (if injected).
+   * Centralizes the holder tracking for all events mutations.
+   */
+  private async _appendEventLine(eventsPath: string, line: string): Promise<void> {
+    await fs.appendFile(eventsPath, line, "utf-8");
+    this.holder?.appendEvents(line);
+  }
+
+  /**
+   * Write state.json atomically AND update the holder (if injected).
+   * Pre-serializes the state object so we can pass the exact bytes to holder.setState().
+   */
+  private async _writeStateJson(stateJsonPath: string, stateObj: unknown): Promise<void> {
+    const stateStr = JSON.stringify(stateObj, null, 2) + "\n";
+    await atomicWriteString(stateJsonPath, stateStr);
+    this.holder?.setState(stateStr);
+  }
+
+  /**
+   * Seed the holder from on-disk files (resume scenario).
+   * Called once when existingCounters !== null and holder is not yet seeded.
+   * Reads events.jsonl + state.json exactly once, then seeds.
+   */
+  private async _seedHolderFromDisk(eventsPath: string, stateJsonPath: string): Promise<void> {
+    if (!this.holder) return;
+    if (this.holder.isSeeded()) return;
+
+    const eventsContent = await fs.readFile(eventsPath, "utf-8").catch(() => "");
+    const stateContent = await fs.readFile(stateJsonPath, "utf-8").catch(() => "");
+    this.holder.seed(eventsContent, stateContent);
+  }
+
+  // ---------------------------------------------------------------------------
+  // persist
+  // ---------------------------------------------------------------------------
 
   /**
    * Atomically persist the state to disk using the appropriate layout.
@@ -89,6 +122,9 @@ export class JobJournal {
    * 3. Append delta records to events.jsonl
    * 4. Update counters
    * 5. Atomically overwrite state.json
+   *
+   * When a JournalAnchorHolder is injected, it is updated with the exact bytes
+   * written so callers can verify authorship without re-reading disk (D1).
    *
    * Accepts both NormalizedJobState and plain JobState.
    */
@@ -114,13 +150,33 @@ export class JobJournal {
 
     if (existingCounters === null) {
       // Fresh write: append all history and steps to events.jsonl
-      await writeAllToJournal(eventsPath, state);
+      await fs.mkdir(path.dirname(eventsPath), { recursive: true });
+      for (const entry of state.history) {
+        const line = JSON.stringify(historyEntryToRecord(entry)) + "\n";
+        await this._appendEventLine(eventsPath, line);
+      }
+      const steps = (state as NormalizedJobState).steps ?? {};
+      for (const [stepName, runs] of Object.entries(steps)) {
+        for (const run of runs) {
+          const line = JSON.stringify(stepRunToRecord(stepName, run)) + "\n";
+          await this._appendEventLine(eventsPath, line);
+        }
+      }
       const counters: JournalCounters = {
         historyCount: state.history.length,
         stepCounts: buildStepCounts((state as NormalizedJobState).steps),
       };
-      await atomicWriteJson(stateJsonPath, { ...stateToStateJson(state, { slugMode: inSlugMode }), _journal: counters });
+      await this._writeStateJson(stateJsonPath, {
+        ...stateToStateJson(state, { slugMode: inSlugMode }),
+        _journal: counters,
+      });
+      this.holder?.markSeeded();
       return;
+    }
+
+    // Resume seed: if holder is injected but not yet seeded, seed from disk BEFORE writing delta
+    if (this.holder && !this.holder.isSeeded()) {
+      await this._seedHolderFromDisk(eventsPath, stateJsonPath);
     }
 
     // Fast path: if stored counters already cover all in-memory events, skip the O(n) fold.
@@ -133,7 +189,10 @@ export class JobJournal {
       );
     if (fastPathEligible) {
       // No new events since last persist — only cursor fields may have changed.
-      await atomicWriteJson(stateJsonPath, { ...stateToStateJson(state, { slugMode: inSlugMode }), _journal: existingCounters });
+      await this._writeStateJson(stateJsonPath, {
+        ...stateToStateJson(state, { slugMode: inSlugMode }),
+        _journal: existingCounters,
+      });
       return;
     }
 
@@ -179,7 +238,8 @@ export class JobJournal {
     // Compute and append history delta
     const historyDelta = state.history.slice(recoveredCounters.historyCount);
     for (const entry of historyDelta) {
-      await appendEventRecord(eventsPath, historyEntryToRecord(entry));
+      const line = JSON.stringify(historyEntryToRecord(entry)) + "\n";
+      await this._appendEventLine(eventsPath, line);
     }
 
     // Compute and append steps delta
@@ -188,7 +248,8 @@ export class JobJournal {
       const storedCount = recoveredCounters.stepCounts[stepName] ?? 0;
       const deltaRuns = runs.slice(storedCount);
       for (const run of deltaRuns) {
-        await appendEventRecord(eventsPath, stepRunToRecord(stepName, run));
+        const line = JSON.stringify(stepRunToRecord(stepName, run)) + "\n";
+        await this._appendEventLine(eventsPath, line);
       }
     }
 
@@ -199,7 +260,10 @@ export class JobJournal {
     };
 
     // Write state.json
-    await atomicWriteJson(stateJsonPath, { ...stateToStateJson(state, { slugMode: inSlugMode }), _journal: newCounters });
+    await this._writeStateJson(stateJsonPath, {
+      ...stateToStateJson(state, { slugMode: inSlugMode }),
+      _journal: newCounters,
+    });
   }
 
   /**
@@ -214,9 +278,19 @@ export class JobJournal {
   /**
    * Append an interruption record to the events journal.
    * Does not update state.json — callers should persist() separately if needed.
+   *
+   * When a holder is injected, the line is also appended to the holder.
+   * If the holder is not yet seeded, seed from disk first (resume path).
    */
   async appendInterruption(record: InterruptionRecord): Promise<void> {
-    await appendEventRecord(this.resolver.getEventsPath(), record);
+    const eventsPath = this.resolver.getEventsPath();
+    // Seed holder from disk if not yet seeded (resume path: appendInterruption before first persist)
+    if (this.holder && !this.holder.isSeeded()) {
+      const stateJsonPath = this.resolver.getStateJsonPath();
+      await this._seedHolderFromDisk(eventsPath, stateJsonPath);
+    }
+    const line = JSON.stringify(record) + "\n";
+    await this._appendEventLine(eventsPath, line);
   }
 
   /**
@@ -224,8 +298,18 @@ export class JobJournal {
    * Does not update state.json — lineage is journal-only and never materialized
    * into NormalizedJobState (keeps projection lean).
    * Best-effort: callers catch and swallow errors (usage.json append pattern).
+   *
+   * When a holder is injected, the line is also appended to the holder.
    */
-  async appendLineage(record: LineageRecord): Promise<void> {
-    await appendEventRecord(this.resolver.getEventsPath(), record);
+  async appendLineage(record: LineageInput): Promise<void> {
+    const eventsPath = this.resolver.getEventsPath();
+    // Seed holder from disk if not yet seeded (resume path)
+    if (this.holder && !this.holder.isSeeded()) {
+      const stateJsonPath = this.resolver.getStateJsonPath();
+      await this._seedHolderFromDisk(eventsPath, stateJsonPath);
+    }
+    const line = JSON.stringify(record) + "\n";
+    await this._appendEventLine(eventsPath, line);
   }
 }
+

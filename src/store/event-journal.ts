@@ -72,7 +72,7 @@ export interface TransitionRecord {
   type: "transition";
   ts: string;
   step: string;
-  status: "started" | "ok" | "error" | "warning";
+  status: "started" | "ok" | "success" | "error" | "warning";
   message: string;
 }
 
@@ -107,6 +107,42 @@ export interface LineageRecord {
   outputs: ArtifactRef[];
   /** Step inputs (from step.reads()). */
   inputs: ArtifactRef[];
+  /** Commit OID of the journal commit authored by the pipeline for this node (T-04, optional). */
+  commitOid?: string;
+  /**
+   * Alternative step name field (new-format records written via LineageInput).
+   * fold() casts raw JSON, so records written with stepName will carry this field.
+   * Callers should prefer `step ?? stepName` for display.
+   */
+  stepName?: string;
+  /**
+   * Combined artifact list (new-format records written via LineageInput).
+   * fold() casts raw JSON, so records written with artifacts will carry this field.
+   * Callers should prefer `outputs ?? artifacts` for output lookup.
+   */
+  artifacts?: ArtifactRef[];
+}
+
+/**
+ * Flexible input type for appendLineage — accepts both the legacy format (step/outputs/inputs)
+ * and the new format (stepName/artifacts/commitOid). All fields are optional except type and ts.
+ * Used only for writing; fold() returns LineageRecord (required fields) for reading.
+ */
+export interface LineageInput {
+  type: "lineage";
+  ts: string;
+  /** Legacy: step name. */
+  step?: string;
+  /** New: step name. */
+  stepName?: string;
+  /** Commit OID (T-04 authorship separation). */
+  commitOid?: string;
+  /** Legacy: step outputs. */
+  outputs?: ArtifactRef[];
+  /** Legacy: step inputs. */
+  inputs?: ArtifactRef[];
+  /** New: combined artifact list. */
+  artifacts?: ArtifactRef[];
 }
 
 /** All valid event record types. */

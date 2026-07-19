@@ -68,7 +68,7 @@ export type Verdict =
 export interface HistoryEntry {
   ts: string;
   step: string;
-  status: "started" | "ok" | "error" | "warning";
+  status: "started" | "ok" | "success" | "error" | "warning";
   message: string;
 }
 

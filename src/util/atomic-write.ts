@@ -3,17 +3,17 @@ import * as path from "node:path";
 import { randomBytes } from "node:crypto";
 
 /**
- * Atomically write JSON data to a file.
+ * Atomically write a raw string to a file.
  * Writes to a temp file first, then renames to the target path.
  * This ensures partial writes never corrupt the target file.
  *
  * @param filePath - The final target path
- * @param data - The data to serialize as JSON
+ * @param content - The string content to write verbatim
  * @param options.mode - File permissions (e.g., 0o600)
  */
-export async function atomicWriteJson(
+export async function atomicWriteString(
   filePath: string,
-  data: unknown,
+  content: string,
   options?: { mode?: number },
 ): Promise<void> {
   const dir = path.dirname(filePath);
@@ -23,9 +23,8 @@ export async function atomicWriteJson(
   const tmpPath = `${filePath}.tmp.${suffix}`;
 
   try {
-    const json = JSON.stringify(data, null, 2) + "\n";
     const mode = options?.mode ?? 0o600;
-    await fs.writeFile(tmpPath, json, { flag: "wx", mode });
+    await fs.writeFile(tmpPath, content, { flag: "wx", mode, encoding: "utf-8" });
     // Note: fsync would require opening with fs.open but writeFile handles flushing.
     // For POSIX rename atomicity, this is sufficient.
     await fs.rename(tmpPath, filePath);
@@ -36,4 +35,21 @@ export async function atomicWriteJson(
     await fs.unlink(tmpPath).catch(() => undefined);
     throw err;
   }
+}
+
+/**
+ * Atomically write JSON data to a file.
+ * Thin wrapper over atomicWriteString — serializes data as pretty-printed JSON + newline.
+ *
+ * @param filePath - The final target path
+ * @param data - The data to serialize as JSON
+ * @param options.mode - File permissions (e.g., 0o600)
+ */
+export async function atomicWriteJson(
+  filePath: string,
+  data: unknown,
+  options?: { mode?: number },
+): Promise<void> {
+  const json = JSON.stringify(data, null, 2) + "\n";
+  await atomicWriteString(filePath, json, options);
 }

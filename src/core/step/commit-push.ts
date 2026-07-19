@@ -6,6 +6,7 @@ import { gitExec, gitExecExitCode, gitExecResult, type SpawnFn } from "../../uti
 import type { SpawnFn as PipelineSpawnFn } from "../../util/spawn.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { pushFailedError, commitEffectFailedError } from "../../errors.js";
+import { pipelineManagedPaths } from "../pipeline/round-git-scope.js";
 
 /** Infrastructure deps for commit/push operations. */
 export interface CommitPushInfra {
@@ -44,8 +45,12 @@ export async function commitAndPush(
   const branch = state.branch ?? "";
   const slug = deps.slug;
 
-  // Stage all changes. Failure (spawn error or exit≠0) throws typed error → halt path.
-  const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A"]);
+  // Stage all changes, excluding pipeline-managed paths (authorship separation).
+  // pipeline-managed paths (events.jsonl, state.json, usage.json) are committed
+  // separately by commitJournalArtifacts after per-node verification.
+  const managedPaths = pipelineManagedPaths(slug);
+  const excludeArgs = managedPaths.map((p) => `:(exclude)${p}`);
+  const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ".", ...excludeArgs]);
   if (!addResult.ok || addResult.exitCode !== 0) {
     throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
   }
@@ -143,6 +148,33 @@ export async function commitFinalState(params: {
     `Warning: failed to push ${messageLabel} commit for ${slug} to origin/${branch}. ` +
       `Push manually to ensure state is on the branch.`,
   );
+}
+
+/**
+ * Stage only the pipeline-managed journal paths and commit+push if there are staged changes.
+ *
+ * T-04 (authorship-separation): pipeline journal commit — separate from agent code commit.
+ * Stages exactly the pipelineManagedPaths(slug) (events.jsonl, state.json, usage.json),
+ * commits with message `journal: <slug>`, and pushes. If no staged changes, returns (no-op).
+ *
+ * This is called:
+ *   - After per-node authorship verification (sequential executor path)
+ *   - After coordinator commitRound (round sweep)
+ *
+ * @param cwd   - Working directory for git commands.
+ * @param branch - Branch to push to.
+ * @param slug  - Job slug (used to derive managed paths and commit message).
+ * @param infra - Commit/push infrastructure.
+ */
+export async function commitJournalArtifacts(
+  cwd: string,
+  branch: string,
+  slug: string,
+  infra: CommitPushInfra,
+): Promise<void> {
+  const stagePaths = pipelineManagedPaths(slug);
+  const commitMessage = `journal: ${slug}`;
+  await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra);
 }
 
 /**

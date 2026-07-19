@@ -569,6 +569,39 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   }
 
   /**
+   * T-04 (authorship-separation): no-op for managed runtime (no local worktree).
+   * Pipeline-managed paths are committed by the cloud agent — no local staging needed.
+   */
+  async commitJournalArtifacts(
+    _cwd: string,
+    _branch: string,
+    _slug: string,
+    _commitPushInfra: unknown,
+  ): Promise<void> {
+    // no-op: managed runtime has no local worktree
+  }
+
+  /**
+   * T-05 (per-node authorship verification): always skip for managed runtime.
+   * Managed runtime has no local worktree or in-process journal anchor.
+   */
+  async verifyNodeJournalAuthorship(_input: {
+    headBeforeStep: string | null;
+    cwd: string;
+    slug: string;
+  }): Promise<{ kind: "ok" } | { kind: "skip" } | { kind: "tamper"; detail: string }> {
+    return { kind: "skip" };
+  }
+
+  /**
+   * T-05 (per-node authorship restoration): always false for managed runtime.
+   * Managed runtime has no local worktree or in-process anchor to restore from.
+   */
+  async restoreJournalToAnchor(_input: { cwd: string; slug: string }): Promise<boolean> {
+    return false;
+  }
+
+  /**
    * No local worktree available — always returns success with empty paths.
    * Parallel custom reviewer managed support is a known Non-Goal; no local git
    * state means the coordinator cannot detect worktree changes. Returning

@@ -24,6 +24,7 @@ import { requestMdPath, slugEventsPath } from "../../util/paths.js";
 import { checkpointNotAttachableError } from "../../errors.js";
 import { fold } from "../../store/event-journal.js";
 import { detectCounterReversal } from "../../store/journal-integrity.js";
+import { computeJournalDigest } from "../../store/journal-anchor.js";
 import type { NormalizedJobState } from "../../store/job-state-projection.js";
 import type { StepDeps } from "../step/types.js";
 
@@ -66,6 +67,9 @@ export interface VerifiedCheckpoint {
  * @param input.branch        - Branch name (without "origin/" prefix).
  * @param input.expectedRepo  - Repository identity to verify against.
  * @param input.checkpointOid - Immutable commit OID resolved once after fetch (D1/D2).
+ * @param input.anchorDigest  - Durable origin anchor digest (T-08). When present, the
+ *                              checkpoint tree journal must match this digest. When absent
+ *                              (undefined), authenticity predicate is skipped (backward-compat).
  */
 export async function verifyCheckpoint(input: {
   slug: string;
@@ -75,8 +79,9 @@ export async function verifyCheckpoint(input: {
   branch: string;
   expectedRepo: { owner: string; name: string };
   checkpointOid: string;
+  anchorDigest?: string;
 }): Promise<VerifiedCheckpoint> {
-  const { slug, stateJson, eventsJsonl, treeFiles, branch, expectedRepo, checkpointOid } = input;
+  const { slug, stateJson, eventsJsonl, treeFiles, branch, expectedRepo, checkpointOid, anchorDigest } = input;
 
   // (b-new) version 2: events.jsonl is required in treeFiles.
   // Parse raw state.json version before normalization so we see the wire value.
@@ -274,6 +279,21 @@ export async function verifyCheckpoint(input: {
       "slug-identity-mismatch",
       `getJobSlug(state) is '${derivedSlug}', expected '${slug}' (from tree dir name).`,
     );
+  }
+
+  // (authenticity) T-08: if anchorDigest is provided, verify that the checkpoint
+  // tree journal digest matches the durable origin anchor. Absent anchorDigest
+  // → skip (backward-compat, design D7).
+  if (anchorDigest !== undefined) {
+    const treeDigest = computeJournalDigest(eventsJsonl, stateJson);
+    if (treeDigest !== anchorDigest) {
+      throw checkpointNotAttachableError(
+        "journal-authenticity",
+        `journal-authenticity: Checkpoint tree journal digest does not match the durable origin anchor. ` +
+        `Expected: ${anchorDigest}, computed: ${treeDigest}. ` +
+        `The checkpoint may have been tampered with after the pipeline published the anchor.`,
+      );
+    }
   }
 
   return { state, slug, jobId: state.jobId, branch, checkpointOid };

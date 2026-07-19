@@ -727,4 +727,24 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
     config: SpecRunnerConfig,
   ): Promise<IsolatedTestResult>;
   readFileAtCommit(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
+  /**
+   * T-04 (authorship-separation): commit only the pipeline-managed journal paths
+   * (events.jsonl, state.json, usage.json) and push. No-op when no staged changes.
+   */
+  commitJournalArtifacts(cwd: string, branch: string, slug: string, commitPushInfra: unknown): Promise<void>;
+  /**
+   * T-05 (per-node authorship verification): verify that pipeline-managed journal paths
+   * were not modified in the agent commit tree and that the on-disk bytes match the
+   * in-process anchor. Returns "ok", "skip", or "tamper".
+   */
+  verifyNodeJournalAuthorship(input: {
+    headBeforeStep: string | null;
+    cwd: string;
+    slug: string;
+  }): Promise<{ kind: "ok" } | { kind: "skip" } | { kind: "tamper"; detail: string }>;
+  /**
+   * T-05 (per-node authorship restoration): write the in-process anchor bytes back to
+   * on-disk events.jsonl and state.json. Returns false if no anchor is established.
+   */
+  restoreJournalToAnchor(input: { cwd: string; slug: string }): Promise<boolean>;
 };

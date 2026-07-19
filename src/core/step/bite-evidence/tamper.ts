@@ -50,7 +50,7 @@ export function checkTamperStatus(
 
   // Find the test-cases.md output in the lineage record.
   // Match by path suffix to be slug-agnostic.
-  const testCasesOutput = testCaseGenRecord.outputs.find((o) =>
+  const testCasesOutput = (testCaseGenRecord.outputs ?? testCaseGenRecord.artifacts ?? []).find((o) =>
     o.path.endsWith("test-cases.md"),
   );
 

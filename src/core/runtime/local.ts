@@ -39,7 +39,7 @@ import {
   writeOutputTemplates,
   cleanupOutputTemplates,
 } from "../artifact/copy-artifacts.js";
-import { commitAndPush, commitFinalState, commitScopedPaths } from "../step/commit-push.js";
+import { commitAndPush, commitFinalState, commitScopedPaths, commitJournalArtifacts } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
@@ -58,6 +58,11 @@ import type { WorkspaceSetupPlan } from "../worktree/setup.js";
 import { hasJsDependencyTraces } from "../../util/detect-pm.js";
 import { WorkspaceMaterializer, type MaterializerHost } from "./workspace-materializer.js";
 import type { WorktreeMaterializationPlan } from "./workspace-materializer.js";
+import { JournalAnchorHolder, computeJournalDigest, evaluateAnchorPresence } from "../../store/journal-anchor.js";
+import { pipelineManagedPaths } from "../pipeline/round-git-scope.js";
+import { atomicWriteString } from "../../util/atomic-write.js";
+import { pushEvidenceAnchor } from "../../git/evidence-anchor-ref.js";
+import { slugStateJsonPath, slugEventsPath } from "../../util/paths.js";
 
 // Internal structure stored inside CleanupHandle
 interface LocalCleanupInternals {
@@ -99,6 +104,12 @@ export interface LocalRuntimeOptions {
   spawnBackgroundFn?: SpawnBackgroundFn;
   /** Platform override for dependency injection (power assertion, tests). */
   platform?: NodeJS.Platform;
+  /**
+   * In-process journal anchor holder (T-03/T-05/T-06).
+   * When provided, the holder is updated during journal mutations and used for
+   * per-node authorship verification and durable anchor push at checkpoint.
+   */
+  journalAnchor?: JournalAnchorHolder;
 }
 
 export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
@@ -123,6 +134,13 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   /** WorkspaceMaterializer delegated to for worktree create/registration/liveness (T-03). */
   private readonly materializer: WorkspaceMaterializer;
 
+  /**
+   * In-process journal anchor holder (T-03/T-05/T-06).
+   * Tracks the exact bytes the pipeline writes to events.jsonl + state.json.
+   * Undefined when no journalAnchor option was provided.
+   */
+  private readonly journalAnchor: JournalAnchorHolder | undefined;
+
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
   // Set by setupWorkspace(); slug for slug-based store in buildDeps() / registerCleanup()
@@ -145,6 +163,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     // at the composition root (createRuntime) for production job execution.
     this.spawnBackgroundFn = opts.spawnBackgroundFn ?? noopSpawnBackground;
     this.platform = opts.platform ?? process.platform;
+    this.journalAnchor = opts.journalAnchor;
     this.materializer = new WorkspaceMaterializer(this);
   }
 
@@ -671,6 +690,15 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     const slug = deps.slug;
     const messageLabel = state.status === "awaiting-resume" ? "checkpoint" : "finalize";
     await commitFinalState({ cwd, branch, slug, spawnFn: this.wrappedSpawnFn, messageLabel });
+
+    // T-06: push durable evidence anchor to origin after terminal transition.
+    // Best-effort — never throws, push failure does not break the terminal transition.
+    if (branch && this.journalAnchor) {
+      const snap = this.journalAnchor.snapshot();
+      if (snap !== null) {
+        await pushEvidenceAnchor(this.wrappedSpawnFn, cwd, branch, snap.digest);
+      }
+    }
   }
 
   async verifyFindingRefs(refs: FindingRef[], cwd: string, _branch: string | null): Promise<FindingRef[]> {
@@ -806,6 +834,109 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     const infra = commitPushInfra as CommitPushInfra;
     const commitMessage = `${coordinatorName}: ${slug}`;
     await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra);
+  }
+
+  /**
+   * T-04 (authorship-separation): commit only the pipeline-managed journal paths
+   * (events.jsonl, state.json, usage.json) as a separate commit from agent code.
+   * Delegates to commitJournalArtifacts from commit-push.ts.
+   */
+  async commitJournalArtifacts(cwd: string, branch: string, slug: string, commitPushInfra: unknown): Promise<void> {
+    const infra = commitPushInfra as CommitPushInfra;
+    await commitJournalArtifacts(cwd, branch, slug, infra);
+  }
+
+  /**
+   * T-05 (per-node authorship verification): verify that pipeline-managed journal
+   * paths were not modified in the agent commit tree, and that the on-disk bytes
+   * match the in-process anchor.
+   *
+   * Two teeth:
+   *   1. committed-tree tooth: if headBeforeStep is non-null and HEAD advanced,
+   *      diffPathsBetweenCommits checks whether managed paths appear in the diff.
+   *   2. on-disk tooth: read events.jsonl + state.json, compute digest, compare
+   *      with in-process anchor via evaluateAnchorPresence.
+   *
+   * Returns:
+   *   - { kind: "ok" }    — journal is authentic.
+   *   - { kind: "skip" }  — no anchor established, skip verification.
+   *   - { kind: "tamper"; detail } — tamper detected.
+   */
+  async verifyNodeJournalAuthorship(input: {
+    headBeforeStep: string | null;
+    cwd: string;
+    slug: string;
+  }): Promise<{ kind: "ok" } | { kind: "skip" } | { kind: "tamper"; detail: string }> {
+    const { headBeforeStep, cwd, slug } = input;
+
+    // Committed-tree tooth: skip when headBeforeStep is null (no pre-step snapshot).
+    if (headBeforeStep !== null) {
+      const headAfterStep = await this.captureHeadSha(cwd);
+      if (headAfterStep !== null && headAfterStep !== headBeforeStep) {
+        const managed = pipelineManagedPaths(slug);
+        const diffResult = await this.diffPathsBetweenCommits(headBeforeStep, headAfterStep, managed, cwd);
+        if (diffResult.kind === "success" && diffResult.files.length > 0) {
+          return {
+            kind: "tamper",
+            detail: `pipeline-managed journal paths found in agent commit tree: ${diffResult.files.join(", ")}`,
+          };
+        }
+        // diffResult.kind === "unavailable" → skip this tooth (fail-open, rely on on-disk)
+      }
+    }
+
+    // On-disk tooth: read events.jsonl + state.json and compare with in-process anchor.
+    let onDiskDigest: string | null = null;
+    try {
+      const eventsPath = path.join(cwd, slugEventsPath(slug));
+      const statePath = path.join(cwd, slugStateJsonPath(slug));
+      const [eventsBytes, stateBytes] = await Promise.all([
+        fs.readFile(eventsPath, "utf-8"),
+        fs.readFile(statePath, "utf-8"),
+      ]);
+      onDiskDigest = computeJournalDigest(eventsBytes, stateBytes);
+    } catch {
+      // Files absent or unreadable — onDiskDigest stays null
+    }
+
+    const inProcess = this.journalAnchor?.snapshot()?.digest ?? null;
+    const evaluation = evaluateAnchorPresence({ inProcess, durable: null, onDiskDigest });
+
+    if (evaluation.kind === "skip") {
+      return { kind: "skip" };
+    }
+    if (evaluation.kind === "tamper") {
+      return { kind: "tamper", detail: "both anchors absent but on-disk journal exists (unexpected external write)" };
+    }
+    // evaluation.kind === "use"
+    if (evaluation.baseline === onDiskDigest) {
+      return { kind: "ok" };
+    }
+    return {
+      kind: "tamper",
+      detail: `on-disk journal digest mismatch — expected ${evaluation.baseline}, got ${onDiskDigest ?? "(unreadable)"}`,
+    };
+  }
+
+  /**
+   * T-05 (per-node authorship restoration): write the in-process anchor bytes back
+   * to on-disk events.jsonl and state.json. Called after tamper detection before halt.
+   *
+   * Returns true if restoration was performed, false if no anchor is established.
+   */
+  async restoreJournalToAnchor(input: { cwd: string; slug: string }): Promise<boolean> {
+    const snap = this.journalAnchor?.snapshot();
+    if (snap === null || snap === undefined) return false;
+
+    const { cwd, slug } = input;
+    const eventsPath = path.join(cwd, slugEventsPath(slug));
+    const statePath = path.join(cwd, slugStateJsonPath(slug));
+
+    await Promise.all([
+      atomicWriteString(eventsPath, snap.events),
+      atomicWriteString(statePath, snap.state),
+    ]);
+    return true;
   }
 
   /**

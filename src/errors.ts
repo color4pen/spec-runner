@@ -100,6 +100,7 @@ export const ERROR_CODES = {
   DESIGN_LAYER_CHECK_FAILED: "DESIGN_LAYER_CHECK_FAILED",
   DUPLICATE_LIVE_JOB: "DUPLICATE_LIVE_JOB",
   JOURNAL_CORRUPTED: "JOURNAL_CORRUPTED",
+  JOURNAL_AUTHENTICITY_VIOLATION: "JOURNAL_AUTHENTICITY_VIOLATION",
   COMMIT_AND_PUSH_FAILED: "COMMIT_AND_PUSH_FAILED",
   CHECKPOINT_NOT_FOUND: "CHECKPOINT_NOT_FOUND",
   CHECKPOINT_NOT_ATTACHABLE: "CHECKPOINT_NOT_ATTACHABLE",
@@ -403,6 +404,14 @@ export function attachRuntimeUnsupportedError(runtime: string): SpecRunnerError 
     ERROR_CODES.ATTACH_RUNTIME_UNSUPPORTED,
     `'job attach' is only supported for local runtime. Switch to local runtime or use the managed-specific attach workflow.`,
     `'job attach' is not supported for runtime '${runtime}'.`,
+  );
+}
+
+export function journalAuthenticityViolationError(detail: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.JOURNAL_AUTHENTICITY_VIOLATION,
+    `The pipeline journal has been tampered with. Run 'specrunner job resume' after the pipeline restores authentic bytes.`,
+    `Journal authenticity violation: ${detail}`,
   );
 }
 
