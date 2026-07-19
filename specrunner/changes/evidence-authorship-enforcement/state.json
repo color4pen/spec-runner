@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b9b17b77-44dd-48ad-a47a-e8941dde3153",
   "createdAt": "2026-07-19T00:09:01.312Z",
-  "updatedAt": "2026-07-19T03:28:56.552Z",
+  "updatedAt": "2026-07-19T03:48:21.935Z",
   "request": {
     "title": "pipeline-owned evidence を agent が偽造できないようにする — authorship 検証＋復元＋全経路再検査（P0 fix-forward）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/evidence-authorship-enforcement-b9b17b77",
   "error": null,
@@ -64,8 +64,8 @@
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "5a24560d603a82dee82a9415e644bd3d9647d260",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -89,7 +89,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 96,
+    "historyCount": 105,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -101,10 +101,10 @@
       "verification": 4,
       "build-fixer": 2,
       "code-review": 4,
-      "code-fixer": 3,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
