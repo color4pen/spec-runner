@@ -18,6 +18,7 @@ import * as path from "node:path";
 import { computeJournalDigest } from "../../store/journal-anchor.js";
 import { readEvidenceAnchor } from "../../git/evidence-anchor-ref.js";
 import { atomicWriteString } from "../../util/atomic-write.js";
+import { changeFolderPath } from "../../util/paths.js";
 import type { SpawnFn } from "../../util/spawn.js";
 
 // ---------------------------------------------------------------------------
@@ -121,6 +122,8 @@ export async function verifyResumeJournalAuthenticity(input: {
  *
  * @param input.cwd              - Repository root.
  * @param input.branch           - Feature branch name.
+ * @param input.slug             - Job slug (used to derive the tracked git path via
+ *                                  changeFolderPath — avoids worktree path confusion).
  * @param input.sourceChangeDir  - Absolute path to the change folder to restore.
  * @param input.spawnFn          - SpawnFn for git operations.
  * @param input.originAnchorDigest - The digest from the origin anchor ref (must match restored content).
@@ -128,17 +131,18 @@ export async function verifyResumeJournalAuthenticity(input: {
 export async function restoreResumeJournal(input: {
   cwd: string;
   branch: string;
+  slug: string;
   sourceChangeDir: string;
   spawnFn: SpawnFn;
   originAnchorDigest: string;
 }): Promise<void> {
-  const { cwd, branch, sourceChangeDir, spawnFn, originAnchorDigest } = input;
+  const { cwd, branch, slug, sourceChangeDir, spawnFn, originAnchorDigest } = input;
 
-  // Derive the worktree-relative change dir path from sourceChangeDir
-  // (we need the relative path for `git show origin/<branch>:<path>`)
-  const changeDir = sourceChangeDir.startsWith(cwd + "/")
-    ? sourceChangeDir.slice(cwd.length + 1)
-    : sourceChangeDir;
+  // Use changeFolderPath(slug) as the git-tracked relative path for `git show`.
+  // Deriving this from sourceChangeDir by stripping cwd would break in the worktree
+  // case: sourceChangeDir lives under .git/specrunner-worktrees/<slug>/... which is
+  // not a tracked path. changeFolderPath always yields the correct repo-relative path.
+  const changeDir = changeFolderPath(slug);
 
   // Fetch events.jsonl from origin/<branch>
   const eventsRelPath = `${changeDir}/events.jsonl`;

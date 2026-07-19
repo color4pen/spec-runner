@@ -769,6 +769,7 @@ export interface RuntimeStrategy {
   restoreResumeJournal?(input: {
     cwd: string;
     branch: string;
+    slug: string;
     sourceChangeDir: string;
     originAnchorDigest: string;
   }): Promise<void>;
@@ -853,6 +854,7 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
   restoreResumeJournal(input: {
     cwd: string;
     branch: string;
+    slug: string;
     sourceChangeDir: string;
     originAnchorDigest: string;
   }): Promise<void>;

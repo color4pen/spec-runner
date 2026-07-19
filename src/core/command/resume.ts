@@ -233,6 +233,7 @@ export class ResumeCommand extends CommandRunner {
               await this.runtime.restoreResumeJournal?.({
                 cwd,
                 branch: state.branch,
+                slug: slugForVerify,
                 sourceChangeDir,
                 originAnchorDigest: verifyResult.anchorDigest,
               });

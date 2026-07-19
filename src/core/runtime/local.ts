@@ -974,6 +974,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   async restoreResumeJournal(input: {
     cwd: string;
     branch: string;
+    slug: string;
     sourceChangeDir: string;
     originAnchorDigest: string;
   }): Promise<void> {

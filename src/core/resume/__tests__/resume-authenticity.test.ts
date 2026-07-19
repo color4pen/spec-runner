@@ -223,18 +223,16 @@ describe("TC-030: crash→resume で journal 改竄が resume load 時に検出�
       const originDigest = computeJournalDigest(originEvents, originState);
 
       const { fn } = makeSpawnFn([
-        // git show origin/<branch>:events.jsonl
+        // git show origin/<branch>:specrunner/changes/<slug>/events.jsonl
         { exitCode: 0, stdout: originEvents },
-        // git show origin/<branch>:state.json
+        // git show origin/<branch>:specrunner/changes/<slug>/state.json
         { exitCode: 0, stdout: originState },
-        // Fetch evidence anchor to verify restoration is authentic
-        { exitCode: 0 },
-        { exitCode: 0, stdout: originDigest + "\n" },
       ]);
 
       await restoreResumeJournal({
         cwd: tmpdir,
         branch: BRANCH,
+        slug: SLUG,
         sourceChangeDir: changeDir,
         spawnFn: fn,
         originAnchorDigest: originDigest,
@@ -246,6 +244,78 @@ describe("TC-030: crash→resume で journal 改竄が resume load 時に検出�
 
       expect(restoredEvents).toBe(originEvents);
       expect(restoredState).toBe(originState);
+
+      // Verify that git show was called with the slug-based path (not worktree-stripped)
+      const gitShowCalls = fn.mock.calls.filter((c: unknown[]) =>
+        Array.isArray(c) && c[1]?.some?.((a: string) => a.startsWith("show")),
+      );
+      expect(gitShowCalls).toHaveLength(2);
+      expect(fn.mock.calls[0]![1]).toContain(`origin/${BRANCH}:specrunner/changes/${SLUG}/events.jsonl`);
+      expect(fn.mock.calls[1]![1]).toContain(`origin/${BRANCH}:specrunner/changes/${SLUG}/state.json`);
+    } finally {
+      await fs.rm(tmpdir, { recursive: true, force: true }).catch(() => undefined);
+    }
+  });
+
+  it("TC-030-worktree: restoreResumeJournal uses changeFolderPath(slug) even when sourceChangeDir is a worktree path", async () => {
+    // Regression: the old code derived the git show path by stripping cwd from
+    // sourceChangeDir. When sourceChangeDir is
+    //   /repo/.git/specrunner-worktrees/<slug>/specrunner/changes/<slug>
+    // and cwd is /repo, stripping gives
+    //   .git/specrunner-worktrees/<slug>/specrunner/changes/<slug>
+    // which is NOT a tracked git path — git show fails.
+    // Fix: always derive the git show path from changeFolderPath(slug), which
+    // gives the correct repo-tracked path: specrunner/changes/<slug>.
+    const { restoreResumeJournal } = await import("../verify-journal-authenticity.js");
+
+    // cwd = main checkout root; sourceChangeDir mimics a worktree path
+    // (we use a real writable temp dir for the write target since the worktree path
+    //  does not exist on disk — the git show path derivation is what we're testing)
+    const cwd = "/repo";
+
+    const originEvents = '{"type":"history"}\n';
+    const originState  = JSON.stringify({ version: 2, status: "awaiting-resume" }, null, 2) + "\n";
+    const originDigest = computeJournalDigest(originEvents, originState);
+
+    // Write actual temp files so atomicWriteString can write restored bytes
+    const tmpdir = await fs.mkdtemp(path.join(os.tmpdir(), "tc-030wt-"));
+    const actualRestoreDir = path.join(tmpdir, "actual-change-dir");
+    await fs.mkdir(actualRestoreDir, { recursive: true });
+    await fs.writeFile(path.join(actualRestoreDir, "events.jsonl"), "TAMPERED\n");
+    await fs.writeFile(path.join(actualRestoreDir, "state.json"), '{"forged":true}\n');
+
+    try {
+      const capturedArgs: string[][] = [];
+      const { fn } = makeSpawnFn([
+        { exitCode: 0, stdout: originEvents },
+        { exitCode: 0, stdout: originState },
+      ]);
+      // Wrap the fn to capture args before delegating
+      const wrappedFn: SpawnFn = async (cmd, args, opts) => {
+        capturedArgs.push(args);
+        return fn(cmd, args, opts);
+      };
+
+      await restoreResumeJournal({
+        cwd,
+        branch: BRANCH,
+        slug: SLUG,
+        sourceChangeDir: actualRestoreDir,  // restore target is writable temp dir
+        spawnFn: wrappedFn,
+        originAnchorDigest: originDigest,
+      });
+
+      // The git show path must use changeFolderPath(slug), NOT the worktree-stripped path
+      const eventsArg = capturedArgs[0]?.find((a) => a.includes("events.jsonl")) ?? "";
+      const stateArg  = capturedArgs[1]?.find((a) => a.includes("state.json"))   ?? "";
+
+      // Must be the tracked repo-relative path (specrunner/changes/<slug>)
+      expect(eventsArg).toBe(`origin/${BRANCH}:specrunner/changes/${SLUG}/events.jsonl`);
+      expect(stateArg).toBe(`origin/${BRANCH}:specrunner/changes/${SLUG}/state.json`);
+
+      // Must NOT contain the worktree-relative leaked path
+      expect(eventsArg).not.toContain(".git/specrunner-worktrees");
+      expect(stateArg).not.toContain(".git/specrunner-worktrees");
     } finally {
       await fs.rm(tmpdir, { recursive: true, force: true }).catch(() => undefined);
     }

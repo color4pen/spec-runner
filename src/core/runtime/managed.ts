@@ -624,6 +624,7 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   async restoreResumeJournal(_input: {
     cwd: string;
     branch: string;
+    slug: string;
     sourceChangeDir: string;
     originAnchorDigest: string;
   }): Promise<void> {
