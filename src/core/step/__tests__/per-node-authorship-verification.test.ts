@@ -24,6 +24,11 @@ import { JournalAnchorHolder, computeJournalDigest } from "../../../store/journa
 import { LocalRuntime } from "../../runtime/local.js";
 import type { GitHubClient } from "../../port/github-client.js";
 import type { SpawnFn } from "../../../util/spawn.js";
+import { StepExecutor } from "../executor.js";
+import { EventBus } from "../../event/event-bus.js";
+import type { AgentStep } from "../../port/step-types.js";
+import type { PipelineDeps } from "../../types.js";
+import type { JobState } from "../../../state/schema.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -464,5 +469,226 @@ describe("TC-027: round member（roundOwnsGitEffects=true）が per-node 検証�
 
     // For round members: must NOT have called the verification
     expect(runtimeSpy.verifyNodeJournalAuthorship).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-022-exec: executor wiring — tamper detected via executor path (F-01 gap detection)
+// ---------------------------------------------------------------------------
+
+/**
+ * Integration test: verifies that executor wiring is in place.
+ * TC-022~TC-025 called verifyNodeJournalAuthorship directly and bypassed the executor.
+ * This test goes through the executor to detect the gap (F-01).
+ */
+
+function makeExecutorStore() {
+  return {
+    update: async (state: JobState, patch: Partial<JobState>) => ({ ...state, ...patch }),
+    appendHistory: async (state: JobState) => state,
+    fail: async (state: JobState) => state,
+    persist: vi.fn(async (_s: JobState) => undefined),
+    appendLineage: async () => undefined,
+    appendInterruption: async () => undefined,
+    appendStepRun: async (state: JobState) => state,
+    getLatestStepRun: () => undefined,
+  };
+}
+
+function makeExecutorState(): JobState {
+  return {
+    version: 2,
+    jobId: "auth-test-job",
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    request: {
+      path: "specrunner/changes/my-feature/request.md",
+      title: "My Feature",
+      type: "new-feature",
+      slug: SLUG,
+    },
+    repository: { owner: "octo", name: "repo" },
+    session: null,
+    step: "implementer",
+    status: "running",
+    branch: "change/my-feature-abc12345",
+    history: [],
+    error: null,
+    steps: {},
+  };
+}
+
+function makeAgentStepForExec(name = "implementer"): AgentStep {
+  return {
+    kind: "agent",
+    name,
+    agent: { id: `${name}-agent` } as never,
+    completionVerdict: "success" as const,
+    buildMessage: () => "do the work",
+    resultFilePath: () => null,
+    parseResult: () => ({ verdict: "success", findingsPath: null }),
+  };
+}
+
+describe("TC-022-exec: executor wiring — tamper detected through executor path (F-01 gap detection)", () => {
+  it("TC-022-exec: verifyNodeJournalAuthorship returning tamper → executor halts with JOURNAL_AUTHENTICITY_VIOLATION", async () => {
+    // GIVEN: a runtime strategy where verifyNodeJournalAuthorship returns tamper
+    const restoreJournalToAnchor = vi.fn(async (_input: unknown) => true);
+    const commitJournalArtifacts = vi.fn(async () => {});
+    const verifyNodeJournalAuthorship = vi.fn(async (_input: unknown) => ({
+      kind: "tamper" as const,
+      detail: "on-disk digest mismatch: expected sha256:aaa, got sha256:bbb",
+    }));
+
+    const runtimeStrategy = {
+      captureHeadSha: vi.fn(async () => "after-sha"),
+      prepareStepArtifacts: vi.fn(async () => {}),
+      finalizeStepArtifacts: vi.fn(async () => {}),
+      validateStepInputs: vi.fn(async () => {}),
+      validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+      snapshotMainCheckoutGuard: vi.fn(async () => null),
+      verifyNodeJournalAuthorship,
+      restoreJournalToAnchor,
+      commitJournalArtifacts,
+    };
+
+    const store = makeExecutorStore();
+    const storeFactory = () => store as never;
+
+    const runner = {
+      run: vi.fn(async () => ({
+        completionReason: "success" as const,
+        resultContent: null,
+        sessionId: null,
+        agentBranch: null,
+        modelUsage: undefined,
+        toolResult: null,
+        followUpAttempts: 0,
+        transientRetryAttempts: 0,
+        completionReportDiagnostics: [],
+      })),
+    };
+
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const step = makeAgentStepForExec("implementer");
+    const state = makeExecutorState();
+    const deps: PipelineDeps = {
+      cwd: CWD,
+      slug: SLUG,
+      config: {} as never,
+      request: {
+        type: "new-feature",
+        title: "My Feature",
+        slug: SLUG,
+        baseBranch: "main",
+        content: "My request",
+        adr: false,
+        path: "specrunner/changes/my-feature/request.md",
+      },
+      dynamicContext: undefined,
+      githubClient: {} as never,
+      owner: "octo",
+      repo: "repo",
+      spawn: vi.fn() as never,
+      storeFactory: storeFactory as never,
+      runner: runner as never,
+      runtimeStrategy: runtimeStrategy as never,
+    } as PipelineDeps;
+
+    // WHEN: executor runs with a tamper-returning runtime
+    // THEN: executor.execute() throws (via commitOrchestrator.apply which calls attachStateAndRethrow)
+    // AND: the error should have JOURNAL_AUTHENTICITY_VIOLATION code
+    await expect(executor.execute(step, state, deps)).rejects.toThrow();
+
+    // Verify that verifyNodeJournalAuthorship WAS called through the executor wiring
+    expect(verifyNodeJournalAuthorship).toHaveBeenCalledWith({
+      headBeforeStep: expect.any(String) || null,
+      cwd: CWD,
+      slug: SLUG,
+    });
+
+    // Verify that restoreJournalToAnchor WAS called before halt
+    expect(restoreJournalToAnchor).toHaveBeenCalledWith({ cwd: CWD, slug: SLUG });
+
+    // Verify that commitJournalArtifacts was NOT called (halted before journal commit)
+    expect(commitJournalArtifacts).not.toHaveBeenCalled();
+
+    // BREAKING INVARIANT comment (F-01 gap detection):
+    // If this test is removed and TC-022~TC-025 call verifyNodeJournalAuthorship directly,
+    // the executor wiring gap (F-01) would not be caught. This test exercises the full
+    // executor path to ensure the wiring in executor.ts is present.
+  });
+
+  it("TC-022-exec: verifyNodeJournalAuthorship returning ok → executor commits journal artifacts", async () => {
+    // GIVEN: a runtime strategy where verifyNodeJournalAuthorship returns ok
+    const commitJournalArtifacts = vi.fn(async () => {});
+    const verifyNodeJournalAuthorship = vi.fn(async (_input: unknown) => ({ kind: "ok" as const }));
+
+    const runtimeStrategy = {
+      captureHeadSha: vi.fn(async () => "after-sha"),
+      prepareStepArtifacts: vi.fn(async () => {}),
+      finalizeStepArtifacts: vi.fn(async () => {}),
+      validateStepInputs: vi.fn(async () => {}),
+      validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+      snapshotMainCheckoutGuard: vi.fn(async () => null),
+      verifyNodeJournalAuthorship,
+      commitJournalArtifacts,
+    };
+
+    const store = makeExecutorStore();
+    const storeFactory = () => store as never;
+
+    const runner = {
+      run: vi.fn(async () => ({
+        completionReason: "success" as const,
+        resultContent: null,
+        sessionId: null,
+        agentBranch: null,
+        modelUsage: undefined,
+        toolResult: null,
+        followUpAttempts: 0,
+        transientRetryAttempts: 0,
+        completionReportDiagnostics: [],
+      })),
+    };
+
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory);
+    const step = makeAgentStepForExec("implementer");
+    const state = makeExecutorState();
+    const deps: PipelineDeps = {
+      cwd: CWD,
+      slug: SLUG,
+      config: {} as never,
+      request: {
+        type: "new-feature",
+        title: "My Feature",
+        slug: SLUG,
+        baseBranch: "main",
+        content: "My request",
+        adr: false,
+        path: "specrunner/changes/my-feature/request.md",
+      },
+      dynamicContext: undefined,
+      githubClient: {} as never,
+      owner: "octo",
+      repo: "repo",
+      spawn: vi.fn() as never,
+      storeFactory: storeFactory as never,
+      runner: runner as never,
+      runtimeStrategy: runtimeStrategy as never,
+    } as PipelineDeps;
+
+    // WHEN: executor runs with an ok-returning runtime (authentic journal)
+    // THEN: no throw, and commitJournalArtifacts is called
+    await executor.execute(step, state, deps);
+
+    expect(verifyNodeJournalAuthorship).toHaveBeenCalled();
+    // Journal artifacts committed after verification passes
+    expect(commitJournalArtifacts).toHaveBeenCalledWith(
+      CWD,
+      state.branch,
+      SLUG,
+      expect.anything(), // commitPushInfra
+    );
   });
 });

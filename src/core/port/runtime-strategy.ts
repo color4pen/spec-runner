@@ -687,6 +687,91 @@ export interface RuntimeStrategy {
    * RealRuntimeStrategy requires the implementation (compile-time enforcement).
    */
   snapshotMainCheckoutGuard?(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
+
+  // ---------------------------------------------------------------------------
+  // Per-node authorship verification (T-05, D4 seam)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * T-05 (per-node authorship verification): verify that pipeline-managed journal paths
+   * were not modified in the agent commit tree and that the on-disk bytes match the
+   * in-process anchor.
+   *
+   * - local:   checks committed-tree diff + on-disk digest vs in-process anchor.
+   * - managed: always returns {kind:"skip"}.
+   *
+   * Optional on the port so test fakes may omit it.
+   * RealRuntimeStrategy requires the implementation.
+   */
+  verifyNodeJournalAuthorship?(input: {
+    headBeforeStep: string | null;
+    cwd: string;
+    slug: string;
+  }): Promise<{ kind: "ok" } | { kind: "skip" } | { kind: "tamper"; detail: string }>;
+
+  /**
+   * T-05 (per-node authorship restoration): write the in-process anchor bytes back
+   * to on-disk events.jsonl and state.json. Returns false if no anchor is established.
+   *
+   * - local:   restores events.jsonl + state.json from in-process anchor.
+   * - managed: always returns false.
+   *
+   * Optional on the port so test fakes may omit it.
+   * RealRuntimeStrategy requires the implementation.
+   */
+  restoreJournalToAnchor?(input: { cwd: string; slug: string }): Promise<boolean>;
+
+  /**
+   * T-04 (authorship-separation): commit only the pipeline-managed journal paths
+   * (events.jsonl, state.json, usage.json) as a separate commit from agent code.
+   *
+   * - local:   delegates to commitJournalArtifacts in commit-push.ts.
+   * - managed: no-op (no local worktree).
+   *
+   * Optional on the port so test fakes may omit it.
+   * RealRuntimeStrategy requires the implementation.
+   */
+  commitJournalArtifacts?(cwd: string, branch: string, slug: string, commitPushInfra: unknown): Promise<void>;
+
+  // ---------------------------------------------------------------------------
+  // Resume authenticity verification (T-07 / D5, crash→resume tamper detection)
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Verify that the on-disk journal in sourceChangeDir matches the durable origin anchor.
+   * Used by ResumeCommand.prepare() before transitioning to "running" state.
+   *
+   * - local:   fetches and compares origin evidence anchor with on-disk digest.
+   * - managed: no-op (returns {kind:"skip"}).
+   *
+   * Optional on the port so test fakes may omit it.
+   */
+  verifyResumeJournalAuthenticity?(input: {
+    cwd: string;
+    branch: string | null;
+    sourceChangeDir: string;
+  }): Promise<
+    | { kind: "ok" }
+    | { kind: "skip" }
+    | { kind: "tamper"; detail: string; anchorDigest: string }
+    | { kind: "unavailable"; reason: string }
+  >;
+
+  /**
+   * Restore the journal in sourceChangeDir from the origin branch checkpoint.
+   * Called after tamper detection to restore authentic bytes before halting.
+   *
+   * - local:   writes origin checkpoint bytes from git show origin/<branch>:<path>.
+   * - managed: no-op.
+   *
+   * Optional on the port so test fakes may omit it.
+   */
+  restoreResumeJournal?(input: {
+    cwd: string;
+    branch: string;
+    sourceChangeDir: string;
+    originAnchorDigest: string;
+  }): Promise<void>;
 }
 
 // ---------------------------------------------------------------------------
@@ -747,4 +832,28 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
    * on-disk events.jsonl and state.json. Returns false if no anchor is established.
    */
   restoreJournalToAnchor(input: { cwd: string; slug: string }): Promise<boolean>;
+  /**
+   * T-07 (resume authenticity): verify on-disk journal against durable origin anchor.
+   * Called by ResumeCommand.prepare() before running state transition.
+   */
+  verifyResumeJournalAuthenticity(input: {
+    cwd: string;
+    branch: string | null;
+    sourceChangeDir: string;
+  }): Promise<
+    | { kind: "ok" }
+    | { kind: "skip" }
+    | { kind: "tamper"; detail: string; anchorDigest: string }
+    | { kind: "unavailable"; reason: string }
+  >;
+  /**
+   * T-07 (resume restore): write origin checkpoint journal bytes back to sourceChangeDir.
+   * Called after tamper detection before resume is blocked.
+   */
+  restoreResumeJournal(input: {
+    cwd: string;
+    branch: string;
+    sourceChangeDir: string;
+    originAnchorDigest: string;
+  }): Promise<void>;
 };

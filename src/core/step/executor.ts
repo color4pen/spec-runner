@@ -30,6 +30,7 @@ import {
   makeCommitFailHalt,
   makeInputMissingHalt,
   makeCliStepFailHalt,
+  makeJournalTamperHalt,
 } from "./step-halt.js";
 import type { StepHalt } from "./step-halt.js";
 import { deriveStepCompletion } from "./step-completion.js";
@@ -464,6 +465,38 @@ export class StepExecutor {
       !deps.roundOwnsGitEffects && deps.runtimeStrategy
         ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? undefined
         : undefined;
+
+    // ---------------------------------------------------------------------------
+    // Per-node authorship verification + journal commit (T1-T5, D4)
+    //
+    // Runs only on sequential steps (!roundOwnsGitEffects): round members skip
+    // per-node verification because the coordinator owns git effects for the round.
+    //
+    // Flow:
+    //   1. verifyNodeJournalAuthorship: check committed-tree diff + on-disk digest.
+    //   2. If tamper: restoreJournalToAnchor (write authentic bytes) → halt.
+    //   3. If ok/skip: commitJournalArtifacts (pipeline journal commit, separate from agent code).
+    // ---------------------------------------------------------------------------
+    if (!deps.roundOwnsGitEffects && deps.runtimeStrategy) {
+      const verifyResult = await deps.runtimeStrategy.verifyNodeJournalAuthorship?.({
+        headBeforeStep,
+        cwd,
+        slug: deps.slug,
+      });
+
+      if (verifyResult?.kind === "tamper") {
+        // Restore authentic journal bytes before halt (fail-closed: tampered bytes must not persist).
+        await deps.runtimeStrategy.restoreJournalToAnchor?.({ cwd, slug: deps.slug });
+        const halt = makeJournalTamperHalt(verifyResult.detail, step.name, deps.slug, { startedAt });
+        return { kind: "halt", halt };
+      }
+
+      // Journal is authentic (ok) — commit pipeline journal artifacts as a separate commit.
+      // skip: no anchor established (new job or managed runtime) — no journal commit needed.
+      if (verifyResult?.kind === "ok" && state.branch) {
+        await deps.runtimeStrategy.commitJournalArtifacts?.(cwd, state.branch, deps.slug, this.commitPushInfra);
+      }
+    }
 
     // T-03 (no-op detection): delegate to sibling no-op-detect.ts.
     const noOpVerdictOverride: Verdict | undefined =

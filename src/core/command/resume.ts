@@ -27,6 +27,7 @@ import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
+import { changeFolderPath } from "../../util/paths.js";
 
 export interface ResumeOptions {
   from?: string;
@@ -184,6 +185,74 @@ export class ResumeCommand extends CommandRunner {
     }
 
     logInfo(`Resuming job '${this.slug}' from step '${startStep}'`);
+
+    // -------------------------------------------------------------------------
+    // Journal authenticity verification (T4 — crash→resume tamper detection)
+    // D5: state resolve 後・running 遷移 persist 前に authenticity 検査を行う。
+    //
+    // If the durable origin anchor shows the on-disk journal was tampered while
+    // the process was down (crash→resume window), restore authentic bytes from
+    // origin and block resume.
+    // -------------------------------------------------------------------------
+    {
+      const slugForVerify = getJobSlug(state);
+      if (slugForVerify) {
+        // Compute sourceChangeDir: prefer sidecar worktreePath, fall back to cwd.
+        let worktreePathForVerify: string | null = (state.worktreePath as string | null | undefined) ?? null;
+        if (!worktreePathForVerify) {
+          try {
+            const sidecarAbsPath = nodePath.join(cwd, livenessJsonPath(slugForVerify));
+            const raw = await nodeFs.readFile(sidecarAbsPath, "utf-8");
+            const sidecar = JSON.parse(raw) as Record<string, unknown>;
+            if (typeof sidecar["worktreePath"] === "string" && sidecar["jobId"] === state.jobId) {
+              const wtp = sidecar["worktreePath"] as string;
+              try {
+                await nodeFs.access(wtp);
+                worktreePathForVerify = wtp;
+              } catch {
+                // Worktree not accessible — fall back to cwd
+              }
+            }
+          } catch {
+            // No sidecar or parse error — fall back to cwd
+          }
+        }
+        const stateRoot = worktreePathForVerify ?? cwd;
+        const sourceChangeDir = nodePath.join(stateRoot, changeFolderPath(slugForVerify));
+
+        const verifyResult = await this.runtime.verifyResumeJournalAuthenticity?.({
+          cwd,
+          branch: state.branch ?? null,
+          sourceChangeDir,
+        });
+
+        if (verifyResult?.kind === "tamper") {
+          // Restore authentic journal bytes from origin before blocking resume.
+          if (state.branch && verifyResult.anchorDigest) {
+            try {
+              await this.runtime.restoreResumeJournal?.({
+                cwd,
+                branch: state.branch,
+                sourceChangeDir,
+                originAnchorDigest: verifyResult.anchorDigest,
+              });
+            } catch (restoreErr) {
+              stderrWrite(`Warning: failed to restore journal after tamper detection: ${(restoreErr as Error).message}`);
+            }
+          }
+          logError(`Journal authenticity violation: ${verifyResult.detail}`);
+          stderrWrite("Hint: The journal was modified outside the pipeline. Authentic bytes have been restored. Inspect and re-run.");
+          throw new PrepareError(1, "Journal tampered — resume blocked");
+        }
+
+        if (verifyResult?.kind === "unavailable") {
+          logError(`Cannot verify journal authenticity: ${verifyResult.reason}`);
+          stderrWrite("Hint: Ensure network/git access is available and retry.");
+          throw new PrepareError(1, "Journal authenticity verification unavailable");
+        }
+        // kind === "ok" or "skip" → proceed normally
+      }
+    }
 
     // Parse request.md before committing to "running" state
     // resolveRequestPath handles legacy state files where request.path points to a deleted draft

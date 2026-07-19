@@ -333,6 +333,21 @@ export class ParallelReviewRound {
       roundError,
     });
 
+    // --- 9b. Round journal sweep: commit pipeline journal after round commit ---
+    // D1 (round 終端 journal sweep): after commitRound, the pipeline journal bytes
+    // (events.jsonl / state.json) from the round are still uncommitted to origin.
+    // Commit them here as a separate pipeline journal commit so the durable anchor
+    // gets the round's journal bytes before the next sequential node or checkpoint.
+    if (deps.runtimeStrategy?.commitJournalArtifacts && state.branch) {
+      const defaultSleepFn = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+      const journalInfra: CommitPushInfra = {
+        spawnFn: deps.gitTransportSpawn ?? defaultSpawnFn,
+        sleepFn: deps.sleepFn ?? defaultSleepFn,
+        events: this.events,
+      };
+      await deps.runtimeStrategy.commitJournalArtifacts(cwd, state.branch, deps.slug, journalInfra);
+    }
+
     return { outcome: aggregateVerdictResult, state };
   }
 }

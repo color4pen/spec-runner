@@ -41,6 +41,11 @@ import {
 } from "../artifact/copy-artifacts.js";
 import { commitAndPush, commitFinalState, commitScopedPaths, commitJournalArtifacts } from "../step/commit-push.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
+import {
+  verifyResumeJournalAuthenticity as verifyResumeJournalAuthenticityImpl,
+  restoreResumeJournal as restoreResumeJournalImpl,
+} from "../resume/verify-journal-authenticity.js";
+import type { ResumeAuthenticityResult } from "../resume/verify-journal-authenticity.js";
 import type { AgentStep } from "../step/types.js";
 import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
@@ -564,7 +569,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       spawn: this.wrappedSpawnFn,
       storeFactory: (id: string) => {
         const stateRoot = workspace.worktreePath ?? workspace.cwd;
-        return new JobStateStore(id, this.cwd, { slug, stateRoot });
+        return new JobStateStore(id, this.cwd, { slug, stateRoot, anchorHolder: this.journalAnchor });
       },
       repoRoot: this.cwd,
       runtimeStrategy: this,
@@ -937,6 +942,33 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       atomicWriteString(statePath, snap.state),
     ]);
     return true;
+  }
+
+  /**
+   * T-07 (resume authenticity): verify on-disk journal against durable origin anchor.
+   * Wraps verifyResumeJournalAuthenticityImpl using the transport-wrapped spawnFn.
+   * Called by ResumeCommand.prepare() before transitioning to "running" state.
+   */
+  async verifyResumeJournalAuthenticity(input: {
+    cwd: string;
+    branch: string | null;
+    sourceChangeDir: string;
+  }): Promise<ResumeAuthenticityResult> {
+    return verifyResumeJournalAuthenticityImpl({ ...input, spawnFn: this.wrappedSpawnFn });
+  }
+
+  /**
+   * T-07 (resume restore): write origin checkpoint journal bytes back to sourceChangeDir.
+   * Wraps restoreResumeJournalImpl using the transport-wrapped spawnFn.
+   * Called after tamper detection before resume is blocked.
+   */
+  async restoreResumeJournal(input: {
+    cwd: string;
+    branch: string;
+    sourceChangeDir: string;
+    originAnchorDigest: string;
+  }): Promise<void> {
+    return restoreResumeJournalImpl({ ...input, spawnFn: this.wrappedSpawnFn });
   }
 
   /**

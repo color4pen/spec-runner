@@ -27,7 +27,7 @@ import type { SpawnFn } from "../../util/spawn.js";
 export type ResumeAuthenticityResult =
   | { kind: "ok" }
   | { kind: "skip" }
-  | { kind: "tamper"; detail: string }
+  | { kind: "tamper"; detail: string; anchorDigest: string }
   | { kind: "unavailable"; reason: string };
 
 // ---------------------------------------------------------------------------
@@ -92,6 +92,7 @@ export async function verifyResumeJournalAuthenticity(input: {
     return {
       kind: "tamper",
       detail: `on-disk journal unreadable: ${err instanceof Error ? err.message : String(err)}`,
+      anchorDigest,
     };
   }
 
@@ -102,6 +103,7 @@ export async function verifyResumeJournalAuthenticity(input: {
   return {
     kind: "tamper",
     detail: `on-disk journal digest mismatch — expected ${anchorDigest}, got ${onDiskDigest}`,
+    anchorDigest,
   };
 }
 

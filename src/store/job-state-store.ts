@@ -8,6 +8,7 @@ import { JobLocationResolver } from "./job-location-resolver.js";
 import { JobJournal } from "./job-journal.js";
 import { JobCatalog } from "./job-catalog.js";
 import { loadSplitLayout } from "./job-state-projection.js";
+import type { JournalAnchorHolder } from "./journal-anchor.js";
 
 /**
  * Normalized view of a JobState with steps as StepRun[].
@@ -136,14 +137,14 @@ export class JobStateStore {
   private readonly _location: JobLocationResolver;
   private readonly _journal: JobJournal;
 
-  constructor(jobId: string, repoRoot: string, opts?: { slug?: string; stateRoot?: string; changeDir?: string }) {
+  constructor(jobId: string, repoRoot: string, opts?: { slug?: string; stateRoot?: string; changeDir?: string; anchorHolder?: JournalAnchorHolder }) {
     this.jobId = jobId;
     this.repoRoot = repoRoot;
     this.slug = opts?.slug;
     this.stateRoot = opts?.stateRoot;
     this.changeDir = opts?.changeDir;
     this._location = new JobLocationResolver(jobId, repoRoot, opts);
-    this._journal = new JobJournal(this._location);
+    this._journal = new JobJournal(this._location, opts?.anchorHolder);
   }
 
   private isSlugMode(): boolean {

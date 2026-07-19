@@ -602,6 +602,35 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   }
 
   /**
+   * T-07 (resume authenticity): always skip for managed runtime.
+   * Managed runtime has no local worktree or origin evidence anchor to compare.
+   */
+  async verifyResumeJournalAuthenticity(_input: {
+    cwd: string;
+    branch: string | null;
+    sourceChangeDir: string;
+  }): Promise<
+    | { kind: "ok" }
+    | { kind: "skip" }
+    | { kind: "tamper"; detail: string; anchorDigest: string }
+    | { kind: "unavailable"; reason: string }
+  > {
+    return { kind: "skip" };
+  }
+
+  /**
+   * T-07 (resume restore): no-op for managed runtime.
+   */
+  async restoreResumeJournal(_input: {
+    cwd: string;
+    branch: string;
+    sourceChangeDir: string;
+    originAnchorDigest: string;
+  }): Promise<void> {
+    // no-op: managed runtime has no local worktree
+  }
+
+  /**
    * No local worktree available — always returns success with empty paths.
    * Parallel custom reviewer managed support is a known Non-Goal; no local git
    * state means the coordinator cannot detect worktree changes. Returning

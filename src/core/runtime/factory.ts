@@ -15,6 +15,7 @@ import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import { LocalRuntime } from "./local.js";
 import { ManagedRuntime } from "./managed.js";
 import { spawnBackground } from "../../util/spawn.js";
+import { JournalAnchorHolder } from "../../store/journal-anchor.js";
 
 /**
  * Create the appropriate RuntimeStrategy for the given config.
@@ -35,7 +36,8 @@ export function createRuntime(
   githubToken: string,
 ): RuntimeStrategy {
   if (config.runtime === "local") {
-    return new LocalRuntime({ cwd, githubClient, githubToken, owner: repo.owner, repo: repo.name, workspaceSetup: config.workspace?.setup, spawnBackgroundFn: spawnBackground });
+    const journalAnchor = new JournalAnchorHolder();
+    return new LocalRuntime({ cwd, githubClient, githubToken, owner: repo.owner, repo: repo.name, workspaceSetup: config.workspace?.setup, spawnBackgroundFn: spawnBackground, journalAnchor });
   }
 
   // Managed runtime: sessionClient must be injected by the caller
