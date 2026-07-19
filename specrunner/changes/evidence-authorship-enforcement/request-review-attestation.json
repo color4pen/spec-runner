@@ -1,0 +1,28 @@
+{
+  "requestHash": "sha256:6f8128953b24bf620ee35c90c2b700ef1202d167503f3b0e2415766074da8c6a",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/store/job-location-resolver.ts: JobLocationResolver exists with stateRoot field (slug mode: slug + stateRoot → paths)",
+    "src/store/job-catalog.ts:115: stateRoot = worktreePath confirmed",
+    "src/store/job-journal.ts: JobJournal.persist() does events.jsonl append + state.json atomic overwrite",
+    "src/store/job-state-store.ts:246: JobStateStore.persist() delegates to this._journal.persist(state)",
+    "src/core/step/commit-orchestrator.ts: CommitOrchestrator is primary persistence owner for sequential steps; commitSuccess/commitSkipped/commitHalt/commitRound all call store.persist()",
+    "src/core/step/commit-push.ts:48: commitAndPush uses git add -A (no pipelineManagedPaths exclusion in sequential path)",
+    "src/core/step/commit-push.ts:105-146: commitFinalState exists, messageLabel defaults to 'finalize', 'checkpoint' used for awaiting-resume",
+    "src/core/runtime/local.ts:672: messageLabel = state.status === 'awaiting-resume' ? 'checkpoint' : 'finalize'",
+    "src/core/step/executor.ts:404-405: Output contract gate exists",
+    "src/core/step/executor.ts:436-459: finalizeStepArtifacts block (if !deps.roundOwnsGitEffects)",
+    "src/core/step/executor.ts:445: deps.runtimeStrategy.finalizeStepArtifacts call site",
+    "src/core/step/executor.ts:461-466: captureHeadSha call site for commitOid capture",
+    "src/core/pipeline/round-git-scope.ts:54-56: pipelineManagedPaths() returns [slugStateJsonPath, slugEventsPath, usageJsonPath]",
+    "src/core/pipeline/round-git-scope.ts: commitScopedPaths + pipelineManagedPaths exclusion for round path confirmed",
+    "src/core/resume/resolve-job.ts:19: resolveJobStateBySlug uses JobStateStore.list() (no authenticity check)",
+    "src/store/job-state-store.ts:10: loadSplitLayout imported and used in load()",
+    "src/core/attach/verify-checkpoint.ts: verifyCheckpoint checks fold/counter/profile/identity self-consistency but NOT authenticity",
+    "src/git/checkpoint-ref.ts:152-154: git show <ref>:path pattern used to read state.json",
+    "src/core/port/runtime-strategy.ts: readFileAtCommit, diffPathsBetweenCommits, listCommitChangedFiles, digestArtifacts all exist on port",
+    "src/core/step/step-halt.ts: StepHalt type exists; makeDriftHalt imported in executor.ts",
+    "src/core/step/executor.ts:28,34: makeDriftHalt and StepHalt imported from step-halt.ts"
+  ],
+  "sourceRevision": "491e2146cbf454ab5cdcfba6ceaec52620858b73"
+}
