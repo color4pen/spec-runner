@@ -222,7 +222,7 @@ describe("TC-030: crash→resume で journal 改竄が resume load 時に検出�
       const originState  = JSON.stringify({ version: 2, status: "awaiting-resume" }, null, 2) + "\n";
       const originDigest = computeJournalDigest(originEvents, originState);
 
-      const { fn } = makeSpawnFn([
+      const { fn, calls } = makeSpawnFn([
         // git show origin/<branch>:specrunner/changes/<slug>/events.jsonl
         { exitCode: 0, stdout: originEvents },
         // git show origin/<branch>:specrunner/changes/<slug>/state.json
@@ -245,13 +245,12 @@ describe("TC-030: crash→resume で journal 改竄が resume load 時に検出�
       expect(restoredEvents).toBe(originEvents);
       expect(restoredState).toBe(originState);
 
-      // Verify that git show was called with the slug-based path (not worktree-stripped)
-      const gitShowCalls = fn.mock.calls.filter((c: unknown[]) =>
-        Array.isArray(c) && c[1]?.some?.((a: string) => a.startsWith("show")),
-      );
+      // Verify that git show was called with the slug-based path (not worktree-stripped).
+      // Use `calls` (type-safe Array<[string, string[]]>) from makeSpawnFn, not fn.mock.calls.
+      const gitShowCalls = calls.filter(([, args]) => args.some((a) => a === "show"));
       expect(gitShowCalls).toHaveLength(2);
-      expect(fn.mock.calls[0]![1]).toContain(`origin/${BRANCH}:specrunner/changes/${SLUG}/events.jsonl`);
-      expect(fn.mock.calls[1]![1]).toContain(`origin/${BRANCH}:specrunner/changes/${SLUG}/state.json`);
+      expect(calls[0]![1]).toContain(`origin/${BRANCH}:specrunner/changes/${SLUG}/events.jsonl`);
+      expect(calls[1]![1]).toContain(`origin/${BRANCH}:specrunner/changes/${SLUG}/state.json`);
     } finally {
       await fs.rm(tmpdir, { recursive: true, force: true }).catch(() => undefined);
     }
