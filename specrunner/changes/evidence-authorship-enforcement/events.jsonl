@@ -75,3 +75,13 @@
 {"type":"lineage","step":"verification","ts":"2026-07-19T02:18:36.511Z","outputs":[{"path":"specrunner/changes/evidence-authorship-enforcement/verification-result.md","hash":"sha256:83856f858f0e513d6827cb67ea92898461d2cb32d93ffa43a4a58a7e1aae87b7"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-07-19T02:18:36.518Z","step":"verification","status":"warning","message":"verification iteration 3 completed with verdict: failed"}
 {"type":"transition","ts":"2026-07-19T02:18:36.519Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: verification did not pass after 2 iterations"}
+{"type":"transition","ts":"2026-07-19T02:21:33.295Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'verification'"}
+{"type":"transition","ts":"2026-07-19T02:21:33.366Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-07-19T02:21:33.367Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-07-19T02:22:37.116Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/evidence-authorship-enforcement/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-19T02:21:33.368Z","endedAt":"2026-07-19T02:22:37.115Z"}
+{"type":"lineage","step":"verification","ts":"2026-07-19T02:22:37.115Z","outputs":[{"path":"specrunner/changes/evidence-authorship-enforcement/verification-result.md","hash":"sha256:2e9b4117e997178dbbfcae6dacbb76add7b57305b2a976c2a53cdf6a308e3c4b"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-19T02:22:37.126Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
+{"type":"transition","ts":"2026-07-19T02:22:37.126Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-07-19T02:22:37.128Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-19T02:22:37.128Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
