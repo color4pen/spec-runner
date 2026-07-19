@@ -18,7 +18,7 @@ import * as fs from "node:fs/promises";
 import {
   verifyResumeJournalAuthenticity,
 } from "../verify-journal-authenticity.js";
-import { JournalAnchorHolder, computeJournalDigest } from "../../../store/journal-anchor.js";
+import { computeJournalDigest } from "../../../store/journal-anchor.js";
 import type { SpawnFn } from "../../../util/spawn.js";
 
 // ---------------------------------------------------------------------------

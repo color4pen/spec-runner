@@ -26,7 +26,7 @@ import type { CommitPushInfra } from "../commit-push.js";
 import type { AgentStep } from "../types.js";
 import type { JobState } from "../../../state/schema.js";
 import type { PipelineDeps } from "../../types.js";
-import { JournalAnchorHolder, computeJournalDigest } from "../../../store/journal-anchor.js";
+import { JournalAnchorHolder } from "../../../store/journal-anchor.js";
 import { LocalRuntime } from "../../runtime/local.js";
 import type { GitHubClient } from "../../port/github-client.js";
 

@@ -31,7 +31,7 @@ import type { SpawnFn } from "../../../util/spawn.js";
 
 const SLUG = "my-feature";
 const CWD = "/tmp/fake-worktree";
-const BRANCH = "change/my-feature-abc12345";
+const _BRANCH = "change/my-feature-abc12345";
 
 function makeSpawnFn(
   responses: Array<{ exitCode: number; stdout?: string; stderr?: string }>,

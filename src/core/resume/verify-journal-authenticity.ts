@@ -18,7 +18,6 @@ import * as path from "node:path";
 import { computeJournalDigest } from "../../store/journal-anchor.js";
 import { readEvidenceAnchor } from "../../git/evidence-anchor-ref.js";
 import { atomicWriteString } from "../../util/atomic-write.js";
-import { slugStateJsonPath, slugEventsPath } from "../../util/paths.js";
 import type { SpawnFn } from "../../util/spawn.js";
 
 // ---------------------------------------------------------------------------

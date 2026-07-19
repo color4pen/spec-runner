@@ -7,7 +7,7 @@ import {
   stepRunToRecord,
   historyEntryToRecord,
 } from "./event-journal.js";
-import type { FoldResult, InterruptionRecord, LineageRecord, LineageInput } from "./event-journal.js";
+import type { FoldResult, InterruptionRecord, LineageInput } from "./event-journal.js";
 import { detectCounterReversal, describeJournalIssue } from "./journal-integrity.js";
 import { atomicWriteString } from "../util/atomic-write.js";
 import { appendHistoryEntry } from "../state/schema.js";
