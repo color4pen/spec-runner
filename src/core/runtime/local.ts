@@ -856,9 +856,10 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    * paths were not modified in the agent commit tree, and that the on-disk bytes
    * match the in-process anchor.
    *
-   * Two teeth:
+   * Two teeth (both fail-closed — D4):
    *   1. committed-tree tooth: if headBeforeStep is non-null and HEAD advanced,
    *      diffPathsBetweenCommits checks whether managed paths appear in the diff.
+   *      If the diff is unavailable, halt rather than fall through (fail-closed).
    *   2. on-disk tooth: read events.jsonl + state.json, compute digest, compare
    *      with in-process anchor via evaluateAnchorPresence.
    *
@@ -880,13 +881,21 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       if (headAfterStep !== null && headAfterStep !== headBeforeStep) {
         const managed = pipelineManagedPaths(slug);
         const diffResult = await this.diffPathsBetweenCommits(headBeforeStep, headAfterStep, managed, cwd);
+        // D4 (fail-closed): unavailable diff → cannot certify the committed tree is clean.
+        // Halt rather than fall through to on-disk check alone. An agent that makes
+        // diffPathsBetweenCommits unavailable must not be able to bypass the tree tooth.
+        if (diffResult.kind === "unavailable") {
+          return {
+            kind: "tamper",
+            detail: `committed-tree diff unavailable (${diffResult.reason}) — fail-closed halt to prevent bypass`,
+          };
+        }
         if (diffResult.kind === "success" && diffResult.files.length > 0) {
           return {
             kind: "tamper",
             detail: `pipeline-managed journal paths found in agent commit tree: ${diffResult.files.join(", ")}`,
           };
         }
-        // diffResult.kind === "unavailable" → skip this tooth (fail-open, rely on on-disk)
       }
     }
 

@@ -600,9 +600,11 @@ describe("TC-022-exec: executor wiring — tamper detected through executor path
     // AND: the error should have JOURNAL_AUTHENTICITY_VIOLATION code
     await expect(executor.execute(step, state, deps)).rejects.toThrow();
 
-    // Verify that verifyNodeJournalAuthorship WAS called through the executor wiring
+    // Verify that verifyNodeJournalAuthorship WAS called through the executor wiring.
+    // headBeforeStep is null because gitExec runs against a non-git CWD (/tmp/fake-worktree)
+    // and returns null on failure. The executor uses raw gitExec (not captureHeadSha) here.
     expect(verifyNodeJournalAuthorship).toHaveBeenCalledWith({
-      headBeforeStep: expect.any(String) || null,
+      headBeforeStep: null,
       cwd: CWD,
       slug: SLUG,
     });
