@@ -1,0 +1,14 @@
+{
+  "requestHash": "sha256:502c46acfd82968c11d102e690876166f44d74041c01da80e23e32d7ac5ab054",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/reviewer-chain.ts:154 — on: \"approved\" in buildReviewerChainTransitions standard path transition",
+    "src/core/pipeline/reviewer-chain.ts:162 — return collectFixableFindings(findings).length > 0; (when condition for standard path)",
+    "src/core/pipeline/reviewer-chain.ts:381 — on: \"approved\" in buildParallelReviewerTransitions code-review section",
+    "src/core/pipeline/reviewer-chain.ts:390 — return collectFixableFindings(findings).length > 0; (when condition for parallel path)",
+    "src/core/pipeline/pipeline.ts:493-499 — fixer exhaustion block using tryExhaust with phase: \"review-after-final-fix\" and reportIteration: effectiveMax",
+    "src/core/pipeline/pipeline.ts:563 — if (opts.iteration < effectiveMax) in tryExhaust, no reviewer verdict check",
+    "src/core/pipeline/types.ts:179 — message: (n) => `code-review did not approve after ${n} iterations`"
+  ],
+  "sourceRevision": "491e2146cbf454ab5cdcfba6ceaec52620858b73"
+}
