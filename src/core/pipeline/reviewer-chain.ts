@@ -122,6 +122,20 @@ function lastFindingsOf(state: JobState, reviewer: string): import("../../kernel
 }
 
 /**
+ * Return the number of fixable findings from the last run of a reviewer step.
+ *
+ * Pure function: no I/O or side effects.
+ *
+ * @param state    - Current job state.
+ * @param reviewer - Step name of the reviewer (e.g. "code-review", "regression-gate").
+ * @returns Number of findings with resolution === "fixable" in the last run's toolResult.
+ *          Returns 0 when the reviewer has no runs or the last run has no toolResult.
+ */
+export function lastReviewerFixableCount(state: JobState, reviewer: string): number {
+  return collectFixableFindings(lastFindingsOf(state, reviewer)).length;
+}
+
+/**
  * Build the transition table rows for the reviewer chain.
  *
  * For each reviewer R_i in chain:

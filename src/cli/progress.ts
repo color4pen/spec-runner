@@ -108,6 +108,7 @@ export class ProgressDisplay {
     this.events.on("pipeline:iteration:exhausted", (p) => this.onIterationExhausted(p));
     this.events.on("pipeline:summary", (p) => this.onPipelineSummary(p));
     this.events.on("pipeline:cli-step", (p) => this.onCliStep(p));
+    this.events.on("pipeline:fixer:budget-skipped", (p) => this.onFixerBudgetSkipped(p));
   }
 
   private onStepStart(p: { step: string }): void {
@@ -224,6 +225,13 @@ export class ProgressDisplay {
   private onPipelineSummary(p: { step: string; iterations: number; finalVerdict: string }): void {
     if (this.isQuiet) return;
     process.stderr.write(maskSensitive(`Pipeline finished: ${p.step} iterations=${p.iterations}, final verdict=${p.finalVerdict}\n`));
+  }
+
+  private onFixerBudgetSkipped(p: { step: string; fixer: string; omittedFixableFindings: number; maxIterations: number }): void {
+    if (this.isQuiet) return;
+    process.stderr.write(maskSensitive(
+      `[${p.step}] approved: ${p.omittedFixableFindings} fixable finding(s) skipped (${p.fixer} budget exhausted after ${p.maxIterations} iterations)\n`,
+    ));
   }
 
   private onCliStep(p: { step: string; verdict?: string }): void {
