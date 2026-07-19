@@ -86,6 +86,7 @@ function makeStubSpawn(
 
 /** Build a stub SpawnFn that models a fully valid checkpoint + fetch. */
 function makeValidSpawn(): SpawnFn {
+  const evidenceRef = `refs/specrunner/evidence/${BRANCH}`;
   return makeStubSpawn(
     new Map<string, Partial<SpawnResult>>([
       [`git fetch origin ${BRANCH}`, { exitCode: 0, stdout: "", stderr: "" }],
@@ -114,6 +115,14 @@ function makeValidSpawn(): SpawnFn {
           `specrunner/changes/${SLUG}/tasks.md`,
           `specrunner/changes/${SLUG}/spec.md`,
         ].join("\n") + "\n",
+      }],
+      // Evidence anchor: simulate "absent" (pre-feature / no anchor pushed yet).
+      // readEvidenceAnchor returns { kind: "absent" } → anchorDigest stays undefined
+      // → authenticity check is skipped (backward-compat path, design D7).
+      [`git fetch origin ${evidenceRef}:${evidenceRef}`, {
+        exitCode: 1,
+        stdout: "",
+        stderr: `fatal: couldn't find remote ref ${evidenceRef}`,
       }],
     ]),
   );

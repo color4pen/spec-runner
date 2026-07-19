@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b9b17b77-44dd-48ad-a47a-e8941dde3153",
   "createdAt": "2026-07-19T00:09:01.312Z",
-  "updatedAt": "2026-07-19T01:59:38.941Z",
+  "updatedAt": "2026-07-19T02:13:34.003Z",
   "request": {
     "title": "pipeline-owned evidence を agent が偽造できないようにする — authorship 検証＋復元＋全経路再検査（P0 fix-forward）",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "build-fixer",
   "status": "running",
   "branch": "change/evidence-authorship-enforcement-b9b17b77",
   "error": null,
@@ -62,13 +62,16 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 25,
+    "historyCount": 36,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
