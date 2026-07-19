@@ -37,7 +37,6 @@ import {
   // TC-007/TC-008: lastReviewerFixableCount does NOT exist yet (T-01).
   // The named import resolves to undefined at runtime; calling it throws TypeError.
   // The tests below will FAIL with TypeError until T-01 is implemented.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } from "../../../src/core/pipeline/reviewer-chain.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { PipelineLogger } from "../../../src/logger/pipeline-logger.js";
@@ -355,7 +354,7 @@ function buildParallelScenarioPipeline(baseState: JobState): {
   const stateSeq = makeCodeReviewStateSequence(baseState);
 
   let codeReviewCallCount = 0;
-  let codeFixerCallCount = 0;
+  let _codeFixerCallCount = 0;
   let customReviewersCallCount = 0;
 
   const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
@@ -365,7 +364,7 @@ function buildParallelScenarioPipeline(baseState: JobState): {
     }
 
     if (step.name === "code-fixer") {
-      codeFixerCallCount++;
+      _codeFixerCallCount++;
       return currentState;
     }
 
@@ -694,9 +693,8 @@ describe("TC-001: standard path — approved not overturned by fixer budget exha
 
     await pipeline.run("code-review", baseState, deps).catch(() => {});
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const codeReviewCalls = executeSpy.mock.calls.filter(
-      ([step]: any[]) => (step as Step)?.name === "code-review",
+      ([step]: unknown[]) => (step as Step)?.name === "code-review",
     );
     expect(codeReviewCalls).toHaveLength(3); // 2 needs-fix + 1 approved+fixable
   });
