@@ -1435,10 +1435,16 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     const cwd = this.cwd;
     const manager = this.manager;
     const slugOpts = this.slugStoreOpts();
+    // Capture for signal checkpoint (F-01): signal handler writes journal bytes that
+    // must be reflected in the anchor. Without anchorHolder, the anchor stays at the
+    // prior checkpoint digest → resume sees on-disk > anchor → false tamper detection.
+    const journalAnchor = this.journalAnchor;
+    const wrappedSpawnFn = this.wrappedSpawnFn;
 
     const makeStore = () => {
       if (slugOpts) {
-        return new JobStateStore(jobId, cwd, slugOpts);
+        // F-01: inject anchorHolder so appendInterruption + persist update the anchor.
+        return new JobStateStore(jobId, cwd, { ...slugOpts, anchorHolder: journalAnchor });
       }
       throw new SpecRunnerError(
         ERROR_CODES.STEP_INPUT_MISSING,
@@ -1502,6 +1508,30 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
           },
         });
         await store.persist(updated);
+
+        // F-01 (signal checkpoint): commit+push journal bytes and durable anchor so that
+        // resume sees on-disk matching the origin anchor → no false tamper detection.
+        // journalAnchor is now updated (via anchorHolder in makeStore) to reflect the
+        // interruption + state that were just written to disk.
+        // Best-effort: failure is accepted degradation; the next resume will be blocked by
+        // authenticity verification but can be recovered with force.
+        if (updated.branch && slugOpts?.slug && journalAnchor) {
+          try {
+            await commitFinalState({
+              cwd,
+              branch: updated.branch,
+              slug: slugOpts.slug,
+              spawnFn: wrappedSpawnFn,
+              messageLabel: "checkpoint",
+            });
+            const snap = journalAnchor.snapshot();
+            if (snap !== null) {
+              await pushEvidenceAnchor(wrappedSpawnFn, cwd, updated.branch, snap.digest);
+            }
+          } catch {
+            // Best-effort — exit proceeds regardless
+          }
+        }
       } catch {
         // Best-effort persist; state file (layer 2) handles residuals
       }
