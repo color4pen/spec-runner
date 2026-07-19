@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b9b17b77-44dd-48ad-a47a-e8941dde3153",
   "createdAt": "2026-07-19T00:09:01.312Z",
-  "updatedAt": "2026-07-19T03:02:45.658Z",
+  "updatedAt": "2026-07-19T03:05:48.100Z",
   "request": {
     "title": "pipeline-owned evidence を agent が偽造できないようにする — authorship 検証＋復元＋全経路再検査（P0 fix-forward）",
     "type": "spec-change",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/evidence-authorship-enforcement-b9b17b77",
-  "error": {
-    "code": "CODE_REVIEW_RETRIES_EXHAUSTED",
-    "message": "code-review did not approve after 2 iterations",
-    "hint": "Review review-feedback-003.md and address findings manually."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -63,15 +59,10 @@
       ]
     }
   ],
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "code-review did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 81,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
