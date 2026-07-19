@@ -14,6 +14,7 @@ export type DomainEvent =
   | "pipeline:iteration:exhausted"
   | "pipeline:summary"
   | "pipeline:cli-step"
+  | "pipeline:fixer:budget-skipped"
   | "step:start"
   | "step:complete"
   | "step:error"

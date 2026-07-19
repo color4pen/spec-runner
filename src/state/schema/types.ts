@@ -129,7 +129,7 @@ export interface StepOutcome {
    * Added in tool-driven-step-completion.
    * Widened to include findings and observations arrays for judge steps.
    */
-  toolResult?: (BaseReportResult & { findings?: Finding[]; observations?: Observation[] }) | null;
+  toolResult?: (BaseReportResult & { approved?: boolean; findings?: Finding[]; observations?: Observation[] }) | null;
   /**
    * Number of follow-up retry attempts made to get the agent to call report_result.
    * 0 = the agent called the tool on the first turn (or feature not applicable).

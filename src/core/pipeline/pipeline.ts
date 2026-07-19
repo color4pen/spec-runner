@@ -11,7 +11,7 @@ import { getLatestStepResult } from "../../state/helpers.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { notifyJobTerminal } from "../notify/issue-notifier.js";
-import { resolveActiveReviewer } from "./reviewer-chain.js";
+import { resolveActiveReviewer, lastReviewerFixableCount } from "./reviewer-chain.js";
 import { ConvergenceBudget } from "./convergence-budget.js";
 import { ParallelReviewRound } from "./parallel-review-round.js";
 
@@ -363,7 +363,7 @@ export class Pipeline {
       const transition = this.transitions.find(
         (t) => t.step === currentStep && t.on === outcome && (!t.when || t.when(state)),
       );
-      const nextStep = transition?.to ?? "escalate";
+      let nextStep = transition?.to ?? "escalate";
       logPipelineDiag("pipeline:transition:resolved", `step=${currentStep}, outcome=${outcome}, next=${nextStep}`);
 
       // --- Terminal conditions ---
@@ -413,6 +413,74 @@ export class Pipeline {
         }
 
         break;
+      }
+
+      // --- T-03: Prevent approved verdict from being overturned by fixer budget exhaustion ---
+      // When a reviewer approves (outcome==="approved") but the paired fixer's iteration
+      // budget is already exhausted, re-route to the clean approved destination instead of
+      // entering the fixer (which would trigger the fixer exhaustion check and escalate).
+      //
+      // Conditions (all must be true to fire):
+      //   1. outcome === "approved"
+      //   2. nextStep is a paired fixer
+      //   3. fixer iteration budget >= effectiveMax for the paired reviewer
+      //
+      // Action: replace nextStep with the clean approved transition (the approved row with
+      // no `when` guard that does NOT target a fixer step). If no clean transition is found,
+      // fall through to the existing fixer exhaustion check (fail-safe = traditional escalation).
+      //
+      // T-04: Record the omission in history and emit pipeline:fixer:budget-skipped event.
+      //
+      // DESTRUCTION CONFIRMATION (TC-014):
+      // Commenting out this block causes TC-001 to fail:
+      //   result.status === "awaiting-resume" with CODE_REVIEW_RETRIES_EXHAUSTED
+      // Reproduce: comment this block, run:
+      //   bun run test tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts
+      {
+        const fixerNamesForReroute = new Set(Object.values(this.loopFixerPairs));
+        if (
+          outcome === "approved" &&
+          typeof nextStep === "string" &&
+          fixerNamesForReroute.has(nextStep)
+        ) {
+          const budgetSkippedFixer = nextStep;
+          const exhaustedReviewer = resolvePairedReviewForFixer(state, budgetSkippedFixer, this.loopFixerPairs);
+          const effectiveMaxReroute = this.resolveMaxIterations(exhaustedReviewer);
+          if (budget.getFixerIter(budgetSkippedFixer) >= effectiveMaxReroute) {
+            // Find the clean approved transition: target is not a fixer, and no when guard
+            // (or when guard passes). The clean row is the unconditional approved→next row
+            // produced by buildReviewerChainTransitions / buildParallelReviewerTransitions.
+            const cleanTransition = this.transitions.find(
+              (t) =>
+                t.step === currentStep &&
+                t.on === "approved" &&
+                !fixerNamesForReroute.has(t.to as string) &&
+                t.to !== "end" &&
+                t.to !== "escalate" &&
+                (!t.when || t.when(state)),
+            );
+            if (cleanTransition !== undefined) {
+              // T-04: Record the omission before re-routing
+              const omitted = lastReviewerFixableCount(state, currentStep);
+              this.events.emit("pipeline:fixer:budget-skipped", {
+                step: currentStep,
+                fixer: budgetSkippedFixer,
+                omittedFixableFindings: omitted,
+                maxIterations: effectiveMaxReroute,
+              });
+              state = appendHistoryEntry(state, {
+                ts: new Date().toISOString(),
+                step: currentStep,
+                status: "warning",
+                message: `${currentStep} approved: ${omitted} fixable finding(s) not applied (${budgetSkippedFixer} budget exhausted after ${effectiveMaxReroute} iterations); proceeding to ${cleanTransition.to as string}`,
+              });
+              logPipelineDiag("pipeline:budget-skip:reroute", `step=${currentStep}, fixer=${budgetSkippedFixer}, omitted=${omitted}, next=${cleanTransition.to as string}`);
+              nextStep = cleanTransition.to;
+            }
+            // If no clean transition found: fall through to existing fixer exhaustion check
+            // (fail-safe: escalation is better than silently skipping the omission record)
+          }
+        }
       }
 
       // --- Fresh convergence episode reset (fixer-pair loops only) ---

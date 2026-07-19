@@ -160,6 +160,10 @@ export class PipelineLogger {
     events.on("pipeline:cli-step", ({ step, verdict }) => {
       this.write({ type: "pipeline:cli-step", step, verdict: verdict ?? null });
     });
+
+    events.on("pipeline:fixer:budget-skipped", ({ step, fixer, omittedFixableFindings, maxIterations }) => {
+      this.write({ type: "pipeline:fixer:budget-skipped", step, fixer, omittedFixableFindings, maxIterations });
+    });
   }
 
   /**
