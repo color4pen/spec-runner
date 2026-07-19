@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d294f4e0-bb83-494e-9613-4ef47a1c2454",
   "createdAt": "2026-07-19T05:55:01.314Z",
-  "updatedAt": "2026-07-19T11:03:00.396Z",
+  "updatedAt": "2026-07-19T11:07:06.853Z",
   "request": {
     "title": "reviewer の approved を fixer 予算切れで覆さない — 任意修正の省略を明示して次工程へ進む",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/approved-not-overturned-by-fixer-budget-d294f4e0",
   "error": null,
   "pipelineId": "standard",
@@ -86,8 +86,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/854",
+    "number": 854,
+    "createdAt": "2026-07-19T11:07:06.138Z"
+  },
   "_journal": {
-    "historyCount": 64,
+    "historyCount": 73,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -102,7 +107,10 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
