@@ -39,11 +39,5 @@ jobs:
 
       - run: bun run test
 
-      - name: Package smoke test (npm pack → clean install → --help)
-        run: |
-          npm pack
-          SMOKE_DIR="$(mktemp -d)"
-          cd "$SMOKE_DIR"
-          npm init -y
-          npm install --omit=optional "$GITHUB_WORKSPACE"/color4pen-specrunner-*.tgz
-          ./node_modules/.bin/specrunner --help
+      - name: Package smoke (first-contact contract assertions)
+        run: bash scripts/smoke/package-smoke.sh
