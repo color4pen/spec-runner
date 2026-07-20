@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ae96b6a9-2f5f-4892-b434-69b5f433ed7d",
   "createdAt": "2026-07-20T03:27:21.209Z",
-  "updatedAt": "2026-07-20T03:37:16.354Z",
+  "updatedAt": "2026-07-20T03:42:27.004Z",
   "request": {
     "title": "init が実行結果を報告する — git repo 外の無言スキップと再実行時の無言成功を解消する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/init-reports-scaffold-ae96b6a9",
   "error": null,
@@ -61,10 +61,11 @@
   ],
   "issueNumber": 857,
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
