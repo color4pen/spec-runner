@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "79130e2c-9b19-4dd5-9f31-7fd2a273b2da",
   "createdAt": "2026-07-20T03:27:24.304Z",
-  "updatedAt": "2026-07-20T04:16:49.738Z",
+  "updatedAt": "2026-07-20T04:21:02.286Z",
   "request": {
     "title": "job prune を orphan sidecar に拡張する — doctor の生 rm -rf hint を製品コマンド案内に置換する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "change/prune-orphan-sidecars-79130e2c",
   "error": null,
@@ -60,8 +60,35 @@
     }
   ],
   "issueNumber": 859,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -71,7 +98,12 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 2,
-      "build-fixer": 1
+      "build-fixer": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
