@@ -1443,3 +1443,177 @@ describe("commit-projection-unify structure gates", () => {
     expect(nonComment.length).toBeGreaterThanOrEqual(2);
   });
 });
+
+// ─── CWD: process.cwd() allowlist ratchet over src/ ──────────────────────────
+
+describe("CWD invariant: process.cwd() occurrences in src/ are allowlist-gated (T-05)", () => {
+  /**
+   * TC-010, TC-018, TC-019, TC-020
+   *
+   * Enforces that every `process.cwd()` occurrence in `src/` (excluding test files
+   * and comment lines) is covered by a `CWD` entry in ARCH_ALLOWLIST.
+   *
+   * Governance: same delete-only ratchet as B-1 through B-12 and DSM.
+   * New `process.cwd()` calls in src/ that are NOT in the allowlist trip this test.
+   *
+   * Seeding: the allowlist must contain one entry per current non-comment,
+   * non-test `process.cwd()` occurrence, EXCLUDING the three converted sites:
+   *   - command-registry.ts:334  (executeNew call — now uses ctx.repoRoot)
+   *   - command-registry.ts:683  (runJobStats call — now uses ctx.repoRoot)
+   *   - doctor.ts:114            (config-error path — now reuses resolved repoRoot)
+   */
+
+  // ── TC-010: main invariant — no un-allowlisted process.cwd() in src/ ─────
+
+  it("TC-010: grep finds no un-allowlisted process.cwd() in src/ beyond the CWD allowlist", () => {
+    // Grep all process.cwd() occurrences in src/ (non-test, non-comment)
+    const raw = grepE(`'process\\.cwd\\(\\)'`, "src");
+    const allMatches = parseGrepOutput(raw);
+
+    // Exclude test files
+    const candidates = allMatches.filter(
+      (m) =>
+        !m.file.includes("__tests__/") &&
+        !m.file.includes(".test.ts"),
+    );
+
+    const cwdEntries = ARCH_ALLOWLIST.filter((e) => e.invariant === "CWD");
+
+    // Before T-05 (no CWD entries seeded): all occurrences are violations → RED ✓
+    // After T-05 (seed complete): all occurrences are covered → GREEN ✓
+    const violations = filterViolations(candidates, cwdEntries);
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  // ── TC-018: liveness — the grep scan is not vacuous ──────────────────────
+
+  it("TC-018: CWD allowlist liveness — raw match count in src/ is greater than zero", () => {
+    // Confirms the grep is live and not vacuously passing.
+    const raw = grepE(`'process\\.cwd\\(\\)'`, "src");
+    const allMatches = parseGrepOutput(raw);
+
+    const candidates = allMatches.filter(
+      (m) =>
+        !m.file.includes("__tests__/") &&
+        !m.file.includes(".test.ts") &&
+        !isCommentLine(m.content),
+    );
+
+    // process.cwd() is used extensively in src/ (both as DI defaults and debt sites).
+    // This must be > 0 to confirm the grep scan is working.
+    expect(candidates.length).toBeGreaterThan(0);
+  });
+
+  // ── TC-019: suppression — allowlisted occurrence is not flagged ───────────
+
+  it("TC-019: a synthetic process.cwd() occurrence covered by a CWD allowlist entry is suppressed", () => {
+    // Inject a synthetic match that matches an EXISTING CWD allowlist entry.
+    // We use a synthetic entry to keep the test decoupled from real allowlist contents.
+    const syntheticCwdEntry = [
+      {
+        file: "src/util/repo-root.ts",
+        pattern: "process.cwd()",
+        invariant: "CWD",
+        tracking: "CWD-synthetic-suppression-demo",
+        comment: "Synthetic entry for suppression mechanism verification (TC-019).",
+      },
+    ];
+
+    const allowlistedMatch: GrepMatch[] = [
+      {
+        file: "src/util/repo-root.ts",
+        line: 10,
+        content: "    const result = await spawnCommand('git', ['rev-parse'], { cwd: cwd ?? process.cwd() });",
+      },
+    ];
+
+    const violations = filterViolations(allowlistedMatch, syntheticCwdEntry);
+
+    // The match IS covered by the synthetic entry — must be suppressed (not flagged)
+    expect(violations).toHaveLength(0);
+  });
+
+  // ── TC-020: converted sites absent from allowlist seed ────────────────────
+
+  it("TC-020: the three converted sites do not appear in the CWD allowlist", () => {
+    // After T-04, command-registry.ts:334 uses ctx.repoRoot (not process.cwd()).
+    // After T-03, command-registry.ts:683 uses ctx.repoRoot (not process.cwd()).
+    // After T-04, doctor.ts:114 reuses the resolved repoRoot (not process.cwd()).
+    //
+    // None of these three sites should appear in the CWD allowlist seed.
+    // If they do, it means the implementation did NOT remove process.cwd() from them.
+
+    const cwdEntries = ARCH_ALLOWLIST.filter((e) => e.invariant === "CWD");
+
+    // Helper: check if a (file, context-substring) pair is in the allowlist
+    function isInAllowlist(fileSuffix: string, patternHint: string): boolean {
+      return cwdEntries.some(
+        (e) =>
+          (e.file.endsWith(fileSuffix) || e.file === fileSuffix) &&
+          e.pattern.includes(patternHint),
+      );
+    }
+
+    // command-registry.ts:334 — formerly `executeNew(slug, requestType, process.cwd())`
+    // After T-02: this line passes ctx.repoRoot — no longer uses process.cwd()
+    // Allowlist entry for executeNew + process.cwd() must NOT exist
+    const hasRequestNewSite = isInAllowlist(
+      "command-registry.ts",
+      // The distinguishing content of the old line (contains both executeNew and process.cwd)
+      "executeNew",
+    );
+    // If the allowlist has an entry covering executeNew + process.cwd(), the code was NOT converted
+    // (We check this conservatively: if the site is present in allowlist, the implementation is wrong)
+    // Note: this assertion passes vacuously if no CWD entries exist at all (seed not yet added)
+    // — which is the case before T-05. After T-05, the seed exists but must not contain these sites.
+    //
+    // The real teeth: TC-010 fails if any process.cwd() exists at these sites.
+
+    // command-registry.ts:683 — formerly `runJobStats({ cwd: process.cwd(), json })`
+    const hasJobStatsSite = isInAllowlist("command-registry.ts", "runJobStats");
+
+    // doctor.ts:114 — formerly `await resolveRepoRoot(process.cwd()).catch(() => null)`
+    const hasDoctorSite = isInAllowlist("doctor.ts", "resolveRepoRoot");
+
+    // None of the three converted sites should be in the seed
+    expect(hasRequestNewSite).toBe(false);
+    expect(hasJobStatsSite).toBe(false);
+    expect(hasDoctorSite).toBe(false);
+  });
+
+  // ── CWD regression guard — synthetic detection tests ─────────────────────
+
+  it("CWD regression guard: un-allowlisted process.cwd() in src/ is detected (TC-010 mechanism)", () => {
+    // Inject a synthetic un-allowlisted process.cwd() in a hypothetical new src/ file.
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/cli/new-command.ts",
+        line: 42,
+        content: "  const base = process.cwd();  // new un-allowlisted usage",
+      },
+    ];
+
+    const cwdEntries = ARCH_ALLOWLIST.filter((e) => e.invariant === "CWD");
+    const violations = filterViolations(injectedMatches, cwdEntries);
+
+    // This file + pattern are NOT in the CWD allowlist → must be detected as a violation
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.file).toBe("src/cli/new-command.ts");
+  });
+
+  it("CWD regression guard: a comment line with process.cwd() is NOT flagged", () => {
+    // Comment lines are excluded from the scan
+    const commentLine: GrepMatch[] = [
+      {
+        file: "src/cli/new-command.ts",
+        line: 5,
+        content: "// defaults to process.cwd() when not supplied",
+      },
+    ];
+
+    const cwdEntries = ARCH_ALLOWLIST.filter((e) => e.invariant === "CWD");
+    // Comment lines are filtered out by filterViolations (isCommentLine guard)
+    const violations = filterViolations(commentLine, cwdEntries);
+    expect(violations).toHaveLength(0);
+  });
+});
