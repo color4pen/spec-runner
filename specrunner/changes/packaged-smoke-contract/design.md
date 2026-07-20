@@ -2,7 +2,7 @@
 
 ## Context
 
-開発検証（bun + TS ソース + repo root）と利用者の実運用（node + dist bundle + npx + 任意 cwd）は実変数がすべて異なる。既存の package smoke は起動確認だけで初回接触の契約を何も assert していないため、公開物にだけ現れる欠陥を dogfooding で構造的に検出できない。本 change はこの smoke を「packed tarball を node で実行して初回接触契約を歩くゲート」に拡張する。
+開発検証（bun + TS ソース + repo root）と利用者の実運用（node + dist bundle + npx + 任意 cwd）は実変数がすべて異なる。既存の package smoke は起動確認だけで初回接触の契約を何も assert していないため、公開物にだけ現れる欠陥を dogfooding で構造的に検出できない。本 change はこの smoke を「packed tarball を fixture へ install し、`npx --no-install specrunner`（npm 利用者の実入口）で初回接触契約を歩くゲート」に拡張する。
 
 現状コードの前提（確認済み）:
 
@@ -44,21 +44,22 @@ smoke の assert 本体を repo 内スクリプト `scripts/smoke/package-smoke.
 - workflow YAML に直書き → 却下（ローカル再現不可・破壊確認不可、architect 評価で却下済み）。
 - assert を vitest に書く → 却下。vitest 実行は bun / repo の TS を引き込み、「packed tarball + node のみ」（T5）の隔離が崩れる。smoke の主旨は**配布物を製品コードから切り離して歩く**ことにある。
 
-### D2: tarball を作って隔離した「消費者プロジェクト」に一度だけ install し、各 fixture cwd から node で叩く
+### D2: tarball を fixture project 自身に install し、すべての CLI 実行を `npx --no-install specrunner` で行う
 
 スクリプトの実行フロー:
 
 1. **前提チェック**: `dist/specrunner.js` の存在を確認し、無ければ「先に build して dist を生成せよ」と明示エラーで停止する（スクリプトは build を担わない＝bun を呼ばない）。CI では前段 `bun run build` が dist を用意する。
 2. **pack**: `npm pack` を temp ディレクトリ宛に実行し、生成された tarball のパスを解決する。
-3. **install**: temp の「消費者プロジェクト」で `npm init -y` → `npm install --omit=optional <tarball>`。実行対象バイナリを `node_modules/@color4pen/specrunner/dist/specrunner.js`（安定パス）に解決する。
-4. **assert**: 各 scenario は専用 fixture ディレクトリを cwd にして `node <解決した dist パス>` で CLI を叩く。
+3. **install**: fixture 側へ install する — 非 git ディレクトリ（S1 用）と fixture git repo（S2 以降用）のそれぞれで `npm init -y` → `npm install --omit=optional <tarball>`。install 後、`node_modules/.bin/specrunner` が生成されていることを前提条件として検査する（`bin` 配線故障の即時検出）。
+4. **assert**: 各 scenario は fixture 内の cwd（root または nested subdirectory）から `npx --no-install specrunner …` で CLI を叩く。
 
-CLI 起動は常に `node <dist>` 形式（＝「dist bundle を node で実行」を明示）。`--omit=optional` を維持するのは、assert 対象の経路（init / doctor / request new / --help）が optional SDK に依存しないことを同時に証明するため（Context の doctor 依存分析）。
+CLI 起動は常に `npx --no-install specrunner` — **npm 利用者が実際に打つコマンドそのもの**であり、`package.json` の `bin` 指定・shebang・`.bin/specrunner` 生成・npx の上方 node_modules 解決がすべて assert 経路に載る。`--omit=optional` を維持するのは、assert 対象の経路（init / doctor / request new / --help）が optional SDK に依存しないことを同時に証明するため（Context の doctor 依存分析）。
 
-**Rationale**: 「一度 install して複数 cwd から叩く」は npx 利用者の実運用（グローバル install したツールを任意ディレクトリで使う）を最も忠実に写す。install を scenario ごとに繰り返すのは遅く、契約検証に寄与しない。
+**Rationale**: smoke の主題は「利用者の実入口の成立」である。`node <dist>` 直叩きは dist の実行可能性しか証明せず、`bin` 配線・shebang・実行権限が壊れても green になる（旧 smoke が持っていた `./node_modules/.bin/specrunner` の確認すら失う）。install を fixture 自身に置くのは、npx の解決が「その project に install された CLI」という実運用と一致するため。
 
 **Alternatives considered**:
-- `./node_modules/.bin/specrunner`（shebang 経由）で叩く → 可（内部的に node 実行）。ただし「node で実行」を観測的に明示するため `node <dist>` 形式を採る。両者は等価だが後者が意図を残す。
+- 別ディレクトリに install して `node <dist>` を直接叩く → 却下。npm 利用者の実入口（bin 配線 / shebang / npx 解決）を迂回し、それらの故障を smoke が検出できない。
+- `./node_modules/.bin/specrunner` を直接叩く → 可（bin 配線は載る）が、npx の上方解決（subdirectory からの起動で使われる実経路）が載らないため `npx --no-install` を採る。
 - optional 込みで install → 却下。assert 経路が optional SDK 非依存であることの証明を失い、install も重くなる。
 
 ### D3: fixture は mktemp 配下に作り、XDG_CONFIG_HOME / HOME を隔離し、非対話で起動する

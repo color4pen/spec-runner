@@ -2,10 +2,12 @@
 
 ## Requirements
 
-### Requirement: Packaged smoke SHALL assert first-contact contracts using only the packed tarball run with node
+### Requirement: Packaged smoke SHALL assert first-contact contracts through the real npm entry (`npx --no-install specrunner`) on the packed tarball
 
 The project SHALL provide a smoke check that MUST exercise the published artifact by
-running the packed npm tarball with `node`, and MUST NOT depend on `bun` or on the
+installing the packed npm tarball into the fixture projects and invoking the CLI
+exclusively via `npx --no-install specrunner` (exercising the package `bin` wiring,
+shebang, and `.bin/specrunner` generation), and MUST NOT depend on `bun` or on the
 repository's TypeScript sources (`src/`). The smoke MUST assert the out-of-repo init,
 subdirectory init, isolated-XDG doctor, and subdirectory `request new` contracts, and
 MUST retain the existing `--help` startup check. When any asserted contract does not
@@ -13,10 +15,10 @@ hold, the smoke MUST exit non-zero.
 
 #### Scenario: init outside a git repository writes nothing including under isolated XDG
 
-**Given** the smoke has packed the tarball and installed it into an isolated consumer project
+**Given** the smoke has packed the tarball and installed it into a non-git fixture directory
 **And** a working directory that is not inside any git repository
 **And** an isolated empty `XDG_CONFIG_HOME`
-**When** the smoke runs `node <installed dist> init` from that directory
+**When** the smoke runs `npx --no-install specrunner init` from that directory
 **Then** the process exits non-zero
 **And** no `specrunner/` directory and no `.gitignore` are created in that directory
 **And** no `config.json` is created under the isolated `XDG_CONFIG_HOME`
@@ -25,7 +27,7 @@ hold, the smoke MUST exit non-zero.
 
 **Given** a fixture git repository with a nested subdirectory
 **And** an isolated empty `XDG_CONFIG_HOME`
-**When** the smoke runs `node <installed dist> init` with the subdirectory as the working directory
+**When** the smoke runs `npx --no-install specrunner init` with the subdirectory as the working directory
 **Then** the process exits 0
 **And** `specrunner/drafts` and `specrunner/changes` exist at the repository root
 **And** no nested `specrunner/` directory is created under the subdirectory
@@ -34,30 +36,54 @@ hold, the smoke MUST exit non-zero.
 #### Scenario: isolated XDG init then doctor reports config-file-exists pass judged per-check
 
 **Given** a fixture git repository and an isolated empty `XDG_CONFIG_HOME`
-**And** the smoke has run `node <installed dist> init` with that isolated `XDG_CONFIG_HOME`
-**When** the smoke runs `node <installed dist> doctor --json` with the same isolated `XDG_CONFIG_HOME`
+**And** the smoke has run `npx --no-install specrunner init` with that isolated `XDG_CONFIG_HOME`
+**When** the smoke runs `npx --no-install specrunner doctor --json` from both the repo root and the subdirectory with the same isolated `XDG_CONFIG_HOME`
 **Then** the smoke parses the JSON output and finds the check named `config-file-exists`
 **And** that check's `status` is `pass`
 **And** the judgment uses that check's status, not the doctor process exit code
 
+#### Scenario: second init reports per-item already-exists (idempotent)
+
+**Given** the fixture git repo has been fully initialized by a prior `init`
+**When** the smoke runs `npx --no-install specrunner init` again from the subdirectory
+**Then** it exits 0 and reports `already exists` for each item (global config, `.gitignore`, `specrunner/drafts`, `specrunner/changes`)
+
+#### Scenario: half-initialized repo is completed with a per-item created / already-exists split
+
+**Given** the global config exists but the project scaffold (`specrunner/`, `.gitignore`) has been removed
+**When** the smoke runs `npx --no-install specrunner init` from the subdirectory
+**Then** it exits 0, reports `already exists` for the global config, and reports `created` for `.gitignore`, `specrunner/drafts`, and `specrunner/changes`
+
+#### Scenario: doctor per-check results are identical from root and subdirectory
+
+**Given** the fixture git repo is initialized
+**When** the smoke runs `npx --no-install specrunner doctor --json` from the repo root and from the nested subdirectory
+**Then** the per-check (name, status) sets of the two runs are identical
+
+#### Scenario: help output includes usage text
+
+**Given** the tarball is installed in the fixture git repo
+**When** the smoke runs `npx --no-install specrunner --help`
+**Then** it exits 0 and the output contains `Usage: specrunner`
+
 #### Scenario: request new from a subdirectory lands at repo root without nesting
 
 **Given** a fixture git repository with a nested subdirectory
-**When** the smoke runs `node <installed dist> request new <slug>` with the subdirectory as the working directory
+**When** the smoke runs `npx --no-install specrunner request new <slug>` with the subdirectory as the working directory
 **Then** `specrunner/drafts/<slug>/request.md` exists at the repository root
 **And** no nested `specrunner/` directory is created under the subdirectory
 
 #### Scenario: help startup check is retained on the packaged artifact
 
 **Given** the installed tarball
-**When** the smoke runs `node <installed dist> --help`
+**When** the smoke runs `npx --no-install specrunner --help`
 **Then** the process exits 0 and prints usage output
 
 #### Scenario: the smoke does not reference bun or repository sources
 
 **Given** the smoke script and its CI invocation
 **When** the smoke executes end to end
-**Then** it invokes only the installed tarball with `node` plus `npm`/`git`/coreutils
+**Then** it invokes the installed tarball only via `npx --no-install specrunner` plus `npm`/`node`/`git`/coreutils
 **And** it does not invoke `bun`
 **And** it does not read from the repository `src/` tree
 
