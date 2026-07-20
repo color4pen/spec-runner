@@ -8,7 +8,7 @@
  * TC-020: Best-effort deletion — per-directory rm failure becomes a warning and processing continues
  * TC-021: Hard scan failure returns exitCode 1 with a failure message
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { pruneOrphanSidecars } from "../../../../src/core/prune/sidecar-runner.js";
 import type { SidecarPruneDeps } from "../../../../src/core/prune/sidecar-runner.js";
 import type { ScanSidecarsFn } from "../../../../src/core/sidecar/orphan.js";
