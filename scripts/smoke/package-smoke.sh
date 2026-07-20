@@ -79,6 +79,8 @@ mkdir -p "${F1_DIR}" "${F2_SUB}"
 git -C "${F2_REPO}" init --quiet 2>/dev/null
 git -C "${F2_REPO}" config user.email "smoke@example.com" 2>/dev/null
 git -C "${F2_REPO}" config user.name "Smoke Test" 2>/dev/null
+# Origin stub: makes the fixture shape match a real project (URL only — never contacted).
+git -C "${F2_REPO}" remote add origin "https://github.com/example/fixture-app.git" 2>/dev/null
 
 # The npm-generated bin symlink is itself part of the asserted surface: if the
 # package `bin` field or the dist shebang breaks, this precondition (and every
