@@ -8,7 +8,7 @@
 被 assert 側の製品コード（init / doctor / request new / xdg 等 `src/`）は変更しない。既に merge 済みの契約を歩くだけ。
 
 共通の実装前提（design D2〜D5）:
-- 起動は常に `node <installed dist>` 形式。install は `npm install --omit=optional <tarball>`。dist 解決パスは `node_modules/@color4pen/specrunner/dist/specrunner.js`。
+- 起動は常に `npx --no-install specrunner` 形式（npm 利用者の実入口 = `bin` 配線・shebang・`.bin/specrunner` 生成を通る経路）。install は fixture project 自身へ `npm install --omit=optional <tarball>`。
 - CLI 呼び出しは非対話（`init` は `--provider anthropic` かつ `< /dev/null`）。
 - 各 scenario は `mktemp` 配下の専用 fixture を持ち、`XDG_CONFIG_HOME` / `HOME` を temp へ隔離する。
 - 各 assert は machine-greppable な PASS/FAIL 判定行を出し、1 つでも失敗したらスクリプト全体を非ゼロ exit させる。意図的な非ゼロ exit を扱う scenario では exit code を明示捕捉する（`set -e` に依存しない）。
@@ -19,7 +19,7 @@
 - [x] `set -u`（必要に応じ `pipefail`）を設定し、意図的失敗 scenario と衝突しない失敗判定方針を採る。
 - [x] リポジトリ root を解決し、`dist/specrunner.js` の存在を前提チェックする。無ければ「先に build して dist を生成せよ」と明示エラーで非ゼロ exit（スクリプトは build を担わない＝`bun` を呼ばない）。
 - [x] `npm pack` を temp ディレクトリ宛に実行し、生成 tarball のパスを解決する。
-- [x] 隔離した「消費者プロジェクト」temp dir で `npm init -y` → `npm install --omit=optional <tarball>` を実行し、`node_modules/@color4pen/specrunner/dist/specrunner.js` を実行対象 dist として解決する。
+- [x] fixture project（非 git dir と git repo の 2 つ）で `npm init -y` → `npm install --omit=optional <tarball>` を実行し、`node_modules/.bin/specrunner` の生成を前提条件として検査する。以後の CLI 実行はすべて `npx --no-install specrunner`。
 - [x] scenario 共通のヘルパ（隔離 env での起動、PASS/FAIL 判定行の出力、失敗集計と最終 exit）を用意する。
 - [x] スクリプト終了時に temp ディレクトリ・生成 tarball を後片付けする（trap 等）。
 
