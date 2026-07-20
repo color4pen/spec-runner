@@ -7,8 +7,9 @@
 import { COMMANDS, USAGE, RUNTIME_RESET_USAGE, NO_DETAILED_HELP_USAGE } from "../src/cli/command-registry.js";
 import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
 import { detectWorktree } from "../src/core/worktree/detection.js";
-import { SpecRunnerError, EXIT_CODE, worktreeGuardError } from "../src/errors.js";
+import { SpecRunnerError, EXIT_CODE, worktreeGuardError, repoRequiredError } from "../src/errors.js";
 import { getVersion } from "../src/cli/version.js";
+import { buildCommandContext } from "../src/cli/command-context.js";
 
 export { USAGE, RUNTIME_RESET_USAGE };
 
@@ -97,8 +98,17 @@ export async function main(): Promise<void> {
       process.exit(1);
     }
 
+    // Build dispatch-time context (single repo root resolution per invocation)
+    const ctx = await buildCommandContext(process.cwd());
+    if (subDef.requiresRepo && ctx.repoRoot === null) {
+      const err = repoRequiredError(`${command} ${sub}`);
+      process.stderr.write(`Error: ${err.message}\n`);
+      process.stderr.write(`Hint: ${err.hint}\n`);
+      process.exit(err.exitCode);
+    }
+
     try {
-      await subDef.handler(parsed);
+      await subDef.handler(parsed, ctx);
     } catch (e) {
       if (e instanceof FlagParseError) {
         process.stderr.write(e.message + "\n");
@@ -134,7 +144,16 @@ export async function main(): Promise<void> {
       }
     }
 
-    await entry.handler(parsed);
+    // Build dispatch-time context (single repo root resolution per invocation)
+    const ctx = await buildCommandContext(process.cwd());
+    if (entry.requiresRepo && ctx.repoRoot === null) {
+      const err = repoRequiredError(command);
+      process.stderr.write(`Error: ${err.message}\n`);
+      process.stderr.write(`Hint: ${err.hint}\n`);
+      process.exit(err.exitCode);
+    }
+
+    await entry.handler(parsed, ctx);
   } catch (e) {
     if (e instanceof FlagParseError) {
       process.stderr.write(e.message + "\n");

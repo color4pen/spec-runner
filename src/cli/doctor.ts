@@ -91,18 +91,35 @@ export const buildExecFile = (
 
 /**
  * Run the doctor command.
- * @param opts.json - Whether to output JSON instead of human-readable format
+ * @param opts.json        - Whether to output JSON instead of human-readable format
+ * @param opts.repoRoot    - Pre-resolved repo root from dispatch (pass undefined to auto-resolve).
+ *                           null means invoker is outside a git repo; repo checks will fail.
+ * @param opts.invokerCwd  - The actual working directory from which the command was invoked.
+ *                           Defaults to process.cwd() when not provided (role (a) default).
  * @returns Exit code: 0 (all pass/warn) or 1 (any fail).
  *          The caller (bin/specrunner.ts) is responsible for process.exit().
  *          Exit code 2 (crash) is handled by the outer try/catch in bin/specrunner.ts.
  */
-export async function runDoctor(opts: { json: boolean }): Promise<number> {
+export async function runDoctor(opts: {
+  json: boolean;
+  repoRoot?: string | null;
+  invokerCwd?: string;
+}): Promise<number> {
+  // Role (a): invokerCwd defaults to process.cwd() — the repo root discovery origin.
+  const invokerCwd = opts.invokerCwd ?? process.cwd();
+  // Use the pre-resolved repoRoot from dispatch when provided; fall back to auto-resolution.
+  const repoRoot = opts.repoRoot !== undefined
+    ? opts.repoRoot
+    : await resolveRepoRoot(invokerCwd);
+
   // Load config (best-effort — checks will report failure if unavailable)
   let rawConfig: SpecRunnerConfig | null = null;
   let configLoadError: string | undefined;
   let configLoadErrorPath: string | undefined;
   try {
-    rawConfig = await loadConfigWithOverlay();
+    // Pass the already-resolved repoRoot so loadConfigWithOverlay skips its internal
+    // resolveRepoRoot call (avoids a duplicate resolution when repoRoot is pre-supplied).
+    rawConfig = await loadConfigWithOverlay(invokerCwd, repoRoot);
   } catch (err: unknown) {
     // Config not available — propagate reason so config-file-exists can distinguish
     // malformed JSON from ENOENT.
@@ -111,7 +128,7 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
     // loadConfig labels errors with "project local config" or "user global config".
     // The project-local config lives at the repo root, not necessarily cwd.
     if (configLoadError.includes("project local config")) {
-      const repoRoot = await resolveRepoRoot(process.cwd()).catch(() => null);
+      // Reuse the already-resolved repoRoot instead of calling resolveRepoRoot again.
       if (repoRoot) {
         configLoadErrorPath = path.join(repoRoot, ".specrunner", "config.json");
       }
@@ -171,7 +188,8 @@ export async function runDoctor(opts: { json: boolean }): Promise<number> {
 
   // Assemble DoctorContext
   const ctx: DoctorContext = {
-    cwd: process.cwd(),
+    cwd: invokerCwd,
+    repoRoot,
     env: process.env as Record<string, string | undefined>,
     now: new Date(),
     fetch: globalThis.fetch,

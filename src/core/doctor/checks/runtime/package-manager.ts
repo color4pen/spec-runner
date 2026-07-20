@@ -18,7 +18,8 @@ export const packageManagerCheck: DoctorCheck = {
   required: true,
 
   async check(ctx: DoctorContext) {
-    const { pm } = await detectPackageManager(ctx.cwd, ctx.fs);
+    // Use repoRoot when available so checks are equivalent from any subdirectory.
+    const { pm } = await detectPackageManager(ctx.repoRoot ?? ctx.cwd, ctx.fs);
     try {
       const result = await ctx.execFile(pm, ["--version"], { signal: AbortSignal.timeout(5000) });
       const version = result.stdout.trim();

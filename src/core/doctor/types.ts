@@ -84,8 +84,15 @@ export interface DoctorGitHubClient {
  * Unit tests provide a mock; production code provides real implementations.
  */
 export interface DoctorContext {
-  /** Current working directory */
+  /** Current working directory (invoker cwd — may be a subdirectory of the repo root) */
   cwd: string;
+  /**
+   * Git repository root resolved at dispatch time.
+   * undefined = not yet resolved (backward-compatible with existing check mocks that don't set it).
+   * null      = invoker is outside a git repository (doctor runs, repo checks report fail).
+   * string    = the actual repo root path (repo/storage checks must use this instead of cwd).
+   */
+  repoRoot?: string | null;
   /** Environment variables */
   env: Record<string, string | undefined>;
   /** Current time (useful for mocking) */

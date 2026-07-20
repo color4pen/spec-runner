@@ -69,6 +69,10 @@ describe("TC-002: buildCommandContext — outside a repository resolves to null 
       ctx = await buildCommandContext("/tmp/not-a-repo", nullResolver);
     }).not.toThrow();
 
+    // Vitest's .not.toThrow() calls the async function but does not await its returned Promise.
+    // Yield once so that the pending microtasks (buildCommandContext → ctx assignment) can settle.
+    await Promise.resolve();
+
     expect(ctx).toBeDefined();
     expect(ctx!.repoRoot).toBeNull();
   });

@@ -14,22 +14,24 @@ export const workflowStructureCheck: DoctorCheck = {
   required: false,
 
   async check(ctx: DoctorContext) {
+    // Use repoRoot when available so checks are equivalent from any subdirectory.
+    const base = ctx.repoRoot ?? ctx.cwd;
     const missingDirs: string[] = [];
 
     // Check specrunner/drafts/ exists
-    const draftsDirPath = path.join(ctx.cwd, "specrunner", "drafts");
+    const draftsDirPath = path.join(base, "specrunner", "drafts");
     if (!ctx.fs.existsSync(draftsDirPath)) {
       missingDirs.push("drafts");
     }
 
     // Check specrunner/changes/ exists
-    const changesDirPath = path.join(ctx.cwd, changesDirRel());
+    const changesDirPath = path.join(base, changesDirRel());
     if (!ctx.fs.existsSync(changesDirPath)) {
       missingDirs.push("changes");
     }
 
     // Deprecation: requests/active/ should no longer be used
-    const activeDirPath = path.join(ctx.cwd, "specrunner", "requests", "active");
+    const activeDirPath = path.join(base, "specrunner", "requests", "active");
     const isDeprecatedPresent = ctx.fs.existsSync(activeDirPath);
 
     // Collect all issues before returning so missing-dir warnings are not masked

@@ -5,18 +5,18 @@ Acceptance-criteria IDs T1–T7 refer to the request's acceptance criteria.
 
 ## T-01: Introduce CommandContext + dispatch-time single repo-root resolution
 
-- [ ] Add `src/cli/command-context.ts` exporting:
+- [x] Add `src/cli/command-context.ts` exporting:
   - `interface CommandContext { repoRoot: string | null; invokerCwd: string }`
   - `async function buildCommandContext(invokerCwd: string, resolveFn?: (cwd: string) => Promise<string | null>): Promise<CommandContext>`
     (defaults `resolveFn` to `resolveRepoRoot` from `src/util/repo-root.ts`; injectable
     for tests). Only `src/util/*` may be imported (keeps cli → leaf edge legal).
-- [ ] In `src/cli/command-registry.ts`:
+- [x] In `src/cli/command-registry.ts`:
   - Add `requiresRepo?: boolean` to `CommandDef` (default `false`).
   - Change `CommandDef.handler` to
     `(parsed: ParsedArgs, ctx: CommandContext) => Promise<void>` and import
     `CommandContext` from `command-context.ts`. Do NOT edit handlers that ignore
     `ctx` (fewer-parameter functions remain assignable).
-- [ ] In `bin/specrunner.ts`, in BOTH dispatch branches (subcommand path and normal
+- [x] In `bin/specrunner.ts`, in BOTH dispatch branches (subcommand path and normal
   command path), after `parseFlags` and after the existing worktree guard, and
   before invoking the handler:
   - Build `ctx = await buildCommandContext(process.cwd())`.
@@ -25,7 +25,7 @@ Acceptance-criteria IDs T1–T7 refer to the request's acceptance criteria.
     `handler(parsed, ctx)`.
   - Keep resolution AFTER the `--help`/`--version` short-circuits and AFTER the
     worktree guard so existing ordering/tests are unchanged.
-- [ ] Add `repoRequiredError(command: string)` to `src/errors.ts` using the existing
+- [x] Add `repoRequiredError(command: string)` to `src/errors.ts` using the existing
   `NOT_GIT_REPO` code (exit 2), with a hint prescribing `git init` or `cd` into a
   repository, then re-run.
 
@@ -42,8 +42,8 @@ Acceptance-criteria IDs T1–T7 refer to the request's acceptance criteria.
 
 ## T-02: Convert `request new` to repo-root base
 
-- [ ] Mark the `request new` subcommand `requiresRepo: true`.
-- [ ] Change `command-registry.ts:334` to pass `ctx.repoRoot` (guaranteed non-null by
+- [x] Mark the `request new` subcommand `requiresRepo: true`.
+- [x] Change `command-registry.ts:334` to pass `ctx.repoRoot` (guaranteed non-null by
   `requiresRepo`) into `executeNew(slug, requestType, ctx.repoRoot)`; add a call-site
   comment noting the base is the repo root. Do not change `executeNew` /
   `request/store.ts`.
@@ -59,8 +59,8 @@ Acceptance-criteria IDs T1–T7 refer to the request's acceptance criteria.
 
 ## T-03: Convert `job stats` to repo-root base
 
-- [ ] Mark the `job stats` subcommand `requiresRepo: true`.
-- [ ] Change `command-registry.ts:683` to `runJobStats({ cwd: ctx.repoRoot, json })`
+- [x] Mark the `job stats` subcommand `requiresRepo: true`.
+- [x] Change `command-registry.ts:683` to `runJobStats({ cwd: ctx.repoRoot, json })`
   (option key stays `cwd`; the supplied value is now the repo root). Do not change
   `runJobStats`. The in-command specrunner-worktree guard keeps inspecting the
   supplied base (D5 — worktree semantics preserved).
@@ -76,18 +76,18 @@ Acceptance-criteria IDs T1–T7 refer to the request's acceptance criteria.
 
 ## T-04: doctor — carry repo root in DoctorContext; checks use root; repo-optional
 
-- [ ] `src/core/doctor/types.ts`: add `repoRoot?: string | null` to `DoctorContext`
+- [x] `src/core/doctor/types.ts`: add `repoRoot?: string | null` to `DoctorContext`
   (optional so existing check mocks keep compiling).
-- [ ] `src/cli/doctor.ts` `runDoctor`:
+- [x] `src/cli/doctor.ts` `runDoctor`:
   - Signature `runDoctor(opts: { json: boolean; repoRoot?: string | null; invokerCwd?: string })`.
   - `invokerCwd = opts.invokerCwd ?? process.cwd()`;
     `repoRoot = opts.repoRoot !== undefined ? opts.repoRoot : await resolveRepoRoot(invokerCwd)`.
   - Set `ctx.cwd = invokerCwd` and `ctx.repoRoot = repoRoot`.
   - Reuse `repoRoot` for the config-error path (replace the duplicate
     `resolveRepoRoot(process.cwd())` at line 114).
-- [ ] `doctor` handler in `command-registry.ts`: keep `requiresRepo: false`; pass
+- [x] `doctor` handler in `command-registry.ts`: keep `requiresRepo: false`; pass
   `{ json, repoRoot: ctx.repoRoot, invokerCwd: ctx.invokerCwd }` into `runDoctor`.
-- [ ] Update the 9 repo/storage checks to derive their base from
+- [x] Update the 9 repo/storage checks to derive their base from
   `ctx.repoRoot ?? ctx.cwd` instead of `ctx.cwd`:
   - `repo/git-repository.ts` (fail-message base only),
     `repo/specrunner-project-md.ts`, `repo/workflow-structure.ts`
@@ -111,7 +111,7 @@ Acceptance-criteria IDs T1–T7 refer to the request's acceptance criteria.
 
 ## T-05: Tooth — process.cwd() allowlist ratchet over src/
 
-- [ ] Add a `CWD` invariant `describe` block to
+- [x] Add a `CWD` invariant `describe` block to
   `tests/unit/architecture/core-invariants.test.ts`:
   - `grepE("process\\.cwd\\(\\)", "src")`, parse, exclude `__tests__/` and `.test.ts`
     and comment lines (reuse existing helpers), filter through
@@ -120,7 +120,7 @@ Acceptance-criteria IDs T1–T7 refer to the request's acceptance criteria.
   - T-04-style regression guard: a synthetic `process.cwd()` match in a
     non-allowlisted `src/` file is detected; a synthetic match covered by a `CWD`
     entry is suppressed.
-- [ ] Seed `tests/unit/architecture/arch-allowlist.ts` with a `CWD` section
+- [x] Seed `tests/unit/architecture/arch-allowlist.ts` with a `CWD` section
   containing one entry per current non-comment, non-test `process.cwd()` occurrence in
   `src/`, EXCLUDING the two converted sites (`command-registry.ts:334`,
   `command-registry.ts:683`) and the removed `doctor.ts:114`. Classify each entry's
@@ -136,7 +136,7 @@ Acceptance-criteria IDs T1–T7 refer to the request's acceptance criteria.
 
 ## T-06: request validate relative-path regression guard
 
-- [ ] No code change (role (b) at `command-registry.ts:381` is preserved). Add the
+- [x] No code change (role (b) at `command-registry.ts:381` is preserved). Add the
   test below to pin the behavior.
 
 **Acceptance Criteria** (T4):
@@ -147,7 +147,7 @@ Acceptance-criteria IDs T1–T7 refer to the request's acceptance criteria.
 
 ## T-07: Full verification
 
-- [ ] Run `typecheck && test`.
+- [x] Run `typecheck && test`.
 
 **Acceptance Criteria** (T7):
 - `typecheck` is clean.

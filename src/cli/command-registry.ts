@@ -38,6 +38,7 @@ import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { logError, stderrWrite, resolveLogLevel } from "../logger/stdout.js";
 import { SpecRunnerError, EXIT_CODE } from "../errors.js";
+import type { CommandContext } from "./command-context.js";
 import { ClaudeCodeOneShotQueryClient } from "../adapter/claude-code/one-shot-query-client.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
@@ -49,7 +50,13 @@ export interface CommandDef {
   flags: Record<string, FlagDef>;
   positional?: { name: string; required: boolean; count?: number };
   usage?: string; // shown in error output for this command
-  handler: (parsed: ParsedArgs) => Promise<void>;
+  /**
+   * When true, dispatch will check that repoRoot is non-null before invoking
+   * the handler. If the invoker is outside a git repository, dispatch emits
+   * the unified repo-required error (NOT_GIT_REPO, exit 2) and halts.
+   */
+  requiresRepo?: boolean;
+  handler: (parsed: ParsedArgs, ctx?: CommandContext) => Promise<void>;
 }
 
 export interface ParentCommandDef {
@@ -333,10 +340,13 @@ export const COMMANDS: Record<string, CommandEntry> = {
           type: { type: "string" },
         },
         positional: { name: "slug", required: true },
-        handler: async (parsed) => {
+        requiresRepo: true,
+        handler: async (parsed, ctx) => {
           const slug = parsed.positional!;
           const requestType = (parsed.flags["type"] as string | undefined) ?? "new-feature";
-          process.exit(await executeNew(slug, requestType, process.cwd()));
+          // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
+          // base is repo root (not invoker cwd) so subdir invocations write to the correct location
+          process.exit(await executeNew(slug, requestType, ctx!.repoRoot!));
         },
       },
       /** Renamed from `create` */
@@ -684,8 +694,11 @@ export const COMMANDS: Record<string, CommandEntry> = {
         flags: {
           json: { type: "boolean" },
         },
-        handler: async (parsed) => {
-          process.exit(await runJobStats({ cwd: process.cwd(), json: !!parsed.flags["json"] }));
+        requiresRepo: true,
+        handler: async (parsed, ctx) => {
+          // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
+          // cwd is the repo root so subdir invocations find the same archive runs as root invocations
+          process.exit(await runJobStats({ cwd: ctx!.repoRoot!, json: !!parsed.flags["json"] }));
         },
       },
     },
@@ -805,9 +818,14 @@ export const COMMANDS: Record<string, CommandEntry> = {
     flags: {
       json: { type: "boolean" },
     },
-    handler: async (parsed) => {
+    // requiresRepo: false (default) — doctor is always runnable, even outside a repo
+    handler: async (parsed, ctx) => {
       try {
-        process.exit(await runDoctor({ json: !!parsed.flags["json"] }));
+        process.exit(await runDoctor({
+          json: !!parsed.flags["json"],
+          repoRoot: ctx?.repoRoot,
+          invokerCwd: ctx?.invokerCwd,
+        }));
       } catch (err: unknown) {
         stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
         process.exit(EXIT_CODE.GENERAL_ERROR);
