@@ -569,6 +569,15 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   }
 
   /**
+   * Managed runtime performs no local provider readiness probe.
+   * Managed readiness / preflight is unchanged by this change (T-05, T-06, T-08).
+   * No-op — mirrors assertNoDuplicateLiveJob convention.
+   */
+  async assertProviderReadiness(_env: Record<string, string | undefined>): Promise<void> {
+    // no-op: managed runtime readiness is handled by existing preflight / session creation
+  }
+
+  /**
    * No local worktree available — always returns success with empty paths.
    * Parallel custom reviewer managed support is a known Non-Goal; no local git
    * state means the coordinator cannot detect worktree changes. Returning

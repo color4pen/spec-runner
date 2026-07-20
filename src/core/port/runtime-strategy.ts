@@ -569,6 +569,22 @@ export interface RuntimeStrategy {
    */
   assertNoDuplicateLiveJob?(repoRoot: string, slug: string): Promise<void>;
 
+  /**
+   * Assert that the provider is ready before any side effects (job state / worktree / branch
+   * / journal) are created.
+   *
+   * Called by CommandRunner.execute() at the very top — before prepare() — so a readiness
+   * failure surfaces prior to any persistent mutations.
+   *
+   * - local:   calls the injected ProviderReadinessProbe once; throws a classified
+   *            SpecRunnerError("PROVIDER_NOT_READY", ...) when the probe returns a non-ready kind.
+   * - managed: no-op (managed readiness / preflight is unchanged by this change).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it; RealRuntimeStrategy
+   * requires it (compile-time enforcement on concrete runtimes — mirrors assertNoDuplicateLiveJob).
+   */
+  assertProviderReadiness?(env: Record<string, string | undefined>): Promise<void>;
+
   // ---------------------------------------------------------------------------
   // Isolated test execution for bite-evidence gate (R4, bite-evidence-forward T-04)
   // ---------------------------------------------------------------------------
@@ -708,6 +724,7 @@ export interface RuntimeStrategy {
 export type RealRuntimeStrategy = RuntimeStrategy & {
   canDeriveChangedFiles(): boolean;
   assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>;
+  assertProviderReadiness(env: Record<string, string | undefined>): Promise<void>;
   snapshotMainCheckoutGuard(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
   listWorktreeChanges(cwd: string): Promise<WorktreeInspectionResult>;
   commitRoundArtifacts(
