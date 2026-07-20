@@ -406,6 +406,14 @@ export function attachRuntimeUnsupportedError(runtime: string): SpecRunnerError 
   );
 }
 
+export function repoRequiredError(command: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.NOT_GIT_REPO,
+    "Run 'git init' to initialize a repository, or cd into an existing git repository, then re-run.",
+    `'${command}' requires a git repository.`,
+  );
+}
+
 export function commitEffectFailedError(
   label: string,
   branch: string,

@@ -11,7 +11,9 @@ export const specrunnerProjectMdCheck: DoctorCheck = {
   required: false,
 
   async check(ctx: DoctorContext) {
-    const projectMdPath = path.join(ctx.cwd, "specrunner", "project.md");
+    // Use repoRoot when available so checks are equivalent from any subdirectory.
+    const base = ctx.repoRoot ?? ctx.cwd;
+    const projectMdPath = path.join(base, "specrunner", "project.md");
     const exists = ctx.fs.existsSync(projectMdPath);
 
     if (exists) {
@@ -23,7 +25,7 @@ export const specrunnerProjectMdCheck: DoctorCheck = {
 
     return {
       status: "warn",
-      message: `specrunner/project.md not found in ${ctx.cwd}`,
+      message: `specrunner/project.md not found in ${base}`,
       hint: "specrunner/project.md is optional but recommended. It provides project-level context to the pipeline agents.",
     };
   },

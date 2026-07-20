@@ -14,7 +14,8 @@ export const legacyJobsDirCheck: DoctorCheck = {
   required: false,
 
   async check(ctx: DoctorContext) {
-    const jobsDir = path.join(ctx.cwd, ".specrunner", "jobs");
+    // Use repoRoot when available so checks are equivalent from any subdirectory.
+    const jobsDir = path.join(ctx.repoRoot ?? ctx.cwd, ".specrunner", "jobs");
 
     if (ctx.fs.existsSync(jobsDir)) {
       return {

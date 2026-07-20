@@ -36,7 +36,8 @@ export function createJournalIntegrityCheck(overrideScan?: ScanFn): DoctorCheck 
     async check(ctx: DoctorContext) {
       let findings: JournalFinding[];
       try {
-        findings = await doScan({ repoRoot: ctx.cwd });
+        // Use repoRoot when available so checks are equivalent from any subdirectory.
+        findings = await doScan({ repoRoot: ctx.repoRoot ?? ctx.cwd });
       } catch {
         // Defensive: scan errors must not affect doctor exit code
         return {

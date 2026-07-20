@@ -226,4 +226,323 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
   //
   // DSM 実違反ゼロ達成: 全エントリ burn-down 完了。
 
+  // ── CWD: process.cwd() allowlist ratchet over src/ ───────────────────────
+  //
+  // Seeded at repo-root-entry-resolution (T-05).
+  // Governance: same delete-only ratchet — entries shrink only when the code
+  //   at the cited site is converted to use injected cwd / ctx.repoRoot.
+  //
+  // Three converted sites are intentionally ABSENT from this seed:
+  //   - command-registry.ts:334  (executeNew call — now uses ctx.repoRoot)
+  //   - command-registry.ts:683  (runJobStats call — now uses ctx.repoRoot)
+  //   - doctor.ts:114            (config-error path — now reuses resolved repoRoot)
+  //
+  // Classification:
+  //   role-a       = repo root discovery origin or graceful degradation default
+  //   role-b       = user-supplied relative-path base (CLI standard, permanent)
+  //   di-default   = `x ?? process.cwd()` dependency-injection default param (permanent)
+  //   debt         = un-converted internal-state derivation (follow-up burn-down)
+
+  // ── Permanent-legit — role (a): repo-root discovery origin / degradation ─
+
+  {
+    file: "src/util/repo-root.ts",
+    pattern: "cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-util-repo-root-discovery",
+    comment: "role-a: repo-root discovery origin. The cwd param defaults to process.cwd() as the git rev-parse start point.",
+  },
+  {
+    file: "src/cli/load-config-with-overlay.ts",
+    pattern: "resolveRepoRoot(cwd ?? process.cwd())",
+    invariant: "CWD",
+    tracking: "CWD-load-config-overlay-root",
+    comment: "role-a: resolveRepoRoot called with process.cwd() as the repo discovery origin when no cwd is injected.",
+  },
+  {
+    file: "src/cli/init.ts",
+    pattern: "{ cwd: process.cwd() }",
+    invariant: "CWD",
+    tracking: "CWD-init-git-spawn",
+    comment: "role-a: git rev-parse run from process.cwd() to find the repo root during init.",
+  },
+  {
+    file: "src/cli/job-show.ts",
+    pattern: "resolveRepoRoot()) ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-job-show-root-resolve",
+    comment: "role-a: resolveRepoRoot with graceful degradation to process.cwd() when outside a repo.",
+  },
+  {
+    file: "src/cli/job-show.ts",
+    pattern: "repoRoot: string = process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-job-show-print-default",
+    comment: "role-a: printJobState parameter default; callers inject the real repoRoot in production.",
+  },
+  {
+    file: "src/cli/ps.ts",
+    pattern: "resolveRepoRoot()) ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-ps-root-resolve",
+    comment: "role-a: resolveRepoRoot with graceful degradation to process.cwd() when outside a repo.",
+  },
+  {
+    file: "src/cli/doctor.ts",
+    pattern: "invokerCwd = opts.invokerCwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-doctor-invokercwd-default",
+    comment: "role-a: invokerCwd defaults to process.cwd() as the repo discovery origin when not injected.",
+  },
+  {
+    file: "src/git/transport-auth.ts",
+    pattern: "opts.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-transport-auth-spawn",
+    comment: "role-a: transport-auth uses process.cwd() as the fallback working directory for git operations.",
+  },
+
+  // ── Permanent-legit — role (b): user-supplied relative-path base ─────────
+
+  {
+    file: "src/cli/command-registry.ts",
+    pattern: "path.resolve(process.cwd(), input)",
+    invariant: "CWD",
+    tracking: "CWD-registry-validate-relative",
+    comment: "role-b: resolve a user-supplied relative file path against the invoker cwd (standard CLI behaviour).",
+  },
+  {
+    file: "src/cli/command-registry.ts",
+    pattern: "path.resolve(process.cwd(), promptFile)",
+    invariant: "CWD",
+    tracking: "CWD-registry-prompt-file-relative",
+    comment: "role-b: resolve --prompt-file relative path against the invoker cwd.",
+  },
+  {
+    file: "src/core/command/request.ts",
+    pattern: "opts?.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-request-validate-cwd",
+    comment: "role-b: executeValidate uses the injected cwd (invoker cwd) to resolve relative paths.",
+  },
+
+  // ── Permanent-legit — dependency-injection default (x ?? process.cwd()) ──
+
+  {
+    file: "src/adapter/claude-code/agent-runner.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-agent-runner-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
+  },
+  {
+    file: "src/adapter/claude-code/query-one-shot.ts",
+    pattern: "opts.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-query-one-shot-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
+  },
+  {
+    file: "src/adapter/shared/provider-sdk-loader.ts",
+    pattern: "detectPackageManager(process.cwd())",
+    invariant: "CWD",
+    tracking: "CWD-provider-sdk-loader-di-default",
+    comment: "di-default: detectPackageManager falls back to process.cwd() when no detectPm is injected.",
+  },
+  {
+    file: "src/cli/config-effective.ts",
+    pattern: "options.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-config-effective-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
+  },
+  {
+    file: "src/cli/resume.ts",
+    pattern: "options.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-resume-cli-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
+  },
+  {
+    file: "src/cli/run.ts",
+    pattern: "options.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-run-cli-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
+  },
+  {
+    file: "src/core/command/pipeline-run.ts",
+    pattern: "this.options.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-pipeline-run-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
+  },
+  {
+    file: "src/core/command/resume.ts",
+    pattern: "this.options.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-core-resume-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
+  },
+  {
+    file: "src/core/credentials/github.ts",
+    pattern: "cwd: process.cwd(),",
+    invariant: "CWD",
+    tracking: "CWD-credentials-github-gh-spawn",
+    comment: "di-default: gh auth token subprocess run from process.cwd(); not an internal-state derivation.",
+  },
+  {
+    file: "src/core/finish/resolve-target.ts",
+    pattern: "input.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-finish-resolve-target-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
+  },
+  {
+    file: "src/core/pipeline/parallel-review-round.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-parallel-review-round-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
+  },
+  {
+    file: "src/core/runtime/local.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-local-runtime-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
+  },
+  {
+    file: "src/core/step/bite-evidence/step.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-bite-evidence-step-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
+  },
+  {
+    file: "src/core/step/commit-push.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-commit-push-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
+  },
+  {
+    file: "src/core/step/executor.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-executor-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
+  },
+  {
+    file: "src/core/step/pr-create.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-pr-create-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
+  },
+  {
+    file: "src/core/step/scope-check.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-scope-check-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
+  },
+  {
+    file: "src/core/step/step-completion.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-step-completion-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
+  },
+  {
+    file: "src/core/step/verification.ts",
+    pattern: "deps.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-verification-step-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the worktree path in production.",
+  },
+  {
+    file: "src/core/verification/lcov.ts",
+    pattern: "cwd: string = process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-lcov-di-default",
+    comment: "di-default: cwd function parameter default; callers inject the real worktree cwd in production.",
+  },
+  {
+    file: "src/core/verification/runner.ts",
+    pattern: "cwd: string = process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-verification-runner-di-default",
+    comment: "di-default: cwd function parameter default; callers inject the real worktree cwd in production.",
+  },
+
+  // ── Debt — un-converted internal-state derivation (follow-up burn-down) ───
+  //
+  // These sites pass process.cwd() where a repo-root is needed but have not yet
+  // been converted. They are tracked here and may be removed when converted.
+
+  {
+    file: "src/cli/command-registry.ts",
+    pattern: "cwd: process.cwd(),",
+    invariant: "CWD",
+    tracking: "CWD-registry-generate-resume-attach-archive-debt",
+    comment: "debt: generate/resume/attach/archive handlers pass process.cwd() as repo base. Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/command-registry.ts",
+    pattern: "executeList(process.cwd())",
+    invariant: "CWD",
+    tracking: "CWD-registry-list-debt",
+    comment: "debt: request ls passes process.cwd() as repo base. Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/command-registry.ts",
+    pattern: "storeResolve(process.cwd(), input)",
+    invariant: "CWD",
+    tracking: "CWD-registry-store-resolve-debt",
+    comment: "debt: validate slug-path resolution passes process.cwd(). Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/command-registry.ts",
+    pattern: "executeRulesNew(stepName, ruleSlug, process.cwd())",
+    invariant: "CWD",
+    tracking: "CWD-registry-rules-new-debt",
+    comment: "debt: rules new passes process.cwd() as repo base. Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/command-registry.ts",
+    pattern: "executeReviewersNew(name, process.cwd())",
+    invariant: "CWD",
+    tracking: "CWD-registry-reviewers-new-debt",
+    comment: "debt: reviewers new passes process.cwd() as repo base. Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/command-registry.ts",
+    pattern: "showUsage(slug, process.cwd())",
+    invariant: "CWD",
+    tracking: "CWD-registry-show-usage-debt",
+    comment: "debt: usage show passes process.cwd() as repo base. Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/command-registry.ts",
+    pattern: "showUsageSummary(process.cwd())",
+    invariant: "CWD",
+    tracking: "CWD-registry-show-usage-summary-debt",
+    comment: "debt: usage summary passes process.cwd() as repo base. Follow-up burn-down.",
+  },
+  {
+    file: "src/cli/inbox.ts",
+    pattern: "const cwd = process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-inbox-debt",
+    comment: "debt: inbox run derives internal paths from process.cwd(). Follow-up burn-down.",
+  },
+  {
+    file: "src/config/store.ts",
+    pattern: "path.join(process.cwd(), \".specrunner\", \"config.json\")",
+    invariant: "CWD",
+    tracking: "CWD-config-store-debt",
+    comment: "debt: config store derives project-local config path from process.cwd(). Follow-up burn-down.",
+  },
+
 ];

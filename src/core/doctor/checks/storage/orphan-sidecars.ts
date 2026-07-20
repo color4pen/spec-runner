@@ -33,7 +33,8 @@ export function createOrphanSidecarsCheck(overrideScan?: ScanSidecarsFn): Doctor
     async check(ctx: DoctorContext) {
       let orphans: Awaited<ReturnType<typeof scanOrphanSidecars>>;
       try {
-        orphans = await doScan({ repoRoot: ctx.cwd, fs: ctx.fs });
+        // Use repoRoot when available so the check is equivalent from any subdirectory.
+        orphans = await doScan({ repoRoot: ctx.repoRoot ?? ctx.cwd, fs: ctx.fs });
       } catch {
         return {
           status: "pass",

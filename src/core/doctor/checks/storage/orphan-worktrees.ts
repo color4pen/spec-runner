@@ -35,8 +35,9 @@ export function createOrphanWorktreesCheck(overrideScan?: ScanFn): DoctorCheck {
     async check(ctx: DoctorContext) {
       let orphans: OrphanWorktree[];
       try {
+        // Use repoRoot when available so checks are equivalent from any subdirectory.
         orphans = await doScan({
-          repoRoot: ctx.cwd,
+          repoRoot: ctx.repoRoot ?? ctx.cwd,
           spawn: spawnCommand,
         });
       } catch {

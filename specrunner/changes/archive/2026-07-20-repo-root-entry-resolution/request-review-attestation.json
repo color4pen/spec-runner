@@ -1,0 +1,30 @@
+{
+  "requestHash": "sha256:bd8702ee33e8e21b3d42742a5cf2040e08f4664d7d200d945121f76d76808050",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/util/repo-root.ts:8 — resolveRepoRoot(cwd?) function declaration exists",
+    "src/util/repo-root.ts:25 — resolveRepoRootOrFail(cwd?) function declaration exists (request says :24, actual is :25)",
+    "src/cli/command-registry.ts:334 — process.cwd() passed to executeNew",
+    "src/cli/command-registry.ts:354 — process.cwd() in executeCreate call",
+    "src/cli/command-registry.ts:363 — process.cwd() passed to executeList",
+    "src/cli/command-registry.ts:381 — path.resolve(process.cwd(), input) for relative path resolution",
+    "src/cli/command-registry.ts:388 — storeResolve(process.cwd(), input) for slug resolution",
+    "src/cli/command-registry.ts:538 — path.resolve(process.cwd(), promptFile) for prompt-file flag",
+    "src/cli/command-registry.ts:562 — cwd: process.cwd() in runResume call",
+    "src/cli/command-registry.ts:599 — cwd: process.cwd() in runAttach call",
+    "src/cli/command-registry.ts:640 — cwd: process.cwd() in runArchive call",
+    "src/cli/command-registry.ts:683 — process.cwd() passed to runJobStats",
+    "src/cli/command-registry.ts:753 — process.cwd() passed to executeRulesNew",
+    "src/cli/command-registry.ts:767 — process.cwd() passed to executeReviewersNew",
+    "src/cli/command-registry.ts:819 — process.cwd() passed to showUsage",
+    "src/cli/command-registry.ts:821 — process.cwd() passed to showUsageSummary",
+    "src/cli/doctor.ts:174 — DoctorContext.cwd set to process.cwd()",
+    "src/core/doctor/checks/storage/orphan-worktrees.ts:39 — repoRoot: ctx.cwd direct pass to doScan",
+    "src/core/command/job-stats.ts:347 — runJobStats(opts: { cwd: string; json: boolean }) signature",
+    "src/cli/job-show.ts:42 — (await resolveRepoRoot()) ?? process.cwd() graceful degradation pattern",
+    "tests/unit/architecture/core-invariants.test.ts — architecture invariant test infrastructure exists",
+    "tests/unit/architecture/arch-allowlist.ts — CODEOWNERS-gated allowlist with delete-only governance",
+    "9 doctor check files use ctx.cwd (repo/: git-repository, specrunner-project-md, workflow-structure; storage/: journal-integrity, legacy-jobs-dir, local-state-writable, orphan-sidecars, orphan-worktrees; runtime/package-manager.ts)"
+  ],
+  "sourceRevision": "7cca00cfb1c5c5708d0bfbee4913f75cddc46bce"
+}

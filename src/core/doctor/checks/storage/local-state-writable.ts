@@ -17,7 +17,8 @@ export const localStateWritableCheck: DoctorCheck = {
   required: true,
 
   async check(ctx: DoctorContext) {
-    const localDir = path.join(ctx.cwd, ".specrunner", "local");
+    // Use repoRoot when available so checks are equivalent from any subdirectory.
+    const localDir = path.join(ctx.repoRoot ?? ctx.cwd, ".specrunner", "local");
     const W_OK = ctx.fs.constants.W_OK;
 
     try {

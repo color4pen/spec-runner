@@ -20,7 +20,8 @@ export const gitRepositoryCheck: DoctorCheck = {
     } catch {
       return {
         status: "fail",
-        message: `Not a git repository: ${ctx.cwd}`,
+        // Display the invoker cwd in the fail message (where doctor was run from)
+        message: `Not a git repository: ${ctx.repoRoot ?? ctx.cwd}`,
         hint: "Run 'git init' or navigate to a git repository.",
       };
     }
