@@ -1,0 +1,11 @@
+{
+  "requestHash": "sha256:5ed32b17a19a17172cfd9d529385fac8083ad45a0ba2db4bfe5da8578577a483",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/prompts/test-case-gen-system.ts:55 — Source field format: `spec.md > Requirement: <name> > Scenario: <name>` (current producer format)",
+    "src/prompts/test-materialize-system.ts:84-86 — Scenario 由来 TC の判別条件が `specs/<capability>/spec.md > ...` 形式（旧形式）で記述されている",
+    "src/prompts/implementer-system.ts:48-49 — 未 materialize 経路の TDD 指示で `specs/<capability>/spec.md > ...` 形式（旧形式）を使用している",
+    "src/prompts/judge-rules.ts — leaf module パターン（project-internal import なし）が確立されており、同型の共有定数を配置できる"
+  ],
+  "sourceRevision": "d51c9bc9098389b04b8e6f4b3f8d7378af8f704a"
+}
