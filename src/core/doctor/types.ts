@@ -27,6 +27,12 @@ export interface DoctorResult {
   message: string;
   hint?: string;
   details?: string[];
+  /**
+   * Human-only rounded view of `details`.
+   * When present, `formatHuman` renders this instead of `details`.
+   * `formatJson` always uses the full `details` and never emits this field.
+   */
+  detailsHuman?: string[];
 }
 
 export interface DoctorCheck {

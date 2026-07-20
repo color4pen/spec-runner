@@ -13,12 +13,12 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
 
 ## T-01: Shared sidecar-orphan detection module
 
-- [ ] Create `src/core/sidecar/orphan.ts` as the single source of truth for
+- [x] Create `src/core/sidecar/orphan.ts` as the single source of truth for
       sidecar-orphan classification (imported by both the doctor check and the
       prune runner). Mirror the shape of `src/core/worktree/orphan.ts`.
-- [ ] Move `ACTIVE_STATUSES` here verbatim (`running`, `awaiting-resume`,
+- [x] Move `ACTIVE_STATUSES` here verbatim (`running`, `awaiting-resume`,
       `awaiting-archive`, `failed`, `terminated`). Do NOT change the set.
-- [ ] Define and export types:
+- [x] Define and export types:
   - `OrphanSidecar { slug: string; sidecarPath: string }` (`sidecarPath` is the
     absolute path to `.specrunner/local/<slug>`).
   - `SidecarScanFs` — read-only fs port: `existsSync(p): boolean`,
@@ -28,7 +28,7 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
   - `ScanSidecarDeps { repoRoot: string; fs: SidecarScanFs }`.
   - `ScanSidecarsFn = (deps: ScanSidecarDeps) => Promise<OrphanSidecar[]>` (for
     dependency injection in tests / the check factory).
-- [ ] Implement `isOrphanSidecar(deps: ScanSidecarDeps, slug, sidecarDir): Promise<boolean>`
+- [x] Implement `isOrphanSidecar(deps: ScanSidecarDeps, slug, sidecarDir): Promise<boolean>`
       by lifting the current predicate from
       `src/core/doctor/checks/storage/orphan-sidecars.ts:26-77` **without
       changing its semantics**: read `liveness.json` for a `worktreePath`
@@ -37,7 +37,7 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
       status is `archived`/`canceled` or no state exists anywhere; non-orphan for
       `ACTIVE_STATUSES` and for unknown/malformed states. Replace `ctx.fs` →
       `deps.fs` and `ctx.cwd` → `deps.repoRoot`.
-- [ ] Implement `scanOrphanSidecars(deps: ScanSidecarDeps): Promise<OrphanSidecar[]>`:
+- [x] Implement `scanOrphanSidecars(deps: ScanSidecarDeps): Promise<OrphanSidecar[]>`:
   1. Resolve the base dir `<repoRoot>/.specrunner/local` (use
      `localSidecarBaseDirRel()` from `src/util/paths.ts`).
   2. If the base does not exist or `readdirSync` throws → return `[]`.
@@ -45,7 +45,7 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
      errors), apply `isOrphanSidecar`, and collect `{ slug, sidecarPath }` for
      orphans.
   4. Sort the result by `slug` for deterministic ordering.
-- [ ] The module MUST be read-only (no `rm`/`unlink`) — deletion belongs to the
+- [x] The module MUST be read-only (no `rm`/`unlink`) — deletion belongs to the
       prune runner (T-04), not the shared scan.
 
 **Acceptance Criteria** (AC-T5):
@@ -59,14 +59,14 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
 
 ## T-02: Refactor the `orphan-sidecars` doctor check onto the shared scan
 
-- [ ] Rewrite `src/core/doctor/checks/storage/orphan-sidecars.ts` to delegate to
+- [x] Rewrite `src/core/doctor/checks/storage/orphan-sidecars.ts` to delegate to
       `scanOrphanSidecars` (T-01). Remove the private `ACTIVE_STATUSES` and
       `isOrphanSidecar` (now imported) and the inline readdir/stat loop.
-- [ ] Adopt the factory shape used by `orphan-worktrees.ts`: export
+- [x] Adopt the factory shape used by `orphan-worktrees.ts`: export
       `createOrphanSidecarsCheck(overrideScan?: ScanSidecarsFn): DoctorCheck`
       plus a default `orphanSidecarsCheck = createOrphanSidecarsCheck()`. The
       check calls the scan with `{ repoRoot: ctx.cwd, fs: ctx.fs }`.
-- [ ] Result mapping:
+- [x] Result mapping:
   - No `.specrunner/local/` or no orphans → `pass` (keep the existing messages).
   - Orphans → `warn` with:
     - `message`: `Found N orphan sidecar director(y|ies) (archived/missing jobs)`.
@@ -78,9 +78,9 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
       (`K = orphans.length - N`); when `≤ N`, set `detailsHuman` equal to the
       full list (or leave undefined so it falls back to `details`).
   - Preserve `name: "orphan-sidecars"`, `category: "storage"`, `required: false`.
-- [ ] Define `SIDECAR_DETAILS_HUMAN_LIMIT` as an exported named constant so tests
+- [x] Define `SIDECAR_DETAILS_HUMAN_LIMIT` as an exported named constant so tests
       can pin the rounding boundary.
-- [ ] Keep the check read-only. Do not touch `index.ts` registration ordering or
+- [x] Keep the check read-only. Do not touch `index.ts` registration ordering or
       any other check.
 
 **Acceptance Criteria** (AC-T3, AC-T5):
@@ -95,10 +95,10 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
 
 ## T-03: `DoctorResult.detailsHuman` + human-only rounding in the formatter
 
-- [ ] Add optional `detailsHuman?: string[]` to `DoctorResult` in
+- [x] Add optional `detailsHuman?: string[]` to `DoctorResult` in
       `src/core/doctor/types.ts` (additive; documents that it is a human-only
       rounded view of `details`).
-- [ ] In `src/core/doctor/formatter.ts`:
+- [x] In `src/core/doctor/formatter.ts`:
   - `formatHuman`: render `r.detailsHuman ?? r.details` (so checks without
     `detailsHuman` are byte-identical to today).
   - `formatJson`: unchanged — continue emitting `r.details` (full) and never emit
@@ -113,7 +113,7 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
 
 ## T-04: `job prune` sidecar runner
 
-- [ ] Create `src/core/prune/sidecar-runner.ts` exporting
+- [x] Create `src/core/prune/sidecar-runner.ts` exporting
       `pruneOrphanSidecars(opts): Promise<PruneResult>` where:
   - `PruneResult` is reused from `src/core/prune/runner.ts`
     (`{ exitCode: 0 | 1; message?; info?; warnings? }`).
@@ -123,7 +123,7 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
     `rm(path, opts: { recursive: boolean; force: boolean }): Promise<void>`, and
     `scan` defaults to `scanOrphanSidecars` (override enables the T2 destructive
     test).
-- [ ] Behavior:
+- [x] Behavior:
   1. Scan orphans via `deps.scan ?? scanOrphanSidecars({ repoRoot, fs })`. A hard
      scan failure → `{ exitCode: 1, message: "Failed to scan for orphan sidecars: …" }`.
   2. No orphans → `{ exitCode: 0, message: "No orphan sidecar directories found" }`.
@@ -150,7 +150,7 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
 
 ## T-05: `runPrune` CLI composition + usage updates
 
-- [ ] Extend `runPrune` in `src/cli/prune.ts` to run BOTH runners after resolving
+- [x] Extend `runPrune` in `src/cli/prune.ts` to run BOTH runners after resolving
       the repo root:
   - `pruneOrphanWorktrees({ force, deps: { repoRoot, spawn, worktreeManager } })`
     — unchanged call.
@@ -158,17 +158,17 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
   - Build the node-fs adapter inline (`existsSync`, `readdirSync`, `fs.promises.stat`,
     `fs.promises.readFile`, `fs.promises.rm`), mirroring `buildRealFs` in
     `src/cli/doctor.ts` plus `rm`.
-- [ ] Print the two results under explicit, labeled sections
+- [x] Print the two results under explicit, labeled sections
       ("Orphan worktrees:" / "Orphan sidecars:") so the resource kinds are
       distinguished; keep the existing worktree wording within its section
       (reuse the current `writeResult` for each section body).
-- [ ] Combine exit codes: return `worktreeResult.exitCode || sidecarResult.exitCode`.
-- [ ] Update usage text to cover worktrees + sidecars:
+- [x] Combine exit codes: return `worktreeResult.exitCode || sidecarResult.exitCode`.
+- [x] Update usage text to cover worktrees + sidecars:
   - `src/cli/command-registry.ts:82` help line (currently
     "orphan worktree を列挙（--force で削除）").
   - `PRUNE_USAGE` (`src/cli/command-registry.ts:235-248`) — describe the combined
     worktree + sidecar scope and the dry-run/`--force` behavior for both.
-- [ ] `job prune` is already in `job.guardedSubcommands` — no change there.
+- [x] `job prune` is already in `job.guardedSubcommands` — no change there.
 
 **Acceptance Criteria** (AC-T1, AC-T2, AC-T6):
 - `runPrune` invokes both runners and its exit code is the max of the two.
@@ -180,25 +180,25 @@ Request acceptance criteria are referenced as AC-T1 … AC-T6:
 
 ## T-06: Tests and full verification
 
-- [ ] Shared module tests (T-01): `scanOrphanSidecars` classification matrix
+- [x] Shared module tests (T-01): `scanOrphanSidecars` classification matrix
       (archived / canceled / missing / each active status) + empty-base +
       determinism, and the `isOrphanSidecar` destructive-confirmation.
-- [ ] Doctor check tests (T-02): update
+- [x] Doctor check tests (T-02): update
       `src/core/doctor/checks/storage/orphan-sidecars.test.ts` for the new hint
       (`W-03`: assert `job prune` in hint and paths in `details`, drop the
       "paths in hint" assertion); add the factory-override delegation test; add
       the rounding test (`> N` orphans → `detailsHuman` has `N + 1` entries with a
       remainder line, `details` has all). This expectation update is the explicit
       T6 carve-out.
-- [ ] Formatter tests (T-03): `detailsHuman` renders in human, `details` (full)
+- [x] Formatter tests (T-03): `detailsHuman` renders in human, `details` (full)
       in JSON, no `detailsHuman` key in JSON.
-- [ ] Sidecar prune runner tests (T-04): dry-run-no-delete, force-delete-orphan,
+- [x] Sidecar prune runner tests (T-04): dry-run-no-delete, force-delete-orphan,
       keep-active, best-effort-on-`rm`-failure, idempotent re-run, and the
       破壊確認 variant.
-- [ ] Confirm existing `pruneOrphanWorktrees` tests
+- [x] Confirm existing `pruneOrphanWorktrees` tests
       (`tests/unit/core/prune/runner.test.ts`) and unrelated doctor tests remain
       green **without modification**.
-- [ ] Run the full gate: `typecheck && test` green.
+- [x] Run the full gate: `typecheck && test` green.
 
 **Acceptance Criteria** (AC-T1 … AC-T6):
 - All request acceptance criteria are covered:

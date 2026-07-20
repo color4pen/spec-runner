@@ -79,7 +79,7 @@ Job commands:
   job resume <slug>               halted job を再開
   job attach --branch <branch>    remote branch の quiescent checkpoint を attach する
   job archive <slug>              change folder 移動・worktree 撤去・status 更新
-  job prune [--force]             orphan worktree を列挙（--force で削除）
+  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）
   job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計
 
 Rules commands:
@@ -234,16 +234,21 @@ Claude Code:
 
 export const PRUNE_USAGE = `Usage: specrunner job prune [options]
 
-Remove orphan worktrees under .git/specrunner-worktrees/ that have no associated
-non-terminal job state. This cleans up worktrees left behind when a process died
-before the job state was persisted.
+Remove orphan worktrees and orphan sidecar directories that have no associated
+non-terminal job state. This cleans up resources left behind when a process died
+or a job was archived/canceled.
+
+  Orphan worktrees: directories under .git/specrunner-worktrees/ with no active job.
+  Orphan sidecars:  directories under .specrunner/local/ for archived, canceled,
+                    or otherwise missing jobs.
 
 By default runs as a dry-run (lists orphans without deleting). Use --force to delete.
 
 Worktrees with uncommitted or unpushed changes are always skipped (even with --force).
+Active job sidecars (running / awaiting-* / failed / terminated) are never touched.
 
 Options:
-  --force     Delete orphan worktrees and their local branches (default: dry-run)
+  --force     Delete orphan worktrees and sidecar directories (default: dry-run)
   --help, -h  Show this help message
 `;
 
