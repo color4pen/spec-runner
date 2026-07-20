@@ -114,7 +114,8 @@ function validateHintCommands(
 ): string[] {
   const errors: string[] = [];
   // Match: specrunner <token1> [<token2>]
-  const cmdRe = /specrunner\s+(\S+)(?:\s+(\S+))?/g;
+  // Use [a-zA-Z0-9_-]+ to avoid capturing surrounding punctuation (quotes, dots, etc.)
+  const cmdRe = /specrunner\s+([a-zA-Z0-9_-]+)(?:\s+([a-zA-Z0-9_-]+))?/g;
   let m: RegExpExecArray | null;
   while ((m = cmdRe.exec(hint)) !== null) {
     const token1 = m[1]!;
