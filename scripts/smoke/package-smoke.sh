@@ -273,6 +273,8 @@ S4_EXIT=0
   node "${DIST}" request new "${S4_SLUG}" \
   < /dev/null > /dev/null 2>&1) || S4_EXIT=$?
 
+# Assert 0: exit 0
+assert_exit_zero "TC-004/S4/exit-zero" "${S4_EXIT}"
 # Assert 1: request.md exists at repo root (not in subdirectory)
 assert_present "TC-004/S4/root-request-md" "${S4_REPO}/specrunner/drafts/${S4_SLUG}/request.md"
 # Assert 2: no nested specrunner/ in subdirectory

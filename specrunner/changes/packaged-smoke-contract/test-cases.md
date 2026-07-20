@@ -56,8 +56,8 @@ Result section MUST appear at the very end as a YAML code block:
 ## Summary
 
 - **Total**: 15 cases
-- **Automated** (unit/integration): 9
-- **Manual**: 6
+- **Automated** (unit/integration): 10
+- **Manual**: 5
 - **Priority**: must: 13, should: 1, could: 1
 
 ---
@@ -104,7 +104,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ### TC-006: the smoke does not reference bun or repository sources
 
-**Category**: manual
+**Category**: automated
 **Priority**: must
 **Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts using only the packed tarball run with node > Scenario: the smoke does not reference bun or repository sources
 
