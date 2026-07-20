@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f9eb31a0-199c-4ce9-a6d6-b2b2049ceffb",
   "createdAt": "2026-07-20T05:59:10.377Z",
-  "updatedAt": "2026-07-20T07:43:05.545Z",
+  "updatedAt": "2026-07-20T07:45:43.837Z",
   "request": {
     "title": "エラー処方の整合 — 誤診 hint の修正・廃止コマンド処方の除去・状態駆動 next steps・doctor の XDG 認識",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
-  "status": "running",
+  "step": "verification",
+  "status": "awaiting-resume",
   "branch": "change/error-prescription-integrity-f9eb31a0",
-  "error": null,
+  "error": {
+    "code": "VERIFICATION_RETRIES_EXHAUSTED",
+    "message": "verification did not pass after 2 iterations",
+    "hint": "Review verification-result-003.md and fix the build errors manually."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -60,8 +64,14 @@
     }
   ],
   "issueNumber": 858,
+  "resumePoint": {
+    "step": "build-fixer",
+    "reason": "verification did not pass after 2 iterations",
+    "iterationsExhausted": 2,
+    "exhaustionPhase": "review-after-final-fix"
+  },
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -70,8 +80,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
-      "build-fixer": 1
+      "verification": 3,
+      "build-fixer": 2
     }
   }
 }
