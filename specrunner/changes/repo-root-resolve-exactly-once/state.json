@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6eeee74e-95a0-40f3-9e5b-687bf567e8b1",
   "createdAt": "2026-07-20T08:44:48.950Z",
-  "updatedAt": "2026-07-20T10:19:02.884Z",
+  "updatedAt": "2026-07-20T10:23:13.002Z",
   "request": {
     "title": "repo root 解決を 1 invocation につき 1 回にする — handler 内再解決の除去と CWD 不変の識別子一意化",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/repo-root-resolve-exactly-once-6eeee74e",
   "error": null,
@@ -61,7 +61,7 @@
   ],
   "issueNumber": 867,
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -70,8 +70,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
-      "build-fixer": 1
+      "verification": 3,
+      "build-fixer": 2
     }
   }
 }
