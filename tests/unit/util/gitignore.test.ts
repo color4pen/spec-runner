@@ -207,4 +207,49 @@ describe("ensureDotSpecrunnerGitignore", () => {
     expect(content).toContain(".specrunner/*");
     expect(content).toContain("!.specrunner/config.json");
   });
+
+  // TC-008: ensureDotSpecrunnerGitignore が .gitignore を変更しない場合 false を返す
+  // Source: tasks.md > T-01: ensureDotSpecrunnerGitignore が変更有無を返すようにする
+  it("TC-008: returns false when .gitignore already contains all required entries (no change)", async () => {
+    // All required lines are already present — no write should occur
+    const initial = "node_modules/\n.specrunner/*\n!.specrunner/config.json\n";
+    await writeGitignore(initial);
+
+    const result = await ensureDotSpecrunnerGitignore(tempDir);
+
+    // Must return false: the function must signal that it did NOT modify the file
+    expect(result).toBe(false);
+
+    // File content is unchanged
+    const content = await readGitignore();
+    expect(content).toBe(initial);
+  });
+
+  // TC-009: ensureDotSpecrunnerGitignore が .gitignore を書き換えた場合 true を返す
+  // Source: tasks.md > T-01: ensureDotSpecrunnerGitignore が変更有無を返すようにする
+  it("TC-009: returns true when .gitignore is written (specrunner entries were missing)", async () => {
+    // specrunner entries are missing — function must add them and return true
+    await writeGitignore("node_modules/\ndist/\n");
+
+    const result = await ensureDotSpecrunnerGitignore(tempDir);
+
+    // Must return true: the function must signal that it modified the file
+    expect(result).toBe(true);
+
+    // Entries are present after the write
+    const content = await readGitignore();
+    expect(content).toContain(".specrunner/*");
+    expect(content).toContain("!.specrunner/config.json");
+  });
+
+  it("TC-009b: returns true when .gitignore does not exist (file is created with required entries)", async () => {
+    // No .gitignore at all — function must create it and return true
+    const result = await ensureDotSpecrunnerGitignore(tempDir);
+
+    expect(result).toBe(true);
+
+    const content = await readGitignore();
+    expect(content).toContain(".specrunner/*");
+    expect(content).toContain("!.specrunner/config.json");
+  });
 });

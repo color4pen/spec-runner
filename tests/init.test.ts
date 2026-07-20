@@ -173,8 +173,9 @@ describe("config-write-hygiene: runInit で github フィールドが保持さ�
   });
 });
 
-// TC-002: init で git repo 外では specrunner/ ディレクトリが作成されない
-describe("TC-002: specrunner init — git repo 外では specrunner/ が作成されない", () => {
+// TC-001: 非 git ディレクトリで非ゼロ exit かつ FS に何も作られない
+// Source: spec.md > Scenario: non-git directory stops with non-zero exit and writes nothing
+describe("TC-001: specrunner init — git repo 外では非ゼロ exit で停止し FS に何も作られない", () => {
   let nonGitTempDir: string;
 
   beforeEach(async () => {
@@ -186,15 +187,41 @@ describe("TC-002: specrunner init — git repo 外では specrunner/ が作成�
     await fs.rm(nonGitTempDir, { recursive: true, force: true });
   });
 
-  it("git repo 外の dir で init しても specrunner/ は作成されない", async () => {
+  it("TC-001: git repo 外の dir で init すると非ゼロ exit で停止し、FS に何も作られない", async () => {
+    // ANTI-REGRESSION (TC-002): If the git gate is removed, runInit returns 0 even in a
+    // non-git directory. The assertion `expect(result).not.toBe(0)` would then fail,
+    // confirming the regression. TC-002 in init-git-guard.test.ts reinforces this with
+    // a mocked spawnCommand returning exitCode=128.
     vi.spyOn(process, "cwd").mockReturnValue(nonGitTempDir);
+
+    const stderrCapture: string[] = [];
+    vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      stderrCapture.push(String(chunk));
+      return true;
+    });
 
     const { runInit } = await import("../src/cli/init.js");
     const result = await runInit({});
 
-    expect(result).toBe(0);
+    // Must be non-zero — ANTI-REGRESSION: removing the git gate makes this 0 and the assertion fails
+    expect(result).not.toBe(0);
+    expect(result).toBe(1);
 
+    // stderr must contain a prescription requiring a git repository
+    const stderrText = stderrCapture.join("");
+    expect(stderrText.toLowerCase()).toMatch(/git/);
+    // Prescription mentions git init or moving to an existing repo
+    expect(stderrText.toLowerCase()).toMatch(/git init|existing repo|git repo|run inside/);
+
+    // No global config created (XDG_CONFIG_HOME → outer tempDir)
+    const configPath = path.join(tempDir, "specrunner", "config.json");
+    await expect(fs.access(configPath)).rejects.toThrow();
+
+    // No specrunner/ scaffold in the non-git dir
     await expect(fs.access(path.join(nonGitTempDir, "specrunner"))).rejects.toThrow();
+
+    // No .gitignore in the non-git dir
+    await expect(fs.access(path.join(nonGitTempDir, ".gitignore"))).rejects.toThrow();
   });
 });
 
@@ -264,6 +291,165 @@ describe("T-01: specrunner init でプロジェクトディレクトリが作成
 
     await expect(fs.access(draftsPath).then(() => undefined)).resolves.toBeUndefined();
     await expect(fs.access(changesPath).then(() => undefined)).resolves.toBeUndefined();
+  });
+});
+
+// TC-004: 未初期化 git repo で init を実行すると 4 項目すべて created と報告される
+// Source: spec.md > Scenario: fresh git repository reports every artifact created
+describe("TC-004: 未初期化 git repo で init が 4 項目すべてを created と stdout に報告する", () => {
+  let gitTempDir: string;
+
+  beforeEach(async () => {
+    gitTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-init-tc004-"));
+    spawnSync("git", ["init"], { cwd: gitTempDir });
+    spawnSync("git", ["config", "user.email", "test@test.com"], { cwd: gitTempDir });
+    spawnSync("git", ["config", "user.name", "Test"], { cwd: gitTempDir });
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await fs.rm(gitTempDir, { recursive: true, force: true });
+  });
+
+  it("TC-004: stdout に 4 項目すべて created が 1 行ずつ出力され exit 0", async () => {
+    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
+
+    const stdoutCapture: string[] = [];
+    vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      stdoutCapture.push(String(chunk));
+      return true;
+    });
+
+    const { runInit } = await import("../src/cli/init.js");
+    const result = await runInit({});
+
+    expect(result).toBe(0);
+
+    const stdoutText = stdoutCapture.join("");
+    // Each artifact must be reported individually as "created"
+    expect(stdoutText).toContain("global config: created");
+    expect(stdoutText).toContain(".gitignore: created");
+    expect(stdoutText).toContain("specrunner/drafts: created");
+    expect(stdoutText).toContain("specrunner/changes: created");
+
+    // Verify FS artifacts exist
+    await expect(fs.access(path.join(tempDir, "specrunner", "config.json")).then(() => undefined)).resolves.toBeUndefined();
+    await expect(fs.access(path.join(gitTempDir, ".gitignore")).then(() => undefined)).resolves.toBeUndefined();
+    await expect(fs.access(path.join(gitTempDir, "specrunner", "drafts")).then(() => undefined)).resolves.toBeUndefined();
+    await expect(fs.access(path.join(gitTempDir, "specrunner", "changes")).then(() => undefined)).resolves.toBeUndefined();
+  });
+});
+
+// TC-005: 初期化済み repo での再実行が 4 項目すべて already exists を報告し FS を変更しない
+// Source: spec.md > Scenario: second run reports all already-exists with no filesystem change
+describe("TC-005: 初期化済み repo での再実行が全項目 already-exists を報告し FS を変更しない", () => {
+  let gitTempDir: string;
+
+  beforeEach(async () => {
+    gitTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-init-tc005-"));
+    spawnSync("git", ["init"], { cwd: gitTempDir });
+    spawnSync("git", ["config", "user.email", "test@test.com"], { cwd: gitTempDir });
+    spawnSync("git", ["config", "user.name", "Test"], { cwd: gitTempDir });
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await fs.rm(gitTempDir, { recursive: true, force: true });
+  });
+
+  it("TC-005: 2 回目の runInit が全項目 already-exists を stdout に報告し exit 0、FS を変更しない", async () => {
+    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
+
+    const { runInit } = await import("../src/cli/init.js");
+
+    // First run: fully initialize
+    await runInit({});
+
+    // Snapshot FS state before second run
+    const gitignoreBefore = await fs.readFile(path.join(gitTempDir, ".gitignore"), "utf-8");
+
+    // Capture stdout for second run only
+    const stdoutCapture: string[] = [];
+    vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      stdoutCapture.push(String(chunk));
+      return true;
+    });
+
+    const result = await runInit({});
+
+    expect(result).toBe(0);
+
+    const stdoutText = stdoutCapture.join("");
+    // All four artifacts must report already-exists on the second run
+    expect(stdoutText).toContain("global config: already exists");
+    expect(stdoutText).toContain(".gitignore: already exists");
+    expect(stdoutText).toContain("specrunner/drafts: already exists");
+    expect(stdoutText).toContain("specrunner/changes: already exists");
+
+    // FS is unchanged between the two runs
+    const gitignoreAfter = await fs.readFile(path.join(gitTempDir, ".gitignore"), "utf-8");
+    expect(gitignoreAfter).toBe(gitignoreBefore);
+  });
+});
+
+// TC-006: config 既存かつ scaffold 欠損の状態から実行すると欠損分が created として報告される
+// Source: spec.md > Scenario: config exists but scaffold missing is completed and reported
+describe("TC-006: config 既存・scaffold 欠損の状態から init が欠損分を created として報告する", () => {
+  let gitTempDir: string;
+
+  beforeEach(async () => {
+    gitTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-init-tc006-"));
+    spawnSync("git", ["init"], { cwd: gitTempDir });
+    spawnSync("git", ["config", "user.email", "test@test.com"], { cwd: gitTempDir });
+    spawnSync("git", ["config", "user.name", "Test"], { cwd: gitTempDir });
+
+    // Pre-create global config to simulate half-initialized state
+    const configDir = path.join(tempDir, "specrunner");
+    await fs.mkdir(configDir, { recursive: true });
+    const existingConfig = {
+      version: 1,
+      agents: {},
+      steps: { defaults: { model: "claude-sonnet-4-6", maxTurns: null, timeoutMs: null } },
+    };
+    await fs.writeFile(
+      path.join(configDir, "config.json"),
+      JSON.stringify(existingConfig),
+      { mode: 0o600 },
+    );
+    // No scaffold (no specrunner/drafts, specrunner/changes, no .gitignore specrunner entries)
+  });
+
+  afterEach(async () => {
+    vi.restoreAllMocks();
+    await fs.rm(gitTempDir, { recursive: true, force: true });
+  });
+
+  it("TC-006: config 既存だが scaffold なしの状態から init が欠損分を created として stdout に報告する", async () => {
+    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
+
+    const stdoutCapture: string[] = [];
+    vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
+      stdoutCapture.push(String(chunk));
+      return true;
+    });
+
+    const { runInit } = await import("../src/cli/init.js");
+    const result = await runInit({});
+
+    expect(result).toBe(0);
+
+    const stdoutText = stdoutCapture.join("");
+    // Config already existed — must report already-exists (no re-write)
+    expect(stdoutText).toContain("global config: already exists");
+    // Missing scaffold items must be reported as created (not silent "Skipping")
+    expect(stdoutText).toContain("specrunner/drafts: created");
+    expect(stdoutText).toContain("specrunner/changes: created");
+    expect(stdoutText).toContain(".gitignore: created");
+
+    // Scaffold is actually created
+    await expect(fs.access(path.join(gitTempDir, "specrunner", "drafts")).then(() => undefined)).resolves.toBeUndefined();
+    await expect(fs.access(path.join(gitTempDir, "specrunner", "changes")).then(() => undefined)).resolves.toBeUndefined();
+    await expect(fs.access(path.join(gitTempDir, ".gitignore")).then(() => undefined)).resolves.toBeUndefined();
   });
 });
 
