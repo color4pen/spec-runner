@@ -4,6 +4,9 @@
  * Documents known divergences from the structural invariants defined in
  * architecture/model.md §4 (B-1 through B-12).
  *
+ * Also defines RESOLVE_REPO_ROOT_ALLOWED_FILES — the fixed structural allowlist
+ * for resolveRepoRoot* confinement in the handler layer (TC-014, repo-root-resolve-exactly-once).
+ *
  * GOVERNANCE:
  * - All entries were grandfather'd at the arch-test-core-wide-ratchet change.
  * - This list ONLY shrinks: each entry removal must be paired with the
@@ -21,6 +24,28 @@
  *   - the match line content includes entry.pattern as a substring.
  * Both conditions must hold simultaneously.
  */
+
+/**
+ * Fixed structural allowlist for resolveRepoRoot* confinement in the handler layer.
+ *
+ * These four files are the ONLY permitted call sites for resolveRepoRoot* in src/cli/.
+ *   - command-context.ts   : single production resolution point (dispatch choke-point)
+ *   - doctor.ts            : DI-fallback; production dispatch always supplies pre-resolved root
+ *   - load-config-with-overlay.ts : DI-fallback; same guarantee
+ *   - ps.ts                : DI-fallback (opts.repoRoot ?? resolveRepoRoot()); production passes repoRoot
+ *
+ * TC-014 (repo-root-resolve-exactly-once): the test imports and inspects this export.
+ *
+ * GOVERNANCE: CODEOWNERS-gated (/tests/unit/architecture/ @color4pen).
+ * This is a FIXED structural carve-out — NOT a burn-down ratchet.
+ * Adding entries requires explicit approval.
+ */
+export const RESOLVE_REPO_ROOT_ALLOWED_FILES: readonly string[] = [
+  "src/cli/command-context.ts",
+  "src/cli/doctor.ts",
+  "src/cli/load-config-with-overlay.ts",
+  "src/cli/ps.ts",
+];
 
 /** Single known-divergence record. */
 export interface AllowlistEntry {
