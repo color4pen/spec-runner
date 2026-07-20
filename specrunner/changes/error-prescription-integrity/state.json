@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f9eb31a0-199c-4ce9-a6d6-b2b2049ceffb",
   "createdAt": "2026-07-20T05:59:10.377Z",
-  "updatedAt": "2026-07-20T08:12:08.520Z",
+  "updatedAt": "2026-07-20T08:31:02.351Z",
   "request": {
     "title": "エラー処方の整合 — 誤診 hint の修正・廃止コマンド処方の除去・状態駆動 next steps・doctor の XDG 認識",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "change/error-prescription-integrity-f9eb31a0",
   "error": null,
@@ -62,8 +62,35 @@
   "issueNumber": 858,
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "70d6d8d3b8b7032111edace2df666720617811e6",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "70d6d8d3b8b7032111edace2df666720617811e6",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 73,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -73,7 +100,12 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 4,
-      "build-fixer": 3
+      "build-fixer": 3,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
