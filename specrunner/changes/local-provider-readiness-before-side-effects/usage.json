@@ -221,6 +221,46 @@
       },
       "jobId": "8bd5a858-7338-4a32-8d24-a79b09c04c34",
       "stepName": "code-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-07-20T12:09:32.233Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 8121,
+          "outputTokens": 16,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 33,
+          "outputTokens": 14148,
+          "cacheReadInputTokens": 2207038,
+          "cacheCreationInputTokens": 98192
+        }
+      },
+      "jobId": "8bd5a858-7338-4a32-8d24-a79b09c04c34",
+      "stepName": "code-review"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-07-20T12:18:38.239Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 8201,
+          "outputTokens": 18,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 56,
+          "outputTokens": 24794,
+          "cacheReadInputTokens": 4467322,
+          "cacheCreationInputTokens": 118287
+        }
+      },
+      "jobId": "8bd5a858-7338-4a32-8d24-a79b09c04c34",
+      "stepName": "cross-boundary-invariants"
     }
   ]
 }
