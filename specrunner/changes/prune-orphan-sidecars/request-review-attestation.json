@@ -1,0 +1,14 @@
+{
+  "requestHash": "sha256:ed7d2e9278dd7abf34b0a7e3dfc38081611adcdf7a8664e003ccfe4b9faa40cc",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/prune.ts:26-60 — runPrune calls resolveRepoRootOrFail + pruneOrphanWorktrees (worktree-only)",
+    "src/core/doctor/checks/storage/orphan-worktrees.ts:17-40 — scanOrphanWorktrees shared between doctor check and prune",
+    "src/core/doctor/checks/storage/orphan-sidecars.ts:26-77 — isOrphanSidecar is a private (non-exported) function",
+    "src/core/doctor/checks/storage/orphan-sidecars.ts:131-139 — rm -rf hint with quote-joined paths + full orphans array in details",
+    "src/core/doctor/formatter.ts:60-64 — formatHuman displays all details without truncation",
+    "src/cli/command-registry.ts:82 — usage line reads 'orphan worktree を列挙（--force で削除）'",
+    "src/cli/command-registry.ts:235 — PRUNE_USAGE describes worktree-only scope"
+  ],
+  "sourceRevision": "7cca00cfb1c5c5708d0bfbee4913f75cddc46bce"
+}
