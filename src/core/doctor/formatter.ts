@@ -3,6 +3,7 @@
  * Design D4: formatHuman / formatJson both exported from this module.
  */
 import type { DoctorResult, DoctorCategory } from "./types.js";
+import { deriveNextSteps } from "./next-steps.js";
 
 const CATEGORY_ORDER: DoctorCategory[] = [
   "runtime",
@@ -77,6 +78,15 @@ export function formatHuman(results: DoctorResult[]): string {
   }
 
   lines.push(`\nSummary: ${pass} pass, ${warn} warn, ${fail} fail`);
+
+  // Next steps: derived from fail set, only shown when non-empty
+  const nextSteps = deriveNextSteps(results);
+  if (nextSteps.length > 0) {
+    lines.push("\nNext steps:");
+    nextSteps.forEach((step, i) => {
+      lines.push(`  ${i + 1}. ${step}`);
+    });
+  }
 
   return lines.join("\n");
 }

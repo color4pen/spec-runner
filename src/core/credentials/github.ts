@@ -80,7 +80,7 @@ export async function resolveGitHubToken(
 
     throw new SpecRunnerError(
       ERROR_CODES.GITHUB_TOKEN_MISSING,
-      `Set GH_ENTERPRISE_TOKEN env var, run 'gh auth login --hostname ${host}', or run 'specrunner login'.`,
+      `Set GH_ENTERPRISE_TOKEN env var, run 'gh auth login --hostname ${host}', or run specrunner login to authenticate.`,
       `GitHub token not found for host ${host}.`,
     );
   }
@@ -121,7 +121,7 @@ export async function resolveGitHubToken(
   // No source — throw with guidance
   throw new SpecRunnerError(
     ERROR_CODES.GITHUB_TOKEN_MISSING,
-    "Set GH_TOKEN env var, run 'gh auth login', or run 'specrunner login'.",
+    "Set GH_TOKEN env var, run 'gh auth login', or run specrunner login to authenticate.",
     "GitHub token not found.",
   );
 }

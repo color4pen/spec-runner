@@ -14,3 +14,4 @@ export type {
 export { runChecks } from "./runner.js";
 export { formatHuman, formatJson } from "./formatter.js";
 export { allChecks } from "./checks/index.js";
+export { deriveNextSteps } from "./next-steps.js";

@@ -1,0 +1,21 @@
+{
+  "requestHash": "sha256:76308cd096db67e0331fe8998318c555f2db6cf70e31f39c72cd9b923a71e14d",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/git/remote.ts:36-37 — hint 'cd into a git repository before running specrunner.' (origin absent, is-git-repo case)",
+    "src/git/remote.ts:51-52 — same hint for empty remoteUrl case",
+    "src/errors.ts:148 — notGitRepoError() returns 'cd into a git repository before running specrunner.'",
+    "src/core/doctor/checks/storage/local-state-writable.ts:42 — hint \"Run 'specrunner ps' once to initialize storage.\"",
+    "src/core/doctor/checks/repo/workflow-structure.ts:59 — hint 'Create the missing directories manually.'",
+    "src/core/doctor/checks/config/github-token-present.ts:35 — triple hint 'Set GH_TOKEN env var, run \\'gh auth login\\', or run \\'specrunner login\\'.'",
+    "src/core/doctor/checks/auth/github-token-valid.ts:19 — same triple hint",
+    "src/core/doctor/checks/config/file-exists.ts:15 — path.join(ctx.homeDir, '.config', 'specrunner', 'config.json') hard-coded, ignores XDG_CONFIG_HOME",
+    "src/util/xdg.ts:18 — getConfigPath() defined, respects XDG_CONFIG_HOME via resolveXdgConfigDir()",
+    "src/core/doctor/formatter.ts — formatHuman outputs category groups + Summary only, no next steps section",
+    "src/cli/command-registry.ts:817 — doctor entry has no 'usage' field",
+    "src/core/runtime/local.ts:464 — throws Error('git fetch origin failed (exit N): <stderr>') verbatim",
+    "src/core/command/runner.ts:139 — logError('Failed to set up workspace: ' + err.message) displays the raw error",
+    "bin/specrunner.ts + src/cli/command-registry.ts — 'ps' is not a key in COMMANDS; runPs is used only inside job.ls handler"
+  ],
+  "sourceRevision": "18b513455f54a5512cd506d22e90828bbfab53ca"
+}

@@ -16,7 +16,7 @@ export const githubTokenValidCheck: DoctorCheck = {
       return {
         status: "fail",
         message: "GitHub token not found — cannot validate",
-        hint: "Set GH_TOKEN env var, run 'gh auth login', or run 'specrunner login'.",
+        hint: "Run specrunner login to authenticate. Alternatively, set the GH_TOKEN env var or run 'gh auth login'.",
       };
     }
 
@@ -27,7 +27,7 @@ export const githubTokenValidCheck: DoctorCheck = {
         return {
           status: "fail",
           message: "GitHub token is invalid or expired (HTTP 401)",
-          hint: "Run 'specrunner login' to re-authenticate.",
+          hint: "Run specrunner login to re-authenticate.",
         };
       }
 

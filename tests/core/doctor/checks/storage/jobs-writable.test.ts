@@ -36,7 +36,7 @@ describe("localStateWritableCheck", () => {
     const ctx = buildMockContext({ fs, homeDir: "/home/user" });
     const result = await localStateWritableCheck.check(ctx);
     expect(result.status).toBe("warn");
-    expect(result.hint).toContain("specrunner ps");
+    expect(result.hint).not.toContain("specrunner ps");
   });
 
   // TC-041
@@ -72,7 +72,7 @@ describe("localStateWritableCheck", () => {
     const ctx = buildMockContext({ fs, homeDir: "/home/user" });
     const result = await localStateWritableCheck.check(ctx);
     expect(result.status).toBe("warn");
-    expect(result.hint).toContain("specrunner ps");
+    expect(result.hint).not.toContain("specrunner ps");
   });
 
   // TC-042

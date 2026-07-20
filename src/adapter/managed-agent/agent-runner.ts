@@ -582,7 +582,7 @@ export class ManagedAgentRunner implements AgentRunner {
     } catch (err) {
       throwCaughtAsWrapped(err, {
         code: "CONFIG_INCOMPLETE",
-        hint: "Run 'specrunner managed setup' to configure agents.",
+        hint: "Run specrunner runtime setup to configure agents.",
       }, state);
     }
 

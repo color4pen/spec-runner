@@ -79,7 +79,7 @@ export async function loadStateByJobId(
   // No sidecar entry, or local entry with no accessible slug state: unresolvable.
   throw new SpecRunnerError(
     ERROR_CODES.JOB_NOT_FOUND,
-    "Run 'specrunner ps' to list available job IDs.",
+    "Run specrunner job ls to list available job IDs.",
     `Job not found: ${jobId}`,
   );
 }

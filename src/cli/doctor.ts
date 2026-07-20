@@ -206,6 +206,7 @@ export async function runDoctor(opts: {
     specRunnerApiKeySource,
     resolvedClaudeCodeOAuthToken,
     claudeCodeOAuthTokenSource,
+    configPath: getConfigPath(),
   };
 
   // Run runtime-specific checks

@@ -28,6 +28,19 @@ npx specrunner run my-feature
 npx specrunner job archive --with-merge my-feature
 ```
 
+### Joining an existing project
+
+If you are cloning a repository that already uses SpecRunner (the `specrunner/` scaffold and `.specrunner/config.json` are committed), run:
+
+```bash
+git clone <repo-url> && cd <repo>
+npm install
+npx specrunner init    # creates local .gitignore entries and machine-local directories
+npx specrunner login   # stores your GitHub token
+```
+
+`specrunner init` is safe to re-run; it does not overwrite existing config. The `specrunner/` scaffold and project config are already in the repository — you do not need to recreate them.
+
 When a job escalates (ambiguous request, unresolvable findings, unfixable build), its state is preserved — resume it directly:
 
 ```bash

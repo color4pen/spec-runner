@@ -203,7 +203,7 @@ describe("TC-06: live pid but jobId absent → DUPLICATE_LIVE_JOB (null jobId pa
     }
   });
 
-  it("hint contains 'specrunner job list' guidance", async () => {
+  it("hint contains 'specrunner job ls' guidance", async () => {
     const deps = {
       readFile: vi.fn().mockResolvedValue(JSON.stringify({ pid: 4242 })),
       isAlive: vi.fn().mockReturnValue(true),
@@ -213,7 +213,7 @@ describe("TC-06: live pid but jobId absent → DUPLICATE_LIVE_JOB (null jobId pa
       await checkDuplicateLiveJob(REPO_ROOT, SLUG, deps);
       expect.fail("should have thrown");
     } catch (err) {
-      expect((err as SpecRunnerError).hint).toContain("specrunner job list");
+      expect((err as SpecRunnerError).hint).toContain("specrunner job ls");
     }
   });
 });

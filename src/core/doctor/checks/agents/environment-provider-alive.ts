@@ -28,7 +28,7 @@ export const environmentProviderAliveCheck: DoctorCheck = {
       return {
         status: "fail",
         message: "No environment.id in config",
-        hint: "Run 'specrunner managed setup'.",
+        hint: "Run specrunner runtime setup to configure the managed runtime.",
       };
     }
 
@@ -68,7 +68,7 @@ export const environmentProviderAliveCheck: DoctorCheck = {
         return {
           status: "fail",
           message: `Environment ${envId} not found on provider side`,
-          hint: "Run 'specrunner managed setup' to recreate the environment.",
+          hint: "Run specrunner runtime setup to recreate the environment.",
         };
       }
 

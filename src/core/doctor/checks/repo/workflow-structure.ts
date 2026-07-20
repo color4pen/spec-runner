@@ -56,7 +56,7 @@ export const workflowStructureCheck: DoctorCheck = {
     }
     if (missingDirs.length > 0) {
       messageParts.push(`specrunner/ is missing dirs: ${missingDirs.join(", ")}`);
-      hintParts.push("Create the missing directories manually.");
+      hintParts.push(`Run 'specrunner init' to create the missing directories (${missingDirs.join(", ")}).`);
     }
 
     return {

@@ -17,7 +17,7 @@ export function getAgentId(cfg: SpecRunnerConfig, role: AgentStepName): string {
 
   throw new SpecRunnerError(
     ERROR_CODES.CONFIG_INCOMPLETE,
-    `Run 'specrunner managed setup' to register the ${role} agent.`,
+    `Run specrunner runtime setup to register the ${role} agent.`,
     `Missing agent ID for role: ${role}.`,
   );
 }

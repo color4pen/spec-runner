@@ -1745,9 +1745,9 @@ describe("TC-005: environmentNotSetError factory", () => {
     expect(error.message).toContain("design");
   });
 
-  it("hint contains 'specrunner managed setup'", () => {
+  it("hint contains 'specrunner runtime setup'", () => {
     const error = environmentNotSetError("design");
-    expect(error.hint).toContain("specrunner managed setup");
+    expect(error.hint).toContain("specrunner runtime setup");
   });
 });
 

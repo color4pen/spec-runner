@@ -104,6 +104,7 @@ function buildMinimalContext(overrides: Partial<DoctorContext> = {}): DoctorCont
     specRunnerApiKeySource: null,
     resolvedClaudeCodeOAuthToken: null,
     claudeCodeOAuthTokenSource: null,
+    configPath: "/fake/home/.config/specrunner/config.json",
     ...overrides,
   };
 }

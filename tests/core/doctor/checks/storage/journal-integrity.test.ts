@@ -42,6 +42,7 @@ function makeCtx(): DoctorContext {
     specRunnerApiKeySource: null,
     resolvedClaudeCodeOAuthToken: null,
     claudeCodeOAuthTokenSource: null,
+    configPath: "/home/user/.config/specrunner/config.json",
   };
 }
 

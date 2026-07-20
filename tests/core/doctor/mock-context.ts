@@ -74,6 +74,7 @@ export function buildMockContext(overrides?: Partial<DoctorContext>): DoctorCont
     specRunnerApiKeySource: "env",
     resolvedClaudeCodeOAuthToken: "claude-oauth-test123",
     claudeCodeOAuthTokenSource: "credentials",
+    configPath: "/fake/home/.config/specrunner/config.json",
     ...overrides,
   };
 }

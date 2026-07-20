@@ -1,4 +1,4 @@
-import { notGitRepoError, remoteNotGitHubError } from "../errors.js";
+import { notGitRepoError, remoteNotGitHubError, originNotConfiguredError } from "../errors.js";
 import { SpecRunnerError } from "../errors.js";
 import { runSubprocess, gitExecExitCode, defaultSpawnFn } from "../util/git-exec.js";
 
@@ -31,11 +31,7 @@ export async function getOriginInfo(cwd: string, host: string = "github.com"): P
       // Distinguish "not a git repo" from "git repo but no origin".
       const gitDirCode = await gitExecExitCode(defaultSpawnFn, cwd, ["rev-parse", "--git-dir"]);
       if (gitDirCode === 0) {
-        throw new SpecRunnerError(
-          "NOT_GIT_REPO",
-          "cd into a git repository before running specrunner.",
-          "Origin remote not configured.",
-        );
+        throw originNotConfiguredError();
       }
       throw notGitRepoError();
     }
@@ -46,11 +42,7 @@ export async function getOriginInfo(cwd: string, host: string = "github.com"): P
   }
 
   if (!remoteUrl || remoteUrl.length === 0) {
-    throw new SpecRunnerError(
-      "NOT_GIT_REPO",
-      "cd into a git repository before running specrunner.",
-      "Origin remote not configured.",
-    );
+    throw originNotConfiguredError();
   }
 
   return parseRemoteUrl(remoteUrl, host);

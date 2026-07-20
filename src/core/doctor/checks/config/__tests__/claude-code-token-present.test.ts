@@ -35,6 +35,7 @@ function makeCtx(overrides: Partial<DoctorContext> = {}): DoctorContext {
     specRunnerApiKeySource: null,
     resolvedClaudeCodeOAuthToken: null,
     claudeCodeOAuthTokenSource: null,
+    configPath: "/home/user/.config/specrunner/config.json",
     ...overrides,
   };
 }

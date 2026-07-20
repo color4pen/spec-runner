@@ -284,7 +284,7 @@ export class JobCatalog {
     if (matches.length === 0) {
       throw new SpecRunnerError(
         ERROR_CODES.JOB_NOT_FOUND,
-        "Run 'specrunner ps' to list available job IDs.",
+        "Run specrunner job ls to list available job IDs.",
         `Job not found: no job ID starts with '${prefix}'`,
       );
     }

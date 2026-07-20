@@ -40,7 +40,7 @@ export const agentsRegisteredCheck: DoctorCheck = {
     return {
       status: "fail",
       message: `Missing agents: ${missing.join(", ")}`,
-      hint: "Run 'specrunner managed setup' to register all agents.",
+      hint: "Run specrunner runtime setup to register all agents.",
     };
   },
 };
