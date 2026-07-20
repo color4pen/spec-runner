@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8bd5a858-7338-4a32-8d24-a79b09c04c34",
   "createdAt": "2026-07-20T10:38:25.301Z",
-  "updatedAt": "2026-07-20T11:00:13.162Z",
+  "updatedAt": "2026-07-20T11:02:15.082Z",
   "request": {
     "title": "local runtime の provider readiness を副作用より前に確立する — auth 欠如が worktree / branch / journal 作成後に発覚する経路を塞ぐ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/local-provider-readiness-before-side-effects-8bd5a858",
   "error": null,
@@ -61,11 +61,12 @@
   ],
   "issueNumber": 862,
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }
