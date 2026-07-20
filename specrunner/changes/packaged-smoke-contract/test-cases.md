@@ -55,62 +55,86 @@ Result section MUST appear at the very end as a YAML code block:
 
 ## Summary
 
-- **Total**: 15 cases
-- **Automated** (unit/integration): 10
+- **Total**: 20 cases
+- **Automated** (unit/integration): 15
 - **Manual**: 5
-- **Priority**: must: 13, should: 1, could: 1
+- **Priority**: must: 15, should: 5, could: 0
 
 ---
 
-### TC-001: init outside a git repository exits non-zero and writes nothing including under isolated XDG
+### TC-001: repo 外 init — 非ゼロ exit と XDG 含む無書き込み
 
 **Category**: integration
 **Priority**: must
-**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts using only the packed tarball run with node > Scenario: init outside a git repository writes nothing including under isolated XDG
+**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts through the real npm entry (`npx --no-install specrunner`) on the packed tarball > Scenario: init outside a git repository writes nothing including under isolated XDG
 
 ---
 
-### TC-002: init from a subdirectory lands scaffold at repo root without nesting and reports created
+### TC-002: subdirectory init — repo root 着地・入れ子なし・created 項目報告
 
 **Category**: integration
 **Priority**: must
-**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts using only the packed tarball run with node > Scenario: init from a subdirectory lands scaffold at repo root without nesting and reports created
+**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts through the real npm entry (`npx --no-install specrunner`) on the packed tarball > Scenario: init from a subdirectory lands scaffold at repo root without nesting and reports created
 
 ---
 
-### TC-003: isolated XDG init then doctor reports config-file-exists pass judged per-check
+### TC-003: 2 回目 init — 全項目 already-exists の冪等報告
 
 **Category**: integration
 **Priority**: must
-**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts using only the packed tarball run with node > Scenario: isolated XDG init then doctor reports config-file-exists pass judged per-check
+**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts through the real npm entry (`npx --no-install specrunner`) on the packed tarball > Scenario: second init reports per-item already-exists (idempotent)
 
 ---
 
-### TC-004: request new from a subdirectory lands at repo root without nesting
+### TC-004: 半初期化からの補完 — created / already-exists の項目別分離
 
 **Category**: integration
 **Priority**: must
-**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts using only the packed tarball run with node > Scenario: request new from a subdirectory lands at repo root without nesting
+**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts through the real npm entry (`npx --no-install specrunner`) on the packed tarball > Scenario: half-initialized repo is completed with a per-item created / already-exists split
 
 ---
 
-### TC-005: help startup check is retained on the packaged artifact
+### TC-005: 隔離 XDG init → doctor の config-file-exists = pass（per-check 判定）
 
 **Category**: integration
 **Priority**: must
-**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts using only the packed tarball run with node > Scenario: help startup check is retained on the packaged artifact
+**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts through the real npm entry (`npx --no-install specrunner`) on the packed tarball > Scenario: isolated XDG init then doctor reports config-file-exists pass judged per-check
 
 ---
 
-### TC-006: the smoke does not reference bun or repository sources
+### TC-006: doctor の per-check 結果が root / subdirectory で同値
 
-**Category**: automated
+**Category**: integration
 **Priority**: must
-**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts using only the packed tarball run with node > Scenario: the smoke does not reference bun or repository sources
+**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts through the real npm entry (`npx --no-install specrunner`) on the packed tarball > Scenario: doctor per-check results are identical from root and subdirectory
 
 ---
 
-### TC-007: assertions hold regardless of ambient tokens
+### TC-007: --help — exit 0 と "Usage: specrunner" 出力の assert
+
+**Category**: integration
+**Priority**: must
+**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts through the real npm entry (`npx --no-install specrunner`) on the packed tarball > Scenario: help output includes usage text
+
+---
+
+### TC-008: subdirectory request new — repo root 着地・入れ子なし
+
+**Category**: integration
+**Priority**: must
+**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts through the real npm entry (`npx --no-install specrunner`) on the packed tarball > Scenario: request new from a subdirectory lands at repo root without nesting
+
+---
+
+### TC-009: smoke が bun / repo src/ を参照しない（ソース純粋性）
+
+**Category**: manual
+**Priority**: must
+**Source**: spec.md > Requirement: Packaged smoke SHALL assert first-contact contracts through the real npm entry (`npx --no-install specrunner`) on the packed tarball > Scenario: the smoke does not reference bun or repository sources
+
+---
+
+### TC-010: token 有無に依存しない assert 構成
 
 **Category**: integration
 **Priority**: must
@@ -118,7 +142,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-008: fixtures and config are isolated from the host
+### TC-011: fixtures と config がホスト環境から隔離される
 
 **Category**: integration
 **Priority**: must
@@ -126,7 +150,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-009: CI runs the smoke script and fails on a broken contract
+### TC-012: CI が smoke を gate として実行し、契約違反で job が失敗する
 
 **Category**: manual
 **Priority**: must
@@ -134,15 +158,15 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-010: a developer runs the same smoke locally
+### TC-013: 開発者がローカルで同一 smoke を実行できる
 
 **Category**: manual
-**Priority**: must
+**Priority**: should
 **Source**: spec.md > Requirement: CI SHALL run the smoke as a gate and the smoke SHALL be locally runnable > Scenario: a developer runs the same smoke locally
 
 ---
 
-### TC-011: inverting one expectation fails exactly that assertion
+### TC-014: 期待値反転で当該 assert のみが fail し他は通過する（個別 falsifiable）
 
 **Category**: manual
 **Priority**: must
@@ -150,51 +174,75 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-012: smoke script exits with explicit error when dist/specrunner.js is absent
+### TC-015: dist 未 build 時のスクリプト明示エラー停止
 
 **Category**: integration
 **Priority**: must
-**Source**: tasks.md > T-01 / design.md > D2（前提チェック）
+**Source**: tasks.md > T-01: smoke スクリプトのハーネス（pack → install → dist 解決）
 
-**GIVEN** `dist/specrunner.js` が存在しない状態（`bun run build` 未実行）
+**GIVEN** `dist/specrunner.js` が存在しない（build 前または意図的に削除）状態でリポジトリ root にいる
 **WHEN** `bash scripts/smoke/package-smoke.sh` を実行する
-**THEN** スクリプトが非ゼロ exit し、dist が無い旨と先に build するよう促す人間可読なエラーメッセージを出力し、`bun` は呼び出さない
+**THEN** スクリプトが非ゼロ exit し、「dist/specrunner.js が存在しない / 先に build せよ」旨の明示エラーを stdout または stderr に出力する。pack / install ステップには進まない
 
 ---
 
-### TC-013: package.json に smoke convenience script エントリが存在する
+### TC-016: tarball install 後の bin 配線（node_modules/.bin/specrunner）の存在確認
+
+**Category**: integration
+**Priority**: must
+**Source**: design.md > D2: tarball を fixture project 自身に install し、すべての CLI 実行を `npx --no-install specrunner` で行う
+
+**GIVEN** fixture project で `npm install --omit=optional <tarball>` が完了した直後の状態
+**WHEN** スクリプトが `node_modules/.bin/specrunner` の存在を前提条件チェックとして確認する
+**THEN** `node_modules/.bin/specrunner` が存在して bin 配線の成立を証明し、存在しない場合はスクリプトが即時 fail して後続 scenario に進まない
+
+---
+
+### TC-017: GIT_CEILING_DIRECTORIES による S1 fixture の repo 外保証
+
+**Category**: integration
+**Priority**: should
+**Source**: design.md > D3: fixture は mktemp 配下に作り、XDG_CONFIG_HOME / HOME を隔離し、非対話で起動する / tasks.md > T-02
+
+**GIVEN** mktemp が `$TMPDIR` に非 git fixture ディレクトリを作成する環境で、`$TMPDIR` が偶発的に git repo 配下に存在する可能性がある
+**WHEN** S1（repo 外 init）の実行前に `GIT_CEILING_DIRECTORIES` を fixture の親に設定し、`git rev-parse --show-toplevel` で fixture が repo 外であることを確認する
+**THEN** git の上位探索が temp 境界で止まり fixture が repo 外と判定される。もし fixture が repo 内と判定された場合はスクリプトが環境エラーとして明示 fail し、S1 の assert は実行されない
+
+---
+
+### TC-018: temp ディレクトリと tarball の cleanup（trap による後片付け）
+
+**Category**: integration
+**Priority**: should
+**Source**: tasks.md > T-01: スクリプト終了時に temp ディレクトリ・生成 tarball を後片付けする
+
+**GIVEN** スクリプトが `mktemp -d` で temp ディレクトリを作成し、`npm pack` で tarball を生成した状態
+**WHEN** スクリプトが正常終了（全 PASS）または途中エラーで終了する
+**THEN** trap により temp ディレクトリと tarball が削除され、CI runner や開発者機のファイルシステムに残留しない
+
+---
+
+### TC-019: package.json の smoke convenience スクリプトエントリ
 
 **Category**: manual
 **Priority**: should
-**Source**: tasks.md > T-06 / design.md > D6（CI 配線とローカル起動口）
+**Source**: tasks.md > T-06: S5 — help 維持（T5）と CI / ローカル起動口の配線
 
-**GIVEN** 変更後の `package.json`
-**WHEN** `scripts` フィールドを確認する
-**THEN** `"smoke"` エントリ（または同等）が存在し、その値が `bash scripts/smoke/package-smoke.sh` を呼び出すものになっている。既存の build / test / lint スクリプトは変更されていない
-
----
-
-### TC-014: スクリプト終了時に temp ディレクトリが後片付けされる
-
-**Category**: integration
-**Priority**: could
-**Source**: tasks.md > T-01 / design.md > D3（fixture 作成・隔離方針）
-
-**GIVEN** `scripts/smoke/package-smoke.sh` が実行中であり、`mktemp -d` で作成した temp ディレクトリと pack で生成した tarball が存在する
-**WHEN** スクリプトが（成功・失敗を問わず）終了する
-**THEN** `trap` 等の仕組みにより、mktemp で作成した一時ディレクトリと tarball が削除されている
+**GIVEN** `package.json` の `scripts` に `"smoke": "bash scripts/smoke/package-smoke.sh"` エントリが追加された状態
+**WHEN** `npm run smoke`（または `bun run smoke`）を実行する
+**THEN** `bash scripts/smoke/package-smoke.sh` が呼び出されて同一の smoke assertions が走る。既存の `build` / `test` / `lint` 等の script エントリは変更されていない
 
 ---
 
-### TC-015: typecheck と vitest がリグレッションなしで green になる
+### TC-020: CI workflow の smoke step 配置と内容
 
 **Category**: manual
-**Priority**: must
-**Source**: tasks.md > T-08
+**Priority**: should
+**Source**: tasks.md > T-06: S5 — help 維持（T5）と CI / ローカル起動口の配線
 
-**GIVEN** smoke スクリプト・CI step・package.json の変更が適用されており、`src/` の製品コードに変更がない状態
-**WHEN** `bun run typecheck` と `bun run test` を実行する
-**THEN** 両者が exit 0 で完了し、型エラーもテスト失敗も発生しない
+**GIVEN** `.github/workflows/ci.yml` が変更された状態
+**WHEN** smoke 相当 step の内容と位置を確認する
+**THEN** 既存の smoke step が `scripts/smoke/package-smoke.sh` を呼ぶ step に置き換わり、step が `bun run build`（dist 生成）より後に位置し、他の job / step（build / lint / test 等）は変更されていない
 
 ---
 
@@ -202,11 +250,11 @@ Result section MUST appear at the very end as a YAML code block:
 
 ```yaml
 result: completed
-total: 15
-automated: 9
-manual: 6
-must: 13
-should: 1
-could: 1
+total: 20
+automated: 15
+manual: 5
+must: 15
+should: 5
+could: 0
 blocked_reasons: []
 ```
