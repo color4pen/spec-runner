@@ -67,3 +67,5 @@
 {"type":"lineage","step":"verification","ts":"2026-07-20T07:45:43.828Z","outputs":[{"path":"specrunner/changes/error-prescription-integrity/verification-result.md","hash":"sha256:bc7c8451c3a879335b8eb9fad9e329b381bc55d3dd2bf520395b2fcd043d66c6"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-07-20T07:45:43.836Z","step":"verification","status":"warning","message":"verification iteration 3 completed with verdict: failed"}
 {"type":"transition","ts":"2026-07-20T07:45:43.837Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: verification did not pass after 2 iterations"}
+{"type":"transition","ts":"2026-07-20T08:07:30.869Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'build-fixer'"}
+{"type":"transition","ts":"2026-07-20T08:07:30.983Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
