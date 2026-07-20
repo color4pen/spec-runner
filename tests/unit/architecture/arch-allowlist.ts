@@ -133,6 +133,16 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
   //
   // Governance: each entry must document why the raw read is safe.
   {
+    file: "src/core/command/runner.ts",
+    pattern: "assertProviderReadiness(process.env",
+    invariant: "B-6",
+    tracking: "B6-runner-readiness-port-call",
+    comment:
+      "assertProviderReadiness is a port-method call, not a direct subprocess or SDK spawn. " +
+      "The adapter implementation (LocalRuntime) calls stripSecrets(env) internally before " +
+      "passing env to the Claude Agent SDK. process.env is not forwarded raw to any subprocess.",
+  },
+  {
     file: "src/util/env-filter.ts",
     pattern: "SPECRUNNER_DEBUG",
     invariant: "B-6",

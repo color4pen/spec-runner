@@ -100,6 +100,12 @@ export interface LocalRuntimeOptions {
   spawnBackgroundFn?: SpawnBackgroundFn;
   /** Platform override for dependency injection (power assertion, tests). */
   platform?: NodeJS.Platform;
+  /**
+   * Injectable provider readiness probe for dependency injection in tests.
+   * Defaults to the real adapter-backed probe from adapter/claude-code/provider-readiness-probe.ts.
+   * Test fakes return a predetermined ProviderReadinessResult without any real network call.
+   */
+  providerReadinessProbe?: import("../port/provider-readiness.js").ProviderReadinessProbe;
 }
 
 export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
@@ -124,6 +130,9 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   /** WorkspaceMaterializer delegated to for worktree create/registration/liveness (T-03). */
   private readonly materializer: WorkspaceMaterializer;
 
+  /** Injectable provider readiness probe (defaults to real adapter probe at composition root). */
+  private readonly providerReadinessProbe: import("../port/provider-readiness.js").ProviderReadinessProbe | undefined;
+
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
   // Set by setupWorkspace(); slug for slug-based store in buildDeps() / registerCleanup()
@@ -147,6 +156,10 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     this.spawnBackgroundFn = opts.spawnBackgroundFn ?? noopSpawnBackground;
     this.platform = opts.platform ?? process.platform;
     this.materializer = new WorkspaceMaterializer(this);
+    // Default is undefined — the composition root (createRuntime / factory.ts) injects
+    // the real adapter-backed probe. Leaving it undefined here means tests that
+    // construct LocalRuntime without a probe option also avoid network calls.
+    this.providerReadinessProbe = opts.providerReadinessProbe;
   }
 
   /**
@@ -815,6 +828,34 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    */
   async assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void> {
     await checkDuplicateLiveJob(repoRoot, slug);
+  }
+
+  /**
+   * Assert provider readiness before any side effects (job state / worktree / branch / journal).
+   *
+   * Calls the injected ProviderReadinessProbe once per invocation. The result is
+   * classified by classifyProviderReadiness: null → resolves (gate passes); non-null
+   * → throws the classified SpecRunnerError("PROVIDER_NOT_READY", ...).
+   *
+   * If no probe is injected (opts.providerReadinessProbe is undefined), this method
+   * delegates to the real adapter-backed probe (createClaudeProviderReadinessProbe).
+   * The real probe is lazy-imported to avoid pulling adapter dependencies at
+   * class construction time.
+   */
+  async assertProviderReadiness(env: Record<string, string | undefined>): Promise<void> {
+    const { classifyProviderReadiness } = await import("./provider-readiness.js");
+
+    let probe = this.providerReadinessProbe;
+    if (!probe) {
+      const { createClaudeProviderReadinessProbe } = await import(
+        "../../adapter/claude-code/provider-readiness-probe.js"
+      );
+      probe = createClaudeProviderReadinessProbe();
+    }
+
+    const result = await probe(env);
+    const err = classifyProviderReadiness(result);
+    if (err) throw err;
   }
 
   // ---------------------------------------------------------------------------

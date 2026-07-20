@@ -46,6 +46,14 @@ vi.mock("../../../src/core/worktree/manager.js", () => ({
   }),
 }));
 
+// Prevent the real Claude provider readiness probe from making network calls
+// in unit tests. LocalRuntime.assertProviderReadiness() lazy-imports this module;
+// vi.mock() intercepts dynamic imports too.
+vi.mock("../../../src/adapter/claude-code/provider-readiness-probe.js", () => ({
+  createClaudeProviderReadinessProbe: () =>
+    async (_env: Record<string, string | undefined>) => ({ kind: "ready" as const }),
+}));
+
 vi.mock("../../../src/core/pipeline/index.js", () => {
   const defaultState = {
     version: 1,

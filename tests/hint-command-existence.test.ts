@@ -3,11 +3,14 @@
  *
  * Rationale: prevents dead-end UX where a hint directs users to an unimplemented command.
  * Regression guard for: finish-hint-actionable-fallback (issue #73)
+ *
+ * TC-005: Auth prescriptions in PROVIDER_READINESS_HINTS name only real commands
  */
 import { describe, it, expect } from "vitest";
 import { COMMANDS } from "../src/cli/command-registry.js";
 import { STATUS_HINTS } from "../src/core/finish/job-state-update.js";
 import { pollTimeoutError } from "../src/errors.js";
+import { PROVIDER_READINESS_HINTS } from "../src/core/runtime/provider-readiness.js";
 
 /** Extract `specrunner <verb>` patterns from a hint string. */
 function extractCommandVerbs(hint: string): string[] {
@@ -38,6 +41,24 @@ describe("hint command existence", () => {
         registeredCommands.has(verb),
         `pollTimeoutError hint references unregistered command 'specrunner ${verb}'`,
       ).toBe(true);
+    }
+  });
+});
+
+// TC-005: Auth prescriptions name only real commands
+describe("TC-005: PROVIDER_READINESS_HINTS reference only registered commands", () => {
+  it("every specrunner <verb> in PROVIDER_READINESS_HINTS is a registered command", () => {
+    // Cast via Record<string, string> — PROVIDER_READINESS_HINTS is typed as
+    // Record<Exclude<ProviderReadinessKind, "ready">, string> in the implementation.
+    const hints = PROVIDER_READINESS_HINTS as Record<string, string>;
+    for (const [kind, hint] of Object.entries(hints)) {
+      const verbs = extractCommandVerbs(hint);
+      for (const verb of verbs) {
+        expect(
+          registeredCommands.has(verb),
+          `PROVIDER_READINESS_HINTS["${kind}"] references unregistered command 'specrunner ${verb}'`,
+        ).toBe(true);
+      }
     }
   });
 });

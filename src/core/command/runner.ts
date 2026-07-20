@@ -89,6 +89,27 @@ export abstract class CommandRunner {
    * Returns exit code (0 = success, 1 = failure).
    */
   async execute(): Promise<number> {
+    // Step 0: provider readiness gate — must fire before prepare() so that readiness
+    // failures surface prior to any persistent side effects (job record / worktree /
+    // branch / journal). Uses optional call (`?.`) so test fakes without the method
+    // are unaffected (backward-compatible with RuntimeStrategy-typed fakes).
+    if (this.runtime.assertProviderReadiness) {
+      try {
+        await this.runtime.assertProviderReadiness(process.env as Record<string, string | undefined>);
+      } catch (err) {
+        if (err instanceof SpecRunnerError) {
+          logError(err.message);
+          if (err.hint) {
+            stderrWrite(`Hint: ${err.hint}`);
+          }
+        } else {
+          logError((err as Error).message ?? String(err));
+        }
+        // Do NOT emit RunResultContract JSON here — no job exists yet.
+        return 1;
+      }
+    }
+
     // Step 1: prepare — subclass override
     // Note: re-throw any error so callers (e.g. ResumeCommand.execute) can inspect it
     const prepared = await this.prepare();
