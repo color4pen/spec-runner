@@ -39,7 +39,7 @@ export const localStateWritableCheck: DoctorCheck = {
             return {
               status: "warn",
               message: `Local state directory does not exist yet: ${localDir}`,
-              hint: "Run 'specrunner ps' once to initialize storage.",
+              hint: "The local state directory will be created automatically on the first run.",
             };
           } catch (ancestorErr: unknown) {
             const ancestorCode = (ancestorErr as NodeJS.ErrnoException).code;

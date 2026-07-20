@@ -23,7 +23,7 @@ function parseAndMigrate(content: string, label: string): unknown {
   } catch {
     throw new SpecRunnerError(
       ERROR_CODES.CONFIG_INVALID,
-      "Delete the config and run 'specrunner init' again.",
+      "Delete the config and run specrunner init again.",
       `JSON parse error in ${label}.`,
     );
   }
@@ -32,7 +32,7 @@ function parseAndMigrate(content: string, label: string): unknown {
   } catch (err: unknown) {
     throw new SpecRunnerError(
       ERROR_CODES.CONFIG_INVALID,
-      "Delete the config and run 'specrunner init' again.",
+      "Delete the config and run specrunner init again.",
       `Config migration failed in ${label}: ${(err as Error).message}`,
     );
   }
@@ -49,7 +49,7 @@ function validateAndWrap(migrated: unknown): SpecRunnerConfig {
     if (code === "CONFIG_INVALID") {
       throw new SpecRunnerError(
         ERROR_CODES.CONFIG_INVALID,
-        "Delete the config and run 'specrunner init' again.",
+        "Delete the config and run specrunner init again.",
         (err as Error).message,
       );
     }
@@ -265,7 +265,7 @@ export class FileConfigStore {
     }
     throw new SpecRunnerError(
       ERROR_CODES.CONFIG_INCOMPLETE,
-      `Run 'specrunner managed setup' to register the ${role} agent.`,
+      `Run specrunner runtime setup to register the ${role} agent.`,
       `Missing agent ID for role: ${role}.`,
     );
   }

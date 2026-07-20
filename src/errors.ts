@@ -113,7 +113,7 @@ export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
 export function configMissingError(): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.CONFIG_MISSING,
-    "Run 'specrunner init' first.",
+    "Run specrunner init first.",
     "Config file not found.",
   );
 }
@@ -121,7 +121,7 @@ export function configMissingError(): SpecRunnerError {
 export function configIncompleteError(field: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.CONFIG_INCOMPLETE,
-    "Run 'specrunner login' first.",
+    "Run specrunner login first.",
     `Missing required config field: ${field}.`,
   );
 }
@@ -129,7 +129,7 @@ export function configIncompleteError(field: string): SpecRunnerError {
 export function githubTokenExpiredError(): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.GITHUB_TOKEN_EXPIRED,
-    "Run 'specrunner login' to refresh.",
+    "Run specrunner login to refresh.",
     "GitHub token expired.",
   );
 }
@@ -147,6 +147,14 @@ export function notGitRepoError(): SpecRunnerError {
     ERROR_CODES.NOT_GIT_REPO,
     "cd into a git repository before running specrunner.",
     "Not a git repository.",
+  );
+}
+
+export function originNotConfiguredError(): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.NOT_GIT_REPO,
+    "Run 'git remote add origin <url>' to configure the origin remote.",
+    "Origin remote not configured.",
   );
 }
 
@@ -217,7 +225,7 @@ export function branchNotSetError(stepName: string): SpecRunnerError {
 export function environmentNotSetError(stepName: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.ENVIRONMENT_NOT_SET,
-    "Run 'specrunner managed setup'.",
+    "Run specrunner runtime setup to configure the managed runtime.",
     `Managed environment is not configured when entering '${stepName}'.`,
   );
 }
@@ -233,7 +241,7 @@ export function noCommitDetectedError(stepName: string, branch: string): SpecRun
 export function pushFailedError(stepName: string, branch: string, detail: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.PUSH_FAILED,
-    `Check network connectivity and remote permissions. Retry with 'specrunner job resume'.`,
+    `Check network connectivity and remote permissions. Retry with specrunner job resume to continue.`,
     `${stepName}: git push origin ${branch} failed after retry: ${detail}`,
   );
 }
@@ -282,7 +290,7 @@ export function pollTimeoutError(sessionId: string, elapsedMs: number): SpecRunn
   const elapsedSec = Math.round(elapsedMs / 1000);
   return new SpecRunnerError(
     ERROR_CODES.POLL_TIMEOUT,
-    "Session may still be running on Anthropic side. Use 'specrunner job resume' to retry or 'specrunner job cancel <jobId>' to abort.",
+    "Session may still be running on Anthropic side. Use specrunner job resume to retry or 'specrunner job cancel <jobId>' to abort.",
     `Session '${sessionId}' did not complete within ${elapsedSec}s (${elapsedMs}ms).`,
   );
 }
@@ -359,7 +367,7 @@ export function duplicateLiveJobError(slug: string, priorJobId: string | null): 
   }
   return new SpecRunnerError(
     ERROR_CODES.DUPLICATE_LIVE_JOB,
-    `A live job is already running for slug '${slug}'. Cancel it with 'specrunner job cancel <jobId>' (see 'specrunner job list'), or wait for it to finish before re-running.`,
+    `A live job is already running for slug '${slug}'. Cancel it with 'specrunner job cancel <jobId>' (or run specrunner job ls to list all jobs), or wait for it to finish before re-running.`,
     `Refusing to start a duplicate run: slug '${slug}' already has a live job.`,
   );
 }
@@ -422,7 +430,7 @@ export function commitEffectFailedError(
 ): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.COMMIT_AND_PUSH_FAILED,
-    `Check for index.lock conflicts, disk issues, or worktree corruption. Retry with 'specrunner job resume'.`,
+    `Check for index.lock conflicts, disk issues, or worktree corruption. Retry with specrunner job resume to continue.`,
     `${label}: git ${operation} failed on branch '${branch}': ${detail}`,
   );
 }

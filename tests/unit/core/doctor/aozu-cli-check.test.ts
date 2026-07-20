@@ -32,6 +32,7 @@ function makeCtx(configValues: Record<string, unknown> = {}, execFileImpl?: () =
     specRunnerApiKeySource: null,
     resolvedClaudeCodeOAuthToken: null,
     claudeCodeOAuthTokenSource: null,
+    configPath: "/home/user/.config/specrunner/config.json",
   };
 }
 

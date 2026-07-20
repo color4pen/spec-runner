@@ -32,7 +32,7 @@ export async function checkRuntimePrereqs(
       } catch {
         return {
           field: req.envVar,
-          hint: "Save an API key via 'specrunner login --provider anthropic', set SPECRUNNER_API_KEY env var, then run 'specrunner managed setup'.",
+          hint: "Save an API key via 'specrunner login --provider anthropic', set SPECRUNNER_API_KEY env var, then run specrunner runtime setup to complete configuration.",
         };
       }
     } else if (req.key === "anthropic.claudeCodeOAuthToken") {
@@ -50,13 +50,13 @@ export async function checkRuntimePrereqs(
     if (!cfg.agents?.["design"]?.agentId) {
       return {
         field: "agents.design.agentId",
-        hint: "Run 'specrunner managed setup' first.",
+        hint: "Run specrunner runtime setup first.",
       };
     }
     if (!cfg.environment?.id) {
       return {
         field: "environment.id",
-        hint: "Run 'specrunner managed setup' first.",
+        hint: "Run specrunner runtime setup first.",
       };
     }
   }

@@ -72,7 +72,7 @@ export const definitionDriftCheck: DoctorCheck = {
     return {
       status: "warn",
       message: `Agent definition drifted: ${drifted.join(", ")}`,
-      hint: "Run 'specrunner managed setup' to refresh agent definitions.",
+      hint: "Run specrunner runtime setup to refresh agent definitions.",
     };
   },
 };

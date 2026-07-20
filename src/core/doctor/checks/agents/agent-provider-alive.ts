@@ -103,7 +103,7 @@ export const agentProviderAliveCheck: DoctorCheck = {
       return {
         status: "fail",
         message: `Missing agent IDs in config: ${missing.join(", ")}`,
-        hint: "Run 'specrunner managed setup' to register agents.",
+        hint: "Run specrunner runtime setup to register agents.",
       };
     }
 
@@ -111,7 +111,7 @@ export const agentProviderAliveCheck: DoctorCheck = {
       return {
         status: "fail",
         message: `Agents not found on provider side: ${notFound.join(", ")}`,
-        hint: "Run 'specrunner managed setup' to reconcile agents.",
+        hint: "Run specrunner runtime setup to reconcile agents.",
       };
     }
 

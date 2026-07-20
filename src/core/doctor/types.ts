@@ -82,7 +82,14 @@ export interface DoctorGitHubClient {
 /**
  * DoctorContext: injectable dependencies for all doctor checks.
  * Unit tests provide a mock; production code provides real implementations.
+ *
+ * The const below co-exists with the interface in separate declaration spaces,
+ * providing a runtime-accessible export so dynamic import destructuring works.
+ * @internal
  */
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const DoctorContext: undefined = undefined;
+
 export interface DoctorContext {
   /** Current working directory (invoker cwd — may be a subdirectory of the repo root) */
   cwd: string;
@@ -143,6 +150,12 @@ export interface DoctorContext {
    * null when no token is available.
    */
   claudeCodeOAuthTokenSource: "credentials" | "env" | null;
+  /**
+   * Absolute path to the user-global config file, resolved using the same
+   * XDG_CONFIG_HOME logic as getConfigPath() in src/util/xdg.ts.
+   * Used by config-file-exists check so that the check honours XDG_CONFIG_HOME.
+   */
+  configPath: string;
 }
 
 /**

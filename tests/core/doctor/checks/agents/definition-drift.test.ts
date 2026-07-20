@@ -52,7 +52,7 @@ describe("definitionDriftCheck", () => {
     const result = await definitionDriftCheck.check(ctx);
     expect(result.status).toBe("warn");
     expect(result.message).toMatch(/definition drifted/i);
-    expect(result.hint).toContain("specrunner managed setup");
+    expect(result.hint).toContain("specrunner runtime setup");
   });
 
   // TC-079

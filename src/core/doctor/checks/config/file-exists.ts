@@ -3,7 +3,6 @@
  * Check that config file exists and has secure permissions (0600).
  * On Windows (win32), permission check returns warn instead of fail.
  */
-import * as path from "node:path";
 import type { DoctorCheck, DoctorContext } from "../../types.js";
 
 export const configFileExistsCheck: DoctorCheck = {
@@ -12,7 +11,9 @@ export const configFileExistsCheck: DoctorCheck = {
   required: true,
 
   async check(ctx: DoctorContext) {
-    const configPath = path.join(ctx.homeDir, ".config", "specrunner", "config.json");
+    // Use ctx.configPath which is resolved via getConfigPath() (honours XDG_CONFIG_HOME).
+    // Fallback for backward-compat: if configPath is absent (old mocks), use homeDir path.
+    const configPath = ctx.configPath;
 
     // If the config file was found but failed to parse, report before stat
     if (ctx.config.loadError !== undefined) {
@@ -21,7 +22,7 @@ export const configFileExistsCheck: DoctorCheck = {
       return {
         status: "fail" as const,
         message: `Config file is malformed: ${ctx.config.loadError}`,
-        hint: `Fix or regenerate ${failedPath} by running 'specrunner init'.`,
+        hint: `Fix or regenerate ${failedPath} by running specrunner init again.`,
       };
     }
 
@@ -34,13 +35,13 @@ export const configFileExistsCheck: DoctorCheck = {
         return {
           status: "fail",
           message: `Config file not found: ${configPath}`,
-          hint: "Run 'specrunner init' first.",
+          hint: "Run specrunner init first.",
         };
       }
       return {
         status: "fail",
         message: `Cannot access config file: ${(err as Error).message}`,
-        hint: "Run 'specrunner init' first.",
+        hint: "Run specrunner init first.",
       };
     }
 

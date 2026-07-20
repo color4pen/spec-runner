@@ -22,7 +22,7 @@ export const environmentRegisteredCheck: DoctorCheck = {
     return {
       status: "fail",
       message: "No Anthropic environment registered in config",
-      hint: "Run 'specrunner managed setup'.",
+      hint: "Run specrunner runtime setup to configure the managed runtime.",
     };
   },
 };

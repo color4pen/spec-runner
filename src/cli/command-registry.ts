@@ -275,6 +275,16 @@ Options:
   --help, -h             Show this help message
 `;
 
+export const DOCTOR_USAGE = `Usage: specrunner doctor [options]
+
+Diagnose environment, configuration, and authentication prerequisites.
+Runs all checks and reports pass/warn/fail per check with hints for remediation.
+
+Options:
+  --json      Output results as machine-readable JSON (schema: { summary, results[] })
+  --help, -h  Show this help message
+`;
+
 export const COMMANDS: Record<string, CommandEntry> = {
   init: {
     flags: {
@@ -818,6 +828,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
     flags: {
       json: { type: "boolean" },
     },
+    usage: DOCTOR_USAGE,
     // requiresRepo: false (default) — doctor is always runnable, even outside a repo
     handler: async (parsed, ctx) => {
       try {

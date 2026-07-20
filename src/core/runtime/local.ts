@@ -58,6 +58,7 @@ import type { WorkspaceSetupPlan } from "../worktree/setup.js";
 import { hasJsDependencyTraces } from "../../util/detect-pm.js";
 import { WorkspaceMaterializer, type MaterializerHost } from "./workspace-materializer.js";
 import type { WorktreeMaterializationPlan } from "./workspace-materializer.js";
+import { describeGitFetchFailure } from "./git-fetch-error.js";
 
 // Internal structure stored inside CleanupHandle
 interface LocalCleanupInternals {
@@ -461,7 +462,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       await this.transportAuth.authArgs().catch(() => {});
       const fetchResult = await this.wrappedSpawnFn("git", ["fetch", "origin"], { cwd: this.cwd });
       if (fetchResult.exitCode !== 0) {
-        throw new Error(`git fetch origin failed (exit ${fetchResult.exitCode}): ${fetchResult.stderr.trim()}`);
+        throw new Error(describeGitFetchFailure(fetchResult.exitCode ?? 1, fetchResult.stderr));
       }
 
       // Warn if local base branch is behind remote (informational — worktree uses remoteBaseRef so this is safe)
