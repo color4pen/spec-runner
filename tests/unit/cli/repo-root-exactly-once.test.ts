@@ -740,8 +740,7 @@ describe("TC-019: init command — git-binary-unavailable path collapses to unif
       throw new Error(`process.exit(${code})`);
     });
 
-    let originalArgv: string[];
-    originalArgv = process.argv;
+    const originalArgv: string[] = process.argv;
     process.argv = ["node", "specrunner", "init"];
 
     try {
