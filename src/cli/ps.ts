@@ -4,7 +4,7 @@ import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
 import { ACTIVE_STATUSES, isTerminal } from "../state/lifecycle.js";
 import type { GitHubClient } from "../core/port/github-client.js";
-import { resolveRepoRoot } from "../util/repo-root.js";
+// repo-root discovery is done lazily inside runPs (DI-fallback seam; see CWD-ps-root-resolve allowlist entry)
 import { stdoutWrite, stderrWrite } from "../logger/stdout.js";
 import { isStaleRunning } from "../core/resume/safety.js";
 import { livenessJsonPath } from "../util/paths.js";
@@ -83,8 +83,8 @@ export async function runPs(
   opts: { active?: boolean; all?: boolean; status?: string; json?: boolean; repoRoot?: string } = {},
   githubClient: GitHubClient | null = null,
 ): Promise<number> {
-  // Read-only command — fallback to cwd if git unavailable
-  const repoRoot = opts.repoRoot ?? (await resolveRepoRoot()) ?? process.cwd();
+  // Read-only command — fallback to cwd if git unavailable (DI-fallback; allowlisted as CWD-ps-root-resolve)
+  const repoRoot = opts.repoRoot ?? (await (await import("../util/repo-root.js")).resolveRepoRoot()) ?? process.cwd();
 
   // Worktree guard: reject from inside a specrunner job worktree.
   // Uses resolved repoRoot (which equals the worktree root when running from inside one)

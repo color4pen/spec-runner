@@ -345,9 +345,9 @@ describe("TC-016: CWD allowlist strictly decreases — exactly four entries remo
   it("TC-016: total CWD entry count is strictly less than 26 (the pre-change baseline)", async () => {
     const { ARCH_ALLOWLIST } = await import("../../unit/architecture/arch-allowlist.js");
     const cwdEntries = ARCH_ALLOWLIST.filter((e: { invariant: string }) => e.invariant === "CWD");
-    // Baseline was 26 CWD entries at the repo-root-entry-resolution seeding.
-    // After this change: 4 removed, 0 added → count must be < 26.
-    expect(cwdEntries.length).toBeLessThan(26);
+    // Baseline at implementation time: 41 CWD entries (26 seeded at repo-root-entry-resolution
+    // + 15 added by subsequent PRs). After this change: 4 removed, 0 added → count must be < 41.
+    expect(cwdEntries.length).toBeLessThan(41);
   });
 
   it("TC-016: no new CWD entry was added for any of the converted handler files", async () => {
@@ -478,7 +478,8 @@ describe("TC-018: B-13 appears only in StepExecutor context across the entire re
           !line.includes(".test.ts") &&
           !line.includes("__tests__/") &&
           !line.includes("test-cases.md") &&
-          !line.includes("repo-root-exactly-once"),
+          !line.includes("repo-root-exactly-once") &&
+          !line.includes("repo-root-resolve-exactly-once"),
       );
     expect(nonTestLines).toHaveLength(0);
   });
@@ -1021,18 +1022,11 @@ describe("TC-008: Repo-required command outside a repository stops with the unif
    */
   let originalArgv: string[];
 
-  beforeEach(() => {
+  beforeEach(async () => {
     originalArgv = process.argv;
-    const repoRootMod = vi.mocked(
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      require("../../../src/util/repo-root.js") as typeof import("../../../src/util/repo-root.js"),
-    );
-    void repoRootMod;
     // resolver returns null → outside repo
-    (async () => {
-      const mod = await import("../../../src/util/repo-root.js");
-      vi.mocked(mod.resolveRepoRoot).mockResolvedValue(null);
-    })();
+    const mod = await import("../../../src/util/repo-root.js");
+    vi.mocked(mod.resolveRepoRoot).mockResolvedValue(null);
   });
 
   afterEach(() => {

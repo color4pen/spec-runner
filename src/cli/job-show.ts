@@ -18,7 +18,6 @@ import { JobStateStore } from "../store/job-state-store.js";
 import { loadStateByJobId } from "../core/job-access/load-by-job-id.js";
 import { getJobSlug } from "../state/job-slug.js";
 import type { JobState } from "../state/schema.js";
-import { resolveRepoRoot } from "../util/repo-root.js";
 import { logResult, stderrWrite } from "../logger/stdout.js";
 import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
 import { worktreeGuardError, SpecRunnerError, ERROR_CODES } from "../errors.js";
@@ -36,10 +35,15 @@ const UUID_REGEX = /^[a-f0-9-]{36}$/;
 /**
  * Run `job show` — print key fields to stdout.
  * Returns the exit code: 0 = success, 1 = error.
+ *
+ * @param opts.repoRoot  Dispatch-resolved repo root. When not provided, falls back to "".
  */
-export async function runJobShow(input: string): Promise<number> {
-  // Read-only command — fallback to cwd if git unavailable
-  const repoRoot = (await resolveRepoRoot()) ?? process.cwd();
+export async function runJobShow(
+  input: string,
+  opts?: { repoRoot?: string | null },
+): Promise<number> {
+  // repoRoot is dispatch-injected; fallback to "" for direct callers (graceful degradation).
+  const repoRoot = opts?.repoRoot ?? "";
 
   // Worktree guard: reject from inside a specrunner job worktree.
   // Uses resolved repoRoot (which equals the worktree root when running from inside one)

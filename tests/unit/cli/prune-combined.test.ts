@@ -16,7 +16,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 const mockPruneOrphanWorktrees = vi.fn();
 const mockPruneOrphanSidecars = vi.fn();
-const mockResolveRepoRootOrFail = vi.fn().mockResolvedValue("/repo");
 
 vi.mock("../../../src/core/prune/runner.js", () => ({
   pruneOrphanWorktrees: mockPruneOrphanWorktrees,
@@ -24,10 +23,6 @@ vi.mock("../../../src/core/prune/runner.js", () => ({
 
 vi.mock("../../../src/core/prune/sidecar-runner.js", () => ({
   pruneOrphanSidecars: mockPruneOrphanSidecars,
-}));
-
-vi.mock("../../../src/util/repo-root.js", () => ({
-  resolveRepoRootOrFail: mockResolveRepoRootOrFail,
 }));
 
 vi.mock("../../../src/core/worktree/manager.js", () => ({
@@ -97,7 +92,7 @@ describe("TC-022: runPrune exit code is the logical OR of both runner exit codes
     mockPruneOrphanWorktrees.mockResolvedValue(makeWorktreeResult(0));
     mockPruneOrphanSidecars.mockResolvedValue(makeSidecarResult(0));
 
-    const code = await runPrune({ force: false });
+    const code = await runPrune({ force: false, repoRoot: "/repo" });
 
     expect(code).toBe(0);
   });
@@ -106,7 +101,7 @@ describe("TC-022: runPrune exit code is the logical OR of both runner exit codes
     mockPruneOrphanWorktrees.mockResolvedValue(makeWorktreeResult(1));
     mockPruneOrphanSidecars.mockResolvedValue(makeSidecarResult(0));
 
-    const code = await runPrune({ force: false });
+    const code = await runPrune({ force: false, repoRoot: "/repo" });
 
     expect(code).toBe(1);
   });
@@ -115,7 +110,7 @@ describe("TC-022: runPrune exit code is the logical OR of both runner exit codes
     mockPruneOrphanWorktrees.mockResolvedValue(makeWorktreeResult(0));
     mockPruneOrphanSidecars.mockResolvedValue(makeSidecarResult(1));
 
-    const code = await runPrune({ force: false });
+    const code = await runPrune({ force: false, repoRoot: "/repo" });
 
     expect(code).toBe(1);
   });
@@ -124,7 +119,7 @@ describe("TC-022: runPrune exit code is the logical OR of both runner exit codes
     mockPruneOrphanWorktrees.mockResolvedValue(makeWorktreeResult(1));
     mockPruneOrphanSidecars.mockResolvedValue(makeSidecarResult(1));
 
-    const code = await runPrune({ force: false });
+    const code = await runPrune({ force: false, repoRoot: "/repo" });
 
     expect(code).toBe(1);
   });
@@ -133,7 +128,7 @@ describe("TC-022: runPrune exit code is the logical OR of both runner exit codes
     mockPruneOrphanWorktrees.mockResolvedValue(makeWorktreeResult(1));
     mockPruneOrphanSidecars.mockResolvedValue(makeSidecarResult(0));
 
-    await runPrune({ force: true });
+    await runPrune({ force: true, repoRoot: "/repo" });
 
     expect(mockPruneOrphanWorktrees).toHaveBeenCalledOnce();
     expect(mockPruneOrphanSidecars).toHaveBeenCalledOnce();
@@ -155,7 +150,7 @@ describe("TC-005: output presents orphan worktrees and sidecars under separate l
       info: ["Would remove: /repo/.specrunner/local/orphan-job"],
     }));
 
-    await runPrune({ force: false });
+    await runPrune({ force: false, repoRoot: "/repo" });
 
     const allOutput = [...stdoutLines, ...stderrLines].join("");
     expect(allOutput).toMatch(/orphan worktree/i);
@@ -163,7 +158,7 @@ describe("TC-005: output presents orphan worktrees and sidecars under separate l
   });
 
   it("output contains a sidecar section label", async () => {
-    await runPrune({ force: false });
+    await runPrune({ force: false, repoRoot: "/repo" });
 
     const allOutput = [...stdoutLines, ...stderrLines].join("");
     // Both sections should be labeled
@@ -178,7 +173,7 @@ describe("TC-005: output presents orphan worktrees and sidecars under separate l
       info: ["Would remove: /repo/.specrunner/local/sc-slug"],
     }));
 
-    await runPrune({ force: false });
+    await runPrune({ force: false, repoRoot: "/repo" });
 
     const allOutput = [...stdoutLines, ...stderrLines].join("");
     // Both paths should appear in output
@@ -193,7 +188,7 @@ describe("TC-005: output presents orphan worktrees and sidecars under separate l
 
 describe("TC-013: worktree prune behavior is unaffected", () => {
   it("passes force flag to pruneOrphanWorktrees", async () => {
-    await runPrune({ force: true });
+    await runPrune({ force: true, repoRoot: "/repo" });
 
     expect(mockPruneOrphanWorktrees).toHaveBeenCalledOnce();
     const callArg = (mockPruneOrphanWorktrees as ReturnType<typeof vi.fn>).mock.calls[0]![0];
@@ -201,32 +196,28 @@ describe("TC-013: worktree prune behavior is unaffected", () => {
   });
 
   it("passes force: false to pruneOrphanWorktrees in dry-run mode", async () => {
-    await runPrune({ force: false });
+    await runPrune({ force: false, repoRoot: "/repo" });
 
     const callArg = (mockPruneOrphanWorktrees as ReturnType<typeof vi.fn>).mock.calls[0]![0];
     expect(callArg.force).toBe(false);
   });
 
   it("pruneOrphanWorktrees is always called (not skipped when sidecar runner is also present)", async () => {
-    await runPrune({ force: false });
+    await runPrune({ force: false, repoRoot: "/repo" });
 
     expect(mockPruneOrphanWorktrees).toHaveBeenCalledOnce();
     expect(mockPruneOrphanSidecars).toHaveBeenCalledOnce();
   });
 
-  it("pruneOrphanWorktrees receives repoRoot from resolveRepoRootOrFail", async () => {
-    mockResolveRepoRootOrFail.mockResolvedValue("/custom/repo");
-
-    await runPrune({ force: false });
+  it("pruneOrphanWorktrees receives the injected repoRoot", async () => {
+    await runPrune({ force: false, repoRoot: "/custom/repo" });
 
     const callArg = (mockPruneOrphanWorktrees as ReturnType<typeof vi.fn>).mock.calls[0]![0];
     expect(callArg.deps.repoRoot).toBe("/custom/repo");
   });
 
   it("sidecar runner also receives the same repoRoot", async () => {
-    mockResolveRepoRootOrFail.mockResolvedValue("/custom/repo");
-
-    await runPrune({ force: false });
+    await runPrune({ force: false, repoRoot: "/custom/repo" });
 
     const callArg = (mockPruneOrphanSidecars as ReturnType<typeof vi.fn>).mock.calls[0]![0];
     expect(callArg.deps.repoRoot).toBe("/custom/repo");
@@ -244,7 +235,7 @@ describe("TC-013: worktree prune behavior is unaffected", () => {
 describe("TC-009 [recheck]: runPrune wires the real isOrphanSidecar as the re-check dependency", () => {
   it("deps.recheck === isOrphanSidecar in the pruneOrphanSidecars call under force: true", async () => {
     // GIVEN runPrune is called with force: true
-    await runPrune({ force: true });
+    await runPrune({ force: true, repoRoot: "/repo" });
 
     // WHEN the captured pruneOrphanSidecars call arg is inspected
     const callArg = (mockPruneOrphanSidecars as ReturnType<typeof vi.fn>).mock.calls[0]![0];
@@ -258,7 +249,7 @@ describe("TC-009 [recheck]: runPrune wires the real isOrphanSidecar as the re-ch
   it("deps.recheck === isOrphanSidecar even in dry-run mode (force: false)", async () => {
     // The re-check wiring should be present regardless of force flag —
     // the runner itself chooses not to invoke it in dry-run mode (TC-005 / TC-011).
-    await runPrune({ force: false });
+    await runPrune({ force: false, repoRoot: "/repo" });
 
     const callArg = (mockPruneOrphanSidecars as ReturnType<typeof vi.fn>).mock.calls[0]![0];
     expect(callArg.deps.recheck).toBe(isOrphanSidecar);
@@ -268,7 +259,7 @@ describe("TC-009 [recheck]: runPrune wires the real isOrphanSidecar as the re-ch
     mockPruneOrphanWorktrees.mockResolvedValue(makeWorktreeResult(0));
     mockPruneOrphanSidecars.mockResolvedValue(makeSidecarResult(0));
 
-    const code = await runPrune({ force: true });
+    const code = await runPrune({ force: true, repoRoot: "/repo" });
 
     // Both runners still called exactly once
     expect(mockPruneOrphanWorktrees).toHaveBeenCalledOnce();

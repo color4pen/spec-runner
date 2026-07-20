@@ -4,7 +4,6 @@ import * as readline from "node:readline";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { getConfigPath } from "../util/xdg.js";
 import { logInfo, logError, logResult } from "../logger/stdout.js";
-import { spawnCommand } from "../util/spawn.js";
 import { ensureDotSpecrunnerGitignore } from "../util/gitignore.js";
 import { changesDirRel, draftsDir } from "../util/paths.js";
 import type { SpecRunnerConfig, StepConfigMap, StepExecutionConfig } from "../config/schema.js";
@@ -42,20 +41,20 @@ export async function resolveInitProvider(
 /**
  * Run the specrunner init command.
  * Generates a global config scaffold and a per-repo project scaffold (specrunner/drafts,
- * specrunner/changes, .gitignore entries). Requires the current working directory to be
- * inside a git repository; exits with code 1 if it is not.
+ * specrunner/changes, .gitignore entries). The caller (dispatch) is responsible for
+ * ensuring a git repository is present (requiresRepo: true on the registry entry).
  * Does NOT set up managed runtime — use 'managed setup' for that.
  *
  * Returns the exit code:
  *   0 = success
- *   1 = environment error (not a git repo, git unavailable)
  *   2 = argument error (deprecated flag)
  */
 export async function runInit(options: {
   runtime?: "managed" | "local";
   provider?: Provider;
+  repoRoot: string;
 }): Promise<number> {
-  const { runtime, provider: flagProvider } = options;
+  const { runtime, provider: flagProvider, repoRoot } = options;
 
   if (runtime === "managed") {
     logError("init no longer sets up managed runtime. Run 'init' for config scaffold, then set SPECRUNNER_API_KEY and run 'managed setup'.");
@@ -65,28 +64,6 @@ export async function runInit(options: {
   if (runtime === "local") {
     logError("--runtime flag is no longer needed. 'init' generates a local-default config scaffold.");
     return 2;
-  }
-
-  // Git repository gate: init requires a git repository.
-  // .gitignore and worktree scaffold are git-specific; running outside a repo is not supported.
-  let repoRoot: string;
-  try {
-    const gitResult = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
-    if (gitResult.exitCode === null) {
-      logError("git is not available. Please install git and try again.");
-      return 1;
-    }
-    if (gitResult.exitCode !== 0) {
-      logError(
-        "specrunner init must be run inside a git repository. " +
-        "Run 'git init' to create one, or cd into an existing repo.",
-      );
-      return 1;
-    }
-    repoRoot = gitResult.stdout.trim();
-  } catch {
-    logError("git is not available. Please install git and try again.");
-    return 1;
   }
 
   // Check if global config already exists

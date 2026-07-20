@@ -217,7 +217,7 @@ describe("TC-038: init does not reference AgentSyncer (managed setup moved to 'm
   it("init writes config scaffold without anthropic or runtime field", async () => {
     // Run the actual init to verify config scaffold is written
     const { runInit } = await import("../../../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");
@@ -413,7 +413,7 @@ describe("TC-PROG: validateConfig progress.heartbeatIntervalSec validation", () 
 describe("TC-042: specrunner init writes config scaffold without runtime or anthropic field", () => {
   it("config file has no runtime field (local is the default)", async () => {
     const { runInit } = await import("../../../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");
@@ -426,7 +426,7 @@ describe("TC-042: specrunner init writes config scaffold without runtime or anth
 
   it("init does not write anthropic field to config", async () => {
     const { runInit } = await import("../../../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");

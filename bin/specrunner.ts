@@ -134,26 +134,44 @@ export async function main(): Promise<void> {
     emitHelp(entry.usage);
   }
 
+  // Parse flags (FlagParseError caught separately from handler errors)
+  let parsedNormal: ReturnType<typeof parseFlags>;
   try {
-    const parsed = parseFlags(normalArgs, entry.flags, entry.positional);
-
-    if (WORKTREE_GUARDED_COMMANDS.has(command)) {
-      const detection = await detectWorktree(process.cwd());
-      if (detection.isWorktree) {
-        throw worktreeGuardError(command, detection.mainWorktreePath ?? process.cwd());
-      }
+    parsedNormal = parseFlags(normalArgs, entry.flags, entry.positional);
+  } catch (e) {
+    if (e instanceof FlagParseError) {
+      process.stderr.write(e.message + "\n");
+      if (entry.usage) process.stderr.write(entry.usage);
+      else process.stderr.write(USAGE);
+      process.exit(2);
     }
+    process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
+    process.exit(1);
+  }
 
-    // Build dispatch-time context (single repo root resolution per invocation)
-    const ctx = await buildCommandContext(process.cwd());
-    if (entry.requiresRepo && ctx.repoRoot === null) {
-      const err = repoRequiredError(command);
+  if (WORKTREE_GUARDED_COMMANDS.has(command)) {
+    const detection = await detectWorktree(process.cwd());
+    if (detection.isWorktree) {
+      const err = worktreeGuardError(command, detection.mainWorktreePath ?? process.cwd());
       process.stderr.write(`Error: ${err.message}\n`);
       process.stderr.write(`Hint: ${err.hint}\n`);
       process.exit(err.exitCode);
     }
+  }
 
-    await entry.handler(parsed, ctx);
+  // Build dispatch-time context (single repo root resolution per invocation)
+  // This is outside the handler try/catch so the requiresRepo exit(2) is never
+  // swallowed by the handler error handler (important for test-mode exit mocking).
+  const ctxNormal = await buildCommandContext(process.cwd());
+  if (entry.requiresRepo && ctxNormal.repoRoot === null) {
+    const err = repoRequiredError(command);
+    process.stderr.write(`Error: ${err.message}\n`);
+    process.stderr.write(`Hint: ${err.hint}\n`);
+    process.exit(err.exitCode);
+  }
+
+  try {
+    await entry.handler(parsedNormal!, ctxNormal);
   } catch (e) {
     if (e instanceof FlagParseError) {
       process.stderr.write(e.message + "\n");

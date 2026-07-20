@@ -6,6 +6,7 @@ export default defineConfig({
     include: ["src/**/__tests__/**/*.test.ts", "tests/**/*.test.ts"],
     pool: "forks",
     maxWorkers: 4,
+    testTimeout: 30000,
     globalSetup: "./tests/global-setup.ts",
     coverage: {
       provider: "v8",

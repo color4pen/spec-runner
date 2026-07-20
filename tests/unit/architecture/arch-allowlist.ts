@@ -285,20 +285,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     comment: "role-a: resolveRepoRoot called with process.cwd() as the repo discovery origin when no cwd is injected.",
   },
   {
-    file: "src/cli/init.ts",
-    pattern: "{ cwd: process.cwd() }",
-    invariant: "CWD",
-    tracking: "CWD-init-git-spawn",
-    comment: "role-a: git rev-parse run from process.cwd() to find the repo root during init.",
-  },
-  {
-    file: "src/cli/job-show.ts",
-    pattern: "resolveRepoRoot()) ?? process.cwd()",
-    invariant: "CWD",
-    tracking: "CWD-job-show-root-resolve",
-    comment: "role-a: resolveRepoRoot with graceful degradation to process.cwd() when outside a repo.",
-  },
-  {
     file: "src/cli/job-show.ts",
     pattern: "repoRoot: string = process.cwd()",
     invariant: "CWD",
@@ -373,13 +359,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     invariant: "CWD",
     tracking: "CWD-provider-sdk-loader-di-default",
     comment: "di-default: detectPackageManager falls back to process.cwd() when no detectPm is injected.",
-  },
-  {
-    file: "src/cli/config-effective.ts",
-    pattern: "options.cwd ?? process.cwd()",
-    invariant: "CWD",
-    tracking: "CWD-config-effective-di-default",
-    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
   },
   {
     file: "src/cli/resume.ts",
@@ -554,13 +533,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     invariant: "CWD",
     tracking: "CWD-registry-show-usage-summary-debt",
     comment: "debt: usage summary passes process.cwd() as repo base. Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/inbox.ts",
-    pattern: "const cwd = process.cwd()",
-    invariant: "CWD",
-    tracking: "CWD-inbox-debt",
-    comment: "debt: inbox run derives internal paths from process.cwd(). Follow-up burn-down.",
   },
   {
     file: "src/config/store.ts",

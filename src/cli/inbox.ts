@@ -8,7 +8,6 @@ import { resolveGitHubToken } from "../core/credentials/github.js";
 import { createGitHubClient } from "../adapter/github/github-client.js";
 import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-host.js";
 import { getOriginInfo } from "../git/remote.js";
-import { resolveRepoRootOrFail } from "../util/repo-root.js";
 import { resolveInboxConfig } from "../config/schema.js";
 import { runInboxOrchestrator } from "../core/inbox/run-inbox.js";
 import { logError, stderrWrite } from "../logger/stdout.js";
@@ -21,6 +20,8 @@ export interface InboxRunCliOptions {
   json?: boolean;
   verbose?: boolean;
   quiet?: boolean;
+  /** Dispatch-resolved repo root (provided by the registry handler via ctx.repoRoot). */
+  repoRoot: string;
 }
 
 /**
@@ -29,23 +30,14 @@ export interface InboxRunCliOptions {
  */
 export async function runInboxRun(options: InboxRunCliOptions): Promise<number> {
   try {
-    const cwd = process.cwd();
+    const repoRoot = options.repoRoot;
 
-    // Resolve config
+    // Resolve config (pre-resolved repoRoot passed to avoid redundant git resolution)
     let config;
     try {
-      config = await loadConfigWithOverlay(cwd);
+      config = await loadConfigWithOverlay(repoRoot, repoRoot);
     } catch (err) {
       logError(`Failed to load config: ${(err as Error).message}`);
-      return EXIT_CODE.GENERAL_ERROR;
-    }
-
-    // Resolve repo root
-    let repoRoot: string;
-    try {
-      repoRoot = await resolveRepoRootOrFail(cwd);
-    } catch (err) {
-      logError(`Failed to resolve git repo root: ${(err as Error).message}`);
       return EXIT_CODE.GENERAL_ERROR;
     }
 
@@ -65,7 +57,7 @@ export async function runInboxRun(options: InboxRunCliOptions): Promise<number> 
     let owner: string;
     let repo: string;
     try {
-      const origin = await getOriginInfo(cwd, githubHost);
+      const origin = await getOriginInfo(repoRoot, githubHost);
       owner = origin.owner;
       repo = origin.name;
     } catch (err) {

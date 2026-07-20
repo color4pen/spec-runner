@@ -18,11 +18,16 @@ import { ConformanceStep } from "../core/step/conformance.js";
 import { AdrGenStep } from "../core/step/adr-gen.js";
 import { EXIT_CODE, SpecRunnerError } from "../errors.js";
 import { stdoutWrite, stderrWrite } from "../logger/stdout.js";
-import { resolveRepoRoot } from "../util/repo-root.js";
 
 export interface RunConfigEffectiveOptions {
   requestType?: string;
   json?: boolean;
+  /** Dispatch-resolved repo root. null/undefined = outside a repo (use global config only). */
+  repoRoot?: string | null;
+  /**
+   * @deprecated Use repoRoot instead. Kept for backward compatibility with direct callers.
+   * When both repoRoot and cwd are provided, repoRoot takes precedence.
+   */
   cwd?: string;
 }
 
@@ -54,7 +59,6 @@ const STANDARD_AGENT_STEPS: Record<string, AgentStep> = {
 };
 
 export async function runConfigEffective(options: RunConfigEffectiveOptions): Promise<number> {
-  const cwd = options.cwd ?? process.cwd();
   const requestType = options.requestType;
   if (requestType !== undefined && TYPE_CONFIG[requestType] === undefined) {
     stderrWrite(`Error: invalid --type value "${requestType}". Valid values: ${Object.keys(TYPE_CONFIG).join(", ")}`);
@@ -62,7 +66,10 @@ export async function runConfigEffective(options: RunConfigEffectiveOptions): Pr
   }
 
   try {
-    const repoRoot = await resolveRepoRoot(cwd);
+    // repoRoot takes precedence over cwd (backward compat); null/undefined = global config only.
+    const repoRoot = options.repoRoot !== undefined
+      ? options.repoRoot
+      : (options.cwd ?? undefined);
     const loaded = await loadConfigWithSourceMetadata(repoRoot ?? undefined);
     const output: ConfigEffectiveOutput = {
       requestType: requestType ?? null,

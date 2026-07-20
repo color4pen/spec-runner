@@ -29,7 +29,7 @@ afterEach(async () => {
 describe("runInit — config scaffold generation", () => {
   it("creates a config file with version:1 and steps.defaults", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");
@@ -44,7 +44,7 @@ describe("runInit — config scaffold generation", () => {
 
   it("does not write anthropic field to config", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");
@@ -55,7 +55,7 @@ describe("runInit — config scaffold generation", () => {
 
   it("does not write runtime field to config (defaults to local)", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");
@@ -66,7 +66,7 @@ describe("runInit — config scaffold generation", () => {
 
   it("creates config with 0600 permissions", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const stat = await fs.stat(configPath);
@@ -76,13 +76,13 @@ describe("runInit — config scaffold generation", () => {
 
   it("--runtime managed returns exit code 2 (deprecated flag is arg error)", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    const result = await runInit({ runtime: "managed" });
+    const result = await runInit({ runtime: "managed", repoRoot: tempDir });
     expect(result).toBe(2);
   });
 
   it("--runtime local returns exit code 2 (deprecated flag is arg error)", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    const result = await runInit({ runtime: "local" });
+    const result = await runInit({ runtime: "local", repoRoot: tempDir });
     expect(result).toBe(2);
   });
 });
@@ -91,7 +91,7 @@ describe("runInit — config scaffold generation", () => {
 describe("TC-010: specrunner init で steps.defaults が追加される", () => {
   it("steps フィールドがない config に steps.defaults を追加する", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");
@@ -124,7 +124,7 @@ describe("TC-011: specrunner init で既存の steps は上書きされない", 
     await fs.writeFile(configPath, JSON.stringify(existingConfig), { mode: 0o600 });
 
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const raw = await fs.readFile(configPath, "utf-8");
     const config = JSON.parse(raw);
@@ -135,12 +135,12 @@ describe("TC-011: specrunner init で既存の steps は上書きされない", 
 
   it("2 回目実行後も config.json のコンテンツが変わらない", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const contentAfterFirst = await fs.readFile(configPath, "utf-8");
 
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const contentAfterSecond = await fs.readFile(configPath, "utf-8");
     expect(contentAfterSecond).toBe(contentAfterFirst);
@@ -162,7 +162,7 @@ describe("config-write-hygiene: runInit で github フィールドが保持さ�
     await fs.writeFile(configPath, JSON.stringify(existingConfig), { mode: 0o600 });
 
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const raw = await fs.readFile(configPath, "utf-8");
     const config = JSON.parse(raw);
@@ -173,55 +173,16 @@ describe("config-write-hygiene: runInit で github フィールドが保持さ�
   });
 });
 
-// TC-001: 非 git ディレクトリで非ゼロ exit かつ FS に何も作られない
-// Source: spec.md > Scenario: non-git directory stops with non-zero exit and writes nothing
-describe("TC-001: specrunner init — git repo 外では非ゼロ exit で停止し FS に何も作られない", () => {
-  let nonGitTempDir: string;
-
-  beforeEach(async () => {
-    nonGitTempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-init-nongit-test-"));
-  });
-
-  afterEach(async () => {
-    vi.restoreAllMocks();
-    await fs.rm(nonGitTempDir, { recursive: true, force: true });
-  });
-
-  it("TC-001: git repo 外の dir で init すると非ゼロ exit で停止し、FS に何も作られない", async () => {
-    // ANTI-REGRESSION (TC-002): If the git gate is removed, runInit returns 0 even in a
-    // non-git directory. The assertion `expect(result).not.toBe(0)` would then fail,
-    // confirming the regression. TC-002 in init-git-guard.test.ts reinforces this with
-    // a mocked spawnCommand returning exitCode=128.
-    vi.spyOn(process, "cwd").mockReturnValue(nonGitTempDir);
-
-    const stderrCapture: string[] = [];
-    vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
-      stderrCapture.push(String(chunk));
-      return true;
-    });
-
-    const { runInit } = await import("../src/cli/init.js");
-    const result = await runInit({});
-
-    // Must be non-zero — ANTI-REGRESSION: removing the git gate makes this 0 and the assertion fails
-    expect(result).not.toBe(0);
-    expect(result).toBe(1);
-
-    // stderr must contain a prescription requiring a git repository
-    const stderrText = stderrCapture.join("");
-    expect(stderrText.toLowerCase()).toMatch(/git/);
-    // Prescription mentions git init or moving to an existing repo
-    expect(stderrText.toLowerCase()).toMatch(/git init|existing repo|git repo|run inside/);
-
-    // No global config created (XDG_CONFIG_HOME → outer tempDir)
-    const configPath = path.join(tempDir, "specrunner", "config.json");
-    await expect(fs.access(configPath)).rejects.toThrow();
-
-    // No specrunner/ scaffold in the non-git dir
-    await expect(fs.access(path.join(nonGitTempDir, "specrunner"))).rejects.toThrow();
-
-    // No .gitignore in the non-git dir
-    await expect(fs.access(path.join(nonGitTempDir, ".gitignore"))).rejects.toThrow();
+// TC-001: requiresRepo: true によって dispatch レベルで repo が必要と宣言されている
+// Source: repo-root-resolve-exactly-once > T-01
+// Note: git gate was moved from runInit internals to dispatch level (requiresRepo: true).
+//       The "outside repo stops with error" behavior is now tested at dispatch level
+//       via TC-019 in tests/unit/cli/repo-root-exactly-once.test.ts.
+describe("TC-001: specrunner init — COMMANDS.init は requiresRepo: true を持つ", () => {
+  it("TC-001: COMMANDS.init.requiresRepo === true（dispatch レベルで repo 必須が宣言されている）", async () => {
+    const { COMMANDS } = await import("../src/cli/command-registry.js");
+    const initCmd = COMMANDS["init"] as { requiresRepo?: boolean };
+    expect(initCmd.requiresRepo).toBe(true);
   });
 });
 
@@ -242,10 +203,8 @@ describe("T-01: specrunner init でプロジェクトディレクトリが作成
   });
 
   it("git repo 内で init すると specrunner/drafts/ と specrunner/changes/ が作成される", async () => {
-    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
-
     const { runInit } = await import("../src/cli/init.js");
-    const result = await runInit({});
+    const result = await runInit({ repoRoot: gitTempDir });
 
     expect(result).toBe(0);
 
@@ -257,11 +216,9 @@ describe("T-01: specrunner init でプロジェクトディレクトリが作成
   });
 
   it("冪等性: 2 回 runInit しても正常に完了する", async () => {
-    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
-
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({});
-    const result = await runInit({});
+    await runInit({ repoRoot: gitTempDir });
+    const result = await runInit({ repoRoot: gitTempDir });
 
     expect(result).toBe(0);
 
@@ -273,8 +230,6 @@ describe("T-01: specrunner init でプロジェクトディレクトリが作成
   });
 
   it("config が存在する場合でも project scaffold（drafts/, changes/）は作成される", async () => {
-    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
-
     // Pre-create the global config so init skips scaffold generation
     const configDir = path.join(tempDir, "specrunner");
     await fs.mkdir(configDir, { recursive: true });
@@ -282,7 +237,7 @@ describe("T-01: specrunner init でプロジェクトディレクトリが作成
     await fs.writeFile(path.join(configDir, "config.json"), JSON.stringify(existingConfig), { mode: 0o600 });
 
     const { runInit } = await import("../src/cli/init.js");
-    const result = await runInit({});
+    const result = await runInit({ repoRoot: gitTempDir });
 
     expect(result).toBe(0);
 
@@ -312,8 +267,6 @@ describe("TC-004: 未初期化 git repo で init が 4 項目すべてを create
   });
 
   it("TC-004: stdout に 4 項目すべて created が 1 行ずつ出力され exit 0", async () => {
-    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
-
     const stdoutCapture: string[] = [];
     vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
       stdoutCapture.push(String(chunk));
@@ -321,7 +274,7 @@ describe("TC-004: 未初期化 git repo で init が 4 項目すべてを create
     });
 
     const { runInit } = await import("../src/cli/init.js");
-    const result = await runInit({});
+    const result = await runInit({ repoRoot: gitTempDir });
 
     expect(result).toBe(0);
 
@@ -358,12 +311,10 @@ describe("TC-005: 初期化済み repo での再実行が全項目 already-exist
   });
 
   it("TC-005: 2 回目の runInit が全項目 already-exists を stdout に報告し exit 0、FS を変更しない", async () => {
-    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
-
     const { runInit } = await import("../src/cli/init.js");
 
     // First run: fully initialize
-    await runInit({});
+    await runInit({ repoRoot: gitTempDir });
 
     // Snapshot FS state before second run
     const gitignoreBefore = await fs.readFile(path.join(gitTempDir, ".gitignore"), "utf-8");
@@ -375,7 +326,7 @@ describe("TC-005: 初期化済み repo での再実行が全項目 already-exist
       return true;
     });
 
-    const result = await runInit({});
+    const result = await runInit({ repoRoot: gitTempDir });
 
     expect(result).toBe(0);
 
@@ -425,8 +376,6 @@ describe("TC-006: config 既存・scaffold 欠損の状態から init が欠損�
   });
 
   it("TC-006: config 既存だが scaffold なしの状態から init が欠損分を created として stdout に報告する", async () => {
-    vi.spyOn(process, "cwd").mockReturnValue(gitTempDir);
-
     const stdoutCapture: string[] = [];
     vi.spyOn(process.stdout, "write").mockImplementation((chunk) => {
       stdoutCapture.push(String(chunk));
@@ -434,7 +383,7 @@ describe("TC-006: config 既存・scaffold 欠損の状態から init が欠損�
     });
 
     const { runInit } = await import("../src/cli/init.js");
-    const result = await runInit({});
+    const result = await runInit({ repoRoot: gitTempDir });
 
     expect(result).toBe(0);
 
@@ -521,7 +470,7 @@ describe("resolveInitProvider — TTY prompts user", () => {
 describe("runInit — provider: openai scaffold", () => {
   it("generates config with gpt-5.4-mini as defaults model and gpt-5.5 as design model", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    const result = await runInit({ provider: "openai" });
+    const result = await runInit({ provider: "openai", repoRoot: tempDir });
 
     expect(result).toBe(0);
 
@@ -539,7 +488,7 @@ describe("runInit — provider: openai scaffold", () => {
 describe("runInit — provider: anthropic scaffold (legacy-compatible)", () => {
   it("generates config identical to legacy (no steps.design block)", async () => {
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({ provider: "anthropic" });
+    await runInit({ provider: "anthropic", repoRoot: tempDir });
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");
@@ -554,7 +503,7 @@ describe("runInit — no provider flag, non-TTY (CI compatibility)", () => {
   it("defaults to anthropic scaffold when stdin is not a TTY", async () => {
     // process.stdin.isTTY is undefined/false in test environment
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({});
+    await runInit({ repoRoot: tempDir });
 
     const configPath = path.join(tempDir, "specrunner", "config.json");
     const raw = await fs.readFile(configPath, "utf-8");
@@ -579,7 +528,7 @@ describe("runInit — config exists, provider flag is ignored", () => {
     await fs.writeFile(configPath, JSON.stringify(existingConfig), { mode: 0o600 });
 
     const { runInit } = await import("../src/cli/init.js");
-    await runInit({ provider: "openai" });
+    await runInit({ provider: "openai", repoRoot: tempDir });
 
     const raw = await fs.readFile(configPath, "utf-8");
     const config = JSON.parse(raw);

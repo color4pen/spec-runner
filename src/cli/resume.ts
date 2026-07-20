@@ -31,6 +31,8 @@ export interface ResumeOptions {
   force?: boolean;
   logLevel?: LogLevel;
   cwd?: string;
+  /** Dispatch-resolved repo root (null = outside a repo). Forwarded to bootstrap for config load. */
+  repoRoot?: string | null;
   prompt?: string;
   json?: boolean;
   noWorktree?: boolean;
@@ -48,7 +50,7 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
   let runtime: Awaited<ReturnType<typeof bootstrap>>["runtime"];
   let config: Awaited<ReturnType<typeof bootstrap>>["config"];
   try {
-    ({ runtime, config } = await bootstrap(cwd, repo));
+    ({ runtime, config } = await bootstrap(cwd, repo, options.repoRoot ?? null));
   } catch (err) {
     const e = err as Error & { hint?: string };
     logError(e.message);

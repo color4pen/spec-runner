@@ -291,12 +291,14 @@ export const COMMANDS: Record<string, CommandEntry> = {
       runtime: { type: "string", values: ["managed", "local"] as const },
       provider: { type: "string", values: ["anthropic", "openai"] as const },
     },
-    handler: async (parsed) => {
+    requiresRepo: true,
+    handler: async (parsed, ctx) => {
       const runtimeRaw = parsed.flags["runtime"] as string | undefined;
       const runtime = runtimeRaw as "managed" | "local" | undefined;
       const providerRaw = parsed.flags["provider"] as string | undefined;
       const provider = providerRaw as "anthropic" | "openai" | undefined;
-      process.exit(await runInit({ runtime, provider }));
+      // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
+      process.exit(await runInit({ runtime, provider, repoRoot: ctx!.repoRoot! }));
     },
   },
 
@@ -464,7 +466,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           json: { type: "boolean" },
         },
         usage: "job ls [--active] [--all] [--status <status>] [--json]  全 job 一覧（区分付き運用ビュー）",
-        handler: async (parsed) => {
+        handler: async (parsed, ctx) => {
           let githubClient = null;
           try {
             let githubHost = "github.com";
@@ -481,12 +483,14 @@ export const COMMANDS: Record<string, CommandEntry> = {
           } catch {
             // No token available — PR merge check will be skipped
           }
+          // Pass repoRoot so runPs DI-fallback never fires on the production path (TC-002/TC-023)
           process.exit(await runPs(
             {
               active: !!parsed.flags["active"],
               all: !!parsed.flags["all"],
               status: parsed.flags["status"] as string | undefined,
               json: !!parsed.flags["json"],
+              repoRoot: ctx!.repoRoot ?? ctx!.invokerCwd,
             },
             githubClient,
           ));
@@ -495,8 +499,11 @@ export const COMMANDS: Record<string, CommandEntry> = {
       show: {
         flags: {},
         positional: { name: "jobId|slug", required: true },
-        handler: async (parsed) => {
-          process.exit(await runJobShow(parsed.positional!));
+        handler: async (parsed, ctx) => {
+          process.exit(await runJobShow(
+            parsed.positional!,
+            { repoRoot: ctx?.repoRoot ?? ctx?.invokerCwd },
+          ));
         },
       },
       cancel: {
@@ -508,7 +515,8 @@ export const COMMANDS: Record<string, CommandEntry> = {
           "restore-draft": { type: "boolean" },
         },
         positional: { name: "jobId", required: false },
-        handler: async (parsed) => {
+        requiresRepo: true,
+        handler: async (parsed, ctx) => {
           const jobId = parsed.positional;
           // Security: path-traversal guard; short prefixes are allowed (resolveId handles lookup)
           if (jobId !== undefined && !VALID_JOB_ID_CHARS.test(jobId)) {
@@ -524,6 +532,8 @@ export const COMMANDS: Record<string, CommandEntry> = {
                 allTerminated: !!parsed.flags["all-terminated"],
                 yes: !!parsed.flags["yes"],
                 restoreDraft: !!parsed.flags["restore-draft"],
+                // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
+                repoRoot: ctx!.repoRoot!,
               }),
             );
           } catch (err: unknown) {
@@ -549,7 +559,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           "no-worktree": { type: "boolean" },
         },
         positional: { name: "slug", required: true },
-        handler: async (parsed) => {
+        handler: async (parsed, ctx) => {
           const promptText = parsed.flags["prompt"] as string | undefined;
           const promptFile = parsed.flags["prompt-file"] as string | undefined;
 
@@ -585,6 +595,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
               force: !!parsed.flags["force"],
               logLevel,
               cwd: process.cwd(),
+              repoRoot: ctx?.repoRoot,
               prompt: resolvedPrompt,
               json: !!parsed.flags["json"],
               noWorktree: !!parsed.flags["no-worktree"],
@@ -606,7 +617,8 @@ export const COMMANDS: Record<string, CommandEntry> = {
           verbose: { type: "boolean" },
           quiet: { type: "boolean" },
         },
-        handler: async (parsed) => {
+        requiresRepo: true,
+        handler: async (parsed, ctx) => {
           const branch = parsed.flags["branch"] as string | undefined;
           if (!branch) {
             logError("--branch <branch> is required for 'job attach'.");
@@ -622,6 +634,8 @@ export const COMMANDS: Record<string, CommandEntry> = {
               await runAttach({
                 branch,
                 cwd: process.cwd(),
+                // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
+                repoRoot: ctx!.repoRoot!,
                 logLevel,
               }),
             );
@@ -682,11 +696,14 @@ export const COMMANDS: Record<string, CommandEntry> = {
           force: { type: "boolean" },
         },
         usage: PRUNE_USAGE,
-        handler: async (parsed) => {
+        requiresRepo: true,
+        handler: async (parsed, ctx) => {
           try {
             process.exit(
               await runPrune({
                 force: !!parsed.flags["force"],
+                // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
+                repoRoot: ctx!.repoRoot!,
               }),
             );
           } catch (err: unknown) {
@@ -722,10 +739,11 @@ export const COMMANDS: Record<string, CommandEntry> = {
           type: { type: "string" },
           json: { type: "boolean" },
         },
-        handler: async (parsed) => {
+        handler: async (parsed, ctx) => {
           process.exit(await runConfigEffective({
             requestType: parsed.flags["type"] as string | undefined,
             json: !!parsed.flags["json"],
+            repoRoot: ctx?.repoRoot,
           }));
         },
       },
@@ -744,7 +762,8 @@ export const COMMANDS: Record<string, CommandEntry> = {
           verbose: { type: "boolean" },
           quiet: { type: "boolean" },
         },
-        handler: async (parsed) => {
+        requiresRepo: true,
+        handler: async (parsed, ctx) => {
           const limitRaw = parsed.flags["limit"] as string | undefined;
           let limit: number | undefined;
           if (limitRaw !== undefined) {
@@ -755,6 +774,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
             }
             limit = n;
           }
+          // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
           process.exit(
             await runInboxRun({
               dryRun: !!parsed.flags["dry-run"],
@@ -762,6 +782,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
               json: !!parsed.flags["json"],
               verbose: !!parsed.flags["verbose"],
               quiet: !!parsed.flags["quiet"],
+              repoRoot: ctx!.repoRoot!,
             }),
           );
         },
