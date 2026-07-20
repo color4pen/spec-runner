@@ -26,14 +26,12 @@
 
 ## 要件
 
-1. **smoke を契約 assert に拡張する**: 既存 step を置き換え、**tarball を fixture project へ install し、すべての CLI 実行を `npx --no-install specrunner`（npm 利用者の実入口 = `bin` 配線・shebang・`.bin/specrunner` 生成を通る経路）で行って**次を assert する:
-   - **repo 外 init**: git repo でないディレクトリ（tarball install 済み）から `npx --no-install specrunner init` が非ゼロ exit し、ファイルを一切作らない（隔離した `XDG_CONFIG_HOME` 配下も含めて空のまま）
-   - **subdirectory init（初回）**: fixture git repo の nested subdirectory から init すると exit 0 で、scaffold が repo root に作られ（subdirectory 配下に `specrunner/` が生成されない）、出力に **項目別の created 報告**（global config / .gitignore / drafts / changes）が含まれる
-   - **init 2 回目**: 同条件の再実行が全項目 **already exists** を項目別に報告する（冪等）
-   - **半初期化の補完**: config を残し scaffold を消した状態からの init が、created / already exists を項目別に正しく分けて報告する
-   - **doctor の root/subdirectory 同値 + XDG 契約**: `doctor --json` を repo root と subdirectory の両方から実行して per-check 結果（name / status の組）が一致すること、および隔離 `XDG_CONFIG_HOME` 下で `config-file-exists` check が `pass` であること（全体 exit code ではなく該当 check の status で判定する）
+1. **smoke を契約 assert に拡張する**: 既存 step を置き換え、packed tarball のみを使って（repo の TS ソース・bun に依存せず）次を assert する:
+   - **repo 外 init**: git repo でないディレクトリで `init` が非ゼロ exit し、ファイルを一切作らない（隔離した `XDG_CONFIG_HOME` 配下も含めて空のまま）
+   - **subdirectory init**: fixture git repo の subdirectory から `init` を実行すると exit 0 で、scaffold が repo root に作られ（subdirectory 配下に `specrunner/` が生成されない）、出力に created の項目報告が含まれる
+   - **XDG 契約**: 隔離した `XDG_CONFIG_HOME` で `init` した後の `doctor --json` で、`config-file-exists` check が `pass` である（全体 exit code ではなく該当 check の status で判定する）
    - **subdirectory request new**: subdirectory から `request new` した request.md が repo root 側に作成され、subdirectory 配下に入れ子の `specrunner/` が無い
-   - **--help**: exit 0 に加えて usage 出力（`Usage: specrunner`）を assert する
+   - 既存の `--help` 起動確認は維持する
 2. **ローカル実行可能なスクリプトに切り出す**: assert 本体は repo 内のスクリプト（例: `scripts/`）に置き、CI からはそれを呼ぶ。開発者がローカルで同じ smoke を実行・デバッグできること。
 3. **環境隔離**: fixture は mktemp 配下に作り、`XDG_CONFIG_HOME` / `HOME` 等を隔離して、CI runner や開発者機の実際の設定・認証状態に依存しないこと（token 不在でも成立する assert のみで構成する）。
 
@@ -45,12 +43,12 @@
 
 ## 受け入れ基準
 
-- [ ] **T1**: repo 外 init（npx 経由）の非ゼロ exit と無書き込み（XDG 配下含む）が smoke で assert される。
-- [ ] **T2**: subdirectory init の root 着地・入れ子なしに加え、初回 created / 2 回目 already-exists / 半初期化の created・already-exists 分離が**項目別に** assert される。
-- [ ] **T3**: `doctor --json` の root / subdirectory per-check 同値と、隔離 XDG 下の `config-file-exists` = pass が assert される。
+- [ ] **T1**: repo 外 init の非ゼロ exit と無書き込み（XDG 配下含む）が smoke で assert される。
+- [ ] **T2**: subdirectory init の root 着地・入れ子なし・created 報告が smoke で assert される。
+- [ ] **T3**: 隔離 XDG → init → `doctor --json` の `config-file-exists` = pass が smoke で assert される。
 - [ ] **T4**: subdirectory request new の root 着地・入れ子なしが smoke で assert される。
-- [ ] **T5**: すべての CLI 実行が `npx --no-install specrunner` 経由であり（`node dist` 直叩きを用いない）、smoke が `bun` / repo の `src/` を参照しない。スクリプトがローカル実行可能である。
-- [ ] **T6（破壊確認・ローカル）**: 期待反転で assert が落ちることに加え、**`.bin/specrunner`（bin 配線）を意図的に壊すと smoke が落ちる**ことを確認する（確認後に戻す）。
+- [ ] **T5**: smoke が packed tarball と node のみで動く（`bun` / repo の `src/` を参照しない）。スクリプトがローカル実行可能である。
+- [ ] **T6（破壊確認・ローカル）**: スクリプトの assert がそれぞれ実際に失敗し得ることを、期待値を意図的に反転して落ちることで確認する（確認後に戻す）。
 - [ ] **T7**: CI が green（本 smoke を含む）。`typecheck && test` が green。
 
 ## architect 評価済みの設計判断

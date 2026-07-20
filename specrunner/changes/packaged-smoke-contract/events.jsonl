@@ -107,3 +107,6 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/packaged-smoke-contract/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-20T09:45:35.012Z","endedAt":"2026-07-20T09:45:37.700Z"}
 {"type":"lineage","step":"pr-create","ts":"2026-07-20T09:45:37.700Z","outputs":[{"path":"specrunner/changes/packaged-smoke-contract/pr-create-result.md","hash":"sha256:6ac3c2f7075d569fbd51bb04c1579fd54c356fc80125ff83d53567c24cbee95d"}],"inputs":[{"path":"feat/packaged-smoke-contract-4940f179","hash":null}]}
 {"type":"transition","ts":"2026-07-20T09:45:37.714Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"transition","ts":"2026-07-20T13:23:13.754Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'spec-review'"}
+{"type":"transition","ts":"2026-07-20T13:23:13.822Z","step":"spec-review","status":"started","message":"spec-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-20T13:23:13.824Z","step":"spec-review-started","status":"started","message":"Starting spec-review step"}
