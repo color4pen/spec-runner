@@ -375,7 +375,7 @@ describe("TC-006: probe invoked exactly once per run/resume", () => {
   });
 
   it("probe is NOT called when runtime has no assertProviderReadiness method", async () => {
-    const { probe, getCallCount } = countingProbe({ kind: "ready" });
+    const { probe: _probe, getCallCount } = countingProbe({ kind: "ready" });
     // runtime WITHOUT assertProviderReadiness — probe should not be invoked
     const { runtime } = makeMinimalRuntime({ omitReadinessMethod: true });
     const events = new EventBus();
