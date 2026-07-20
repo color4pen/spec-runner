@@ -8,7 +8,13 @@ Full documentation: [`docs/`](docs/README.md).
 
 ## Quick Start
 
+`specrunner init` must be run inside a git repository — it writes `.gitignore` entries and creates
+the `specrunner/` scaffold that the pipeline depends on. Run `git init` first if you are starting
+from an empty directory.
+
 ```bash
+mkdir my-project && cd my-project
+git init
 npm install -D @color4pen/specrunner
 npx specrunner init
 npx specrunner login

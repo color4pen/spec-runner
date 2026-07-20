@@ -3,7 +3,7 @@ import * as path from "node:path";
 import * as readline from "node:readline";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { getConfigPath } from "../util/xdg.js";
-import { logInfo, logSuccess, logError } from "../logger/stdout.js";
+import { logInfo, logError, logResult } from "../logger/stdout.js";
 import { spawnCommand } from "../util/spawn.js";
 import { ensureDotSpecrunnerGitignore } from "../util/gitignore.js";
 import { changesDirRel, draftsDir } from "../util/paths.js";
@@ -41,10 +41,15 @@ export async function resolveInitProvider(
 
 /**
  * Run the specrunner init command.
- * Generates a local-default config scaffold only.
+ * Generates a global config scaffold and a per-repo project scaffold (specrunner/drafts,
+ * specrunner/changes, .gitignore entries). Requires the current working directory to be
+ * inside a git repository; exits with code 1 if it is not.
  * Does NOT set up managed runtime — use 'managed setup' for that.
  *
- * Returns the exit code: 0 = success, 2 = argument error (deprecated flag).
+ * Returns the exit code:
+ *   0 = success
+ *   1 = environment error (not a git repo, git unavailable)
+ *   2 = argument error (deprecated flag)
  */
 export async function runInit(options: {
   runtime?: "managed" | "local";
@@ -62,7 +67,29 @@ export async function runInit(options: {
     return 2;
   }
 
-  // Check if global config already exists — if so, skip scaffold generation
+  // Git repository gate: init requires a git repository.
+  // .gitignore and worktree scaffold are git-specific; running outside a repo is not supported.
+  let repoRoot: string;
+  try {
+    const gitResult = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
+    if (gitResult.exitCode === null) {
+      logError("git is not available. Please install git and try again.");
+      return 1;
+    }
+    if (gitResult.exitCode !== 0) {
+      logError(
+        "specrunner init must be run inside a git repository. " +
+        "Run 'git init' to create one, or cd into an existing repo.",
+      );
+      return 1;
+    }
+    repoRoot = gitResult.stdout.trim();
+  } catch {
+    logError("git is not available. Please install git and try again.");
+    return 1;
+  }
+
+  // Check if global config already exists
   const configPath = getConfigPath();
   let configExists = false;
   try {
@@ -130,26 +157,23 @@ export async function runInit(options: {
     delete (newConfig as unknown as Record<string, unknown>)["anthropic"];
 
     await saveConfig(newConfig);
-    logSuccess("Config saved.");
     logInfo("Run 'specrunner login' to authenticate with GitHub (required for PR creation).");
-  } else {
-    logInfo("Config already exists. Skipping global config generation.");
   }
 
-  // Append .specrunner/ to .gitignore and create project scaffold if CWD is a git repository (idempotent)
-  try {
-    const result = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });
-    if (result.exitCode === 0) {
-      const repoRoot = result.stdout.trim();
-      await ensureDotSpecrunnerGitignore(repoRoot);
-      // Create project scaffold directories (idempotent — recursive:true is no-op if exists)
-      await fs.mkdir(path.join(repoRoot, draftsDir()), { recursive: true });
-      await fs.mkdir(path.join(repoRoot, changesDirRel()), { recursive: true });
-    }
-    // Non-zero exit = not a git repo; skip silently
-  } catch {
-    // git not available or other error — skip silently
-  }
+  // Report each artifact: created or already exists
+  logResult(`global config: ${configExists ? "already exists" : "created"}`);
+
+  // .gitignore: append .specrunner/* and !.specrunner/config.json (idempotent)
+  const gitignoreChanged = await ensureDotSpecrunnerGitignore(repoRoot);
+  logResult(`.gitignore: ${gitignoreChanged ? "created" : "already exists"}`);
+
+  // specrunner/drafts: create directory (idempotent — recursive:true is no-op if exists)
+  const draftsCreated = await fs.mkdir(path.join(repoRoot, draftsDir()), { recursive: true });
+  logResult(`specrunner/drafts: ${draftsCreated !== undefined ? "created" : "already exists"}`);
+
+  // specrunner/changes: create directory (idempotent — recursive:true is no-op if exists)
+  const changesCreated = await fs.mkdir(path.join(repoRoot, changesDirRel()), { recursive: true });
+  logResult(`specrunner/changes: ${changesCreated !== undefined ? "created" : "already exists"}`);
 
   return 0;
 }

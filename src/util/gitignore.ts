@@ -15,8 +15,10 @@ import * as path from "node:path";
  * - Duplicate `.specrunner/*` lines → deduplicated (first kept)
  * - Comment lines are preserved unchanged
  * - Creates `.gitignore` if it does not exist
+ *
+ * Returns: `true` if the file was written (created or updated), `false` if the file was unchanged.
  */
-export async function ensureDotSpecrunnerGitignore(repoRoot: string): Promise<void> {
+export async function ensureDotSpecrunnerGitignore(repoRoot: string): Promise<boolean> {
   const gitignorePath = path.join(repoRoot, ".gitignore");
 
   let content: string;
@@ -92,7 +94,8 @@ export async function ensureDotSpecrunnerGitignore(repoRoot: string): Promise<vo
   }
 
   const newContent = lines.join("\n");
-  if (newContent === content) return;
+  if (newContent === content) return false;
 
   await fs.writeFile(gitignorePath, newContent, "utf-8");
+  return true;
 }
