@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "79130e2c-9b19-4dd5-9f31-7fd2a273b2da",
   "createdAt": "2026-07-20T03:27:24.304Z",
-  "updatedAt": "2026-07-20T03:27:28.675Z",
+  "updatedAt": "2026-07-20T03:30:42.647Z",
   "request": {
     "title": "job prune を orphan sidecar に拡張する — doctor の生 rm -rf hint を製品コマンド案内に置換する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/prune-orphan-sidecars-79130e2c",
   "error": null,
@@ -61,7 +61,9 @@
   ],
   "issueNumber": 859,
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
