@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8bd5a858-7338-4a32-8d24-a79b09c04c34",
   "createdAt": "2026-07-20T10:38:25.301Z",
-  "updatedAt": "2026-07-20T11:31:06.832Z",
+  "updatedAt": "2026-07-20T11:39:14.232Z",
   "request": {
     "title": "local runtime の provider readiness を副作用より前に確立する — auth 欠如が worktree / branch / journal 作成後に発覚する経路を塞ぐ",
     "type": "spec-change",
@@ -61,7 +61,7 @@
   ],
   "issueNumber": 862,
   "_journal": {
-    "historyCount": 30,
+    "historyCount": 38,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -70,7 +70,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }

@@ -22,15 +22,15 @@ import { stripSecrets } from "../../util/env-filter.js";
 import type { ProviderReadinessProbe, ProviderReadinessResult } from "../../core/port/provider-readiness.js";
 
 /**
- * Local type for the OAuth token resolver — matches the overload signature used by
- * the probe (optional: true → resolves to { token; source } | undefined).
+ * Local type for the OAuth token resolver — narrowed to the exact overload the
+ * probe uses (opts: { optional: true } → result may be undefined).
  *
  * Defined locally to avoid a forbidden adapter→domain static import edge (DSM §3).
  * The real implementation is loaded lazily via dynamic import at probe call time.
  */
 type TokenResolver = (
   env: Record<string, string | undefined>,
-  opts?: { optional?: boolean },
+  opts: { optional: true },
 ) => Promise<{ token: string; source: string } | undefined>;
 
 // ---------------------------------------------------------------------------
@@ -176,11 +176,17 @@ export function createClaudeProviderReadinessProbe(
   const model = opts.model ?? PROBE_MODEL;
 
   return async (env: Record<string, string | undefined>): Promise<ProviderReadinessResult> => {
-    // Resolve token function: use injected resolver if provided, otherwise lazy-load
-    // resolveClaudeCodeOAuthToken via dynamic import to avoid a forbidden
+    // Resolve token function: use injected resolver if provided, otherwise wrap the
+    // real implementation loaded via dynamic import to avoid a forbidden
     // adapter→domain static import edge (DSM §3).
+    // The wrapper narrows to TokenResolver (always calls with { optional: true }).
+    // TypeScript allows a one-parameter function to be assigned to a two-parameter
+    // function type when the extra parameter can be safely ignored.
     const resolveTokenFn: TokenResolver = opts.resolveTokenFn ??
-      (await import("../../core/credentials/claude-code.js")).resolveClaudeCodeOAuthToken;
+      (async (env) => {
+        const { resolveClaudeCodeOAuthToken } = await import("../../core/credentials/claude-code.js");
+        return resolveClaudeCodeOAuthToken(env, { optional: true });
+      });
 
     // Step 1: Resolve token best-effort.
     // Token absence alone is NOT auth-missing — the SDK may authenticate via
