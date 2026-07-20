@@ -44,3 +44,15 @@
 {"type":"transition","ts":"2026-07-20T10:17:14.354Z","step":"verification","status":"warning","message":"verification iteration 1 completed with verdict: failed"}
 {"type":"transition","ts":"2026-07-20T10:17:14.355Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
 {"type":"transition","ts":"2026-07-20T10:17:14.357Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-07-20T10:17:49.713Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"3b24442d-7091-4344-9ea2-4d83bdbc7c2d","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-20T10:17:14.556Z","endedAt":"2026-07-20T10:17:47.892Z","commitOid":"64794b223398f960bc4dd697325a528f1562d394"}
+{"type":"lineage","step":"build-fixer","ts":"2026-07-20T10:17:47.892Z","outputs":[{"path":"specrunner/changes/repo-root-resolve-exactly-once","hash":null}],"inputs":[{"path":"specrunner/changes/repo-root-resolve-exactly-once/verification-result.md","hash":"sha256:4c31d97affe84ccb4a2ddb6ee6e1039408d107a0027627a4cc510ff291966204"}]}
+{"type":"transition","ts":"2026-07-20T10:17:49.719Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-07-20T10:17:49.722Z","step":"verification","status":"started","message":"verification iteration 2 started"}
+{"type":"transition","ts":"2026-07-20T10:17:49.723Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-07-20T10:19:02.873Z","step":"verification-verdict","status":"ok","message":"verification verdict: failed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"failed","findingsPath":"specrunner/changes/repo-root-resolve-exactly-once/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-20T10:17:49.724Z","endedAt":"2026-07-20T10:19:02.872Z"}
+{"type":"lineage","step":"verification","ts":"2026-07-20T10:19:02.872Z","outputs":[{"path":"specrunner/changes/repo-root-resolve-exactly-once/verification-result.md","hash":"sha256:85034ce0738dbd5a0f41d834d96d4f06ffbc6357e67e6cd5842d6aca25f76cae"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-20T10:19:02.881Z","step":"verification","status":"warning","message":"verification iteration 2 completed with verdict: failed"}
+{"type":"transition","ts":"2026-07-20T10:19:02.881Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
+{"type":"transition","ts":"2026-07-20T10:19:02.884Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
