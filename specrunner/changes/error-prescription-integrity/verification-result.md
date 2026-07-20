@@ -6,10 +6,10 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 1.1s | 0 |
-| 2 | typecheck | passed | 4.5s | 0 |
-| 3 | test | failed | 23.7s | 1 |
-| 4 | lint | skipped | — | — |
+| 1 | build | passed | 0.3s | 0 |
+| 2 | typecheck | passed | 4.3s | 0 |
+| 3 | test | passed | 23.8s | 0 |
+| 4 | lint | failed | 5.2s | 1 |
 | 5 | changed-line-coverage | skipped | — | — |
 
 ## Phase: build
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.23 MB
-ESM ⚡️ Build success in 79ms
+ESM ⚡️ Build success in 61ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -39,14 +39,10 @@ $ tsc --noEmit
 
 ## Phase: test
 
-Step 'test' failed
-
 ```
 
  RUN  v4.1.5 .
 
- ❯ tests/unit/cli/hint-command-references.test.ts (7 tests | 1 failed) 38ms
-     × hint に正規コマンドのみが含まれる場合は violations が出ない 4ms
 No jobs found.
 [実行中]
 JOB_ID	SLUG	STEP	STATUS	NEXT	AGE
@@ -55,10 +51,10 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	200d
   "categories": []
 }
 
- Test Files  1 failed | 558 passed (559)
-      Tests  1 failed | 7583 passed | 1 skipped (7585)
-   Start at  16:39:40
-   Duration  23.40s (transform 5.09s, setup 0ms, import 20.95s, tests 29.80s, environment 27ms)
+ Test Files  559 passed (559)
+      Tests  7584 passed | 1 skipped (7585)
+   Start at  16:42:35
+   Duration  23.45s (transform 5.21s, setup 0ms, import 20.53s, tests 30.43s, environment 26ms)
 
 
 $ vitest run
@@ -71,24 +67,24 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-oxXcd9/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-8SnIkW/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-VpXTse/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-FwLdu0/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
@@ -115,14 +111,10 @@ Retrying worktree add: lock contention (attempt 2/3)
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] resumed job slug=fix-login-bug (issue#10)
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
 [inbox] dry-run: no effects will be executed.
 [inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
   start    issue#1 → slug=fix-login-bug
   resume   fix-login-bug (issue#10)
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 [inbox] recovered stale job slug=my-feature (attempt 1)
 [inbox] escalated stale job slug=my-feature to awaiting-resume
 [inbox] dry-run: no effects will be executed.
@@ -155,12 +147,16 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
 ERROR: file not found
@@ -175,34 +171,32 @@ Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (mem
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
-
- FAIL  tests/unit/cli/hint-command-references.test.ts > TC-004: 架空コマンドの混入を検出する（破壊確認） > hint に正規コマンドのみが含まれる場合は violations が出ない
-AssertionError: expected 1 to be +0 // Object.is equality
-
-- Expected
-+ Received
-
-- 0
-+ 1
-
- ❯ tests/unit/cli/hint-command-references.test.ts:225:31
-    223|     const validHint = "Run 'specrunner login' to authenticate.";
-    224|     const violations = validateHintCommands(validHint, validTopLevel, …
-    225|     expect(violations.length).toBe(0);
-       |                               ^
-    226|   });
-    227| });
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-
-error: script "test" exited with code 1
-
 ```
 
 ## Phase: lint
 
-_(skipped — previous command failed)_
+Step 'lint' failed
+
+```
+
+src/core/doctor/types.ts
+  90:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-redeclare')
+
+tests/unit/cli/doctor-help.test.ts
+  67:5  warning  'stderrSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+tests/unit/git/origin-not-configured.test.ts
+  7:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+
+✖ 3 problems (0 errors, 3 warnings)
+  0 errors and 2 warnings potentially fixable with the `--fix` option.
+
+
+$ eslint ./src ./tests --max-warnings 0
+ESLint found too many warnings (maximum: 0).
+error: script "lint" exited with code 1
+
+```
 
 ## Phase: changed-line-coverage
 
