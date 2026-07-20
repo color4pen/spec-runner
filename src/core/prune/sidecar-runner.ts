@@ -13,7 +13,7 @@
  * D5: All I/O deps injected for testability
  */
 import { scanOrphanSidecars } from "../sidecar/orphan.js";
-import type { SidecarScanFs, ScanSidecarsFn, OrphanSidecar } from "../sidecar/orphan.js";
+import type { SidecarScanFs, ScanSidecarsFn, ScanSidecarDeps, OrphanSidecar } from "../sidecar/orphan.js";
 import type { PruneResult } from "./runner.js";
 
 // ---------------------------------------------------------------------------
@@ -27,11 +27,29 @@ export interface SidecarPruneFs extends SidecarScanFs {
   rm(path: string, opts: { recursive: boolean; force: boolean }): Promise<void>;
 }
 
+/**
+ * Per-slug re-check function called immediately before each deletion.
+ * Returns true if the sidecar is still orphan (safe to delete), false if it
+ * has become active and must be spared.
+ * Mirrors the signature of `isOrphanSidecar`.
+ */
+export type RecheckSidecarFn = (
+  deps: ScanSidecarDeps,
+  slug: string,
+  sidecarDir: string,
+) => Promise<boolean>;
+
 export interface SidecarPruneDeps {
   repoRoot: string;
   fs: SidecarPruneFs;
   /** Override for scan function. Defaults to scanOrphanSidecars. */
   scan?: ScanSidecarsFn;
+  /**
+   * Per-slug re-check performed immediately before each deletion.
+   * Production wires `isOrphanSidecar` here.
+   * When absent the runner trusts the scan classification (pre-change behavior).
+   */
+  recheck?: RecheckSidecarFn;
 }
 
 export interface SidecarPruneOpts {
@@ -92,11 +110,32 @@ export async function pruneOrphanSidecars(opts: SidecarPruneOpts): Promise<Prune
   }
 
   // Step 4: --force: perform actual removal (best-effort)
+  const doRecheck: RecheckSidecarFn = deps.recheck ?? (async () => true);
   const warnings: string[] = [];
   const info: string[] = [];
   let removed = 0;
 
   for (const orphan of orphans) {
+    // Re-check immediately before deletion to catch scan→delete races (TOCTOU).
+    let stillOrphan: boolean;
+    try {
+      stillOrphan = await doRecheck({ repoRoot, fs }, orphan.slug, orphan.sidecarPath);
+    } catch (err: unknown) {
+      // Re-check threw — fail-safe: skip deletion
+      warnings.push(
+        `Warning: skipped sidecar for '${orphan.slug}' at ${orphan.sidecarPath}: re-check failed (${err instanceof Error ? err.message : String(err)})`,
+      );
+      continue;
+    }
+
+    if (!stillOrphan) {
+      // Sidecar became active after scan — skip deletion
+      warnings.push(
+        `Warning: skipped sidecar for '${orphan.slug}' at ${orphan.sidecarPath}: no longer orphan (became active after scan)`,
+      );
+      continue;
+    }
+
     try {
       await fs.rm(orphan.sidecarPath, { recursive: true, force: true });
       info.push(`Removed: ${orphan.sidecarPath}`);

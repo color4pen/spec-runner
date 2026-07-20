@@ -14,6 +14,7 @@ import { logResult, logError, stderrWrite } from "../logger/stdout.js";
 import { createWorktreeManager } from "../core/worktree/manager.js";
 import { spawnCommand } from "../util/spawn.js";
 import type { SidecarPruneFs } from "../core/prune/sidecar-runner.js";
+import { isOrphanSidecar } from "../core/sidecar/orphan.js";
 
 export interface RunPruneOptions {
   force: boolean;
@@ -84,6 +85,7 @@ export async function runPrune(opts: RunPruneOptions): Promise<number> {
       deps: {
         repoRoot,
         fs: sidecarFs,
+        recheck: isOrphanSidecar,
       },
     });
   } catch (err: unknown) {

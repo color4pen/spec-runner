@@ -4,6 +4,9 @@
  * TC-005: Worktree and sidecar sections are distinguished in output
  * TC-013: Worktree prune behavior is unaffected
  * TC-022: runPrune exit code is the logical OR of the two runner exit codes
+ *
+ * [prune-force-recheck-before-delete change]
+ * TC-009: Production CLI (runPrune) wires the real isOrphanSidecar as the re-check
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
@@ -40,6 +43,8 @@ vi.mock("../../../src/util/spawn.js", () => ({
 }));
 
 import { runPrune } from "../../../src/cli/prune.js";
+// isOrphanSidecar is intentionally NOT mocked — TC-009 checks the CLI wires the real predicate.
+import { isOrphanSidecar } from "../../../src/core/sidecar/orphan.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -225,5 +230,50 @@ describe("TC-013: worktree prune behavior is unaffected", () => {
 
     const callArg = (mockPruneOrphanSidecars as ReturnType<typeof vi.fn>).mock.calls[0]![0];
     expect(callArg.deps.repoRoot).toBe("/custom/repo");
+  });
+});
+
+// =============================================================================
+// [prune-force-recheck-before-delete change]
+// =============================================================================
+
+// ---------------------------------------------------------------------------
+// TC-009: Production CLI (runPrune) wires the real isOrphanSidecar as the re-check
+// ---------------------------------------------------------------------------
+
+describe("TC-009 [recheck]: runPrune wires the real isOrphanSidecar as the re-check dependency", () => {
+  it("deps.recheck === isOrphanSidecar in the pruneOrphanSidecars call under force: true", async () => {
+    // GIVEN runPrune is called with force: true
+    await runPrune({ force: true });
+
+    // WHEN the captured pruneOrphanSidecars call arg is inspected
+    const callArg = (mockPruneOrphanSidecars as ReturnType<typeof vi.fn>).mock.calls[0]![0];
+
+    // THEN deps.recheck === isOrphanSidecar (the imported real predicate)
+    // isOrphanSidecar is not mocked, so this checks by reference equality that
+    // the CLI wires the real function — not undefined, not a stub.
+    expect(callArg.deps.recheck).toBe(isOrphanSidecar);
+  });
+
+  it("deps.recheck === isOrphanSidecar even in dry-run mode (force: false)", async () => {
+    // The re-check wiring should be present regardless of force flag —
+    // the runner itself chooses not to invoke it in dry-run mode (TC-005 / TC-011).
+    await runPrune({ force: false });
+
+    const callArg = (mockPruneOrphanSidecars as ReturnType<typeof vi.fn>).mock.calls[0]![0];
+    expect(callArg.deps.recheck).toBe(isOrphanSidecar);
+  });
+
+  it("worktree runner call and combined exit code are unchanged by the recheck wiring", async () => {
+    mockPruneOrphanWorktrees.mockResolvedValue(makeWorktreeResult(0));
+    mockPruneOrphanSidecars.mockResolvedValue(makeSidecarResult(0));
+
+    const code = await runPrune({ force: true });
+
+    // Both runners still called exactly once
+    expect(mockPruneOrphanWorktrees).toHaveBeenCalledOnce();
+    expect(mockPruneOrphanSidecars).toHaveBeenCalledOnce();
+    // Combined exit code is still logical OR of both runners
+    expect(code).toBe(0);
   });
 });

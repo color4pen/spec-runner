@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:be40b71304299fd9158f15aced9b7344338997fa2ec79541c13a8500765c1a64",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/prune/sidecar-runner.ts: pruneOrphanSidecars calls fs.rm without re-check between scan and delete (L99-109)",
+    "src/core/sidecar/orphan.ts: isOrphanSidecar exported as standalone function at L66",
+    "src/core/sidecar/orphan.ts: ACTIVE_STATUSES = running/awaiting-resume/awaiting-archive/failed/terminated (L20-26)",
+    "src/core/prune/sidecar-runner.ts: SidecarPruneFs interface extends SidecarScanFs with rm (L26-28)",
+    "src/core/prune/sidecar-runner.ts: deletion is best-effort with per-item warning on failure (L94-116)",
+    "src/core/prune/sidecar-runner.ts: SidecarPruneDeps.scan is injectable override for scan function (L30-35)"
+  ],
+  "sourceRevision": "18b513455f54a5512cd506d22e90828bbfab53ca"
+}
