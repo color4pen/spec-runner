@@ -315,6 +315,23 @@ describe("TC-015: token value never appears in probe detail", () => {
     expect(detailOf(result)).toBeDefined();
     expect(detailOf(result)).not.toContain(SECRET_TOKEN);
   });
+
+  it("token value embedded in the SDK error message is redacted from detail", async () => {
+    // Covers the case where a 401 response echoes the token back in the message body.
+    const SECRET_TOKEN = "sk-ant-secret-token-xyzABC123";
+    const sdk = makeFakeSdkThrowing(
+      new Error(`401 Unauthorized: token ${SECRET_TOKEN} is invalid or expired`),
+    );
+    const probe = createClaudeProviderReadinessProbe({
+      loadSdkFn: fakeLoader(sdk),
+      resolveTokenFn: tokenResolver(SECRET_TOKEN),
+    });
+
+    const result = await probe({});
+    expect(detailOf(result)).toBeDefined();
+    expect(detailOf(result)).not.toContain(SECRET_TOKEN);
+    expect(detailOf(result)).toContain("[REDACTED]");
+  });
 });
 
 // ---------------------------------------------------------------------------

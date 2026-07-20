@@ -132,8 +132,12 @@ function classifyError(
  * Build a sanitized, credential-free detail string from a thrown error.
  * Never includes the token value or any pattern-matched secret.
  */
-function buildDetail(err: unknown, _tokenValue: string | undefined): string {
-  const msg = messageOf(err);
+function buildDetail(err: unknown, tokenValue: string | undefined): string {
+  let msg = messageOf(err);
+  // Scrub token value before truncation so it never appears in the detail string
+  if (tokenValue && msg.includes(tokenValue)) {
+    msg = msg.replaceAll(tokenValue, "[REDACTED]");
+  }
   // Truncate to a reasonable bound; never include the token literal
   const bounded = msg.length > 200 ? msg.slice(0, 200) + "…" : msg;
   return bounded;
