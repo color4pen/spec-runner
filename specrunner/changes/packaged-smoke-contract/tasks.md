@@ -15,13 +15,13 @@
 
 ## T-01: smoke スクリプトのハーネス（pack → install → dist 解決）を実装する
 
-- [ ] `scripts/smoke/package-smoke.sh` を新規作成し、実行権限を付与する。冒頭コメントに用途・ローカル実行方法（`bash scripts/smoke/package-smoke.sh`）・「bun / src を参照しない」旨を書く。
-- [ ] `set -u`（必要に応じ `pipefail`）を設定し、意図的失敗 scenario と衝突しない失敗判定方針を採る。
-- [ ] リポジトリ root を解決し、`dist/specrunner.js` の存在を前提チェックする。無ければ「先に build して dist を生成せよ」と明示エラーで非ゼロ exit（スクリプトは build を担わない＝`bun` を呼ばない）。
-- [ ] `npm pack` を temp ディレクトリ宛に実行し、生成 tarball のパスを解決する。
-- [ ] 隔離した「消費者プロジェクト」temp dir で `npm init -y` → `npm install --omit=optional <tarball>` を実行し、`node_modules/@color4pen/specrunner/dist/specrunner.js` を実行対象 dist として解決する。
-- [ ] scenario 共通のヘルパ（隔離 env での起動、PASS/FAIL 判定行の出力、失敗集計と最終 exit）を用意する。
-- [ ] スクリプト終了時に temp ディレクトリ・生成 tarball を後片付けする（trap 等）。
+- [x] `scripts/smoke/package-smoke.sh` を新規作成し、実行権限を付与する。冒頭コメントに用途・ローカル実行方法（`bash scripts/smoke/package-smoke.sh`）・「bun / src を参照しない」旨を書く。
+- [x] `set -u`（必要に応じ `pipefail`）を設定し、意図的失敗 scenario と衝突しない失敗判定方針を採る。
+- [x] リポジトリ root を解決し、`dist/specrunner.js` の存在を前提チェックする。無ければ「先に build して dist を生成せよ」と明示エラーで非ゼロ exit（スクリプトは build を担わない＝`bun` を呼ばない）。
+- [x] `npm pack` を temp ディレクトリ宛に実行し、生成 tarball のパスを解決する。
+- [x] 隔離した「消費者プロジェクト」temp dir で `npm init -y` → `npm install --omit=optional <tarball>` を実行し、`node_modules/@color4pen/specrunner/dist/specrunner.js` を実行対象 dist として解決する。
+- [x] scenario 共通のヘルパ（隔離 env での起動、PASS/FAIL 判定行の出力、失敗集計と最終 exit）を用意する。
+- [x] スクリプト終了時に temp ディレクトリ・生成 tarball を後片付けする（trap 等）。
 
 **Acceptance Criteria**:
 - スクリプト単体で `bash scripts/smoke/package-smoke.sh` としてローカル起動でき、dist 未 build 時は明示エラーで停止する。
@@ -30,9 +30,9 @@
 
 ## T-02: S1 — repo 外 init の非ゼロ exit と無書き込み（T1）
 
-- [ ] `mktemp` 配下に「git repo でない」fixture ディレクトリと、空の隔離 `XDG_CONFIG_HOME` を用意する。`GIT_CEILING_DIRECTORIES` を fixture 親に設定し、実行前に fixture が repo 外であることを `git rev-parse` で確認する（repo 内なら環境エラーで fail）。
-- [ ] fixture を cwd、隔離 XDG/HOME で `node <dist> init --provider anthropic < /dev/null` を実行し、exit code を明示捕捉する。
-- [ ] assert: exit code が非ゼロ / fixture 直下に `specrunner/` も `.gitignore` も無い / `$XDG_CONFIG_HOME/specrunner/config.json` が不在。
+- [x] `mktemp` 配下に「git repo でない」fixture ディレクトリと、空の隔離 `XDG_CONFIG_HOME` を用意する。`GIT_CEILING_DIRECTORIES` を fixture 親に設定し、実行前に fixture が repo 外であることを `git rev-parse` で確認する（repo 内なら環境エラーで fail）。
+- [x] fixture を cwd、隔離 XDG/HOME で `node <dist> init --provider anthropic < /dev/null` を実行し、exit code を明示捕捉する。
+- [x] assert: exit code が非ゼロ / fixture 直下に `specrunner/` も `.gitignore` も無い / `$XDG_CONFIG_HOME/specrunner/config.json` が不在。
 
 **Acceptance Criteria**:
 - repo 外 init が非ゼロ exit し、cwd と隔離 XDG のいずれにも書き込みが無いことが assert される。
@@ -40,9 +40,9 @@
 
 ## T-03: S2 — subdirectory init の root 着地・入れ子なし・created 報告（T2）
 
-- [ ] `mktemp` 配下に `git init` した fixture repo を作り、subdirectory（例 `sub/deep`）と空の隔離 `XDG_CONFIG_HOME` を用意する。
-- [ ] subdirectory を cwd、隔離 XDG/HOME で `node <dist> init --provider anthropic < /dev/null` を実行し、stdout を捕捉する。
-- [ ] assert: exit 0 / `<root>/specrunner/drafts` と `<root>/specrunner/changes` が存在 / `<subdir>/specrunner` が不在 / stdout に created の項目報告（例 `specrunner/drafts: created`）を含む。
+- [x] `mktemp` 配下に `git init` した fixture repo を作り、subdirectory（例 `sub/deep`）と空の隔離 `XDG_CONFIG_HOME` を用意する。
+- [x] subdirectory を cwd、隔離 XDG/HOME で `node <dist> init --provider anthropic < /dev/null` を実行し、stdout を捕捉する。
+- [x] assert: exit 0 / `<root>/specrunner/drafts` と `<root>/specrunner/changes` が存在 / `<subdir>/specrunner` が不在 / stdout に created の項目報告（例 `specrunner/drafts: created`）を含む。
 
 **Acceptance Criteria**:
 - subdirectory init が exit 0 で scaffold を repo root に作り、subdirectory 配下に入れ子の `specrunner/` を作らないことが assert される。
@@ -50,10 +50,10 @@
 
 ## T-04: S3 — 隔離 XDG → init → doctor --json の config-file-exists = pass（T3）
 
-- [ ] `mktemp` 配下に `git init` fixture と空の隔離 `XDG_CONFIG_HOME` を用意し、その XDG で `node <dist> init --provider anthropic < /dev/null` を実行する。
-- [ ] 同 XDG・fixture root cwd で `node <dist> doctor --json` を実行し、stdout を捕捉する。
-- [ ] node のワンライナー（`node -e`、`jq` 等の外部依存を使わない）で JSON を parse し、`results[]` から `name === "config-file-exists"` を取り出す。
-- [ ] assert: 取り出した check の `status === "pass"`。doctor プロセス全体の exit code は判定に使わない。
+- [x] `mktemp` 配下に `git init` fixture と空の隔離 `XDG_CONFIG_HOME` を用意し、その XDG で `node <dist> init --provider anthropic < /dev/null` を実行する。
+- [x] 同 XDG・fixture root cwd で `node <dist> doctor --json` を実行し、stdout を捕捉する。
+- [x] node のワンライナー（`node -e`、`jq` 等の外部依存を使わない）で JSON を parse し、`results[]` から `name === "config-file-exists"` を取り出す。
+- [x] assert: 取り出した check の `status === "pass"`。doctor プロセス全体の exit code は判定に使わない。
 
 **Acceptance Criteria**:
 - 隔離 XDG で init 済みの状態に対し、`doctor --json` の `config-file-exists` check が `pass` であることが per-check status で assert される。
@@ -61,18 +61,18 @@
 
 ## T-05: S4 — subdirectory request new の root 着地・入れ子なし（T4）
 
-- [ ] `mktemp` 配下に `git init` fixture と subdirectory を用意する（固定 slug を用いる。例 `smoke-request-fixture`。`/^[a-z0-9][a-z0-9-]{0,63}$/` に適合すること）。
-- [ ] subdirectory を cwd に `node <dist> request new <slug>`（非対話、`< /dev/null`）を実行し、exit code を捕捉する。
-- [ ] assert: exit 0 / `<root>/specrunner/drafts/<slug>/request.md` が存在 / `<subdir>/specrunner` が不在。
+- [x] `mktemp` 配下に `git init` fixture と subdirectory を用意する（固定 slug を用いる。例 `smoke-request-fixture`。`/^[a-z0-9][a-z0-9-]{0,63}$/` に適合すること）。
+- [x] subdirectory を cwd に `node <dist> request new <slug>`（非対話、`< /dev/null`）を実行し、exit code を捕捉する。
+- [x] assert: exit 0 / `<root>/specrunner/drafts/<slug>/request.md` が存在 / `<subdir>/specrunner` が不在。
 
 **Acceptance Criteria**:
 - subdirectory からの request new が repo root 側に request.md を作り、subdirectory 配下に入れ子の `specrunner/` を作らないことが assert される。
 
 ## T-06: S5 — help 維持（T5）と CI / ローカル起動口の配線
 
-- [ ] `node <dist> --help` が exit 0 で usage を出すことを assert する（既存起動確認の維持）。
-- [ ] `.github/workflows/ci.yml` の既存 `Package smoke test` step（現 `:42-49`）を、`scripts/smoke/package-smoke.sh` を呼ぶ step に置き換える。step 名を契約 assert を表す名前に更新する。step は前段 `bun run build`（dist 生成）より後に位置させる。他 job / step は変更しない。
-- [ ] `package.json` の `scripts` に、スクリプトを呼ぶ薄い convenience エントリ（例 `"smoke": "bash scripts/smoke/package-smoke.sh"`）を additive に追加する。既存 build/test/lint script は変更しない。
+- [x] `node <dist> --help` が exit 0 で usage を出すことを assert する（既存起動確認の維持）。
+- [x] `.github/workflows/ci.yml` の既存 `Package smoke test` step（現 `:42-49`）を、`scripts/smoke/package-smoke.sh` を呼ぶ step に置き換える。step 名を契約 assert を表す名前に更新する。step は前段 `bun run build`（dist 生成）より後に位置させる。他 job / step は変更しない。
+- [x] `package.json` の `scripts` に、スクリプトを呼ぶ薄い convenience エントリ（例 `"smoke": "bash scripts/smoke/package-smoke.sh"`）を additive に追加する。既存 build/test/lint script は変更しない。
 
 **Acceptance Criteria**:
 - `--help` 起動確認が smoke に含まれ、スクリプトが packed tarball と node のみで動く（`bun` / repo `src/` 非参照）。
@@ -81,19 +81,19 @@
 
 ## T-07: 破壊確認（T6・ローカル）
 
-- [ ] S1〜S4 の各 assert について、期待値を意図的に反転（または前提を壊す）して、その scenario の assert が実際に fail することを 1 つずつ確認する。
-- [ ] 各破壊が対象 scenario だけを落とし、他 scenario の評価を巻き込まないこと（個別 falsifiable）を確認する。
-- [ ] 確認後、すべての反転を元に戻し、スクリプトが全 scenario PASS で終了することを確認する。
+- [x] S1〜S4 の各 assert について、期待値を意図的に反転（または前提を壊す）して、その scenario の assert が実際に fail することを 1 つずつ確認する。
+- [x] 各破壊が対象 scenario だけを落とし、他 scenario の評価を巻き込まないこと（個別 falsifiable）を確認する。
+- [x] 確認後、すべての反転を元に戻し、スクリプトが全 scenario PASS で終了することを確認する。
 
 **Acceptance Criteria**:
 - 各 assert が反転時に実際に fail し、対象 scenario に帰属して落ちることが確認され、確認後に元へ戻されている。
 
 ## T-08: 検証（T7）
 
-- [ ] `bun run build` で dist を用意した状態で `bash scripts/smoke/package-smoke.sh` が全 scenario PASS で exit 0 になることを確認する。
-- [ ] `bun run typecheck`（tsc）が green であることを確認する。
-- [ ] `bun run test`（vitest）が green であることを確認する。
-- [ ] 変更が `scripts/smoke/package-smoke.sh`・`.github/workflows/ci.yml` の該当 step・`package.json` の scripts 追加に限られ、被 assert 側の製品コード（`src/`）や他 CI step を変更していないことを確認する。
+- [x] `bun run build` で dist を用意した状態で `bash scripts/smoke/package-smoke.sh` が全 scenario PASS で exit 0 になることを確認する。
+- [x] `bun run typecheck`（tsc）が green であることを確認する。
+- [x] `bun run test`（vitest）が green であることを確認する。
+- [x] 変更が `scripts/smoke/package-smoke.sh`・`.github/workflows/ci.yml` の該当 step・`package.json` の scripts 追加に限られ、被 assert 側の製品コード（`src/`）や他 CI step を変更していないことを確認する。
 
 **Acceptance Criteria**:
 - smoke スクリプトがローカルで全 scenario green、`typecheck && test` が green。
