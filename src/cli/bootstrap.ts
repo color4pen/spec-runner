@@ -15,7 +15,6 @@ import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-hos
 import { createAnthropicClient } from "../adapter/managed-agent/client.js";
 import { createAnthropicSessionClient } from "../adapter/managed-agent/session-client.js";
 import { createRuntime } from "../core/runtime/index.js";
-import { resolveRepoRoot } from "../util/repo-root.js";
 import type { OriginInfo } from "../git/remote.js";
 import type { RuntimeStrategy } from "../core/port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
@@ -31,9 +30,13 @@ export interface BootstrapResult {
 /**
  * Load config, resolve GitHub token, create GitHub client and runtime for the given working directory and repo.
  * Throws on config load failure or missing GitHub token — callers handle the error.
+ *
+ * @param cwd       Invoker working directory (used for runtime setup).
+ * @param repo      Origin info (owner/name).
+ * @param repoRoot  Dispatch-resolved repo root, or null when outside a repo. When null,
+ *                  config is loaded from the global config only (no project-local overlay).
  */
-export async function bootstrap(cwd: string, repo: OriginInfo): Promise<BootstrapResult> {
-  const repoRoot = await resolveRepoRoot(cwd);
+export async function bootstrap(cwd: string, repo: OriginInfo, repoRoot: string | null = null): Promise<BootstrapResult> {
   const config = await loadConfig(repoRoot ?? undefined);
   const githubHost = resolveGitHubHost(config.github);
   const githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);

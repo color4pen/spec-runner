@@ -4,6 +4,9 @@
  * Documents known divergences from the structural invariants defined in
  * architecture/model.md §4 (B-1 through B-12).
  *
+ * Also defines RESOLVE_REPO_ROOT_ALLOWED_FILES — the fixed structural allowlist
+ * for resolveRepoRoot* confinement in the handler layer (TC-014, repo-root-resolve-exactly-once).
+ *
  * GOVERNANCE:
  * - All entries were grandfather'd at the arch-test-core-wide-ratchet change.
  * - This list ONLY shrinks: each entry removal must be paired with the
@@ -21,6 +24,28 @@
  *   - the match line content includes entry.pattern as a substring.
  * Both conditions must hold simultaneously.
  */
+
+/**
+ * Fixed structural allowlist for resolveRepoRoot* confinement in the handler layer.
+ *
+ * These four files are the ONLY permitted call sites for resolveRepoRoot* in src/cli/.
+ *   - command-context.ts   : single production resolution point (dispatch choke-point)
+ *   - doctor.ts            : DI-fallback; production dispatch always supplies pre-resolved root
+ *   - load-config-with-overlay.ts : DI-fallback; same guarantee
+ *   - ps.ts                : DI-fallback (opts.repoRoot ?? resolveRepoRoot()); production passes repoRoot
+ *
+ * TC-014 (repo-root-resolve-exactly-once): the test imports and inspects this export.
+ *
+ * GOVERNANCE: CODEOWNERS-gated (/tests/unit/architecture/ @color4pen).
+ * This is a FIXED structural carve-out — NOT a burn-down ratchet.
+ * Adding entries requires explicit approval.
+ */
+export const RESOLVE_REPO_ROOT_ALLOWED_FILES: readonly string[] = [
+  "src/cli/command-context.ts",
+  "src/cli/doctor.ts",
+  "src/cli/load-config-with-overlay.ts",
+  "src/cli/ps.ts",
+];
 
 /** Single known-divergence record. */
 export interface AllowlistEntry {
@@ -260,20 +285,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     comment: "role-a: resolveRepoRoot called with process.cwd() as the repo discovery origin when no cwd is injected.",
   },
   {
-    file: "src/cli/init.ts",
-    pattern: "{ cwd: process.cwd() }",
-    invariant: "CWD",
-    tracking: "CWD-init-git-spawn",
-    comment: "role-a: git rev-parse run from process.cwd() to find the repo root during init.",
-  },
-  {
-    file: "src/cli/job-show.ts",
-    pattern: "resolveRepoRoot()) ?? process.cwd()",
-    invariant: "CWD",
-    tracking: "CWD-job-show-root-resolve",
-    comment: "role-a: resolveRepoRoot with graceful degradation to process.cwd() when outside a repo.",
-  },
-  {
     file: "src/cli/job-show.ts",
     pattern: "repoRoot: string = process.cwd()",
     invariant: "CWD",
@@ -348,13 +359,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     invariant: "CWD",
     tracking: "CWD-provider-sdk-loader-di-default",
     comment: "di-default: detectPackageManager falls back to process.cwd() when no detectPm is injected.",
-  },
-  {
-    file: "src/cli/config-effective.ts",
-    pattern: "options.cwd ?? process.cwd()",
-    invariant: "CWD",
-    tracking: "CWD-config-effective-di-default",
-    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
   },
   {
     file: "src/cli/resume.ts",
@@ -529,13 +533,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     invariant: "CWD",
     tracking: "CWD-registry-show-usage-summary-debt",
     comment: "debt: usage summary passes process.cwd() as repo base. Follow-up burn-down.",
-  },
-  {
-    file: "src/cli/inbox.ts",
-    pattern: "const cwd = process.cwd()",
-    invariant: "CWD",
-    tracking: "CWD-inbox-debt",
-    comment: "debt: inbox run derives internal paths from process.cwd(). Follow-up burn-down.",
   },
   {
     file: "src/config/store.ts",

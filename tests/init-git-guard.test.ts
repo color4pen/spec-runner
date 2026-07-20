@@ -1,25 +1,18 @@
 /**
- * Unit tests for the git-repository gate in runInit.
+ * Tests for the repo-required gate on the `init` command.
  *
- * TC-002: git guard — spawnCommand non-zero exit causes non-zero runInit exit (breakage confirmation)
- * TC-003: git binary unavailable — runInit stops with non-zero exit and reports the error
+ * After the repo-root-resolve-exactly-once change, runInit no longer calls git directly.
+ * The git-repository requirement is enforced at the dispatch level via requiresRepo: true.
  *
- * These tests mock spawnCommand to isolate the guard logic from real git invocation.
+ * TC-002: COMMANDS.init has requiresRepo: true (dispatch guard is present)
+ * TC-003: runInit with a provided repoRoot succeeds (no internal git check)
+ *
  * Pool: forks — each test file runs in its own process, so module cache is isolated.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-
-// Mock spawnCommand before any module that imports it is loaded.
-// vi.mock is hoisted, so init.ts will receive the mocked version on first import.
-vi.mock("../src/util/spawn.js", () => ({
-  spawnCommand: vi.fn(),
-}));
-
-import { spawnCommand } from "../src/util/spawn.js";
-const mockSpawnCommand = vi.mocked(spawnCommand);
 
 let tempDir: string;
 let originalXdgConfigHome: string | undefined;
@@ -43,62 +36,33 @@ afterEach(async () => {
   vi.clearAllMocks();
 });
 
-// TC-002: git guard — spawnCommand non-zero exit causes non-zero runInit exit (breakage confirmation)
-// Source: spec.md > Scenario: reverting the fix regresses the non-git guard
-describe("TC-002: git guard 単体 — spawnCommand 非ゼロ exit が runInit 非ゼロ exit を引き起こす（破壊確認）", () => {
-  it("TC-002: spawnCommand が exitCode 128 を返すと runInit は 1 を返す（ゲート撤廃で 0 になり落ちる）", async () => {
-    // Simulate git reporting: not a git repository (exitCode 128 is git's standard non-repo code)
-    mockSpawnCommand.mockResolvedValueOnce({
-      exitCode: 128,
-      stdout: "",
-      stderr: "fatal: not a git repository (or any of the parent directories): .git",
-    });
-
-    const { runInit } = await import("../src/cli/init.js");
-    const result = await runInit({});
-
-    // ANTI-REGRESSION: Without the git gate, spawnCommand returning exitCode 128 is silently
-    // ignored and runInit proceeds to create config, returning 0. If the gate is removed,
-    // this assertion fails — confirming the regression (TC-002 breakage scenario).
-    // The TC-001 integration test in init.test.ts validates this at the real git level.
-    expect(result).not.toBe(0);
-    expect(result).toBe(1);
-
-    // No global config created (gate fired before config resolution)
-    const configPath = path.join(tempDir, "specrunner", "config.json");
-    await expect(fs.access(configPath)).rejects.toThrow();
+// TC-002: dispatch guard — COMMANDS.init has requiresRepo: true
+// Source: repo-root-resolve-exactly-once > Scenario: adding re-resolution trips the invariant
+describe("TC-002: COMMANDS.init は requiresRepo: true を持つ（dispatch guard が存在する）", () => {
+  it("TC-002: COMMANDS.init.requiresRepo === true (ゲートが dispatch レベルに移動した)", async () => {
+    const { COMMANDS } = await import("../src/cli/command-registry.js");
+    const initCmd = COMMANDS["init"] as { requiresRepo?: boolean };
+    // After conversion: dispatch guard is at command-registry level (requiresRepo: true)
+    // Before conversion: no requiresRepo; gate was inside runInit via spawnCommand
+    expect(initCmd.requiresRepo).toBe(true);
   });
 });
 
-// TC-003: git binary unavailable — runInit stops with non-zero exit and stderr reports the error
-// Source: spec.md > Scenario: unavailable git binary is reported as an error
-describe("TC-003: git バイナリ不在 — runInit が非ゼロ exit で停止し stderr にエラーを報告する", () => {
-  it("TC-003: spawnCommand が exitCode null (ENOENT) を返すと runInit は 1 を返し stderr に git エラーが出る", async () => {
-    // Simulate git binary not found — spawnCommand returns exitCode: null when spawn fails (ENOENT)
-    mockSpawnCommand.mockResolvedValueOnce({
-      exitCode: null,
-      stdout: "",
-      stderr: "spawn git ENOENT",
-    });
-
-    const stderrCapture: string[] = [];
-    vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
-      stderrCapture.push(String(chunk));
-      return true;
-    });
-
+// TC-003: runInit with a provided repoRoot creates scaffold without calling git
+// Source: repo-root-resolve-exactly-once > T-02
+describe("TC-003: runInit は repoRoot が渡されれば git を呼ばずにスキャフォルドを作成する", () => {
+  it("TC-003: runInit({ repoRoot: gitTempDir }) が exit 0 でスキャフォルドを作成する", async () => {
+    // runInit no longer calls spawnCommand — it uses the provided repoRoot directly
     const { runInit } = await import("../src/cli/init.js");
-    const result = await runInit({});
+    const result = await runInit({ repoRoot: tempDir });
 
-    // Must return non-zero (environment error = 1)
-    expect(result).toBe(1);
+    // Must return 0 — repoRoot is provided, no git check needed
+    expect(result).toBe(0);
 
-    // stderr must contain an error message mentioning git
-    const stderrText = stderrCapture.join("");
-    expect(stderrText.toLowerCase()).toMatch(/git/);
-
-    // No global config created (gate fired before config resolution)
-    const configPath = path.join(tempDir, "specrunner", "config.json");
-    await expect(fs.access(configPath)).rejects.toThrow();
+    // Verify scaffold was created in the provided repoRoot (tempDir)
+    const draftsDir = path.join(tempDir, "specrunner", "drafts");
+    const changesDir = path.join(tempDir, "specrunner", "changes");
+    await expect(fs.access(draftsDir).then(() => undefined)).resolves.toBeUndefined();
+    await expect(fs.access(changesDir).then(() => undefined)).resolves.toBeUndefined();
   });
 });

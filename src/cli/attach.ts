@@ -20,7 +20,6 @@ import { getOriginInfo } from "../git/remote.js";
 import { resolveGitHubHost } from "../config/github-host.js";
 import { createTransportAuth } from "../git/transport-auth.js";
 import { spawnCommand } from "../util/spawn.js";
-import { resolveRepoRoot } from "../util/repo-root.js";
 import {
   SpecRunnerError,
   worktreeGuardError,
@@ -33,7 +32,14 @@ import { resolveGitHubApiBaseUrl } from "../config/github-host.js";
 
 export interface RunAttachOptions {
   branch: string;
+  /** Invoker working directory — used for worktree guard and origin info. */
   cwd: string;
+  /**
+   * Dispatch-resolved repo root. When provided (production dispatch path),
+   * this is used for config load, transport auth, and runtime setup.
+   * Falls back to cwd when not provided (direct call in tests).
+   */
+  repoRoot?: string;
   logLevel?: LogLevel;
 }
 
@@ -56,14 +62,15 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
   }
 
   // 2. Config / token / repo resolution
+  // repoRoot is dispatch-injected (opts.repoRoot) or falls back to cwd for direct callers.
+  const repoRoot = opts.repoRoot ?? cwd;
+
   let config: import("../config/schema.js").SpecRunnerConfig;
   let githubToken: string;
-  let repoRoot: string;
   let owner: string;
   let repoName: string;
 
   try {
-    repoRoot = (await resolveRepoRoot(cwd)) ?? cwd;
     config = await loadConfig(repoRoot);
   } catch (err: unknown) {
     const e = err instanceof SpecRunnerError ? err : null;

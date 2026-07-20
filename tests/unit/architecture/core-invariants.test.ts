@@ -33,7 +33,7 @@ import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
 import * as path from "node:path";
 import * as url from "node:url";
-import { ARCH_ALLOWLIST, type AllowlistEntry } from "./arch-allowlist.js";
+import { ARCH_ALLOWLIST, RESOLVE_REPO_ROOT_ALLOWED_FILES, type AllowlistEntry } from "./arch-allowlist.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "../../..");
@@ -1615,5 +1615,179 @@ describe("CWD invariant: process.cwd() occurrences in src/ are allowlist-gated (
     // Comment lines are filtered out by filterViolations (isCommentLine guard)
     const violations = filterViolations(commentLine, cwdEntries);
     expect(violations).toHaveLength(0);
+  });
+});
+
+// ─── Exactly-once repo root resolution: confinement invariant ─────────────────
+
+describe("Exactly-once repo root resolution: resolveRepoRoot* confined to allowed files in src/cli/ (repo-root-resolve-exactly-once)", () => {
+  /**
+   * TC-001 (mechanism), TC-003, TC-004, TC-005, TC-015
+   *
+   * Enforces that `resolveRepoRoot` / `resolveRepoRootOrFail` references in `src/cli/`
+   * (excluding test files and comment lines) are confined to the fixed allowlist
+   * RESOLVE_REPO_ROOT_ALLOWED_FILES, and that no `src/cli/` file resolves the repo root
+   * via a direct `git rev-parse --show-toplevel`.
+   *
+   * The allowed-file set is a fixed structural carve-out (not a burn-down ratchet).
+   * GOVERNANCE: CODEOWNERS-gated — the pipeline cannot expand the allowed set.
+   *
+   * RED before implementation: converted handler files (inbox.ts, cancel.ts, etc.) still
+   * import and call resolveRepoRoot*, so the confinement assertion fails.
+   * GREEN after implementation: all those calls are removed; only the four allowed files remain.
+   */
+
+  // ── TC-001/TC-003: confinement — no resolveRepoRoot* outside the allowed files ──
+
+  it("TC-003: resolveRepoRoot* in src/cli/ non-test files is confined to RESOLVE_REPO_ROOT_ALLOWED_FILES", () => {
+    // TC-001 mechanism: this test is the machine-fixed tooth for exactly-once.
+    // RED before implementation: handler files like inbox.ts / cancel.ts still have
+    //   resolveRepoRoot* calls → violations list is non-empty → assertion fails.
+    // GREEN after implementation: only the four allowed files retain the call.
+    const raw = grepE("resolveRepoRoot", "src/cli");
+    const matches = parseGrepOutput(raw);
+
+    const candidates = matches.filter(
+      (m) =>
+        !m.file.includes("__tests__/") &&
+        !m.file.includes(".test.ts") &&
+        !isCommentLine(m.content),
+    );
+
+    // Build allowlist entries from the fixed structural allowlist
+    const allowlistEntries: AllowlistEntry[] = RESOLVE_REPO_ROOT_ALLOWED_FILES.map((file) => ({
+      file,
+      pattern: "resolveRepoRoot",
+      invariant: "RESOLVE_ONCE",
+      tracking: "RESOLVE_ONCE-allowed",
+    }));
+
+    const violations = filterViolations(candidates, allowlistEntries);
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  // ── TC-004: no direct git rev-parse --show-toplevel in src/cli/ ───────────────
+
+  it("TC-004: no direct git rev-parse --show-toplevel in src/cli/ non-test files", () => {
+    // RED before implementation: src/cli/init.ts line 74 contains show-toplevel.
+    // GREEN after implementation: init.ts uses ctx.repoRoot instead of spawning git.
+    const raw = grepE("show-toplevel", "src/cli");
+    const matches = parseGrepOutput(raw);
+
+    const candidates = matches.filter(
+      (m) =>
+        !m.file.includes("__tests__/") &&
+        !m.file.includes(".test.ts") &&
+        !isCommentLine(m.content),
+    );
+
+    expect(violationLines(candidates)).toEqual([]);
+  });
+
+  // ── TC-005: liveness — the scan is not vacuous ────────────────────────────────
+
+  it("TC-005: resolveRepoRoot liveness — raw match count in src/cli/ is greater than zero", () => {
+    // Confirms that the grep scan is live (finds the allowed files).
+    // This test is GREEN both before and after implementation: the four allowed files
+    // (command-context.ts, doctor.ts, load-config-with-overlay.ts, ps.ts) always have
+    // resolveRepoRoot* calls. If count were 0, it would mean the grep is broken.
+    const raw = grepE("resolveRepoRoot", "src/cli");
+    const matches = parseGrepOutput(raw);
+
+    const candidates = matches.filter(
+      (m) =>
+        !m.file.includes("__tests__/") &&
+        !m.file.includes(".test.ts") &&
+        !isCommentLine(m.content),
+    );
+
+    expect(candidates.length).toBeGreaterThan(0);
+  });
+
+  // ── TC-003/TC-015 regression guards (synthetic injection) ─────────────────────
+
+  it("TC-015 regression guard: resolveRepoRoot in src/cli/inbox.ts (not in allowlist) is flagged", () => {
+    // Synthetic injection: simulates adding resolveRepoRoot back to a converted handler.
+    // The invariant must detect this and report inbox.ts as a violation.
+    const syntheticMatch: GrepMatch[] = [
+      {
+        file: "src/cli/inbox.ts",
+        line: 45,
+        content: "    repoRoot = await resolveRepoRootOrFail(cwd);",
+      },
+    ];
+
+    const allowlistEntries: AllowlistEntry[] = RESOLVE_REPO_ROOT_ALLOWED_FILES.map((file) => ({
+      file,
+      pattern: "resolveRepoRoot",
+      invariant: "RESOLVE_ONCE",
+      tracking: "RESOLVE_ONCE-allowed",
+    }));
+
+    const violations = filterViolations(syntheticMatch, allowlistEntries);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.file).toBe("src/cli/inbox.ts");
+  });
+
+  it("TC-015 regression guard: resolveRepoRoot in src/cli/cancel.ts (not in allowlist) is flagged", () => {
+    const syntheticMatch: GrepMatch[] = [
+      {
+        file: "src/cli/cancel.ts",
+        line: 60,
+        content: "    repoRoot = await resolveRepoRootOrFail();",
+      },
+    ];
+
+    const allowlistEntries: AllowlistEntry[] = RESOLVE_REPO_ROOT_ALLOWED_FILES.map((file) => ({
+      file,
+      pattern: "resolveRepoRoot",
+      invariant: "RESOLVE_ONCE",
+      tracking: "RESOLVE_ONCE-allowed",
+    }));
+
+    const violations = filterViolations(syntheticMatch, allowlistEntries);
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.file).toBe("src/cli/cancel.ts");
+  });
+
+  it("TC-015 regression guard: resolveRepoRoot in src/cli/ps.ts (in allowlist) is suppressed", () => {
+    // ps.ts is allowed because it retains the DI-fallback exactly at opts.repoRoot ?? resolveRepoRoot().
+    const syntheticMatch: GrepMatch[] = [
+      {
+        file: "src/cli/ps.ts",
+        line: 87,
+        content: "  const repoRoot = opts.repoRoot ?? (await resolveRepoRoot()) ?? process.cwd();",
+      },
+    ];
+
+    const allowlistEntries: AllowlistEntry[] = RESOLVE_REPO_ROOT_ALLOWED_FILES.map((file) => ({
+      file,
+      pattern: "resolveRepoRoot",
+      invariant: "RESOLVE_ONCE",
+      tracking: "RESOLVE_ONCE-allowed",
+    }));
+
+    const violations = filterViolations(syntheticMatch, allowlistEntries);
+    expect(violations).toHaveLength(0);
+  });
+
+  it("TC-004 regression guard: show-toplevel in src/cli/init.ts is detected when present", () => {
+    // Synthetic injection: simulates re-adding a direct git rev-parse to a converted handler.
+    const syntheticMatch: GrepMatch[] = [
+      {
+        file: "src/cli/init.ts",
+        line: 74,
+        content: '    const gitResult = await spawnCommand("git", ["rev-parse", "--show-toplevel"], { cwd: process.cwd() });',
+      },
+    ];
+
+    const candidates = syntheticMatch.filter(
+      (m) =>
+        !m.file.includes("__tests__/") &&
+        !m.file.includes(".test.ts") &&
+        !isCommentLine(m.content),
+    );
+
+    expect(candidates).toHaveLength(1);
   });
 });

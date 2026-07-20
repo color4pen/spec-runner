@@ -1,0 +1,25 @@
+{
+  "requestHash": "sha256:213311eb6bc52fa615dc60c1db5ddc278b34dfa86a338d789344704ec0c65d07",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/init.ts:74 — spawnCommand(\"git\", [\"rev-parse\", \"--show-toplevel\"], { cwd: process.cwd() })",
+    "src/cli/inbox.ts:46 — repoRoot = await resolveRepoRootOrFail(cwd)",
+    "src/cli/prune.ts:36 — dynamic import of resolveRepoRootOrFail from ../util/repo-root.js",
+    "src/cli/prune.ts:42 — repoRoot = await resolveRepoRootOrFail()",
+    "src/cli/cancel.ts:60 — repoRoot = await resolveRepoRootOrFail()",
+    "src/cli/config-effective.ts:65 — const repoRoot = await resolveRepoRoot(cwd)",
+    "src/cli/job-show.ts:42 — const repoRoot = (await resolveRepoRoot()) ?? process.cwd()",
+    "src/cli/bootstrap.ts:36 — const repoRoot = await resolveRepoRoot(cwd)",
+    "src/cli/attach.ts:66 — repoRoot = (await resolveRepoRoot(cwd)) ?? cwd",
+    "src/cli/ps.ts:87 — const repoRoot = opts.repoRoot ?? (await resolveRepoRoot()) ?? process.cwd()",
+    "src/cli/command-context.ts — buildCommandContext(invokerCwd, resolveFn?) exists, CommandContext type defined",
+    "src/cli/doctor.ts:113 — resolveRepoRoot DI fallback (pre-resolved || auto-resolve) pattern confirmed",
+    "src/cli/load-config-with-overlay.ts:24 — resolveRepoRoot(cwd ?? process.cwd()) DI fallback confirmed",
+    "tests/unit/architecture/arch-allowlist.ts — CWD allowlist entries confirmed (CWD-inbox-debt, CWD-init-git-spawn, CWD-job-show-root-resolve, CWD-ps-root-resolve, etc.)",
+    "tests/unit/architecture/core-invariants.test.ts:1001 — describe 'B-13 (arch pin): StepExecutor は store 永続化 API を CommitOrchestrator 経由でしか呼ばない'",
+    "tests/unit/architecture/core-invariants.test.ts:1449 — describe 'CWD invariant: process.cwd() occurrences in src/ are allowlist-gated (T-05)'",
+    "architecture/model.md:91 — B-13 = StepExecutor single-writer invariant (CommitOrchestrator)",
+    "specrunner/adr/2026-07-20-cwd-role-boundary-dispatch-context.md — D5 section uses 'B-13' for CWD ratchet (conflicting with model.md B-13)"
+  ],
+  "sourceRevision": "2c2cdeff3a07aec51792daae2a67cb716da07a20"
+}

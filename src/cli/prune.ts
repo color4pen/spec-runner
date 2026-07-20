@@ -18,6 +18,8 @@ import { isOrphanSidecar } from "../core/sidecar/orphan.js";
 
 export interface RunPruneOptions {
   force: boolean;
+  /** Dispatch-resolved repo root (provided by the registry handler via ctx.repoRoot). */
+  repoRoot: string;
 }
 
 /**
@@ -25,25 +27,16 @@ export interface RunPruneOptions {
  * Returns exit code: 0 (success), 1 (error).
  * Caller (command-registry.ts) is responsible for process.exit().
  *
- * Note: pruneOrphanWorktrees, pruneOrphanSidecars, and resolveRepoRootOrFail are
- * imported lazily (via dynamic import) so that vi.mock factory closures in tests
- * are evaluated after the outer const mock variables have been initialized.
+ * Note: pruneOrphanWorktrees and pruneOrphanSidecars are imported lazily (via
+ * dynamic import) so that vi.mock factory closures in tests are evaluated after
+ * the outer const mock variables have been initialized.
  */
 export async function runPrune(opts: RunPruneOptions): Promise<number> {
-  const { force } = opts;
+  const { force, repoRoot } = opts;
 
   // Lazy imports allow vi.mock factory binding in tests.
-  const { resolveRepoRootOrFail } = await import("../util/repo-root.js");
   const { pruneOrphanWorktrees } = await import("../core/prune/runner.js");
   const { pruneOrphanSidecars } = await import("../core/prune/sidecar-runner.js");
-
-  let repoRoot: string;
-  try {
-    repoRoot = await resolveRepoRootOrFail();
-  } catch (err: unknown) {
-    logError((err as Error).message);
-    return 1;
-  }
 
   const worktreeManager = createWorktreeManager();
 

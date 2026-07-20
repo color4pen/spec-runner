@@ -8,10 +8,6 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-vi.mock("../../../src/util/repo-root.js", () => ({
-  resolveRepoRootOrFail: vi.fn().mockResolvedValue("/repo"),
-}));
-
 vi.mock("../../../src/store/job-state-store.js", () => ({
   JobStateStore: {
     resolveId: vi.fn().mockResolvedValue("test-job-id-cancel-5678"),
@@ -64,7 +60,7 @@ describe("T-044: initPipelineLog called with correct args for single job cancel"
     const { runCancel } = await import("../../../src/cli/cancel.js");
     const { initPipelineLog } = await import("../../../src/logger/pipeline-logger.js");
 
-    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false });
+    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false, repoRoot: "/repo" });
 
     expect(initPipelineLog).toHaveBeenCalledWith("/repo", "test-job-id-cancel-5678");
   });
@@ -76,7 +72,7 @@ describe("T-044b: cancel:start and cancel:complete events recorded", () => {
     const { runCancel } = await import("../../../src/cli/cancel.js");
     const { logPipelineEvent } = await import("../../../src/logger/pipeline-logger.js");
 
-    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false });
+    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false, repoRoot: "/repo" });
 
     const eventTypes = (logPipelineEvent as ReturnType<typeof vi.fn>).mock.calls.map(
       (c) => (c[0] as Record<string, unknown>)["type"],
@@ -96,7 +92,7 @@ describe("T-044c: cancel:error event recorded on cancelSingleJob exception", () 
     const { logPipelineEvent, closePipelineLog } = await import("../../../src/logger/pipeline-logger.js");
 
     await expect(
-      runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false }),
+      runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false, repoRoot: "/repo" }),
     ).rejects.toThrow("cancel failed");
 
     const eventTypes = (logPipelineEvent as ReturnType<typeof vi.fn>).mock.calls.map(
@@ -113,7 +109,7 @@ describe("T-045: --all-terminated does not call initPipelineLog", () => {
     const { runCancel } = await import("../../../src/cli/cancel.js");
     const { initPipelineLog } = await import("../../../src/logger/pipeline-logger.js");
 
-    await runCancel({ force: false, purge: false, allTerminated: true, yes: true, restoreDraft: false });
+    await runCancel({ force: false, purge: false, allTerminated: true, yes: true, restoreDraft: false, repoRoot: "/repo" });
 
     expect(initPipelineLog).not.toHaveBeenCalled();
   });
@@ -126,7 +122,7 @@ describe("T-046: --all-terminated --restore-draft exits 2", () => {
     const { cancelSingleJob, cancelAllTerminated } = await import("../../../src/core/cancel/runner.js");
 
     const exitCode = await runCancel({
-      force: false, purge: false, allTerminated: true, yes: false, restoreDraft: true,
+      force: false, purge: false, allTerminated: true, yes: false, restoreDraft: true, repoRoot: "/repo",
     });
 
     expect(exitCode).toBe(2);
@@ -141,7 +137,7 @@ describe("T-047: restoreDraft forwarded to cancelSingleJob", () => {
     const { runCancel } = await import("../../../src/cli/cancel.js");
     const { cancelSingleJob } = await import("../../../src/core/cancel/runner.js");
 
-    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: true });
+    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: true, repoRoot: "/repo" });
 
     expect(cancelSingleJob).toHaveBeenCalledWith(expect.objectContaining({
       restoreDraft: true,
@@ -152,7 +148,7 @@ describe("T-047: restoreDraft forwarded to cancelSingleJob", () => {
     const { runCancel } = await import("../../../src/cli/cancel.js");
     const { cancelSingleJob } = await import("../../../src/core/cancel/runner.js");
 
-    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false });
+    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false, repoRoot: "/repo" });
 
     expect(cancelSingleJob).toHaveBeenCalledWith(expect.objectContaining({
       restoreDraft: false,

@@ -13,7 +13,6 @@ import { logResult, logError, stderrWrite } from "../logger/stdout.js";
 import { cancelSingleJob, cancelAllTerminated } from "../core/cancel/runner.js";
 import { createWorktreeManager } from "../core/worktree/manager.js";
 import { spawnCommand } from "../util/spawn.js";
-import { resolveRepoRootOrFail } from "../util/repo-root.js";
 import { initPipelineLog, logPipelineEvent, closePipelineLog } from "../logger/pipeline-logger.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { loadConfig } from "../config/store.js";
@@ -26,6 +25,12 @@ export interface RunCancelOptions {
   allTerminated: boolean;
   yes: boolean;
   restoreDraft: boolean;
+  /**
+   * Dispatch-resolved repo root (provided by the registry handler via ctx.repoRoot).
+   * Optional so that direct callers that return before repoRoot is accessed (e.g.
+   * arg-exclusivity checks) do not require it in type-checked tests (TC-020).
+   */
+  repoRoot?: string;
 }
 
 /**
@@ -34,7 +39,7 @@ export interface RunCancelOptions {
  * Caller (bin/specrunner.ts) is responsible for process.exit().
  */
 export async function runCancel(opts: RunCancelOptions): Promise<number> {
-  const { jobId, force, purge, allTerminated, yes, restoreDraft } = opts;
+  const { jobId, force, purge, allTerminated, yes, restoreDraft, repoRoot } = opts;
 
   // Arg validation: exclusivity checks
   if (!allTerminated && !jobId) {
@@ -54,18 +59,11 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
     return 2;
   }
 
-  // State-modifying command — require valid git repo (fail-fast)
-  let repoRoot: string;
-  try {
-    repoRoot = await resolveRepoRootOrFail();
-  } catch (err: unknown) {
-    logError((err as Error).message);
-    return 1;
-  }
-
   // --all-terminated bulk cleanup
+  // (repoRoot is guaranteed by dispatch; '!' is safe — early returns above cover the
+  //  arg-exclusivity paths that TC-020 tests without a repoRoot)
   if (allTerminated) {
-    const result = await cancelAllTerminated({ yes, repoRoot });
+    const result = await cancelAllTerminated({ yes, repoRoot: repoRoot! });
     writeResult(result);
     return result.exitCode;
   }
@@ -73,7 +71,7 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
   // Resolve short job ID to full UUID
   let resolvedJobId: string;
   try {
-    resolvedJobId = await JobStateStore.resolveId(repoRoot, jobId!);
+    resolvedJobId = await JobStateStore.resolveId(repoRoot!, jobId!);
   } catch (err: unknown) {
     if (err instanceof SpecRunnerError) {
       logError(err.message);
@@ -99,7 +97,7 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
   }
 
   // Initialize pipeline log for the resolved job
-  initPipelineLog(repoRoot, resolvedJobId);
+  initPipelineLog(repoRoot!, resolvedJobId);
   logPipelineEvent({ type: "cancel:start", jobId: resolvedJobId });
 
   let result;
@@ -118,7 +116,7 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
           process.kill(pid, 0);
           return true;
         },
-        repoRoot,
+        repoRoot: repoRoot!,
         githubToken: cancelToken,
       },
     });
