@@ -1,0 +1,22 @@
+{
+  "requestHash": "sha256:cb9d02199a7c002666fc6a475cc4209e059af3c576d3c9d19f4b9f5a6ac29e19",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    ".github/workflows/ci.yml:42-49 — npm pack → mktemp → npm init -y → tarball install → ./node_modules/.bin/specrunner --help のみ",
+    "package.json bin['specrunner'] = 'dist/specrunner.js' (node で実行される配布物)",
+    "src/cli/init.ts:74-90 — git rev-parse --show-toplevel が非ゼロなら return 1（ファイル書き込みより前に早期 return）",
+    "src/cli/init.ts:93-178 — config / .gitignore / specrunner/drafts / specrunner/changes の書き込みはすべて git repo gate 通過後",
+    "src/cli/command-registry.ts:358 — request new handler が ctx!.repoRoot! を executeNew の cwd に渡す（process.cwd() ではない）",
+    "src/core/command/request-new.ts:49 — storeWrite(cwd, slug, content) の cwd は上位から渡された repoRoot",
+    "src/util/xdg.ts:8-12 — resolveXdgConfigDir() が XDG_CONFIG_HOME 環境変数を優先する",
+    "src/util/xdg.ts:19 — getConfigPath() = XDG_CONFIG_HOME/specrunner/config.json",
+    "src/cli/doctor.ts:209 — ctx.configPath = getConfigPath()（XDG_CONFIG_HOME 尊重）",
+    "src/core/doctor/checks/config/file-exists.ts:9 — check name は 'config-file-exists'",
+    "src/core/doctor/checks/config/file-exists.ts:16 — check は ctx.configPath（XDG 尊重パス）を stat する",
+    "src/core/doctor/formatter.ts:122-137 — doctor --json の results[] に name / status フィールドが含まれる",
+    "src/cli/doctor.ts:225 — hasFail = results.some(r => r.status === 'fail') → exit 1（token 不在時は fail check 存在）",
+    "src/config/store.ts:13 — CONFIG_MODE = 0o600",
+    "src/util/atomic-write.ts:28,33 — writeFile + chmod で 0o600 を保証（config-file-exists が pass を返す条件を満たす）"
+  ],
+  "sourceRevision": "2c2cdeff3a07aec51792daae2a67cb716da07a20"
+}
