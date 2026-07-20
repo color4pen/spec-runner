@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:ec4b8046b83c0535c1468d25b64fb798bce513f3b8a4ba79506d6490964629ec",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/runtime/prereqs.ts:38-43 — resolveClaudeCodeOAuthToken(env, { optional: true }).catch(() => undefined) at line 42, confirming best-effort only",
+    "src/core/credentials/requirements.ts — declarative requirements matrix: local=[github.token, anthropic.claudeCodeOAuthToken], managed=[github.token, anthropic.apiKey]",
+    "src/core/command/pipeline-run.ts:93-104 — preflight slot comment 'Resolve pipeline id and run preflight capability gate BEFORE bootstrapping job' before bootstrapJob() at line 128",
+    "src/core/command/runner.ts:96-159 — execution order: prepare() → setupWorkspace() (line 130) → pipeline.run() (line 216); failed workspace persists job record (line 138)",
+    "src/adapter/claude-code/sdk-loader.ts — exists",
+    "src/adapter/claude-code/one-shot-query-client.ts — exists",
+    "src/adapter/claude-code/agent-runner.ts — exists",
+    "src/core/runtime/git-fetch-error.ts:describeGitFetchFailure — wrapping pattern: prescriptive first sentence + raw detail preserved underneath",
+    "src/core/doctor/checks/agents/agent-provider-alive.ts — managed/agent-provider-alive check with 5s timeout, no equivalent for local runtime",
+    "specrunner login --provider claude — real command implemented in src/cli/login.ts:34-133",
+    "claude setup-token — real external command referenced in src/core/credentials/claude-code.ts and src/cli/login.ts",
+    "tests/hint-command-existence.test.ts — existing teeth for hint command existence, covers STATUS_HINTS and pollTimeoutError"
+  ],
+  "sourceRevision": "3bf4681806ca6ba1ea17e53005fd166580db21a1"
+}
