@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ae96b6a9-2f5f-4892-b434-69b5f433ed7d",
   "createdAt": "2026-07-20T03:27:21.209Z",
-  "updatedAt": "2026-07-20T04:05:47.613Z",
+  "updatedAt": "2026-07-20T04:08:37.628Z",
   "request": {
     "title": "init が実行結果を報告する — git repo 外の無言スキップと再実行時の無言成功を解消する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/init-reports-scaffold-ae96b6a9",
   "error": null,
   "pipelineId": "standard",
@@ -87,8 +87,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/863",
+    "number": 863,
+    "createdAt": "2026-07-20T04:08:36.993Z"
+  },
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -102,7 +107,10 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
