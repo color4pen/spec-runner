@@ -81,7 +81,18 @@ describe("TC-017: createOrphanSidecarsCheck delegates to injected scan", () => {
     expect(result.details).toContain("/repo/.specrunner/local/orphan-job");
   });
 
-  it("passes { repoRoot: ctx.cwd, fs: ctx.fs } to the injected scan", async () => {
+  it("passes { repoRoot: ctx.repoRoot, fs: ctx.fs } to the injected scan when repoRoot is resolved", async () => {
+    const mockScan = makeMockScan([]);
+    const check = createOrphanSidecarsCheck(mockScan);
+
+    await check.check({ ...ctx, cwd: "/repo/src/sub", repoRoot: "/repo" });
+
+    const callArg = (mockScan as ReturnType<typeof vi.fn>).mock.calls[0]![0];
+    expect(callArg.repoRoot).toBe("/repo");
+    expect(callArg.fs).toBe(ctx.fs);
+  });
+
+  it("falls back to ctx.cwd for the scan base when repoRoot is not resolved", async () => {
     const mockScan = makeMockScan([]);
     const check = createOrphanSidecarsCheck(mockScan);
 
