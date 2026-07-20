@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "pr-create",
-  "status": "awaiting-archive",
+  "status": "awaiting-resume",
   "branch": "feat/packaged-smoke-contract-4940f179",
   "error": null,
   "pipelineId": "standard",
