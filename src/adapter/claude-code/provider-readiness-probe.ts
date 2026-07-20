@@ -37,8 +37,13 @@ type TokenResolver = (
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Wall-clock timeout for the readiness probe (comparable to doctor's 5 s check). */
-const PROBE_TIMEOUT_MS = 10_000;
+/**
+ * Wall-clock timeout for the readiness probe.
+ * The probe spawns a full Claude Agent SDK session; a healthy fast machine measures
+ * 8-9 s end-to-end, so the ceiling must leave headroom for slower networks —
+ * a false "unreachable" here blocks a legitimate run entirely.
+ */
+const PROBE_TIMEOUT_MS = 30_000;
 
 /** Cheapest viable model for the probe (minimal token cost). */
 const PROBE_MODEL = "claude-haiku-4-5";
@@ -156,7 +161,7 @@ export interface ClaudeProviderReadinessProbeOptions {
    * a forbidden adapter→domain static import edge per DSM §3).
    */
   resolveTokenFn?: TokenResolver;
-  /** Wall-clock timeout in ms. Defaults to PROBE_TIMEOUT_MS (10 s). */
+  /** Wall-clock timeout in ms. Defaults to PROBE_TIMEOUT_MS (30 s). */
   timeoutMs?: number;
   /** Model to use for the probe. Defaults to PROBE_MODEL. */
   model?: string;
