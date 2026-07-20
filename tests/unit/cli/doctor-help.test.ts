@@ -64,12 +64,12 @@ vi.mock("../../../src/core/command/reviewers-new.js", () => ({
 
 let originalArgv: string[];
 let stdoutSpy: ReturnType<typeof vi.spyOn>;
-let stderrSpy: ReturnType<typeof vi.spyOn>;
+let _stderrSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   originalArgv = process.argv;
   stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
-  stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+  _stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
     throw new Error(`process.exit(${code})`);
   });

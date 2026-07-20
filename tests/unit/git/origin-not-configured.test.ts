@@ -4,7 +4,6 @@
  * TC-017: originNotConfiguredError の error code と exit code が現行と同一
  */
 import { describe, it, expect } from "vitest";
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import { notGitRepoError } from "../../../src/errors.js";
 
 // TC-017: originNotConfiguredError factory の code / exit code 検証

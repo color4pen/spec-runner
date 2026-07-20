@@ -87,7 +87,6 @@ export interface DoctorGitHubClient {
  * providing a runtime-accessible export so dynamic import destructuring works.
  * @internal
  */
-// eslint-disable-next-line @typescript-eslint/no-redeclare
 export const DoctorContext: undefined = undefined;
 
 export interface DoctorContext {
