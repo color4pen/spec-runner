@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c193e3e3-5703-4920-937e-cc88a5c07d5d",
   "createdAt": "2026-07-20T05:59:13.234Z",
-  "updatedAt": "2026-07-20T05:59:15.358Z",
+  "updatedAt": "2026-07-20T06:01:31.387Z",
   "request": {
     "title": "job prune --force に削除直前の再検証を入れる — scan 後に active 化した sidecar の削除競合を塞ぐ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/prune-force-recheck-before-delete-c193e3e3",
   "error": null,
@@ -61,7 +61,9 @@
   ],
   "issueNumber": 868,
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
