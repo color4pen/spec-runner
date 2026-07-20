@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3cedb338-8366-45c6-81ee-ffa370972731",
   "createdAt": "2026-07-20T03:27:18.653Z",
-  "updatedAt": "2026-07-20T04:17:57.317Z",
+  "updatedAt": "2026-07-20T04:54:16.969Z",
   "request": {
     "title": "CLI の repo root 解決を entry に一本化する — cwd 暗黙仮定で subdirectory 起動が静かに誤動作する問題の構造解",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "build-fixer",
   "status": "running",
   "branch": "change/repo-root-entry-resolution-3cedb338",
   "error": null,
@@ -61,13 +61,16 @@
   ],
   "issueNumber": 856,
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 30,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }

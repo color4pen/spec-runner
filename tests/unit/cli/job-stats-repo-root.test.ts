@@ -86,7 +86,7 @@ let originalArgv: string[];
 let exitSpy: ReturnType<typeof vi.spyOn>;
 let stdoutSpy: ReturnType<typeof vi.spyOn>;
 let stderrSpy: ReturnType<typeof vi.spyOn>;
-let cwdSpy: ReturnType<typeof vi.spyOn>;
+let _cwdSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(async () => {
   originalArgv = process.argv;
@@ -149,7 +149,7 @@ describe("TC-006: job stats from a subdirectory equals job stats from the root",
 
     // --- Run from repo root ---
     await setRepoRoot(tmpRepoRoot);
-    cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(tmpRepoRoot);
+    _cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(tmpRepoRoot);
 
     await runMain(["job", "stats", "--json"]).catch(() => {});
 
@@ -164,7 +164,7 @@ describe("TC-006: job stats from a subdirectory equals job stats from the root",
 
     // --- Run from subdir ---
     await setRepoRoot(tmpRepoRoot); // resolver still returns the same root
-    cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(subdir);
+    _cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(subdir);
 
     await runMain(["job", "stats", "--json"]).catch(() => {});
 
@@ -183,7 +183,7 @@ describe("TC-006: job stats from a subdirectory equals job stats from the root",
 
     // --- Run from repo root ---
     await setRepoRoot(tmpRepoRoot);
-    cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(tmpRepoRoot);
+    _cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(tmpRepoRoot);
     await runMain(["job", "stats", "--json"]).catch(() => {});
     const rootRuns = (captureStdoutJson() as { runs: Array<{ slug: string }> }).runs;
 
@@ -192,7 +192,7 @@ describe("TC-006: job stats from a subdirectory equals job stats from the root",
 
     // --- Run from subdir ---
     await setRepoRoot(tmpRepoRoot);
-    cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(subdir);
+    _cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(subdir);
     await runMain(["job", "stats", "--json"]).catch(() => {});
     const subdirRuns = (captureStdoutJson() as { runs: Array<{ slug: string }> }).runs;
 

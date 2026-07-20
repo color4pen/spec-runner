@@ -55,8 +55,8 @@ let subdir: string;
 let originalArgv: string[];
 let exitSpy: ReturnType<typeof vi.spyOn>;
 let stderrSpy: ReturnType<typeof vi.spyOn>;
-let stdoutSpy: ReturnType<typeof vi.spyOn>;
-let cwdSpy: ReturnType<typeof vi.spyOn>;
+let _stdoutSpy: ReturnType<typeof vi.spyOn>;
+let _cwdSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(async () => {
   originalArgv = process.argv;
@@ -64,7 +64,7 @@ beforeEach(async () => {
   subdir = path.join(tmpRepoRoot, "src");
   await fs.mkdir(subdir, { recursive: true });
 
-  stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+  _stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
     throw new Error(`process.exit(${code})`);
@@ -107,7 +107,7 @@ describe("TC-003: request new outside a git repository exits non-zero with unifi
   it("exits with code 2 when there is no git repository (repoRoot is null)", async () => {
     // Simulate invoker cwd is NOT inside a git repository
     await setRepoRoot(null);
-    cwdSpy = vi.spyOn(process, "cwd").mockReturnValue("/tmp/not-a-repo");
+    _cwdSpy = vi.spyOn(process, "cwd").mockReturnValue("/tmp/not-a-repo");
 
     const result = await runMain(["request", "new", "my-slug"]);
 
@@ -128,7 +128,7 @@ describe("TC-003: request new outside a git repository exits non-zero with unifi
 
   it("does NOT create any specrunner/drafts/ directory when outside a repo", async () => {
     await setRepoRoot(null);
-    cwdSpy = vi.spyOn(process, "cwd").mockReturnValue("/tmp/not-a-repo");
+    _cwdSpy = vi.spyOn(process, "cwd").mockReturnValue("/tmp/not-a-repo");
 
     await runMain(["request", "new", "my-slug"]).catch(() => {});
 
@@ -146,7 +146,7 @@ describe("TC-007: request new from a subdirectory creates file at repo root", ()
   it("creates specrunner/drafts/<slug>/request.md at the repo root, not under the subdir", async () => {
     // Simulate: cwd = subdir, repoRoot = tmpRepoRoot
     await setRepoRoot(tmpRepoRoot);
-    cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(subdir);
+    _cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(subdir);
 
     await runMain(["request", "new", "my-slug"]).catch(() => {});
 
@@ -228,7 +228,7 @@ test background
 
     // Repo root is the parent (repoRoot = tmpRepoRoot, cwd = subdir)
     await setRepoRoot(tmpRepoRoot);
-    cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(subdir);
+    _cwdSpy = vi.spyOn(process, "cwd").mockReturnValue(subdir);
 
     // Run validate with a relative path "foo.md" — should resolve to subdir/foo.md
     await runMain(["request", "validate", "foo.md"]).catch(() => undefined);
