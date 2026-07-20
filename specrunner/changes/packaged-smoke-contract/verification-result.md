@@ -6,11 +6,11 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 0.4s | 0 |
-| 2 | typecheck | passed | 4.5s | 0 |
-| 3 | test | passed | 27.1s | 0 |
-| 4 | lint | passed | 5.0s | 0 |
-| 5 | changed-line-coverage | passed | 30.3s | 0 |
+| 1 | build | passed | 0.5s | 0 |
+| 2 | typecheck | passed | 5.4s | 0 |
+| 3 | test | passed | 30.6s | 0 |
+| 4 | lint | passed | 4.8s | 0 |
+| 5 | changed-line-coverage | passed | 33.2s | 0 |
 
 ## Phase: build
 
@@ -22,8 +22,8 @@ CLI Using tsup config: tsup.config.ts
 CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
-ESM dist/specrunner.js 1.23 MB
-ESM ⚡️ Build success in 85ms
+ESM dist/specrunner.js 1.24 MB
+ESM ⚡️ Build success in 98ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -51,53 +51,66 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	200d
   "categories": []
 }
 
- Test Files  560 passed (560)
-      Tests  7611 passed | 1 skipped (7612)
-   Start at  18:44:31
-   Duration  26.79s (transform 5.56s, setup 0ms, import 23.88s, tests 31.84s, environment 31ms)
+ Test Files  565 passed (565)
+      Tests  7800 passed | 1 skipped (7801)
+   Start at  22:50:53
+   Duration  30.25s (transform 5.74s, setup 0ms, import 24.00s, tests 48.10s, environment 31ms)
 
 
 $ vitest run
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-sm10PV/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-GUPZ2Q/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-B5CPpY/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-8wx9rK/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
@@ -118,15 +131,6 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=old-feature (issue#50)
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -147,27 +151,23 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
+Warning: issue-notifier: failed to write comment to issue #42: network error
+ERROR: file not found
+spawn ENOENT
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
-Warning: issue-notifier: failed to write comment to issue #42: network error
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-ERROR: file not found
-spawn ENOENT
 Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 
@@ -183,6 +183,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (22 changed files checked, 22 skipped)
-  Skipped (not in coverage surface): .github/workflows/ci.yml, package.json, scripts/smoke/package-smoke.sh, specrunner/changes/packaged-smoke-contract/bite-evidence-result.md, specrunner/changes/packaged-smoke-contract/conformance-result-001.md, specrunner/changes/packaged-smoke-contract/design.md, specrunner/changes/packaged-smoke-contract/events.jsonl, specrunner/changes/packaged-smoke-contract/regression-gate-result-001.md, specrunner/changes/packaged-smoke-contract/regression-gate-result-002.md, specrunner/changes/packaged-smoke-contract/request-review-attestation.json, specrunner/changes/packaged-smoke-contract/request-review-result-001.md, specrunner/changes/packaged-smoke-contract/request.md, specrunner/changes/packaged-smoke-contract/review-feedback-001.md, specrunner/changes/packaged-smoke-contract/rules.md, specrunner/changes/packaged-smoke-contract/spec-review-result-001.md, specrunner/changes/packaged-smoke-contract/spec.md, specrunner/changes/packaged-smoke-contract/state.json, specrunner/changes/packaged-smoke-contract/tasks.md, specrunner/changes/packaged-smoke-contract/test-cases.md, specrunner/changes/packaged-smoke-contract/usage.json, specrunner/changes/packaged-smoke-contract/verification-result.md, tests/package-smoke-contract.test.ts
+changed-line-coverage: passed (24 changed files checked, 24 skipped)
+  Skipped (not in coverage surface): .github/workflows/ci.yml, package.json, scripts/smoke/package-smoke.sh, specrunner/changes/packaged-smoke-contract/bite-evidence-result.md, specrunner/changes/packaged-smoke-contract/conformance-result-001.md, specrunner/changes/packaged-smoke-contract/design.md, specrunner/changes/packaged-smoke-contract/events.jsonl, specrunner/changes/packaged-smoke-contract/pr-create-result.md, specrunner/changes/packaged-smoke-contract/regression-gate-result-001.md, specrunner/changes/packaged-smoke-contract/regression-gate-result-002.md, specrunner/changes/packaged-smoke-contract/request-review-attestation.json, specrunner/changes/packaged-smoke-contract/request-review-result-001.md, specrunner/changes/packaged-smoke-contract/request.md, specrunner/changes/packaged-smoke-contract/review-feedback-001.md, specrunner/changes/packaged-smoke-contract/rules.md, specrunner/changes/packaged-smoke-contract/spec-review-result-001.md, specrunner/changes/packaged-smoke-contract/spec-review-result-002.md, specrunner/changes/packaged-smoke-contract/spec.md, specrunner/changes/packaged-smoke-contract/state.json, specrunner/changes/packaged-smoke-contract/tasks.md, specrunner/changes/packaged-smoke-contract/test-cases.md, specrunner/changes/packaged-smoke-contract/usage.json, specrunner/changes/packaged-smoke-contract/verification-result.md, tests/package-smoke-contract.test.ts
 ```
