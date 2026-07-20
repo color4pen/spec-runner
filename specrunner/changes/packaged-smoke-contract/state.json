@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4940f179-073e-4fde-b038-16dcca57638d",
   "createdAt": "2026-07-20T08:44:46.023Z",
-  "updatedAt": "2026-07-20T09:39:13.220Z",
+  "updatedAt": "2026-07-20T09:41:04.185Z",
   "request": {
     "title": "CI の package smoke を初回接触契約の assert に拡張する — npm 配布物・任意 cwd・隔離 XDG で実運用条件を歩く",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/packaged-smoke-contract-4940f179",
   "error": null,
@@ -88,7 +88,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -103,7 +103,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
