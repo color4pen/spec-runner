@@ -18,9 +18,20 @@
  * - The token value never appears in the returned detail string.
  */
 import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader } from "./sdk-loader.js";
-import { resolveClaudeCodeOAuthToken } from "../../core/credentials/claude-code.js";
 import { stripSecrets } from "../../util/env-filter.js";
 import type { ProviderReadinessProbe, ProviderReadinessResult } from "../../core/port/provider-readiness.js";
+
+/**
+ * Local type for the OAuth token resolver — matches the overload signature used by
+ * the probe (optional: true → resolves to { token; source } | undefined).
+ *
+ * Defined locally to avoid a forbidden adapter→domain static import edge (DSM §3).
+ * The real implementation is loaded lazily via dynamic import at probe call time.
+ */
+type TokenResolver = (
+  env: Record<string, string | undefined>,
+  opts?: { optional?: boolean },
+) => Promise<{ token: string; source: string } | undefined>;
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -135,8 +146,12 @@ function buildDetail(err: unknown, _tokenValue: string | undefined): string {
 export interface ClaudeProviderReadinessProbeOptions {
   /** Injectable SDK loader for testing. Defaults to the real loadClaudeAgentSdk. */
   loadSdkFn?: ClaudeAgentSdkLoader;
-  /** Injectable token resolver for testing. Defaults to resolveClaudeCodeOAuthToken. */
-  resolveTokenFn?: typeof resolveClaudeCodeOAuthToken;
+  /**
+   * Injectable token resolver for testing.
+   * Defaults to resolveClaudeCodeOAuthToken (loaded lazily via dynamic import to avoid
+   * a forbidden adapter→domain static import edge per DSM §3).
+   */
+  resolveTokenFn?: TokenResolver;
   /** Wall-clock timeout in ms. Defaults to PROBE_TIMEOUT_MS (10 s). */
   timeoutMs?: number;
   /** Model to use for the probe. Defaults to PROBE_MODEL. */
@@ -157,11 +172,16 @@ export function createClaudeProviderReadinessProbe(
   opts: ClaudeProviderReadinessProbeOptions = {},
 ): ProviderReadinessProbe {
   const loadSdkFn = opts.loadSdkFn ?? loadClaudeAgentSdk;
-  const resolveTokenFn = opts.resolveTokenFn ?? resolveClaudeCodeOAuthToken;
   const timeoutMs = opts.timeoutMs ?? PROBE_TIMEOUT_MS;
   const model = opts.model ?? PROBE_MODEL;
 
   return async (env: Record<string, string | undefined>): Promise<ProviderReadinessResult> => {
+    // Resolve token function: use injected resolver if provided, otherwise lazy-load
+    // resolveClaudeCodeOAuthToken via dynamic import to avoid a forbidden
+    // adapter→domain static import edge (DSM §3).
+    const resolveTokenFn: TokenResolver = opts.resolveTokenFn ??
+      (await import("../../core/credentials/claude-code.js")).resolveClaudeCodeOAuthToken;
+
     // Step 1: Resolve token best-effort.
     // Token absence alone is NOT auth-missing — the SDK may authenticate via
     // interactive credential stores (CLAUDE.md, keychain, etc.).

@@ -459,6 +459,9 @@ describe("TC-E2E-001 + TC-E2E-002: guard-halt publishes checkpoint; attach resum
           repo: EXPECTED_REPO.name,
           spawnFn: spawnCommand,
           manager: resumeManager,
+          // Inject a no-op probe so the readiness gate passes without network calls.
+          // The gate is tested independently in provider-readiness-gate.test.ts.
+          providerReadinessProbe: async () => ({ kind: "ready" as const }),
         }, machineBRunner);
 
         // 9. Execute real ResumeCommand (prepare() + buildPipelineForJob() non-mock)
