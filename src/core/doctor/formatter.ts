@@ -57,8 +57,9 @@ export function formatHuman(results: DoctorResult[]): string {
       if (r.hint) {
         lines.push(`      Hint: ${r.hint}`);
       }
-      if (r.details && r.details.length > 0) {
-        for (const detail of r.details) {
+      const humanDetails = r.detailsHuman ?? r.details;
+      if (humanDetails && humanDetails.length > 0) {
+        for (const detail of humanDetails) {
           lines.push(`      - ${detail}`);
         }
       }
