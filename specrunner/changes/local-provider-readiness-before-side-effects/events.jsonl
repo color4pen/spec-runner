@@ -67,3 +67,5 @@
 {"type":"lineage","step":"verification","ts":"2026-07-20T11:43:07.057Z","outputs":[{"path":"specrunner/changes/local-provider-readiness-before-side-effects/verification-result.md","hash":"sha256:9adf85871a042351d79c089d84135f1ad2c4ee2a6450035419c2a7f27e170712"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-07-20T11:43:07.066Z","step":"verification","status":"warning","message":"verification iteration 3 completed with verdict: failed"}
 {"type":"transition","ts":"2026-07-20T11:43:07.068Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: verification did not pass after 2 iterations"}
+{"type":"transition","ts":"2026-07-20T11:44:57.114Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'build-fixer'"}
+{"type":"transition","ts":"2026-07-20T11:44:57.176Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
