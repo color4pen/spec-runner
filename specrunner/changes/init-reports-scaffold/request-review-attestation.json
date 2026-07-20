@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:f61753e7e8445ecb37f5b2af0b82659462c1e639abec3ed3333d4a8334800881",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/init.ts:139-152 — scaffold 作成（ensureDotSpecrunnerGitignore + fs.mkdir × 2）は git rev-parse --show-toplevel が exitCode 0 の場合のみ実行される",
+    "src/cli/init.ts:149 — コメント 'Non-zero exit = not a git repo; skip silently' が存在する",
+    "src/cli/init.ts:150-151 — catch ブロックにコメント 'git not available or other error — skip silently' が存在する",
+    "src/cli/init.ts:154 — return 0 が catch 外で唯一の return であり、どちらの経路でも exit 0",
+    "src/cli/init.ts:136 — configExists 分岐の else 節で logInfo('Config already exists. Skipping global config generation.') のみ出力",
+    "src/cli/init.ts:144-147 — scaffold 作成（L144: ensureDotSpecrunnerGitignore, L146: fs.mkdir draftsDir, L147: fs.mkdir changesDirRel）後に出力なし",
+    "src/cli/init.ts:133 — config 新規作成時の出力は logSuccess('Config saved.')",
+    "src/cli/init.ts:134 — login 案内のみ追加、scaffold への言及なし",
+    "README.md:11-14 — Quick Start の npm install → specrunner init → specrunner login の並びに git repo 前提の言及なし",
+    "src/util/gitignore.ts — ensureDotSpecrunnerGitignore は newContent === content なら早期 return（L95）し、globSeen/exceptionSeen によるデデュープで冪等性を保証"
+  ],
+  "sourceRevision": "7cca00cfb1c5c5708d0bfbee4913f75cddc46bce"
+}
