@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:7e01260eb08ed618c59aa53fc1c9dffcf76c1c14b5c862793b87c46294feb4c8",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "specrunner/changes/archive/2026-07-20-packaged-smoke-contract/events.jsonl:115 — lineage event type=lineage, step=spec-review, outputs=[{path:spec-review-result-003.md, hash:null}]",
+    "specrunner/changes/archive/2026-07-20-packaged-smoke-contract/events.jsonl:114 — step-attempt event, findingsPath=spec-review-result-002.md, endedAt=2026-07-20T13:28:47.719Z, commitOid=ca55144f4402cf68e68f172c4d70815c6a6cff39",
+    "src/core/step/commit-orchestrator.ts — commitSuccess calls projectSuccess(state,...) then applySuccessPostPersistEffects(store, s, ...) with updated state s; writes(state,deps) evaluated inside on post-pushStepResult state",
+    "src/core/step/spec-review.ts:89-93 — writes() returns [{path: specReviewResultPath(deps.slug, nextIteration(state, STEP_NAMES.SPEC_REVIEW))}]",
+    "src/core/step/io-iteration.ts:12-14 — nextIteration = (state.steps?.[stepName]?.length ?? 0) + 1",
+    "src/core/step/code-review.ts:133-136 — writes() uses nextIteration(state, STEP_NAMES.CODE_REVIEW)",
+    "src/core/step/conformance.ts:73-76 — writes() uses nextIteration(state, STEP_NAMES.CONFORMANCE)",
+    "src/core/step/request-review.ts:73-79 — writes() uses nextIteration(state, STEP_NAMES.REQUEST_REVIEW)",
+    "src/core/step/custom-reviewer.ts:134-138 — writes() uses nextIteration(state, snapshot.name)",
+    "src/core/step/regression-gate.ts:126-131 — writes() uses nextIteration(state, REGRESSION_GATE_STEP_NAME)",
+    "src/core/runtime/local.ts:1158-1171 — digestArtifacts computes sha256 for existing files, returns hash:null for missing files",
+    "src/core/runtime/managed.ts:530-532 — digestArtifacts returns hash:null for every ref (no local filesystem)"
+  ],
+  "sourceRevision": "cb0fd58aa879a5693d616b75974caf65fa9ee59d"
+}

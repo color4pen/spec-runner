@@ -14,7 +14,7 @@
  */
 
 import * as path from "node:path";
-import type { Step, AgentStep } from "./types.js";
+import type { Step, AgentStep, IoRef } from "./types.js";
 import type { JobState, Verdict, ModelUsage, StepRun, ErrorInfo, HistoryEntry } from "../../state/schema.js";
 import type { ReviewerStatus } from "../../kernel/reviewer-snapshot.js";
 import type { PipelineDeps, StoreFactory } from "../types.js";
@@ -201,6 +201,8 @@ export class CommitOrchestrator {
     step: Step,
     result: StepExecutionResult & { kind: "success" },
     deps: PipelineDeps,
+    preWriteIo: IoRef[],
+    preReadIo: IoRef[],
   ): Promise<void> {
     const { completion, completedAt, modelUsage, followUpAttempts } = result;
     const { verdict, persistToolResult } = completion;
@@ -222,30 +224,26 @@ export class CommitOrchestrator {
     }
 
     // lineage (appendLineage — best-effort)
-    if (deps.runtimeStrategy && step.writes && deps.cwd) {
+    if (deps.runtimeStrategy && preWriteIo.length > 0 && deps.cwd) {
       try {
         const cwd = deps.cwd;
-        const writes = step.writes(state, deps);
-        if (writes.length > 0) {
-          const reads = step.reads ? step.reads(state, deps) : [];
-          const [outputRefs, inputRefs] = await Promise.all([
-            deps.runtimeStrategy.digestArtifacts(writes.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
-            deps.runtimeStrategy.digestArtifacts(reads.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
-          ]);
-          const inputArtifactRefs = inputRefs.map((r, i) => {
-            const ioRef = reads[i];
-            if (ioRef?.required !== undefined) return { ...r, required: ioRef.required };
-            return r;
-          });
-          const lineageRecord: LineageRecord = {
-            type: "lineage",
-            step: step.name,
-            ts: completedAt,
-            outputs: outputRefs,
-            inputs: inputArtifactRefs,
-          };
-          await store.appendLineage(lineageRecord);
-        }
+        const [outputRefs, inputRefs] = await Promise.all([
+          deps.runtimeStrategy.digestArtifacts(preWriteIo.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+          deps.runtimeStrategy.digestArtifacts(preReadIo.map((r) => ({ path: r.path })), cwd, state.branch ?? null),
+        ]);
+        const inputArtifactRefs = inputRefs.map((r, i) => {
+          const ioRef = preReadIo[i];
+          if (ioRef?.required !== undefined) return { ...r, required: ioRef.required };
+          return r;
+        });
+        const lineageRecord: LineageRecord = {
+          type: "lineage",
+          step: step.name,
+          ts: completedAt,
+          outputs: outputRefs,
+          inputs: inputArtifactRefs,
+        };
+        await store.appendLineage(lineageRecord);
       } catch {
         // Best-effort: lineage recording failure must not affect step completion
       }
@@ -312,6 +310,12 @@ export class CommitOrchestrator {
 
     logVerbose("step", "verdict parsed", { step: step.name, verdict });
 
+    // Evaluate writes/reads on the PRE-push state (before pushStepResult appends the new StepRun).
+    // For iteration-dependent steps, nextIteration(state, stepName) returns the correct N here.
+    // If evaluated after projectSuccess, it would return N+1 (the off-by-one bug).
+    const preWriteIo: IoRef[] = step.writes ? step.writes(state, deps) : [];
+    const preReadIo: IoRef[] = step.reads ? step.reads(state, deps) : [];
+
     // In-memory projection: pushStepResult
     let s = projectSuccess(state, step, result, findingsPath);
 
@@ -341,7 +345,7 @@ export class CommitOrchestrator {
     await store.persist(s);
 
     // Post-persist effects: usage + lineage + verdict:parsed emit
-    await this.applySuccessPostPersistEffects(store, s, step, result, deps);
+    await this.applySuccessPostPersistEffects(store, s, step, result, deps, preWriteIo, preReadIo);
 
     return s;
   }
@@ -471,7 +475,7 @@ export class CommitOrchestrator {
     const now = new Date().toISOString();
 
     // Track success member entries for best-effort post-persist work
-    const successEntries: Array<{ step: Step; result: StepExecutionResult & { kind: "success" } }> = [];
+    const successEntries: Array<{ step: Step; result: StepExecutionResult & { kind: "success" }; preWriteIo: IoRef[]; preReadIo: IoRef[] }> = [];
     const skippedEntries: Array<{ step: Step; result: StepExecutionResult & { kind: "skipped" } }> = [];
 
     // --- 1. Fold members in-memory (no store calls) ---
@@ -480,6 +484,12 @@ export class CommitOrchestrator {
     for (const { step, startedAt, result } of members) {
       if (result.kind === "success") {
         const findingsPath = step.resultFilePath(base, deps);
+
+        // Evaluate writes/reads on the PRE-fold state (before projectSuccess appends this member's StepRun).
+        // Each member's writes() must see the state before its own run is recorded — not the folded state
+        // that includes sibling members' results. This prevents off-by-one iteration paths.
+        const preWriteIo: IoRef[] = step.writes ? step.writes(state, deps) : [];
+        const preReadIo: IoRef[] = step.reads ? step.reads(state, deps) : [];
 
         // Round-only: {step}-started history (sequential path uses begin() instead)
         state = appendHistoryEntry(state, {
@@ -494,7 +504,7 @@ export class CommitOrchestrator {
         // {step}-verdict history (in-memory; round batches into a single persist)
         state = appendHistoryEntry(state, verdictHistoryEntry(step, result.completion.verdict as Verdict | null, now));
 
-        successEntries.push({ step, result });
+        successEntries.push({ step, result, preWriteIo, preReadIo });
       } else if (result.kind === "skipped") {
         // Round-only: {step}-started history (sequential path uses begin() instead)
         state = appendHistoryEntry(state, {
@@ -541,8 +551,8 @@ export class CommitOrchestrator {
     await store.persist(state);
 
     // --- 4. Best-effort post-persist: usage + lineage + verdict:parsed ---
-    for (const { step, result } of successEntries) {
-      await this.applySuccessPostPersistEffects(store, state, step, result, deps);
+    for (const { step, result, preWriteIo, preReadIo } of successEntries) {
+      await this.applySuccessPostPersistEffects(store, state, step, result, deps, preWriteIo, preReadIo);
     }
 
     // verdict:parsed for skipped members (skipped entries have no usage or lineage)
