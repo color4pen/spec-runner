@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3050a772-7d51-4c35-bdd8-3e9a57fc2053",
   "createdAt": "2026-07-21T01:35:03.523Z",
-  "updatedAt": "2026-07-21T03:54:08.892Z",
+  "updatedAt": "2026-07-21T04:03:01.449Z",
   "request": {
     "title": "全 step prompt を 5 部構成の共通骨格に再構成し、evidence 規律と原因分類を共通化する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/step-prompt-skeleton-restructure-3050a772",
   "error": null,
@@ -87,7 +87,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 58,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -102,7 +102,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
