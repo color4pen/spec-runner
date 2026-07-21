@@ -12,6 +12,8 @@
 import { describe, it, expect } from "vitest";
 import {
   codeChangedSinceLastVerification,
+  revisionChangedSinceLastVerification,
+  reverificationNeeded,
   conformanceApprovedLatest,
   IMPL_CODE_MUTATOR_STEPS,
 } from "../../../../src/core/pipeline/reverification.js";
@@ -37,7 +39,7 @@ function makeBaseState(overrides: Partial<JobState> = {}): JobState {
   };
 }
 
-function makeRun(endedAt: string, verdict = "passed"): StepRun {
+function makeRun(endedAt: string, verdict = "passed", commitOid?: string): StepRun {
   return {
     attempt: 1,
     sessionId: null,
@@ -48,6 +50,7 @@ function makeRun(endedAt: string, verdict = "passed"): StepRun {
     },
     startedAt: endedAt,
     endedAt,
+    ...(commitOid !== undefined ? { commitOid } : {}),
   };
 }
 
@@ -338,5 +341,139 @@ describe("TC-014: conformanceApprovedLatest — no conformance runs → false", 
   it("returns false when steps is undefined (initial state)", () => {
     const state = makeBaseState({ steps: undefined });
     expect(conformanceApprovedLatest(state)).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-015: revisionChangedSinceLastVerification
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-015: revisionChangedSinceLastVerification — commitOid-based revision mismatch detection", () => {
+  it("returns true when conformance commitOid differs from verification commitOid (human push scenario)", () => {
+    // Scenario: reopen → human push → code-review clean → conformance approved
+    // conformance records new commitOid; verification still has old one → reverification needed
+    const state = makeBaseState({
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:01.000Z", "passed", "abc123")],
+        [STEP_NAMES.CONFORMANCE]:  [makeRun("2026-01-01T00:00:03.000Z", "approved", "def456")],
+      },
+    });
+    expect(revisionChangedSinceLastVerification(state)).toBe(true);
+  });
+
+  it("returns false when conformance commitOid matches verification commitOid (same revision)", () => {
+    const state = makeBaseState({
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:01.000Z", "passed", "abc123")],
+        [STEP_NAMES.CONFORMANCE]:  [makeRun("2026-01-01T00:00:02.000Z", "approved", "abc123")],
+      },
+    });
+    expect(revisionChangedSinceLastVerification(state)).toBe(false);
+  });
+
+  it("returns false (fail-closed) when verification commitOid is absent (legacy run)", () => {
+    const state = makeBaseState({
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:01.000Z", "passed")], // no commitOid
+        [STEP_NAMES.CONFORMANCE]:  [makeRun("2026-01-01T00:00:02.000Z", "approved", "abc123")],
+      },
+    });
+    expect(revisionChangedSinceLastVerification(state)).toBe(false);
+  });
+
+  it("returns false (fail-closed) when conformance commitOid is absent (legacy run)", () => {
+    const state = makeBaseState({
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:01.000Z", "passed", "abc123")],
+        [STEP_NAMES.CONFORMANCE]:  [makeRun("2026-01-01T00:00:02.000Z", "approved")], // no commitOid
+      },
+    });
+    expect(revisionChangedSinceLastVerification(state)).toBe(false);
+  });
+
+  it("returns false when no verification runs exist", () => {
+    const state = makeBaseState({
+      steps: {
+        [STEP_NAMES.CONFORMANCE]: [makeRun("2026-01-01T00:00:01.000Z", "approved", "abc123")],
+      },
+    });
+    expect(revisionChangedSinceLastVerification(state)).toBe(false);
+  });
+
+  it("returns false when no conformance runs exist", () => {
+    const state = makeBaseState({
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:01.000Z", "passed", "abc123")],
+      },
+    });
+    expect(revisionChangedSinceLastVerification(state)).toBe(false);
+  });
+
+  it("uses the latest verification and conformance runs (multiple runs)", () => {
+    // Latest conformance has same commitOid as latest verification — no mismatch
+    const state = makeBaseState({
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [
+          makeRun("2026-01-01T00:00:01.000Z", "passed", "old111"),
+          makeRun("2026-01-01T00:00:03.000Z", "passed", "new222"),
+        ],
+        [STEP_NAMES.CONFORMANCE]: [
+          makeRun("2026-01-01T00:00:02.000Z", "needs-fix:code-fixer", "old111"),
+          makeRun("2026-01-01T00:00:04.000Z", "approved", "new222"),
+        ],
+      },
+    });
+    expect(revisionChangedSinceLastVerification(state)).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-016: reverificationNeeded — composite guard (OR of both predicates)
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-016: reverificationNeeded — composite OR of codeChangedSinceLastVerification and revisionChangedSinceLastVerification", () => {
+  it("returns true when a specrunner mutator ran after verification (timestamp arm)", () => {
+    // code-fixer ran after verification — timestamp arm fires
+    const state = makeBaseState({
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:01.000Z", "passed", "abc123")],
+        [STEP_NAMES.CODE_FIXER]:   [makeRun("2026-01-01T00:00:02.000Z", "success", "abc123")],
+        [STEP_NAMES.CONFORMANCE]:  [makeRun("2026-01-01T00:00:03.000Z", "approved", "abc123")],
+      },
+    });
+    expect(reverificationNeeded(state)).toBe(true);
+  });
+
+  it("returns true when a human pushed new commits and no mutator ran (commitOid arm)", () => {
+    // Reopen scenario: no specrunner mutator, but verification and conformance have different commitOids
+    const state = makeBaseState({
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:01.000Z", "passed", "old111")],
+        [STEP_NAMES.CONFORMANCE]:  [makeRun("2026-01-01T00:00:03.000Z", "approved", "new222")],
+      },
+    });
+    expect(reverificationNeeded(state)).toBe(true);
+  });
+
+  it("returns false when verification is current and commitOids match (clean state, no reverification)", () => {
+    const state = makeBaseState({
+      steps: {
+        [STEP_NAMES.IMPLEMENTER]:  [makeRun("2026-01-01T00:00:01.000Z", "success", "abc123")],
+        [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:02.000Z", "passed", "abc123")],
+        [STEP_NAMES.CONFORMANCE]:  [makeRun("2026-01-01T00:00:03.000Z", "approved", "abc123")],
+      },
+    });
+    expect(reverificationNeeded(state)).toBe(false);
+  });
+
+  it("returns false (fail-closed) when both commitOids are absent (legacy state, no mutator)", () => {
+    // Legacy runs without commitOid: timestamp check false (verification ran after implementer),
+    // commitOid check false (absent oids) → overall false → route to adr-gen (same as before fix)
+    const state = makeBaseState({
+      steps: {
+        [STEP_NAMES.IMPLEMENTER]:  [makeRun("2026-01-01T00:00:01.000Z", "success")],
+        [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:02.000Z", "passed")],
+        [STEP_NAMES.CONFORMANCE]:  [makeRun("2026-01-01T00:00:03.000Z", "approved")],
+      },
+    });
+    expect(reverificationNeeded(state)).toBe(false);
   });
 });
