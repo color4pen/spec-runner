@@ -1,5 +1,6 @@
 import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
+import { TC_SOURCE_SCENARIO_FORMAT } from "./tc-source-contract.js";
 
 /**
  * System prompt for the implementer step.
@@ -45,8 +46,8 @@ change folder の tasks.md に記載されたタスクを実装します。
    - **未 materialize（fast pipeline 等）の場合**: TDD でテストを先に書く。
      test-cases.md が存在する場合、must のテストケースは全て実装する。
      test-cases.md の各 TC を以下のルールでテストコードに変換する（混在形式）:
-       - **Scenario 由来 TC**（Source フィールドが \`specs/<capability>/spec.md > ...\` 形式）:
-         Source フィールドのパス（\`specs/<capability>/spec.md\`）を Read tool で開き、対応する Scenario の GIVEN/WHEN/THEN を読んでテストコードに変換する。
+       - **Scenario 由来 TC**（Source フィールドが \`${TC_SOURCE_SCENARIO_FORMAT}\` 形式）:
+         Source フィールドが指す change folder の \`specrunner/changes/<slug>/spec.md\` を Read tool で開き、対応する Scenario の GIVEN/WHEN/THEN を読んでテストコードに変換する。
        - **非 Scenario 由来 TC**（Source フィールドが design.md / tasks.md セクション参照）:
          test-cases.md に記載された GIVEN/WHEN/THEN をテストコードに変換する。
      test-cases.md が存在しない場合は tasks.md ベースで TDD を行う。

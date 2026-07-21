@@ -3,6 +3,7 @@ import { buildSystemPrompt } from "./builder.js";
 import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE } from "./fragments.js";
 import { renderTestPlacementInstruction } from "./test-placement.js";
 import type { TestPlacement } from "../config/schema.js";
+import { TC_SOURCE_SCENARIO_FORMAT } from "./tc-source-contract.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
 const _changesDir = changesDirRel();
@@ -81,8 +82,8 @@ it("パスワードが 8 文字未満のとき登録を拒否する", () => {
 
 test-cases.md の各 must TC を以下のルールでテストコードに変換する:
 
-- **Scenario 由来 TC**（Source フィールドが \`specs/<capability>/spec.md > ...\` 形式）:
-  test-cases.md に GWT が記載されていない。Source フィールドのパス（\`specs/<capability>/spec.md\`）を Read tool で開き、
+- **Scenario 由来 TC**（Source フィールドが \`${TC_SOURCE_SCENARIO_FORMAT}\` 形式）:
+  test-cases.md に GWT が記載されていない。Source フィールドが指す change folder の \`specrunner/changes/<slug>/spec.md\` を Read tool で開き、
   対応する Scenario の GIVEN/WHEN/THEN を読んでテストコードに変換する。
 
 - **非 Scenario 由来 TC**（Source フィールドが design.md / tasks.md セクション参照）:
