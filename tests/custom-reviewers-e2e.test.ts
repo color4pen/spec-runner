@@ -25,6 +25,7 @@ import type { SpawnFn } from "../src/util/spawn.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
 import { buildInitialJobState } from "../src/store/job-state-store.js";
 import type { ReviewerSnapshot } from "../src/core/reviewers/types.js";
+import type { RuntimeStrategy } from "../src/core/port/runtime-strategy.js";
 import { vi as vitest } from "vitest";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
@@ -387,6 +388,33 @@ function buildRunner(
     repo: buildRepo(),
     githubToken: "ghp_test",
   });
+}
+
+/**
+ * Minimal RuntimeStrategy stub that makes captureHeadSha return "test-sha" for all steps.
+ *
+ * T-05 (approval-revision-binding): tests that go through the re-verification path
+ * (code-fixer ran after verification → conformance approved → re-verification) need
+ * conformance.commitOid === verification.commitOid for `conformanceApprovedForVerifiedRevision`
+ * to return true. Without runtimeStrategy, captureHeadSha is never called and commitOid
+ * is never set on StepRun records, causing the guard to return false and loop back to
+ * code-review (resulting in an extra code-review/regression-gate cycle).
+ *
+ * All contract/validation methods are no-ops so they do not interfere with the mock
+ * agent runner's verdict flow.
+ */
+function makeCommitOidStubStrategy(): RuntimeStrategy {
+  return {
+    captureHeadSha: async (): Promise<string | null> => "test-sha",
+    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
+    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
+    prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
+    commitFinalState: vi.fn().mockResolvedValue(undefined),
+    validateStepInputs: vi.fn().mockResolvedValue(undefined),
+    verifyFindingRefs: vi.fn().mockResolvedValue([]),
+    digestArtifacts: vi.fn().mockResolvedValue([]),
+    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
+  } as unknown as RuntimeStrategy;
 }
 
 // ---------------------------------------------------------------------------
@@ -867,6 +895,14 @@ describe("TC-RG-01: regression-gate detects regression → code-fixer → approv
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      // T-05 (approval-revision-binding): provide runtimeStrategy so captureHeadSha
+      // returns "test-sha" for all step runs. This ensures conformance.commitOid ===
+      // verification.commitOid, making conformanceApprovedForVerifiedRevision return true
+      // after re-verification (code-fixer ran after initial verification → conformance
+      // approved → codeChangedSinceLastVerification → re-verify). Without this, the guard
+      // returns false (no commitOids) and the pipeline loops back to code-review, causing
+      // regression-gate to run a 3rd time.
+      runtimeStrategy: makeCommitOidStubStrategy(),
     });
 
     expect(result.status).toBe("awaiting-archive");
