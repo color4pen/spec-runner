@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4e3af7b0-9cec-4743-84eb-3344710ccd3e",
   "createdAt": "2026-07-20T23:50:57.555Z",
-  "updatedAt": "2026-07-21T01:24:30.975Z",
+  "updatedAt": "2026-07-21T01:28:35.583Z",
   "request": {
     "title": "judge 系 step の判定チャネルを typed findings に一本化し、result md を evidence report にする",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/verdict-channel-unification-4e3af7b0",
   "error": null,
   "pipelineId": "standard",
@@ -86,8 +86,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/879",
+    "number": 879,
+    "createdAt": "2026-07-21T01:28:34.752Z"
+  },
   "_journal": {
-    "historyCount": 60,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -103,7 +108,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
