@@ -36,6 +36,7 @@ function makeFoldResult(overrides: Partial<FoldResult> = {}): FoldResult {
   return {
     steps: {},
     history: [],
+    operatorEvents: [],
     stepsTotal: 0,
     stepCounts: {},
     historyCount: 0,

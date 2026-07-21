@@ -1013,7 +1013,7 @@ describe("B-13 (arch pin): StepExecutor は store 永続化 API を CommitOrches
    */
   it("executor.ts に store 永続化 API の直接呼び出しが存在しない", () => {
     const raw = grepE(
-      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun)\\("`,
+      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun|appendOperatorEvent)\\("`,
       "src/core/step/executor.ts",
     );
     const matches = parseGrepOutput(raw);
@@ -1023,7 +1023,7 @@ describe("B-13 (arch pin): StepExecutor は store 永続化 API を CommitOrches
 
   it("B-13 liveness: commit-orchestrator.ts に store 永続化 API 呼び出しが存在する（grep が vacuous でない）", () => {
     const raw = grepE(
-      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun)\\("`,
+      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun|appendOperatorEvent)\\("`,
       "src/core/step/commit-orchestrator.ts",
     );
     const matches = parseGrepOutput(raw);
@@ -1048,7 +1048,7 @@ describe("B-13 (arch pin): StepExecutor は store 永続化 API を CommitOrches
   // the coordinator commits the whole round once via CommitOrchestrator.commitRound.
   it("B-13 parallel: parallel-review-round.ts に store 永続化 API の直接呼び出しが存在しない", () => {
     const raw = grepE(
-      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun)\\("`,
+      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun|appendOperatorEvent)\\("`,
       "src/core/pipeline/parallel-review-round.ts",
     );
     const matches = parseGrepOutput(raw);

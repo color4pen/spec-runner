@@ -179,10 +179,10 @@ export interface FoldResult {
    * All operator event records in chronological order (D1, reopen-journal).
    * NOT materialized into state.json / NormalizedJobState — journal-only.
    * Empty array if no operator-event records have been appended.
-   * Optional for backward compat with code that constructs FoldResult literals;
-   * fold() always populates this field.
+   * fold() always populates this field; literal constructors must provide it
+   * (empty array when no operator events exist).
    */
-  operatorEvents?: OperatorEventRecord[];
+  operatorEvents: OperatorEventRecord[];
   /**
    * Present when a mid-journal corruption was detected (a committed line that is
    * not valid JSON or not a plain object). Absent when the journal is clean.

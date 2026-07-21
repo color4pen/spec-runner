@@ -290,9 +290,7 @@ Arguments:
 
 Options:
   --from <step>       Pipeline step to restart from (required).
-                      Valid steps: ${[...["request-review", "design", "spec-review", "spec-fixer",
-  "test-case-gen", "implementer", "verification", "build-fixer", "code-review",
-  "code-fixer", "conformance", "adr-gen", "pr-create"]].join(", ")}
+                      Valid steps: ${[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ")}
   --reason <text>     Operator rationale for the reopen (required, recorded in journal).
   --verbose           More detailed output
   --quiet             Suppress informational output
