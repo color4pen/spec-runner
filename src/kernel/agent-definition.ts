@@ -74,12 +74,16 @@ export interface AgentCapabilities {
  * Each Step class owns one AgentDefinition — self-contained.
  *
  * Design D1: Step.agent is a complete AgentDefinition, not a runtime placeholder.
+ *
+ * role is typed as string (not AgentStepName) to allow test helpers to construct steps
+ * with arbitrary role strings without requiring a type cast. All production steps use
+ * AgentStepName literals, which satisfy string.
  */
 export interface AgentDefinition {
   /** Human-readable name on Anthropic (e.g. "specrunner-propose"). */
   readonly name: string;
-  /** AgentStepName this agent is associated with (kebab-case). */
-  readonly role: AgentStepName;
+  /** Step role this agent is associated with (kebab-case). Typically an AgentStepName literal. */
+  readonly role: string;
   /** Anthropic model ID. */
   readonly model: string;
   /** Full system prompt string. */

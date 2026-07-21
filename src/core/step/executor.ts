@@ -99,6 +99,8 @@ export class StepExecutor {
     this.sleepFn = sleepFn ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
     this.commitPushInfra = { spawnFn: this.spawnFn, sleepFn: this.sleepFn, events: this.events };
     this.permissionScope = permissionScope;
+    // storeFactory may be undefined in test contexts that don't exercise store-dependent paths.
+    // CommitOrchestrator throws at runtime if store operations are attempted without a factory.
     this.orchestrator = new CommitOrchestrator(storeFactory, events, permissionScope);
   }
 

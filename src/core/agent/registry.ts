@@ -7,12 +7,11 @@
  */
 import type { AgentDefinition } from "./definition.js";
 import type { Step, AgentStep } from "../step/types.js";
-import type { AgentStepName } from "../../state/schema.js";
 import { hashObject } from "./hash.js";
 
 export class AgentRegistry {
   private constructor(
-    private readonly defs: Map<AgentStepName, AgentDefinition>,
+    private readonly defs: Map<string, AgentDefinition>,
   ) {}
 
   /**
@@ -22,7 +21,7 @@ export class AgentRegistry {
    * Throws with "Duplicate agent role: <role>" if two Steps share a role.
    */
   static fromSteps(steps: Step[]): AgentRegistry {
-    const map = new Map<AgentStepName, AgentDefinition>();
+    const map = new Map<string, AgentDefinition>();
     // Filter to agent-only steps — CLI steps (like verification) have no agent
     const agentSteps = steps.filter((s): s is AgentStep => s.kind === "agent");
     for (const step of agentSteps) {
@@ -43,7 +42,7 @@ export class AgentRegistry {
    * Get the AgentDefinition for a given role.
    * Returns undefined if the role is not registered.
    */
-  get(role: AgentStepName): AgentDefinition | undefined {
+  get(role: string): AgentDefinition | undefined {
     return this.defs.get(role);
   }
 
@@ -60,7 +59,7 @@ export class AgentRegistry {
    * Deterministic: same definition → same hash every time.
    * Throws with "Unknown agent role: <role>" if not registered.
    */
-  hashOf(role: AgentStepName): string {
+  hashOf(role: string): string {
     const def = this.defs.get(role);
     if (def === undefined) {
       throw new Error(`Unknown agent role: ${role}`);

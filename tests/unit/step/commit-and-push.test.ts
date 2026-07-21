@@ -17,6 +17,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+
+// Stub fs.access so filterExistingFiles treats all managed paths as existing.
+// Real access() rejects for tempDir paths that don't exist, causing stagePaths=[]
+// → early return before git add, breaking tests that assert git add call args.
+vi.mock("node:fs/promises", async () => {
+  const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+  return { ...actual, access: vi.fn().mockResolvedValue(undefined) };
+});
 import * as os from "node:os";
 import { StepExecutor } from "../../../src/core/step/executor.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";

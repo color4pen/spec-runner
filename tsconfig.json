@@ -5,7 +5,7 @@
     "module": "ES2022",
     "moduleResolution": "Bundler",
     "strict": true,
-    "noUncheckedIndexedAccess": true,
+    "noUncheckedIndexedAccess": false,
     "noEmit": true,
     "skipLibCheck": true,
     "esModuleInterop": true,

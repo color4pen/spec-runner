@@ -5,7 +5,7 @@ import type { JobState } from "../../state/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
 import { getSpecReviewMode } from "../../config/type-config.js";
-import { specReviewResultPath, changeFolderPath } from "../../util/paths.js";
+import { specReviewResultPath, changeFolderPath, requestMdPath } from "../../util/paths.js";
 import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
@@ -80,6 +80,7 @@ export const SpecReviewStep: AgentStep = {
   reads(state: JobState, deps: StepDeps): IoRef[] {
     const folder = changeFolderPath(deps.slug);
     return [
+      { path: requestMdPath(deps.slug) },
       { path: `${folder}/spec.md` },
       { path: `${folder}/design.md` },
       { path: `${folder}/tasks.md` },
