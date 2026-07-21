@@ -431,6 +431,9 @@ describe("TC-2: code-fixer approved (code-review done) → conformance → verif
                 outcome: { verdict: "approved" as const, findingsPath: null, error: null },
                 startedAt: ts,
                 endedAt: ts,
+                // T-05: commitOid required so conformanceApprovedForVerifiedRevision can
+                // match against the verification run's commitOid.
+                commitOid: "sha-c",
               },
             ],
           },
@@ -450,6 +453,9 @@ describe("TC-2: code-fixer approved (code-review done) → conformance → verif
                 outcome: { verdict: "passed" as const, findingsPath: null, error: null },
                 startedAt: ts,
                 endedAt: ts,
+                // T-05: commitOid must match conformance's commitOid so that
+                // conformanceApprovedForVerifiedRevision guard returns true → adr-gen.
+                commitOid: "sha-c",
               },
             ],
           },

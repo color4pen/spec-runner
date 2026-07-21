@@ -63,10 +63,66 @@ export function codeChangedSinceLastVerification(state: JobState): boolean {
  * Health invariant: conformance only runs after code-review approved, so this
  * predicate is true only in re-verification context — never during initial
  * verification (implementer → verification, where conformance has not yet run).
+ *
+ * @deprecated Use `conformanceApprovedForVerifiedRevision` for revision-bound
+ * approval checking. This function remains for backward compatibility with tests
+ * that explicitly import it.
  */
 export function conformanceApprovedLatest(state: JobState): boolean {
   const runs = state.steps?.[STEP_NAMES.CONFORMANCE] ?? [];
   if (runs.length === 0) return false;
   const lastRun = runs[runs.length - 1];
   return lastRun?.outcome?.verdict === "approved";
+}
+
+/**
+ * Returns true when the most recent conformance run was approved **for the same
+ * revision** as the most recent verification run.
+ *
+ * Revision 照合ルール（D1 / D3 / D6）:
+ *   承認はそれが評価した revision に対してのみ有効。
+ *   不一致・判定不能（commitOid 欠落）は「承認なし」として routing を false に倒す（fail-closed）。
+ *
+ * True conditions (all must hold):
+ *   (1) Latest conformance run exists and its verdict is "approved".
+ *   (2) Latest conformance run has a non-empty commitOid.
+ *   (3) Latest verification run exists and has a non-empty commitOid.
+ *   (4) conformance.commitOid === verification.commitOid.
+ *
+ * If any condition is absent, returns false (fail-closed per D6).
+ * This function is state-pure: it reads only from `state.steps` and performs
+ * no git I/O, ensuring deterministic routing guard behaviour.
+ *
+ * Distinction from `codeChangedSinceLastVerification` (endedAt-based, auxiliary):
+ *   - `codeChangedSinceLastVerification` detects whether a code mutator ran more
+ *     recently than the last verification (timestamp comparison). Used for the
+ *     conformance→verification re-entry guard.
+ *   - `conformanceApprovedForVerifiedRevision` detects whether the conformance
+ *     approval matches the currently verified revision (commitOid comparison).
+ *     Used for the verification→adr-gen / verification→pr-create short-circuit guard.
+ *
+ * STANDARD / FAST profile usage:
+ *   `{ step: VERIFICATION, on: "passed", to: ADR_GEN|PR_CREATE, when: conformanceApprovedForVerifiedRevision }`
+ *   Replaces the old `conformanceApprovedLatest` guard in types.ts.
+ */
+export function conformanceApprovedForVerifiedRevision(state: JobState): boolean {
+  // (1) Latest conformance run must exist with "approved" verdict
+  const conformanceRuns = state.steps?.[STEP_NAMES.CONFORMANCE] ?? [];
+  if (conformanceRuns.length === 0) return false;
+  const lastConformance = conformanceRuns[conformanceRuns.length - 1];
+  if (lastConformance?.outcome?.verdict !== "approved") return false;
+
+  // (2) Conformance run must have a non-empty commitOid
+  const conformanceOid = lastConformance.commitOid;
+  if (!conformanceOid) return false;
+
+  // (3) Latest verification run must exist and have a non-empty commitOid
+  const verificationRuns = state.steps?.[STEP_NAMES.VERIFICATION] ?? [];
+  if (verificationRuns.length === 0) return false;
+  const lastVerification = verificationRuns[verificationRuns.length - 1];
+  const verificationOid = lastVerification?.commitOid;
+  if (!verificationOid) return false;
+
+  // (4) Both commitOids must match
+  return conformanceOid === verificationOid;
 }

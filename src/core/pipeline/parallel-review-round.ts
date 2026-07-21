@@ -103,9 +103,16 @@ export class ParallelReviewRound {
     // New seam NOT introduced — reuse existing RuntimeStrategy.listChangedFiles.
     // Managed runtime: listChangedFiles returns [] → invalidation not fired (fail-safe).
     // NOTE: parallel custom reviewer managed support is a known limitation (Non-Goal).
+    //
+    // T-04 (approval-revision-binding): baselineCommit is the raw captureHeadSha result with
+    // no timestamp fallback. null → revision check disabled in selectPendingMembers (managed
+    // fail-safe). currentHeadSha retains the timestamp fallback for invalidatedByCommit only.
+    let baselineCommit: string | null = null;
     if (deps.runtimeStrategy) {
-      // Capture HEAD SHA once for the invalidatedByCommit field
-      const currentHeadSha = await deps.runtimeStrategy.captureHeadSha(cwd) ?? new Date().toISOString();
+      // baselineCommit: nullable raw SHA — used for revision binding (T-04).
+      // currentHeadSha: with timestamp fallback — used for invalidatedByCommit field only.
+      baselineCommit = await deps.runtimeStrategy.captureHeadSha(cwd);
+      const currentHeadSha = baselineCommit ?? new Date().toISOString();
 
       // Per-member invalidation: each approved member has its own approvedAtCommit
       const updatedStatuses = [...statuses];
@@ -134,13 +141,25 @@ export class ParallelReviewRound {
         // computeInvalidations evaluates a single member's touched files against its activation paths
         // We compute per-member by passing a single-element statuses array
         const [invalidated] = computeInvalidations([s], sourceTouched, requestType, currentHeadSha);
-        if (invalidated) updatedStatuses[i] = invalidated;
+        if (invalidated) {
+          // T-04 re-anchor: when listChangedFiles returned positive evidence (kind === "success")
+          // and the member was NOT invalidated (stays approved), update approvedAtCommit to the
+          // current baseline. This keeps the revision binding valid for the next round without
+          // requiring a fresh re-approval run.
+          // evidence unavailable (result.kind !== "success") → no re-anchor (fail-closed).
+          if (result.kind === "success" && invalidated.status === "approved" && baselineCommit !== null) {
+            updatedStatuses[i] = { ...invalidated, approvedAtCommit: baselineCommit };
+          } else {
+            updatedStatuses[i] = invalidated;
+          }
+        }
       }
       statuses = updatedStatuses;
     }
 
     // --- 3. Select pending members ---
-    const pending = selectPendingMembers(statuses, memberNames);
+    // T-04: pass baselineCommit for revision binding. null → disable revision check (managed).
+    const pending = selectPendingMembers(statuses, memberNames, baselineCommit);
     logPipelineDiag("pipeline:coordinator:pending", `coordinator=${coordinatorName}, pending=[${pending.join(",")}]`);
 
     // --- 4. All approved fast path ---

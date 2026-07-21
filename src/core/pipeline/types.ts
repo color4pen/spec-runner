@@ -3,7 +3,7 @@ import { STEP_NAMES } from "../step/step-names.js";
 import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import type { Step } from "../step/types.js";
 import { buildReviewerChainTransitions } from "./reviewer-chain.js";
-import { codeChangedSinceLastVerification, conformanceApprovedLatest } from "./reverification.js";
+import { codeChangedSinceLastVerification, conformanceApprovedForVerifiedRevision } from "./reverification.js";
 
 /**
  * Pipeline-level role of a step (convergence / resume semantics).
@@ -247,7 +247,7 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.BITE_EVIDENCE, on: "strategy-deferred", to: STEP_NAMES.VERIFICATION },
   { step: STEP_NAMES.BITE_EVIDENCE, on: "failed",            to: "escalate" },
   { step: STEP_NAMES.BITE_EVIDENCE, on: "error",             to: "escalate" },
-  { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.ADR_GEN,    when: conformanceApprovedLatest },
+  { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.ADR_GEN,    when: conformanceApprovedForVerifiedRevision },
   { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.CODE_REVIEW },
   { step: STEP_NAMES.VERIFICATION, on: "failed",   to: STEP_NAMES.BUILD_FIXER },
   { step: STEP_NAMES.VERIFICATION, on: "escalation", to: "escalate" },
@@ -304,7 +304,7 @@ export const FAST_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.IMPLEMENTER,  on: "success", to: STEP_NAMES.VERIFICATION },
   { step: STEP_NAMES.IMPLEMENTER,  on: "error",   to: "escalate" },
   // --- verification loop (reverification chokepoint: when-guarded rows first) ---
-  { step: STEP_NAMES.VERIFICATION, on: "passed",    to: STEP_NAMES.PR_CREATE,    when: conformanceApprovedLatest },
+  { step: STEP_NAMES.VERIFICATION, on: "passed",    to: STEP_NAMES.PR_CREATE,    when: conformanceApprovedForVerifiedRevision },
   { step: STEP_NAMES.VERIFICATION, on: "passed",    to: STEP_NAMES.CODE_REVIEW },
   { step: STEP_NAMES.VERIFICATION, on: "failed",    to: STEP_NAMES.BUILD_FIXER },
   { step: STEP_NAMES.VERIFICATION, on: "escalation", to: "escalate" },

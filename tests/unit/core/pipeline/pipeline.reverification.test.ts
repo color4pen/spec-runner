@@ -119,6 +119,7 @@ function appendRun(
   verdict: string,
   ts: string,
   fixableFindings = 0,
+  commitOid?: string,
 ): JobState {
   const existing = state.steps?.[stepName] ?? [];
   const findings = Array.from({ length: fixableFindings }, (_, i) => ({
@@ -141,6 +142,7 @@ function appendRun(
     },
     startedAt: ts,
     endedAt: ts,
+    ...(commitOid !== undefined ? { commitOid } : {}),
   };
   return {
     ...state,
@@ -241,13 +243,17 @@ describe("TC-001: code-fixer ran after verification → re-verification before p
       if (step.name === "bite-evidence") return appendRun(s, "bite-evidence", "strategy-deferred", ts);
       if (step.name === "verification") {
         verificationCallCount++;
-        return appendRun(s, "verification", "passed", ts);
+        // T-05: 2nd+ verification run (re-verification) needs commitOid so that
+        // conformanceApprovedForVerifiedRevision guard returns true → routes to adr-gen.
+        const commitOid = verificationCallCount >= 2 ? "sha-c" : undefined;
+        return appendRun(s, "verification", "passed", ts, 0, commitOid);
       }
       // code-review: approved with 1 fixable finding → routes to code-fixer
       if (step.name === "code-review") return appendRun(s, "code-review", "approved", ts, 1);
       // code-fixer: approved → routes to conformance (forward row: code-review.verdict=approved)
       if (step.name === "code-fixer") return appendRun(s, "code-fixer", "approved", ts);
-      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts);
+      // T-05: conformance run needs commitOid matching re-verification's commitOid.
+      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts, 0, "sha-c");
       if (step.name === "adr-gen") return appendRun(s, "adr-gen", "success", ts);
       if (step.name === "pr-create") return appendRun(s, "pr-create", "success", ts);
       throw new Error(`Unexpected step: ${step.name}`);
@@ -309,7 +315,10 @@ describe("TC-002: conformance needs-fix:code-fixer path also triggers re-verific
       if (step.name === "bite-evidence") return appendRun(s, "bite-evidence", "strategy-deferred", ts);
       if (step.name === "verification") {
         verificationCallCount++;
-        return appendRun(s, "verification", "passed", ts);
+        // T-05: 2nd+ verification run (re-verification) needs commitOid so that
+        // conformanceApprovedForVerifiedRevision guard returns true → routes to adr-gen.
+        const commitOid = verificationCallCount >= 2 ? "sha-c" : undefined;
+        return appendRun(s, "verification", "passed", ts, 0, commitOid);
       }
       // code-review: no fixable findings → routes to conformance
       if (step.name === "code-review") return appendRun(s, "code-review", "approved", ts);
@@ -320,7 +329,9 @@ describe("TC-002: conformance needs-fix:code-fixer path also triggers re-verific
         // 1st: needs-fix:code-fixer → code-fixer runs
         // 2nd: approved → triggers re-verification (code-fixer ran after verification)
         const verdict = conformanceCallCount === 1 ? "needs-fix:code-fixer" : "approved";
-        return appendRun(s, "conformance", verdict, ts);
+        // T-05: 2nd conformance (approved) needs commitOid matching re-verification's commitOid.
+        const commitOid = conformanceCallCount >= 2 ? "sha-c" : undefined;
+        return appendRun(s, "conformance", verdict, ts, 0, commitOid);
       }
       if (step.name === "adr-gen") return appendRun(s, "adr-gen", "success", ts);
       if (step.name === "pr-create") return appendRun(s, "pr-create", "success", ts);
@@ -379,7 +390,10 @@ describe("TC-003: re-verification failed → build-fixer (not pr-create)", () =>
       if (step.name === "verification") {
         const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
         verificationCallCount++;
-        return appendRun(s, "verification", verdict, ts);
+        // T-05: 3rd verification (build-fixer recovery pass) needs commitOid matching conformance
+        // so that conformanceApprovedForVerifiedRevision guard returns true → routes to adr-gen.
+        const commitOid = verificationCallCount >= 3 ? "sha-c" : undefined;
+        return appendRun(s, "verification", verdict, ts, 0, commitOid);
       }
       if (step.name === "build-fixer") {
         buildFixerCallCount++;
@@ -387,7 +401,8 @@ describe("TC-003: re-verification failed → build-fixer (not pr-create)", () =>
       }
       if (step.name === "code-review") return appendRun(s, "code-review", "approved", ts, 1);
       if (step.name === "code-fixer") return appendRun(s, "code-fixer", "approved", ts);
-      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts);
+      // T-05: conformance needs commitOid matching recovery verification's commitOid.
+      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts, 0, "sha-c");
       if (step.name === "adr-gen") return appendRun(s, "adr-gen", "success", ts);
       if (step.name === "pr-create") return appendRun(s, "pr-create", "success", ts);
       throw new Error(`Unexpected step: ${step.name}`);
@@ -442,12 +457,16 @@ describe("TC-004: build-fixer recovery → re-verification passes → adr-gen (n
       if (step.name === "verification") {
         const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
         verificationCallCount++;
-        return appendRun(s, "verification", verdict, ts);
+        // T-05: 3rd verification (build-fixer recovery pass) needs commitOid matching conformance
+        // so that conformanceApprovedForVerifiedRevision guard returns true → routes to adr-gen.
+        const commitOid = verificationCallCount >= 3 ? "sha-c" : undefined;
+        return appendRun(s, "verification", verdict, ts, 0, commitOid);
       }
       if (step.name === "build-fixer") return appendRun(s, "build-fixer", "success", ts);
       if (step.name === "code-review") return appendRun(s, "code-review", "approved", ts, 1);
       if (step.name === "code-fixer") return appendRun(s, "code-fixer", "approved", ts);
-      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts);
+      // T-05: conformance needs commitOid matching recovery verification's commitOid.
+      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts, 0, "sha-c");
       if (step.name === "adr-gen") return appendRun(s, "adr-gen", "success", ts);
       if (step.name === "pr-create") return appendRun(s, "pr-create", "success", ts);
       throw new Error(`Unexpected step: ${step.name}`);
@@ -586,7 +605,11 @@ describe("TC-019: conformance → verification re-entry gives fresh verification
       if (step.name === "verification") {
         const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
         verificationCallCount++;
-        return appendRun(s, "verification", verdict, ts);
+        // T-05: 5th verification (episode-2 recovery pass) needs commitOid matching conformance
+        // so that conformanceApprovedForVerifiedRevision guard returns true → routes to adr-gen.
+        // Verification calls 1-4: no commitOid (either failures or pre-conformance pass).
+        const commitOid = verificationCallCount >= 5 ? "sha-c" : undefined;
+        return appendRun(s, "verification", verdict, ts, 0, commitOid);
       }
       if (step.name === "build-fixer") {
         buildFixerCallCount++;
@@ -596,7 +619,8 @@ describe("TC-019: conformance → verification re-entry gives fresh verification
       if (step.name === "code-review") return appendRun(s, "code-review", "approved", ts, 1);
       // code-fixer runs AFTER verification(pass, T3), so code-fixer.ts > verification.ts
       if (step.name === "code-fixer") return appendRun(s, "code-fixer", "approved", ts);
-      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts);
+      // T-05: conformance needs commitOid matching episode-2 recovery verification's commitOid.
+      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts, 0, "sha-c");
       if (step.name === "adr-gen") return appendRun(s, "adr-gen", "success", ts);
       if (step.name === "pr-create") return appendRun(s, "pr-create", "success", ts);
       throw new Error(`Unexpected step in TC-019: ${step.name}`);

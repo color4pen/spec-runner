@@ -71,18 +71,53 @@ export function deriveReviewerStatuses(
  * - approved → skip on resume (D8), or have passed the current round
  * - skipped → activation not matched; skipped is fixed for the job lifetime
  *
- * @param statuses - Current reviewer status records.
- * @param members  - Reviewer names in declaration order.
+ * T-04 (approval-revision-binding): When `baselineCommit` is a non-null string,
+ * an approved member is only excluded (skip) if its `approvedAtCommit` matches
+ * `baselineCommit` exactly. Mismatched or absent `approvedAtCommit` reverts the
+ * member to pending (fail-closed per D6 / req 6).
+ *
+ * When `baselineCommit` is null or undefined (managed runtime / unknown baseline),
+ * revision checking is disabled and the function falls back to status-only behaviour
+ * (approved → exclude, regardless of commitOid). This preserves managed-runtime
+ * fail-safe skip and backward compatibility with 2-arg call sites.
+ *
+ * Approval exclusion table:
+ *   baselineCommit = null/undefined → revision check disabled → approved always excluded
+ *   baselineCommit = "sha" + approvedAtCommit = "sha"  → match → excluded (skip)
+ *   baselineCommit = "sha" + approvedAtCommit = "other" → mismatch → pending (re-run)
+ *   baselineCommit = "sha" + approvedAtCommit = null   → absent → pending (fail-closed)
+ *
+ * @param statuses       - Current reviewer status records.
+ * @param members        - Reviewer names in declaration order.
+ * @param baselineCommit - Current HEAD SHA to check against approvedAtCommit.
+ *                         null/undefined → disable revision check (managed fail-safe).
  */
 export function selectPendingMembers(
   statuses: ReviewerStatus[],
   members: string[],
+  baselineCommit?: string | null,
 ): string[] {
-  const statusByName = new Map(statuses.map((s) => [s.name, s.status]));
+  const statusMap = new Map(statuses.map((s) => [s.name, s]));
   return members.filter((name) => {
-    const status = statusByName.get(name);
+    const rec = statusMap.get(name);
     // Unknown members (not in statuses yet) are treated as pending
-    return status === "pending" || status === undefined;
+    if (rec === undefined) return true;
+
+    const status = rec.status;
+    if (status === "skipped") return false;
+    if (status !== "approved") return true; // pending or any other non-approved
+
+    // Member is approved. Check revision binding when baseline is available.
+    if (baselineCommit == null) {
+      // null/undefined baseline → disable revision check → exclude (managed fail-safe)
+      return false;
+    }
+
+    // Revision check: approvedAtCommit must match baselineCommit exactly.
+    // null/undefined approvedAtCommit → fail-closed → pending.
+    const approvedAtCommit = rec.approvedAtCommit;
+    if (!approvedAtCommit) return true; // null → pending (fail-closed)
+    return approvedAtCommit !== baselineCommit; // true = pending if mismatch
   });
 }
 
