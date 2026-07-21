@@ -44,18 +44,8 @@ export interface ReviewerStatus {
   /** Current execution status. */
   status: "pending" | "approved" | "skipped";
   /**
-   * HEAD SHA at the time this reviewer was approved (or re-anchored).
-   *
-   * Dual purpose (T-04 / approval-revision-binding):
-   * 1. Invalidation origin: `listChangedFiles(approvedAtCommit, HEAD)` determines
-   *    which files the fixer touched since this approval.
-   * 2. Revision binding: `selectPendingMembers` skips an approved member only when
-   *    `approvedAtCommit === baselineCommit`. Mismatch or null → fail-closed → re-run.
-   *
-   * Re-anchor: when `listChangedFiles` returns positive evidence that the fixer did
-   * NOT touch this reviewer's activation paths, `approvedAtCommit` is updated to the
-   * current `baselineCommit` so the binding stays valid without a fresh re-approval.
-   *
+   * HEAD SHA at the time this reviewer was approved.
+   * Used as the starting point for invalidation diff (approvedAtCommit..HEAD).
    * null = not yet approved.
    */
   approvedAtCommit?: string | null;
