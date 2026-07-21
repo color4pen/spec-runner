@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "817bb294-543a-4cae-8a56-d6cbc6e1ef22",
   "createdAt": "2026-07-21T23:16:21.480Z",
-  "updatedAt": "2026-07-21T23:20:37.451Z",
+  "updatedAt": "2026-07-21T23:28:06.155Z",
   "request": {
     "title": "request-review の完了契約に evidence counts を追加し、確認ゼロの approve を非 green にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/request-review-evidence-counts-817bb294",
   "error": null,
@@ -60,9 +60,10 @@
     }
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
