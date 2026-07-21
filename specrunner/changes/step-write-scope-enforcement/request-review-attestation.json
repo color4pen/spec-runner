@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:57a5e6bdfcf8919a643ac542485af9ce3d94c9b3793e13f7a95e5c9f1c5b8375",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/commit-push.ts:48 — commitAndPush uses [\"add\", \"-A\"] (git add -A, worktree-wide)",
+    "src/core/step/commit-push.ts:115 — commitFinalState uses [\"add\", \"-A\"] (git add -A, worktree-wide)",
+    "src/core/step/commit-push.ts:183 — commitScopedPaths uses [\"add\", \"-A\", \"--\", ...stagePaths] (scoped variant exists)",
+    "src/core/step/spec-review.ts:80-87 — reads() returns spec.md, design.md, tasks.md only; request.md is absent",
+    "src/prompts/rules.ts — RULES_MD_CONTENT contains step × touch-allowed/forbidden responsibility table",
+    "src/core/step/types.ts — re-exports IoRef, reads?(), writes?() from src/core/port/step-types.ts (AgentStep and CliStep interfaces)"
+  ],
+  "sourceRevision": "cb0fd58aa879a5693d616b75974caf65fa9ee59d"
+}
