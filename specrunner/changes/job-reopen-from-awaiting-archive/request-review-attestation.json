@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:9e5bab57a61a9091250335ee70191d74c446213e216ce8d6cf85bda3a2c9d45e",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/state/lifecycle.ts:39 — [\"awaiting-archive\", new Set([\"archived\", \"canceled\"])]",
+    "src/core/pipeline/reverification.ts:108 — conformanceApprovedForVerifiedRevision function",
+    "src/core/pipeline/reviewer-status.ts:95 — selectPendingMembers with approvedAtCommit field",
+    "src/state/schema/types.ts:209 — StepRun.commitOid?: string",
+    "src/cli/command-registry.ts:550 — job resume subcommand with from/prompt flags and slug positional",
+    "src/core/command/resume.ts — ResumeCommand implementation",
+    "src/core/step/commit-push.ts — write-scope enforcement (guarded mode, findWriteScopeViolations)",
+    "src/util/paths.ts — requestReviewResultPath/specReviewResultPath/reviewFeedbackPath iteration-based paths",
+    "src/store/event-journal.ts — events.jsonl append-only (appendEventRecord)"
+  ],
+  "sourceRevision": "c23df190c8c4e6247f09ec5e917aa8c6c2cbd88b"
+}
