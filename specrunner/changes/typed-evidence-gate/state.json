@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "18cecd72-4e99-419a-941a-4753c4e83ce1",
   "createdAt": "2026-07-21T06:45:25.812Z",
-  "updatedAt": "2026-07-21T08:45:50.655Z",
+  "updatedAt": "2026-07-21T08:49:36.255Z",
   "request": {
     "title": "judge 完了契約に evidence counts を追加し、確認ゼロ・全 skip を非 green にする",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/typed-evidence-gate-18cecd72",
   "error": null,
   "pipelineId": "standard",
@@ -86,8 +86,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/882",
+    "number": 882,
+    "createdAt": "2026-07-21T08:49:35.508Z"
+  },
   "_journal": {
-    "historyCount": 84,
+    "historyCount": 89,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -104,7 +109,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
