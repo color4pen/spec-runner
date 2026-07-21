@@ -8,9 +8,12 @@ import { SpecRunnerError, ERROR_CODES } from "../errors.js";
  * Reads from `config.agents[role].agentId` only.
  * Legacy `config.agent.id` fallback has been removed (design.md D4).
  * Throws CONFIG_INCOMPLETE if the role's entry is missing.
+ *
+ * role is typed as string (not AgentStepName) to allow callers with AgentDefinition.role
+ * (which is now string) to avoid casts.
  */
-export function getAgentId(cfg: SpecRunnerConfig, role: AgentStepName): string {
-  const record = cfg.agents?.[role];
+export function getAgentId(cfg: SpecRunnerConfig, role: string): string {
+  const record = cfg.agents?.[role as AgentStepName];
   if (record?.agentId) {
     return record.agentId;
   }

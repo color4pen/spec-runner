@@ -140,7 +140,7 @@ describe("TC-GH-001/002: sequential guard-halt → break immediately, awaiting-r
     const deps = makeMinimalDeps();
 
     // Persist initial state so the store can read/write it
-    await deps.storeFactory(state.jobId).persist(state);
+    await deps.storeFactory!(state.jobId).persist(state);
 
     const awaitingResumeState = makeAwaitingResumeState(state, "implementer");
 
@@ -214,7 +214,7 @@ describe("TC-GH-001/002: sequential guard-halt → break immediately, awaiting-r
   it("does NOT run code-review or pr-create when design guard-halts", async () => {
     const state = makeMinimalState({ step: "design" });
     const deps = makeMinimalDeps();
-    await deps.storeFactory(state.jobId).persist(state);
+    await deps.storeFactory!(state.jobId).persist(state);
 
     const awaitingResumeState = makeAwaitingResumeState(state, "design");
     const codeReviewSpy = vi.fn();
@@ -266,7 +266,7 @@ describe("TC-GH-003/004: coordinator/round guard-halt via escalation terminal �
   it("does NOT run conformance when coordinator round returns escalation from guard-halt member", async () => {
     const state = makeMinimalState({ step: "implementer" });
     const deps = makeMinimalDeps();
-    await deps.storeFactory(state.jobId).persist(state);
+    await deps.storeFactory!(state.jobId).persist(state);
 
     const conformanceSpy = vi.fn();
 
@@ -352,7 +352,7 @@ describe("TC-GH-005: escalation terminal regression — sequential step failure 
   it("does NOT run verification when implementer fails (state.status=failed), transitions to awaiting-resume", async () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
-    await deps.storeFactory(state.jobId).persist(state);
+    await deps.storeFactory!(state.jobId).persist(state);
 
     const failedState: JobState = {
       ...state,
@@ -405,7 +405,7 @@ describe("TC-GH-006: exhaustion terminal regression — loop exhaustion stops pi
   it("does NOT run downstream steps after loop exhaustion", async () => {
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
-    await deps.storeFactory(state.jobId).persist(state);
+    await deps.storeFactory!(state.jobId).persist(state);
 
     const downstreamSpy = vi.fn();
     let iter = 0;

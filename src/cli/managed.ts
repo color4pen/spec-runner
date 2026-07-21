@@ -124,7 +124,7 @@ export async function runManagedSetup(): Promise<number> {
   const now = new Date().toISOString();
   const agents: Partial<Record<AgentStepName, AgentRecord>> = {};
   for (const [role, result] of syncResult.results.entries()) {
-    agents[role] = {
+    agents[role as AgentStepName] = {
       agentId: result.agentId,
       definitionHash: result.definitionHash,
       lastSyncedAt: result.lastSyncedAt ?? now,

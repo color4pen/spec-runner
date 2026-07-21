@@ -153,7 +153,7 @@ export class Pipeline {
       // Last-resort safety net: if state is still "running" after an unhandled throw,
       // transition to awaiting-resume so the job is resumable (not stuck).
       if (finalState.status === "running") {
-        const store = deps.storeFactory(finalState.jobId);
+        const store = deps.storeFactory!(finalState.jobId);
         const { state: resumeState } = transitionJob(finalState, "awaiting-resume", {
           trigger: "pipeline",
           reason: (err as Error).message ?? String(err),
@@ -284,7 +284,7 @@ export class Pipeline {
             // Safety net: executor threw without attaching state.
             // Mark as failed so getStepOutcome() returns "error" and
             // the transition table routes to "escalate" → awaiting-resume.
-            const store = deps.storeFactory(state.jobId);
+            const store = deps.storeFactory!(state.jobId);
             state = await store.fail(state, {
               code: "UNEXPECTED_STEP_ERROR",
               message: (err as Error).message ?? String(err),
@@ -296,7 +296,7 @@ export class Pipeline {
         logPipelineDiag("pipeline:step:post-execute", `step=${currentStep}, status=${state.status}`);
 
         // Persist state after each step for crash resilience
-        const store = deps.storeFactory(state.jobId);
+        const store = deps.storeFactory!(state.jobId);
         await store.persist(state);
 
         // --- Determine step outcome for transition lookup ---
@@ -388,7 +388,7 @@ export class Pipeline {
             reason: "pipeline complete",
           });
           state = mergeState;
-          const endStore = deps.storeFactory(state.jobId);
+          const endStore = deps.storeFactory!(state.jobId);
           await endStore.persist(state);
           // D5: commit slug canonical state (state.json / events.jsonl) to feature branch
           await deps.runtimeStrategy?.commitFinalState(deps, state);
@@ -408,7 +408,7 @@ export class Pipeline {
             },
           });
           state = escalateState;
-          const escalateStore = deps.storeFactory(state.jobId);
+          const escalateStore = deps.storeFactory!(state.jobId);
           await escalateStore.persist(state);
         }
 
@@ -575,7 +575,7 @@ export class Pipeline {
       const fromMsg = budget.getPreviousLoopStep()
         ? `${budget.getPreviousLoopStep()} complete → ${nextStep} (iter ${budget.getLoopIter(this.loopName) + (nextStep === this.loopName ? 1 : 0)})`
         : `${currentStep} → ${nextStep}`;
-      const transitionStore = deps.storeFactory(state.jobId);
+      const transitionStore = deps.storeFactory!(state.jobId);
       state = await transitionStore.appendHistory(state, {
         ts: new Date().toISOString(),
         step: "step-transition",
@@ -757,7 +757,7 @@ export class Pipeline {
         },
       },
     });
-    const exhaustedStore = deps.storeFactory(exhaustedState.jobId);
+    const exhaustedStore = deps.storeFactory!(exhaustedState.jobId);
     await exhaustedStore.persist(exhaustedState);
     return exhaustedState;
   }

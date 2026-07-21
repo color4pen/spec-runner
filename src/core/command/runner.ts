@@ -242,7 +242,7 @@ export abstract class CommandRunner {
         const crashErrorInfo = { code: crashCode, message: crashMessage, hint: "" };
         let crashState: JobState | null = null;
         try {
-          const store = deps.storeFactory(jobState.jobId);
+          const store = deps.storeFactory!(jobState.jobId);
           const diskState = await store.load();
           if (diskState.status === "running") {
             crashState = await store.fail(diskState as JobState, crashErrorInfo, jobState.step);

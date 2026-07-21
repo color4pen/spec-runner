@@ -106,6 +106,7 @@ export const ERROR_CODES = {
   ATTACH_FETCH_FAILED: "ATTACH_FETCH_FAILED",
   ATTACH_RUNTIME_UNSUPPORTED: "ATTACH_RUNTIME_UNSUPPORTED",
   PROVIDER_NOT_READY: "PROVIDER_NOT_READY",
+  WRITE_SCOPE_VIOLATION: "WRITE_SCOPE_VIOLATION",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -433,5 +434,22 @@ export function commitEffectFailedError(
     ERROR_CODES.COMMIT_AND_PUSH_FAILED,
     `Check for index.lock conflicts, disk issues, or worktree corruption. Retry with specrunner job resume to continue.`,
     `${label}: git ${operation} failed on branch '${branch}': ${detail}`,
+  );
+}
+
+/**
+ * Error thrown when a guarded step's worktree changes include paths outside its write-scope.
+ * commit-push.ts throws this before staging to prevent boundary violations from being committed.
+ */
+export function writeScopeViolationError(
+  stepName: string,
+  branch: string,
+  violatedPaths: string[],
+): SpecRunnerError {
+  const pathList = violatedPaths.map((p) => `  - ${p}`).join("\n");
+  return new SpecRunnerError(
+    ERROR_CODES.WRITE_SCOPE_VIOLATION,
+    `境界外への変更を検出したため commit を中止した。worktree を確認し、境界外変更を取り除いてから resume する。\nViolating paths:\n${pathList}`,
+    `Step '${stepName}' on branch '${branch}' attempted to write outside its declared scope.\nForbidden paths changed:\n${pathList}`,
   );
 }

@@ -5,20 +5,20 @@
 
 ## T-01: write-scope 単一ソース module を新設する
 
-- [ ] `src/core/step/write-scope.ts` を新規作成する（leaf module。import は `src/util/paths.ts` の
+- [x] `src/core/step/write-scope.ts` を新規作成する（leaf module。import は `src/util/paths.ts` の
       path helper のみに限定し、他 core module へ依存しない）。
-- [ ] `GUARDED_WRITE_STEPS: ReadonlySet<string>` を定義する = { `implementer`, `build-fixer`,
+- [x] `GUARDED_WRITE_STEPS: ReadonlySet<string>` を定義する = { `implementer`, `build-fixer`,
       `code-fixer`, `test-materialize`, `adr-gen` }（STEP_NAMES 定数を使用）。
-- [ ] `stagingModeFor(stepName: string): "scoped" | "guarded"` を定義する。既定 `"scoped"`、
+- [x] `stagingModeFor(stepName: string): "scoped" | "guarded"` を定義する。既定 `"scoped"`、
       `GUARDED_WRITE_STEPS` に属する step のみ `"guarded"`。
-- [ ] `protectedCanonPaths(slug: string): string[]` を定義する = request.md / spec.md / design.md /
+- [x] `protectedCanonPaths(slug: string): string[]` を定義する = request.md / spec.md / design.md /
       tasks.md / test-cases.md / request-review-attestation.json（`requestMdPath` /
       `factCheckAttestationPath` ／ `changeFolderPath` 連結で解決）。
-- [ ] 判定成果物述語 `isJudgeArtifact(path: string, slug: string): boolean` を定義する
+- [x] 判定成果物述語 `isJudgeArtifact(path: string, slug: string): boolean` を定義する
       = `specrunner/changes/<slug>/` 配下の `*-result-*.md` / `review-feedback-*.md` に一致。
-- [ ] `forbiddenWritePaths(stepName, slug, declaredWritePaths: string[]): string[]` を定義する
+- [x] `forbiddenWritePaths(stepName, slug, declaredWritePaths: string[]): string[]` を定義する
       = `protectedCanonPaths(slug)` − `declaredWritePaths`（step が writes() で owned とする path を除外）。
-- [ ] `findWriteScopeViolations(stepName, slug, changedPaths: string[], declaredWritePaths: string[]):
+- [x] `findWriteScopeViolations(stepName, slug, changedPaths: string[], declaredWritePaths: string[]):
       string[]` を定義する = changedPaths のうち `forbiddenWritePaths(...)` に含まれるか
       `isJudgeArtifact` に一致し、かつ declaredWritePaths に含まれないものの集合。
 
@@ -30,8 +30,8 @@
 
 ## T-02: write-scope 違反 error を定義する
 
-- [ ] `src/errors.ts` の `ERROR_CODES` に `WRITE_SCOPE_VIOLATION: "WRITE_SCOPE_VIOLATION"` を追加する。
-- [ ] `writeScopeViolationError(stepName: string, branch: string, violatedPaths: string[]):
+- [x] `src/errors.ts` の `ERROR_CODES` に `WRITE_SCOPE_VIOLATION: "WRITE_SCOPE_VIOLATION"` を追加する。
+- [x] `writeScopeViolationError(stepName: string, branch: string, violatedPaths: string[]):
       SpecRunnerError` を追加する。message に違反 path を列挙し、code は `WRITE_SCOPE_VIOLATION`。
       hint は「境界外への変更を検出したため commit を中止した。worktree を確認し、境界外変更を
       取り除いてから resume する」旨。
@@ -41,12 +41,12 @@
 
 ## T-03: commitAndPush に scoped staging 分岐を実装する
 
-- [ ] `src/core/step/commit-push.ts` の `commitAndPush` を、`stagingModeFor(step.name)` で分岐する。
-- [ ] scoped mode: `step.writes?.(state, deps)` の file path（`artifact === "gitState"` を除外）と
+- [x] `src/core/step/commit-push.ts` の `commitAndPush` を、`stagingModeFor(step.name)` で分岐する。
+- [x] scoped mode: `step.writes?.(state, deps)` の file path（`artifact === "gitState"` を除外）と
       `pipelineManagedPaths(deps.slug)`（`round-git-scope.ts` から import）の union を stagePaths とし、
       `git add -A -- <stagePaths>` で stage する。stagePaths が空なら現行の空 stage 相当（no-op で
       commit しない）に倒す。
-- [ ] stage 後の tail（`git diff --cached --quiet` による hasChanges 判定、HEAD-advance 検出、
+- [x] stage 後の tail（`git diff --cached --quiet` による hasChanges 判定、HEAD-advance 検出、
       commit、`pushOnly`）は既存ロジックを共有ヘルパへ抽出して両 mode から呼ぶ。HEAD-advance
       検出（agent 自主 commit → push-only）を scoped mode でも保存する。
 
@@ -57,15 +57,15 @@
 
 ## T-04: commitAndPush に guarded 差分検査（fail-closed）を実装する
 
-- [ ] guarded mode: `git add -A` の **前** に `git status --porcelain -z --no-renames`
+- [x] guarded mode: `git add -A` の **前** に `git status --porcelain -z --no-renames`
       （`infra.spawnFn` 経由）で worktree 相対の変更 path を列挙する（stdout を返す小ヘルパを
       `commit-push.ts` 内 or `git-exec.ts` に追加。NUL 分割 parse は `local.ts` の
       `listWorktreeChanges` と同じ規則）。
-- [ ] `findWriteScopeViolations(step.name, deps.slug, changed, declaredWritePaths)` を評価する。
+- [x] `findWriteScopeViolations(step.name, deps.slug, changed, declaredWritePaths)` を評価する。
       1 件でも違反があれば `writeScopeViolationError(step.name, branch, violations)` を throw し、
       commit / push を行わない（fail-closed）。
-- [ ] 違反が無ければ従来どおり `git add -A` → T-03 の共有 tail（diff / HEAD-advance / commit / push）。
-- [ ] status 列挙が spawn 失敗・非 0 exit の場合も fail-closed（commit せず halt）にする。
+- [x] 違反が無ければ従来どおり `git add -A` → T-03 の共有 tail（diff / HEAD-advance / commit / push）。
+- [x] status 列挙が spawn 失敗・非 0 exit の場合も fail-closed（commit せず halt）にする。
 
 **Acceptance Criteria**:
 - guarded step が禁止領域（request.md 最低限）を変更した状態で commit されず halt になり、halt の
@@ -74,7 +74,7 @@
 
 ## T-05: spec-review の reads() に request.md を追加する
 
-- [ ] `src/core/step/spec-review.ts` の `SpecReviewStep.reads()` に
+- [x] `src/core/step/spec-review.ts` の `SpecReviewStep.reads()` に
       `{ path: requestMdPath(deps.slug) }` を追加する（`util/paths.js` から `requestMdPath` を import）。
 
 **Acceptance Criteria**:
@@ -82,7 +82,7 @@
 
 ## T-06: scoped 経路の境界強制テスト（judge の request.md 除外）
 
-- [ ] scoped step（spec-review 相当）の実行結果に request.md 変更が含まれる状態で commit 処理を
+- [x] scoped step（spec-review 相当）の実行結果に request.md 変更が含まれる状態で commit 処理を
       行うと、request.md 変更が commit に **含まれない** ことを固定するテストを追加する
       （`tests/unit/step/` 配下。real git worktree もしくは spawn mock ＋ stage pathspec 検査）。
 
@@ -91,7 +91,7 @@
 
 ## T-07: guarded 経路の fail-closed halt テスト（implementer の request.md 変更）
 
-- [ ] 広域 write step（implementer 相当）が request.md を変更した状態で commit 処理を行うと、
+- [x] 広域 write step（implementer 相当）が request.md を変更した状態で commit 処理を行うと、
       commit されず halt になり、halt 報告（`ErrorInfo.message` もしくは throw error の message）に
       違反 path が含まれることを固定するテストを追加する。
 
@@ -100,9 +100,9 @@
 
 ## T-08: 正常経路の挙動同一テスト
 
-- [ ] 境界内のみの変更（scoped: 宣言出力 ＋ pipeline 管理 path、guarded: source ＋ 管理 path）で
+- [x] 境界内のみの変更（scoped: 宣言出力 ＋ pipeline 管理 path、guarded: source ＋ 管理 path）で
       commit 内容・挙動が現行と同一であることを固定するテストを追加する。
-- [ ] 既存 pipeline テスト（`tests/pipeline-integration.test.ts`、`tests/core/pipeline/**`、
+- [x] 既存 pipeline テスト（`tests/pipeline-integration.test.ts`、`tests/core/pipeline/**`、
       `tests/unit/step/commit-and-push.test.ts` 等）を無改変で green に保つ。commit-and-push.test.ts の
       新規分岐（scoped / guarded / 違反 halt）は追加テストとして足す。
 
@@ -112,11 +112,11 @@
 
 ## T-09: 単一ソース ↔ 責任範囲表 無矛盾テスト
 
-- [ ] write-scope 単一ソースが唯一の write 境界定義であり、`RULES_MD_CONTENT`
+- [x] write-scope 単一ソースが唯一の write 境界定義であり、`RULES_MD_CONTENT`
       （`src/prompts/rules.ts`）の責任範囲表と矛盾しないことを固定するテストを追加する。
-- [ ] 表の 禁止 セルのうち path 表現可能な項目（spec / design / tasks / test-cases）が、対応する
+- [x] 表の 禁止 セルのうち path 表現可能な項目（spec / design / tasks / test-cases）が、対応する
       guarded step の `forbiddenWritePaths(...)` に含まれること（表 ⊆ module）を assert する。
-- [ ] implementer の Touch 可能 tasks.md が `forbiddenWritePaths("implementer", ...)` に含まれない
+- [x] implementer の Touch 可能 tasks.md が `forbiddenWritePaths("implementer", ...)` に含まれない
       ことを assert する。
 
 **Acceptance Criteria**:
@@ -125,15 +125,15 @@
 
 ## T-10: spec-review reads() テスト
 
-- [ ] `SpecReviewStep.reads()` の返す集合に request.md が含まれることを固定するテストを追加する。
+- [x] `SpecReviewStep.reads()` の返す集合に request.md が含まれることを固定するテストを追加する。
 
 **Acceptance Criteria**:
 - reads() に request.md path が含まれることが assert される。
 
 ## T-11: 検証ゲート
 
-- [ ] `bun run typecheck` が green。
-- [ ] `bun run test` が green。
+- [x] `bun run typecheck` が green。
+- [x] `bun run test` が green。
 
 **Acceptance Criteria**:
 - `typecheck && test` が green。
@@ -145,9 +145,9 @@
 > レビューで判断する。要件 1〜4 の behavioral テスト（T-06〜T-10）が主たる歯であり、本タスクは
 > 回帰防止の追加壁。
 
-- [ ] `architecture/conformance.md` に不変（例 B-17）を追加する: `commit-push.ts` の `commitAndPush`
+- [x] `architecture/conformance.md` に不変（例 B-17）を追加する: `commit-push.ts` の `commitAndPush`
       が `stagingModeFor` / `findWriteScopeViolations`（write-scope 単一ソース）を経由するか。
-- [ ] `tests/unit/architecture/core-invariants.test.ts` に対応する grep 検査を追加する。
+- [x] `tests/unit/architecture/core-invariants.test.ts` に対応する grep 検査を追加する。
 
 **Acceptance Criteria**:
 - 追加した場合、grep-pin テストが green で、sequential 経路の無差別 `git add -A` 回帰を検出できる。

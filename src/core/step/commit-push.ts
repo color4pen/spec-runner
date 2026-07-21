@@ -2,10 +2,12 @@ import type { AgentStep } from "./types.js";
 import type { JobState } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
-import { gitExec, gitExecExitCode, gitExecResult, type SpawnFn } from "../../util/git-exec.js";
+import { gitExec, gitExecExitCode, gitExecResult, runSubprocess, type SpawnFn } from "../../util/git-exec.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../util/spawn.js";
 import { stderrWrite } from "../../logger/stdout.js";
-import { pushFailedError, commitEffectFailedError } from "../../errors.js";
+import { pushFailedError, commitEffectFailedError, writeScopeViolationError } from "../../errors.js";
+import { stagingModeFor, findWriteScopeViolations } from "./write-scope.js";
+import { pipelineManagedPaths } from "./round-git-scope.js";
 
 /** Infrastructure deps for commit/push operations. */
 export interface CommitPushInfra {
@@ -15,41 +17,60 @@ export interface CommitPushInfra {
 }
 
 /**
- * Stage all changes, commit, and push to origin.
+ * Run `git status --porcelain -z --no-renames` and return the changed worktree paths.
  *
- * tool-driven-step-completion: requiresCommit guard removed.
- * New behavior:
- * - git add -A: failure throws commitEffectFailedError("stage") → halt path
- * - git diff --cached --quiet:
- *   - exit 0 = no staged changes → check HEAD advance
- *   - exit 1 = staged changes present → commit
- *   - exit ≥2 or spawn failure → throws commitEffectFailedError("diff") → halt path
- * - if no changes:
- *   - compare headBeforeStep with current HEAD
- *   - if HEAD advanced (agent self-committed): push only, log detection message
- *   - otherwise: silently return (no commit needed, step completed via tool)
- * - git commit -m "${step.name}: ${slug}": failure throws commitEffectFailedError("commit") → halt path
- * - git push origin ${branch} — retry once after 5s on failure
- * - if second push fails: throw pushFailedError
- * - emit commit:push on success
+ * Returns { ok: true, paths } on success, { ok: false, paths: [] } on spawn failure or
+ * non-zero exit. Never throws — callers treat ok:false as fail-closed.
+ *
+ * Parsing rules (same as LocalRuntime.listWorktreeChanges):
+ *   - NUL-delimited entries: each entry is "XY PATH" (2-char status + space + path).
+ *   - Entries shorter than 4 characters are skipped.
+ *   - Path is extracted from entry.slice(3).
  */
-export async function commitAndPush(
+async function getWorktreeChangedPaths(
+  spawnFn: SpawnFn,
+  cwd: string,
+): Promise<{ ok: boolean; paths: string[] }> {
+  try {
+    const { stdout, exitCode } = await runSubprocess(
+      spawnFn,
+      "git",
+      ["status", "--porcelain", "-z", "--no-renames"],
+      { cwd },
+    );
+    if (exitCode !== 0) {
+      return { ok: false, paths: [] };
+    }
+    const parts = stdout.split("\0").filter((p) => p.length > 0);
+    const paths: string[] = [];
+    for (const part of parts) {
+      // Format: XY<SP>path — 2-char status + space prefix
+      if (part.length < 4) continue;
+      const filePath = part.slice(3);
+      if (filePath) paths.push(filePath);
+    }
+    return { ok: true, paths };
+  } catch {
+    return { ok: false, paths: [] };
+  }
+}
+
+/**
+ * Shared tail for both scoped and guarded staging modes.
+ *
+ * Runs after staging is complete:
+ * 1. git diff --cached --quiet → determine if staged changes exist.
+ * 2. No staged changes → check if HEAD advanced (agent self-committed) → push-only or skip.
+ * 3. Staged changes → commit + push.
+ */
+async function commitAndPushTail(
   step: AgentStep,
-  state: JobState,
-  deps: PipelineDeps,
   headBeforeStep: string | null,
   infra: CommitPushInfra,
+  cwd: string,
+  branch: string,
+  slug: string,
 ): Promise<void> {
-  const cwd = deps.cwd ?? process.cwd();
-  const branch = state.branch ?? "";
-  const slug = deps.slug;
-
-  // Stage all changes. Failure (spawn error or exit≠0) throws typed error → halt path.
-  const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A"]);
-  if (!addResult.ok || addResult.exitCode !== 0) {
-    throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
-  }
-
   // Check if there are staged changes.
   // `git diff --cached --quiet` exits 0 when no staged changes, 1 when there are staged changes,
   // ≥2 on git error (spawn failure or error exit code) → throws typed error → halt path.
@@ -81,6 +102,92 @@ export async function commitAndPush(
 
   // Push with one retry
   await pushOnly(branch, cwd, step.name, infra);
+}
+
+/**
+ * Stage all changes, commit, and push to origin.
+ *
+ * Branching on staging mode (from write-scope single source):
+ *
+ * "scoped" mode (deterministic steps: design, spec-review, spec-fixer, etc.):
+ *   - Stage only declared outputs: git add -A -- <step.writes() + pipelineManagedPaths>.
+ *   - Boundary-external changes in the worktree are silently excluded from the commit.
+ *   - If stagePaths is empty, no-op (nothing to stage or commit).
+ *
+ * "guarded" mode (broad-write steps: implementer, build-fixer, code-fixer, etc.):
+ *   - Pre-check: git status --porcelain -z --no-renames → list changed paths.
+ *   - Violation detection: findWriteScopeViolations → halt if any forbidden path changed.
+ *   - Status spawn failure / non-zero exit → fail-closed halt.
+ *   - If no violations: git add -A → stage whole worktree (original behaviour).
+ *
+ * Shared tail (both modes):
+ *   - git diff --cached --quiet:
+ *     - exit 0 = no staged changes → check HEAD advance
+ *     - exit 1 = staged changes present → commit
+ *     - exit ≥2 or spawn failure → throws commitEffectFailedError("diff") → halt path
+ *   - if no changes:
+ *     - compare headBeforeStep with current HEAD
+ *     - if HEAD advanced (agent self-committed): push only, log detection message
+ *     - otherwise: silently return (no commit needed, step completed via tool)
+ *   - git commit -m "${step.name}: ${slug}"
+ *   - git push origin ${branch} — retry once after 5s on failure
+ */
+export async function commitAndPush(
+  step: AgentStep,
+  state: JobState,
+  deps: PipelineDeps,
+  headBeforeStep: string | null,
+  infra: CommitPushInfra,
+): Promise<void> {
+  const cwd = deps.cwd ?? process.cwd();
+  const branch = state.branch ?? "";
+  const slug = deps.slug;
+  const mode = stagingModeFor(step.name);
+
+  if (mode === "scoped") {
+    // Scoped staging: limit to declared outputs + pipeline-managed paths.
+    const writes = step.writes?.(state, deps) ?? [];
+    const filePaths = writes.filter((r) => r.artifact !== "gitState").map((r) => r.path);
+    const managed = pipelineManagedPaths(slug);
+    const stagePaths = [...new Set([...filePaths, ...managed])];
+
+    // Nothing to stage — skip entirely (no-op equivalent to empty stage).
+    if (stagePaths.length === 0) return;
+
+    // Stage only the declared paths. Failure → halt.
+    const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ...stagePaths]);
+    if (!addResult.ok || addResult.exitCode !== 0) {
+      throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
+    }
+  } else {
+    // Guarded mode: pre-check for write-scope violations before staging.
+
+    // List all changed paths in the worktree.
+    const statusResult = await getWorktreeChangedPaths(infra.spawnFn, cwd);
+    if (!statusResult.ok) {
+      // git status spawn failure or non-zero exit → fail-closed.
+      throw commitEffectFailedError(step.name, branch, "stage", "git status failed");
+    }
+
+    // Resolve declared write paths (excluding git-state artifacts).
+    const writes = step.writes?.(state, deps) ?? [];
+    const declaredWritePaths = writes.filter((r) => r.artifact !== "gitState").map((r) => r.path);
+
+    // Check for forbidden boundary violations.
+    const violations = findWriteScopeViolations(step.name, slug, statusResult.paths, declaredWritePaths);
+    if (violations.length > 0) {
+      throw writeScopeViolationError(step.name, branch, violations);
+    }
+
+    // No violations — stage whole worktree (original behaviour).
+    const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A"]);
+    if (!addResult.ok || addResult.exitCode !== 0) {
+      throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
+    }
+  }
+
+  // Shared tail: diff check, HEAD-advance detection, commit, push.
+  await commitAndPushTail(step, headBeforeStep, infra, cwd, branch, slug);
 }
 
 /**
