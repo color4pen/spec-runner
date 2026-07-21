@@ -1,4 +1,4 @@
-import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION, COVERAGE_GATE_INTEGRITY } from "./fragments.js";
+import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE, COVERAGE_GATE_INTEGRITY } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 
 /**
@@ -49,8 +49,6 @@ ${COVERAGE_GATE_INTEGRITY}
 ## Evidence
 
 ${EVIDENCE_DISCIPLINE}
-
-${CAUSE_CLASSIFICATION}
 
 **step 固有の evidence 要求**:
 - 修正した finding の file:line を記録する

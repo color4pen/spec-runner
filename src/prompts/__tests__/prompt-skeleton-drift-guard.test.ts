@@ -25,6 +25,12 @@
  * will fail until those are created, making the entire suite fail at module load.
  */
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // ── New leaf module (does not exist yet → import will fail, all tests red) ──
 import { PIPELINE_MAP } from "../pipeline-map.js";
@@ -60,6 +66,8 @@ import { REGRESSION_GATE_SYSTEM_PROMPT } from "../regression-gate-system.js";
 import { buildCustomReviewerSystemPrompt } from "../custom-reviewer-system.js";
 import { ADR_GEN_SYSTEM_PROMPT } from "../adr-gen-system.js";
 import { REQUEST_GENERATE_SYSTEM_PROMPT } from "../request-generate-system.js";
+import { DESIGN_INITIAL_MESSAGE_TEMPLATE } from "../design-system.js";
+import { SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE } from "../spec-review-system.js";
 
 // ── Templates ──
 import {
@@ -609,6 +617,203 @@ describe("TC-017: producer prompt が COMPLETION_DIRECTIVE を保持する", () 
       expect(prompt).toContain(COMPLETION_DIRECTIVE);
     });
   }
+});
+
+// ============================================================================
+// TC-018: PIPELINE_MAP が全 16 step を列挙し各 step に一行責務が付く
+// Source: tasks.md > T-01 Acceptance Criteria
+// ============================================================================
+
+describe("TC-018: PIPELINE_MAP が全 16 step を列挙し各 step に一行責務が付く", () => {
+  const EXPECTED_STEPS = [
+    "request-review",
+    "design",
+    "spec-review",
+    "spec-fixer",
+    "test-case-gen",
+    "test-materialize",
+    "implementer",
+    "verification",
+    "build-fixer",
+    "code-review",
+    "code-fixer",
+    "custom-reviewer",
+    "regression-gate",
+    "conformance",
+    "adr-gen",
+    "pr-create",
+  ];
+
+  for (const step of EXPECTED_STEPS) {
+    it(`TC-018: PIPELINE_MAP contains step identifier "${step}"`, () => {
+      expect(PIPELINE_MAP).toContain(step);
+    });
+  }
+
+  it("TC-018: PIPELINE_MAP has exactly 16 data rows (one per step)", () => {
+    // Count table rows: lines starting with "|" that are not the header or separator
+    const rows = PIPELINE_MAP.split("\n").filter(
+      (line) => line.startsWith("|") && !line.includes("Step") && !line.includes("---"),
+    );
+    expect(rows.length).toBe(16);
+  });
+});
+
+// ============================================================================
+// TC-019: COVERAGE_GATE_INTEGRITY が 3 つのキーワードを含む
+// Source: tasks.md > T-01 Acceptance Criteria
+// ============================================================================
+
+describe("TC-019: COVERAGE_GATE_INTEGRITY が 3 つのキーワードを含む", () => {
+  it("TC-019: COVERAGE_GATE_INTEGRITY contains 'テストの削除'", () => {
+    expect(COVERAGE_GATE_INTEGRITY).toContain("テストの削除");
+  });
+
+  it("TC-019: COVERAGE_GATE_INTEGRITY contains 'dead code'", () => {
+    expect(COVERAGE_GATE_INTEGRITY).toContain("dead code");
+  });
+
+  it("TC-019: COVERAGE_GATE_INTEGRITY contains 'coverage 設定'", () => {
+    expect(COVERAGE_GATE_INTEGRITY).toContain("coverage 設定");
+  });
+});
+
+// ============================================================================
+// TC-020: rules.ts に手書き件数誤記が存在しない
+// Source: tasks.md > T-02 Acceptance Criteria
+// ============================================================================
+
+describe("TC-020: rules.ts に手書き件数誤記が存在しない", () => {
+  it("TC-020: RULES_MD_CONTENT does not contain '9 step' (old hand-written count)", () => {
+    expect(RULES_MD_CONTENT).not.toContain("9 step");
+  });
+
+  it("TC-020: RULES_MD_CONTENT does not contain '11 step' or '11 項目' (old hand-written count)", () => {
+    expect(RULES_MD_CONTENT).not.toMatch(/\b11\s*(step|項目)/);
+  });
+});
+
+// ============================================================================
+// TC-021: rules.ts の責任範囲表に欠落していた 5 step が追加されている
+// Source: tasks.md > T-02 Acceptance Criteria
+// ============================================================================
+
+describe("TC-021: rules.ts の責任範囲表に欠落していた 5 step が追加されている", () => {
+  const PREVIOUSLY_MISSING_STEPS = [
+    "request-review",
+    "test-materialize",
+    "conformance",
+    "regression-gate",
+    "custom-reviewer",
+  ];
+
+  for (const step of PREVIOUSLY_MISSING_STEPS) {
+    it(`TC-021: RULES_MD_CONTENT responsibility table contains step "${step}"`, () => {
+      expect(RULES_MD_CONTENT).toContain(step);
+    });
+  }
+});
+
+// ============================================================================
+// TC-024: initial message に判定基準が含まれない
+// Source: tasks.md > T-08 Acceptance Criteria
+// ============================================================================
+
+describe("TC-024: initial message に判定基準が含まれない", () => {
+  // Patterns that indicate verdict criteria / judgment definitions in initial messages.
+  // Initial messages must contain only run-specific bindings (path / slug / branch / iteration).
+  const CRITERIA_PATTERNS = [
+    "Category determination:",
+    "Priority determination:",
+    "result determination:",
+    "→ needs-fix",
+    "→ escalation",
+    "→ approved",
+    "critical|high →",
+  ];
+
+  for (const pattern of CRITERIA_PATTERNS) {
+    it(`TC-024: DESIGN_INITIAL_MESSAGE_TEMPLATE does not contain criteria pattern "${pattern}"`, () => {
+      expect(DESIGN_INITIAL_MESSAGE_TEMPLATE).not.toContain(pattern);
+    });
+
+    it(`TC-024: SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE does not contain criteria pattern "${pattern}"`, () => {
+      expect(SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE).not.toContain(pattern);
+    });
+  }
+});
+
+// ============================================================================
+// TC-025: request-generate prompt が既存の生成規律を保持する
+// Source: tasks.md > T-06 Acceptance Criteria
+// ============================================================================
+
+describe("TC-025: request-generate prompt が既存の生成規律を保持する", () => {
+  it("TC-025: REQUEST_GENERATE_SYSTEM_PROMPT contains required section names in Method", () => {
+    const methodSection = extractSection(REQUEST_GENERATE_SYSTEM_PROMPT, "Method");
+    expect(methodSection, "Method section must exist").toBeTruthy();
+    expect(methodSection).toContain("## Meta");
+    expect(methodSection).toContain("## 背景");
+    expect(methodSection).toContain("## 受け入れ基準");
+    expect(methodSection).toContain("## スコープ外");
+  });
+
+  it("TC-025: REQUEST_GENERATE_SYSTEM_PROMPT Method section contains type inference guidance", () => {
+    const methodSection = extractSection(REQUEST_GENERATE_SYSTEM_PROMPT, "Method");
+    expect(methodSection).toContain("type 推論");
+  });
+
+  it("TC-025: REQUEST_GENERATE_SYSTEM_PROMPT Method section contains adr field guidance", () => {
+    const methodSection = extractSection(REQUEST_GENERATE_SYSTEM_PROMPT, "Method");
+    expect(methodSection).toContain("adr フィールド");
+  });
+});
+
+// ============================================================================
+// TC-026: code-fixer prompt が Fix 対応方針を Method 節に保持する
+// Source: tasks.md > T-04 Acceptance Criteria
+// ============================================================================
+
+describe("TC-026: code-fixer prompt が Fix 対応方針を Method 節に保持する", () => {
+  it("TC-026: CODE_FIXER_SYSTEM_PROMPT Method section contains Fix カラム別の対応", () => {
+    const methodSection = extractSection(CODE_FIXER_SYSTEM_PROMPT, "Method");
+    expect(methodSection, "Method section must exist").toBeTruthy();
+    expect(methodSection).toContain("Fix カラム別の対応");
+  });
+
+  it("TC-026: CODE_FIXER_SYSTEM_PROMPT Method section contains Fix: yes handling", () => {
+    const methodSection = extractSection(CODE_FIXER_SYSTEM_PROMPT, "Method");
+    expect(methodSection).toContain("Fix: yes");
+  });
+
+  it("TC-026: CODE_FIXER_SYSTEM_PROMPT Method section contains Fix: no handling", () => {
+    const methodSection = extractSection(CODE_FIXER_SYSTEM_PROMPT, "Method");
+    expect(methodSection).toContain("Fix: no");
+  });
+});
+
+// ============================================================================
+// TC-027: pipeline-map.ts がプロジェクト内 import を持たない leaf module である
+// Source: tasks.md > T-01 Acceptance Criteria
+// ============================================================================
+
+describe("TC-027: pipeline-map.ts がプロジェクト内 import を持たない leaf module である", () => {
+  it("TC-027: pipeline-map.ts has no project-internal relative imports", () => {
+    const pipelineMapSource = readFileSync(
+      join(__dirname, "..", "pipeline-map.ts"),
+      "utf-8",
+    );
+    // Relative imports (./  or ../) would indicate project-internal dependencies
+    expect(pipelineMapSource).not.toMatch(/^import\s+.*from\s+['"][.]{1,2}\//m);
+  });
+
+  it("TC-027: PIPELINE_MAP loads without circular dependency (leaf module integrity)", () => {
+    // The fact that PIPELINE_MAP can be imported at the top of this test file
+    // alongside rules.ts (which also imports pipeline-map.ts) without error
+    // proves no circular imports exist.
+    expect(typeof PIPELINE_MAP).toBe("string");
+    expect(PIPELINE_MAP.length).toBeGreaterThan(100);
+  });
 });
 
 // ============================================================================

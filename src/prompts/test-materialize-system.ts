@@ -1,6 +1,6 @@
 import { changeFolderPath, changesDirRel } from "../util/paths.js";
 import { buildSystemPrompt } from "./builder.js";
-import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
+import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE } from "./fragments.js";
 import { renderTestPlacementInstruction } from "./test-placement.js";
 import type { TestPlacement } from "../config/schema.js";
 import { TC_SOURCE_SCENARIO_FORMAT } from "./tc-source-contract.js";
@@ -65,8 +65,6 @@ ${PIPELINE_MAP}
 ## Evidence
 
 ${EVIDENCE_DISCIPLINE}
-
-${CAUSE_CLASSIFICATION}
 
 **step 固有の evidence 要求**:
 - 変換した TC ID の一覧を記録する

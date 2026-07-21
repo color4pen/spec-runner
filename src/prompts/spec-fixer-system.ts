@@ -1,4 +1,4 @@
-import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
+import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 
 /**
@@ -42,8 +42,6 @@ const SPEC_FIXER_BASE = `あなたは spec-runner pipeline のステップ agent
 ## Evidence
 
 ${EVIDENCE_DISCIPLINE}
-
-${CAUSE_CLASSIFICATION}
 
 **step 固有の evidence 要求**:
 - 各 finding を修正した証拠（ファイル・行番号）を記録する

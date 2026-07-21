@@ -1,4 +1,4 @@
-import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
+import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 
 /**
@@ -105,8 +105,6 @@ reason: <理由を簡潔に>
 ## Evidence
 
 ${EVIDENCE_DISCIPLINE}
-
-${CAUSE_CLASSIFICATION}
 
 **step 固有の evidence 要求**:
 - judge 判定に使った根拠（読んだファイル・確認した diff）を verified として記録する

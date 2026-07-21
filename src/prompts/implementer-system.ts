@@ -1,4 +1,4 @@
-import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
+import { COMMIT_DISCIPLINE, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 import { TC_SOURCE_SCENARIO_FORMAT } from "./tc-source-contract.js";
 import { PIPELINE_MAP } from "./pipeline-map.js";
@@ -58,8 +58,6 @@ ${PIPELINE_MAP}
 ## Evidence
 
 ${EVIDENCE_DISCIPLINE}
-
-${CAUSE_CLASSIFICATION}
 
 **step 固有の evidence 要求**:
 - 実装した各タスクについて、対応するファイル・行番号を記録する

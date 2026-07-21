@@ -2,7 +2,7 @@ import { changesDirRel } from "../util/paths.js";
 import type { DynamicContext } from "../git/dynamic-context.js";
 import { buildSystemPrompt } from "./builder.js";
 import { buildRequestConstraintsBlock } from "../parser/extract-section.js";
-import { COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
+import { COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE } from "./fragments.js";
 import { SPEC_EXEMPT_MARKER } from "../templates/step-output-templates.js";
 import { PIPELINE_MAP } from "./pipeline-map.js";
 
@@ -68,8 +68,6 @@ ${PIPELINE_MAP}
 ## Evidence
 
 ${EVIDENCE_DISCIPLINE}
-
-${CAUSE_CLASSIFICATION}
 
 **step 固有の evidence 要求**:
 - 現状コード断定の検証: 各断定について、確認に使ったコマンドと結果を記録する。unverified の断定がある場合は明示列挙する。

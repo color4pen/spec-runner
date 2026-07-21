@@ -1,5 +1,5 @@
 import { changesDirRel } from "../util/paths.js";
-import { PIPELINE_RULES, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
+import { PIPELINE_RULES, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
 import { DECISION_NEEDED_DEFINITION, SEVERITY_DEFINITION } from "./judge-rules.js";
 import { SPEC_EXEMPT_MARKER } from "../templates/step-output-templates.js";
@@ -51,8 +51,6 @@ const CONFORMANCE_BASE = `あなたは spec-runner pipeline のステップ agen
 ## Evidence
 
 ${EVIDENCE_DISCIPLINE}
-
-${CAUSE_CLASSIFICATION}
 
 **step 固有の evidence 要求**:
 - 4 judgment items それぞれの適合/不適合の判定根拠を記録する

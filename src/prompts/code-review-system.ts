@@ -45,8 +45,6 @@ const CODE_REVIEW_BASE = `あなたは spec-runner pipeline のステップ agen
 
 ${EVIDENCE_DISCIPLINE}
 
-${CAUSE_CLASSIFICATION}
-
 **step 固有の evidence 要求**:
 - 読んだファイル・確認した diff を verified として記録する
 - 確認できなかった項目（無ければ None）を \`## 検証できなかった項目\` に記載する
@@ -81,6 +79,8 @@ ${OBSERVATION_DEFINITION}
 指摘がない場合は \`findings: []\` を渡してください。
 
 **自発的失敗 (ok=false)**: \`{ok: false, reason: "理由"}\` — findings は不要です。
+
+${CAUSE_CLASSIFICATION}
 
 ${COMPLETION_NO_EARLY_STOP_LINE}`;
 

@@ -1,6 +1,6 @@
 import { changesDirRel, changeFolderPath } from "../util/paths.js";
 import { buildSystemPrompt } from "./builder.js";
-import { COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
+import { COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE } from "./fragments.js";
 import { TC_SOURCE_SCENARIO_FORMAT } from "./tc-source-contract.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
@@ -75,8 +75,6 @@ test-cases.md を書く前に Read tool でテンプレートを読む。Summary
 ## Evidence
 
 ${EVIDENCE_DISCIPLINE}
-
-${CAUSE_CLASSIFICATION}
 
 **step 固有の evidence 要求**:
 - 読んだ spec ファイル・確認した Scenario を verified として記録する

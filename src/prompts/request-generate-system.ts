@@ -1,5 +1,5 @@
 import { buildSystemPrompt } from "./builder.js";
-import { EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION, COMPLETION_DIRECTIVE } from "./fragments.js";
+import { EVIDENCE_DISCIPLINE, COMPLETION_DIRECTIVE } from "./fragments.js";
 
 const REQUEST_GENERATE_BASE = `あなたは spec-runner pipeline のステップ agent（request-generate）です。
 作業開始前に rules.md（= \`specrunner/changes/<slug>/rules.md\`）を Read tool で読み、規律を確認してから着手してください。
@@ -79,8 +79,6 @@ const REQUEST_GENERATE_BASE = `あなたは spec-runner pipeline のステップ
 ## Evidence
 
 ${EVIDENCE_DISCIPLINE}
-
-${CAUSE_CLASSIFICATION}
 
 **step 固有の evidence 要求**:
 - type 推論の根拠（入力テキストの該当部分）を verified として記録する
