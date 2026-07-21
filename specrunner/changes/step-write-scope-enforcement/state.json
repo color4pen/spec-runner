@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "aceecc9e-7637-4184-8af6-adc4451cca9b",
   "createdAt": "2026-07-21T06:45:21.518Z",
-  "updatedAt": "2026-07-21T07:04:38.243Z",
+  "updatedAt": "2026-07-21T07:14:53.172Z",
   "request": {
     "title": "sequential step の commit を write-set 境界で機械強制する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/step-write-scope-enforcement-aceecc9e",
   "error": null,
@@ -60,10 +60,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
