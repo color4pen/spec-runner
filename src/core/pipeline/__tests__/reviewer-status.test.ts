@@ -123,7 +123,9 @@ describe("selectPendingMembers", () => {
       { name: "security", status: "approved", approvedAtCommit: "sha1" },
       { name: "perf", status: "pending" },
     ];
-    expect(selectPendingMembers(statuses, ["security", "perf"])).toEqual(["perf"]);
+    // T-04 (approval-revision-binding): pass baselineCommit matching approvedAtCommit to exercise
+    // the new revision-binding path (not the managed-runtime fallback).
+    expect(selectPendingMembers(statuses, ["security", "perf"], "sha1")).toEqual(["perf"]);
   });
 
   it("excludes skipped members", () => {
@@ -153,7 +155,9 @@ describe("selectPendingMembers", () => {
       { name: "security", status: "approved", approvedAtCommit: "sha1" },
       { name: "perf", status: "skipped" },
     ];
-    expect(selectPendingMembers(statuses, ["security", "perf"])).toEqual([]);
+    // T-04 (approval-revision-binding): pass baselineCommit matching approved member's
+    // approvedAtCommit to exercise the revision-binding path.
+    expect(selectPendingMembers(statuses, ["security", "perf"], "sha1")).toEqual([]);
   });
 });
 

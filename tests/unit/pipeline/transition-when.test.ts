@@ -221,7 +221,7 @@ describe("TC-015: conformance approved → verification when-guard exists", () =
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-016: verification passed → adr-gen (when conformanceApprovedLatest)
+// TC-016: verification passed → adr-gen (when conformanceApprovedForVerifiedRevision)
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-016: verification passed → adr-gen when-guard exists", () => {
   it("STANDARD_TRANSITIONS has verification --passed→ adr-gen row with `when` function", () => {
