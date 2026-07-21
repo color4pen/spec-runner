@@ -254,3 +254,42 @@ describe("TC-026: deriveRegressionGateVerdict (2-arg) is assignable to judgeVerd
     expect(result).toBe("approved");
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-027: deriveRegressionGateVerdict — vacuous check (checked=0 → escalation)
+// regression-gate は ledger 非空時のみ走るため、checked=0 は「ledger を 1 件も
+// 検証していない」ことを意味する。approved にすると退行が未検査のまま通る。
+// ---------------------------------------------------------------------------
+describe("TC-027: deriveRegressionGateVerdict vacuous check", () => {
+  it("TC-027: checked=0 + findings:[] → 'escalation' (not approved)", () => {
+    expect(
+      deriveRegressionGateVerdict([], true, { checked: 0, skipped: 0, unverified: 0 }),
+    ).toBe("escalation");
+  });
+
+  it("TC-027: checked=0 overrides fixable findings → 'escalation'", () => {
+    expect(
+      deriveRegressionGateVerdict(
+        [{ severity: "low", resolution: "fixable", file: "a.ts", title: "t", rationale: "r" }],
+        true,
+        { checked: 0, skipped: 3, unverified: 0 },
+      ),
+    ).toBe("escalation");
+  });
+
+  it("TC-027: checked>0 + findings:[] → 'approved' (unchanged normal path)", () => {
+    expect(
+      deriveRegressionGateVerdict([], true, { checked: 5, skipped: 0, unverified: 0 }),
+    ).toBe("approved");
+  });
+
+  it("TC-027: checked>0 + fixable finding → 'needs-fix' (unchanged)", () => {
+    expect(
+      deriveRegressionGateVerdict(
+        [{ severity: "medium", resolution: "fixable", file: "a.ts", title: "t", rationale: "r" }],
+        true,
+        { checked: 5, skipped: 0, unverified: 0 },
+      ),
+    ).toBe("needs-fix");
+  });
+});

@@ -119,23 +119,24 @@ export function collectFixableFindings(findings: Finding[]): Finding[] {
  * Rationale: the regression-gate ledger exclusively contains previously-fixed findings that
  * regressed; any regression (even low/medium severity) must be re-fixed.
  *
- * NOTE: The vacuous check (checked === 0 → escalation) is intentionally NOT applied here.
- * Regression-gate is skipWhen-gated: it only runs when the findings ledger is non-empty,
- * so a checked=0 approved path does not arise in production. Adding the vacuous check would
- * require evidence to be threaded through judgeVerdictFn dispatching, breaking the clean
- * 2-argument signature that makes regression-gate assignable to judgeVerdictFn.
+ * The vacuous check applies here as in deriveJudgeVerdict: the gate only runs when the
+ * findings ledger is non-empty, so a checked=0 report means the agent verified none of the
+ * ledger items — approving would leave regressions unchecked.
  *
  * Priority order:
  * 1. ok=false → escalation
- * 2. decision-needed ≥ 1 → escalation
- * 3. fixable ≥ 1 → needs-fix (any severity, including medium/low)
- * 4. else → approved
+ * 2. evidence present && checked === 0 → escalation (vacuous check: no ledger items verified)
+ * 3. decision-needed ≥ 1 → escalation
+ * 4. fixable ≥ 1 → needs-fix (any severity, including medium/low)
+ * 5. else → approved
  */
 export function deriveRegressionGateVerdict(
   findings: Finding[],
   ok: boolean,
+  evidence?: Evidence,
 ): "approved" | "needs-fix" | "escalation" {
   if (!ok) return "escalation";
+  if (evidence !== undefined && evidence.checked === 0) return "escalation"; // vacuous check
   if (findings.some((f) => f.resolution === "decision-needed")) return "escalation";
   if (findings.some((f) => f.resolution === "fixable")) return "needs-fix";
   return "approved";
