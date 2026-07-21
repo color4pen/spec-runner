@@ -1,0 +1,21 @@
+{
+  "requestHash": "sha256:0578894b79d4ec27650b47bf7dda39cfa9869dee95325e408f8e30fba2e1335c",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/prompts/rules.ts:21 — says '9 step' but lists 11 items (design through pr-create)",
+    "src/prompts/rules.ts:19-35 — missing request-review, test-materialize, conformance, regression-gate, custom-reviewer from step list",
+    "src/prompts/rules.ts:66 — '共通禁止:' section has empty body",
+    "src/prompts/design-system.ts:25-32 — Pipeline Position section with 5-stage table (design/spec-review/implementer/verification/code-review)",
+    "src/prompts/implementer-system.ts:14-21 — Pipeline Position section with same 5-stage table, independently declared",
+    "src/prompts/test-materialize-system.ts:31-39 — Pipeline Position section with 6-stage table (different from design/implementer)",
+    "src/prompts/design-system.ts:133-136 — architecture/ directory reference in litmus section",
+    "src/prompts/test-case-gen-system.ts:92-115 — Repeat Invocation & Idempotency Axis section with N/A explicit rule",
+    "src/prompts/design-system.ts:155-179 — CRITICAL BOUNDARY (path-fence) section with verbose prose",
+    "src/prompts/build-fixer-system.ts:24 — coverage gate 回避禁止 text",
+    "src/prompts/code-fixer-system.ts:30 — identical coverage gate 回避禁止 text (duplicate of build-fixer)",
+    "src/prompts/builder.ts — buildSystemPrompt(base, fragments) function exists at line 19",
+    "src/templates/step-output-templates.ts — TEST_CASES_TEMPLATE contains Category/Priority/result determination tables in HTML comment",
+    "src/templates/step-output-templates.ts — SPEC_EXEMPT_NOTE contains downstream reviewer action instructions"
+  ],
+  "sourceRevision": "2b15e8920226c1326c61859938a794138038bc2c"
+}
