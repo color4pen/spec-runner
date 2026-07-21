@@ -6,10 +6,10 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 1.1s | 0 |
+| 1 | build | passed | 0.4s | 0 |
 | 2 | typecheck | passed | 4.6s | 0 |
-| 3 | test | failed | 27.2s | 1 |
-| 4 | lint | skipped | — | — |
+| 3 | test | passed | 27.2s | 0 |
+| 4 | lint | failed | 5.4s | 1 |
 | 5 | changed-line-coverage | skipped | — | — |
 
 ## Phase: build
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.24 MB
-ESM ⚡️ Build success in 81ms
+ESM ⚡️ Build success in 78ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -39,14 +39,10 @@ $ tsc --noEmit
 
 ## Phase: test
 
-Step 'test' failed
-
 ```
 
  RUN  v4.1.5 .
 
- ❯ tests/custom-reviewers-e2e.test.ts (14 tests | 1 failed) 1316ms
-     × regression-gate reports high/fixable → code-fixer → gate re-runs → approved → conformance 127ms
 No jobs found.
 [実行中]
 JOB_ID	SLUG	STEP	STATUS	NEXT	AGE
@@ -55,10 +51,10 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	201d
   "categories": []
 }
 
- Test Files  1 failed | 584 passed (585)
-      Tests  1 failed | 8568 passed | 1 skipped (8570)
-   Start at  21:24:18
-   Duration  26.88s (transform 5.19s, setup 0ms, import 21.45s, tests 41.18s, environment 28ms)
+ Test Files  585 passed (585)
+      Tests  8569 passed | 1 skipped (8570)
+   Start at  21:39:08
+   Duration  26.93s (transform 5.31s, setup 0ms, import 21.58s, tests 41.06s, environment 28ms)
 
 
 $ vitest run
@@ -71,8 +67,8 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-OSp8kv/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-ENHJTf/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Xq0mhM/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-cagTYN/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
@@ -97,26 +93,6 @@ Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
-[inbox] started job slug=fix-login-bug from issue#1
-[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
-[inbox] started job slug=fix-login-bug from issue#1
-[inbox] resumed job slug=fix-login-bug (issue#10)
-[inbox] dry-run: no effects will be executed.
-[inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
-  start    issue#1 → slug=fix-login-bug
-  resume   fix-login-bug (issue#10)
-[inbox] recovered stale job slug=my-feature (attempt 1)
-[inbox] escalated stale job slug=my-feature to awaiting-resume
-[inbox] dry-run: no effects will be executed.
-[inbox] plan: 0 start(s), 0 reject(s), 0 resume(s), 1 recover(s), 1 escalate(s)
-  recover  my-feature (attempt 1)
-  escalate other-feat (step=design)
-[inbox] warn: recover my-feature: disk full
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=old-feature (issue#50)
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
@@ -155,12 +131,32 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] resumed job slug=fix-login-bug (issue#10)
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
+  start    issue#1 → slug=fix-login-bug
+  resume   fix-login-bug (issue#10)
+[inbox] recovered stale job slug=my-feature (attempt 1)
+[inbox] escalated stale job slug=my-feature to awaiting-resume
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 0 start(s), 0 reject(s), 0 resume(s), 1 recover(s), 1 escalate(s)
+  recover  my-feature (attempt 1)
+  escalate other-feat (step=design)
+[inbox] warn: recover my-feature: disk full
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=old-feature (issue#50)
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
 ERROR: file not found
@@ -175,34 +171,31 @@ Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (mem
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
-
- FAIL  tests/custom-reviewers-e2e.test.ts > TC-RG-01: regression-gate detects regression → code-fixer → approved → conformance > regression-gate reports high/fixable → code-fixer → gate re-runs → approved → conformance
-AssertionError: expected 3 to be 2 // Object.is equality
-
-- Expected
-+ Received
-
-- 2
-+ 3
-
- ❯ tests/custom-reviewers-e2e.test.ts:877:29
-    875|     const gateArr = result.steps?.["regression-gate"];
-    876|     expect(gateArr, "regression-gate should have run").toBeDefined();
-    877|     expect(gateArr?.length).toBe(2);
-       |                             ^
-    878|     expect(toLegacyStepResult(gateArr![0]!).verdict).toBe("needs-fix");
-    879|     expect(toLegacyStepResult(gateArr![1]!).verdict).toBe("approved");
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
-
-error: script "test" exited with code 1
-
 ```
 
 ## Phase: lint
 
-_(skipped — previous command failed)_
+Step 'lint' failed
+
+```
+
+tests/unit/core/pipeline/conformance-revision-binding.test.ts
+  24:1  warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  27:6  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+
+tests/unit/core/pipeline/pipeline.build-fixer-reentry.test.ts
+  308:9  warning  'conformanceCallCount' is assigned a value but never used. Allowed unused vars must match /^_/u   @typescript-eslint/no-unused-vars
+  474:9  warning  'verificationCallCount' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+✖ 4 problems (0 errors, 4 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
+
+$ eslint ./src ./tests --max-warnings 0
+ESLint found too many warnings (maximum: 0).
+error: script "lint" exited with code 1
+
+```
 
 ## Phase: changed-line-coverage
 
