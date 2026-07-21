@@ -37,7 +37,7 @@ export const REQUEST_REVIEW_RESULT_TEMPLATE = `# Request Review Result
 <!-- EVIDENCE REPORT FORMAT:
      verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
      findings は report_result（typed）で報告し、この file はその補足の evidence report である。
-     CLI の判定: decision-needed → escalation（needs-discussion）/ critical|high → needs-fix / else → approved
+     decision-needed の finding がある場合は escalation（needs-discussion）として扱われる。
 -->
 
 ## 検証した項目
@@ -64,7 +64,7 @@ export const SPEC_REVIEW_RESULT_TEMPLATE = `# Spec Review Result
 <!-- EVIDENCE REPORT FORMAT:
      verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
      findings は report_result（typed）で報告し、この file はその補足の evidence report である。
-     CLI の判定: decision-needed → escalation / critical|high → needs-fix / else → approved
+     decision-needed の finding がある場合は escalation として扱われる。
 -->
 
 ## 検証した項目
@@ -91,7 +91,6 @@ export const REVIEW_FEEDBACK_TEMPLATE = `# Code Review Feedback — iteration NN
 <!-- EVIDENCE REPORT FORMAT:
      verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
      findings は report_result（typed）で報告し、この file はその補足の evidence report である。
-     CLI の判定: decision-needed → escalation / critical|high → needs-fix / else → approved
 -->
 
 ## 検証した項目
@@ -134,16 +133,6 @@ GIVEN/WHEN/THEN structure (mixed format — depends on TC type):
     **WHEN** <action>
     **THEN** <expected result>
 
-Category determination:
-  unit        — pure logic, validation, helper functions (automated)
-  integration — DB operations, API endpoints, multi-module interaction (automated)
-  manual      — UI/UX confirmation, visual verification, build artifact check (not automated)
-
-Priority determination:
-  must   — core functionality; if broken, the feature does not work
-  should — important but core still works; edge cases, error handling
-  could  — nice to have; performance, UX details
-
 Summary section MUST appear immediately after the title with ALL 4 items:
   ## Summary
   - **Total**: {count} cases
@@ -163,11 +152,6 @@ Result section MUST appear at the very end as a YAML code block:
   could: {count}
   blocked_reasons: []
   \`\`\`
-
-  result determination:
-    completed — all testable behaviors are documented
-    partial   — some cases could not be derived due to design ambiguity
-    failed    — spec is absent AND design.md / tasks.md are also missing
 -->
 
 ## Summary
@@ -322,17 +306,10 @@ export const SPEC_EXEMPT_NOTE = `# Spec: (${SPEC_EXEMPT_MARKER})
 <!-- ${SPEC_EXEMPT_MARKER}
 この変更は request 型（chore）が spec 対象外のため、振る舞い spec（Requirement / Scenario）を持たない。
 型による宣言的な免除であり、記述漏れではない。
-
-Downstream reviewers (spec-review, conformance):
-- このファイルを vacuously satisfied（conforms）として扱うこと。
-- Requirement / Scenario の欠如を finding（non-conformity）にしないこと。
 -->
 
 この変更は **spec-exempt** です。request 型 (\`chore\`) は振る舞い spec の対象外のため、
 Requirement および Scenario は存在しません。これは記述漏れではなく、型による宣言的な免除です。
-
-下流レビュー（spec-review / conformance）へ: このファイルを vacuously satisfied として扱ってください。
-Requirement / Scenario の欠如を finding にしないでください。
 `;
 
 /**
@@ -346,7 +323,6 @@ export const CONFORMANCE_RESULT_TEMPLATE = `# Conformance Result
 <!-- EVIDENCE REPORT FORMAT:
      verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
      findings は report_result（typed）で報告し、この file はその補足の evidence report である。
-     CLI の判定: decision-needed → escalation / critical|high → needs-fix / else → approved
 -->
 
 ## 検証した項目
