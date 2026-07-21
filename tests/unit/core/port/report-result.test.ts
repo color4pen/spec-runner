@@ -79,7 +79,7 @@ describe("parseProducerReportInput", () => {
 
 describe("parseJudgeReportInput", () => {
   it("{ok:true, approved:true, findings:[]} → value has approved:true", () => {
-    const result = parseJudgeReportInput({ ok: true, approved: true, findings: [] });
+    const result = parseJudgeReportInput({ ok: true, approved: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.ok).toBe(true);
@@ -87,14 +87,14 @@ describe("parseJudgeReportInput", () => {
   });
 
   it("{ok:true, approved:false, findings:[]} → value has approved:false", () => {
-    const result = parseJudgeReportInput({ ok: true, approved: false, findings: [] });
+    const result = parseJudgeReportInput({ ok: true, approved: false, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.approved).toBe(false);
   });
 
   it("{ok:true, findings:[]} (no approved) → approved undefined", () => {
-    const result = parseJudgeReportInput({ ok: true, findings: [] });
+    const result = parseJudgeReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.approved).toBeUndefined();
@@ -108,7 +108,7 @@ describe("parseJudgeReportInput", () => {
   });
 
   it('{ok:true, approved:"yes", findings:[]} (non-boolean approved) → approved undefined', () => {
-    const result = parseJudgeReportInput({ ok: true, approved: "yes", findings: [] });
+    const result = parseJudgeReportInput({ ok: true, approved: "yes", evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.approved).toBeUndefined();
@@ -121,7 +121,7 @@ describe("parseJudgeReportInput", () => {
 
 describe("parseCodeReviewReportInput", () => {
   it("{ok:true, approved:true, fixableCount:3, findings:[]} → value has approved:true, fixableCount:3", () => {
-    const result = parseCodeReviewReportInput({ ok: true, approved: true, fixableCount: 3, findings: [] });
+    const result = parseCodeReviewReportInput({ ok: true, approved: true, fixableCount: 3, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.ok).toBe(true);
@@ -130,7 +130,7 @@ describe("parseCodeReviewReportInput", () => {
   });
 
   it("{ok:true, approved:false, fixableCount:0, findings:[]} → value has approved:false, fixableCount:0", () => {
-    const result = parseCodeReviewReportInput({ ok: true, approved: false, fixableCount: 0, findings: [] });
+    const result = parseCodeReviewReportInput({ ok: true, approved: false, fixableCount: 0, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.approved).toBe(false);
@@ -138,7 +138,7 @@ describe("parseCodeReviewReportInput", () => {
   });
 
   it("{ok:true, findings:[]} (no approved, no fixableCount) → both undefined", () => {
-    const result = parseCodeReviewReportInput({ ok: true, findings: [] });
+    const result = parseCodeReviewReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.approved).toBeUndefined();
@@ -153,14 +153,14 @@ describe("parseCodeReviewReportInput", () => {
   });
 
   it('{ok:true, fixableCount:"5", findings:[]} (non-number fixableCount) → fixableCount undefined', () => {
-    const result = parseCodeReviewReportInput({ ok: true, fixableCount: "5", findings: [] });
+    const result = parseCodeReviewReportInput({ ok: true, fixableCount: "5", evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.fixableCount).toBeUndefined();
   });
 
   it("{ok:true, approved:true, findings:[]} (fixableCount absent) → fixableCount undefined, approved set", () => {
-    const result = parseCodeReviewReportInput({ ok: true, approved: true, findings: [] });
+    const result = parseCodeReviewReportInput({ ok: true, approved: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.approved).toBe(true);

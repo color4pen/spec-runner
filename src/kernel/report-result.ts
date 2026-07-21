@@ -75,6 +75,19 @@ export interface Finding {
 }
 
 /**
+ * Verification-volume counts reported by judge steps via report_result.
+ * Used to detect vacuous completions where no items were actually verified.
+ */
+export interface Evidence {
+  /** Number of items actually verified (files read, scenarios traced, requirements checked). */
+  checked: number;
+  /** Number of in-scope items that were NOT verified. */
+  skipped: number;
+  /** Number of items that could not be verified and are declared unconfirmed. */
+  unverified: number;
+}
+
+/**
  * A single observation reported by a judge agent via the report_result observations array.
  *
  * Observations are informational records that do NOT affect verdict routing.

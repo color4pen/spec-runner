@@ -137,7 +137,7 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
               type: "agent.custom_tool_use",
               name: "report_result",
               id: "mock-report-id",
-              input: { ok: true, approved: true, findings: [] },
+              input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
             },
           ]);
         } else if (rawVerdict === "decision-needed") {
@@ -150,6 +150,7 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
               input: {
                 ok: true,
                 approved: false,
+                evidence: { checked: 1, skipped: 0, unverified: 0 },
                 findings: [
                   {
                     severity: "low",
@@ -186,6 +187,7 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
               input: {
                 ok: true,
                 approved: false,
+                evidence: { checked: 1, skipped: 0, unverified: 0 },
                 findings: [
                   {
                     severity: "high",
@@ -213,7 +215,7 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
               type: "agent.custom_tool_use",
               name: "report_result",
               id: "mock-report-id",
-              input: { ok: true, approved: true, findings: [] },
+              input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
             },
           ]);
         } else {
@@ -226,6 +228,7 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
               input: {
                 ok: true,
                 approved: false,
+                evidence: { checked: 1, skipped: 0, unverified: 0 },
                 findings: [
                   {
                     severity: "high",
@@ -248,7 +251,7 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
             type: "agent.custom_tool_use",
             name: "report_result",
             id: "mock-report-id",
-            input: { ok: true, approved: true, findings: [] },
+            input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
           },
         ]);
       }

@@ -1,7 +1,7 @@
 import { changesDirRel } from "../util/paths.js";
 import { PIPELINE_RULES, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, SEVERITY_DEFINITION } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION } from "./judge-rules.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
 const _changesDir = changesDirRel();
@@ -74,6 +74,8 @@ ${SEVERITY_DEFINITION}
 ${DECISION_NEEDED_DEFINITION}
 
 ${OBSERVATION_DEFINITION}
+
+${EVIDENCE_COUNTS_DEFINITION}
 
 **重要**: CLI が \`findings\` 配列から verdict を決定します。\`approved\` boolean は routing に使用されません。
 指摘がない場合は \`findings: []\` を渡してください。

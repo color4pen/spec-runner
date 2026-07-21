@@ -105,11 +105,11 @@ export function createRegressionGateStep(): AgentStep {
      * verdict "skipped" via the existing commitSkipped path.
      *
      * Uses the same ledger computation as buildMessage to stay consistent:
-     * deriveImplReviewerChain(state) + collectFindingsLedger(state, chain).
+     * deriveImplReviewerChain(state) + collectFindingsLedger(chain, state).
      */
     skipWhen(state: JobState): string | null {
       const reviewerChain = deriveImplReviewerChain(state);
-      const ledger = collectFindingsLedger(state, reviewerChain);
+      const ledger = collectFindingsLedger(reviewerChain, state);
       if (ledger.length === 0) {
         return "findings ledger is empty — no fixable findings to verify";
       }
@@ -137,7 +137,7 @@ export function createRegressionGateStep(): AgentStep {
 
       // Build the ledger from all reviewer chain steps (excludes this gate).
       const reviewerChain = deriveImplReviewerChain(state);
-      const ledger = collectFindingsLedger(state, reviewerChain);
+      const ledger = collectFindingsLedger(reviewerChain, state);
 
       const ledgerBlock = buildLedgerBlock(ledger);
 

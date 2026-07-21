@@ -139,7 +139,6 @@ describe("TC-015: resume with legacy records proceeds normally", () => {
         toolResult: {
           ok: true,
           findings: [],
-          // @ts-expect-error — evidence not yet in StepResultInput.toolResult type (T-06 adds it)
           evidence: { checked: 3, skipped: 0, unverified: 0 },
         },
       });
@@ -202,7 +201,6 @@ describe("TC-024: evidence in toolResult is persisted and readable", () => {
       toolResult: {
         ok: true,
         findings: [],
-        // @ts-expect-error — evidence not yet in StepResultInput.toolResult type (T-06 adds it)
         evidence,
       },
     });
@@ -236,7 +234,6 @@ describe("TC-024: evidence in toolResult is persisted and readable", () => {
       toolResult: {
         ok: true,
         findings: [],
-        // @ts-expect-error — evidence not yet in StepResultInput.toolResult type (T-06 adds it)
         evidence,
       },
     });

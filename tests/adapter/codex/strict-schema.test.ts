@@ -174,12 +174,14 @@ describe("parseJudgeReportInput: line: null in findings is valid", () => {
   it("line: null in findings → same outcome as omitting line", () => {
     const withNullLine = {
       ok: true,
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [
         { severity: "high", resolution: "fixable", file: "a.ts", title: "t", rationale: "r", line: null },
       ],
     };
     const withoutLine = {
       ok: true,
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [
         { severity: "high", resolution: "fixable", file: "a.ts", title: "t", rationale: "r" },
       ],
@@ -200,6 +202,7 @@ describe("parseJudgeReportInput: line: null in findings is valid", () => {
   it("line: null → finding does not have line property", () => {
     const input = {
       ok: true,
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [
         { severity: "high", resolution: "fixable", file: "a.ts", title: "t", rationale: "r", line: null },
       ],
@@ -352,6 +355,7 @@ describe("parseJudgeReportInput — observations line:null normalization", () =>
   it("line:null in observation → observation retained without line field", () => {
     const input = {
       ok: true,
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [],
       observations: [
         { severity: "low", file: "a.ts", title: "Note", rationale: "r", line: null },

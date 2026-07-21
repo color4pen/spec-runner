@@ -1,5 +1,5 @@
 import type { JobState, StepResult, StepRun, ModelUsage } from "./schema.js";
-import type { BaseReportResult, Finding, Observation } from "../kernel/report-result.js";
+import type { BaseReportResult, Finding, Observation, Evidence } from "../kernel/report-result.js";
 import type { CompletionReportDiagnostic } from "../kernel/completion-report-diagnostic.js";
 
 /**
@@ -68,7 +68,7 @@ export interface StepResultInput {
    * null = tool was not called. Added in tool-driven-step-completion.
    * Widened to include findings and observations arrays for judge steps.
    */
-  toolResult?: (BaseReportResult & { findings?: Finding[]; observations?: Observation[] }) | null;
+  toolResult?: (BaseReportResult & { findings?: Finding[]; observations?: Observation[]; evidence?: Evidence }) | null;
   /**
    * Number of follow-up retry attempts. 0 = first turn success.
    * Added in tool-driven-step-completion.

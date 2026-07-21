@@ -105,7 +105,7 @@ describe("collectFindingsLedger — (a) intermediate fixable findings are retain
       ],
     });
 
-    const ledger = collectFindingsLedger(state, ["code-review"]);
+    const ledger = collectFindingsLedger(["code-review"], state);
     expect(ledger).toHaveLength(1);
     expect(ledger[0]!.title).toBe("Issue in iter 1");
   });
@@ -132,7 +132,7 @@ describe("collectFindingsLedger — (b) decision-needed findings excluded", () =
       ],
     });
 
-    const ledger = collectFindingsLedger(state, ["code-review"]);
+    const ledger = collectFindingsLedger(["code-review"], state);
     expect(ledger).toHaveLength(1);
     expect(ledger[0]!.title).toBe("Fixable issue");
     expect(ledger.every((f) => f.resolution === "fixable")).toBe(true);
@@ -173,7 +173,7 @@ describe("dedupeFindings — (c) structural duplicates", () => {
       ],
     });
 
-    const ledger = collectFindingsLedger(state, ["code-review"]);
+    const ledger = collectFindingsLedger(["code-review"], state);
     expect(ledger).toHaveLength(1);
   });
 });
@@ -189,7 +189,7 @@ describe("collectFindingsLedger — (d) missing toolResult/findings ignored", ()
         { outcome: { verdict: "approved", findingsPath: null, error: null } },
       ],
     });
-    const ledger = collectFindingsLedger(state, ["code-review"]);
+    const ledger = collectFindingsLedger(["code-review"], state);
     expect(ledger).toEqual([]);
   });
 
@@ -199,7 +199,7 @@ describe("collectFindingsLedger — (d) missing toolResult/findings ignored", ()
         { outcome: { verdict: "approved", findingsPath: null, error: null, toolResult: null } },
       ],
     });
-    const ledger = collectFindingsLedger(state, ["code-review"]);
+    const ledger = collectFindingsLedger(["code-review"], state);
     expect(ledger).toEqual([]);
   });
 
@@ -209,13 +209,13 @@ describe("collectFindingsLedger — (d) missing toolResult/findings ignored", ()
         { outcome: { verdict: "approved", findingsPath: null, error: null, toolResult: { ok: true } } },
       ],
     });
-    const ledger = collectFindingsLedger(state, ["code-review"]);
+    const ledger = collectFindingsLedger(["code-review"], state);
     expect(ledger).toEqual([]);
   });
 
   it("ignores step with no runs in state", () => {
     const state = makeState({});
-    const ledger = collectFindingsLedger(state, ["code-review"]);
+    const ledger = collectFindingsLedger(["code-review"], state);
     expect(ledger).toEqual([]);
   });
 });
@@ -231,7 +231,7 @@ describe("collectFindingsLedger — (e) empty chain or findings", () => {
         { outcome: { verdict: "approved", findingsPath: null, error: null, toolResult: { ok: true, findings: [] } } },
       ],
     });
-    const ledger = collectFindingsLedger(state, []);
+    const ledger = collectFindingsLedger([], state);
     expect(ledger).toEqual([]);
   });
 
@@ -244,7 +244,7 @@ describe("collectFindingsLedger — (e) empty chain or findings", () => {
         { outcome: { verdict: "approved", findingsPath: null, error: null, toolResult: { ok: true, findings: [] } } },
       ],
     });
-    const ledger = collectFindingsLedger(state, ["code-review", "security"]);
+    const ledger = collectFindingsLedger(["code-review", "security"], state);
     expect(ledger).toEqual([]);
   });
 
@@ -259,7 +259,7 @@ describe("collectFindingsLedger — (e) empty chain or findings", () => {
         { outcome: { verdict: "approved", findingsPath: null, error: null, toolResult: { ok: true, findings: [secFinding] } } },
       ],
     });
-    const ledger = collectFindingsLedger(state, ["code-review", "security"]);
+    const ledger = collectFindingsLedger(["code-review", "security"], state);
     expect(ledger).toHaveLength(2);
     expect(ledger.map((f) => f.title)).toContain("CR finding");
     expect(ledger.map((f) => f.title)).toContain("Security finding");
@@ -294,7 +294,7 @@ describe("collectFindingsLedger — TC-026: coordinator synthetic run excluded f
     });
 
     // Chain excludes "custom-reviewers" — regression-gate passes only member chains
-    const ledger = collectFindingsLedger(state, ["code-review", "A", "B"]);
+    const ledger = collectFindingsLedger(["code-review", "A", "B"], state);
 
     // Member findings are collected; coordinator synthetic findings are NOT
     const titles = ledger.map((f) => f.title);
@@ -511,7 +511,7 @@ describe("collectFindingsLedger — observations excluded (T-06 invariant)", () 
       },
     };
 
-    const ledger = collectFindingsLedger(state, ["code-review"]);
+    const ledger = collectFindingsLedger(["code-review"], state);
 
     // The fixable finding must appear
     expect(ledger).toHaveLength(1);

@@ -21,13 +21,13 @@ import { getLatestJudgeFindings } from "../step/fixer-helpers.js";
  * The regression-gate step itself must NOT appear in reviewerChain — the gate
  * does not feed itself.
  *
- * @param state         - Current job state.
  * @param reviewerChain - Ordered list of reviewer step names (excludes regression-gate).
+ * @param state         - Current job state.
  * @returns Deduplicated set of fixable findings from all reviewer runs.
  */
 export function collectFindingsLedger(
-  state: JobState,
   reviewerChain: string[],
+  state: JobState,
 ): Finding[] {
   if (reviewerChain.length === 0) return [];
 

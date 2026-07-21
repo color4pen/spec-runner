@@ -9,8 +9,8 @@ import type { ZodRawShape } from "zod/v4";
 
 export type { ZodRawShape };
 
-import type { BaseReportResult, Finding, FixTarget, Observation, DecisionOption } from "../../kernel/report-result.js";
-export type { BaseReportResult, Finding, FixTarget, Observation, DecisionOption } from "../../kernel/report-result.js";
+import type { BaseReportResult, Finding, FixTarget, Observation, DecisionOption, Evidence } from "../../kernel/report-result.js";
+export type { BaseReportResult, Finding, FixTarget, Observation, DecisionOption, Evidence } from "../../kernel/report-result.js";
 
 /**
  * Specification for the report_result custom tool that an agent step registers.
@@ -137,6 +137,33 @@ const VALID_RESOLUTIONS = new Set(["fixable", "decision-needed"]);
 const VALID_FIX_TARGETS = new Set<FixTarget>(["implementer", "code-fixer", "spec-fixer"]);
 
 /**
+ * Parse and validate an evidence object from unknown input.
+ * Pure function — no I/O. Uses typeof checks (no zod parse).
+ *
+ * Returns { ok: true, value: Evidence } if input is a valid evidence object.
+ * Returns { ok: false } if input is missing, not a plain object, or contains invalid values.
+ * All counts must be non-negative integers.
+ */
+export function parseEvidence(
+  raw: unknown,
+): { ok: true; value: Evidence } | { ok: false } {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return { ok: false };
+  const o = raw as Record<string, unknown>;
+  for (const key of ["checked", "skipped", "unverified"] as const) {
+    const v = o[key];
+    if (typeof v !== "number" || !Number.isInteger(v) || v < 0) return { ok: false };
+  }
+  return {
+    ok: true,
+    value: {
+      checked: o["checked"] as number,
+      skipped: o["skipped"] as number,
+      unverified: o["unverified"] as number,
+    },
+  };
+}
+
+/**
  * Parse and validate a findings array from unknown input.
  * Pure function — no I/O. Uses typeof checks (no zod parse).
  *
@@ -248,11 +275,13 @@ export function parseObservations(raw: unknown): { ok: true; value: Observation[
  * approved: boolean — kept for backward compat; NOT used for verdict routing.
  * findings: structured findings array — used by CLI for verdict derivation.
  * observations: optional informational records — NOT used for verdict routing.
+ * evidence: verification-volume counts — required when ok=true (new judge completions).
  */
 export interface JudgeReportResult extends BaseReportResult {
   approved?: boolean;
   findings?: Finding[];
   observations?: Observation[];
+  evidence?: Evidence;
 }
 
 /**
@@ -306,13 +335,19 @@ export function parseJudgeReportInput(
     result.approved = obj["approved"];
   }
 
-  // When ok=true, findings are required and must be valid (strict: decision-needed requires options)
+  // When ok=true, findings and evidence are required
   if (result.ok) {
     const parsed = parseFindings(obj["findings"], true);
     if (!parsed.ok) {
       return { ok: false, missingFields: ["findings"], rawInput: raw };
     }
     result.findings = parsed.value;
+
+    const parsedEvidence = parseEvidence(obj["evidence"]);
+    if (!parsedEvidence.ok) {
+      return { ok: false, missingFields: ["evidence"], rawInput: raw };
+    }
+    result.evidence = parsedEvidence.value;
   }
 
   // observations: best-effort silent-ignore — absence or invalid input leaves field unset
