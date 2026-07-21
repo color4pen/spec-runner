@@ -110,7 +110,7 @@ describe("T-02: CodeReviewStep.followUpPrompt — 撤去済み（added-turns-per
     const contracts = CodeReviewStep.outputContracts!(state, deps);
     const contentFormatContracts = contracts.filter((c) => c.kind === "content-format");
     expect(contentFormatContracts.length).toBeGreaterThan(0);
-    // The contract has checks for separator row and 7-column header
+    // The contract has checks for evidence report sections (検証した項目 / 検証できなかった項目)
     const checks = contentFormatContracts[0]!.checks ?? [];
     expect(checks.length).toBeGreaterThan(0);
   });

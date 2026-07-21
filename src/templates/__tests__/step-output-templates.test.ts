@@ -46,15 +46,19 @@ function makeJobState(type: string): JobState {
 }
 
 // ---------------------------------------------------------------------------
-// request-review template: blocking must include decision-needed (T-03 AC)
+// request-review template: evidence report format (verdict-channel-unification)
 // ---------------------------------------------------------------------------
 
 describe("REQUEST_REVIEW_RESULT_TEMPLATE", () => {
-  it("contains VERDICT_BLOCKING_RULES", () => {
-    expect(REQUEST_REVIEW_RESULT_TEMPLATE).toContain(VERDICT_BLOCKING_RULES);
+  it("contains evidence report section 検証した項目", () => {
+    expect(REQUEST_REVIEW_RESULT_TEMPLATE).toContain("## 検証した項目");
   });
 
-  it("blocking condition includes decision-needed", () => {
+  it("contains evidence report section 検証できなかった項目", () => {
+    expect(REQUEST_REVIEW_RESULT_TEMPLATE).toContain("## 検証できなかった項目");
+  });
+
+  it("HTML comment includes decision-needed routing note", () => {
     expect(REQUEST_REVIEW_RESULT_TEMPLATE).toContain("decision-needed");
   });
 
@@ -62,21 +66,29 @@ describe("REQUEST_REVIEW_RESULT_TEMPLATE", () => {
     expect(REQUEST_REVIEW_RESULT_TEMPLATE).not.toContain("Approval is blocked when HIGH ≥ 1");
   });
 
-  it("verdict line format requirement is present", () => {
-    expect(REQUEST_REVIEW_RESULT_TEMPLATE).toContain("verdict line format");
+  it("does not contain verdict line format requirement (TC-017)", () => {
+    expect(REQUEST_REVIEW_RESULT_TEMPLATE).not.toContain("verdict line format");
+  });
+
+  it("does not contain embedded VERDICT_BLOCKING_RULES block (TC-017)", () => {
+    expect(REQUEST_REVIEW_RESULT_TEMPLATE).not.toContain(VERDICT_BLOCKING_RULES);
   });
 });
 
 // ---------------------------------------------------------------------------
-// spec-review template: blocking must include decision-needed (T-03 AC)
+// spec-review template: evidence report format (verdict-channel-unification)
 // ---------------------------------------------------------------------------
 
 describe("SPEC_REVIEW_RESULT_TEMPLATE", () => {
-  it("contains VERDICT_BLOCKING_RULES", () => {
-    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain(VERDICT_BLOCKING_RULES);
+  it("contains evidence report section 検証した項目", () => {
+    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("## 検証した項目");
   });
 
-  it("blocking condition includes decision-needed", () => {
+  it("contains evidence report section 検証できなかった項目", () => {
+    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("## 検証できなかった項目");
+  });
+
+  it("HTML comment includes decision-needed routing note", () => {
     expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("decision-needed");
   });
 
@@ -84,30 +96,42 @@ describe("SPEC_REVIEW_RESULT_TEMPLATE", () => {
     expect(SPEC_REVIEW_RESULT_TEMPLATE).not.toContain("Approval is blocked when CRITICAL ≥ 1 OR HIGH ≥ 1");
   });
 
-  it("verdict line format requirement is present", () => {
-    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("verdict line format");
+  it("does not contain verdict line format requirement (TC-017)", () => {
+    expect(SPEC_REVIEW_RESULT_TEMPLATE).not.toContain("verdict line format");
+  });
+
+  it("does not contain embedded VERDICT_BLOCKING_RULES block (TC-017)", () => {
+    expect(SPEC_REVIEW_RESULT_TEMPLATE).not.toContain(VERDICT_BLOCKING_RULES);
   });
 });
 
 // ---------------------------------------------------------------------------
-// review-feedback template: findings priority over verdict line (T-03 AC)
+// review-feedback template: evidence report format (verdict-channel-unification)
 // ---------------------------------------------------------------------------
 
 describe("REVIEW_FEEDBACK_TEMPLATE", () => {
-  it("contains VERDICT_BLOCKING_RULES", () => {
-    expect(REVIEW_FEEDBACK_TEMPLATE).toContain(VERDICT_BLOCKING_RULES);
+  it("contains evidence report section 検証した項目", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("## 検証した項目");
   });
 
-  it("states findings take priority over markdown verdict line", () => {
-    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("findings 由来の導出が優先");
+  it("contains evidence report section 検証できなかった項目", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("## 検証できなかった項目");
   });
 
   it("does not contain old 'verdict line is the authoritative decision' text", () => {
     expect(REVIEW_FEEDBACK_TEMPLATE).not.toContain("The verdict line is the authoritative decision");
   });
 
-  it("verdict line format requirement is present", () => {
-    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("verdict line format");
+  it("does not contain 'findings 由来の導出が優先' (TC-013)", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).not.toContain("findings 由来の導出が優先");
+  });
+
+  it("does not contain verdict line format requirement (TC-017)", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).not.toContain("verdict line format");
+  });
+
+  it("does not contain embedded VERDICT_BLOCKING_RULES block (TC-017)", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).not.toContain(VERDICT_BLOCKING_RULES);
   });
 });
 

@@ -334,10 +334,9 @@ export function buildMockGithubClient(
               specReviewVerdicts[specReviewCallCount] ??
               specReviewVerdicts[specReviewVerdicts.length - 1]!;
             specReviewCallCount++;
-            // Normalize verdict for file content (decision-needed maps to "escalation" in file)
-            const fileVerdict =
-              verdict === "decision-needed" ? "escalation" : verdict;
-            return `- **verdict**: ${fileVerdict}\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n| 1 | HIGH | completeness | tasks.md | Missing tests | Add tests |`;
+            // Evidence report format — verdict is derived by CLI from typed findings, not file content.
+            // Include a note about the verdict in the evidence report for human readability.
+            return `# Spec Review Result\n\n## 検証した項目\n\nReviewed spec.md, design.md, tasks.md. Verdict signal: ${verdict}.\n\n## 検証できなかった項目\n\nNone\n\n## Findings 詳細\n\nNone\n`;
           }
           // Code-review feedback file
           if (/review-feedback-\d{3}\.md$/.test(filePath)) {
@@ -345,11 +344,11 @@ export function buildMockGithubClient(
               codeReviewVerdicts[codeReviewCallCount] ??
               codeReviewVerdicts[codeReviewVerdicts.length - 1]!;
             codeReviewCallCount++;
-            return `- **verdict**: ${verdict}\n\n## Findings\n\n| # | Severity | Category | File | Description | How to Fix |\n|---|---|---|---|---|---|\n`;
+            return `# Review Feedback\n\n## 検証した項目\n\nReviewed changed files. Verdict signal: ${verdict}.\n\n## 検証できなかった項目\n\nNone\n\n## Findings 詳細\n\nNone\n`;
           }
           // Conformance result file
           if (/conformance-result-\d{3}\.md$/.test(filePath)) {
-            return `- **verdict**: approved\n\n## Findings\n\nAll 4 artifacts satisfied.\n`;
+            return `# Conformance Result\n\n## 検証した項目\n\nVerified tasks.md, design.md, spec.md, request.md.\n\n## 検証できなかった項目\n\nNone\n\n## Findings 詳細\n\nNone\n`;
           }
           return null;
         },

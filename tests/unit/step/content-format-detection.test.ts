@@ -419,40 +419,39 @@ describe("T-05: DesignStep.outputContracts", () => {
 });
 
 // ---------------------------------------------------------------------------
-// T-06: CodeReviewStep.outputContracts — review-feedback content-format contract
+// T-06: CodeReviewStep.outputContracts — evidence report format (verdict-channel-unification)
 // ---------------------------------------------------------------------------
 
+// Evidence report format: 検証した項目 / 検証できなかった項目 sections required (TC-005, TC-006)
 const VALID_REVIEW_FEEDBACK = [
-  "## Findings",
+  "## 検証した項目",
   "",
-  "| # | Severity | Category | File | Description | How to Fix | Fix |",
-  "|---|----------|----------|------|-------------|------------|-----|",
-  "| 1 | low | style | src/foo.ts | Minor naming issue | Rename to bar | no |",
+  "Reviewed src/foo.ts and src/bar.ts. Read design.md and tasks.md.",
+  "",
+  "## 検証できなかった項目",
+  "",
+  "None",
+  "",
+  "## Findings 詳細",
+  "",
+  "None",
 ].join("\n");
 
-const INVALID_REVIEW_FEEDBACK_NO_TABLE = [
+const INVALID_REVIEW_FEEDBACK_NO_SECTIONS = [
   "## Findings",
   "",
   "- Finding 1: some issue in foo.ts",
   "- Finding 2: another issue",
 ].join("\n");
 
-const INVALID_REVIEW_FEEDBACK_MISSING_COLUMNS = [
-  "## Findings",
+const INVALID_REVIEW_FEEDBACK_MISSING_UNVERIFIED = [
+  "## 検証した項目",
   "",
-  "| # | Severity | File | Description |",
-  "|---|----------|------|-------------|",
-  "| 1 | low | src/foo.ts | Issue |",
+  "Reviewed src/foo.ts.",
+  // Missing ## 検証できなかった項目
 ].join("\n");
 
-const EMPTY_TABLE_REVIEW_FEEDBACK = [
-  "## Findings",
-  "",
-  "| # | Severity | Category | File | Description | How to Fix | Fix |",
-  "|---|----------|----------|------|-------------|------------|-----|",
-].join("\n");
-
-describe("T-06: CodeReviewStep.outputContracts", () => {
+describe("T-06: CodeReviewStep.outputContracts — evidence report format", () => {
   const state = makeMinimalState({ step: "code-review" });
 
   it("returns content-format contract for review-feedback path", () => {
@@ -468,18 +467,21 @@ describe("T-06: CodeReviewStep.outputContracts", () => {
     expect(c.checks!.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("contract checks include table separator and column header patterns", () => {
+  it("contract checks include evidence section labels (TC-006, TC-007)", () => {
     const deps = makeMinimalDeps("new-feature");
     const contracts = CodeReviewStep.outputContracts!(state, deps);
     const checks = contracts[0]!.checks!;
 
-    // At minimum: separator row check, 7-column header check
-    const patterns = checks.map((c) => c.pattern);
-    // Separator row: something like |---|...
-    expect(patterns.some((p) => p.includes("|-") || p.includes("|[-"))).toBe(true);
+    const labels = checks.map((c) => c.label);
+    // Must include evidence section checks
+    expect(labels.some((l) => l.includes("検証した項目"))).toBe(true);
+    expect(labels.some((l) => l.includes("検証できなかった項目"))).toBe(true);
+    // Must NOT include old 7-column separator/header checks (TC-007)
+    expect(labels.some((l) => l.toLowerCase().includes("separator"))).toBe(false);
+    expect(labels.some((l) => l.includes("7 columns"))).toBe(false);
   });
 
-  it("valid review-feedback → validateStepOutputs returns 0 violations (integration)", async () => {
+  it("valid evidence report → validateStepOutputs returns 0 violations (TC-005)", async () => {
     const feedbackPath = path.join(tempDir, "specrunner/changes/test-slug");
     await fs.mkdir(feedbackPath, { recursive: true });
     await fs.writeFile(path.join(feedbackPath, "review-feedback-001.md"), VALID_REVIEW_FEEDBACK, "utf-8");
@@ -492,10 +494,10 @@ describe("T-06: CodeReviewStep.outputContracts", () => {
     expect(result.violations).toHaveLength(0);
   });
 
-  it("invalid review-feedback (no table) → validateStepOutputs returns follow-up violation (integration)", async () => {
+  it("missing both evidence sections → follow-up violation with section labels (TC-006)", async () => {
     const feedbackPath = path.join(tempDir, "specrunner/changes/test-slug");
     await fs.mkdir(feedbackPath, { recursive: true });
-    await fs.writeFile(path.join(feedbackPath, "review-feedback-001.md"), INVALID_REVIEW_FEEDBACK_NO_TABLE, "utf-8");
+    await fs.writeFile(path.join(feedbackPath, "review-feedback-001.md"), INVALID_REVIEW_FEEDBACK_NO_SECTIONS, "utf-8");
 
     const deps = makeMinimalDeps("new-feature");
     const contracts = CodeReviewStep.outputContracts!(state, deps);
@@ -504,13 +506,14 @@ describe("T-06: CodeReviewStep.outputContracts", () => {
     const result = await runtime.validateStepOutputs(contracts, tempDir, "feat/test");
     expect(result.violations).toHaveLength(1);
     expect(result.violations[0]?.policy).toBe("follow-up");
-    expect(result.violations[0]?.detail).toContain("Findings in Markdown table format (separator row present)");
+    expect(result.violations[0]?.detail).toContain("Verified section present (## 検証した項目)");
+    expect(result.violations[0]?.detail).toContain("Unverified section present (## 検証できなかった項目)");
   });
 
-  it("invalid review-feedback (missing columns) → validateStepOutputs returns follow-up violation (integration)", async () => {
+  it("missing 検証できなかった項目 section → follow-up violation (TC-006)", async () => {
     const feedbackPath = path.join(tempDir, "specrunner/changes/test-slug");
     await fs.mkdir(feedbackPath, { recursive: true });
-    await fs.writeFile(path.join(feedbackPath, "review-feedback-001.md"), INVALID_REVIEW_FEEDBACK_MISSING_COLUMNS, "utf-8");
+    await fs.writeFile(path.join(feedbackPath, "review-feedback-001.md"), INVALID_REVIEW_FEEDBACK_MISSING_UNVERIFIED, "utf-8");
 
     const deps = makeMinimalDeps("new-feature");
     const contracts = CodeReviewStep.outputContracts!(state, deps);
@@ -518,33 +521,15 @@ describe("T-06: CodeReviewStep.outputContracts", () => {
     const runtime = makeLocalRuntime();
     const result = await runtime.validateStepOutputs(contracts, tempDir, "feat/test");
     expect(result.violations).toHaveLength(1);
-    expect(result.violations[0]?.detail).toContain("Required 7 columns header present (# / Severity / Category / File / Description / How to Fix / Fix)");
+    expect(result.violations[0]?.detail).toContain("Unverified section present (## 検証できなかった項目)");
   });
 
-  it("empty table (no finding rows) → 0 violations (no false positive for approved)", async () => {
-    const feedbackPath = path.join(tempDir, "specrunner/changes/test-slug");
-    await fs.mkdir(feedbackPath, { recursive: true });
-    await fs.writeFile(path.join(feedbackPath, "review-feedback-001.md"), EMPTY_TABLE_REVIEW_FEEDBACK, "utf-8");
-
-    const deps = makeMinimalDeps("new-feature");
-    const contracts = CodeReviewStep.outputContracts!(state, deps);
-
-    const runtime = makeLocalRuntime();
-    const result = await runtime.validateStepOutputs(contracts, tempDir, "feat/test");
-    // Empty table (no finding rows) is still a valid table — separator and header exist
-    expect(result.violations).toHaveLength(0);
-  });
-
-  it("followUpPrompt is absent (post-work self-check turn removed in added-turns-persist-and-review-trim)", () => {
-    // followUpPrompt was removed; format and Fix/severity checks moved to outputContracts content-format.
-    // The unconditional self-check turn no longer fires.
+  it("followUpPrompt is absent (post-work self-check turn removed)", () => {
     expect(CodeReviewStep.followUpPrompt).toBeUndefined();
   });
 
-  it("outputContracts content-format checks cover table format (replaces old followUpPrompt checks)", () => {
-    // Verify that the content-format contract now carries the checks that were previously in followUpPrompt.
-    // This is the contract that enforces table format via the repair-turn mechanism.
-    const state: import("../../../src/state/schema.js").JobState = {
+  it("contract does NOT check for 7-column table pattern (TC-007)", () => {
+    const state2: import("../../../src/state/schema.js").JobState = {
       version: 1,
       jobId: "test-job",
       createdAt: "2026-01-01T00:00:00.000Z",
@@ -559,14 +544,15 @@ describe("T-06: CodeReviewStep.outputContracts", () => {
       error: null,
       steps: {},
     };
-    const contracts = CodeReviewStep.outputContracts!(state, { config: { version: 1, agents: {}, environment: { id: "env", lastSyncedAt: "2026" } }, request: { type: "feature", title: "T", slug: "new-feature", baseBranch: "main", content: "c", adr: false }, slug: "new-feature" });
+    const contracts = CodeReviewStep.outputContracts!(state2, { config: { version: 1, agents: {}, environment: { id: "env", lastSyncedAt: "2026" } }, request: { type: "feature", title: "T", slug: "new-feature", baseBranch: "main", content: "c", adr: false }, slug: "new-feature" });
     const cf = contracts.find((c) => c.kind === "content-format");
     expect(cf).toBeDefined();
-    const labels = (cf!.checks ?? []).map((c) => c.label);
-    // Separator row check
-    expect(labels.some((l) => l.toLowerCase().includes("separator"))).toBe(true);
-    // 7-column header check
-    expect(labels.some((l) => l.includes("7 columns"))).toBe(true);
+    const patterns = (cf!.checks ?? []).map((c) => c.pattern);
+    // Must NOT contain 7-column header pattern (TC-007)
+    expect(patterns.some((p) => p.includes("Severity") && p.includes("How to Fix") && p.includes("Fix"))).toBe(false);
+    // Must contain evidence section patterns
+    expect(patterns.some((p) => p.includes("検証した項目"))).toBe(true);
+    expect(patterns.some((p) => p.includes("検証できなかった項目"))).toBe(true);
   });
 });
 

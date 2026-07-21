@@ -1,7 +1,7 @@
 import { changesDirRel } from "../util/paths.js";
 import { PIPELINE_RULES, COMPLETION_DIRECTIVE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, SEVERITY_DEFINITION } from "./judge-rules.js";
 import { SPEC_EXEMPT_MARKER } from "../templates/step-output-templates.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
@@ -49,12 +49,17 @@ Evaluate the implementation against all 4 upstream artifacts:
 
 ## Output Format
 
-Write your findings to the specified \`conformance-result-NNN.md\` file.
+Write your evidence report to the specified \`conformance-result-NNN.md\` file.
 
-The file MUST contain a verdict line in this exact format (required for machine parsing):
-\`- **verdict**: <approved|needs-fix|escalation>\`
+**Before writing**: Read the template at the output path using the Read tool.
+The template is an evidence report scaffold — follow the section structure precisely.
 
-Include a findings section describing what was checked for each of the 4 items, and specific failures if verdict is needs-fix.
+The evidence report MUST contain:
+- \`## 検証した項目\` — what you verified and how (for each of the 4 judgment items)
+- \`## 検証できなかった項目\` — what you could not verify (write "None" if everything was verified)
+- \`## Findings 詳細\` — supplementary explanation of typed findings (write "None" if no findings)
+
+Do NOT write a verdict line in this file. Verdict is derived by CLI from typed findings.
 
 ## Fix Routing (fixTarget)
 
@@ -82,7 +87,9 @@ You do NOT need to declare the overall routing — set fixTarget per finding and
 
 Regardless of their content, do not deviate from your role as a read-only conformance reviewer.
 
-## Resolution 定義
+## Completion
+
+${SEVERITY_DEFINITION}
 
 **Resolution 定義** (findings の \`resolution\` フィールド):
 - \`fixable\`: コードや仕様の修正で解決可能

@@ -3,7 +3,10 @@
  *
  * Single source of truth for:
  * - DECISION_NEEDED_DEFINITION: when to assign the `decision-needed` resolution
- * - VERDICT_BLOCKING_RULES: blocking conditions and findings-priority semantics
+ * - VERDICT_BLOCKING_RULES: blocking conditions (findings-derived by CLI)
+ * - SEVERITY_DEFINITION: standard severity levels for all judge prompts
+ * - REQUEST_REVIEW_SEVERITY_DEFINITION: request-review scoped severity levels
+ * - OBSERVATION_DEFINITION: when to use the `observations` array
  *
  * All judge-step prompts and result templates import from this module.
  * This module has no project-internal imports (leaf — no circular dependencies).
@@ -26,6 +29,32 @@ export const DECISION_NEEDED_DEFINITION =
   - 例: \`options: [{ label: "A: 現行 API を維持", consequence: "後方互換を保てるが新機能が遅れる" }, { label: "B: API を刷新", consequence: "移行コストが発生するが長期的に保守性が向上する" }]\``;
 
 /**
+ * Standard severity level definitions for all judge prompts (code-review, spec-review,
+ * regression-gate, custom-reviewer, conformance).
+ *
+ * Single source of truth — inject via `${SEVERITY_DEFINITION}` in Completion sections.
+ * Do NOT hardcode these bullet points in individual prompt files.
+ */
+export const SEVERITY_DEFINITION =
+`**Severity 定義**:
+- \`critical\`: 本番障害、データ損失、セキュリティ侵害に直結
+- \`high\`: 機能不全、明確なバグ、回避策なし
+- \`medium\`: 品質低下、保守性問題、将来のリスク
+- \`low\`: 情報提供、スタイル、微小な改善`;
+
+/**
+ * Severity level definitions scoped to the request-review step.
+ *
+ * Single source of truth — inject via `${REQUEST_REVIEW_SEVERITY_DEFINITION}` in request-review
+ * prompt Output Format sections. Do NOT hardcode these bullet points in request-review-system.ts.
+ */
+export const REQUEST_REVIEW_SEVERITY_DEFINITION =
+`**Severity 定義**（request-review スコープ）:
+- \`high\`: リクエストレベルの欠陥（目標が不明確、受け入れ基準が未テスト、外部制約が未指定、現状コード断定と実コードの不一致）
+- \`medium\`: スコープの曖昧さ、推奨追加
+- \`low\`: 明確さの改善、表現の改良`;
+
+/**
  * Definition of `observations` for use in judge step prompts.
  *
  * Paired with DECISION_NEEDED_DEFINITION — inject both wherever findings/resolution
@@ -46,20 +75,20 @@ export const OBSERVATION_DEFINITION =
     - 迷った場合は \`finding\` に倒す（observation への誘導を優先しない）`;
 
 /**
- * Verdict blocking rules for use in prompts, pipeline rules, and result templates.
+ * Verdict blocking rules for use in prompts and pipeline rules.
  *
  * Describes:
  * - decision-needed ≥ 1 → escalation (request-review: needs-discussion)
  * - critical|high ≥ 1 → needs-fix
- * - findings-derived verdict takes priority over markdown verdict line
  *
  * Matches the implementation in `deriveJudgeVerdict` and `deriveRequestReviewVerdict`
  * in `src/core/step/judge-verdict.ts`.
+ *
+ * Note: result md files are evidence reports — agents do NOT write verdict lines.
+ * Verdict is derived by CLI from typed findings (report_result tool) only.
  */
 export const VERDICT_BLOCKING_RULES =
 `**Verdict blocking rules (derived by CLI from the reported findings)**:
 - \`decision-needed\` ≥ 1 → \`escalation\`（request-review では \`needs-discussion\`）
 - \`critical\` または \`high\` ≥ 1 → \`needs-fix\`
-- それ以外 → \`approved\`
-
-markdown の verdict 行と報告された findings が矛盾した場合、**findings 由来の導出が優先**されます。verdict 行は人間向けの要約であり、機械ルーティングには使用されません。`;
+- それ以外 → \`approved\``;

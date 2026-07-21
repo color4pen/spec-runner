@@ -95,9 +95,9 @@ Steps:
 5. Read ${changeFolder}/request.md — note all acceptance criteria
 6. Run \`git diff main...HEAD --stat\` to understand the scope of implementation changes
 7. Review the implementation against all 4 judgment items
-8. Write your findings and verdict to: ${findingsPath}
+8. Write your evidence report to: ${findingsPath}
 
-The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\`
+Do NOT write a verdict line. Verdict is derived by CLI from typed findings (report_result).
 
 Original request:
 ${deps.request.content}

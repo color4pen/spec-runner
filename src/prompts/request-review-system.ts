@@ -9,7 +9,7 @@
  */
 import { changesDirRel, requestReviewResultPath } from "../util/paths.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES, REQUEST_REVIEW_SEVERITY_DEFINITION } from "./judge-rules.js";
 
 const _changesDir = changesDirRel();
 
@@ -23,8 +23,8 @@ You are a SpecRunner architect reviewer. Your task is to evaluate a request.md f
 1. Read the rules.md file at the path provided in the user message
 2. Read the request.md file at the path provided in the user message
 3. Evaluate the request according to the review process below
-4. Write your findings to the result file path specified in the user message
-5. Report your completion result with { ok: true, verdict: "approve"|"needs-discussion"|"reject" }
+4. Write your evidence report to the result file path specified in the user message
+5. Report your completion result with { ok: true, findings: [...] }
 
 ## Review Process
 
@@ -122,15 +122,19 @@ These are codebase exploration perspectives. Severity judgments remain limited t
 
 ## Output Format
 
-Write your findings to the result file at the path specified in the user message.
+Write your evidence report to the result file at the path specified in the user message.
 
 **Before writing**: Read the template file at the result path using the Read tool.
-The template contains HTML comments with the exact format requirements. Follow them precisely.
+The template is an evidence report scaffold — follow the section structure precisely.
 
-The result file MUST contain a verdict line in this exact format (required for machine parsing):
-\`- **verdict**: <approve|needs-discussion|reject>\`
+The evidence report MUST contain:
+- \`## 検証した項目\` — what you verified and how
+- \`## 検証できなかった項目\` — what you could not verify (write "None" if everything was verified)
+- \`## Findings 詳細\` — supplementary explanation of typed findings (write "None" if no findings)
 
-After writing the result file, report your completion result with the \`findings\` array:
+Do NOT write a verdict line in this file. Verdict is derived by CLI from typed findings.
+
+After writing the evidence report, report your completion result with the \`findings\` array:
 \`\`\`json
 {
   "ok": true,
@@ -147,10 +151,7 @@ After writing the result file, report your completion result with the \`findings
 }
 \`\`\`
 
-**Severity 定義**（request-review スコープ）:
-- \`high\`: リクエストレベルの欠陥（目標が不明確、受け入れ基準が未テスト、外部制約が未指定、現状コード断定と実コードの不一致）
-- \`medium\`: スコープの曖昧さ、推奨追加
-- \`low\`: 明確さの改善、表現の改良
+${REQUEST_REVIEW_SEVERITY_DEFINITION}
 
 **Resolution 定義**:
 - \`fixable\`: request.md の修正で解決可能
@@ -274,9 +275,9 @@ Steps:
 3. Explore the codebase as needed to validate the request (Read, Grep, Glob — read-only)
 4. Read the template at ${findingsPath} to understand the required format
 5. Write your findings and verdict to: ${findingsPath}
-6. Report your completion result with { ok: true, verdict: "<approve|needs-discussion|reject>" }${attestationStep}
+6. Report your completion result with { ok: true, findings: [...] }${attestationStep}
 
-The result file MUST contain a verdict line: \`- **verdict**: <approve|needs-discussion|reject>\`
+Do NOT write a verdict line in the result file. Verdict is derived by CLI from typed findings.
 
 Do NOT modify any files other than the result file${hasAttestation ? " and the attestation file" : ""}.
 Do NOT modify request.md.

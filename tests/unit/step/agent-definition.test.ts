@@ -92,12 +92,13 @@ describe("TC-035: spec-review system prompt includes verdict/severity definition
     expect(system).toContain("escalation");
   });
 
-  it("contains CRITICAL, HIGH, MEDIUM, LOW severity levels", () => {
+  it("contains lowercase severity levels via SEVERITY_DEFINITION constant (TC-010)", () => {
     const system = SpecReviewStep.agent.system;
-    expect(system).toContain("CRITICAL");
-    expect(system).toContain("HIGH");
-    expect(system).toContain("MEDIUM");
-    expect(system).toContain("LOW");
+    // Severity levels are now lowercase (from SEVERITY_DEFINITION constant)
+    expect(system).toContain("critical");
+    expect(system).toContain("high");
+    expect(system).toContain("medium");
+    expect(system).toContain("low");
   });
 
   it("mentions writing output file", () => {
