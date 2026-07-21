@@ -72,3 +72,54 @@ ${COMPLETION_REPORT_LINE}
 - 自発的失敗（実行不能等）: \`{ok: false, reason: "理由"}\`
 
 ${COMPLETION_NO_EARLY_STOP_LINE}`;
+
+// ---------------------------------------------------------------------------
+// Cross-step evidence and classification discipline (T-01)
+// ---------------------------------------------------------------------------
+
+/**
+ * Evidence discipline — common to ALL agent steps.
+ * Single source of truth for evidence classification, unverified enumeration,
+ * empty-set reporting, and numeric parameter attestation.
+ *
+ * Do NOT include severity definitions here (those live in judge-rules.ts).
+ */
+export const EVIDENCE_DISCIPLINE = `**Evidence Discipline** — 全 step 共通の根拠規律:
+
+出力中の主張は根拠区分を持つ:
+- **verified**: 実測。確認に使ったコマンド / file:line を引用できる
+- **derived**: 上流成果物からの導出。出典を引用できる
+- **unverified**: 未確認
+
+**Unverified 列挙義務**: unverified の主張は明示列挙する。無い場合は「None」と明記する。沈黙の省略は禁止。
+
+**空集合は判定不能**: 検査対象が空集合・全 skip だった検査は「合格」ではなく「判定不能」として報告する。
+
+**数値パラメータ**: timeout / limit / threshold 等の数値提案は verified（実測）か unverified（根拠なし）のいずれかであり、類推（「他の値と同等でよいはず」）は unverified として申告する。`;
+
+/**
+ * Cause classification — used in Completion sections of all agent steps.
+ * Classifies the cause of failures, escalations, and decision-needed reports.
+ * This is evidence report discipline; typed schema is NOT changed.
+ */
+export const CAUSE_CLASSIFICATION = `**Cause Classification** — 失敗・escalation・decision-needed の報告時に原因分類を付す:
+
+- \`request-gap\`: request の不足・曖昧さ
+- \`derivation-gap\`: 上流成果物からの導出漏れ
+- \`implementation-defect\`: 実装の欠陥
+- \`harness-defect\`: pipeline / CLI 側の問題
+- \`operational\`: 運用・環境の問題
+
+これは evidence report の記述規律であり、typed schema の変更は行わない。`;
+
+/**
+ * Coverage gate integrity — single source for both build-fixer and code-fixer.
+ * Prohibits any form of coverage gate evasion.
+ *
+ * Single source of truth — do NOT duplicate this text in individual prompt files.
+ */
+export const COVERAGE_GATE_INTEGRITY = `**Coverage Gate Integrity** — coverage gate 回避禁止:
+
+- **テストの削除・移設**: 既存テストを削除・移設してカバレッジを維持することは禁止
+- **dead code / dead export の追加**: カバレッジ目的の dead code または dead export の追加は禁止
+- **coverage 設定（include / exclude / threshold）の編集**: coverage 設定を緩める変更は禁止`;

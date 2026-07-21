@@ -280,9 +280,11 @@ describe("TC-002: Layer-0 prohibition is present in DESIGN_SYSTEM_PROMPT", () =>
 });
 
 // TC-003: DESIGN_SYSTEM_PROMPT に architecture/ 参照 guidance が含まれる
-describe("TC-003: architecture/ reference guidance is present in DESIGN_SYSTEM_PROMPT", () => {
-  it("contains 'architecture/' reference", () => {
-    expect(DESIGN_SYSTEM_PROMPT).toContain("architecture/");
+// NOTE: This check was removed because drift-guard TC-007 prohibits architecture/ references
+// in all CLI-built prompts. Project-specific resource references go into rules.md instead.
+describe("TC-003: architecture/ reference guidance — removed (drift-guard TC-007)", () => {
+  it("prompt does not contain 'architecture/' (project-specific path, prohibited by drift-guard)", () => {
+    expect(DESIGN_SYSTEM_PROMPT).not.toContain("architecture/");
   });
 });
 
