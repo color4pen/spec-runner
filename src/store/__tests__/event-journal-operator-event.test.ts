@@ -1,5 +1,5 @@
 /**
- * TC-009, TC-022, TC-023 — OperatorEventRecord in the event journal.
+ * TC-009, TC-022, TC-023, TC-024 — OperatorEventRecord in the event journal.
  *
  * TC-009: fold() returns operatorEvents containing the reopen record with all fields
  *         intact (action, reason, fromStep, ts).
@@ -14,12 +14,20 @@
  *         Tested here via an empty-journal fold (equivalent shape).
  *         (RED until the literal in job-journal.ts is updated)
  *
+ * TC-024: appendOperatorEvent round-trip via JobStateStore: calling
+ *         store.appendOperatorEvent() writes a record to events.jsonl
+ *         that fold() then collects in operatorEvents.
+ *
  * Source: spec.md › Requirement: reopen records an operator event in the journal
  *         tasks.md T-02
  */
 import { describe, it, expect } from "vitest";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import * as os from "node:os";
 import { fold } from "../../store/event-journal.js";
-import type { FoldResult } from "../../store/event-journal.js";
+import type { FoldResult, OperatorEventRecord } from "../../store/event-journal.js";
+import { JobStateStore } from "../job-state-store.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -208,5 +216,73 @@ describe("TC-009: fold() returns operatorEvents containing the reopen operator r
 
     // No corruption detected
     expect(result.corruption).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-024: appendOperatorEvent round-trip via JobStateStore
+// ---------------------------------------------------------------------------
+
+describe("TC-024: appendOperatorEvent round-trip (JobStateStore → events.jsonl → fold)", () => {
+  it("TC-024: store.appendOperatorEvent() writes a record to events.jsonl that fold() collects in operatorEvents", async () => {
+    // GIVEN a temp directory with a minimal job state
+    const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "operator-event-rt-"));
+    try {
+      const changeDir = path.join(tempDir, "specrunner", "changes", "test-slug");
+      await fs.mkdir(changeDir, { recursive: true });
+      // Minimal state.json required for JobStateStore.load() / path resolution
+      await fs.writeFile(
+        path.join(changeDir, "state.json"),
+        JSON.stringify({
+          version: 2,
+          jobId: "test-job-id",
+          createdAt: "2026-01-01T00:00:00Z",
+          updatedAt: "2026-01-01T00:00:00Z",
+          request: { path: "/req.md", title: "T", type: "bug-fix", slug: "test-slug" },
+          repository: { owner: "o", name: "r" },
+          session: null,
+          step: "pr-create",
+          status: "awaiting-archive",
+          branch: "fix/test-slug",
+          history: [],
+          error: null,
+          _journal: { historyCount: 0, stepCounts: {} },
+        }),
+      );
+
+      // WHEN appendOperatorEvent is called on a real JobStateStore instance
+      const store = new JobStateStore("test-job-id", tempDir, {
+        slug: "test-slug",
+        stateRoot: tempDir,
+      });
+      const record: OperatorEventRecord = {
+        type: "operator-event",
+        action: "reopen",
+        reason: "post-review fix applied",
+        fromStep: "spec-review",
+        ts: "2026-07-01T10:00:00.000Z",
+      };
+      await store.appendOperatorEvent(record);
+
+      // THEN the record appears in events.jsonl and fold() collects it in operatorEvents
+      const content = await fs.readFile(path.join(changeDir, "events.jsonl"), "utf-8");
+      const result = fold(content);
+      const events = getOperatorEvents(result);
+      expect(events).toHaveLength(1);
+
+      const evt = events![0] as Record<string, unknown>;
+      expect(evt["type"]).toBe("operator-event");
+      expect(evt["action"]).toBe("reopen");
+      expect(evt["reason"]).toBe("post-review fix applied");
+      expect(evt["fromStep"]).toBe("spec-review");
+      expect(evt["ts"]).toBe("2026-07-01T10:00:00.000Z");
+
+      // AND state.json is NOT modified (operator events are journal-only)
+      const stateRaw = await fs.readFile(path.join(changeDir, "state.json"), "utf-8");
+      const stateParsed = JSON.parse(stateRaw) as Record<string, unknown>;
+      expect("operatorEvents" in stateParsed).toBe(false);
+    } finally {
+      await fs.rm(tempDir, { recursive: true, force: true });
+    }
   });
 });
