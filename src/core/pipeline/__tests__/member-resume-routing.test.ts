@@ -127,7 +127,9 @@ describe("member-resume-routing: approved member excluded from pending on coordi
     ];
     const state = makeMinimalState({ reviewerStatuses: approvedStatuses });
     const statuses = deriveReviewerStatuses(state, REVIEWERS);
-    const pending = selectPendingMembers(statuses, ["cross-boundary-invariants"]);
+    // T-04 (approval-revision-binding): pass baselineCommit matching approvedAtCommit to
+    // exercise the revision-binding path (approved at same revision → skip).
+    const pending = selectPendingMembers(statuses, ["cross-boundary-invariants"], "abc123");
     expect(pending).toEqual([]);
   });
 
@@ -143,7 +145,8 @@ describe("member-resume-routing: approved member excluded from pending on coordi
     ];
     const state = makeMinimalState({ reviewerStatuses: approvedStatuses });
     const statuses = deriveReviewerStatuses(state, REVIEWERS);
-    const pending = selectPendingMembers(statuses, ["cross-boundary-invariants"]);
+    // T-04 (approval-revision-binding): pass baselineCommit matching approvedAtCommit.
+    const pending = selectPendingMembers(statuses, ["cross-boundary-invariants"], "abc123");
     // Empty pending → coordinator returns approved without any member execution
     expect(pending.length).toBe(0);
   });
@@ -181,9 +184,12 @@ describe("member-resume-routing: approved member excluded from pending on coordi
     ];
     const state = makeMinimalState({ reviewerStatuses: mixedStatuses });
     const statuses = deriveReviewerStatuses(state, multiReviewers);
+    // T-04 (approval-revision-binding): pass baselineCommit matching the approved member's
+    // approvedAtCommit so revision-binding path skips the approved member correctly.
     const pending = selectPendingMembers(
       statuses,
       ["cross-boundary-invariants", "security"],
+      "abc123",
     );
     expect(pending).toEqual(["security"]);
     expect(pending).not.toContain("cross-boundary-invariants");

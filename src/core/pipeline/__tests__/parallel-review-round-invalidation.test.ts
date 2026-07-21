@@ -12,6 +12,14 @@
  *     Req 3 — source path touched: path-constrained reviewer IS re-run.
  *     Req 4 — always-activate reviewer: always re-run even with change-folder-only diff.
  *
+ * T-04 (approval-revision-binding re-anchor): verifies the D5 re-anchor logic.
+ *     TC-011 — path-untouched member: when a source path changes but does not touch
+ *       the member's activation paths, the coordinator re-anchors approvedAtCommit to
+ *       baselineCommit, keeping the member in the fast path (skip maintained).
+ *     TC-012 — evidence unavailable: when listChangedFiles returns unavailable, no
+ *       re-anchor occurs. approvedAtCommit stays mismatched, member is re-run
+ *       (fail-closed per D6 / req 6).
+ *
  * All tests use fake executor + fake runtimeStrategy. No filesystem, git, or network I/O.
  */
 
@@ -444,5 +452,102 @@ describe("ParallelReviewRound — always-activate reviewer is always re-run (T-0
     );
 
     expect(outcome).toBe("needs-fix");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-011 (T-04 approval-revision-binding re-anchor):
+// path-untouched member is re-anchored to baselineCommit, skip maintained.
+//
+// When listChangedFiles returns positive evidence (kind === "success") and the
+// changed source path does NOT match the member's activation paths, the member
+// is NOT invalidated. The coordinator re-anchors approvedAtCommit to
+// baselineCommit, so that selectPendingMembers can still exclude the member
+// (skip maintained). The executor is NOT called (all-approved fast path).
+//
+// Without re-anchor: approvedAtCommit ("sha-before") ≠ baselineCommit
+// ("current-sha") → selectPendingMembers would put member back to pending →
+// unnecessary re-run (regresses the 2026-07-15-round-invalidation-source-scoped
+// optimisation). With re-anchor: both match → skip.
+// ---------------------------------------------------------------------------
+
+describe("ParallelReviewRound — path-untouched member is re-anchored, skip maintained (TC-011)", () => {
+  it("re-anchors approvedAtCommit to baselineCommit when source path change does not touch activation paths", async () => {
+    const store = makeStore();
+
+    // captureHeadSha returns a NEW sha different from the member's approvedAtCommit
+    const runtimeStrategy = {
+      captureHeadSha: vi.fn(async () => "current-sha"),
+      // Changed file is in src/other/, NOT in src/specific/ (member's activation path)
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: ["src/other/bar.ts"] })),
+      finalizeStepArtifacts: vi.fn(async () => {}),
+      validateStepInputs: vi.fn(async () => {}),
+      validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+    };
+
+    const memberStep = makeStep(MEMBER_A);
+    const { executor, wasCalled } = makeFixedExecutor("needs-fix");
+    const round = makeRound(executor, memberStep);
+
+    // Member A approved at "sha-before", activation path ["src/specific/**"]
+    // Changed file "src/other/bar.ts" does not match ["src/specific/**"] → not invalidated
+    const { outcome, state } = await round.run(
+      COORDINATOR,
+      makeApprovedState(["src/specific/**"]),
+      makeDeps(store, runtimeStrategy as never),
+    );
+
+    // Path not touched → not invalidated → re-anchor → all-approved fast path
+    expect(wasCalled()).toBe(false);
+    expect(outcome).toBe("approved");
+
+    // approvedAtCommit must be re-anchored to baselineCommit ("current-sha")
+    // so that the next round / resume does not put the member back to pending
+    const memberStatus = state.reviewerStatuses?.find((s) => s.name === MEMBER_A);
+    expect(memberStatus?.status).toBe("approved");
+    expect(memberStatus?.approvedAtCommit).toBe("current-sha");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-012 (T-04 approval-revision-binding re-anchor):
+// evidence unavailable → no re-anchor → fail-closed.
+//
+// When listChangedFiles returns unavailable (kind !== "success"), the
+// coordinator does NOT re-anchor approvedAtCommit. Because approvedAtCommit
+// ("sha-before") ≠ baselineCommit ("current-sha"), selectPendingMembers
+// returns the member as pending. The member IS re-run (fail-closed per D6).
+//
+// This preserves the invariant: "承認の有効性が判定不能な場合は再実行に倒す"
+// (approval validity cannot be confirmed without evidence → re-run).
+// ---------------------------------------------------------------------------
+
+describe("ParallelReviewRound — evidence unavailable: no re-anchor, member is re-run (TC-012)", () => {
+  it("does not re-anchor and re-runs member when listChangedFiles returns unavailable", async () => {
+    const store = makeStore();
+
+    const runtimeStrategy = {
+      captureHeadSha: vi.fn(async () => "current-sha"),
+      // listChangedFiles returns unavailable (git error)
+      listChangedFiles: vi.fn(async () => ({ kind: "unavailable" as const, reason: "git spawn failed" })),
+      finalizeStepArtifacts: vi.fn(async () => {}),
+      validateStepInputs: vi.fn(async () => {}),
+      validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+    };
+
+    const memberStep = makeStep(MEMBER_A);
+    const { executor, wasCalled } = makeFixedExecutor("approved");
+    const round = makeRound(executor, memberStep);
+
+    // Member A approved at "sha-before", baselineCommit = "current-sha"
+    // No re-anchor → approvedAtCommit stays "sha-before" → mismatch → pending → re-run
+    await round.run(
+      COORDINATOR,
+      makeApprovedState(["src/specific/**"]),
+      makeDeps(store, runtimeStrategy as never),
+    );
+
+    // Evidence unavailable → no re-anchor → fail-closed → member is re-run
+    expect(wasCalled()).toBe(true);
   });
 });

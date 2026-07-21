@@ -119,6 +119,7 @@ function appendRun(
   verdict: string,
   ts: string,
   fixableFindings = 0,
+  commitOid?: string,
 ): JobState {
   const existing = state.steps?.[stepName] ?? [];
   const findings = Array.from({ length: fixableFindings }, (_, i) => ({
@@ -141,6 +142,7 @@ function appendRun(
     },
     startedAt: ts,
     endedAt: ts,
+    ...(commitOid !== undefined ? { commitOid } : {}),
   };
   return {
     ...state,
@@ -241,13 +243,17 @@ describe("TC-001: code-fixer ran after verification → re-verification before p
       if (step.name === "bite-evidence") return appendRun(s, "bite-evidence", "strategy-deferred", ts);
       if (step.name === "verification") {
         verificationCallCount++;
-        return appendRun(s, "verification", "passed", ts);
+        // T-05: 2nd+ verification run (re-verification) needs commitOid so that
+        // conformanceApprovedForVerifiedRevision guard returns true → routes to adr-gen.
+        const commitOid = verificationCallCount >= 2 ? "sha-c" : undefined;
+        return appendRun(s, "verification", "passed", ts, 0, commitOid);
       }
       // code-review: approved with 1 fixable finding → routes to code-fixer
       if (step.name === "code-review") return appendRun(s, "code-review", "approved", ts, 1);
       // code-fixer: approved → routes to conformance (forward row: code-review.verdict=approved)
       if (step.name === "code-fixer") return appendRun(s, "code-fixer", "approved", ts);
-      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts);
+      // T-05: conformance run needs commitOid matching re-verification's commitOid.
+      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts, 0, "sha-c");
       if (step.name === "adr-gen") return appendRun(s, "adr-gen", "success", ts);
       if (step.name === "pr-create") return appendRun(s, "pr-create", "success", ts);
       throw new Error(`Unexpected step: ${step.name}`);
@@ -309,7 +315,10 @@ describe("TC-002: conformance needs-fix:code-fixer path also triggers re-verific
       if (step.name === "bite-evidence") return appendRun(s, "bite-evidence", "strategy-deferred", ts);
       if (step.name === "verification") {
         verificationCallCount++;
-        return appendRun(s, "verification", "passed", ts);
+        // T-05: 2nd+ verification run (re-verification) needs commitOid so that
+        // conformanceApprovedForVerifiedRevision guard returns true → routes to adr-gen.
+        const commitOid = verificationCallCount >= 2 ? "sha-c" : undefined;
+        return appendRun(s, "verification", "passed", ts, 0, commitOid);
       }
       // code-review: no fixable findings → routes to conformance
       if (step.name === "code-review") return appendRun(s, "code-review", "approved", ts);
@@ -320,7 +329,9 @@ describe("TC-002: conformance needs-fix:code-fixer path also triggers re-verific
         // 1st: needs-fix:code-fixer → code-fixer runs
         // 2nd: approved → triggers re-verification (code-fixer ran after verification)
         const verdict = conformanceCallCount === 1 ? "needs-fix:code-fixer" : "approved";
-        return appendRun(s, "conformance", verdict, ts);
+        // T-05: 2nd conformance (approved) needs commitOid matching re-verification's commitOid.
+        const commitOid = conformanceCallCount >= 2 ? "sha-c" : undefined;
+        return appendRun(s, "conformance", verdict, ts, 0, commitOid);
       }
       if (step.name === "adr-gen") return appendRun(s, "adr-gen", "success", ts);
       if (step.name === "pr-create") return appendRun(s, "pr-create", "success", ts);
@@ -352,11 +363,14 @@ describe("TC-002: conformance needs-fix:code-fixer path also triggers re-verific
 // ─────────────────────────────────────────────────────────────────────────────
 // TC-003: 再検証 failed は build-fixer へ流れる
 //
-// Sequence:
-//   implementer → verification(pass,T2) → code-review(approved+fixable) →
-//   code-fixer(T4) → conformance(approved) →
-//   verification(fail,T6) → build-fixer →
-//   verification(pass,T8) → adr-gen → pr-create
+// Sequence (D4 / approval-revision-binding):
+//   implementer → verification(pass,T2) → code-review#1(approved+fixable) →
+//   code-fixer(T4) → conformance#1(approved, sha-conf) →
+//   verification(fail,T6) → build-fixer(→ sha-bf) →
+//   verification(pass,T8, sha-bf) →
+//   [guard: sha-conf ≠ sha-bf → FALSE → code-review re-entry] →
+//   code-review#2(approved, no fixable) → conformance#2(approved, sha-bf) →
+//   [codeChangedSinceLastVerification=false] → adr-gen → pr-create
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-003: re-verification failed → build-fixer (not pr-create)", () => {
   it("when re-verification fails, pipeline routes to build-fixer and eventually pr-create", async () => {
@@ -366,6 +380,8 @@ describe("TC-003: re-verification failed → build-fixer (not pr-create)", () =>
 
     let verificationCallCount = 0;
     let buildFixerCallCount = 0;
+    let conformanceCallCount = 0;
+    let codeReviewCallCount = 0;
     const stepsOrder: string[] = [];
 
     // verification: initial pass (T2), re-verify fail (T6), recovery pass (T8)
@@ -379,15 +395,30 @@ describe("TC-003: re-verification failed → build-fixer (not pr-create)", () =>
       if (step.name === "verification") {
         const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
         verificationCallCount++;
-        return appendRun(s, "verification", verdict, ts);
+        // D4 (approval-revision-binding): 3rd verification (build-fixer recovery pass) uses
+        // sha-bf — DIFFERENT from conformance's sha-conf. This makes the guard return false
+        // → code-review re-entry (D4 is the intended behaviour, not a bug).
+        const commitOid = verificationCallCount >= 3 ? "sha-bf" : undefined;
+        return appendRun(s, "verification", verdict, ts, 0, commitOid);
       }
       if (step.name === "build-fixer") {
         buildFixerCallCount++;
         return appendRun(s, "build-fixer", "success", ts);
       }
-      if (step.name === "code-review") return appendRun(s, "code-review", "approved", ts, 1);
+      if (step.name === "code-review") {
+        codeReviewCallCount++;
+        // 1st call: 1 fixable finding → code-fixer.  2nd call (post build-fixer): no findings.
+        const fixableFindings = codeReviewCallCount === 1 ? 1 : 0;
+        return appendRun(s, "code-review", "approved", ts, fixableFindings);
+      }
       if (step.name === "code-fixer") return appendRun(s, "code-fixer", "approved", ts);
-      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts);
+      if (step.name === "conformance") {
+        conformanceCallCount++;
+        // D4: 1st conformance uses sha-conf; build-fixer later commits → sha-bf.
+        // 2nd conformance re-approves the build-fixer revision (sha-bf).
+        const commitOid = conformanceCallCount === 1 ? "sha-conf" : "sha-bf";
+        return appendRun(s, "conformance", "approved", ts, 0, commitOid);
+      }
       if (step.name === "adr-gen") return appendRun(s, "adr-gen", "success", ts);
       if (step.name === "pr-create") return appendRun(s, "pr-create", "success", ts);
       throw new Error(`Unexpected step: ${step.name}`);
@@ -420,15 +451,23 @@ describe("TC-003: re-verification failed → build-fixer (not pr-create)", () =>
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-004: build-fixer 回復後に再検証が通過して adr-gen へ向かう（code-review を経由しない）
+// TC-004: build-fixer 回復後に code-review 再入を経て adr-gen へ向かう（D4 / approval-revision-binding）
+//
+// Sequence (D4): build-fixer が conformance 承認後に commit することで HEAD が動くため、
+// recovery verification の entry HEAD (sha-bf) ≠ conformance の commitOid (sha-conf) となり
+// conformanceApprovedForVerifiedRevision guard が false → code-review 再入。
+// code-review 再入後 conformance 再承認 (sha-bf) → codeChangedSinceLastVerification=false
+// → adr-gen → pr-create（再検証なし）。
 // ─────────────────────────────────────────────────────────────────────────────
-describe("TC-004: build-fixer recovery → re-verification passes → adr-gen (not code-review again)", () => {
-  it("after re-verify-fail → build-fixer recovery, routes to adr-gen (conformance still approved)", async () => {
+describe("TC-004: build-fixer recovery → code-review re-entry → adr-gen (D4)", () => {
+  it("after re-verify-fail → build-fixer recovery, routes via code-review re-entry to adr-gen", async () => {
     const tick = makeTick();
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
     let verificationCallCount = 0;
+    let conformanceCallCount = 0;
+    let codeReviewCallCount = 0;
     const stepsOrder: string[] = [];
 
     // verification: initial pass, re-verify fail, recovery pass
@@ -442,12 +481,28 @@ describe("TC-004: build-fixer recovery → re-verification passes → adr-gen (n
       if (step.name === "verification") {
         const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
         verificationCallCount++;
-        return appendRun(s, "verification", verdict, ts);
+        // D4 (approval-revision-binding): 3rd verification (build-fixer recovery) uses sha-bf —
+        // DIFFERENT from conformance's sha-conf. Guard returns false → code-review re-entry.
+        // No 4th verification: after code-review#2 + conformance#2(sha-bf),
+        // codeChangedSinceLastVerification=false → adr-gen directly.
+        const commitOid = verificationCallCount >= 3 ? "sha-bf" : undefined;
+        return appendRun(s, "verification", verdict, ts, 0, commitOid);
       }
       if (step.name === "build-fixer") return appendRun(s, "build-fixer", "success", ts);
-      if (step.name === "code-review") return appendRun(s, "code-review", "approved", ts, 1);
+      if (step.name === "code-review") {
+        codeReviewCallCount++;
+        // 1st call: 1 fixable finding → code-fixer.
+        // 2nd call (post build-fixer recovery, D4 re-entry): no findings → straight to conformance.
+        const fixableFindings = codeReviewCallCount === 1 ? 1 : 0;
+        return appendRun(s, "code-review", "approved", ts, fixableFindings);
+      }
       if (step.name === "code-fixer") return appendRun(s, "code-fixer", "approved", ts);
-      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts);
+      if (step.name === "conformance") {
+        conformanceCallCount++;
+        // D4: 1st conformance: sha-conf. 2nd conformance (re-approval of build-fixer rev): sha-bf.
+        const commitOid = conformanceCallCount === 1 ? "sha-conf" : "sha-bf";
+        return appendRun(s, "conformance", "approved", ts, 0, commitOid);
+      }
       if (step.name === "adr-gen") return appendRun(s, "adr-gen", "success", ts);
       if (step.name === "pr-create") return appendRun(s, "pr-create", "success", ts);
       throw new Error(`Unexpected step: ${step.name}`);
@@ -462,11 +517,13 @@ describe("TC-004: build-fixer recovery → re-verification passes → adr-gen (n
     const adrGenIdx = stepsOrder.lastIndexOf("adr-gen");
     expect(adrGenIdx).toBeGreaterThan(-1);
 
-    // code-review must appear only once (initial path only, not after recovery)
+    // D4: code-review is re-entered after build-fixer recovery (guard false → code-review)
+    // code-review appears twice: once on the initial path, once on the D4 re-entry path.
     const codeReviewCount = stepsOrder.filter((n) => n === "code-review").length;
-    expect(codeReviewCount).toBe(1);
+    expect(codeReviewCount).toBe(2);
 
     // verification was called exactly 3 times: initial + re-verify-fail + recovery
+    // (no 4th verification: conformance#2 with sha-bf → codeChanged=false → adr-gen directly)
     expect(verificationCallCount).toBe(3);
   });
 });
@@ -579,6 +636,9 @@ describe("TC-019: conformance → verification re-entry gives fresh verification
     // verificationVerdicts[3..4] = episode 2 fresh (fail, pass)
     const verificationVerdicts = ["failed", "failed", "passed", "failed", "passed"];
 
+    let conformanceCallCount = 0;
+    let codeReviewCallCount = 0;
+
     const executeSpy = vi.fn().mockImplementation(async (step: Step, s: JobState) => {
       const ts = tick();
       if (step.name === "implementer") return appendRun(s, "implementer", "success", ts);
@@ -586,17 +646,32 @@ describe("TC-019: conformance → verification re-entry gives fresh verification
       if (step.name === "verification") {
         const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
         verificationCallCount++;
-        return appendRun(s, "verification", verdict, ts);
+        // D4 (approval-revision-binding): 5th verification (episode-2 recovery pass) uses sha-bf —
+        // DIFFERENT from conformance#1's sha-conf. Guard returns false → code-review re-entry.
+        // After code-review#2(0 fixable) + conformance#2(sha-bf):
+        //   codeChangedSinceLastVerification=false → adr-gen directly (no 6th verification).
+        const commitOid = verificationCallCount >= 5 ? "sha-bf" : undefined;
+        return appendRun(s, "verification", verdict, ts, 0, commitOid);
       }
       if (step.name === "build-fixer") {
         buildFixerCallCount++;
         return appendRun(s, "build-fixer", "success", ts);
       }
-      // code-review with fixable findings → code-fixer (runs after bypass verification)
-      if (step.name === "code-review") return appendRun(s, "code-review", "approved", ts, 1);
+      if (step.name === "code-review") {
+        codeReviewCallCount++;
+        // Episode 1: code-review#1 returns 1 fixable → code-fixer → conformance.
+        // Episode 2 D4 re-entry: code-review#2 returns 0 fixable → straight to conformance.
+        const fixableFindings = codeReviewCallCount === 1 ? 1 : 0;
+        return appendRun(s, "code-review", "approved", ts, fixableFindings);
+      }
       // code-fixer runs AFTER verification(pass, T3), so code-fixer.ts > verification.ts
       if (step.name === "code-fixer") return appendRun(s, "code-fixer", "approved", ts);
-      if (step.name === "conformance") return appendRun(s, "conformance", "approved", ts);
+      if (step.name === "conformance") {
+        conformanceCallCount++;
+        // D4: conformance#1 (episode 1): sha-conf. conformance#2 (D4 re-entry): sha-bf.
+        const commitOid = conformanceCallCount === 1 ? "sha-conf" : "sha-bf";
+        return appendRun(s, "conformance", "approved", ts, 0, commitOid);
+      }
       if (step.name === "adr-gen") return appendRun(s, "adr-gen", "success", ts);
       if (step.name === "pr-create") return appendRun(s, "pr-create", "success", ts);
       throw new Error(`Unexpected step in TC-019: ${step.name}`);

@@ -186,15 +186,25 @@ export interface StepRun {
    */
   modelUsage?: Record<string, ModelUsage>;
   /**
-   * The commit OID (SHA) captured immediately after this node's per-node commit
-   * (`finalizeStepArtifacts` / `commitAndPush`).
+   * The commit OID (SHA) recorded for this step run.
+   *
+   * Capture asymmetry (T-01 / approval-revision-binding):
+   * - **Agent steps** (ClaudeCodeRunner, ManagedAgentRunner): exit-HEAD — captured
+   *   immediately AFTER `finalizeStepArtifacts` / `commitAndPush`. Represents the
+   *   revision produced by this step.
+   * - **CLI steps** (e.g. verification): entry-HEAD — captured BEFORE `step.run()`
+   *   to record the revision that was evaluated, not the post-commit HEAD. A CLI step
+   *   may advance HEAD during run() (e.g. `propagateVerificationResult`), but the OID
+   *   stored here is the revision the step assessed.
    *
    * Set only for sequential agent/CLI steps that own their own git commit.
    * Round (parallel reviewer) members do NOT set this field — their git effects
    * are committed by the coordinator via `commitRoundArtifacts`.
    *
    * Used by the bite-evidence gate (R4) to identify the base (test-materialize)
-   * and candidate (implementer) OIDs for isolated test execution.
+   * and candidate (implementer) OIDs for isolated test execution, and by
+   * `conformanceApprovedForVerifiedRevision` to bind conformance approval to the
+   * specific revision that verification evaluated.
    */
   commitOid?: string;
 }

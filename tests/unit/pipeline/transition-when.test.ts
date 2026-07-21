@@ -221,7 +221,7 @@ describe("TC-015: conformance approved → verification when-guard exists", () =
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-016: verification passed → adr-gen (when conformanceApprovedLatest)
+// TC-016: verification passed → adr-gen (when conformanceApprovedForVerifiedRevision)
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-016: verification passed → adr-gen when-guard exists", () => {
   it("STANDARD_TRANSITIONS has verification --passed→ adr-gen row with `when` function", () => {
@@ -431,6 +431,9 @@ describe("TC-2: code-fixer approved (code-review done) → conformance → verif
                 outcome: { verdict: "approved" as const, findingsPath: null, error: null },
                 startedAt: ts,
                 endedAt: ts,
+                // T-05: commitOid required so conformanceApprovedForVerifiedRevision can
+                // match against the verification run's commitOid.
+                commitOid: "sha-c",
               },
             ],
           },
@@ -450,6 +453,9 @@ describe("TC-2: code-fixer approved (code-review done) → conformance → verif
                 outcome: { verdict: "passed" as const, findingsPath: null, error: null },
                 startedAt: ts,
                 endedAt: ts,
+                // T-05: commitOid must match conformance's commitOid so that
+                // conformanceApprovedForVerifiedRevision guard returns true → adr-gen.
+                commitOid: "sha-c",
               },
             ],
           },

@@ -520,6 +520,19 @@ export class StepExecutor {
    * Does NOT persist state — all state mutation is delegated to CommitOrchestrator.
    *
    * TC-012: store.update (begin) is handled by CommitOrchestrator.begin() before this runs.
+   *
+   * T-01 (approval-revision-binding): captures the entry-HEAD commitOid BEFORE step.run()
+   * so that the StepRun records the revision that this CLI step evaluated, not the
+   * post-commit HEAD that results from propagateVerificationResult.
+   * This is the "evaluation revision" (the code that was built and tested), which
+   * is used by conformanceApprovedForVerifiedRevision to verify approval binding.
+   *
+   * commitOid semantics for CLI vs agent steps:
+   *   - CLI step (e.g. verification): entry-HEAD (captured BEFORE step.run())
+   *   - Agent step: exit-HEAD (captured AFTER per-node commit in runAgentStep)
+   * The asymmetry is intentional: CLI steps evaluate a specific revision and
+   * advance HEAD during run(); capturing after run() would capture the post-commit
+   * HEAD, not the evaluated revision.
    */
   private async runCliStep(
     step: CliStep,
@@ -534,6 +547,15 @@ export class StepExecutor {
     if (inputHalt) {
       return { kind: "halt", halt: inputHalt };
     }
+
+    // T-01: Capture entry-HEAD commitOid BEFORE step.run().
+    // step.run() may advance HEAD (e.g. propagateVerificationResult commits a result file).
+    // We capture the pre-run HEAD so the StepRun records the evaluated revision.
+    // When runtimeStrategy is absent (e.g. managed runtime without git access), commitOid
+    // remains undefined (no captureHeadSha available). null result → also undefined.
+    const entryHeadSha = deps.runtimeStrategy
+      ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? undefined
+      : undefined;
 
     // Run the CLI step
     try {
@@ -574,6 +596,7 @@ export class StepExecutor {
       completedAt,
       startedAt,
       session: null,
+      ...(entryHeadSha !== undefined ? { commitOid: entryHeadSha } : {}),
     };
   }
 }

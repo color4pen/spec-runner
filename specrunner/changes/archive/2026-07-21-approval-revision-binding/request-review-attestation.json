@@ -1,0 +1,15 @@
+{
+  "requestHash": "sha256:850a4edf82c634c0b33ce88aa0febdf04da5629d85717c20ba59945e3c1721f8",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/reverification.ts:67-72 — conformanceApprovedLatest checks verdict only, no commitOid comparison",
+    "src/core/pipeline/types.ts:250 — STANDARD_TRANSITIONS VERIFICATION passed → ADR_GEN when:conformanceApprovedLatest",
+    "src/core/pipeline/types.ts:307 — FAST_TRANSITIONS VERIFICATION passed → PR_CREATE when:conformanceApprovedLatest",
+    "src/core/pipeline/reverification.ts:37-53 — codeChangedSinceLastVerification uses endedAt time comparison only",
+    "src/state/schema/types.ts:199 — StepRun commitOid?: string exists",
+    "src/core/step/executor.ts:464-468 — commitOid capture condition !roundOwnsGitEffects && runtimeStrategy (agent step only); runCliStep has no commitOid capture",
+    "src/core/pipeline/reviewer-status.ts:57 — approvedAtCommit: null in deriveReviewerStatuses initialization",
+    "src/core/pipeline/reviewer-status.ts:70-77 — selectPendingMembers filters by status===pending only, no approvedAtCommit revision check"
+  ],
+  "sourceRevision": "e561c0e5ecf6a44199cdd2f1351aaf5582b45453"
+}

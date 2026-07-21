@@ -160,6 +160,74 @@ function makeTestRuntimeStrategy(spawnFn: GitSpawnFn): RuntimeStrategy {
   };
 }
 
+/**
+ * Minimal RuntimeStrategy stub for tests that need commitOid but no real git.
+ *
+ * T-05 (approval-revision-binding): integration tests that go through the re-verification
+ * path (code-fixer ran after verification → conformance → re-verification) need
+ * conformance.commitOid === verification.commitOid for `conformanceApprovedForVerifiedRevision`
+ * to return true. Without runtimeStrategy, captureHeadSha is never called and commitOid
+ * is never set, causing the guard to return false and loop back to code-review.
+ *
+ * Returns "test-sha" for all captureHeadSha calls; all contract/validation methods are
+ * no-ops so they do not interfere with the mock agent runner's verdict flow.
+ *
+ * Missing methods that are called when runtimeStrategy is present:
+ * - validateStepInputs: called by executor for every step with reads(); must not throw
+ *   (TypeError would convert to an input-missing halt → "awaiting-resume").
+ * - verifyFindingRefs: called by step-completion for judge steps with high-severity
+ *   findings (e.g. code-review needs-fix iteration); must return [] (no non-existent refs).
+ * - digestArtifacts: called from commit-orchestrator inside finalizeStepArtifacts, which
+ *   is stubbed as a no-op so digestArtifacts is never reached; included for completeness.
+ * - listChangedFiles: called for steps with activation conditions and for no-op detection;
+ *   standard pipeline steps have no activation, and headBeforeStep=null (due to
+ *   makeFailingGitSpawnFn) skips no-op detection entirely.
+ */
+function makeCommitOidStubStrategy(): RuntimeStrategy {
+  return {
+    captureHeadSha: async (): Promise<string | null> => "test-sha",
+    finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
+    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
+    prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
+    // commitFinalState is called via deps.runtimeStrategy?.commitFinalState(...) when
+    // state.status === "awaiting-resume". TC-062 passes through awaiting-resume at
+    // code-fixer exhaustion. Must be stubbed since runtimeStrategy is defined.
+    commitFinalState: vi.fn().mockResolvedValue(undefined),
+    // validateStepInputs: called for every step with reads() — must resolve to avoid
+    // TypeError → makeInputMissingHalt → pipeline halt → "awaiting-resume".
+    validateStepInputs: vi.fn().mockResolvedValue(undefined),
+    // verifyFindingRefs: called by step-completion for judge steps with high-severity
+    // findings. Must return [] so no non-existent refs are reported (verdict unaffected).
+    verifyFindingRefs: vi.fn().mockResolvedValue([]),
+    // digestArtifacts and listChangedFiles: not reached via the stub paths above, but
+    // included to prevent TypeError if called unexpectedly.
+    digestArtifacts: vi.fn().mockResolvedValue([]),
+    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
+  } as unknown as RuntimeStrategy;
+}
+
+/**
+ * Git spawn that always fails (exitCode 1), making gitExec return null.
+ *
+ * T-05: When runtimeStrategy is present, executor.ts runs gitExec(this.spawnFn, cwd,
+ * ["rev-parse", "HEAD"]) to capture headBeforeStep for no-op detection. A null result
+ * (non-zero exit code) makes headBeforeStep = null, which skips no-op detection.
+ * This prevents code-fixer from being falsely identified as a no-op (which would
+ * override its verdict to "needs-fix").
+ */
+function makeFailingGitSpawnFn(): GitSpawnFn {
+  return (_bin: string, _args: string[], _opts: SpawnOptions): ChildProcess => {
+    const emitter = new EventEmitter();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const em = emitter as any;
+    em.stdout = new EventEmitter();
+    em.stderr = new EventEmitter();
+    em.stdin = { write: () => true, end: () => {} };
+    setImmediate(() => emitter.emit("close", 1)); // exitCode 1 → gitExec returns null
+    return emitter as unknown as ChildProcess;
+  };
+}
+
 async function makeJobState() {
   const state = buildInitialJobState({
     request: { path: "/test/request.md", title: "Test", type: "feature" },
@@ -701,6 +769,14 @@ describe("TC-060: runPipeline — code-review needs-fix → code-fixer → code-
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      // T-05 (approval-revision-binding): provide runtimeStrategy so captureHeadSha
+      // returns a fixed SHA for all step runs. This ensures conformance.commitOid ===
+      // verification.commitOid = "test-sha", making conformanceApprovedForVerifiedRevision
+      // return true after re-verification (code-fixer ran after initial verification).
+      runtimeStrategy: makeCommitOidStubStrategy(),
+      // gitTransportSpawn returning exitCode 1 → gitExec returns null → headBeforeStep = null
+      // → no-op detection skipped for code-fixer (avoids "needs-fix" verdict override).
+      gitTransportSpawn: makeFailingGitSpawnFn(),
     });
 
     expect(result.status).toBe("awaiting-archive");
@@ -830,6 +906,10 @@ describe("TC-062: code-fixer final iter reviewed — approved path", () => {
       repo: "testrepo",
       spawn: noopSpawn,
       storeFactory: makeStoreFactory(tempDir),
+      // T-05 (approval-revision-binding): same as TC-060 — runtimeStrategy provides commitOid
+      // so conformanceApprovedForVerifiedRevision returns true after re-verification.
+      runtimeStrategy: makeCommitOidStubStrategy(),
+      gitTransportSpawn: makeFailingGitSpawnFn(),
     });
 
     expect(result.status).toBe("awaiting-archive");
