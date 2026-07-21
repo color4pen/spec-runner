@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5476862-ab00-4dd0-b764-ac1e52fb23c4",
   "createdAt": "2026-07-21T06:45:17.397Z",
-  "updatedAt": "2026-07-21T07:36:06.869Z",
+  "updatedAt": "2026-07-21T07:42:10.893Z",
   "request": {
     "title": "lineage event の outputs を実生成ファイルに対応付け、hash を実計算する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/lineage-output-attribution-c5476862",
   "error": null,
   "pipelineId": "standard",
@@ -86,8 +86,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/881",
+    "number": 881,
+    "createdAt": "2026-07-21T07:42:10.252Z"
+  },
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -96,13 +101,16 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
