@@ -226,20 +226,33 @@ describe("TC-005: code-review and conformance inherit the evidence requirement",
 });
 
 // ---------------------------------------------------------------------------
-// TC-006: request-review は evidence 必須化の対象外
-// Source: spec.md > Requirement: judge 完了契約 MUST carry required evidence counts
-//         > Scenario: request-review is unaffected
+// TC-006 (reversed by TC-022): request-review IS NOW subject to evidence requirement
+// Source: tasks.md T-07 drift-guard 反転 (TC-022)
+//
+// REVERSAL NOTE: This test was previously TC-006 asserting request-review is EXEMPT from evidence.
+// Reversed per TC-022 (tasks.md T-07 drift-guard reversal) — now asserts evidence IS REQUIRED.
+// Pre-implementation: RED (parseRequestReviewReportInput does not yet enforce evidence)
+// Post-implementation: GREEN (T-01 adds evidence enforcement to parseRequestReviewReportInput)
+//
+// The original TC-006 scenario (request-review unaffected) belonged to the typed-evidence-gate
+// change that excluded request-review. This change (request-review-evidence-counts) reverses it.
 // ---------------------------------------------------------------------------
 
-describe("TC-006: request-review is unaffected by evidence requirement", () => {
-  it("TC-006: parseRequestReviewReportInput({ ok: true }) with no evidence → ok:true", () => {
+describe("TC-006 (reversed): request-review IS subject to evidence requirement", () => {
+  it("TC-006: parseRequestReviewReportInput({ ok: true }) with no evidence → ok:false, missingFields contains 'evidence'", () => {
     const result = parseRequestReviewReportInput({ ok: true });
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.missingFields).toContain("evidence");
+    }
   });
 
-  it("TC-006: parseRequestReviewReportInput({ ok: true, findings: [] }) with no evidence → ok:true", () => {
+  it("TC-006: parseRequestReviewReportInput({ ok: true, findings: [] }) with no evidence → ok:false, missingFields contains 'evidence'", () => {
     const result = parseRequestReviewReportInput({ ok: true, findings: [] });
-    expect(result.ok).toBe(true);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.missingFields).toContain("evidence");
+    }
   });
 });
 

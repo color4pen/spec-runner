@@ -159,19 +159,26 @@ describe("symmetry: parseFindings vs parseObservations", () => {
 
 // ---------------------------------------------------------------------------
 // T-02: parseRequestReviewReportInput — findings optional when ok=true
+//
+// TC-024 fixture following: evidence: { checked: N>0, ... } added to all ok=true inputs.
+// The primary assertion (findings optionality) is unchanged; evidence is added as a
+// required companion field so these tests remain valid after the evidence enforcement lands.
+// { ok: false } inputs are not changed (ok=false does not require evidence).
 // ---------------------------------------------------------------------------
 
 describe("parseRequestReviewReportInput — findings optional when ok=true (T-02)", () => {
-  it("{ ok: true } (no findings field) → parse succeeds, findings undefined", () => {
-    const result = parseRequestReviewReportInput({ ok: true });
+  it("{ ok: true, evidence: {...} } (no findings field) → parse succeeds, findings undefined", () => {
+    // TC-024: evidence added to satisfy the new evidence requirement
+    const result = parseRequestReviewReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.ok).toBe(true);
     expect(result.value.findings).toBeUndefined();
   });
 
-  it("{ ok: true, verdict: 'approve' } (no findings field) → parse succeeds, findings undefined", () => {
-    const result = parseRequestReviewReportInput({ ok: true, verdict: "approve" });
+  it("{ ok: true, verdict: 'approve', evidence: {...} } (no findings field) → parse succeeds, findings undefined", () => {
+    // TC-024: evidence added to satisfy the new evidence requirement
+    const result = parseRequestReviewReportInput({ ok: true, verdict: "approve", evidence: { checked: 1, skipped: 0, unverified: 0 } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.ok).toBe(true);
@@ -179,14 +186,16 @@ describe("parseRequestReviewReportInput — findings optional when ok=true (T-02
     expect(result.value.findings).toBeUndefined();
   });
 
-  it("{ ok: true, findings: [] } → parse succeeds, findings is empty array", () => {
-    const result = parseRequestReviewReportInput({ ok: true, findings: [] });
+  it("{ ok: true, findings: [], evidence: {...} } → parse succeeds, findings is empty array", () => {
+    // TC-024: evidence added to satisfy the new evidence requirement
+    const result = parseRequestReviewReportInput({ ok: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.value.findings).toEqual([]);
   });
 
-  it("{ ok: true, findings: [invalid] } → parse fails (findings present but invalid)", () => {
+  it("{ ok: true, findings: [invalid] } → parse fails (findings present but invalid — evidence check not reached)", () => {
+    // Invalid findings cause parse failure before evidence is checked — no evidence needed
     const result = parseRequestReviewReportInput({
       ok: true,
       findings: [{ severity: "invalid", resolution: "fixable", file: "a.ts", title: "T", rationale: "R" }],
@@ -194,7 +203,7 @@ describe("parseRequestReviewReportInput — findings optional when ok=true (T-02
     expect(result.ok).toBe(false);
   });
 
-  it("{ ok: false } → parse succeeds (findings not required when ok=false)", () => {
+  it("{ ok: false } → parse succeeds (findings and evidence not required when ok=false)", () => {
     const result = parseRequestReviewReportInput({ ok: false });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -208,8 +217,9 @@ describe("parseRequestReviewReportInput — findings optional when ok=true (T-02
 });
 
 describe("parseRequestReviewReportInput — findings routing (T-02 symptom 2)", () => {
-  it("MEDIUM+LOW findings only → deriveRequestReviewVerdict produces 'approve'", async () => {
+  it("MEDIUM+LOW findings only + evidence → deriveRequestReviewVerdict produces 'approve'", async () => {
     const { deriveRequestReviewVerdict } = await import("../../step/judge-verdict.js");
+    // TC-024: evidence added to satisfy the new evidence requirement
     const raw = {
       ok: true,
       verdict: "approve",
@@ -217,20 +227,29 @@ describe("parseRequestReviewReportInput — findings routing (T-02 symptom 2)", 
         { severity: "medium", resolution: "fixable", file: "a.ts", title: "T1", rationale: "R1" },
         { severity: "low", resolution: "fixable", file: "b.ts", title: "T2", rationale: "R2" },
       ],
+      evidence: { checked: 2, skipped: 0, unverified: 0 },
     };
     const parsed = parseRequestReviewReportInput(raw);
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    const verdict = deriveRequestReviewVerdict(parsed.value.findings ?? [], parsed.value.ok);
+    // Cast to future signature (evidence as 3rd arg) for post-implementation verdict derivation
+    type VerdictFn = (findings: unknown[], ok: boolean, evidence?: unknown) => "approve" | "needs-discussion";
+    const verdictFn = deriveRequestReviewVerdict as unknown as VerdictFn;
+    const value = parsed.value as unknown as { findings?: unknown[]; ok: boolean; evidence?: unknown };
+    const verdict = verdictFn(value.findings ?? [], value.ok, value.evidence);
     expect(verdict).toBe("approve");
   });
 
-  it("no findings (undefined) → deriveRequestReviewVerdict produces 'approve'", async () => {
+  it("no findings (undefined) + evidence → deriveRequestReviewVerdict produces 'approve'", async () => {
     const { deriveRequestReviewVerdict } = await import("../../step/judge-verdict.js");
-    const parsed = parseRequestReviewReportInput({ ok: true });
+    // TC-024: evidence added to satisfy the new evidence requirement
+    const parsed = parseRequestReviewReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 } });
     expect(parsed.ok).toBe(true);
     if (!parsed.ok) return;
-    const verdict = deriveRequestReviewVerdict(parsed.value.findings ?? [], parsed.value.ok);
+    type VerdictFn = (findings: unknown[], ok: boolean, evidence?: unknown) => "approve" | "needs-discussion";
+    const verdictFn = deriveRequestReviewVerdict as unknown as VerdictFn;
+    const value = parsed.value as unknown as { findings?: unknown[]; ok: boolean; evidence?: unknown };
+    const verdict = verdictFn(value.findings ?? [], value.ok, value.evidence);
     expect(verdict).toBe("approve");
   });
 });
