@@ -3,7 +3,7 @@ import type { JobState, StepRun, ErrorInfo, HistoryEntry, RequestInfo, Repositor
 import { STANDARD_PIPELINE_ID } from "../kernel/pipeline-ids.js";
 import { STANDARD_PROFILE } from "../state/profile.js";
 import { transitionJob } from "../state/lifecycle.js";
-import type { InterruptionRecord, LineageRecord } from "./event-journal.js";
+import type { InterruptionRecord, LineageRecord, OperatorEventRecord } from "./event-journal.js";
 import { JobLocationResolver } from "./job-location-resolver.js";
 import { JobJournal } from "./job-journal.js";
 import { JobCatalog } from "./job-catalog.js";
@@ -270,6 +270,16 @@ export class JobStateStore {
    */
   async appendLineage(record: LineageRecord): Promise<void> {
     return this._journal.appendLineage(record);
+  }
+
+  /**
+   * Append an operator event record to the events journal (D1, reopen-journal).
+   * Does not update state.json — operator events are journal-only evidence.
+   * Must be called BEFORE persisting the corresponding lifecycle transition,
+   * ensuring the event is durable even if the subsequent persist fails.
+   */
+  async appendOperatorEvent(record: OperatorEventRecord): Promise<void> {
+    return this._journal.appendOperatorEvent(record);
   }
 
   /**

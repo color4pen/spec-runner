@@ -17,6 +17,7 @@ import { runAttach } from "./attach.js";
 import { runCancel } from "./cancel.js";
 import { runPrune } from "./prune.js";
 import { runResume } from "./resume.js";
+import { runReopen } from "./reopen.js";
 import { runJobShow } from "./job-show.js";
 import { runJobStats } from "../core/command/job-stats.js";
 import { runInboxRun } from "./inbox.js";
@@ -275,6 +276,31 @@ Options:
   --help, -h             Show this help message
 `;
 
+export const REOPEN_USAGE = `Usage: specrunner job reopen <slug> --from <step> --reason <text> [options]
+
+Reopen an awaiting-archive job and restart the pipeline from the specified step.
+The associated PR must be OPEN (not merged or closed).
+
+This is an operator-scoped action: --from and --reason are both required.
+Prior evidence (steps, artifacts, reviewer statuses) is preserved; new iterations
+are appended without overwriting existing results.
+
+Arguments:
+  <slug>              Slug of the job to reopen (required).
+
+Options:
+  --from <step>       Pipeline step to restart from (required).
+                      Valid steps: ${[...["request-review", "design", "spec-review", "spec-fixer",
+  "test-case-gen", "implementer", "verification", "build-fixer", "code-review",
+  "code-fixer", "conformance", "adr-gen", "pr-create"]].join(", ")}
+  --reason <text>     Operator rationale for the reopen (required, recorded in journal).
+  --verbose           More detailed output
+  --quiet             Suppress informational output
+  --json              Output structured JSON result
+  --no-worktree       Run without a git worktree
+  --help, -h          Show this help message
+`;
+
 export const DOCTOR_USAGE = `Usage: specrunner doctor [options]
 
 Diagnose environment, configuration, and authentication prerequisites.
@@ -427,7 +453,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   job: {
-    guardedSubcommands: new Set(["start", "resume", "attach", "archive", "prune"]),
+    guardedSubcommands: new Set(["start", "resume", "attach", "archive", "prune", "reopen"]),
     subcommands: {
       start: {
         flags: {
@@ -611,6 +637,58 @@ export const COMMANDS: Record<string, CommandEntry> = {
           }
         },
       },
+      reopen: {
+        flags: {
+          from: { type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES] as const },
+          reason: { type: "string" },
+          verbose: { type: "boolean" },
+          quiet: { type: "boolean" },
+          json: { type: "boolean" },
+          "no-worktree": { type: "boolean" },
+        },
+        positional: { name: "slug", required: true },
+        usage: REOPEN_USAGE,
+        handler: async (parsed, ctx) => {
+          const fromStep = parsed.flags["from"] as string | undefined;
+          const reason = parsed.flags["reason"] as string | undefined;
+
+          if (!fromStep) {
+            logError("--from <step> is required for 'job reopen'.");
+            process.exit(EXIT_CODE.ARG_ERROR);
+          }
+          if (!reason) {
+            logError("--reason <text> is required for 'job reopen'.");
+            process.exit(EXIT_CODE.ARG_ERROR);
+          }
+
+          const logLevel = resolveLogLevel({
+            quiet: !!parsed.flags["quiet"],
+            verbose: !!parsed.flags["verbose"],
+            debug: !!parsed.flags["debug"],
+          });
+
+          try {
+            await runReopen(parsed.positional!, {
+              from: fromStep,
+              reason,
+              logLevel,
+              cwd: process.cwd(),
+              repoRoot: ctx?.repoRoot,
+              json: !!parsed.flags["json"],
+              noWorktree: !!parsed.flags["no-worktree"],
+            });
+          } catch (err: unknown) {
+            if (err instanceof SpecRunnerError) {
+              stderrWrite(`Error: ${err.message}`);
+              stderrWrite(`Hint: ${err.hint}`);
+              process.exit(err.exitCode);
+            }
+            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
+            process.exit(1);
+          }
+        },
+      },
+
       attach: {
         flags: {
           branch: { type: "string" },

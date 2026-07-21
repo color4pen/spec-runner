@@ -371,6 +371,13 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     comment: "di-default: detectPackageManager falls back to process.cwd() when no detectPm is injected.",
   },
   {
+    file: "src/cli/reopen.ts",
+    pattern: "options.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-reopen-cli-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
+  },
+  {
     file: "src/cli/resume.ts",
     pattern: "options.cwd ?? process.cwd()",
     invariant: "CWD",
@@ -389,6 +396,13 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     pattern: "this.options.cwd ?? process.cwd()",
     invariant: "CWD",
     tracking: "CWD-pipeline-run-di-default",
+    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
+  },
+  {
+    file: "src/core/command/reopen.ts",
+    pattern: "this.options.cwd ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-core-reopen-di-default",
     comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
   },
   {

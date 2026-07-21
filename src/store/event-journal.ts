@@ -109,8 +109,28 @@ export interface LineageRecord {
   inputs: ArtifactRef[];
 }
 
+/**
+ * Records an operator-initiated lifecycle event (e.g. reopen).
+ * Journal-only: NOT materialized into state.json / NormalizedJobState.
+ *
+ * D1 (reopen-journal): operator events are append-only evidence and are
+ * never deleted or rewritten. Successive reopen operations each append
+ * a new record.
+ */
+export interface OperatorEventRecord {
+  type: "operator-event";
+  /** Action taken by the operator. Currently only "reopen" is defined. */
+  action: "reopen";
+  /** Operator-supplied reason for the action (required by `job reopen --reason`). */
+  reason: string;
+  /** Pipeline step from which execution will (re)start. */
+  fromStep: string;
+  /** ISO 8601 timestamp of the operator action. */
+  ts: string;
+}
+
 /** All valid event record types. */
-export type EventRecord = StepAttemptRecord | TransitionRecord | InterruptionRecord | LineageRecord;
+export type EventRecord = StepAttemptRecord | TransitionRecord | InterruptionRecord | LineageRecord | OperatorEventRecord;
 
 // ---------------------------------------------------------------------------
 // Fold corruption
@@ -155,6 +175,14 @@ export interface FoldResult {
    * Empty array if no lineage records have been appended.
    */
   lineage: LineageRecord[];
+  /**
+   * All operator event records in chronological order (D1, reopen-journal).
+   * NOT materialized into state.json / NormalizedJobState — journal-only.
+   * Empty array if no operator-event records have been appended.
+   * Optional for backward compat with code that constructs FoldResult literals;
+   * fold() always populates this field.
+   */
+  operatorEvents?: OperatorEventRecord[];
   /**
    * Present when a mid-journal corruption was detected (a committed line that is
    * not valid JSON or not a plain object). Absent when the journal is clean.
@@ -226,6 +254,7 @@ export function fold(content: string): FoldResult {
   const historyRecords: TransitionRecord[] = [];
   let lastInterruption: InterruptionRecord | undefined;
   const lineageRecords: LineageRecord[] = [];
+  const operatorEventRecords: OperatorEventRecord[] = [];
   let corruption: FoldCorruption | undefined;
 
   for (let i = 0; i < committedLines.length; i++) {
@@ -274,6 +303,9 @@ export function fold(content: string): FoldResult {
     } else if (obj["type"] === "lineage") {
       // Collect lineage records in chronological order (D1, artifact-observability)
       lineageRecords.push(obj as unknown as LineageRecord);
+    } else if (obj["type"] === "operator-event") {
+      // Collect operator event records in chronological order (D1, reopen-journal)
+      operatorEventRecords.push(obj as unknown as OperatorEventRecord);
     }
     // Unknown / legacy types (e.g. "history") are silently ignored for forward compat.
     // Unknown type is NOT a corruption — forward compatibility.
@@ -322,6 +354,7 @@ export function fold(content: string): FoldResult {
     stepCounts,
     historyCount: historyRecords.length,
     lineage: lineageRecords,
+    operatorEvents: operatorEventRecords,
     ...(lastInterruption !== undefined ? { lastInterruption } : {}),
     ...(corruption !== undefined ? { corruption } : {}),
   };

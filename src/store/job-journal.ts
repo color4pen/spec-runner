@@ -7,7 +7,7 @@ import {
   stepRunToRecord,
   historyEntryToRecord,
 } from "./event-journal.js";
-import type { FoldResult, InterruptionRecord, LineageRecord } from "./event-journal.js";
+import type { FoldResult, InterruptionRecord, LineageRecord, OperatorEventRecord } from "./event-journal.js";
 import { detectCounterReversal, describeJournalIssue } from "./journal-integrity.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { appendHistoryEntry } from "../state/schema.js";
@@ -145,7 +145,7 @@ export class JobJournal {
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException).code;
       if (code === "ENOENT") {
-        foldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0, lineage: [] };
+        foldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0, lineage: [], operatorEvents: [] };
       } else {
         throw err;
       }
@@ -226,6 +226,16 @@ export class JobJournal {
    * Best-effort: callers catch and swallow errors (usage.json append pattern).
    */
   async appendLineage(record: LineageRecord): Promise<void> {
+    await appendEventRecord(this.resolver.getEventsPath(), record);
+  }
+
+  /**
+   * Append an operator event record to the events journal (D1, reopen-journal).
+   * Does not update state.json — operator events are journal-only evidence.
+   * Appended BEFORE the corresponding lifecycle transition is persisted,
+   * ensuring the event is durable even if the subsequent persist fails.
+   */
+  async appendOperatorEvent(record: OperatorEventRecord): Promise<void> {
     await appendEventRecord(this.resolver.getEventsPath(), record);
   }
 }
