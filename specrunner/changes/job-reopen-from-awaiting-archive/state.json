@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "121cee89-ee28-4b80-8b16-044a2252269d",
   "createdAt": "2026-07-21T14:09:53.176Z",
-  "updatedAt": "2026-07-21T16:20:08.701Z",
+  "updatedAt": "2026-07-21T16:43:43.499Z",
   "request": {
     "title": "awaiting-archive job の正規 reopen — 指定 step 以降の承認を失効させて再検証する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/job-reopen-from-awaiting-archive-121cee89",
   "error": null,
@@ -66,7 +66,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "7344380d9a7d9338459b435c95c70417d57205d0",
+      "approvedAtCommit": "e1c33ae853ba6189d5d548c8983e42e2c89f65a9",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -79,7 +79,7 @@
     {
       "name": "scale-tolerance",
       "status": "approved",
-      "approvedAtCommit": "7344380d9a7d9338459b435c95c70417d57205d0",
+      "approvedAtCommit": "e1c33ae853ba6189d5d548c8983e42e2c89f65a9",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
@@ -90,7 +90,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 83,
+    "historyCount": 95,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -101,11 +101,11 @@
       "bite-evidence": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1,
+      "code-review": 2,
       "code-fixer": 3,
-      "cross-boundary-invariants": 3,
-      "scale-tolerance": 1,
-      "custom-reviewers": 3,
+      "cross-boundary-invariants": 4,
+      "scale-tolerance": 2,
+      "custom-reviewers": 4,
       "regression-gate": 1
     }
   }
