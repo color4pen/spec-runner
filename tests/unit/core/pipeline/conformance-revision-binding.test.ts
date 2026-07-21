@@ -15,16 +15,7 @@
 import { describe, it, expect } from "vitest";
 import type { JobState, StepRun } from "../../../../src/state/schema.js";
 import { STEP_NAMES } from "../../../../src/core/step/step-names.js";
-
-// ---------------------------------------------------------------------------
-// Dynamic import of the not-yet-exported function (T-02).
-// Resolves to undefined at runtime until T-02 is implemented.
-// Tests calling it will FAIL with TypeError ("... is not a function") → RED.
-// ---------------------------------------------------------------------------
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const { conformanceApprovedForVerifiedRevision } = await import(
-  "../../../../src/core/pipeline/reverification.js"
-) as any;
+import { conformanceApprovedForVerifiedRevision } from "../../../../src/core/pipeline/reverification.js";
 
 // ---------------------------------------------------------------------------
 // Helpers

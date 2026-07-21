@@ -305,7 +305,6 @@ describe("TC-013: build-fixer after conformance approval → code-review re-entr
     const deps = makeMinimalDeps();
 
     const stepsOrder: string[] = [];
-    let conformanceCallCount = 0;
 
     const executeSpy = vi.fn().mockImplementation(async (step: Step, s: JobState) => {
       const ts = tick();
@@ -320,7 +319,6 @@ describe("TC-013: build-fixer after conformance approval → code-review re-entr
         return appendRunWithOid(s, "code-review", "approved", ts);
       }
       if (step.name === STEP_NAMES.CONFORMANCE) {
-        conformanceCallCount++;
         // 2nd conformance: approved with sha-bf (re-approved at build-fixer revision)
         return appendRunWithOid(s, "conformance", "approved", ts, "sha-bf");
       }
@@ -471,7 +469,6 @@ describe("TC-017: build-fixer re-entry converges to awaiting-archive without esc
     };
 
     const stepsOrder: string[] = [];
-    let verificationCallCount = 0;
     let conformanceCallCount = 0;
 
     const executeSpy = vi.fn().mockImplementation(async (step: Step, s: JobState) => {
@@ -479,7 +476,6 @@ describe("TC-017: build-fixer re-entry converges to awaiting-archive without esc
       stepsOrder.push(step.name);
 
       if (step.name === STEP_NAMES.VERIFICATION) {
-        verificationCallCount++;
         // Always returns passed with sha-bf (entry HEAD after build-fixer)
         return appendRunWithOid(s, "verification", "passed", ts, "sha-bf");
       }
