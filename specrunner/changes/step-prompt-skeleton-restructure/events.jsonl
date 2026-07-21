@@ -91,3 +91,10 @@
 {"type":"transition","ts":"2026-07-21T04:08:20.431Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-07-21T04:08:20.432Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-07-21T04:08:20.434Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-21T04:11:25.705Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"39d08a29-02b6-4a6c-9e56-b5033337f568","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/step-prompt-skeleton-restructure/regression-gate-result-002.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[]},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-21T04:08:20.481Z","endedAt":"2026-07-21T04:11:23.980Z","commitOid":"a622c1c203822a873715dcb133a7ea9ce4292ea3"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-21T04:11:23.980Z","outputs":[{"path":"specrunner/changes/step-prompt-skeleton-restructure/regression-gate-result-003.md","hash":null}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-21T04:11:25.712Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-21T04:11:25.712Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-21T04:11:25.714Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-21T04:11:25.718Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
