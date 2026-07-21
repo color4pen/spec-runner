@@ -143,7 +143,10 @@ export async function deriveStepCompletion(
         const tr = toolResult as RequestReviewReportResult;
         const allFindings = tr.findings ?? [];
         const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
-        verdict = deriveRequestReviewVerdict(undecidedFindings, tr.ok);
+        if (tr.evidence?.checked === 0) {
+          stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため needs-discussion として扱われます`);
+        }
+        verdict = deriveRequestReviewVerdict(undecidedFindings, tr.ok, tr.evidence);
       } else if (isConformanceStep) {
         const tr = toolResult as JudgeReportResult;
         const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];

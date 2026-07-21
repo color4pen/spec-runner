@@ -10,7 +10,7 @@
 import { changesDirRel, requestReviewResultPath } from "../util/paths.js";
 import { buildSystemPrompt } from "./builder.js";
 import { EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
-import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES, REQUEST_REVIEW_SEVERITY_DEFINITION } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES, REQUEST_REVIEW_SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION } from "./judge-rules.js";
 
 const _changesDir = changesDirRel();
 
@@ -89,6 +89,8 @@ ${REQUEST_REVIEW_SEVERITY_DEFINITION}
 ${DECISION_NEEDED_DEFINITION}
 
 ${OBSERVATION_DEFINITION}
+
+${EVIDENCE_COUNTS_DEFINITION}
 
 **重要**: CLI が \`findings\` 配列から verdict を決定します。\`verdict\` フィールドは互換のために残されていますが routing に使用されません。
 指摘がない場合は \`findings: []\` を渡してください。
