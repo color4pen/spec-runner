@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5476862-ab00-4dd0-b764-ac1e52fb23c4",
   "createdAt": "2026-07-21T06:45:17.397Z",
-  "updatedAt": "2026-07-21T06:50:30.186Z",
+  "updatedAt": "2026-07-21T06:55:14.225Z",
   "request": {
     "title": "lineage event の outputs を実生成ファイルに対応付け、hash を実計算する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "fix/lineage-output-attribution-c5476862",
   "error": null,
@@ -60,9 +60,10 @@
     }
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
