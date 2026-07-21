@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c60285d5-fe67-494b-912e-37765e28ba54",
   "createdAt": "2026-07-21T10:11:47.999Z",
-  "updatedAt": "2026-07-21T10:58:02.912Z",
+  "updatedAt": "2026-07-21T11:00:38.291Z",
   "request": {
     "title": "記録済み承認を revision に束縛し、stale 承認による reviewer 群 skip を封鎖する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/approval-revision-binding-c60285d5",
   "error": null,
@@ -60,11 +60,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }
