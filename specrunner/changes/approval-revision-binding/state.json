@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c60285d5-fe67-494b-912e-37765e28ba54",
   "createdAt": "2026-07-21T10:11:47.999Z",
-  "updatedAt": "2026-07-21T13:57:04.864Z",
+  "updatedAt": "2026-07-21T14:01:22.448Z",
   "request": {
     "title": "記録済み承認を revision に束縛し、stale 承認による reviewer 群 skip を封鎖する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/approval-revision-binding-c60285d5",
   "error": null,
   "pipelineId": "standard",
@@ -88,8 +88,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/885",
+    "number": 885,
+    "createdAt": "2026-07-21T14:01:21.731Z"
+  },
   "_journal": {
-    "historyCount": 93,
+    "historyCount": 98,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -106,7 +111,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
