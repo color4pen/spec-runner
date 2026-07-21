@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3050a772-7d51-4c35-bdd8-3e9a57fc2053",
   "createdAt": "2026-07-21T01:35:03.523Z",
-  "updatedAt": "2026-07-21T04:22:18.073Z",
+  "updatedAt": "2026-07-21T04:26:53.366Z",
   "request": {
     "title": "全 step prompt を 5 部構成の共通骨格に再構成し、evidence 規律と原因分類を共通化する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/step-prompt-skeleton-restructure-3050a772",
   "error": null,
   "pipelineId": "standard",
@@ -86,8 +86,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/880",
+    "number": 880,
+    "createdAt": "2026-07-21T04:26:52.646Z"
+  },
   "_journal": {
-    "historyCount": 76,
+    "historyCount": 81,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -104,7 +109,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
