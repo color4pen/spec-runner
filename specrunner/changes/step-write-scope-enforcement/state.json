@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "aceecc9e-7637-4184-8af6-adc4451cca9b",
   "createdAt": "2026-07-21T06:45:21.518Z",
-  "updatedAt": "2026-07-21T09:54:13.408Z",
+  "updatedAt": "2026-07-21T09:58:21.958Z",
   "request": {
     "title": "sequential step の commit を write-set 境界で機械強制する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/step-write-scope-enforcement-aceecc9e",
   "error": null,
   "pipelineId": "standard",
@@ -86,8 +86,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/883",
+    "number": 883,
+    "createdAt": "2026-07-21T09:58:21.003Z"
+  },
   "_journal": {
-    "historyCount": 84,
+    "historyCount": 89,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -104,7 +109,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
