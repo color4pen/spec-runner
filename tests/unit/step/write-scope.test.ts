@@ -188,7 +188,7 @@ describe("TC-012: isJudgeArtifact — pattern matching and slug exclusion", () =
 
   it("returns false for conformance-result.md without iteration number", () => {
     // conformance-result.md does not match *-result-*.md (no iteration in name)
-    const path = `specrunner/changes/${slug}/conformance-result.md`;
+    const _path = `specrunner/changes/${slug}/conformance-result.md`;
     // This may match or not — the key is the pattern. Let's verify the pattern
     // correctly handles the iteration suffix.
     // If the implementation matches only NNN format: expect false for no-NNN

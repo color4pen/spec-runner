@@ -428,7 +428,7 @@ describe("TC-005: guarded mode — request.md change causes halt", () => {
 
     // git status returns request.md as changed
     const statusOutput = ` M ${requestMdPath}\0`;
-    const { spawnFn, calls } = makeGitSpawnFn({
+    const { spawnFn } = makeGitSpawnFn({
       responses: {
         "status": { exitCode: 0, stdout: statusOutput },
         "add": { exitCode: 0 },
@@ -673,7 +673,7 @@ describe("TC-018: guarded mode — HEAD-advance detection preserved", () => {
 
 describe("TC-019: guarded mode — git status spawn failure → fail-closed halt", () => {
   it("throws when git status returns non-zero exit code", async () => {
-    const { spawnFn, calls } = makeGitSpawnFn({
+    const { spawnFn } = makeGitSpawnFn({
       responses: {
         "status": { exitCode: 1 }, // non-zero exit → fail-closed
       },
