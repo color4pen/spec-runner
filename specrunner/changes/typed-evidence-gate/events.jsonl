@@ -44,3 +44,15 @@
 {"type":"transition","ts":"2026-07-21T08:05:24.623Z","step":"verification","status":"warning","message":"verification iteration 1 completed with verdict: failed"}
 {"type":"transition","ts":"2026-07-21T08:05:24.623Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
 {"type":"transition","ts":"2026-07-21T08:05:24.627Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-07-21T08:06:18.130Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"ab98acd3-dfe6-4e90-8a46-d01969b6fa50","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-21T08:05:24.801Z","endedAt":"2026-07-21T08:06:16.541Z","commitOid":"ec8ddd62d5c1b40e556435768e141bc9d0abe402"}
+{"type":"lineage","step":"build-fixer","ts":"2026-07-21T08:06:16.541Z","outputs":[{"path":"specrunner/changes/typed-evidence-gate","hash":null}],"inputs":[{"path":"specrunner/changes/typed-evidence-gate/verification-result.md","hash":"sha256:93105fa22423d4a53b162daf6173f88ec7e6e6b00284494279b8eafc15ea6817"}]}
+{"type":"transition","ts":"2026-07-21T08:06:18.136Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-07-21T08:06:18.137Z","step":"verification","status":"started","message":"verification iteration 2 started"}
+{"type":"transition","ts":"2026-07-21T08:06:18.138Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-07-21T08:07:28.574Z","step":"verification-verdict","status":"ok","message":"verification verdict: failed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"failed","findingsPath":"specrunner/changes/typed-evidence-gate/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-21T08:06:18.139Z","endedAt":"2026-07-21T08:07:28.573Z"}
+{"type":"lineage","step":"verification","ts":"2026-07-21T08:07:28.573Z","outputs":[{"path":"specrunner/changes/typed-evidence-gate/verification-result.md","hash":"sha256:a0f6745175ba48eaad6d9f41513d39c1ff466d501e9227d90e71aa402301006b"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-21T08:07:28.583Z","step":"verification","status":"warning","message":"verification iteration 2 completed with verdict: failed"}
+{"type":"transition","ts":"2026-07-21T08:07:28.583Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
+{"type":"transition","ts":"2026-07-21T08:07:28.585Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
