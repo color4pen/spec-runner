@@ -9,6 +9,9 @@
  * TC-018: guarded mode — HEAD-advance detection (push-only path) preserved
  * TC-019: guarded mode — git status spawn failure → fail-closed halt
  * TC-020: guarded mode — spec.md change → halt with spec.md in error message
+ * TC-021: guarded mode — violated files restored to HEAD before WRITE_SCOPE_VIOLATION throw
+ * TC-022: scoped mode — pipeline-managed paths included in scoped git add call
+ * TC-023: scoped mode — residual protected dirty files restored after staging
  *
  * NOTE: Tests TC-003, TC-004, TC-017 are RED until commitAndPush implements
  * scoped staging (git add -A -- <paths> instead of git add -A).
@@ -46,6 +49,23 @@ vi.mock("../../../src/core/step/round-git-scope.js", () => ({
     `specrunner/changes/${slug}/usage.json`,
   ],
 }));
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mock node:fs/promises.access to always resolve (all managed paths "exist").
+//
+// commit-push.ts uses filterExistingFiles (via fs.access) to filter managed
+// paths before calling git add, to avoid exit 128 on non-existent pathspecs.
+// In unit tests, the temp directory does not contain managed path files, so
+// we stub access to treat all paths as existing. Other fs functions remain real.
+// ─────────────────────────────────────────────────────────────────────────────
+
+vi.mock("node:fs/promises", async () => {
+  const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
+  return {
+    ...actual,
+    access: vi.fn().mockResolvedValue(undefined),
+  };
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Test state management
@@ -260,6 +280,7 @@ function makeCommitPushInfra(spawnFn: SpawnFn): CommitPushInfra {
     events: new EventBus(),
   };
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TC-003: scoped mode — judge step's request.md change excluded from commit
@@ -803,5 +824,363 @@ describe("TC-020: guarded mode — spec.md change causes halt with path in error
     const subcommands = calls.map((c) => c.args[0]);
     expect(subcommands).not.toContain("commit");
     expect(subcommands).not.toContain("push");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-021: guarded mode — violated files restored to HEAD before WRITE_SCOPE_VIOLATION
+//
+// Fix for [HIGH]: commitFinalState (checkpoint path) uses git add -A after every
+// awaiting-resume exit. Without restoration, a guarded step that halt-detected
+// request.md (or another protected path) as a violation would leave that file dirty
+// in the worktree. commitFinalState's git add -A would then stage and commit the
+// violation content into the remote branch, defeating the fail-closed guarantee.
+//
+// Fix: before throwing WRITE_SCOPE_VIOLATION, guarded mode calls
+// git checkout HEAD -- <violations> to restore those files to their HEAD state.
+// commitFinalState's subsequent git add -A sees only the HEAD content (no diff
+// for those files) and therefore does not include violation content in the commit.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-021: guarded mode — violated files restored to HEAD before WRITE_SCOPE_VIOLATION throw", () => {
+  it("git checkout HEAD is called for request.md before throwing WRITE_SCOPE_VIOLATION", async () => {
+    const slug = "test-slug";
+    const requestMd = `specrunner/changes/${slug}/request.md`;
+    const statusOutput = ` M ${requestMd}\0`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "status": { exitCode: 0, stdout: statusOutput },
+        "checkout": { exitCode: 0 }, // restore succeeds
+      },
+    });
+
+    const step = makeGuardedStep("implementer");
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await expect(commitAndPush(step, state, deps, null, infra)).rejects.toMatchObject({
+      code: "WRITE_SCOPE_VIOLATION",
+    });
+
+    // git checkout HEAD -- request.md must be called BEFORE the throw
+    const checkoutCall = calls.find((c) => c.args[0] === "checkout");
+    expect(checkoutCall, "git checkout must be called to restore the violated file").toBeDefined();
+    expect(checkoutCall!.args, "must checkout HEAD").toContain("HEAD");
+    expect(checkoutCall!.args, "must use '--' separator").toContain("--");
+    expect(checkoutCall!.args, "must restore request.md").toContain(requestMd);
+  });
+
+  it("checkout is called before the throw (not after)", async () => {
+    const slug = "test-slug";
+    const requestMd = `specrunner/changes/${slug}/request.md`;
+    const statusOutput = ` M ${requestMd}\0`;
+
+    const callOrder: string[] = [];
+    const { spawnFn } = makeGitSpawnFn({
+      responses: {
+        "status": { exitCode: 0, stdout: statusOutput },
+        "checkout": { exitCode: 0 },
+      },
+    });
+
+    // Wrap spawnFn to record call order
+    const orderTrackingSpawnFn: typeof spawnFn = (bin, args, opts) => {
+      callOrder.push(args[0] ?? "");
+      return spawnFn(bin, args, opts);
+    };
+
+    const step = makeGuardedStep("implementer");
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(orderTrackingSpawnFn);
+
+    await expect(commitAndPush(step, state, deps, null, infra)).rejects.toThrow();
+
+    const statusIdx = callOrder.indexOf("status");
+    const checkoutIdx = callOrder.indexOf("checkout");
+    expect(statusIdx, "status must be called").toBeGreaterThanOrEqual(0);
+    expect(checkoutIdx, "checkout must be called").toBeGreaterThanOrEqual(0);
+    expect(checkoutIdx, "checkout must come AFTER status").toBeGreaterThan(statusIdx);
+    // commit and push must NOT be called (throw happens before them)
+    expect(callOrder).not.toContain("commit");
+    expect(callOrder).not.toContain("push");
+  });
+
+  it("multiple violated paths are all passed to git checkout", async () => {
+    const slug = "test-slug";
+    const requestMd = `specrunner/changes/${slug}/request.md`;
+    const specMd = `specrunner/changes/${slug}/spec.md`;
+    const statusOutput = ` M ${requestMd}\0 M ${specMd}\0`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "status": { exitCode: 0, stdout: statusOutput },
+        "checkout": { exitCode: 0 },
+      },
+    });
+
+    const step = makeGuardedStep("implementer");
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await expect(commitAndPush(step, state, deps, null, infra)).rejects.toThrow();
+
+    const checkoutCall = calls.find((c) => c.args[0] === "checkout");
+    expect(checkoutCall, "git checkout must be called").toBeDefined();
+    // Both violated paths must be in the checkout args
+    expect(checkoutCall!.args, "request.md must be in checkout args").toContain(requestMd);
+    expect(checkoutCall!.args, "spec.md must be in checkout args").toContain(specMd);
+  });
+
+  it("WRITE_SCOPE_VIOLATION is always thrown even when git checkout fails", async () => {
+    const slug = "test-slug";
+    const requestMd = `specrunner/changes/${slug}/request.md`;
+    const statusOutput = ` M ${requestMd}\0`;
+
+    const { spawnFn } = makeGitSpawnFn({
+      responses: {
+        "status": { exitCode: 0, stdout: statusOutput },
+        "checkout": { exitCode: 1 }, // restore fails (e.g. file not in HEAD)
+      },
+    });
+
+    const step = makeGuardedStep("implementer");
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    // Even if checkout fails, the WRITE_SCOPE_VIOLATION is still thrown
+    await expect(commitAndPush(step, state, deps, null, infra)).rejects.toMatchObject({
+      code: "WRITE_SCOPE_VIOLATION",
+    });
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-022: scoped mode — pipeline-managed paths are included in scoped git add call
+//
+// Regression guard for pipelineManagedPaths dual-semantics:
+//   - parallel round (partitionRoundChanges): managed paths are EXCLUDED from staging.
+//   - sequential scoped (commitAndPush): managed paths are INCLUDED in staging.
+// This test directly asserts the inclusion invariant so that a pipelineManagedPaths
+// definition change surfaces here before silently breaking the sequential path.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-022: scoped mode — pipeline-managed paths included in scoped git add call", () => {
+  it("state.json, events.jsonl, usage.json appear in git add pathspec even when not in writes()", async () => {
+    const slug = "test-slug";
+    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "add": { exitCode: 0 },
+        "status": { exitCode: 0, stdout: "" }, // no residual violations
+        "diff": { exitCode: 1 }, // staged changes
+        "commit": { exitCode: 0 },
+        "push": { exitCode: 0 },
+      },
+    });
+
+    // writes() only declares the result file — NOT managed paths.
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await commitAndPush(step, state, deps, null, infra);
+
+    const addCall = calls.find((c) => c.args[0] === "add");
+    expect(addCall, "git add must have been called").toBeDefined();
+
+    const addArgs = addCall!.args;
+    // The mocked pipelineManagedPaths returns these 3 paths — they must be included
+    // in the pathspec even though writes() did not declare them.
+    expect(addArgs, "state.json must be in scoped add pathspec").toContain(
+      `specrunner/changes/${slug}/state.json`,
+    );
+    expect(addArgs, "events.jsonl must be in scoped add pathspec").toContain(
+      `specrunner/changes/${slug}/events.jsonl`,
+    );
+    expect(addArgs, "usage.json must be in scoped add pathspec").toContain(
+      `specrunner/changes/${slug}/usage.json`,
+    );
+  });
+
+  it("declared result file AND managed paths are both in the git add pathspec", async () => {
+    const slug = "test-slug";
+    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "add": { exitCode: 0 },
+        "status": { exitCode: 0, stdout: "" },
+        "diff": { exitCode: 1 },
+        "commit": { exitCode: 0 },
+        "push": { exitCode: 0 },
+      },
+    });
+
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await commitAndPush(step, state, deps, null, infra);
+
+    const addCall = calls.find((c) => c.args[0] === "add");
+    expect(addCall, "git add must have been called").toBeDefined();
+
+    const addArgs = addCall!.args;
+    // Declared result file
+    expect(addArgs, "declared result file must be in pathspec").toContain(resultPath);
+    // Managed paths (added automatically)
+    expect(addArgs, "state.json must be in pathspec").toContain(`specrunner/changes/${slug}/state.json`);
+    expect(addArgs, "events.jsonl must be in pathspec").toContain(`specrunner/changes/${slug}/events.jsonl`);
+    expect(addArgs, "usage.json must be in pathspec").toContain(`specrunner/changes/${slug}/usage.json`);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-023: scoped mode — residual protected dirty files are restored after staging
+//
+// Scenario: scoped step (spec-review) inadvertently modifies request.md.
+// Scoped staging excludes request.md from the commit — correct.
+// BUT without restoration, request.md stays dirty in the worktree. The NEXT
+// guarded step (implementer) then sees request.md as changed, falsely reports a
+// WRITE_SCOPE_VIOLATION attributed to implementer.
+//
+// Fix: after scoped staging, call git checkout HEAD -- <residual violations>
+// to restore dirty protected files and prevent cross-step contamination.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-023: scoped mode — residual protected dirty files restored after staging", () => {
+  it("calls git checkout HEAD for request.md that was changed but excluded from scoped staging", async () => {
+    const slug = "test-slug";
+    const requestMd = `specrunner/changes/${slug}/request.md`;
+    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+
+    // After git add (scoped staging), git status still shows request.md as dirty
+    // because it was NOT included in the scoped pathspec.
+    const postStageDirtyStatus = ` M ${requestMd}\0`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "add": { exitCode: 0 },
+        // post-stage git status returns request.md still dirty
+        "status": { exitCode: 0, stdout: postStageDirtyStatus },
+        "checkout": { exitCode: 0 }, // restore succeeds
+        "diff": { exitCode: 1 }, // staged changes present
+        "commit": { exitCode: 0 },
+        "push": { exitCode: 0 },
+      },
+    });
+
+    // spec-review does NOT declare request.md as a write target
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await commitAndPush(step, state, deps, null, infra);
+
+    // git checkout HEAD -- request.md must be called to restore the dirty file
+    const checkoutCall = calls.find((c) => c.args[0] === "checkout");
+    expect(checkoutCall, "git checkout must be called for residual violation").toBeDefined();
+    expect(checkoutCall!.args, "checkout must target HEAD").toContain("HEAD");
+    expect(checkoutCall!.args, "checkout must use '--' separator").toContain("--");
+    expect(checkoutCall!.args, "checkout must include request.md").toContain(requestMd);
+  });
+
+  it("does NOT call git checkout when no protected files are dirty after staging", async () => {
+    const slug = "test-slug";
+    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "add": { exitCode: 0 },
+        // post-stage status is clean (no residual dirty files)
+        "status": { exitCode: 0, stdout: "" },
+        "diff": { exitCode: 1 },
+        "commit": { exitCode: 0 },
+        "push": { exitCode: 0 },
+      },
+    });
+
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await commitAndPush(step, state, deps, null, infra);
+
+    // With a clean worktree after staging, no checkout should be called
+    const checkoutCall = calls.find((c) => c.args[0] === "checkout");
+    expect(checkoutCall, "git checkout must NOT be called when no residual violations").toBeUndefined();
+  });
+
+  it("normal commit flow completes even when residual restore runs", async () => {
+    const slug = "test-slug";
+    const requestMd = `specrunner/changes/${slug}/request.md`;
+    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "add": { exitCode: 0 },
+        "status": { exitCode: 0, stdout: ` M ${requestMd}\0` },
+        "checkout": { exitCode: 0 },
+        "diff": { exitCode: 1 },
+        "commit": { exitCode: 0 },
+        "push": { exitCode: 0 },
+      },
+    });
+
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    // Must resolve (not throw) — restoration is transparent to callers
+    await expect(commitAndPush(step, state, deps, null, infra)).resolves.toBeUndefined();
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands, "commit must still be called").toContain("commit");
+    expect(subcommands, "push must still be called").toContain("push");
+  });
+
+  it("declared protected file in writes() is NOT restored (step owns it)", async () => {
+    const slug = "test-slug";
+    // spec-fixer explicitly owns spec.md
+    const specMd = `specrunner/changes/${slug}/spec.md`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "add": { exitCode: 0 },
+        // spec.md is staged (and still shows in post-stage status as staged change)
+        "status": { exitCode: 0, stdout: `M  ${specMd}\0` },
+        "diff": { exitCode: 1 },
+        "commit": { exitCode: 0 },
+        "push": { exitCode: 0 },
+      },
+    });
+
+    // spec-fixer declares spec.md as its output
+    const step = makeScopedStep("spec-fixer", [specMd]);
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await commitAndPush(step, state, deps, null, infra);
+
+    // spec.md is declared — must NOT be passed to git checkout (would undo staged change)
+    const checkoutCall = calls.find((c) => c.args[0] === "checkout");
+    if (checkoutCall) {
+      expect(
+        checkoutCall.args,
+        "declared spec.md must not appear in git checkout args",
+      ).not.toContain(specMd);
+    }
   });
 });

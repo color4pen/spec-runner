@@ -1,3 +1,5 @@
+import { access as fsAccess } from "node:fs/promises";
+import { join as pathJoin } from "node:path";
 import type { AgentStep } from "./types.js";
 import type { JobState } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
@@ -8,6 +10,22 @@ import { stderrWrite } from "../../logger/stdout.js";
 import { pushFailedError, commitEffectFailedError, writeScopeViolationError } from "../../errors.js";
 import { stagingModeFor, findWriteScopeViolations } from "./write-scope.js";
 import { pipelineManagedPaths } from "./round-git-scope.js";
+
+/**
+ * Return the subset of `paths` that actually exist in the filesystem at `cwd`.
+ *
+ * Used to filter pipeline-managed paths before calling `git add -- <paths>`:
+ * git fails with exit 128 if any pathspec in the list matches no file, so we
+ * must omit paths that do not exist (e.g. usage.json when no usage was recorded).
+ *
+ * Checks are run in parallel; non-existent paths are silently dropped.
+ */
+async function filterExistingFiles(paths: string[], cwd: string): Promise<string[]> {
+  const results = await Promise.allSettled(
+    paths.map((p) => fsAccess(pathJoin(cwd, p)).then(() => p)),
+  );
+  return results.flatMap((r) => (r.status === "fulfilled" ? [r.value] : []));
+}
 
 /** Infrastructure deps for commit/push operations. */
 export interface CommitPushInfra {
@@ -112,6 +130,10 @@ async function commitAndPushTail(
  * "scoped" mode (deterministic steps: design, spec-review, spec-fixer, etc.):
  *   - Stage only declared outputs: git add -A -- <step.writes() + pipelineManagedPaths>.
  *   - Boundary-external changes in the worktree are silently excluded from the commit.
+ *   - After staging, any protected paths that remain dirty are restored to HEAD via
+ *     git checkout HEAD -- <residualViolations>. This prevents residual dirty protected
+ *     files (e.g. request.md changed by a scoped step but excluded from its commit) from
+ *     causing misattributed WRITE_SCOPE_VIOLATION halts in subsequent guarded steps.
  *   - If stagePaths is empty, no-op (nothing to stage or commit).
  *
  * "guarded" mode (broad-write steps: implementer, build-fixer, code-fixer, etc.):
@@ -148,8 +170,10 @@ export async function commitAndPush(
     // Scoped staging: limit to declared outputs + pipeline-managed paths.
     const writes = step.writes?.(state, deps) ?? [];
     const filePaths = writes.filter((r) => r.artifact !== "gitState").map((r) => r.path);
-    const managed = pipelineManagedPaths(slug);
-    const stagePaths = [...new Set([...filePaths, ...managed])];
+    // Filter managed paths to existing files: git add -A -- <path> fails with exit 128
+    // for any pathspec that matches no file (e.g. usage.json when no usage was recorded).
+    const existingManaged = await filterExistingFiles(pipelineManagedPaths(slug), cwd);
+    const stagePaths = [...new Set([...filePaths, ...existingManaged])];
 
     // Nothing to stage — skip entirely (no-op equivalent to empty stage).
     if (stagePaths.length === 0) return;
@@ -158,6 +182,20 @@ export async function commitAndPush(
     const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ...stagePaths]);
     if (!addResult.ok || addResult.exitCode !== 0) {
       throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
+    }
+
+    // After scoped staging: restore any protected paths that remain dirty in the worktree
+    // but were not staged (because they are outside the scoped step's declared outputs).
+    // Without this, a scoped step that inadvertently changes request.md (or another canon
+    // path) leaves the worktree dirty, causing the NEXT guarded step's pre-commit check to
+    // emit a misattributed WRITE_SCOPE_VIOLATION against the wrong step.
+    // Best-effort: git checkout HEAD failure (e.g. file not in HEAD) is silently ignored.
+    const postStatus = await getWorktreeChangedPaths(infra.spawnFn, cwd);
+    if (postStatus.ok && postStatus.paths.length > 0) {
+      const residualViolations = findWriteScopeViolations(step.name, slug, postStatus.paths, filePaths);
+      if (residualViolations.length > 0) {
+        await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...residualViolations]);
+      }
     }
   } else {
     // Guarded mode: pre-check for write-scope violations before staging.
@@ -176,6 +214,20 @@ export async function commitAndPush(
     // Check for forbidden boundary violations.
     const violations = findWriteScopeViolations(step.name, slug, statusResult.paths, declaredWritePaths);
     if (violations.length > 0) {
+      // Restore violated paths to HEAD state before throwing.
+      //
+      // commitFinalState (checkpoint path) runs after every awaiting-resume exit, including
+      // WRITE_SCOPE_VIOLATION halts. It uses git add -A to stage all worktree changes for
+      // the checkpoint commit. Without this restore, the violation content (e.g. agent-
+      // modified request.md) would leak into the remote branch via the checkpoint commit —
+      // defeating the fail-closed guarantee.
+      //
+      // Restoring to HEAD before throwing ensures commitFinalState sees only the committed
+      // (pre-violation) content for those files, which is effectively a no-op stage for them.
+      //
+      // Best-effort: ignore if a violated file is not in HEAD (e.g. newly created protected
+      // file — a pathological but rare scenario). The throw always happens regardless.
+      await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...violations]);
       throw writeScopeViolationError(step.name, branch, violations);
     }
 
@@ -200,6 +252,11 @@ export async function commitAndPush(
  * Stages all changes (git add -A), commits if there are staged changes
  * (message: "<messageLabel>: <slug>"), and pushes with one retry.
  *
+ * Write-scope safety: when commitFinalState is called after a WRITE_SCOPE_VIOLATION
+ * halt, the guarded-mode commitAndPush has already restored violated files to their
+ * HEAD state via git checkout HEAD before throwing. Therefore, git add -A here does
+ * not pick up violation content — those files are already clean (match HEAD).
+ *
  * Idempotent: if no staged changes, returns immediately (no-op).
  * Push failures: warns on stderr but does NOT throw — local resume is preserved.
  *
@@ -218,7 +275,9 @@ export async function commitFinalState(params: {
 }): Promise<void> {
   const { cwd, branch, slug, spawnFn, messageLabel = "finalize" } = params;
 
-  // Stage all changes
+  // Stage all changes. When called after a WRITE_SCOPE_VIOLATION halt, guarded-mode
+  // commitAndPush has already restored violated files to HEAD via git checkout HEAD
+  // before throwing — so this git add -A does not pick up any violation content.
   const addResult = await spawnFn("git", ["add", "-A"], { cwd });
   if ((addResult.exitCode ?? 1) !== 0) {
     // Not a git repo or git is non-functional — skip silently
