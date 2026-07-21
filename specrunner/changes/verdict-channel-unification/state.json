@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4e3af7b0-9cec-4743-84eb-3344710ccd3e",
   "createdAt": "2026-07-20T23:50:57.555Z",
-  "updatedAt": "2026-07-20T23:51:00.192Z",
+  "updatedAt": "2026-07-20T23:56:03.192Z",
   "request": {
     "title": "judge 系 step の判定チャネルを typed findings に一本化し、result md を evidence report にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/verdict-channel-unification-4e3af7b0",
   "error": null,
@@ -60,7 +60,9 @@
     }
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
