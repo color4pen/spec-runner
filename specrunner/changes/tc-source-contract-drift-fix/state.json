@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "363ac773-54cd-4bce-b8d6-39c020a7b91d",
   "createdAt": "2026-07-20T23:46:19.170Z",
-  "updatedAt": "2026-07-21T00:07:01.072Z",
+  "updatedAt": "2026-07-21T00:09:53.662Z",
   "request": {
     "title": "TC Source 形式の producer/consumer drift を単一ソース化で修正する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "fix/tc-source-contract-drift-fix-363ac773",
   "error": null,
@@ -59,8 +59,35 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -69,7 +96,12 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
