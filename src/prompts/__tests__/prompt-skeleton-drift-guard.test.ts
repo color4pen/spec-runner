@@ -225,7 +225,7 @@ describe("TC-001: 各 system prompt 出力が 5 節見出しを含む", () => {
     it(`TC-001: ${name} headings appear in correct order (Question→Contract→Method→Evidence→Completion)`, () => {
       const indices = REQUIRED_HEADINGS.map((h) => prompt.indexOf(h));
       for (let i = 1; i < indices.length; i++) {
-        expect(indices[i], `"${REQUIRED_HEADINGS[i]}" must come after "${REQUIRED_HEADINGS[i - 1]}"`).toBeGreaterThan(indices[i - 1]);
+        expect(indices[i]!, `"${REQUIRED_HEADINGS[i]!}" must come after "${REQUIRED_HEADINGS[i - 1]!}"`).toBeGreaterThan(indices[i - 1]!);
       }
     });
   }
