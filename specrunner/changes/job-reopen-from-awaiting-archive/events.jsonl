@@ -155,3 +155,10 @@
 {"type":"transition","ts":"2026-07-21T16:53:50.914Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-07-21T16:53:50.915Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-07-21T16:53:50.916Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-21T16:55:31.037Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"9ba06b8d-8979-43cb-b076-ae105797324b","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/job-reopen-from-awaiting-archive/regression-gate-result-003.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"evidence":{"checked":7,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-21T16:53:50.962Z","endedAt":"2026-07-21T16:55:29.448Z","commitOid":"20bd5cc12b02c17fc989068f2cad7c81db5d7442"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-21T16:55:29.448Z","outputs":[{"path":"specrunner/changes/job-reopen-from-awaiting-archive/regression-gate-result-003.md","hash":"sha256:36ed0712babbfd219df15eda58a0f344353bd8f92a5fb53d549ad9a037f5537d"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-21T16:55:31.044Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-21T16:55:31.044Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-21T16:55:31.046Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-21T16:55:31.047Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
