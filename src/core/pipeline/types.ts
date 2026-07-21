@@ -3,7 +3,7 @@ import { STEP_NAMES } from "../step/step-names.js";
 import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import type { Step } from "../step/types.js";
 import { buildReviewerChainTransitions } from "./reviewer-chain.js";
-import { codeChangedSinceLastVerification, conformanceApprovedForVerifiedRevision } from "./reverification.js";
+import { reverificationNeeded, conformanceApprovedForVerifiedRevision } from "./reverification.js";
 
 /**
  * Pipeline-level role of a step (convergence / resume semantics).
@@ -261,7 +261,7 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   // code-review escalation removed (R3 cutover): judge halt via loop exhaustion only
   ...buildReviewerChainTransitions([STEP_NAMES.CODE_REVIEW]),
   // --- conformance (acceptance gate, after code-review approved) ---
-  { step: STEP_NAMES.CONFORMANCE, on: "approved", to: STEP_NAMES.VERIFICATION, when: codeChangedSinceLastVerification },
+  { step: STEP_NAMES.CONFORMANCE, on: "approved", to: STEP_NAMES.VERIFICATION, when: reverificationNeeded },
   { step: STEP_NAMES.CONFORMANCE, on: "approved",             to: STEP_NAMES.ADR_GEN },
   { step: STEP_NAMES.CONFORMANCE, on: "needs-fix:spec-fixer", to: STEP_NAMES.SPEC_FIXER },
   { step: STEP_NAMES.CONFORMANCE, on: "needs-fix:implementer", to: STEP_NAMES.IMPLEMENTER },
@@ -284,7 +284,7 @@ export const STANDARD_TRANSITIONS: Transition[] = [
  * Derived from STANDARD_TRANSITIONS with spec-review / spec-fixer / test-case-gen / adr-gen
  * rows removed. design goes directly to implementer (no spec-review gate).
  * conformance approved goes directly to pr-create (no adr-gen step).
- * reverification chokepoints (conformanceApprovedLatest / codeChangedSinceLastVerification)
+ * reverification chokepoints (conformanceApprovedLatest / reverificationNeeded)
  * are preserved with the same when-guard ordering as standard.
  *
  * needs-fix:spec-fixer is intentionally absent → no matching transition → escalate fallback
@@ -313,7 +313,7 @@ export const FAST_TRANSITIONS: Transition[] = [
   // --- code-review loop (same generator as standard, chain=["code-review"]) ---
   ...buildReviewerChainTransitions([STEP_NAMES.CODE_REVIEW]),
   // --- conformance (acceptance gate + scope checkpoint; adr-gen absent) ---
-  { step: STEP_NAMES.CONFORMANCE, on: "approved",              to: STEP_NAMES.VERIFICATION, when: codeChangedSinceLastVerification },
+  { step: STEP_NAMES.CONFORMANCE, on: "approved",              to: STEP_NAMES.VERIFICATION, when: reverificationNeeded },
   { step: STEP_NAMES.CONFORMANCE, on: "approved",              to: STEP_NAMES.PR_CREATE },
   { step: STEP_NAMES.CONFORMANCE, on: "needs-fix:implementer", to: STEP_NAMES.IMPLEMENTER },
   { step: STEP_NAMES.CONFORMANCE, on: "needs-fix:code-fixer",  to: STEP_NAMES.CODE_FIXER },

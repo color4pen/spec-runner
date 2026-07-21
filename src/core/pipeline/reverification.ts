@@ -53,6 +53,59 @@ export function codeChangedSinceLastVerification(state: JobState): boolean {
 }
 
 /**
+ * Returns true when the latest conformance run's commitOid differs from the
+ * latest verification run's commitOid, indicating that the code under review
+ * has changed since the last verification run.
+ *
+ * Use case — reopen + human push:
+ *   After `job reopen --from code-review`, a human may push additional commits.
+ *   If code-review passes without triggering code-fixer, no specrunner mutator
+ *   step runs, so `codeChangedSinceLastVerification` (timestamp-based) returns
+ *   false.  But if the human's push advanced HEAD, the conformance run will
+ *   record a new commitOid while the last verification run retains the old one.
+ *   This predicate detects that mismatch and forces reverification.
+ *
+ * Fail-closed: returns false when either commitOid is absent (legacy step runs
+ * that predate commitOid recording) — the caller falls through to the next
+ * matching transition (adr-gen / pr-create), same as before the fix.
+ */
+export function revisionChangedSinceLastVerification(state: JobState): boolean {
+  const verificationRuns = state.steps?.[STEP_NAMES.VERIFICATION] ?? [];
+  if (verificationRuns.length === 0) return false;
+  const lastVerification = verificationRuns[verificationRuns.length - 1];
+  const verificationOid = lastVerification?.commitOid;
+  if (!verificationOid) return false;
+
+  const conformanceRuns = state.steps?.[STEP_NAMES.CONFORMANCE] ?? [];
+  if (conformanceRuns.length === 0) return false;
+  const lastConformance = conformanceRuns[conformanceRuns.length - 1];
+  const conformanceOid = lastConformance?.commitOid;
+  if (!conformanceOid) return false;
+
+  return conformanceOid !== verificationOid;
+}
+
+/**
+ * Composite re-verification guard: returns true when reverification is needed
+ * because either (a) or (b) holds:
+ *
+ *   (a) `codeChangedSinceLastVerification` — an impl-phase mutator step (implementer /
+ *       build-fixer / code-fixer) ran more recently than the last verification run
+ *       (timestamp-based; detects specrunner code changes).
+ *
+ *   (b) `revisionChangedSinceLastVerification` — the latest conformance run's
+ *       commitOid differs from the latest verification run's commitOid
+ *       (revision-based; detects human pushes after reopen).
+ *
+ * Used as the `when` guard for `conformance approved → verification` routing,
+ * replacing the earlier `codeChangedSinceLastVerification`-only guard that
+ * missed human pushes during reopen recovery.
+ */
+export function reverificationNeeded(state: JobState): boolean {
+  return codeChangedSinceLastVerification(state) || revisionChangedSinceLastVerification(state);
+}
+
+/**
  * Returns true when the most recent conformance run has verdict "approved".
  *
  * Used as the `when` guard for `verification passed → adr-gen`.

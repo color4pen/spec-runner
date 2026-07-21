@@ -71,7 +71,7 @@ export async function composeSplitLayoutFromContent(
   }
 
   // Fold events.jsonl — empty string means "no events" (empty fold)
-  let foldResult: FoldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0, lineage: [] };
+  let foldResult: FoldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0, lineage: [], operatorEvents: [] };
   if (eventsJsonl.length > 0) {
     foldResult = fold(eventsJsonl);
   }

@@ -1013,7 +1013,7 @@ describe("B-13 (arch pin): StepExecutor は store 永続化 API を CommitOrches
    */
   it("executor.ts に store 永続化 API の直接呼び出しが存在しない", () => {
     const raw = grepE(
-      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun)\\("`,
+      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun|appendOperatorEvent)\\("`,
       "src/core/step/executor.ts",
     );
     const matches = parseGrepOutput(raw);
@@ -1023,7 +1023,7 @@ describe("B-13 (arch pin): StepExecutor は store 永続化 API を CommitOrches
 
   it("B-13 liveness: commit-orchestrator.ts に store 永続化 API 呼び出しが存在する（grep が vacuous でない）", () => {
     const raw = grepE(
-      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun)\\("`,
+      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun|appendOperatorEvent)\\("`,
       "src/core/step/commit-orchestrator.ts",
     );
     const matches = parseGrepOutput(raw);
@@ -1048,7 +1048,7 @@ describe("B-13 (arch pin): StepExecutor は store 永続化 API を CommitOrches
   // the coordinator commits the whole round once via CommitOrchestrator.commitRound.
   it("B-13 parallel: parallel-review-round.ts に store 永続化 API の直接呼び出しが存在しない", () => {
     const raw = grepE(
-      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun)\\("`,
+      `"store\\.(persist|fail|update|appendHistory|appendInterruption|appendLineage|appendStepRun|appendOperatorEvent)\\("`,
       "src/core/pipeline/parallel-review-round.ts",
     );
     const matches = parseGrepOutput(raw);
@@ -1181,6 +1181,91 @@ describe("B-16 (arch pin): 並列 round 実行は共有 deps（orchestration 入
     ];
     const violations = injectedMatches.filter(isAssignment);
     expect(violations).toHaveLength(1);
+  });
+});
+
+// ─── B-17: allowReopen call-site confinement ─────────────────────────────────
+
+describe("B-17 (arch pin): allowReopen: true は src/core/command/reopen.ts からのみ呼ばれる", () => {
+  /**
+   * B-17: The operator-scoped opt-in `{ allowReopen: true }` that unlocks the
+   * awaiting-archive → running transition must only be passed from
+   * src/core/command/reopen.ts.  Any other call site bypasses the intent of
+   * D1 (reopen is a named operator action, not a widening of resume) and
+   * undermines the FSM guard in lifecycle.ts.
+   *
+   * Pattern: the object-literal `allowReopen: true` (call-site form).
+   * src/state/lifecycle.ts uses `opts?.allowReopen === true` (guard form) which
+   * is a different lexical pattern and is naturally excluded by this grep.
+   *
+   * Liveness: at least one match must be found (confirms grep is live and
+   * that the call site in reopen.ts has not been accidentally removed).
+   */
+
+  const ALLOWED_FILE = "src/core/command/reopen.ts";
+
+  it("allowReopen: true は reopen.ts 以外の src/ ファイルに存在しない", () => {
+    const raw = grepE(`"allowReopen: true"`, "src");
+    const matches = parseGrepOutput(raw);
+
+    const candidates = matches.filter(
+      (m) =>
+        !m.file.includes("__tests__/") &&
+        !m.file.includes(".test.ts") &&
+        !isCommentLine(m.content),
+    );
+
+    // Liveness: at least one match must exist (confirms reopen.ts still has the call)
+    expect(candidates.length).toBeGreaterThan(0);
+
+    // Only the allowed file may contain the opt-in
+    const violations = candidates.filter(
+      (m) => !m.file.endsWith(ALLOWED_FILE) && m.file !== ALLOWED_FILE,
+    );
+
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  it("B-17 regression guard: allowReopen: true を reopen.ts 以外で使うと検出される", () => {
+    // Simulate a new command that passes { allowReopen: true } to transitionJob.
+    const injectedMatches: GrepMatch[] = [
+      {
+        file: "src/core/command/resume.ts",
+        line: 42,
+        content: "        { allowReopen: true },",
+      },
+    ];
+
+    const violations = injectedMatches.filter(
+      (m) =>
+        !isCommentLine(m.content) &&
+        !m.file.endsWith(ALLOWED_FILE) &&
+        m.file !== ALLOWED_FILE,
+    );
+
+    // resume.ts is NOT the allowed file — violation must be detected.
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.file).toBe("src/core/command/resume.ts");
+  });
+
+  it("B-17: reopen.ts 内の allowReopen: true は違反にならない", () => {
+    // Confirm the allowed file is correctly excluded from violations.
+    const allowedMatch: GrepMatch[] = [
+      {
+        file: "src/core/command/reopen.ts",
+        line: 260,
+        content: "        { allowReopen: true },",
+      },
+    ];
+
+    const violations = allowedMatch.filter(
+      (m) =>
+        !isCommentLine(m.content) &&
+        !m.file.endsWith(ALLOWED_FILE) &&
+        m.file !== ALLOWED_FILE,
+    );
+
+    expect(violations).toHaveLength(0);
   });
 });
 

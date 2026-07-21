@@ -43,6 +43,18 @@ export const VALID_TRANSITIONS: ReadonlyMap<JobStatus, ReadonlySet<JobStatus>> =
   ["canceled",         new Set()],
 ]);
 
+/**
+ * Operator-scoped reopen transitions.
+ * Only accessible via the explicit `job reopen` command (allowReopen opt-in).
+ * The general `canTransition` guard and `job resume` path must NOT consult this table.
+ *
+ * D1 (reopen-fsm): awaiting-archive → running is permitted only through
+ * an explicit operator action with reason + journal recording.
+ */
+export const REOPEN_TRANSITIONS: ReadonlyMap<JobStatus, ReadonlySet<JobStatus>> = new Map([
+  ["awaiting-archive", new Set(["running"])],
+]);
+
 export const TERMINAL_STATUSES: ReadonlySet<JobStatus> = new Set(["archived", "canceled"]);
 
 export const ACTIVE_STATUSES: ReadonlySet<JobStatus> = new Set(["running", "awaiting-resume"]);
@@ -72,25 +84,40 @@ export function isTerminal(status: JobStatus): boolean {
 // ---------------------------------------------------------------------------
 
 /**
+ * Optional opts for operator-scoped transition overrides.
+ * allowReopen: when true, also consults REOPEN_TRANSITIONS for allowed edges.
+ * Must only be passed by ReopenCommand.prepare() — never by resume or other callers.
+ */
+export interface TransitionOpts {
+  allowReopen?: boolean;
+}
+
+/**
  * Pure transition function — validates the transition, appends a history entry,
  * merges any patch, and updates status + updatedAt.
  *
  * Throws if the transition is invalid (non-noop transition from/to incompatible statuses).
  * Returns { state, noop: true } for same-status transitions without modifying the state.
+ *
+ * @param opts.allowReopen - When true, also permits edges in REOPEN_TRANSITIONS.
+ *   Only ReopenCommand.prepare() should pass this. All other callers (resume, etc.)
+ *   must omit opts so the general guard remains enforced.
  */
 export function transitionJob(
   state: JobState,
   to: JobStatus,
   ctx: TransitionContext,
+  opts?: TransitionOpts,
 ): TransitionResult {
   // Same status → noop (idempotent)
   if (state.status === to) {
     return { state, noop: true };
   }
 
-  // Validate transition
+  // Validate transition: normal edges first, then operator-scoped reopen edge if opt-in
   const allowed = VALID_TRANSITIONS.get(state.status);
-  if (!allowed || !allowed.has(to)) {
+  const reopenAllowed = opts?.allowReopen === true && (REOPEN_TRANSITIONS.get(state.status)?.has(to) ?? false);
+  if ((!allowed || !allowed.has(to)) && !reopenAllowed) {
     throw new Error(
       `Invalid transition: ${state.status} → ${to} (trigger: ${ctx.trigger}, reason: ${ctx.reason})`,
     );
