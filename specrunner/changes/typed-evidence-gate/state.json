@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "18cecd72-4e99-419a-941a-4753c4e83ce1",
   "createdAt": "2026-07-21T06:45:25.812Z",
-  "updatedAt": "2026-07-21T08:17:10.826Z",
+  "updatedAt": "2026-07-21T08:27:38.413Z",
   "request": {
     "title": "judge 完了契約に evidence counts を追加し、確認ゼロ・全 skip を非 green にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/typed-evidence-gate-18cecd72",
   "error": null,
@@ -59,8 +59,35 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "8389d3a6581a1cecb833b84da5f919cf5108de4b",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -71,7 +98,11 @@
       "bite-evidence": 1,
       "verification": 3,
       "build-fixer": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
