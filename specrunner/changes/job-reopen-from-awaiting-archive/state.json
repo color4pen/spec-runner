@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "121cee89-ee28-4b80-8b16-044a2252269d",
   "createdAt": "2026-07-21T14:09:53.176Z",
-  "updatedAt": "2026-07-21T15:49:29.568Z",
+  "updatedAt": "2026-07-21T15:55:34.306Z",
   "request": {
     "title": "awaiting-archive job の正規 reopen — 指定 step 以降の承認を失効させて再検証する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/job-reopen-from-awaiting-archive-121cee89",
   "error": null,
   "pipelineId": "standard",
@@ -60,11 +60,7 @@
     }
   ],
   "issueNumber": 876,
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -83,7 +79,7 @@
     {
       "name": "scale-tolerance",
       "status": "approved",
-      "approvedAtCommit": "b4cbf81a5ad1fda0c0a53503194f57f18f673ad5",
+      "approvedAtCommit": "56275d578a2189b1a5d04bbb99440af93cad71e3",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
@@ -94,7 +90,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 58,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -107,9 +103,9 @@
       "build-fixer": 1,
       "code-review": 1,
       "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }

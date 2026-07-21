@@ -223,27 +223,34 @@ export class ReopenCommand extends CommandRunner {
       throw new PrepareError(1, "Failed to parse request.md");
     }
 
-    // Build the job state store (needed for appendOperatorEvent + persist)
+    // Build the job state store (needed for appendOperatorEvent + persist).
+    // D6: a durable store is required — fail-closed when sidecar is missing.
     const slug = resolvedSlug ?? this.slug;
-    let store: JobStateStore | null;
+    let store: JobStateStore;
     if (this.options.noWorktree) {
       store = new JobStateStore(state.jobId, cwd, { slug, stateRoot: cwd });
     } else {
-      store = await resolveStateStoreByJobId(cwd, state.jobId);
+      const resolved = await resolveStateStoreByJobId(cwd, state.jobId);
+      if (resolved === null) {
+        logError(
+          `Cannot locate a writable state store for job '${this.slug}' (sidecar missing). ` +
+          `The job state is inaccessible — reopen cannot proceed without a durable store.`,
+        );
+        throw new PrepareError(1, "State store unavailable — sidecar missing");
+      }
+      store = resolved;
     }
 
     // Append the operator event BEFORE persisting the transition (D6 durability).
     // If persist subsequently fails, the event remains as evidence.
     const operatorEventTs = new Date().toISOString();
-    if (store) {
-      await store.appendOperatorEvent({
-        type: "operator-event",
-        action: "reopen",
-        reason: this.options.reason,
-        fromStep: startStep,
-        ts: operatorEventTs,
-      });
-    }
+    await store.appendOperatorEvent({
+      type: "operator-event",
+      action: "reopen",
+      reason: this.options.reason,
+      fromStep: startStep,
+      ts: operatorEventTs,
+    });
 
     // Transition awaiting-archive → running (operator-scoped opt-in)
     // D4: patch clears only run-control fields; steps/reviewerStatuses/decisions/biteEvidence untouched
@@ -259,9 +266,7 @@ export class ReopenCommand extends CommandRunner {
         },
         { allowReopen: true },
       );
-      if (store) {
-        await store.persist(transitioned);
-      }
+      await store.persist(transitioned);
       updatedState = transitioned;
     } catch (err) {
       logError(`Failed to update job state: ${(err as Error).message}`);
