@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c60285d5-fe67-494b-912e-37765e28ba54",
   "createdAt": "2026-07-21T10:11:47.999Z",
-  "updatedAt": "2026-07-21T12:58:42.734Z",
+  "updatedAt": "2026-07-21T13:27:12.165Z",
   "request": {
     "title": "記録済み承認を revision に束縛し、stale 承認による reviewer 群 skip を封鎖する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/approval-revision-binding-c60285d5",
   "error": null,
@@ -61,8 +61,35 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "ef5c21819c0b259966c52bf82dbabdde771e8d1b",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 60,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -73,7 +100,11 @@
       "bite-evidence": 1,
       "verification": 4,
       "build-fixer": 3,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
