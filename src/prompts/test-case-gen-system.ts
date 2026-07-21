@@ -1,6 +1,7 @@
 import { changesDirRel, changeFolderPath } from "../util/paths.js";
 import { buildSystemPrompt } from "./builder.js";
 import { COMPLETION_DIRECTIVE } from "./fragments.js";
+import { TC_SOURCE_SCENARIO_FORMAT } from "./tc-source-contract.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
 const _changesDir = changesDirRel();
@@ -52,7 +53,7 @@ Each test case must use the following structure (see template for exact field na
     GWT は必須: **GIVEN** / **WHEN** / **THEN** を記述する。
 
 **Source field format**:
-- Spec Scenario (primary): \`spec.md > Requirement: <name> > Scenario: <name>\`
+- Spec Scenario (primary): \`${TC_SOURCE_SCENARIO_FORMAT}\`
 - Fallback (spec absent): reference to design.md or tasks.md section
 
 ### Category Determination
