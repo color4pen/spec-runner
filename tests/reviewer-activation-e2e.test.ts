@@ -131,21 +131,21 @@ function buildMockClient() {
       if (agentId === "agent_spec_review") {
         return Promise.resolve([{
           type: "agent.custom_tool_use", name: "report_result", id: "id",
-          input: { ok: true, approved: true, findings: [] },
+          input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
         }]);
       }
       // code-review
       if (agentId === "code-review-agent-id") {
         return Promise.resolve([{
           type: "agent.custom_tool_use", name: "report_result", id: "id",
-          input: { ok: true, approved: true, findings: [] },
+          input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
         }]);
       }
       // conformance
       if (agentId === "conformance-agent-id") {
         return Promise.resolve([{
           type: "agent.custom_tool_use", name: "report_result", id: "id",
-          input: { ok: true, approved: true, findings: [] },
+          input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
         }]);
       }
       // request-review
@@ -158,7 +158,7 @@ function buildMockClient() {
       // All other (custom reviewers, producers)
       return Promise.resolve([{
         type: "agent.custom_tool_use", name: "report_result", id: "id",
-        input: { ok: true, approved: true, findings: [] },
+        input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
       }]);
     }),
     sendEvents: vi.fn().mockResolvedValue(undefined),

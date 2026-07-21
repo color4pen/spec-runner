@@ -154,7 +154,7 @@ function buildCustomMockClient(opts: {
           type: "agent.custom_tool_use",
           name: "report_result",
           id: "mock-id",
-          input: { ok: true, approved: true, findings: [] },
+          input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
         }]);
       }
 
@@ -167,7 +167,7 @@ function buildCustomMockClient(opts: {
             type: "agent.custom_tool_use",
             name: "report_result",
             id: "mock-id",
-            input: { ok: true, approved: true, findings: [] },
+            input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
           }]);
         } else {
           return Promise.resolve([{
@@ -177,6 +177,7 @@ function buildCustomMockClient(opts: {
             input: {
               ok: true,
               approved: false,
+              evidence: { checked: 1, skipped: 0, unverified: 0 },
               findings: [{ severity: "high", resolution: "fixable", file: "src/test.ts", title: "code-review issue", rationale: "Fix required" }],
             },
           }]);
@@ -195,7 +196,7 @@ function buildCustomMockClient(opts: {
               type: "agent.custom_tool_use",
               name: "report_result",
               id: "mock-id",
-              input: { ok: true, approved: true, findings: [] },
+              input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
             }]);
           } else if (rawVerdict === "ok-false") {
             return Promise.resolve([{
@@ -213,6 +214,7 @@ function buildCustomMockClient(opts: {
               input: {
                 ok: true,
                 approved: false,
+                evidence: { checked: 1, skipped: 0, unverified: 0 },
                 findings: [{
                   severity: "high",
                   resolution: "fixable",
@@ -235,7 +237,7 @@ function buildCustomMockClient(opts: {
             type: "agent.custom_tool_use",
             name: "report_result",
             id: "mock-id",
-            input: { ok: true, approved: true, findings: [] },
+            input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
           }]);
         } else if (rawVerdict === "decision-needed") {
           return Promise.resolve([{
@@ -244,6 +246,7 @@ function buildCustomMockClient(opts: {
             id: "mock-id",
             input: {
               ok: true,
+              evidence: { checked: 1, skipped: 0, unverified: 0 },
               findings: [{
                 severity: "high",
                 resolution: "decision-needed",
@@ -265,6 +268,7 @@ function buildCustomMockClient(opts: {
             id: "mock-id",
             input: {
               ok: true,
+              evidence: { checked: 1, skipped: 0, unverified: 0 },
               findings: [{
                 severity: "high",
                 resolution: "fixable",
@@ -283,7 +287,7 @@ function buildCustomMockClient(opts: {
           type: "agent.custom_tool_use",
           name: "report_result",
           id: "mock-id",
-          input: { ok: true, approved: true, findings: [] },
+          input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } },
         }]);
       }
 

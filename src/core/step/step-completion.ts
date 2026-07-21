@@ -18,7 +18,7 @@ import type { JobState, Verdict } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { BaseReportResult } from "../port/report-result.js";
 import type { JudgeReportResult, ProducerReportResult, RequestReviewReportResult } from "../port/report-result.js";
-import type { Finding } from "../../kernel/report-result.js";
+import type { Finding, Evidence } from "../../kernel/report-result.js";
 import type { PermissionScope } from "../pipeline/types.js";
 import type { CompletionReportDiagnostic } from "../port/agent-runner.js";
 import type { ModelUsage } from "../../state/schema.js";
@@ -72,7 +72,7 @@ export interface StepCompletionInput {
  */
 export interface StepCompletion {
   verdict: Verdict;
-  persistToolResult: (BaseReportResult & { findings?: Finding[] }) | null;
+  persistToolResult: (BaseReportResult & { findings?: Finding[]; evidence?: Evidence }) | null;
   /** Pull request info extracted from prose parse (pr-create step only). */
   pullRequest?: { url: string; number: number; createdAt: string };
   /**
@@ -124,8 +124,8 @@ export async function deriveStepCompletion(
   const isRequestReviewStep = stepReportTool === REQUEST_REVIEW_REPORT_TOOL;
 
   // Track effective toolResult for persistence.
-  let persistToolResult: (BaseReportResult & { findings?: Finding[] }) | null =
-    (agentResult?.toolResult as (BaseReportResult & { findings?: Finding[] }) | null | undefined) ?? null;
+  let persistToolResult: (BaseReportResult & { findings?: Finding[]; evidence?: Evidence }) | null =
+    (agentResult?.toolResult as (BaseReportResult & { findings?: Finding[]; evidence?: Evidence }) | null | undefined) ?? null;
 
   const resultContent = agentResult?.resultContent ?? null;
 
@@ -148,7 +148,10 @@ export async function deriveStepCompletion(
         const tr = toolResult as JudgeReportResult;
         const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];
         const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
-        verdict = deriveConformanceVerdict(undecidedFindings, tr.ok);
+        if (tr.evidence?.checked === 0) {
+          stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため判定不能として扱われます`);
+        }
+        verdict = deriveConformanceVerdict(undecidedFindings, tr.ok, tr.evidence);
       } else if (isJudgeStep) {
         const tr = toolResult as JudgeReportResult;
         const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];
@@ -157,7 +160,10 @@ export async function deriveStepCompletion(
           "judgeVerdictFn" in step && step.judgeVerdictFn
             ? step.judgeVerdictFn
             : deriveJudgeVerdict;
-        verdict = verdictFn(undecidedFindings, (toolResult as JudgeReportResult).ok);
+        if (tr.evidence?.checked === 0) {
+          stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため判定不能として扱われます`);
+        }
+        verdict = verdictFn(undecidedFindings, tr.ok, tr.evidence);
       } else {
         // producer: status "error" → "error", else completionVerdict (fallback "success")
         const completionVerdict =
@@ -171,7 +177,7 @@ export async function deriveStepCompletion(
       }
 
       // Build effective toolResult for persistence (scope findings merged when present).
-      const effectiveToolResult: BaseReportResult & { findings?: Finding[] } =
+      const effectiveToolResult: BaseReportResult & { findings?: Finding[]; evidence?: Evidence } =
         extraScopeFindings.length > 0
           ? {
               ...(toolResult as JudgeReportResult),

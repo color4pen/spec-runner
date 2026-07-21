@@ -6,7 +6,7 @@
  *
  * All functions are pure (no side effects, no I/O).
  */
-import type { Finding, FixTarget } from "../../kernel/report-result.js";
+import type { Finding, FixTarget, Evidence } from "../../kernel/report-result.js";
 export type { FindingRef } from "../port/runtime-strategy.js";
 
 /**
@@ -21,19 +21,25 @@ export function collectVerdictAffectingFindings(findings: Finding[]): Finding[] 
 }
 
 /**
- * Derive the judge verdict from findings and ok flag.
+ * Derive the judge verdict from findings, ok flag, and optional evidence.
  *
  * Priority order:
  * 1. ok=false → escalation (voluntary failure takes precedence over findings)
- * 2. decision-needed ≥ 1 → escalation
- * 3. critical|high ≥ 1 → needs-fix
- * 4. else → approved
+ * 2. evidence present && checked === 0 → escalation (vacuous check: no items verified)
+ * 3. decision-needed ≥ 1 → escalation
+ * 4. critical|high ≥ 1 → needs-fix
+ * 5. else → approved
+ *
+ * When evidence is undefined (legacy path), the vacuous check is skipped and
+ * derivation follows the pre-evidence rules (backward compatible).
  */
 export function deriveJudgeVerdict(
   findings: Finding[],
   ok: boolean,
+  evidence?: Evidence,
 ): "approved" | "needs-fix" | "escalation" {
   if (!ok) return "escalation";
+  if (evidence !== undefined && evidence.checked === 0) return "escalation"; // vacuous check
   if (findings.some((f) => f.resolution === "decision-needed")) return "escalation";
   if (findings.some((f) => f.severity === "critical" || f.severity === "high")) return "needs-fix";
   return "approved";
@@ -64,14 +70,17 @@ export function aggregateFixTarget(findings: Finding[]): FixTarget {
 }
 
 /**
- * Derive the conformance verdict from findings and ok flag.
+ * Derive the conformance verdict from findings, ok flag, and optional evidence.
  *
  * Extends deriveJudgeVerdict: when the base verdict is "needs-fix", the
  * target step is derived from finding fixTarget values via aggregateFixTarget.
  *
+ * evidence is forwarded to deriveJudgeVerdict — when checked=0, returns "escalation"
+ * before fixTarget aggregation (vacuous check precedes fixTarget routing).
+ *
  * Returns:
  *   "approved"                — all items pass
- *   "escalation"              — ok=false or decision-needed findings
+ *   "escalation"              — ok=false, checked=0, or decision-needed findings
  *   "needs-fix:implementer"   — missing/incomplete implementation
  *   "needs-fix:code-fixer"    — local code non-conformity
  *   "needs-fix:spec-fixer"    — spec/design error
@@ -79,8 +88,9 @@ export function aggregateFixTarget(findings: Finding[]): FixTarget {
 export function deriveConformanceVerdict(
   findings: Finding[],
   ok: boolean,
+  evidence?: Evidence,
 ): "approved" | "escalation" | "needs-fix:implementer" | "needs-fix:code-fixer" | "needs-fix:spec-fixer" {
-  const base = deriveJudgeVerdict(findings, ok);
+  const base = deriveJudgeVerdict(findings, ok, evidence);
   if (base !== "needs-fix") return base;
 
   const target = aggregateFixTarget(findings);
@@ -109,17 +119,24 @@ export function collectFixableFindings(findings: Finding[]): Finding[] {
  * Rationale: the regression-gate ledger exclusively contains previously-fixed findings that
  * regressed; any regression (even low/medium severity) must be re-fixed.
  *
+ * The vacuous check applies here as in deriveJudgeVerdict: the gate only runs when the
+ * findings ledger is non-empty, so a checked=0 report means the agent verified none of the
+ * ledger items — approving would leave regressions unchecked.
+ *
  * Priority order:
  * 1. ok=false → escalation
- * 2. decision-needed ≥ 1 → escalation
- * 3. fixable ≥ 1 → needs-fix (any severity, including medium/low)
- * 4. else → approved
+ * 2. evidence present && checked === 0 → escalation (vacuous check: no ledger items verified)
+ * 3. decision-needed ≥ 1 → escalation
+ * 4. fixable ≥ 1 → needs-fix (any severity, including medium/low)
+ * 5. else → approved
  */
 export function deriveRegressionGateVerdict(
   findings: Finding[],
   ok: boolean,
+  evidence?: Evidence,
 ): "approved" | "needs-fix" | "escalation" {
   if (!ok) return "escalation";
+  if (evidence !== undefined && evidence.checked === 0) return "escalation"; // vacuous check
   if (findings.some((f) => f.resolution === "decision-needed")) return "escalation";
   if (findings.some((f) => f.resolution === "fixable")) return "needs-fix";
   return "approved";

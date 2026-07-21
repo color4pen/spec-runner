@@ -148,7 +148,7 @@ describe("parseFindings", () => {
 
 describe("parseJudgeReportInput — findings validation", () => {
   it("{ok:true, findings:[valid]} → ok:true with findings set", () => {
-    const result = parseJudgeReportInput({ ok: true, findings: [validFinding] });
+    const result = parseJudgeReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [validFinding] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.findings).toHaveLength(1);
@@ -156,7 +156,7 @@ describe("parseJudgeReportInput — findings validation", () => {
   });
 
   it("{ok:true, findings:[]} → ok:true with empty findings", () => {
-    const result = parseJudgeReportInput({ ok: true, findings: [] });
+    const result = parseJudgeReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.findings).toEqual([]);
@@ -194,7 +194,7 @@ describe("parseJudgeReportInput — findings validation", () => {
 
 describe("parseCodeReviewReportInput — findings validation", () => {
   it("{ok:true, findings:[valid]} → ok:true with findings", () => {
-    const result = parseCodeReviewReportInput({ ok: true, findings: [validFinding] });
+    const result = parseCodeReviewReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [validFinding] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.findings).toHaveLength(1);
@@ -217,6 +217,7 @@ describe("parseCodeReviewReportInput — findings validation", () => {
   it("fixableCount is preserved when present", () => {
     const result = parseCodeReviewReportInput({
       ok: true,
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [validFinding],
       fixableCount: 3,
     });
@@ -428,6 +429,7 @@ describe("parseConformanceReportInput — fixTarget capture", () => {
   it("{ok:true, findings:[{fixTarget:'spec-fixer'}]} → finding has fixTarget", () => {
     const result = parseConformanceReportInput({
       ok: true,
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [{ ...validFinding, fixTarget: "spec-fixer" }],
     });
     expect(result.ok).toBe(true);
@@ -438,6 +440,7 @@ describe("parseConformanceReportInput — fixTarget capture", () => {
   it("invalid fixTarget is ignored (undefined on finding)", () => {
     const result = parseConformanceReportInput({
       ok: true,
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [{ ...validFinding, fixTarget: "bogus" }],
     });
     expect(result.ok).toBe(true);
@@ -446,7 +449,7 @@ describe("parseConformanceReportInput — fixTarget capture", () => {
   });
 
   it("{ok:true, findings:[]} → ok:true with empty findings", () => {
-    const result = parseConformanceReportInput({ ok: true, findings: [] });
+    const result = parseConformanceReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 }, findings: [] });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.findings).toEqual([]);

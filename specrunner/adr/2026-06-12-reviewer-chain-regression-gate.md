@@ -54,7 +54,7 @@ ADR-20260611 D3 で custom reviewer が確立した手法の再適用。
 
 ### D6: 純関数 `collectFindingsLedger` で累積 findings 台帳を構築する
 
-純関数 `collectFindingsLedger(state, reviewerChain)` を新設する。台帳の定義:
+純関数 `collectFindingsLedger(reviewerChain, state)` を新設する。台帳の定義:
 
 - 対象は reviewer chain（`["code-review", ...names]`、ゲート自身を除く）の各 step の全 iteration
 - `resolution === "fixable"` の finding のみを採る（`decision-needed` は escalation 済みでチェーン完走時点に現れない）

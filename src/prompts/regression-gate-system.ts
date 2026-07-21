@@ -11,7 +11,7 @@
  */
 import { PIPELINE_RULES, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE, EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, SEVERITY_DEFINITION } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION } from "./judge-rules.js";
 
 const REGRESSION_GATE_BASE = `あなたは spec-runner pipeline の退行ゲート agent（regression-gate）です。
 作業開始前に rules.md（= \`specrunner/changes/<slug>/rules.md\`）を Read tool で読み、規律を確認してから着手してください。
@@ -86,6 +86,8 @@ ${SEVERITY_DEFINITION}
 ${DECISION_NEEDED_DEFINITION}
 
 ${OBSERVATION_DEFINITION}
+
+${EVIDENCE_COUNTS_DEFINITION}
 
 **重要**: CLI が \`findings\` 配列から verdict を決定します。退行なし → approved、退行あり（high/fixable） → needs-fix、矛盾（decision-needed） → escalation。
 

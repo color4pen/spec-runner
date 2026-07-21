@@ -142,6 +142,7 @@ describe("parseJudgeReportInput — observations valid → set", () => {
     const raw = {
       ok: true,
       findings: [],
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       observations: [
         { severity: "low", file: "src/a.ts", title: "Note", rationale: "FYI" },
       ],
@@ -155,7 +156,7 @@ describe("parseJudgeReportInput — observations valid → set", () => {
   });
 
   it("sets observations to empty array when empty observations provided", () => {
-    const raw = { ok: true, findings: [], observations: [] };
+    const raw = { ok: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 }, observations: [] };
     const result = parseJudgeReportInput(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -165,7 +166,7 @@ describe("parseJudgeReportInput — observations valid → set", () => {
 
 describe("parseJudgeReportInput — observations invalid → silent drop", () => {
   it("silently drops invalid observations (string), ok=true, missingFields clean", () => {
-    const raw = { ok: true, findings: [], observations: "bad" };
+    const raw = { ok: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 }, observations: "bad" };
     const result = parseJudgeReportInput(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) {
@@ -180,6 +181,7 @@ describe("parseJudgeReportInput — observations invalid → silent drop", () =>
     const raw = {
       ok: true,
       findings: [],
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       observations: [{ severity: "invalid", file: "a.ts", title: "t", rationale: "r" }],
     };
     const result = parseJudgeReportInput(raw);
@@ -189,7 +191,7 @@ describe("parseJudgeReportInput — observations invalid → silent drop", () =>
   });
 
   it("does not include 'observations' in missingFields on invalid input", () => {
-    const raw = { ok: true, findings: [], observations: 42 };
+    const raw = { ok: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 }, observations: 42 };
     const result = parseJudgeReportInput(raw);
     // ok should still be true since findings are valid
     expect(result.ok).toBe(true);
@@ -198,7 +200,7 @@ describe("parseJudgeReportInput — observations invalid → silent drop", () =>
 
 describe("parseJudgeReportInput — observations absent → undefined", () => {
   it("leaves observations undefined when field absent", () => {
-    const raw = { ok: true, findings: [] };
+    const raw = { ok: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } };
     const result = parseJudgeReportInput(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -215,6 +217,7 @@ describe("parseCodeReviewReportInput — observations", () => {
     const raw = {
       ok: true,
       findings: [],
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       observations: [{ severity: "low", file: "a.ts", title: "Note", rationale: "FYI" }],
     };
     const result = parseCodeReviewReportInput(raw);
@@ -225,7 +228,7 @@ describe("parseCodeReviewReportInput — observations", () => {
   });
 
   it("silently drops invalid observations, ok=true", () => {
-    const raw = { ok: true, findings: [], observations: "invalid" };
+    const raw = { ok: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 }, observations: "invalid" };
     const result = parseCodeReviewReportInput(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -233,7 +236,7 @@ describe("parseCodeReviewReportInput — observations", () => {
   });
 
   it("leaves observations undefined when absent", () => {
-    const raw = { ok: true, findings: [] };
+    const raw = { ok: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } };
     const result = parseCodeReviewReportInput(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -284,6 +287,7 @@ describe("backward compat — old toolResult without observations field", () => 
   it("parseJudgeReportInput parses old format (no observations field)", () => {
     const oldFormat = {
       ok: true,
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [
         {
           severity: "high",
@@ -307,6 +311,7 @@ describe("backward compat — old toolResult without observations field", () => 
       ok: true,
       approved: true,
       fixableCount: 1,
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       findings: [
         { severity: "low", resolution: "fixable", file: "a.ts", title: "Old", rationale: "r" },
       ],
@@ -339,6 +344,7 @@ describe("parse → derive integration: observations do not affect verdict", () 
     const raw = {
       ok: true,
       findings: [],
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       observations: [
         {
           severity: "critical",
@@ -361,6 +367,7 @@ describe("parse → derive integration: observations do not affect verdict", () 
     const raw = {
       ok: true,
       findings: [],
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       observations: [
         { severity: "high", file: "src/x.ts", title: "Obs title", rationale: "r" },
       ],

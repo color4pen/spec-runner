@@ -76,6 +76,17 @@ export const PRODUCER_REPORT_TOOL: ReportToolSpec<ProducerReportResult> = {
 };
 
 /**
+ * Zod schema for the evidence field in judge report tools.
+ * All three counts (checked, skipped, unverified) are required non-negative integers.
+ * Evidence is required when ok=true; enforcement is via parseInput, not zod.
+ */
+const evidenceSchema = object({
+  checked: number(),
+  skipped: number(),
+  unverified: number(),
+});
+
+/**
  * Zod schema for a single decision option within a decision-needed finding.
  */
 const decisionOptionSchema = object({
@@ -121,16 +132,18 @@ const observationSchema = array(object({
  * Adds approved: boolean (compat) and findings array to the base schema.
  * verdict is derived by the CLI from findings — approved boolean is ignored for routing.
  * observations: optional channel for informational records that do NOT affect verdict routing.
+ * evidence: REQUIRED when ok=true — verification-volume counts. checked=0 is treated as indeterminate.
  */
 export const JUDGE_REPORT_TOOL: ReportToolSpec<JudgeReportResult> = {
   name: "report_result",
-  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, options?: [{label: string, consequence: string}] }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. The CLI derives the verdict from findings; the 'approved' field is kept for compatibility but is NOT used for routing. Optional: 'observations' array for informational records that do not require action and do not affect the verdict — each element is { severity, file, line?, title, rationale } (no resolution field). Omit observations if there is nothing noteworthy to record. You MUST call this tool before ending your turn.",
+  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, options?: [{label: string, consequence: string}] }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. The CLI derives the verdict from findings; the 'approved' field is kept for compatibility but is NOT used for routing. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; skipped = in-scope items not verified; unverified = items declared unconfirmed. checked=0 is treated as indeterminate (判定不能). Optional: 'observations' array for informational records that do not require action and do not affect the verdict — each element is { severity, file, line?, title, rationale } (no resolution field). Omit observations if there is nothing noteworthy to record. You MUST call this tool before ending your turn.",
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),
     approved: optional(boolean()),
     findings: optional(findingSchema),
     observations: optional(observationSchema),
+    evidence: optional(evidenceSchema),
   },
   parseInput: parseJudgeReportInput,
 };
@@ -143,10 +156,11 @@ export const JUDGE_REPORT_TOOL: ReportToolSpec<JudgeReportResult> = {
  * fixableCount: number remains in zodSchema for compat with old prompt caches, but
  * agents are not required to report it — routing is derived from findings.
  * observations: optional channel for informational records that do NOT affect verdict routing.
+ * evidence: REQUIRED when ok=true — verification-volume counts. checked=0 is treated as indeterminate.
  */
 export const CODE_REVIEW_REPORT_TOOL: ReportToolSpec<CodeReviewReportResult> = {
   name: "report_result",
-  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, options?: [{label: string, consequence: string}] }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. The CLI derives the verdict from findings; the 'approved' field is kept for compatibility but is NOT used for routing. Optional: 'observations' array for informational records that do not require action and do not affect the verdict — each element is { severity, file, line?, title, rationale } (no resolution field). Omit observations if there is nothing noteworthy to record. You MUST call this tool before ending your turn.",
+  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, options?: [{label: string, consequence: string}] }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. The CLI derives the verdict from findings; the 'approved' field is kept for compatibility but is NOT used for routing. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; skipped = in-scope items not verified; unverified = items declared unconfirmed. checked=0 is treated as indeterminate (判定不能). Optional: 'observations' array for informational records that do not require action and do not affect the verdict — each element is { severity, file, line?, title, rationale } (no resolution field). Omit observations if there is nothing noteworthy to record. You MUST call this tool before ending your turn.",
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),
@@ -154,6 +168,7 @@ export const CODE_REVIEW_REPORT_TOOL: ReportToolSpec<CodeReviewReportResult> = {
     fixableCount: optional(number()),
     findings: optional(findingSchema),
     observations: optional(observationSchema),
+    evidence: optional(evidenceSchema),
   },
   parseInput: parseCodeReviewReportInput,
 };
@@ -180,6 +195,7 @@ const conformanceFindingSchema = array(object({
  *
  * Extends the judge findings schema with fixTarget for fix routing.
  * The CLI derives the routing target from findings (R7 contract — not agent-declared).
+ * evidence: REQUIRED when ok=true — verification-volume counts. checked=0 is treated as indeterminate.
  *
  * fixTarget semantics (per finding):
  *   "spec-fixer"  — spec/design errors: the spec or design artifact is wrong/incomplete
@@ -189,12 +205,13 @@ const conformanceFindingSchema = array(object({
  */
 export const CONFORMANCE_REPORT_TOOL: ReportToolSpec<ConformanceReportResult> = {
   name: "report_result",
-  description: "Report the completion of the conformance step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, fixTarget?: 'implementer'|'code-fixer'|'spec-fixer', options?: [{label: string, consequence: string}] }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. The CLI derives the routing target from findings; do NOT declare a routing verdict yourself. fixTarget routing: 'spec-fixer' = spec/design artifact is wrong; 'implementer' = implementation is missing or incomplete; 'code-fixer' = local code non-conformity; omit to default to 'implementer'. You MUST call this tool before ending your turn.",
+  description: "Report the completion of the conformance step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, fixTarget?: 'implementer'|'code-fixer'|'spec-fixer', options?: [{label: string, consequence: string}] }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. The CLI derives the routing target from findings; do NOT declare a routing verdict yourself. fixTarget routing: 'spec-fixer' = spec/design artifact is wrong; 'implementer' = implementation is missing or incomplete; 'code-fixer' = local code non-conformity; omit to default to 'implementer'. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; checked=0 is treated as indeterminate (判定不能). You MUST call this tool before ending your turn.",
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),
     approved: optional(boolean()),
     findings: optional(conformanceFindingSchema),
+    evidence: optional(evidenceSchema),
   },
   parseInput: parseConformanceReportInput,
 };

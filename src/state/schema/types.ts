@@ -4,7 +4,7 @@
 export type JobStatus = "running" | "awaiting-resume" | "awaiting-archive" | "failed" | "terminated" | "archived" | "canceled";
 
 import type { ModelUsage } from "../../kernel/model-usage.js";
-import type { BaseReportResult, Finding, Observation, DecisionOption, FindingSeverity } from "../../kernel/report-result.js";
+import type { BaseReportResult, Finding, Observation, DecisionOption, FindingSeverity, Evidence } from "../../kernel/report-result.js";
 import type { CompletionReportDiagnostic } from "../../kernel/completion-report-diagnostic.js";
 import type { AgentStepName as AgentStepNameUnion } from "../../kernel/agent-definition.js";
 import type { ReviewerSnapshot, ReviewerStatus } from "../../kernel/reviewer-snapshot.js";
@@ -129,7 +129,7 @@ export interface StepOutcome {
    * Added in tool-driven-step-completion.
    * Widened to include findings and observations arrays for judge steps.
    */
-  toolResult?: (BaseReportResult & { approved?: boolean; findings?: Finding[]; observations?: Observation[] }) | null;
+  toolResult?: (BaseReportResult & { approved?: boolean; findings?: Finding[]; observations?: Observation[]; evidence?: Evidence }) | null;
   /**
    * Number of follow-up retry attempts made to get the agent to call report_result.
    * 0 = the agent called the tool on the first turn (or feature not applicable).

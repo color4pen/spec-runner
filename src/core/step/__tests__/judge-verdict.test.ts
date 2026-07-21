@@ -231,6 +231,7 @@ describe("observations do NOT affect verdict derivation (T-06 invariant)", () =>
     const raw = {
       ok: true,
       findings: [],
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       observations: [
         {
           severity: "critical",

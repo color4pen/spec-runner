@@ -75,6 +75,30 @@ export const OBSERVATION_DEFINITION =
     - 迷った場合は \`finding\` に倒す（observation への誘導を優先しない）`;
 
 /**
+ * Evidence counts definition for use in the Completion section of judge step prompts.
+ *
+ * Instructs agents to include the `evidence` object `{ checked, skipped, unverified }`
+ * in their completion report when ok=true.
+ *
+ * Key invariant: checked=0 is treated as "判定不能" (indeterminate) → escalation.
+ *
+ * Provider-neutral: must NOT contain the strings "report_result" or "end_turn".
+ * Inject via `${EVIDENCE_COUNTS_DEFINITION}` in Completion sections of judge prompts.
+ */
+export const EVIDENCE_COUNTS_DEFINITION =
+`**evidence 記入 (ok=true 必須)**:
+完了報告に \`evidence\` オブジェクトを必ず含めてください:
+\`\`\`json
+{
+  "checked": 12,     // 実際に確認したアイテム数（ファイル読取・シナリオ追跡・要件確認など）
+  "skipped": 2,      // スコープ内だが確認しなかったアイテム数
+  "unverified": 1    // 確認できなかったアイテム数（未確認として申告）
+}
+\`\`\`
+- すべて非負の整数で指定する
+- \`checked === 0\` は「判定不能」として扱われます。何かしら検証した場合は checked に実測値を記入してください。`;
+
+/**
  * Verdict blocking rules for use in prompts and pipeline rules.
  *
  * Describes:

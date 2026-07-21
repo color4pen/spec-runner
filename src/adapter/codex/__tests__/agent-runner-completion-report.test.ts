@@ -143,6 +143,7 @@ describe("tryExtractToolResult — unit tests", () => {
     it("findings with line: null → toolResult non-null (kernel parser normalizes null)", () => {
       const jsonWithNullLine = JSON.stringify({
         ok: true,
+        evidence: { checked: 1, skipped: 0, unverified: 0 },
         findings: [
           {
             severity: "high",
@@ -162,6 +163,7 @@ describe("tryExtractToolResult — unit tests", () => {
     it("findings with mixed null and number line values → toolResult non-null", () => {
       const json = JSON.stringify({
         ok: true,
+        evidence: { checked: 1, skipped: 0, unverified: 0 },
         findings: [
           { severity: "high", resolution: "fixable", file: "a.ts", title: "T", rationale: "R", line: null },
           { severity: "low", resolution: "fixable", file: "b.ts", title: "U", rationale: "S", line: 10 },

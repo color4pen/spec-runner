@@ -165,7 +165,7 @@ coordinator は入口で `reviewerStatuses` を読み、`approved` かつ未 inv
 
 ### D9: regression-gate / 累積 findings 台帳は不変
 
-regression-gate は全 reviewer approved 後に従来どおり走る。`collectFindingsLedger(state, deriveImplReviewerChain(state))`
+regression-gate は全 reviewer approved 後に従来どおり走る。`collectFindingsLedger(deriveImplReviewerChain(state), state)`
 は reviewer chain（`["code-review", ...member names]`）の全 run から findings を集約する。coordinator は
 member 名と別名（`custom-reviewers`）で chain に含まれないため、台帳は member の実 findings をそのまま集約でき
 **変更不要**（ADR-20260612 と完全一致）。

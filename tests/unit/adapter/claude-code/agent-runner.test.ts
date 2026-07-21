@@ -2430,7 +2430,7 @@ describe("T-07: typed outcome presence tests (R2 expand phase)", () => {
     const queryFn: QueryFn = async function* () {
       const handler = getHandler();
       if (handler) {
-        await handler({ ok: true, approved: true, findings: [] });
+        await handler({ ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } });
       }
       yield {
         type: "result" as const,
@@ -2484,7 +2484,7 @@ describe("T-07: typed outcome presence tests (R2 expand phase)", () => {
     const queryFn: QueryFn = async function* () {
       const handler = getHandler();
       if (handler) {
-        await handler({ ok: true, approved: true, fixableCount: 2, findings: [] });
+        await handler({ ok: true, approved: true, fixableCount: 2, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } });
       }
       yield {
         type: "result" as const,

@@ -1,7 +1,7 @@
 import { changesDirRel } from "../util/paths.js";
 import { PIPELINE_RULES, COMPLETION_DIRECTIVE, EVIDENCE_DISCIPLINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, SEVERITY_DEFINITION } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION } from "./judge-rules.js";
 import { SPEC_EXEMPT_MARKER } from "../templates/step-output-templates.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
@@ -75,6 +75,8 @@ ${DECISION_NEEDED_DEFINITION}
 | tasks.md / design.md に従った実装が欠落・不完全 | \`implementer\` |
 | 孤立したコードレベルの non-conformity | \`code-fixer\` |
 | 判断できない | 省略（デフォルト: \`implementer\`） |
+
+${EVIDENCE_COUNTS_DEFINITION}
 
 `;
 

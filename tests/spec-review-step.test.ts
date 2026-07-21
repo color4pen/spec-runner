@@ -86,8 +86,8 @@ function buildMockSessionClient(opts: {
     streamEvents: vi.fn().mockRejectedValue(new Error("streamEvents not used by spec-review")),
     getSessionUsage: vi.fn().mockResolvedValue(undefined),
     listEvents: vi.fn().mockResolvedValue([
-      // Include findings:[] so parseJudgeReportInput succeeds (findings required when ok=true)
-      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [] } },
+      // Include findings:[] and evidence so parseJudgeReportInput succeeds (both required when ok=true)
+      { type: "agent.custom_tool_use", name: "report_result", id: "mock-report-id", input: { ok: true, approved: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } } },
     ]),
     sendEvents: vi.fn().mockResolvedValue(undefined),
   };
