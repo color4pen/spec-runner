@@ -149,7 +149,7 @@ export async function deriveStepCompletion(
         const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];
         const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
         if (tr.evidence?.checked === 0) {
-          stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため approved を保留し escalation`);
+          stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため判定不能として扱われます`);
         }
         verdict = deriveConformanceVerdict(undecidedFindings, tr.ok, tr.evidence);
       } else if (isJudgeStep) {
@@ -161,7 +161,7 @@ export async function deriveStepCompletion(
             ? step.judgeVerdictFn
             : deriveJudgeVerdict;
         if (tr.evidence?.checked === 0) {
-          stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため approved を保留し escalation`);
+          stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため判定不能として扱われます`);
         }
         verdict = verdictFn(undecidedFindings, tr.ok, tr.evidence);
       } else {

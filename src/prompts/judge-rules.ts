@@ -96,7 +96,7 @@ export const EVIDENCE_COUNTS_DEFINITION =
 }
 \`\`\`
 - すべて非負の整数で指定する
-- \`checked === 0\` は「判定不能」として扱われ、\`escalation\` になります。何かしら検証した場合は checked に実測値を記入してください。`;
+- \`checked === 0\` は「判定不能」として扱われます。何かしら検証した場合は checked に実測値を記入してください。`;
 
 /**
  * Verdict blocking rules for use in prompts and pipeline rules.

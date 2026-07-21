@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "18cecd72-4e99-419a-941a-4753c4e83ce1",
   "createdAt": "2026-07-21T06:45:25.812Z",
-  "updatedAt": "2026-07-21T08:27:38.413Z",
+  "updatedAt": "2026-07-21T08:33:10.649Z",
   "request": {
     "title": "judge 完了契約に evidence counts を追加し、確認ゼロ・全 skip を非 green にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/typed-evidence-gate-18cecd72",
   "error": null,
@@ -87,7 +87,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 66,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -102,7 +102,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
