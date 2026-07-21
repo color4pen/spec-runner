@@ -1,0 +1,11 @@
+{
+  "requestHash": "sha256:83f57f8353b50d073107ce105456b2bdef26eaefcdac1c4ede6a89bb65d1c826",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/judge-verdict.ts: deriveJudgeVerdict(findings, ok) derives verdict from severity/resolution only — no evidence/checked concept (lines 32-40)",
+    "src/state/helpers.ts:71: toolResult?: (BaseReportResult & { findings?: Finding[]; observations?: Observation[] }) | null",
+    "src/prompts/fragments.ts: EVIDENCE_DISCIPLINE fragment defined at lines 74-85 and injected into all agent step system prompts",
+    "src/prompts/judge-rules.ts: VERDICT_BLOCKING_RULES confirms result md files are evidence reports — verdict derived by CLI from typed findings only"
+  ],
+  "sourceRevision": "cb0fd58aa879a5693d616b75974caf65fa9ee59d"
+}
