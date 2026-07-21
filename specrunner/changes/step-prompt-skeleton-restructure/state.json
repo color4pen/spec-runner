@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "3050a772-7d51-4c35-bdd8-3e9a57fc2053",
   "createdAt": "2026-07-21T01:35:03.523Z",
-  "updatedAt": "2026-07-21T03:37:36.117Z",
+  "updatedAt": "2026-07-21T03:54:08.892Z",
   "request": {
     "title": "全 step prompt を 5 部構成の共通骨格に再構成し、evidence 規律と原因分類を共通化する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/step-prompt-skeleton-restructure-3050a772",
   "error": null,
@@ -59,8 +59,35 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 54,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -71,7 +98,11 @@
       "bite-evidence": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
