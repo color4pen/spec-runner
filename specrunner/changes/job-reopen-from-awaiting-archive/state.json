@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "121cee89-ee28-4b80-8b16-044a2252269d",
   "createdAt": "2026-07-21T14:09:53.176Z",
-  "updatedAt": "2026-07-21T15:28:35.019Z",
+  "updatedAt": "2026-07-21T15:33:08.803Z",
   "request": {
     "title": "awaiting-archive job の正規 reopen — 指定 step 以降の承認を失効させて再検証する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/job-reopen-from-awaiting-archive-121cee89",
   "error": null,
@@ -63,7 +63,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -72,7 +72,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
