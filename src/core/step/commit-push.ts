@@ -140,6 +140,8 @@ async function commitAndPushTail(
  *   - Pre-check: git status --porcelain -z --no-renames → list changed paths.
  *   - Violation detection: findWriteScopeViolations → halt if any forbidden path changed.
  *   - Status spawn failure / non-zero exit → fail-closed halt.
+ *   - If violations: two-step restore (git clean -f for untracked new files; git checkout
+ *     HEAD for tracked modified files) then throws WRITE_SCOPE_VIOLATION.
  *   - If no violations: git add -A → stage whole worktree (original behaviour).
  *
  * Shared tail (both modes):
@@ -175,26 +177,37 @@ export async function commitAndPush(
     const existingManaged = await filterExistingFiles(pipelineManagedPaths(slug), cwd);
     const stagePaths = [...new Set([...filePaths, ...existingManaged])];
 
-    // Nothing to stage — skip entirely (no-op equivalent to empty stage).
-    if (stagePaths.length === 0) return;
+    // Stage only declared paths when there are any.
+    // Empty stagePaths → skip git add (git add -A -- <empty> is invalid).
+    // We still fall through to commitAndPushTail for HEAD-advance detection.
+    if (stagePaths.length > 0) {
+      // Stage only the declared paths. Failure → halt.
+      const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ...stagePaths]);
+      if (!addResult.ok || addResult.exitCode !== 0) {
+        throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
+      }
 
-    // Stage only the declared paths. Failure → halt.
-    const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ...stagePaths]);
-    if (!addResult.ok || addResult.exitCode !== 0) {
-      throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
-    }
-
-    // After scoped staging: restore any protected paths that remain dirty in the worktree
-    // but were not staged (because they are outside the scoped step's declared outputs).
-    // Without this, a scoped step that inadvertently changes request.md (or another canon
-    // path) leaves the worktree dirty, causing the NEXT guarded step's pre-commit check to
-    // emit a misattributed WRITE_SCOPE_VIOLATION against the wrong step.
-    // Best-effort: git checkout HEAD failure (e.g. file not in HEAD) is silently ignored.
-    const postStatus = await getWorktreeChangedPaths(infra.spawnFn, cwd);
-    if (postStatus.ok && postStatus.paths.length > 0) {
-      const residualViolations = findWriteScopeViolations(step.name, slug, postStatus.paths, filePaths);
-      if (residualViolations.length > 0) {
-        await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...residualViolations]);
+      // After scoped staging: restore any protected paths that remain dirty in the worktree
+      // but were not staged (because they are outside the scoped step's declared outputs).
+      // Without this, a scoped step that inadvertently changes request.md (or another canon
+      // path) leaves the worktree dirty, causing the NEXT guarded step's pre-commit check to
+      // emit a misattributed WRITE_SCOPE_VIOLATION against the wrong step.
+      //
+      // Two-step restore: git clean removes newly created (untracked) files that are not in
+      // HEAD (git checkout HEAD would fail for those, leaving them in the worktree).
+      // git checkout HEAD then restores tracked modified files to their committed content.
+      // Both are best-effort (failures silently ignored).
+      //
+      // Asymmetry note: postStatus.ok===false → skip silently (best-effort).
+      // Scoped restoration is defensive (prevents cross-step false positives), not
+      // safety-critical. Guarded mode is the hard enforcement gate (fail-closed).
+      const postStatus = await getWorktreeChangedPaths(infra.spawnFn, cwd);
+      if (postStatus.ok && postStatus.paths.length > 0) {
+        const residualViolations = findWriteScopeViolations(step.name, slug, postStatus.paths, filePaths);
+        if (residualViolations.length > 0) {
+          await gitExecResult(infra.spawnFn, cwd, ["clean", "-f", "--", ...residualViolations]);
+          await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...residualViolations]);
+        }
       }
     }
   } else {
@@ -214,19 +227,17 @@ export async function commitAndPush(
     // Check for forbidden boundary violations.
     const violations = findWriteScopeViolations(step.name, slug, statusResult.paths, declaredWritePaths);
     if (violations.length > 0) {
-      // Restore violated paths to HEAD state before throwing.
+      // Restore violated paths before throwing so commitFinalState's git add -A does not
+      // pick them up and commit them to the remote branch (defeating the fail-closed guarantee).
       //
-      // commitFinalState (checkpoint path) runs after every awaiting-resume exit, including
-      // WRITE_SCOPE_VIOLATION halts. It uses git add -A to stage all worktree changes for
-      // the checkpoint commit. Without this restore, the violation content (e.g. agent-
-      // modified request.md) would leak into the remote branch via the checkpoint commit —
-      // defeating the fail-closed guarantee.
-      //
-      // Restoring to HEAD before throwing ensures commitFinalState sees only the committed
-      // (pre-violation) content for those files, which is effectively a no-op stage for them.
-      //
-      // Best-effort: ignore if a violated file is not in HEAD (e.g. newly created protected
-      // file — a pathological but rare scenario). The throw always happens regardless.
+      // Two-step restore handles both tracked and untracked violations:
+      //   1. git clean -f -- <violations>: removes newly created (untracked) violations.
+      //      These files are not in HEAD, so git checkout HEAD would fail and leave them in
+      //      the worktree where commitFinalState's git add -A would then pick them up.
+      //   2. git checkout HEAD -- <violations>: restores tracked modified violations to their
+      //      committed content.
+      // Both operations are best-effort (failures silently ignored). The throw always occurs.
+      await gitExecResult(infra.spawnFn, cwd, ["clean", "-f", "--", ...violations]);
       await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...violations]);
       throw writeScopeViolationError(step.name, branch, violations);
     }

@@ -9,15 +9,11 @@
  * TC-018: guarded mode — HEAD-advance detection (push-only path) preserved
  * TC-019: guarded mode — git status spawn failure → fail-closed halt
  * TC-020: guarded mode — spec.md change → halt with spec.md in error message
- * TC-021: guarded mode — violated files restored to HEAD before WRITE_SCOPE_VIOLATION throw
+ * TC-021: guarded mode — violated files restored before WRITE_SCOPE_VIOLATION throw
+ *         (two-step: git clean for untracked, git checkout HEAD for tracked)
  * TC-022: scoped mode — pipeline-managed paths included in scoped git add call
  * TC-023: scoped mode — residual protected dirty files restored after staging
- *
- * NOTE: Tests TC-003, TC-004, TC-017 are RED until commitAndPush implements
- * scoped staging (git add -A -- <paths> instead of git add -A).
- *
- * Tests TC-005, TC-006, TC-018, TC-019, TC-020 are RED until commitAndPush
- * implements the guarded mode (git status pre-check + findWriteScopeViolations).
+ *         (best-effort: postStatus failure is silently skipped)
  *
  * The mock for pipelineManagedPaths (round-git-scope.ts) is registered via vi.mock
  * so that once the implementation imports it, the mock takes effect.
@@ -82,6 +78,10 @@ beforeEach(async () => {
 afterEach(async () => {
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
+  // Reset the access mock to always-resolve after each test.
+  // TC-017 overrides it to always-reject; without this reset, subsequent
+  // tests would see filterExistingFiles return [] and get unexpected behavior.
+  vi.mocked(fs.access).mockResolvedValue(undefined);
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -623,28 +623,36 @@ describe("TC-006: guarded mode — boundary-safe changes commit proceeds normall
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("TC-017: scoped mode — empty stagePaths → no-op", () => {
-  it("no git add is called when writes() is empty (stagePaths = [])", async () => {
-    // Override pipelineManagedPaths to return [] for this test
-    // (simulating a scenario where no pipeline paths exist)
-    vi.doMock("../../../src/core/step/round-git-scope.js", () => ({
-      pipelineManagedPaths: () => [],
-    }));
+  it("no git add is called when writes() is empty and no managed paths exist (stagePaths = [])", async () => {
+    // vi.doMock cannot override the hoisted vi.mock at the top of this file.
+    // Instead, make filterExistingFiles return [] by rejecting all access() calls —
+    // no managed path "exists", so existingManaged=[]. Combined with empty writes(),
+    // stagePaths=[] and git add must NOT be called.
+    vi.mocked(fs.access).mockRejectedValue(new Error("does not exist"));
 
-    const { spawnFn, calls } = makeGitSpawnFn({});
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "diff": { exitCode: 0 }, // no staged changes (nothing was added)
+      },
+    });
 
     const slug = "test-slug";
-    // Scoped step with empty writes() — all possible stage paths are empty
-    const step = makeScopedStep("spec-fixer", []); // empty writes
+    const step = makeScopedStep("spec-fixer", []); // empty writes()
     const state = makeJobState();
     const deps = makeDeps(slug);
     const infra = makeCommitPushInfra(spawnFn);
 
     await commitAndPush(step, state, deps, null, infra);
 
-    // With empty stagePaths, no git commands should be called
+    // git add must NOT be called when stagePaths is empty
     expect(
       calls.map((c) => c.args[0]),
-      "No git commands should be called when stagePaths is empty",
+      "git add must NOT be called when stagePaths is empty",
+    ).not.toContain("add");
+    // git commit must NOT be called (no staged changes)
+    expect(
+      calls.map((c) => c.args[0]),
+      "git commit must NOT be called when stagePaths is empty",
     ).not.toContain("commit");
   });
 });
@@ -828,7 +836,7 @@ describe("TC-020: guarded mode — spec.md change causes halt with path in error
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-021: guarded mode — violated files restored to HEAD before WRITE_SCOPE_VIOLATION
+// TC-021: guarded mode — violated files restored before WRITE_SCOPE_VIOLATION throw
 //
 // Fix for [HIGH]: commitFinalState (checkpoint path) uses git add -A after every
 // awaiting-resume exit. Without restoration, a guarded step that halt-detected
@@ -836,13 +844,15 @@ describe("TC-020: guarded mode — spec.md change causes halt with path in error
 // in the worktree. commitFinalState's git add -A would then stage and commit the
 // violation content into the remote branch, defeating the fail-closed guarantee.
 //
-// Fix: before throwing WRITE_SCOPE_VIOLATION, guarded mode calls
-// git checkout HEAD -- <violations> to restore those files to their HEAD state.
-// commitFinalState's subsequent git add -A sees only the HEAD content (no diff
-// for those files) and therefore does not include violation content in the commit.
+// Fix: two-step restore before throwing WRITE_SCOPE_VIOLATION:
+//   1. git clean -f -- <violations>: removes newly created (untracked) violations that
+//      are not in HEAD. git checkout HEAD would fail for those, leaving them in the
+//      worktree where commitFinalState's git add -A would pick them up.
+//   2. git checkout HEAD -- <violations>: restores tracked modified violations.
+// Both are best-effort (failures silently ignored). The throw always occurs.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-021: guarded mode — violated files restored to HEAD before WRITE_SCOPE_VIOLATION throw", () => {
+describe("TC-021: guarded mode — violated files restored before WRITE_SCOPE_VIOLATION throw", () => {
   it("git checkout HEAD is called for request.md before throwing WRITE_SCOPE_VIOLATION", async () => {
     const slug = "test-slug";
     const requestMd = `specrunner/changes/${slug}/request.md`;
@@ -957,6 +967,46 @@ describe("TC-021: guarded mode — violated files restored to HEAD before WRITE_
       code: "WRITE_SCOPE_VIOLATION",
     });
   });
+
+  it("untracked (new) violation file is removed with git clean -f before git checkout HEAD", async () => {
+    // Scenario: agent creates a brand-new request.md that didn't exist before (untracked).
+    // git checkout HEAD -- request.md would fail (not in HEAD) and leave the file in the
+    // worktree. The two-step restore calls git clean -f first to remove untracked files,
+    // then git checkout HEAD for tracked modified files.
+    const slug = "test-slug";
+    const requestMd = `specrunner/changes/${slug}/request.md`;
+    // "??" prefix = untracked (new file, never committed to git)
+    const statusOutput = `?? ${requestMd}\0`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "status": { exitCode: 0, stdout: statusOutput },
+        "clean": { exitCode: 0 },
+        "checkout": { exitCode: 1 }, // fails because file not in HEAD — expected for new files
+      },
+    });
+
+    const step = makeGuardedStep("implementer");
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    // WRITE_SCOPE_VIOLATION must be thrown despite clean succeeding and checkout failing
+    await expect(commitAndPush(step, state, deps, null, infra)).rejects.toMatchObject({
+      code: "WRITE_SCOPE_VIOLATION",
+    });
+
+    const cleanCall = calls.find((c) => c.args[0] === "clean");
+    expect(cleanCall, "git clean must be called to remove untracked violation").toBeDefined();
+    expect(cleanCall!.args, "git clean must use -f flag").toContain("-f");
+    expect(cleanCall!.args, "git clean must use '--' separator").toContain("--");
+    expect(cleanCall!.args, "git clean must target the violation path").toContain(requestMd);
+
+    const checkoutCall = calls.find((c) => c.args[0] === "checkout");
+    expect(checkoutCall, "git checkout HEAD must also be attempted (for tracked files)").toBeDefined();
+    expect(checkoutCall!.args, "checkout must target HEAD").toContain("HEAD");
+    expect(checkoutCall!.args, "checkout must include violation path").toContain(requestMd);
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1052,8 +1102,14 @@ describe("TC-022: scoped mode — pipeline-managed paths included in scoped git 
 // guarded step (implementer) then sees request.md as changed, falsely reports a
 // WRITE_SCOPE_VIOLATION attributed to implementer.
 //
-// Fix: after scoped staging, call git checkout HEAD -- <residual violations>
-// to restore dirty protected files and prevent cross-step contamination.
+// Fix: two-step restore after scoped staging:
+//   1. git clean -f -- <residualViolations>: removes newly created untracked files.
+//   2. git checkout HEAD -- <residualViolations>: restores tracked modified files.
+//
+// Best-effort asymmetry: if git status fails (ok===false) after staging, the
+// residual restoration is silently skipped. This is intentional — scoped restoration
+// is defensive (prevents cross-step false positives in the NEXT step), not
+// safety-critical. Guarded mode is the hard enforcement gate (fail-closed).
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("TC-023: scoped mode — residual protected dirty files restored after staging", () => {
@@ -1182,5 +1238,43 @@ describe("TC-023: scoped mode — residual protected dirty files restored after 
         "declared spec.md must not appear in git checkout args",
       ).not.toContain(specMd);
     }
+  });
+
+  it("git status failure after staging is silently skipped (best-effort asymmetry)", async () => {
+    // postStatus.ok===false → skip residual restoration silently.
+    // This is intentional: scoped post-staging restoration is defensive (prevents
+    // cross-step false positives), not safety-critical. Guarded mode is the hard gate.
+    const slug = "test-slug";
+    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "add": { exitCode: 0 },
+        // git status fails after staging (e.g. git error)
+        "status": { exitCode: 128 },
+        "diff": { exitCode: 1 },
+        "commit": { exitCode: 0 },
+        "push": { exitCode: 0 },
+      },
+    });
+
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    // Must complete without error — status failure is silently skipped
+    await expect(commitAndPush(step, state, deps, null, infra)).resolves.toBeUndefined();
+
+    // No git clean or checkout should be called (residual restoration skipped)
+    const cleanCall = calls.find((c) => c.args[0] === "clean");
+    const checkoutCall = calls.find((c) => c.args[0] === "checkout");
+    expect(cleanCall, "git clean must NOT be called when status fails").toBeUndefined();
+    expect(checkoutCall, "git checkout must NOT be called when status fails").toBeUndefined();
+
+    // Commit and push must still complete normally
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands, "git commit must proceed despite status failure").toContain("commit");
+    expect(subcommands, "git push must proceed despite status failure").toContain("push");
   });
 });
