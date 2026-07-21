@@ -31,10 +31,7 @@ import * as os from "node:os";
 
 // ─── Prompts ────────────────────────────────────────────────────────────────
 import { PIPELINE_RULES } from "../../../prompts/fragments.js";
-import {
-  VERDICT_BLOCKING_RULES,
-  DECISION_NEEDED_DEFINITION,
-} from "../../../prompts/judge-rules.js";
+import { VERDICT_BLOCKING_RULES } from "../../../prompts/judge-rules.js";
 // Dynamic access for SEVERITY_DEFINITION / REQUEST_REVIEW_SEVERITY_DEFINITION
 // which will be added to judge-rules.ts by the implementer (T-01).
 import * as judgeRules from "../../../prompts/judge-rules.js";
