@@ -170,8 +170,8 @@ describe("VERDICT_BLOCKING_RULES constant content", () => {
     expect(VERDICT_BLOCKING_RULES).toContain("needs-fix");
   });
 
-  it("states findings take priority over markdown verdict line", () => {
-    expect(VERDICT_BLOCKING_RULES).toContain("findings 由来の導出が優先");
+  it("does not contain removed 'findings 由来の導出が優先' paragraph (TC-013)", () => {
+    expect(VERDICT_BLOCKING_RULES).not.toContain("findings 由来の導出が優先");
   });
 });
 
@@ -393,7 +393,7 @@ describe("T-07: VERDICT_BLOCKING_RULES does not contain report_result", () => {
     expect(VERDICT_BLOCKING_RULES).toContain("needs-fix");
   });
 
-  it("VERDICT_BLOCKING_RULES still contains findings 由来の導出が優先", () => {
-    expect(VERDICT_BLOCKING_RULES).toContain("findings 由来の導出が優先");
+  it("VERDICT_BLOCKING_RULES does not contain removed 'findings 由来の導出が優先' paragraph (TC-013)", () => {
+    expect(VERDICT_BLOCKING_RULES).not.toContain("findings 由来の導出が優先");
   });
 });

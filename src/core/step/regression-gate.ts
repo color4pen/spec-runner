@@ -156,9 +156,9 @@ Verification steps:
 3. Report any regressions (findings that are back) with severity=high / resolution=fixable.
 4. Report contradictions (fixing A re-introduces B) with resolution=decision-needed.
 5. If ledger is empty → call \`report_result\` with findings=[] immediately.
-6. Write your result to: ${resultPath}
+6. Write your evidence report to: ${resultPath}
 
-The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\`
+Do NOT write a verdict line. Verdict is derived by CLI from typed findings (report_result).
 
 Original request:
 ${deps.request.content}

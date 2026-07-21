@@ -1,7 +1,7 @@
 import { changesDirRel, specReviewResultPath } from "../util/paths.js";
 import { PIPELINE_RULES, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, SEVERITY_DEFINITION } from "./judge-rules.js";
 import { SPEC_EXEMPT_MARKER } from "../templates/step-output-templates.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
@@ -25,25 +25,23 @@ Your task is to review the change folder and produce a verdict on the specificat
 
 ## Your Output
 
-Write your findings to the path specified in the user message (e.g. ${_changesDir}/<slug>/spec-review-result-NNN.md).
+Write your evidence report to the path specified in the user message (e.g. ${_changesDir}/<slug>/spec-review-result-NNN.md).
 
 **Before writing**: Read the template file at the path specified in the user message using the Read tool.
-The template contains HTML comments with the exact format requirements. Follow them precisely.
+The template is an evidence report scaffold — follow the section structure precisely.
 
-The file MUST contain a verdict line in this exact format (required for machine parsing):
-\`- **verdict**: <approved|needs-fix|escalation>\`
+The evidence report MUST contain:
+- \`## 検証した項目\` — what you verified and how (files read, scenarios reviewed, etc.)
+- \`## 検証できなかった項目\` — what you could not verify and why (write "None" if everything was verified)
+- \`## Findings 詳細\` — supplementary explanation of typed findings (write "None" if no findings)
 
-### Verdict Definitions
-
-- **approved**: The specification is complete, consistent, and ready for implementation. All critical concerns are addressed.
-- **needs-fix**: The specification has issues that must be resolved before implementation. List findings clearly.
-- **escalation**: The specification has unresolvable conflicts, missing context, or requires human judgment beyond automated review.
+Do NOT write a verdict line in this file. Verdict is derived by CLI from typed findings.
 
 ## Delivery
 
-After writing the verdict and findings to the result file:
+After writing the evidence report:
 1. Read the template at the findings path first (the template is pre-placed for you)
-2. Write the result file to the worktree path specified in the user message following the template format
+2. Write the evidence report to the worktree path specified in the user message
 3. Do NOT finish until the file is written
 
 The CLI reads the result file from the local worktree after your session ends.
@@ -89,8 +87,7 @@ When \`spec.md\` is present **and is NOT spec-exempt** (does not contain \`${SPE
 ## Important Constraints
 
 - Do NOT propose fixes or rewrite spec sections. Your role is evaluation only.
-- Write the verdict line BEFORE the findings table.
-- Use exactly the format shown above — the verdict line must start with \`- **verdict**:\` at the beginning of a line.
+- Do NOT write a verdict line. Verdict is derived by CLI from typed findings.
 - Findings must follow the Pipeline Rules above.
 - Do not modify any source code or spec files other than the spec-review-result file.
 
@@ -111,11 +108,7 @@ ${COMPLETION_REPORT_LINE}
 }
 \`\`\`
 
-**Severity 定義**:
-- \`critical\`: 仕様の根本的な矛盾、実装不可能な要件
-- \`high\`: 機能不全につながる仕様欠陥、明確なアーキテクチャ違反
-- \`medium\`: 品質低下、保守性問題、将来のリスク
-- \`low\`: 情報提供、スタイル改善、微小な曖昧さ
+${SEVERITY_DEFINITION}
 
 **Resolution 定義**:
 - \`fixable\`: コードや仕様の修正で解決可能
@@ -137,7 +130,7 @@ export const SPEC_REVIEW_SYSTEM_PROMPT = buildSystemPrompt(SPEC_REVIEW_BASE, [
 /**
  * Template for the initial user message sent to the spec-review session.
  */
-export const SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE = `Please review the following change folder specification and produce a verdict.
+export const SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE = `Please review the following change folder specification.
 
 Change folder: ${_changesDir}/{{SLUG}}
 Request type: {{REQUEST_TYPE}}
@@ -148,10 +141,11 @@ Request type: {{REQUEST_TYPE}}
 {{REQUEST_CONTENT}}
 </user-request>
 
-Review all spec files in the change folder (request.md, design.md, tasks.md, spec.md). Write your verdict and findings to:
+Review all spec files in the change folder (request.md, design.md, tasks.md, spec.md). Write your evidence report to:
 {{FINDINGS_PATH}}
 
-The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\`
+The evidence report must contain: ## 検証した項目, ## 検証できなかった項目, ## Findings 詳細 sections.
+Do NOT write a verdict line — verdict is derived by CLI from typed findings.
 
 {{GIT_PUSH_INSTRUCTION}}`;
 

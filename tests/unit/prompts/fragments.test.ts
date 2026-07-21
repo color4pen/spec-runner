@@ -40,18 +40,26 @@ describe("fragments.ts exports remaining fragments as strings", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-02: Severity section
+// TC-02: Severity section removed from PIPELINE_RULES (verdict-channel-unification)
 // ---------------------------------------------------------------------------
-describe("TC-02: PIPELINE_RULES contains Severity section", () => {
-  it("contains all four severity levels", () => {
-    expect(PIPELINE_RULES).toContain("CRITICAL");
-    expect(PIPELINE_RULES).toContain("HIGH");
-    expect(PIPELINE_RULES).toContain("MEDIUM");
-    expect(PIPELINE_RULES).toContain("LOW");
+describe("TC-02: PIPELINE_RULES does NOT contain removed Severity section (TC-010, TC-016)", () => {
+  it("does not contain uppercase CRITICAL severity label", () => {
+    expect(PIPELINE_RULES).not.toContain("CRITICAL");
   });
 
-  it("contains approval block condition", () => {
-    expect(PIPELINE_RULES).toMatch(/CRITICAL.*≥.*1.*HIGH.*≥.*1|承認阻止条件/s);
+  it("does not contain uppercase HIGH severity label", () => {
+    expect(PIPELINE_RULES).not.toContain("HIGH");
+  });
+
+  it("does not contain uppercase MEDIUM severity label", () => {
+    expect(PIPELINE_RULES).not.toContain("MEDIUM");
+  });
+
+  it("does not contain uppercase LOW severity label", () => {
+    expect(PIPELINE_RULES).not.toContain("LOW");
+  });
+
+  it("still contains needs-fix verdict (in Verdict section)", () => {
     expect(PIPELINE_RULES).toContain("needs-fix");
   });
 });
@@ -80,46 +88,45 @@ describe("TC-03: PIPELINE_RULES contains all 9 categories", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-04: Findings Format section
+// TC-04: Findings Format section removed from PIPELINE_RULES (verdict-channel-unification)
 // ---------------------------------------------------------------------------
-describe("TC-04: PIPELINE_RULES contains Findings Format section", () => {
-  it("contains all required columns", () => {
-    expect(PIPELINE_RULES).toContain("# |");
-    expect(PIPELINE_RULES).toContain("Severity");
-    expect(PIPELINE_RULES).toContain("Category");
-    expect(PIPELINE_RULES).toContain("File");
-    expect(PIPELINE_RULES).toContain("Description");
-    expect(PIPELINE_RULES).toContain("How to Fix");
+describe("TC-04: PIPELINE_RULES does NOT contain removed Findings Format section (TC-015)", () => {
+  it("does not contain 7-column findings table header", () => {
+    expect(PIPELINE_RULES).not.toContain("# | Severity | Category | File | Description | How to Fix");
   });
 
-  it("contains File column format note", () => {
-    expect(PIPELINE_RULES).toMatch(/\{path\}:\{line\}|path.*line/);
+  it("does not contain {path}:{line} column format note", () => {
+    expect(PIPELINE_RULES).not.toMatch(/\{path\}:\{line\}/);
   });
 
-  it("contains How to Fix column note about specific guidance", () => {
-    expect(PIPELINE_RULES).toContain("How to Fix");
-    expect(PIPELINE_RULES).toMatch(/具体的|抽象表現は不可/);
+  it("does not contain '具体的|抽象表現は不可' How-to-Fix guidance", () => {
+    expect(PIPELINE_RULES).not.toMatch(/抽象表現は不可/);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-05: Scoring section
+// TC-05: Scoring section removed from PIPELINE_RULES (verdict-channel-unification)
 // ---------------------------------------------------------------------------
-describe("TC-05: PIPELINE_RULES contains Scoring section", () => {
-  it("contains Score 1-10 table", () => {
-    expect(PIPELINE_RULES).toContain("1-3");
-    expect(PIPELINE_RULES).toContain("9-10");
+describe("TC-05: PIPELINE_RULES does NOT contain removed Scoring section (TC-008)", () => {
+  it("does not contain Score 1-10 table values", () => {
+    expect(PIPELINE_RULES).not.toContain("9-10");
   });
 
-  it("contains Weight table for 6 categories", () => {
-    expect(PIPELINE_RULES).toContain("0.30");
-    expect(PIPELINE_RULES).toContain("0.25");
-    expect(PIPELINE_RULES).toContain("0.15");
-    expect(PIPELINE_RULES).toContain("0.10");
+  it("does not contain Weight table decimal values", () => {
+    expect(PIPELINE_RULES).not.toContain("0.30");
+    expect(PIPELINE_RULES).not.toContain("0.25");
   });
 
-  it("contains pass threshold 7.0", () => {
-    expect(PIPELINE_RULES).toContain("7.0");
+  it("does not contain pass threshold 7.0", () => {
+    expect(PIPELINE_RULES).not.toContain("7.0");
+  });
+
+  it("does not contain 'Score' column header", () => {
+    expect(PIPELINE_RULES).not.toContain("| Score |");
+  });
+
+  it("does not contain 'Weight' column header", () => {
+    expect(PIPELINE_RULES).not.toContain("| Weight |");
   });
 });
 
@@ -141,23 +148,23 @@ describe("TC-06: PIPELINE_RULES contains Verdict section", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-07: Iteration Comparison section
+// TC-07: Iteration Comparison section removed from PIPELINE_RULES (verdict-channel-unification)
 // ---------------------------------------------------------------------------
-describe("TC-07: PIPELINE_RULES contains Iteration Comparison section", () => {
-  it("contains Improvements, Regressions, Unchanged Issues", () => {
-    expect(PIPELINE_RULES).toContain("Improvements");
-    expect(PIPELINE_RULES).toContain("Regressions");
-    expect(PIPELINE_RULES).toContain("Unchanged");
+describe("TC-07: PIPELINE_RULES does NOT contain removed Iteration Comparison section (TC-008)", () => {
+  it("does not contain Convergence Trend text", () => {
+    expect(PIPELINE_RULES).not.toContain("Convergence Trend");
   });
 
-  it("contains Convergence Trend table with all trend values", () => {
-    expect(PIPELINE_RULES).toContain("improving");
-    expect(PIPELINE_RULES).toContain("plateaued");
-    expect(PIPELINE_RULES).toContain("regressing");
+  it("does not contain 'plateaued' trend value", () => {
+    expect(PIPELINE_RULES).not.toContain("plateaued");
   });
 
-  it("contains stagnation detection rule (2 iterations)", () => {
-    expect(PIPELINE_RULES).toMatch(/plateaued.*2.*iteration|停滞検出.*2.*iteration/s);
+  it("does not contain 'Regressions' column from Iteration Comparison table", () => {
+    expect(PIPELINE_RULES).not.toContain("Regressions");
+  });
+
+  it("does not contain stagnation detection pattern", () => {
+    expect(PIPELINE_RULES).not.toMatch(/停滞検出.*2.*iteration/s);
   });
 });
 

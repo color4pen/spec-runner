@@ -1,0 +1,27 @@
+{
+  "requestHash": "sha256:32943ea7fe9dd7c91182e1e6a744e93df346e96ac42fbd4576231570c4d6e42d",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/judge-verdict.ts:4-5 — comment confirms verdict derivation is CLI's deterministic function (deriveJudgeVerdict 系)",
+    "src/core/step/code-review.ts:189 — parseResult has R4 contract lock comment: prose-verdict parse path is dead",
+    "src/core/step/conformance.ts:115 — parseResult has R4 contract lock comment: prose-verdict parse path is dead",
+    "src/core/step/custom-reviewer.ts:161 — parseResult has R4 contract lock comment: prose-verdict parse path is dead",
+    "src/core/step/regression-gate.ts:176 — parseResult has R4 contract lock comment: prose-verdict parse path is dead",
+    "src/core/step/request-review.ts:125 — parseResult has R4 contract lock comment: prose-verdict parse path is dead",
+    "src/core/step/spec-review.ts:119 — parseResult has R4 contract lock comment: prose-verdict parse path is dead",
+    "src/core/step/code-review.ts:90 — buildCodeReviewInitialMessage contains 'The file MUST contain a verdict line'",
+    "src/core/step/conformance.ts:100 — buildMessage contains 'The file MUST contain a verdict line'",
+    "src/core/step/custom-reviewer.ts:66 — buildCustomReviewerMessage contains 'The file MUST contain a verdict line'",
+    "src/core/step/regression-gate.ts:161 — buildMessage (regression-gate) contains 'The file MUST contain a verdict line'",
+    "src/prompts/spec-review-system.ts:33-34 — system prompt contains verdict line requirement 'required for machine parsing'",
+    "src/prompts/spec-review-system.ts:154 — initial message template also contains verdict line requirement",
+    "src/prompts/request-review-system.ts:130-131 — system prompt contains verdict line requirement 'required for machine parsing'",
+    "src/prompts/request-review-system.ts:279 — initial message builder contains verdict line requirement",
+    "src/prompts/fragments.ts:70-125 — PIPELINE_RULES contains Scoring section (Score 基準 / Weight), line 97 states 'CLI 側の verdict 判定には使用されない', lines 109-125 contain Iteration Comparison / Convergence Trend / plateau detection",
+    "src/core/step/code-review.ts:139-160 — outputContracts content-format gate checks for 7-column header (# / Severity / Category / File / Description / How to Fix / Fix)",
+    "src/core/step/design.ts:68-94 — design outputContracts checks spec.md for Requirement/Scenario/SHALL|MUST structure, no verdict channel involvement",
+    "src/templates/step-output-templates.ts — REQUEST_REVIEW_RESULT_TEMPLATE, SPEC_REVIEW_RESULT_TEMPLATE, REVIEW_FEEDBACK_TEMPLATE, CONFORMANCE_RESULT_TEMPLATE each contain verdict placeholder and format instructions",
+    "src/prompts/judge-rules.ts — DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES defined here; severity definitions absent (exist as duplicates in each prompt Completion section)"
+  ],
+  "sourceRevision": "d51c9bc9098389b04b8e6f4b3f8d7378af8f704a"
+}

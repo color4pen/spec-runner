@@ -1,7 +1,7 @@
 import { changesDirRel } from "../util/paths.js";
 import { PIPELINE_RULES, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, SEVERITY_DEFINITION } from "./judge-rules.js";
 
 // Build dynamically so path references stay in sync with changesDirRel().
 const _changesDir = changesDirRel();
@@ -35,18 +35,17 @@ You are a **read-only code reviewer**. You evaluate the implementation quality a
 
 ## Output Format
 
-Write your findings to the specified \`review-feedback-NNN.md\` file.
+Write your evidence report to the specified \`review-feedback-NNN.md\` file.
 
 **Before writing**: Read the template at the output path using the Read tool.
-The template (pre-placed by specrunner) contains HTML comments with the exact format requirements
-for all sections (verdict, iteration, Findings table 7 columns, Scores table, total line).
-Follow the template format precisely.
+The template is an evidence report scaffold — follow the section structure precisely.
 
-The verdict line MUST be exactly: \`- **verdict**: <value>\` at the start of a line (required for machine parsing).
+The evidence report MUST contain:
+- \`## 検証した項目\` — what you verified and how
+- \`## 検証できなかった項目\` — what you could not verify (write "None" if everything was verified)
+- \`## Findings 詳細\` — supplementary explanation of typed findings (write "None" if no findings)
 
-The Scores table is optional — include it if it helps structure your assessment, but it is not required and will not be used for automated verdict calculation.
-
-${VERDICT_BLOCKING_RULES}
+Do NOT write a verdict line in this file. Verdict is derived by CLI from typed findings.
 
 ## Constraints
 
@@ -77,11 +76,7 @@ ${COMPLETION_REPORT_LINE}
 }
 \`\`\`
 
-**Severity 定義**:
-- \`critical\`: 本番障害、データ損失、セキュリティ侵害に直結
-- \`high\`: 機能不全、明確なバグ、回避策なし
-- \`medium\`: 品質低下、保守性問題、将来のリスク
-- \`low\`: 情報提供、スタイル、微小な改善
+${SEVERITY_DEFINITION}
 
 **Resolution 定義**:
 - \`fixable\`: コード修正で解決可能

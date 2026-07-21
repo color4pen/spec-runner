@@ -20,7 +20,6 @@ import {
   reviewFeedbackPath,
   conformanceResultPath,
 } from "../util/paths.js";
-import { VERDICT_BLOCKING_RULES } from "../prompts/judge-rules.js";
 import { isSpecRequired } from "../config/type-config.js";
 
 // ---------------------------------------------------------------------------
@@ -28,125 +27,84 @@ import { isSpecRequired } from "../config/type-config.js";
 // ---------------------------------------------------------------------------
 
 /**
- * Template for request-review-result-NNN.md (A-group).
+ * Template for request-review-result-NNN.md (A-group) — evidence report format.
  *
- * Machine-parsed fields:
- * - verdict line: `- **verdict**: <value>` at start of line
- * - Findings table: 6 columns
+ * verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
+ * findings は report_result（typed）で報告し、この file はその補足の evidence report である。
  */
 export const REQUEST_REVIEW_RESULT_TEMPLATE = `# Request Review Result
 
-<!-- FORMAT REQUIREMENTS (machine-parsed):
-- The verdict line MUST appear before the Findings table.
-- verdict line format (exact): \`- **verdict**: <value>\` at the start of a line
-- Valid verdict values: approve | needs-discussion | reject
-  - approve:          No blocking findings (no HIGH, no decision-needed). Request is ready for pipeline execution.
-  - needs-discussion: One or more blocking findings (HIGH or decision-needed) resolvable through discussion.
-  - reject:           Multiple blocking findings AND requirement contradictions or structural breakdown.
-- Findings table MUST have exactly 6 columns in this order:
-  # | Severity | Category | Location | Description | Recommendation
-- Valid Severity values (uppercase): HIGH | MEDIUM | LOW
-  - HIGH:   Request-level defect — goal unclear, acceptance criteria absent/untestable, or critical external constraint unspecified
-  - MEDIUM: Scope ambiguity, recommended additions
-  - LOW:    Clarity improvements, expression refinements
-${VERDICT_BLOCKING_RULES}
+<!-- EVIDENCE REPORT FORMAT:
+     verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
+     findings は report_result（typed）で報告し、この file はその補足の evidence report である。
+     CLI の判定: decision-needed → escalation（needs-discussion）/ critical|high → needs-fix / else → approved
 -->
 
-- **verdict**:
+## 検証した項目
 
-## Findings
+（何をどう確認したか。読んだファイル・辿った手順・確認したコード等を記載する）
 
-| # | Severity | Category | Location | Description | Recommendation |
-|---|----------|----------|----------|-------------|----------------|
+## 検証できなかった項目
+
+（確認できなかった項目と理由。無ければ None と明記する）
+
+## Findings 詳細
+
+（typed findings の補足説明。指摘がない場合は None と明記する）
 `;
 
 /**
- * Template for spec-review-result-NNN.md (A-group).
+ * Template for spec-review-result-NNN.md (A-group) — evidence report format.
  *
- * Machine-parsed fields:
- * - verdict line: `- **verdict**: <value>` at start of line
- * - Findings table: 6 columns
+ * verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
+ * findings は report_result（typed）で報告し、この file はその補足の evidence report である。
  */
 export const SPEC_REVIEW_RESULT_TEMPLATE = `# Spec Review Result
 
-<!-- FORMAT REQUIREMENTS (machine-parsed):
-- The verdict line MUST appear before the Findings table.
-- verdict line format (exact): \`- **verdict**: <value>\` at the start of a line
-- Valid verdict values: approved | needs-fix | escalation
-  - approved:    specification is complete, consistent, and ready for implementation
-  - needs-fix:   specification has issues that must be resolved before implementation
-  - escalation:  unresolvable conflicts, missing context, or requires human judgment
-- Findings table MUST have exactly 6 columns in this order:
-  # | Severity | Category | File | Description | How to Fix
-- Valid Severity values (uppercase): CRITICAL | HIGH | MEDIUM | LOW
-  - CRITICAL: production outage, data loss, security breach
-  - HIGH:     functional failure, clear bug, no workaround — blocks approval
-  - MEDIUM:   quality degradation, maintainability issue, future risk
-  - LOW:      informational, style, minor improvement
-- If no findings, write a table row with "None" or omit the table body.
-${VERDICT_BLOCKING_RULES}
+<!-- EVIDENCE REPORT FORMAT:
+     verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
+     findings は report_result（typed）で報告し、この file はその補足の evidence report である。
+     CLI の判定: decision-needed → escalation / critical|high → needs-fix / else → approved
 -->
 
-- **verdict**:
+## 検証した項目
 
-## Findings
+（何をどう確認したか。読んだ spec ファイル・辿った Scenario・確認した要件等を記載する）
 
-| # | Severity | Category | File | Description | How to Fix |
-|---|----------|----------|------|-------------|------------|
+## 検証できなかった項目
+
+（確認できなかった項目と理由。無ければ None と明記する）
+
+## Findings 詳細
+
+（typed findings の補足説明。指摘がない場合は None と明記する）
 `;
 
 /**
- * Template for review-feedback-NNN.md (A-group).
+ * Template for review-feedback-NNN.md (A-group) — evidence report format.
  *
- * Machine-parsed fields:
- * - verdict line: `- **verdict**: <value>`
- * - iteration line: `- **iteration**: NNN`
- * - Findings table: 7 columns (includes Fix column)
- * - Scores table: Category | Score | Weight
- * - total line: `- **total**: <weighted score>`
+ * verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
+ * findings は report_result（typed）で報告し、この file はその補足の evidence report である。
  */
 export const REVIEW_FEEDBACK_TEMPLATE = `# Code Review Feedback — iteration NNN
 
-<!-- FORMAT REQUIREMENTS (machine-parsed):
-- verdict line format (exact): \`- **verdict**: <value>\` at the start of a line
-- Valid verdict values: approved | needs-fix | escalation
-- iteration line format (exact): \`- **iteration**: NNN\` (3-digit zero-padded integer)
-- Findings table MUST have exactly 7 columns in this order:
-  # | Severity | Category | File | Description | How to Fix | Fix
-  - Fix column: yes = fixer should address this finding; no = skip (pre-existing / out-of-scope)
-- Scores table columns: Category | Score | Weight
-  - Valid Category values: correctness | security | architecture | performance | maintainability | testing
-  - Score: integer 1-10
-  - Weight: decimal as defined below
-- total line format (exact): \`- **total**: <decimal>\`
-- Default weights: correctness=0.30, security=0.25, architecture=0.15, performance=0.10, maintainability=0.10, testing=0.10
-- Scores table is optional but recommended.
-${VERDICT_BLOCKING_RULES}
+<!-- EVIDENCE REPORT FORMAT:
+     verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
+     findings は report_result（typed）で報告し、この file はその補足の evidence report である。
+     CLI の判定: decision-needed → escalation / critical|high → needs-fix / else → approved
 -->
 
-- **verdict**:
-- **iteration**:
+## 検証した項目
 
-## Findings
+（何をどう確認したか。読んだファイル・辿った diff・確認したコード等を記載する）
 
-| # | Severity | Category | File | Description | How to Fix | Fix |
-|---|----------|----------|------|-------------|------------|-----|
+## 検証できなかった項目
 
-## Scores
+（確認できなかった項目と理由。無ければ None と明記する）
 
-| Category | Score | Weight |
-|----------|-------|--------|
-| correctness |  | 0.30 |
-| security |  | 0.25 |
-| architecture |  | 0.15 |
-| performance |  | 0.10 |
-| maintainability |  | 0.10 |
-| testing |  | 0.10 |
+## Findings 詳細
 
-- **total**:
-
-## Summary
-
+（typed findings の補足説明。指摘がない場合は None と明記する）
 `;
 
 /**
@@ -378,32 +336,30 @@ Requirement / Scenario の欠如を finding にしないでください。
 `;
 
 /**
- * Template for conformance-result-NNN.md (A-group).
+ * Template for conformance-result-NNN.md (A-group) — evidence report format.
  *
- * Placed in the change folder before the conformance step runs. The agent
- * overwrites it with the per-artifact conformance findings and verdict.
+ * verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
+ * findings は report_result（typed）で報告し、この file はその補足の evidence report である。
  */
 export const CONFORMANCE_RESULT_TEMPLATE = `# Conformance Result
 
-<!-- FORMAT REQUIREMENTS (machine-parsed):
-- verdict line format (exact): \`- **verdict**: <value>\` at the start of a line
-- Valid verdict values: approved | needs-fix | escalation
-  - approved:   implementation conforms to tasks.md, design.md, spec.md, and request.md
-  - needs-fix:  one or more upstream artifacts are not satisfied by the implementation
-  - escalation: conformance cannot be determined (missing artifacts, unresolvable ambiguity)
-- The Findings table records the per-artifact judgment.
+<!-- EVIDENCE REPORT FORMAT:
+     verdict は CLI が typed findings から導出する。この file に verdict 行を書かない。
+     findings は report_result（typed）で報告し、この file はその補足の evidence report である。
+     CLI の判定: decision-needed → escalation / critical|high → needs-fix / else → approved
 -->
 
-- **verdict**:
+## 検証した項目
 
-## Conformance Findings
+（何をどう確認したか。確認した tasks.md・design.md・spec.md・request.md の項目を記載する）
 
-| Artifact | Conforms | Notes |
-|----------|----------|-------|
-| tasks.md |  |  |
-| design.md |  |  |
-| spec.md |  |  |
-| request.md |  |  |
+## 検証できなかった項目
+
+（確認できなかった項目と理由。無ければ None と明記する）
+
+## Findings 詳細
+
+（typed findings の補足説明。指摘がない場合は None と明記する）
 `;
 
 // ---------------------------------------------------------------------------

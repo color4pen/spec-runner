@@ -201,44 +201,56 @@ describe("TC-T004: design step templates are A-group (no cleanup)", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-T005: template constants contain HTML comment format constraints
+// TC-T005: template constants are evidence report format (verdict-channel-unification)
 // ---------------------------------------------------------------------------
-describe("TC-T005: template constants contain HTML comment format constraints", () => {
-  it("SPEC_REVIEW_RESULT_TEMPLATE contains verdict format instruction", () => {
-    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("- **verdict**:");
-    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("approved");
-    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("needs-fix");
-    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("escalation");
+describe("TC-T005: template constants are evidence report format", () => {
+  it("SPEC_REVIEW_RESULT_TEMPLATE contains 検証した項目 section (TC-003)", () => {
+    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("## 検証した項目");
   });
 
-  it("SPEC_REVIEW_RESULT_TEMPLATE contains Findings table 6 columns", () => {
-    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("| # | Severity | Category | File | Description | How to Fix |");
+  it("SPEC_REVIEW_RESULT_TEMPLATE contains 検証できなかった項目 section (TC-003)", () => {
+    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("## 検証できなかった項目");
   });
 
-  it("SPEC_REVIEW_RESULT_TEMPLATE contains severity values", () => {
-    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("CRITICAL");
-    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("HIGH");
-    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("MEDIUM");
-    expect(SPEC_REVIEW_RESULT_TEMPLATE).toContain("LOW");
+  it("SPEC_REVIEW_RESULT_TEMPLATE does not contain old 7-column header (TC-004)", () => {
+    expect(SPEC_REVIEW_RESULT_TEMPLATE).not.toContain("| # | Severity | Category | File | Description | How to Fix |");
   });
 
-  it("REVIEW_FEEDBACK_TEMPLATE contains verdict and iteration format", () => {
-    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("- **verdict**:");
-    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("- **iteration**:");
+  it("SPEC_REVIEW_RESULT_TEMPLATE does not contain uppercase severity values (TC-004)", () => {
+    expect(SPEC_REVIEW_RESULT_TEMPLATE).not.toContain("CRITICAL");
+    expect(SPEC_REVIEW_RESULT_TEMPLATE).not.toContain("| HIGH |");
   });
 
-  it("REVIEW_FEEDBACK_TEMPLATE contains Findings table 7 columns (with Fix)", () => {
-    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("| # | Severity | Category | File | Description | How to Fix | Fix |");
+  it("SPEC_REVIEW_RESULT_TEMPLATE does not contain - **verdict**: placeholder (TC-017)", () => {
+    expect(SPEC_REVIEW_RESULT_TEMPLATE).not.toContain("- **verdict**:");
   });
 
-  it("REVIEW_FEEDBACK_TEMPLATE contains Scores table", () => {
-    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("| Category | Score | Weight |");
-    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("correctness");
-    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("security");
+  it("REVIEW_FEEDBACK_TEMPLATE contains 検証した項目 section (TC-003)", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("## 検証した項目");
   });
 
-  it("REVIEW_FEEDBACK_TEMPLATE contains total line format", () => {
-    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("- **total**:");
+  it("REVIEW_FEEDBACK_TEMPLATE contains 検証できなかった項目 section (TC-003)", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).toContain("## 検証できなかった項目");
+  });
+
+  it("REVIEW_FEEDBACK_TEMPLATE does not contain - **verdict**: placeholder (TC-017)", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).not.toContain("- **verdict**:");
+  });
+
+  it("REVIEW_FEEDBACK_TEMPLATE does not contain - **iteration**: placeholder (TC-017)", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).not.toContain("- **iteration**:");
+  });
+
+  it("REVIEW_FEEDBACK_TEMPLATE does not contain - **total**: placeholder (TC-017)", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).not.toContain("- **total**:");
+  });
+
+  it("REVIEW_FEEDBACK_TEMPLATE does not contain 7-column Findings table (TC-004)", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).not.toContain("| # | Severity | Category | File | Description | How to Fix | Fix |");
+  });
+
+  it("REVIEW_FEEDBACK_TEMPLATE does not contain Scores table (TC-004)", () => {
+    expect(REVIEW_FEEDBACK_TEMPLATE).not.toContain("| Category | Score | Weight |");
   });
 
   it("TEST_CASES_TEMPLATE contains TC-NNN format instruction", () => {

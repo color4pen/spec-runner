@@ -321,25 +321,28 @@ describe("T-03: CodeReviewStep.followUpPrompt / getFollowUpPrompt are absent (un
   });
 });
 
-// A well-formed review-feedback table (separator row + 7-column header)
+// A well-formed evidence report (検証した項目 / 検証できなかった項目 sections present)
 const VALID_REVIEW_FEEDBACK = [
   "# Review Feedback",
   "",
-  "- **verdict**: approved",
+  "## 検証した項目",
   "",
-  "| # | Severity | Category | File | Description | How to Fix | Fix |",
-  "|---|----------|----------|------|-------------|------------|-----|",
-  "| 1 | low | style | src/foo.ts | Minor naming | Rename to bar | no |",
+  "Reviewed src/foo.ts and src/bar.ts. Read design.md and tasks.md.",
   "",
+  "## 検証できなかった項目",
+  "",
+  "None",
+  "",
+  "## Findings 詳細",
+  "",
+  "None",
 ].join("\n");
 
-// A malformed review-feedback (no separator row, no required header)
+// A malformed review-feedback (missing required evidence sections)
 const INVALID_REVIEW_FEEDBACK = [
   "# Review Feedback",
   "",
-  "- **verdict**: needs-fix",
-  "",
-  "Just some text without a proper table.",
+  "Just some text without the required evidence report sections.",
   "",
 ].join("\n");
 

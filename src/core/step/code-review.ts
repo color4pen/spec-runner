@@ -85,9 +85,9 @@ Steps:
 3. Read the spec in ${changeFolderPath(opts.slug)}/ (design.md, tasks.md)
 4. Refer to the Pipeline Rules in your system prompt for the findings format and severity definitions
 5. If ${changeFolderPath(opts.slug)}/test-cases.md exists, check test coverage against it (must scenarios); otherwise review code and tests as written
-6. Write your findings and verdict to: ${opts.findingsPath}
+6. Write your evidence report to: ${opts.findingsPath}
 
-The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\`
+Do NOT write a verdict line. Verdict is derived by CLI from typed findings (report_result).
 
 Original request:
 ${opts.requestContent}
@@ -146,12 +146,12 @@ export const CodeReviewStep: AgentStep = {
         policy: "follow-up",
         checks: [
           {
-            label: "Findings in Markdown table format (separator row present)",
-            pattern: "\\|[-:]+\\|",
+            label: "Verified section present (## 検証した項目)",
+            pattern: "##\\s+検証した項目",
           },
           {
-            label: "Required 7 columns header present (# / Severity / Category / File / Description / How to Fix / Fix)",
-            pattern: "\\|\\s*#\\s*\\|\\s*Severity\\s*\\|\\s*Category\\s*\\|\\s*File\\s*\\|\\s*Description\\s*\\|\\s*How to Fix\\s*\\|\\s*Fix\\s*\\|",
+            label: "Unverified section present (## 検証できなかった項目)",
+            pattern: "##\\s+検証できなかった項目",
           },
         ],
       },
@@ -160,8 +160,8 @@ export const CodeReviewStep: AgentStep = {
 
   // followUpPrompt is intentionally absent: the unconditional post-work self-check
   // turn has been removed (added-turns-persist-and-review-trim).
-  // Format (table + required columns) is enforced by the content-format outputContract above.
-  // Severity definitions are already injected via system prompt (step 4 of buildMessage).
+  // Evidence report sections (検証した項目 / 検証できなかった項目) are enforced by the content-format outputContract above.
+  // Severity definitions are already injected via system prompt.
 
   // maxTurns: code-review reads diff + writes findings; 20 is sufficient.
   // Design D3 (propose-openspec-cli-and-step-model-config).

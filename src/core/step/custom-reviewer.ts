@@ -61,9 +61,9 @@ Steps:
 2. Review the implementation according to your reviewer definition (観点 / 判定基準)
 3. Read the spec in ${changeFolderPath(opts.slug)}/ (design.md, tasks.md)
 4. Refer to your system prompt for the findings format and severity definitions
-5. Write your findings and verdict to: ${opts.resultFilePath}
+5. Write your evidence report to: ${opts.resultFilePath}
 
-The file MUST contain a verdict line: \`- **verdict**: <approved|needs-fix|escalation>\`
+Do NOT write a verdict line. Verdict is derived by CLI from typed findings (report_result).
 
 Original request:
 ${opts.requestContent}

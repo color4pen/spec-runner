@@ -8,7 +8,7 @@
  */
 import { PIPELINE_RULES, COMPLETION_REPORT_LINE, COMPLETION_NO_EARLY_STOP_LINE } from "./fragments.js";
 import { buildSystemPrompt } from "./builder.js";
-import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, SEVERITY_DEFINITION } from "./judge-rules.js";
 import { changesDirRel } from "../util/paths.js";
 import type { ReviewerSnapshot } from "../kernel/reviewer-snapshot.js";
 
@@ -56,10 +56,6 @@ ${def.freeText ? `### 補足\n\n${def.freeText}\n` : ""}
 4. Evaluate against the 判定基準 above
 5. Write your findings to the path specified in the user message
 
-The verdict line MUST be exactly: \`- **verdict**: <value>\` at the start of a line (required for machine parsing).
-
-${VERDICT_BLOCKING_RULES}
-
 ## Constraints
 
 - Do NOT modify any source files
@@ -88,11 +84,7 @@ ${COMPLETION_REPORT_LINE}
 }
 \`\`\`
 
-**Severity 定義**:
-- \`critical\`: 本番障害、データ損失、セキュリティ侵害に直結
-- \`high\`: 機能不全、明確なバグ、回避策なし
-- \`medium\`: 品質低下、保守性問題、将来のリスク
-- \`low\`: 情報提供、スタイル、微小な改善
+${SEVERITY_DEFINITION}
 
 **Resolution 定義**:
 - \`fixable\`: コード修正で解決可能
