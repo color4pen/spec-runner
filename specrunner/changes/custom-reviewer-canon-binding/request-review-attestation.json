@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:e2ca546a6a557d0e3f2ab72b1c2d80ed4e7ce999bd20adff14c351944ad39549",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/round-git-scope.ts:excludeChangeFolderPaths — specrunner/changes 配下すべてを除外（lines 37-41）",
+    "src/core/pipeline/reviewer-status.ts:190-199 — aggregateVerdict が全 skipped/空配列で approved を返す",
+    "src/core/pipeline/parallel-review-round.ts:139 — excludeChangeFolderPaths を sourceTouched に適用して computeInvalidations に渡す",
+    "src/core/pipeline/reviewer-status.ts:selectPendingMembers — approvedAtCommit/baselineCommit 一致で skip、revision 束縛実装済み（lines 95-122）",
+    "src/core/port/runtime-strategy.ts:442 — digestArtifacts メソッドが RuntimeStrategy ポートに存在",
+    "src/core/runtime/local.ts:1158 — LocalRuntime.digestArtifacts が sha256 を返す",
+    "src/core/runtime/managed.ts:530 — ManagedRuntime.digestArtifacts が hash: null を返す（best-effort）",
+    "src/kernel/reviewer-snapshot.ts:ReviewerStatus — approvedAtCommit 等のフィールドがオプション定義",
+    "src/state/schema/operations.ts:243-262 — reviewerStatuses validation は name/status のみチェック（追加フィールドは後方互換）"
+  ],
+  "sourceRevision": "13ad41862fd2028c1fb928e4c3941df25e2a1795"
+}
