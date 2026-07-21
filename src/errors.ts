@@ -445,11 +445,15 @@ export function writeScopeViolationError(
   stepName: string,
   branch: string,
   violatedPaths: string[],
+  quarantinePath?: string | null,
 ): SpecRunnerError {
   const pathList = violatedPaths.map((p) => `  - ${p}`).join("\n");
+  const quarantineNote = quarantinePath
+    ? `\n違反内容の退避先（machine-local、commit されない）: ${quarantinePath}`
+    : "";
   return new SpecRunnerError(
     ERROR_CODES.WRITE_SCOPE_VIOLATION,
-    `境界外への変更を検出したため commit を中止した。worktree を確認し、境界外変更を取り除いてから resume する。\nViolating paths:\n${pathList}`,
-    `Step '${stepName}' on branch '${branch}' attempted to write outside its declared scope.\nForbidden paths changed:\n${pathList}`,
+    `境界外への変更を検出したため commit を中止した。違反変更は worktree から復元済み（checkpoint commit への混入防止）。\nViolating paths:\n${pathList}${quarantineNote}`,
+    `Step '${stepName}' on branch '${branch}' attempted to write outside its declared scope.\nForbidden paths changed:\n${pathList}${quarantineNote}`,
   );
 }

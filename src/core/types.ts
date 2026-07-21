@@ -60,7 +60,7 @@ export interface PipelineDeps extends StepContext {
    * Pipeline and executor use this instead of inline `new JobStateStore()`.
    * Design D1 (job-state-store-di): required to prevent leaky defaults in tests.
    */
-  storeFactory?: StoreFactory;
+  storeFactory: StoreFactory;
   /**
    * resume 時にユーザーが注入した追加プロンプト。
    * StepExecutor が最初の agent ステップで消費し undefined にする。

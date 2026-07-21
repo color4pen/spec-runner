@@ -91,7 +91,7 @@ export class ParallelReviewRound {
 
     // D4: coordinator constructs its own CommitOrchestrator for single-writer round commit.
     // Pipeline / executor constructors are not changed.
-    const orchestrator = new CommitOrchestrator(deps.storeFactory!, this.events);
+    const orchestrator = new CommitOrchestrator(deps.storeFactory, this.events);
 
     // --- 1. Derive / initialize reviewer statuses ---
     const snapshots = (state.reviewers ?? []).filter((s) => memberNames.includes(s.name));

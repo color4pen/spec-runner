@@ -1,5 +1,6 @@
-import { access as fsAccess } from "node:fs/promises";
+import { access as fsAccess, mkdir as fsMkdir, writeFile as fsWriteFile, readFile as fsReadFile } from "node:fs/promises";
 import { join as pathJoin } from "node:path";
+import { localSidecarDir } from "../../util/paths.js";
 import type { AgentStep } from "./types.js";
 import type { JobState } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
@@ -122,6 +123,61 @@ async function commitAndPushTail(
   await pushOnly(branch, cwd, step.name, infra);
 }
 
+
+/**
+ * Preserve the content of write-scope-violating changes before they are restored.
+ *
+ * The violating content is evidence (what the agent attempted to write outside its
+ * boundary). Restoration is mechanically required so the post-halt checkpoint commit
+ * (commitFinalState: git add -A) cannot leak the violation to the remote branch — but
+ * restoring without capture would destroy the evidence a human needs to judge the halt.
+ *
+ * Captures, per violating path: the tracked diff vs HEAD, or the full content when the
+ * file is untracked (not in HEAD). Written to the machine-local sidecar directory
+ * (.specrunner/local/<slug>/ — never committed).
+ *
+ * Best-effort: returns the quarantine file path, or null on any failure. Failure never
+ * blocks the halt.
+ */
+async function quarantineViolationEvidence(
+  spawnFn: SpawnFn,
+  cwd: string,
+  slug: string,
+  stepName: string,
+  violations: string[],
+): Promise<string | null> {
+  try {
+    const sections: string[] = [
+      `# write-scope violation evidence`,
+      `step: ${stepName}`,
+      `captured-at: ${new Date().toISOString()}`,
+      `paths:`,
+      ...violations.map((v) => `  - ${v}`),
+      "",
+    ];
+    for (const v of violations) {
+      const diff = await gitExec(spawnFn, cwd, ["diff", "HEAD", "--", v]);
+      if (diff !== null && diff.length > 0) {
+        sections.push(`## diff: ${v}`, "```diff", diff, "```", "");
+      } else {
+        // Untracked (not in HEAD) or diff unavailable — capture raw content.
+        try {
+          const content = await fsReadFile(pathJoin(cwd, v), "utf-8");
+          sections.push(`## untracked content: ${v}`, "```", content, "```", "");
+        } catch {
+          sections.push(`## unreadable: ${v}`, "");
+        }
+      }
+    }
+    const dir = pathJoin(cwd, localSidecarDir(slug));
+    await fsMkdir(dir, { recursive: true });
+    const file = pathJoin(dir, `write-scope-violation-${stepName}-${Date.now()}.md`);
+    await fsWriteFile(file, sections.join("\n"), "utf-8");
+    return file;
+  } catch {
+    return null;
+  }
+}
 /**
  * Stage all changes, commit, and push to origin.
  *
@@ -205,6 +261,16 @@ export async function commitAndPush(
       if (postStatus.ok && postStatus.paths.length > 0) {
         const residualViolations = findWriteScopeViolations(step.name, slug, postStatus.paths, filePaths);
         if (residualViolations.length > 0) {
+          // Preserve evidence before restore, and surface the event — a scoped step wrote
+          // outside its declared outputs. The change is excluded from the commit either way;
+          // silent destruction would hide the boundary breach entirely.
+          const residualQuarantine = await quarantineViolationEvidence(
+            infra.spawnFn, cwd, slug, step.name, residualViolations,
+          );
+          stderrWrite(
+            `[${step.name}] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): ${residualViolations.join(", ")}` +
+            (residualQuarantine ? ` — 退避先: ${residualQuarantine}` : ""),
+          );
           await gitExecResult(infra.spawnFn, cwd, ["clean", "-f", "--", ...residualViolations]);
           await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...residualViolations]);
         }
@@ -227,6 +293,11 @@ export async function commitAndPush(
     // Check for forbidden boundary violations.
     const violations = findWriteScopeViolations(step.name, slug, statusResult.paths, declaredWritePaths);
     if (violations.length > 0) {
+      // Preserve the violating content BEFORE restoring — the restore is mechanically
+      // required (see below) but the content is the evidence a human needs at the halt.
+      const quarantinePath = await quarantineViolationEvidence(
+        infra.spawnFn, cwd, slug, step.name, violations,
+      );
       // Restore violated paths before throwing so commitFinalState's git add -A does not
       // pick them up and commit them to the remote branch (defeating the fail-closed guarantee).
       //
@@ -239,7 +310,7 @@ export async function commitAndPush(
       // Both operations are best-effort (failures silently ignored). The throw always occurs.
       await gitExecResult(infra.spawnFn, cwd, ["clean", "-f", "--", ...violations]);
       await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...violations]);
-      throw writeScopeViolationError(step.name, branch, violations);
+      throw writeScopeViolationError(step.name, branch, violations, quarantinePath);
     }
 
     // No violations — stage whole worktree (original behaviour).

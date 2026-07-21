@@ -189,6 +189,9 @@ function makeJobState(branch = "feat/test-slug"): JobState {
 
 function makeDeps(slug = "test-slug"): PipelineDeps {
   return {
+    storeFactory: ((_jobId: string) => {
+      throw new Error("storeFactory must not be used in commit-push tests");
+    }) as unknown as PipelineDeps["storeFactory"],
     config: { version: 1, runtime: "local", agents: {} },
     request: {
       type: "spec-change",
@@ -1276,5 +1279,114 @@ describe("TC-023: scoped mode — residual protected dirty files restored after 
     const subcommands = calls.map((c) => c.args[0]);
     expect(subcommands, "git commit must proceed despite status failure").toContain("commit");
     expect(subcommands, "git push must proceed despite status failure").toContain("push");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// quarantine-01/02/03: violation evidence is preserved before restore
+// 却下済み設計「自動 revert（証跡を消す）」への対処: 復元は checkpoint commit への
+// 混入防止として機構的に必要だが、復元前に違反内容を machine-local sidecar へ退避する。
+// ─────────────────────────────────────────────────────────────────────────────
+describe("quarantine: violation evidence preserved before restore", () => {
+  it("quarantine-01: guarded violation → evidence file written to .specrunner/local/<slug>/ with diff content", async () => {
+    const slug = "test-slug";
+    const requestMdPath = `specrunner/changes/${slug}/request.md`;
+    const statusOutput = ` M ${requestMdPath}\0`;
+    const fakeDiff = "diff --git a/request.md b/request.md\n-old line\n+weakened line";
+
+    const { spawnFn } = makeGitSpawnFn({
+      responses: {
+        "status": { exitCode: 0, stdout: statusOutput },
+        "diff": { exitCode: 0, stdout: fakeDiff },
+        "clean": { exitCode: 0 },
+        "checkout": { exitCode: 0 },
+      },
+    });
+
+    const step = makeGuardedStep("implementer");
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    let thrown: unknown;
+    try {
+      await commitAndPush(step, state, deps, null, infra);
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown).toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
+
+    const sidecarDir = path.join(tempDir, ".specrunner", "local", slug);
+    const files = await fs.readdir(sidecarDir);
+    const evidenceFiles = files.filter((f) => f.startsWith("write-scope-violation-implementer-"));
+    expect(evidenceFiles.length).toBe(1);
+    const content = await fs.readFile(path.join(sidecarDir, evidenceFiles[0]!), "utf-8");
+    expect(content).toContain(requestMdPath);
+    expect(content).toContain("weakened line");
+    // Error message points the human at the quarantine file.
+    expect(String((thrown as Error).message)).toContain("write-scope-violation-implementer-");
+  });
+
+  it("quarantine-02: untracked violation (no diff output) → raw file content captured", async () => {
+    const slug = "test-slug";
+    const newFilePath = `specrunner/changes/${slug}/design.md`;
+    const statusOutput = `?? ${newFilePath}\0`;
+
+    // Real untracked file in the temp worktree — diff returns empty for untracked.
+    await fs.mkdir(path.join(tempDir, "specrunner", "changes", slug), { recursive: true });
+    await fs.writeFile(path.join(tempDir, newFilePath), "fabricated design content", "utf-8");
+
+    const { spawnFn } = makeGitSpawnFn({
+      responses: {
+        "status": { exitCode: 0, stdout: statusOutput },
+        "diff": { exitCode: 0, stdout: "" },
+        "clean": { exitCode: 0 },
+        "checkout": { exitCode: 0 },
+      },
+    });
+
+    const step = makeGuardedStep("implementer");
+    const infra = makeCommitPushInfra(spawnFn);
+    await expect(
+      commitAndPush(step, makeJobState(), makeDeps(slug), null, infra),
+    ).rejects.toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
+
+    const sidecarDir = path.join(tempDir, ".specrunner", "local", slug);
+    const files = await fs.readdir(sidecarDir);
+    const content = await fs.readFile(
+      path.join(sidecarDir, files.find((f) => f.startsWith("write-scope-violation-"))!),
+      "utf-8",
+    );
+    expect(content).toContain("fabricated design content");
+  });
+
+  it("quarantine-03: scoped residual restore → evidence file written and stderr note emitted", async () => {
+    const slug = "test-slug";
+    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+    const requestMdPath = `specrunner/changes/${slug}/request.md`;
+    // After scoped staging, request.md remains dirty (residual violation).
+    const statusOutput = ` M ${requestMdPath}\0`;
+
+    const { spawnFn } = makeGitSpawnFn({
+      responses: {
+        "status": { exitCode: 0, stdout: statusOutput },
+        "add": { exitCode: 0 },
+        "diff": { exitCode: 1 },
+        "clean": { exitCode: 0 },
+        "checkout": { exitCode: 0 },
+        "commit": { exitCode: 0 },
+        "push": { exitCode: 0 },
+      },
+    });
+
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const infra = makeCommitPushInfra(spawnFn);
+    await commitAndPush(step, makeJobState(), makeDeps(slug), null, infra);
+
+    const sidecarDir = path.join(tempDir, ".specrunner", "local", slug);
+    const files = await fs.readdir(sidecarDir);
+    expect(files.some((f) => f.startsWith("write-scope-violation-spec-review-"))).toBe(true);
+    const stderrCalls = vi.mocked(process.stderr.write).mock.calls.map((c) => String(c[0]));
+    expect(stderrCalls.some((c) => c.includes("境界外の残余変更"))).toBe(true);
   });
 });

@@ -53,7 +53,7 @@ export function buildPipeline(
     throw new Error("PipelineDeps.runner is required. Use createRuntime().buildDeps() to construct PipelineDeps.");
   })();
 
-  const executor = new StepExecutor(bus, runner, deps.storeFactory!, deps.gitTransportSpawn, undefined, descriptor.permissionScope);
+  const executor = new StepExecutor(bus, runner, deps.storeFactory, deps.gitTransportSpawn, undefined, descriptor.permissionScope);
 
   const maxIterations = descriptor.maxIterations ?? getMaxRetries(deps.config);
 
