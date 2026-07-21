@@ -67,3 +67,5 @@
 {"type":"lineage","step":"verification","ts":"2026-07-21T12:43:29.349Z","outputs":[{"path":"specrunner/changes/approval-revision-binding/verification-result.md","hash":"sha256:dfde7b566294b17fd4c13ead367836ae36285f296d5f41a4f7cdfd73355ac375"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-07-21T12:43:29.355Z","step":"verification","status":"warning","message":"verification iteration 3 completed with verdict: failed"}
 {"type":"transition","ts":"2026-07-21T12:43:29.356Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: verification did not pass after 2 iterations"}
+{"type":"transition","ts":"2026-07-21T12:47:16.661Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'build-fixer'"}
+{"type":"transition","ts":"2026-07-21T12:47:16.721Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
