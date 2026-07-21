@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c60285d5-fe67-494b-912e-37765e28ba54",
   "createdAt": "2026-07-21T10:11:47.999Z",
-  "updatedAt": "2026-07-21T12:39:42.423Z",
+  "updatedAt": "2026-07-21T12:43:29.356Z",
   "request": {
     "title": "記録済み承認を revision に束縛し、stale 承認による reviewer 群 skip を封鎖する",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
-  "status": "running",
+  "step": "verification",
+  "status": "awaiting-resume",
   "branch": "change/approval-revision-binding-c60285d5",
-  "error": null,
+  "error": {
+    "code": "VERIFICATION_RETRIES_EXHAUSTED",
+    "message": "verification did not pass after 2 iterations",
+    "hint": "Review verification-result-003.md and fix the build errors manually."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -59,8 +63,14 @@
       ]
     }
   ],
+  "resumePoint": {
+    "step": "build-fixer",
+    "reason": "verification did not pass after 2 iterations",
+    "iterationsExhausted": 2,
+    "exhaustionPhase": "review-after-final-fix"
+  },
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -69,8 +79,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
-      "build-fixer": 1
+      "verification": 3,
+      "build-fixer": 2
     }
   }
 }
