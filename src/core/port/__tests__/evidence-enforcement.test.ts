@@ -27,7 +27,6 @@ import {
 // After T-02: parseEvidence is defined → tests pass their assertions (GREEN).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const reportResultModule = (await import("../../port/report-result.js")) as any;
-// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 const parseEvidence = reportResultModule["parseEvidence"] as ((v: unknown) => { ok: boolean; value?: unknown }) | undefined;
 
 // ---------------------------------------------------------------------------

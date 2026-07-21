@@ -20,7 +20,6 @@ import type { ReviewerSnapshot } from "../../kernel/reviewer-snapshot.js";
 // After T-07, it is defined — tests will pass (GREEN).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const judgeRulesModule = (await import("../judge-rules.js")) as any;
-// eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
 const EVIDENCE_COUNTS_DEFINITION = judgeRulesModule["EVIDENCE_COUNTS_DEFINITION"] as string | undefined;
 
 function makeMinimalReviewerSnapshot(): ReviewerSnapshot {
