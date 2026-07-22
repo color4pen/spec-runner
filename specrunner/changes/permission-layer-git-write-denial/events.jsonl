@@ -259,3 +259,10 @@
 {"type":"transition","ts":"2026-07-22T18:06:18.078Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-07-22T18:06:18.079Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-07-22T18:06:18.080Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-22T18:10:10.578Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"70896217-41da-473e-b091-8776cd8ad599","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/permission-layer-git-write-denial/regression-gate-result-005.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"evidence":{"checked":11,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-22T18:06:18.126Z","endedAt":"2026-07-22T18:10:08.846Z","commitOid":"1479c6ee8798146f899789c5125e7938a76c0c02"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-22T18:10:08.846Z","outputs":[{"path":"specrunner/changes/permission-layer-git-write-denial/regression-gate-result-005.md","hash":"sha256:3077c306e8a86a28b703b5eefb9df105589fd58e903111a6a3225442cad8fdf4"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-22T18:10:10.583Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-22T18:10:10.583Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-22T18:10:10.584Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-22T18:10:10.586Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
