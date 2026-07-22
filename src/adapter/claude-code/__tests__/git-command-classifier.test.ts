@@ -188,13 +188,18 @@ describe("TC-007: 環境変数代入プレフィックスをスキップして s
 
 describe("TC-008: CONDITIONAL サブコマンドの読み取り形が read-or-nongit を返す", () => {
   const cases = [
-    "git branch",           // branch with no args = list
-    "git branch --list",    // explicit list flag
-    "git branch -l",        // short list flag
-    "git tag",              // tag with no args = list
-    "git tag -l",           // tag list flag
-    "git stash list",       // stash list sub-action
-    "git stash show",       // stash show sub-action
+    "git branch",                    // branch with no args = list
+    "git branch --list",             // explicit list flag
+    "git branch -l",                 // short list flag
+    "git branch --contains abc123",  // filter flag with value — read (list branches containing commit)
+    "git branch --no-contains abc",  // negated filter flag — read
+    "git branch --merged HEAD",      // filter flag — read (list branches merged into HEAD)
+    "git branch --no-merged main",   // negated filter — read
+    "git branch --points-at HEAD",   // filter flag — read
+    "git tag",                       // tag with no args = list
+    "git tag -l",                    // tag list flag
+    "git stash list",                // stash list sub-action
+    "git stash show",                // stash show sub-action
   ];
 
   for (const cmd of cases) {

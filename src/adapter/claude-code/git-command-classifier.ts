@@ -200,8 +200,27 @@ function classifyConditional(subcommand: string, remainingArgs: string[]): GitCo
       return { kind: "mutation", subcommand };
     }
 
+    // Read-only filter flags that consume one value token (the value is NOT a branch name).
+    // e.g. git branch --contains abc123 → lists branches containing that commit (read).
+    // Without this exception, the value token (abc123) would match the positional-arg
+    // check below and produce a false-positive mutation verdict.
+    const READ_FILTER_FLAGS = new Set([
+      "--contains", "--no-contains",
+      "--merged", "--no-merged",
+      "--points-at", "--sort",
+    ]);
+    const consumedValueTokens = new Set<string>();
+    for (let i = 0; i < remainingArgs.length - 1; i++) {
+      const arg = remainingArgs[i]!;
+      if (READ_FILTER_FLAGS.has(arg)) {
+        const next = remainingArgs[i + 1]!;
+        if (!next.startsWith("-")) consumedValueTokens.add(next);
+      }
+    }
+
     // Positional argument (branch name) → create → mutation
-    if (remainingArgs.some((a) => !a.startsWith("-"))) {
+    // (tokens consumed as values of read-only filter flags are excluded)
+    if (remainingArgs.some((a) => !a.startsWith("-") && !consumedValueTokens.has(a))) {
       return { kind: "mutation", subcommand };
     }
 

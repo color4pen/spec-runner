@@ -128,6 +128,26 @@ describe("TC-039: scoped step の AgentRunContext に正しい writeScope が設
     expect(ctx.writeScope?.stepName).toBe("spec-review");
     expect(ctx.writeScope?.slug).toBe(slug);
     expect(ctx.writeScope?.declaredWritePaths).toEqual([resultPath]);
+
+    // managedPaths: pipelineManagedPaths(slug) — egress ledger paths denied for all steps
+    expect(ctx.writeScope?.managedPaths).toEqual([
+      `specrunner/changes/${slug}/state.json`,
+      `specrunner/changes/${slug}/events.jsonl`,
+      `specrunner/changes/${slug}/usage.json`,
+      `specrunner/changes/${slug}/bite-evidence-result.md`,
+      `specrunner/changes/${slug}/pr-create-result.md`,
+    ]);
+
+    // forbiddenPaths: protectedCanonPaths(slug) minus declaredWritePaths
+    // resultPath is not a protected canon path, so all canon paths are forbidden
+    expect(ctx.writeScope?.forbiddenPaths).toEqual([
+      `specrunner/changes/${slug}/request.md`,
+      `specrunner/changes/${slug}/spec.md`,
+      `specrunner/changes/${slug}/design.md`,
+      `specrunner/changes/${slug}/tasks.md`,
+      `specrunner/changes/${slug}/test-cases.md`,
+      `specrunner/changes/${slug}/request-review-attestation.json`,
+    ]);
   });
 });
 
@@ -170,6 +190,26 @@ describe("TC-040: guarded step の AgentRunContext に正しい writeScope が�
     expect(ctx.writeScope?.stepName).toBe("implementer");
     expect(ctx.writeScope?.slug).toBe(slug);
     expect(ctx.writeScope?.declaredWritePaths).toEqual([implNotesPath]);
+
+    // managedPaths: pipelineManagedPaths(slug)
+    expect(ctx.writeScope?.managedPaths).toEqual([
+      `specrunner/changes/${slug}/state.json`,
+      `specrunner/changes/${slug}/events.jsonl`,
+      `specrunner/changes/${slug}/usage.json`,
+      `specrunner/changes/${slug}/bite-evidence-result.md`,
+      `specrunner/changes/${slug}/pr-create-result.md`,
+    ]);
+
+    // forbiddenPaths: protectedCanonPaths(slug) minus declaredWritePaths
+    // implNotesPath is not a protected canon path, so all canon paths are forbidden
+    expect(ctx.writeScope?.forbiddenPaths).toEqual([
+      `specrunner/changes/${slug}/request.md`,
+      `specrunner/changes/${slug}/spec.md`,
+      `specrunner/changes/${slug}/design.md`,
+      `specrunner/changes/${slug}/tasks.md`,
+      `specrunner/changes/${slug}/test-cases.md`,
+      `specrunner/changes/${slug}/request-review-attestation.json`,
+    ]);
   });
 });
 
