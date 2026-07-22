@@ -174,11 +174,15 @@ describe("aggregateVerdict", () => {
     expect(aggregateVerdict(["approved"])).toBe("approved");
   });
 
-  it("returns approved when all verdicts are skipped (skipped treated as approved for gate, D5)", () => {
-    expect(aggregateVerdict(["skipped", "skipped"])).toBe("approved");
+  // TC-034: reviewer 構成あり + 全 skipped → escalation（非 green 化、req 3）
+  // BREAKING CHANGE from old behavior ("approved"). Now returns "escalation".
+  // Destruction confirmation (TC-048): removing the all-skipped branch makes this test fail.
+  it("TC-034/TC-006: returns escalation when all verdicts are skipped (all-skip → non-green, D6)", () => {
+    expect(aggregateVerdict(["skipped", "skipped"])).toBe("escalation");
   });
 
-  it("returns approved for mixed approved and skipped", () => {
+  // TC-036/TC-008: mixed approved + skipped → approved (not all-skip, gate passes)
+  it("TC-036/TC-008: returns approved for mixed approved and skipped", () => {
     expect(aggregateVerdict(["approved", "skipped"])).toBe("approved");
   });
 
@@ -199,7 +203,8 @@ describe("aggregateVerdict", () => {
     expect(aggregateVerdict(["approved", "needs-fix", "approved"])).toBe("needs-fix");
   });
 
-  it("returns approved for empty verdict list", () => {
+  // TC-035/TC-007: member 0 件 → approved (機能未使用扱い)
+  it("TC-035/TC-007: returns approved for empty verdict list (member 0 = feature unused)", () => {
     expect(aggregateVerdict([])).toBe("approved");
   });
 });
