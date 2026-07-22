@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ac3aa8bf-033e-421f-a92b-59359474389e",
   "createdAt": "2026-07-22T11:54:14.110Z",
-  "updatedAt": "2026-07-22T11:57:44.420Z",
+  "updatedAt": "2026-07-22T12:00:01.451Z",
   "request": {
     "title": "agent の git 状態変更とスコープ外書込を permission 層で遮断する",
     "type": "new-feature",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "request-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/permission-layer-git-write-denial-ac3aa8bf",
-  "error": {
-    "code": "EGRESS_UNKNOWN_COMMIT",
-    "message": "Egress backstop: unknown commit f78c52e1d216d7badb1d4cb9e32ef8f6e402ca1e in publish range for branch 'feat/permission-layer-git-write-denial-ac3aa8bf'.",
-    "hint": "A commit not created by the pipeline was found in the push range. Investigate and resolve before retrying."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -64,13 +60,10 @@
     }
   ],
   "issueNumber": 894,
-  "resumePoint": {
-    "step": "request-review",
-    "reason": "Egress backstop: unknown commit f78c52e1d216d7badb1d4cb9e32ef8f6e402ca1e in publish range for branch 'feat/permission-layer-git-write-denial-ac3aa8bf'.",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 4,
+    "historyCount": 6,
     "stepCounts": {
       "request-review": 1
     }
