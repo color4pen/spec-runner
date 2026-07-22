@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "65199b12-acdf-499d-a63e-bc547bd93448",
   "createdAt": "2026-07-21T23:16:17.564Z",
-  "updatedAt": "2026-07-22T02:01:21.380Z",
+  "updatedAt": "2026-07-22T02:04:59.467Z",
   "request": {
     "title": "custom reviewer の承認を canonical 入力 hash に束縛し、全 skip を非 green にする",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/custom-reviewer-canon-binding-65199b12",
   "error": null,
   "pipelineId": "standard",
@@ -86,8 +86,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/892",
+    "number": 892,
+    "createdAt": "2026-07-22T02:04:58.663Z"
+  },
   "_journal": {
-    "historyCount": 84,
+    "historyCount": 89,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -104,7 +109,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
