@@ -65,7 +65,47 @@ const ALWAYS_MUTATING = new Set([
 /**
  * Git subcommands with conditional behavior (read or write depending on flags/args).
  */
-const CONDITIONAL = new Set(["branch", "tag", "stash"]);
+const CONDITIONAL = new Set(["branch", "tag", "stash", "remote"]);
+
+/**
+ * Read-only git subcommands (closed allowlist).
+ *
+ * Any git subcommand NOT in this set and NOT in CONDITIONAL is treated as a
+ * mutation (deny). The original blocklist default (unknown → read) was fail-open:
+ * `git config alias.p push` (config unclassified → allowed) followed by `git p`
+ * (unknown alias → allowed) reached a direct push in two innocuous-looking
+ * commands. Unknown-deny closes that class; newly needed read commands are added
+ * here explicitly (the deny message tells the agent read-only git is available).
+ */
+const READ_ONLY = new Set([
+  "status",
+  "diff",
+  "diff-tree",
+  "diff-index",
+  "log",
+  "show",
+  "show-ref",
+  "rev-parse",
+  "rev-list",
+  "blame",
+  "grep",
+  "ls-files",
+  "ls-tree",
+  "ls-remote",
+  "describe",
+  "shortlog",
+  "cat-file",
+  "for-each-ref",
+  "name-rev",
+  "merge-base",
+  "count-objects",
+  "check-ignore",
+  "check-attr",
+  "var",
+  "help",
+  "version",
+  "--version",
+]);
 
 /**
  * Git global options that take a separate value argument (space-separated form).
@@ -189,7 +229,20 @@ function classifyConditional(subcommand: string, remainingArgs: string[]): GitCo
     return { kind: "mutation", subcommand };
   }
 
-  return { kind: "read-or-nongit" };
+  if (subcommand === "remote") {
+    // Bare `git remote` / -v → list → read; show / get-url → read.
+    // add / remove / rename / set-url / prune / set-head … → mutation
+    // (set-url could redirect a later pipeline push — treat every non-read form as mutation).
+    if (remainingArgs.length === 0) return { kind: "read-or-nongit" };
+    const first = remainingArgs[0]!;
+    if (first === "-v" || first === "--verbose" || first === "show" || first === "get-url") {
+      return { kind: "read-or-nongit" };
+    }
+    return { kind: "mutation", subcommand };
+  }
+
+  // CONDITIONAL exhausted — callers only reach here for subcommands in the set.
+  return { kind: "mutation", subcommand };
 }
 
 /**
@@ -249,8 +302,15 @@ function classifySegment(segment: string): GitCommandVerdict {
     return classifyConditional(subcommand, remainingArgs);
   }
 
-  // Unknown subcommand (status, diff, log, show, rev-parse, blame, etc.) → read
-  return { kind: "read-or-nongit" };
+  if (READ_ONLY.has(subcommand)) {
+    return { kind: "read-or-nongit" };
+  }
+
+  // Unknown git subcommand → mutation (fail-closed allowlist inversion).
+  // Unknown includes: config (alias-definition evasion vector), worktree, submodule,
+  // notes, reflog, symbolic-ref, repack, and any user-defined alias. A blocklist
+  // default here was the fail-open path to `git config alias.p push && git p`.
+  return { kind: "mutation", subcommand };
 }
 
 /**
