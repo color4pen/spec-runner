@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:7144d9882c8a5372aff7d11845e9b5f18adce0f137903cfde597cc3db77ea724",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/report-tool.ts:231-242 — REQUEST_REVIEW_REPORT_TOOL.zodSchema has ok/reason/verdict/findings/observations but no evidence field",
+    "src/core/step/report-tool.ts:83-87 — evidenceSchema defined with checked/skipped/unverified number fields",
+    "src/core/step/report-tool.ts:137-149 — JUDGE_REPORT_TOOL has evidence in zodSchema and 'REQUIRED when ok=true' in description",
+    "src/core/port/report-result.ts:147-164 — parseEvidence function exists",
+    "src/core/step/judge-verdict.ts:158-170 — deriveRequestReviewVerdict signature is (findings: Finding[], ok: boolean) with no evidence parameter",
+    "src/prompts/judge-rules.ts:88-99 — EVIDENCE_COUNTS_DEFINITION exported from judge-rules.ts",
+    "src/prompts/code-review-system.ts:78 — EVIDENCE_COUNTS_DEFINITION injected",
+    "src/prompts/spec-review-system.ts:84 — EVIDENCE_COUNTS_DEFINITION injected",
+    "src/prompts/custom-reviewer-system.ts:104 — EVIDENCE_COUNTS_DEFINITION injected",
+    "src/prompts/conformance-system.ts:79 — EVIDENCE_COUNTS_DEFINITION injected",
+    "src/prompts/regression-gate-system.ts:90 — EVIDENCE_COUNTS_DEFINITION injected",
+    "src/prompts/request-review-system.ts:13 — EVIDENCE_COUNTS_DEFINITION NOT imported (uses EVIDENCE_DISCIPLINE instead)"
+  ],
+  "sourceRevision": "13ad41862fd2028c1fb928e4c3941df25e2a1795"
+}

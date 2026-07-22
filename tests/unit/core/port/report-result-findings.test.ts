@@ -233,14 +233,16 @@ describe("parseCodeReviewReportInput — findings validation", () => {
 
 describe("parseRequestReviewReportInput — findings validation", () => {
   it("{ok:true, findings:[valid]} → ok:true with findings", () => {
-    const result = parseRequestReviewReportInput({ ok: true, findings: [validFinding] });
+    // TC-024: evidence added to satisfy the new evidence requirement
+    const result = parseRequestReviewReportInput({ ok: true, findings: [validFinding], evidence: { checked: 1, skipped: 0, unverified: 0 } });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.findings).toHaveLength(1);
   });
 
   it("{ok:true, findings:[]} → ok:true with empty findings", () => {
-    const result = parseRequestReviewReportInput({ ok: true, findings: [] });
+    // TC-024: evidence added to satisfy the new evidence requirement
+    const result = parseRequestReviewReportInput({ ok: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.findings).toEqual([]);
@@ -249,7 +251,8 @@ describe("parseRequestReviewReportInput — findings validation", () => {
   it("{ok:true} without findings → ok:true, findings undefined (T-02: findings now optional for request-review)", () => {
     // T-02 fix: request-review agents sometimes omit findings when there are no issues.
     // Parse succeeds and findings is undefined (treated as empty array for verdict derivation).
-    const result = parseRequestReviewReportInput({ ok: true });
+    // TC-024: evidence added to satisfy the new evidence requirement
+    const result = parseRequestReviewReportInput({ ok: true, evidence: { checked: 1, skipped: 0, unverified: 0 } });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");
     expect(result.value.ok).toBe(true);
@@ -265,10 +268,12 @@ describe("parseRequestReviewReportInput — findings validation", () => {
   });
 
   it("verdict field is preserved when present (compat)", () => {
+    // TC-024: evidence added to satisfy the new evidence requirement
     const result = parseRequestReviewReportInput({
       ok: true,
       findings: [],
       verdict: "approve",
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
     });
     expect(result.ok).toBe(true);
     if (!result.ok) throw new Error("unreachable");

@@ -222,6 +222,7 @@ export const CONFORMANCE_REPORT_TOOL: ReportToolSpec<ConformanceReportResult> = 
  * Adds verdict: "approve" | "needs-discussion" | "reject" (compat) and findings array.
  * Routing verdict is derived by the CLI from findings.
  * observations: optional channel for informational records that do NOT affect verdict routing.
+ * evidence: REQUIRED when ok=true — verification-volume counts. checked=0 is treated as indeterminate.
  *
  * Verdict semantics (for findings):
  *   approve          — no blocking findings (critical/high/decision-needed)
@@ -230,13 +231,14 @@ export const CONFORMANCE_REPORT_TOOL: ReportToolSpec<ConformanceReportResult> = 
  */
 export const REQUEST_REVIEW_REPORT_TOOL: ReportToolSpec<RequestReviewReportResult> = {
   name: "report_result",
-  description: "Report the completion of the request-review step. Call with ok=true for normal completion. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, options?: [{label: string, consequence: string}] }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. The CLI derives the verdict from findings; the 'verdict' field is kept for compatibility but is NOT used for routing. Optional: 'observations' array for informational records that do not require action and do not affect the verdict — each element is { severity, file, line?, title, rationale } (no resolution field). Omit observations if there is nothing noteworthy to record. You MUST call this tool before ending your turn.",
+  description: "Report the completion of the request-review step. Call with ok=true for normal completion. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, options?: [{label: string, consequence: string}] }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. The CLI derives the verdict from findings; the 'verdict' field is kept for compatibility but is NOT used for routing. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; skipped = in-scope items not verified; unverified = items declared unconfirmed. checked=0 is treated as indeterminate (判定不能) and will result in needs-discussion. Optional: 'observations' array for informational records that do not require action and do not affect the verdict — each element is { severity, file, line?, title, rationale } (no resolution field). Omit observations if there is nothing noteworthy to record. You MUST call this tool before ending your turn.",
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),
     verdict: optional(union([literal("approve"), literal("needs-discussion"), literal("reject")])),
     findings: optional(findingSchema),
     observations: optional(observationSchema),
+    evidence: optional(evidenceSchema),
   },
   parseInput: parseRequestReviewReportInput,
 };

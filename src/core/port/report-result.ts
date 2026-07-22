@@ -389,11 +389,13 @@ export function parseCodeReviewReportInput(
  * verdict: "approve" | "needs-discussion" | "reject" — kept for compat; NOT used for routing.
  * findings: structured findings array — used by CLI for verdict derivation.
  * observations: optional informational records — NOT used for verdict routing.
+ * evidence: verification-volume counts — required when ok=true (new completions).
  */
 export interface RequestReviewReportResult extends BaseReportResult {
   verdict?: "approve" | "needs-discussion" | "reject";
   findings?: Finding[];
   observations?: Observation[];
+  evidence?: Evidence;
 }
 
 /**
@@ -448,10 +450,12 @@ export function parseRequestReviewReportInput(
     result.verdict = obj["verdict"];
   }
 
-  // When ok=true, findings are OPTIONAL:
-  // - Present and valid → captured.
-  // - Present but invalid → parse fails.
-  // - Absent or undefined → result.findings stays undefined (= empty array for verdict derivation).
+  // When ok=true, findings are OPTIONAL and evidence is REQUIRED:
+  // - findings present and valid → captured.
+  // - findings present but invalid → parse fails.
+  // - findings absent or undefined → result.findings stays undefined (= empty array for verdict derivation).
+  // - evidence required and valid → captured.
+  // - evidence absent or invalid → parse fails with missingFields: ["evidence"].
   if (result.ok) {
     if ("findings" in obj && obj["findings"] !== undefined) {
       const parsed = parseFindings(obj["findings"], true);
@@ -461,6 +465,13 @@ export function parseRequestReviewReportInput(
       result.findings = parsed.value;
     }
     // findings absent: result.findings remains undefined — treated as empty array downstream
+
+    // evidence: REQUIRED when ok=true
+    const parsedEvidence = parseEvidence(obj["evidence"]);
+    if (!parsedEvidence.ok) {
+      return { ok: false, missingFields: ["evidence"], rawInput: raw };
+    }
+    result.evidence = parsedEvidence.value;
   }
 
   // observations: best-effort silent-ignore — absence or invalid input leaves field unset

@@ -140,16 +140,24 @@ describe("TC-017: EVIDENCE_COUNTS_DEFINITION content requirements", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-018: request-review prompt は EVIDENCE_COUNTS_DEFINITION を含まない
-// Source: spec.md > Requirement: judge prompts SHALL instruct evidence reporting from a single source
-//         > Scenario: request-review prompt omits the fragment
+// TC-018 (reversed by TC-023): request-review prompt CONTAINS EVIDENCE_COUNTS_DEFINITION
+// Source: tasks.md T-07 drift-guard 反転 (TC-023)
+//
+// REVERSAL NOTE: This test was previously TC-018 asserting REQUEST_REVIEW_SYSTEM_PROMPT
+// does NOT contain EVIDENCE_COUNTS_DEFINITION.
+// Reversed per TC-023 (tasks.md T-07 drift-guard reversal) — now asserts it DOES contain it.
+// Pre-implementation: RED (T-05 not yet injected EVIDENCE_COUNTS_DEFINITION into the prompt)
+// Post-implementation: GREEN (T-05 adds ${EVIDENCE_COUNTS_DEFINITION} to request-review prompt)
+//
+// The original TC-018 exclusion was from the typed-evidence-gate change that kept request-review
+// out of the evidence requirement. This change (request-review-evidence-counts) reverses it.
 // ---------------------------------------------------------------------------
 
-describe("TC-018: request-review prompt omits EVIDENCE_COUNTS_DEFINITION", () => {
-  it("TC-018: REQUEST_REVIEW_SYSTEM_PROMPT does NOT contain EVIDENCE_COUNTS_DEFINITION", () => {
+describe("TC-018 (reversed): request-review prompt CONTAINS EVIDENCE_COUNTS_DEFINITION", () => {
+  it("TC-018: REQUEST_REVIEW_SYSTEM_PROMPT DOES contain EVIDENCE_COUNTS_DEFINITION (single-source injection)", () => {
     if (EVIDENCE_COUNTS_DEFINITION === undefined) {
       throw new Error("EVIDENCE_COUNTS_DEFINITION not yet implemented (T-07 pending)");
     }
-    expect(REQUEST_REVIEW_SYSTEM_PROMPT).not.toContain(EVIDENCE_COUNTS_DEFINITION);
+    expect(REQUEST_REVIEW_SYSTEM_PROMPT).toContain(EVIDENCE_COUNTS_DEFINITION);
   });
 });

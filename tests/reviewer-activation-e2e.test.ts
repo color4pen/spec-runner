@@ -149,10 +149,12 @@ function buildMockClient() {
         }]);
       }
       // request-review
+      // TC-024: evidence added (checked > 0) so parseRequestReviewReportInput succeeds
+      // after the evidence requirement is enforced (request-review-evidence-counts change)
       if (agentId === "request-review-agent-id") {
         return Promise.resolve([{
           type: "agent.custom_tool_use", name: "report_result", id: "id",
-          input: { ok: true, verdict: "approve", findings: [] },
+          input: { ok: true, verdict: "approve", findings: [], evidence: { checked: 5, skipped: 0, unverified: 0 } },
         }]);
       }
       // All other (custom reviewers, producers)

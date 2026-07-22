@@ -10,7 +10,7 @@
 import { changesDirRel, requestReviewResultPath } from "../util/paths.js";
 import { buildSystemPrompt } from "./builder.js";
 import { EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
-import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES, REQUEST_REVIEW_SEVERITY_DEFINITION } from "./judge-rules.js";
+import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES, REQUEST_REVIEW_SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION } from "./judge-rules.js";
 
 const _changesDir = changesDirRel();
 
@@ -90,6 +90,8 @@ ${DECISION_NEEDED_DEFINITION}
 
 ${OBSERVATION_DEFINITION}
 
+${EVIDENCE_COUNTS_DEFINITION}
+
 **重要**: CLI が \`findings\` 配列から verdict を決定します。\`verdict\` フィールドは互換のために残されていますが routing に使用されません。
 指摘がない場合は \`findings: []\` を渡してください。
 
@@ -165,7 +167,7 @@ Steps:
 3. Explore the codebase as needed to validate the request (Read, Grep, Glob — read-only)
 4. Read the template at ${findingsPath} to understand the required format
 5. Write your findings and verdict to: ${findingsPath}
-6. Report your completion result with { ok: true, findings: [...] }${attestationStep}
+6. Report your completion result with { ok: true, findings: [...], evidence: { checked: N, skipped: N, unverified: N } }${attestationStep}
 
 Do NOT write a verdict line in the result file. Verdict is derived by CLI from typed findings.
 

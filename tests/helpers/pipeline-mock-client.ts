@@ -257,13 +257,15 @@ export function buildPipelineMockClient(opts: BuildPipelineMockClientOpts = {}) 
       }
 
       // request-review gate step — always approves by default in integration tests
+      // TC-024: evidence added (checked > 0) so parseRequestReviewReportInput succeeds
+      // after the evidence requirement is enforced (request-review-evidence-counts change)
       if (agentId === "request-review-agent-id") {
         return Promise.resolve([
           {
             type: "agent.custom_tool_use",
             name: "report_result",
             id: "mock-report-id",
-            input: { ok: true, verdict: "approve", findings: [] },
+            input: { ok: true, verdict: "approve", findings: [], evidence: { checked: 5, skipped: 0, unverified: 0 } },
           },
         ]);
       }

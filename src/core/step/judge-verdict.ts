@@ -143,23 +143,29 @@ export function deriveRegressionGateVerdict(
 }
 
 /**
- * Derive the request-review verdict from findings and ok flag.
+ * Derive the request-review verdict from findings, ok flag, and optional evidence.
  *
  * Blocking finding: severity critical/high OR resolution decision-needed.
  *
  * Priority order:
- * 1. ok=false → needs-discussion
- * 2. blocking ≥ 1 → needs-discussion
- * 3. else → approve
+ * 1. ok=false → needs-discussion (voluntary failure, highest priority)
+ * 2. evidence present && checked === 0 → needs-discussion (vacuous check: no items verified)
+ * 3. blocking ≥ 1 → needs-discussion
+ * 4. else → approve
+ *
+ * When evidence is undefined (legacy path), the vacuous check is skipped and
+ * derivation follows the pre-evidence rules (backward compatible).
  *
  * Note: "reject" is not derived — pipeline routes needs-discussion and reject
- * identically (both escalate), so agen-declared reject labeling has no routing value.
+ * identically (both escalate), so agent-declared reject labeling has no routing value.
  */
 export function deriveRequestReviewVerdict(
   findings: Finding[],
   ok: boolean,
+  evidence?: Evidence,
 ): "approve" | "needs-discussion" {
   if (!ok) return "needs-discussion";
+  if (evidence !== undefined && evidence.checked === 0) return "needs-discussion"; // vacuous check
   const hasBlocking = findings.some(
     (f) =>
       f.severity === "critical" ||

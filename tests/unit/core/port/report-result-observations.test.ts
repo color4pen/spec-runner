@@ -250,9 +250,11 @@ describe("parseCodeReviewReportInput — observations", () => {
 
 describe("parseRequestReviewReportInput — observations", () => {
   it("sets observations when valid", () => {
+    // TC-024: evidence added to satisfy the new evidence requirement
     const raw = {
       ok: true,
       findings: [],
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
       observations: [{ severity: "medium", file: "req.md", title: "Risk noted", rationale: "FYI" }],
     };
     const result = parseRequestReviewReportInput(raw);
@@ -263,7 +265,8 @@ describe("parseRequestReviewReportInput — observations", () => {
   });
 
   it("silently drops invalid observations, ok=true", () => {
-    const raw = { ok: true, findings: [], observations: [{ bad: "object" }] };
+    // TC-024: evidence added to satisfy the new evidence requirement
+    const raw = { ok: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 }, observations: [{ bad: "object" }] };
     const result = parseRequestReviewReportInput(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -271,7 +274,8 @@ describe("parseRequestReviewReportInput — observations", () => {
   });
 
   it("leaves observations undefined when absent", () => {
-    const raw = { ok: true, findings: [] };
+    // TC-024: evidence added to satisfy the new evidence requirement
+    const raw = { ok: true, findings: [], evidence: { checked: 1, skipped: 0, unverified: 0 } };
     const result = parseRequestReviewReportInput(raw);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
@@ -323,10 +327,12 @@ describe("backward compat — old toolResult without observations field", () => 
   });
 
   it("parseRequestReviewReportInput parses old format", () => {
+    // TC-024: evidence added to satisfy the new evidence requirement
     const oldFormat = {
       ok: true,
       verdict: "approve",
       findings: [],
+      evidence: { checked: 1, skipped: 0, unverified: 0 },
     };
     const result = parseRequestReviewReportInput(oldFormat);
     expect(result.ok).toBe(true);
