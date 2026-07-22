@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "be8366eb-b73d-4796-90ce-5f4df03d7ed5",
   "createdAt": "2026-07-21T23:16:15.038Z",
-  "updatedAt": "2026-07-22T01:31:42.290Z",
+  "updatedAt": "2026-07-22T01:35:15.248Z",
   "request": {
     "title": "write-set 検査を開始 HEAD・index・agent commit まで拡張し、既知の 3 突破経路を閉じる",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/write-scope-bypass-closure-be8366eb",
   "error": null,
   "pipelineId": "standard",
@@ -88,8 +88,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/891",
+    "number": 891,
+    "createdAt": "2026-07-22T01:35:14.448Z"
+  },
   "_journal": {
-    "historyCount": 93,
+    "historyCount": 98,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -106,7 +111,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 3,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
