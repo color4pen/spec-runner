@@ -87,7 +87,11 @@ export type ClaudeCodeOAuthTokenResolver = (
  * D1: filesystem.allowWrite restricts writes to cwd and its subtree (OS-level enforcement).
  * D2: failIfUnavailable: false enables fail-open degradation (unsupported platforms continue).
  * D3: no denyRead / allowRead — reads remain unrestricted.
- * D4: autoAllowBashIfSandboxed: true preserves Bash tool execution under the sandbox.
+ * D4 (permission-layer-git-write-denial): autoAllowBashIfSandboxed MUST be false — probe
+ *   observation B (2026-07-23) measured that `true` auto-approves Bash BEFORE canUseTool,
+ *   making the guard's Bash branch (git mutation deny) unreachable. With `false`, Bash
+ *   routes through canUseTool and allowed commands still execute under the sandbox
+ *   (probe scenarios bash-canusetool-gate-b / bash-git-mutation-deny).
  * write-scope-guard-redo D4: allowUnsandboxedCommands: false closes the dangerouslyDisableSandbox
  *   escape hatch — the model cannot re-run a sandboxed Bash command unsandboxed.
  *
@@ -97,7 +101,7 @@ export function buildWorkspaceSandbox(cwd: string): Record<string, unknown> {
   return {
     enabled: true,
     failIfUnavailable: false,
-    autoAllowBashIfSandboxed: true,
+    autoAllowBashIfSandboxed: false,
     allowUnsandboxedCommands: false,
     filesystem: {
       allowWrite: [cwd, `${cwd}/**`],
@@ -578,7 +582,8 @@ export class ClaudeCodeRunner implements AgentRunner {
       canUseTool: createWorkspaceToolGuard(cwd, ctx.writeScope),
       // D1: scope filesystem writes to the workspace (OS-level enforcement via SDK native sandbox).
       // D2: failIfUnavailable: false → fail-open when sandbox is unavailable.
-      // D4: autoAllowBashIfSandboxed: true → Bash runs normally under the sandbox.
+      // D4: autoAllowBashIfSandboxed: false → Bash routes through canUseTool (probe observation B:
+      //     true auto-approves Bash before the guard, making the git-mutation deny unreachable).
       // write-scope-guard-redo D4: allowUnsandboxedCommands: false → escape hatch disabled.
       sandbox: buildWorkspaceSandbox(cwd),
       // D5: stderr callback observes sandbox degradation; once-latch emits a single warning.

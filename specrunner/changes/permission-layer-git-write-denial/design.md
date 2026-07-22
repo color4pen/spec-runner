@@ -242,7 +242,17 @@ probe の 5 シナリオ verdict は design（本節の追記 or PR コメント
 シナリオ (a)〜(e) を `write-scope-guard-probe.ts` に追加実装した（`makeTrackedBashGuard` ヘルパー + 5 シナリオ）。
 guard ロジックは単体テスト（classifier TC-001〜TC-009、guard TC-FW-04 拡張、buildStepContext TC-039〜TC-042）で
 確定済みのため、probe はベルト・サスペンダーの実 SDK 検証として機能する。
-実 SDK 実行結果は `ANTHROPIC_API_KEY` を持つ環境で `bun scripts/probes/write-scope-guard-probe.ts` を実行後に追記する。
+**probe 実行記録(2026-07-23、実 SDK)**:
+
+| シナリオ | 結果 | 観測 |
+|---|---|---|
+| (a) bash-canusetool-gate | PASS | **観測 B**: `autoAllowBashIfSandboxed: true` は Bash を canUseTool より先に auto-approve する(guard 不到達)。`false` では canUseTool が発火(gate-b PASS) |
+| (b) bash-git-mutation-deny | PASS | `git commit` が canUseTool で deny される(`false` 設定下) |
+| (c) bash-git-read-allow | PASS | route=**sdk-fast-path**: SDK は読み取り安全コマンド(`git status`)を canUseTool 前に auto-approve する。Bash tool_use はストリームで観測され正常実行。guard の read-allow 分岐は fast-path 不適用コマンド向けのベルト・サスペンダー |
+| (d) scoped-write-deny | PASS | 宣言外 Write が deny |
+| (e) state-json-deny | PASS | state.json Write が deny |
+
+観測 B に基づき production の `buildWorkspaceSandbox` を `autoAllowBashIfSandboxed: false` に変更した(D1 の処方どおり)。`false` 下でも allow された Bash は sandbox 内で正常実行される(シナリオ (c) で実測)。既存シナリオ out-of-workspace-write / in-workspace-write / report_result も同日 PASS を確認(report_result は同日の再実行 1 回で in-process client の一時的 auth 失敗あり — guard と無関係)。
 
 テスト側の固定:
 

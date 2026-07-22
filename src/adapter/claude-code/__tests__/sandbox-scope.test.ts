@@ -158,7 +158,7 @@ describe("TC-SB-01: sandbox settings in step-agent query options", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-SB-02: Bash is NOT in allowedTools — canUseTool fires for Bash", () => {
-  it("autoAllowBashIfSandboxed is true and allowedTools does NOT contain Bash", async () => {
+  it("autoAllowBashIfSandboxed is false and allowedTools does NOT contain Bash", async () => {
     // permission-layer-git-write-denial D1: Bash removed from allowedTools so
     // canUseTool fires for Bash calls. The guard's Bash branch enforces git mutation deny.
     // Read, Grep, Glob remain pre-approved.
@@ -174,8 +174,10 @@ describe("TC-SB-02: Bash is NOT in allowedTools — canUseTool fires for Bash", 
 
     expect(capturedOptions).toBeDefined();
     const sandbox = capturedOptions!["sandbox"] as Record<string, unknown>;
-    // autoAllowBashIfSandboxed remains true so sandboxed Bash can execute once guard allows it
-    expect(sandbox["autoAllowBashIfSandboxed"]).toBe(true);
+    // Probe observation B (2026-07-23): autoAllowBashIfSandboxed:true auto-approves Bash
+    // BEFORE canUseTool, making the guard's git-mutation deny unreachable. Must be false
+    // so Bash routes through the guard; allowed commands still execute under the sandbox.
+    expect(sandbox["autoAllowBashIfSandboxed"]).toBe(false);
     // Bash is NOT pre-approved — canUseTool must fire for git mutation classification
     expect((capturedOptions!["allowedTools"] as string[])).not.toContain("Bash");
   });
