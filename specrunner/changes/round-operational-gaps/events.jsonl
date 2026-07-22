@@ -79,3 +79,9 @@
 {"type":"transition","ts":"2026-07-22T14:59:22.208Z","step":"regression-gate","status":"warning","message":"regression-gate iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-07-22T14:59:22.208Z","step":"step-transition","status":"ok","message":"regression-gate → code-fixer"}
 {"type":"transition","ts":"2026-07-22T14:59:22.210Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-07-22T14:59:44.609Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"9cf23c1c-004a-4125-838d-abcd8de7e462","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"reason":"line 213 の it() ラベルを TC-001b: に改名し、TC-001 重複を解消した。","status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-22T14:59:22.258Z","endedAt":"2026-07-22T14:59:42.977Z","commitOid":"cc2f9343b99a33ec781eef7f193c0c07983d34fe"}
+{"type":"lineage","step":"code-fixer","ts":"2026-07-22T14:59:42.977Z","outputs":[{"path":"specrunner/changes/round-operational-gaps","hash":null}],"inputs":[{"path":"specrunner/changes/round-operational-gaps/regression-gate-result-001.md","hash":"sha256:d5eccc6516e41737c707fa8fe3a3596dd156206b66a9a670228aa15a77ddfe82"}]}
+{"type":"transition","ts":"2026-07-22T14:59:44.613Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
+{"type":"transition","ts":"2026-07-22T14:59:44.615Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
+{"type":"transition","ts":"2026-07-22T14:59:44.616Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
