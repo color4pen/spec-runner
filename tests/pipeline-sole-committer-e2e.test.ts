@@ -33,6 +33,7 @@ import type { StepExecutor } from "../src/core/step/executor.js";
 import type { StepExecutionResult } from "../src/core/step/commit-orchestrator.js";
 import type { ParallelReviewConfig } from "../src/core/pipeline/types.js";
 import type { SpawnFn as GitExecSpawnFn } from "../src/util/git-exec.js";
+import type { RuntimeStrategy } from "../src/core/port/runtime-strategy.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -365,10 +366,10 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
         validateStepInputs: vi.fn().mockResolvedValue(undefined),
         validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-      };
+      } as unknown as RuntimeStrategy;
 
       // 5. Executor that simulates reviewer weakening request.md and self-committing
-      const selfCommitExecutor: StepExecutor = {
+      const selfCommitExecutor = {
         produceResult: vi.fn(async (): Promise<StepExecutionResult> => {
           // Reviewer weakens the canonical doc and commits (unauthorized self-commit)
           const requestAbsPath = path.join(
@@ -390,7 +391,7 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
           };
         }),
         execute: vi.fn().mockResolvedValue({}) as never,
-      };
+      } as unknown as StepExecutor;
 
       // 6. Construct ParallelReviewRound
       const steps = new Map([[MEMBER_A, makeMinimalStep(MEMBER_A)]]);
@@ -519,10 +520,10 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
         finalizeStepArtifacts: vi.fn().mockResolvedValue(undefined),
         validateStepInputs: vi.fn().mockResolvedValue(undefined),
         validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
-      };
+      } as unknown as RuntimeStrategy;
 
       // Executor that does NOT commit (legitimate behavior)
-      const cleanExecutor: StepExecutor = {
+      const cleanExecutor = {
         produceResult: vi.fn(async (): Promise<StepExecutionResult> => ({
           kind: "success",
           completion: { verdict: "approved", persistToolResult: null },
@@ -531,7 +532,7 @@ describe("TC-020: R6-2 — parallel reviewer 自己 commit 封鎖（実 git E2E�
           session: null,
         })),
         execute: vi.fn().mockResolvedValue({}) as never,
-      };
+      } as unknown as StepExecutor;
 
       const steps = new Map([[MEMBER_A, makeMinimalStep(MEMBER_A)]]);
       const parallelReview: ParallelReviewConfig = {

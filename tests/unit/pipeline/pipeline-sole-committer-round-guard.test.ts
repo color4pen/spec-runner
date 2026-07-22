@@ -90,11 +90,14 @@ function makeJobState(jobId: string, branch = `change/${SLUG}-abc`): JobState {
     reviewers: [
       {
         name: MEMBER_A,
+        maxIterations: 3,
         model: "claude-sonnet-4-5",
-        system: "review",
+        purpose: "review the change",
+        criteria: "correctness and completeness",
+        judgment: "approve or escalate",
+        freeText: "",
         paths: undefined,
         requestTypes: undefined,
-        budget: undefined,
       },
     ],
     reviewerStatuses: [],
@@ -124,7 +127,7 @@ function makeMemberStep(name: string): Step {
     resultFilePath: () => `specrunner/changes/${SLUG}/${name}-result-001.md`,
     parseResult: () => ({ verdict: "approved", findingsPath: null }),
     writes: (_state, deps) => [
-      { path: `specrunner/changes/${deps.slug}/${name}-result-001.md`, artifact: "result" as const },
+      { path: `specrunner/changes/${deps.slug}/${name}-result-001.md`, artifact: "file" as const },
     ],
   };
 }
@@ -472,7 +475,7 @@ describe("TC-032: 破壊確認 — HEAD guard を除去すると round halt テ�
     //
     // Documentation: after implementing the HEAD guard, these calls WILL check and detect
     // the advance, causing the test to turn GREEN.
-    const headAdvanceWouldBeDetected = headBeforeRound !== headAfterSelfCommit;
+    const headAdvanceWouldBeDetected = (headBeforeRound as string) !== headAfterSelfCommit;
     expect(headAdvanceWouldBeDetected, "HEAD advance is detectable (values differ)").toBe(true);
   });
 });

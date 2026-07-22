@@ -223,7 +223,7 @@ function makeScopedStep(overrides: Partial<AgentStep> = {}): AgentStep {
     resultFilePath: () => null,
     parseResult: () => ({ verdict: null, findingsPath: null }),
     writes: (_state, deps) => [
-      { path: `specrunner/changes/${deps.slug}/spec-review-result-001.md`, artifact: "result" as const },
+      { path: `specrunner/changes/${deps.slug}/spec-review-result-001.md`, artifact: "file" as const },
     ],
     ...overrides,
   };
@@ -262,13 +262,12 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
-    storeFactory: {
-      createStore: vi.fn().mockReturnValue({
-        load: vi.fn().mockResolvedValue(makeJobState("test")),
-        save: vi.fn().mockResolvedValue(undefined),
-        appendHistory: vi.fn().mockResolvedValue(undefined),
-      }),
-    },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    storeFactory: (_jobId: string) => ({
+      load: vi.fn().mockResolvedValue(makeJobState("test")),
+      save: vi.fn().mockResolvedValue(undefined),
+      appendHistory: vi.fn().mockResolvedValue(undefined),
+    }) as any,
     ...overrides,
   };
 }
@@ -483,7 +482,7 @@ describe("TC-004: scoped step は宣言 path + 管理 path のみを明示 commi
     const step = makeScopedStep({
       name: "spec-review",
       writes: (_state, deps) => [
-        { path: `specrunner/changes/${deps.slug}/spec-review-result-001.md`, artifact: "result" as const },
+        { path: `specrunner/changes/${deps.slug}/spec-review-result-001.md`, artifact: "file" as const },
       ],
     });
     const state = makeJobState("tc-004-job");
@@ -727,7 +726,7 @@ describe("TC-017: 合成経路の git add 失敗は halt する", () => {
 
     const step = makeScopedStep({
       writes: (_state, deps) => [
-        { path: `specrunner/changes/${deps.slug}/spec-review-result-001.md`, artifact: "result" as const },
+        { path: `specrunner/changes/${deps.slug}/spec-review-result-001.md`, artifact: "file" as const },
       ],
     });
     const state = makeJobState("tc-017b-job");
