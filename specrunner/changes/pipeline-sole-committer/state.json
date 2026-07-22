@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "561baf30-2710-4053-8409-873006401aaf",
   "createdAt": "2026-07-22T03:47:07.942Z",
-  "updatedAt": "2026-07-22T07:58:41.206Z",
+  "updatedAt": "2026-07-22T08:34:55.013Z",
   "request": {
     "title": "pipeline を唯一の committer にする — 検査モデルから合成モデルへ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/pipeline-sole-committer-561baf30",
   "error": null,
@@ -59,8 +59,36 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "676719b9cbb4af49b5e0c37588144a6632ef8794",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/pipeline-sole-committer/design.md:sha256:751f07603187ca600e463736d68755d6cbd0f538e2cb1a014b4d20b8c4a5e465|specrunner/changes/pipeline-sole-committer/request.md:sha256:3122ca495dac7b813bd2c740d4e92d4f9d9e0e6b313fb92036f77b9ca1de84aa|specrunner/changes/pipeline-sole-committer/spec.md:sha256:f499947de7e12846a2e46fd2105f0b97c12608760ed00601fa529e4600dcb989|specrunner/changes/pipeline-sole-committer/tasks.md:sha256:55a8fe12cff56de9d69434fbb2b204412fbc239a8beae9452cd909c0238017a8|specrunner/changes/pipeline-sole-committer/test-cases.md:sha256:040312ed6f773112e1c02c92fc37c3c01adecfe539a07dcae8616021f22f9893"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 59,
+    "historyCount": 70,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -72,7 +100,10 @@
       "verification": 3,
       "build-fixer": 2,
       "code-review": 2,
-      "code-fixer": 1
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
