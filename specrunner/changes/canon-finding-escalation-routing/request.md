@@ -34,7 +34,7 @@ fixable finding が次の両方を満たす場合、当該 finding を needs-fix
 1. `finding.file` が保護正典パス集合に含まれる
 2. その finding の実効 routing 先 fixer(finding.fixTarget、欠落時は当該 verdict 関数の default)がその file を合法に書けない(= fixer の宣言 write に含まれない)
 
-規則は pure に保つ(正典集合・fixer 別の書込可能集合は引数で受け、判定関数内で I/O しない)。spec-fixer が書ける正典(spec.md / design.md)への `fixTarget: "spec-fixer"` finding は現行どおり needs-fix routing を維持する。request.md / tasks.md / test-cases.md はどの fixer も書けないため、これらへの fixable finding は fixTarget によらず常に escalation になる。
+規則は pure に保つ(正典集合・fixer 別の書込可能集合は引数で受け、判定関数内で I/O しない)。spec-fixer が書ける正典(spec.md / design.md)への `fixTarget: "spec-fixer"` finding は現行どおり needs-fix routing を維持する。request.md / test-cases.md はどの fixer も書けないため、これらへの fixable finding は fixTarget によらず常に escalation になる。tasks.md は implementer のみが宣言 write に含む(src/core/step/implementer.ts:176、task checkbox 更新用)ため、fixTarget: implementer(conformance 経路)は needs-fix:implementer を維持し、それ以外の fixTarget では escalation になる。
 
 ### R2: 全 verdict 導出関数への適用
 
@@ -59,7 +59,8 @@ fixable finding が次の両方を満たす場合、当該 finding を needs-fix
 ## 受け入れ基準
 
 - [ ] test-cases.md への fixable finding(fixTarget: code-fixer / 欠落)で deriveRegressionGateVerdict が escalation を返すことをテストで固定する(#890 の実例の再現)
-- [ ] request.md / tasks.md への fixable finding が fixTarget によらず escalation になることをテストで固定する
+- [ ] request.md への fixable finding が fixTarget によらず escalation になることをテストで固定する
+- [ ] tasks.md への fixable finding は fixTarget: implementer(conformance)のみ needs-fix:implementer を維持し、code-fixer / spec-fixer / 欠落 default が code-fixer 系の経路では escalation になることをテストで固定する
 - [ ] spec.md への `fixTarget: "spec-fixer"` fixable finding は conformance で `needs-fix:spec-fixer` のまま routing されることをテストで固定する(挙動保存)
 - [ ] 非正典 file(src/**)への fixable finding の needs-fix routing が全 verdict 関数で不変であることをテストで固定する
 - [ ] ledger 経路: 正典 finding を含む reviewer round の後、code-fixer の受領 findings に正典 finding が含まれず、verdict が escalation になることをテストで固定する
