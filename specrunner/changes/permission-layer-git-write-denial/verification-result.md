@@ -7,10 +7,10 @@
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
 | 1 | build | passed | 0.3s | 0 |
-| 2 | typecheck | passed | 4.5s | 0 |
-| 3 | test | passed | 28.5s | 0 |
+| 2 | typecheck | passed | 4.6s | 0 |
+| 3 | test | passed | 28.8s | 0 |
 | 4 | lint | passed | 4.9s | 0 |
-| 5 | changed-line-coverage | passed | 34.5s | 0 |
+| 5 | changed-line-coverage | passed | 35.6s | 0 |
 
 ## Phase: build
 
@@ -22,8 +22,8 @@ CLI Using tsup config: tsup.config.ts
 CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
-ESM dist/specrunner.js 1.28 MB
-ESM ⚡️ Build success in 63ms
+ESM dist/specrunner.js 1.30 MB
+ESM ⚡️ Build success in 61ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -51,10 +51,10 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	202d
   "categories": []
 }
 
- Test Files  612 passed (612)
-      Tests  9075 passed | 1 skipped (9076)
-   Start at  02:00:30
-   Duration  28.23s (transform 5.55s, setup 0ms, import 22.62s, tests 43.97s, environment 29ms)
+ Test Files  624 passed (624)
+      Tests  9258 passed | 1 skipped (9259)
+   Start at  03:16:50
+   Duration  28.57s (transform 5.52s, setup 0ms, import 22.68s, tests 44.82s, environment 29ms)
 
 
 $ vitest run
@@ -67,11 +67,11 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-9RTRFO/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-bnegdh/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-mOuJpx/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-n3hkwK/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
@@ -80,11 +80,6 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
@@ -107,6 +102,11 @@ Retrying worktree add: lock contention (attempt 2/3)
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
@@ -183,6 +183,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (43 changed files checked, 35 skipped)
-  Skipped (not in coverage surface): scripts/probes/write-scope-guard-probe.ts, specrunner/changes/permission-layer-git-write-denial/bite-evidence-result.md, specrunner/changes/permission-layer-git-write-denial/conformance-result-001.md, specrunner/changes/permission-layer-git-write-denial/conformance-result-002.md, specrunner/changes/permission-layer-git-write-denial/cross-boundary-invariants-result-001.md, specrunner/changes/permission-layer-git-write-denial/cross-boundary-invariants-result-002.md, specrunner/changes/permission-layer-git-write-denial/cross-boundary-invariants-result-003.md, specrunner/changes/permission-layer-git-write-denial/design.md, specrunner/changes/permission-layer-git-write-denial/events.jsonl, specrunner/changes/permission-layer-git-write-denial/regression-gate-result-001.md, specrunner/changes/permission-layer-git-write-denial/regression-gate-result-002.md, specrunner/changes/permission-layer-git-write-denial/regression-gate-result-003.md, specrunner/changes/permission-layer-git-write-denial/request-review-attestation.json, specrunner/changes/permission-layer-git-write-denial/request-review-result-001.md, specrunner/changes/permission-layer-git-write-denial/request-review-result-002.md, specrunner/changes/permission-layer-git-write-denial/request.md, specrunner/changes/permission-layer-git-write-denial/review-feedback-001.md, specrunner/changes/permission-layer-git-write-denial/review-feedback-002.md, specrunner/changes/permission-layer-git-write-denial/review-feedback-003.md, specrunner/changes/permission-layer-git-write-denial/review-feedback-004.md, specrunner/changes/permission-layer-git-write-denial/rules.md, specrunner/changes/permission-layer-git-write-denial/spec-review-result-001.md, specrunner/changes/permission-layer-git-write-denial/spec.md, specrunner/changes/permission-layer-git-write-denial/state.json, specrunner/changes/permission-layer-git-write-denial/tasks.md, specrunner/changes/permission-layer-git-write-denial/test-cases.md, specrunner/changes/permission-layer-git-write-denial/usage.json, specrunner/changes/permission-layer-git-write-denial/verification-result.md, src/adapter/claude-code/__tests__/git-command-classifier.test.ts, src/adapter/claude-code/__tests__/sandbox-scope.test.ts, src/adapter/claude-code/__tests__/workspace-tool-guard.test.ts, src/core/step/__tests__/step-context-builder.test.ts, src/util/__tests__/paths.test.ts, tests/unit/adapter/claude-code/agent-runner.test.ts, tests/unit/no-worktree-mode.test.ts
+changed-line-coverage: passed (75 changed files checked, 68 skipped)
+  Skipped (not in coverage surface): scripts/probes/write-scope-guard-probe.ts, specrunner/adr/2026-07-22-coverage-type-only-structural-skip.md, specrunner/adr/2026-07-23-permission-layer-git-write-denial.md, specrunner/adr/2026-07-23-type-only-coverage-skip.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/bite-evidence-result.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/conformance-result-001.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/conformance-result-002.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/cross-boundary-invariants-result-003.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/cross-boundary-invariants-result-004.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/design.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/events.jsonl, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/pr-create-result.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/request-review-attestation.json, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/request-review-result-001.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/request.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/review-feedback-001.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/rules.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/spec-review-result-001.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/spec.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/state.json, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/tasks.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/test-cases.md, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/usage.json, specrunner/changes/archive/2026-07-23-coverage-type-only-not-loaded/verification-result.md, specrunner/changes/permission-layer-git-write-denial/bite-evidence-result.md, specrunner/changes/permission-layer-git-write-denial/conformance-result-001.md, specrunner/changes/permission-layer-git-write-denial/conformance-result-002.md, specrunner/changes/permission-layer-git-write-denial/conformance-result-003.md, specrunner/changes/permission-layer-git-write-denial/cross-boundary-invariants-result-001.md, specrunner/changes/permission-layer-git-write-denial/cross-boundary-invariants-result-002.md, specrunner/changes/permission-layer-git-write-denial/cross-boundary-invariants-result-003.md, specrunner/changes/permission-layer-git-write-denial/cross-boundary-invariants-result-004.md, specrunner/changes/permission-layer-git-write-denial/cross-boundary-invariants-result-005.md, specrunner/changes/permission-layer-git-write-denial/design.md, specrunner/changes/permission-layer-git-write-denial/events.jsonl, specrunner/changes/permission-layer-git-write-denial/pr-create-result.md, specrunner/changes/permission-layer-git-write-denial/regression-gate-result-001.md, specrunner/changes/permission-layer-git-write-denial/regression-gate-result-002.md, specrunner/changes/permission-layer-git-write-denial/regression-gate-result-003.md, specrunner/changes/permission-layer-git-write-denial/regression-gate-result-004.md, specrunner/changes/permission-layer-git-write-denial/regression-gate-result-005.md, specrunner/changes/permission-layer-git-write-denial/request-review-attestation.json, specrunner/changes/permission-layer-git-write-denial/request-review-result-001.md, specrunner/changes/permission-layer-git-write-denial/request-review-result-002.md, specrunner/changes/permission-layer-git-write-denial/request.md, specrunner/changes/permission-layer-git-write-denial/review-feedback-001.md, specrunner/changes/permission-layer-git-write-denial/review-feedback-002.md, specrunner/changes/permission-layer-git-write-denial/review-feedback-003.md, specrunner/changes/permission-layer-git-write-denial/review-feedback-004.md, specrunner/changes/permission-layer-git-write-denial/review-feedback-005.md, specrunner/changes/permission-layer-git-write-denial/review-feedback-006.md, specrunner/changes/permission-layer-git-write-denial/rules.md, specrunner/changes/permission-layer-git-write-denial/spec-review-result-001.md, specrunner/changes/permission-layer-git-write-denial/spec.md, specrunner/changes/permission-layer-git-write-denial/state.json, specrunner/changes/permission-layer-git-write-denial/tasks.md, specrunner/changes/permission-layer-git-write-denial/test-cases.md, specrunner/changes/permission-layer-git-write-denial/usage.json, specrunner/changes/permission-layer-git-write-denial/verification-result.md, src/adapter/claude-code/__tests__/git-command-classifier.test.ts, src/adapter/claude-code/__tests__/sandbox-scope.test.ts, src/adapter/claude-code/__tests__/workspace-tool-guard.test.ts, src/core/step/__tests__/step-context-builder.test.ts, src/util/__tests__/paths.test.ts, tests/unit/adapter/claude-code/agent-runner.test.ts, tests/unit/core/verification/changed-line-coverage-type-only.test.ts, tests/unit/core/verification/type-only.test.ts, tests/unit/no-worktree-mode.test.ts
 ```
