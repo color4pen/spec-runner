@@ -26,6 +26,7 @@ const STATE_JSON = `specrunner/changes/${SLUG}/state.json`;
 const EVENTS_JSONL = `specrunner/changes/${SLUG}/events.jsonl`;
 const USAGE_JSON = `specrunner/changes/${SLUG}/usage.json`;
 const BITE_EVIDENCE = `specrunner/changes/${SLUG}/bite-evidence-result.md`;
+const PR_CREATE_RESULT = `specrunner/changes/${SLUG}/pr-create-result.md`;
 
 /** Declared output paths (typical reviewer result files) */
 const DECLARED_A = `specrunner/changes/${SLUG}/spec-result-001.md`;
@@ -40,14 +41,24 @@ const UNDECLARED_OTHER = "some/other/file.md";
 // ---------------------------------------------------------------------------
 
 describe("pipelineManagedPaths", () => {
-  it("returns state.json, events.jsonl, usage.json, bite-evidence-result.md for the given slug", () => {
+  // TC-002: pipelineManagedPaths が pr-create-result.md を含む（長さ 5）
+  //
+  // Destruction confirmation: prCreateResultPath を配列から外すと toHaveLength(5) および
+  // toContain(PR_CREATE_RESULT) が fail する
+  it("TC-002: returns state.json, events.jsonl, usage.json, bite-evidence-result.md, pr-create-result.md for the given slug", () => {
     const paths = pipelineManagedPaths(SLUG);
     expect(paths).toContain(STATE_JSON);
     expect(paths).toContain(EVENTS_JSONL);
     expect(paths).toContain(USAGE_JSON);
     expect(paths).toContain(BITE_EVIDENCE);
-    expect(paths).toHaveLength(4);
+    // TC-002: prCreateResultPath must be included (#898 fix, T-01)
+    expect(paths).toContain(PR_CREATE_RESULT);
+    expect(paths).toHaveLength(5);
   });
+
+  // Destruction confirmation: prCreateResultPath を pipelineManagedPaths から除去すると
+  // 「pr-create-result.md in changed → excluded from BOTH offending AND toStage」が fail する
+  // (offending に PR_CREATE_RESULT が入り、expect(offending).toHaveLength(0) が赤になる)
 
   it("uses the slug to build paths under specrunner/changes/<slug>/", () => {
     const other = "other-slug";
@@ -173,6 +184,36 @@ describe("partitionRoundChanges — pipeline-managed paths in changed", () => {
     const { toStage, offending } = partitionRoundChanges({
       changed: [STATE_JSON, EVENTS_JSONL, USAGE_JSON],
       declared: [DECLARED_A, DECLARED_B],
+      slug: SLUG,
+    });
+    expect(toStage).toHaveLength(0);
+    expect(offending).toHaveLength(0);
+  });
+
+  // TC-001: pr-create-result.md のみが dirty な round で offending が空になる (#898 regression)
+  //
+  // Mirrors the bite-evidence-result.md regression test (#888).
+  // Destruction confirmation: prCreateResultPath を pipelineManagedPaths から除去すると
+  // このテストが fail する — offending に PR_CREATE_RESULT が入り toHaveLength(0) が赤になる。
+  it("TC-001: pr-create-result.md in changed → excluded from BOTH offending AND toStage", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [DECLARED_A, PR_CREATE_RESULT],
+      declared: [DECLARED_A],
+      slug: SLUG,
+    });
+    // PR_CREATE_RESULT is pipeline-managed → must NOT appear in toStage
+    expect(toStage).toEqual([DECLARED_A]);
+    expect(toStage).not.toContain(PR_CREATE_RESULT);
+    // PR_CREATE_RESULT is pipeline-managed → must NOT appear in offending
+    expect(offending).not.toContain(PR_CREATE_RESULT);
+    expect(offending).toHaveLength(0);
+  });
+
+  // TC-001 (pr-create-result.md only in changed — no other declared changes)
+  it("TC-001b: pr-create-result.md only in changed (no declared changes) → toStage = [], offending = []", () => {
+    const { toStage, offending } = partitionRoundChanges({
+      changed: [PR_CREATE_RESULT],
+      declared: [],
       slug: SLUG,
     });
     expect(toStage).toHaveLength(0);

@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:e44dcdb39fedad64b6a74714c5dc167e9ea7ee18df67c21061fa3d3a09a83b01",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/round-git-scope.ts:105 — pipelineManagedPaths returns [slugStateJsonPath, slugEventsPath, usageJsonPath, biteEvidenceResultPath], no prCreateResultPath",
+    "src/util/paths.ts:83-84 — prCreateResultPath(slug) exists and returns specrunner/changes/<slug>/pr-create-result.md",
+    "specrunner/reviewers/cross-boundary-invariants.md frontmatter paths: 5 globs (src/core/pipeline/**, src/core/step/**, src/state/**, src/store/**, src/adapter/**), missing src/core/runtime/** and src/core/verification/**",
+    "src/core/runtime/ directory exists with local.ts, managed.ts, workspace-materializer.ts etc.",
+    "src/core/verification/ directory exists with runner.ts, phases.ts etc.",
+    "src/core/pipeline/__tests__/round-git-scope.test.ts:49 — expect(paths).toHaveLength(4) will break when prCreateResultPath is added"
+  ],
+  "sourceRevision": "1938fe17c9a03b1ad66c12af5ff35d03faee81f9"
+}
