@@ -80,6 +80,23 @@ export interface ReviewerStatus {
 }
 
 /**
+ * Returns true when a ReviewerStatus record has a valid canon hash binding
+ * (i.e. `canonHash` is a non-null string).
+ *
+ * Records with absent (`undefined`) or `null` canonHash are considered unbound:
+ *   - `undefined` → legacy record (pre-canon-binding); treated as fail-closed.
+ *   - `null`      → hash was unavailable at approval time; treated as fail-closed.
+ *
+ * Used by selectPendingMembers to distinguish bound approvals (skip-eligible)
+ * from unbound approvals (always pending when canon check is engaged).
+ */
+export function isBoundToCanonHash(
+  status: ReviewerStatus,
+): status is ReviewerStatus & { canonHash: string } {
+  return typeof status.canonHash === "string";
+}
+
+/**
  * Immutable snapshot of a reviewer definition stored in JobState.
  * Captured at job start; used by pipeline composition and step execution.
  * Persisted in state.json.

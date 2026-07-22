@@ -20,6 +20,7 @@
 
 import type { JobState } from "../../state/schema.js";
 import type { ReviewerStatus } from "../../kernel/reviewer-snapshot.js";
+import { isBoundToCanonHash } from "../../kernel/reviewer-snapshot.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
 import type { StepExecutionResult } from "../step/commit-orchestrator.js";
 import type { ArtifactRef } from "../../state/artifact-types.js";
@@ -174,13 +175,12 @@ export function selectPendingMembers(
     // currentCanonHash=null → canon unavailable → fail-closed → pending
     if (currentCanonHash === null) return true;
 
-    // Canon check: record must have a non-null, matching canonHash.
-    // absent (undefined) or null → legacy record → fail-closed → pending
-    const recordCanonHash = rec.canonHash;
-    if (!recordCanonHash) return true; // null/undefined → pending (fail-closed / legacy)
+    // Canon check: record must have a bound (non-null string) canonHash.
+    // absent (undefined) or null → unbound legacy record → fail-closed → pending
+    if (!isBoundToCanonHash(rec)) return true; // unbound → pending (fail-closed / legacy)
 
     // Both revision and canon match → skip (exclude from pending list)
-    return recordCanonHash !== currentCanonHash; // true = pending if mismatch
+    return rec.canonHash !== currentCanonHash; // true = pending if mismatch
   });
 }
 
