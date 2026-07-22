@@ -52,13 +52,13 @@ const MEMBER_A = "reviewer-alpha";
 const MEMBER_B = "reviewer-beta";
 
 /** Change folder paths (pipeline output — should be excluded from invalidation) */
-const FINDINGS_PATH = `specrunner/changes/${SLUG}/alpha-result-001.md`;
+const _FINDINGS_PATH = `specrunner/changes/${SLUG}/alpha-result-001.md`;
 
 /** Canonical doc paths */
-const DESIGN_MD = `specrunner/changes/${SLUG}/design.md`;
+const _DESIGN_MD = `specrunner/changes/${SLUG}/design.md`;
 
 /** Source path (outside change folder) */
-const SOURCE_PATH = "src/foo.ts";
+const _SOURCE_PATH = "src/foo.ts";
 
 // Canonical refs used for computing hash values in tests
 const INITIAL_REFS: ArtifactRef[] = [

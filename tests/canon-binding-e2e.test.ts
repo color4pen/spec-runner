@@ -176,7 +176,7 @@ function makeDeps(
   };
 }
 
-function makeRound(): ParallelReviewRound {
+function _makeRound(): ParallelReviewRound {
   const steps = new Map([[MEMBER_A, makeMinimalStep(MEMBER_A)]]);
   const parallelReview: ParallelReviewConfig = {
     coordinator: COORDINATOR,
