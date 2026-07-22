@@ -14,6 +14,14 @@ import { slugStateJsonPath, slugEventsPath, usageJsonPath, changesDirRel, isCano
 /**
  * Filter out pipeline-managed change folder paths from a list of files.
  *
+ * @deprecated Use `excludePipelineManagedChangePaths` instead.
+ *   This function excludes ALL paths under the change folder, including canonical
+ *   documents (request.md / spec.md / design.md / tasks.md / test-cases.md).
+ *   Using it for the invalidation diff prevents canonical doc changes from
+ *   appearing in sourceTouched, silently bypassing the canon-binding invalidation
+ *   (TC-005 / TC-016 regression path). Retained only for test backward compatibility
+ *   (round-git-scope.test.ts). Do not use in production invalidation paths.
+ *
  * Used by the round invalidation logic to exclude findings commits
  * (specrunner/changes/<slug>/...) from the "touched" file list before
  * evaluating reviewer activation paths. This ensures that a reviewer's
