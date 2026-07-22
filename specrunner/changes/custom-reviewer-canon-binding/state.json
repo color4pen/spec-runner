@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "65199b12-acdf-499d-a63e-bc547bd93448",
   "createdAt": "2026-07-21T23:16:17.564Z",
-  "updatedAt": "2026-07-22T01:09:55.251Z",
+  "updatedAt": "2026-07-22T01:15:00.528Z",
   "request": {
     "title": "custom reviewer の承認を canonical 入力 hash に束縛し、全 skip を非 green にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/custom-reviewer-canon-binding-65199b12",
   "error": null,
@@ -60,7 +60,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -69,8 +69,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
-      "build-fixer": 1
+      "verification": 3,
+      "build-fixer": 2
     }
   }
 }
