@@ -209,3 +209,10 @@
 {"type":"transition","ts":"2026-07-22T11:18:41.622Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-07-22T11:18:41.623Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-07-22T11:18:41.625Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-22T11:22:17.848Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"7607cb81-bfd0-48a4-bef7-c074d57dfca6","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/pipeline-sole-committer/regression-gate-result-004.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"evidence":{"checked":16,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-22T11:18:41.672Z","endedAt":"2026-07-22T11:22:15.900Z","commitOid":"e0b29cd2725b700f548c3f83d4a17ad083e5b36d"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-22T11:22:15.900Z","outputs":[{"path":"specrunner/changes/pipeline-sole-committer/regression-gate-result-004.md","hash":"sha256:54dffafd6f670801d5e451cb34262929c6a8f26c2b62e0263390033bf4b67b5e"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-22T11:22:17.857Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-22T11:22:17.857Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-22T11:22:17.859Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-22T11:22:17.860Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
