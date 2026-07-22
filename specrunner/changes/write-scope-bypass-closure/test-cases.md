@@ -107,7 +107,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ### TC-009: 結果採用が halt により抑止される
 
-**Category**: integration
+**Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: scoped mode の保護正典残余違反は halt する > Scenario: 結果採用が halt により抑止される
 

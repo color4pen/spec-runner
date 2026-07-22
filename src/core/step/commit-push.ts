@@ -434,6 +434,10 @@ export async function commitAndPush(
           //   git checkout HEAD restores tracked modified violations.
           await gitExecResult(infra.spawnFn, cwd, ["clean", "-f", "--", ...residualViolations]);
           await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...residualViolations]);
+          // T-06: unstage the already-staged declared outputs before the halt.
+          // The step result was produced alongside a canon violation — leaving it staged
+          // would let the checkpoint commit record it as if the step completed normally.
+          await gitExecResult(infra.spawnFn, cwd, ["reset", "HEAD", "--", ...stagePaths]);
           // T-06: halt — do NOT proceed to commit/push with a contaminated step result.
           throw writeScopeViolationError(step.name, branch, residualViolations, residualQuarantine);
         }
