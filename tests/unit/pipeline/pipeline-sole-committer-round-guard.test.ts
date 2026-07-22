@@ -24,6 +24,8 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { spawnSync } from "node:child_process";
+import { EventEmitter } from "node:events";
+import type { ChildProcess, SpawnOptions } from "node:child_process";
 import { ParallelReviewRound } from "../../../src/core/pipeline/parallel-review-round.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import type { Step } from "../../../src/core/step/types.js";
@@ -62,6 +64,22 @@ function gitSync(args: string[], cwd: string): string {
     throw new Error(`git ${args.join(" ")} failed: ${result.stderr}`);
   }
   return (result.stdout ?? "").trim();
+}
+
+/**
+ * Create a minimal GitExecSpawnFn mock that returns the given exit code for all git commands.
+ * Used in unit tests that need to simulate git operations without a real git repository.
+ * The returned function conforms to SpawnFn (git-exec.ts) = (bin, args, opts) => ChildProcess.
+ */
+function makeGitExecSpawnMock(exitCode: number): (_bin: string, _args: string[], _opts: SpawnOptions) => ChildProcess {
+  return (_bin: string, _args: string[], _opts: SpawnOptions): ChildProcess => {
+    const proc = new EventEmitter() as unknown as ChildProcess;
+    proc.stdout = new EventEmitter() as never;
+    proc.stderr = new EventEmitter() as never;
+    proc.stdin = { end: () => {} } as never;
+    setImmediate(() => (proc as unknown as EventEmitter).emit("close", exitCode));
+    return proc;
+  };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -229,6 +247,7 @@ describe("TC-009: reviewer が正典を弱化して自己 commit → round halt"
     // captureHeadSha sequence:
     // Call 1: before fan-out → headBeforeRound
     // Call 2: after fan-out → headAfterReviewerCommit (HEAD advanced)
+    // Call 3: headSha for approvedAtCommit → headBeforeRound (after reset)
     const runtimeStrategy = makeRuntimeStrategyMock({
       captureHeadShaResponses: [headBeforeRound, headAfterReviewerCommit, headBeforeRound],
       // listWorktreeChanges: returns clean worktree (reviewer committed, so worktree is clean)
@@ -254,7 +273,13 @@ describe("TC-009: reviewer が正典を弱化して自己 commit → round halt"
     });
 
     const state = makeJobState("tc-009-job");
-    const deps = makeDeps(runtimeStrategy);
+    // D3 / D5: HEAD guard reset failure → fail-closed halt.
+    // Provide a mock gitTransportSpawn that returns exit 0 for all git commands, simulating
+    // successful quarantine diff and mixed reset without requiring a real git repository.
+    // TC-009 is a unit test that validates HEAD-advance detection logic, not real git ops.
+    const deps = makeDeps(runtimeStrategy, {
+      gitTransportSpawn: makeGitExecSpawnMock(0),
+    });
 
     // Ensure store is initialized
     await fs.mkdir(path.join(tempDir, ".specrunner", "test-jobs", "tc-009-job"), { recursive: true });

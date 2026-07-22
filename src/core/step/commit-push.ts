@@ -516,10 +516,17 @@ export async function commitAndPush(
  *
  * Agent uncommitted work is intentionally left in the worktree for local resume continuity.
  *
+ * D4 (egress-backstop): after committing, the new commit OID is unioned with the existing
+ * synthesizedCommits ledger and passed to verifyEgressLedger before push. If the egress check
+ * fails (unknown commits in the publish range), the push is skipped and a warning is emitted.
+ * The best-effort semantics are preserved — neither commit failures nor egress failures throw.
+ *
  * Commits if staged changes are present, then pushes with one retry.
  * Push failures warn on stderr but do NOT throw — local resume is preserved.
  *
- * @param params.messageLabel - Optional commit message label. Defaults to "finalize".
+ * @param params.messageLabel       - Optional commit message label. Defaults to "finalize".
+ * @param params.synthesizedCommits - Existing synthesizedCommits ledger from job state.
+ *                                    Used as the base for egress verification (D4).
  */
 export async function commitFinalState(params: {
   cwd: string;
@@ -527,8 +534,9 @@ export async function commitFinalState(params: {
   slug: string;
   spawnFn: PipelineSpawnFn;
   messageLabel?: string;
+  synthesizedCommits?: string[];
 }): Promise<void> {
-  const { cwd, branch, slug, spawnFn, messageLabel = "finalize" } = params;
+  const { cwd, branch, slug, spawnFn, messageLabel = "finalize", synthesizedCommits } = params;
 
   const managedPaths = pipelineManagedPaths(slug);
 
@@ -568,6 +576,22 @@ export async function commitFinalState(params: {
   const commitResult = await spawnFn("git", ["commit", "-m", `${messageLabel}: ${slug}`, ...pathspecArgs], { cwd });
   if ((commitResult.exitCode ?? 1) !== 0) {
     stderrWrite(`Warning: ${messageLabel} commit failed for ${slug}. Push manually to ensure state is on the branch.`);
+    return;
+  }
+
+  // D4: Egress verification before push (T-05).
+  // Build ledger: existing synthesizedCommits ∪ this commit's OID.
+  // Design note: terminal path — in-memory union is sufficient; no need to persist the OID.
+  try {
+    const oidResult = await spawnFn("git", ["rev-parse", "HEAD"], { cwd });
+    const newOid = (oidResult.exitCode ?? 1) === 0 ? oidResult.stdout.trim() : "";
+    const ledger = [...(synthesizedCommits ?? []), ...(newOid ? [newOid] : [])];
+    await verifyEgressLedger({ cwd, ledger, spawnFn });
+  } catch (err) {
+    stderrWrite(
+      `Warning: ${messageLabel} egress check failed for ${slug}: ${err instanceof Error ? err.message : String(err)}. ` +
+        `Skipping push to prevent unauthorized commit publication.`,
+    );
     return;
   }
 

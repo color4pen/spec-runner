@@ -684,7 +684,14 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     const branch = state.branch ?? "";
     const slug = deps.slug;
     const messageLabel = state.status === "awaiting-resume" ? "checkpoint" : "finalize";
-    await commitFinalState({ cwd, branch, slug, spawnFn: this.wrappedSpawnFn, messageLabel });
+    await commitFinalState({
+      cwd,
+      branch,
+      slug,
+      spawnFn: this.wrappedSpawnFn,
+      messageLabel,
+      synthesizedCommits: state.synthesizedCommits,
+    });
   }
 
   async verifyFindingRefs(refs: FindingRef[], cwd: string, _branch: string | null): Promise<FindingRef[]> {

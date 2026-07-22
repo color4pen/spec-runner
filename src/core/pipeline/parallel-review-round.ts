@@ -13,6 +13,7 @@ import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import { quarantineRoundHeadAdvanceEvidence } from "../step/commit-push.js";
+import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import type { StepExecutionResult } from "../step/commit-orchestrator.js";
 import { CommitOrchestrator } from "../step/commit-orchestrator.js";
 import { StepExecutor } from "../step/executor.js";
@@ -216,6 +217,8 @@ export class ParallelReviewRound {
     const members: Array<{ step: Step; startedAt: string; result: StepExecutionResult }> = [];
     // Round error (set when git effects detect non-declared changes)
     let roundError: ErrorInfo | null = null;
+    // Round commit OID for synthesizedCommits ledger (T-08, D4); null when no commit was made.
+    let roundCommitOid: string | null = null;
 
     if (pending.length === 0) {
       // All approved / skipped → synthetic approved, skip to gate
@@ -278,7 +281,17 @@ export class ParallelReviewRound {
             baselineCommit,
             headAfterFanOut,
           );
-          await gitExecResult(guardSpawnFn, cwd, ["reset", "--mixed", baselineCommit]);
+          // D3 / D5: reset --mixed failure → fail-closed halt (do NOT continue with stale HEAD).
+          // If the reset fails, HEAD remains at the reviewer's commit — any subsequent push
+          // would publish the unauthorized reviewer commit. Throw to prevent that path.
+          const resetResult = await gitExecResult(guardSpawnFn, cwd, ["reset", "--mixed", baselineCommit]);
+          if (!resetResult.ok || resetResult.exitCode !== 0) {
+            throw new SpecRunnerError(
+              ERROR_CODES.COMMIT_AND_PUSH_FAILED,
+              "Check for index.lock conflicts, disk issues, or worktree corruption. Retry with specrunner job resume to continue.",
+              `HEAD guard: git reset --mixed ${baselineCommit} failed on branch '${state.branch ?? ""}': exit ${resetResult.exitCode}`,
+            );
+          }
           roundError = {
             code: "ROUND_HEAD_ADVANCED",
             message: `Reviewer self-committed: HEAD advanced from ${baselineCommit} to ${headAfterFanOut}`,
@@ -348,6 +361,7 @@ export class ParallelReviewRound {
       // roundError is passed to commitRound (not applied to state directly).
       // inspectionEscalated: declared at step 5b (HEAD guard) so HEAD guard and this
       // git-effects check share the same flag. Already true if HEAD guard fired.
+      // roundCommitOid is declared above (outer scope) for use in commitRound call.
       if (deps.runtimeStrategy?.listWorktreeChanges) {
         const branch = state.branch ?? "";
         const defaultSleepFn = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -399,6 +413,11 @@ export class ParallelReviewRound {
               deps.slug,
               infra,
             );
+            // Capture round commit OID for synthesizedCommits ledger (T-08, D4).
+            // HEAD should have advanced after a successful commitRoundArtifacts.
+            roundCommitOid = deps.runtimeStrategy
+              ? ((await deps.runtimeStrategy.captureHeadSha(cwd)) ?? null)
+              : null;
           }
           // toStage empty and no offending → nothing changed in declared paths; no-op.
         }
@@ -456,6 +475,8 @@ export class ParallelReviewRound {
     // --- 9. Commit round: single atomic persist via CommitOrchestrator ---
     // D1 (round-owned-state-commit): coordinator is the sole writer for this round.
     // All member results + coordinator patch are applied in-memory and persisted once.
+    // roundCommitOid (T-08): OID of the round's synthesized commit, appended to the
+    // synthesizedCommits ledger inside commitRound before persist.
     state = await orchestrator.commitRound({
       coordinatorName,
       base: state,
@@ -464,6 +485,7 @@ export class ParallelReviewRound {
       reviewerStatuses: statuses,
       coordinatorRun: syntheticRun,
       roundError,
+      roundCommitOid,
     });
 
     return { outcome: aggregateVerdictResult, state };

@@ -26,7 +26,7 @@ import type { PermissionScope } from "../pipeline/types.js";
 import type { StepCompletion } from "./step-completion.js";
 import type { StepHalt } from "./step-halt.js";
 import { pushStepResult } from "../../state/helpers.js";
-import { appendHistoryEntry } from "../../state/schema.js";
+import { appendHistoryEntry, appendSynthesizedCommit } from "../../state/schema.js";
 import {
   recordFailedStepResult,
   attachStateAndRethrow,
@@ -341,6 +341,13 @@ export class CommitOrchestrator {
       s = { ...s, biteEvidence: completion.biteEvidence };
     }
 
+    // Append synthesized commit OID to ledger (T-08, D4).
+    // result.commitOid is the exit-HEAD captured by captureHeadSha after finalizeStepArtifacts.
+    // Sequential steps (roundOwnsGitEffects === false) populate commitOid; round members do not.
+    if (result.commitOid) {
+      s = appendSynthesizedCommit(s, result.commitOid);
+    }
+
     // Persist branch/pullRequest/biteEvidence patch (write 2)
     await store.persist(s);
 
@@ -460,6 +467,9 @@ export class CommitOrchestrator {
    * @param params.reviewerStatuses  - Updated reviewer status records for the round.
    * @param params.coordinatorRun    - Synthetic coordinator StepRun to append.
    * @param params.roundError        - Error to set on state (null clears previous error).
+   * @param params.roundCommitOid    - OID of the round's synthesized commit (from commitRoundArtifacts),
+   *                                   or null/undefined if no round commit was made. Appended to the
+   *                                   synthesizedCommits ledger before persist (T-08, D4).
    */
   async commitRound(params: {
     coordinatorName: string;
@@ -469,8 +479,9 @@ export class CommitOrchestrator {
     reviewerStatuses: ReviewerStatus[];
     coordinatorRun: StepRun;
     roundError: ErrorInfo | null;
+    roundCommitOid?: string | null;
   }): Promise<JobState> {
-    const { coordinatorName, base, deps, members, reviewerStatuses, coordinatorRun, roundError } = params;
+    const { coordinatorName, base, deps, members, reviewerStatuses, coordinatorRun, roundError, roundCommitOid } = params;
     const store = this.getStore(base.jobId);
     const now = new Date().toISOString();
 
@@ -546,6 +557,13 @@ export class CommitOrchestrator {
       error: roundError,
       updatedAt: new Date().toISOString(),
     };
+
+    // --- 2b. Append round commit OID to synthesizedCommits ledger (T-08, D4) ---
+    // roundCommitOid is the HEAD OID captured after commitRoundArtifacts completes.
+    // Absent (null/undefined) when no round commit was made (empty toStage, or inspection halt).
+    if (roundCommitOid) {
+      state = appendSynthesizedCommit(state, roundCommitOid);
+    }
 
     // --- 3. Persist exactly once ---
     await store.persist(state);
