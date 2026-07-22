@@ -434,11 +434,10 @@ export async function commitAndPush(
           //   git checkout HEAD restores tracked modified violations.
           await gitExecResult(infra.spawnFn, cwd, ["clean", "-f", "--", ...residualViolations]);
           await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...residualViolations]);
-          // T-06: unstage the already-staged declared outputs before the halt.
-          // The step result was produced alongside a canon violation — leaving it staged
-          // would let the checkpoint commit record it as if the step completed normally.
-          await gitExecResult(infra.spawnFn, cwd, ["reset", "HEAD", "--", ...stagePaths]);
-          // T-06: halt — do NOT proceed to commit/push with a contaminated step result.
+          // Halt — do NOT proceed to commit/push with a contaminated step result.
+          // Declared outputs (stagePaths) remain staged in the index; commitFinalState's
+          // git add -A will include them in the checkpoint commit. This is accepted (see
+          // commitFinalState docstring: "Known side effect (scoped residual halt)").
           throw writeScopeViolationError(step.name, branch, residualViolations, residualQuarantine);
         }
       }
@@ -521,15 +520,17 @@ export async function commitAndPush(
  * Write-scope safety: when commitFinalState is called after a WRITE_SCOPE_VIOLATION
  * halt, the guarded-mode commitAndPush has already restored violated files to their
  * HEAD state via git checkout HEAD before throwing. Scoped residual violations are
- * similarly restored before throwing (T-06). Therefore, git add -A here does not pick
- * up violation content — those files are already clean (match HEAD).
+ * similarly restored (git clean -f + git checkout HEAD) before throwing. Therefore,
+ * git add -A here does not pick up violation content — those files are already clean
+ * (match HEAD).
  *
  * Known side effect (scoped residual halt): stagePaths (declared outputs) are staged
- * by commitAndPush before the residual check. When T-06 throws, those staged declared
- * outputs remain in the index. Consequently, git add -A here picks them up and they
- * are committed as part of this checkpoint. This is accepted: the step's legitimate
- * declared outputs are preserved in the checkpoint even when a residual violation
- * aborts result adoption. The violation files themselves are already restored (clean).
+ * by commitAndPush before the residual check. When the residual halt throws, those
+ * staged declared outputs remain in the index. Consequently, git add -A here picks
+ * them up and they are committed as part of this checkpoint. This is accepted: the
+ * step's legitimate declared outputs are preserved in the checkpoint even when a
+ * residual violation aborts result adoption. The violation files themselves are
+ * already restored (clean).
  *
  * Idempotent: if no staged changes, returns immediately (no-op).
  * Push failures: warns on stderr but does NOT throw — local resume is preserved.
@@ -550,7 +551,7 @@ export async function commitFinalState(params: {
   const { cwd, branch, slug, spawnFn, messageLabel = "finalize" } = params;
 
   // Stage all changes. When called after a WRITE_SCOPE_VIOLATION halt, both guarded-mode
-  // and scoped-mode (T-06) commitAndPush have already restored violated files to HEAD via
+  // and scoped-mode commitAndPush have already restored violated files to HEAD via
   // git checkout HEAD before throwing — so this git add -A does not pick up violation content.
   const addResult = await spawnFn("git", ["add", "-A"], { cwd });
   if ((addResult.exitCode ?? 1) !== 0) {
