@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6283b476-9b25-4729-b5a9-a9a2b94f533d",
   "createdAt": "2026-07-22T11:55:42.653Z",
-  "updatedAt": "2026-07-22T13:20:32.315Z",
+  "updatedAt": "2026-07-22T13:22:01.311Z",
   "request": {
     "title": "changed-line-coverage の not-loaded 判定を type-only ファイルで誤検出させない",
     "type": "spec-change",
@@ -16,9 +16,9 @@
   "status": "awaiting-resume",
   "branch": "change/coverage-type-only-not-loaded-6283b476",
   "error": {
-    "code": "ROUND_ALL_MEMBERS_SKIPPED",
-    "message": "All reviewers returned skipped verdict; no reviewer has approved the round.",
-    "hint": "Check reviewer activation conditions (paths / requestTypes). If all reviewers are configured with conditions that do not match the current change, the round will not produce a positive verdict."
+    "code": "ROUND_NONDECLARED_CHANGE",
+    "message": "Round produced undeclared file changes: specrunner/changes/coverage-type-only-not-loaded/pr-create-result.md",
+    "hint": "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration."
   },
   "pipelineId": "standard",
   "profile": {
@@ -111,11 +111,12 @@
   },
   "resumePoint": {
     "step": "custom-reviewers",
-    "reason": "All reviewers returned skipped verdict; no reviewer has approved the round.",
+    "reason": "Round produced undeclared file changes: specrunner/changes/coverage-type-only-not-loaded/pr-create-result.md",
     "iterationsExhausted": 1
   },
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 70,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -126,9 +127,9 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "cross-boundary-invariants": 1,
-      "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 2,
+      "custom-reviewers": 2,
       "regression-gate": 1,
       "conformance": 1,
       "adr-gen": 1,
