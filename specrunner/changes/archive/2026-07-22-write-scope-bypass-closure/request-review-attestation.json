@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:754cd6c961ad4ccf6ddcd99ffb927c34e7df32f2b50a48c46b08f883d481a6a3",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/commit-push.ts:117 — commit is [\"commit\", \"-m\", commitMessage] (no pathspec = whole index)",
+    "src/core/step/commit-push.ts:commitAndPushTail lines 102-112 — HEAD advance with no staged changes → pushOnly() called with no write-scope inspection of commit contents",
+    "src/core/step/commit-push.ts scoped residual check lines 260-276 — findWriteScopeViolations called, quarantine + restore performed, then falls through to commitAndPushTail without throw/halt",
+    "src/core/step/commit-push.ts guarded mode lines 282-320 — git status --porcelain, findWriteScopeViolations, violations → quarantine + restore + throw writeScopeViolationError (WRITE_SCOPE_VIOLATION halt)",
+    "src/core/step/commit-push.ts quarantineViolationEvidence function lines 142-180 — violation evidence written to .specrunner/local/<slug>/write-scope-violation-<step>-<ts>.md",
+    "src/core/step/commit-push.ts:219 and line 324 — headBeforeStep: string | null parameter passed through commitAndPush to commitAndPushTail"
+  ],
+  "sourceRevision": "13ad41862fd2028c1fb928e4c3941df25e2a1795"
+}

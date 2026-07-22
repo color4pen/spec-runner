@@ -9,7 +9,7 @@ import { gitExec, gitExecExitCode, gitExecResult, runSubprocess, type SpawnFn } 
 import type { SpawnFn as PipelineSpawnFn } from "../../util/spawn.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { pushFailedError, commitEffectFailedError, writeScopeViolationError } from "../../errors.js";
-import { stagingModeFor, findWriteScopeViolations } from "./write-scope.js";
+import { stagingModeFor, findWriteScopeViolations, findScopedCommitViolations } from "./write-scope.js";
 import { pipelineManagedPaths } from "./round-git-scope.js";
 
 /**
@@ -75,12 +75,87 @@ async function getWorktreeChangedPaths(
 }
 
 /**
+ * List the net-changed paths in the commit range base..head.
+ *
+ * Uses `git diff --name-only --no-renames <base> <head>`. Renames are suppressed
+ * (`--no-renames`) to ensure every affected path is enumerated individually (consistent
+ * with getWorktreeChangedPaths).
+ *
+ * Returns null on git error (non-zero exit or spawn failure) so callers can treat null
+ * as fail-closed (distinct from an empty array which means the range touched no files).
+ *
+ * T-03 / D2: used by commitAndPushTail to inspect agent self-commit content before push.
+ */
+async function listCommitRangeChangedPaths(
+  spawnFn: SpawnFn,
+  cwd: string,
+  base: string,
+  head: string,
+): Promise<string[] | null> {
+  const result = await gitExec(spawnFn, cwd, ["diff", "--name-only", "--no-renames", base, head]);
+  if (result === null) return null;
+  return result
+    .split("\n")
+    .map((p) => p.trim())
+    .filter((p) => p.length > 0);
+}
+
+/**
+ * Mode-specific context passed from commitAndPush to commitAndPushTail.
+ *
+ * D7: mode-dependent information (commit pathspec, violation rules) is resolved in
+ * commitAndPush and forwarded as a single context object so commitAndPushTail can
+ * apply the correct behavior without re-reading step or state.
+ */
+interface CommitTailContext {
+  /** "scoped" (deterministic step) or "guarded" (broad-write step). */
+  mode: "scoped" | "guarded";
+  /**
+   * Pathspec for staged-check and commit in scoped mode.
+   * Empty in guarded mode (whole-index commit).
+   * Empty in scoped mode when the step has no declared writes and no existing managed paths.
+   */
+  stagePaths: string[];
+  /** Paths declared by step.writes() — for scoped violation check and guarded check. */
+  declaredWritePaths: string[];
+  /** All pipeline-managed paths (not just existing) — for scoped commit violation check. */
+  managedPaths: string[];
+}
+
+/**
  * Shared tail for both scoped and guarded staging modes.
  *
- * Runs after staging is complete:
- * 1. git diff --cached --quiet → determine if staged changes exist.
- * 2. No staged changes → check if HEAD advanced (agent self-committed) → push-only or skip.
- * 3. Staged changes → commit + push.
+ * Runs after staging and residual-violation checks are complete:
+ *
+ * 1. Staged-change check (mode-specific):
+ *    - scoped, stagePaths non-empty: `git diff --cached --quiet -- <stagePaths>`
+ *      (only checks whether the declared paths have staged changes, ignoring the rest of
+ *      the index — pre-staged unauthorized files do not trigger a commit).
+ *    - scoped, stagePaths empty: skip diff check (nothing in scope to stage); set
+ *      hasChanges = false and proceed to HEAD-advance detection only.
+ *    - guarded: `git diff --cached --quiet` (whole-index check, original behavior).
+ *    - exit 0 = no staged changes, exit 1 = staged changes, exit ≥2 = git error → throws.
+ *
+ * 2. No staged changes path → HEAD-advance detection + agent self-commit inspection (T-05):
+ *    a. `git rev-parse HEAD` to get the current HEAD SHA.
+ *    b. If headBeforeStep !== HEAD (agent authored commit(s) since step start):
+ *       - Enumerate changed paths in headBeforeStep..HEAD via listCommitRangeChangedPaths.
+ *       - Enumerate failure (null = git error) → fail-closed: throw commitEffectFailedError.
+ *       - Inspect changed paths against write-scope rules:
+ *           scoped: findScopedCommitViolations (changedPaths − declaredWrites − managedPaths)
+ *           guarded: findWriteScopeViolations (changed ∩ protected canon − declaredWrites)
+ *       - Violations found: quarantineViolationEvidence with range {base, head}, then throw
+ *         WRITE_SCOPE_VIOLATION. Push is NOT called; the violating commit remains local.
+ *       - No violations: log detection and push-only (original behavior preserved).
+ *    c. headBeforeStep = null or HEAD unchanged → silently return (no-op).
+ *
+ * 3. Staged changes path → commit + push (mode-specific):
+ *    - scoped, stagePaths non-empty: `git commit -m "<step>: <slug>" -- <stagePaths>`
+ *      (pathspec restricts the commit to the declared scope; pre-staged unauthorized files
+ *      that are not in stagePaths are excluded from the commit, even if still in the index).
+ *    - guarded: `git commit -m "<step>: <slug>"` (whole-index commit, original behavior).
+ *    - Commit failure → throws commitEffectFailedError("commit").
+ *    - Push with one retry → throws pushFailedError on double failure.
  */
 async function commitAndPushTail(
   step: AgentStep,
@@ -89,22 +164,81 @@ async function commitAndPushTail(
   cwd: string,
   branch: string,
   slug: string,
+  ctx: CommitTailContext,
 ): Promise<void> {
-  // Check if there are staged changes.
-  // `git diff --cached --quiet` exits 0 when no staged changes, 1 when there are staged changes,
-  // ≥2 on git error (spawn failure or error exit code) → throws typed error → halt path.
-  const diffResult = await gitExecResult(infra.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
-  if (!diffResult.ok || diffResult.exitCode >= 2) {
-    throw commitEffectFailedError(step.name, branch, "diff", `exit code ${diffResult.exitCode}`);
+  // ── 0. Agent self-commit inspection (T-05) — BEFORE any push-capable path ──
+  // The inspection guards the EFFECT (push), not a single control-flow branch:
+  // an agent that self-commits a violation AND leaves staged declared changes would
+  // otherwise route through the staged-commit path and have its commit carried by
+  // the push uninspected. HEAD is captured here (pre-pipeline-commit) so the range
+  // covers exactly the agent-authored commits.
+  const headAtTailEntry = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
+  if (headBeforeStep && headAtTailEntry && headAtTailEntry !== headBeforeStep) {
+    const rangeChangedPaths = await listCommitRangeChangedPaths(
+      infra.spawnFn, cwd, headBeforeStep, headAtTailEntry,
+    );
+    if (rangeChangedPaths === null) {
+      // Enumerate failed → fail-closed: cannot verify commit safety.
+      throw commitEffectFailedError(
+        step.name, branch, "diff",
+        "commit range path enumerate failed (git diff --name-only error)",
+      );
+    }
+    let rangeViolations: string[];
+    if (ctx.mode === "scoped") {
+      rangeViolations = findScopedCommitViolations(
+        slug, rangeChangedPaths, ctx.declaredWritePaths, ctx.managedPaths,
+      );
+    } else {
+      rangeViolations = findWriteScopeViolations(
+        step.name, slug, rangeChangedPaths, ctx.declaredWritePaths,
+      );
+    }
+    if (rangeViolations.length > 0) {
+      // Preserve commit diff evidence before halting. The violating commit stays
+      // local (not reset) — it is evidence for operator investigation.
+      const quarantinePath = await quarantineViolationEvidence(
+        infra.spawnFn, cwd, slug, step.name, rangeViolations,
+        { base: headBeforeStep, head: headAtTailEntry },
+      );
+      throw writeScopeViolationError(step.name, branch, rangeViolations, quarantinePath);
+    }
   }
-  const hasChanges = diffResult.exitCode === 1;
 
+  // ── 1. Staged-change check (mode-specific) ──────────────────────────────
+  let hasChanges: boolean;
+
+  if (ctx.mode === "scoped" && ctx.stagePaths.length > 0) {
+    // Scoped: check only within the declared pathspec — pre-staged unauthorized files
+    // outside this scope are invisible to this check (T-04).
+    const diffResult = await gitExecResult(infra.spawnFn, cwd, [
+      "diff", "--cached", "--quiet", "--", ...ctx.stagePaths,
+    ]);
+    if (!diffResult.ok || diffResult.exitCode >= 2) {
+      throw commitEffectFailedError(step.name, branch, "diff", `exit code ${diffResult.exitCode}`);
+    }
+    hasChanges = diffResult.exitCode === 1;
+  } else if (ctx.mode === "scoped") {
+    // Scoped with empty stagePaths: no declared scope → nothing in scope to check.
+    // Skip diff entirely; go to HEAD-advance detection (T-04).
+    hasChanges = false;
+  } else {
+    // Guarded: whole-index staged check (original behavior).
+    const diffResult = await gitExecResult(infra.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
+    if (!diffResult.ok || diffResult.exitCode >= 2) {
+      throw commitEffectFailedError(step.name, branch, "diff", `exit code ${diffResult.exitCode}`);
+    }
+    hasChanges = diffResult.exitCode === 1;
+  }
+
+  // ── 2. No staged changes: HEAD-advance push-as-is ──────────────────────
+  // (Range inspection already ran at tail entry (step 0) — reaching here means the
+  // agent's self-commits are boundary-safe.)
   if (!hasChanges) {
-    // Check if HEAD advanced (agent self-committed before pipeline commit).
-    const headAfterStep = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
-    if (headBeforeStep && headAfterStep && headAfterStep !== headBeforeStep) {
-      // Agent authored commit(s) since step start — push the existing commits as-is.
-      stderrWrite("Detected agent-authored commit(s) since step start; skipping pipeline commit and pushing as-is.\n");
+    if (headBeforeStep && headAtTailEntry && headAtTailEntry !== headBeforeStep) {
+      stderrWrite(
+        "Detected agent-authored commit(s) since step start; skipping pipeline commit and pushing as-is.\n",
+      );
       await pushOnly(branch, cwd, step.name, infra);
       return;
     }
@@ -112,9 +246,19 @@ async function commitAndPushTail(
     return;
   }
 
-  // Commit. Failure (spawn error or exit≠0) throws typed error → never falls through to push.
+  // ── 3. Staged changes present: commit + push ────────────────────────────
   const commitMessage = `${step.name}: ${slug}`;
-  const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage]);
+  let commitResult;
+  if (ctx.mode === "scoped" && ctx.stagePaths.length > 0) {
+    // Scoped: pathspec-restricted commit — excludes any pre-staged unauthorized files
+    // that are in the index but not in stagePaths (T-04).
+    commitResult = await gitExecResult(infra.spawnFn, cwd, [
+      "commit", "-m", commitMessage, "--", ...ctx.stagePaths,
+    ]);
+  } else {
+    // Guarded: whole-index commit (original behavior).
+    commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage]);
+  }
   if (!commitResult.ok || commitResult.exitCode !== 0) {
     throw commitEffectFailedError(step.name, branch, "commit", `exit code ${commitResult.exitCode}`);
   }
@@ -132,12 +276,19 @@ async function commitAndPushTail(
  * (commitFinalState: git add -A) cannot leak the violation to the remote branch — but
  * restoring without capture would destroy the evidence a human needs to judge the halt.
  *
- * Captures, per violating path: the tracked diff vs HEAD, or the full content when the
- * file is untracked (not in HEAD). Written to the machine-local sidecar directory
- * (.specrunner/local/<slug>/ — never committed).
+ * Captures, per violating path:
+ *   - When `range` is given (self-commit violation, T-02): the diff of that path in the
+ *     commit range via `git diff <base> <head> -- <path>`.
+ *   - When no range (worktree violation): the tracked diff vs HEAD via
+ *     `git diff HEAD -- <path>` (original behavior, unchanged).
+ *   - Fallback for untracked / empty diff: the full raw file content.
  *
- * Best-effort: returns the quarantine file path, or null on any failure. Failure never
- * blocks the halt.
+ * Written to the machine-local sidecar directory (.specrunner/local/<slug>/ — never
+ * committed). Best-effort: returns the quarantine file path, or null on any failure.
+ * Failure never blocks the halt.
+ *
+ * @param range - Optional commit range for self-commit violations (T-02). When provided,
+ *   `git diff base head -- path` is used instead of `git diff HEAD -- path`.
  */
 async function quarantineViolationEvidence(
   spawnFn: SpawnFn,
@@ -145,18 +296,24 @@ async function quarantineViolationEvidence(
   slug: string,
   stepName: string,
   violations: string[],
+  range?: { base: string; head: string } | null,
 ): Promise<string | null> {
   try {
     const sections: string[] = [
       `# write-scope violation evidence`,
       `step: ${stepName}`,
       `captured-at: ${new Date().toISOString()}`,
+      ...(range ? [`range: ${range.base}..${range.head}`] : []),
       `paths:`,
       ...violations.map((v) => `  - ${v}`),
       "",
     ];
     for (const v of violations) {
-      const diff = await gitExec(spawnFn, cwd, ["diff", "HEAD", "--", v]);
+      // Choose diff command based on whether this is a commit-range violation (T-02).
+      const diffArgs = range
+        ? ["diff", range.base, range.head, "--", v]
+        : ["diff", "HEAD", "--", v];
+      const diff = await gitExec(spawnFn, cwd, diffArgs);
       if (diff !== null && diff.length > 0) {
         sections.push(`## diff: ${v}`, "```diff", diff, "```", "");
       } else {
@@ -178,6 +335,7 @@ async function quarantineViolationEvidence(
     return null;
   }
 }
+
 /**
  * Stage all changes, commit, and push to origin.
  *
@@ -186,11 +344,12 @@ async function quarantineViolationEvidence(
  * "scoped" mode (deterministic steps: design, spec-review, spec-fixer, etc.):
  *   - Stage only declared outputs: git add -A -- <step.writes() + pipelineManagedPaths>.
  *   - Boundary-external changes in the worktree are silently excluded from the commit.
- *   - After staging, any protected paths that remain dirty are restored to HEAD via
- *     git checkout HEAD -- <residualViolations>. This prevents residual dirty protected
- *     files (e.g. request.md changed by a scoped step but excluded from its commit) from
- *     causing misattributed WRITE_SCOPE_VIOLATION halts in subsequent guarded steps.
- *   - If stagePaths is empty, no-op (nothing to stage or commit).
+ *   - After staging, any protected paths that remain dirty are quarantined, restored to
+ *     HEAD, and WRITE_SCOPE_VIOLATION is thrown (T-06: halt, not continue).
+ *     Prior behavior ("restore and continue") is removed — a step that read a contaminated
+ *     canon must not have its result adopted.
+ *   - If stagePaths is empty, no-op for git add and diff check; HEAD-advance detection
+ *     still runs via commitAndPushTail.
  *
  * "guarded" mode (broad-write steps: implementer, build-fixer, code-fixer, etc.):
  *   - Pre-check: git status --porcelain -z --no-renames → list changed paths.
@@ -200,17 +359,22 @@ async function quarantineViolationEvidence(
  *     HEAD for tracked modified files) then throws WRITE_SCOPE_VIOLATION.
  *   - If no violations: git add -A → stage whole worktree (original behaviour).
  *
- * Shared tail (both modes):
- *   - git diff --cached --quiet:
- *     - exit 0 = no staged changes → check HEAD advance
- *     - exit 1 = staged changes present → commit
- *     - exit ≥2 or spawn failure → throws commitEffectFailedError("diff") → halt path
- *   - if no changes:
- *     - compare headBeforeStep with current HEAD
- *     - if HEAD advanced (agent self-committed): push only, log detection message
- *     - otherwise: silently return (no commit needed, step completed via tool)
- *   - git commit -m "${step.name}: ${slug}"
- *   - git push origin ${branch} — retry once after 5s on failure
+ * Shared tail (commitAndPushTail, both modes):
+ *   - Staged-change check (mode-specific pathspec for scoped, whole-index for guarded).
+ *   - If no staged changes:
+ *     - Compare headBeforeStep with current HEAD.
+ *     - If HEAD advanced (agent self-committed): inspect commit content (T-05):
+ *         scoped: findScopedCommitViolations(declaredWrites + managedPaths)
+ *         guarded: findWriteScopeViolations(protectedCanonPaths)
+ *       - Violations: quarantine with commit range diff → WRITE_SCOPE_VIOLATION halt.
+ *         Push is NOT called; the violating commit stays local for operator investigation.
+ *       - No violations: push only (original behavior preserved).
+ *     - Otherwise: silently return (no commit needed).
+ *   - Commit (mode-specific: scoped uses pathspec, guarded is whole-index).
+ *   - Push with one retry.
+ *
+ * Mode-dependent context (stagePaths, declaredWritePaths, managedPaths) is forwarded
+ * to commitAndPushTail via CommitTailContext (D7).
  */
 export async function commitAndPush(
   step: AgentStep,
@@ -228,9 +392,10 @@ export async function commitAndPush(
     // Scoped staging: limit to declared outputs + pipeline-managed paths.
     const writes = step.writes?.(state, deps) ?? [];
     const filePaths = writes.filter((r) => r.artifact !== "gitState").map((r) => r.path);
+    const allManagedPaths = pipelineManagedPaths(slug);
     // Filter managed paths to existing files: git add -A -- <path> fails with exit 128
     // for any pathspec that matches no file (e.g. usage.json when no usage was recorded).
-    const existingManaged = await filterExistingFiles(pipelineManagedPaths(slug), cwd);
+    const existingManaged = await filterExistingFiles(allManagedPaths, cwd);
     const stagePaths = [...new Set([...filePaths, ...existingManaged])];
 
     // Stage only declared paths when there are any.
@@ -243,27 +408,25 @@ export async function commitAndPush(
         throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
       }
 
-      // After scoped staging: restore any protected paths that remain dirty in the worktree
-      // but were not staged (because they are outside the scoped step's declared outputs).
-      // Without this, a scoped step that inadvertently changes request.md (or another canon
-      // path) leaves the worktree dirty, causing the NEXT guarded step's pre-commit check to
-      // emit a misattributed WRITE_SCOPE_VIOLATION against the wrong step.
+      // After scoped staging: check for protected paths that remain dirty in the worktree
+      // (i.e. outside the step's declared scope). If found:
+      //   1. Quarantine evidence (what the step attempted to write).
+      //   2. Two-step restore: git clean -f (untracked) then git checkout HEAD (tracked).
+      //   3. Throw WRITE_SCOPE_VIOLATION — halt, do NOT continue (T-06).
       //
-      // Two-step restore: git clean removes newly created (untracked) files that are not in
-      // HEAD (git checkout HEAD would fail for those, leaving them in the worktree).
-      // git checkout HEAD then restores tracked modified files to their committed content.
-      // Both are best-effort (failures silently ignored).
+      // A step that read a contaminated canon file cannot have its result safely adopted.
+      // "Restore and continue" is rejected: it would leave the result record saying the
+      // step reviewed the restored (correct) file, when it actually read the modified one.
       //
       // Asymmetry note: postStatus.ok===false → skip silently (best-effort).
-      // Scoped restoration is defensive (prevents cross-step false positives), not
-      // safety-critical. Guarded mode is the hard enforcement gate (fail-closed).
+      // The postStatus check is defensive (prevents cross-step misattribution); guarded
+      // mode is the hard enforcement gate. But residual violations DO halt (T-06).
       const postStatus = await getWorktreeChangedPaths(infra.spawnFn, cwd);
       if (postStatus.ok && postStatus.paths.length > 0) {
         const residualViolations = findWriteScopeViolations(step.name, slug, postStatus.paths, filePaths);
         if (residualViolations.length > 0) {
-          // Preserve evidence before restore, and surface the event — a scoped step wrote
-          // outside its declared outputs. The change is excluded from the commit either way;
-          // silent destruction would hide the boundary breach entirely.
+          // Preserve evidence before restore — the restore is mechanically required
+          // (prevents checkpoint commit leakage) but must not destroy the evidence.
           const residualQuarantine = await quarantineViolationEvidence(
             infra.spawnFn, cwd, slug, step.name, residualViolations,
           );
@@ -271,11 +434,29 @@ export async function commitAndPush(
             `[${step.name}] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): ${residualViolations.join(", ")}` +
             (residualQuarantine ? ` — 退避先: ${residualQuarantine}` : ""),
           );
+          // Two-step restore (same pattern as guarded mode):
+          //   git clean -f removes newly created untracked violations (not in HEAD).
+          //   git checkout HEAD restores tracked modified violations.
           await gitExecResult(infra.spawnFn, cwd, ["clean", "-f", "--", ...residualViolations]);
           await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...residualViolations]);
+          // Halt — do NOT proceed to commit/push with a contaminated step result.
+          // Declared outputs (stagePaths) remain staged in the index; commitFinalState's
+          // git add -A will include them in the checkpoint commit. This is accepted (see
+          // commitFinalState docstring: "Known side effect (scoped residual halt)").
+          throw writeScopeViolationError(step.name, branch, residualViolations, residualQuarantine);
         }
       }
     }
+
+    // Build context for commitAndPushTail.
+    const ctx: CommitTailContext = {
+      mode: "scoped",
+      stagePaths,
+      declaredWritePaths: filePaths,
+      managedPaths: allManagedPaths,
+    };
+
+    await commitAndPushTail(step, headBeforeStep, infra, cwd, branch, slug, ctx);
   } else {
     // Guarded mode: pre-check for write-scope violations before staging.
 
@@ -318,10 +499,17 @@ export async function commitAndPush(
     if (!addResult.ok || addResult.exitCode !== 0) {
       throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
     }
-  }
 
-  // Shared tail: diff check, HEAD-advance detection, commit, push.
-  await commitAndPushTail(step, headBeforeStep, infra, cwd, branch, slug);
+    // Build context for commitAndPushTail.
+    const ctx: CommitTailContext = {
+      mode: "guarded",
+      stagePaths: [],        // guarded: whole-index commit, no pathspec needed
+      declaredWritePaths,
+      managedPaths: [],      // not used in guarded self-commit check
+    };
+
+    await commitAndPushTail(step, headBeforeStep, infra, cwd, branch, slug, ctx);
+  }
 }
 
 /**
@@ -336,8 +524,18 @@ export async function commitAndPush(
  *
  * Write-scope safety: when commitFinalState is called after a WRITE_SCOPE_VIOLATION
  * halt, the guarded-mode commitAndPush has already restored violated files to their
- * HEAD state via git checkout HEAD before throwing. Therefore, git add -A here does
- * not pick up violation content — those files are already clean (match HEAD).
+ * HEAD state via git checkout HEAD before throwing. Scoped residual violations are
+ * similarly restored (git clean -f + git checkout HEAD) before throwing. Therefore,
+ * git add -A here does not pick up violation content — those files are already clean
+ * (match HEAD).
+ *
+ * Known side effect (scoped residual halt): stagePaths (declared outputs) are staged
+ * by commitAndPush before the residual check. When the residual halt throws, those
+ * staged declared outputs remain in the index. Consequently, git add -A here picks
+ * them up and they are committed as part of this checkpoint. This is accepted: the
+ * step's legitimate declared outputs are preserved in the checkpoint even when a
+ * residual violation aborts result adoption. The violation files themselves are
+ * already restored (clean).
  *
  * Idempotent: if no staged changes, returns immediately (no-op).
  * Push failures: warns on stderr but does NOT throw — local resume is preserved.
@@ -357,9 +555,9 @@ export async function commitFinalState(params: {
 }): Promise<void> {
   const { cwd, branch, slug, spawnFn, messageLabel = "finalize" } = params;
 
-  // Stage all changes. When called after a WRITE_SCOPE_VIOLATION halt, guarded-mode
-  // commitAndPush has already restored violated files to HEAD via git checkout HEAD
-  // before throwing — so this git add -A does not pick up any violation content.
+  // Stage all changes. When called after a WRITE_SCOPE_VIOLATION halt, both guarded-mode
+  // and scoped-mode commitAndPush have already restored violated files to HEAD via
+  // git checkout HEAD before throwing — so this git add -A does not pick up violation content.
   const addResult = await spawnFn("git", ["add", "-A"], { cwd });
   if ((addResult.exitCode ?? 1) !== 0) {
     // Not a git repo or git is non-functional — skip silently

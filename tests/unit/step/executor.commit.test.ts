@@ -338,10 +338,10 @@ describe("TC-CAP-NEW-001: staged changes → commit + push (requiresCommit:true,
     expect(subcommands).toContain("diff");
     expect(subcommands).toContain("commit");
     expect(subcommands).toContain("push");
-    // rev-parse is called twice: once before step (headBeforeStep) + once after finalize (commitOid capture)
-    // commitAndPush skips HEAD comparison when hasChanges=true (staged changes present)
+    // rev-parse is called 3x: before step (headBeforeStep) + tail-entry self-commit
+    // inspection (TC-030 hoist) + after finalize (commitOid capture).
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(2);
+    expect(revParseCalls.length).toBe(3);
   });
 });
 
@@ -429,15 +429,36 @@ describe("TC-CAP-NEW-004: staged changes + HEAD advance → commit staged + push
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
+    const { spawnFn: baseSpawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
-        diff: { exitCode: 1 }, // staged changes present
+        diff: { exitCode: 1 }, // staged changes present (--cached check)
         commit: { exitCode: 0 },
         push: { exitCode: 0 },
       },
       ["abc123before", "def456after"], // HEAD advanced (partial agent commit)
     );
+    // TC-030 hoist: the tail-entry inspection enumerates the agent commit range via
+    // `git diff --name-only`. Return a boundary-safe path (guarded mode: only protected
+    // canon paths are violations) so the clean self-commit proceeds to commit+push.
+    const spawnFn: SpawnFn = (bin, args, opts) => {
+      if (args[0] === "diff" && args.includes("--name-only")) {
+        calls.push({ args: [...args] });
+        const procEm = new EventEmitter();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const procAny = procEm as any;
+        const stdoutEm = new EventEmitter();
+        procAny.stdout = stdoutEm;
+        procAny.stderr = new EventEmitter();
+        procAny.stdin = { write: () => true, end: () => {} };
+        setImmediate(() => {
+          stdoutEm.emit("data", Buffer.from("src/agent-authored-change.ts\n"));
+          procEm.emit("close", 0);
+        });
+        return procEm as unknown as ChildProcess;
+      }
+      return baseSpawnFn(bin, args, opts);
+    };
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
@@ -448,13 +469,12 @@ describe("TC-CAP-NEW-004: staged changes + HEAD advance → commit staged + push
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
-    // Both commit and push should be called (staged changes take precedence path)
+    // Clean self-commit (boundary-safe range) + staged changes → commit + push proceed.
     expect(subcommands).toContain("commit");
     expect(subcommands).toContain("push");
-    // Two rev-parse calls: before step (headBeforeStep) + after finalize (commitOid capture)
-    // hasChanges=true skips the HEAD comparison inside commitAndPush
+    // rev-parse 3x: before step + tail-entry inspection (TC-030) + commitOid capture.
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(2);
+    expect(revParseCalls.length).toBe(3);
   });
 });
 

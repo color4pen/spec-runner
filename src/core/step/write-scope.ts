@@ -8,6 +8,14 @@
  *
  * D2 (write-scope-enforcement): single source of truth for per-step staging mode and
  * forbidden write boundaries. Referenced by commit-push.ts to enforce at commit time.
+ *
+ * Exports:
+ *   - stagingModeFor           — commit-staging mode ("scoped" | "guarded") for a step
+ *   - protectedCanonPaths      — canonical protected path set for a job slug
+ *   - forbiddenWritePaths      — paths the step must not write (protected minus declared)
+ *   - findWriteScopeViolations — detect worktree / commit violations (guarded mode)
+ *   - findScopedCommitViolations — detect scoped self-commit violations (T-01 / D5)
+ *   - isJudgeArtifact          — true when a path is a review result or feedback file
  */
 
 import {
@@ -111,6 +119,8 @@ export function forbiddenWritePaths(
  *   - is a judge artifact (isJudgeArtifact),
  *   AND is NOT in declaredWritePaths (step did not declare it as an output).
  *
+ * Used for: guarded-mode worktree pre-commit checks and guarded self-commit inspection.
+ *
  * @param stepName         - The pipeline step name.
  * @param slug             - The job slug.
  * @param changedPaths     - Worktree-relative paths that changed (from git status).
@@ -128,4 +138,36 @@ export function findWriteScopeViolations(
   return changedPaths.filter(
     (p) => (forbidden.has(p) || isJudgeArtifact(p, slug)) && !declared.has(p),
   );
+}
+
+/**
+ * Find paths in changedPaths that violate the write-scope for a scoped (self-)commit.
+ *
+ * A scoped commit must only contain paths that are either declared outputs of the step
+ * (declaredWritePaths) or pipeline-managed paths (managedPaths). Any other changed path
+ * is a violation — it entered the commit outside the step's declared scope.
+ *
+ * Computed as: changedPaths − declaredWritePaths − managedPaths.
+ *
+ * This is the single source of truth for scoped-commit boundary enforcement (T-01 / D5).
+ * commit-push.ts calls this function from the write-scope single source for self-commit
+ * inspection (T-05).
+ *
+ * Leaf constraint: this function has no dependency on slug or protected-path logic —
+ * the scoped boundary is purely the declared + managed path union.
+ *
+ * @param _slug              - Job slug (reserved for future per-slug narrowing; unused).
+ * @param changedPaths       - Paths changed in the commit range (from git diff --name-only).
+ * @param declaredWritePaths - Paths declared by step.writes() (worktree-relative).
+ * @param managedPaths       - Pipeline-managed paths (e.g. state.json, events.jsonl).
+ * @returns Array of violating paths (empty = no violations).
+ */
+export function findScopedCommitViolations(
+  _slug: string,
+  changedPaths: string[],
+  declaredWritePaths: string[],
+  managedPaths: string[],
+): string[] {
+  const allowed = new Set([...declaredWritePaths, ...managedPaths]);
+  return changedPaths.filter((p) => !allowed.has(p));
 }

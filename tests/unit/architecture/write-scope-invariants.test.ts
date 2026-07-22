@@ -121,6 +121,66 @@ describe("TC-010: write-scope module is a leaf module", () => {
 // findWriteScopeViolations の呼び出しが存在することを静的解析で確認する。
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-028: write-scope module exports findScopedCommitViolations (T-01 leaf constraint)
+//
+// T-01 adds findScopedCommitViolations to write-scope.ts (single source).
+// commit-push.ts calls it via the single source (no duplicate logic).
+// Leaf module constraint: write-scope.ts must still only import from src/util/paths.ts.
+//
+// RED until T-01 adds the export and T-05 calls it in commit-push.ts.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-028: write-scope module exports findScopedCommitViolations (leaf + single-source)", () => {
+  const writeScopePath = path.join(ROOT, "src/core/step/write-scope.ts");
+
+  it("write-scope.ts exports findScopedCommitViolations", () => {
+    if (!existsSync(writeScopePath)) {
+      expect(existsSync(writeScopePath), "write-scope.ts must exist").toBe(true);
+      return;
+    }
+    const content = readFileSync(writeScopePath, "utf-8");
+    expect(
+      content,
+      "write-scope.ts must export findScopedCommitViolations (T-01)",
+    ).toContain("findScopedCommitViolations");
+    expect(
+      content,
+      "findScopedCommitViolations must be exported (not just defined)",
+    ).toMatch(/export\s+(function|const|async function)\s+findScopedCommitViolations/);
+  });
+
+  it("commit-push.ts calls findScopedCommitViolations via write-scope single source (T-05)", () => {
+    const commitPushPath = path.join(ROOT, "src/core/step/commit-push.ts");
+    if (!existsSync(commitPushPath)) return;
+
+    const result = grepFile("findScopedCommitViolations", commitPushPath);
+    expect(
+      result,
+      "commit-push.ts must call findScopedCommitViolations from write-scope (T-05 single source)",
+    ).not.toBe("");
+  });
+
+  it("write-scope.ts still satisfies leaf module constraint after T-01 addition", () => {
+    if (!existsSync(writeScopePath)) return;
+
+    const content = readFileSync(writeScopePath, "utf-8");
+    const fromSpecifiers = [...content.matchAll(/from\s+["']([^"']+)["']/g)].map((m) => m[1]);
+    const violations = fromSpecifiers.filter((s) => {
+      if (s.startsWith("node:")) return false;
+      if (s === "../../util/paths.js" || s === "../../util/paths") return false;
+      if (s.startsWith(".")) return true;
+      if (s.startsWith("src/")) return true;
+      return false;
+    });
+
+    expect(
+      violations,
+      `write-scope.ts must still be leaf-only after findScopedCommitViolations addition: ${violations.join(", ")}`,
+    ).toHaveLength(0);
+  });
+});
+
 describe("TC-022: commitAndPush calls write-scope single-source functions", () => {
   const commitPushPath = path.join(ROOT, "src/core/step/commit-push.ts");
 
