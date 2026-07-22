@@ -98,7 +98,7 @@ async function getWorktreeChangedPaths(
   spawnFn: SpawnFn,
   cwd: string,
   worktreeOnly = false,
-): Promise<{ ok: boolean; paths: string[]; untracked: string[]; stagedOnly: string[] }> {
+): Promise<{ ok: boolean; paths: string[]; untracked: string[]; stagedOnly: string[]; stagedNew: string[] }> {
   try {
     const { stdout, exitCode } = await runSubprocess(
       spawnFn,
@@ -107,12 +107,13 @@ async function getWorktreeChangedPaths(
       { cwd },
     );
     if (exitCode !== 0) {
-      return { ok: false, paths: [], untracked: [], stagedOnly: [] };
+      return { ok: false, paths: [], untracked: [], stagedOnly: [], stagedNew: [] };
     }
     const parts = stdout.split("\0").filter((p) => p.length > 0);
     const paths: string[] = [];
     const untracked: string[] = [];
     const stagedOnly: string[] = [];
+    const stagedNew: string[] = [];
     for (const part of parts) {
       // Format: XY<SP>path — 2-char status + space prefix
       // part[0] = X (index/staging state), part[1] = Y (worktree state)
@@ -123,7 +124,14 @@ async function getWorktreeChangedPaths(
       // though the worktree column is clean).
       if (part[0] !== " " && part[0] !== "?" && part[1] === " ") {
         const stagedPath = part.slice(3);
-        if (stagedPath) stagedOnly.push(stagedPath);
+        if (stagedPath) {
+          stagedOnly.push(stagedPath);
+          // X='A', Y=' ': staged-new file — has no HEAD entry.
+          // git checkout HEAD -- <file> would fail for these; they need git rm --cached
+          // (unstage) followed by git clean -f (remove from worktree) to restore to HEAD
+          // state (i.e. the file did not exist).
+          if (part[0] === "A") stagedNew.push(stagedPath);
+        }
       }
       if (worktreeOnly && part[1] === " ") continue; // skip staged-only (pre-staged) files
       const filePath = part.slice(3);
@@ -134,9 +142,9 @@ async function getWorktreeChangedPaths(
         if (part[0] === "?") untracked.push(filePath);
       }
     }
-    return { ok: true, paths, untracked, stagedOnly };
+    return { ok: true, paths, untracked, stagedOnly, stagedNew };
   } catch {
-    return { ok: false, paths: [], untracked: [], stagedOnly: [] };
+    return { ok: false, paths: [], untracked: [], stagedOnly: [], stagedNew: [] };
   }
 }
 
@@ -159,10 +167,32 @@ async function restoreViolatedPaths(
   branch: string,
   violations: string[],
   untrackedPaths: string[],
+  stagedNewPaths: string[] = [],
 ): Promise<void> {
   const untrackedSet = new Set(untrackedPaths);
+  const stagedNewSet = new Set(stagedNewPaths);
   const cleanTargets = violations.filter((p) => untrackedSet.has(p));
-  const checkoutTargets = violations.filter((p) => !untrackedSet.has(p));
+  // Staged-new violations (X='A', Y=' '): no HEAD entry → git checkout HEAD fails.
+  // Restore by: (1) unstaging via git rm --cached, (2) removing the now-untracked file via git clean -f.
+  const rmCachedTargets = violations.filter((p) => !untrackedSet.has(p) && stagedNewSet.has(p));
+  const checkoutTargets = violations.filter((p) => !untrackedSet.has(p) && !stagedNewSet.has(p));
+  if (rmCachedTargets.length > 0) {
+    const rmResult = await gitExecResult(spawnFn, cwd, ["rm", "--cached", "--", ...rmCachedTargets]);
+    if (!rmResult.ok || rmResult.exitCode !== 0) {
+      throw commitEffectFailedError(
+        stepLabel, branch, "restore",
+        `git rm --cached exit ${rmResult.exitCode}; staged-new tampered paths remain in index: ${rmCachedTargets.join(", ")}`,
+      );
+    }
+    // After unstaging, the file exists in the worktree as untracked — remove it.
+    const cleanNewResult = await gitExecResult(spawnFn, cwd, ["clean", "-f", "--", ...rmCachedTargets]);
+    if (!cleanNewResult.ok || cleanNewResult.exitCode !== 0) {
+      throw commitEffectFailedError(
+        stepLabel, branch, "restore",
+        `git clean exit ${cleanNewResult.exitCode}; tampered paths remain in worktree: ${rmCachedTargets.join(", ")}`,
+      );
+    }
+  }
   if (cleanTargets.length > 0) {
     const cleanResult = await gitExecResult(spawnFn, cwd, ["clean", "-f", "--", ...cleanTargets]);
     if (!cleanResult.ok || cleanResult.exitCode !== 0) {
@@ -465,10 +495,10 @@ export async function commitAndPush(
           `[${step.name}] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): ${allViolations.join(", ")}` +
           (residualQuarantine ? ` — 退避先: ${residualQuarantine}` : ""),
         );
-        // Restore: untracked violations via clean -f, tracked (incl. staged-only canon)
-        // via checkout HEAD (resets both index and worktree to HEAD content).
+        // Restore: untracked violations via clean -f, staged-new via rm --cached + clean -f,
+        // tracked (incl. staged-only modified canon) via checkout HEAD.
         // Restore failure must not be silenced (D5) — restoreViolatedPaths throws.
-        await restoreViolatedPaths(infra.spawnFn, cwd, step.name, branch, allViolations, postStatus.untracked);
+        await restoreViolatedPaths(infra.spawnFn, cwd, step.name, branch, allViolations, postStatus.untracked, postStatus.stagedNew);
         throw writeScopeViolationError(step.name, branch, allViolations, residualQuarantine);
       }
     }
@@ -520,9 +550,10 @@ export async function commitAndPush(
         infra.spawnFn, cwd, slug, step.name, violations,
       );
       // Restore before halting so the worktree does not keep violation content that
-      // resumed steps would read (untracked → clean -f, tracked → checkout HEAD).
+      // resumed steps would read (untracked → clean -f, staged-new → rm --cached + clean -f,
+      // tracked → checkout HEAD).
       // Restore failure must not be silenced (D5) — restoreViolatedPaths throws.
-      await restoreViolatedPaths(infra.spawnFn, cwd, step.name, branch, violations, statusResult.untracked);
+      await restoreViolatedPaths(infra.spawnFn, cwd, step.name, branch, violations, statusResult.untracked, statusResult.stagedNew);
       throw writeScopeViolationError(step.name, branch, violations, quarantinePath);
     }
 

@@ -1947,4 +1947,42 @@ describe("D5: restore failure during violation handling → fail-closed halt (no
       commitAndPush(step, makeJobState(), makeDeps(slug), null, infra),
     ).rejects.toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
   });
+
+  it("staged-NEW canon file (X='A', Y=' ') → WRITE_SCOPE_VIOLATION via rm --cached + clean (not checkout HEAD)", async () => {
+    // Agent stages a brand-new canon file (no HEAD entry). X='A', Y=' '.
+    // git checkout HEAD -- <file> would fail (no HEAD entry) → wrong error type.
+    // Fix: restoreViolatedPaths routes staged-new to git rm --cached + git clean -f.
+    // DESTROY: pass empty stagedNew → checkout path taken → COMMIT_AND_PUSH_FAILED instead.
+    const slug = "test-slug";
+    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+    const newCanonPath = `specrunner/changes/${slug}/request.md`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        add: { exitCode: 0 },
+        // "A " = staged-new, worktree clean (X='A', Y=' ')
+        status: { exitCode: 0, stdout: `A  ${newCanonPath}\0` },
+        diff: { exitCode: 0, stdout: "diff --git a/request.md\n+new file" },
+        rm: { exitCode: 0 },   // git rm --cached succeeds
+        clean: { exitCode: 0 },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+    });
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    // Must throw WRITE_SCOPE_VIOLATION, not COMMIT_AND_PUSH_FAILED
+    await expect(
+      commitAndPush(step, makeJobState(), makeDeps(slug), null, infra),
+    ).rejects.toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
+
+    const subcommands = calls.map((c) => c.args[0]);
+    // Restoration must use rm --cached (not checkout HEAD) for staged-new files
+    expect(subcommands, "git rm must be called to unstage staged-new violation").toContain("rm");
+    expect(subcommands, "git checkout HEAD must NOT be called for staged-new file").not.toContain("checkout");
+    // Nothing committed or pushed
+    expect(subcommands, "commit must NOT run").not.toContain("commit");
+    expect(subcommands, "push must NOT run").not.toContain("push");
+  });
 });

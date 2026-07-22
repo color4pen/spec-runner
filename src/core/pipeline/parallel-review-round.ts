@@ -411,21 +411,40 @@ export class ParallelReviewRound {
             );
           } else if (toStage.length > 0) {
             // All changes are within declared outputs — scoped stage + commit + push.
-            await deps.runtimeStrategy.commitRoundArtifacts?.(
-              toStage,
-              cwd,
-              branch,
-              coordinatorName,
-              deps.slug,
-              infra,
-              // D4 backstop: pass egress params so LocalRuntime can verify publish range.
-              { synthesizedCommits: state.synthesizedCommits ?? [] },
-            );
+            // Wrap in try-catch: if push fails AFTER the commit is created, HEAD has already
+            // advanced. We capture the OID regardless so synthesizedCommits stays consistent
+            // on resume and EGRESS_UNKNOWN_COMMIT deadlock is prevented. (regression-gate finding)
+            let commitArtifactError: unknown = null;
+            try {
+              await deps.runtimeStrategy.commitRoundArtifacts?.(
+                toStage,
+                cwd,
+                branch,
+                coordinatorName,
+                deps.slug,
+                infra,
+                // D4 backstop: pass egress params so LocalRuntime can verify publish range.
+                { synthesizedCommits: state.synthesizedCommits ?? [] },
+              );
+            } catch (err) {
+              commitArtifactError = err;
+            }
             // Capture round commit OID for synthesizedCommits ledger (T-08, D4).
-            // HEAD should have advanced after a successful commitRoundArtifacts.
+            // Captured even on push failure: commit may already exist locally.
             roundCommitOid = deps.runtimeStrategy
               ? ((await deps.runtimeStrategy.captureHeadSha(cwd)) ?? null)
               : null;
+            if (commitArtifactError !== null) {
+              // Push failed (or commit failed) — record as escalation so commitRound still
+              // persists the OID, preventing EGRESS_UNKNOWN_COMMIT on the next resume attempt.
+              aggregateVerdictResult = "escalation";
+              inspectionEscalated = true;
+              roundError = roundError ?? {
+                code: "ROUND_COMMIT_PUSH_FAILED",
+                message: `Round artifact push failed: ${commitArtifactError instanceof Error ? commitArtifactError.message : String(commitArtifactError)}`,
+                hint: "The round commit was created locally but push failed. Resolve the push issue and resume — the commit OID has been recorded in synthesizedCommits to prevent egress deadlock.",
+              };
+            }
           }
           // toStage empty and no offending → nothing changed in declared paths; no-op.
         }
