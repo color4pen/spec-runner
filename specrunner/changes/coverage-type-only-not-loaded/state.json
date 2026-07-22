@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6283b476-9b25-4729-b5a9-a9a2b94f533d",
   "createdAt": "2026-07-22T11:55:42.653Z",
-  "updatedAt": "2026-07-22T15:54:59.352Z",
+  "updatedAt": "2026-07-22T17:24:47.723Z",
   "request": {
     "title": "changed-line-coverage の not-loaded 判定を type-only ファイルで誤検出させない",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-resume",
+  "step": "conformance",
+  "status": "running",
   "branch": "change/coverage-type-only-not-loaded-6283b476",
   "error": null,
   "pipelineId": "standard",
@@ -74,13 +74,14 @@
     "abab0a405b8b1288f4fc71ffe66b0277725e6119",
     "047e9f6330a21e89b7adf3d6971baace8ac947f8",
     "4076af8584d7727d36d396a2ea0d9f6b681d281e",
-    "d4c6d8857db8d3ef99b809be1033d1ec7bab430e"
+    "d4c6d8857db8d3ef99b809be1033d1ec7bab430e",
+    "57d94baa2fd4f91092cace6027aac4b44081c848"
   ],
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "550fe14172a8b338601b95470416495d865f8284",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -90,7 +91,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/coverage-type-only-not-loaded/design.md:sha256:5dfb0c1f604c9c2dceb22ef74f797dbc013f74c0811c5ad578787efa314e6c29|specrunner/changes/coverage-type-only-not-loaded/request.md:sha256:c866d5627ab3a6af359fa4934718d2301885e83f61b2ddb4d2d5f3b3e33d8d4a|specrunner/changes/coverage-type-only-not-loaded/spec.md:sha256:889b9a9247d374cefce88d36694bb9ac4de2e544b1bedf10a44d40f5acc333ad|specrunner/changes/coverage-type-only-not-loaded/tasks.md:sha256:7b167191d5d59c2b6d8531ad892edaf795b9ab70a78897c15b4af7ecbca373c3|specrunner/changes/coverage-type-only-not-loaded/test-cases.md:sha256:54ca936fa28db4fb81f0c213819652963dc059853d3fbb1d5778e1baf7a8c467"
     },
     {
       "name": "scale-tolerance",
@@ -110,14 +112,10 @@
     "number": 897,
     "createdAt": "2026-07-22T13:20:31.439Z"
   },
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 91,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -128,10 +126,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "cross-boundary-invariants": 3,
+      "cross-boundary-invariants": 4,
       "scale-tolerance": 3,
-      "custom-reviewers": 3,
-      "regression-gate": 1,
+      "custom-reviewers": 4,
+      "regression-gate": 2,
       "conformance": 1,
       "adr-gen": 1,
       "pr-create": 1
