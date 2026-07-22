@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ac3aa8bf-033e-421f-a92b-59359474389e",
   "createdAt": "2026-07-22T11:54:14.110Z",
-  "updatedAt": "2026-07-22T18:18:01.713Z",
+  "updatedAt": "2026-07-22T18:22:05.578Z",
   "request": {
     "title": "agent の git 状態変更とスコープ外書込を permission 層で遮断する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/permission-layer-git-write-denial-ac3aa8bf",
   "error": null,
   "pipelineId": "standard",
@@ -101,7 +101,8 @@
     "378693ce79afcc71acd1b5b4890773991e39322b",
     "1479c6ee8798146f899789c5125e7938a76c0c02",
     "357142602b453cee46e81dd6980064fdf179f93d",
-    "2bf313e9fb63463d762ae8569923deba2d9d5388"
+    "2bf313e9fb63463d762ae8569923deba2d9d5388",
+    "0a95dbd9cc260370eacf9f4aa709e5407d5752d9"
   ],
   "reviewerStatuses": [
     {
@@ -134,10 +135,10 @@
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/902",
     "number": 902,
-    "createdAt": "2026-07-22T17:07:33.611Z"
+    "createdAt": "2026-07-22T18:22:04.467Z"
   },
   "_journal": {
-    "historyCount": 191,
+    "historyCount": 196,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -155,8 +156,8 @@
       "custom-reviewers": 5,
       "regression-gate": 5,
       "conformance": 3,
-      "adr-gen": 1,
-      "pr-create": 1
+      "adr-gen": 2,
+      "pr-create": 2
     }
   }
 }
