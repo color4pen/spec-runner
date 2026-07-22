@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "561baf30-2710-4053-8409-873006401aaf",
   "createdAt": "2026-07-22T03:47:07.942Z",
-  "updatedAt": "2026-07-22T08:34:55.013Z",
+  "updatedAt": "2026-07-22T08:44:14.813Z",
   "request": {
     "title": "pipeline を唯一の committer にする — 検査モデルから合成モデルへ",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "regression-gate",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/pipeline-sole-committer-561baf30",
   "error": null,
   "pipelineId": "standard",
@@ -87,8 +87,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": {
+    "step": "regression-gate",
+    "reason": "regression-gate escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 70,
+    "historyCount": 73,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -103,7 +108,8 @@
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
