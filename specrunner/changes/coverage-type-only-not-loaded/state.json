@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6283b476-9b25-4729-b5a9-a9a2b94f533d",
   "createdAt": "2026-07-22T11:55:42.653Z",
-  "updatedAt": "2026-07-22T17:24:47.723Z",
+  "updatedAt": "2026-07-22T17:31:32.628Z",
   "request": {
     "title": "changed-line-coverage の not-loaded 判定を type-only ファイルで誤検出させない",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/coverage-type-only-not-loaded-6283b476",
   "error": null,
@@ -75,7 +75,9 @@
     "047e9f6330a21e89b7adf3d6971baace8ac947f8",
     "4076af8584d7727d36d396a2ea0d9f6b681d281e",
     "d4c6d8857db8d3ef99b809be1033d1ec7bab430e",
-    "57d94baa2fd4f91092cace6027aac4b44081c848"
+    "57d94baa2fd4f91092cace6027aac4b44081c848",
+    "b6fda032dba7ccd756993d78382fd2a2c9dd4191",
+    "7e7552aa8aedaf5e54d5d7f6bf45819722bf9097"
   ],
   "reviewerStatuses": [
     {
@@ -115,7 +117,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 91,
+    "historyCount": 100,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -124,13 +126,13 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 1,
       "cross-boundary-invariants": 4,
       "scale-tolerance": 3,
       "custom-reviewers": 4,
       "regression-gate": 2,
-      "conformance": 1,
+      "conformance": 2,
       "adr-gen": 1,
       "pr-create": 1
     }
