@@ -131,16 +131,26 @@ function classifyConditional(subcommand: string, remainingArgs: string[]): GitCo
     // No args → list → read
     if (remainingArgs.length === 0) return { kind: "read-or-nongit" };
 
-    // --list / -l → read (unless combined with a mutation flag like -D/-m)
+    // Flags that always indicate a mutation operation on a branch (short and long forms).
+    // --set-upstream-to / --unset-upstream may appear as --set-upstream-to=<upstream> (=value form)
+    // or as bare --set-upstream-to followed by a value token; both are covered here.
+    const isBranchMutationFlag = (a: string): boolean =>
+      ["-D", "-d", "-m", "-M", "-c", "-C", "-u"].includes(a) ||
+      a === "--set-upstream-to" ||
+      a.startsWith("--set-upstream-to=") ||
+      a === "--unset-upstream" ||
+      a === "--edit-description";
+
+    // --list / -l → read (unless combined with a mutation flag)
     if (remainingArgs.some((a) => a === "--list" || a === "-l")) {
-      if (remainingArgs.some((a) => ["-D", "-d", "-m", "-M", "-c", "-C", "-u"].includes(a))) {
+      if (remainingArgs.some(isBranchMutationFlag)) {
         return { kind: "mutation", subcommand };
       }
       return { kind: "read-or-nongit" };
     }
 
-    // Deletion / move / rename flags → mutation
-    if (remainingArgs.some((a) => ["-D", "-d", "-m", "-M", "-c", "-C", "-u"].includes(a))) {
+    // Deletion / move / rename / upstream flags → mutation
+    if (remainingArgs.some(isBranchMutationFlag)) {
       return { kind: "mutation", subcommand };
     }
 
