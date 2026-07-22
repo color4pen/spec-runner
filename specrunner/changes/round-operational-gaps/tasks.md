@@ -4,9 +4,9 @@
 
 対象ファイル: `src/core/pipeline/round-git-scope.ts`
 
-- [ ] import 文に `prCreateResultPath` を追加する（`biteEvidenceResultPath` と同一 import 元 `../../util/paths.js`）
-- [ ] `pipelineManagedPaths(slug)` の返り値配列に `prCreateResultPath(slug)` を追加する（5 要素になる）
-- [ ] JSDoc に `prCreateResultPath` (#898 fix, T-01) の説明を追加する（biteEvidenceResultPath の注記と同型で）
+- [x] import 文に `prCreateResultPath` を追加する（`biteEvidenceResultPath` と同一 import 元 `../../util/paths.js`）
+- [x] `pipelineManagedPaths(slug)` の返り値配列に `prCreateResultPath(slug)` を追加する（5 要素になる）
+- [x] JSDoc に `prCreateResultPath` (#898 fix, T-01) の説明を追加する（biteEvidenceResultPath の注記と同型で）
 
 **Acceptance Criteria**:
 - `pipelineManagedPaths("test-slug")` が `specrunner/changes/test-slug/pr-create-result.md` を含む
@@ -19,11 +19,11 @@
 
 対象ファイル: `src/core/pipeline/__tests__/round-git-scope.test.ts`
 
-- [ ] ファイル先頭の Constants セクションに `PR_CREATE_RESULT` 定数を追加する（`BITE_EVIDENCE` と同様のパターン）
-- [ ] `describe("pipelineManagedPaths")` 内の第 1 テスト（"returns state.json, events.jsonl, usage.json, bite-evidence-result.md for the given slug"）を更新する:
-  - [ ] テスト説明文を "… bite-evidence-result.md, pr-create-result.md …" を含む形に更新する
-  - [ ] `expect(paths).toContain(PR_CREATE_RESULT)` を追加する
-  - [ ] `expect(paths).toHaveLength(4)` を `expect(paths).toHaveLength(5)` に更新する
+- [x] ファイル先頭の Constants セクションに `PR_CREATE_RESULT` 定数を追加する（`BITE_EVIDENCE` と同様のパターン）
+- [x] `describe("pipelineManagedPaths")` 内の第 1 テスト（"returns state.json, events.jsonl, usage.json, bite-evidence-result.md for the given slug"）を更新する:
+  - [x] テスト説明文を "… bite-evidence-result.md, pr-create-result.md …" を含む形に更新する
+  - [x] `expect(paths).toContain(PR_CREATE_RESULT)` を追加する
+  - [x] `expect(paths).toHaveLength(4)` を `expect(paths).toHaveLength(5)` に更新する
 
 定数の形:
 ```typescript
@@ -44,7 +44,7 @@ const PR_CREATE_RESULT = `specrunner/changes/${SLUG}/pr-create-result.md`;
 
 #888 の bite-evidence 回帰テストと同型で、`pr-create-result.md` 専用の回帰テスト group を追加する。
 
-- [ ] `describe("partitionRoundChanges — pipeline-managed paths in changed")` ブロック内に新しい `it` を追加する:
+- [x] `describe("partitionRoundChanges — pipeline-managed paths in changed")` ブロック内に新しい `it` を追加する:
   ```
   "pr-create-result.md in changed → excluded from BOTH offending AND toStage"
   ```
@@ -53,14 +53,14 @@ const PR_CREATE_RESULT = `specrunner/changes/${SLUG}/pr-create-result.md`;
   - `offending` に `PR_CREATE_RESULT` が含まれないことを assert する
   - `offending` が空であることを assert する
 
-- [ ] `describe("pipelineManagedPaths")` のブロック内（または末尾近く）に destruction confirmation コメントを追加する:
+- [x] `describe("pipelineManagedPaths")` のブロック内（または末尾近く）に destruction confirmation コメントを追加する:
   ```
   // Destruction confirmation: prCreateResultPath を pipelineManagedPaths から除去すると
   // 「pr-create-result.md in changed → excluded from BOTH offending AND toStage」が fail する
   // (offending に PR_CREATE_RESULT が入り、expect(offending).toHaveLength(0) が赤になる)
   ```
 
-- [ ] `describe("pipelineManagedPaths")` 内の第 1 テストに同様のコメントを追加する:
+- [x] `describe("pipelineManagedPaths")` 内の第 1 テストに同様のコメントを追加する:
   ```
   // Destruction confirmation: prCreateResultPath を配列から外すと toHaveLength(5) および
   // toContain(PR_CREATE_RESULT) が fail する
@@ -77,12 +77,12 @@ const PR_CREATE_RESULT = `specrunner/changes/${SLUG}/pr-create-result.md`;
 
 対象ファイル: `specrunner/reviewers/cross-boundary-invariants.md`
 
-- [ ] frontmatter `paths` セクションに以下の 2 行を追加する（既存 5 glob の後に追記）:
+- [x] frontmatter `paths` セクションに以下の 2 行を追加する（既存 5 glob の後に追記）:
   ```yaml
     - src/core/runtime/**
     - src/core/verification/**
   ```
-- [ ] 本文（`## 目的` 以降）は一切変更しない
+- [x] 本文（`## 目的` 以降）は一切変更しない
 
 修正後の frontmatter 全体:
 ```yaml
@@ -110,8 +110,8 @@ paths:
 
 ## T-05: `typecheck && test` を通す
 
-- [ ] `bun run typecheck` が green（型エラーなし）
-- [ ] `bun run test` が green（全テスト pass、既存 round-git-scope テストを含む）
+- [x] `bun run typecheck` が green（型エラーなし）
+- [x] `bun run test` が green（全テスト pass、既存 round-git-scope テストを含む）
 
 **Acceptance Criteria**:
 - typecheck / test どちらも exit 0

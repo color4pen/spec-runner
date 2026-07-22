@@ -7,6 +7,8 @@ paths:
   - src/state/**
   - src/store/**
   - src/adapter/**
+  - src/core/runtime/**
+  - src/core/verification/**
 ---
 
 ## 目的
