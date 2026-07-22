@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.4.2](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.1...specrunner-v0.4.2) (2026-07-22)
+
+
+### Features
+
+* agent の git 状態変更とスコープ外書込を permission 層で遮断する ([#902](https://github.com/color4pen/spec-runner/issues/902)) ([cc454de](https://github.com/color4pen/spec-runner/commit/cc454de0f860729b54fd98e36881ab961d42382f))
+* awaiting-archive job の正規 reopen — 指定 step 以降の承認を失効させて再検証する ([#887](https://github.com/color4pen/spec-runner/issues/887)) ([13ad418](https://github.com/color4pen/spec-runner/commit/13ad41862fd2028c1fb928e4c3941df25e2a1795))
+* changed-line-coverage の not-loaded 判定を type-only ファイルで誤検出させない ([#897](https://github.com/color4pen/spec-runner/issues/897)) ([2361b0d](https://github.com/color4pen/spec-runner/commit/2361b0df07eeb4a04a5a3900ab263f4e6f41565f))
+* CI の package smoke を初回接触契約の assert に拡張する — npm 配布物・任意 cwd・隔離 XDG で実運用条件を歩く ([#872](https://github.com/color4pen/spec-runner/issues/872)) ([d51c9bc](https://github.com/color4pen/spec-runner/commit/d51c9bc9098389b04b8e6f4b3f8d7378af8f704a))
+* CLI の repo root 解決を entry に一本化する — cwd 暗黙仮定で subdirectory 起動が静かに誤動作する問題の構造解 ([#866](https://github.com/color4pen/spec-runner/issues/866)) ([18b5134](https://github.com/color4pen/spec-runner/commit/18b513455f54a5512cd506d22e90828bbfab53ca))
+* custom reviewer の承認を canonical 入力 hash に束縛し、全 skip を非 green にする ([#892](https://github.com/color4pen/spec-runner/issues/892)) ([37d51c7](https://github.com/color4pen/spec-runner/commit/37d51c70d7ef303e01cc36edff1aba72b8f39195))
+* init が実行結果を報告する — git repo 外の無言スキップと再実行時の無言成功を解消する ([#863](https://github.com/color4pen/spec-runner/issues/863)) ([ab18ab6](https://github.com/color4pen/spec-runner/commit/ab18ab6d1c00bfb0740924e440d1d7293d3ac578))
+* job prune --force に削除直前の再検証を入れる — scan 後に active 化した sidecar の削除競合を塞ぐ ([#870](https://github.com/color4pen/spec-runner/issues/870)) ([f5e726f](https://github.com/color4pen/spec-runner/commit/f5e726fb6e5462c9b7a50ef819649d0bff19f3ea))
+* job prune を orphan sidecar に拡張する — doctor の生 rm -rf hint を製品コマンド案内に置換する ([#865](https://github.com/color4pen/spec-runner/issues/865)) ([b8f8643](https://github.com/color4pen/spec-runner/commit/b8f8643bdd62c9e0c6d55b0e4f6b2e51f7a845b2))
+* judge 完了契約に evidence counts を追加し、確認ゼロ・全 skip を非 green にする ([#882](https://github.com/color4pen/spec-runner/issues/882)) ([0ad0249](https://github.com/color4pen/spec-runner/commit/0ad0249596f7a6a96edc29666564f8d7e63d7b1b))
+* judge 系 step の判定チャネルを typed findings に一本化し、result md を evidence report にする ([#879](https://github.com/color4pen/spec-runner/issues/879)) ([2b15e89](https://github.com/color4pen/spec-runner/commit/2b15e8920226c1326c61859938a794138038bc2c))
+* local runtime の provider readiness を副作用より前に確立する — auth 欠如が worktree / branch / journal 作成後に発覚する経路を塞ぐ ([#874](https://github.com/color4pen/spec-runner/issues/874)) ([6a788a0](https://github.com/color4pen/spec-runner/commit/6a788a0a7e42550ff9d361fbf56c39e09740c24d))
+* pipeline を唯一の committer にする — 検査モデルから合成モデルへ ([#893](https://github.com/color4pen/spec-runner/issues/893)) ([d8dc2d1](https://github.com/color4pen/spec-runner/commit/d8dc2d164be63feff3ff5d2e7bb3748b50bb20e4))
+* repo root 解決を 1 invocation につき 1 回にする — handler 内再解決の除去と CWD 不変の識別子一意化 ([#873](https://github.com/color4pen/spec-runner/issues/873)) ([3bf4681](https://github.com/color4pen/spec-runner/commit/3bf4681806ca6ba1ea17e53005fd166580db21a1))
+* request-review の完了契約に evidence counts を追加し、確認ゼロの approve を非 green にする ([#889](https://github.com/color4pen/spec-runner/issues/889)) ([b272288](https://github.com/color4pen/spec-runner/commit/b2722885f2641ce9450adf6920fbbfa5fab3bbcf))
+* sequential step の commit を write-set 境界で機械強制する ([#883](https://github.com/color4pen/spec-runner/issues/883)) ([e561c0e](https://github.com/color4pen/spec-runner/commit/e561c0e5ecf6a44199cdd2f1351aaf5582b45453))
+* write-set 検査を開始 HEAD・index・agent commit まで拡張し、既知の 3 突破経路を閉じる ([#891](https://github.com/color4pen/spec-runner/issues/891)) ([1591a8f](https://github.com/color4pen/spec-runner/commit/1591a8fed458d46488aa79135d68f8e39c8ad161))
+* エラー処方の整合 — 誤診 hint の修正・廃止コマンド処方の除去・状態駆動 next steps・doctor の XDG 認識 ([#871](https://github.com/color4pen/spec-runner/issues/871)) ([2c2cdef](https://github.com/color4pen/spec-runner/commit/2c2cdeff3a07aec51792daae2a67cb716da07a20))
+* 保護正典への fixable finding を、書けない fixer に routing せず escalation に倒す ([#901](https://github.com/color4pen/spec-runner/issues/901)) ([dd26c54](https://github.com/color4pen/spec-runner/commit/dd26c54982f776ac0dcea550e2bd9b9aa23c5917))
+* 全 step prompt を 5 部構成の共通骨格に再構成し、evidence 規律と原因分類を共通化する ([#880](https://github.com/color4pen/spec-runner/issues/880)) ([cb0fd58](https://github.com/color4pen/spec-runner/commit/cb0fd58aa879a5693d616b75974caf65fa9ee59d))
+* 記録済み承認を revision に束縛し、stale 承認による reviewer 群 skip を封鎖する ([#885](https://github.com/color4pen/spec-runner/issues/885)) ([c23df19](https://github.com/color4pen/spec-runner/commit/c23df190c8c4e6247f09ec5e917aa8c6c2cbd88b))
+
+
+### Bug Fixes
+
+* bootstrap の materialization commit を egress 台帳に記録し、初回 push の誤 halt を解消する ([#895](https://github.com/color4pen/spec-runner/issues/895)) ([1938fe1](https://github.com/color4pen/spec-runner/commit/1938fe17c9a03b1ad66c12af5ff35d03faee81f9))
+* custom reviewer round の運用欠落 2 件を修正する — pr-create-result の管理パス化と activationPaths の欠落補完 ([#900](https://github.com/color4pen/spec-runner/issues/900)) ([a8b1297](https://github.com/color4pen/spec-runner/commit/a8b12977a0539e3c71d39fc8b0d077ba564a6525))
+* lineage event の outputs を実生成ファイルに対応付け、hash を実計算する ([#881](https://github.com/color4pen/spec-runner/issues/881)) ([c743f95](https://github.com/color4pen/spec-runner/commit/c743f9589889e1e78fb4adbb3c82a38b3b24879f))
+* TC Source 形式の producer/consumer drift を単一ソース化で修正する ([#878](https://github.com/color4pen/spec-runner/issues/878)) ([b260941](https://github.com/color4pen/spec-runner/commit/b2609411c4f4903ce58fd0f9f5bba0a7ffdf1c0f))
+
 ## [0.4.1](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.0...specrunner-v0.4.1) (2026-07-19)
 
 
