@@ -308,6 +308,15 @@ function analyzeStatements(tokens: string[]): boolean {
           if (next === undefined || !TYPE_CONTINUATION_TOKENS.has(next)) {
             return true;
           }
+          // Opening brackets continue a type ONLY on the same line (array suffix
+          // `{...}[]`, call-signature parens). Across a newline they are statement
+          // LEADERS of runtime expressions (IIFE `(fn)()`, array expression) that
+          // semicolon-less style would otherwise absorb into the type statement —
+          // the false-positive path found in adversarial review. Ending here makes
+          // such files false NEGATIVES (still gate-failing), never false positives.
+          if ((next === "(" || next === "[") && j !== i) {
+            return true;
+          }
           // Continuation: keep consuming (e.g., `export type { A } from "..."`)
         }
         continue;
@@ -322,6 +331,14 @@ function analyzeStatements(tokens: string[]): boolean {
         if (next === undefined || !TYPE_CONTINUATION_TOKENS.has(next)) {
           // ASI: statement ends here. Do NOT consume `next` — leave it for
           // the main loop to re-classify as a statement leader.
+          return true;
+        }
+        // Line-leading `(` / `[` after an ASI point are runtime statement leaders
+        // (IIFE, array expression), not type continuations — see the same-line
+        // rule at the block-close check above. Multiline function types that put
+        // a leading `(` on the next line become false negatives (accepted: the
+        // request's bias is fail-closed toward the existing gate failure).
+        if (next === "(" || next === "[") {
           return true;
         }
         // Continuation token (e.g., `|` in a multiline union type): keep going.

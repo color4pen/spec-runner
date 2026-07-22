@@ -272,3 +272,51 @@ describe("TC-018: isTypeOnlySource の型整合性（型は実装後に bun run 
     expect(result).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// F-IIFE: セミコロンなしスタイルの IIFE 吸収による偽陽性の封鎖
+// (cross-boundary review 2026-07-23 の発見シナリオ)
+//
+// `(` / `[` を無条件の継続トークンにすると、ASI 境界を跨いだ行頭の
+// runtime 式 (IIFE / array expression) が型文の継続として吸収され、
+// runtime コードを持つファイルが type-only 判定される (偽陽性 = gate の抜け穴)。
+// 修正: 改行を跨いだ行頭の `(` `[` は文末扱い (偽陰性側に倒す)。
+// 同一行の `(` `[` (array suffix `{}[]` / call signature) は従来どおり型構文。
+//
+// DESTROY: 行頭 `(` `[` の文末扱いを外す (無条件継続に戻す) と
+// 下の false 期待テストが true になり fail する。
+// ---------------------------------------------------------------------------
+
+describe("F-IIFE: 行頭 ( / [ の runtime 式吸収を封鎖 (偽陽性の構造的排除)", () => {
+  it("type 宣言 + 改行 + IIFE → false (ASI 経路の吸収封鎖)", () => {
+    const src = 'type X = A\n(function initRuntime() { globalThis.__init = true })()';
+    expect(isTypeOnlySource(src)).toBe(false);
+  });
+
+  it("interface ブロック + 改行 + IIFE → false (block-close 経路の吸収封鎖)", () => {
+    const src = 'interface X { a: number }\n(function initRuntime() { globalThis.__init = true })()';
+    expect(isTypeOnlySource(src)).toBe(false);
+  });
+
+  it("type 宣言 + 改行 + 行頭 array expression → false", () => {
+    const src = 'type X = A\n[1, 2].forEach(() => {})';
+    expect(isTypeOnlySource(src)).toBe(false);
+  });
+
+  it("同一行の array suffix ({...}[]) は type-only のまま (挙動保存)", () => {
+    const src = 'type Rows = { id: number }[];\ntype Other = string;';
+    expect(isTypeOnlySource(src)).toBe(true);
+  });
+
+  it("同一行の function type ((x) => void) は type-only のまま (挙動保存)", () => {
+    const src = 'type Handler = (event: string) => void;';
+    expect(isTypeOnlySource(src)).toBe(true);
+  });
+
+  it("改行を跨ぐ行頭 ( の multiline function type は偽陰性側に倒す (許容された縮小)", () => {
+    // `type F =` の次行を `(` で始める書式は文末扱いになり type-only と判定されない。
+    // 偽陰性は現行どおり gate fail に落ちるだけで検出力は下がらない (request R1 の bias)。
+    const src = 'type F =\n(x: number) => void';
+    expect(isTypeOnlySource(src)).toBe(false);
+  });
+});
