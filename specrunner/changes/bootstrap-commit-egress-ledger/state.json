@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "27f57112-6f79-4b9a-a0f2-ffc3d02f181e",
   "createdAt": "2026-07-22T12:00:45.803Z",
-  "updatedAt": "2026-07-22T14:09:14.349Z",
+  "updatedAt": "2026-07-22T14:14:07.103Z",
   "request": {
     "title": "bootstrap の materialization commit を egress 台帳に記録し、初回 push の誤 halt を解消する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/bootstrap-commit-egress-ledger-27f57112",
   "error": null,
   "pipelineId": "standard",
@@ -77,7 +77,9 @@
     "2f34398173b41c19cc9d6a3e7c94e9b7e53a1cb9",
     "f153f8c4630fec6d474279901d36d1439cab231c",
     "2eeaa8e66e6339124b470b7a15e1bab3fbcf8fa6",
-    "3a0e4701c65bc81428fe0c482b4b2d57468bc139"
+    "3a0e4701c65bc81428fe0c482b4b2d57468bc139",
+    "2e129536815aad9915e47601a0d3868a03e3aa09",
+    "9cd3bdfa57c5c66f6325a6977cbf30c91853255b"
   ],
   "reviewerStatuses": [
     {
@@ -112,12 +114,12 @@
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/895",
     "number": 895,
-    "createdAt": "2026-07-22T12:57:20.831Z"
+    "createdAt": "2026-07-22T14:14:06.036Z"
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 102,
+    "historyCount": 116,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -126,15 +128,15 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 2,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 3,
       "custom-reviewers": 3,
       "regression-gate": 3,
-      "conformance": 1,
-      "adr-gen": 1,
-      "pr-create": 1,
+      "conformance": 2,
+      "adr-gen": 2,
+      "pr-create": 2,
       "code-fixer": 2
     }
   }
