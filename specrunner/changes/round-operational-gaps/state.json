@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "326fb481-6723-4faa-82b3-f020ced8dd1d",
   "createdAt": "2026-07-22T14:20:53.595Z",
-  "updatedAt": "2026-07-22T14:59:44.616Z",
+  "updatedAt": "2026-07-22T15:00:25.387Z",
   "request": {
     "title": "custom reviewer round の運用欠落 2 件を修正する — pr-create-result の管理パス化と activationPaths の欠落補完",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "fix/round-operational-gaps-326fb481",
   "error": null,
@@ -74,7 +74,8 @@
     "d1a020cb5fb2f575cf5477dd6d07eda8a78838e8",
     "f05def0dc585eac2ab202658167fe6adb16d5159",
     "c72378c97c61f5a266c863c2e98b6b338bca90a8",
-    "cc2f9343b99a33ec781eef7f193c0c07983d34fe"
+    "cc2f9343b99a33ec781eef7f193c0c07983d34fe",
+    "c94cb57bd567717ff1cf93a1aef4e2e020bd4065"
   ],
   "reviewerStatuses": [
     {
@@ -105,7 +106,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 58,
+    "historyCount": 63,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -120,7 +121,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
