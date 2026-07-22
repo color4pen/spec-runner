@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d81cea8f-31d9-4c26-b116-79ba54c46ab5",
   "createdAt": "2026-07-22T11:54:57.409Z",
-  "updatedAt": "2026-07-22T14:38:01.259Z",
+  "updatedAt": "2026-07-22T14:53:17.841Z",
   "request": {
     "title": "保護正典への fixable finding を、書けない fixer に routing せず escalation に倒す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/canon-finding-escalation-routing-d81cea8f",
   "error": null,
@@ -70,12 +70,42 @@
     "78d64250be8fc751d9388b5e17dc6bf057ad7707",
     "6d610e08f917a004967a17fa74ec4ed226b98e96",
     "db91021484302cb1f56304f374a1b7e77b67c135",
-    "6ff75df2f764934a2e46dc01e5eaf4210a9b2b01"
+    "6ff75df2f764934a2e46dc01e5eaf4210a9b2b01",
+    "75fc6fa5c6a8f3110ec79f388ffc01790da138ae",
+    "7fa22658aceed2ec817d76e85f213c417f06ce84"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "75fc6fa5c6a8f3110ec79f388ffc01790da138ae",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/canon-finding-escalation-routing/design.md:sha256:65588881e365ea8f89dba40ad6a581c4c3284faa75c558fce61e9ed4b2036548|specrunner/changes/canon-finding-escalation-routing/request.md:sha256:4b6fb28630ce72f65d0c2fa48adfe8861852bf541e604f10d6bb3f1e730208ae|specrunner/changes/canon-finding-escalation-routing/spec.md:sha256:1c083a95a189201ba67d05492bf040055d022f021af5173a969fc00043be7953|specrunner/changes/canon-finding-escalation-routing/tasks.md:sha256:2c639b42f20a6b2bbc89e009fcd132ed566a52412d9d3f5b7b2cc228662addbf|specrunner/changes/canon-finding-escalation-routing/test-cases.md:sha256:0b11bc2862d7fb9fa481515de74936dd8c8a06782061f434d14b88798d881729"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -85,7 +115,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
