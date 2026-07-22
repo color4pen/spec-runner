@@ -211,9 +211,15 @@ describe("TC-008: CONDITIONAL サブコマンドの読み取り形が read-or-no
 
 describe("TC-009: CONDITIONAL サブコマンドの変更形が mutation を返す", () => {
   const cases = [
-    "git branch -D foo",                              // delete flag → mutation
+    "git branch -D foo",                              // -D (delete) → mutation
+    "git branch --delete foo",                        // --delete (long form) → mutation
     "git branch new-branch",                          // positional arg = create → mutation
-    "git branch -m old new",                          // move flag → mutation
+    "git branch -m old new",                          // -m (move) → mutation
+    "git branch --move old new",                      // --move (long form) → mutation
+    "git branch -c old new",                          // -c (copy) → mutation
+    "git branch --copy old new",                      // --copy (long form) → mutation
+    "git branch -f existing",                         // -f (force) → mutation
+    "git branch --force existing",                    // --force (long form) → mutation
     "git branch --set-upstream-to=origin/main",       // --set-upstream-to=value form → mutation
     "git branch --set-upstream-to origin/main",       // --set-upstream-to space-value form → mutation
     "git branch --unset-upstream",                    // --unset-upstream → mutation

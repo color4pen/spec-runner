@@ -132,10 +132,16 @@ function classifyConditional(subcommand: string, remainingArgs: string[]): GitCo
     if (remainingArgs.length === 0) return { kind: "read-or-nongit" };
 
     // Flags that always indicate a mutation operation on a branch (short and long forms).
-    // --set-upstream-to / --unset-upstream may appear as --set-upstream-to=<upstream> (=value form)
+    // Design D2 explicit list: -d/-D/--delete, -m/-M/--move, -c/-C/--copy, -f/--force,
+    // -u/--set-upstream-to, --unset-upstream, --edit-description.
+    // --set-upstream-to may appear as --set-upstream-to=<upstream> (=value form)
     // or as bare --set-upstream-to followed by a value token; both are covered here.
     const isBranchMutationFlag = (a: string): boolean =>
-      ["-D", "-d", "-m", "-M", "-c", "-C", "-u"].includes(a) ||
+      ["-D", "-d", "-m", "-M", "-c", "-C", "-u", "-f"].includes(a) ||
+      a === "--delete" ||
+      a === "--move" ||
+      a === "--copy" ||
+      a === "--force" ||
       a === "--set-upstream-to" ||
       a.startsWith("--set-upstream-to=") ||
       a === "--unset-upstream" ||
