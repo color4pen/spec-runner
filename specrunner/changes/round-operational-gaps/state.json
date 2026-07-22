@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "326fb481-6723-4faa-82b3-f020ced8dd1d",
   "createdAt": "2026-07-22T14:20:53.595Z",
-  "updatedAt": "2026-07-22T14:37:57.642Z",
+  "updatedAt": "2026-07-22T14:40:44.312Z",
   "request": {
     "title": "custom reviewer round の運用欠落 2 件を修正する — pr-create-result の管理パス化と activationPaths の欠落補完",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "fix/round-operational-gaps-326fb481",
   "error": null,
@@ -65,14 +65,16 @@
   "synthesizedCommits": [
     "67dd3b2219a9728e09e310d4525d15febd415c9f",
     "760522a890a0e3ba0379fc5e0837ac44478a809d",
-    "fc6de8db418cc97e777b3c5f92b644a677e60177"
+    "fc6de8db418cc97e777b3c5f92b644a677e60177",
+    "1364ef90b4b8c1dd0a8300b693fa8dedab0a52f8"
   ],
   "_journal": {
-    "historyCount": 17,
+    "historyCount": 20,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }
