@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:5d7beccd2b435b22d9085e6e08b857dbc37c94f35db67f0b7a7264df543e7533",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/runtime/local.ts:406 — git commit without OID capture or synthesizedCommits update",
+    "src/core/runtime/managed.ts:236 — git commit without OID capture or synthesizedCommits update",
+    "src/core/runtime/workspace-materializer.ts:215 — git commit without OID capture or synthesizedCommits update",
+    "src/state/schema/operations.ts:appendSynthesizedCommit — pure idempotent function exists at line 35",
+    "src/core/step/commit-push.ts:runInlineEgressCheck — uses strict rev-list HEAD --not --remotes=origin at line 365",
+    "tests/pipeline-sole-committer-e2e.test.ts — no synthesizedCommits seed for bootstrap commits (makeJobState has no synthesizedCommits default)"
+  ],
+  "sourceRevision": "d8dc2d164be63feff3ff5d2e7bb3748b50bb20e4"
+}
