@@ -670,3 +670,87 @@ describe("resume snapshot propagation respects resolved startStep", () => {
     expect(result.resumePrompt).toBe("human note");
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-NW-017: setupWorkspace no-worktree run path — bootstrap OID recorded in synthesizedCommits
+// ---------------------------------------------------------------------------
+
+describe("TC-NW-017: setupWorkspace no-worktree run path — bootstrap OID recorded in synthesizedCommits", () => {
+  const BOOTSTRAP_OID = "abc123def456abc123def456abc123def456abc1";
+
+  /**
+   * spawnFn stub that returns BOOTSTRAP_OID for `git rev-parse HEAD`.
+   * All other git commands fall back to exitCode=0, empty stdout/stderr.
+   */
+  function buildSpawnFnWithRevParse(opts: { revParseExitCode?: number } = {}): SpawnFn {
+    const { revParseExitCode = 0 } = opts;
+    return vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
+      if (cmd === "git" && args[0] === "status" && args[1] === "--porcelain") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "checkout" && args[1] === "-b") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "rev-parse" && args[1] === "HEAD") {
+        return {
+          exitCode: revParseExitCode,
+          stdout: revParseExitCode === 0 ? `${BOOTSTRAP_OID}\n` : "",
+          stderr: revParseExitCode !== 0 ? "fatal: bad revision 'HEAD'" : "",
+        };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+  }
+
+  it("records bootstrap OID in state.synthesizedCommits after git commit", async () => {
+    const manager = buildMockManager();
+    const spawnFn = buildSpawnFnWithRevParse();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const slug = "bootstrap-oid-test";
+    const branchName = "change/bootstrap-oid-test-abc12345";
+    const jobState = await makeJobState(slug);
+
+    // Create a flat-file request.md in tempDir (not inside the change folder)
+    const requestFile = path.join(tempDir, `${slug}.md`);
+    await fs.writeFile(requestFile, "# Bootstrap OID Test\n");
+
+    await runtime.setupWorkspace(slug, jobState.jobId, {
+      noWorktree: true,
+      branchName,
+      requestFilePath: requestFile,
+      bootstrapState: jobState,
+    });
+
+    // Read final state from slug store and verify synthesizedCommits was populated
+    const store = new JobStateStore(jobState.jobId, tempDir, { slug, stateRoot: tempDir });
+    const finalState = await store.load();
+
+    expect(finalState?.synthesizedCommits).toBeDefined();
+    expect(finalState?.synthesizedCommits).toContain(BOOTSTRAP_OID);
+  });
+
+  it("throws 'Failed to capture bootstrap commit OID' when git rev-parse HEAD fails", async () => {
+    const manager = buildMockManager();
+    const spawnFn = buildSpawnFnWithRevParse({ revParseExitCode: 1 });
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const slug = "bootstrap-oid-fail";
+    const branchName = "change/bootstrap-oid-fail-abc12345";
+    const jobState = await makeJobState(slug);
+
+    const requestFile = path.join(tempDir, `${slug}.md`);
+    await fs.writeFile(requestFile, "# Bootstrap OID Fail Test\n");
+
+    await expect(
+      runtime.setupWorkspace(slug, jobState.jobId, {
+        noWorktree: true,
+        branchName,
+        requestFilePath: requestFile,
+        bootstrapState: jobState,
+      }),
+    ).rejects.toThrow("Failed to capture bootstrap commit OID");
+  });
+});
