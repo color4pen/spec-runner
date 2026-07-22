@@ -210,7 +210,7 @@ describe("partitionRoundChanges — pipeline-managed paths in changed", () => {
   });
 
   // TC-001 (pr-create-result.md only in changed — no other declared changes)
-  it("TC-001: pr-create-result.md only in changed (no declared changes) → toStage = [], offending = []", () => {
+  it("TC-001b: pr-create-result.md only in changed (no declared changes) → toStage = [], offending = []", () => {
     const { toStage, offending } = partitionRoundChanges({
       changed: [PR_CREATE_RESULT],
       declared: [],
