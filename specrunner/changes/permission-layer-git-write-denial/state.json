@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ac3aa8bf-033e-421f-a92b-59359474389e",
   "createdAt": "2026-07-22T11:54:14.110Z",
-  "updatedAt": "2026-07-22T12:00:01.451Z",
+  "updatedAt": "2026-07-22T12:04:59.101Z",
   "request": {
     "title": "agent の git 状態変更とスコープ外書込を permission 層で遮断する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/permission-layer-git-write-denial-ac3aa8bf",
   "error": null,
@@ -62,10 +62,13 @@
   "issueNumber": 894,
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "synthesizedCommits": [
+    "398a2f6374d70de7d9354742ccb17179eba9acdc"
+  ],
   "_journal": {
-    "historyCount": 6,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 2
     }
   }
 }
