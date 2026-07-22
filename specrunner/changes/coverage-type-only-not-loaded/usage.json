@@ -79,6 +79,26 @@
       },
       "jobId": "6283b476-9b25-4729-b5a9-a9a2b94f533d",
       "stepName": "test-case-gen"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-07-22T12:41:18.853Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 6746,
+          "outputTokens": 17,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 23,
+          "outputTokens": 46403,
+          "cacheReadInputTokens": 1178268,
+          "cacheCreationInputTokens": 90404
+        }
+      },
+      "jobId": "6283b476-9b25-4729-b5a9-a9a2b94f533d",
+      "stepName": "test-materialize"
     }
   ]
 }
