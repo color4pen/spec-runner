@@ -18,6 +18,7 @@ import { parseLcov } from "./lcov.js";
 import { getChangedFilesAndLines } from "./changed-lines.js";
 import { spawnCommand } from "./commands.js";
 import { stripSecrets } from "../../util/env-filter.js";
+import { isTypeOnlySource } from "./type-only.js";
 import type { PhaseResult } from "./runner.js";
 import type { CoverageConfig } from "../../config/schema.js";
 import type { SpawnFn } from "./changed-lines.js";
@@ -28,6 +29,15 @@ import type { SpawnFn } from "./changed-lines.js";
 
 /** Reason a file failed the coverage gate. */
 export type FailReason = "not-loaded" | "unexecuted" | "below-threshold";
+
+/** Reason a file was skipped as type-only. */
+export type SkipReason = "type-only";
+
+/** Per-file type-only skip record. */
+export interface TypeOnlySkip {
+  file: string;
+  reason: "type-only";
+}
 
 /** Per-file failure record. */
 export interface FailedFile {
@@ -53,6 +63,13 @@ export interface EvaluateInput {
    * Range: 0–1 when specified.
    */
   minChangedLineCoverage?: number;
+  /**
+   * Files known to contain only type-level constructs (no runtime code).
+   * When a file in this set is absent from lcov, it is skipped rather than
+   * failed. Omit (or leave undefined) to preserve the original fail-closed
+   * behavior where any lcov-absent file is a failure.
+   */
+  typeOnlyFiles?: Set<string>;
 }
 
 /** Result of the pure evaluator. */
@@ -60,6 +77,8 @@ export interface EvaluateResult {
   status: "passed" | "failed";
   failedFiles: FailedFile[];
   skippedFiles: string[];
+  /** Files skipped because they are type-only (absent from lcov, no runtime code). */
+  typeOnlySkipped: TypeOnlySkip[];
   stdout: string;
 }
 
@@ -75,10 +94,11 @@ export interface EvaluateResult {
  *    - With minChangedLineCoverage: executed / total changedDA >= threshold → pass; else fail.
  */
 export function evaluateChangedLineCoverage(input: EvaluateInput): EvaluateResult {
-  const { lcov, changedLinesByFile, include, exclude, minChangedLineCoverage } = input;
+  const { lcov, changedLinesByFile, include, exclude, minChangedLineCoverage, typeOnlyFiles } = input;
 
   const failedFiles: FailedFile[] = [];
   const skippedFiles: string[] = [];
+  const typeOnlySkipped: TypeOnlySkip[] = [];
 
   for (const [file, changedLines] of changedLinesByFile) {
     // 1. Filter by include/exclude globs.
@@ -94,9 +114,16 @@ export function evaluateChangedLineCoverage(input: EvaluateInput): EvaluateResul
       continue;
     }
 
-    // 2. Check lcov presence (fail-closed).
+    // 2. Check lcov presence.
+    //    Type-only files (interface/type/declare only, no runtime code) are
+    //    erased by the compiler and never appear in lcov. Skip them rather
+    //    than failing — fail-closed only for files with runtime code.
     if (!lcov.has(file)) {
-      failedFiles.push({ file, reason: "not-loaded" });
+      if (typeOnlyFiles?.has(file)) {
+        typeOnlySkipped.push({ file, reason: "type-only" });
+      } else {
+        failedFiles.push({ file, reason: "not-loaded" });
+      }
       continue;
     }
 
@@ -164,10 +191,17 @@ export function evaluateChangedLineCoverage(input: EvaluateInput): EvaluateResul
     lines.push(`  Skipped (not in coverage surface): ${skippedFiles.join(", ")}`);
   }
 
+  if (typeOnlySkipped.length > 0) {
+    lines.push(
+      `  Type-only (no runtime code, absent from lcov): ${typeOnlySkipped.map((s) => s.file).join(", ")}`,
+    );
+  }
+
   return {
     status,
     failedFiles,
     skippedFiles,
+    typeOnlySkipped,
     stdout: lines.join("\n"),
   };
 }
@@ -298,13 +332,34 @@ export async function runChangedLineCoverageGate(
     };
   }
 
-  // Step 5: Evaluate.
+  // Step 5: Build typeOnlyFiles — for each changed file absent from lcov,
+  // read its source and check whether it is type-only. Type-only files are
+  // compiler-erased and structurally cannot appear in lcov.
+  // Fail-closed: if the source cannot be read, do NOT add the file to
+  // typeOnlyFiles so that the evaluator treats it as a not-loaded failure.
+  const typeOnlyFiles = new Set<string>();
+  for (const [file] of changedLinesByFile) {
+    if (!lcov.has(file)) {
+      try {
+        const src = await fs.readFile(path.resolve(cwd, file), "utf-8");
+        if (isTypeOnlySource(src)) {
+          typeOnlyFiles.add(file);
+        }
+      } catch {
+        // Source unreadable → not added to typeOnlyFiles → evaluator fails
+        // with "not-loaded" (fail-closed behavior preserved).
+      }
+    }
+  }
+
+  // Step 6: Evaluate.
   const evaluation = evaluateChangedLineCoverage({
     lcov,
     changedLinesByFile,
     include: coverage.include,
     exclude: coverage.exclude,
     minChangedLineCoverage: coverage.minChangedLineCoverage,
+    typeOnlyFiles,
   });
 
   return {
