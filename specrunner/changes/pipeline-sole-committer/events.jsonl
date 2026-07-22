@@ -151,3 +151,13 @@
 {"type":"transition","ts":"2026-07-22T09:58:41.684Z","step":"code-review","status":"ok","message":"code-review iteration 1 completed with verdict: approved"}
 {"type":"transition","ts":"2026-07-22T09:58:41.684Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-07-22T09:58:41.688Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-07-22T09:59:01.378Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"6ca6d706-328d-49eb-9a84-82feb8da2ccd","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-22T09:58:41.739Z","endedAt":"2026-07-22T09:58:59.777Z","commitOid":"413da7b96a240f9f08ff75d282e0ff7368f31b73"}
+{"type":"lineage","step":"code-fixer","ts":"2026-07-22T09:58:59.777Z","outputs":[{"path":"specrunner/changes/pipeline-sole-committer","hash":null}],"inputs":[{"path":"specrunner/changes/pipeline-sole-committer/review-feedback-003.md","hash":"sha256:4c888582b439c42069a72db2a0eb46c3f7f080739c70707d59214b44305525e2"}]}
+{"type":"transition","ts":"2026-07-22T09:59:01.382Z","step":"step-transition","status":"ok","message":"code-fixer → custom-reviewers"}
+{"type":"interruption","reason":"signal","ts":"2026-07-22T10:08:17.119Z"}
+{"type":"interruption","reason":"signal","ts":"2026-07-22T10:08:17.120Z"}
+{"type":"transition","ts":"2026-07-22T10:08:17.120Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-22T10:08:17.120Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-07-22T10:09:54.454Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-fixer'"}
+{"type":"transition","ts":"2026-07-22T10:09:54.529Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
