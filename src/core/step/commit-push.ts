@@ -98,7 +98,7 @@ async function getWorktreeChangedPaths(
   spawnFn: SpawnFn,
   cwd: string,
   worktreeOnly = false,
-): Promise<{ ok: boolean; paths: string[]; untracked: string[] }> {
+): Promise<{ ok: boolean; paths: string[]; untracked: string[]; stagedOnly: string[] }> {
   try {
     const { stdout, exitCode } = await runSubprocess(
       spawnFn,
@@ -107,15 +107,24 @@ async function getWorktreeChangedPaths(
       { cwd },
     );
     if (exitCode !== 0) {
-      return { ok: false, paths: [], untracked: [] };
+      return { ok: false, paths: [], untracked: [], stagedOnly: [] };
     }
     const parts = stdout.split("\0").filter((p) => p.length > 0);
     const paths: string[] = [];
     const untracked: string[] = [];
+    const stagedOnly: string[] = [];
     for (const part of parts) {
       // Format: XY<SP>path — 2-char status + space prefix
       // part[0] = X (index/staging state), part[1] = Y (worktree state)
       if (part.length < 4) continue;
+      // Staged-only entries (X≠' ', Y=' '): index and worktree agree on content that
+      // differs from HEAD. Collected regardless of worktreeOnly so callers can apply
+      // canon-integrity checks to them (the worktree FILE is tampered vs HEAD even
+      // though the worktree column is clean).
+      if (part[0] !== " " && part[0] !== "?" && part[1] === " ") {
+        const stagedPath = part.slice(3);
+        if (stagedPath) stagedOnly.push(stagedPath);
+      }
       if (worktreeOnly && part[1] === " ") continue; // skip staged-only (pre-staged) files
       const filePath = part.slice(3);
       if (filePath) {
@@ -125,9 +134,9 @@ async function getWorktreeChangedPaths(
         if (part[0] === "?") untracked.push(filePath);
       }
     }
-    return { ok: true, paths, untracked };
+    return { ok: true, paths, untracked, stagedOnly };
   } catch {
-    return { ok: false, paths: [], untracked: [] };
+    return { ok: false, paths: [], untracked: [], stagedOnly: [] };
   }
 }
 
@@ -357,8 +366,9 @@ async function runInlineEgressCheck(
  *
  * "scoped" mode (deterministic steps: design, spec-review, spec-fixer, etc.):
  *   - Stages only declared outputs + pipeline-managed paths (explicit pathspec).
- *   - Residual check: any worktree path outside declared+managed scope is quarantined and
- *     WRITE_SCOPE_VIOLATION is thrown (halt, not continue).
+ *   - Residual check: any worktree-dirty path outside declared+managed scope, and any
+ *     staged-only protected canon path (the step read tampered canon), is quarantined
+ *     and WRITE_SCOPE_VIOLATION is thrown (halt, not continue).
  *   - Staged-change diff check restricted to the declared pathspec.
  *   - Commit uses the same explicit pathspec (pre-staged unauthorized files excluded).
  *
@@ -366,7 +376,8 @@ async function runInlineEgressCheck(
  *   - Runs git status to enumerate all worktree changes after reset.
  *   - findWriteScopeViolations: halt if any protected canon path was modified.
  *   - Stages all enumerated changed paths explicitly (git add -A -- <paths>).
- *   - Fallback: if no changes detected, uses `git add -A -- .` (backward compat).
+ *   - Empty enumeration skips the add entirely; if staged changes exist anyway, the
+ *     commit throws fail-closed (never a whole-index commit; no `git add -A -- .`).
  *   - Commit uses the same explicit pathspec.
  *
  * Shared tail (both modes):
@@ -425,29 +436,40 @@ export async function commitAndPush(
     }
 
     // Residual check: detect worktree paths outside declared+managed scope.
-    // Uses worktreeOnly=true to skip pre-staged files (X≠' ', Y=' '): those were
-    // staged before the step ran and are not modifications made by this step.
-    // Violated paths are quarantined (evidence) then restored to prevent checkpoint leakage.
+    // Two rules over one status snapshot:
+    //   - Worktree-dirty entries (worktreeOnly=true set): anything outside
+    //     declared+managed scope is a violation (this step's own residue).
+    //   - Staged-only entries (X≠' ', Y=' '): checked against protected canon only.
+    //     A staged canonical doc means the worktree FILE differs from HEAD — this step
+    //     just READ tampered canon, so its result must not be adopted, regardless of
+    //     whether the staging predates the step. Non-canon pre-staged files stay
+    //     excluded here (pathspec commits keep them out of history; halting on them
+    //     would misattribute another step's leftovers to this step).
+    // Violated paths are quarantined (evidence) then restored to prevent downstream
+    // steps from reading tampered content.
     const postStatus = await getWorktreeChangedPaths(infra.spawnFn, cwd, true);
     if (!postStatus.ok) {
       // git status spawn failure or non-zero exit → fail-closed (D5): an uninspected
       // worktree must not proceed to commit/push.
       throw commitEffectFailedError(step.name, branch, "stage", "git status failed");
     }
-    if (postStatus.paths.length > 0) {
+    {
       const residualViolations = findScopedCommitViolations(slug, postStatus.paths, filePaths, allManagedPaths);
-      if (residualViolations.length > 0) {
+      const stagedCanonViolations = findWriteScopeViolations(step.name, slug, postStatus.stagedOnly, filePaths);
+      const allViolations = [...new Set([...residualViolations, ...stagedCanonViolations])];
+      if (allViolations.length > 0) {
         const residualQuarantine = await quarantineViolationEvidence(
-          infra.spawnFn, cwd, slug, step.name, residualViolations,
+          infra.spawnFn, cwd, slug, step.name, allViolations,
         );
         stderrWrite(
-          `[${step.name}] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): ${residualViolations.join(", ")}` +
+          `[${step.name}] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): ${allViolations.join(", ")}` +
           (residualQuarantine ? ` — 退避先: ${residualQuarantine}` : ""),
         );
-        // Restore: untracked violations via clean -f, tracked via checkout HEAD.
+        // Restore: untracked violations via clean -f, tracked (incl. staged-only canon)
+        // via checkout HEAD (resets both index and worktree to HEAD content).
         // Restore failure must not be silenced (D5) — restoreViolatedPaths throws.
-        await restoreViolatedPaths(infra.spawnFn, cwd, step.name, branch, residualViolations, postStatus.untracked);
-        throw writeScopeViolationError(step.name, branch, residualViolations, residualQuarantine);
+        await restoreViolatedPaths(infra.spawnFn, cwd, step.name, branch, allViolations, postStatus.untracked);
+        throw writeScopeViolationError(step.name, branch, allViolations, residualQuarantine);
       }
     }
 

@@ -1863,6 +1863,71 @@ describe("D5: restore failure during violation handling → fail-closed halt (no
     expect(String((caught as Error).message)).toContain("restore");
   });
 
+  it("staged-only canon tampering (X='M', Y=' ') → WRITE_SCOPE_VIOLATION halt (cross-boundary F-002)", async () => {
+    // Agent edits request.md and stages it (git add): index and worktree agree on
+    // content that differs from HEAD. worktreeOnly filtering alone would skip this
+    // entry, but the worktree FILE is tampered — the step read weakened canon, so
+    // the residual check must halt via the staged-only canon rule.
+    // DESTROY: drop the stagedOnly canon check → this resolves (silent adoption).
+    const slug = "test-slug";
+    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+    const requestMdPath = `specrunner/changes/${slug}/request.md`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        add: { exitCode: 0 },
+        // "M " = staged, worktree clean (X='M', Y=' ')
+        status: { exitCode: 0, stdout: `M  ${requestMdPath}\0` },
+        diff: { exitCode: 0, stdout: "diff --git a/request.md\n-orig\n+weakened" },
+        clean: { exitCode: 0 },
+        checkout: { exitCode: 0 },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+    });
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await expect(
+      commitAndPush(step, makeJobState(), makeDeps(slug), null, infra),
+    ).rejects.toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
+
+    // Restore must route the tracked staged-only path to checkout HEAD (resets index+worktree)
+    const checkoutCall = calls.find((c) => c.args[0] === "checkout");
+    expect(checkoutCall, "checkout HEAD must restore the staged canon path").toBeDefined();
+    expect(checkoutCall!.args).toContain(requestMdPath);
+
+    // Nothing may be committed/pushed after the halt
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands, "commit must NOT run after staged-canon halt").not.toContain("commit");
+    expect(subcommands, "push must NOT run after staged-canon halt").not.toContain("push");
+  });
+
+  it("pre-staged NON-canon file (staged-only) does not halt — pathspec exclusion continues (behavior preserved)", async () => {
+    // R6-1 contract: pre-staged unauthorized non-canon files (e.g. src/secret.ts) are
+    // excluded from commits by pathspec and the step proceeds. Only canon divergence
+    // triggers the staged-only halt.
+    const slug = "test-slug";
+    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        add: { exitCode: 0 },
+        status: { exitCode: 0, stdout: `M  src/secret.ts\0` },
+        diff: { exitCode: 1 },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+    });
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await commitAndPush(step, makeJobState(), makeDeps(slug), null, infra);
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands, "commit must proceed (non-canon pre-staged file is not a violation)").toContain("commit");
+  });
+
   it("restore success keeps the WRITE_SCOPE_VIOLATION halt (behavior preserved)", async () => {
     const { spawnFn } = makeGitSpawnFn({
       responses: {
