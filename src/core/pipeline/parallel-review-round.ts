@@ -377,7 +377,9 @@ export class ParallelReviewRound {
           // Worktree inspection failed — fail-closed: do not approve an uninspected worktree.
           aggregateVerdictResult = "escalation";
           inspectionEscalated = true;
-          roundError = {
+          // First error wins: when the HEAD guard (5b) already set ROUND_HEAD_ADVANCED,
+          // that is the root cause and must not be overwritten by this consequence.
+          roundError = roundError ?? {
             code: "ROUND_INSPECTION_UNAVAILABLE",
             message: `Worktree inspection unavailable: ${inspection.reason}`,
             hint: "Check that git is available in the worktree and that the working directory is a valid git repository. Retry the round after resolving the git issue.",
@@ -394,7 +396,11 @@ export class ParallelReviewRound {
             // Non-declared changes detected — halt the entire round.
             aggregateVerdictResult = "escalation";
             inspectionEscalated = true;
-            roundError = {
+            // First error wins: after the HEAD guard (5b) fires, the mixed reset leaves the
+            // reviewer's committed changes in the worktree, so this branch is reached with the
+            // same root cause. ROUND_HEAD_ADVANCED must survive as the recorded error — the
+            // offending paths here are a consequence of the reset, not an independent cause.
+            roundError = roundError ?? {
               code: "ROUND_NONDECLARED_CHANGE",
               message: `Round produced undeclared file changes: ${offending.join(", ")}`,
               hint: "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration.",

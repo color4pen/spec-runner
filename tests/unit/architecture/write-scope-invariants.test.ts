@@ -267,6 +267,58 @@ describe('TC-021: `src/` に裸の `git add -A` が存在しない', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
+// F-012: `src/` 全体に pathspec なしの `git commit` が存在しない (must)
+//
+// R1-3 の不変条件「全経路で明示パス指定」は staging（add）だけでなく commit にも
+// 及ぶ: pathspec なしの `git commit -m` は index 全体を commit するため、scoped
+// staging が除外した事前 stage 済み許可外エントリを回収してしまう（そしてその
+// commit は pipeline 合成として egress 台帳に載り、backstop を素通りする）。
+//
+// TC-021 は `git add -A` のみを対象としており、bare `git commit` はこの静的
+// ゲートの外側だった（regression-gate F-012）。本 describe は src/ を再帰走査し、
+// `"commit"` と `"-m"` を含む行が同一行に `"--"` を持つことを要求する。
+//
+// DESTROY: いずれかの commit 呼び出しから `"--"` pathspec を外すと FAIL する。
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('F-012: `src/` に pathspec なしの `git commit` が存在しない', () => {
+  it("src/ 配下の全 .ts ファイルで git commit 行が同一行に pathspec 区切り \"--\" を持つ", () => {
+    const srcDir = path.join(ROOT, "src");
+    if (!existsSync(srcDir)) return;
+
+    const entries = readdirSync(srcDir, { recursive: true }) as string[];
+    const tsFiles = entries
+      .filter((f) => f.endsWith(".ts"))
+      // Test fixtures create commits in throwaway repos — the invariant targets
+      // production egress paths only.
+      .filter((f) => !f.includes("__tests__") && !f.endsWith(".test.ts"))
+      .map((f) => path.join(srcDir, f));
+
+    const violations: string[] = [];
+    for (const filePath of tsFiles) {
+      const content = readFileSync(filePath, "utf-8");
+      const lines = content.split("\n");
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i]!;
+        // A git commit invocation line carries both the "commit" subcommand literal and
+        // the "-m" flag literal. Such a line without an explicit "--" pathspec separator
+        // is a whole-index commit.
+        if (line.includes('"commit"') && line.includes('"-m"') && !line.includes('"--"')) {
+          violations.push(`${path.relative(ROOT, filePath)}:${i + 1}: ${line.trim()}`);
+        }
+      }
+    }
+
+    expect(
+      violations,
+      `Bare 'git commit' (no pathspec "--") found in src/:\n${violations.join("\n")}\n` +
+      "(F-012: every commit must be pathspec-limited — a whole-index commit sweeps in " +
+      "pre-staged unauthorized index entries)",
+    ).toHaveLength(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
 // TC-006: push-as-is 経路と自己 commit 範囲検査のコードが削除されている (should)
 //
 // T-04 の完了後、`src/core/step/commit-push.ts` の commitAndPushTail から

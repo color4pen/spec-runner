@@ -66,8 +66,11 @@ describe("propagateVerificationResult — happy path", () => {
     expect(result).toEqual({ ok: true });
     const cmds = spawn.calls.map((c) => `${c.cmd} ${c.args.join(" ")}`);
     expect(cmds[0]).toBe(`git add ${verificationResultPath("my-change")}`);
-    expect(cmds[1]).toBe("git diff --cached --quiet");
+    // Pathspec-limited diff and commit: a whole-index diff/commit would treat unrelated
+    // pre-staged entries as pending changes / sweep them into the verification commit.
+    expect(cmds[1]).toBe(`git diff --cached --quiet -- ${verificationResultPath("my-change")}`);
     expect(cmds[2]).toContain("git commit -m chore: verification result for my-change (iter 1)");
+    expect(cmds[2]).toContain(`-- ${verificationResultPath("my-change")}`);
     expect(cmds[3]).toBe("git push origin feat/test");
 
     // All operations run in cwd (NOT a temp worktree)

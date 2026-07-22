@@ -403,7 +403,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       // Commit change folder files as the first commit on the feature branch
       const gitCommitResult = await this.spawnFn(
         "git",
-        ["commit", "-m", `add request.md for ${slug}`],
+        ["commit", "-m", `add request.md for ${slug}`, "--", changeFolderPath(slug)],
         { cwd: this.cwd },
       );
       if (gitCommitResult.exitCode !== 0) {

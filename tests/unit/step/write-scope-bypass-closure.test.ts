@@ -1734,3 +1734,152 @@ describe("TC-030: self-commit violation + staged declared changes → halt befor
     expect(subcommands, "push must be called").toContain("push");
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// F-009: scoped residual status failure → fail-closed halt (D5)
+//
+// Source: spec.md > Requirement: 合成・復帰経路の git 操作失敗は fail-closed
+//         Scenario: 実変更列挙の status 失敗は halt する
+//
+// The scoped residual check enumerates worktree changes via git status. A status
+// failure means the worktree is UNINSPECTED — proceeding would commit/push without
+// knowing whether protected canon was tampered with.
+// DESTROY: revert to `if (postStatus.ok && ...)` guard → status failure silently
+// skips the residual check and the run resolves (this suite goes RED).
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("F-009: scoped residual status failure → fail-closed halt", () => {
+  const slug = "test-slug";
+  const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+
+  it("throws COMMIT_AND_PUSH_FAILED when git status fails during scoped residual check", async () => {
+    const { spawnFn } = makeGitSpawnFn({
+      responses: {
+        add: { exitCode: 0 },
+        status: { exitCode: 128 }, // git status failure → residual check impossible
+        diff: { exitCode: 1 },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+    });
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await expect(
+      commitAndPush(step, makeJobState(), makeDeps(slug), null, infra),
+    ).rejects.toMatchObject({ code: "COMMIT_AND_PUSH_FAILED" });
+  });
+
+  it("commit and push are NOT called after status failure (uninspected worktree never published)", async () => {
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        add: { exitCode: 0 },
+        status: { exitCode: 128 },
+        diff: { exitCode: 1 },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+    });
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await expect(
+      commitAndPush(step, makeJobState(), makeDeps(slug), null, infra),
+    ).rejects.toThrow();
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands, "git commit must NOT run on an uninspected worktree").not.toContain("commit");
+    expect(subcommands, "git push must NOT run on an uninspected worktree").not.toContain("push");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// D5: restore failure is not silenced (scoped residual / guarded violation)
+//
+// Source: spec.md > Requirement: 合成・復帰経路の git 操作失敗は fail-closed
+//         (restore 失敗の黙殺を解消する)
+//
+// A failed clean/checkout restore leaves tampered canon in the worktree where
+// resumed steps would read it. The halt must report the restore failure instead
+// of claiming the violation was restored.
+// DESTROY: ignore clean/checkout results again → these tests see
+// WRITE_SCOPE_VIOLATION (restore silently failed) instead of the restore error.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("D5: restore failure during violation handling → fail-closed halt (not silenced)", () => {
+  const slug = "test-slug";
+  const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+  const requestMdPath = `specrunner/changes/${slug}/request.md`;
+
+  it("scoped residual: checkout restore failure → COMMIT_AND_PUSH_FAILED naming the restore", async () => {
+    const { spawnFn } = makeGitSpawnFn({
+      responses: {
+        add: { exitCode: 0 },
+        status: { exitCode: 0, stdout: ` M ${requestMdPath}\0` },
+        diff: { exitCode: 0, stdout: "diff --git a/request.md\n-orig\n+changed" },
+        clean: { exitCode: 0 },
+        checkout: { exitCode: 1 }, // restore failure — tampered canon remains in worktree
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+    });
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    let caught: unknown;
+    try {
+      await commitAndPush(step, makeJobState(), makeDeps(slug), null, infra);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeDefined();
+    expect((caught as { code?: string }).code).toBe("COMMIT_AND_PUSH_FAILED");
+    expect(String((caught as Error).message)).toContain("restore");
+  });
+
+  it("guarded violation: checkout restore failure → COMMIT_AND_PUSH_FAILED naming the restore", async () => {
+    const { spawnFn } = makeGitSpawnFn({
+      responses: {
+        add: { exitCode: 0 },
+        status: { exitCode: 0, stdout: ` M ${requestMdPath}\0` },
+        diff: { exitCode: 0, stdout: "diff --git a/request.md\n-orig\n+changed" },
+        clean: { exitCode: 0 },
+        checkout: { exitCode: 1 },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+    });
+    const step = makeGuardedStep("implement", []);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    let caught: unknown;
+    try {
+      await commitAndPush(step, makeJobState(), makeDeps(slug), null, infra);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeDefined();
+    expect((caught as { code?: string }).code).toBe("COMMIT_AND_PUSH_FAILED");
+    expect(String((caught as Error).message)).toContain("restore");
+  });
+
+  it("restore success keeps the WRITE_SCOPE_VIOLATION halt (behavior preserved)", async () => {
+    const { spawnFn } = makeGitSpawnFn({
+      responses: {
+        add: { exitCode: 0 },
+        status: { exitCode: 0, stdout: ` M ${requestMdPath}\0` },
+        diff: { exitCode: 0, stdout: "diff --git a/request.md\n-orig\n+changed" },
+        clean: { exitCode: 0 },
+        checkout: { exitCode: 0 },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+    });
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await expect(
+      commitAndPush(step, makeJobState(), makeDeps(slug), null, infra),
+    ).rejects.toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
+  });
+});

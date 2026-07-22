@@ -470,6 +470,9 @@ describe("TC-CAP-004: push failure → retry once → success on second push", (
     const { spawnFn: baseFn } = makeGitSpawnFn({
       responses: {
         "add": { exitCode: 0 },
+        // git status returns a changed file so guarded enumeration is non-empty (consistent
+        // with the staged-changes diff below; empty enumeration + staged diff is fail-closed).
+        "status": { exitCode: 0, stdout: " M src/foo.ts\0" },
         "diff": { exitCode: 1 }, // staged changes
         "commit": { exitCode: 0 },
       },
@@ -510,6 +513,9 @@ describe("TC-CAP-005: push failure → retry → second failure → PUSH_FAILED"
     const { spawnFn: baseFn } = makeGitSpawnFn({
       responses: {
         "add": { exitCode: 0 },
+        // git status returns a changed file so guarded enumeration is non-empty (consistent
+        // with the staged-changes diff below; empty enumeration + staged diff is fail-closed).
+        "status": { exitCode: 0, stdout: " M src/foo.ts\0" },
         "diff": { exitCode: 1 },
         "commit": { exitCode: 0 },
       },
@@ -552,6 +558,8 @@ describe("TC-CAP-006: commit message format", () => {
     const { spawnFn, calls } = makeGitSpawnFn({
       responses: {
         "add": { exitCode: 0 },
+        // Non-empty status keeps guarded enumeration consistent with the staged diff below.
+        "status": { exitCode: 0, stdout: " M src/foo.ts\0" },
         "diff": { exitCode: 1 },
         "commit": { exitCode: 0 },
         "push": { exitCode: 0 },
@@ -591,6 +599,8 @@ describe("TC-CAP-007: successful push emits commit:push event", () => {
     const { spawnFn } = makeGitSpawnFn({
       responses: {
         "add": { exitCode: 0 },
+        // Non-empty status keeps guarded enumeration consistent with the staged diff below.
+        "status": { exitCode: 0, stdout: " M src/foo.ts\0" },
         "diff": { exitCode: 1 },
         "commit": { exitCode: 0 },
         "push": { exitCode: 0 },

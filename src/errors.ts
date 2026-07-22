@@ -429,7 +429,7 @@ export function repoRequiredError(command: string): SpecRunnerError {
 export function commitEffectFailedError(
   label: string,
   branch: string,
-  operation: "stage" | "diff" | "commit",
+  operation: "stage" | "diff" | "commit" | "restore",
   detail: string,
 ): SpecRunnerError {
   return new SpecRunnerError(

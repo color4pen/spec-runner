@@ -130,8 +130,9 @@ Acceptance Criteria は受け入れ基準に機械照合できる粒度で記す
       `write-scope-bypass-closure(.test / -integration.test)`、`commit-and-push.test`、
       `commit-push-write-scope.test`、`commit-final-state.test`、`scope-escalation.test`、
       `fast-scope-checkpoint.test`、`parallel-review-round-git-effects.test`。
-- [x] 自己 commit → 「mixed reset で歴史除外 + 合成」、scoped residual halt → 「非宣言変更は commit に含まれない・
-      halt しない」、push-as-is → 「合成 push」へ期待を書き換える。
+- [x] 自己 commit → 「mixed reset で歴史除外 + 合成」、push-as-is → 「合成 push」へ期待を書き換える。
+      scoped residual halt（TC-008/009）は D7 のとおり**保持される契約**であり期待を変更しない
+      （halt の存在理由は commit 層の leak ではなく「改変された正典を読んだ step の結果を採用しない」こと）。
 
 **Acceptance Criteria**:
 - 移行対象テストが合成モデル挙動で green。

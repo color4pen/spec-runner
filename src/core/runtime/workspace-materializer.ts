@@ -212,7 +212,7 @@ export class WorkspaceMaterializer {
           // Commit change folder request.md and rules.md as the first commit on the feature branch (D2)
           const gitCommitResult = await this.host.spawnFn(
             "git",
-            ["commit", "-m", `add request.md for ${slug}`],
+            ["commit", "-m", `add request.md for ${slug}`, "--", changeFolderPath(slug)],
             { cwd: worktreePath },
           );
           if (gitCommitResult.exitCode !== 0) {

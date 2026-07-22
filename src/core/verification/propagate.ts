@@ -58,13 +58,17 @@ export async function propagateVerificationResult(params: {
     return { ok: false, error: `git add failed: ${addResult.stderr.trim()}` };
   }
 
-  const diffResult = await spawn("git", ["diff", "--cached", "--quiet"], { cwd });
+  // Pathspec-limited: only the verification result decides whether to commit.
+  // Whole-index diff would treat unrelated pre-staged entries as pending changes.
+  const diffResult = await spawn("git", ["diff", "--cached", "--quiet", "--", relPath], { cwd });
   if (diffResult.exitCode === 0) {
     return { ok: true, warning: "verification-result.md unchanged; skipping commit" };
   }
 
   const commitMsg = `chore: verification result for ${slug} (iter ${iteration})`;
-  const commitResult = await spawn("git", ["commit", "-m", commitMsg], { cwd });
+  // Explicit pathspec — a bare commit would sweep pre-staged unauthorized index entries
+  // into the verification-result commit (which egress then blesses as pipeline-synthesized).
+  const commitResult = await spawn("git", ["commit", "-m", commitMsg, "--", relPath], { cwd });
   if (commitResult.exitCode !== 0) {
     return { ok: false, error: `git commit failed: ${commitResult.stderr.trim()}` };
   }

@@ -98,7 +98,7 @@ async function getWorktreeChangedPaths(
   spawnFn: SpawnFn,
   cwd: string,
   worktreeOnly = false,
-): Promise<{ ok: boolean; paths: string[] }> {
+): Promise<{ ok: boolean; paths: string[]; untracked: string[] }> {
   try {
     const { stdout, exitCode } = await runSubprocess(
       spawnFn,
@@ -107,21 +107,70 @@ async function getWorktreeChangedPaths(
       { cwd },
     );
     if (exitCode !== 0) {
-      return { ok: false, paths: [] };
+      return { ok: false, paths: [], untracked: [] };
     }
     const parts = stdout.split("\0").filter((p) => p.length > 0);
     const paths: string[] = [];
+    const untracked: string[] = [];
     for (const part of parts) {
       // Format: XY<SP>path — 2-char status + space prefix
       // part[0] = X (index/staging state), part[1] = Y (worktree state)
       if (part.length < 4) continue;
       if (worktreeOnly && part[1] === " ") continue; // skip staged-only (pre-staged) files
       const filePath = part.slice(3);
-      if (filePath) paths.push(filePath);
+      if (filePath) {
+        paths.push(filePath);
+        // "??" = untracked. Restoration must route these to `git clean -f`
+        // (`git checkout HEAD` cannot restore a path that is not in HEAD).
+        if (part[0] === "?") untracked.push(filePath);
+      }
     }
-    return { ok: true, paths };
+    return { ok: true, paths, untracked };
   } catch {
-    return { ok: false, paths: [] };
+    return { ok: false, paths: [], untracked: [] };
+  }
+}
+
+/**
+ * Restore violated paths to their HEAD state, split by tracked state (D5 fail-closed).
+ *
+ * Untracked violations are removed with `git clean -f`; tracked ones are restored with
+ * `git checkout HEAD`. The split keeps failure semantics unambiguous: running both
+ * commands over all paths made `checkout` fail benignly whenever the violation set
+ * contained an untracked file, which forced callers to ignore restore failures entirely.
+ *
+ * Throws commitEffectFailedError("restore") when a restore command fails — a failed
+ * restore leaves tampered content in the worktree where resumed steps would read it,
+ * so the halt must not claim the violation was restored.
+ */
+async function restoreViolatedPaths(
+  spawnFn: SpawnFn,
+  cwd: string,
+  stepLabel: string,
+  branch: string,
+  violations: string[],
+  untrackedPaths: string[],
+): Promise<void> {
+  const untrackedSet = new Set(untrackedPaths);
+  const cleanTargets = violations.filter((p) => untrackedSet.has(p));
+  const checkoutTargets = violations.filter((p) => !untrackedSet.has(p));
+  if (cleanTargets.length > 0) {
+    const cleanResult = await gitExecResult(spawnFn, cwd, ["clean", "-f", "--", ...cleanTargets]);
+    if (!cleanResult.ok || cleanResult.exitCode !== 0) {
+      throw commitEffectFailedError(
+        stepLabel, branch, "restore",
+        `git clean exit ${cleanResult.exitCode}; tampered paths remain in worktree: ${cleanTargets.join(", ")}`,
+      );
+    }
+  }
+  if (checkoutTargets.length > 0) {
+    const checkoutResult = await gitExecResult(spawnFn, cwd, ["checkout", "HEAD", "--", ...checkoutTargets]);
+    if (!checkoutResult.ok || checkoutResult.exitCode !== 0) {
+      throw commitEffectFailedError(
+        stepLabel, branch, "restore",
+        `git checkout HEAD exit ${checkoutResult.exitCode}; tampered paths remain in worktree: ${checkoutTargets.join(", ")}`,
+      );
+    }
   }
 }
 
@@ -394,7 +443,12 @@ export async function commitAndPush(
     // staged before the step ran and are not modifications made by this step.
     // Violated paths are quarantined (evidence) then restored to prevent checkpoint leakage.
     const postStatus = await getWorktreeChangedPaths(infra.spawnFn, cwd, true);
-    if (postStatus.ok && postStatus.paths.length > 0) {
+    if (!postStatus.ok) {
+      // git status spawn failure or non-zero exit → fail-closed (D5): an uninspected
+      // worktree must not proceed to commit/push.
+      throw commitEffectFailedError(step.name, branch, "stage", "git status failed");
+    }
+    if (postStatus.paths.length > 0) {
       const residualViolations = findScopedCommitViolations(slug, postStatus.paths, filePaths, allManagedPaths);
       if (residualViolations.length > 0) {
         const residualQuarantine = await quarantineViolationEvidence(
@@ -404,9 +458,9 @@ export async function commitAndPush(
           `[${step.name}] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): ${residualViolations.join(", ")}` +
           (residualQuarantine ? ` — 退避先: ${residualQuarantine}` : ""),
         );
-        // Two-step restore: untracked (clean -f) then tracked (checkout HEAD).
-        await gitExecResult(infra.spawnFn, cwd, ["clean", "-f", "--", ...residualViolations]);
-        await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...residualViolations]);
+        // Restore: untracked violations via clean -f, tracked via checkout HEAD.
+        // Restore failure must not be silenced (D5) — restoreViolatedPaths throws.
+        await restoreViolatedPaths(infra.spawnFn, cwd, step.name, branch, residualViolations, postStatus.untracked);
         throw writeScopeViolationError(step.name, branch, residualViolations, residualQuarantine);
       }
     }
@@ -457,10 +511,10 @@ export async function commitAndPush(
       const quarantinePath = await quarantineViolationEvidence(
         infra.spawnFn, cwd, slug, step.name, violations,
       );
-      // Two-step restore before halting so commitFinalState's managed-paths staging
-      // cannot pick up violation content (fail-closed guarantee).
-      await gitExecResult(infra.spawnFn, cwd, ["clean", "-f", "--", ...violations]);
-      await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...violations]);
+      // Restore before halting so the worktree does not keep violation content that
+      // resumed steps would read (untracked → clean -f, tracked → checkout HEAD).
+      // Restore failure must not be silenced (D5) — restoreViolatedPaths throws.
+      await restoreViolatedPaths(infra.spawnFn, cwd, step.name, branch, violations, statusResult.untracked);
       throw writeScopeViolationError(step.name, branch, violations, quarantinePath);
     }
 
@@ -486,13 +540,16 @@ export async function commitAndPush(
       return;
     }
 
-    // Commit with explicit pathspec (or whole-index when no changes were enumerated).
+    // Commit with explicit pathspec — never fall back to a whole-index commit.
+    // changedPaths is non-empty here: an empty enumeration skips the add above and the
+    // whole-index diff check returns early. If this invariant is ever broken, fail closed
+    // rather than committing an index we did not enumerate (a bare commit would sweep in
+    // pre-staged unauthorized entries).
     const commitMessage = `${step.name}: ${slug}`;
-    const commitArgs: string[] =
-      changedPaths.length > 0
-        ? ["commit", "-m", commitMessage, "--", ...changedPaths]
-        : ["commit", "-m", commitMessage];
-    const commitResult = await gitExecResult(infra.spawnFn, cwd, commitArgs);
+    if (changedPaths.length === 0) {
+      throw commitEffectFailedError(step.name, branch, "commit", "staged changes present but enumeration is empty");
+    }
+    const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage, "--", ...changedPaths]);
     if (!commitResult.ok || commitResult.exitCode !== 0) {
       throw commitEffectFailedError(step.name, branch, "commit", `exit code ${commitResult.exitCode}`);
     }
@@ -564,10 +621,19 @@ export async function commitFinalState(params: {
     }
   }
 
-  // Check for staged changes (exit 1 = changes present, exit 0 = clean).
-  const diffResult = await spawnFn("git", ["diff", "--cached", "--quiet"], { cwd });
+  // Nothing managed could be staged → nothing to commit. Never fall back to a bare
+  // commit here: with an empty managed pathspec the only staged content could be
+  // pre-staged unauthorized entries, and a whole-index commit would sweep them in.
+  if (stagedPaths.length === 0) {
+    return;
+  }
+
+  // Check for staged changes within the managed pathspec only (exit 1 = changes present,
+  // exit 0 = clean). Whole-index diff would report exit 1 for pre-staged unauthorized
+  // entries even when no managed file changed.
+  const diffResult = await spawnFn("git", ["diff", "--cached", "--quiet", "--", ...stagedPaths], { cwd });
   if ((diffResult.exitCode ?? 0) !== 1) {
-    // No staged changes — nothing to commit.
+    // No staged changes in managed paths — nothing to commit.
     return;
   }
 
@@ -577,8 +643,7 @@ export async function commitFinalState(params: {
   // matching the listed paths; other staged content stays in the index but is NOT included
   // in this commit. Paths that failed to add (non-existent optionals) are excluded from
   // stagedPaths and therefore absent from the commit pathspec, avoiding git exit 1.
-  const pathspecArgs = stagedPaths.length > 0 ? ["--", ...stagedPaths] : [];
-  const commitResult = await spawnFn("git", ["commit", "-m", `${messageLabel}: ${slug}`, ...pathspecArgs], { cwd });
+  const commitResult = await spawnFn("git", ["commit", "-m", `${messageLabel}: ${slug}`, "--", ...stagedPaths], { cwd });
   if ((commitResult.exitCode ?? 1) !== 0) {
     stderrWrite(`Warning: ${messageLabel} commit failed for ${slug}. Push manually to ensure state is on the branch.`);
     return;
@@ -624,11 +689,12 @@ export async function commitFinalState(params: {
  *   1. stagePaths empty → no-op (nothing to stage or commit).
  *   2. `git add -A -- <stagePaths...>` (pathspec-limited; also stages deletions for listed paths).
  *      If add fails (spawn error or exit≠0) → throws commitEffectFailedError("stage").
- *   3. `git diff --cached --quiet`:
- *      - exit 0 → no staged changes → no-op (nothing was changed in the declared paths).
+ *   3. `git diff --cached --quiet -- <stagePaths...>` (pathspec-limited):
+ *      - exit 0 → no staged changes in scope → no-op (nothing was changed in the declared paths).
  *      - exit 1 → staged changes → commit then push.
  *      - ≥2 or spawn failure → throws commitEffectFailedError("diff").
- *   4. `git commit -m <commitMessage>`: failure throws commitEffectFailedError("commit").
+ *   4. `git commit -m <commitMessage> -- <stagePaths...>` (pathspec-limited):
+ *      failure throws commitEffectFailedError("commit").
  *   5. `pushOnly` (one retry on failure, throws pushFailedError on double failure).
  *
  * @param stagePaths    - Worktree-relative paths to stage (must all be declared outputs).
@@ -658,18 +724,21 @@ export async function commitScopedPaths(
     throw commitEffectFailedError(commitMessage, branch, "stage", `exit code ${addResult.exitCode}`);
   }
 
-  // Check if there are staged changes.
+  // Check if there are staged changes within the declared pathspec only.
   // exit 0 = no staged changes; exit 1 = staged changes present;
   // ≥2 (or spawn failure) = git error → throws typed error → halt path.
-  const diffResult = await gitExecResult(infra.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
+  // Whole-index diff would report pre-staged unauthorized entries as changes.
+  const diffResult = await gitExecResult(infra.spawnFn, cwd, ["diff", "--cached", "--quiet", "--", ...stagePaths]);
   if (!diffResult.ok || diffResult.exitCode >= 2) {
     throw commitEffectFailedError(commitMessage, branch, "diff", `exit code ${diffResult.exitCode}`);
   }
   const hasChanges = diffResult.exitCode === 1;
   if (!hasChanges) return;
 
-  // Commit. Failure (spawn error or exit≠0) throws typed error → never falls through to push.
-  const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage]);
+  // Commit with explicit pathspec — a bare commit would sweep pre-staged unauthorized
+  // index entries into the round commit. Failure throws typed error → never falls
+  // through to push.
+  const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage, "--", ...stagePaths]);
   if (!commitResult.ok || commitResult.exitCode !== 0) {
     throw commitEffectFailedError(commitMessage, branch, "commit", `exit code ${commitResult.exitCode}`);
   }

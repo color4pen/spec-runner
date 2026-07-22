@@ -10,10 +10,11 @@
  * TC-019: guarded mode — git status spawn failure → fail-closed halt
  * TC-020: guarded mode — spec.md change → halt with spec.md in error message
  * TC-021: guarded mode — violated files restored before WRITE_SCOPE_VIOLATION throw
- *         (two-step: git clean for untracked, git checkout HEAD for tracked)
+ *         (split by tracked state: git clean -f for untracked, git checkout HEAD for
+ *         tracked; restore failure → COMMIT_AND_PUSH_FAILED, never silenced — D5)
  * TC-022: scoped mode — pipeline-managed paths included in scoped git add call
  * TC-023: scoped mode — residual protected dirty files restored after staging
- *         (best-effort: postStatus failure is silently skipped)
+ *         (postStatus failure → fail-closed halt — D5)
  *
  * The mock for pipelineManagedPaths (round-git-scope.ts) is registered via vi.mock
  * so that once the implementation imports it, the mock takes effect.
@@ -959,7 +960,13 @@ describe("TC-021: guarded mode — violated files restored before WRITE_SCOPE_VI
     expect(checkoutCall!.args, "spec.md must be in checkout args").toContain(specMd);
   });
 
-  it("WRITE_SCOPE_VIOLATION is always thrown even when git checkout fails", async () => {
+  it("restore failure (checkout fails on a tracked violation) → COMMIT_AND_PUSH_FAILED, not silenced", async () => {
+    // D5 (pipeline-sole-committer): restore failure must not be silenced. A failed
+    // checkout leaves the tampered canon in the worktree where resumed steps would
+    // read it, so the halt must name the restore failure instead of claiming the
+    // violation was restored.
+    // DESTROY: ignore the checkout result again → WRITE_SCOPE_VIOLATION is thrown
+    // (silently claiming restoration) and this test FAILS.
     const slug = "test-slug";
     const requestMd = `specrunner/changes/${slug}/request.md`;
     const statusOutput = ` M ${requestMd}\0`;
@@ -967,7 +974,7 @@ describe("TC-021: guarded mode — violated files restored before WRITE_SCOPE_VI
     const { spawnFn } = makeGitSpawnFn({
       responses: {
         "status": { exitCode: 0, stdout: statusOutput },
-        "checkout": { exitCode: 1 }, // restore fails (e.g. file not in HEAD)
+        "checkout": { exitCode: 1 }, // restore fails
       },
     });
 
@@ -976,17 +983,23 @@ describe("TC-021: guarded mode — violated files restored before WRITE_SCOPE_VI
     const deps = makeDeps(slug);
     const infra = makeCommitPushInfra(spawnFn);
 
-    // Even if checkout fails, the WRITE_SCOPE_VIOLATION is still thrown
-    await expect(commitAndPush(step, state, deps, null, infra)).rejects.toMatchObject({
-      code: "WRITE_SCOPE_VIOLATION",
-    });
+    let caught: unknown;
+    try {
+      await commitAndPush(step, state, deps, null, infra);
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeDefined();
+    expect((caught as { code?: string }).code).toBe("COMMIT_AND_PUSH_FAILED");
+    expect(String((caught as Error).message)).toContain("restore");
   });
 
-  it("untracked (new) violation file is removed with git clean -f before git checkout HEAD", async () => {
+  it("untracked (new) violation file is removed with git clean -f; checkout is not run on it", async () => {
     // Scenario: agent creates a brand-new request.md that didn't exist before (untracked).
-    // git checkout HEAD -- request.md would fail (not in HEAD) and leave the file in the
-    // worktree. The two-step restore calls git clean -f first to remove untracked files,
-    // then git checkout HEAD for tracked modified files.
+    // Restoration is split by tracked state: untracked violations go to `git clean -f`,
+    // tracked ones to `git checkout HEAD`. Running checkout on an untracked path would
+    // fail benignly (not in HEAD), which is exactly the ambiguity that used to force
+    // restore failures to be ignored — so checkout must NOT be invoked here.
     const slug = "test-slug";
     const requestMd = `specrunner/changes/${slug}/request.md`;
     // "??" prefix = untracked (new file, never committed to git)
@@ -996,7 +1009,7 @@ describe("TC-021: guarded mode — violated files restored before WRITE_SCOPE_VI
       responses: {
         "status": { exitCode: 0, stdout: statusOutput },
         "clean": { exitCode: 0 },
-        "checkout": { exitCode: 1 }, // fails because file not in HEAD — expected for new files
+        "checkout": { exitCode: 1 }, // would fail if invoked — must not be invoked
       },
     });
 
@@ -1005,7 +1018,7 @@ describe("TC-021: guarded mode — violated files restored before WRITE_SCOPE_VI
     const deps = makeDeps(slug);
     const infra = makeCommitPushInfra(spawnFn);
 
-    // WRITE_SCOPE_VIOLATION must be thrown despite clean succeeding and checkout failing
+    // clean succeeds → restore complete → WRITE_SCOPE_VIOLATION halt
     await expect(commitAndPush(step, state, deps, null, infra)).rejects.toMatchObject({
       code: "WRITE_SCOPE_VIOLATION",
     });
@@ -1017,9 +1030,7 @@ describe("TC-021: guarded mode — violated files restored before WRITE_SCOPE_VI
     expect(cleanCall!.args, "git clean must target the violation path").toContain(requestMd);
 
     const checkoutCall = calls.find((c) => c.args[0] === "checkout");
-    expect(checkoutCall, "git checkout HEAD must also be attempted (for tracked files)").toBeDefined();
-    expect(checkoutCall!.args, "checkout must target HEAD").toContain("HEAD");
-    expect(checkoutCall!.args, "checkout must include violation path").toContain(requestMd);
+    expect(checkoutCall, "git checkout must NOT run on an untracked-only violation set").toBeUndefined();
   });
 });
 
@@ -1256,10 +1267,12 @@ describe("TC-023: scoped mode — residual protected dirty files restored AND ha
     }
   });
 
-  it("git status failure after staging is silently skipped (best-effort asymmetry)", async () => {
-    // postStatus.ok===false → skip residual restoration silently.
-    // This is intentional: scoped post-staging restoration is defensive (prevents
-    // cross-step false positives), not safety-critical. Guarded mode is the hard gate.
+  it("git status failure after staging → fail-closed halt (D5: no silent skip)", async () => {
+    // postStatus.ok===false → the worktree is UNINSPECTED. The former best-effort
+    // asymmetry (silently skipping the residual check) let an uninspected worktree
+    // proceed to commit/push — D5 (pipeline-sole-committer) makes this fail-closed.
+    // DESTROY: restore the `postStatus.ok && ...` guard → this run resolves and
+    // commit/push execute on an uninspected worktree (this test FAILS).
     const slug = "test-slug";
     const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
 
@@ -1279,19 +1292,16 @@ describe("TC-023: scoped mode — residual protected dirty files restored AND ha
     const deps = makeDeps(slug);
     const infra = makeCommitPushInfra(spawnFn);
 
-    // Must complete without error — status failure is silently skipped
-    await expect(commitAndPush(step, state, deps, null, infra)).resolves.toBeUndefined();
+    // Fail-closed: status failure halts the step
+    await expect(commitAndPush(step, state, deps, null, infra)).rejects.toMatchObject({
+      code: "COMMIT_AND_PUSH_FAILED",
+    });
 
-    // No git clean or checkout should be called (residual restoration skipped)
-    const cleanCall = calls.find((c) => c.args[0] === "clean");
-    const checkoutCall = calls.find((c) => c.args[0] === "checkout");
-    expect(cleanCall, "git clean must NOT be called when status fails").toBeUndefined();
-    expect(checkoutCall, "git checkout must NOT be called when status fails").toBeUndefined();
-
-    // Commit and push must still complete normally
-    const subcommands = calls.map((c) => c.args[0]);
-    expect(subcommands, "git commit must proceed despite status failure").toContain("commit");
-    expect(subcommands, "git push must proceed despite status failure").toContain("push");
+    // Nothing may be published from an uninspected worktree
+    const commitCall = calls.find((c) => c.args[0] === "commit");
+    const pushCall = calls.find((c) => c.args[0] === "push");
+    expect(commitCall, "git commit must NOT run on an uninspected worktree").toBeUndefined();
+    expect(pushCall, "git push must NOT run on an uninspected worktree").toBeUndefined();
   });
 });
 

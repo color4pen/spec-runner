@@ -623,6 +623,8 @@ describe("TC-001: finalizeStep records lineage when step declares writes()", () 
     const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
+        // Non-empty status keeps guarded enumeration consistent with the staged diff below.
+        status: { exitCode: 0, stdout: " M src/foo.ts\0" },
         diff: { exitCode: 1 }, // staged changes present
         commit: { exitCode: 0 },
         push: { exitCode: 0 },
@@ -673,6 +675,8 @@ describe("TC-001: finalizeStep records lineage when step declares writes()", () 
     const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
+        // Non-empty status keeps guarded enumeration consistent with the staged diff below.
+        status: { exitCode: 0, stdout: " M src/foo.ts\0" },
         diff: { exitCode: 1 },
         commit: { exitCode: 0 },
         push: { exitCode: 0 },
