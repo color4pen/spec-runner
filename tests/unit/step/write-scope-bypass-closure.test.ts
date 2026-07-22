@@ -1639,3 +1639,110 @@ describe("TC-022: (should) diff mock — --cached and --name-only both work in s
     ).toContain("push");
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-030: 自己 commit 違反 + staged 宣言変更の同時発生 → staged 経路でも halt、push なし
+//
+// 経路 2（staged なし）にのみ検査があると、agent が「違反を自己 commit + 宣言ファイルも
+// 書く」ことで staged 経路(3)に入り、push が違反 commit を無検査で運ぶ。
+// 検査は push が起こり得る全経路の前（tail entry）で実行されなければならない。
+// DESTROY: 検査を経路 2 内へ戻すと本テストが fail する。
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-030: self-commit violation + staged declared changes → halt before staged-commit path", () => {
+  const slug = "test-slug";
+  const headBeforeStep = "old-sha-before-step";
+  const headAfterAgentCommit = "new-sha-after-agent-commit";
+  const requestMdPath = `specrunner/changes/${slug}/request.md`;
+  const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+
+  function makeMixedViolationSpawnFn() {
+    return makeGitSpawnFnByArgs({
+      rules: [
+        // Worktree status: only the declared result file is dirty (no residual violation)
+        {
+          match: (args) => args[0] === "status",
+          exitCode: 0,
+          stdout: ` M ${resultPath}\0`,
+        },
+        // Staged check (pathspec): staged changes PRESENT → would route to staged-commit path
+        {
+          match: (args) => args[0] === "diff" && args.includes("--cached"),
+          exitCode: 1,
+        },
+        // HEAD: advanced (agent self-committed the request.md weakening)
+        {
+          match: (args) => args[0] === "rev-parse",
+          exitCode: 0,
+          stdout: `${headAfterAgentCommit}\n`,
+        },
+        // Commit range diff: agent commit changed request.md (violation)
+        {
+          match: (args) => args[0] === "diff" && args.includes("--name-only"),
+          exitCode: 0,
+          stdout: `${requestMdPath}\n`,
+        },
+        // Quarantine evidence diff
+        {
+          match: (args) => args[0] === "diff" && !args.includes("--cached") && !args.includes("--name-only"),
+          exitCode: 0,
+          stdout: "diff --git a/request.md b/request.md\n-original\n+weakened",
+        },
+      ],
+      defaults: {
+        add: { exitCode: 0 },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+    });
+  }
+
+  it("TC-030: throws WRITE_SCOPE_VIOLATION even though staged declared changes exist (scoped)", async () => {
+    const { spawnFn } = makeMixedViolationSpawnFn();
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await expect(
+      commitAndPush(step, makeJobState(), makeDeps(slug), headBeforeStep, infra),
+    ).rejects.toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
+  });
+
+  it("TC-030: neither commit nor push is called (violation halts before staged-commit path)", async () => {
+    const { spawnFn, calls } = makeMixedViolationSpawnFn();
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await expect(
+      commitAndPush(step, makeJobState(), makeDeps(slug), headBeforeStep, infra),
+    ).rejects.toThrow();
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands, "commit must NOT be called").not.toContain("commit");
+    expect(subcommands, "push must NOT be called").not.toContain("push");
+  });
+
+  it("TC-030: clean self-commit + staged declared changes → pipeline commit + push proceed", async () => {
+    const { spawnFn, calls } = makeGitSpawnFnByArgs({
+      rules: [
+        { match: (args) => args[0] === "status", exitCode: 0, stdout: ` M ${resultPath}\0` },
+        { match: (args) => args[0] === "diff" && args.includes("--cached"), exitCode: 1 },
+        { match: (args) => args[0] === "rev-parse", exitCode: 0, stdout: `${headAfterAgentCommit}\n` },
+        // Agent commit touched only its own declared output — boundary-safe
+        { match: (args) => args[0] === "diff" && args.includes("--name-only"), exitCode: 0, stdout: `${resultPath}\n` },
+      ],
+      defaults: {
+        add: { exitCode: 0 },
+        commit: { exitCode: 0 },
+        push: { exitCode: 0 },
+      },
+    });
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await commitAndPush(step, makeJobState(), makeDeps(slug), headBeforeStep, infra);
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands, "commit must be called (normal staged path)").toContain("commit");
+    expect(subcommands, "push must be called").toContain("push");
+  });
+});

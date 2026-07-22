@@ -166,6 +166,45 @@ async function commitAndPushTail(
   slug: string,
   ctx: CommitTailContext,
 ): Promise<void> {
+  // ── 0. Agent self-commit inspection (T-05) — BEFORE any push-capable path ──
+  // The inspection guards the EFFECT (push), not a single control-flow branch:
+  // an agent that self-commits a violation AND leaves staged declared changes would
+  // otherwise route through the staged-commit path and have its commit carried by
+  // the push uninspected. HEAD is captured here (pre-pipeline-commit) so the range
+  // covers exactly the agent-authored commits.
+  const headAtTailEntry = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
+  if (headBeforeStep && headAtTailEntry && headAtTailEntry !== headBeforeStep) {
+    const rangeChangedPaths = await listCommitRangeChangedPaths(
+      infra.spawnFn, cwd, headBeforeStep, headAtTailEntry,
+    );
+    if (rangeChangedPaths === null) {
+      // Enumerate failed → fail-closed: cannot verify commit safety.
+      throw commitEffectFailedError(
+        step.name, branch, "diff",
+        "commit range path enumerate failed (git diff --name-only error)",
+      );
+    }
+    let rangeViolations: string[];
+    if (ctx.mode === "scoped") {
+      rangeViolations = findScopedCommitViolations(
+        slug, rangeChangedPaths, ctx.declaredWritePaths, ctx.managedPaths,
+      );
+    } else {
+      rangeViolations = findWriteScopeViolations(
+        step.name, slug, rangeChangedPaths, ctx.declaredWritePaths,
+      );
+    }
+    if (rangeViolations.length > 0) {
+      // Preserve commit diff evidence before halting. The violating commit stays
+      // local (not reset) — it is evidence for operator investigation.
+      const quarantinePath = await quarantineViolationEvidence(
+        infra.spawnFn, cwd, slug, step.name, rangeViolations,
+        { base: headBeforeStep, head: headAtTailEntry },
+      );
+      throw writeScopeViolationError(step.name, branch, rangeViolations, quarantinePath);
+    }
+  }
+
   // ── 1. Staged-change check (mode-specific) ──────────────────────────────
   let hasChanges: boolean;
 
@@ -192,45 +231,11 @@ async function commitAndPushTail(
     hasChanges = diffResult.exitCode === 1;
   }
 
-  // ── 2. No staged changes: HEAD-advance detection + self-commit inspection (T-05) ──
+  // ── 2. No staged changes: HEAD-advance push-as-is ──────────────────────
+  // (Range inspection already ran at tail entry (step 0) — reaching here means the
+  // agent's self-commits are boundary-safe.)
   if (!hasChanges) {
-    const headAfterStep = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
-    if (headBeforeStep && headAfterStep && headAfterStep !== headBeforeStep) {
-      // Agent authored commit(s) since step start. Inspect commit content before push.
-      const changedPaths = await listCommitRangeChangedPaths(
-        infra.spawnFn, cwd, headBeforeStep, headAfterStep,
-      );
-      if (changedPaths === null) {
-        // Enumerate failed → fail-closed: cannot verify commit safety.
-        throw commitEffectFailedError(
-          step.name, branch, "diff",
-          "commit range path enumerate failed (git diff --name-only error)",
-        );
-      }
-
-      // Apply mode-specific violation rules to the commit range.
-      let violations: string[];
-      if (ctx.mode === "scoped") {
-        violations = findScopedCommitViolations(
-          slug, changedPaths, ctx.declaredWritePaths, ctx.managedPaths,
-        );
-      } else {
-        violations = findWriteScopeViolations(
-          step.name, slug, changedPaths, ctx.declaredWritePaths,
-        );
-      }
-
-      if (violations.length > 0) {
-        // Preserve commit diff evidence before halting. The violating commit stays
-        // local (not reset) — it is evidence for operator investigation.
-        const quarantinePath = await quarantineViolationEvidence(
-          infra.spawnFn, cwd, slug, step.name, violations,
-          { base: headBeforeStep, head: headAfterStep },
-        );
-        throw writeScopeViolationError(step.name, branch, violations, quarantinePath);
-      }
-
-      // No violations: agent's self-commit is boundary-safe — push as-is.
+    if (headBeforeStep && headAtTailEntry && headAtTailEntry !== headBeforeStep) {
       stderrWrite(
         "Detected agent-authored commit(s) since step start; skipping pipeline commit and pushing as-is.\n",
       );
