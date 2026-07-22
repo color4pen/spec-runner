@@ -12,10 +12,12 @@ import type { JobState, StepRun, ErrorInfo } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
+import { quarantineRoundHeadAdvanceEvidence } from "../step/commit-push.js";
+import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import type { StepExecutionResult } from "../step/commit-orchestrator.js";
 import { CommitOrchestrator } from "../step/commit-orchestrator.js";
 import { StepExecutor } from "../step/executor.js";
-import { defaultSpawnFn } from "../../util/git-exec.js";
+import { defaultSpawnFn, gitExecResult } from "../../util/git-exec.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import {
   deriveReviewerStatuses,
@@ -210,11 +212,13 @@ export class ParallelReviewRound {
 
     // --- 4. All approved fast path ---
     const now = new Date().toISOString();
-    let aggregateVerdictResult: "approved" | "needs-fix" | "escalation";
+    let aggregateVerdictResult: "approved" | "needs-fix" | "escalation" = "escalation";
     // Member results for commitRound (empty for fast path)
     const members: Array<{ step: Step; startedAt: string; result: StepExecutionResult }> = [];
     // Round error (set when git effects detect non-declared changes)
     let roundError: ErrorInfo | null = null;
+    // Round commit OID for synthesizedCommits ledger (T-08, D4); null when no commit was made.
+    let roundCommitOid: string | null = null;
 
     if (pending.length === 0) {
       // All approved / skipped → synthetic approved, skip to gate
@@ -257,6 +261,49 @@ export class ParallelReviewRound {
         }),
       );
 
+      // --- 5b. HEAD guard: detect reviewer self-commit (D3 / T-07) ---
+      // Compare HEAD against baselineCommit immediately after fan-out.
+      // If HEAD advanced, a reviewer self-committed during the round:
+      //   quarantine the diff, reset HEAD to baselineCommit, halt the round.
+      // inspectionEscalated: declared here so HEAD guard and git-effects check share it.
+      let inspectionEscalated = false;
+      if (deps.runtimeStrategy) {
+        const headAfterFanOut = await deps.runtimeStrategy.captureHeadSha(cwd);
+        if (headAfterFanOut !== null && baselineCommit !== null && headAfterFanOut !== baselineCommit) {
+          aggregateVerdictResult = "escalation";
+          inspectionEscalated = true;
+          const guardSpawnFn = deps.gitTransportSpawn ?? defaultSpawnFn;
+          // Best-effort quarantine via commit-push (node:fs lives there, not here).
+          await quarantineRoundHeadAdvanceEvidence(
+            guardSpawnFn,
+            cwd,
+            deps.slug,
+            baselineCommit,
+            headAfterFanOut,
+          );
+          // D3 / D5: reset --mixed failure → fail-closed halt (do NOT continue with stale HEAD).
+          // If the reset fails, HEAD remains at the reviewer's commit — any subsequent push
+          // would publish the unauthorized reviewer commit. Throw to prevent that path.
+          const resetResult = await gitExecResult(guardSpawnFn, cwd, ["reset", "--mixed", baselineCommit]);
+          if (!resetResult.ok || resetResult.exitCode !== 0) {
+            throw new SpecRunnerError(
+              ERROR_CODES.COMMIT_AND_PUSH_FAILED,
+              "Check for index.lock conflicts, disk issues, or worktree corruption. Retry with specrunner job resume to continue.",
+              `HEAD guard: git reset --mixed ${baselineCommit} failed on branch '${state.branch ?? ""}': exit ${resetResult.exitCode}`,
+            );
+          }
+          roundError = {
+            code: "ROUND_HEAD_ADVANCED",
+            message: `Reviewer self-committed: HEAD advanced from ${baselineCommit} to ${headAfterFanOut}`,
+            hint: "A reviewer committed changes during the round. The commit has been removed. Investigate which reviewer self-committed.",
+          };
+          logPipelineDiag(
+            "pipeline:coordinator:head-guard-halt",
+            `coordinator=${coordinatorName}, base=${baselineCommit}, head=${headAfterFanOut}`,
+          );
+        }
+      }
+
       // --- 6. Derive per-member verdicts (no state merge needed) ---
       // Capture HEAD SHA after all members have run (for approvedAtCommit).
       // Under roundOwnsGitEffects, members do not commit, so HEAD should not have
@@ -289,7 +336,11 @@ export class ParallelReviewRound {
       // --- 7. Compute aggregate verdict from member results ---
       // Member statuses are applied AFTER git-effects inspection (step 7c) so that a
       // fail-closed inspection escalation leaves members pending rather than approved.
-      aggregateVerdictResult = aggregateVerdict([...memberVerdicts.values()]);
+      // Skip if HEAD guard (step 5b) already set escalation — aggregateVerdictResult
+      // must remain "escalation" and not be overwritten by member verdicts.
+      if (!inspectionEscalated) {
+        aggregateVerdictResult = aggregateVerdict([...memberVerdicts.values()]);
+      }
 
       // --- 7a. Detect all-members-skipped (T-05) ---
       // When all members return "skipped" (non-empty verdict set), the round has no positive
@@ -308,10 +359,9 @@ export class ParallelReviewRound {
       // declared outputs union. Undeclared changes (excluding pipeline-managed paths) halt
       // the round; declared changes are committed via scoped staging.
       // roundError is passed to commitRound (not applied to state directly).
-      // inspectionEscalated: true when the round is halted by a fail-closed inspection
-      // outcome (git status unavailable, or undeclared changes). Consumed at step 7c to
-      // keep members pending so resume re-runs the fan-out and re-inspects.
-      let inspectionEscalated = false;
+      // inspectionEscalated: declared at step 5b (HEAD guard) so HEAD guard and this
+      // git-effects check share the same flag. Already true if HEAD guard fired.
+      // roundCommitOid is declared above (outer scope) for use in commitRound call.
       if (deps.runtimeStrategy?.listWorktreeChanges) {
         const branch = state.branch ?? "";
         const defaultSleepFn = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
@@ -327,7 +377,9 @@ export class ParallelReviewRound {
           // Worktree inspection failed — fail-closed: do not approve an uninspected worktree.
           aggregateVerdictResult = "escalation";
           inspectionEscalated = true;
-          roundError = {
+          // First error wins: when the HEAD guard (5b) already set ROUND_HEAD_ADVANCED,
+          // that is the root cause and must not be overwritten by this consequence.
+          roundError = roundError ?? {
             code: "ROUND_INSPECTION_UNAVAILABLE",
             message: `Worktree inspection unavailable: ${inspection.reason}`,
             hint: "Check that git is available in the worktree and that the working directory is a valid git repository. Retry the round after resolving the git issue.",
@@ -344,7 +396,11 @@ export class ParallelReviewRound {
             // Non-declared changes detected — halt the entire round.
             aggregateVerdictResult = "escalation";
             inspectionEscalated = true;
-            roundError = {
+            // First error wins: after the HEAD guard (5b) fires, the mixed reset leaves the
+            // reviewer's committed changes in the worktree, so this branch is reached with the
+            // same root cause. ROUND_HEAD_ADVANCED must survive as the recorded error — the
+            // offending paths here are a consequence of the reset, not an independent cause.
+            roundError = roundError ?? {
               code: "ROUND_NONDECLARED_CHANGE",
               message: `Round produced undeclared file changes: ${offending.join(", ")}`,
               hint: "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration.",
@@ -355,14 +411,40 @@ export class ParallelReviewRound {
             );
           } else if (toStage.length > 0) {
             // All changes are within declared outputs — scoped stage + commit + push.
-            await deps.runtimeStrategy.commitRoundArtifacts?.(
-              toStage,
-              cwd,
-              branch,
-              coordinatorName,
-              deps.slug,
-              infra,
-            );
+            // Wrap in try-catch: if push fails AFTER the commit is created, HEAD has already
+            // advanced. We capture the OID regardless so synthesizedCommits stays consistent
+            // on resume and EGRESS_UNKNOWN_COMMIT deadlock is prevented. (regression-gate finding)
+            let commitArtifactError: unknown = null;
+            try {
+              await deps.runtimeStrategy.commitRoundArtifacts?.(
+                toStage,
+                cwd,
+                branch,
+                coordinatorName,
+                deps.slug,
+                infra,
+                // D4 backstop: pass egress params so LocalRuntime can verify publish range.
+                { synthesizedCommits: state.synthesizedCommits ?? [] },
+              );
+            } catch (err) {
+              commitArtifactError = err;
+            }
+            // Capture round commit OID for synthesizedCommits ledger (T-08, D4).
+            // Captured even on push failure: commit may already exist locally.
+            roundCommitOid = deps.runtimeStrategy
+              ? ((await deps.runtimeStrategy.captureHeadSha(cwd)) ?? null)
+              : null;
+            if (commitArtifactError !== null) {
+              // Push failed (or commit failed) — record as escalation so commitRound still
+              // persists the OID, preventing EGRESS_UNKNOWN_COMMIT on the next resume attempt.
+              aggregateVerdictResult = "escalation";
+              inspectionEscalated = true;
+              roundError = roundError ?? {
+                code: "ROUND_COMMIT_PUSH_FAILED",
+                message: `Round artifact push failed: ${commitArtifactError instanceof Error ? commitArtifactError.message : String(commitArtifactError)}`,
+                hint: "The round commit was created locally but push failed. Resolve the push issue and resume — the commit OID has been recorded in synthesizedCommits to prevent egress deadlock.",
+              };
+            }
           }
           // toStage empty and no offending → nothing changed in declared paths; no-op.
         }
@@ -420,6 +502,8 @@ export class ParallelReviewRound {
     // --- 9. Commit round: single atomic persist via CommitOrchestrator ---
     // D1 (round-owned-state-commit): coordinator is the sole writer for this round.
     // All member results + coordinator patch are applied in-memory and persisted once.
+    // roundCommitOid (T-08): OID of the round's synthesized commit, appended to the
+    // synthesizedCommits ledger inside commitRound before persist.
     state = await orchestrator.commitRound({
       coordinatorName,
       base: state,
@@ -428,6 +512,7 @@ export class ParallelReviewRound {
       reviewerStatuses: statuses,
       coordinatorRun: syntheticRun,
       roundError,
+      roundCommitOid,
     });
 
     return { outcome: aggregateVerdictResult, state };

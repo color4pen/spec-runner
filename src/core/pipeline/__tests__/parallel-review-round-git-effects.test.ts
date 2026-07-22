@@ -604,3 +604,81 @@ describe("ParallelReviewRound git effects — inspection escalation keeps member
     expect(memberStatus(result.state, MEMBER_B)).toBe("approved");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Scenario 9: commitRoundArtifacts push failure → OID recorded in synthesizedCommits
+// ---------------------------------------------------------------------------
+// Regression guard: if commitRoundArtifacts throws (push failure after commit was
+// created), the commit OID must still be appended to synthesizedCommits so that
+// egress checks on the next resume do not see EGRESS_UNKNOWN_COMMIT deadlock.
+// The round records ROUND_COMMIT_PUSH_FAILED escalation and does NOT re-throw.
+
+describe("ParallelReviewRound git effects — push failure after commit → OID in synthesizedCommits", () => {
+  const PUSH_FAIL_OID = "push-fail-commit-oid-abc123";
+
+  function makeRuntimeStrategyWithPushFailure() {
+    return {
+      captureHeadSha: vi.fn(async () => PUSH_FAIL_OID),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [] })),
+      finalizeStepArtifacts: vi.fn(async () => {}),
+      validateStepInputs: vi.fn(async () => {}),
+      validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+      listWorktreeChanges: vi.fn(async (_cwd: string) => ({
+        kind: "success" as const,
+        paths: [DECLARED_A],
+      })),
+      commitRoundArtifacts: vi.fn(async () => {
+        throw Object.assign(new Error("git push origin HEAD:refs/heads/change/... exited with code 1"), { code: "PUSH_FAILED" });
+      }),
+    };
+  }
+
+  it("round does NOT throw when commitRoundArtifacts push fails", async () => {
+    const runtimeStrategy = makeRuntimeStrategyWithPushFailure();
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    // Must resolve (not throw) — push failure is converted to escalation in state
+    await expect(
+      round.run(COORDINATOR, makeState(), makeDeps({ runtimeStrategy: runtimeStrategy as never })),
+    ).resolves.toBeDefined();
+  });
+
+  it("round outcome is escalation and error.code is ROUND_COMMIT_PUSH_FAILED", async () => {
+    const runtimeStrategy = makeRuntimeStrategyWithPushFailure();
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(result.outcome).toBe("escalation");
+    expect(result.state.error?.code).toBe("ROUND_COMMIT_PUSH_FAILED");
+  });
+
+  it("push-fail commit OID is appended to synthesizedCommits (prevents EGRESS_UNKNOWN_COMMIT on resume)", async () => {
+    const runtimeStrategy = makeRuntimeStrategyWithPushFailure();
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    // synthesizedCommits must contain the OID captured after the failed push
+    expect(result.state.synthesizedCommits).toContain(PUSH_FAIL_OID);
+  });
+});

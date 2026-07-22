@@ -26,7 +26,7 @@ import type { PermissionScope } from "../pipeline/types.js";
 import type { StepCompletion } from "./step-completion.js";
 import type { StepHalt } from "./step-halt.js";
 import { pushStepResult } from "../../state/helpers.js";
-import { appendHistoryEntry } from "../../state/schema.js";
+import { appendHistoryEntry, appendSynthesizedCommit } from "../../state/schema.js";
 import {
   recordFailedStepResult,
   attachStateAndRethrow,
@@ -69,8 +69,25 @@ export type StepExecutionResult =
        * Commit OID captured after this step's per-node commit (bite-evidence-forward R4).
        * Set only for sequential steps with roundOwnsGitEffects === false.
        * Absent for round (parallel reviewer) members and managed-runtime steps.
+       *
+       * Semantics by step kind:
+       *   - Agent step: exit-HEAD (the pipeline-synthesized commit).
+       *   - CLI step:   entry-HEAD (the revision evaluated by the step — NOT a synthesized commit).
+       *     Use exitCommitOid for the CLI step's synthesized commit (if HEAD advanced during run()).
        */
       commitOid?: string;
+      /**
+       * For CLI steps only: OID of the commit created during step.run() (T-08, D4).
+       *
+       * CLI steps (e.g. VerificationStep via propagateVerificationResult) may advance HEAD
+       * during step.run(). exitCommitOid captures the exit-HEAD when it differs from the
+       * entry-HEAD (commitOid). This OID is appended to synthesizedCommits so that
+       * commitFinalState's verifyEgressLedger does not flag it as an unknown commit if the
+       * CLI step's own push failed and left the commit local-only.
+       *
+       * Absent for agent steps (their synthesized commit is already captured in commitOid).
+       */
+      exitCommitOid?: string;
     }
   | { kind: "halt"; halt: StepHalt }
   | { kind: "skipped"; skipReason: string };
@@ -341,6 +358,20 @@ export class CommitOrchestrator {
       s = { ...s, biteEvidence: completion.biteEvidence };
     }
 
+    // Append synthesized commit OID(s) to ledger (T-08, D4).
+    // Agent step: commitOid = exit-HEAD (pipeline-synthesized commit). Append it.
+    // CLI step: commitOid = entry-HEAD (evaluated revision, already on origin — harmless to append).
+    //           exitCommitOid = exit-HEAD if HEAD advanced during step.run() (synthesized commit).
+    if (result.commitOid) {
+      s = appendSynthesizedCommit(s, result.commitOid);
+    }
+    // CLI step created a commit during step.run() (e.g. propagateVerificationResult).
+    // Append exit-HEAD so verifyEgressLedger in commitFinalState recognises it as a known
+    // pipeline commit even if the CLI step's push failed and left the commit local-only.
+    if (result.exitCommitOid) {
+      s = appendSynthesizedCommit(s, result.exitCommitOid);
+    }
+
     // Persist branch/pullRequest/biteEvidence patch (write 2)
     await store.persist(s);
 
@@ -460,6 +491,9 @@ export class CommitOrchestrator {
    * @param params.reviewerStatuses  - Updated reviewer status records for the round.
    * @param params.coordinatorRun    - Synthetic coordinator StepRun to append.
    * @param params.roundError        - Error to set on state (null clears previous error).
+   * @param params.roundCommitOid    - OID of the round's synthesized commit (from commitRoundArtifacts),
+   *                                   or null/undefined if no round commit was made. Appended to the
+   *                                   synthesizedCommits ledger before persist (T-08, D4).
    */
   async commitRound(params: {
     coordinatorName: string;
@@ -469,8 +503,9 @@ export class CommitOrchestrator {
     reviewerStatuses: ReviewerStatus[];
     coordinatorRun: StepRun;
     roundError: ErrorInfo | null;
+    roundCommitOid?: string | null;
   }): Promise<JobState> {
-    const { coordinatorName, base, deps, members, reviewerStatuses, coordinatorRun, roundError } = params;
+    const { coordinatorName, base, deps, members, reviewerStatuses, coordinatorRun, roundError, roundCommitOid } = params;
     const store = this.getStore(base.jobId);
     const now = new Date().toISOString();
 
@@ -546,6 +581,13 @@ export class CommitOrchestrator {
       error: roundError,
       updatedAt: new Date().toISOString(),
     };
+
+    // --- 2b. Append round commit OID to synthesizedCommits ledger (T-08, D4) ---
+    // roundCommitOid is the HEAD OID captured after commitRoundArtifacts completes.
+    // Absent (null/undefined) when no round commit was made (empty toStage, or inspection halt).
+    if (roundCommitOid) {
+      state = appendSynthesizedCommit(state, roundCommitOid);
+    }
 
     // --- 3. Persist exactly once ---
     await store.persist(state);

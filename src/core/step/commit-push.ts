@@ -8,7 +8,14 @@ import type { EventBus } from "../event/event-bus.js";
 import { gitExec, gitExecExitCode, gitExecResult, runSubprocess, type SpawnFn } from "../../util/git-exec.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../util/spawn.js";
 import { stderrWrite } from "../../logger/stdout.js";
-import { pushFailedError, commitEffectFailedError, writeScopeViolationError } from "../../errors.js";
+import {
+  pushFailedError,
+  commitEffectFailedError,
+  writeScopeViolationError,
+  egressUnknownCommitError,
+  SpecRunnerError,
+  ERROR_CODES,
+} from "../../errors.js";
 import { stagingModeFor, findWriteScopeViolations, findScopedCommitViolations } from "./write-scope.js";
 import { pipelineManagedPaths } from "./round-git-scope.js";
 
@@ -36,7 +43,43 @@ export interface CommitPushInfra {
 }
 
 /**
- * Run `git status --porcelain -z --no-renames` and return the changed worktree paths.
+ * Write a quarantine evidence file for a parallel-round HEAD guard violation.
+ *
+ * Called when the HEAD guard detects that a reviewer self-committed during a round.
+ * Written to the machine-local sidecar directory (.specrunner/local/<slug>/ — never
+ * committed). Best-effort: returns the quarantine file path, or null on any failure.
+ * Failure never blocks the halt.
+ */
+export async function quarantineRoundHeadAdvanceEvidence(
+  spawnFn: SpawnFn,
+  cwd: string,
+  slug: string,
+  baseCommit: string,
+  headCommit: string,
+): Promise<string | null> {
+  try {
+    const dir = pathJoin(cwd, localSidecarDir(slug));
+    await fsMkdir(dir, { recursive: true });
+    const diffText = await gitExec(spawnFn, cwd, ["diff", baseCommit, headCommit]);
+    const ts = Date.now();
+    const file = pathJoin(dir, `round-head-advance-${ts}.md`);
+    const content = [
+      `# round HEAD guard violation`,
+      `base: ${baseCommit}`,
+      `head: ${headCommit}`,
+      `captured-at: ${new Date().toISOString()}`,
+      ``,
+      diffText ? `## diff\n\`\`\`diff\n${diffText}\n\`\`\`` : `## no diff available`,
+    ].join("\n");
+    await fsWriteFile(file, content, "utf-8");
+    return file;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Run `git status --porcelain -z --no-renames` and return the changed paths.
  *
  * Returns { ok: true, paths } on success, { ok: false, paths: [] } on spawn failure or
  * non-zero exit. Never throws — callers treat ok:false as fail-closed.
@@ -45,11 +88,17 @@ export interface CommitPushInfra {
  *   - NUL-delimited entries: each entry is "XY PATH" (2-char status + space + path).
  *   - Entries shorter than 4 characters are skipped.
  *   - Path is extracted from entry.slice(3).
+ *
+ * @param worktreeOnly - When true, only paths that are dirty in the WORKTREE (Y≠' ')
+ *   are returned. Pre-staged-only files (X≠' ', Y=' ') are excluded. Use this for
+ *   residual violation checks after staging: pre-staged files (staged before the step
+ *   ran) are not modifications made by the step and must not trigger residual halts.
  */
 async function getWorktreeChangedPaths(
   spawnFn: SpawnFn,
   cwd: string,
-): Promise<{ ok: boolean; paths: string[] }> {
+  worktreeOnly = false,
+): Promise<{ ok: boolean; paths: string[]; untracked: string[]; stagedOnly: string[]; stagedNew: string[] }> {
   try {
     const { stdout, exitCode } = await runSubprocess(
       spawnFn,
@@ -58,226 +107,122 @@ async function getWorktreeChangedPaths(
       { cwd },
     );
     if (exitCode !== 0) {
-      return { ok: false, paths: [] };
+      return { ok: false, paths: [], untracked: [], stagedOnly: [], stagedNew: [] };
     }
     const parts = stdout.split("\0").filter((p) => p.length > 0);
     const paths: string[] = [];
+    const untracked: string[] = [];
+    const stagedOnly: string[] = [];
+    const stagedNew: string[] = [];
     for (const part of parts) {
       // Format: XY<SP>path — 2-char status + space prefix
+      // part[0] = X (index/staging state), part[1] = Y (worktree state)
       if (part.length < 4) continue;
+      // Staged-only entries (X≠' ', Y=' '): index and worktree agree on content that
+      // differs from HEAD. Collected regardless of worktreeOnly so callers can apply
+      // canon-integrity checks to them (the worktree FILE is tampered vs HEAD even
+      // though the worktree column is clean).
+      if (part[0] !== " " && part[0] !== "?" && part[1] === " ") {
+        const stagedPath = part.slice(3);
+        if (stagedPath) {
+          stagedOnly.push(stagedPath);
+          // X='A', Y=' ': staged-new file — has no HEAD entry.
+          // git checkout HEAD -- <file> would fail for these; they need git rm --cached
+          // (unstage) followed by git clean -f (remove from worktree) to restore to HEAD
+          // state (i.e. the file did not exist).
+          if (part[0] === "A") stagedNew.push(stagedPath);
+        }
+      }
+      if (worktreeOnly && part[1] === " ") continue; // skip staged-only (pre-staged) files
       const filePath = part.slice(3);
-      if (filePath) paths.push(filePath);
+      if (filePath) {
+        paths.push(filePath);
+        // "??" = untracked. Restoration must route these to `git clean -f`
+        // (`git checkout HEAD` cannot restore a path that is not in HEAD).
+        if (part[0] === "?") untracked.push(filePath);
+      }
     }
-    return { ok: true, paths };
+    return { ok: true, paths, untracked, stagedOnly, stagedNew };
   } catch {
-    return { ok: false, paths: [] };
+    return { ok: false, paths: [], untracked: [], stagedOnly: [], stagedNew: [] };
   }
 }
 
 /**
- * List the net-changed paths in the commit range base..head.
+ * Restore violated paths to their HEAD state, split by tracked state (D5 fail-closed).
  *
- * Uses `git diff --name-only --no-renames <base> <head>`. Renames are suppressed
- * (`--no-renames`) to ensure every affected path is enumerated individually (consistent
- * with getWorktreeChangedPaths).
+ * Untracked violations are removed with `git clean -f`; tracked ones are restored with
+ * `git checkout HEAD`. The split keeps failure semantics unambiguous: running both
+ * commands over all paths made `checkout` fail benignly whenever the violation set
+ * contained an untracked file, which forced callers to ignore restore failures entirely.
  *
- * Returns null on git error (non-zero exit or spawn failure) so callers can treat null
- * as fail-closed (distinct from an empty array which means the range touched no files).
- *
- * T-03 / D2: used by commitAndPushTail to inspect agent self-commit content before push.
+ * Throws commitEffectFailedError("restore") when a restore command fails — a failed
+ * restore leaves tampered content in the worktree where resumed steps would read it,
+ * so the halt must not claim the violation was restored.
  */
-async function listCommitRangeChangedPaths(
+async function restoreViolatedPaths(
   spawnFn: SpawnFn,
   cwd: string,
-  base: string,
-  head: string,
-): Promise<string[] | null> {
-  const result = await gitExec(spawnFn, cwd, ["diff", "--name-only", "--no-renames", base, head]);
-  if (result === null) return null;
-  return result
-    .split("\n")
-    .map((p) => p.trim())
-    .filter((p) => p.length > 0);
-}
-
-/**
- * Mode-specific context passed from commitAndPush to commitAndPushTail.
- *
- * D7: mode-dependent information (commit pathspec, violation rules) is resolved in
- * commitAndPush and forwarded as a single context object so commitAndPushTail can
- * apply the correct behavior without re-reading step or state.
- */
-interface CommitTailContext {
-  /** "scoped" (deterministic step) or "guarded" (broad-write step). */
-  mode: "scoped" | "guarded";
-  /**
-   * Pathspec for staged-check and commit in scoped mode.
-   * Empty in guarded mode (whole-index commit).
-   * Empty in scoped mode when the step has no declared writes and no existing managed paths.
-   */
-  stagePaths: string[];
-  /** Paths declared by step.writes() — for scoped violation check and guarded check. */
-  declaredWritePaths: string[];
-  /** All pipeline-managed paths (not just existing) — for scoped commit violation check. */
-  managedPaths: string[];
-}
-
-/**
- * Shared tail for both scoped and guarded staging modes.
- *
- * Runs after staging and residual-violation checks are complete:
- *
- * 1. Staged-change check (mode-specific):
- *    - scoped, stagePaths non-empty: `git diff --cached --quiet -- <stagePaths>`
- *      (only checks whether the declared paths have staged changes, ignoring the rest of
- *      the index — pre-staged unauthorized files do not trigger a commit).
- *    - scoped, stagePaths empty: skip diff check (nothing in scope to stage); set
- *      hasChanges = false and proceed to HEAD-advance detection only.
- *    - guarded: `git diff --cached --quiet` (whole-index check, original behavior).
- *    - exit 0 = no staged changes, exit 1 = staged changes, exit ≥2 = git error → throws.
- *
- * 2. No staged changes path → HEAD-advance detection + agent self-commit inspection (T-05):
- *    a. `git rev-parse HEAD` to get the current HEAD SHA.
- *    b. If headBeforeStep !== HEAD (agent authored commit(s) since step start):
- *       - Enumerate changed paths in headBeforeStep..HEAD via listCommitRangeChangedPaths.
- *       - Enumerate failure (null = git error) → fail-closed: throw commitEffectFailedError.
- *       - Inspect changed paths against write-scope rules:
- *           scoped: findScopedCommitViolations (changedPaths − declaredWrites − managedPaths)
- *           guarded: findWriteScopeViolations (changed ∩ protected canon − declaredWrites)
- *       - Violations found: quarantineViolationEvidence with range {base, head}, then throw
- *         WRITE_SCOPE_VIOLATION. Push is NOT called; the violating commit remains local.
- *       - No violations: log detection and push-only (original behavior preserved).
- *    c. headBeforeStep = null or HEAD unchanged → silently return (no-op).
- *
- * 3. Staged changes path → commit + push (mode-specific):
- *    - scoped, stagePaths non-empty: `git commit -m "<step>: <slug>" -- <stagePaths>`
- *      (pathspec restricts the commit to the declared scope; pre-staged unauthorized files
- *      that are not in stagePaths are excluded from the commit, even if still in the index).
- *    - guarded: `git commit -m "<step>: <slug>"` (whole-index commit, original behavior).
- *    - Commit failure → throws commitEffectFailedError("commit").
- *    - Push with one retry → throws pushFailedError on double failure.
- */
-async function commitAndPushTail(
-  step: AgentStep,
-  headBeforeStep: string | null,
-  infra: CommitPushInfra,
-  cwd: string,
+  stepLabel: string,
   branch: string,
-  slug: string,
-  ctx: CommitTailContext,
+  violations: string[],
+  untrackedPaths: string[],
+  stagedNewPaths: string[] = [],
 ): Promise<void> {
-  // ── 0. Agent self-commit inspection (T-05) — BEFORE any push-capable path ──
-  // The inspection guards the EFFECT (push), not a single control-flow branch:
-  // an agent that self-commits a violation AND leaves staged declared changes would
-  // otherwise route through the staged-commit path and have its commit carried by
-  // the push uninspected. HEAD is captured here (pre-pipeline-commit) so the range
-  // covers exactly the agent-authored commits.
-  const headAtTailEntry = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
-  if (headBeforeStep && headAtTailEntry && headAtTailEntry !== headBeforeStep) {
-    const rangeChangedPaths = await listCommitRangeChangedPaths(
-      infra.spawnFn, cwd, headBeforeStep, headAtTailEntry,
-    );
-    if (rangeChangedPaths === null) {
-      // Enumerate failed → fail-closed: cannot verify commit safety.
+  const untrackedSet = new Set(untrackedPaths);
+  const stagedNewSet = new Set(stagedNewPaths);
+  const cleanTargets = violations.filter((p) => untrackedSet.has(p));
+  // Staged-new violations (X='A', Y=' '): no HEAD entry → git checkout HEAD fails.
+  // Restore by: (1) unstaging via git rm --cached, (2) removing the now-untracked file via git clean -f.
+  const rmCachedTargets = violations.filter((p) => !untrackedSet.has(p) && stagedNewSet.has(p));
+  const checkoutTargets = violations.filter((p) => !untrackedSet.has(p) && !stagedNewSet.has(p));
+  if (rmCachedTargets.length > 0) {
+    const rmResult = await gitExecResult(spawnFn, cwd, ["rm", "--cached", "--", ...rmCachedTargets]);
+    if (!rmResult.ok || rmResult.exitCode !== 0) {
       throw commitEffectFailedError(
-        step.name, branch, "diff",
-        "commit range path enumerate failed (git diff --name-only error)",
+        stepLabel, branch, "restore",
+        `git rm --cached exit ${rmResult.exitCode}; staged-new tampered paths remain in index: ${rmCachedTargets.join(", ")}`,
       );
     }
-    let rangeViolations: string[];
-    if (ctx.mode === "scoped") {
-      rangeViolations = findScopedCommitViolations(
-        slug, rangeChangedPaths, ctx.declaredWritePaths, ctx.managedPaths,
-      );
-    } else {
-      rangeViolations = findWriteScopeViolations(
-        step.name, slug, rangeChangedPaths, ctx.declaredWritePaths,
+    // After unstaging, the file exists in the worktree as untracked — remove it.
+    const cleanNewResult = await gitExecResult(spawnFn, cwd, ["clean", "-f", "--", ...rmCachedTargets]);
+    if (!cleanNewResult.ok || cleanNewResult.exitCode !== 0) {
+      throw commitEffectFailedError(
+        stepLabel, branch, "restore",
+        `git clean exit ${cleanNewResult.exitCode}; tampered paths remain in worktree: ${rmCachedTargets.join(", ")}`,
       );
     }
-    if (rangeViolations.length > 0) {
-      // Preserve commit diff evidence before halting. The violating commit stays
-      // local (not reset) — it is evidence for operator investigation.
-      const quarantinePath = await quarantineViolationEvidence(
-        infra.spawnFn, cwd, slug, step.name, rangeViolations,
-        { base: headBeforeStep, head: headAtTailEntry },
+  }
+  if (cleanTargets.length > 0) {
+    const cleanResult = await gitExecResult(spawnFn, cwd, ["clean", "-f", "--", ...cleanTargets]);
+    if (!cleanResult.ok || cleanResult.exitCode !== 0) {
+      throw commitEffectFailedError(
+        stepLabel, branch, "restore",
+        `git clean exit ${cleanResult.exitCode}; tampered paths remain in worktree: ${cleanTargets.join(", ")}`,
       );
-      throw writeScopeViolationError(step.name, branch, rangeViolations, quarantinePath);
     }
   }
-
-  // ── 1. Staged-change check (mode-specific) ──────────────────────────────
-  let hasChanges: boolean;
-
-  if (ctx.mode === "scoped" && ctx.stagePaths.length > 0) {
-    // Scoped: check only within the declared pathspec — pre-staged unauthorized files
-    // outside this scope are invisible to this check (T-04).
-    const diffResult = await gitExecResult(infra.spawnFn, cwd, [
-      "diff", "--cached", "--quiet", "--", ...ctx.stagePaths,
-    ]);
-    if (!diffResult.ok || diffResult.exitCode >= 2) {
-      throw commitEffectFailedError(step.name, branch, "diff", `exit code ${diffResult.exitCode}`);
-    }
-    hasChanges = diffResult.exitCode === 1;
-  } else if (ctx.mode === "scoped") {
-    // Scoped with empty stagePaths: no declared scope → nothing in scope to check.
-    // Skip diff entirely; go to HEAD-advance detection (T-04).
-    hasChanges = false;
-  } else {
-    // Guarded: whole-index staged check (original behavior).
-    const diffResult = await gitExecResult(infra.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
-    if (!diffResult.ok || diffResult.exitCode >= 2) {
-      throw commitEffectFailedError(step.name, branch, "diff", `exit code ${diffResult.exitCode}`);
-    }
-    hasChanges = diffResult.exitCode === 1;
-  }
-
-  // ── 2. No staged changes: HEAD-advance push-as-is ──────────────────────
-  // (Range inspection already ran at tail entry (step 0) — reaching here means the
-  // agent's self-commits are boundary-safe.)
-  if (!hasChanges) {
-    if (headBeforeStep && headAtTailEntry && headAtTailEntry !== headBeforeStep) {
-      stderrWrite(
-        "Detected agent-authored commit(s) since step start; skipping pipeline commit and pushing as-is.\n",
+  if (checkoutTargets.length > 0) {
+    const checkoutResult = await gitExecResult(spawnFn, cwd, ["checkout", "HEAD", "--", ...checkoutTargets]);
+    if (!checkoutResult.ok || checkoutResult.exitCode !== 0) {
+      throw commitEffectFailedError(
+        stepLabel, branch, "restore",
+        `git checkout HEAD exit ${checkoutResult.exitCode}; tampered paths remain in worktree: ${checkoutTargets.join(", ")}`,
       );
-      await pushOnly(branch, cwd, step.name, infra);
-      return;
     }
-    // No changes and no agent self-commit — silently skip (step completed via tool, no file writes needed)
-    return;
   }
-
-  // ── 3. Staged changes present: commit + push ────────────────────────────
-  const commitMessage = `${step.name}: ${slug}`;
-  let commitResult;
-  if (ctx.mode === "scoped" && ctx.stagePaths.length > 0) {
-    // Scoped: pathspec-restricted commit — excludes any pre-staged unauthorized files
-    // that are in the index but not in stagePaths (T-04).
-    commitResult = await gitExecResult(infra.spawnFn, cwd, [
-      "commit", "-m", commitMessage, "--", ...ctx.stagePaths,
-    ]);
-  } else {
-    // Guarded: whole-index commit (original behavior).
-    commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage]);
-  }
-  if (!commitResult.ok || commitResult.exitCode !== 0) {
-    throw commitEffectFailedError(step.name, branch, "commit", `exit code ${commitResult.exitCode}`);
-  }
-
-  // Push with one retry
-  await pushOnly(branch, cwd, step.name, infra);
 }
-
 
 /**
  * Preserve the content of write-scope-violating changes before they are restored.
  *
  * The violating content is evidence (what the agent attempted to write outside its
  * boundary). Restoration is mechanically required so the post-halt checkpoint commit
- * (commitFinalState: git add -A) cannot leak the violation to the remote branch — but
+ * (commitFinalState: git add -- managed) cannot leak the violation to the remote branch — but
  * restoring without capture would destroy the evidence a human needs to judge the halt.
  *
  * Captures, per violating path:
- *   - When `range` is given (self-commit violation, T-02): the diff of that path in the
+ *   - When `range` is given (self-commit violation): the diff of that path in the
  *     commit range via `git diff <base> <head> -- <path>`.
  *   - When no range (worktree violation): the tracked diff vs HEAD via
  *     `git diff HEAD -- <path>` (original behavior, unchanged).
@@ -287,7 +232,7 @@ async function commitAndPushTail(
  * committed). Best-effort: returns the quarantine file path, or null on any failure.
  * Failure never blocks the halt.
  *
- * @param range - Optional commit range for self-commit violations (T-02). When provided,
+ * @param range - Optional commit range for self-commit violations. When provided,
  *   `git diff base head -- path` is used instead of `git diff HEAD -- path`.
  */
 async function quarantineViolationEvidence(
@@ -309,7 +254,7 @@ async function quarantineViolationEvidence(
       "",
     ];
     for (const v of violations) {
-      // Choose diff command based on whether this is a commit-range violation (T-02).
+      // Choose diff command based on whether this is a commit-range violation.
       const diffArgs = range
         ? ["diff", range.base, range.head, "--", v]
         : ["diff", "HEAD", "--", v];
@@ -337,44 +282,137 @@ async function quarantineViolationEvidence(
 }
 
 /**
- * Stage all changes, commit, and push to origin.
+ * Verify that all commits in the push range are recorded in the synthesizedCommits ledger.
  *
- * Branching on staging mode (from write-scope single source):
+ * Runs `git rev-list HEAD --not --remotes=origin` to enumerate the set of commits that
+ * would be published to origin. Each OID is checked against `ledger`
+ * (synthesizedCommits ∪ current-op OIDs). Any unknown OID → throw EGRESS_UNKNOWN_COMMIT
+ * and do NOT push.
+ *
+ * rev-list failure (non-0 exit or spawn error) → halt (fail-closed): we cannot verify
+ * the publish range, so we must not push.
+ *
+ * @param params.cwd      - Working directory for git.
+ * @param params.ledger   - Union of synthesizedCommits and current-op OIDs.
+ * @param params.spawnFn  - Async spawn function (PipelineSpawnFn from spawn.ts).
+ */
+export async function verifyEgressLedger(params: {
+  cwd: string;
+  ledger: string[];
+  spawnFn: PipelineSpawnFn;
+}): Promise<void> {
+  const { cwd, ledger, spawnFn } = params;
+  const ledgerSet = new Set(ledger);
+
+  let result: { exitCode: number | null; stdout: string; stderr: string };
+  try {
+    result = await spawnFn("git", ["rev-list", "HEAD", "--not", "--remotes=origin"], { cwd });
+  } catch (err) {
+    // Spawn failure → re-throw (fail-closed)
+    throw err;
+  }
+
+  if ((result.exitCode ?? -1) !== 0) {
+    throw new SpecRunnerError(
+      ERROR_CODES.GIT_SUBPROCESS_FAILED,
+      "Egress rev-list failed. Ensure git repository is healthy.",
+      `git rev-list failed: exit ${result.exitCode}: ${result.stderr}`,
+    );
+  }
+
+  const oids = result.stdout.split("\n").map((s) => s.trim()).filter(Boolean);
+  for (const oid of oids) {
+    if (!ledgerSet.has(oid)) {
+      throw egressUnknownCommitError(oid, "");
+    }
+  }
+}
+
+/**
+ * Inline egress verification after a pipeline-synthesized commit.
+ *
+ * Captures the OID of the just-created commit, unions it with the existing
+ * synthesizedCommits ledger from state, then enumerates the publish range to
+ * ensure every OID is accounted for.
+ *
+ * Publish range is `git rev-list HEAD --not --remotes=origin` — everything a push
+ * would newly publish. The range is deliberately NOT narrowed by the step's entry
+ * HEAD: `headBeforeStep` is re-captured live at every step (re-)entry, so after a
+ * crash-and-resume an agent self-commit made in the crashed attempt becomes the
+ * new entry HEAD and any entry-HEAD-based exclusion would blind the check to it.
+ * Pre-existing legitimate commits are excluded because they are on origin
+ * (pipeline pushes after every synthesis; operator hand-commits are hand-pushed).
+ * Test environments must therefore either provide an origin remote or seed
+ * `state.synthesizedCommits` with the baseline `git rev-list HEAD` OIDs.
+ *
+ * Uses SpawnFn (git-exec.js child-process variant) matching the infra.spawnFn already in use.
+ *
+ * @param synthesizedCommits - Existing synthesizedCommits ledger (from job state or caller-supplied).
+ */
+async function runInlineEgressCheck(
+  spawnFn: SpawnFn,
+  cwd: string,
+  branch: string,
+  synthesizedCommits: readonly string[],
+): Promise<void> {
+  // Capture OID of the just-synthesized commit (may be "" in tests)
+  const newCommitOid = (await gitExec(spawnFn, cwd, ["rev-parse", "HEAD"])) ?? "";
+
+  // Build ledger: existing synthesizedCommits ∪ current-op OID (filter empty strings)
+  const ledger = new Set<string>([...synthesizedCommits, newCommitOid].filter(Boolean));
+
+  // Enumerate publish range: all commits a push would newly publish.
+  const revListArgs = ["rev-list", "HEAD", "--not", "--remotes=origin"];
+  const revListResult = await runSubprocess(spawnFn, "git", revListArgs, { cwd });
+  if (revListResult.exitCode !== 0) {
+    throw new SpecRunnerError(
+      ERROR_CODES.GIT_SUBPROCESS_FAILED,
+      "Egress rev-list failed. Ensure git repository is healthy.",
+      `git rev-list failed: exit ${revListResult.exitCode}: ${revListResult.stderr}`,
+    );
+  }
+
+  const oids = revListResult.stdout.split("\n").map((s) => s.trim()).filter(Boolean);
+  for (const oid of oids) {
+    if (!ledger.has(oid)) {
+      throw egressUnknownCommitError(oid, branch);
+    }
+  }
+}
+
+/**
+ * Synthesis model for step commit+push.
+ *
+ * Replaces the inspection model (push-as-is + range inspection). Instead of pushing agent
+ * self-commits and inspecting their contents, the pipeline:
+ *   1. Captures current HEAD.
+ *   2. Applies `git reset --mixed <headBeforeStep>` if HEAD advanced (agent self-committed).
+ *      This unwinds agent commit objects from the history while preserving worktree changes.
+ *   3. Enumerates actual worktree changes (guarded) or uses declared outputs (scoped).
+ *   4. Stages and commits explicitly via pathspec.
+ *   5. Verifies egress (publish range ⊆ synthesizedCommits ledger) before push.
+ *
+ * Branching on staging mode:
  *
  * "scoped" mode (deterministic steps: design, spec-review, spec-fixer, etc.):
- *   - Stage only declared outputs: git add -A -- <step.writes() + pipelineManagedPaths>.
- *   - Boundary-external changes in the worktree are silently excluded from the commit.
- *   - After staging, any protected paths that remain dirty are quarantined, restored to
- *     HEAD, and WRITE_SCOPE_VIOLATION is thrown (T-06: halt, not continue).
- *     Prior behavior ("restore and continue") is removed — a step that read a contaminated
- *     canon must not have its result adopted.
- *   - If stagePaths is empty, no-op for git add and diff check; HEAD-advance detection
- *     still runs via commitAndPushTail.
+ *   - Stages only declared outputs + pipeline-managed paths (explicit pathspec).
+ *   - Residual check: any worktree-dirty path outside declared+managed scope, and any
+ *     staged-only protected canon path (the step read tampered canon), is quarantined
+ *     and WRITE_SCOPE_VIOLATION is thrown (halt, not continue).
+ *   - Staged-change diff check restricted to the declared pathspec.
+ *   - Commit uses the same explicit pathspec (pre-staged unauthorized files excluded).
  *
  * "guarded" mode (broad-write steps: implementer, build-fixer, code-fixer, etc.):
- *   - Pre-check: git status --porcelain -z --no-renames → list changed paths.
- *   - Violation detection: findWriteScopeViolations → halt if any forbidden path changed.
- *   - Status spawn failure / non-zero exit → fail-closed halt.
- *   - If violations: two-step restore (git clean -f for untracked new files; git checkout
- *     HEAD for tracked modified files) then throws WRITE_SCOPE_VIOLATION.
- *   - If no violations: git add -A → stage whole worktree (original behaviour).
+ *   - Runs git status to enumerate all worktree changes after reset.
+ *   - findWriteScopeViolations: halt if any protected canon path was modified.
+ *   - Stages all enumerated changed paths explicitly (git add -A -- <paths>).
+ *   - Empty enumeration skips the add entirely; if staged changes exist anyway, the
+ *     commit throws fail-closed (never a whole-index commit; no `git add -A -- .`).
+ *   - Commit uses the same explicit pathspec.
  *
- * Shared tail (commitAndPushTail, both modes):
- *   - Staged-change check (mode-specific pathspec for scoped, whole-index for guarded).
- *   - If no staged changes:
- *     - Compare headBeforeStep with current HEAD.
- *     - If HEAD advanced (agent self-committed): inspect commit content (T-05):
- *         scoped: findScopedCommitViolations(declaredWrites + managedPaths)
- *         guarded: findWriteScopeViolations(protectedCanonPaths)
- *       - Violations: quarantine with commit range diff → WRITE_SCOPE_VIOLATION halt.
- *         Push is NOT called; the violating commit stays local for operator investigation.
- *       - No violations: push only (original behavior preserved).
- *     - Otherwise: silently return (no commit needed).
- *   - Commit (mode-specific: scoped uses pathspec, guarded is whole-index).
- *   - Push with one retry.
- *
- * Mode-dependent context (stagePaths, declaredWritePaths, managedPaths) is forwarded
- * to commitAndPushTail via CommitTailContext (D7).
+ * Shared tail (both modes):
+ *   - Inline egress check (runInlineEgressCheck): rev-list against synthesizedCommits ledger.
+ *   - pushOnly with one retry.
  */
 export async function commitAndPush(
   step: AgentStep,
@@ -388,8 +426,26 @@ export async function commitAndPush(
   const slug = deps.slug;
   const mode = stagingModeFor(step.name);
 
+  // ── 0. Capture current HEAD ───────────────────────────────────────────────
+  const headAtEntry = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
+
+  // ── 1. Mixed reset: undo agent self-commits to restore synthesis base ─────
+  // If the agent committed during its run (HEAD advanced beyond the step-start baseline),
+  // reset --mixed brings HEAD back to headBeforeStep while keeping the worktree changes.
+  // This ensures the pipeline synthesizes its own commit from the raw worktree diff.
+  if (headBeforeStep && headAtEntry && headAtEntry !== headBeforeStep) {
+    stderrWrite(
+      `[${step.name}] synthesis: agent self-commit detected (HEAD advanced to ${headAtEntry}); ` +
+      `applying mixed reset to ${headBeforeStep} to restore synthesis baseline\n`,
+    );
+    const resetResult = await gitExecResult(infra.spawnFn, cwd, ["reset", "--mixed", headBeforeStep]);
+    if (!resetResult.ok || resetResult.exitCode !== 0) {
+      throw commitEffectFailedError(step.name, branch, "stage", "git reset --mixed failed");
+    }
+  }
+
   if (mode === "scoped") {
-    // Scoped staging: limit to declared outputs + pipeline-managed paths.
+    // ── Scoped synthesis mode ─────────────────────────────────────────────────
     const writes = step.writes?.(state, deps) ?? [];
     const filePaths = writes.filter((r) => r.artifact !== "gitState").map((r) => r.path);
     const allManagedPaths = pipelineManagedPaths(slug);
@@ -398,153 +454,180 @@ export async function commitAndPush(
     const existingManaged = await filterExistingFiles(allManagedPaths, cwd);
     const stagePaths = [...new Set([...filePaths, ...existingManaged])];
 
-    // Stage only declared paths when there are any.
-    // Empty stagePaths → skip git add (git add -A -- <empty> is invalid).
-    // We still fall through to commitAndPushTail for HEAD-advance detection.
-    if (stagePaths.length > 0) {
-      // Stage only the declared paths. Failure → halt.
-      const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ...stagePaths]);
-      if (!addResult.ok || addResult.exitCode !== 0) {
-        throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
-      }
+    if (stagePaths.length === 0) {
+      // Nothing in scope → skip commit (no-op).
+      return;
+    }
 
-      // After scoped staging: check for protected paths that remain dirty in the worktree
-      // (i.e. outside the step's declared scope). If found:
-      //   1. Quarantine evidence (what the step attempted to write).
-      //   2. Two-step restore: git clean -f (untracked) then git checkout HEAD (tracked).
-      //   3. Throw WRITE_SCOPE_VIOLATION — halt, do NOT continue (T-06).
-      //
-      // A step that read a contaminated canon file cannot have its result safely adopted.
-      // "Restore and continue" is rejected: it would leave the result record saying the
-      // step reviewed the restored (correct) file, when it actually read the modified one.
-      //
-      // Asymmetry note: postStatus.ok===false → skip silently (best-effort).
-      // The postStatus check is defensive (prevents cross-step misattribution); guarded
-      // mode is the hard enforcement gate. But residual violations DO halt (T-06).
-      const postStatus = await getWorktreeChangedPaths(infra.spawnFn, cwd);
-      if (postStatus.ok && postStatus.paths.length > 0) {
-        const residualViolations = findWriteScopeViolations(step.name, slug, postStatus.paths, filePaths);
-        if (residualViolations.length > 0) {
-          // Preserve evidence before restore — the restore is mechanically required
-          // (prevents checkpoint commit leakage) but must not destroy the evidence.
-          const residualQuarantine = await quarantineViolationEvidence(
-            infra.spawnFn, cwd, slug, step.name, residualViolations,
-          );
-          stderrWrite(
-            `[${step.name}] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): ${residualViolations.join(", ")}` +
-            (residualQuarantine ? ` — 退避先: ${residualQuarantine}` : ""),
-          );
-          // Two-step restore (same pattern as guarded mode):
-          //   git clean -f removes newly created untracked violations (not in HEAD).
-          //   git checkout HEAD restores tracked modified violations.
-          await gitExecResult(infra.spawnFn, cwd, ["clean", "-f", "--", ...residualViolations]);
-          await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...residualViolations]);
-          // Halt — do NOT proceed to commit/push with a contaminated step result.
-          // Declared outputs (stagePaths) remain staged in the index; commitFinalState's
-          // git add -A will include them in the checkpoint commit. This is accepted (see
-          // commitFinalState docstring: "Known side effect (scoped residual halt)").
-          throw writeScopeViolationError(step.name, branch, residualViolations, residualQuarantine);
-        }
+    // Stage only declared paths (pathspec-limited; pre-staged unauthorized files excluded).
+    const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ...stagePaths]);
+    if (!addResult.ok || addResult.exitCode !== 0) {
+      throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
+    }
+
+    // Residual check: detect worktree paths outside declared+managed scope.
+    // Two rules over one status snapshot:
+    //   - Worktree-dirty entries (worktreeOnly=true set): anything outside
+    //     declared+managed scope is a violation (this step's own residue).
+    //   - Staged-only entries (X≠' ', Y=' '): checked against protected canon only.
+    //     A staged canonical doc means the worktree FILE differs from HEAD — this step
+    //     just READ tampered canon, so its result must not be adopted, regardless of
+    //     whether the staging predates the step. Non-canon pre-staged files stay
+    //     excluded here (pathspec commits keep them out of history; halting on them
+    //     would misattribute another step's leftovers to this step).
+    // Violated paths are quarantined (evidence) then restored to prevent downstream
+    // steps from reading tampered content.
+    const postStatus = await getWorktreeChangedPaths(infra.spawnFn, cwd, true);
+    if (!postStatus.ok) {
+      // git status spawn failure or non-zero exit → fail-closed (D5): an uninspected
+      // worktree must not proceed to commit/push.
+      throw commitEffectFailedError(step.name, branch, "stage", "git status failed");
+    }
+    {
+      const residualViolations = findScopedCommitViolations(slug, postStatus.paths, filePaths, allManagedPaths);
+      const stagedCanonViolations = findWriteScopeViolations(step.name, slug, postStatus.stagedOnly, filePaths);
+      const allViolations = [...new Set([...residualViolations, ...stagedCanonViolations])];
+      if (allViolations.length > 0) {
+        const residualQuarantine = await quarantineViolationEvidence(
+          infra.spawnFn, cwd, slug, step.name, allViolations,
+        );
+        stderrWrite(
+          `[${step.name}] write-scope: 境界外の残余変更を検出・復元した (commit から除外済み): ${allViolations.join(", ")}` +
+          (residualQuarantine ? ` — 退避先: ${residualQuarantine}` : ""),
+        );
+        // Restore: untracked violations via clean -f, staged-new via rm --cached + clean -f,
+        // tracked (incl. staged-only modified canon) via checkout HEAD.
+        // Restore failure must not be silenced (D5) — restoreViolatedPaths throws.
+        await restoreViolatedPaths(infra.spawnFn, cwd, step.name, branch, allViolations, postStatus.untracked, postStatus.stagedNew);
+        throw writeScopeViolationError(step.name, branch, allViolations, residualQuarantine);
       }
     }
 
-    // Build context for commitAndPushTail.
-    const ctx: CommitTailContext = {
-      mode: "scoped",
-      stagePaths,
-      declaredWritePaths: filePaths,
-      managedPaths: allManagedPaths,
-    };
+    // Staged-change check (scoped pathspec only: pre-staged unauthorized files invisible here).
+    const diffResult = await gitExecResult(infra.spawnFn, cwd, [
+      "diff", "--cached", "--quiet", "--", ...stagePaths,
+    ]);
+    if (!diffResult.ok || diffResult.exitCode >= 2) {
+      throw commitEffectFailedError(step.name, branch, "diff", `exit code ${diffResult.exitCode}`);
+    }
+    if (diffResult.exitCode === 0) {
+      // No staged changes within scope — skip commit.
+      return;
+    }
 
-    await commitAndPushTail(step, headBeforeStep, infra, cwd, branch, slug, ctx);
+    // Commit with explicit pathspec (excludes unauthorized pre-staged files not in stagePaths).
+    const commitMessage = `${step.name}: ${slug}`;
+    const commitResult = await gitExecResult(infra.spawnFn, cwd, [
+      "commit", "-m", commitMessage, "--", ...stagePaths,
+    ]);
+    if (!commitResult.ok || commitResult.exitCode !== 0) {
+      throw commitEffectFailedError(step.name, branch, "commit", `exit code ${commitResult.exitCode}`);
+    }
+
+    // Egress verification: publish range ⊆ synthesizedCommits ledger.
+    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? []);
+
+    // Push with one retry.
+    await pushOnly(branch, cwd, step.name, infra);
   } else {
-    // Guarded mode: pre-check for write-scope violations before staging.
-
-    // List all changed paths in the worktree.
+    // ── Guarded synthesis mode ────────────────────────────────────────────────
+    // List all changed paths in the worktree (post-reset: reflects actual agent output).
     const statusResult = await getWorktreeChangedPaths(infra.spawnFn, cwd);
     if (!statusResult.ok) {
       // git status spawn failure or non-zero exit → fail-closed.
       throw commitEffectFailedError(step.name, branch, "stage", "git status failed");
     }
+    const changedPaths = statusResult.paths;
 
-    // Resolve declared write paths (excluding git-state artifacts).
+    // Resolve declared write paths for the violation allowlist.
     const writes = step.writes?.(state, deps) ?? [];
     const declaredWritePaths = writes.filter((r) => r.artifact !== "gitState").map((r) => r.path);
 
-    // Check for forbidden boundary violations.
-    const violations = findWriteScopeViolations(step.name, slug, statusResult.paths, declaredWritePaths);
+    // Write-scope violation check: halt if any protected canon path was modified.
+    const violations = findWriteScopeViolations(step.name, slug, changedPaths, declaredWritePaths);
     if (violations.length > 0) {
-      // Preserve the violating content BEFORE restoring — the restore is mechanically
-      // required (see below) but the content is the evidence a human needs at the halt.
       const quarantinePath = await quarantineViolationEvidence(
         infra.spawnFn, cwd, slug, step.name, violations,
       );
-      // Restore violated paths before throwing so commitFinalState's git add -A does not
-      // pick them up and commit them to the remote branch (defeating the fail-closed guarantee).
-      //
-      // Two-step restore handles both tracked and untracked violations:
-      //   1. git clean -f -- <violations>: removes newly created (untracked) violations.
-      //      These files are not in HEAD, so git checkout HEAD would fail and leave them in
-      //      the worktree where commitFinalState's git add -A would then pick them up.
-      //   2. git checkout HEAD -- <violations>: restores tracked modified violations to their
-      //      committed content.
-      // Both operations are best-effort (failures silently ignored). The throw always occurs.
-      await gitExecResult(infra.spawnFn, cwd, ["clean", "-f", "--", ...violations]);
-      await gitExecResult(infra.spawnFn, cwd, ["checkout", "HEAD", "--", ...violations]);
+      // Restore before halting so the worktree does not keep violation content that
+      // resumed steps would read (untracked → clean -f, staged-new → rm --cached + clean -f,
+      // tracked → checkout HEAD).
+      // Restore failure must not be silenced (D5) — restoreViolatedPaths throws.
+      await restoreViolatedPaths(infra.spawnFn, cwd, step.name, branch, violations, statusResult.untracked, statusResult.stagedNew);
       throw writeScopeViolationError(step.name, branch, violations, quarantinePath);
     }
 
-    // No violations — stage whole worktree (original behaviour).
-    const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A"]);
-    if (!addResult.ok || addResult.exitCode !== 0) {
-      throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
+    // Stage all changed paths explicitly via pathspec.
+    // When changedPaths is empty (git status found no changes), skip add entirely:
+    // there is nothing to stage, and the diff check below will confirm no staged changes.
+    // The previous fallback `["add", "-A", "--", "."]` was equivalent to bare `git add -A`
+    // (root pathspec = whole repo) and violated F-004 (explicit pathspec required). (Finding 3)
+    if (changedPaths.length > 0) {
+      const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ...changedPaths]);
+      if (!addResult.ok || addResult.exitCode !== 0) {
+        throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
+      }
     }
 
-    // Build context for commitAndPushTail.
-    const ctx: CommitTailContext = {
-      mode: "guarded",
-      stagePaths: [],        // guarded: whole-index commit, no pathspec needed
-      declaredWritePaths,
-      managedPaths: [],      // not used in guarded self-commit check
-    };
+    // Staged-change check (whole-index).
+    const diffResult = await gitExecResult(infra.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
+    if (!diffResult.ok || diffResult.exitCode >= 2) {
+      throw commitEffectFailedError(step.name, branch, "diff", `exit code ${diffResult.exitCode}`);
+    }
+    if (diffResult.exitCode === 0) {
+      // No staged changes — nothing to commit.
+      return;
+    }
 
-    await commitAndPushTail(step, headBeforeStep, infra, cwd, branch, slug, ctx);
+    // Commit with explicit pathspec — never fall back to a whole-index commit.
+    // changedPaths is non-empty here: an empty enumeration skips the add above and the
+    // whole-index diff check returns early. If this invariant is ever broken, fail closed
+    // rather than committing an index we did not enumerate (a bare commit would sweep in
+    // pre-staged unauthorized entries).
+    const commitMessage = `${step.name}: ${slug}`;
+    if (changedPaths.length === 0) {
+      throw commitEffectFailedError(step.name, branch, "commit", "staged changes present but enumeration is empty");
+    }
+    const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage, "--", ...changedPaths]);
+    if (!commitResult.ok || commitResult.exitCode !== 0) {
+      throw commitEffectFailedError(step.name, branch, "commit", `exit code ${commitResult.exitCode}`);
+    }
+
+    // Egress verification: publish range ⊆ synthesizedCommits ledger.
+    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? []);
+
+    // Push with one retry.
+    await pushOnly(branch, cwd, step.name, infra);
   }
 }
 
 /**
- * Commit final pipeline state to the feature branch.
+ * Commit final pipeline state to the feature branch (checkpoint or finalize).
  *
  * D5 (remote-checkpoint-publish-attach-closure): called after terminal transitions.
  * - awaiting-archive: messageLabel = "finalize" (existing behavior, unchanged).
- * - awaiting-resume:  messageLabel = "checkpoint" (new seam in pipeline.ts).
+ * - awaiting-resume:  messageLabel = "checkpoint".
  *
- * Stages all changes (git add -A), commits if there are staged changes
- * (message: "<messageLabel>: <slug>"), and pushes with one retry.
+ * Stages only pipeline-managed paths (state.json, events.jsonl, usage.json,
+ * bite-evidence-result.md) using a per-path `git add -- <path>` loop (exit codes ignored
+ * to tolerate non-existent optional paths). Then commits with an explicit pathspec
+ * (`git commit -- <managedPaths>`) so pre-staged unauthorized files cannot leak into the
+ * checkpoint/finalize commit. This replaces the previous bare `git add -A`
+ * which could inadvertently include agent uncommitted work or pre-staged unauthorized files.
  *
- * Write-scope safety: when commitFinalState is called after a WRITE_SCOPE_VIOLATION
- * halt, the guarded-mode commitAndPush has already restored violated files to their
- * HEAD state via git checkout HEAD before throwing. Scoped residual violations are
- * similarly restored (git clean -f + git checkout HEAD) before throwing. Therefore,
- * git add -A here does not pick up violation content — those files are already clean
- * (match HEAD).
+ * Agent uncommitted work is intentionally left in the worktree for local resume continuity.
  *
- * Known side effect (scoped residual halt): stagePaths (declared outputs) are staged
- * by commitAndPush before the residual check. When the residual halt throws, those
- * staged declared outputs remain in the index. Consequently, git add -A here picks
- * them up and they are committed as part of this checkpoint. This is accepted: the
- * step's legitimate declared outputs are preserved in the checkpoint even when a
- * residual violation aborts result adoption. The violation files themselves are
- * already restored (clean).
+ * D4 (egress-backstop): after committing, the new commit OID is unioned with the existing
+ * synthesizedCommits ledger and passed to verifyEgressLedger before push. If the egress check
+ * fails (unknown commits in the publish range), the push is skipped and a warning is emitted.
+ * The best-effort semantics are preserved — neither commit failures nor egress failures throw.
  *
- * Idempotent: if no staged changes, returns immediately (no-op).
- * Push failures: warns on stderr but does NOT throw — local resume is preserved.
+ * Commits if staged changes are present, then pushes with one retry.
+ * Push failures warn on stderr but do NOT throw — local resume is preserved.
  *
- * Uses `spawn.ts` SpawnFn (same as LocalRuntime.spawnFn) so the same injection
- * point works without any adapter.
- *
- * @param params.messageLabel - Optional commit message label. Defaults to "finalize".
- *   awaiting-resume publish passes "checkpoint"; awaiting-archive passes "finalize".
+ * @param params.messageLabel       - Optional commit message label. Defaults to "finalize".
+ * @param params.synthesizedCommits - Existing synthesizedCommits ledger from job state.
+ *                                    Used as the base for egress verification (D4).
  */
 export async function commitFinalState(params: {
   cwd: string;
@@ -552,33 +635,76 @@ export async function commitFinalState(params: {
   slug: string;
   spawnFn: PipelineSpawnFn;
   messageLabel?: string;
+  synthesizedCommits?: string[];
 }): Promise<void> {
-  const { cwd, branch, slug, spawnFn, messageLabel = "finalize" } = params;
+  const { cwd, branch, slug, spawnFn, messageLabel = "finalize", synthesizedCommits } = params;
 
-  // Stage all changes. When called after a WRITE_SCOPE_VIOLATION halt, both guarded-mode
-  // and scoped-mode commitAndPush have already restored violated files to HEAD via
-  // git checkout HEAD before throwing — so this git add -A does not pick up violation content.
-  const addResult = await spawnFn("git", ["add", "-A"], { cwd });
-  if ((addResult.exitCode ?? 1) !== 0) {
-    // Not a git repo or git is non-functional — skip silently
+  const managedPaths = pipelineManagedPaths(slug);
+
+  // Stage each pipeline-managed path individually; record which paths were staged successfully.
+  //
+  // Per-path staging is used instead of a single `git add -- <all-paths>` call because:
+  //   - `git add -- <path>` exits 128 for any path that doesn't exist and isn't tracked,
+  //     which would abort the entire add and leave nothing staged.
+  //   - Optional pipeline outputs (events.jsonl, usage.json, bite-evidence-result.md)
+  //     may not have been written in every run.
+  //
+  // Paths where `git add` succeeds (exit 0) are recorded in `stagedPaths` for use as
+  // the commit pathspec — ensuring only successfully-staged managed files enter the commit
+  // and pre-staged unauthorized files (adversarially placed in the index) are excluded.
+  const stagedPaths: string[] = [];
+  for (const p of managedPaths) {
+    const addResult = await spawnFn("git", ["add", "--", p], { cwd });
+    if ((addResult.exitCode ?? 1) === 0) {
+      stagedPaths.push(p);
+    }
+  }
+
+  // Nothing managed could be staged → nothing to commit. Never fall back to a bare
+  // commit here: with an empty managed pathspec the only staged content could be
+  // pre-staged unauthorized entries, and a whole-index commit would sweep them in.
+  if (stagedPaths.length === 0) {
     return;
   }
 
-  // Check for staged changes (exit 1 = changes present, exit 0 = clean)
-  const diffResult = await spawnFn("git", ["diff", "--cached", "--quiet"], { cwd });
+  // Check for staged changes within the managed pathspec only (exit 1 = changes present,
+  // exit 0 = clean). Whole-index diff would report exit 1 for pre-staged unauthorized
+  // entries even when no managed file changed.
+  const diffResult = await spawnFn("git", ["diff", "--cached", "--quiet", "--", ...stagedPaths], { cwd });
   if ((diffResult.exitCode ?? 0) !== 1) {
-    // No staged changes — nothing to commit
+    // No staged changes in managed paths — nothing to commit.
     return;
   }
 
-  // Commit
-  const commitResult = await spawnFn("git", ["commit", "-m", `${messageLabel}: ${slug}`], { cwd });
+  // Commit managed-paths state snapshot.
+  // Explicit pathspec (-- stagedPaths) prevents pre-staged unauthorized files from leaking
+  // into the checkpoint/finalize commit. git commit with pathspec only commits staged changes
+  // matching the listed paths; other staged content stays in the index but is NOT included
+  // in this commit. Paths that failed to add (non-existent optionals) are excluded from
+  // stagedPaths and therefore absent from the commit pathspec, avoiding git exit 1.
+  const commitResult = await spawnFn("git", ["commit", "-m", `${messageLabel}: ${slug}`, "--", ...stagedPaths], { cwd });
   if ((commitResult.exitCode ?? 1) !== 0) {
     stderrWrite(`Warning: ${messageLabel} commit failed for ${slug}. Push manually to ensure state is on the branch.`);
     return;
   }
 
-  // Push with one retry (best-effort — don't throw on failure)
+  // D4: Egress verification before push (T-05).
+  // Build ledger: existing synthesizedCommits ∪ this commit's OID.
+  // Design note: terminal path — in-memory union is sufficient; no need to persist the OID.
+  try {
+    const oidResult = await spawnFn("git", ["rev-parse", "HEAD"], { cwd });
+    const newOid = (oidResult.exitCode ?? 1) === 0 ? oidResult.stdout.trim() : "";
+    const ledger = [...(synthesizedCommits ?? []), ...(newOid ? [newOid] : [])];
+    await verifyEgressLedger({ cwd, ledger, spawnFn });
+  } catch (err) {
+    stderrWrite(
+      `Warning: ${messageLabel} egress check failed for ${slug}: ${err instanceof Error ? err.message : String(err)}. ` +
+        `Skipping push to prevent unauthorized commit publication.`,
+    );
+    return;
+  }
+
+  // Push with one retry (best-effort — don't throw on failure).
   const push1 = await spawnFn("git", ["push", "origin", branch], { cwd });
   if ((push1.exitCode ?? 1) === 0) return;
 
@@ -602,11 +728,12 @@ export async function commitFinalState(params: {
  *   1. stagePaths empty → no-op (nothing to stage or commit).
  *   2. `git add -A -- <stagePaths...>` (pathspec-limited; also stages deletions for listed paths).
  *      If add fails (spawn error or exit≠0) → throws commitEffectFailedError("stage").
- *   3. `git diff --cached --quiet`:
- *      - exit 0 → no staged changes → no-op (nothing was changed in the declared paths).
+ *   3. `git diff --cached --quiet -- <stagePaths...>` (pathspec-limited):
+ *      - exit 0 → no staged changes in scope → no-op (nothing was changed in the declared paths).
  *      - exit 1 → staged changes → commit then push.
  *      - ≥2 or spawn failure → throws commitEffectFailedError("diff").
- *   4. `git commit -m <commitMessage>`: failure throws commitEffectFailedError("commit").
+ *   4. `git commit -m <commitMessage> -- <stagePaths...>` (pathspec-limited):
+ *      failure throws commitEffectFailedError("commit").
  *   5. `pushOnly` (one retry on failure, throws pushFailedError on double failure).
  *
  * @param stagePaths    - Worktree-relative paths to stage (must all be declared outputs).
@@ -614,6 +741,9 @@ export async function commitFinalState(params: {
  * @param branch        - Branch to push to.
  * @param commitMessage - Commit message (typically "<coordinator>: <slug>").
  * @param infra         - Commit/push infrastructure (spawnFn, sleepFn, events).
+ * @param egress        - Optional D4 egress check params. When provided, runs
+ *                        runInlineEgressCheck after commit and before push.
+ *                        synthesizedCommits: existing ledger from job state.
  */
 export async function commitScopedPaths(
   stagePaths: string[],
@@ -621,6 +751,7 @@ export async function commitScopedPaths(
   branch: string,
   commitMessage: string,
   infra: CommitPushInfra,
+  egress?: { synthesizedCommits: readonly string[] },
 ): Promise<void> {
   if (stagePaths.length === 0) return;
 
@@ -631,20 +762,29 @@ export async function commitScopedPaths(
     throw commitEffectFailedError(commitMessage, branch, "stage", `exit code ${addResult.exitCode}`);
   }
 
-  // Check if there are staged changes.
+  // Check if there are staged changes within the declared pathspec only.
   // exit 0 = no staged changes; exit 1 = staged changes present;
   // ≥2 (or spawn failure) = git error → throws typed error → halt path.
-  const diffResult = await gitExecResult(infra.spawnFn, cwd, ["diff", "--cached", "--quiet"]);
+  // Whole-index diff would report pre-staged unauthorized entries as changes.
+  const diffResult = await gitExecResult(infra.spawnFn, cwd, ["diff", "--cached", "--quiet", "--", ...stagePaths]);
   if (!diffResult.ok || diffResult.exitCode >= 2) {
     throw commitEffectFailedError(commitMessage, branch, "diff", `exit code ${diffResult.exitCode}`);
   }
   const hasChanges = diffResult.exitCode === 1;
   if (!hasChanges) return;
 
-  // Commit. Failure (spawn error or exit≠0) throws typed error → never falls through to push.
-  const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage]);
+  // Commit with explicit pathspec — a bare commit would sweep pre-staged unauthorized
+  // index entries into the round commit. Failure throws typed error → never falls
+  // through to push.
+  const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage, "--", ...stagePaths]);
   if (!commitResult.ok || commitResult.exitCode !== 0) {
     throw commitEffectFailedError(commitMessage, branch, "commit", `exit code ${commitResult.exitCode}`);
+  }
+
+  // D4 backstop: egress verification before push (when caller supplies egress params).
+  // Verifies publish range ⊆ synthesizedCommits ∪ current commit OID.
+  if (egress) {
+    await runInlineEgressCheck(infra.spawnFn, cwd, branch, egress.synthesizedCommits);
   }
 
   // Push with one retry (uses commitMessage as step label for the event)

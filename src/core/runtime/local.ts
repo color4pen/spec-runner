@@ -403,7 +403,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       // Commit change folder files as the first commit on the feature branch
       const gitCommitResult = await this.spawnFn(
         "git",
-        ["commit", "-m", `add request.md for ${slug}`],
+        ["commit", "-m", `add request.md for ${slug}`, "--", changeFolderPath(slug)],
         { cwd: this.cwd },
       );
       if (gitCommitResult.exitCode !== 0) {
@@ -676,7 +676,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    *
    * - awaiting-archive: messageLabel = "finalize" (commit "finalize: <slug>").
    * - awaiting-resume: messageLabel = "checkpoint" (commit "checkpoint: <slug>").
-   * - git add -A → commit → push origin <branch> (1 retry).
+   * - 管理パス（state.json / events.jsonl / usage.json / bite-evidence-result.md）のみを明示 pathspec で add → commit → push（1 retry）。
    * - Push failures warn on stderr but do not throw (local resume is preserved).
    */
   async commitFinalState(deps: PipelineDeps, state: JobState): Promise<void> {
@@ -684,7 +684,14 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     const branch = state.branch ?? "";
     const slug = deps.slug;
     const messageLabel = state.status === "awaiting-resume" ? "checkpoint" : "finalize";
-    await commitFinalState({ cwd, branch, slug, spawnFn: this.wrappedSpawnFn, messageLabel });
+    await commitFinalState({
+      cwd,
+      branch,
+      slug,
+      spawnFn: this.wrappedSpawnFn,
+      messageLabel,
+      synthesizedCommits: state.synthesizedCommits,
+    });
   }
 
   async verifyFindingRefs(refs: FindingRef[], cwd: string, _branch: string | null): Promise<FindingRef[]> {
@@ -816,10 +823,14 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     coordinatorName: string,
     slug: string,
     commitPushInfra: unknown,
+    egressParams?: unknown,
   ): Promise<void> {
     const infra = commitPushInfra as CommitPushInfra;
+    const egress = egressParams as
+      | { synthesizedCommits: readonly string[] }
+      | undefined;
     const commitMessage = `${coordinatorName}: ${slug}`;
-    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra);
+    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egress);
   }
 
   /**

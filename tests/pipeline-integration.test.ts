@@ -1398,19 +1398,27 @@ describe("TC-DC-108: dynamicContext omitted — backward compatibility", () => {
 // ---------------------------------------------------------------------------
 // TC-AGENT-COMMIT-INT-001: implementer self-commit → pipeline does not halt
 // Reproduces the finish-phase0-local-conflict-check scenario (issue #275):
-// - implementer agent self-commits (HEAD advances, no staged changes after)
-// - pipeline should NOT halt — executor detects HEAD advancement and pushes as-is
+// - implementer agent self-commits (HEAD advances)
+// - synthesis model: reset --mixed restores synthesis base, pipeline commits worktree changes
+// - pipeline should NOT halt — executor detects HEAD advancement, resets, then commits+pushes
 // - verification step runs after implementer completes
 // ---------------------------------------------------------------------------
 
 describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not halt, verification proceeds", () => {
   it("pipeline continues to verification when implementer self-commits and HEAD advances", async () => {
-    // Build a git SpawnFn that simulates the agent self-commit scenario:
-    // 1. rev-parse HEAD (before implementer runs) → "before-sha-abc"
-    // 2. git add -A → exit 0
-    // 3. git diff --cached --quiet → exit 0 (no staged, agent already committed)
-    // 4. rev-parse HEAD (inside commitAndPush) → "after-sha-def" (HEAD advanced!)
-    // 5. git push → exit 0
+    // Synthesis model flow for implementer self-commit:
+    // 1. rev-parse HEAD (executor, before implementer) → "before-sha" (headBeforeStep)
+    // 2. Agent runs, self-commits (HEAD advances)
+    // 3. rev-parse HEAD (commitAndPush, headAtEntry) → "after-sha" (advanced)
+    // 4. git reset --mixed "before-sha" → exit 0 (undo agent commit, preserve worktree)
+    // 5. git status → " M src/implementation.ts\0" (agent's changes now in worktree)
+    // 6. git add -A -- src/implementation.ts → exit 0
+    // 7. git diff --cached --quiet → exit 1 (staged changes present)
+    // 8. git commit → exit 0 (pipeline synthesizes its own commit)
+    // 9. rev-parse HEAD (egress check) → "after-sha"
+    // 10. git rev-list HEAD --not --remotes/origin "before-sha" → "" (anchor limits range)
+    // 11. git push → exit 0
+    // 12. Verification step: rev-parse → "after-sha", no HEAD advance, scoped → early return
 
     let revParseCallCount = 0;
     const gitCallLog: string[][] = [];
@@ -1423,14 +1431,21 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
       let stdout = "";
 
       if (subcommand === "rev-parse") {
-        // First call: HEAD before step; second call: HEAD after step (advanced)
-        stdout = revParseCallCount === 0 ? "abc123before000000000000000000000000000" : "def456after000000000000000000000000000";
+        // 1st call (executor headBeforeStep): before HEAD
+        // 2nd call (commitAndPush headAtEntry): after HEAD (agent advanced it)
+        // 3rd+ calls (egress check, verification executor, etc.): after HEAD
+        stdout = revParseCallCount === 0
+          ? "abc123before000000000000000000000000000"
+          : "def456after0000000000000000000000000000";
         revParseCallCount++;
+      } else if (subcommand === "status") {
+        // Post-reset worktree status: agent's changes are in worktree (guarded implementer)
+        stdout = " M src/implementation.ts\0";
       } else if (subcommand === "diff") {
-        // No staged changes (agent committed its own changes)
-        exitCode = 0;
+        // diff --cached --quiet: staged changes present after add (implementer)
+        exitCode = 1;
       }
-      // add, push, and all others exit 0
+      // reset, add, commit, push, rev-list, and all others exit 0
 
       const procEm = new EventEmitter();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -1522,13 +1537,17 @@ describe("TC-AGENT-COMMIT-INT-001: implementer self-commit — pipeline does not
     // Verification must have run (pipeline continued past implementer)
     expect(result.steps?.["verification"]).toBeDefined();
 
-    // Push was called (agent self-commit path)
+    // Push was called (synthesis model: reset + commit + push)
     const pushCalls = gitCallLog.filter((args) => args[0] === "push");
     expect(pushCalls.length).toBeGreaterThanOrEqual(1);
 
-    // Commit was NOT called by pipeline (push-only path)
+    // Reset was called (synthesis model: undo agent self-commit before pipeline commit)
+    const resetCalls = gitCallLog.filter((args) => args[0] === "reset");
+    expect(resetCalls.length).toBeGreaterThanOrEqual(1);
+
+    // Pipeline commit was called (synthesis model: pipeline synthesizes its own commit)
     const commitCalls = gitCallLog.filter((args) => args[0] === "commit");
-    expect(commitCalls.length).toBe(0);
+    expect(commitCalls.length).toBeGreaterThanOrEqual(1);
   });
 });
 

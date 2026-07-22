@@ -528,6 +528,8 @@ export interface RuntimeStrategy {
     coordinatorName: string,
     slug: string,
     commitPushInfra: unknown,
+    /** D4 egress backstop params (typed unknown at port level). LocalRuntime casts to concrete type. */
+    egressParams?: unknown,
   ): Promise<void>;
 
   /**
@@ -734,6 +736,7 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
     coordinatorName: string,
     slug: string,
     commitPushInfra: unknown,
+    egressParams?: unknown,
   ): Promise<void>;
   listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
   diffPathsBetweenCommits(baseOid: string, headOid: string, paths: string[], cwd: string): Promise<ChangedFilesResult>;

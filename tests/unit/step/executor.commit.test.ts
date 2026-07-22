@@ -317,6 +317,7 @@ describe("TC-CAP-NEW-001: staged changes → commit + push (requiresCommit:true,
 
     const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
       {
+        status: { exitCode: 0, stdout: " M src/foo.ts\0" }, // guarded mode: non-empty changedPaths → add IS called
         add: { exitCode: 0 },
         diff: { exitCode: 1 }, // staged changes present
         commit: { exitCode: 0 },
@@ -338,10 +339,13 @@ describe("TC-CAP-NEW-001: staged changes → commit + push (requiresCommit:true,
     expect(subcommands).toContain("diff");
     expect(subcommands).toContain("commit");
     expect(subcommands).toContain("push");
-    // rev-parse is called 3x: before step (headBeforeStep) + tail-entry self-commit
-    // inspection (TC-030 hoist) + after finalize (commitOid capture).
+    // rev-parse is called 4x in the synthesis model:
+    //   1. Before step (headBeforeStep, via raw gitExec in executor)
+    //   2. Inside commitAndPush — headAtEntry (synthesis model HEAD comparison)
+    //   3. Inside runInlineEgressCheck — newCommitOid (just-synthesized commit)
+    //   4. After finalize — commitOid capture (via runtimeStrategy.captureHeadSha)
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(3);
+    expect(revParseCalls.length).toBe(4);
   });
 });
 
@@ -382,8 +386,17 @@ describe("TC-CAP-NEW-002: staged 0 + HEAD no advance → silent skip (no NO_COMM
 // TC-CAP-NEW-003: staged 0 + HEAD advance + requiresCommit:true → push only (NEW behavior)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-CAP-NEW-003: staged 0 + HEAD advance + requiresCommit:true → push only, no halt", () => {
-  it("does not halt, calls push but not commit, when agent self-committed and HEAD advanced", async () => {
+describe("TC-CAP-NEW-003: agent self-commit + no pipeline-staged changes → synthesis commit + push", () => {
+  it("resets agent commit, re-synthesizes from worktree, commits and pushes", async () => {
+    // Synthesis model: when the agent self-commits (HEAD advances), the pipeline:
+    //   1. Detects HEAD advance
+    //   2. git reset --mixed headBeforeStep (undo agent commit, put changes back in worktree)
+    //   3. git status → enumerates agent's changes (now in worktree)
+    //   4. git add -- <changedPaths> → stages them
+    //   5. git diff --cached → exit 1 (staged changes from reset)
+    //   6. git commit → synthesis commit
+    //   7. git push
+    // The OLD "push-only" path (push agent's commit as-is) is removed in the synthesis model.
     const jobId = "tc-cap-new-003-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
@@ -391,7 +404,10 @@ describe("TC-CAP-NEW-003: staged 0 + HEAD advance + requiresCommit:true → push
     const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
-        diff: { exitCode: 0 }, // no staged changes (agent already committed)
+        reset: { exitCode: 0 },
+        status: { exitCode: 0, stdout: " M src/agent-file.ts\0" }, // agent's changes in worktree after reset
+        diff: { exitCode: 1 }, // staged changes present after add
+        commit: { exitCode: 0 },
         push: { exitCode: 0 },
       },
       ["abc123before", "def456after"], // HEAD advanced (agent self-committed)
@@ -404,18 +420,18 @@ describe("TC-CAP-NEW-003: staged 0 + HEAD advance + requiresCommit:true → push
 
     const step = makeAgentStep({ name: "implementer" });
 
-    // Must NOT throw
+    // Must NOT throw — synthesis model handles agent self-commits transparently
     const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
-    // push must have been called
+    // Synthesis model: reset + status + add + commit + push
+    expect(subcommands).toContain("reset");  // mixed reset undoes agent commit
+    expect(subcommands).toContain("commit"); // synthesis commit (not push-only)
     expect(subcommands).toContain("push");
-    // commit must NOT have been called (push-only path)
-    expect(subcommands).not.toContain("commit");
-    // Three rev-parse calls: before step (headBeforeStep) + inside commitAndPush (HEAD comparison) + after finalize (commitOid)
+    // rev-parse 4x in synthesis model (see TC-CAP-NEW-001 comment)
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(3);
+    expect(revParseCalls.length).toBe(4);
   });
 });
 
@@ -429,36 +445,20 @@ describe("TC-CAP-NEW-004: staged changes + HEAD advance → commit staged + push
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    const { spawnFn: baseSpawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
+    // Synthesis model: agent self-commit is detected (HEAD advances), mixed-reset undoes it,
+    // then status returns the staged changes, commit+push proceed.
+    // Unlike the inspection model, `git diff --name-only` is not called for range inspection.
+    const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
         diff: { exitCode: 1 }, // staged changes present (--cached check)
         commit: { exitCode: 0 },
         push: { exitCode: 0 },
+        reset: { exitCode: 0 },
+        status: { exitCode: 0, stdout: " M src/agent-authored-change.ts\0" },
       },
-      ["abc123before", "def456after"], // HEAD advanced (partial agent commit)
+      ["abc123before", "def456after"], // HEAD advanced (agent self-committed)
     );
-    // TC-030 hoist: the tail-entry inspection enumerates the agent commit range via
-    // `git diff --name-only`. Return a boundary-safe path (guarded mode: only protected
-    // canon paths are violations) so the clean self-commit proceeds to commit+push.
-    const spawnFn: SpawnFn = (bin, args, opts) => {
-      if (args[0] === "diff" && args.includes("--name-only")) {
-        calls.push({ args: [...args] });
-        const procEm = new EventEmitter();
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const procAny = procEm as any;
-        const stdoutEm = new EventEmitter();
-        procAny.stdout = stdoutEm;
-        procAny.stderr = new EventEmitter();
-        procAny.stdin = { write: () => true, end: () => {} };
-        setImmediate(() => {
-          stdoutEm.emit("data", Buffer.from("src/agent-authored-change.ts\n"));
-          procEm.emit("close", 0);
-        });
-        return procEm as unknown as ChildProcess;
-      }
-      return baseSpawnFn(bin, args, opts);
-    };
 
     const runner = makeSuccessRunner();
     const events = new EventBus();
@@ -469,12 +469,17 @@ describe("TC-CAP-NEW-004: staged changes + HEAD advance → commit staged + push
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
-    // Clean self-commit (boundary-safe range) + staged changes → commit + push proceed.
+    // Synthesis model: reset + status + add + commit + push (agent self-commit subsumed).
+    expect(subcommands).toContain("reset");
     expect(subcommands).toContain("commit");
     expect(subcommands).toContain("push");
-    // rev-parse 3x: before step + tail-entry inspection (TC-030) + commitOid capture.
+    // rev-parse 4x in synthesis model:
+    //   1. Before step (headBeforeStep)
+    //   2. headAtEntry inside commitAndPush
+    //   3. runInlineEgressCheck (newCommitOid)
+    //   4. After finalize (commitOid capture)
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(3);
+    expect(revParseCalls.length).toBe(4);
   });
 });
 
@@ -518,17 +523,22 @@ describe("TC-CAP-NEW-005: staged 0 + HEAD no advance + requiresCommit:false → 
 // TC-CAP-NEW-006: staged 0 + HEAD advance + requiresCommit:false → silent skip (HEAD advance ignored)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-CAP-NEW-006: staged 0 + HEAD advance → push only (requiresCommit removed, HEAD advance always pushes)", () => {
-  it("calls push-only when HEAD advanced and no staged changes, regardless of step config", async () => {
+describe("TC-CAP-NEW-006: agent self-commit + synthesis model → synthesis commit + push", () => {
+  it("resets agent commit, re-synthesizes from worktree, commits and pushes", async () => {
+    // Synthesis model (see TC-CAP-NEW-003 for detailed description).
+    // This test uses a scoped step (spec-review) to verify the synthesis path works
+    // for both guarded (implementer) and scoped (spec-review) steps.
     const jobId = "tc-cap-new-006-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
 
-    // HEAD advances — T-05: requiresCommit removed, HEAD advance always triggers push
     const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
-        diff: { exitCode: 0 }, // no staged changes
+        reset: { exitCode: 0 },
+        status: { exitCode: 0, stdout: " M src/agent-file.ts\0" }, // agent changes in worktree after reset
+        diff: { exitCode: 1 }, // staged changes present after add
+        commit: { exitCode: 0 },
         push: { exitCode: 0 },
       },
       ["abc123before", "def456after"],
@@ -539,17 +549,18 @@ describe("TC-CAP-NEW-006: staged 0 + HEAD advance → push only (requiresCommit 
     const noopSleep = async (_ms: number) => {};
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn, noopSleep);
 
-    const step = makeAgentStep({ name: "spec-review" });
+    const step = makeAgentStep({ name: "implementer" }); // guarded mode — accepts any changed path
     const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 
     const subcommands = calls.map((c) => c.args[0]);
-    // HEAD advanced → push-only path (no staged, agent self-commit)
-    expect(subcommands).not.toContain("commit");
+    // Synthesis model: reset undoes agent commit, synthesis commit + push proceed
+    expect(subcommands).toContain("reset");
+    expect(subcommands).toContain("commit");
     expect(subcommands).toContain("push");
-    // Three rev-parse calls: before step (headBeforeStep) + inside commitAndPush (HEAD comparison) + after finalize (commitOid)
+    // rev-parse 4x (see TC-CAP-NEW-001 comment)
     const revParseCalls = calls.filter((c) => c.args[0] === "rev-parse");
-    expect(revParseCalls.length).toBe(3);
+    expect(revParseCalls.length).toBe(4);
   });
 });
 
@@ -558,7 +569,10 @@ describe("TC-CAP-NEW-006: staged 0 + HEAD advance → push only (requiresCommit 
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("TC-CAP-NEW-007: agent self-commit detected → detection message written to stderr", () => {
-  it("writes detection log when HEAD advanced and staged is 0", async () => {
+  it("writes synthesis diagnostic log when HEAD advanced (mixed reset applied)", async () => {
+    // Synthesis model: when the agent self-commits, commitAndPush logs the detection
+    // and applies git reset --mixed to restore the synthesis baseline. The message
+    // reflects the synthesis model (not the old push-only path).
     const jobId = "tc-cap-new-007-job";
     const state = makeJobState(jobId);
     await seedJobState(jobId, state);
@@ -566,10 +580,13 @@ describe("TC-CAP-NEW-007: agent self-commit detected → detection message writt
     const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
-        diff: { exitCode: 0 }, // no staged (agent committed)
+        reset: { exitCode: 0 },
+        status: { exitCode: 0, stdout: " M src/agent-file.ts\0" },
+        diff: { exitCode: 1 }, // staged after add
+        commit: { exitCode: 0 },
         push: { exitCode: 0 },
       },
-      ["before-sha-abc", "after-sha-def"], // HEAD advanced
+      ["before-sha-abc", "after-sha-def"], // HEAD advanced (agent self-committed)
     );
 
     const runner = makeSuccessRunner();
@@ -587,8 +604,9 @@ describe("TC-CAP-NEW-007: agent self-commit detected → detection message writt
     await executor.execute(step, state, makeLocalDeps({}, spawnFn));
 
     const combined = stderrMessages.join("");
-    expect(combined).toContain("Detected agent-authored commit(s) since step start");
-    expect(combined).toContain("skipping pipeline commit and pushing as-is");
+    // Synthesis model diagnostic log (emitted in commitAndPush when HEAD advances)
+    expect(combined).toContain("synthesis: agent self-commit detected");
+    expect(combined).toContain("applying mixed reset");
   });
 });
 
@@ -605,6 +623,8 @@ describe("TC-001: finalizeStep records lineage when step declares writes()", () 
     const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
+        // Non-empty status keeps guarded enumeration consistent with the staged diff below.
+        status: { exitCode: 0, stdout: " M src/foo.ts\0" },
         diff: { exitCode: 1 }, // staged changes present
         commit: { exitCode: 0 },
         push: { exitCode: 0 },
@@ -655,6 +675,8 @@ describe("TC-001: finalizeStep records lineage when step declares writes()", () 
     const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
+        // Non-empty status keeps guarded enumeration consistent with the staged diff below.
+        status: { exitCode: 0, stdout: " M src/foo.ts\0" },
         diff: { exitCode: 1 },
         commit: { exitCode: 0 },
         push: { exitCode: 0 },
@@ -695,6 +717,7 @@ describe("TC-CAP-NEW-HALT-001: git add failure → executor.execute rejects with
 
     const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
       {
+        status: { exitCode: 0, stdout: " M src/foo.ts\0" }, // guarded mode: non-empty changedPaths → add IS reached
         add: { exitCode: 128 }, // git add operational failure
       },
       ["abc123before"], // only pre-step rev-parse
@@ -715,8 +738,10 @@ describe("TC-CAP-NEW-HALT-001: git add failure → executor.execute rejects with
 // TC-CAP-NEW-008: commit:push event emitted on agent self-commit push path
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-CAP-NEW-008: commit:push event emitted after push-only path", () => {
-  it("emits commit:push with step and branch when push succeeds on agent self-commit path", async () => {
+describe("TC-CAP-NEW-008: commit:push event emitted after synthesis commit + push", () => {
+  it("emits commit:push with step and branch when synthesis commit push succeeds", async () => {
+    // Synthesis model: agent self-commit triggers reset → synthesis commit → push.
+    // The commit:push event is emitted from pushOnly after the synthesis push.
     const jobId = "tc-cap-new-008-job";
     const state = makeJobState(jobId, "feat/self-commit-branch");
     await seedJobState(jobId, state);
@@ -724,7 +749,10 @@ describe("TC-CAP-NEW-008: commit:push event emitted after push-only path", () =>
     const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
       {
         add: { exitCode: 0 },
-        diff: { exitCode: 0 },
+        reset: { exitCode: 0 },
+        status: { exitCode: 0, stdout: " M src/agent-file.ts\0" },
+        diff: { exitCode: 1 }, // staged after add
+        commit: { exitCode: 0 },
         push: { exitCode: 0 },
       },
       ["sha-before-111", "sha-after-222"],

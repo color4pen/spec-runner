@@ -490,6 +490,18 @@ export interface JobState {
    * Optional for backward compat — absent in legacy state files is valid.
    */
   biteEvidence?: BiteEvidenceRecord[];
+  /**
+   * Append-only ledger of commit OIDs synthesized by the pipeline.
+   *
+   * Populated by `appendSynthesizedCommit` at each point where the pipeline constructs
+   * a git commit (sequential step commits, round commits, verification commits). Used by
+   * the egress backstop (`verifyEgressLedger`) to verify that every commit in the push
+   * range was created by the pipeline — not by an agent self-commit that bypassed synthesis.
+   *
+   * Absent in legacy state files — treated as an empty set (no restriction imposed).
+   * Optional for backward compat — absent in legacy state is valid.
+   */
+  synthesizedCommits?: string[];
 }
 
 /**

@@ -282,6 +282,11 @@ export async function runArchiveOrchestrator(
       stderrWrite(`Warning: failed to delete draft folder for ${slug}. Remove manually if needed.`);
     }
 
+    // Pathspecs staged for the archive commit. commitArchive limits both its staging
+    // detection and the commit itself to this list — the archive commit is merged into
+    // the base branch and must never sweep in unrelated pre-staged index entries.
+    const archivePathspecs: string[] = [];
+
     // Stage the draft deletion only if the drafts directory exists in the worktree.
     // Skipping when absent avoids `fatal: pathspec 'specrunner/drafts' did not match any files`
     // warnings in repos that have never created a draft (T-05: symptom 4).
@@ -291,6 +296,8 @@ export async function runArchiveOrchestrator(
       const draftAddResult = await spawn("git", ["add", draftsDir()], { cwd: recordDir });
       if (draftAddResult.exitCode !== 0) {
         stderrWrite(`Warning: git add ${draftsDir()}/ failed: ${draftAddResult.stderr.trim()}. Continuing.`);
+      } else {
+        archivePathspecs.push(draftsDir());
       }
     }
 
@@ -298,6 +305,8 @@ export async function runArchiveOrchestrator(
     const addResult = await spawn("git", ["add", "specrunner/changes/"], { cwd: recordDir });
     if (addResult.exitCode !== 0) {
       stderrWrite(`Warning: git add specrunner/changes/ failed: ${addResult.stderr.trim()}. Continuing.`);
+    } else {
+      archivePathspecs.push("specrunner/changes/");
     }
 
     // Design-layer topic emission: emit design-level findings as topic files.
@@ -329,9 +338,14 @@ export async function runArchiveOrchestrator(
     if (markResult.status === "unknown-slug") {
       stderrWrite(`Warning: design-layer mark implemented: slug '${slug}' is not managed by aozu. Skipping state transition.`);
     }
+    if (markResult.status === "marked") {
+      // mark-hook staged aozu's writes via `git add -A -- design` (its success implies
+      // the pathspec matched, so the commit pathspec below cannot fail on it).
+      archivePathspecs.push("design");
+    }
 
-    // Commit staged changes
-    const commitResult = await commitArchive({ slug, cwd: recordDir, spawn });
+    // Commit staged changes (pathspec-limited to what was staged above)
+    const commitResult = await commitArchive({ slug, cwd: recordDir, spawn, pathspecs: archivePathspecs });
     if (!commitResult.ok) {
       return { exitCode: 1, escalation: commitResult.escalation };
     }

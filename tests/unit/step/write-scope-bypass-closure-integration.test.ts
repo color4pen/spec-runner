@@ -205,6 +205,15 @@ function git(args: string[], cwd: string): void {
   }
 }
 
+/** Read all commit OIDs reachable from HEAD (baseline ledger seed for remote-less repos) */
+function revList(cwd: string): string[] {
+  const result = spawnSync("git", ["rev-list", "HEAD"], { cwd, encoding: "utf-8" });
+  if (result.status !== 0) {
+    throw new Error(`git rev-list HEAD failed:\n${result.stderr}`);
+  }
+  return result.stdout.split("\n").map((s) => s.trim()).filter(Boolean);
+}
+
 /** Read HEAD sha synchronously */
 function headSha(cwd: string): string {
   const result = spawnSync("git", ["rev-parse", "HEAD"], { cwd, encoding: "utf-8" });
@@ -281,6 +290,9 @@ describe("TC-023: 実 git — 経路1: 事前 stage した許可外ファイル�
   it("scoped commit does NOT include pre-staged unauthorized file src/secret.ts", async () => {
     const spawnFn = makeRealGitNoPushSpawnFn();
 
+    // Capture HEAD before step (initial commit).
+    const headBeforeStep = headSha(gitDir);
+
     // Pre-stage unauthorized file (before pipeline step runs)
     const srcDir = path.join(gitDir, "src");
     await fs.mkdir(srcDir, { recursive: true });
@@ -298,9 +310,12 @@ describe("TC-023: 実 git — 経路1: 事前 stage した許可外ファイル�
     const deps = makeDeps(slug, gitDir);
     const infra = makeCommitPushInfra(spawnFn);
 
-    // After T-04: scoped commit uses pathspec → src/secret.ts excluded
-    // Before T-04: commit has no pathspec → src/secret.ts included (BUG)
-    await commitAndPush(step, makeJobState(), deps, null, infra);
+    // After T-04: scoped commit uses pathspec → src/secret.ts excluded from commit
+    // Egress: the publish range is strict (no entry-HEAD narrowing — resume would let an
+    // agent commit become the entry HEAD). This remote-less repo therefore seeds the
+    // ledger with the baseline OIDs, mirroring production where baseline is on origin.
+    const state = { ...makeJobState(), synthesizedCommits: revList(gitDir) };
+    await commitAndPush(step, state, deps, headBeforeStep, infra);
 
     const committed = commitFiles(gitDir);
     expect(

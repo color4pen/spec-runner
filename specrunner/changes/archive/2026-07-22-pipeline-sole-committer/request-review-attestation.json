@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:3122ca495dac7b813bd2c740d4e92d4f9d9e0e6b313fb92036f77b9ca1de84aa",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/commit-push.ts:498 — guarded mode staging is bare git add -A (no pathspec)",
+    "src/core/step/commit-push.ts:561 — commitFinalState staging is bare git add -A",
+    "src/core/step/commit-push.ts:242 — push-as-is path when agent self-committed with no staged changes",
+    "src/core/step/commit-push.ts:267 — pushOnly after pipeline commit (section 3: staged changes path)",
+    "src/core/pipeline/parallel-review-round.ts — no HEAD guard before/after fan-out; listWorktreeChanges (worktree only) is the only inspection",
+    "src/core/step/commit-orchestrator.ts:464 — commitRound is the single writer for parallel round commits",
+    "src/util/paths.ts:75 — biteEvidenceResultPath function exists",
+    "src/core/step/commit-push.ts:421-425 — scoped residual git status failure is silently skipped (best-effort)",
+    "src/core/step/commit-push.ts:440-441,492-493 — git clean/checkout restore failures are silently ignored (best-effort)"
+  ],
+  "sourceRevision": "37d51c70d7ef303e01cc36edff1aba72b8f39195"
+}

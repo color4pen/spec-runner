@@ -308,7 +308,8 @@ describe("TC-010: fake が書いた state ファイルが archive コミット�
       expect(markResult.status).toBe("marked");
 
       // Call the real commitArchive to create the actual git commit.
-      const commitResult = await realCommitArchive({ slug: "my-slug", cwd: tmpDir, spawn: fakeSpawn });
+      // pathspecs: ["design"] mirrors the orchestrator's markResult.status === "marked" branch.
+      const commitResult = await realCommitArchive({ slug: "my-slug", cwd: tmpDir, spawn: fakeSpawn, pathspecs: ["design"] });
       expect(commitResult.ok).toBe(true);
       if (commitResult.ok) {
         expect(commitResult.skipped).toBe(false);

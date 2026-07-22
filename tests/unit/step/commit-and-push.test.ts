@@ -286,18 +286,24 @@ function makePushSequenceSpawnFn(
 
 /**
  * Build a SpawnFn that simulates a spawn failure (ChildProcess error event) for
- * the specified git subcommand. All other commands default to exit 0 (success).
+ * the specified git subcommand. All other commands default to exit 0 (success),
+ * unless overridden via `responses`.
  *
  * When the targeted subcommand is spawned, the returned ChildProcess emits an
  * `error` event instead of a `close` event. This causes `runSubprocess` in
  * git-exec.ts to reject, which `gitExecResult` catches and converts to
  * `{ ok: false, exitCode: -1 }` — the !addResult.ok branch in commitAndPush.
+ *
+ * @param opts.errorOnSubcommand - Subcommand that should emit a spawn error event.
+ * @param opts.responses         - Exit codes/stdout for specific non-error subcommands.
+ *                                 Defaults to exit 0 with empty stdout for unlisted ones.
  */
 function makeGitSpawnFnWithSpawnError(opts: {
   errorOnSubcommand: string;
+  responses?: Record<string, { exitCode: number; stdout?: string }>;
 }): { spawnFn: SpawnFn; calls: GitCallRecord[] } {
   const calls: GitCallRecord[] = [];
-  const { errorOnSubcommand } = opts;
+  const { errorOnSubcommand, responses = {} } = opts;
 
   const spawnFn: SpawnFn = (_bin: string, args: string[], _opts: SpawnOptions): ChildProcess => {
     calls.push({ args: [...args] });
@@ -306,7 +312,8 @@ function makeGitSpawnFnWithSpawnError(opts: {
     const procEm = new EventEmitter();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const procAny = procEm as any;
-    procAny.stdout = new EventEmitter();
+    const stdoutEm = new EventEmitter();
+    procAny.stdout = stdoutEm;
     procAny.stderr = new EventEmitter();
     procAny.stdin = { write: () => true, end: () => {} };
 
@@ -316,8 +323,12 @@ function makeGitSpawnFnWithSpawnError(opts: {
         procEm.emit("error", new Error(`Simulated spawn failure for git ${subcommand}`));
       });
     } else {
-      // All other commands succeed
-      setImmediate(() => { procEm.emit("close", 0); });
+      // All other commands use the responses map or succeed with exit 0
+      const response = responses[subcommand] ?? { exitCode: 0, stdout: "" };
+      setImmediate(() => {
+        if (response.stdout) stdoutEm.emit("data", Buffer.from(response.stdout));
+        procEm.emit("close", response.exitCode);
+      });
     }
 
     return procEm as unknown as ChildProcess;
@@ -338,6 +349,9 @@ describe("TC-CAP-001: commitAndPush — correct git call sequence", () => {
 
     const { spawnFn, calls } = makeGitSpawnFn({
       responses: {
+        // git status returns a changed file so changedPaths is non-empty (triggers add).
+        // Without a non-empty status, guarded mode skips add when changedPaths=[] (Finding 3).
+        "status": { exitCode: 0, stdout: " M src/foo.ts\0" },
         // git add exits 0
         "add": { exitCode: 0 },
         // git diff --cached --quiet exits 1 (staged changes present)
@@ -456,6 +470,9 @@ describe("TC-CAP-004: push failure → retry once → success on second push", (
     const { spawnFn: baseFn } = makeGitSpawnFn({
       responses: {
         "add": { exitCode: 0 },
+        // git status returns a changed file so guarded enumeration is non-empty (consistent
+        // with the staged-changes diff below; empty enumeration + staged diff is fail-closed).
+        "status": { exitCode: 0, stdout: " M src/foo.ts\0" },
         "diff": { exitCode: 1 }, // staged changes
         "commit": { exitCode: 0 },
       },
@@ -496,6 +513,9 @@ describe("TC-CAP-005: push failure → retry → second failure → PUSH_FAILED"
     const { spawnFn: baseFn } = makeGitSpawnFn({
       responses: {
         "add": { exitCode: 0 },
+        // git status returns a changed file so guarded enumeration is non-empty (consistent
+        // with the staged-changes diff below; empty enumeration + staged diff is fail-closed).
+        "status": { exitCode: 0, stdout: " M src/foo.ts\0" },
         "diff": { exitCode: 1 },
         "commit": { exitCode: 0 },
       },
@@ -538,6 +558,8 @@ describe("TC-CAP-006: commit message format", () => {
     const { spawnFn, calls } = makeGitSpawnFn({
       responses: {
         "add": { exitCode: 0 },
+        // Non-empty status keeps guarded enumeration consistent with the staged diff below.
+        "status": { exitCode: 0, stdout: " M src/foo.ts\0" },
         "diff": { exitCode: 1 },
         "commit": { exitCode: 0 },
         "push": { exitCode: 0 },
@@ -577,6 +599,8 @@ describe("TC-CAP-007: successful push emits commit:push event", () => {
     const { spawnFn } = makeGitSpawnFn({
       responses: {
         "add": { exitCode: 0 },
+        // Non-empty status keeps guarded enumeration consistent with the staged diff below.
+        "status": { exitCode: 0, stdout: " M src/foo.ts\0" },
         "diff": { exitCode: 1 },
         "commit": { exitCode: 0 },
         "push": { exitCode: 0 },
@@ -615,6 +639,9 @@ describe("TC-CAP-008: git add failure → COMMIT_AND_PUSH_FAILED halt", () => {
 
     const { spawnFn, calls } = makeGitSpawnFn({
       responses: {
+        // Provide a non-empty status so changedPaths is non-empty and add IS called.
+        // Without this, guarded mode skips add when changedPaths=[] (Finding 3 fix).
+        "status": { exitCode: 0, stdout: " M src/foo.ts\0" },
         "add": { exitCode: 128 }, // git operational failure
       },
     });
@@ -748,7 +775,12 @@ describe("TC-CAP-016: git add spawn failure (ChildProcess error event) → COMMI
     // Simulates spawn-level failure for `git add`:
     // ChildProcess emits error event → runSubprocess rejects →
     // gitExecResult returns {ok:false, exitCode:-1} → !addResult.ok branch throws.
-    const { spawnFn, calls } = makeGitSpawnFnWithSpawnError({ errorOnSubcommand: "add" });
+    // A non-empty status response ensures changedPaths is non-empty so add IS called
+    // (guarded mode skips add when changedPaths=[] after the Finding 3 fix).
+    const { spawnFn, calls } = makeGitSpawnFnWithSpawnError({
+      errorOnSubcommand: "add",
+      responses: { "status": { exitCode: 0, stdout: " M src/foo.ts\0" } },
+    });
 
     const runner = makeSuccessRunner();
     const events = new EventBus();

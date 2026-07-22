@@ -22,7 +22,7 @@ function makeSpawnSequence(results: Array<{ exitCode: number; stdout?: string; s
   return fn;
 }
 
-const BASE = { slug: "test-slug", cwd: "/repo" };
+const BASE = { slug: "test-slug", cwd: "/repo", pathspecs: ["specrunner/changes/"] };
 
 // TC-CA-001
 describe("TC-CA-001: staging あり → commit 成功", () => {
@@ -47,10 +47,23 @@ describe("TC-CA-001: staging あり → commit 成功", () => {
     expect(calls[0]![1]).toContain("--cached");
     expect(calls[0]![1]).toContain("--quiet");
 
-    // Second call: git commit with correct message
+    // Second call: git commit with correct message, pathspec-limited (never whole-index)
     expect(calls[1]![0]).toBe("git");
     expect(calls[1]![1]).toContain("commit");
     expect(calls[1]![1]).toContain("chore: archive test-slug");
+    expect(calls[1]![1]).toContain("--");
+    expect(calls[1]![1]).toContain("specrunner/changes/");
+  });
+
+  it("empty pathspecs → skip without any git call (never falls back to a bare commit)", async () => {
+    const spawn = makeSpawn(1);
+
+    const result = await commitArchive({ ...BASE, pathspecs: [], spawn });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.skipped).toBe(true);
+    expect((spawn as ReturnType<typeof vi.fn>).mock.calls).toHaveLength(0);
   });
 });
 

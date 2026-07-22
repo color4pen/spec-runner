@@ -9,7 +9,7 @@
  *   2. Detect undeclared file changes that trigger a round halt (offending).
  */
 
-import { slugStateJsonPath, slugEventsPath, usageJsonPath, changesDirRel, isCanonicalDocPath } from "../../util/paths.js";
+import { slugStateJsonPath, slugEventsPath, usageJsonPath, biteEvidenceResultPath, changesDirRel, isCanonicalDocPath } from "../../util/paths.js";
 
 /**
  * Filter out pipeline-managed change folder paths from a list of files.
@@ -93,11 +93,16 @@ export function excludePipelineManagedChangePaths(files: string[]): string[] {
  *   - scoped staging (toStage): excluded from the round commit to avoid capturing
  *     state/event/usage churn that is already committed by the pipeline's own seams.
  *
+ * Includes bite-evidence-result.md (#888 fix, T-02): the bite-evidence step writes this
+ * file, and a parallel round running next would detect it as an undeclared worktree change
+ * triggering a false-fire halt. Adding it here filters it from both the offending check
+ * (partitionRoundChanges) and the scoped commit pathspec (commitAndPush), fixing #888.
+ *
  * @param slug - The job slug.
  * @returns Array of pipeline-managed worktree-relative paths.
  */
 export function pipelineManagedPaths(slug: string): string[] {
-  return [slugStateJsonPath(slug), slugEventsPath(slug), usageJsonPath(slug)];
+  return [slugStateJsonPath(slug), slugEventsPath(slug), usageJsonPath(slug), biteEvidenceResultPath(slug)];
 }
 
 /**
