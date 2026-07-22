@@ -6,11 +6,11 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 0.4s | 0 |
-| 2 | typecheck | passed | 4.7s | 0 |
-| 3 | test | passed | 28.0s | 0 |
-| 4 | lint | passed | 5.4s | 0 |
-| 5 | changed-line-coverage | passed | 34.6s | 0 |
+| 1 | build | passed | 0.7s | 0 |
+| 2 | typecheck | passed | 6.5s | 0 |
+| 3 | test | passed | 36.5s | 0 |
+| 4 | lint | passed | 5.0s | 0 |
+| 5 | changed-line-coverage | passed | 35.7s | 0 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.26 MB
-ESM ⚡️ Build success in 73ms
+ESM ⚡️ Build success in 124ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -53,8 +53,8 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	202d
 
  Test Files  595 passed (595)
       Tests  8699 passed | 1 skipped (8700)
-   Start at  09:00:02
-   Duration  27.71s (transform 5.39s, setup 0ms, import 22.54s, tests 42.28s, environment 29ms)
+   Start at  09:32:15
+   Duration  36.11s (transform 8.13s, setup 0ms, import 26.83s, tests 68.06s, environment 30ms)
 
 
 $ vitest run
@@ -67,24 +67,24 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-O7BH4G/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-aqNEts/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-g8hKA8/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-17e4Z6/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
-Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
@@ -98,10 +98,6 @@ Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -131,6 +127,16 @@ Retrying worktree add: lock contention (attempt 2/3)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=old-feature (issue#50)
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -151,21 +157,15 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
 ERROR: file not found
 spawn ENOENT
+Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
-Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
@@ -183,6 +183,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (31 changed files checked, 26 skipped)
-  Skipped (not in coverage surface): specrunner/changes/request-review-evidence-counts/design.md, specrunner/changes/request-review-evidence-counts/events.jsonl, specrunner/changes/request-review-evidence-counts/request-review-attestation.json, specrunner/changes/request-review-evidence-counts/request-review-result-001.md, specrunner/changes/request-review-evidence-counts/request.md, specrunner/changes/request-review-evidence-counts/rules.md, specrunner/changes/request-review-evidence-counts/spec-review-result-001.md, specrunner/changes/request-review-evidence-counts/spec.md, specrunner/changes/request-review-evidence-counts/state.json, specrunner/changes/request-review-evidence-counts/tasks.md, specrunner/changes/request-review-evidence-counts/test-cases.md, specrunner/changes/request-review-evidence-counts/usage.json, src/core/port/__tests__/evidence-enforcement.test.ts, src/core/port/__tests__/report-result.test.ts, src/core/port/__tests__/request-review-evidence-parse.test.ts, src/core/port/__tests__/request-review-legacy-compat.test.ts, src/core/step/__tests__/report-tool-evidence-schema.test.ts, src/core/step/__tests__/request-review-step-completion-evidence.test.ts, src/core/step/__tests__/request-review-verdict-evidence.test.ts, src/prompts/__tests__/evidence-fragment-coverage.test.ts, src/prompts/__tests__/request-review-evidence-prompt.test.ts, tests/custom-reviewers-e2e.test.ts, tests/helpers/pipeline-mock-client.ts, tests/reviewer-activation-e2e.test.ts, tests/unit/core/port/report-result-findings.test.ts, tests/unit/core/port/report-result-observations.test.ts
+changed-line-coverage: passed (39 changed files checked, 34 skipped)
+  Skipped (not in coverage surface): specrunner/changes/request-review-evidence-counts/bite-evidence-result.md, specrunner/changes/request-review-evidence-counts/conformance-result-001.md, specrunner/changes/request-review-evidence-counts/cross-boundary-invariants-result-001.md, specrunner/changes/request-review-evidence-counts/cross-boundary-invariants-result-002.md, specrunner/changes/request-review-evidence-counts/design.md, specrunner/changes/request-review-evidence-counts/events.jsonl, specrunner/changes/request-review-evidence-counts/regression-gate-result-001.md, specrunner/changes/request-review-evidence-counts/regression-gate-result-002.md, specrunner/changes/request-review-evidence-counts/request-review-attestation.json, specrunner/changes/request-review-evidence-counts/request-review-result-001.md, specrunner/changes/request-review-evidence-counts/request.md, specrunner/changes/request-review-evidence-counts/review-feedback-001.md, specrunner/changes/request-review-evidence-counts/rules.md, specrunner/changes/request-review-evidence-counts/spec-review-result-001.md, specrunner/changes/request-review-evidence-counts/spec.md, specrunner/changes/request-review-evidence-counts/state.json, specrunner/changes/request-review-evidence-counts/tasks.md, specrunner/changes/request-review-evidence-counts/test-cases.md, specrunner/changes/request-review-evidence-counts/usage.json, specrunner/changes/request-review-evidence-counts/verification-result.md, src/core/port/__tests__/evidence-enforcement.test.ts, src/core/port/__tests__/report-result.test.ts, src/core/port/__tests__/request-review-evidence-parse.test.ts, src/core/port/__tests__/request-review-legacy-compat.test.ts, src/core/step/__tests__/report-tool-evidence-schema.test.ts, src/core/step/__tests__/request-review-step-completion-evidence.test.ts, src/core/step/__tests__/request-review-verdict-evidence.test.ts, src/prompts/__tests__/evidence-fragment-coverage.test.ts, src/prompts/__tests__/request-review-evidence-prompt.test.ts, tests/custom-reviewers-e2e.test.ts, tests/helpers/pipeline-mock-client.ts, tests/reviewer-activation-e2e.test.ts, tests/unit/core/port/report-result-findings.test.ts, tests/unit/core/port/report-result-observations.test.ts
 ```
