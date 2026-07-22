@@ -31,7 +31,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import type { SpawnOptions, ChildProcess } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { commitAndPush } from "../../../src/core/step/commit-push.js";
 import type { CommitPushInfra } from "../../../src/core/step/commit-push.js";
