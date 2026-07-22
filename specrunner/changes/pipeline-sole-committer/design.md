@@ -143,6 +143,10 @@ pipeline のみが書ける領域）。pipeline が commit を作成するたび
   push を経由する。egress context（台帳 + 現操作 OID）を渡す。
 - `--not --remotes=origin` は remote-tracking ref を基準に「今回新規公開する commit」を厳密に与える（初回 push
   では base branch commit を除外して feature branch の新規 commit のみ）。baseBranch 引数を必要としない。
+- 公開範囲を step の entry HEAD（`headBeforeStep`）で追加縮小してはならない。entry HEAD は step (再)entry ごとに
+  live で取り直されるため、crash → resume 後は crash 試行中の agent 自己 commit が entry HEAD になり、
+  entry-HEAD 除外はその commit を照合の盲点にする（resume 経路のバイパス）。remote を持たないテスト環境は
+  origin remote を用意するか baseline `rev-list HEAD` を台帳に seed して整合させる。
 
 **位置づけ**: agent 偽装への壁ではない（壁は D1 の mixed reset + 合成、D3 の HEAD guard reset）。合成漏れ・harness
 欠陥の backstop。operator の手 commit は operator 自身が手 push する現行運用のままとし、pipeline の公開範囲に

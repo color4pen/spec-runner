@@ -907,6 +907,11 @@ describe("TC-F1: AC-3 — test-materialize commit tree: *.test.ts ≥1, src/*.ts
     };
 
     const jobId = "tc-f1-real-git-job";
+    // Egress ledger seed: the publish range is strict (no entry-HEAD narrowing), so this
+    // remote-less repo seeds synthesizedCommits with the baseline OIDs, mirroring
+    // production where the baseline is already on origin.
+    const baselineOids = spawnSync("git", ["rev-list", "HEAD"], { cwd: gitDir, encoding: "utf-8" })
+      .stdout.split("\n").map((s: string) => s.trim()).filter(Boolean);
     const state: JobState = {
       version: 1,
       jobId,
@@ -921,6 +926,7 @@ describe("TC-F1: AC-3 — test-materialize commit tree: *.test.ts ≥1, src/*.ts
       history: [],
       error: null,
       steps: {},
+      synthesizedCommits: baselineOids,
     };
 
     const deps: PipelineDeps = {

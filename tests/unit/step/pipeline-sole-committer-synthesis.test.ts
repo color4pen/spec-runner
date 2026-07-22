@@ -861,3 +861,51 @@ describe("TC-033: 破壊確認 — push-as-is 経路の封鎖有効性", () => {
     ).toBe(true);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// egress 公開範囲は entry-HEAD で縮小しない（resume 経路の盲点防止）
+//
+// headBeforeStep は step (再)entry ごとに live rev-parse で取り直される。crash →
+// resume の後は crash した試行中の agent 自己 commit が entry HEAD になるため、
+// entry-HEAD を rev-list の除外 (--not の追加 ref) に使うと、その agent commit が
+// 公開範囲から外れて egress 照合の盲点になる。公開範囲は常に
+// `rev-list HEAD --not --remotes=origin` の厳密形でなければならない。
+//
+// DESTROY: runInlineEgressCheck が headBeforeStep を rev-list 引数に加える旧実装に
+// 戻すと本テストが fail する。
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("egress 公開範囲は entry-HEAD で縮小しない（resume 経路の盲点防止）", () => {
+  it("guarded 合成の egress rev-list 引数が厳密形で、headBeforeStep を含まない", async () => {
+    const headBeforeStep = "entry-head-abc123";
+
+    const { spawnFn, calls } = makeSeqGitSpawnFn([
+      { subcommand: "rev-parse", exitCode: 0, stdout: `${headBeforeStep}\n` },
+      { subcommand: "status", exitCode: 0, stdout: " M src/foo.ts\0" },
+      { subcommand: "add", exitCode: 0 },
+      { subcommand: "diff", exitCode: 1 },
+      { subcommand: "commit", exitCode: 0 },
+      { subcommand: "rev-list", exitCode: 0, stdout: "" },
+      { subcommand: "push", exitCode: 0 },
+    ]);
+
+    const step = makeGuardedStep();
+    const state = makeJobState("egress-strict-job");
+    const infra = makeInfra(spawnFn);
+
+    await commitAndPush(step, state, makeDeps(), headBeforeStep, infra);
+
+    const revListCalls = calls.filter((c) => c.args[0] === "rev-list");
+    expect(revListCalls.length, "egress rev-list must run").toBeGreaterThan(0);
+    for (const call of revListCalls) {
+      expect(
+        call.args,
+        "publish range must be the strict form (no entry-HEAD exclusion ref)",
+      ).toEqual(["rev-list", "HEAD", "--not", "--remotes=origin"]);
+      expect(
+        call.args,
+        "headBeforeStep must NOT narrow the publish range (resume blind-spot)",
+      ).not.toContain(headBeforeStep);
+    }
+  });
+});

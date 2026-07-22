@@ -296,33 +296,25 @@ export async function verifyEgressLedger(params: {
  * synthesizedCommits ledger from state, then enumerates the publish range to
  * ensure every OID is accounted for.
  *
- * Publish range is `git rev-list HEAD --not --remotes=origin [headBeforeStep]`:
- *   - `--not --remotes=origin` excludes commits already pushed to origin.
- *   - `headBeforeStep` (when provided) additionally excludes commits that
- *     pre-dated this step. This is important in test environments without a
- *     remote: without it, `rev-list` returns ALL commits in the repo (including
- *     the initial commit), which the ledger doesn't track.
- *   In production both guards are typically redundant (pre-step commits are on
- *   origin), but in tests only `headBeforeStep` gates pre-existing commits.
+ * Publish range is `git rev-list HEAD --not --remotes=origin` — everything a push
+ * would newly publish. The range is deliberately NOT narrowed by the step's entry
+ * HEAD: `headBeforeStep` is re-captured live at every step (re-)entry, so after a
+ * crash-and-resume an agent self-commit made in the crashed attempt becomes the
+ * new entry HEAD and any entry-HEAD-based exclusion would blind the check to it.
+ * Pre-existing legitimate commits are excluded because they are on origin
+ * (pipeline pushes after every synthesis; operator hand-commits are hand-pushed).
+ * Test environments must therefore either provide an origin remote or seed
+ * `state.synthesizedCommits` with the baseline `git rev-list HEAD` OIDs.
  *
  * Uses SpawnFn (git-exec.js child-process variant) matching the infra.spawnFn already in use.
  *
- * @param headBeforeStep - The HEAD OID before the step started. When non-null,
- *   commits reachable from this ref are excluded from the publish range (they
- *   pre-date the synthesis and are not the pipeline's responsibility).
- */
-/**
- * Inline egress verification after a pipeline-synthesized commit.
- *
  * @param synthesizedCommits - Existing synthesizedCommits ledger (from job state or caller-supplied).
- * @param headBeforeStep     - HEAD OID before the step started (excludes pre-existing commits in tests).
  */
 async function runInlineEgressCheck(
   spawnFn: SpawnFn,
   cwd: string,
   branch: string,
   synthesizedCommits: readonly string[],
-  headBeforeStep: string | null,
 ): Promise<void> {
   // Capture OID of the just-synthesized commit (may be "" in tests)
   const newCommitOid = (await gitExec(spawnFn, cwd, ["rev-parse", "HEAD"])) ?? "";
@@ -330,14 +322,8 @@ async function runInlineEgressCheck(
   // Build ledger: existing synthesizedCommits ∪ current-op OID (filter empty strings)
   const ledger = new Set<string>([...synthesizedCommits, newCommitOid].filter(Boolean));
 
-  // Enumerate publish range.
-  // All refs after `--not` are excluded from the range. Appending headBeforeStep
-  // (still under the same --not toggle) excludes pre-existing commits so that test
-  // environments without a remote don't trigger false egress failures.
+  // Enumerate publish range: all commits a push would newly publish.
   const revListArgs = ["rev-list", "HEAD", "--not", "--remotes=origin"];
-  if (headBeforeStep) {
-    revListArgs.push(headBeforeStep);
-  }
   const revListResult = await runSubprocess(spawnFn, "git", revListArgs, { cwd });
   if (revListResult.exitCode !== 0) {
     throw new SpecRunnerError(
@@ -487,7 +473,7 @@ export async function commitAndPush(
     }
 
     // Egress verification: publish range ⊆ synthesizedCommits ledger.
-    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? [], headBeforeStep);
+    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? []);
 
     // Push with one retry.
     await pushOnly(branch, cwd, step.name, infra);
@@ -555,7 +541,7 @@ export async function commitAndPush(
     }
 
     // Egress verification: publish range ⊆ synthesizedCommits ledger.
-    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? [], headBeforeStep);
+    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? []);
 
     // Push with one retry.
     await pushOnly(branch, cwd, step.name, infra);
@@ -705,7 +691,6 @@ export async function commitFinalState(params: {
  * @param egress        - Optional D4 egress check params. When provided, runs
  *                        runInlineEgressCheck after commit and before push.
  *                        synthesizedCommits: existing ledger from job state.
- *                        headBeforeStep: HEAD OID before the round started (for test safety).
  */
 export async function commitScopedPaths(
   stagePaths: string[],
@@ -713,7 +698,7 @@ export async function commitScopedPaths(
   branch: string,
   commitMessage: string,
   infra: CommitPushInfra,
-  egress?: { synthesizedCommits: readonly string[]; headBeforeStep: string | null },
+  egress?: { synthesizedCommits: readonly string[] },
 ): Promise<void> {
   if (stagePaths.length === 0) return;
 
@@ -746,7 +731,7 @@ export async function commitScopedPaths(
   // D4 backstop: egress verification before push (when caller supplies egress params).
   // Verifies publish range ⊆ synthesizedCommits ∪ current commit OID.
   if (egress) {
-    await runInlineEgressCheck(infra.spawnFn, cwd, branch, egress.synthesizedCommits, egress.headBeforeStep);
+    await runInlineEgressCheck(infra.spawnFn, cwd, branch, egress.synthesizedCommits);
   }
 
   // Push with one retry (uses commitMessage as step label for the event)
