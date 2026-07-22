@@ -1,0 +1,246 @@
+/**
+ * git-command-classifier.ts — permission-layer-git-write-denial
+ *
+ * Pure lexical classifier for git commands. Determines whether a shell command
+ * (or compound command) contains a git state-mutation operation.
+ *
+ * Leaf module: no imports from src/ — pure lexical analysis only (TC-010).
+ *
+ * Design D2 (permission-layer-git-write-denial):
+ *   - Splits on shell connectors (&&, ||, |, ;, &, newline) and classifies each segment.
+ *   - Skips leading VAR=value env var assignments.
+ *   - Skips git global options that take a separate value token
+ *     (-C, -c, --git-dir, --work-tree, --namespace, --exec-path) and the --opt=value form.
+ *   - Classifies subcommand against ALWAYS_MUTATING and CONDITIONAL lists.
+ *   - If any segment is a mutation → whole command is mutation.
+ *
+ * Residual (not detected): shell variable expansion, redirects, editor-mediated writes.
+ * These are caught by the commit layer (pipeline-sole-committer #893).
+ */
+
+/**
+ * Verdict returned by classifyGitCommand.
+ * - mutation: the command contains a git state-mutation operation.
+ * - read-or-nongit: the command is read-only git or not a git command.
+ */
+export type GitCommandVerdict =
+  | { kind: "mutation"; subcommand: string }
+  | { kind: "read-or-nongit" };
+
+/**
+ * Git subcommands that always perform state mutation.
+ */
+const ALWAYS_MUTATING = new Set([
+  "commit",
+  "push",
+  "add",
+  "reset",
+  "checkout",
+  "restore",
+  "clean",
+  "merge",
+  "rebase",
+  "cherry-pick",
+  "rm",
+  "mv",
+  "am",
+  "apply",
+  "update-ref",
+  "filter-branch",
+]);
+
+/**
+ * Git subcommands with conditional behavior (read or write depending on flags/args).
+ */
+const CONDITIONAL = new Set(["branch", "tag", "stash"]);
+
+/**
+ * Git global options that take a separate value argument (space-separated form).
+ * e.g., git -C /path commit  →  skip "-C" and "/path" to reach "commit".
+ */
+const GLOBAL_OPTS_WITH_VALUE = new Set([
+  "-C",
+  "-c",
+  "--git-dir",
+  "--work-tree",
+  "--namespace",
+  "--exec-path",
+]);
+
+/**
+ * Split a compound shell command into individual segments on shell connectors.
+ * Connectors: &&, ||, |, ;, &, newline.
+ */
+function splitSegments(command: string): string[] {
+  return command.split(/&&|\|\||[|;&\n]/).map((s) => s.trim()).filter((s) => s.length > 0);
+}
+
+/**
+ * Naive whitespace tokenization (no quote handling beyond outer-quote stripping).
+ */
+function tokenize(segment: string): string[] {
+  return segment.trim().split(/\s+/).filter((t) => t.length > 0);
+}
+
+/**
+ * Strip surrounding single or double quotes from a token.
+ */
+function stripQuotes(token: string): string {
+  if (
+    (token.startsWith('"') && token.endsWith('"')) ||
+    (token.startsWith("'") && token.endsWith("'"))
+  ) {
+    return token.slice(1, -1);
+  }
+  return token;
+}
+
+/**
+ * Returns true if the token looks like a shell environment variable assignment (VAR=value).
+ */
+function isEnvAssignment(token: string): boolean {
+  return /^[A-Za-z_][A-Za-z0-9_]*=/.test(token);
+}
+
+/**
+ * Returns the basename (last path component after '/') of a string.
+ */
+function basename(p: string): string {
+  const idx = p.lastIndexOf("/");
+  return idx >= 0 ? p.slice(idx + 1) : p;
+}
+
+/**
+ * Classify CONDITIONAL subcommands (branch, tag, stash) based on their trailing arguments.
+ */
+function classifyConditional(subcommand: string, remainingArgs: string[]): GitCommandVerdict {
+  if (subcommand === "branch") {
+    // No args → list → read
+    if (remainingArgs.length === 0) return { kind: "read-or-nongit" };
+
+    // --list / -l → read (unless combined with a mutation flag like -D/-m)
+    if (remainingArgs.some((a) => a === "--list" || a === "-l")) {
+      if (remainingArgs.some((a) => ["-D", "-d", "-m", "-M", "-c", "-C", "-u"].includes(a))) {
+        return { kind: "mutation", subcommand };
+      }
+      return { kind: "read-or-nongit" };
+    }
+
+    // Deletion / move / rename flags → mutation
+    if (remainingArgs.some((a) => ["-D", "-d", "-m", "-M", "-c", "-C", "-u"].includes(a))) {
+      return { kind: "mutation", subcommand };
+    }
+
+    // Positional argument (branch name) → create → mutation
+    if (remainingArgs.some((a) => !a.startsWith("-"))) {
+      return { kind: "mutation", subcommand };
+    }
+
+    return { kind: "read-or-nongit" };
+  }
+
+  if (subcommand === "tag") {
+    // No args → list → read
+    if (remainingArgs.length === 0) return { kind: "read-or-nongit" };
+    // -l / --list → read
+    if (remainingArgs.some((a) => a === "-l" || a === "--list")) {
+      return { kind: "read-or-nongit" };
+    }
+    // Any flag (-a, -d, -f …) or positional arg (tag name) → mutation
+    return { kind: "mutation", subcommand };
+  }
+
+  if (subcommand === "stash") {
+    // Bare `git stash` → push (mutation)
+    if (remainingArgs.length === 0) return { kind: "mutation", subcommand };
+    const action = remainingArgs[0];
+    // list / show → read
+    if (action === "list" || action === "show") return { kind: "read-or-nongit" };
+    // pop, drop, push, apply, branch, clear … → mutation
+    return { kind: "mutation", subcommand };
+  }
+
+  return { kind: "read-or-nongit" };
+}
+
+/**
+ * Classify a single shell segment as mutation or read/non-git.
+ */
+function classifySegment(segment: string): GitCommandVerdict {
+  const tokens = tokenize(segment);
+  if (tokens.length === 0) return { kind: "read-or-nongit" };
+
+  // Skip leading environment variable assignments (VAR=value)
+  let idx = 0;
+  while (idx < tokens.length && isEnvAssignment(tokens[idx]!)) {
+    idx++;
+  }
+  if (idx >= tokens.length) return { kind: "read-or-nongit" };
+
+  // The first remaining token must be `git` (or path ending with `/git`)
+  const cmdToken = stripQuotes(tokens[idx]!);
+  const cmdBase = basename(cmdToken);
+  if (cmdBase !== "git") {
+    return { kind: "read-or-nongit" };
+  }
+  idx++;
+
+  // Parse git global options to find the subcommand
+  while (idx < tokens.length) {
+    const tok = tokens[idx]!;
+    // --opt=value form: single token, skip
+    if (tok.startsWith("--") && tok.includes("=")) {
+      idx++;
+      continue;
+    }
+    // Known options that consume the next token as their value
+    if (GLOBAL_OPTS_WITH_VALUE.has(tok)) {
+      idx += 2; // skip option + value
+      continue;
+    }
+    // Other flags (single or double dash, no known value) → skip single token
+    if (tok.startsWith("-")) {
+      idx++;
+      continue;
+    }
+    // First bare token is the subcommand
+    break;
+  }
+
+  if (idx >= tokens.length) return { kind: "read-or-nongit" };
+
+  const subcommand = tokens[idx]!;
+  const remainingArgs = tokens.slice(idx + 1);
+
+  if (ALWAYS_MUTATING.has(subcommand)) {
+    return { kind: "mutation", subcommand };
+  }
+
+  if (CONDITIONAL.has(subcommand)) {
+    return classifyConditional(subcommand, remainingArgs);
+  }
+
+  // Unknown subcommand (status, diff, log, show, rev-parse, blame, etc.) → read
+  return { kind: "read-or-nongit" };
+}
+
+/**
+ * Classify a shell command (possibly compound with &&, ||, |, ;, etc.) as git mutation or not.
+ *
+ * Returns `{ kind: "mutation", subcommand }` if any segment contains a git state-mutation
+ * operation. Returns `{ kind: "read-or-nongit" }` if all segments are read-only git or
+ * non-git commands.
+ *
+ * Classification is conservative lexical: shell variable expansion, redirects, and
+ * editor-mediated writes are NOT detected (residual — commit layer handles them).
+ *
+ * @param command - The shell command string (may include &&, ||, |, ;, etc.)
+ */
+export function classifyGitCommand(command: string): GitCommandVerdict {
+  const segments = splitSegments(command);
+  for (const segment of segments) {
+    const verdict = classifySegment(segment);
+    if (verdict.kind === "mutation") return verdict;
+  }
+  return { kind: "read-or-nongit" };
+}

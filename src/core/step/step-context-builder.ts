@@ -27,6 +27,9 @@ import { buildResumePrompt } from "../resume/resume-context.js";
 import { projectMdPath } from "../../util/paths.js";
 import { buildOutputFollowUpPrompt, OUTPUT_FOLLOWUP_MAX_ATTEMPTS } from "./output-verify.js";
 import { DEFAULT_TOOL_RETRY } from "../port/report-result.js";
+import { stagingModeFor, forbiddenWritePaths } from "./write-scope.js";
+import { pipelineManagedPaths } from "../pipeline/round-git-scope.js";
+import type { AgentWriteScope } from "../port/agent-runner.js";
 
 /**
  * Filesystem seam for buildStepContext.
@@ -126,7 +129,26 @@ export async function buildStepContext(
     humanResumePrompt: deps.resumePrompt,
   });
 
-  // 7. Assemble AgentRunContext.
+  // 7. Compute write scope for permission guard (permission-layer-git-write-denial D3).
+  // Mirrors the same expression used in commit-push.ts to filter gitState artifacts.
+  // Pre-computes managedPaths and forbiddenPaths here (core layer) so that the adapter
+  // guard does not need cross-layer domain imports (DSM closure enforcement).
+  const declaredWritePaths = (step.writes?.(state, deps) ?? [])
+    .filter((r) => r.artifact !== "gitState")
+    .map((r) => r.path);
+  const stagingMode = stagingModeFor(step.name);
+  const managedPaths = pipelineManagedPaths(deps.slug);
+  const forbiddenPaths = forbiddenWritePaths(step.name, deps.slug, declaredWritePaths);
+  const writeScope: AgentWriteScope = {
+    stepName: step.name,
+    slug: deps.slug,
+    declaredWritePaths,
+    stagingMode,
+    managedPaths,
+    forbiddenPaths,
+  };
+
+  // 8. Assemble AgentRunContext.
   const ctx: AgentRunContext = {
     step,
     state,
@@ -154,6 +176,7 @@ export async function buildStepContext(
       outputVerification,
     },
     emit: emitFn,
+    writeScope,
   };
 
   return ctx;

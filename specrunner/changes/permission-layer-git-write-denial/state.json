@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ac3aa8bf-033e-421f-a92b-59359474389e",
   "createdAt": "2026-07-22T11:54:14.110Z",
-  "updatedAt": "2026-07-22T13:27:03.006Z",
+  "updatedAt": "2026-07-22T14:23:54.947Z",
   "request": {
     "title": "agent の git 状態変更とスコープ外書込を permission 層で遮断する",
     "type": "new-feature",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "implementer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/permission-layer-git-write-denial-ac3aa8bf",
-  "error": {
-    "code": "WRITE_SCOPE_VIOLATION",
-    "message": "Step 'implementer' on branch 'feat/permission-layer-git-write-denial-ac3aa8bf' attempted to write outside its declared scope.\nForbidden paths changed:\n  - specrunner/changes/permission-layer-git-write-denial/design.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/permission-layer-git-write-denial-ac3aa8bf/.specrunner/local/permission-layer-git-write-denial/write-scope-violation-implementer-1784726822990.md",
-    "hint": "境界外への変更を検出したため commit を中止した。違反変更は worktree から復元済み（checkpoint commit への混入防止）。\nViolating paths:\n  - specrunner/changes/permission-layer-git-write-denial/design.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/permission-layer-git-write-denial-ac3aa8bf/.specrunner/local/permission-layer-git-write-denial/write-scope-violation-implementer-1784726822990.md"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -64,11 +60,7 @@
     }
   ],
   "issueNumber": 894,
-  "resumePoint": {
-    "step": "implementer",
-    "reason": "Step 'implementer' on branch 'feat/permission-layer-git-write-denial-ac3aa8bf' attempted to write outside its declared scope.\nForbidden paths changed:\n  - specrunner/changes/permission-layer-git-write-denial/design.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/permission-layer-git-write-denial-ac3aa8bf/.specrunner/local/permission-layer-git-write-denial/write-scope-violation-implementer-1784726822990.md",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "synthesizedCommits": [
     "398a2f6374d70de7d9354742ccb17179eba9acdc",
@@ -78,7 +70,7 @@
     "66023f33510f746224657fc2066450b2682709f2"
   ],
   "_journal": {
-    "historyCount": 25,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
