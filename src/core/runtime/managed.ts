@@ -15,6 +15,7 @@ import type { OriginInfo } from "../../git/remote.js";
 import type { ParsedRequest } from "../../parser/request-md.js";
 import { createManagedAgentRunner } from "../../adapter/managed-agent/agent-runner.js";
 import type { JobState, RequestInfo, RepositoryInfo } from "../../state/schema.js";
+import { appendSynthesizedCommit } from "../../state/schema/operations.js";
 import { toStepName } from "../step/step-names.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import type { SpawnFn } from "../../util/spawn.js";
@@ -239,6 +240,21 @@ export class ManagedRuntime implements RealRuntimeStrategy {
       if (gitCommitResult.exitCode !== 0) {
         throw new Error(`Failed to commit request file: ${gitCommitResult.stderr.trim()}`);
       }
+
+      // Capture bootstrap commit OID and record in synthesizedCommits ledger (fail-closed)
+      const revParseResult = await this.spawnFn(
+        "git", ["rev-parse", "HEAD"], { cwd: this.cwd },
+      );
+      if (revParseResult.exitCode !== 0) {
+        throw new Error(
+          `Failed to capture bootstrap commit OID: ${revParseResult.stderr.trim()}`,
+        );
+      }
+      const bootstrapOid = revParseResult.stdout.trim();
+      await this.updateJobState(
+        jobId,
+        (s) => appendSynthesizedCommit(s, bootstrapOid),
+      );
 
       // git push origin <branchName>
       const pushCommitResult = await this.wrappedSpawnFn(
