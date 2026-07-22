@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "27f57112-6f79-4b9a-a0f2-ffc3d02f181e",
   "createdAt": "2026-07-22T12:00:45.803Z",
-  "updatedAt": "2026-07-22T12:57:21.625Z",
+  "updatedAt": "2026-07-22T13:01:32.896Z",
   "request": {
     "title": "bootstrap の materialization commit を egress 台帳に記録し、初回 push の誤 halt を解消する",
     "type": "bug-fix",
@@ -16,9 +16,9 @@
   "status": "awaiting-resume",
   "branch": "fix/bootstrap-commit-egress-ledger-27f57112",
   "error": {
-    "code": "ROUND_ALL_MEMBERS_SKIPPED",
-    "message": "All reviewers returned skipped verdict; no reviewer has approved the round.",
-    "hint": "Check reviewer activation conditions (paths / requestTypes). If all reviewers are configured with conditions that do not match the current change, the round will not produce a positive verdict."
+    "code": "ROUND_NONDECLARED_CHANGE",
+    "message": "Round produced undeclared file changes: specrunner/changes/bootstrap-commit-egress-ledger/pr-create-result.md",
+    "hint": "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration."
   },
   "pipelineId": "standard",
   "profile": {
@@ -109,11 +109,12 @@
   },
   "resumePoint": {
     "step": "custom-reviewers",
-    "reason": "All reviewers returned skipped verdict; no reviewer has approved the round.",
+    "reason": "Round produced undeclared file changes: specrunner/changes/bootstrap-commit-egress-ledger/pr-create-result.md",
     "iterationsExhausted": 1
   },
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 70,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -124,9 +125,9 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "cross-boundary-invariants": 1,
-      "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 2,
+      "custom-reviewers": 2,
       "regression-gate": 1,
       "conformance": 1,
       "adr-gen": 1,
