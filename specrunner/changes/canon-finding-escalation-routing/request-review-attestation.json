@@ -1,0 +1,29 @@
+{
+  "requestHash": "sha256:6e5cfc5e3b401e2fbe0dd2c161f6ba2910aa2f734c25c4add7de16c4469a3339",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/judge-verdict.ts:36-46 — deriveJudgeVerdict: severity/resolution/fixTarget のみ参照、finding.file 未参照",
+    "src/core/step/judge-verdict.ts:133-143 — deriveRegressionGateVerdict: fixable → needs-fix、finding.file 未参照",
+    "src/core/step/judge-verdict.ts:88-98 — deriveConformanceVerdict: needs-fix:${target} を返す、finding.file 未参照",
+    "src/core/step/judge-verdict.ts:58-70 — aggregateFixTarget: fixTarget 欠落 → 'implementer' default",
+    "src/kernel/report-result.ts:22 — FixTarget = 'implementer' | 'code-fixer' | 'spec-fixer'",
+    "src/kernel/report-result.ts:43-44 — Finding.file JSDoc(:43) + 宣言(:44) — worktree-relative path",
+    "src/core/step/write-scope.ts:64-74 — protectedCanonPaths: request.md / spec.md / design.md / tasks.md / test-cases.md / attestation を列挙",
+    "src/core/step/write-scope.ts:104-112 — forbiddenWritePaths: protectedCanonPaths − declaredWritePaths",
+    "src/core/step/write-scope.ts — judge-verdict.ts から write-scope.ts への import なし(verdict 導出層は独立)",
+    "src/core/step/step-completion.ts:149-169 — deriveRequestReviewVerdict / deriveConformanceVerdict / judgeVerdictFn の配線点",
+    "src/core/step/step-completion.ts:200-211 — finding-ref 検証失敗時に verdict を 'escalation' に上書き",
+    "src/core/pipeline/types.ts:266-270 — conformance: needs-fix:spec-fixer→spec-fixer / needs-fix:implementer→implementer / needs-fix:code-fixer→code-fixer / needs-fix→implementer",
+    "src/core/pipeline/reviewer-chain.ts:166-178 — reviewer approved+fixable→code-fixer",
+    "src/core/pipeline/reviewer-chain.ts:188-192 — reviewer needs-fix→code-fixer",
+    "src/core/pipeline/reviewer-chain.ts:433-438 — coordinator needs-fix→code-fixer",
+    "src/core/pipeline/reviewer-chain.ts:491-495 — regression-gate needs-fix→code-fixer",
+    "src/core/pipeline/reviewer-chain.ts:470-483 — regression-gate approved+fixable→code-fixer",
+    "src/core/pipeline/findings-ledger.ts:28-48 — collectFindingsLedger: fixable finding を無差別収集",
+    "src/core/pipeline/findings-ledger.ts:63-87 — collectParallelFixerFindings: fixable finding を無差別収集",
+    "src/core/pipeline/pipeline.ts:366 — escalation verdict は transition なし → ?? 'escalate' で terminal",
+    "src/core/pipeline/pipeline.ts:427-443 — escalate → awaiting-resume + resumePoint",
+    "src/core/step/spec-fixer.ts:99-105 — writes() は design.md と spec.md のみ宣言(tasks.md は含まれない — request の前提に誤り)"
+  ],
+  "sourceRevision": "d8dc2d164be63feff3ff5d2e7bb3748b50bb20e4"
+}
