@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d81cea8f-31d9-4c26-b116-79ba54c46ab5",
   "createdAt": "2026-07-22T11:54:57.409Z",
-  "updatedAt": "2026-07-22T13:05:52.178Z",
+  "updatedAt": "2026-07-22T13:22:29.208Z",
   "request": {
     "title": "保護正典への fixable finding を、書けない fixer に routing せず escalation に倒す",
     "type": "spec-change",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "implementer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/canon-finding-escalation-routing-d81cea8f",
-  "error": null,
+  "error": {
+    "code": "PUSH_FAILED",
+    "message": "implementer: git push origin change/canon-finding-escalation-routing-d81cea8f failed after retry: exit code 1",
+    "hint": "Check network connectivity and remote permissions. Retry with specrunner job resume to continue."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -69,16 +73,21 @@
     "75e0e0b8e8a4048e835dc3bb730ca82380d598d3",
     "78d64250be8fc751d9388b5e17dc6bf057ad7707"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "implementer",
+    "reason": "implementer: git push origin change/canon-finding-escalation-routing-d81cea8f failed after retry: exit code 1",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 29,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
       "spec-review": 2,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1
     }
   }
 }
