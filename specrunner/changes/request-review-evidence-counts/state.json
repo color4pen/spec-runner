@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "817bb294-543a-4cae-8a56-d6cbc6e1ef22",
   "createdAt": "2026-07-21T23:16:21.480Z",
-  "updatedAt": "2026-07-22T00:16:37.366Z",
+  "updatedAt": "2026-07-22T00:25:32.365Z",
   "request": {
     "title": "request-review の完了契約に evidence counts を追加し、確認ゼロの approve を非 green にする",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "awaiting-resume",
+  "step": "regression-gate",
+  "status": "running",
   "branch": "change/request-review-evidence-counts-817bb294",
-  "error": {
-    "code": "ROUND_NONDECLARED_CHANGE",
-    "message": "Round produced undeclared file changes: specrunner/changes/request-review-evidence-counts/bite-evidence-result.md",
-    "hint": "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -66,8 +62,8 @@
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "47a03278bb89f30cb7092a3aa252d9d8ff675fba",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -79,7 +75,7 @@
     },
     {
       "name": "scale-tolerance",
-      "status": "pending",
+      "status": "skipped",
       "approvedAtCommit": null,
       "activationPaths": [
         "src/store/**",
@@ -90,13 +86,10 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "Round produced undeclared file changes: specrunner/changes/request-review-evidence-counts/bite-evidence-result.md",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 41,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -107,9 +100,9 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 1,
-      "cross-boundary-invariants": 1,
-      "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 2,
+      "custom-reviewers": 2
     }
   }
 }
