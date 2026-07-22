@@ -15,13 +15,13 @@
  *   - NOT include agent's uncommitted work content in the checkpoint/finalize commit.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { SpawnFn, SpawnResult } from "../../../../src/util/spawn.js";
+import type { SpawnFn } from "../../../../src/util/spawn.js";
 import { commitFinalState } from "../../../../src/core/step/commit-push.js";
 
-let stderrSpy: ReturnType<typeof vi.spyOn>;
+let _stderrSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
-  stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+  _stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 

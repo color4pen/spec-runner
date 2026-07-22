@@ -27,7 +27,8 @@ import type { ChildProcess, SpawnOptions } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { commitAndPush } from "../../../src/core/step/commit-push.js";
 import type { CommitPushInfra } from "../../../src/core/step/commit-push.js";
-import type { AgentStep, IoRef } from "../../../src/core/step/types.js";
+import type { AgentStep } from "../../../src/core/step/types.js";
+import type { JobStateStore } from "../../../src/store/job-state-store.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../src/core/types.js";
 import type { SpawnFn } from "../../../src/util/git-exec.js";
@@ -262,12 +263,11 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     owner: "user",
     repo: "repo",
     spawn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     storeFactory: (_jobId: string) => ({
       load: vi.fn().mockResolvedValue(makeJobState("test")),
       save: vi.fn().mockResolvedValue(undefined),
       appendHistory: vi.fn().mockResolvedValue(undefined),
-    }) as any,
+    }) as unknown as JobStateStore,
     ...overrides,
   };
 }
@@ -610,7 +610,7 @@ describe("TC-015: mixed reset 失敗は halt する", () => {
     const { spawnFn: base } = makeSeqGitSpawnFn([
       { subcommand: "rev-parse", exitCode: 0, stdout: `${headAtTailEntry}\n` },
     ]);
-    const { spawnFn: withError, calls } = makeSpawnErrorFn("reset");
+    const { spawnFn: withError } = makeSpawnErrorFn("reset");
 
     // Combine: rev-parse uses base, reset uses spawn error
     let revParseCount = 0;
@@ -818,12 +818,11 @@ describe("TC-033: 破壊確認 — push-as-is 経路の封鎖有効性", () => {
     // Currently this test passes (current code doesn't call reset → the resetCall check would find nothing).
     // After implementation, this test should also pass (reset IS called → TC-001 is green, regression caught).
 
-    const headBeforeStep = "abc123headbefore";
     const headAtTailEntry = "def456headadvanced";
 
     // Mock: simulate the old push-as-is behavior (no reset, direct push after agent commit)
     const callsRecord: string[][] = [];
-    const pushAsIsSpawnFn: SpawnFn = (_bin, args, _opts): ChildProcess => {
+    const _pushAsIsSpawnFn: SpawnFn = (_bin, args, _opts): ChildProcess => {
       callsRecord.push([...args]);
       const subcommand = args[0] ?? "";
 

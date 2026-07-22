@@ -22,6 +22,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { spawnSync } from "node:child_process";
+import { EventEmitter } from "node:events";
 import { commitFinalState } from "../src/core/step/commit-push.js";
 import type { SpawnFn } from "../src/util/spawn.js";
 import { ParallelReviewRound } from "../src/core/pipeline/parallel-review-round.js";
@@ -138,16 +139,15 @@ function makeGitExecSpawnFn(repoDir: string): GitExecSpawnFn {
       cwd: (opts as { cwd?: string })?.cwd ?? repoDir,
       encoding: "utf8",
     });
-    const { EventEmitter } = require("node:events");
     const cp = new EventEmitter();
-    Object.assign(cp, {
-      stdout: new EventEmitter(),
-      stderr: new EventEmitter(),
-    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cpAny = cp as any;
+    cpAny.stdout = new EventEmitter();
+    cpAny.stderr = new EventEmitter();
     // Emit data + close asynchronously
     setImmediate(() => {
-      if (result.stdout) cp.stdout.emit("data", result.stdout);
-      if (result.stderr) cp.stderr.emit("data", result.stderr);
+      if (result.stdout) cpAny.stdout.emit("data", result.stdout);
+      if (result.stderr) cpAny.stderr.emit("data", result.stderr);
       cp.emit("close", result.status ?? 0);
     });
     return cp as ReturnType<GitExecSpawnFn>;
