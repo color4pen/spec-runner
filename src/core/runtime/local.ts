@@ -58,6 +58,7 @@ import type { WorkspaceSetupPlan } from "../worktree/setup.js";
 import { hasJsDependencyTraces } from "../../util/detect-pm.js";
 import { WorkspaceMaterializer, type MaterializerHost } from "./workspace-materializer.js";
 import type { WorktreeMaterializationPlan } from "./workspace-materializer.js";
+import { appendSynthesizedCommit } from "../../state/schema/operations.js";
 import { describeGitFetchFailure } from "./git-fetch-error.js";
 
 // Internal structure stored inside CleanupHandle
@@ -409,6 +410,22 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       if (gitCommitResult.exitCode !== 0) {
         throw new Error(`Failed to commit request file: ${gitCommitResult.stderr.trim()}`);
       }
+
+      // Capture bootstrap commit OID and record in synthesizedCommits ledger (fail-closed)
+      const revParseResult = await this.spawnFn(
+        "git", ["rev-parse", "HEAD"], { cwd: this.cwd },
+      );
+      if (revParseResult.exitCode !== 0) {
+        throw new Error(
+          `Failed to capture bootstrap commit OID: ${revParseResult.stderr.trim()}`,
+        );
+      }
+      const bootstrapOid = revParseResult.stdout.trim();
+      await this.updateJobState(
+        jobId,
+        (s) => appendSynthesizedCommit(s, bootstrapOid),
+        slugOpts,
+      );
     }
 
     // Resume path: recopy draft request.md into change folder (copy semantics)

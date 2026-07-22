@@ -24,6 +24,7 @@ import {
   recopyDraftToChangeFolder,
   rejectSymlink,
 } from "../artifact/copy-artifacts.js";
+import { appendSynthesizedCommit } from "../../state/schema/operations.js";
 
 export type WorktreeMaterializationPlan =
   | { kind: "no-worktree" }
@@ -221,6 +222,24 @@ export class WorkspaceMaterializer {
             await this.host.manager.prune(this.host.cwd).catch(() => {});
             throw new Error(`Failed to commit request file: ${gitCommitResult.stderr.trim()}`);
           }
+
+          // Capture bootstrap commit OID and record in synthesizedCommits ledger (fail-closed)
+          const revParseResult = await this.host.spawnFn(
+            "git", ["rev-parse", "HEAD"], { cwd: worktreePath },
+          );
+          if (revParseResult.exitCode !== 0) {
+            await this.host.manager.remove(worktreePath, this.host.cwd).catch(() => {});
+            await this.host.manager.prune(this.host.cwd).catch(() => {});
+            throw new Error(
+              `Failed to capture bootstrap commit OID: ${revParseResult.stderr.trim()}`,
+            );
+          }
+          const bootstrapOid = revParseResult.stdout.trim();
+          await this.host.updateJobState(
+            jobId,
+            (s) => appendSynthesizedCommit(s, bootstrapOid),
+            slugOpts,
+          );
         }
 
         // Record branchName in state so downstream steps can use it (D3)
