@@ -12,10 +12,11 @@ import type { JobState, StepRun, ErrorInfo } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
+import { quarantineRoundHeadAdvanceEvidence } from "../step/commit-push.js";
 import type { StepExecutionResult } from "../step/commit-orchestrator.js";
 import { CommitOrchestrator } from "../step/commit-orchestrator.js";
 import { StepExecutor } from "../step/executor.js";
-import { defaultSpawnFn } from "../../util/git-exec.js";
+import { defaultSpawnFn, gitExecResult } from "../../util/git-exec.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import {
   deriveReviewerStatuses,
@@ -210,7 +211,7 @@ export class ParallelReviewRound {
 
     // --- 4. All approved fast path ---
     const now = new Date().toISOString();
-    let aggregateVerdictResult: "approved" | "needs-fix" | "escalation";
+    let aggregateVerdictResult: "approved" | "needs-fix" | "escalation" = "escalation";
     // Member results for commitRound (empty for fast path)
     const members: Array<{ step: Step; startedAt: string; result: StepExecutionResult }> = [];
     // Round error (set when git effects detect non-declared changes)
@@ -257,6 +258,39 @@ export class ParallelReviewRound {
         }),
       );
 
+      // --- 5b. HEAD guard: detect reviewer self-commit (D3 / T-07) ---
+      // Compare HEAD against baselineCommit immediately after fan-out.
+      // If HEAD advanced, a reviewer self-committed during the round:
+      //   quarantine the diff, reset HEAD to baselineCommit, halt the round.
+      // inspectionEscalated: declared here so HEAD guard and git-effects check share it.
+      let inspectionEscalated = false;
+      if (deps.runtimeStrategy) {
+        const headAfterFanOut = await deps.runtimeStrategy.captureHeadSha(cwd);
+        if (headAfterFanOut !== null && baselineCommit !== null && headAfterFanOut !== baselineCommit) {
+          aggregateVerdictResult = "escalation";
+          inspectionEscalated = true;
+          const guardSpawnFn = deps.gitTransportSpawn ?? defaultSpawnFn;
+          // Best-effort quarantine via commit-push (node:fs lives there, not here).
+          await quarantineRoundHeadAdvanceEvidence(
+            guardSpawnFn,
+            cwd,
+            deps.slug,
+            baselineCommit,
+            headAfterFanOut,
+          );
+          await gitExecResult(guardSpawnFn, cwd, ["reset", "--mixed", baselineCommit]);
+          roundError = {
+            code: "ROUND_HEAD_ADVANCED",
+            message: `Reviewer self-committed: HEAD advanced from ${baselineCommit} to ${headAfterFanOut}`,
+            hint: "A reviewer committed changes during the round. The commit has been removed. Investigate which reviewer self-committed.",
+          };
+          logPipelineDiag(
+            "pipeline:coordinator:head-guard-halt",
+            `coordinator=${coordinatorName}, base=${baselineCommit}, head=${headAfterFanOut}`,
+          );
+        }
+      }
+
       // --- 6. Derive per-member verdicts (no state merge needed) ---
       // Capture HEAD SHA after all members have run (for approvedAtCommit).
       // Under roundOwnsGitEffects, members do not commit, so HEAD should not have
@@ -289,7 +323,11 @@ export class ParallelReviewRound {
       // --- 7. Compute aggregate verdict from member results ---
       // Member statuses are applied AFTER git-effects inspection (step 7c) so that a
       // fail-closed inspection escalation leaves members pending rather than approved.
-      aggregateVerdictResult = aggregateVerdict([...memberVerdicts.values()]);
+      // Skip if HEAD guard (step 5b) already set escalation — aggregateVerdictResult
+      // must remain "escalation" and not be overwritten by member verdicts.
+      if (!inspectionEscalated) {
+        aggregateVerdictResult = aggregateVerdict([...memberVerdicts.values()]);
+      }
 
       // --- 7a. Detect all-members-skipped (T-05) ---
       // When all members return "skipped" (non-empty verdict set), the round has no positive
@@ -308,10 +346,8 @@ export class ParallelReviewRound {
       // declared outputs union. Undeclared changes (excluding pipeline-managed paths) halt
       // the round; declared changes are committed via scoped staging.
       // roundError is passed to commitRound (not applied to state directly).
-      // inspectionEscalated: true when the round is halted by a fail-closed inspection
-      // outcome (git status unavailable, or undeclared changes). Consumed at step 7c to
-      // keep members pending so resume re-runs the fan-out and re-inspects.
-      let inspectionEscalated = false;
+      // inspectionEscalated: declared at step 5b (HEAD guard) so HEAD guard and this
+      // git-effects check share the same flag. Already true if HEAD guard fired.
       if (deps.runtimeStrategy?.listWorktreeChanges) {
         const branch = state.branch ?? "";
         const defaultSleepFn = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));

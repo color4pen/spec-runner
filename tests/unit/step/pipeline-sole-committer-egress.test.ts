@@ -18,10 +18,10 @@
  * EGRESS_UNKNOWN_COMMIT must be added to errors.ts (T-09).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { SpawnFn } from "../../../../src/util/spawn.js";
+import type { SpawnFn } from "../../../src/util/spawn.js";
 // verifyEgressLedger is added by T-03 — RED until implemented
-import { verifyEgressLedger } from "../../../../src/core/step/commit-push.js";
-import { SpecRunnerError } from "../../../../src/errors.js";
+import { verifyEgressLedger } from "../../../src/core/step/commit-push.js";
+import { SpecRunnerError } from "../../../src/errors.js";
 
 let stderrSpy: ReturnType<typeof vi.spyOn>;
 

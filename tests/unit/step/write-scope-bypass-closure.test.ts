@@ -520,9 +520,9 @@ describe("TC-003: (should) scoped empty stagePaths — no global commit fallback
 // Source: spec.md > Requirement: agent 自己 commit の内容を write-scope 規則で検査する
 //         Scenario: guarded 自己 commit に保護正典が含まれる → push せず halt
 //
-// RED: current code does not check self-commit content — pushes directly.
-// GREEN after T-05: check headBeforeStep..HEAD for violations before push.
-// DESTROY: revert T-05 → push called without violation check.
+// Synthesis model: agent commit is reset (--mixed) → changes land in worktree →
+//   findWriteScopeViolations detects protected path → WRITE_SCOPE_VIOLATION.
+// DESTROY: revert synthesis model → push called without violation check.
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("TC-004: guarded agent self-commit with protected path → WRITE_SCOPE_VIOLATION halt, no push", () => {
@@ -534,37 +534,33 @@ describe("TC-004: guarded agent self-commit with protected path → WRITE_SCOPE_
   function makeGuardedSelfCommitViolationSpawnFn() {
     return makeGitSpawnFnByArgs({
       rules: [
-        // Worktree status: clean (no violations)
-        {
-          match: (args) => args[0] === "status",
-          exitCode: 0,
-          stdout: "",
-        },
-        // Staged check: no staged changes (agent already committed)
-        {
-          match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 0,
-        },
-        // HEAD: advanced from headBeforeStep
+        // HEAD: advanced from headBeforeStep (agent self-committed)
         {
           match: (args) => args[0] === "rev-parse",
           exitCode: 0,
           stdout: `${headAfterAgentCommit}\n`,
         },
-        // Commit range diff: agent commit changed request.md (violation)
+        // Mixed reset succeeds: undo agent self-commit, preserve worktree changes
         {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
+          match: (args) => args[0] === "reset",
           exitCode: 0,
-          stdout: `${requestMdPath}\n`,
         },
-        // Quarantine evidence diff
+        // Post-reset worktree status: requestMdPath now in worktree (agent change unwound)
         {
-          match: (args) => args[0] === "diff" && !args.includes("--cached") && !args.includes("--name-only"),
+          match: (args) => args[0] === "status",
+          exitCode: 0,
+          stdout: ` M ${requestMdPath}\0`,
+        },
+        // Quarantine evidence: git diff HEAD -- requestMdPath (worktree diff, no range)
+        {
+          match: (args) => args[0] === "diff" && args.includes("HEAD"),
           exitCode: 0,
           stdout: "diff --git a/request.md b/request.md\n-original\n+weakened",
         },
       ],
       defaults: {
+        clean: { exitCode: 0 },
+        checkout: { exitCode: 0 },
         add: { exitCode: 0 },
         push: { exitCode: 0 },
       },
@@ -620,9 +616,10 @@ describe("TC-004: guarded agent self-commit with protected path → WRITE_SCOPE_
 // Source: spec.md > Requirement: agent 自己 commit の内容を write-scope 規則で検査する
 //         Scenario: scoped 自己 commit に宣言外 path が含まれる → push せず halt
 //
-// RED: current code does not check self-commit content — pushes directly.
-// GREEN after T-05: findScopedCommitViolations detects unauthorized path.
-// DESTROY: revert T-05 → push called without violation check.
+// Synthesis model: agent commit is reset (--mixed) → changes land in worktree →
+//   scoped mode stages declared paths → post-stage status shows requestMdPath as residual →
+//   findScopedCommitViolations detects unauthorized path → WRITE_SCOPE_VIOLATION.
+// DESTROY: revert synthesis model → push called without violation check.
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("TC-005: scoped agent self-commit with unauthorized path → WRITE_SCOPE_VIOLATION halt, no push", () => {
@@ -635,33 +632,34 @@ describe("TC-005: scoped agent self-commit with unauthorized path → WRITE_SCOP
   function makeScopedSelfCommitViolationSpawnFn() {
     return makeGitSpawnFnByArgs({
       rules: [
-        // Staged check: no staged changes (agent already committed)
-        {
-          match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 0,
-        },
-        // HEAD: advanced
+        // HEAD: advanced (agent self-committed)
         {
           match: (args) => args[0] === "rev-parse",
           exitCode: 0,
           stdout: `${headAfterAgentCommit}\n`,
         },
-        // Commit range diff: scoped self-commit changed request.md (unauthorized for scoped step)
+        // Mixed reset succeeds: undo agent self-commit, preserve worktree changes
         {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
+          match: (args) => args[0] === "reset",
           exitCode: 0,
-          stdout: `${requestMdPath}\n`,
         },
-        // Quarantine evidence diff
+        // Post-staging status: requestMdPath still dirty (not in staging scope)
         {
-          match: (args) => args[0] === "diff" && !args.includes("--cached") && !args.includes("--name-only"),
+          match: (args) => args[0] === "status",
+          exitCode: 0,
+          stdout: ` M ${requestMdPath}\0`,
+        },
+        // Quarantine evidence: git diff HEAD -- requestMdPath (worktree diff, no range)
+        {
+          match: (args) => args[0] === "diff" && args.includes("HEAD"),
           exitCode: 0,
           stdout: "diff --git a/request.md b/request.md\n-original\n+unauthorized",
         },
       ],
       defaults: {
         add: { exitCode: 0 },
-        status: { exitCode: 0, stdout: "" },
+        clean: { exitCode: 0 },
+        checkout: { exitCode: 0 },
         push: { exitCode: 0 },
       },
     });
@@ -710,32 +708,32 @@ describe("TC-006: clean agent self-commit (boundary-safe) → push (behavior pre
 
     const { spawnFn, calls } = makeGitSpawnFnByArgs({
       rules: [
-        // Status: clean (no worktree violations)
-        {
-          match: (args) => args[0] === "status",
-          exitCode: 0,
-          stdout: "",
-        },
-        // Staged check: no staged changes
-        {
-          match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 0,
-        },
-        // HEAD: advanced
+        // HEAD: advanced (agent self-committed)
         {
           match: (args) => args[0] === "rev-parse",
           exitCode: 0,
           stdout: `${headAfterCommit}\n`,
         },
-        // Commit range diff: only source files changed (boundary-safe for guarded)
+        // Mixed reset succeeds
         {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
+          match: (args) => args[0] === "reset",
           exitCode: 0,
-          stdout: "src/foo.ts\nsrc/bar.ts\n",
+        },
+        // Post-reset worktree status: source files changed (boundary-safe for guarded)
+        {
+          match: (args) => args[0] === "status",
+          exitCode: 0,
+          stdout: " M src/foo.ts\0 M src/bar.ts\0",
+        },
+        // Staged check: staged changes present (after add)
+        {
+          match: (args) => args[0] === "diff" && args.includes("--cached"),
+          exitCode: 1,
         },
       ],
       defaults: {
         add: { exitCode: 0 },
+        commit: { exitCode: 0 },
         push: { exitCode: 0 },
       },
     });
@@ -761,25 +759,32 @@ describe("TC-006: clean agent self-commit (boundary-safe) → push (behavior pre
 
     const { spawnFn } = makeGitSpawnFnByArgs({
       rules: [
-        {
-          match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 0, // no staged (agent committed)
-        },
+        // HEAD: advanced (agent self-committed)
         {
           match: (args) => args[0] === "rev-parse",
           exitCode: 0,
           stdout: `${headAfterCommit}\n`,
         },
-        // Commit range: only declared result path (no violation for scoped)
+        // Mixed reset succeeds
         {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
+          match: (args) => args[0] === "reset",
           exitCode: 0,
-          stdout: `${resultPath}\n`,
+        },
+        // Post-staging status: clean (no residual violations)
+        {
+          match: (args) => args[0] === "status",
+          exitCode: 0,
+          stdout: "",
+        },
+        // Staged check: staged changes present
+        {
+          match: (args) => args[0] === "diff" && args.includes("--cached"),
+          exitCode: 1,
         },
       ],
       defaults: {
         add: { exitCode: 0 },
-        status: { exitCode: 0, stdout: "" },
+        commit: { exitCode: 0 },
         push: { exitCode: 0 },
       },
     });
@@ -794,43 +799,40 @@ describe("TC-006: clean agent self-commit (boundary-safe) → push (behavior pre
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-007: commit range enumerate failure (git error) → fail-closed halt, no push
+// TC-007: worktree enumerate failure (git status error) → fail-closed halt, no push
 //
 // 変更 path の列挙に失敗したら fail-closed
 // Source: spec.md > Requirement: agent 自己 commit の内容を write-scope 規則で検査する
 //         Scenario: 変更 path の列挙に失敗したら fail-closed
 //
-// RED: current code pushes when HEAD advances, regardless of enumerate failure.
-// GREEN after T-05: enumerate failure → halt (push not called).
-// DESTROY: revert T-05 → push called even on enumerate failure.
+// Synthesis model: guarded mode uses git status (not diff --name-only) to enumerate
+//   changed paths. Status failure → ok=false → halt (push not called).
+// DESTROY: ignore status failure → push called without violation check.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-007: commit range enumerate failure (git error) → fail-closed halt, no push", () => {
-  it("throws when git diff --name-only fails (git error)", async () => {
+describe("TC-007: worktree enumerate failure (git status error) → fail-closed halt, no push", () => {
+  it("throws when git status fails (git error) — cannot enumerate worktree changes", async () => {
     const slug = "test-slug";
     const headBeforeStep = "old-sha";
     const headAfterCommit = "new-sha";
 
     const { spawnFn } = makeGitSpawnFnByArgs({
       rules: [
-        {
-          match: (args) => args[0] === "status",
-          exitCode: 0,
-          stdout: "",
-        },
-        {
-          match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 0, // no staged
-        },
+        // HEAD: advanced (triggers reset)
         {
           match: (args) => args[0] === "rev-parse",
           exitCode: 0,
           stdout: `${headAfterCommit}\n`,
         },
-        // enumerate failure: git error (exit 128)
+        // Mixed reset succeeds
         {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
-          exitCode: 128, // git error → gitExec returns null
+          match: (args) => args[0] === "reset",
+          exitCode: 0,
+        },
+        // Status fails (git error) → ok=false → fail-closed halt
+        {
+          match: (args) => args[0] === "status",
+          exitCode: 1,
         },
       ],
       defaults: {
@@ -847,7 +849,7 @@ describe("TC-007: commit range enumerate failure (git error) → fail-closed hal
     ).rejects.toThrow();
   });
 
-  it("git push is NOT called when enumerate fails (fail-closed)", async () => {
+  it("git push is NOT called when status fails (fail-closed)", async () => {
     const slug = "test-slug";
     const headBeforeStep = "old-sha";
     const headAfterCommit = "new-sha";
@@ -855,22 +857,18 @@ describe("TC-007: commit range enumerate failure (git error) → fail-closed hal
     const { spawnFn, calls } = makeGitSpawnFnByArgs({
       rules: [
         {
-          match: (args) => args[0] === "status",
-          exitCode: 0,
-          stdout: "",
-        },
-        {
-          match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 0,
-        },
-        {
           match: (args) => args[0] === "rev-parse",
           exitCode: 0,
           stdout: `${headAfterCommit}\n`,
         },
         {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
-          exitCode: 128,
+          match: (args) => args[0] === "reset",
+          exitCode: 0,
+        },
+        // Status failure → halt
+        {
+          match: (args) => args[0] === "status",
+          exitCode: 1,
         },
       ],
       defaults: {
@@ -888,7 +886,7 @@ describe("TC-007: commit range enumerate failure (git error) → fail-closed hal
 
     expect(
       calls.map((c) => c.args[0]),
-      "git push must NOT be called on enumerate failure (fail-closed)",
+      "git push must NOT be called when status fails (fail-closed)",
     ).not.toContain("push");
   });
 });
@@ -1031,62 +1029,48 @@ describe("TC-009: scoped residual halt prevents result adoption", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-010: self-commit violation quarantine uses commit range diff (base..head)
+// TC-010: self-commit violation quarantine uses worktree diff (git diff HEAD -- path)
 //
-// 自己 commit 違反は commit 差分を退避する
+// 自己 commit 違反は worktree 差分を退避する（synthesis model）
 // Source: spec.md > Requirement: 3 経路の違反は証跡を退避し halt メッセージに退避先を含める
 //         Scenario: 自己 commit 違反は commit 差分を退避する
 //
-// RED: current code doesn't check self-commits, so no quarantine with range is produced.
-// GREEN after T-02 + T-05: quarantine captures git diff base head -- path.
+// Synthesis model: after reset --mixed, agent's changes land in worktree. Quarantine
+//   uses git diff HEAD -- path (worktree diff). No commit range (base..head) needed.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-010: self-commit violation quarantine uses commit range diff (base..head)", () => {
-  it("quarantine file is written with commit range diff content when self-commit violation detected", async () => {
+describe("TC-010: self-commit violation quarantine uses worktree diff (git diff HEAD -- path)", () => {
+  it("quarantine file is written with worktree diff content when self-commit violation detected", async () => {
     const slug = "test-slug";
     const headBeforeStep = "old-sha-tc010";
     const headAfterCommit = "new-sha-tc010";
     const requestMdPath = `specrunner/changes/${slug}/request.md`;
-    const rangeDiffContent = "diff --git a/request.md b/request.md\n-original\n+weakened-by-agent";
+    const worktreeDiffContent = "diff --git a/request.md b/request.md\n-original\n+weakened-by-agent";
 
     const { spawnFn } = makeGitSpawnFnByArgs({
       rules: [
-        {
-          match: (args) => args[0] === "status",
-          exitCode: 0,
-          stdout: "",
-        },
-        {
-          match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 0,
-        },
+        // HEAD: advanced (agent self-committed)
         {
           match: (args) => args[0] === "rev-parse",
           exitCode: 0,
           stdout: `${headAfterCommit}\n`,
         },
-        // Commit range enumerate: returns request.md (violation)
+        // Mixed reset succeeds: undo agent commit, changes land in worktree
         {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
+          match: (args) => args[0] === "reset",
           exitCode: 0,
-          stdout: `${requestMdPath}\n`,
         },
-        // Range evidence diff: git diff base head -- path
+        // Post-reset worktree status: requestMdPath now in worktree
         {
-          match: (args) =>
-            args[0] === "diff" &&
-            !args.includes("--name-only") &&
-            !args.includes("--cached") &&
-            args.includes(headBeforeStep) &&
-            args.includes(headAfterCommit),
+          match: (args) => args[0] === "status",
           exitCode: 0,
-          stdout: rangeDiffContent,
+          stdout: ` M ${requestMdPath}\0`,
         },
-        // Fallback diff (e.g. HEAD --) returns empty
+        // Quarantine evidence: git diff HEAD -- requestMdPath (worktree diff, no range)
         {
           match: (args) => args[0] === "diff" && args.includes("HEAD"),
           exitCode: 0,
-          stdout: "",
+          stdout: worktreeDiffContent,
         },
       ],
       defaults: {
@@ -1109,15 +1093,15 @@ describe("TC-010: self-commit violation quarantine uses commit range diff (base.
 
     expect(thrown).toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
 
-    // Quarantine file must exist with range diff content
+    // Quarantine file must exist with worktree diff content
     const sidecarDir = path.join(tempDir, ".specrunner", "local", slug);
     const files = await fs.readdir(sidecarDir);
     const evidenceFiles = files.filter((f) => f.startsWith("write-scope-violation-implementer-"));
     expect(evidenceFiles.length, "quarantine file must be written").toBeGreaterThanOrEqual(1);
 
     const content = await fs.readFile(path.join(sidecarDir, evidenceFiles[0]!), "utf-8");
-    // Content must contain range diff (base..head) not just HEAD diff
-    expect(content, "quarantine must contain commit range diff content").toContain("weakened-by-agent");
+    // Content must contain worktree diff (via git diff HEAD -- path)
+    expect(content, "quarantine must contain worktree diff content").toContain("weakened-by-agent");
 
     // Halt message must reference the quarantine file
     expect(
@@ -1259,7 +1243,7 @@ describe("TC-012: guarded boundary-safe changes → commit + push (behavior pres
     expect(subcommands, "git push must be called for boundary-safe changes").toContain("push");
   });
 
-  it("guarded commit uses -A (no pathspec) — whole worktree staging preserved", async () => {
+  it("guarded add uses -A with explicit pathspec from worktree status", async () => {
     const slug = "test-slug";
 
     const { spawnFn, calls } = makeGitSpawnFn({
@@ -1279,8 +1263,10 @@ describe("TC-012: guarded boundary-safe changes → commit + push (behavior pres
 
     const addCall = calls.find((c) => c.args[0] === "add");
     expect(addCall, "git add must be called").toBeDefined();
-    expect(addCall!.args, "guarded add must use -A (whole worktree)").toContain("-A");
-    expect(addCall!.args, "guarded add must NOT use -- (no pathspec)").not.toContain("--");
+    expect(addCall!.args, "guarded add must use -A").toContain("-A");
+    // Synthesis model: guarded add uses explicit pathspec from status (not bare -A)
+    expect(addCall!.args, "guarded add uses '--' pathspec separator").toContain("--");
+    expect(addCall!.args, "guarded add includes changed path from status").toContain("src/foo.ts");
   });
 });
 
@@ -1321,62 +1307,49 @@ describe("TC-013: scoped boundary-safe changes → pathspec commit + push (behav
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-018: quarantine with range { base, head } → git diff base head -- path captured
+// TC-018: self-commit violation quarantine uses worktree diff (git diff HEAD -- path)
 //
 // Source: tasks.md > T-02: quarantine を commit 差分レンジ対応に一般化（D6）
 //
-// RED: current quarantineViolationEvidence always uses `git diff HEAD -- path`.
-// GREEN after T-02: when range { base, head } is passed, uses `git diff base head -- path`.
+// Synthesis model: after reset --mixed, agent changes land in worktree. Quarantine
+//   always uses git diff HEAD -- path (worktree diff). No commit range is used
+//   because the violation content is in the worktree, not in a commit.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-018: quarantine with range { base, head } → git diff base head -- path captured", () => {
-  it("quarantine evidence uses commit range diff when self-commit violation quarantined", async () => {
-    // This test verifies TC-018 through the observable effect: quarantine file
-    // content comes from `git diff base head -- path` when a range is provided
-    // (T-05 passes range to quarantineViolationEvidence for self-commit violations).
+describe("TC-018: self-commit violation quarantine uses worktree diff (git diff HEAD -- path)", () => {
+  it("quarantine evidence uses worktree diff (HEAD) when self-commit violation quarantined", async () => {
+    // Synthesis model: agent commit is reset --mixed, changes land in worktree.
+    // Quarantine captures git diff HEAD -- path (no range needed).
     const slug = "test-slug";
     const headBeforeStep = "base-sha-018";
     const headAfterCommit = "head-sha-018";
     const requestMdPath = `specrunner/changes/${slug}/request.md`;
-    const RANGE_DIFF = "## range-diff-content: from base-sha-018 to head-sha-018";
+    const WORKTREE_DIFF = "## worktree-diff-content from HEAD to working tree";
 
     const { spawnFn } = makeGitSpawnFnByArgs({
       rules: [
-        {
-          match: (args) => args[0] === "status",
-          exitCode: 0,
-          stdout: "",
-        },
-        {
-          match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 0,
-        },
+        // HEAD: advanced (agent self-committed)
         {
           match: (args) => args[0] === "rev-parse",
           exitCode: 0,
           stdout: `${headAfterCommit}\n`,
         },
+        // Mixed reset succeeds: agent commit unwound, changes in worktree
         {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
+          match: (args) => args[0] === "reset",
           exitCode: 0,
-          stdout: `${requestMdPath}\n`,
         },
-        // Range diff: called with base and head args for quarantine evidence
+        // Post-reset status: requestMdPath now in worktree
         {
-          match: (args) =>
-            args[0] === "diff" &&
-            !args.includes("--name-only") &&
-            !args.includes("--cached") &&
-            args.includes(headBeforeStep) &&
-            args.includes(headAfterCommit),
+          match: (args) => args[0] === "status",
           exitCode: 0,
-          stdout: RANGE_DIFF,
+          stdout: ` M ${requestMdPath}\0`,
         },
-        // HEAD diff fallback
+        // Quarantine evidence: git diff HEAD -- requestMdPath (worktree diff, no range)
         {
           match: (args) => args[0] === "diff" && args.includes("HEAD"),
           exitCode: 0,
-          stdout: "",
+          stdout: WORKTREE_DIFF,
         },
       ],
       defaults: {
@@ -1402,8 +1375,8 @@ describe("TC-018: quarantine with range { base, head } → git diff base head --
     expect(evidenceFile, "quarantine file must exist").toBeDefined();
 
     const content = await fs.readFile(path.join(sidecarDir, evidenceFile!), "utf-8");
-    // After T-02: content includes range diff, not just HEAD diff
-    expect(content, "quarantine must contain range diff content (base..head)").toContain(RANGE_DIFF);
+    // Synthesis model: content is from worktree diff (git diff HEAD -- path), not commit range
+    expect(content, "quarantine must contain worktree diff content").toContain(WORKTREE_DIFF);
   });
 });
 
@@ -1453,45 +1426,48 @@ describe("TC-019: quarantine without range → git diff HEAD -- path captured (e
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-020: commit range enumerate helper → returns path array on success
+// TC-020: worktree changed paths from status → violation check → push on success
 //
 // Source: tasks.md > T-03: commit レンジの変更 path 列挙ヘルパ（D2, fail-closed）
 //
-// Tested via commitAndPush behavior: when HEAD advances and range enumerate succeeds,
-// the changed paths are returned for violation check.
+// Synthesis model: guarded mode uses git status (not diff --name-only) to enumerate
+//   worktree changed paths after reset. Boundary-safe paths → no violations → push.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-020: commit range enumerate helper → path array on success", () => {
-  it("commit range diff result is parsed and used for violation check (boundary-safe → push)", async () => {
+describe("TC-020: worktree paths from status → violation check → push on success", () => {
+  it("status enumeration result is used for violation check (boundary-safe → push)", async () => {
     const slug = "test-slug";
     const headBeforeStep = "abc123";
     const headAfterCommit = "def456";
 
     const { spawnFn, calls } = makeGitSpawnFnByArgs({
       rules: [
-        {
-          match: (args) => args[0] === "status",
-          exitCode: 0,
-          stdout: "",
-        },
-        {
-          match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 0,
-        },
+        // HEAD: advanced (agent self-committed)
         {
           match: (args) => args[0] === "rev-parse",
           exitCode: 0,
           stdout: `${headAfterCommit}\n`,
         },
-        // Range enumerate: returns boundary-safe paths (no violations for guarded mode)
+        // Mixed reset succeeds
         {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
+          match: (args) => args[0] === "reset",
           exitCode: 0,
-          stdout: "src/a.ts\nresult.md\n",
+        },
+        // Post-reset status: boundary-safe paths in worktree (no violations for guarded mode)
+        {
+          match: (args) => args[0] === "status",
+          exitCode: 0,
+          stdout: " M src/a.ts\0 M result.md\0",
+        },
+        // Staged check: staged changes present (after add)
+        {
+          match: (args) => args[0] === "diff" && args.includes("--cached"),
+          exitCode: 1,
         },
       ],
       defaults: {
         add: { exitCode: 0 },
+        commit: { exitCode: 0 },
         push: { exitCode: 0 },
       },
     });
@@ -1499,55 +1475,60 @@ describe("TC-020: commit range enumerate helper → path array on success", () =
     const step = makeGuardedStep("implementer");
     const infra = makeCommitPushInfra(spawnFn);
 
-    // With boundary-safe paths in commit, should push successfully
+    // With boundary-safe paths in worktree, should push successfully
     await expect(
       commitAndPush(step, makeJobState(), makeDeps(slug), headBeforeStep, infra),
     ).resolves.toBeUndefined();
 
-    // Verify that git diff --name-only was called (enumerate helper invoked)
+    // Verify that git status was called (worktree enumerate)
+    const statusCall = calls.find((c) => c.args[0] === "status");
+    expect(statusCall, "git status must be called for worktree path enumeration").toBeDefined();
+
+    // Synthesis model: diff --name-only (commit range) is NOT used
     const nameOnlyCall = calls.find(
       (c) => c.args[0] === "diff" && c.args.includes("--name-only"),
     );
-    expect(nameOnlyCall, "git diff --name-only must be called for commit range enumerate").toBeDefined();
-    // The call must include both SHAs
-    expect(nameOnlyCall!.args, "enumerate must include headBeforeStep").toContain(headBeforeStep);
-    expect(nameOnlyCall!.args, "enumerate must include HEAD (after commit)").toContain(headAfterCommit);
+    expect(nameOnlyCall, "diff --name-only must NOT be called in synthesis model").toBeUndefined();
+
+    // Push must be called (no violations)
+    expect(
+      calls.map((c) => c.args[0]),
+      "push must be called when no violations found",
+    ).toContain("push");
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-021: commit range enumerate helper → null on git error (fail-closed)
+// TC-021: status failure → fail-closed halt, no push (synthesis model)
 //
 // Source: tasks.md > T-03: commit レンジの変更 path 列挙ヘルパ（D2, fail-closed）
 //
-// Tested via commitAndPush behavior: enumerate failure → halt (push not called).
+// Synthesis model: guarded mode uses git status for worktree path enumeration.
+// Status non-zero exit → ok=false → commitEffectFailedError thrown → push not called.
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-021: commit range enumerate helper → null on git error (fail-closed)", () => {
-  it("commitAndPush halts when range enumerate fails (null returned, not empty array)", async () => {
+describe("TC-021: status failure → fail-closed halt, no push (synthesis model)", () => {
+  it("commitAndPush halts when git status fails (cannot enumerate worktree changes)", async () => {
     const slug = "test-slug";
     const headBeforeStep = "abc123";
     const headAfterCommit = "def456";
 
     const { spawnFn, calls } = makeGitSpawnFnByArgs({
       rules: [
-        {
-          match: (args) => args[0] === "status",
-          exitCode: 0,
-          stdout: "",
-        },
-        {
-          match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 0,
-        },
+        // HEAD: advanced (triggers reset)
         {
           match: (args) => args[0] === "rev-parse",
           exitCode: 0,
           stdout: `${headAfterCommit}\n`,
         },
-        // Git error on enumerate (non-zero exit → gitExec returns null)
+        // Mixed reset succeeds
         {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
+          match: (args) => args[0] === "reset",
+          exitCode: 0,
+        },
+        // Status fails (git error) → ok=false → halt
+        {
+          match: (args) => args[0] === "status",
           exitCode: 128,
         },
       ],
@@ -1560,7 +1541,7 @@ describe("TC-021: commit range enumerate helper → null on git error (fail-clos
     const step = makeGuardedStep("implementer");
     const infra = makeCommitPushInfra(spawnFn);
 
-    // Enumerate failure → fail-closed halt
+    // Status failure → fail-closed halt
     await expect(
       commitAndPush(step, makeJobState(), makeDeps(slug), headBeforeStep, infra),
     ).rejects.toThrow();
@@ -1568,52 +1549,43 @@ describe("TC-021: commit range enumerate helper → null on git error (fail-clos
     // Push must NOT be called (fail-closed)
     expect(
       calls.map((c) => c.args[0]),
-      "git push must NOT be called when enumerate returns null",
+      "git push must NOT be called when status fails",
     ).not.toContain("push");
   });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-022: (should) diff mock handles --cached and --name-only simultaneously
+// TC-022: (should) guarded mode uses whole-index diff --cached (no pathspec separator)
 //
 // Source: tasks.md > T-09: 新規単体テスト（mock spawn・分岐網羅）
+//
+// Synthesis model: guarded mode uses `git diff --cached --quiet` (whole-index, no "--")
+//   while scoped mode uses `git diff --cached --quiet -- <stagePaths>` (pathspec-limited).
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-022: (should) diff mock — --cached and --name-only both work in same spawn", () => {
-  it("staged=no (exit 0 for --cached) and range diff (path list for --name-only) work simultaneously", async () => {
+describe("TC-022: (should) guarded mode uses whole-index diff --cached (no pathspec separator)", () => {
+  it("guarded diff --cached has no '--' pathspec separator; status and diff --cached both called", async () => {
     const slug = "test-slug";
-    const headBeforeStep = "old-sha-022";
-    const headAfterCommit = "new-sha-022";
     const sourcePath = "src/valid.ts";
 
-    // Single spawn mock with arg-based dispatch for both diff subcommand variants
     const { spawnFn, calls } = makeGitSpawnFnByArgs({
       rules: [
+        // Worktree status: source file changed (boundary-safe)
         {
           match: (args) => args[0] === "status",
           exitCode: 0,
-          stdout: "",
+          stdout: ` M ${sourcePath}\0`,
         },
-        // --cached --quiet: no staged changes (exit 0)
+        // Whole-index diff --cached: staged changes present
         {
           match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 0,
+          exitCode: 1,
           stdout: "",
-        },
-        {
-          match: (args) => args[0] === "rev-parse",
-          exitCode: 0,
-          stdout: `${headAfterCommit}\n`,
-        },
-        // --name-only range diff: returns boundary-safe paths
-        {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
-          exitCode: 0,
-          stdout: `${sourcePath}\n`,
         },
       ],
       defaults: {
         add: { exitCode: 0 },
+        commit: { exitCode: 0 },
         push: { exitCode: 0 },
       },
     });
@@ -1621,18 +1593,28 @@ describe("TC-022: (should) diff mock — --cached and --name-only both work in s
     const step = makeGuardedStep("implementer");
     const infra = makeCommitPushInfra(spawnFn);
 
+    // No headBeforeStep → no reset; guarded mode enumerates worktree via status
     await expect(
-      commitAndPush(step, makeJobState(), makeDeps(slug), headBeforeStep, infra),
+      commitAndPush(step, makeJobState(), makeDeps(slug), null, infra),
     ).resolves.toBeUndefined();
 
+    // Both status (worktree enumerate) and diff --cached (staged check) must be called
+    const statusCall = calls.find((c) => c.args[0] === "status");
     const diffCachedCall = calls.find((c) => c.args[0] === "diff" && c.args.includes("--cached"));
-    const diffNameOnlyCall = calls.find((c) => c.args[0] === "diff" && c.args.includes("--name-only"));
 
-    // Both diff variants must have been called
+    expect(statusCall, "git status must be called for worktree enumeration").toBeDefined();
     expect(diffCachedCall, "diff --cached must be called for staged check").toBeDefined();
-    expect(diffNameOnlyCall, "diff --name-only must be called for range enumerate").toBeDefined();
 
-    // No conflict: staged check correctly returned exit 0, range diff returned paths
+    // Guarded mode: diff --cached is whole-index (no "--" pathspec separator)
+    expect(
+      diffCachedCall!.args,
+      "guarded diff --cached must NOT use '--' pathspec separator",
+    ).not.toContain("--");
+
+    // Synthesis model: diff --name-only is NOT used
+    const diffNameOnlyCall = calls.find((c) => c.args[0] === "diff" && c.args.includes("--name-only"));
+    expect(diffNameOnlyCall, "diff --name-only must NOT be called in synthesis model").toBeUndefined();
+
     expect(
       calls.map((c) => c.args[0]),
       "push must be called when no violations found",
@@ -1657,40 +1639,40 @@ describe("TC-030: self-commit violation + staged declared changes → halt befor
   const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
 
   function makeMixedViolationSpawnFn() {
+    // Synthesis model: agent self-committed BOTH requestMdPath (violation) AND resultPath (declared).
+    // After reset --mixed, both land in worktree.
+    // Scoped mode stages resultPath → post-staging status shows requestMdPath still dirty
+    // → findScopedCommitViolations detects requestMdPath → WRITE_SCOPE_VIOLATION thrown.
     return makeGitSpawnFnByArgs({
       rules: [
-        // Worktree status: only the declared result file is dirty (no residual violation)
-        {
-          match: (args) => args[0] === "status",
-          exitCode: 0,
-          stdout: ` M ${resultPath}\0`,
-        },
-        // Staged check (pathspec): staged changes PRESENT → would route to staged-commit path
-        {
-          match: (args) => args[0] === "diff" && args.includes("--cached"),
-          exitCode: 1,
-        },
-        // HEAD: advanced (agent self-committed the request.md weakening)
+        // HEAD: advanced (agent self-committed both paths)
         {
           match: (args) => args[0] === "rev-parse",
           exitCode: 0,
           stdout: `${headAfterAgentCommit}\n`,
         },
-        // Commit range diff: agent commit changed request.md (violation)
+        // Mixed reset succeeds: both paths land in worktree
         {
-          match: (args) => args[0] === "diff" && args.includes("--name-only"),
+          match: (args) => args[0] === "reset",
           exitCode: 0,
-          stdout: `${requestMdPath}\n`,
         },
-        // Quarantine evidence diff
+        // Post-staging status: requestMdPath still dirty (not in declared scope)
         {
-          match: (args) => args[0] === "diff" && !args.includes("--cached") && !args.includes("--name-only"),
+          match: (args) => args[0] === "status",
+          exitCode: 0,
+          stdout: ` M ${requestMdPath}\0`,
+        },
+        // Quarantine evidence: git diff HEAD -- requestMdPath
+        {
+          match: (args) => args[0] === "diff" && args.includes("HEAD"),
           exitCode: 0,
           stdout: "diff --git a/request.md b/request.md\n-original\n+weakened",
         },
       ],
       defaults: {
         add: { exitCode: 0 },
+        clean: { exitCode: 0 },
+        checkout: { exitCode: 0 },
         commit: { exitCode: 0 },
         push: { exitCode: 0 },
       },
@@ -1721,14 +1703,20 @@ describe("TC-030: self-commit violation + staged declared changes → halt befor
     expect(subcommands, "push must NOT be called").not.toContain("push");
   });
 
-  it("TC-030: clean self-commit + staged declared changes → pipeline commit + push proceed", async () => {
+  it("TC-030: clean self-commit (declared only) + post-reset worktree → pipeline commit + push proceed", async () => {
+    // Synthesis model: agent self-committed only resultPath (boundary-safe for scoped).
+    // After reset --mixed, only resultPath in worktree.
+    // Scoped mode stages resultPath → post-staging status clean → no violations → commit + push.
     const { spawnFn, calls } = makeGitSpawnFnByArgs({
       rules: [
-        { match: (args) => args[0] === "status", exitCode: 0, stdout: ` M ${resultPath}\0` },
-        { match: (args) => args[0] === "diff" && args.includes("--cached"), exitCode: 1 },
+        // HEAD: advanced (agent self-committed resultPath)
         { match: (args) => args[0] === "rev-parse", exitCode: 0, stdout: `${headAfterAgentCommit}\n` },
-        // Agent commit touched only its own declared output — boundary-safe
-        { match: (args) => args[0] === "diff" && args.includes("--name-only"), exitCode: 0, stdout: `${resultPath}\n` },
+        // Mixed reset succeeds: resultPath lands in worktree
+        { match: (args) => args[0] === "reset", exitCode: 0 },
+        // Post-staging status: clean (resultPath staged, nothing else dirty)
+        { match: (args) => args[0] === "status", exitCode: 0, stdout: "" },
+        // Staged check: staged changes present
+        { match: (args) => args[0] === "diff" && args.includes("--cached"), exitCode: 1 },
       ],
       defaults: {
         add: { exitCode: 0 },

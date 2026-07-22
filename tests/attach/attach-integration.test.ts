@@ -417,19 +417,29 @@ describe("TC-INT-006: publish → same OID attach (D1/D5 symmetry)", () => {
     await git(sourceDir, "commit", "-m", "initial");
     await git(sourceDir, "push", "origin", "main");
 
-    // 4. Machine A: create feature branch + checkpoint files (uncommitted, in working tree)
+    // 4. Machine A: create feature branch + content files
     await git(sourceDir, "checkout", "-b", BRANCH);
     const changeDir = path.join(sourceDir, "specrunner", "changes", SLUG);
     await fs.mkdir(changeDir, { recursive: true });
-    await fs.writeFile(path.join(changeDir, "state.json"), makeStateJson(), "utf-8");
-    await fs.writeFile(path.join(changeDir, "events.jsonl"), EVENTS_JSONL, "utf-8");
+    // Content files (tasks.md, request.md, spec.md) are committed by design/spec steps,
+    // not by commitFinalState (checkpoint commit only covers pipeline metadata).
     await fs.writeFile(path.join(changeDir, "request.md"),
       `# Test feature request\n\n## Meta\n\n- **type**: new-feature\n- **slug**: ${SLUG}\n`, "utf-8");
     await fs.writeFile(path.join(changeDir, "tasks.md"), `# Tasks\n\n- [ ] task 1\n`, "utf-8");
     await fs.writeFile(path.join(changeDir, "spec.md"), `# Spec\n\nTest.\n`, "utf-8");
+    // Simulate design steps committing content to branch (before checkpoint is taken)
+    await git(sourceDir, "add", "-A");
+    await git(sourceDir, "commit", "-m", "design: initial spec content");
+    await git(sourceDir, "push", "origin", BRANCH);
+
+    // 4b. Pipeline metadata files (state.json, events.jsonl) written to worktree but not yet staged
+    // commitFinalState will stage+commit only the managed pipeline paths.
+    await fs.writeFile(path.join(changeDir, "state.json"), makeStateJson(), "utf-8");
+    await fs.writeFile(path.join(changeDir, "events.jsonl"), EVENTS_JSONL, "utf-8");
 
     // 5. Machine A: publish checkpoint via commitFinalState (simulates the D5 publisher seam)
     // This is the single-seam awaiting-resume publish from pipeline.ts after the while loop.
+    // Only commits pipeline-managed paths: state.json, events.jsonl (managed paths).
     await commitFinalState({
       cwd: sourceDir,
       branch: BRANCH,

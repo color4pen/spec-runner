@@ -25,6 +25,7 @@ const SLUG = "my-change";
 const STATE_JSON = `specrunner/changes/${SLUG}/state.json`;
 const EVENTS_JSONL = `specrunner/changes/${SLUG}/events.jsonl`;
 const USAGE_JSON = `specrunner/changes/${SLUG}/usage.json`;
+const BITE_EVIDENCE = `specrunner/changes/${SLUG}/bite-evidence-result.md`;
 
 /** Declared output paths (typical reviewer result files) */
 const DECLARED_A = `specrunner/changes/${SLUG}/spec-result-001.md`;
@@ -39,12 +40,13 @@ const UNDECLARED_OTHER = "some/other/file.md";
 // ---------------------------------------------------------------------------
 
 describe("pipelineManagedPaths", () => {
-  it("returns state.json, events.jsonl, usage.json for the given slug", () => {
+  it("returns state.json, events.jsonl, usage.json, bite-evidence-result.md for the given slug", () => {
     const paths = pipelineManagedPaths(SLUG);
     expect(paths).toContain(STATE_JSON);
     expect(paths).toContain(EVENTS_JSONL);
     expect(paths).toContain(USAGE_JSON);
-    expect(paths).toHaveLength(3);
+    expect(paths).toContain(BITE_EVIDENCE);
+    expect(paths).toHaveLength(4);
   });
 
   it("uses the slug to build paths under specrunner/changes/<slug>/", () => {

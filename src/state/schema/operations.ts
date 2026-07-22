@@ -20,6 +20,25 @@ export function appendHistoryEntry(state: JobState, entry: HistoryEntry): JobSta
 }
 
 /**
+ * Append a synthesized commit OID to the synthesizedCommits ledger (pure transform).
+ *
+ * Deduplicates: if the OID is already present in the ledger, returns the original state
+ * unchanged (idempotent). Never performs I/O — synchronous pure function.
+ *
+ * Design B-13: state writes happen only in the CommitOrchestrator layer; git-layer callers
+ * receive the OID in-memory and pass it upward for this helper to persist.
+ *
+ * @param state - Current job state (not mutated).
+ * @param oid   - Commit OID to append to the ledger.
+ * @returns New state with the OID appended (or original state if OID was already present).
+ */
+export function appendSynthesizedCommit(state: JobState, oid: string): JobState {
+  const existing = state.synthesizedCommits ?? [];
+  if (existing.includes(oid)) return state;
+  return { ...state, synthesizedCommits: [...existing, oid] };
+}
+
+/**
  * Normalize a steps record: convert any legacy format to StepRun[].
  * Handles:
  *   - Missing or null steps → {}

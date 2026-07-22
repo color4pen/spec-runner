@@ -589,7 +589,10 @@ describe("TC-006: guarded mode — boundary-safe changes commit proceeds normall
     await expect(commitAndPush(step, state, deps, null, infra)).resolves.toBeUndefined();
   });
 
-  it("guarded mode uses bare 'git add -A' (no pathspec) after passing status check", async () => {
+  it("guarded mode uses explicit pathspec 'git add -A -- <changedPaths>' after status enumeration", async () => {
+    // Synthesis model (T-04): guarded mode enumerates changed paths via git status and
+    // uses an explicit pathspec for git add. This prevents unauthorized pre-staged files
+    // from entering the commit.
     const slug = "test-slug";
     const statusOutput = " M src/foo.ts\0";
 
@@ -613,11 +616,11 @@ describe("TC-006: guarded mode — boundary-safe changes commit proceeds normall
     const addCall = calls.find((c) => c.args[0] === "add");
     expect(addCall, "git add must have been called").toBeDefined();
 
-    // In guarded mode, git add -A (without pathspec) should be used after passing the check
-    // This preserves the original "stage whole worktree" behavior for guarded steps
+    // Synthesis model: guarded mode uses explicit pathspec (git add -A -- <changedPaths>)
+    // NOT bare git add -A (which would stage unauthorized pre-staged files too).
     expect(addCall!.args).toContain("-A");
-    // Should NOT use pathspec for guarded mode (whole worktree is staged)
-    expect(addCall!.args).not.toContain("--");
+    expect(addCall!.args).toContain("--");            // pathspec separator
+    expect(addCall!.args).toContain("src/foo.ts");    // enumerated by git status
   });
 });
 
@@ -664,17 +667,28 @@ describe("TC-017: scoped mode — empty stagePaths → no-op", () => {
 // TC-018: guarded mode — HEAD-advance detection preserved (push-only path)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-018: guarded mode — HEAD-advance detection preserved", () => {
-  it("push is called without commit when agent self-committed (HEAD advanced)", async () => {
+describe("TC-018: guarded mode — HEAD-advance detection uses synthesis model (reset + commit)", () => {
+  it("resets agent commit, synthesizes from worktree, and commits+pushes when HEAD advanced", async () => {
+    // Synthesis model (T-04): when agent self-commits (HEAD advanced), the pipeline:
+    //   1. Detects HEAD advance (rev-parse returns new SHA)
+    //   2. git reset --mixed headBeforeStep (undo agent commit)
+    //   3. git status → enumerates agent's changes (now in worktree after reset)
+    //   4. git add -A -- <changedPaths> → stages them
+    //   5. git diff --cached → exit 1 (staged)
+    //   6. git commit → synthesis commit
+    //   7. git push
+    // The OLD "push-only" path is removed in the synthesis model.
     const slug = "test-slug";
     const headBeforeStep = "old-sha-before-step";
 
     const { spawnFn, calls } = makeGitSpawnFn({
       responses: {
-        "status": { exitCode: 0, stdout: "" }, // clean worktree — no violations
-        "add": { exitCode: 0 },
-        "diff": { exitCode: 0 }, // no staged changes (agent already committed)
         "rev-parse": { exitCode: 0, stdout: "new-sha-after-agent-commit\n" }, // HEAD advanced
+        "reset": { exitCode: 0 },
+        "status": { exitCode: 0, stdout: " M src/agent-file.ts\0" }, // changes in worktree after reset
+        "add": { exitCode: 0 },
+        "diff": { exitCode: 1 }, // staged changes present after add
+        "commit": { exitCode: 0 },
         "push": { exitCode: 0 },
       },
     });
@@ -688,14 +702,11 @@ describe("TC-018: guarded mode — HEAD-advance detection preserved", () => {
 
     const subcommands = calls.map((c) => c.args[0]);
 
-    // git status must be called (guarded mode)
-    expect(subcommands, "git status must be called").toContain("status");
-
-    // Push must happen (agent-committed, push-only path)
+    // Synthesis model: reset detects HEAD advance, status enumerates changes
+    expect(subcommands, "git reset must be called to undo agent commit").toContain("reset");
+    expect(subcommands, "git status must be called to enumerate changes").toContain("status");
+    expect(subcommands, "git commit must be called (synthesis commit)").toContain("commit");
     expect(subcommands, "git push must be called").toContain("push");
-
-    // git commit must NOT be called (agent already committed)
-    expect(subcommands, "git commit must NOT be called for push-only path").not.toContain("commit");
   });
 });
 

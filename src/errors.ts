@@ -107,6 +107,8 @@ export const ERROR_CODES = {
   ATTACH_RUNTIME_UNSUPPORTED: "ATTACH_RUNTIME_UNSUPPORTED",
   PROVIDER_NOT_READY: "PROVIDER_NOT_READY",
   WRITE_SCOPE_VIOLATION: "WRITE_SCOPE_VIOLATION",
+  EGRESS_UNKNOWN_COMMIT: "EGRESS_UNKNOWN_COMMIT",
+  ROUND_HEAD_ADVANCED: "ROUND_HEAD_ADVANCED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -434,6 +436,21 @@ export function commitEffectFailedError(
     ERROR_CODES.COMMIT_AND_PUSH_FAILED,
     `Check for index.lock conflicts, disk issues, or worktree corruption. Retry with specrunner job resume to continue.`,
     `${label}: git ${operation} failed on branch '${branch}': ${detail}`,
+  );
+}
+
+/**
+ * Error thrown when the egress backstop detects a commit OID in the push range that is not
+ * recorded in the synthesizedCommits ledger. This means the commit was not created by the
+ * pipeline — an agent self-commit or external commit slipped through.
+ *
+ * git push is NOT called when this error is thrown (fail-closed).
+ */
+export function egressUnknownCommitError(oid: string, branch: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.EGRESS_UNKNOWN_COMMIT,
+    "A commit not created by the pipeline was found in the push range. Investigate and resolve before retrying.",
+    `Egress backstop: unknown commit ${oid} in publish range for branch '${branch}'.`,
   );
 }
 

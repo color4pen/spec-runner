@@ -24,12 +24,12 @@ import { describe, it, expect } from "vitest";
 import { existsSync, readFileSync } from "node:fs";
 import * as path from "node:path";
 import * as url from "node:url";
-import type { JobState, StepRun } from "../../../../src/state/schema.js";
+import type { JobState, StepRun } from "../../../src/state/schema.js";
 // appendSynthesizedCommit is added by T-01 — RED until implemented
-import { appendSynthesizedCommit } from "../../../../src/state/schema.js";
+import { appendSynthesizedCommit } from "../../../src/state/schema.js";
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, "../../../..");
+const ROOT = path.resolve(__dirname, "../../..");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Minimal JobState fixture (no synthesizedCommits — legacy format)
