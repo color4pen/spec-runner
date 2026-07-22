@@ -179,3 +179,6 @@
 {"type":"step-attempt","step":"code-fixer","sessionId":"6ca6d706-328d-49eb-9a84-82feb8da2ccd","outcome":{"verdict":"needs-fix","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-22T10:29:51.916Z","endedAt":"2026-07-22T10:30:16.763Z","commitOid":"3f4bff8fddc80313fa3e4b96326405c2fd341ccb"}
 {"type":"lineage","step":"code-fixer","ts":"2026-07-22T10:30:16.763Z","outputs":[{"path":"specrunner/changes/pipeline-sole-committer","hash":null}],"inputs":[{"path":"specrunner/changes/pipeline-sole-committer/cross-boundary-invariants-result-002.md","hash":"sha256:002e9e6cecfcb5f77628ff83a324b792092ebf60fa25c872be0a362dfbd01563"}]}
 {"type":"transition","ts":"2026-07-22T10:30:18.496Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: code-fixer escalated"}
+{"type":"transition","ts":"2026-07-22T10:32:09.566Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-review'"}
+{"type":"transition","ts":"2026-07-22T10:32:09.634Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-22T10:32:09.635Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
