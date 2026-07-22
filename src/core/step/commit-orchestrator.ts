@@ -358,6 +358,19 @@ export class CommitOrchestrator {
       s = { ...s, biteEvidence: completion.biteEvidence };
     }
 
+    // Canon-finding escalation: persist error info so the operator can identify the cause.
+    // CANON_FINDING_ESCALATION is NOT in FATAL_ERROR_CODES → job lands in awaiting-resume.
+    if (verdict === "escalation" && completion.escalationReason) {
+      s = {
+        ...s,
+        error: {
+          code: "CANON_FINDING_ESCALATION",
+          message: completion.escalationReason,
+          hint: "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正し、job resume で再開してください。",
+        },
+      };
+    }
+
     // Append synthesized commit OID(s) to ledger (T-08, D4).
     // Agent step: commitOid = exit-HEAD (pipeline-synthesized commit). Append it.
     // CLI step: commitOid = entry-HEAD (evaluated revision, already on origin — harmless to append).

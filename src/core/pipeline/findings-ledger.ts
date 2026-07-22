@@ -11,6 +11,11 @@ import type { JobState } from "../../state/schema.js";
 import type { Finding } from "../../kernel/report-result.js";
 import { collectFixableFindings } from "../step/judge-verdict.js";
 import { getLatestJudgeFindings } from "../step/fixer-helpers.js";
+import {
+  selectUnroutableCanonFindings,
+  judgeEffectiveFixer,
+  type CanonWriteScope,
+} from "../step/canon-escalation.js";
 
 /**
  * Collect all fixable findings from every StepRun in the given reviewer chain.
@@ -28,6 +33,7 @@ import { getLatestJudgeFindings } from "../step/fixer-helpers.js";
 export function collectFindingsLedger(
   reviewerChain: string[],
   state: JobState,
+  canonScope?: CanonWriteScope,
 ): Finding[] {
   if (reviewerChain.length === 0) return [];
 
@@ -44,7 +50,16 @@ export function collectFindingsLedger(
     }
   }
 
-  return dedupeFindings(all);
+  const deduped = dedupeFindings(all);
+
+  // R3: exclude unroutable canon findings when canonScope is provided
+  if (!canonScope) return deduped;
+  const unroutable = new Set(
+    selectUnroutableCanonFindings(deduped, canonScope, judgeEffectiveFixer).map(
+      (f) => `${f.file}|${f.line ?? ""}|${f.title}`,
+    ),
+  );
+  return deduped.filter((f) => !unroutable.has(`${f.file}|${f.line ?? ""}|${f.title}`));
 }
 
 /**
@@ -63,6 +78,7 @@ export function collectFindingsLedger(
 export function collectParallelFixerFindings(
   state: JobState,
   members: string[],
+  canonScope?: CanonWriteScope,
 ): Finding[] {
   const all: Finding[] = [];
 
@@ -83,7 +99,16 @@ export function collectParallelFixerFindings(
     all.push(...fixable);
   }
 
-  return dedupeFindings(all);
+  const deduped = dedupeFindings(all);
+
+  // R3: exclude unroutable canon findings when canonScope is provided
+  if (!canonScope) return deduped;
+  const unroutable = new Set(
+    selectUnroutableCanonFindings(deduped, canonScope, judgeEffectiveFixer).map(
+      (f) => `${f.file}|${f.line ?? ""}|${f.title}`,
+    ),
+  );
+  return deduped.filter((f) => !unroutable.has(`${f.file}|${f.line ?? ""}|${f.title}`));
 }
 
 /**

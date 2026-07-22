@@ -29,6 +29,7 @@ import { deriveImplReviewerChain } from "../pipeline/reviewer-chain.js";
 import { deriveRegressionGateVerdict } from "./judge-verdict.js";
 import { buildFindingsBlock } from "./fixer-helpers.js";
 import type { Finding } from "../../kernel/report-result.js";
+import { buildCanonWriteScope } from "./canon-write-scope.js";
 
 /**
  * Canonical step name for the regression-gate.
@@ -107,9 +108,10 @@ export function createRegressionGateStep(): AgentStep {
      * Uses the same ledger computation as buildMessage to stay consistent:
      * deriveImplReviewerChain(state) + collectFindingsLedger(chain, state).
      */
-    skipWhen(state: JobState): string | null {
+    skipWhen(state: JobState, deps: StepDeps): string | null {
       const reviewerChain = deriveImplReviewerChain(state);
-      const ledger = collectFindingsLedger(reviewerChain, state);
+      const canonScope = buildCanonWriteScope(state, deps);
+      const ledger = collectFindingsLedger(reviewerChain, state, canonScope);
       if (ledger.length === 0) {
         return "findings ledger is empty — no fixable findings to verify";
       }
@@ -137,7 +139,8 @@ export function createRegressionGateStep(): AgentStep {
 
       // Build the ledger from all reviewer chain steps (excludes this gate).
       const reviewerChain = deriveImplReviewerChain(state);
-      const ledger = collectFindingsLedger(reviewerChain, state);
+      const canonScope = buildCanonWriteScope(state, deps);
+      const ledger = collectFindingsLedger(reviewerChain, state, canonScope);
 
       const ledgerBlock = buildLedgerBlock(ledger);
 

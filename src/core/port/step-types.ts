@@ -285,6 +285,7 @@ export interface AgentStep {
     findings: import("../../kernel/report-result.js").Finding[],
     ok: boolean,
     evidence?: import("../../kernel/report-result.js").Evidence,
+    canonScope?: import("../step/canon-escalation.js").CanonWriteScope,
   ) => "approved" | "needs-fix" | "escalation";
 
   /**

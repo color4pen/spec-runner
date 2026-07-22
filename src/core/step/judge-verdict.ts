@@ -7,7 +7,14 @@
  * All functions are pure (no side effects, no I/O).
  */
 import type { Finding, FixTarget, Evidence } from "../../kernel/report-result.js";
+import {
+  selectUnroutableCanonFindings,
+  judgeEffectiveFixer,
+  conformanceEffectiveFixer,
+  type CanonWriteScope,
+} from "./canon-escalation.js";
 export type { FindingRef } from "../port/runtime-strategy.js";
+export type { CanonWriteScope } from "./canon-escalation.js";
 
 /**
  * Collect findings that affect verdict routing.
@@ -37,10 +44,15 @@ export function deriveJudgeVerdict(
   findings: Finding[],
   ok: boolean,
   evidence?: Evidence,
+  canonScope?: CanonWriteScope,
 ): "approved" | "needs-fix" | "escalation" {
   if (!ok) return "escalation";
   if (evidence !== undefined && evidence.checked === 0) return "escalation"; // vacuous check
   if (findings.some((f) => f.resolution === "decision-needed")) return "escalation";
+  // R1: canon-finding escalation — insert before critical|high → needs-fix
+  if (canonScope && selectUnroutableCanonFindings(findings, canonScope, judgeEffectiveFixer).length > 0) {
+    return "escalation";
+  }
   if (findings.some((f) => f.severity === "critical" || f.severity === "high")) return "needs-fix";
   return "approved";
 }
@@ -89,8 +101,17 @@ export function deriveConformanceVerdict(
   findings: Finding[],
   ok: boolean,
   evidence?: Evidence,
+  canonScope?: CanonWriteScope,
 ): "approved" | "escalation" | "needs-fix:implementer" | "needs-fix:code-fixer" | "needs-fix:spec-fixer" {
+  // Call deriveJudgeVerdict WITHOUT canonScope (conformance uses conformanceEffectiveFixer, not judgeEffectiveFixer)
   const base = deriveJudgeVerdict(findings, ok, evidence);
+  if (base === "escalation") return base;
+
+  // R1: canon-finding escalation using conformanceEffectiveFixer
+  if (canonScope && selectUnroutableCanonFindings(findings, canonScope, conformanceEffectiveFixer).length > 0) {
+    return "escalation";
+  }
+
   if (base !== "needs-fix") return base;
 
   const target = aggregateFixTarget(findings);
@@ -134,10 +155,15 @@ export function deriveRegressionGateVerdict(
   findings: Finding[],
   ok: boolean,
   evidence?: Evidence,
+  canonScope?: CanonWriteScope,
 ): "approved" | "needs-fix" | "escalation" {
   if (!ok) return "escalation";
   if (evidence !== undefined && evidence.checked === 0) return "escalation"; // vacuous check
   if (findings.some((f) => f.resolution === "decision-needed")) return "escalation";
+  // R1: canon-finding escalation — insert before fixable → needs-fix
+  if (canonScope && selectUnroutableCanonFindings(findings, canonScope, judgeEffectiveFixer).length > 0) {
+    return "escalation";
+  }
   if (findings.some((f) => f.resolution === "fixable")) return "needs-fix";
   return "approved";
 }

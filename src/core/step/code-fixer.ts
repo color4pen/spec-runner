@@ -14,6 +14,7 @@ import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { deriveImplFixerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
 import { conformanceResultPath } from "../../util/paths.js";
 import { collectParallelFixerFindings } from "../pipeline/findings-ledger.js";
+import { buildCanonWriteScope } from "./canon-write-scope.js";
 import { CUSTOM_REVIEWERS_STEP_NAME } from "../pipeline/types.js";
 import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 
@@ -204,7 +205,8 @@ ${deps.request.content}
     // Design D5 (reviewer-parallel-execution): all needs-fix findings → single fixer session.
     if (isCoordinatorLoopActive(state)) {
       const needsFixMembers = getNeedsFixMembers(state);
-      const aggregatedFindings = collectParallelFixerFindings(state, needsFixMembers);
+      const canonScope = buildCanonWriteScope(state, deps);
+      const aggregatedFindings = collectParallelFixerFindings(state, needsFixMembers, canonScope);
 
       if (isFixerContinuation(state, STEP_NAMES.CODE_FIXER)) {
         // Continuation: use short prompt with aggregated findings

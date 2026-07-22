@@ -37,6 +37,13 @@ import {
 } from "./judge-verdict.js";
 import { filterUndecidedFindings } from "../decision/decision-ledger.js";
 import { computeExtraScopeFindings } from "./scope-check.js";
+import {
+  selectUnroutableCanonFindings,
+  judgeEffectiveFixer,
+  conformanceEffectiveFixer,
+  buildCanonEscalationReason,
+} from "./canon-escalation.js";
+import { buildCanonWriteScope } from "./canon-write-scope.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -81,6 +88,13 @@ export interface StepCompletion {
    * commitSuccess() reflects this into state.biteEvidence (T-08, R4).
    */
   biteEvidence?: import("../../state/schema.js").BiteEvidenceRecord[];
+  /**
+   * Canon-finding escalation reason.
+   * Set when the verdict is "escalation" caused by a fixable finding on a
+   * protected canon path that the effective fixer cannot legally write.
+   * Absent for non-canon escalations (vacuous / decision-needed / finding-ref).
+   */
+  escalationReason?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -129,6 +143,14 @@ export async function deriveStepCompletion(
 
   const resultContent = agentResult?.resultContent ?? null;
 
+  // Build canon write scope once for this step completion (used in verdict derivation).
+  // buildCanonWriteScope is pure (no I/O) — safe to call unconditionally.
+  const canonScope = buildCanonWriteScope(state, deps);
+
+  // Track the undecided findings for the last judge/conformance path to compute escalationReason.
+  let lastUndecidedFindings: Finding[] | null = null;
+  let lastIsConformancePath = false;
+
   if (agentResult !== undefined && stepReportTool !== undefined) {
     // Agent step with reportTool — use typed outcome exclusively.
     const toolResult = agentResult.toolResult;
@@ -147,6 +169,7 @@ export async function deriveStepCompletion(
           stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため needs-discussion として扱われます`);
         }
         verdict = deriveRequestReviewVerdict(undecidedFindings, tr.ok, tr.evidence);
+        // request-review is not subject to canon escalation routing
       } else if (isConformanceStep) {
         const tr = toolResult as JudgeReportResult;
         const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];
@@ -154,7 +177,9 @@ export async function deriveStepCompletion(
         if (tr.evidence?.checked === 0) {
           stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため判定不能として扱われます`);
         }
-        verdict = deriveConformanceVerdict(undecidedFindings, tr.ok, tr.evidence);
+        verdict = deriveConformanceVerdict(undecidedFindings, tr.ok, tr.evidence, canonScope);
+        lastUndecidedFindings = undecidedFindings;
+        lastIsConformancePath = true;
       } else if (isJudgeStep) {
         const tr = toolResult as JudgeReportResult;
         const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];
@@ -166,7 +191,9 @@ export async function deriveStepCompletion(
         if (tr.evidence?.checked === 0) {
           stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため判定不能として扱われます`);
         }
-        verdict = verdictFn(undecidedFindings, tr.ok, tr.evidence);
+        verdict = verdictFn(undecidedFindings, tr.ok, tr.evidence, canonScope);
+        lastUndecidedFindings = undecidedFindings;
+        lastIsConformancePath = false;
       } else {
         // producer: status "error" → "error", else completionVerdict (fallback "success")
         const completionVerdict =
@@ -248,10 +275,21 @@ export async function deriveStepCompletion(
     verdict = agentResult.verdictOverride;
   }
 
+  // Compute escalationReason when verdict is "escalation" due to unroutable canon findings.
+  let escalationReason: string | undefined;
+  if (verdict === "escalation" && lastUndecidedFindings !== null) {
+    const resolver = lastIsConformancePath ? conformanceEffectiveFixer : judgeEffectiveFixer;
+    const unroutable = selectUnroutableCanonFindings(lastUndecidedFindings, canonScope, resolver);
+    if (unroutable.length > 0) {
+      escalationReason = buildCanonEscalationReason(unroutable);
+    }
+  }
+
   return {
     verdict: verdict as Verdict,
     persistToolResult,
     pullRequest: parsed?.pullRequest,
     ...(parsed?.biteEvidence !== undefined ? { biteEvidence: parsed.biteEvidence } : {}),
+    ...(escalationReason !== undefined ? { escalationReason } : {}),
   };
 }
