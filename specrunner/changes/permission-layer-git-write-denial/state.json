@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ac3aa8bf-033e-421f-a92b-59359474389e",
   "createdAt": "2026-07-22T11:54:14.110Z",
-  "updatedAt": "2026-07-22T15:02:43.886Z",
+  "updatedAt": "2026-07-22T15:17:32.493Z",
   "request": {
     "title": "agent の git 状態変更とスコープ外書込を permission 層で遮断する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/permission-layer-git-write-denial-ac3aa8bf",
   "error": null,
   "pipelineId": "standard",
@@ -60,11 +60,7 @@
     }
   ],
   "issueNumber": 894,
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "code-review escalated",
-    "iterationsExhausted": 2
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "synthesizedCommits": [
     "398a2f6374d70de7d9354742ccb17179eba9acdc",
@@ -81,7 +77,7 @@
     "225ece7148ff141be73904996d86ffbb7673acc8"
   ],
   "_journal": {
-    "historyCount": 58,
+    "historyCount": 61,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
