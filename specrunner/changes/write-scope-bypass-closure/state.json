@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "be8366eb-b73d-4796-90ce-5f4df03d7ed5",
   "createdAt": "2026-07-21T23:16:15.038Z",
-  "updatedAt": "2026-07-22T00:58:25.663Z",
+  "updatedAt": "2026-07-22T01:02:55.632Z",
   "request": {
     "title": "write-set 検査を開始 HEAD・index・agent commit まで拡張し、既知の 3 突破経路を閉じる",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
-  "status": "awaiting-resume",
+  "step": "code-review",
+  "status": "running",
   "branch": "change/write-scope-bypass-closure-be8366eb",
-  "error": {
-    "code": "WRITE_SCOPE_VIOLATION",
-    "message": "Step 'code-fixer' on branch 'change/write-scope-bypass-closure-be8366eb' attempted to write outside its declared scope.\nForbidden paths changed:\n  - specrunner/changes/write-scope-bypass-closure/test-cases.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/write-scope-bypass-closure-be8366eb/.specrunner/local/write-scope-bypass-closure/write-scope-violation-code-fixer-1784681905640.md",
-    "hint": "境界外への変更を検出したため commit を中止した。違反変更は worktree から復元済み（checkpoint commit への混入防止）。\nViolating paths:\n  - specrunner/changes/write-scope-bypass-closure/test-cases.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/write-scope-bypass-closure-be8366eb/.specrunner/local/write-scope-bypass-closure/write-scope-violation-code-fixer-1784681905640.md"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -90,13 +86,10 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "Step 'code-fixer' on branch 'change/write-scope-bypass-closure-be8366eb' attempted to write outside its declared scope.\nForbidden paths changed:\n  - specrunner/changes/write-scope-bypass-closure/test-cases.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/write-scope-bypass-closure-be8366eb/.specrunner/local/write-scope-bypass-closure/write-scope-violation-code-fixer-1784681905640.md",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 60,
+    "historyCount": 63,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
