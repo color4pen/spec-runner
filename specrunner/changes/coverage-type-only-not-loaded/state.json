@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6283b476-9b25-4729-b5a9-a9a2b94f533d",
   "createdAt": "2026-07-22T11:55:42.653Z",
-  "updatedAt": "2026-07-22T13:16:45.861Z",
+  "updatedAt": "2026-07-22T13:20:32.315Z",
   "request": {
     "title": "changed-line-coverage の not-loaded 判定を type-only ファイルで誤検出させない",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-resume",
   "branch": "change/coverage-type-only-not-loaded-6283b476",
   "error": {
     "code": "ROUND_ALL_MEMBERS_SKIPPED",
@@ -74,7 +74,8 @@
     "981af693cecaca684c26e3965be2ea83d5124d86",
     "f36f10afb6f7cfaaa9ea8606b6ccc8f7cbb38a0e",
     "abab0a405b8b1288f4fc71ffe66b0277725e6119",
-    "047e9f6330a21e89b7adf3d6971baace8ac947f8"
+    "047e9f6330a21e89b7adf3d6971baace8ac947f8",
+    "4076af8584d7727d36d396a2ea0d9f6b681d281e"
   ],
   "reviewerStatuses": [
     {
@@ -103,8 +104,18 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/897",
+    "number": 897,
+    "createdAt": "2026-07-22T13:20:31.439Z"
+  },
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "All reviewers returned skipped verdict; no reviewer has approved the round.",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -119,7 +130,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
