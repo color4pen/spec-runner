@@ -192,7 +192,7 @@ describe("TC-FW-03: in-workspace Edit → allow", () => {
 });
 
 describe("TC-FW-04: Bash / Read / MCP tool → allow each", () => {
-  it("allows Bash with any command", async () => {
+  it("allows Bash with a read-only git command (mutations are denied by the classifier branch)", async () => {
     const guard = createWorkspaceToolGuard(tempDir);
     const result = await guard("Bash", { command: "git status" }, stubOptions);
     expect(result.behavior).toBe("allow");
