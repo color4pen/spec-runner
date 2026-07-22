@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "561baf30-2710-4053-8409-873006401aaf",
   "createdAt": "2026-07-22T03:47:07.942Z",
-  "updatedAt": "2026-07-22T10:09:54.529Z",
+  "updatedAt": "2026-07-22T10:22:30.419Z",
   "request": {
     "title": "pipeline を唯一の committer にする — 検査モデルから合成モデルへ",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/pipeline-sole-committer-561baf30",
   "error": null,
   "pipelineId": "standard",
@@ -62,8 +62,8 @@
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "approved",
-      "approvedAtCommit": "676719b9cbb4af49b5e0c37588144a6632ef8794",
+      "status": "pending",
+      "approvedAtCommit": null,
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -71,7 +71,7 @@
         "src/store/**",
         "src/adapter/**"
       ],
-      "invalidatedByCommit": null,
+      "invalidatedByCommit": "a8dc2e141e3e512fe082dd02b6e18de0672dbb99",
       "canonHash": "specrunner/changes/pipeline-sole-committer/design.md:sha256:751f07603187ca600e463736d68755d6cbd0f538e2cb1a014b4d20b8c4a5e465|specrunner/changes/pipeline-sole-committer/request.md:sha256:3122ca495dac7b813bd2c740d4e92d4f9d9e0e6b313fb92036f77b9ca1de84aa|specrunner/changes/pipeline-sole-committer/spec.md:sha256:f499947de7e12846a2e46fd2105f0b97c12608760ed00601fa529e4600dcb989|specrunner/changes/pipeline-sole-committer/tasks.md:sha256:55a8fe12cff56de9d69434fbb2b204412fbc239a8beae9452cd909c0238017a8|specrunner/changes/pipeline-sole-committer/test-cases.md:sha256:040312ed6f773112e1c02c92fc37c3c01adecfe539a07dcae8616021f22f9893"
     },
     {
@@ -87,7 +87,11 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/893",
@@ -95,7 +99,7 @@
     "createdAt": "2026-07-22T09:36:47.694Z"
   },
   "_journal": {
-    "historyCount": 108,
+    "historyCount": 115,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -107,10 +111,10 @@
       "verification": 4,
       "build-fixer": 2,
       "code-review": 3,
-      "code-fixer": 3,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "custom-reviewers": 2,
       "regression-gate": 2,
       "conformance": 1,
       "adr-gen": 1,

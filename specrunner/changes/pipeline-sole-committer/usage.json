@@ -361,6 +361,40 @@
       },
       "jobId": "561baf30-2710-4053-8409-873006401aaf",
       "stepName": "code-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-07-22T10:10:10.131Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 7,
+          "outputTokens": 326,
+          "cacheReadInputTokens": 105748,
+          "cacheCreationInputTokens": 1483
+        }
+      },
+      "jobId": "561baf30-2710-4053-8409-873006401aaf",
+      "stepName": "code-fixer"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-07-22T10:22:28.377Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 9639,
+          "outputTokens": 20,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 7805,
+          "outputTokens": 36127,
+          "cacheReadInputTokens": 2429625,
+          "cacheCreationInputTokens": 123084
+        }
+      },
+      "jobId": "561baf30-2710-4053-8409-873006401aaf",
+      "stepName": "cross-boundary-invariants"
     }
   ]
 }
