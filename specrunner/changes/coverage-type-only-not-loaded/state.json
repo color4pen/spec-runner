@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6283b476-9b25-4729-b5a9-a9a2b94f533d",
   "createdAt": "2026-07-22T11:55:42.653Z",
-  "updatedAt": "2026-07-22T13:09:23.942Z",
+  "updatedAt": "2026-07-22T13:16:45.861Z",
   "request": {
     "title": "changed-line-coverage の not-loaded 判定を type-only ファイルで誤検出させない",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/coverage-type-only-not-loaded-6283b476",
   "error": {
@@ -72,7 +72,9 @@
     "f1812b80ee26ebc91f0ce8369768e4e7273e7b2f",
     "93353e283f858879f017a00c574ae4c1f0052f5c",
     "981af693cecaca684c26e3965be2ea83d5124d86",
-    "f36f10afb6f7cfaaa9ea8606b6ccc8f7cbb38a0e"
+    "f36f10afb6f7cfaaa9ea8606b6ccc8f7cbb38a0e",
+    "abab0a405b8b1288f4fc71ffe66b0277725e6119",
+    "047e9f6330a21e89b7adf3d6971baace8ac947f8"
   ],
   "reviewerStatuses": [
     {
@@ -102,7 +104,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -111,12 +113,13 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
