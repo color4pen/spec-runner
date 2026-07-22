@@ -245,12 +245,16 @@ describe("ParallelReviewRound — approvedAtCommit is reviewed source revision (
 // ---------------------------------------------------------------------------
 
 // ---------------------------------------------------------------------------
-// Req 2a: change-folder-path-only diff, broad-activation ["specrunner/changes/**"]
-// Member has broad activationPaths that match the change folder.
-// After excludeChangeFolderPaths, sourceTouched is empty → not activated → NOT re-run.
+// Req 2a: change-folder-pipeline-output-only diff, broad-activation ["specrunner/changes/**"]
+// CHANGE_FOLDER_PATH is a pipeline output (alpha-result-001.md), NOT a canonical document.
+// After excludePipelineManagedChangePaths, pipeline outputs are excluded → sourceTouched is
+// empty → not activated → NOT re-run.
+// Note: if CHANGE_FOLDER_PATH were a canonical document (e.g. design.md under the change
+// folder), excludePipelineManagedChangePaths would PRESERVE it in sourceTouched → activated
+// → re-run (new canon-binding behavior enforced by TC-005 / TC-016).
 // ---------------------------------------------------------------------------
 
-describe("ParallelReviewRound — change-folder-only diff does not invalidate broad-activation reviewer (T-04 Req 2a)", () => {
+describe("ParallelReviewRound — pipeline-output-only diff does not invalidate broad-activation reviewer (T-04 Req 2a)", () => {
   it("approved member with activationPaths ['specrunner/changes/**'] stays approved when only change folder paths changed", async () => {
     const store = makeStore();
 
@@ -397,12 +401,21 @@ describe("ParallelReviewRound — source path change invalidates path-constraine
 });
 
 // ---------------------------------------------------------------------------
-// Req 4 (behavior preservation): always-activate reviewer (activationPaths undefined)
-// is always invalidated, even when sourceTouched is empty after filtering.
-// evaluateActivation({ paths: undefined }, ...) → activated: true unconditionally.
+// Req 4 (legacy path — no digestArtifacts): always-activate reviewer (activationPaths
+// undefined) is always invalidated when currentCanonHash === undefined.
+//
+// In this path (runtimeStrategy.digestArtifacts absent), the canon-binding guard at
+// parallel-review-round.ts:175 does NOT fire because the condition requires
+// currentCanonHash !== undefined. computeInvalidations runs as before, and
+// always-activate reviewers (activationPaths=undefined) are re-run regardless of
+// whether sourceTouched is empty. Backward-compat with pre-canon-binding callers.
+//
+// Real runtime (digestArtifacts present) with pipeline-output-only diff and no canonical
+// doc change: currentCanonHash is defined → guard fires → always-activate is NOT
+// invalidated (skip). See "real-runtime path" describe block below for that test.
 // ---------------------------------------------------------------------------
 
-describe("ParallelReviewRound — always-activate reviewer is always re-run (T-04 Req 4)", () => {
+describe("ParallelReviewRound — always-activate reviewer is re-run in legacy path without digestArtifacts (T-04 Req 4)", () => {
   it("approved always-activate reviewer (activationPaths undefined) is re-run when only change folder paths changed", async () => {
     const store = makeStore();
 
@@ -426,7 +439,8 @@ describe("ParallelReviewRound — always-activate reviewer is always re-run (T-0
       makeDeps(store, runtimeStrategy as never),
     );
 
-    // Always-activate: even empty sourceTouched triggers invalidation → executor IS called
+    // Legacy path (no digestArtifacts): guard does not fire → computeInvalidations runs
+    // → always-activate triggers invalidation even with empty sourceTouched → executor IS called
     expect(wasCalled()).toBe(true);
   });
 
@@ -452,6 +466,76 @@ describe("ParallelReviewRound — always-activate reviewer is always re-run (T-0
     );
 
     expect(outcome).toBe("needs-fix");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Req 4 (real-runtime path — digestArtifacts present): always-activate reviewer
+// (activationPaths undefined) is NOT re-run when digestArtifacts is available and
+// only pipeline outputs changed (no canonical doc change, canonHash matches).
+//
+// Flow: listChangedFiles returns CHANGE_FOLDER_PATH (pipeline output) →
+// excludePipelineManagedChangePaths filters it out → sourceTouched = [] →
+// currentCanonHash defined (digestArtifacts present) → guard fires at
+// parallel-review-round.ts:175 → skip computeInvalidations → re-anchor
+// approvedAtCommit to baselineCommit → selectPendingMembers: revision matches,
+// canonHash matches → executor NOT called.
+// ---------------------------------------------------------------------------
+
+describe("ParallelReviewRound — always-activate reviewer skips in real-runtime path with pipeline-output-only diff (T-04 Req 4 real-runtime)", () => {
+  // The canon hash computed from digestArtifacts returning one non-null hash.
+  // computeCanonHash([{ path: "specrunner/changes/my-change/request.md", hash: "abc123" }])
+  // → "specrunner/changes/my-change/request.md:abc123"
+  const CANON_HASH = `specrunner/changes/${SLUG}/request.md:abc123`;
+
+  it("approved always-activate reviewer stays approved when digestArtifacts present and only pipeline outputs changed", async () => {
+    const store = makeStore();
+
+    const runtimeStrategy = {
+      captureHeadSha: vi.fn(async () => "current-sha"),
+      // listChangedFiles returns ONLY a pipeline output (NOT a canonical doc)
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [CHANGE_FOLDER_PATH] })),
+      finalizeStepArtifacts: vi.fn(async () => {}),
+      validateStepInputs: vi.fn(async () => {}),
+      validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+      // digestArtifacts present (real runtime): returns hash matching state.canonHash
+      digestArtifacts: vi.fn(async () => [
+        { path: `specrunner/changes/${SLUG}/request.md`, hash: "abc123" },
+      ]),
+    };
+
+    // Always-activate reviewer pre-approved with canon hash bound to CANON_HASH.
+    // approvedAtCommit intentionally differs from captureHeadSha ("sha-before" ≠ "current-sha")
+    // to ensure re-anchor fires; after re-anchor, revision and canonHash both match → skip.
+    const state: JobState = {
+      ...makeBaseState(),
+      reviewerStatuses: [
+        {
+          name: MEMBER_A,
+          status: "approved",
+          approvedAtCommit: "sha-before",
+          activationPaths: undefined, // always-activate
+          invalidatedByCommit: null,
+          canonHash: CANON_HASH,
+        },
+      ],
+    };
+
+    const memberStep = makeStep(MEMBER_A);
+    const { executor, wasCalled } = makeFixedExecutor("needs-fix");
+    const round = makeRound(executor, memberStep);
+
+    const { outcome } = await round.run(
+      COORDINATOR,
+      state,
+      makeDeps(store, runtimeStrategy as never),
+    );
+
+    // Real runtime: guard fires (sourceTouched=[], currentCanonHash defined) →
+    // re-anchor approvedAtCommit to "current-sha" → selectPendingMembers: skip →
+    // executor NOT called → all-approved fast path → outcome "approved"
+    expect(wasCalled()).toBe(false);
+    expect(outcome).toBe("approved");
   });
 });
 

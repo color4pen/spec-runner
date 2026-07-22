@@ -8,6 +8,13 @@
  * - TC-ACT-04: skip ≠ approved — skipped reviewer が後続 reviewer / conformance へ進む
  * - TC-ACT-05: reviewers/ 空の場合は既存挙動と完全一致（regression）
  *
+ * TC-040 (must): 単一 reviewer が activation 不一致で skip → job が "awaiting-resume" で停止
+ *   (all-skip escalation per aggregateVerdict, req 3)
+ *   Affects: TC-ACT-01, TC-ACT-02 (requestTypes不一致), TC-ACT-04 (first test / single-skip case)
+ * TC-041 (must): reviewer が 1 名 skip + 1 名 approved → job は "awaiting-archive" で完了
+ *   (mixed verdict = approved, not escalation)
+ *   Affects: TC-ACT-04 (second test / mixed case) — stays "awaiting-archive"
+ *
  * Note: These tests use the managed agent runner (mock client).
  * In managed mode, listChangedFiles is not available (runtimeStrategy not injected),
  * so changedFiles defaults to []. Path-based conditions with non-empty patterns
@@ -270,7 +277,10 @@ describe("TC-ACT-01: paths 不一致 reviewer is skipped", () => {
 
     const result = await runPipelineWith(reviewers);
 
-    expect(result.status).toBe("awaiting-archive");
+    // TC-040: all-skip → escalation → "awaiting-resume" (not "awaiting-archive")
+    // BREAKING CHANGE from old behavior ("awaiting-archive").
+    // Destruction confirmation (TC-048): reverting aggregateVerdict all-skip branch makes this fail.
+    expect(result.status).toBe("awaiting-resume");
 
     // security reviewer should have been skipped
     const securityRuns = result.steps?.["security"];
@@ -319,7 +329,8 @@ describe("TC-ACT-02: requestTypes condition", () => {
     expect(securityRuns![0]!.outcome.skipReason).toContain("spec-change");
     expect(securityRuns![0]!.outcome.skipReason).toContain("bug-fix");
 
-    expect(result.status).toBe("awaiting-archive");
+    // TC-040: all-skip → escalation → "awaiting-resume" (not "awaiting-archive")
+    expect(result.status).toBe("awaiting-resume");
   });
 });
 
@@ -355,7 +366,8 @@ describe("TC-ACT-04: skipped verdict is distinct from approved", () => {
     const run = result.steps?.["security"]?.[0];
     expect(run?.outcome.verdict).toBe("skipped");
     expect(run?.outcome.verdict).not.toBe("approved");
-    expect(result.status).toBe("awaiting-archive");
+    // TC-040: single reviewer all-skip → escalation → "awaiting-resume"
+    expect(result.status).toBe("awaiting-resume");
   });
 
   it("two reviewers: one skipped, one approved — pipeline still completes", async () => {

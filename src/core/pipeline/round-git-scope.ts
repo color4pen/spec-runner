@@ -9,10 +9,18 @@
  *   2. Detect undeclared file changes that trigger a round halt (offending).
  */
 
-import { slugStateJsonPath, slugEventsPath, usageJsonPath, changesDirRel } from "../../util/paths.js";
+import { slugStateJsonPath, slugEventsPath, usageJsonPath, changesDirRel, isCanonicalDocPath } from "../../util/paths.js";
 
 /**
  * Filter out pipeline-managed change folder paths from a list of files.
+ *
+ * @deprecated Use `excludePipelineManagedChangePaths` instead.
+ *   This function excludes ALL paths under the change folder, including canonical
+ *   documents (request.md / spec.md / design.md / tasks.md / test-cases.md).
+ *   Using it for the invalidation diff prevents canonical doc changes from
+ *   appearing in sourceTouched, silently bypassing the canon-binding invalidation
+ *   (TC-005 / TC-016 regression path). Retained only for test backward compatibility
+ *   (round-git-scope.test.ts). Do not use in production invalidation paths.
  *
  * Used by the round invalidation logic to exclude findings commits
  * (specrunner/changes/<slug>/...) from the "touched" file list before
@@ -38,6 +46,43 @@ export function excludeChangeFolderPaths(files: string[]): string[] {
   const root = changesDirRel();
   const prefix = `${root}/`;
   return files.filter((f) => f !== root && !f.startsWith(prefix));
+}
+
+/**
+ * Filter out pipeline-managed change folder paths from a list of files.
+ * Preserves canonical documents (request.md / spec.md / design.md / tasks.md / test-cases.md)
+ * so that changes to them appear in the invalidation diff and trigger reviewer re-runs.
+ *
+ * Excludes (pipeline output paths):
+ *   - Non-canonical paths under the change folder root (findings files, state.json,
+ *     events.jsonl, usage.json, rules.md, attestation.json, etc.)
+ *   - The change folder root directory itself ("specrunner/changes")
+ *
+ * Preserves:
+ *   - Canonical documents directly under specrunner/changes/<slug>/
+ *     (request.md / spec.md / design.md / tasks.md / test-cases.md)
+ *   - All paths outside the change folder (src/, specrunner/reviewers/, etc.)
+ *   - Same-prefix-different-directory paths (e.g. "specrunner/changes-not-a-child/...")
+ *
+ * Replaces excludeChangeFolderPaths for the invalidation diff path (T-02).
+ * The existing goal is maintained: reviewer's own findings commit does not spuriously
+ * invalidate it — findings files are pipeline outputs and are excluded.
+ *
+ * Destruction confirmation (TC-047): if reverted to excludeChangeFolderPaths (full exclusion),
+ * TC-005 and TC-016 fail because canonical docs would be excluded from the invalidation diff.
+ *
+ * @param files - Worktree-relative file paths (e.g. from listChangedFiles).
+ * @returns Files that are not pipeline-managed change folder outputs (canonical docs preserved).
+ */
+export function excludePipelineManagedChangePaths(files: string[]): string[] {
+  const root = changesDirRel();
+  const prefix = `${root}/`;
+  return files.filter((f) => {
+    // Not under the change folder root → preserve (src/, specrunner/reviewers/, etc.)
+    if (f !== root && !f.startsWith(prefix)) return true;
+    // Under change folder: preserve only canonical documents
+    return isCanonicalDocPath(f);
+  });
 }
 
 /**

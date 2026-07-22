@@ -61,6 +61,39 @@ export interface ReviewerStatus {
    * null = not invalidated.
    */
   invalidatedByCommit?: string | null;
+  /**
+   * Content hash of the canonical documents (request.md / spec.md / design.md / tasks.md /
+   * test-cases.md) at the time this reviewer was approved.
+   *
+   * Used by selectPendingMembers to detect canonical doc changes between rounds:
+   * if the current canonHash differs from the recorded value, the approval is invalidated
+   * and the reviewer must re-run (fail-closed).
+   *
+   * Semantics:
+   *   string  — hash bound at approval time; matched against current canonical docs hash.
+   *   null    — canon hash was unavailable at approval time (e.g. managed runtime, file missing).
+   *             Treated as fail-closed: any current canon hash ≠ null → pending.
+   *   absent (undefined) — legacy record (pre-canon-binding feature).
+   *             Treated as fail-closed: always returns pending when currentCanonHash is engaged.
+   */
+  canonHash?: string | null;
+}
+
+/**
+ * Returns true when a ReviewerStatus record has a valid canon hash binding
+ * (i.e. `canonHash` is a non-null string).
+ *
+ * Records with absent (`undefined`) or `null` canonHash are considered unbound:
+ *   - `undefined` → legacy record (pre-canon-binding); treated as fail-closed.
+ *   - `null`      → hash was unavailable at approval time; treated as fail-closed.
+ *
+ * Used by selectPendingMembers to distinguish bound approvals (skip-eligible)
+ * from unbound approvals (always pending when canon check is engaged).
+ */
+export function isBoundToCanonHash(
+  status: ReviewerStatus,
+): status is ReviewerStatus & { canonHash: string } {
+  return typeof status.canonHash === "string";
 }
 
 /**
