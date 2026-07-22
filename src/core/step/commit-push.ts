@@ -520,6 +520,13 @@ export async function commitAndPush(
  * similarly restored before throwing (T-06). Therefore, git add -A here does not pick
  * up violation content — those files are already clean (match HEAD).
  *
+ * Known side effect (scoped residual halt): stagePaths (declared outputs) are staged
+ * by commitAndPush before the residual check. When T-06 throws, those staged declared
+ * outputs remain in the index. Consequently, git add -A here picks them up and they
+ * are committed as part of this checkpoint. This is accepted: the step's legitimate
+ * declared outputs are preserved in the checkpoint even when a residual violation
+ * aborts result adoption. The violation files themselves are already restored (clean).
+ *
  * Idempotent: if no staged changes, returns immediately (no-op).
  * Push failures: warns on stderr but does NOT throw — local resume is preserved.
  *

@@ -1218,6 +1218,7 @@ describe("TC-011: scoped residual quarantine uses worktree diff (HEAD)", () => {
     }
 
     // After T-06: throws with message containing quarantine path
+    expect(caught).toBeDefined();
     if (caught) {
       expect(String((caught as Error).message)).toContain("write-scope-violation-");
     }
