@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "27f57112-6f79-4b9a-a0f2-ffc3d02f181e",
   "createdAt": "2026-07-22T12:00:45.803Z",
-  "updatedAt": "2026-07-22T12:47:32.629Z",
+  "updatedAt": "2026-07-22T12:51:34.847Z",
   "request": {
     "title": "bootstrap の materialization commit を egress 台帳に記録し、初回 push の誤 halt を解消する",
     "type": "bug-fix",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "fix/bootstrap-commit-egress-ledger-27f57112",
-  "error": null,
+  "error": {
+    "code": "ROUND_ALL_MEMBERS_SKIPPED",
+    "message": "All reviewers returned skipped verdict; no reviewer has approved the round.",
+    "hint": "Check reviewer activation conditions (paths / requestTypes). If all reviewers are configured with conditions that do not match the current change, the round will not produce a positive verdict."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -66,10 +70,38 @@
     "89bf60ce6bbdde701eb5a44a98e37673eff590c6",
     "79b14d48380dfaa38aba3e989ea52475a3272dc0",
     "92262f154891879738c875476a81460b11aee091",
-    "e064722d3d4636b1a9a7d4a6ff1aa95da917fcfe"
+    "e064722d3d4636b1a9a7d4a6ff1aa95da917fcfe",
+    "628293098bb5983c72e74992d89bb729adf57c01"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -78,7 +110,12 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
