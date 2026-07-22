@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "561baf30-2710-4053-8409-873006401aaf",
   "createdAt": "2026-07-22T03:47:07.942Z",
-  "updatedAt": "2026-07-22T09:49:16.073Z",
+  "updatedAt": "2026-07-22T09:58:41.688Z",
   "request": {
     "title": "pipeline を唯一の committer にする — 検査モデルから合成モデルへ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/pipeline-sole-committer-561baf30",
   "error": null,
@@ -95,7 +95,7 @@
     "createdAt": "2026-07-22T09:36:47.694Z"
   },
   "_journal": {
-    "historyCount": 98,
+    "historyCount": 102,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -106,7 +106,7 @@
       "bite-evidence": 1,
       "verification": 4,
       "build-fixer": 2,
-      "code-review": 2,
+      "code-review": 3,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,

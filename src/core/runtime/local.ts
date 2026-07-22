@@ -676,7 +676,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    *
    * - awaiting-archive: messageLabel = "finalize" (commit "finalize: <slug>").
    * - awaiting-resume: messageLabel = "checkpoint" (commit "checkpoint: <slug>").
-   * - git add -A → commit → push origin <branch> (1 retry).
+   * - 管理パス（state.json / events.jsonl / usage.json / bite-evidence-result.md）のみを明示 pathspec で add → commit → push（1 retry）。
    * - Push failures warn on stderr but do not throw (local resume is preserved).
    */
   async commitFinalState(deps: PipelineDeps, state: JobState): Promise<void> {
