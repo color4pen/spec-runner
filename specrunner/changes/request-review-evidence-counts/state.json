@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "817bb294-543a-4cae-8a56-d6cbc6e1ef22",
   "createdAt": "2026-07-21T23:16:21.480Z",
-  "updatedAt": "2026-07-22T00:01:11.716Z",
+  "updatedAt": "2026-07-22T00:16:37.366Z",
   "request": {
     "title": "request-review の完了契約に evidence counts を追加し、確認ゼロの approve を非 green にする",
     "type": "spec-change",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/request-review-evidence-counts-817bb294",
-  "error": null,
+  "error": {
+    "code": "ROUND_NONDECLARED_CHANGE",
+    "message": "Round produced undeclared file changes: specrunner/changes/request-review-evidence-counts/bite-evidence-result.md",
+    "hint": "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -59,8 +63,40 @@
       ]
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "Round produced undeclared file changes: specrunner/changes/request-review-evidence-counts/bite-evidence-result.md",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 41,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -69,7 +105,11 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
