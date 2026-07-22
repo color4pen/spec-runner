@@ -349,3 +349,71 @@ export function localSlugStateJsonPath(slug: string): string {
 export function localSlugEventsPath(slug: string): string {
   return `${LOCAL_SIDECAR_BASE}/${slug}/events.jsonl`;
 }
+
+// ---------------------------------------------------------------------------
+// Canonical document helpers (T-01, custom-reviewer-canon-binding)
+// ---------------------------------------------------------------------------
+
+/**
+ * Fixed set of canonical document filenames for a change folder.
+ * These are the human-authored design documents bound to custom reviewer approvals.
+ * Changes to these files invalidate prior reviewer approvals (canon-hash binding).
+ *
+ * TC-034: this file MUST NOT import from any other src/ module.
+ */
+const CANONICAL_DOC_NAMES = new Set([
+  "request.md",
+  "spec.md",
+  "design.md",
+  "tasks.md",
+  "test-cases.md",
+]);
+
+/**
+ * Returns the 5 canonical document paths for a given change slug.
+ * Paths are worktree-relative (no leading slash).
+ *
+ * Example: canonicalDocPaths("foo") → [
+ *   "specrunner/changes/foo/request.md",
+ *   "specrunner/changes/foo/spec.md",
+ *   "specrunner/changes/foo/design.md",
+ *   "specrunner/changes/foo/tasks.md",
+ *   "specrunner/changes/foo/test-cases.md",
+ * ]
+ *
+ * Pure function — no I/O, no imports from other src/ modules.
+ * TC-034: this file MUST NOT import from any other src/ module.
+ */
+export function canonicalDocPaths(slug: string): string[] {
+  return [
+    "request.md",
+    "spec.md",
+    "design.md",
+    "tasks.md",
+    "test-cases.md",
+  ].map((name) => `${CHANGES_DIR}/${slug}/${name}`);
+}
+
+/**
+ * Returns true when `path` is a canonical document directly under a change slug folder.
+ *
+ * Canonical layout: specrunner/changes/<slug>/<canonical-name>
+ *   - Must be exactly 2 path segments under specrunner/changes/ (<slug> and <file>)
+ *   - Filename must be one of: request.md / spec.md / design.md / tasks.md / test-cases.md
+ *
+ * Paths under archive/ or canceled/ (depth ≥ 3 from changes/) return false.
+ * Paths outside specrunner/changes/ return false.
+ *
+ * TC-034: this file MUST NOT import from any other src/ module.
+ */
+export function isCanonicalDocPath(path: string): boolean {
+  const prefix = `${CHANGES_DIR}/`;
+  if (!path.startsWith(prefix)) return false;
+  const rest = path.slice(prefix.length);
+  const slashIdx = rest.indexOf("/");
+  if (slashIdx === -1) return false; // no filename (e.g. "specrunner/changes/foo")
+  const filename = rest.slice(slashIdx + 1);
+  // Empty filename or nested deeper (contains another "/") → not canonical
+  if (!filename || filename.includes("/")) return false;
+  return CANONICAL_DOC_NAMES.has(filename);
+}

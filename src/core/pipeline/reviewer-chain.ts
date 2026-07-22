@@ -442,6 +442,28 @@ export function buildParallelReviewerTransitions(opts: {
     on: "skipped",
     to: REGRESSION_GATE_STEP_NAME,
   });
+  // all-members-skipped escalation → regression-gate
+  // When aggregateVerdict returns "escalation" because all members skipped (ROUND_ALL_MEMBERS_SKIPPED),
+  // route through the remaining pipeline (regression-gate → conformance → pr-create) so those steps
+  // still run. The final escalation to "awaiting-resume" fires in pipeline.ts when nextStep="end"
+  // and state.error.code === "ROUND_ALL_MEMBERS_SKIPPED" is detected.
+  //
+  // This is intentionally separate from other coordinator escalation causes (e.g. ROUND_NONDECLARED_CHANGE)
+  // which still default to the "escalate" terminal and stop the pipeline immediately.
+  //
+  // Destruction confirmation (TC-047): removing this transition causes TC-ACT-01's conformance
+  // assertion to fail (conformance would not run when all reviewers skip).
+  transitions.push({
+    step: coordinator,
+    on: "escalation",
+    to: REGRESSION_GATE_STEP_NAME,
+    when: (s) => {
+      const runs = s.steps?.[coordinator] ?? [];
+      if (runs.length === 0) return false;
+      const last = runs[runs.length - 1];
+      return last?.outcome?.error?.code === "ROUND_ALL_MEMBERS_SKIPPED";
+    },
+  });
 
   // --- regression-gate rows ---
   // approved + fixable findings → code-fixer

@@ -4,14 +4,14 @@
 
 ## T-01: 正典文書パスの pure ヘルパを追加する
 
-- [ ] `src/util/paths.ts` に正典文書ファイル名の固定集合を定義する
+- [x] `src/util/paths.ts` に正典文書ファイル名の固定集合を定義する
       （request.md / spec.md / design.md / tasks.md / test-cases.md）。
-- [ ] `canonicalDocPaths(slug: string): string[]` を追加し、
+- [x] `canonicalDocPaths(slug: string): string[]` を追加し、
       `specrunner/changes/<slug>/<name>` の 5 パスを返す（実在チェックはしない。純粋にパス生成）。
-- [ ] `isCanonicalDocPath(path: string): boolean` を追加する。
+- [x] `isCanonicalDocPath(path: string): boolean` を追加する。
       `specrunner/changes/` 直下 slug の深さ 2（`<slug>/<file>`）かつ basename が正典集合に属する時 true。
       archive / canceled 配下（深さ 3 以上）は false。
-- [ ] `paths.ts` は他 src モジュールを import しない制約（TC-034）を維持する。
+- [x] `paths.ts` は他 src モジュールを import しない制約（TC-034）を維持する。
 
 **Acceptance Criteria**:
 - `canonicalDocPaths("foo")` が 5 つの `specrunner/changes/foo/*.md` を返す。
@@ -22,13 +22,13 @@
 
 ## T-02: round の除外を pipeline 出力に限定する（正典文書は保持）
 
-- [ ] `src/core/pipeline/round-git-scope.ts` の `excludeChangeFolderPaths` を
+- [x] `src/core/pipeline/round-git-scope.ts` の `excludeChangeFolderPaths` を
       `excludePipelineManagedChangePaths` に改称し、`isCanonicalDocPath`（T-01）を用いて
       「change folder 内かつ非正典のみ除外・正典と change folder 外は保持」に変更する。
-- [ ] docstring を「正典文書は保持し、pipeline 出力（findings / state / events / usage /
+- [x] docstring を「正典文書は保持し、pipeline 出力（findings / state / events / usage /
       attestation / rules 等）のみ除外する」旨へ更新する。既存目的（reviewer 自身の findings で
       誤 invalidate しない）が維持されることを明記する。
-- [ ] `partitionRoundChanges` / `pipelineManagedPaths` は変更しない（staging / halt 検出の責務は別軸）。
+- [x] `partitionRoundChanges` / `pipelineManagedPaths` は変更しない（staging / halt 検出の責務は別軸）。
 
 **Acceptance Criteria**:
 - `excludePipelineManagedChangePaths(["specrunner/changes/foo/design.md"])` が
@@ -40,10 +40,10 @@
 
 ## T-03: ReviewerStatus に canonHash フィールドを追加する
 
-- [ ] `src/kernel/reviewer-snapshot.ts` の `ReviewerStatus` に `canonHash?: string | null` を追加する。
-- [ ] JSDoc: 「承認時点の正典文書集合の内容 hash。null / 欠落 = legacy または検証不能 →
+- [x] `src/kernel/reviewer-snapshot.ts` の `ReviewerStatus` に `canonHash?: string | null` を追加する。
+- [x] JSDoc: 「承認時点の正典文書集合の内容 hash。null / 欠落 = legacy または検証不能 →
       skip 判定で fail-closed（pending に戻す）」を記述する。
-- [ ] `src/state/schema/operations.ts` の reviewerStatuses 検証は name / status のみ検査の後方互換の
+- [x] `src/state/schema/operations.ts` の reviewerStatuses 検証は name / status のみ検査の後方互換の
       ままとし、変更しない（追加フィールドは素通り）。
 
 **Acceptance Criteria**:
@@ -52,18 +52,18 @@
 
 ## T-04: reviewer-status.ts の純粋関数を拡張する
 
-- [ ] `computeCanonHash(refs: ArtifactRef[]): string | null` を追加する（D3）。
+- [x] `computeCanonHash(refs: ArtifactRef[]): string | null` を追加する（D3）。
       hash 非 null の refs のみ採用し path 昇順ソートで決定的に serialize、採用 0 件 → null。
       `ArtifactRef` は `../../state/artifact-types.js` から type import する。
-- [ ] `selectPendingMembers(statuses, members, baselineCommit?, currentCanonHash?)` に第 4 引数
+- [x] `selectPendingMembers(statuses, members, baselineCommit?, currentCanonHash?)` に第 4 引数
       `currentCanonHash?: string | null` を追加し、D4 の判定順序を実装する
       （managed short-circuit は canon 前段。approved かつ local で revision 一致後に canon 判定:
       undefined → skip / null → pending / record.canonHash 欠落 or 不一致 → pending / 一致 → skip）。
-- [ ] `applyRoundResults(statuses, results, headSha, currentCanonHash?)` に第 4 引数を追加し、
+- [x] `applyRoundResults(statuses, results, headSha, currentCanonHash?)` に第 4 引数を追加し、
       approved verdict の member に `canonHash = currentCanonHash ?? null` を記録する
       （approvedAtCommit = headSha の記録は既存どおり）。needs-fix / escalation で承認解除時の
       canonHash は保持不要（status pending 化で参照されない）。
-- [ ] `aggregateVerdict(memberVerdicts)` を D6 に従い変更する
+- [x] `aggregateVerdict(memberVerdicts)` を D6 に従い変更する
       （空 → approved / escalation 優先 / needs-fix 優先 / 非空かつ全 skipped → escalation /
       それ以外 → approved）。
 
@@ -79,20 +79,20 @@
 
 ## T-05: ParallelReviewRound に canon 束縛と全 skip escalation を組み込む
 
-- [ ] round 開始時（statuses 導出後）に `deps.runtimeStrategy?.digestArtifacts` があれば
+- [x] round 開始時（statuses 導出後）に `deps.runtimeStrategy?.digestArtifacts` があれば
       `canonicalDocPaths(deps.slug).map(p => ({ path: p }))` を渡して 1 回だけ呼び、
       `computeCanonHash` で `currentCanonHash: string | null` を算出する。method 不在時は undefined。
-- [ ] invalidation ループの `excludeChangeFolderPaths` を `excludePipelineManagedChangePaths` に置換する
+- [x] invalidation ループの `excludeChangeFolderPaths` を `excludePipelineManagedChangePaths` に置換する
       （import も更新）。source-touched に正典文書が現れるようにする。re-anchor は approvedAtCommit の
       付け替えのみとし canonHash は触らない（正典変更時に canon 不一致を残して再走させるため）。
-- [ ] `selectPendingMembers(statuses, memberNames, baselineCommit, currentCanonHash)` を呼ぶ。
-- [ ] fan-out 後、`allMembersSkipped = memberVerdicts.size > 0 && 全て "skipped"` を算出する。
+- [x] `selectPendingMembers(statuses, memberNames, baselineCommit, currentCanonHash)` を呼ぶ。
+- [x] fan-out 後、`allMembersSkipped = memberVerdicts.size > 0 && 全て "skipped"` を算出する。
       true の場合: roundError に `ROUND_ALL_MEMBERS_SKIPPED`（message / hint 付き、既存 ErrorInfo 形式）を
       設定し、step 7c の `applyRoundResults` 適用を抑止する（member を pending のまま残す）。
       aggregateVerdictResult は aggregateVerdict の戻り（escalation）に従う。
-- [ ] `applyRoundResults(statuses, memberVerdicts, headSha, currentCanonHash)` を呼ぶ
+- [x] `applyRoundResults(statuses, memberVerdicts, headSha, currentCanonHash)` を呼ぶ
       （inspectionEscalated でも allMembersSkipped でもない場合のみ、既存 guard を拡張）。
-- [ ] roundError の precedence: git-effects inspection escalation が発生した場合はその error を優先し、
+- [x] roundError の precedence: git-effects inspection escalation が発生した場合はその error を優先し、
       未設定時のみ全 skip error を残す（両者とも escalation として妥当）。
 
 **Acceptance Criteria**:
@@ -104,15 +104,15 @@
 
 ## T-06: 純粋関数・除外の unit テストを追加/更新する
 
-- [ ] `src/core/pipeline/__tests__/reviewer-status.test.ts` の
+- [x] `src/core/pipeline/__tests__/reviewer-status.test.ts` の
       `aggregateVerdict(["skipped","skipped"])` 期待を escalation に更新。
       `[]` → approved、`["approved","skipped"]` → approved のケースは維持/追加。
-- [ ] `selectPendingMembers` の canon 束縛ケースを追加する（design.md 「テスト影響」の polarity 表を固定）:
+- [x] `selectPendingMembers` の canon 束縛ケースを追加する（design.md 「テスト影響」の polarity 表を固定）:
       revision 一致 + canon 一致 → skip、canon 不一致 → pending、legacy record（canonHash 欠落）→ pending、
       currentCanonHash=null → pending、currentCanonHash=undefined → skip（3-arg 保存）。
-- [ ] `applyRoundResults` の canonHash 記録ケースを追加する。
-- [ ] `computeCanonHash` の unit テストを追加する（空 / 全 null / 内容差 / 順不同同一）。
-- [ ] `src/core/pipeline/__tests__/round-git-scope.test.ts` を
+- [x] `applyRoundResults` の canonHash 記録ケースを追加する。
+- [x] `computeCanonHash` の unit テストを追加する（空 / 全 null / 内容差 / 順不同同一）。
+- [x] `src/core/pipeline/__tests__/round-git-scope.test.ts` を
       `excludePipelineManagedChangePaths` へ追随し、正典文書（design.md / request.md 等）が
       **保持** されるケースと、pipeline 出力が除外される既存ケースを両方固定する。
 
@@ -123,13 +123,13 @@
 
 ## T-07: reviewer-activation-e2e の期待を更新する（要件 3 の blast radius）
 
-- [ ] `tests/reviewer-activation-e2e.test.ts` の単一 reviewer skip 構成の `result.status` 期待を
+- [x] `tests/reviewer-activation-e2e.test.ts` の単一 reviewer skip 構成の `result.status` 期待を
       `"awaiting-archive"` から `"awaiting-resume"`（全 skip escalation）へ更新する:
       TC-ACT-01 / TC-ACT-02「requestTypes 不一致で skip」/ TC-ACT-04 第 1 テスト。
       member verdict "skipped" / skipReason の assertion は維持する。
-- [ ] TC-ACT-04 第 2 テスト（skipped + approved 混在）/ TC-ACT-02 一致ケース / TC-ACT-03 / TC-ACT-05 は
+- [x] TC-ACT-04 第 2 テスト（skipped + approved 混在）/ TC-ACT-02 一致ケース / TC-ACT-03 / TC-ACT-05 は
       変更しない（approved 合流のまま awaiting-archive）。
-- [ ] `tests/custom-reviewers-e2e.test.ts` の既存ケース（reviewer が approved / needs-fix を返す）が
+- [x] `tests/custom-reviewers-e2e.test.ts` の既存ケース（reviewer が approved / needs-fix を返す）が
       全 skip escalation の影響を受けないことを確認する（無変更で green）。TC-050 / TC-051 の
       承認 skip / invalidation 挙動が canon 束縛追加後も維持されることを確認する。
 
@@ -139,19 +139,19 @@
 
 ## T-08: E2E（fabricated state + 実 git）で canon 束縛の一連を固定する
 
-- [ ] 実 git の temp repo を用意し、初期 commit に `specrunner/changes/<slug>/` 直下の正典文書
+- [x] 実 git の temp repo を用意し、初期 commit に `specrunner/changes/<slug>/` 直下の正典文書
       （request.md / spec.md / design.md / tasks.md）と src ファイルを含める。branch を切る。
-- [ ] 実 `LocalRuntime`（実 spawnFn）と、approved を返す fake `StepExecutor` を用いて
+- [x] 実 `LocalRuntime`（実 spawnFn）と、approved を返す fake `StepExecutor` を用いて
       `ParallelReviewRound.run` を駆動する（実 LLM 不使用）。
-- [ ] シナリオ A（再走 + 新束縛）: round1 で reviewer を承認 → status に canonHash H1 /
+- [x] シナリオ A（再走 + 新束縛）: round1 で reviewer を承認 → status に canonHash H1 /
       approvedAtCommit C1 が記録される。design.md を変更して git commit（HEAD=C2, canon=H2）→
       承認済み state を fabricate して round2 を実行 → reviewer が pending に戻って再走 → 新 status に
       canonHash H2 / approvedAtCommit C2 が束縛される。
-- [ ] シナリオ B（挙動保存）: 正典・source いずれも不変の round2 → reviewer が skip され再走しない
+- [x] シナリオ B（挙動保存）: 正典・source いずれも不変の round2 → reviewer が skip され再走しない
       （fake executor が呼ばれない）。
-- [ ] シナリオ C（findings 保存）: round 間で `<name>-result-NNN.md` のみを commit（正典・source 不変）
+- [x] シナリオ C（findings 保存）: round 間で `<name>-result-NNN.md` のみを commit（正典・source 不変）
       → reviewer が invalidation を受けず skip される。
-- [ ] シナリオ D（破壊確認）: canon 束縛を無効化した場合にシナリオ A の再走 assertion が fail し、
+- [x] シナリオ D（破壊確認）: canon 束縛を無効化した場合にシナリオ A の再走 assertion が fail し、
       旧 `excludeChangeFolderPaths`（全除外）に戻すと正典変更 surfacing が fail することをコメントで
       記録する（コード上の期待は修正後挙動で固定）。
 
@@ -163,10 +163,10 @@
 
 ## T-09: 破壊確認の記録と検証ゲート
 
-- [ ] 各受け入れ基準に対応する「修正前挙動に戻すと該当テストが fail する」ことを、テストコメントまたは
+- [x] 各受け入れ基準に対応する「修正前挙動に戻すと該当テストが fail する」ことを、テストコメントまたは
       design.md「破壊確認」節への追記として記録する（canon 束縛除去 / 除外全戻し / 全 skip approved 戻し /
       legacy skip 戻し）。
-- [ ] `typecheck && test` を green にする。
+- [x] `typecheck && test` を green にする。
 
 **Acceptance Criteria**:
 - 破壊確認が全受け入れ基準について記録されている。

@@ -22,9 +22,36 @@ import type { JobState } from "../../state/schema.js";
 import type { ReviewerStatus } from "../../kernel/reviewer-snapshot.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
 import type { StepExecutionResult } from "../step/commit-orchestrator.js";
+import type { ArtifactRef } from "../../state/artifact-types.js";
 import { evaluateActivation } from "../reviewers/activation.js";
 
 export type { ReviewerStatus };
+
+// ---------------------------------------------------------------------------
+// computeCanonHash
+// ---------------------------------------------------------------------------
+
+/**
+ * Compute a deterministic content hash string from a list of ArtifactRefs.
+ *
+ * Algorithm (D3, custom-reviewer-canon-binding):
+ *   1. Filter refs to those with non-null hash values.
+ *   2. Sort filtered refs by path (ascending lexicographic) for determinism.
+ *   3. Serialize as "path:hash|path:hash|..." joined string.
+ *   4. Return null when no non-null hashes are present (all missing / managed runtime).
+ *
+ * The returned string is opaque and suitable for equality comparison only.
+ * Different sets of canonical docs → different string. Same set in any order → same string.
+ *
+ * @param refs - ArtifactRef array (e.g. from runtimeStrategy.digestArtifacts).
+ * @returns Deterministic hash string, or null if all refs have null hash.
+ */
+export function computeCanonHash(refs: ArtifactRef[]): string | null {
+  const adopted = refs.filter((r) => r.hash !== null);
+  if (adopted.length === 0) return null;
+  adopted.sort((a, b) => a.path.localeCompare(b.path));
+  return adopted.map((r) => `${r.path}:${r.hash}`).join("|");
+}
 
 // ---------------------------------------------------------------------------
 // deriveReviewerStatuses
@@ -81,21 +108,41 @@ export function deriveReviewerStatuses(
  * (approved → exclude, regardless of commitOid). This preserves managed-runtime
  * fail-safe skip and backward compatibility with 2-arg call sites.
  *
+ * T-04 (canon-hash binding, custom-reviewer-canon-binding): When `currentCanonHash` is
+ * a string or null, canon verification is engaged after revision matching (local path only):
+ *   - `currentCanonHash === undefined` → canon check disabled (3-arg backward compat, skip)
+ *   - `currentCanonHash === null`      → canon unavailable → fail-closed → pending
+ *   - `rec.canonHash` absent/null      → legacy record → fail-closed → pending
+ *   - `rec.canonHash === currentCanonHash` → match → skip
+ *   - else                             → mismatch → pending (canonical docs changed)
+ *
+ * Managed short-circuit (baselineCommit=null) fires BEFORE canon check. This ensures
+ * that managed runtime (null baseline) always skips approved reviewers without canon check.
+ *
  * Approval exclusion table:
  *   baselineCommit = null/undefined → revision check disabled → approved always excluded
- *   baselineCommit = "sha" + approvedAtCommit = "sha"  → match → excluded (skip)
+ *   baselineCommit = "sha" + approvedAtCommit = "sha" + currentCanonHash = undefined → skip (3-arg compat)
+ *   baselineCommit = "sha" + approvedAtCommit = "sha" + currentCanonHash = null → pending (fail-closed)
+ *   baselineCommit = "sha" + approvedAtCommit = "sha" + rec.canonHash absent/null → pending (legacy)
+ *   baselineCommit = "sha" + approvedAtCommit = "sha" + rec.canonHash === currentCanonHash → skip
+ *   baselineCommit = "sha" + approvedAtCommit = "sha" + rec.canonHash ≠ currentCanonHash → pending
  *   baselineCommit = "sha" + approvedAtCommit = "other" → mismatch → pending (re-run)
  *   baselineCommit = "sha" + approvedAtCommit = null   → absent → pending (fail-closed)
  *
- * @param statuses       - Current reviewer status records.
- * @param members        - Reviewer names in declaration order.
- * @param baselineCommit - Current HEAD SHA to check against approvedAtCommit.
- *                         null/undefined → disable revision check (managed fail-safe).
+ * @param statuses          - Current reviewer status records.
+ * @param members           - Reviewer names in declaration order.
+ * @param baselineCommit    - Current HEAD SHA to check against approvedAtCommit.
+ *                            null/undefined → disable revision check (managed fail-safe).
+ * @param currentCanonHash  - Current canonical docs hash (from computeCanonHash).
+ *                            undefined → disable canon check (backward compat / no digestArtifacts).
+ *                            null → canon unavailable → fail-closed.
+ *                            string → check against rec.canonHash.
  */
 export function selectPendingMembers(
   statuses: ReviewerStatus[],
   members: string[],
   baselineCommit?: string | null,
+  currentCanonHash?: string | null,
 ): string[] {
   const statusMap = new Map(statuses.map((s) => [s.name, s]));
   return members.filter((name) => {
@@ -109,7 +156,8 @@ export function selectPendingMembers(
 
     // Member is approved. Check revision binding when baseline is available.
     if (baselineCommit == null) {
-      // null/undefined baseline → disable revision check → exclude (managed fail-safe)
+      // null/undefined baseline → disable revision check → exclude (managed fail-safe).
+      // Canon check is also skipped (managed short-circuit fires first, D4).
       return false;
     }
 
@@ -117,7 +165,22 @@ export function selectPendingMembers(
     // null/undefined approvedAtCommit → fail-closed → pending.
     const approvedAtCommit = rec.approvedAtCommit;
     if (!approvedAtCommit) return true; // null → pending (fail-closed)
-    return approvedAtCommit !== baselineCommit; // true = pending if mismatch
+    if (approvedAtCommit !== baselineCommit) return true; // mismatch → pending
+
+    // Revision matches. Now apply canon hash binding if engaged (local path only).
+    // currentCanonHash=undefined → 3-arg backward compat → skip canon check → exclude (skip)
+    if (currentCanonHash === undefined) return false;
+
+    // currentCanonHash=null → canon unavailable → fail-closed → pending
+    if (currentCanonHash === null) return true;
+
+    // Canon check: record must have a non-null, matching canonHash.
+    // absent (undefined) or null → legacy record → fail-closed → pending
+    const recordCanonHash = rec.canonHash;
+    if (!recordCanonHash) return true; // null/undefined → pending (fail-closed / legacy)
+
+    // Both revision and canon match → skip (exclude from pending list)
+    return recordCanonHash !== currentCanonHash; // true = pending if mismatch
   });
 }
 
@@ -129,19 +192,27 @@ export function selectPendingMembers(
  * Update reviewer statuses based on the verdicts produced in a parallel round.
  *
  * Rules:
- * - approved → status = "approved", approvedAtCommit = headSha
+ * - approved → status = "approved", approvedAtCommit = headSha, canonHash = currentCanonHash ?? null
  * - needs-fix → status = "pending" (clear approvedAtCommit)
  * - skipped   → status = "skipped"
  * - Any other verdict (escalation, error) → leave status as pending
  *
- * @param statuses - Existing status records.
- * @param results  - Map of reviewer name → latest verdict string.
- * @param headSha  - HEAD SHA at round completion time.
+ * T-04 (canon-hash binding): When `currentCanonHash` is provided, approved verdicts record
+ * `canonHash = currentCanonHash`. When omitted (3-arg callers), canonHash is set to null.
+ * Needs-fix/escalation/pending transitions do not record canonHash (not needed; status=pending
+ * means the reviewer must re-run regardless).
+ *
+ * @param statuses          - Existing status records.
+ * @param results           - Map of reviewer name → latest verdict string.
+ * @param headSha           - HEAD SHA at round completion time.
+ * @param currentCanonHash  - Current canonical docs hash (optional). When provided, recorded on
+ *                            approved status. When absent, canonHash is set to null (fail-closed).
  */
 export function applyRoundResults(
   statuses: ReviewerStatus[],
   results: Map<string, string>,
   headSha: string,
+  currentCanonHash?: string | null,
 ): ReviewerStatus[] {
   return statuses.map((s) => {
     const verdict = results.get(s.name);
@@ -153,6 +224,8 @@ export function applyRoundResults(
         status: "approved" as const,
         approvedAtCommit: headSha,
         invalidatedByCommit: null,
+        // Record canonHash from the current round (null when not provided — fail-closed on next resume)
+        canonHash: currentCanonHash ?? null,
       };
     }
     if (verdict === "skipped") {
@@ -180,10 +253,17 @@ export function applyRoundResults(
  * Priority: escalation > needs-fix > approved
  * - Any escalation → "escalation"
  * - No escalation, any needs-fix → "needs-fix"
- * - All approved or skipped → "approved" (skipped counts as approved for gate)
+ * - Non-empty, all skipped → "escalation" (D6 / TC-034: all-skip is non-green)
+ * - All approved or mixed approved+skipped → "approved"
+ * - Empty list → "approved" (TC-035/TC-007: feature unused, member 0 → gate pass-through)
  *
- * Design D5: skipped is treated as approved for the purpose of gate progression
- * (activation not matched → reviewer has no opinion → pass-through).
+ * Design D5/D6 update (custom-reviewer-canon-binding):
+ *   When a non-empty reviewer set produces ALL skipped verdicts, the round has no positive
+ *   opinion — this is a non-green outcome (escalation). A single non-skipped approved verdict
+ *   in a mixed result overrides this and produces "approved".
+ *
+ * Destruction confirmation (TC-048): removing the all-skip branch causes
+ * aggregateVerdict(["skipped","skipped"]) to return "approved" instead of "escalation".
  *
  * @param memberVerdicts - Array of verdict strings from each member's last run.
  */
@@ -191,10 +271,19 @@ export function aggregateVerdict(
   memberVerdicts: string[],
 ): "approved" | "needs-fix" | "escalation" {
   let hasNeedsFix = false;
+  let hasNonSkipped = false;
   for (const v of memberVerdicts) {
     if (v === "escalation") return "escalation";
-    if (v === "needs-fix") hasNeedsFix = true;
+    if (v === "needs-fix") {
+      hasNeedsFix = true;
+      hasNonSkipped = true;
+    } else if (v !== "skipped") {
+      // "approved" or any other non-skip, non-escalation verdict
+      hasNonSkipped = true;
+    }
   }
+  // Non-empty but all skipped → escalation (D6: no positive opinion from any reviewer)
+  if (memberVerdicts.length > 0 && !hasNonSkipped) return "escalation";
   return hasNeedsFix ? "needs-fix" : "approved";
 }
 
