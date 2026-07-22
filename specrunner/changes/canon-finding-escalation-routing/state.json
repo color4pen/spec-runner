@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d81cea8f-31d9-4c26-b116-79ba54c46ab5",
   "createdAt": "2026-07-22T11:54:57.409Z",
-  "updatedAt": "2026-07-22T15:06:39.567Z",
+  "updatedAt": "2026-07-22T15:08:43.573Z",
   "request": {
     "title": "保護正典への fixable finding を、書けない fixer に routing せず escalation に倒す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/canon-finding-escalation-routing-d81cea8f",
   "error": null,
@@ -74,7 +74,8 @@
     "75fc6fa5c6a8f3110ec79f388ffc01790da138ae",
     "7fa22658aceed2ec817d76e85f213c417f06ce84",
     "32347482028cbd35a8b333b3e194eab441338816",
-    "c85ffa25279d067352582e63b4f29a4ae688ae2d"
+    "c85ffa25279d067352582e63b4f29a4ae688ae2d",
+    "030e03ec90a7dc58d729861b4c026dd8f595de66"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -107,7 +108,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 73,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -122,7 +123,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
