@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6283b476-9b25-4729-b5a9-a9a2b94f533d",
   "createdAt": "2026-07-22T11:55:42.653Z",
-  "updatedAt": "2026-07-22T13:05:39.358Z",
+  "updatedAt": "2026-07-22T13:09:23.942Z",
   "request": {
     "title": "changed-line-coverage の not-loaded 判定を type-only ファイルで誤検出させない",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "change/coverage-type-only-not-loaded-6283b476",
-  "error": null,
+  "error": {
+    "code": "ROUND_ALL_MEMBERS_SKIPPED",
+    "message": "All reviewers returned skipped verdict; no reviewer has approved the round.",
+    "hint": "Check reviewer activation conditions (paths / requestTypes). If all reviewers are configured with conditions that do not match the current change, the round will not produce a positive verdict."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -67,10 +71,38 @@
     "ea325152c0731833e9b1d0e731e2f42025837566",
     "f1812b80ee26ebc91f0ce8369768e4e7273e7b2f",
     "93353e283f858879f017a00c574ae4c1f0052f5c",
-    "981af693cecaca684c26e3965be2ea83d5124d86"
+    "981af693cecaca684c26e3965be2ea83d5124d86",
+    "f36f10afb6f7cfaaa9ea8606b6ccc8f7cbb38a0e"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -79,7 +111,12 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
