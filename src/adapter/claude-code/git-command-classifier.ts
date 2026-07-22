@@ -29,24 +29,37 @@ export type GitCommandVerdict =
 
 /**
  * Git subcommands that always perform state mutation.
+ *
+ * Design D2 (permission-layer-git-write-denial) full list:
+ * commit, commit-tree, push, add, reset, checkout, switch, restore, clean,
+ * merge, rebase, cherry-pick, revert, rm, mv, am, apply, pull,
+ * update-ref, update-index, filter-branch, fast-import, gc, prune.
  */
 const ALWAYS_MUTATING = new Set([
   "commit",
+  "commit-tree",
   "push",
   "add",
   "reset",
   "checkout",
+  "switch",
   "restore",
   "clean",
   "merge",
   "rebase",
   "cherry-pick",
+  "revert",
   "rm",
   "mv",
   "am",
   "apply",
+  "pull",
   "update-ref",
+  "update-index",
   "filter-branch",
+  "fast-import",
+  "gc",
+  "prune",
 ]);
 
 /**

@@ -23,21 +23,29 @@ import { classifyGitCommand } from "../git-command-classifier.js";
 describe("TC-001: ALWAYS_MUTATING サブコマンド群が mutation を返す", () => {
   const cases: Array<{ cmd: string; expectedSubcommand: string }> = [
     { cmd: "git commit -m x", expectedSubcommand: "commit" },
+    { cmd: "git commit-tree abc", expectedSubcommand: "commit-tree" },
     { cmd: "git push origin main", expectedSubcommand: "push" },
     { cmd: "git add .", expectedSubcommand: "add" },
     { cmd: "git reset --hard HEAD", expectedSubcommand: "reset" },
     { cmd: "git checkout main", expectedSubcommand: "checkout" },
+    { cmd: "git switch main", expectedSubcommand: "switch" },
     { cmd: "git clean -fd", expectedSubcommand: "clean" },
     { cmd: "git merge feature", expectedSubcommand: "merge" },
     { cmd: "git rebase main", expectedSubcommand: "rebase" },
     { cmd: "git restore src/foo.ts", expectedSubcommand: "restore" },
     { cmd: "git cherry-pick abc", expectedSubcommand: "cherry-pick" },
+    { cmd: "git revert HEAD", expectedSubcommand: "revert" },
     { cmd: "git rm file.txt", expectedSubcommand: "rm" },
     { cmd: "git mv a.ts b.ts", expectedSubcommand: "mv" },
     { cmd: "git am patch.diff", expectedSubcommand: "am" },
     { cmd: "git apply patch.diff", expectedSubcommand: "apply" },
+    { cmd: "git pull origin main", expectedSubcommand: "pull" },
     { cmd: "git update-ref refs/heads/main abc", expectedSubcommand: "update-ref" },
+    { cmd: "git update-index --add file.txt", expectedSubcommand: "update-index" },
     { cmd: "git filter-branch --tree-filter ...", expectedSubcommand: "filter-branch" },
+    { cmd: "git fast-import --export-marks=marks.txt", expectedSubcommand: "fast-import" },
+    { cmd: "git gc --aggressive", expectedSubcommand: "gc" },
+    { cmd: "git prune", expectedSubcommand: "prune" },
   ];
 
   for (const { cmd, expectedSubcommand } of cases) {

@@ -117,11 +117,12 @@ export function buildWorkspaceSandbox(cwd: string): Record<string, unknown> {
  *
  * Measured SDK facts (confirmed by probe):
  * - Under permissionMode "default", canUseTool fires for tools NOT on allowedTools.
- * - Edit and Write are removed from allowedTools so this guard fires for them.
- * - Tools on allowedTools (Read, Bash, Grep, Glob, MCP report) bypass canUseTool entirely;
+ * - Edit, Write, and Bash are removed from allowedTools so canUseTool fires for all three.
+ * - Tools on allowedTools (Read, Grep, Glob, MCP report) bypass canUseTool entirely;
  *   the default-allow arm below is defense-in-depth only.
- * - Bash is on allowedTools (autoAllowBashIfSandboxed: true preserves execution under sandbox);
- *   the Bash branch below provides direct-call classification (tested by unit tests and probes).
+ * - Bash is NOT on allowedTools — the Bash branch below classifies git commands and
+ *   denies state-mutation operations; read git and non-git Bash are allowed.
+ *   (D1: permission-layer-git-write-denial)
  *
  * Residual (not detected via this guard): shell variable expansion, redirects, editor-mediated
  * writes. Commit layer (#893 mixed-reset + synthesis + egress) handles these.
@@ -551,11 +552,14 @@ export class ClaudeCodeRunner implements AgentRunner {
       }
     };
 
-    // write-scope-guard-redo D1: allowedTools base — Edit / Write removed so canUseTool fires for them.
+    // permission-layer-git-write-denial D1: Bash removed from allowedTools so canUseTool fires
+    //   for Bash tool calls. The guard's Bash branch classifies git state-mutation commands and
+    //   denies them; read git and non-git (e.g. bun test) are allowed.
+    // write-scope-guard-redo D1: Edit / Write also removed so canUseTool fires for them.
     // write-scope-guard-redo D3: when reportTool is configured, pre-approve its MCP tool name so
     //   report_result runs immediately without consulting canUseTool (pipeline lifeline isolation).
     //   MCP tool name format: mcp__<serverName>__<toolName> (measured fact 5).
-    const baseAllowedTools = ["Read", "Bash", "Grep", "Glob"];
+    const baseAllowedTools = ["Read", "Grep", "Glob"];
     const allowedTools = reportTool
       ? [...baseAllowedTools, `mcp__${REPORT_MCP_SERVER_NAME}__${reportTool.name}`]
       : baseAllowedTools;

@@ -19,7 +19,7 @@ import {
   ClaudeCodeRunner,
 } from "../agent-runner.js";
 import type { QueryFn, CreateMcpServerFn } from "../agent-runner.js";
-import type { AgentRunContext } from "../../../core/port/agent-runner.js";
+import type { AgentRunContext, AgentWriteScope } from "../../../core/port/agent-runner.js";
 import type { ReportToolSpec } from "../../../core/port/report-result.js";
 import { parseBaseReportInput } from "../../../core/port/report-result.js";
 import type { JobState } from "../../../state/schema.js";
@@ -420,5 +420,491 @@ describe("TC-FW-07: step-agent queryOptions freeze — with reportTool", () => {
     // Must still not contain Edit or Write
     expect(allowedTools).not.toContain("Edit");
     expect(allowedTools).not.toContain("Write");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Helpers for scope-aware guard tests (TC-011..TC-036)
+// ---------------------------------------------------------------------------
+
+const TEST_SLUG = "test-slug";
+
+/**
+ * Build a scoped AgentWriteScope for the given declared write paths.
+ * Mirrors what buildStepContext produces for a scoped step (e.g. spec-review).
+ */
+function makeScopedScope(declaredRelPaths: string[]): AgentWriteScope {
+  return {
+    stepName: "spec-review",
+    slug: TEST_SLUG,
+    declaredWritePaths: declaredRelPaths,
+    stagingMode: "scoped",
+    managedPaths: [
+      `specrunner/changes/${TEST_SLUG}/state.json`,
+      `specrunner/changes/${TEST_SLUG}/events.jsonl`,
+      `specrunner/changes/${TEST_SLUG}/usage.json`,
+      `specrunner/changes/${TEST_SLUG}/bite-evidence-result.md`,
+    ],
+    forbiddenPaths: [], // unused in scoped mode
+  };
+}
+
+/** All protected canon paths for TEST_SLUG (mirrors protectedCanonPaths). */
+const CANON_PATHS = [
+  `specrunner/changes/${TEST_SLUG}/request.md`,
+  `specrunner/changes/${TEST_SLUG}/spec.md`,
+  `specrunner/changes/${TEST_SLUG}/design.md`,
+  `specrunner/changes/${TEST_SLUG}/tasks.md`,
+  `specrunner/changes/${TEST_SLUG}/test-cases.md`,
+  `specrunner/changes/${TEST_SLUG}/request-review-attestation.json`,
+];
+
+/**
+ * Build a guarded AgentWriteScope for the given declared write paths.
+ * Mirrors what buildStepContext produces for a guarded step (e.g. implementer).
+ */
+function makeGuardedScope(declaredRelPaths: string[]): AgentWriteScope {
+  const declared = new Set(declaredRelPaths);
+  return {
+    stepName: "implementer",
+    slug: TEST_SLUG,
+    declaredWritePaths: declaredRelPaths,
+    stagingMode: "guarded",
+    managedPaths: [
+      `specrunner/changes/${TEST_SLUG}/state.json`,
+      `specrunner/changes/${TEST_SLUG}/events.jsonl`,
+      `specrunner/changes/${TEST_SLUG}/usage.json`,
+      `specrunner/changes/${TEST_SLUG}/bite-evidence-result.md`,
+    ],
+    forbiddenPaths: CANON_PATHS.filter((p) => !declared.has(p)),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// TC-011: guard が状態変更 git の Bash call を deny する
+// ---------------------------------------------------------------------------
+
+describe("TC-011: guard が状態変更 git の Bash call を deny する", () => {
+  it("denies 'git commit -m x'", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git commit -m x" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies 'git push origin main'", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git push origin main" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies 'git add .'", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git add ." }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies 'git reset --hard HEAD'", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git reset --hard HEAD" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies 'git checkout main'", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git checkout main" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies 'git merge feature'", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git merge feature" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies 'git rebase main'", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git rebase main" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies 'git stash' (bare — mutation)", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git stash" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-012: deny message が「commit は pipeline が合成する」と「読み取り系は許可」を含む
+// ---------------------------------------------------------------------------
+
+describe("TC-012: deny message が commit は pipeline が合成する と 読み取り系は許可 を含む", () => {
+  it("deny message mentions pipeline synthesis and read-only git permission", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git commit -m msg" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+    if (result.behavior === "deny") {
+      // Message must mention that commit is done by the pipeline
+      expect(result.message).toMatch(/pipeline/i);
+      // Message must mention that read-only git is allowed
+      expect(result.message).toMatch(/読み取り|read/i);
+    }
+  });
+
+  it("deny message contains the denied command (truncated to 60 chars)", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git push origin main" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+    if (result.behavior === "deny") {
+      expect(result.message).toContain("git push origin main");
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-013: guard が読み取り git の Bash call を allow し updatedInput を返す
+// ---------------------------------------------------------------------------
+
+describe("TC-013: guard が読み取り git の Bash call を allow し updatedInput を返す", () => {
+  it("allows 'git status' and returns updatedInput", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { command: "git status" };
+    const result = await guard("Bash", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("allows 'git diff HEAD' and returns updatedInput", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { command: "git diff HEAD" };
+    const result = await guard("Bash", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("allows 'git log --oneline' and returns updatedInput", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { command: "git log --oneline" };
+    const result = await guard("Bash", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("allows 'git stash list' (read sub-action) and returns updatedInput", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { command: "git stash list" };
+    const result = await guard("Bash", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-014: guard が非 git の Bash call を allow し updatedInput を返す
+// ---------------------------------------------------------------------------
+
+describe("TC-014: guard が非 git の Bash call を allow し updatedInput を返す", () => {
+  it("allows 'bun test' and returns updatedInput", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { command: "bun test" };
+    const result = await guard("Bash", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("allows 'echo hello' and returns updatedInput", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { command: "echo hello" };
+    const result = await guard("Bash", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("allows 'bun run typecheck' and returns updatedInput", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { command: "bun run typecheck" };
+    const result = await guard("Bash", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("allows Bash with non-string command and returns updatedInput", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { command: 42 };
+    const result = await guard("Bash", input as Record<string, unknown>, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-015: guard が mutation セグメントを含む複合コマンドを deny する
+// ---------------------------------------------------------------------------
+
+describe("TC-015: guard が mutation セグメントを含む複合コマンドを deny する", () => {
+  it("denies 'git status && git commit -m x'", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git status && git commit -m x" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies 'bun test; git push'", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "bun test; git push" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies 'echo ok | git add -A'", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "echo ok | git add -A" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-017: state.json への Write が deny される
+// ---------------------------------------------------------------------------
+
+describe("TC-017: state.json への Write が deny される", () => {
+  it("denies Write to state.json (pipeline-managed path)", async () => {
+    const scope = makeScopedScope([]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const stateJsonPath = `specrunner/changes/${TEST_SLUG}/state.json`;
+    const result = await guard("Write", { file_path: stateJsonPath }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("deny message mentions pipeline-managed path", async () => {
+    const scope = makeScopedScope([]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const result = await guard("Write", { file_path: `specrunner/changes/${TEST_SLUG}/state.json` }, stubOptions);
+    expect(result.behavior).toBe("deny");
+    if (result.behavior === "deny") {
+      expect(result.message.toLowerCase()).toMatch(/pipeline|state\.json/);
+    }
+  });
+
+  it("denies Write to state.json from guarded step as well", async () => {
+    const scope = makeGuardedScope([]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const result = await guard("Write", { file_path: `specrunner/changes/${TEST_SLUG}/state.json` }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-018: .specrunner 配下への Write が deny される
+// ---------------------------------------------------------------------------
+
+describe("TC-018: .specrunner 配下への Write が deny される", () => {
+  it("denies Write to .specrunner/local/config.json", async () => {
+    const scope = makeScopedScope([]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const result = await guard("Write", { file_path: ".specrunner/local/config.json" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies Write directly to .specrunner (top-level)", async () => {
+    const scope = makeScopedScope([]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const result = await guard("Write", { file_path: ".specrunner" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies Edit to .specrunner/marker.txt", async () => {
+    const scope = makeGuardedScope([]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const result = await guard("Edit", { file_path: ".specrunner/marker.txt" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-022: scoped step で宣言外 Write が deny される
+// ---------------------------------------------------------------------------
+
+describe("TC-022: scoped step で宣言外 Write が deny される", () => {
+  it("denies Write to src/foo.ts when not in declaredWritePaths", async () => {
+    const declared = [`specrunner/changes/${TEST_SLUG}/spec-review-result-001.md`];
+    const scope = makeScopedScope(declared);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const result = await guard("Write", { file_path: "src/foo.ts" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("denies Write to any path outside declaredWritePaths in scoped mode", async () => {
+    const declared = [`specrunner/changes/${TEST_SLUG}/spec-review-result-001.md`];
+    const scope = makeScopedScope(declared);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const result = await guard("Write", { file_path: "README.md" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("deny message for scoped undeclared write mentions declared paths", async () => {
+    const declared = [`specrunner/changes/${TEST_SLUG}/spec-review-result-001.md`];
+    const scope = makeScopedScope(declared);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const result = await guard("Write", { file_path: "src/undeclared.ts" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+    if (result.behavior === "deny") {
+      // Message should mention scoped mode and what is allowed
+      expect(result.message.toLowerCase()).toMatch(/scoped|declared/);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-023: scoped step で宣言外 Edit が deny される
+// ---------------------------------------------------------------------------
+
+describe("TC-023: scoped step で宣言外 Edit が deny される", () => {
+  it("denies Edit to src/agent-runner.ts when not in declaredWritePaths", async () => {
+    const declared = [`specrunner/changes/${TEST_SLUG}/spec-review-result-001.md`];
+    const scope = makeScopedScope(declared);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const result = await guard("Edit", { file_path: "src/agent-runner.ts" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-025: scoped step で宣言内 Write が allow され updatedInput を返す
+// ---------------------------------------------------------------------------
+
+describe("TC-025: scoped step で宣言内 Write が allow され updatedInput を返す", () => {
+  it("allows Write to a declared path and returns updatedInput", async () => {
+    const declaredPath = `specrunner/changes/${TEST_SLUG}/spec-review-result-001.md`;
+    const scope = makeScopedScope([declaredPath]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const input = { file_path: declaredPath, content: "review result" };
+    const result = await guard("Write", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-026: scoped step で宣言内 Edit が allow され updatedInput を返す
+// ---------------------------------------------------------------------------
+
+describe("TC-026: scoped step で宣言内 Edit が allow され updatedInput を返す", () => {
+  it("allows Edit to a declared path and returns updatedInput", async () => {
+    const declaredPath = `specrunner/changes/${TEST_SLUG}/spec-review-result-001.md`;
+    const scope = makeScopedScope([declaredPath]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const input = { file_path: declaredPath, old_string: "old", new_string: "new" };
+    const result = await guard("Edit", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-027: guarded step で宣言していない保護正典（design.md 等）への Write が deny される
+// ---------------------------------------------------------------------------
+
+describe("TC-027: guarded step で宣言していない保護正典への Write が deny される", () => {
+  it("denies Write to design.md (protected canon) when not declared", async () => {
+    const scope = makeGuardedScope([]); // no declarations → all canon paths are forbidden
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const result = await guard("Write", { file_path: `specrunner/changes/${TEST_SLUG}/design.md` }, stubOptions);
+    expect(result.behavior).toBe("deny");
+  });
+
+  it("deny message for guarded protected canon write mentions protected canon", async () => {
+    const scope = makeGuardedScope([]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const result = await guard("Write", { file_path: `specrunner/changes/${TEST_SLUG}/design.md` }, stubOptions);
+    expect(result.behavior).toBe("deny");
+    if (result.behavior === "deny") {
+      expect(result.message.toLowerCase()).toMatch(/protect|canon|guarded|forbidden/);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-028: guarded step で spec.md / tasks.md / test-cases.md / request.md / attestation への Write が deny される
+// ---------------------------------------------------------------------------
+
+describe("TC-028: guarded step で各保護正典への Write が deny される", () => {
+  const canonPaths = [
+    `specrunner/changes/${TEST_SLUG}/request.md`,
+    `specrunner/changes/${TEST_SLUG}/spec.md`,
+    `specrunner/changes/${TEST_SLUG}/tasks.md`,
+    `specrunner/changes/${TEST_SLUG}/test-cases.md`,
+    `specrunner/changes/${TEST_SLUG}/request-review-attestation.json`,
+  ];
+
+  for (const canonPath of canonPaths) {
+    it(`denies Write to ${canonPath}`, async () => {
+      const scope = makeGuardedScope([]);
+      const guard = createWorkspaceToolGuard(tempDir, scope);
+      const result = await guard("Write", { file_path: canonPath }, stubOptions);
+      expect(result.behavior).toBe("deny");
+    });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// TC-029: guarded step で保護正典以外の worktree パスへの Write が allow される
+// ---------------------------------------------------------------------------
+
+describe("TC-029: guarded step で保護正典以外の worktree パスへの Write が allow される", () => {
+  it("allows Write to src/foo.ts (not in forbiddenPaths)", async () => {
+    const scope = makeGuardedScope([]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const input = { file_path: "src/foo.ts", content: "code" };
+    const result = await guard("Write", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("allows Write to tests/foo.test.ts", async () => {
+    const scope = makeGuardedScope([]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const input = { file_path: "tests/foo.test.ts", content: "test" };
+    const result = await guard("Write", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("allows Edit to src/util/helper.ts", async () => {
+    const scope = makeGuardedScope([]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const input = { file_path: "src/util/helper.ts", old_string: "old", new_string: "new" };
+    const result = await guard("Edit", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-033: allow 結果に updatedInput が含まれ元 input と同一である (scope-aware paths)
+// ---------------------------------------------------------------------------
+
+describe("TC-033: allow 結果に updatedInput が含まれ元 input と同一である（scope-aware パス）", () => {
+  it("scoped declared Write: updatedInput equals original input", async () => {
+    const declaredPath = `specrunner/changes/${TEST_SLUG}/spec-review-result-001.md`;
+    const scope = makeScopedScope([declaredPath]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const input = { file_path: declaredPath, content: "result content" };
+    const result = await guard("Write", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("guarded non-protected Write (src/): updatedInput equals original input", async () => {
+    const scope = makeGuardedScope([]);
+    const guard = createWorkspaceToolGuard(tempDir, scope);
+    const input = { file_path: "src/new-feature.ts", content: "export const x = 1;" };
+    const result = await guard("Write", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("read-only git Bash: updatedInput equals original input", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { command: "git log --oneline -5" };
+    const result = await guard("Bash", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("non-git Bash (bun test): updatedInput equals original input", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const input = { command: "bun run test" };
+    const result = await guard("Bash", input, stubOptions);
+    expect(result).toEqual({ behavior: "allow", updatedInput: input });
+  });
+
+  it("deny result carries no updatedInput (TC-034)", async () => {
+    const guard = createWorkspaceToolGuard(tempDir);
+    const result = await guard("Bash", { command: "git commit -m x" }, stubOptions);
+    expect(result.behavior).toBe("deny");
+    expect("updatedInput" in result).toBe(false);
   });
 });
