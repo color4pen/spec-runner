@@ -1097,60 +1097,91 @@ describe("TC-022: scoped mode — pipeline-managed paths included in scoped git 
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-023: scoped mode — residual protected dirty files are restored after staging
+// TC-023: scoped mode — residual protected dirty files restored AND halt after staging
+//
+// TC-026 update (T-08): Changed expectation from "resolves + continues" to
+// "rejects with WRITE_SCOPE_VIOLATION". After T-06, residual violations halt.
 //
 // Scenario: scoped step (spec-review) inadvertently modifies request.md.
-// Scoped staging excludes request.md from the commit — correct.
-// BUT without restoration, request.md stays dirty in the worktree. The NEXT
-// guarded step (implementer) then sees request.md as changed, falsely reports a
-// WRITE_SCOPE_VIOLATION attributed to implementer.
+// Scoped staging excludes request.md from the commit.
+// After T-06: restore (clean + checkout HEAD) → WRITE_SCOPE_VIOLATION throw (halt).
 //
-// Fix: two-step restore after scoped staging:
-//   1. git clean -f -- <residualViolations>: removes newly created untracked files.
-//   2. git checkout HEAD -- <residualViolations>: restores tracked modified files.
+// Original pre-T-06 behavior (NOW INCORRECT):
+//   detect residual → restore → CONTINUE ← BUG: result adoption with contaminated canon.
 //
-// Best-effort asymmetry: if git status fails (ok===false) after staging, the
-// residual restoration is silently skipped. This is intentional — scoped restoration
-// is defensive (prevents cross-step false positives in the NEXT step), not
-// safety-critical. Guarded mode is the hard enforcement gate (fail-closed).
+// Post-T-06 behavior (CORRECT):
+//   detect residual → restore → WRITE_SCOPE_VIOLATION throw (halt).
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-023: scoped mode — residual protected dirty files restored after staging", () => {
-  it("calls git checkout HEAD for request.md that was changed but excluded from scoped staging", async () => {
+describe("TC-023: scoped mode — residual protected dirty files restored AND halt after staging", () => {
+  // TC-026: Updated expectation — scoped residual now HALTS (rejects with WRITE_SCOPE_VIOLATION).
+  // RED before T-06: resolves instead of rejects.
+  // GREEN after T-06: rejects with WRITE_SCOPE_VIOLATION.
+
+  it("TC-026: rejects with WRITE_SCOPE_VIOLATION when request.md is residual dirty after scoped staging", async () => {
     const slug = "test-slug";
     const requestMd = `specrunner/changes/${slug}/request.md`;
     const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
-
-    // After git add (scoped staging), git status still shows request.md as dirty
-    // because it was NOT included in the scoped pathspec.
     const postStageDirtyStatus = ` M ${requestMd}\0`;
 
     const { spawnFn, calls } = makeGitSpawnFn({
       responses: {
         "add": { exitCode: 0 },
-        // post-stage git status returns request.md still dirty
         "status": { exitCode: 0, stdout: postStageDirtyStatus },
-        "checkout": { exitCode: 0 }, // restore succeeds
-        "diff": { exitCode: 1 }, // staged changes present
+        "checkout": { exitCode: 0 },
+        "clean": { exitCode: 0 },
+        "diff": { exitCode: 0, stdout: "diff content" },
         "commit": { exitCode: 0 },
         "push": { exitCode: 0 },
       },
     });
 
-    // spec-review does NOT declare request.md as a write target
     const step = makeScopedStep("spec-review", [resultPath]);
     const state = makeJobState();
     const deps = makeDeps(slug);
     const infra = makeCommitPushInfra(spawnFn);
 
-    await commitAndPush(step, state, deps, null, infra);
+    // TC-026: must REJECT with WRITE_SCOPE_VIOLATION (not resolve)
+    await expect(
+      commitAndPush(step, state, deps, null, infra),
+    ).rejects.toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
 
-    // git checkout HEAD -- request.md must be called to restore the dirty file
+    // restore (checkout HEAD) must still be called before the throw
     const checkoutCall = calls.find((c) => c.args[0] === "checkout");
-    expect(checkoutCall, "git checkout must be called for residual violation").toBeDefined();
+    expect(checkoutCall, "git checkout must be called before halt").toBeDefined();
     expect(checkoutCall!.args, "checkout must target HEAD").toContain("HEAD");
     expect(checkoutCall!.args, "checkout must use '--' separator").toContain("--");
     expect(checkoutCall!.args, "checkout must include request.md").toContain(requestMd);
+  });
+
+  it("TC-026: git commit and push are NOT called after residual halt", async () => {
+    const slug = "test-slug";
+    const requestMd = `specrunner/changes/${slug}/request.md`;
+    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
+    const postStageDirtyStatus = ` M ${requestMd}\0`;
+
+    const { spawnFn, calls } = makeGitSpawnFn({
+      responses: {
+        "add": { exitCode: 0 },
+        "status": { exitCode: 0, stdout: postStageDirtyStatus },
+        "checkout": { exitCode: 0 },
+        "clean": { exitCode: 0 },
+        "diff": { exitCode: 0, stdout: "diff content" },
+        "commit": { exitCode: 0 },
+        "push": { exitCode: 0 },
+      },
+    });
+
+    const step = makeScopedStep("spec-review", [resultPath]);
+    const state = makeJobState();
+    const deps = makeDeps(slug);
+    const infra = makeCommitPushInfra(spawnFn);
+
+    await expect(commitAndPush(step, state, deps, null, infra)).rejects.toThrow();
+
+    const subcommands = calls.map((c) => c.args[0]);
+    expect(subcommands, "git commit must NOT be called after residual halt").not.toContain("commit");
+    expect(subcommands, "git push must NOT be called after residual halt").not.toContain("push");
   });
 
   it("does NOT call git checkout when no protected files are dirty after staging", async () => {
@@ -1178,35 +1209,6 @@ describe("TC-023: scoped mode — residual protected dirty files restored after 
     // With a clean worktree after staging, no checkout should be called
     const checkoutCall = calls.find((c) => c.args[0] === "checkout");
     expect(checkoutCall, "git checkout must NOT be called when no residual violations").toBeUndefined();
-  });
-
-  it("normal commit flow completes even when residual restore runs", async () => {
-    const slug = "test-slug";
-    const requestMd = `specrunner/changes/${slug}/request.md`;
-    const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
-
-    const { spawnFn, calls } = makeGitSpawnFn({
-      responses: {
-        "add": { exitCode: 0 },
-        "status": { exitCode: 0, stdout: ` M ${requestMd}\0` },
-        "checkout": { exitCode: 0 },
-        "diff": { exitCode: 1 },
-        "commit": { exitCode: 0 },
-        "push": { exitCode: 0 },
-      },
-    });
-
-    const step = makeScopedStep("spec-review", [resultPath]);
-    const state = makeJobState();
-    const deps = makeDeps(slug);
-    const infra = makeCommitPushInfra(spawnFn);
-
-    // Must resolve (not throw) — restoration is transparent to callers
-    await expect(commitAndPush(step, state, deps, null, infra)).resolves.toBeUndefined();
-
-    const subcommands = calls.map((c) => c.args[0]);
-    expect(subcommands, "commit must still be called").toContain("commit");
-    expect(subcommands, "push must still be called").toContain("push");
   });
 
   it("declared protected file in writes() is NOT restored (step owns it)", async () => {
@@ -1360,7 +1362,12 @@ describe("quarantine: violation evidence preserved before restore", () => {
     expect(content).toContain("fabricated design content");
   });
 
-  it("quarantine-03: scoped residual restore → evidence file written and stderr note emitted", async () => {
+  // TC-027: quarantine-03 updated expectation (T-08).
+  // After T-06: scoped residual violation throws WRITE_SCOPE_VIOLATION.
+  // The evidence file is written AND stderr note is emitted BEFORE the throw.
+  // RED before T-06: resolves (evidence written but no throw).
+  // GREEN after T-06: evidence written + stderr note emitted + throws WRITE_SCOPE_VIOLATION.
+  it("quarantine-03: TC-027: scoped residual restore → evidence file written + stderr note + throw WRITE_SCOPE_VIOLATION", async () => {
     const slug = "test-slug";
     const resultPath = `specrunner/changes/${slug}/spec-review-result-001.md`;
     const requestMdPath = `specrunner/changes/${slug}/request.md`;
@@ -1371,7 +1378,7 @@ describe("quarantine: violation evidence preserved before restore", () => {
       responses: {
         "status": { exitCode: 0, stdout: statusOutput },
         "add": { exitCode: 0 },
-        "diff": { exitCode: 1 },
+        "diff": { exitCode: 0, stdout: "diff --git a/request.md\n-orig\n+changed" },
         "clean": { exitCode: 0 },
         "checkout": { exitCode: 0 },
         "commit": { exitCode: 0 },
@@ -1381,12 +1388,28 @@ describe("quarantine: violation evidence preserved before restore", () => {
 
     const step = makeScopedStep("spec-review", [resultPath]);
     const infra = makeCommitPushInfra(spawnFn);
-    await commitAndPush(step, makeJobState(), makeDeps(slug), null, infra);
 
+    // TC-027: must THROW WRITE_SCOPE_VIOLATION (not resolve)
+    let thrown: unknown;
+    try {
+      await commitAndPush(step, makeJobState(), makeDeps(slug), null, infra);
+    } catch (e) {
+      thrown = e;
+    }
+
+    // After T-06: throws WRITE_SCOPE_VIOLATION
+    expect(thrown, "quarantine-03 (TC-027): must throw WRITE_SCOPE_VIOLATION").toMatchObject({ code: "WRITE_SCOPE_VIOLATION" });
+
+    // Evidence file must be written before the throw
     const sidecarDir = path.join(tempDir, ".specrunner", "local", slug);
     const files = await fs.readdir(sidecarDir);
     expect(files.some((f) => f.startsWith("write-scope-violation-spec-review-"))).toBe(true);
+
+    // Stderr note must be emitted before the throw
     const stderrCalls = vi.mocked(process.stderr.write).mock.calls.map((c) => String(c[0]));
     expect(stderrCalls.some((c) => c.includes("境界外の残余変更"))).toBe(true);
+
+    // Halt message must contain quarantine file path
+    expect(String((thrown as Error).message)).toContain("write-scope-violation-spec-review-");
   });
 });
