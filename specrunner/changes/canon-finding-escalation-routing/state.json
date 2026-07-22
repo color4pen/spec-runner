@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d81cea8f-31d9-4c26-b116-79ba54c46ab5",
   "createdAt": "2026-07-22T11:54:57.409Z",
-  "updatedAt": "2026-07-22T14:27:53.940Z",
+  "updatedAt": "2026-07-22T14:38:01.259Z",
   "request": {
     "title": "保護正典への fixable finding を、書けない fixer に routing せず escalation に倒す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/canon-finding-escalation-routing-d81cea8f",
   "error": null,
@@ -69,12 +69,13 @@
     "75e0e0b8e8a4048e835dc3bb730ca82380d598d3",
     "78d64250be8fc751d9388b5e17dc6bf057ad7707",
     "6d610e08f917a004967a17fa74ec4ed226b98e96",
-    "db91021484302cb1f56304f374a1b7e77b67c135"
+    "db91021484302cb1f56304f374a1b7e77b67c135",
+    "6ff75df2f764934a2e46dc01e5eaf4210a9b2b01"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 45,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -83,7 +84,8 @@
       "test-materialize": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1
     }
   }
 }
