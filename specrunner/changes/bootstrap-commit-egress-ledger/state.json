@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "27f57112-6f79-4b9a-a0f2-ffc3d02f181e",
   "createdAt": "2026-07-22T12:00:45.803Z",
-  "updatedAt": "2026-07-22T13:01:32.896Z",
+  "updatedAt": "2026-07-22T13:42:34.300Z",
   "request": {
     "title": "bootstrap の materialization commit を egress 台帳に記録し、初回 push の誤 halt を解消する",
     "type": "bug-fix",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-resume",
+  "step": "regression-gate",
+  "status": "running",
   "branch": "fix/bootstrap-commit-egress-ledger-27f57112",
-  "error": {
-    "code": "ROUND_NONDECLARED_CHANGE",
-    "message": "Round produced undeclared file changes: specrunner/changes/bootstrap-commit-egress-ledger/pr-create-result.md",
-    "hint": "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -45,7 +41,9 @@
         "src/core/step/**",
         "src/state/**",
         "src/store/**",
-        "src/adapter/**"
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
       ]
     },
     {
@@ -73,25 +71,29 @@
     "e064722d3d4636b1a9a7d4a6ff1aa95da917fcfe",
     "628293098bb5983c72e74992d89bb729adf57c01",
     "4b6e87b2e470c803237de8e35b36f795c06e0604",
-    "d647b6c39272320f981922db5c9a02cabf3a8eb1"
+    "d647b6c39272320f981922db5c9a02cabf3a8eb1",
+    "13763265431fd07e6198d9f53743b18be15a9631"
   ],
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "48971f2099ca8271f42dd904cf97284c451debe6",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
         "src/state/**",
         "src/store/**",
-        "src/adapter/**"
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/bootstrap-commit-egress-ledger/design.md:sha256:fe8feb9f5eb3f9d7297b00d9861555c9a72fe778df61f88202cfec1a28d9dc9b|specrunner/changes/bootstrap-commit-egress-ledger/request.md:sha256:5d7beccd2b435b22d9085e6e08b857dbc37c94f35db67f0b7a7264df543e7533|specrunner/changes/bootstrap-commit-egress-ledger/spec.md:sha256:4c479adb170e98c43aa90a38f018b240c860a24eb6815e0527caf4f28c669d58|specrunner/changes/bootstrap-commit-egress-ledger/tasks.md:sha256:fd55fdefe45d9be6abc98f5bf99a9bcdf3f705207c049f6f3cc7ffd8a1d5a3d3|specrunner/changes/bootstrap-commit-egress-ledger/test-cases.md:sha256:db50bb8ab7b86f94828445ed05ba9bc49aa2ae70cc6d5360640f9b9db08f3bbf"
     },
     {
       "name": "scale-tolerance",
-      "status": "pending",
+      "status": "skipped",
       "approvedAtCommit": null,
       "activationPaths": [
         "src/store/**",
@@ -107,14 +109,10 @@
     "number": 895,
     "createdAt": "2026-07-22T12:57:20.831Z"
   },
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "Round produced undeclared file changes: specrunner/changes/bootstrap-commit-egress-ledger/pr-create-result.md",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 70,
+    "historyCount": 80,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -125,9 +123,9 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "cross-boundary-invariants": 2,
-      "scale-tolerance": 2,
-      "custom-reviewers": 2,
+      "cross-boundary-invariants": 3,
+      "scale-tolerance": 3,
+      "custom-reviewers": 3,
       "regression-gate": 1,
       "conformance": 1,
       "adr-gen": 1,
