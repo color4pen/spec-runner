@@ -175,3 +175,7 @@
 {"type":"transition","ts":"2026-07-22T10:22:30.419Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: custom-reviewers escalated"}
 {"type":"transition","ts":"2026-07-22T10:29:51.803Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-fixer'"}
 {"type":"transition","ts":"2026-07-22T10:29:51.865Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-07-22T10:30:18.490Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: needs-fix"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"6ca6d706-328d-49eb-9a84-82feb8da2ccd","outcome":{"verdict":"needs-fix","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-22T10:29:51.916Z","endedAt":"2026-07-22T10:30:16.763Z","commitOid":"3f4bff8fddc80313fa3e4b96326405c2fd341ccb"}
+{"type":"lineage","step":"code-fixer","ts":"2026-07-22T10:30:16.763Z","outputs":[{"path":"specrunner/changes/pipeline-sole-committer","hash":null}],"inputs":[{"path":"specrunner/changes/pipeline-sole-committer/cross-boundary-invariants-result-002.md","hash":"sha256:002e9e6cecfcb5f77628ff83a324b792092ebf60fa25c872be0a362dfbd01563"}]}
+{"type":"transition","ts":"2026-07-22T10:30:18.496Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: code-fixer escalated"}
