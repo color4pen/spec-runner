@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "be8366eb-b73d-4796-90ce-5f4df03d7ed5",
   "createdAt": "2026-07-21T23:16:15.038Z",
-  "updatedAt": "2026-07-22T00:32:36.983Z",
+  "updatedAt": "2026-07-22T00:37:11.848Z",
   "request": {
     "title": "write-set 検査を開始 HEAD・index・agent commit まで拡張し、既知の 3 突破経路を閉じる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/write-scope-bypass-closure-be8366eb",
   "error": null,
@@ -60,7 +60,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -70,7 +70,8 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 2,
-      "build-fixer": 1
+      "build-fixer": 1,
+      "code-review": 1
     }
   }
 }
