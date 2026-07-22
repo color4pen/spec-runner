@@ -6,10 +6,10 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 1.3s | 0 |
-| 2 | typecheck | failed | 4.6s | 2 |
-| 3 | test | skipped | — | — |
-| 4 | lint | skipped | — | — |
+| 1 | build | passed | 0.3s | 0 |
+| 2 | typecheck | passed | 4.5s | 0 |
+| 3 | test | passed | 29.8s | 0 |
+| 4 | lint | failed | 5.9s | 1 |
 | 5 | changed-line-coverage | skipped | — | — |
 
 ## Phase: build
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.27 MB
-ESM ⚡️ Build success in 71ms
+ESM ⚡️ Build success in 67ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -32,49 +32,176 @@ $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
 
 ## Phase: typecheck
 
-Step 'typecheck' failed
-
 ```
-tests/pipeline-sole-committer-e2e.test.ts(371,13): error TS2740: Type '{ produceResult: Mock<() => Promise<StepExecutionResult>>; execute: never; }' is missing the following properties from type 'StepExecutor': spawnFn, sleepFn, commitPushInfra, permissionScope, and 8 more.
-tests/pipeline-sole-committer-e2e.test.ts(461,9): error TS2740: Type '{ captureHeadSha: () => Promise<string>; listWorktreeChanges: Mock<Procedure>; listChangedFiles: Mock<Procedure>; digestArtifacts: undefined; finalizeStepArtifacts: Mock<...>; validateStepInputs: Mock<...>; validateStepOutputs: Mock<...>; }' is missing the following properties from type 'RuntimeStrategy': bootstrapJob, persistJobState, query, createAgentRunner, and 7 more.
-tests/pipeline-sole-committer-e2e.test.ts(525,13): error TS2740: Type '{ produceResult: Mock<() => Promise<StepExecutionResult>>; execute: never; }' is missing the following properties from type 'StepExecutor': spawnFn, sleepFn, commitPushInfra, permissionScope, and 8 more.
-tests/pipeline-sole-committer-e2e.test.ts(599,9): error TS2740: Type '{ captureHeadSha: () => Promise<string>; listWorktreeChanges: Mock<Procedure>; listChangedFiles: Mock<Procedure>; digestArtifacts: undefined; finalizeStepArtifacts: Mock<...>; validateStepInputs: Mock<...>; validateStepOutputs: Mock<...>; }' is missing the following properties from type 'RuntimeStrategy': bootstrapJob, persistJobState, query, createAgentRunner, and 7 more.
-tests/unit/pipeline/pipeline-sole-committer-round-guard.test.ts(94,9): error TS2353: Object literal may only specify known properties, and 'system' does not exist in type 'ReviewerSnapshot'.
-tests/unit/pipeline/pipeline-sole-committer-round-guard.test.ts(126,5): error TS2322: Type '(_state: JobState, deps: StepContext) => { path: string; artifact: "result"; }[]' is not assignable to type '((state: JobState, deps: StepContext) => IoRef[]) | ((state: JobState, deps: StepContext) => IoRef[]) | undefined'.
-  Type '(_state: JobState, deps: StepContext) => { path: string; artifact: "result"; }[]' is not assignable to type '(state: JobState, deps: StepContext) => IoRef[]'.
-    Type '{ path: string; artifact: "result"; }[]' is not assignable to type 'IoRef[]'.
-      Type '{ path: string; artifact: "result"; }' is not assignable to type 'IoRef'.
-        Types of property 'artifact' are incompatible.
-          Type '"result"' is not assignable to type '"file" | "gitState" | undefined'.
-tests/unit/pipeline/pipeline-sole-committer-round-guard.test.ts(475,40): error TS2367: This comparison appears to be unintentional because the types '"abc123stable"' and '"def456selfcommit"' have no overlap.
-tests/unit/step/pipeline-sole-committer-synthesis.test.ts(225,5): error TS2322: Type '(_state: JobState, deps: StepContext) => { path: string; artifact: "result"; }[]' is not assignable to type '(state: JobState, deps: StepContext) => IoRef[]'.
-  Type '{ path: string; artifact: "result"; }[]' is not assignable to type 'IoRef[]'.
-    Type '{ path: string; artifact: "result"; }' is not assignable to type 'IoRef'.
-      Types of property 'artifact' are incompatible.
-        Type '"result"' is not assignable to type '"file" | "gitState" | undefined'.
-tests/unit/step/pipeline-sole-committer-synthesis.test.ts(266,7): error TS2353: Object literal may only specify known properties, and 'createStore' does not exist in type 'StoreFactory'.
-tests/unit/step/pipeline-sole-committer-synthesis.test.ts(485,7): error TS2322: Type '(_state: JobState, deps: StepContext) => { path: string; artifact: "result"; }[]' is not assignable to type '(state: JobState, deps: StepContext) => IoRef[]'.
-  Type '{ path: string; artifact: "result"; }[]' is not assignable to type 'IoRef[]'.
-    Type '{ path: string; artifact: "result"; }' is not assignable to type 'IoRef'.
-      Types of property 'artifact' are incompatible.
-        Type '"result"' is not assignable to type '"file" | "gitState" | undefined'.
-tests/unit/step/pipeline-sole-committer-synthesis.test.ts(729,7): error TS2322: Type '(_state: JobState, deps: StepContext) => { path: string; artifact: "result"; }[]' is not assignable to type '(state: JobState, deps: StepContext) => IoRef[]'.
-  Type '{ path: string; artifact: "result"; }[]' is not assignable to type 'IoRef[]'.
-    Type '{ path: string; artifact: "result"; }' is not assignable to type 'IoRef'.
-      Types of property 'artifact' are incompatible.
-        Type '"result"' is not assignable to type '"file" | "gitState" | undefined'.
-
 $ tsc --noEmit
 
 ```
 
 ## Phase: test
 
-_(skipped — previous command failed)_
+```
+
+ RUN  v4.1.5 .
+
+No jobs found.
+[実行中]
+JOB_ID	SLUG	STEP	STATUS	NEXT	AGE
+job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	202d
+{
+  "categories": []
+}
+
+ Test Files  610 passed (610)
+      Tests  8918 passed | 1 skipped (8919)
+   Start at  16:10:36
+   Duration  29.41s (transform 5.69s, setup 0ms, import 22.94s, tests 47.47s, environment 30ms)
+
+
+$ vitest run
+Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-PHufLk/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-LlDarO/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: pr-create: attestation comment failed: GitHub API error
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] resumed job slug=fix-login-bug (issue#10)
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
+  start    issue#1 → slug=fix-login-bug
+  resume   fix-login-bug (issue#10)
+[inbox] recovered stale job slug=my-feature (attempt 1)
+[inbox] escalated stale job slug=my-feature to awaiting-resume
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 0 start(s), 0 reject(s), 0 resume(s), 1 recover(s), 1 escalate(s)
+  recover  my-feature (attempt 1)
+  escalate other-feat (step=design)
+[inbox] warn: recover my-feature: disk full
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=old-feature (issue#50)
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...
+GitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
+Warning: issue-notifier: failed to write comment to issue #42: network error
+ERROR: file not found
+spawn ENOENT
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
+Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+
+```
 
 ## Phase: lint
 
-_(skipped — previous command failed)_
+Step 'lint' failed
+
+```
+
+tests/pipeline-sole-committer-e2e.test.ts
+  141:30  error  A `require()` style import is forbidden  @typescript-eslint/no-require-imports
+
+tests/unit/core/step/pipeline-sole-committer-final-state.test.ts
+  18:24  warning  'SpawnResult' is defined but never used. Allowed unused vars must match /^_/u         @typescript-eslint/no-unused-vars
+  21:5   warning  'stderrSpy' is assigned a value but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+tests/unit/step/pipeline-sole-committer-synthesis.test.ts
+   30:26  warning  'IoRef' is defined but never used. Allowed unused vars must match /^_/u                                @typescript-eslint/no-unused-vars
+  265:5   warning  Unused eslint-disable directive (no problems were reported from '@typescript-eslint/no-explicit-any')
+  270:11  warning  Unexpected any. Specify a different type                                                               @typescript-eslint/no-explicit-any
+  613:33  warning  'calls' is assigned a value but never used. Allowed unused vars must match /^_/u                       @typescript-eslint/no-unused-vars
+  821:11  warning  'headBeforeStep' is assigned a value but never used. Allowed unused vars must match /^_/u              @typescript-eslint/no-unused-vars
+  826:11  warning  'pushAsIsSpawnFn' is assigned a value but never used. Allowed unused vars must match /^_/u             @typescript-eslint/no-unused-vars
+
+✖ 9 problems (1 error, 8 warnings)
+  0 errors and 1 warning potentially fixable with the `--fix` option.
+
+
+$ eslint ./src ./tests --max-warnings 0
+error: script "lint" exited with code 1
+
+```
 
 ## Phase: changed-line-coverage
 
