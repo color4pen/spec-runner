@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ac3aa8bf-033e-421f-a92b-59359474389e",
   "createdAt": "2026-07-22T11:54:14.110Z",
-  "updatedAt": "2026-07-22T16:36:43.869Z",
+  "updatedAt": "2026-07-22T16:47:12.070Z",
   "request": {
     "title": "agent の git 状態変更とスコープ外書込を permission 層で遮断する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/permission-layer-git-write-denial-ac3aa8bf",
   "error": null,
@@ -86,13 +86,15 @@
     "06024c3f87585e7a66a7b0d339ddd705ca2fa6a8",
     "73e89314e521158d076bbb35d4c82f28db7d6643",
     "44e16dc725a4b87a3d3b598c3798f7f371a916b3",
-    "a2ae4ceac801c8726ccb8842929c4a555cc0bacd"
+    "a2ae4ceac801c8726ccb8842929c4a555cc0bacd",
+    "c5d94984b697fdce4e72dd19459c8b6cc2eb4ea2",
+    "2e00e5e7c9a091725fb75abda7d0f6fa041526f1"
   ],
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "10844d3bb7f3054b7e23d8e865b11efc20ebe2fe",
+      "approvedAtCommit": "c5d94984b697fdce4e72dd19459c8b6cc2eb4ea2",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -117,7 +119,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 116,
+    "historyCount": 125,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -129,10 +131,10 @@
       "verification": 4,
       "build-fixer": 2,
       "code-review": 4,
-      "code-fixer": 3,
-      "cross-boundary-invariants": 2,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
-      "custom-reviewers": 2,
+      "custom-reviewers": 3,
       "regression-gate": 2,
       "conformance": 1
     }
