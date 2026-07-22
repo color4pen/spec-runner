@@ -7,10 +7,10 @@
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
 | 1 | build | passed | 0.4s | 0 |
-| 2 | typecheck | passed | 4.8s | 0 |
-| 3 | test | passed | 29.6s | 0 |
-| 4 | lint | passed | 5.2s | 0 |
-| 5 | changed-line-coverage | passed | 36.8s | 0 |
+| 2 | typecheck | passed | 4.6s | 0 |
+| 3 | test | passed | 28.4s | 0 |
+| 4 | lint | passed | 5.1s | 0 |
+| 5 | changed-line-coverage | passed | 34.9s | 0 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.28 MB
-ESM ⚡️ Build success in 73ms
+ESM ⚡️ Build success in 71ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -52,14 +52,14 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	202d
 }
 
  Test Files  612 passed (612)
-      Tests  8993 passed | 1 skipped (8994)
-   Start at  22:15:32
-   Duration  29.28s (transform 5.88s, setup 0ms, import 23.55s, tests 45.97s, environment 30ms)
+      Tests  8999 passed | 1 skipped (9000)
+   Start at  02:30:22
+   Duration  28.09s (transform 5.56s, setup 0ms, import 22.58s, tests 43.88s, environment 29ms)
 
 
 $ vitest run
-Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
@@ -67,8 +67,8 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-cBDpSy/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-EwfTHz/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Q4CrA3/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-DB8d9E/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
@@ -88,16 +88,16 @@ Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -107,7 +107,6 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
@@ -157,6 +156,7 @@ GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
 ERROR: file not found
@@ -183,6 +183,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (20 changed files checked, 18 skipped)
-  Skipped (not in coverage surface): specrunner/changes/coverage-type-only-not-loaded/bite-evidence-result.md, specrunner/changes/coverage-type-only-not-loaded/conformance-result-001.md, specrunner/changes/coverage-type-only-not-loaded/design.md, specrunner/changes/coverage-type-only-not-loaded/events.jsonl, specrunner/changes/coverage-type-only-not-loaded/request-review-attestation.json, specrunner/changes/coverage-type-only-not-loaded/request-review-result-001.md, specrunner/changes/coverage-type-only-not-loaded/request.md, specrunner/changes/coverage-type-only-not-loaded/review-feedback-001.md, specrunner/changes/coverage-type-only-not-loaded/rules.md, specrunner/changes/coverage-type-only-not-loaded/spec-review-result-001.md, specrunner/changes/coverage-type-only-not-loaded/spec.md, specrunner/changes/coverage-type-only-not-loaded/state.json, specrunner/changes/coverage-type-only-not-loaded/tasks.md, specrunner/changes/coverage-type-only-not-loaded/test-cases.md, specrunner/changes/coverage-type-only-not-loaded/usage.json, specrunner/changes/coverage-type-only-not-loaded/verification-result.md, tests/unit/core/verification/changed-line-coverage-type-only.test.ts, tests/unit/core/verification/type-only.test.ts
+changed-line-coverage: passed (25 changed files checked, 23 skipped)
+  Skipped (not in coverage surface): specrunner/adr/2026-07-22-coverage-type-only-structural-skip.md, specrunner/changes/coverage-type-only-not-loaded/bite-evidence-result.md, specrunner/changes/coverage-type-only-not-loaded/conformance-result-001.md, specrunner/changes/coverage-type-only-not-loaded/conformance-result-002.md, specrunner/changes/coverage-type-only-not-loaded/cross-boundary-invariants-result-003.md, specrunner/changes/coverage-type-only-not-loaded/cross-boundary-invariants-result-004.md, specrunner/changes/coverage-type-only-not-loaded/design.md, specrunner/changes/coverage-type-only-not-loaded/events.jsonl, specrunner/changes/coverage-type-only-not-loaded/pr-create-result.md, specrunner/changes/coverage-type-only-not-loaded/request-review-attestation.json, specrunner/changes/coverage-type-only-not-loaded/request-review-result-001.md, specrunner/changes/coverage-type-only-not-loaded/request.md, specrunner/changes/coverage-type-only-not-loaded/review-feedback-001.md, specrunner/changes/coverage-type-only-not-loaded/rules.md, specrunner/changes/coverage-type-only-not-loaded/spec-review-result-001.md, specrunner/changes/coverage-type-only-not-loaded/spec.md, specrunner/changes/coverage-type-only-not-loaded/state.json, specrunner/changes/coverage-type-only-not-loaded/tasks.md, specrunner/changes/coverage-type-only-not-loaded/test-cases.md, specrunner/changes/coverage-type-only-not-loaded/usage.json, specrunner/changes/coverage-type-only-not-loaded/verification-result.md, tests/unit/core/verification/changed-line-coverage-type-only.test.ts, tests/unit/core/verification/type-only.test.ts
 ```
