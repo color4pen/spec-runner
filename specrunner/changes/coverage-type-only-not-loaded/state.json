@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6283b476-9b25-4729-b5a9-a9a2b94f533d",
   "createdAt": "2026-07-22T11:55:42.653Z",
-  "updatedAt": "2026-07-22T12:16:46.060Z",
+  "updatedAt": "2026-07-22T12:26:45.718Z",
   "request": {
     "title": "changed-line-coverage の not-loaded 判定を type-only ファイルで誤検出させない",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/coverage-type-only-not-loaded-6283b476",
   "error": null,
@@ -62,13 +62,15 @@
   "issueNumber": 884,
   "synthesizedCommits": [
     "a16bad67992e6e127f4e8333b1e847b7e081adf0",
-    "9dc4f718ba9ab29d6acbdb2f79126cc8a2273040"
+    "9dc4f718ba9ab29d6acbdb2f79126cc8a2273040",
+    "b9197d65f6d4d4098baf9e90da6a1c5457dce97c"
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
