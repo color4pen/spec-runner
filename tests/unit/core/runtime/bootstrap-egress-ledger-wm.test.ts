@@ -116,6 +116,61 @@ describe("TC-001: workspace-materializer new-run path records bootstrap OID in s
 });
 
 // ---------------------------------------------------------------------------
+// R2: ledger persistence failure aborts bootstrap (fail-closed)
+//
+// R2 names BOTH capture (rev-parse) and persistence (updateJobState) failures as
+// fail-closed. A silently-swallowed persistence failure would leave a pipeline
+// commit outside the ledger — the exact class this request closes.
+// DESTROY: wrap the appendSynthesizedCommit updateJobState call in a
+// swallow-and-continue catch → this test fails (resolves instead of rejecting).
+// ---------------------------------------------------------------------------
+describe("R2: updateJobState (ledger persistence) failure aborts bootstrap", () => {
+  it(
+    "materialize() rejects when persisting the bootstrap OID fails (no silent continue)",
+    async () => {
+      const requestFilePath = path.join(tempDir, "request.md");
+      await fs.writeFile(requestFilePath, "# Bootstrap Egress Test\n", "utf-8");
+
+      const initialState = makeInitialState();
+
+      const host: MaterializerHost = {
+        cwd: tempDir,
+        manager: {
+          create: vi.fn().mockResolvedValue(worktreeDir),
+          remove: vi.fn().mockResolvedValue(undefined),
+          prune: vi.fn().mockResolvedValue(undefined),
+        },
+        spawnFn: vi.fn().mockImplementation(
+          async (_cmd: string, args: string[]) => {
+            if (args[0] === "rev-parse" && args[1] === "HEAD") {
+              return { exitCode: 0, stdout: `${BOOTSTRAP_OID}\n`, stderr: "" };
+            }
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+        ) as unknown as SpawnFn,
+        resolveSetupPlan: vi.fn().mockReturnValue({ kind: "skip" } satisfies WorkspaceSetupPlan),
+        registerWorkspace: vi.fn(),
+        // First updateJobState call is the ledger append — fail it.
+        updateJobState: vi.fn().mockRejectedValue(new Error("ledger persistence failed")),
+        writeLivenessSidecar: vi.fn().mockResolvedValue(undefined),
+      };
+
+      const materializer = new WorkspaceMaterializer(host);
+
+      await expect(
+        materializer.materialize(
+          SLUG,
+          JOB_ID,
+          { kind: "new-run", remoteBaseRef: "origin/main", branchName: "feat/bootstrap-wm-egress-test" },
+          { requestFilePath, bootstrapState: initialState },
+        ),
+      ).rejects.toThrow("ledger persistence failed");
+    },
+    20000,
+  );
+});
+
+// ---------------------------------------------------------------------------
 // TC-004: workspace-materializer rev-parse failure aborts bootstrap and cleans up worktree
 // ---------------------------------------------------------------------------
 describe("TC-004: workspace-materializer rev-parse failure aborts bootstrap and cleans up worktree", () => {
