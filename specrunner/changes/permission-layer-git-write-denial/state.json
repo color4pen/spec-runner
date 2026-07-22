@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ac3aa8bf-033e-421f-a92b-59359474389e",
   "createdAt": "2026-07-22T11:54:14.110Z",
-  "updatedAt": "2026-07-22T16:03:48.535Z",
+  "updatedAt": "2026-07-22T16:06:37.785Z",
   "request": {
     "title": "agent の git 状態変更とスコープ外書込を permission 層で遮断する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/permission-layer-git-write-denial-ac3aa8bf",
   "error": null,
@@ -79,7 +79,8 @@
     "4ee3f8a2404a6b05b83eb4e19872c20ef1f67bfa",
     "10844d3bb7f3054b7e23d8e865b11efc20ebe2fe",
     "fb9b2bd235f4269379c993d73e99ed53b4389554",
-    "4d38a76e24a714c25c3f18c95c0475947799ef4d"
+    "4d38a76e24a714c25c3f18c95c0475947799ef4d",
+    "213e4d0deeb347416fd1d9cf5fd9c1b09b5e4512"
   ],
   "reviewerStatuses": [
     {
@@ -110,7 +111,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 85,
+    "historyCount": 89,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -122,7 +123,7 @@
       "verification": 2,
       "build-fixer": 1,
       "code-review": 3,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
