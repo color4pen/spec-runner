@@ -87,3 +87,10 @@
 {"type":"transition","ts":"2026-07-22T00:28:50.927Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-07-22T00:28:50.928Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-07-22T00:28:50.929Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-22T00:29:33.258Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"f6ee5de2-b71c-4316-920f-aa5b6f7a51ad","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/request-review-evidence-counts/regression-gate-result-002.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"evidence":{"checked":1,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-22T00:28:50.978Z","endedAt":"2026-07-22T00:29:31.675Z","commitOid":"dd784876dced1724be47fe126b49d9e634d417c7"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-22T00:29:31.675Z","outputs":[{"path":"specrunner/changes/request-review-evidence-counts/regression-gate-result-002.md","hash":"sha256:15cbf961d7331256bc9881b978de2af4eb24a50b92d6b54142b2a3bfbe86ce20"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-22T00:29:33.263Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-22T00:29:33.263Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-22T00:29:33.265Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-22T00:29:33.265Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
