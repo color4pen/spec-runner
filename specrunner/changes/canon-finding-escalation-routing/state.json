@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d81cea8f-31d9-4c26-b116-79ba54c46ab5",
   "createdAt": "2026-07-22T11:54:57.409Z",
-  "updatedAt": "2026-07-22T15:22:07.597Z",
+  "updatedAt": "2026-07-22T15:23:24.916Z",
   "request": {
     "title": "保護正典への fixable finding を、書けない fixer に routing せず escalation に倒す",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/canon-finding-escalation-routing-d81cea8f",
   "error": null,
   "pipelineId": "standard",
@@ -77,7 +77,8 @@
     "c85ffa25279d067352582e63b4f29a4ae688ae2d",
     "030e03ec90a7dc58d729861b4c026dd8f595de66",
     "aedebbc5056d1ad433aa2f1d34a89076f33c800e",
-    "cb6fae7d21a1610dbc299dbc4d40f86694aa0607"
+    "cb6fae7d21a1610dbc299dbc4d40f86694aa0607",
+    "f6f2a4283c68f31c187e06fd56c6b13e59eaf6cc"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -109,8 +110,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/901",
+    "number": 901,
+    "createdAt": "2026-07-22T15:23:23.742Z"
+  },
   "_journal": {
-    "historyCount": 85,
+    "historyCount": 90,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -126,7 +132,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
