@@ -167,7 +167,7 @@ Steps:
 3. Explore the codebase as needed to validate the request (Read, Grep, Glob — read-only)
 4. Read the template at ${findingsPath} to understand the required format
 5. Write your findings and verdict to: ${findingsPath}
-6. Report your completion result with { ok: true, findings: [...] }${attestationStep}
+6. Report your completion result with { ok: true, findings: [...], evidence: { checked: N, skipped: N, unverified: N } }${attestationStep}
 
 Do NOT write a verdict line in the result file. Verdict is derived by CLI from typed findings.
 
