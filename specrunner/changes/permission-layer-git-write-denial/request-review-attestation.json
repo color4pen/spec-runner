@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:2e40332a270a9eee40185b412b9fcdd628a3cb6af06d1c09a93a218b16a276e0",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/adapter/claude-code/agent-runner.ts:443-446 — baseAllowedTools = [\"Read\", \"Bash\", \"Grep\", \"Glob\"] + report MCP tool",
+    "src/adapter/claude-code/agent-runner.ts:121-150 — createWorkspaceToolGuard guards Edit/Write only; all other tools default-allow at terminus",
+    "src/adapter/claude-code/agent-runner.ts:94-104 — buildWorkspaceSandbox: failIfUnavailable: false, allowUnsandboxedCommands: false, filesystem.allowWrite: [cwd, cwd/**]",
+    "src/core/port/agent-runner.ts:113-141 — AgentRunContext has no writes/stagingMode fields",
+    "src/core/step/step-context-builder.ts:130-157 — buildStepContext assembles ctx without writes/stagingMode",
+    "src/core/step/write-scope.ts:33-39 — GUARDED_WRITE_STEPS set",
+    "src/core/step/write-scope.ts:51-53 — stagingModeFor function",
+    "src/core/step/write-scope.ts:64-74 — protectedCanonPaths function",
+    "src/core/step/write-scope.ts:104-112 — forbiddenWritePaths function",
+    "src/core/pipeline/round-git-scope.ts:104-106 — pipelineManagedPaths returns state.json/events.jsonl/usage.json/bite-evidence-result.md",
+    "scripts/probes/write-scope-guard-probe.ts — 3 scenarios: out-of-workspace-write, in-workspace-write, report_result; Bash/git not tested",
+    "src/adapter/claude-code/query-one-shot.ts:136 — permissionMode: \"bypassPermissions\" confirmed"
+  ],
+  "sourceRevision": "d8dc2d164be63feff3ff5d2e7bb3748b50bb20e4"
+}
