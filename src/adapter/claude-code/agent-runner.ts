@@ -33,8 +33,10 @@ import * as path from "node:path";
 import { defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import { isToolUse } from "./message-types.js";
 import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader, type ClaudeSdkCreateMcpServer } from "./sdk-loader.js";
-import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage } from "../../core/port/agent-runner.js";
+import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage, AgentWriteScope } from "../../core/port/agent-runner.js";
 import { ADDED_TURNS_ZERO } from "../../core/port/agent-runner.js";
+import { classifyGitCommand } from "./git-command-classifier.js";
+import { dotSpecrunnerDirRel } from "../../util/paths.js";
 import type { DomainEvent } from "../../kernel/event-types.js";
 import type { StepContext } from "../../core/port/step-context.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
@@ -85,7 +87,11 @@ export type ClaudeCodeOAuthTokenResolver = (
  * D1: filesystem.allowWrite restricts writes to cwd and its subtree (OS-level enforcement).
  * D2: failIfUnavailable: false enables fail-open degradation (unsupported platforms continue).
  * D3: no denyRead / allowRead — reads remain unrestricted.
- * D4: autoAllowBashIfSandboxed: true preserves Bash tool execution under the sandbox.
+ * D4 (permission-layer-git-write-denial): autoAllowBashIfSandboxed MUST be false — probe
+ *   observation B (2026-07-23) measured that `true` auto-approves Bash BEFORE canUseTool,
+ *   making the guard's Bash branch (git mutation deny) unreachable. With `false`, Bash
+ *   routes through canUseTool and allowed commands still execute under the sandbox
+ *   (probe scenarios bash-canusetool-gate-b / bash-git-mutation-deny).
  * write-scope-guard-redo D4: allowUnsandboxedCommands: false closes the dangerouslyDisableSandbox
  *   escape hatch — the model cannot re-run a sandboxed Bash command unsandboxed.
  *
@@ -95,7 +101,7 @@ export function buildWorkspaceSandbox(cwd: string): Record<string, unknown> {
   return {
     enabled: true,
     failIfUnavailable: false,
-    autoAllowBashIfSandboxed: true,
+    autoAllowBashIfSandboxed: false,
     allowUnsandboxedCommands: false,
     filesystem: {
       allowWrite: [cwd, `${cwd}/**`],
@@ -106,20 +112,58 @@ export function buildWorkspaceSandbox(cwd: string): Record<string, unknown> {
 /**
  * Factory for the workspace write-scope guard passed as `canUseTool` to the step-agent.
  *
+ * permission-layer-git-write-denial:
+ * - Bash: deny git state-mutation commands (commit/push/add/reset/…); allow read git and non-git.
+ * - Edit/Write: deny based on scope boundaries (pipeline-managed paths, .specrunner, scoped/guarded).
+ *
  * write-scope-guard-redo D2: deny Edit / Write whose resolved file_path is outside cwd;
  * allow all other tools and any Edit/Write with malformed (missing / non-string) file_path.
  *
  * Measured SDK facts (confirmed by probe):
  * - Under permissionMode "default", canUseTool fires for tools NOT on allowedTools.
- * - Edit and Write are removed from allowedTools so this guard fires for them.
- * - Tools on allowedTools (Read, Bash, Grep, Glob, MCP report) bypass canUseTool entirely;
+ * - Edit, Write, and Bash are removed from allowedTools so canUseTool fires for all three.
+ * - Tools on allowedTools (Read, Grep, Glob, MCP report) bypass canUseTool entirely;
  *   the default-allow arm below is defense-in-depth only.
+ * - Bash is NOT on allowedTools — the Bash branch below classifies git commands and
+ *   denies state-mutation operations; read git and non-git Bash are allowed.
+ *   (D1: permission-layer-git-write-denial)
  *
- * @param cwd Agent working directory — the boundary for allowed writes.
+ * Residual (not detected via this guard): shell variable expansion, redirects, editor-mediated
+ * writes. Commit layer (#893 mixed-reset + synthesis + egress) handles these.
+ *
+ * @param cwd   Agent working directory — the boundary for allowed writes.
+ * @param scope Optional write-scope computed by buildStepContext. When absent, only the cwd
+ *              boundary is enforced (strictly-weaker fallback for utility contexts).
  * @returns CanUseTool callback suitable for inclusion in queryOptions.
  */
-export function createWorkspaceToolGuard(cwd: string): WorkspaceToolGuard {
+export function createWorkspaceToolGuard(cwd: string, scope?: AgentWriteScope): WorkspaceToolGuard {
   return async (toolName: string, input: Record<string, unknown>): Promise<WorkspacePermissionResult> => {
+    // -----------------------------------------------------------------------
+    // Bash: classify git state-mutation commands and deny them.
+    // All other Bash commands (read git, non-git) are allowed.
+    // This classification applies regardless of writeScope presence.
+    // -----------------------------------------------------------------------
+    if (toolName === "Bash") {
+      const command = input["command"];
+      if (typeof command === "string") {
+        const verdict = classifyGitCommand(command);
+        if (verdict.kind === "mutation") {
+          return {
+            behavior: "deny",
+            message:
+              `git state-mutation command denied: '${command.length > 60 ? command.slice(0, 60) + "…" : command}'. ` +
+              `Commit は pipeline が合成する — agent による git 状態変更は不要です。` +
+              ` 読み取り系 git (status/diff/log/show/rev-parse 等) は許可されています。`,
+          };
+        }
+      }
+      // Non-mutation or non-string command → allow
+      return { behavior: "allow", updatedInput: input };
+    }
+
+    // -----------------------------------------------------------------------
+    // Edit / Write: enforce cwd boundary and scope-aware deny.
+    // -----------------------------------------------------------------------
     if (toolName === "Edit" || toolName === "Write") {
       const filePath = input["file_path"];
       if (typeof filePath !== "string") {
@@ -129,6 +173,7 @@ export function createWorkspaceToolGuard(cwd: string): WorkspaceToolGuard {
         // ZodError validation and the tool call is rejected (measured 2026-07-11).
         return { behavior: "allow", updatedInput: input };
       }
+
       const resolved = path.resolve(cwd, filePath);
       const relative = path.relative(cwd, resolved);
       // Inside the workspace iff the relative path is "" (equals cwd) or does not
@@ -136,15 +181,90 @@ export function createWorkspaceToolGuard(cwd: string): WorkspaceToolGuard {
       const isInside =
         relative === "" ||
         (!relative.startsWith("..") && !path.isAbsolute(relative));
-      if (isInside) {
-        return { behavior: "allow", updatedInput: input };
+
+      if (!isInside) {
+        return {
+          behavior: "deny",
+          message: `Write to '${filePath}' is outside the agent worktree '${cwd}'. Write files only inside the worktree.`,
+        };
       }
-      return {
-        behavior: "deny",
-        message: `Write to '${filePath}' is outside the agent worktree '${cwd}'. Write files only inside the worktree.`,
-      };
+
+      if (scope) {
+        // Normalize to posix separators for comparison with path constants.
+        const rel = relative.replace(/\\/g, "/");
+
+        // ------------------------------------------------------------------
+        // All-step deny: pipeline-managed paths (state.json, events.jsonl,
+        // usage.json, bite-evidence-result.md) — #894 permission-layer closure.
+        // Pre-computed in buildStepContext (core layer) as scope.managedPaths.
+        // ------------------------------------------------------------------
+        if (scope.managedPaths.includes(rel)) {
+          return {
+            behavior: "deny",
+            message:
+              `Write to '${rel}' is denied: this is a pipeline-managed path ` +
+              `(state.json / events.jsonl / usage.json / bite-evidence-result.md). ` +
+              `Pipeline infrastructure writes these; agent writes are never needed.`,
+          };
+        }
+
+        // ------------------------------------------------------------------
+        // All-step deny: .specrunner/ directory (machine-local sidecar).
+        // ------------------------------------------------------------------
+        const dotSpec = dotSpecrunnerDirRel();
+        if (rel === dotSpec || rel.startsWith(`${dotSpec}/`)) {
+          return {
+            behavior: "deny",
+            message:
+              `Write to '${rel}' is denied: .specrunner/ is pipeline-internal ` +
+              `(liveness / marker / local state). Agent writes are never needed here.`,
+          };
+        }
+
+        // ------------------------------------------------------------------
+        // Scoped step: only declared write paths are allowed.
+        // All other in-workspace writes are denied.
+        // ------------------------------------------------------------------
+        if (scope.stagingMode === "scoped") {
+          if (!scope.declaredWritePaths.includes(rel)) {
+            const allowed =
+              scope.declaredWritePaths.length > 0
+                ? scope.declaredWritePaths.join(", ")
+                : "(none declared)";
+            return {
+              behavior: "deny",
+              message:
+                `Write to '${rel}' is denied: step '${scope.stepName}' is in scoped mode. ` +
+                `Only declared write paths are allowed: ${allowed}`,
+            };
+          }
+        }
+
+        // ------------------------------------------------------------------
+        // Guarded step: deny protected canon paths not declared as outputs.
+        // Other worktree paths (src/, tests/, etc.) are allowed.
+        // Pre-computed in buildStepContext (core layer) as scope.forbiddenPaths.
+        // ------------------------------------------------------------------
+        if (scope.stagingMode === "guarded") {
+          if (scope.forbiddenPaths.includes(rel)) {
+            return {
+              behavior: "deny",
+              message:
+                `Write to '${rel}' is denied: protected canon path (request.md / spec.md / ` +
+                `design.md / tasks.md / test-cases.md / attestation) not declared by step ` +
+                `'${scope.stepName}'. Declare the path in writes() to unlock it.`,
+            };
+          }
+        }
+      }
+
+      // In-workspace and not denied by scope rules → allow.
+      return { behavior: "allow", updatedInput: input };
     }
-    // All other tools (Read, Bash, Grep, Glob, MCP tools, etc.) are allowed.
+
+    // -----------------------------------------------------------------------
+    // All other tools (Read, Grep, Glob, MCP tools, etc.) → allow.
+    // -----------------------------------------------------------------------
     return { behavior: "allow", updatedInput: input };
   };
 }
@@ -436,11 +556,14 @@ export class ClaudeCodeRunner implements AgentRunner {
       }
     };
 
-    // write-scope-guard-redo D1: allowedTools base — Edit / Write removed so canUseTool fires for them.
+    // permission-layer-git-write-denial D1: Bash removed from allowedTools so canUseTool fires
+    //   for Bash tool calls. The guard's Bash branch classifies git state-mutation commands and
+    //   denies them; read git and non-git (e.g. bun test) are allowed.
+    // write-scope-guard-redo D1: Edit / Write also removed so canUseTool fires for them.
     // write-scope-guard-redo D3: when reportTool is configured, pre-approve its MCP tool name so
     //   report_result runs immediately without consulting canUseTool (pipeline lifeline isolation).
     //   MCP tool name format: mcp__<serverName>__<toolName> (measured fact 5).
-    const baseAllowedTools = ["Read", "Bash", "Grep", "Glob"];
+    const baseAllowedTools = ["Read", "Grep", "Glob"];
     const allowedTools = reportTool
       ? [...baseAllowedTools, `mcp__${REPORT_MCP_SERVER_NAME}__${reportTool.name}`]
       : baseAllowedTools;
@@ -453,11 +576,14 @@ export class ClaudeCodeRunner implements AgentRunner {
       // "bypassPermissions" never calls canUseTool; "dontAsk" denies without consulting canUseTool.
       permissionMode: "default",
       // write-scope-guard-redo D2: workspace guard — deny Edit/Write outside cwd, allow all else.
+      // permission-layer-git-write-denial D1/D4: scope-aware guard adds Bash git-mutation deny
+      // and scoped/guarded Write deny when ctx.writeScope is populated by buildStepContext.
       // Wired once; follow-up / retry / postWork turns spread ...queryOptions, propagating the guard.
-      canUseTool: createWorkspaceToolGuard(cwd),
+      canUseTool: createWorkspaceToolGuard(cwd, ctx.writeScope),
       // D1: scope filesystem writes to the workspace (OS-level enforcement via SDK native sandbox).
       // D2: failIfUnavailable: false → fail-open when sandbox is unavailable.
-      // D4: autoAllowBashIfSandboxed: true → Bash runs normally under the sandbox.
+      // D4: autoAllowBashIfSandboxed: false → Bash routes through canUseTool (probe observation B:
+      //     true auto-approves Bash before the guard, making the git-mutation deny unreachable).
       // write-scope-guard-redo D4: allowUnsandboxedCommands: false → escape hatch disabled.
       sandbox: buildWorkspaceSandbox(cwd),
       // D5: stderr callback observes sandbox degradation; once-latch emits a single warning.

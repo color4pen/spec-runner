@@ -2,9 +2,11 @@
  * Tests for workspace-scoped sandbox settings in ClaudeCodeRunner.
  *
  * TC-SB-01: step agent query options carry workspace-scoped sandbox (filesystem.allowWrite contains cwd)
- * TC-SB-02: autoAllowBashIfSandboxed is true and Bash remains in allowedTools
+ * TC-SB-02: autoAllowBashIfSandboxed is true and Bash is NOT in allowedTools (canUseTool fires for Bash)
  * TC-SB-03: run continues with completionReason=success and emits exactly one sandbox warn on degradation
  * TC-SB-04: once-latch holds — warning emitted only once even when degradation signal fires multiple times
+ * TC-037: allowedTools does not contain "Bash" (Bash is routed through canUseTool)
+ * TC-038: agent step query options permissionMode is "default"
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
@@ -152,11 +154,14 @@ describe("TC-SB-01: sandbox settings in step-agent query options", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-SB-02: Bash remains available under the sandbox
+// TC-SB-02: Bash is NOT in allowedTools (canUseTool fires for Bash git calls)
 // ---------------------------------------------------------------------------
 
-describe("TC-SB-02: Bash is preserved under sandbox", () => {
-  it("autoAllowBashIfSandboxed is true and allowedTools still contains Bash", async () => {
+describe("TC-SB-02: Bash is NOT in allowedTools — canUseTool fires for Bash", () => {
+  it("autoAllowBashIfSandboxed is false and allowedTools does NOT contain Bash", async () => {
+    // permission-layer-git-write-denial D1: Bash removed from allowedTools so
+    // canUseTool fires for Bash calls. The guard's Bash branch enforces git mutation deny.
+    // Read, Grep, Glob remain pre-approved.
     let capturedOptions: Record<string, unknown> | undefined;
 
     const queryFn: QueryFn = async function* (params) {
@@ -169,8 +174,12 @@ describe("TC-SB-02: Bash is preserved under sandbox", () => {
 
     expect(capturedOptions).toBeDefined();
     const sandbox = capturedOptions!["sandbox"] as Record<string, unknown>;
-    expect(sandbox["autoAllowBashIfSandboxed"]).toBe(true);
-    expect((capturedOptions!["allowedTools"] as string[])).toContain("Bash");
+    // Probe observation B (2026-07-23): autoAllowBashIfSandboxed:true auto-approves Bash
+    // BEFORE canUseTool, making the guard's git-mutation deny unreachable. Must be false
+    // so Bash routes through the guard; allowed commands still execute under the sandbox.
+    expect(sandbox["autoAllowBashIfSandboxed"]).toBe(false);
+    // Bash is NOT pre-approved — canUseTool must fire for git mutation classification
+    expect((capturedOptions!["allowedTools"] as string[])).not.toContain("Bash");
   });
 });
 
@@ -253,6 +262,74 @@ describe("TC-SB-04: warning is emitted only once even with repeated degradation 
     } finally {
       stderrSpy.mockRestore();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-037: allowedTools does not contain "Bash"
+// ---------------------------------------------------------------------------
+
+describe("TC-037: allowedTools に Bash が含まれない", () => {
+  it("allowedTools does not contain 'Bash' — canUseTool must fire for Bash git calls", async () => {
+    // permission-layer-git-write-denial D1 / request TC-037 (must):
+    // Bash must NOT be on allowedTools so canUseTool fires and the guard's Bash branch
+    // can deny git state-mutation commands. Any implementation that re-adds "Bash" to
+    // allowedTools will cause this test to fail (breakage confirmation for TC-060).
+    let capturedOptions: Record<string, unknown> | undefined;
+
+    const queryFn: QueryFn = async function* (params) {
+      capturedOptions = params.options;
+      yield makeSuccessResult() as unknown;
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    await runner.run(makeCtx(makeAgentStep(), makeJobState("tc-037")));
+
+    expect(capturedOptions).toBeDefined();
+    const allowedTools = capturedOptions!["allowedTools"] as string[];
+    expect(allowedTools).not.toContain("Bash");
+  });
+
+  it("allowedTools still contains Read, Grep, Glob (pre-approved non-mutation tools)", async () => {
+    let capturedOptions: Record<string, unknown> | undefined;
+
+    const queryFn: QueryFn = async function* (params) {
+      capturedOptions = params.options;
+      yield makeSuccessResult() as unknown;
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    await runner.run(makeCtx(makeAgentStep(), makeJobState("tc-037b")));
+
+    expect(capturedOptions).toBeDefined();
+    const allowedTools = capturedOptions!["allowedTools"] as string[];
+    expect(allowedTools).toContain("Read");
+    expect(allowedTools).toContain("Grep");
+    expect(allowedTools).toContain("Glob");
+    // Edit and Write must also be absent (pre-existing requirement)
+    expect(allowedTools).not.toContain("Edit");
+    expect(allowedTools).not.toContain("Write");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-038: permissionMode is "default"
+// ---------------------------------------------------------------------------
+
+describe("TC-038: agent step query options の permissionMode が 'default' である", () => {
+  it("permissionMode is 'default' — prerequisite for canUseTool to fire for unlisted tools", async () => {
+    let capturedOptions: Record<string, unknown> | undefined;
+
+    const queryFn: QueryFn = async function* (params) {
+      capturedOptions = params.options;
+      yield makeSuccessResult() as unknown;
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    await runner.run(makeCtx(makeAgentStep(), makeJobState("tc-038")));
+
+    expect(capturedOptions).toBeDefined();
+    expect(capturedOptions!["permissionMode"]).toBe("default");
   });
 });
 

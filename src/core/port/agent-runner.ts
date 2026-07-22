@@ -100,6 +100,50 @@ export interface AgentRunPolicy {
 }
 
 /**
+ * Write-scope descriptor propagated from buildStepContext into AgentRunContext.
+ *
+ * Carries the per-step write boundary so the permission guard (canUseTool) can
+ * enforce scope-aware deny without importing pipeline-domain modules.
+ *
+ * D3 (permission-layer-git-write-denial): threading the scope through AgentRunContext
+ * keeps the guard a pure function of its inputs while reusing the single-source-of-truth
+ * declarations from write-scope.ts and round-git-scope.ts.
+ *
+ * Pre-computed fields (managedPaths, forbiddenPaths) are resolved in buildStepContext
+ * (core layer, which CAN import from core/pipeline and core/step) so that the adapter
+ * guard does not need cross-layer domain imports (DSM closure enforcement).
+ */
+export interface AgentWriteScope {
+  /** Canonical pipeline step name (e.g. "implementer", "spec-review"). */
+  stepName: string;
+  /** Job slug used to derive pipeline-managed and protected-canon paths. */
+  slug: string;
+  /**
+   * Worktree-relative paths the step has declared as owned outputs (via writes()).
+   * gitState artifacts are excluded (they are not file paths the guard can check).
+   */
+  declaredWritePaths: string[];
+  /**
+   * Commit-staging mode for this step.
+   * "scoped"  — stage only declared paths; guard denies any write outside this set.
+   * "guarded" — stage whole worktree; guard denies protected canon paths not declared.
+   */
+  stagingMode: "scoped" | "guarded";
+  /**
+   * Pre-computed pipelineManagedPaths(slug): paths denied for ALL steps regardless of mode.
+   * Includes state.json, events.jsonl, usage.json, bite-evidence-result.md.
+   * Populated by buildStepContext using round-git-scope.ts (core layer).
+   */
+  managedPaths: string[];
+  /**
+   * Pre-computed forbiddenWritePaths(stepName, slug, declaredWritePaths):
+   * protected canon paths minus what this step has declared as outputs.
+   * Only meaningful in "guarded" mode; populated by buildStepContext.
+   */
+  forbiddenPaths: string[];
+}
+
+/**
  * Context passed to AgentRunner.run() for each agent step execution.
  * All fields are runtime-neutral — no SDK-specific types are included.
  *
@@ -138,6 +182,16 @@ export interface AgentRunContext {
   /** Emit a domain event payload back to StepExecutor.
    * Called by adapter for intermediate state updates (e.g. step progress). */
   emit: (event: DomainEvent, payload: Record<string, unknown>) => void;
+  /**
+   * Write-scope descriptor computed by buildStepContext for each agent step.
+   * When set, the permission guard (canUseTool) enforces scope-aware Write/Edit deny.
+   * Optional for backward compatibility: adapters that do not populate this field
+   * fall back to cwd-boundary-only enforcement (strictly-weaker fallback).
+   *
+   * D3 (permission-layer-git-write-denial): threading write scope into the context
+   * without breaking existing AgentRunContext literal construction sites.
+   */
+  writeScope?: AgentWriteScope;
 }
 
 import type { CompletionReportDiagnostic } from "../../kernel/completion-report-diagnostic.js";

@@ -307,7 +307,8 @@ describe("TC-023: ClaudeCodeRunner invokes query() with ctx.cwd", () => {
 
     await runner.run(ctx);
 
-    expect(capturedParams!.options?.allowedTools).toEqual(["Read", "Bash", "Grep", "Glob"]);
+    // permission-layer-git-write-denial D1: Bash removed from allowedTools so canUseTool fires for Bash.
+    expect(capturedParams!.options?.allowedTools).toEqual(["Read", "Grep", "Glob"]);
     expect(capturedParams!.options?.permissionMode).toBe("default");
     // model comes from step.agent.model via stepDefaults resolution
     expect(capturedParams!.options?.model).toBe("claude-sonnet-4-5");

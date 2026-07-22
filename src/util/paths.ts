@@ -333,6 +333,20 @@ export function localSidecarBaseDirRel(): string {
 }
 
 /**
+ * Returns the relative path to the `.specrunner` directory (no trailing slash).
+ * Used by the permission guard to deny agent writes into the pipeline-internal
+ * sidecar directory (liveness.json, marker.json, etc.) regardless of step.
+ *
+ * Distinct from `localSidecarBaseDirRel()` (`.specrunner/local`) because the guard
+ * must deny all paths under `.specrunner/`, not just the local sidecar subtree.
+ *
+ * Example: dotSpecrunnerDirRel() → ".specrunner"
+ */
+export function dotSpecrunnerDirRel(): string {
+  return ".specrunner";
+}
+
+/**
  * Returns the relative path to state.json for the machine-local managed job store.
  * (relative to repoRoot)
  * Example: localSlugStateJsonPath("foo") → ".specrunner/local/foo/state.json"

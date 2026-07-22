@@ -1,9 +1,11 @@
 /**
- * T-04: paths.ts utility function tests — custom reviewer paths.
+ * T-04: paths.ts utility function tests — custom reviewer paths and new path helpers.
  */
 import { describe, it, expect } from "vitest";
 import {
   customReviewerResultPath,
+  dotSpecrunnerDirRel,
+  localSidecarBaseDirRel,
   resolveReviewerResultPath,
   reviewFeedbackPath,
 } from "../paths.js";
@@ -58,5 +60,30 @@ describe("resolveReviewerResultPath", () => {
     const custom = resolveReviewerResultPath("s", "style", 5);
     expect(codeReview).toContain("-005.md");
     expect(custom).toContain("-005.md");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-043: dotSpecrunnerDirRel
+// ---------------------------------------------------------------------------
+
+describe("dotSpecrunnerDirRel (TC-043)", () => {
+  it("TC-043: returns '.specrunner'", () => {
+    expect(dotSpecrunnerDirRel()).toBe(".specrunner");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-044: dotSpecrunnerDirRel vs localSidecarBaseDirRel
+// ---------------------------------------------------------------------------
+
+describe("dotSpecrunnerDirRel vs localSidecarBaseDirRel (TC-044)", () => {
+  it("TC-044: dotSpecrunnerDirRel() and localSidecarBaseDirRel() return different values", () => {
+    expect(dotSpecrunnerDirRel()).not.toBe(localSidecarBaseDirRel());
+  });
+
+  it("TC-044: dotSpecrunnerDirRel() is '.specrunner' and localSidecarBaseDirRel() is '.specrunner/local'", () => {
+    expect(dotSpecrunnerDirRel()).toBe(".specrunner");
+    expect(localSidecarBaseDirRel()).toBe(".specrunner/local");
   });
 });
