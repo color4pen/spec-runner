@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "6283b476-9b25-4729-b5a9-a9a2b94f533d",
   "createdAt": "2026-07-22T11:55:42.653Z",
-  "updatedAt": "2026-07-22T13:22:01.311Z",
+  "updatedAt": "2026-07-22T15:54:59.352Z",
   "request": {
     "title": "changed-line-coverage の not-loaded 判定を type-only ファイルで誤検出させない",
     "type": "spec-change",
@@ -15,11 +15,7 @@
   "step": "pr-create",
   "status": "awaiting-resume",
   "branch": "change/coverage-type-only-not-loaded-6283b476",
-  "error": {
-    "code": "ROUND_NONDECLARED_CHANGE",
-    "message": "Round produced undeclared file changes: specrunner/changes/coverage-type-only-not-loaded/pr-create-result.md",
-    "hint": "Inspect the worktree to identify the source of the non-declared changes and fix the member step's writes() declaration."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -45,7 +41,9 @@
         "src/core/step/**",
         "src/state/**",
         "src/store/**",
-        "src/adapter/**"
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
       ]
     },
     {
@@ -75,7 +73,8 @@
     "f36f10afb6f7cfaaa9ea8606b6ccc8f7cbb38a0e",
     "abab0a405b8b1288f4fc71ffe66b0277725e6119",
     "047e9f6330a21e89b7adf3d6971baace8ac947f8",
-    "4076af8584d7727d36d396a2ea0d9f6b681d281e"
+    "4076af8584d7727d36d396a2ea0d9f6b681d281e",
+    "d4c6d8857db8d3ef99b809be1033d1ec7bab430e"
   ],
   "reviewerStatuses": [
     {
@@ -87,13 +86,15 @@
         "src/core/step/**",
         "src/state/**",
         "src/store/**",
-        "src/adapter/**"
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
       ],
       "invalidatedByCommit": null
     },
     {
       "name": "scale-tolerance",
-      "status": "pending",
+      "status": "skipped",
       "approvedAtCommit": null,
       "activationPaths": [
         "src/store/**",
@@ -111,12 +112,12 @@
   },
   "resumePoint": {
     "step": "custom-reviewers",
-    "reason": "Round produced undeclared file changes: specrunner/changes/coverage-type-only-not-loaded/pr-create-result.md",
+    "reason": "custom-reviewers escalated",
     "iterationsExhausted": 1
   },
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 70,
+    "historyCount": 78,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -127,9 +128,9 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "cross-boundary-invariants": 2,
-      "scale-tolerance": 2,
-      "custom-reviewers": 2,
+      "cross-boundary-invariants": 3,
+      "scale-tolerance": 3,
+      "custom-reviewers": 3,
       "regression-gate": 1,
       "conformance": 1,
       "adr-gen": 1,
