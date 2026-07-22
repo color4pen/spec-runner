@@ -150,6 +150,11 @@ export async function deriveStepCompletion(
   // Track the undecided findings for the last judge/conformance path to compute escalationReason.
   let lastUndecidedFindings: Finding[] | null = null;
   let lastIsConformancePath = false;
+  // Track verdict inputs to determine whether escalation was caused by canon findings (not ok=false,
+  // vacuous check, decision-needed, finding-ref override, or verdictOverride).
+  let lastVerdictOk = true;
+  let lastVerdictEvidence: Evidence | undefined = undefined;
+  let verdictOverriddenByFindingRef = false;
 
   if (agentResult !== undefined && stepReportTool !== undefined) {
     // Agent step with reportTool — use typed outcome exclusively.
@@ -180,6 +185,8 @@ export async function deriveStepCompletion(
         verdict = deriveConformanceVerdict(undecidedFindings, tr.ok, tr.evidence, canonScope);
         lastUndecidedFindings = undecidedFindings;
         lastIsConformancePath = true;
+        lastVerdictOk = tr.ok;
+        lastVerdictEvidence = tr.evidence;
       } else if (isJudgeStep) {
         const tr = toolResult as JudgeReportResult;
         const allFindings = [...(tr.findings ?? []), ...extraScopeFindings];
@@ -194,6 +201,8 @@ export async function deriveStepCompletion(
         verdict = verdictFn(undecidedFindings, tr.ok, tr.evidence, canonScope);
         lastUndecidedFindings = undecidedFindings;
         lastIsConformancePath = false;
+        lastVerdictOk = tr.ok;
+        lastVerdictEvidence = tr.evidence;
       } else {
         // producer: status "error" → "error", else completionVerdict (fallback "success")
         const completionVerdict =
@@ -235,6 +244,7 @@ export async function deriveStepCompletion(
           );
           if (nonExistent.length > 0) {
             verdict = "escalation";
+            verdictOverriddenByFindingRef = true;
           }
         }
       }
@@ -271,17 +281,33 @@ export async function deriveStepCompletion(
   verdict = verdict ?? "escalation";
 
   // verdictOverride: do not override producer status:error.
+  let wasVerdictOverridden = false;
   if (agentResult?.verdictOverride !== undefined && verdict !== "error") {
     verdict = agentResult.verdictOverride;
+    wasVerdictOverridden = true;
   }
 
-  // Compute escalationReason when verdict is "escalation" due to unroutable canon findings.
+  // Compute escalationReason when verdict is "escalation" caused by unroutable canon findings.
+  // Requires causal attribution: escalation from ok=false, vacuous check, decision-needed findings,
+  // finding-ref override, or verdictOverride is NOT canon-caused and must not set escalationReason.
   let escalationReason: string | undefined;
-  if (verdict === "escalation" && lastUndecidedFindings !== null) {
-    const resolver = lastIsConformancePath ? conformanceEffectiveFixer : judgeEffectiveFixer;
-    const unroutable = selectUnroutableCanonFindings(lastUndecidedFindings, canonScope, resolver);
-    if (unroutable.length > 0) {
-      escalationReason = buildCanonEscalationReason(unroutable);
+  if (
+    verdict === "escalation" &&
+    lastUndecidedFindings !== null &&
+    !verdictOverriddenByFindingRef &&
+    !wasVerdictOverridden
+  ) {
+    // Verify the escalation was not caused by a higher-priority reason.
+    const isCanonEscalation =
+      lastVerdictOk &&
+      !(lastVerdictEvidence !== undefined && lastVerdictEvidence.checked === 0) &&
+      !lastUndecidedFindings.some((f) => f.resolution === "decision-needed");
+    if (isCanonEscalation) {
+      const resolver = lastIsConformancePath ? conformanceEffectiveFixer : judgeEffectiveFixer;
+      const unroutable = selectUnroutableCanonFindings(lastUndecidedFindings, canonScope, resolver);
+      if (unroutable.length > 0) {
+        escalationReason = buildCanonEscalationReason(unroutable);
+      }
     }
   }
 

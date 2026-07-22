@@ -278,7 +278,7 @@ export interface AgentStep {
    * Use case: regression-gate needs needs-fix for ANY fixable finding (even low/medium severity),
    * unlike the standard deriveJudgeVerdict which only triggers needs-fix for critical/high severity.
    *
-   * The evidence parameter is optional — functions with only 2 arguments (e.g. deriveRegressionGateVerdict)
+   * The evidence and canonScope parameters are optional — functions with fewer than 4 arguments
    * are still assignable to this type because JavaScript silently ignores extra arguments.
    */
   judgeVerdictFn?: (
