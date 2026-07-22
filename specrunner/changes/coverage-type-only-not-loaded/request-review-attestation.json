@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:c866d5627ab3a6af359fa4934718d2301885e83f61b2ddb4d2d5f3b3e33d8d4a",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/verification/changed-line-coverage.ts:85-95 — include/exclude glob filter (no content-based check)",
+    "src/core/verification/changed-line-coverage.ts:97-101 — if (!lcov.has(file)) → failedFiles.push({ file, reason: 'not-loaded' })",
+    "src/core/verification/changed-line-coverage.ts:113-116 — DA record absent → pass (non-executable lines)",
+    "src/core/verification/changed-line-coverage.ts:148-149 — 'not loaded by test suite (absent from lcov)' message",
+    "src/core/verification/changed-lines.ts:125-173 — getChangedFilesAndLines, diffText discarded after line-number extraction (function ends at l.177)",
+    "src/core/verification/runner.ts:398 — runChangedLineCoverageGate call (first site)",
+    "src/core/verification/runner.ts:599 — runChangedLineCoverageGate call (second site)",
+    "package.json — typescript is devDependency only (not in dependencies)",
+    "tests/unit/core/verification/changed-line-coverage.test.ts — TC-CLG-03 and TC-CLG-04 present",
+    "EvaluateResult.skippedFiles: string[] — current type definition (no reason field)"
+  ],
+  "sourceRevision": "d8dc2d164be63feff3ff5d2e7bb3748b50bb20e4"
+}
