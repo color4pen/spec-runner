@@ -150,8 +150,16 @@ describe("R2: updateJobState (ledger persistence) failure aborts bootstrap", () 
         ) as unknown as SpawnFn,
         resolveSetupPlan: vi.fn().mockReturnValue({ kind: "skip" } satisfies WorkspaceSetupPlan),
         registerWorkspace: vi.fn(),
-        // First updateJobState call is the ledger append — fail it.
-        updateJobState: vi.fn().mockRejectedValue(new Error("ledger persistence failed")),
+        // updateJobState call order in new-run arm:
+        //   1. worktreePath recording (line 176)
+        //   2. request.path update   (line 208)
+        //   3. appendSynthesizedCommit — ledger append (lines 238-242) ← fail this one
+        //   4. branch recording      (lines 248-252, only reached if 3 passes)
+        // Using ordered one-time values so calls 1-2 succeed and call 3 rejects.
+        updateJobState: vi.fn()
+          .mockResolvedValueOnce(undefined)   // call 1: worktreePath
+          .mockResolvedValueOnce(undefined)   // call 2: request.path
+          .mockRejectedValueOnce(new Error("ledger persistence failed")), // call 3: ledger append
         writeLivenessSidecar: vi.fn().mockResolvedValue(undefined),
       };
 
