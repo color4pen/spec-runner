@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ac3aa8bf-033e-421f-a92b-59359474389e",
   "createdAt": "2026-07-22T11:54:14.110Z",
-  "updatedAt": "2026-07-22T17:13:50.257Z",
+  "updatedAt": "2026-07-22T17:21:20.662Z",
   "request": {
     "title": "agent の git 状態変更とスコープ外書込を permission 層で遮断する",
     "type": "new-feature",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/permission-layer-git-write-denial-ac3aa8bf",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/permission-layer-git-write-denial/tasks.md, title: \"tasks.md T-07 のチェックリストコメントが実装と食い違う\"\n\nfixer は write-scope により当該 file を修正できない。operator の適用が必要。",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正し、job resume で再開してください。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -60,7 +64,11 @@
     }
   ],
   "issueNumber": 894,
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/permission-layer-git-write-denial/tasks.md, title: \"tasks.md T-07 のチェックリストコメントが実装と食い違う\"\n\nfixer は write-scope により当該 file を修正できない。operator の適用が必要。",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "synthesizedCommits": [
     "398a2f6374d70de7d9354742ccb17179eba9acdc",
@@ -92,7 +100,8 @@
     "6f14dacddb47c8fa13b99e29a3f424bc24e6c6e4",
     "e0f36903869019f32ff5a93f794ca9fc19bd8a57",
     "b186c14eed9758c8aa12f47333bbb79aaa146e3d",
-    "87a531d3ac0d8bf18fb73820cc1ce2574b6c4d6a"
+    "87a531d3ac0d8bf18fb73820cc1ce2574b6c4d6a",
+    "9e2f450ee932e45ff0a852b0e77f6ecd406c86f7"
   ],
   "reviewerStatuses": [
     {
@@ -128,7 +137,7 @@
     "createdAt": "2026-07-22T17:07:33.611Z"
   },
   "_journal": {
-    "historyCount": 147,
+    "historyCount": 150,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -139,7 +148,7 @@
       "bite-evidence": 1,
       "verification": 5,
       "build-fixer": 2,
-      "code-review": 4,
+      "code-review": 5,
       "code-fixer": 4,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
