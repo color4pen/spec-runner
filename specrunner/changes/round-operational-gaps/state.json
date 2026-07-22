@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "326fb481-6723-4faa-82b3-f020ced8dd1d",
   "createdAt": "2026-07-22T14:20:53.595Z",
-  "updatedAt": "2026-07-22T14:51:11.008Z",
+  "updatedAt": "2026-07-22T14:57:52.464Z",
   "request": {
     "title": "custom reviewer round の運用欠落 2 件を修正する — pr-create-result の管理パス化と activationPaths の欠落補完",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "fix/round-operational-gaps-326fb481",
   "error": null,
@@ -70,10 +70,40 @@
     "c36b31ab77157ba13ddc362556a6f66a26547072",
     "3dc30989b0574307d437818fbe11670a1772bb9c",
     "ff6d0090f500e24f110733684b9ee875cea2320d",
-    "650874c821ee3ad77ae52d3d871cc8ddeaccea07"
+    "650874c821ee3ad77ae52d3d871cc8ddeaccea07",
+    "d1a020cb5fb2f575cf5477dd6d07eda8a78838e8",
+    "f05def0dc585eac2ab202658167fe6adb16d5159"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "d1a020cb5fb2f575cf5477dd6d07eda8a78838e8",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/round-operational-gaps/design.md:sha256:0421794afaa16d66be42d5ec498c98bc0b5a56d44db665c595eadbc2b5e38733|specrunner/changes/round-operational-gaps/request.md:sha256:e44dcdb39fedad64b6a74714c5dc167e9ea7ee18df67c21061fa3d3a09a83b01|specrunner/changes/round-operational-gaps/spec.md:sha256:2333ae3dbb40d3ce007561fa7166e0709ee3d1eacdccfff462c8333b51c5a234|specrunner/changes/round-operational-gaps/tasks.md:sha256:f1a6bd2f68837d0246fb1ab148ed1f6ca14036a4b8e7e87822d30d2a198466c7|specrunner/changes/round-operational-gaps/test-cases.md:sha256:fa2c8265a812c2bf18cc0e5f6fa51c055594f4b878083af95ab82b532e316b50"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -83,7 +113,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
