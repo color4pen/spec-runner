@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "27f57112-6f79-4b9a-a0f2-ffc3d02f181e",
   "createdAt": "2026-07-22T12:00:45.803Z",
-  "updatedAt": "2026-07-22T12:16:02.433Z",
+  "updatedAt": "2026-07-22T12:20:56.512Z",
   "request": {
     "title": "bootstrap の materialization commit を egress 台帳に記録し、初回 push の誤 halt を解消する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "fix/bootstrap-commit-egress-ledger-27f57112",
   "error": null,
@@ -61,13 +61,15 @@
   ],
   "synthesizedCommits": [
     "3880b740fa3330c31552282c315b4365157ceec1",
-    "febba3859e56a9f51485dae4bc3d8a25d6d515ba"
+    "febba3859e56a9f51485dae4bc3d8a25d6d515ba",
+    "64c7796c4ad450a8b7ee4ff4cb231ad04b400757"
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
