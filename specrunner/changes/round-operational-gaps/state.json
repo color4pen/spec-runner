@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "326fb481-6723-4faa-82b3-f020ced8dd1d",
   "createdAt": "2026-07-22T14:20:53.595Z",
-  "updatedAt": "2026-07-22T14:24:06.843Z",
+  "updatedAt": "2026-07-22T14:25:29.942Z",
   "request": {
     "title": "custom reviewer round の運用欠落 2 件を修正する — pr-create-result の管理パス化と activationPaths の欠落補完",
     "type": "bug-fix",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "request-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "fix/round-operational-gaps-326fb481",
-  "error": {
-    "code": "EGRESS_UNKNOWN_COMMIT",
-    "message": "Egress backstop: unknown commit a86dd679322da9d61145ffe2a198785b87a3dde1 in publish range for branch 'fix/round-operational-gaps-326fb481'.",
-    "hint": "A commit not created by the pipeline was found in the push range. Investigate and resolve before retrying."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -64,13 +60,10 @@
     }
   ],
   "issueNumber": 898,
-  "resumePoint": {
-    "step": "request-review",
-    "reason": "Egress backstop: unknown commit a86dd679322da9d61145ffe2a198785b87a3dde1 in publish range for branch 'fix/round-operational-gaps-326fb481'.",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 4,
+    "historyCount": 6,
     "stepCounts": {
       "request-review": 1
     }
