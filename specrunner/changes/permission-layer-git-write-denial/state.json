@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ac3aa8bf-033e-421f-a92b-59359474389e",
   "createdAt": "2026-07-22T11:54:14.110Z",
-  "updatedAt": "2026-07-22T17:39:37.822Z",
+  "updatedAt": "2026-07-22T17:53:48.524Z",
   "request": {
     "title": "agent の git 状態変更とスコープ外書込を permission 層で遮断する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "awaiting-resume",
+  "step": "regression-gate",
+  "status": "running",
   "branch": "feat/permission-layer-git-write-denial-ac3aa8bf",
   "error": null,
   "pipelineId": "standard",
@@ -60,11 +60,7 @@
     }
   ],
   "issueNumber": 894,
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "synthesizedCommits": [
     "398a2f6374d70de7d9354742ccb17179eba9acdc",
@@ -99,13 +95,14 @@
     "87a531d3ac0d8bf18fb73820cc1ce2574b6c4d6a",
     "9e2f450ee932e45ff0a852b0e77f6ecd406c86f7",
     "e63d46d3b02723221429b2ac08f67f29e9327baf",
-    "41b217b16bc606f0d91c092e7739d6fea2e5ca23"
+    "41b217b16bc606f0d91c092e7739d6fea2e5ca23",
+    "ecfaccfa506f089944d405e5d701254a5e1b7182"
   ],
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "2ad37bd29f52f07b55ee253a9209caab8a7a3d3c",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -113,8 +110,8 @@
         "src/store/**",
         "src/adapter/**"
       ],
-      "invalidatedByCommit": "e63d46d3b02723221429b2ac08f67f29e9327baf",
-      "canonHash": "specrunner/changes/permission-layer-git-write-denial/design.md:sha256:d954f1d08f8815611e011d1edb868a168ad2e61003d03e53a9b0793e74a2ce1c|specrunner/changes/permission-layer-git-write-denial/request.md:sha256:2e40332a270a9eee40185b412b9fcdd628a3cb6af06d1c09a93a218b16a276e0|specrunner/changes/permission-layer-git-write-denial/spec.md:sha256:30c9e0f9b0cff09ea8e91d13881bf35877e6e8818762de54ec7e9203b8a48419|specrunner/changes/permission-layer-git-write-denial/tasks.md:sha256:4fab293ef0ab3281f21eb538b2012d23411cdf6384b369b76ecf1b1f1b1830c2|specrunner/changes/permission-layer-git-write-denial/test-cases.md:sha256:e4897eb882ab4639d7f9efc5b7f0d586a94ea7cbe4217dbbed0c8ef7727ee908"
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/permission-layer-git-write-denial/design.md:sha256:b7aa0188d4f689e43e476cb9bea2a3b363a6191282e0faeb9262960223340f63|specrunner/changes/permission-layer-git-write-denial/request.md:sha256:2e40332a270a9eee40185b412b9fcdd628a3cb6af06d1c09a93a218b16a276e0|specrunner/changes/permission-layer-git-write-denial/spec.md:sha256:30c9e0f9b0cff09ea8e91d13881bf35877e6e8818762de54ec7e9203b8a48419|specrunner/changes/permission-layer-git-write-denial/tasks.md:sha256:be657047fd11981ba4861e5295c5904219b6ea68b65170df6fc1dcca2a5d8336|specrunner/changes/permission-layer-git-write-denial/test-cases.md:sha256:e4897eb882ab4639d7f9efc5b7f0d586a94ea7cbe4217dbbed0c8ef7727ee908"
     },
     {
       "name": "scale-tolerance",
@@ -135,7 +132,7 @@
     "createdAt": "2026-07-22T17:07:33.611Z"
   },
   "_journal": {
-    "historyCount": 161,
+    "historyCount": 169,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -148,9 +145,9 @@
       "build-fixer": 2,
       "code-review": 6,
       "code-fixer": 4,
-      "cross-boundary-invariants": 4,
+      "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
-      "custom-reviewers": 4,
+      "custom-reviewers": 5,
       "regression-gate": 3,
       "conformance": 2,
       "adr-gen": 1,
