@@ -317,6 +317,7 @@ describe("TC-CAP-NEW-001: staged changes → commit + push (requiresCommit:true,
 
     const { spawnFn, calls } = makeGitSpawnFnWithRevParseSequence(
       {
+        status: { exitCode: 0, stdout: " M src/foo.ts\0" }, // guarded mode: non-empty changedPaths → add IS called
         add: { exitCode: 0 },
         diff: { exitCode: 1 }, // staged changes present
         commit: { exitCode: 0 },
@@ -712,6 +713,7 @@ describe("TC-CAP-NEW-HALT-001: git add failure → executor.execute rejects with
 
     const { spawnFn } = makeGitSpawnFnWithRevParseSequence(
       {
+        status: { exitCode: 0, stdout: " M src/foo.ts\0" }, // guarded mode: non-empty changedPaths → add IS reached
         add: { exitCode: 128 }, // git add operational failure
       },
       ["abc123before"], // only pre-step rev-parse

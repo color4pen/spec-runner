@@ -57,6 +57,8 @@ export const VerificationStep: CliStep = {
         iteration,
         cwd: verificationCwd,
         spawn: deps.spawn,
+        // D4 egress backstop: pass ledger so propagate can verify publish range before push.
+        synthesizedCommits: state.synthesizedCommits ?? [],
       });
       if (!result.ok) {
         stderrWrite(

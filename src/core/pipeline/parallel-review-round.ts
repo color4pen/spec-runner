@@ -412,6 +412,8 @@ export class ParallelReviewRound {
               coordinatorName,
               deps.slug,
               infra,
+              // D4 backstop: pass egress params so LocalRuntime can verify publish range.
+              { synthesizedCommits: state.synthesizedCommits ?? [], headBeforeStep: baselineCommit },
             );
             // Capture round commit OID for synthesizedCommits ledger (T-08, D4).
             // HEAD should have advanced after a successful commitRoundArtifacts.

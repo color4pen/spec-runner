@@ -571,6 +571,20 @@ export class StepExecutor {
 
     const completedAt = new Date().toISOString();
 
+    // T-08 / D4: Capture exit-HEAD to detect commits created during step.run().
+    // CLI steps (e.g. VerificationStep → propagateVerificationResult) may advance HEAD.
+    // If exit-HEAD ≠ entry-HEAD, the step synthesized a new commit (exitCommitOid).
+    // CommitOrchestrator appends exitCommitOid to synthesizedCommits so that
+    // commitFinalState's verifyEgressLedger does not flag it as an unknown commit
+    // if the CLI step's own push failed and left the commit local-only.
+    const exitHeadSha = deps.runtimeStrategy
+      ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? undefined
+      : undefined;
+    const exitCommitOid =
+      exitHeadSha && entryHeadSha && exitHeadSha !== entryHeadSha
+        ? exitHeadSha
+        : undefined;
+
     // Read the result file from disk (not GitHub — CLI steps write locally)
     const resultFilePath = step.resultFilePath(state, deps);
     let fileContent: string | null = null;
@@ -597,6 +611,7 @@ export class StepExecutor {
       startedAt,
       session: null,
       ...(entryHeadSha !== undefined ? { commitOid: entryHeadSha } : {}),
+      ...(exitCommitOid !== undefined ? { exitCommitOid } : {}),
     };
   }
 }

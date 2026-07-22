@@ -33,9 +33,15 @@ export async function propagateVerificationResult(params: {
   iteration: number;
   cwd: string;
   spawn: SpawnFn;
+  /**
+   * D4 egress backstop: when provided, verifies the publish range against this ledger
+   * (synthesizedCommits from job state) before pushing. Unknown commits abort the push
+   * and return { ok: false, error }. Omit to skip the check (backward compat).
+   */
+  synthesizedCommits?: readonly string[];
 }): Promise<PropagateResult> {
   const spawn = params.spawn;
-  const { slug, branch, iteration, cwd } = params;
+  const { slug, branch, iteration, cwd, synthesizedCommits } = params;
 
   // Verify the source file exists in cwd (the job worktree)
   const sourceFile = path.join(cwd, verificationResultPath(slug));
@@ -61,6 +67,24 @@ export async function propagateVerificationResult(params: {
   const commitResult = await spawn("git", ["commit", "-m", commitMsg], { cwd });
   if (commitResult.exitCode !== 0) {
     return { ok: false, error: `git commit failed: ${commitResult.stderr.trim()}` };
+  }
+
+  // D4 egress backstop: verify publish range ⊆ synthesizedCommits ledger before push.
+  // Inline implementation (not importing from step/commit-push.ts to avoid cross-layer coupling).
+  if (synthesizedCommits !== undefined) {
+    const headResult = await spawn("git", ["rev-parse", "HEAD"], { cwd });
+    const newOid = (headResult.exitCode ?? 1) === 0 ? headResult.stdout.trim() : "";
+    const ledger = new Set([...synthesizedCommits, ...(newOid ? [newOid] : [])]);
+    const revListResult = await spawn("git", ["rev-list", "HEAD", "--not", "--remotes=origin"], { cwd });
+    if ((revListResult.exitCode ?? 1) !== 0) {
+      return { ok: false, error: `egress rev-list failed: exit ${revListResult.exitCode}` };
+    }
+    const oids = revListResult.stdout.split("\n").map((s) => s.trim()).filter(Boolean);
+    for (const oid of oids) {
+      if (!ledger.has(oid)) {
+        return { ok: false, error: `egress check: unknown commit ${oid} in publish range` };
+      }
+    }
   }
 
   const pushResult = await spawn("git", ["push", "origin", branch], { cwd });

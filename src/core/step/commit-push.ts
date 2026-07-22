@@ -262,19 +262,24 @@ export async function verifyEgressLedger(params: {
  *   commits reachable from this ref are excluded from the publish range (they
  *   pre-date the synthesis and are not the pipeline's responsibility).
  */
+/**
+ * Inline egress verification after a pipeline-synthesized commit.
+ *
+ * @param synthesizedCommits - Existing synthesizedCommits ledger (from job state or caller-supplied).
+ * @param headBeforeStep     - HEAD OID before the step started (excludes pre-existing commits in tests).
+ */
 async function runInlineEgressCheck(
   spawnFn: SpawnFn,
   cwd: string,
   branch: string,
-  state: JobState,
+  synthesizedCommits: readonly string[],
   headBeforeStep: string | null,
 ): Promise<void> {
   // Capture OID of the just-synthesized commit (may be "" in tests)
   const newCommitOid = (await gitExec(spawnFn, cwd, ["rev-parse", "HEAD"])) ?? "";
 
   // Build ledger: existing synthesizedCommits ∪ current-op OID (filter empty strings)
-  const existingLedger = state.synthesizedCommits ?? [];
-  const ledger = new Set<string>([...existingLedger, newCommitOid].filter(Boolean));
+  const ledger = new Set<string>([...synthesizedCommits, newCommitOid].filter(Boolean));
 
   // Enumerate publish range.
   // All refs after `--not` are excluded from the range. Appending headBeforeStep
@@ -428,7 +433,7 @@ export async function commitAndPush(
     }
 
     // Egress verification: publish range ⊆ synthesizedCommits ledger.
-    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state, headBeforeStep);
+    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? [], headBeforeStep);
 
     // Push with one retry.
     await pushOnly(branch, cwd, step.name, infra);
@@ -460,15 +465,15 @@ export async function commitAndPush(
     }
 
     // Stage all changed paths explicitly via pathspec.
-    // Fallback: if status reported no changes, use `add -A -- .` to ensure a consistent
-    // index state (backward compat: TC-CAP-001 path where empty worktree still needs add).
-    const addArgs: string[] =
-      changedPaths.length > 0
-        ? ["add", "-A", "--", ...changedPaths]
-        : ["add", "-A", "--", "."];
-    const addResult = await gitExecResult(infra.spawnFn, cwd, addArgs);
-    if (!addResult.ok || addResult.exitCode !== 0) {
-      throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
+    // When changedPaths is empty (git status found no changes), skip add entirely:
+    // there is nothing to stage, and the diff check below will confirm no staged changes.
+    // The previous fallback `["add", "-A", "--", "."]` was equivalent to bare `git add -A`
+    // (root pathspec = whole repo) and violated F-004 (explicit pathspec required). (Finding 3)
+    if (changedPaths.length > 0) {
+      const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ...changedPaths]);
+      if (!addResult.ok || addResult.exitCode !== 0) {
+        throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
+      }
     }
 
     // Staged-change check (whole-index).
@@ -493,7 +498,7 @@ export async function commitAndPush(
     }
 
     // Egress verification: publish range ⊆ synthesizedCommits ledger.
-    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state, headBeforeStep);
+    await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? [], headBeforeStep);
 
     // Push with one retry.
     await pushOnly(branch, cwd, step.name, infra);
@@ -631,6 +636,10 @@ export async function commitFinalState(params: {
  * @param branch        - Branch to push to.
  * @param commitMessage - Commit message (typically "<coordinator>: <slug>").
  * @param infra         - Commit/push infrastructure (spawnFn, sleepFn, events).
+ * @param egress        - Optional D4 egress check params. When provided, runs
+ *                        runInlineEgressCheck after commit and before push.
+ *                        synthesizedCommits: existing ledger from job state.
+ *                        headBeforeStep: HEAD OID before the round started (for test safety).
  */
 export async function commitScopedPaths(
   stagePaths: string[],
@@ -638,6 +647,7 @@ export async function commitScopedPaths(
   branch: string,
   commitMessage: string,
   infra: CommitPushInfra,
+  egress?: { synthesizedCommits: readonly string[]; headBeforeStep: string | null },
 ): Promise<void> {
   if (stagePaths.length === 0) return;
 
@@ -662,6 +672,12 @@ export async function commitScopedPaths(
   const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage]);
   if (!commitResult.ok || commitResult.exitCode !== 0) {
     throw commitEffectFailedError(commitMessage, branch, "commit", `exit code ${commitResult.exitCode}`);
+  }
+
+  // D4 backstop: egress verification before push (when caller supplies egress params).
+  // Verifies publish range ⊆ synthesizedCommits ∪ current commit OID.
+  if (egress) {
+    await runInlineEgressCheck(infra.spawnFn, cwd, branch, egress.synthesizedCommits, egress.headBeforeStep);
   }
 
   // Push with one retry (uses commitMessage as step label for the event)

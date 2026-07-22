@@ -69,8 +69,25 @@ export type StepExecutionResult =
        * Commit OID captured after this step's per-node commit (bite-evidence-forward R4).
        * Set only for sequential steps with roundOwnsGitEffects === false.
        * Absent for round (parallel reviewer) members and managed-runtime steps.
+       *
+       * Semantics by step kind:
+       *   - Agent step: exit-HEAD (the pipeline-synthesized commit).
+       *   - CLI step:   entry-HEAD (the revision evaluated by the step — NOT a synthesized commit).
+       *     Use exitCommitOid for the CLI step's synthesized commit (if HEAD advanced during run()).
        */
       commitOid?: string;
+      /**
+       * For CLI steps only: OID of the commit created during step.run() (T-08, D4).
+       *
+       * CLI steps (e.g. VerificationStep via propagateVerificationResult) may advance HEAD
+       * during step.run(). exitCommitOid captures the exit-HEAD when it differs from the
+       * entry-HEAD (commitOid). This OID is appended to synthesizedCommits so that
+       * commitFinalState's verifyEgressLedger does not flag it as an unknown commit if the
+       * CLI step's own push failed and left the commit local-only.
+       *
+       * Absent for agent steps (their synthesized commit is already captured in commitOid).
+       */
+      exitCommitOid?: string;
     }
   | { kind: "halt"; halt: StepHalt }
   | { kind: "skipped"; skipReason: string };
@@ -341,11 +358,18 @@ export class CommitOrchestrator {
       s = { ...s, biteEvidence: completion.biteEvidence };
     }
 
-    // Append synthesized commit OID to ledger (T-08, D4).
-    // result.commitOid is the exit-HEAD captured by captureHeadSha after finalizeStepArtifacts.
-    // Sequential steps (roundOwnsGitEffects === false) populate commitOid; round members do not.
+    // Append synthesized commit OID(s) to ledger (T-08, D4).
+    // Agent step: commitOid = exit-HEAD (pipeline-synthesized commit). Append it.
+    // CLI step: commitOid = entry-HEAD (evaluated revision, already on origin — harmless to append).
+    //           exitCommitOid = exit-HEAD if HEAD advanced during step.run() (synthesized commit).
     if (result.commitOid) {
       s = appendSynthesizedCommit(s, result.commitOid);
+    }
+    // CLI step created a commit during step.run() (e.g. propagateVerificationResult).
+    // Append exit-HEAD so verifyEgressLedger in commitFinalState recognises it as a known
+    // pipeline commit even if the CLI step's push failed and left the commit local-only.
+    if (result.exitCommitOid) {
+      s = appendSynthesizedCommit(s, result.exitCommitOid);
     }
 
     // Persist branch/pullRequest/biteEvidence patch (write 2)

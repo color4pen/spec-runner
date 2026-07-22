@@ -823,10 +823,14 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     coordinatorName: string,
     slug: string,
     commitPushInfra: unknown,
+    egressParams?: unknown,
   ): Promise<void> {
     const infra = commitPushInfra as CommitPushInfra;
+    const egress = egressParams as
+      | { synthesizedCommits: readonly string[]; headBeforeStep: string | null }
+      | undefined;
     const commitMessage = `${coordinatorName}: ${slug}`;
-    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra);
+    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egress);
   }
 
   /**
