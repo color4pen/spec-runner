@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9141b6e6-fd3b-40a1-8b2c-c0270fb9d9ab",
   "createdAt": "2026-07-23T10:56:38.330Z",
-  "updatedAt": "2026-07-23T12:08:41.743Z",
+  "updatedAt": "2026-07-23T12:22:16.133Z",
   "request": {
     "title": "custom reviewer round の全員 skip をエラーでなく構造的 skip として通す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/round-all-skip-pass-through-9141b6e6",
   "error": null,
@@ -74,13 +74,15 @@
     "4c82b22523a7b1fd714faeb36309f5bc3bd8dbce",
     "8c97845a0d37a2ef5a8b5ed8a501c59dc84b0772",
     "11840e2548f99ca09e1edb15f7d4d0817597ac06",
-    "e7c67a2caad74cba31c4725cc38589bf5ce25d71"
+    "e7c67a2caad74cba31c4725cc38589bf5ce25d71",
+    "dc851038be8739953084f810e6b0dc4bb9425595",
+    "20ae23404ed1af334c8dbe91af3b44b04317b4cd"
   ],
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "8c97845a0d37a2ef5a8b5ed8a501c59dc84b0772",
+      "approvedAtCommit": "dc851038be8739953084f810e6b0dc4bb9425595",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -109,7 +111,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -120,10 +122,10 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 1,
-      "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "custom-reviewers": 2,
       "regression-gate": 1
     }
   }
