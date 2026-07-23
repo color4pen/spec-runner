@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4f35ee5a-8f08-4574-a7ac-db1795bdb450",
   "createdAt": "2026-07-23T13:24:18.438Z",
-  "updatedAt": "2026-07-23T14:23:06.334Z",
+  "updatedAt": "2026-07-23T14:38:53.346Z",
   "request": {
     "title": "spec-fixer の書込集合に tasks.md を加え、tasks.md への fixable finding を pipeline 内で収束させる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/spec-fixer-tasks-md-writable-4f35ee5a",
   "error": null,
@@ -73,12 +73,44 @@
     "dc7e34dd63b02314a8b45323c352a21dd82072e2",
     "537a2bfa971be2a2183121da0d1ecce5e0c45f56",
     "69babdfada69f6b8ee3568e29a2be15a73e7ce22",
-    "096517675fb2502267bbb44b3b5cd0e4075d5e20"
+    "096517675fb2502267bbb44b3b5cd0e4075d5e20",
+    "3964c970f3bfb81cd3f983252484e0af3fc913dc",
+    "57ce1fe9d5040acf6a180ce594d679bcfd8dec5c"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "3964c970f3bfb81cd3f983252484e0af3fc913dc",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/spec-fixer-tasks-md-writable/design.md:sha256:50bf25bea40b77d28ede4411d18d771fc8cb958106f07869e443e6d9b2914519|specrunner/changes/spec-fixer-tasks-md-writable/request.md:sha256:85e4809fe739c8ae1659c88b77ba1fab5e1adb52bc5f79aede44e6ef68ceaf8e|specrunner/changes/spec-fixer-tasks-md-writable/spec.md:sha256:9da8cfd14894d305fc18d57988b8696391972cabd2616d0855e39b09478e4236|specrunner/changes/spec-fixer-tasks-md-writable/tasks.md:sha256:309026fb23a7f9f96530846dc34668271f0aa9bd5c268c7e18012fe0ec55d50c|specrunner/changes/spec-fixer-tasks-md-writable/test-cases.md:sha256:0618ad07e63c91236b7e20124386d113f56aae10b891d82d742ca442da74f42e"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 41,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +120,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
