@@ -122,7 +122,7 @@ export function createStandardPipeline(deps: PipelineDeps, events?: EventBus): P
  * Behavior invariants maintained:
  * - stdout `[iter N/M]` format is bit-for-bit unchanged
  * - Error codes: SESSION_TERMINATED, BRANCH_NOT_REGISTERED,
- *   SPEC_REVIEW_RETRIES_EXHAUSTED, CONFIG_INCOMPLETE
+ *   SPEC_REVIEW_RETRIES_EXHAUSTED, CANON_FINDING_ESCALATION, CONFIG_INCOMPLETE
  */
 export async function runPipeline(
   jobState: JobState,

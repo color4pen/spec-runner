@@ -5,13 +5,6 @@
  *
  * TC IDs are frozen — do not renumber.
  *
- * RED phase: these tests are intentionally red before implementation.
- * The implementer will add:
- *   T-01: specReviewEffectiveFixer, selectRoutableCanonFindings in canon-escalation.ts
- *   T-02: deriveSpecReviewVerdict in judge-verdict.ts
- *   T-03: SpecReviewStep.judgeVerdictFn = deriveSpecReviewVerdict in spec-review.ts
- *   T-04: escalationReason resolver unification in step-completion.ts
- *
  * TC-001: medium fixable finding on spec.md routes to spec-fixer
  * TC-002: low fixable finding on design.md routes to spec-fixer
  * TC-003: fixable finding on request.md escalates with reason
