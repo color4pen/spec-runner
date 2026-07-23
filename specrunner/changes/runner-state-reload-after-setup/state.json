@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "66f2b8e7-e35a-4714-93e8-658f40d04af8",
   "createdAt": "2026-07-23T01:56:12.383Z",
-  "updatedAt": "2026-07-23T02:17:29.491Z",
+  "updatedAt": "2026-07-23T02:21:12.930Z",
   "request": {
     "title": "setupWorkspace 後の in-memory state を store から reload し、field 手動 mirror を廃止する",
     "type": "bug-fix",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "fix/runner-state-reload-after-setup-66f2b8e7",
-  "error": {
-    "code": "CANON_FINDING_ESCALATION",
-    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/runner-state-reload-after-setup/design.md, title: \"D3: managed passthrough の記述が実装不可能 — インターフェースに jobState 引数がない\"\n  - file: specrunner/changes/runner-state-reload-after-setup/tasks.md, title: \"TC-013 DESTROY コメントが封鎖する回帰経路を誤記 — runner.ts 削除では TC-013 は fail しない\"\n\nfixer は write-scope により当該 file を修正できない。operator の適用が必要。",
-    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正し、job resume で再開してください。"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -70,13 +66,10 @@
     "7591b90390112bbe94826f4b27e8f16bf4e98c3b",
     "03244dd145fdd61cc024ccc0b9c5eee0356ed608"
   ],
-  "resumePoint": {
-    "step": "spec-review",
-    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/runner-state-reload-after-setup/design.md, title: \"D3: managed passthrough の記述が実装不可能 — インターフェースに jobState 引数がない\"\n  - file: specrunner/changes/runner-state-reload-after-setup/tasks.md, title: \"TC-013 DESTROY コメントが封鎖する回帰経路を誤記 — runner.ts 削除では TC-013 は fail しない\"\n\nfixer は write-scope により当該 file を修正できない。operator の適用が必要。",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 15,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
