@@ -41,8 +41,10 @@ import {
   selectUnroutableCanonFindings,
   judgeEffectiveFixer,
   conformanceEffectiveFixer,
+  specReviewEffectiveFixer,
   buildCanonEscalationReason,
 } from "./canon-escalation.js";
+import { STEP_NAMES } from "./step-names.js";
 import { buildCanonWriteScope } from "./canon-write-scope.js";
 
 // ---------------------------------------------------------------------------
@@ -149,7 +151,10 @@ export async function deriveStepCompletion(
 
   // Track the undecided findings for the last judge/conformance path to compute escalationReason.
   let lastUndecidedFindings: Finding[] | null = null;
-  let lastIsConformancePath = false;
+  // Captured effective fixer resolver for the last judge/conformance verdict derivation.
+  // Used to compute escalationReason with the same resolver used for verdict derivation,
+  // preventing drift between the two computations (D4).
+  let lastCanonResolver: ((f: Finding) => import("../../kernel/report-result.js").FixTarget) | null = null;
   // Track verdict inputs to determine whether escalation was caused by canon findings (not ok=false,
   // vacuous check, decision-needed, finding-ref override, or verdictOverride).
   let lastVerdictOk = true;
@@ -184,7 +189,7 @@ export async function deriveStepCompletion(
         }
         verdict = deriveConformanceVerdict(undecidedFindings, tr.ok, tr.evidence, canonScope);
         lastUndecidedFindings = undecidedFindings;
-        lastIsConformancePath = true;
+        lastCanonResolver = conformanceEffectiveFixer;
         lastVerdictOk = tr.ok;
         lastVerdictEvidence = tr.evidence;
       } else if (isJudgeStep) {
@@ -200,7 +205,8 @@ export async function deriveStepCompletion(
         }
         verdict = verdictFn(undecidedFindings, tr.ok, tr.evidence, canonScope);
         lastUndecidedFindings = undecidedFindings;
-        lastIsConformancePath = false;
+        lastCanonResolver =
+          step.name === STEP_NAMES.SPEC_REVIEW ? specReviewEffectiveFixer : judgeEffectiveFixer;
         lastVerdictOk = tr.ok;
         lastVerdictEvidence = tr.evidence;
       } else {
@@ -303,10 +309,13 @@ export async function deriveStepCompletion(
       !(lastVerdictEvidence !== undefined && lastVerdictEvidence.checked === 0) &&
       !lastUndecidedFindings.some((f) => f.resolution === "decision-needed");
     if (isCanonEscalation) {
-      const resolver = lastIsConformancePath ? conformanceEffectiveFixer : judgeEffectiveFixer;
-      const unroutable = selectUnroutableCanonFindings(lastUndecidedFindings, canonScope, resolver);
-      if (unroutable.length > 0) {
-        escalationReason = buildCanonEscalationReason(unroutable);
+      // Use the captured resolver from verdict derivation to ensure verdict and
+      // escalationReason always reference the same effective fixer (D4 drift-proof).
+      if (lastCanonResolver !== null) {
+        const unroutable = selectUnroutableCanonFindings(lastUndecidedFindings, canonScope, lastCanonResolver);
+        if (unroutable.length > 0) {
+          escalationReason = buildCanonEscalationReason(unroutable);
+        }
       }
     }
   }

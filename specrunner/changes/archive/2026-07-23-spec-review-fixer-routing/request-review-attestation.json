@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:dcdf5971016a79354792723c4c58be56397e9308ab4317d777c9f5e34e44a4b8",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/canon-escalation.ts:41 — judgeEffectiveFixer always returns \"code-fixer\"",
+    "src/core/step/judge-verdict.ts:53 — deriveJudgeVerdict calls selectUnroutableCanonFindings with judgeEffectiveFixer",
+    "src/core/step/canon-write-scope.ts:47 — code-fixer writableByFixer entry is new Set<string>() (empty set)",
+    "src/core/step/spec-review.ts:69 — reportTool: JUDGE_REPORT_TOOL; no judgeVerdictFn defined in SpecReviewStep",
+    "src/core/step/judge-verdict.ts:53-56 — canon check at lines 52-54 precedes critical|high needs-fix check at line 56",
+    "src/core/step/canon-write-scope.ts:51 — spec-fixer writableByFixer entry contains {spec.md, design.md}",
+    "src/core/pipeline/types.ts:234 — { step: SPEC_REVIEW, on: \"needs-fix\", to: SPEC_FIXER } exists",
+    "src/core/pipeline/types.ts:241 — { step: SPEC_FIXER, on: \"approved\", to: SPEC_REVIEW } exists",
+    "src/core/step/step-completion.ts:306 — escalationReason resolver is lastIsConformancePath ? conformanceEffectiveFixer : judgeEffectiveFixer",
+    "src/core/step/judge-verdict.ts:100-119 — deriveConformanceVerdict uses conformanceEffectiveFixer for canon check"
+  ],
+  "sourceRevision": "6a9864cd18614107112de26483a4caf94b96d3ec"
+}

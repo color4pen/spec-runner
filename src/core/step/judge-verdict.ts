@@ -9,8 +9,10 @@
 import type { Finding, FixTarget, Evidence } from "../../kernel/report-result.js";
 import {
   selectUnroutableCanonFindings,
+  selectRoutableCanonFindings,
   judgeEffectiveFixer,
   conformanceEffectiveFixer,
+  specReviewEffectiveFixer,
   type CanonWriteScope,
 } from "./canon-escalation.js";
 export type { FindingRef } from "../port/runtime-strategy.js";
@@ -53,6 +55,52 @@ export function deriveJudgeVerdict(
   if (canonScope && selectUnroutableCanonFindings(findings, canonScope, judgeEffectiveFixer).length > 0) {
     return "escalation";
   }
+  if (findings.some((f) => f.severity === "critical" || f.severity === "high")) return "needs-fix";
+  return "approved";
+}
+
+/**
+ * Derive the spec-review verdict from findings, ok flag, and optional evidence.
+ *
+ * Extends deriveJudgeVerdict with spec-review-specific canon routing:
+ * spec-review routes fixable findings on spec-fixer-writable canon files (spec.md,
+ * design.md) to spec-fixer via "needs-fix", regardless of severity. Fixable findings
+ * on canon files spec-fixer cannot write (request.md, tasks.md, etc.) remain escalation.
+ *
+ * Priority order:
+ * 1. ok=false → escalation
+ * 2. evidence present && checked === 0 → escalation (vacuous check)
+ * 3. decision-needed ≥ 1 → escalation
+ * 4. canonScope present:
+ *    4a. unroutable canon fixable findings ≥ 1 → escalation (spec-fixer can't fix)
+ *    4b. routable canon fixable findings ≥ 1 → needs-fix (spec-fixer can fix, severity-independent)
+ * 5. critical|high ≥ 1 → needs-fix (non-canon findings retain existing behavior)
+ * 6. else → approved
+ *
+ * 4a is evaluated before 4b: when both unroutable and routable findings coexist,
+ * escalation takes priority. Operator resolves the unroutable ones; then on resume
+ * spec-review re-runs and 4b routes the routable ones to spec-fixer.
+ */
+export function deriveSpecReviewVerdict(
+  findings: Finding[],
+  ok: boolean,
+  evidence?: Evidence,
+  canonScope?: CanonWriteScope,
+): "approved" | "needs-fix" | "escalation" {
+  if (!ok) return "escalation";
+  if (evidence !== undefined && evidence.checked === 0) return "escalation"; // vacuous check
+  if (findings.some((f) => f.resolution === "decision-needed")) return "escalation";
+  if (canonScope) {
+    // 4a: unroutable canon fixable findings → escalation (takes priority over 4b)
+    if (selectUnroutableCanonFindings(findings, canonScope, specReviewEffectiveFixer).length > 0) {
+      return "escalation";
+    }
+    // 4b: routable canon fixable findings → needs-fix (severity-independent)
+    if (selectRoutableCanonFindings(findings, canonScope, specReviewEffectiveFixer).length > 0) {
+      return "needs-fix";
+    }
+  }
+  // 5: non-canon critical|high findings → needs-fix
   if (findings.some((f) => f.severity === "critical" || f.severity === "high")) return "needs-fix";
   return "approved";
 }

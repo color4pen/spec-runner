@@ -9,6 +9,7 @@ import { specReviewResultPath, changeFolderPath, requestMdPath } from "../../uti
 import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import { deriveSpecReviewVerdict } from "./judge-verdict.js";
 
 const SPEC_REVIEW_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -67,6 +68,7 @@ export const SpecReviewStep: AgentStep = {
 
   needsProjectContext: true,
   reportTool: JUDGE_REPORT_TOOL,
+  judgeVerdictFn: deriveSpecReviewVerdict,
 
   // maxTurns: spec-review is read-heavy with focused judgment; 15 is sufficient.
   // Design D3 (propose-openspec-cli-and-step-model-config).
