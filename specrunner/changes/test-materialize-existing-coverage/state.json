@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "02f1c48b-d37b-4d5e-a3fc-42d2a9a17a2d",
   "createdAt": "2026-07-23T14:40:54.462Z",
-  "updatedAt": "2026-07-23T14:56:11.207Z",
+  "updatedAt": "2026-07-23T15:05:49.132Z",
   "request": {
     "title": "既存テストによる must TC 充足をトレーサビリティコメントで正規に表明できるようにする",
     "type": "spec-change",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/test-materialize-existing-coverage-02f1c48b",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/test-materialize-existing-coverage/tasks.md, title: \"T-01 AC で Scenario 3 の「Method 節内配置」が機械的に保証されない\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -65,13 +69,20 @@
   "synthesizedCommits": [
     "fd10c51ca9deffe024657b89b3ba3741dba082df",
     "c67f8154f7222a842c17416c5fd4efad9c6ee1f6",
-    "2237a09acc2b526a44c516dfd32439b167bf24f3"
+    "2237a09acc2b526a44c516dfd32439b167bf24f3",
+    "eef08ee7313ae420143e1d109a632488239ec1d3"
   ],
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/test-materialize-existing-coverage/tasks.md, title: \"T-01 AC で Scenario 3 の「Method 節内配置」が機械的に保証されない\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
