@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a2ed8343-bae5-4510-9bf2-2da0088ab101",
   "createdAt": "2026-07-23T04:40:21.606Z",
-  "updatedAt": "2026-07-23T06:36:20.661Z",
+  "updatedAt": "2026-07-23T06:54:35.994Z",
   "request": {
     "title": "canon escalation の operator 適用を resume が第一級で受け付ける — 編集の破棄と手順欠落を解消する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
-  "status": "awaiting-resume",
+  "step": "regression-gate",
+  "status": "running",
   "branch": "fix/operator-canon-apply-on-resume-a2ed8343",
   "error": null,
   "pipelineId": "standard",
@@ -74,19 +74,16 @@
     "05f20184e3927ea8f0e3aebebc6a79ddfec2e4c7",
     "e591f6ff64a5849ebbace2872449818b5f897bb1",
     "ec7dd0d1e0fad6042a7f062332971bca9c1255cc",
-    "199bc4f23be04fca180d84cba088d885d253b6da"
+    "199bc4f23be04fca180d84cba088d885d253b6da",
+    "919f83024b477b6db04e45cfcb04d46ec329954e"
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "577b6010edec9aaf60565f97bde16b3e8099213f",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -96,7 +93,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/operator-canon-apply-on-resume/design.md:sha256:10e00a016750394e9349db1ccfb9ea75bc7d4df6b443ef8b0df8e80b6b8595d7|specrunner/changes/operator-canon-apply-on-resume/request.md:sha256:9df6cc14b820e772c9d613bfa253fedd15c5fee1a0693c30f8a1abfc8bffea05|specrunner/changes/operator-canon-apply-on-resume/spec.md:sha256:9615ab23fc37012eee7b76acde9d6210ec757b4d43c26c46324aec0633f82fa2|specrunner/changes/operator-canon-apply-on-resume/tasks.md:sha256:fe21e2e7dc1222691531db28131d7d489eaa669932f3e26a5fe97b7c6b232e32|specrunner/changes/operator-canon-apply-on-resume/test-cases.md:sha256:6858651c8b895a8d2e0158560a1817e106dee57b36a46c1546535e1802ce7e9e"
     },
     {
       "name": "scale-tolerance",
@@ -112,7 +110,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 64,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -124,9 +122,9 @@
       "verification": 1,
       "code-review": 1,
       "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
