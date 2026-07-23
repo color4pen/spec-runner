@@ -366,7 +366,7 @@ export class CommitOrchestrator {
         error: {
           code: "CANON_FINDING_ESCALATION",
           message: completion.escalationReason,
-          hint: "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正し、job resume で再開してください。",
+          hint: "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。",
         },
       };
     }

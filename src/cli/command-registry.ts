@@ -581,6 +581,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           "prompt-file": { type: "string" },
           json: { type: "boolean" },
           "no-worktree": { type: "boolean" },
+          "apply-canon": { type: "boolean" },
         },
         positional: { name: "slug", required: true },
         handler: async (parsed, ctx) => {
@@ -623,6 +624,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
               prompt: resolvedPrompt,
               json: !!parsed.flags["json"],
               noWorktree: !!parsed.flags["no-worktree"],
+              applyCanon: !!parsed.flags["apply-canon"],
             });
           } catch (err: unknown) {
             if (err instanceof SpecRunnerError) {

@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:9df6cc14b820e772c9d613bfa253fedd15c5fee1a0693c30f8a1abfc8bffea05",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/commit-orchestrator.ts:369 — CANON_FINDING_ESCALATION hint says '手動で修正し、job resume で再開してください' with no mention of commit/push",
+    "src/core/step/commit-push.ts:commitAndPush (scoped mode) — detects protected canon changes via findScopedCommitViolations+findWriteScopeViolations, quarantines, restores, throws WRITE_SCOPE_VIOLATION without distinguishing pre-step vs step-own writes",
+    "src/core/step/commit-push.ts:runInlineEgressCheck — uses git rev-list HEAD --not --remotes=origin; throws EGRESS_UNKNOWN_COMMIT for any OID not in synthesizedCommits ledger",
+    "src/core/command/resume.ts:ResumeCommand.prepare() — no worktree dirty check and no operator change ingestion mechanism",
+    "src/cli/command-registry.ts:574-637 — job resume flags: from, force, verbose, quiet, prompt, prompt-file, json, no-worktree — no --apply-canon flag",
+    "src/state/schema/operations.ts:appendSynthesizedCommit — pure function (no I/O), idempotent (returns original state if OID already present)"
+  ],
+  "sourceRevision": "67a9ba7c871bd4f1ca8bee6cadbd0a67f4d5b399"
+}
