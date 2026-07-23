@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bebea595-e07c-4d7f-844e-83c141f96d64",
   "createdAt": "2026-07-23T09:09:58.037Z",
-  "updatedAt": "2026-07-23T10:32:08.201Z",
+  "updatedAt": "2026-07-23T12:43:51.574Z",
   "request": {
     "title": "resume が中断 attempt の残骸を機械的に後始末する — halt→resume 回復契約",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-resume",
+  "step": "regression-gate",
+  "status": "running",
   "branch": "change/resume-worktree-reconciliation-bebea595",
-  "error": {
-    "code": "ROUND_ALL_MEMBERS_SKIPPED",
-    "message": "All reviewers returned skipped verdict; no reviewer has approved the round.",
-    "hint": "Check reviewer activation conditions (paths / requestTypes). If all reviewers are configured with conditions that do not match the current change, the round will not produce a positive verdict."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -118,13 +114,10 @@
     "number": 912,
     "createdAt": "2026-07-23T10:32:07.302Z"
   },
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "All reviewers returned skipped verdict; no reviewer has approved the round.",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 73,
+    "historyCount": 83,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -136,9 +129,9 @@
       "verification": 2,
       "code-review": 1,
       "code-fixer": 2,
-      "cross-boundary-invariants": 1,
-      "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 2,
+      "custom-reviewers": 2,
       "regression-gate": 2,
       "conformance": 1,
       "adr-gen": 1,
