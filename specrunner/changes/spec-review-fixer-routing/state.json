@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2095ac19-12f4-4dcc-92fe-e6a0fa04526a",
   "createdAt": "2026-07-23T09:04:31.027Z",
-  "updatedAt": "2026-07-23T09:04:33.787Z",
+  "updatedAt": "2026-07-23T09:11:44.185Z",
   "request": {
     "title": "spec-review の fixable canon finding を spec-fixer round で収束させる — 一律 operator escalation の解消",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/spec-review-fixer-routing-2095ac19",
   "error": null,
@@ -63,10 +63,13 @@
   ],
   "issueNumber": 908,
   "synthesizedCommits": [
-    "3447257f54f01ec0b35857c9899dcbfd1cfb3a6c"
+    "3447257f54f01ec0b35857c9899dcbfd1cfb3a6c",
+    "6de5adb5e402c93a26bdd58433a1b002d2da9eaa"
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
