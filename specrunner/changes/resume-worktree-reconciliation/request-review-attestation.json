@@ -1,0 +1,12 @@
+{
+  "requestHash": "sha256:ceee2074eedf1653deab6a4584d7a97f412bbaf542615c75ee81205a56371707",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/command/resume.ts:268-328 — apply-canon gate checks only protectedCanonPaths; non-canon dirty/untracked files pass unchecked after line 328",
+    "src/core/resume/apply-canon.ts:50 — git status --porcelain -z --no-renames -- <protectedCanonPaths> scoped to canon paths only",
+    "src/core/step/commit-push.ts:92-96 — worktreeOnly parameter excludes pre-staged-only (X≠' ', Y=' ') files; untracked files (Y='?') are included and can trigger findScopedCommitViolations",
+    "src/core/step/commit-push.ts:53-79 — quarantineRoundHeadAdvanceEvidence writes evidence to .specrunner/local/<slug>/; quarantine pattern to this path exists",
+    "src/core/pipeline/round-git-scope.ts:109 — pipelineManagedPaths(slug) defined at line 109, returns [state.json, events.jsonl, usage.json, bite-evidence-result.md, pr-create-result.md]"
+  ],
+  "sourceRevision": "6a9864cd18614107112de26483a4caf94b96d3ec"
+}
