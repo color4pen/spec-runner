@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.4.5](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.4...specrunner-v0.4.5) (2026-07-23)
+
+
+### Features
+
+* archive --with-merge の CI 有無判定を時間観測から構造判定に変える ([#910](https://github.com/color4pen/spec-runner/issues/910)) ([a4c9386](https://github.com/color4pen/spec-runner/commit/a4c93868437e3e87fd9353563b5900491b6cfcf5))
+* custom reviewer round の全員 skip をエラーでなく構造的 skip として通す ([#918](https://github.com/color4pen/spec-runner/issues/918)) ([823479e](https://github.com/color4pen/spec-runner/commit/823479e828d7c096ad666ef29b2367cbbb6b03c4))
+* resume が中断 attempt の残骸を機械的に後始末する — halt→resume 回復契約 ([#912](https://github.com/color4pen/spec-runner/issues/912)) ([c0a5c4e](https://github.com/color4pen/spec-runner/commit/c0a5c4eb62ff477f87d88a4594b2d842979c3b80))
+* spec-fixer の書込集合に tasks.md を加え、tasks.md への fixable finding を pipeline 内で収束させる ([#923](https://github.com/color4pen/spec-runner/issues/923)) ([fd2e19c](https://github.com/color4pen/spec-runner/commit/fd2e19c45e9db41a4dd3b849f0b99fbaf7f9e3ea))
+* spec-review の fixable canon finding を spec-fixer round で収束させる — 一律 operator escalation の解消 ([#913](https://github.com/color4pen/spec-runner/issues/913)) ([ecb7737](https://github.com/color4pen/spec-runner/commit/ecb7737d73369836ff61f8fdd7a5868350f822fd))
+* 既存テストによる must TC 充足をトレーサビリティコメントで正規に表明できるようにする ([#924](https://github.com/color4pen/spec-runner/issues/924)) ([1411c99](https://github.com/color4pen/spec-runner/commit/1411c9933a267c6a50b808f771e092cb145fe40e))
+
+
+### Bug Fixes
+
+* worktree branch の upstream が origin/&lt;base&gt; を継承しないようにする — --no-track + 初回 push -u ([#917](https://github.com/color4pen/spec-runner/issues/917)) ([7c5ca70](https://github.com/color4pen/spec-runner/commit/7c5ca703a73c9af52b2247fde76b66f1a057158d))
+
 ## [0.4.4](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.3...specrunner-v0.4.4) (2026-07-23)
 
 
