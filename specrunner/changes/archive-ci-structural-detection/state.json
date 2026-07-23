@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8c330d56-64ef-441d-9150-7c5760d10489",
   "createdAt": "2026-07-23T09:04:31.477Z",
-  "updatedAt": "2026-07-23T09:04:33.809Z",
+  "updatedAt": "2026-07-23T09:08:30.187Z",
   "request": {
     "title": "archive --with-merge の CI 有無判定を時間観測から構造判定に変える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/archive-ci-structural-detection-8c330d56",
   "error": null,
@@ -63,10 +63,13 @@
   ],
   "issueNumber": 907,
   "synthesizedCommits": [
-    "f196f4ce9b455ad8142fe305c6ffd22d9ec8f3ee"
+    "f196f4ce9b455ad8142fe305c6ffd22d9ec8f3ee",
+    "858ae45f95b7fb7626c1f195e8a60909cb215eef"
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
