@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2095ac19-12f4-4dcc-92fe-e6a0fa04526a",
   "createdAt": "2026-07-23T09:04:31.027Z",
-  "updatedAt": "2026-07-23T10:34:36.665Z",
+  "updatedAt": "2026-07-23T10:40:19.712Z",
   "request": {
     "title": "spec-review の fixable canon finding を spec-fixer round で収束させる — 一律 operator escalation の解消",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/spec-review-fixer-routing-2095ac19",
   "error": null,
@@ -80,7 +80,9 @@
     "a5803fb58b1d8021fe44fabf362621bb5fcdca21",
     "50bc895fe978f8043109baa2c0f586c990595fd7",
     "3ac421a1b60cf2d46e2ebed7cd6daad395fff2fb",
-    "c36ffe1837f4da5e43be307b2384edc32d70f7d6"
+    "c36ffe1837f4da5e43be307b2384edc32d70f7d6",
+    "2b93849f146fb43d0b05a0fc3972b13302af1838",
+    "74c7830695e990b37be1226b921c000a22d71370"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -115,7 +117,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 73,
+    "historyCount": 82,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -124,14 +126,15 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
