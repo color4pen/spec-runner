@@ -1,16 +1,16 @@
 # Verification Result — runner-state-reload-after-setup — iter 1
 
-## Verdict: failed
+## Verdict: passed
 
 ## Phase Results
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 0.9s | 0 |
-| 2 | typecheck | passed | 4.7s | 0 |
-| 3 | test | passed | 28.9s | 0 |
-| 4 | lint | failed | 5.5s | 1 |
-| 5 | changed-line-coverage | skipped | — | — |
+| 1 | build | passed | 0.3s | 0 |
+| 2 | typecheck | passed | 4.6s | 0 |
+| 3 | test | passed | 28.8s | 0 |
+| 4 | lint | passed | 5.0s | 0 |
+| 5 | changed-line-coverage | passed | 36.1s | 0 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.30 MB
-ESM ⚡️ Build success in 69ms
+ESM ⚡️ Build success in 64ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -53,8 +53,8 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	203d
 
  Test Files  626 passed (626)
       Tests  9266 passed | 1 skipped (9267)
-   Start at  12:08:05
-   Duration  28.70s (transform 5.79s, setup 0ms, import 23.52s, tests 43.68s, environment 30ms)
+   Start at  12:09:38
+   Duration  28.59s (transform 5.68s, setup 0ms, import 23.46s, tests 43.40s, environment 30ms)
 
 
 $ vitest run
@@ -67,24 +67,37 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Sp13QD/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Y6Wmzy/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-GHiYIh/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-rzDlpT/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -94,17 +107,6 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -122,8 +124,6 @@ GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -175,25 +175,14 @@ Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → co
 
 ## Phase: lint
 
-Step 'lint' failed
-
 ```
-
-tests/unit/core/runtime/runner-reload-after-setup.test.ts
-  189:10  warning  'buildRuntimeWithSentinelReload' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-
-tests/unit/core/runtime/runner-reload-egress-e2e.test.ts
-  67:32  warning  'WorkspaceContext' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
-
-✖ 2 problems (0 errors, 2 warnings)
-
-
 $ eslint ./src ./tests --max-warnings 0
-ESLint found too many warnings (maximum: 0).
-error: script "lint" exited with code 1
 
 ```
 
 ## Phase: changed-line-coverage
 
-_(skipped — previous command failed)_
+```
+changed-line-coverage: passed (26 changed files checked, 23 skipped)
+  Skipped (not in coverage surface): .release-please-manifest.json, CHANGELOG.md, package.json, specrunner/changes/runner-state-reload-after-setup/bite-evidence-result.md, specrunner/changes/runner-state-reload-after-setup/design.md, specrunner/changes/runner-state-reload-after-setup/events.jsonl, specrunner/changes/runner-state-reload-after-setup/request-review-attestation.json, specrunner/changes/runner-state-reload-after-setup/request-review-result-001.md, specrunner/changes/runner-state-reload-after-setup/request.md, specrunner/changes/runner-state-reload-after-setup/rules.md, specrunner/changes/runner-state-reload-after-setup/spec-review-result-001.md, specrunner/changes/runner-state-reload-after-setup/spec-review-result-002.md, specrunner/changes/runner-state-reload-after-setup/spec-review-result-003.md, specrunner/changes/runner-state-reload-after-setup/spec.md, specrunner/changes/runner-state-reload-after-setup/state.json, specrunner/changes/runner-state-reload-after-setup/tasks.md, specrunner/changes/runner-state-reload-after-setup/test-cases.md, specrunner/changes/runner-state-reload-after-setup/usage.json, specrunner/changes/runner-state-reload-after-setup/verification-result.md, src/core/port/runtime-strategy.ts, tests/unit/core/command/runner.test.ts, tests/unit/core/runtime/runner-reload-after-setup.test.ts, tests/unit/core/runtime/runner-reload-egress-e2e.test.ts
+```
