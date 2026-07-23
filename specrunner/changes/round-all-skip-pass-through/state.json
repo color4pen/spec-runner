@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9141b6e6-fd3b-40a1-8b2c-c0270fb9d9ab",
   "createdAt": "2026-07-23T10:56:38.330Z",
-  "updatedAt": "2026-07-23T12:24:05.463Z",
+  "updatedAt": "2026-07-23T12:24:20.497Z",
   "request": {
     "title": "custom reviewer round の全員 skip をエラーでなく構造的 skip として通す",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/round-all-skip-pass-through-9141b6e6",
   "error": null,
   "pipelineId": "standard",
@@ -77,7 +77,8 @@
     "e7c67a2caad74cba31c4725cc38589bf5ce25d71",
     "dc851038be8739953084f810e6b0dc4bb9425595",
     "20ae23404ed1af334c8dbe91af3b44b04317b4cd",
-    "28ea0ea89af3a093649729e1b10190bda3003071"
+    "28ea0ea89af3a093649729e1b10190bda3003071",
+    "8f48c3cb0739b251a934810853845036d32444ea"
   ],
   "reviewerStatuses": [
     {
@@ -109,10 +110,14 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "code-fixer escalated",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 64,
+    "historyCount": 66,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -123,7 +128,7 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 1,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
