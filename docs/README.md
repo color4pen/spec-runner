@@ -22,6 +22,7 @@
 | [model-evaluation.md](model-evaluation.md) | モデル評価の観点と手順 |
 | [operations.md](operations.md) | 無人運用・監視・障害対応 |
 | [request-authoring.md](request-authoring.md) | request.md の書き方リファレンス |
+| [test-coverage.md](test-coverage.md) | test-coverage フェーズの TC-ID リテラル走査規約とトレーサビリティコメント規約 |
 
 ## 原則
 

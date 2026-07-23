@@ -10,7 +10,7 @@
 
 ## T-01: test-materialize system prompt に既存テスト充足の正規手順を追記する
 
-- [ ] `src/prompts/test-materialize-system.ts` の `TEST_MATERIALIZE_BASE` の `## Method` 節内に、
+- [x] `src/prompts/test-materialize-system.ts` の `TEST_MATERIALIZE_BASE` の `## Method` 節内に、
       既存テスト充足時の分岐手順を追記する。手順の要点:
   - 各 must TC について、変更前から存在するテストで当該振る舞いが既に検証されているかを確認する。
   - 既に充足されている場合: 新規テストを重複作成せず、その既存テストの該当箇所（describe / it の近傍）に
@@ -18,8 +18,8 @@
     （test file 内の TC-ID リテラル走査）を満たす正式手段である。**充足不能として停止しない**。
   - 既存テストがない場合: 従来どおり新規テストコードを書く。
   - いずれの場合も test-cases.md は変更禁止（新フィールドを足さない）。
-- [ ] 追記は新しい `##`（h2）見出しを作らず `## Method` 節の内側に置く。
-- [ ] 手順は「既存テスト」という汎用語で記述し、`architecture/` 等のリポジトリ固有パスを参照しない。
+- [x] 追記は新しい `##`（h2）見出しを作らず `## Method` 節の内側に置く。
+- [x] 手順は「既存テスト」という汎用語で記述し、`architecture/` 等のリポジトリ固有パスを参照しない。
 
 **Acceptance Criteria**:
 
@@ -36,14 +36,14 @@
 
 ## T-02: 走査規約とトレーサビリティ規約を docs に明文化する
 
-- [ ] `docs/test-coverage.md`（新規）を作成し、以下を記述する:
+- [x] `docs/test-coverage.md`（新規）を作成し、以下を記述する:
   - test-coverage が must TC のカバレッジを test file 内の TC-ID リテラル走査で検証すること
     （出現形式を区別しない / found TC は per-file で assertion 存在を確認すること）。
   - 既存テストが既に must TC を充足している場合、その既存テストに `// TC-0XX: <TC 名>`
     トレーサビリティコメントを追記することが充足の正式表明手段であること。
   - コメントのみで assertion を伴わないファイルは assertionless で failed になる点（追記先は
     assertion を持つ既存テストであること）。
-- [ ] `docs/README.md` の「docs/ ファイル一覧」表に `test-coverage.md` の行を追加する。
+- [x] `docs/README.md` の「docs/ ファイル一覧」表に `test-coverage.md` の行を追加する。
 
 **Acceptance Criteria**:
 
