@@ -5,30 +5,30 @@
  *   1. Computes currentCanonHash via runtimeStrategy.digestArtifacts
  *   2. Passes it to selectPendingMembers (invalidating approved members on canon change)
  *   3. Passes it to applyRoundResults (binding new approvals to the current canonHash)
- *   4. Escalates when all members skip (ROUND_ALL_MEMBERS_SKIPPED)
- *   5. Keeps members pending (not "skipped") on all-skip escalation
+ *   4. Treats all-member-skip as structural skip (approved, round-all-skip-pass-through)
+ *   5. Keeps members pending (not "skipped") on all-skip structural skip (D3 guard)
  *
  * TC-001: 正典文書を変更すると承認済み reviewer が pending に戻る
  * TC-002: 正典・activation 対象がいずれも不変なら承認 skip が維持される
  * TC-003: canonHash を持たない legacy 承認 record は pending に戻る
- * TC-006: reviewer 構成ありで全 member skipped → escalation
+ * TC-006 (canon): reviewer 構成ありで全 member skipped → approved（structural skip）
  * TC-007: member 0 件 → approved
  * TC-008: 一部承認・一部 skip → approved
- * TC-009: 全 skip escalation では member が pending のまま残る
+ * TC-009: 全 skip round では member が pending のまま残る（D3 guard, free-pass 回避）
  * TC-010: 正典変更後の再走で新承認が新 revision / 新 canonHash に束縛される
- * TC-038: 全 member skipped 時に roundError が設定され applyRoundResults が抑止される
+ * TC-038: 全 member skipped 時に applyRoundResults が抑止され、roundError は null
  * TC-039: managed runtime では既存の承認 skip 挙動が変わらない
  *
- * RED phase:
- *   - computeCanonHash is not yet in reviewer-status.ts
- *   - digestArtifacts is not yet called in ParallelReviewRound.run
- *   - aggregateVerdict does not yet return "escalation" for all-skipped
- *   - ROUND_ALL_MEMBERS_SKIPPED error code is not yet set
- *   Tests will fail until T-03/T-04/T-05 are implemented.
+ * NEW for round-all-skip-pass-through:
+ *   TC-006 (new): skip と error の混在 → escalation（error は skip に紛れない）
+ *   TC-009 (new): 全 skip round 後も member status は pending のまま
+ *   TC-015: 全 skip round が sticky ROUND_ALL_MEMBERS_SKIPPED error を null にクリアする
  *
  * Destruction confirmations:
  *   TC-046: Removing canon check from selectPendingMembers → TC-001/TC-003 fail
- *   TC-048: Removing all-skip escalation from aggregateVerdict → TC-006/TC-009/TC-038 fail
+ *   TC-003 new: Reverting aggregateVerdict to return "escalation" for all-skip → TC-006(canon)/TC-038 fail
+ *   TC-009 gate: Removing allMembersSkipped guard from applyRoundResults → TC-009(new) fails
+ *   TC-015: Restoring ROUND_ALL_MEMBERS_SKIPPED roundError → TC-015/TC-038 fail
  */
 import { describe, it, expect, vi } from "vitest";
 import { EventBus } from "../../event/event-bus.js";
@@ -354,11 +354,20 @@ describe("TC-003: legacy approval record without canonHash → pending at round 
 });
 
 // ---------------------------------------------------------------------------
-// TC-006/TC-009/TC-038: all members skipped → escalation + members stay pending
+// TC-006(canon)/TC-009/TC-038: all members skipped → approved structural skip, members stay pending
+// (round-all-skip-pass-through: changed from "escalation" to "approved")
 // ---------------------------------------------------------------------------
 
-describe("TC-006/TC-009/TC-038: all members skipped → escalation, members stay pending", () => {
-  it("TC-006/TC-038: round outcome is escalation when all members return skipped verdict", async () => {
+describe("TC-006(canon)/TC-009/TC-038: all members skipped → approved structural skip, members stay pending", () => {
+  it("TC-006(canon)/TC-038: round outcome is approved when all members return skipped verdict (structural skip)", async () => {
+    // TC-003 (reviewer-status unit): aggregateVerdict(["skipped","skipped"]) === "approved"
+    // TC-006 (round level): ParallelReviewRound.run with all-skip members returns "approved"
+    //
+    // CHANGE from custom-reviewer-canon-binding D6 (which returned "escalation").
+    // New behavior per round-all-skip-pass-through: all-skip = structural skip = approved.
+    //
+    // Destruction confirmation: reverting aggregateVerdict to "escalation" for all-skip causes
+    // this test to fail → TC-001/TC-002 (awaiting-archive E2E) and TC-015 (sticky error) also fail.
     const state = makeBaseState();
     const store = makeStore();
     const runtimeStrategy = makeCanonRuntimeStrategy({});
@@ -368,11 +377,18 @@ describe("TC-006/TC-009/TC-038: all members skipped → escalation, members stay
 
     const { outcome } = await round.run(COORDINATOR, state, makeDeps(store, runtimeStrategy as never));
 
-    // TC-006: all-skip → escalation (non-green)
-    expect(outcome).toBe("escalation");
+    // TC-006(canon): all-skip → approved (structural skip, gate pass-through)
+    expect(outcome).toBe("approved");
   });
 
-  it("TC-038: roundError is set to ROUND_ALL_MEMBERS_SKIPPED", async () => {
+  it("TC-038: coordinator StepRun has verdict approved and error null on all-skip round", async () => {
+    // TC-038: roundError must be null (not ROUND_ALL_MEMBERS_SKIPPED).
+    //
+    // CHANGE: previously outcome.verdict was "escalation" and outcome.error.code was "ROUND_ALL_MEMBERS_SKIPPED".
+    // New behavior: verdict = "approved", error = null.
+    //
+    // Destruction confirmation: restoring ROUND_ALL_MEMBERS_SKIPPED roundError causes
+    // TC-015 (sticky error cleanup) and TC-010 (backward recovery) to fail.
     const state = makeBaseState();
     const store = makeStore();
     const runtimeStrategy = makeCanonRuntimeStrategy({});
@@ -386,16 +402,21 @@ describe("TC-006/TC-009/TC-038: all members skipped → escalation, members stay
       makeDeps(store, runtimeStrategy as never),
     );
 
-    // TC-038: roundError is embedded in the coordinator StepRun outcome.error
+    // TC-038: coordinator StepRun has approved verdict and null error
     const coordinatorRun = resultState.steps?.[COORDINATOR]?.[0];
     expect(coordinatorRun).toBeDefined();
-    expect(coordinatorRun?.outcome.verdict).toBe("escalation");
-    expect(coordinatorRun?.outcome.error?.code).toBe("ROUND_ALL_MEMBERS_SKIPPED");
+    expect(coordinatorRun?.outcome.verdict).toBe("approved");
+    expect(coordinatorRun?.outcome.error).toBeNull();
   });
 
-  it("TC-009/TC-038: members stay pending (not skipped) after all-skip escalation", async () => {
-    // TC-009: all-skip escalation must not finalize members as "skipped"
-    // because that would allow resume to bypass the fan-out.
+  it("TC-009: members stay pending (not skipped) after all-skip structural skip round", async () => {
+    // TC-009: D3 guard (allMembersSkipped → suppress applyRoundResults) must be maintained.
+    // Members must NOT be set to "skipped" status — that would make them permanently excluded
+    // from future rounds (free-pass). Keeping them "pending" ensures re-evaluation on next round.
+    //
+    // Destruction confirmation (TC-009 gate): removing the allMembersSkipped guard from
+    // applyRoundResults causes members to be set "skipped", making future rounds skip them
+    // permanently (free-pass violation of requirement 5).
     const state = makeBaseState();
     const store = makeStore();
     const runtimeStrategy = makeCanonRuntimeStrategy({});
@@ -409,15 +430,19 @@ describe("TC-006/TC-009/TC-038: all members skipped → escalation, members stay
       makeDeps(store, runtimeStrategy as never),
     );
 
-    // TC-009/TC-038: reviewerStatuses shows member as "pending" (applyRoundResults suppressed)
+    // TC-009: reviewerStatuses shows member as "pending" (applyRoundResults suppressed by D3 guard)
     const memberStatus = resultState.reviewerStatuses?.find((s) => s.name === MEMBER_A);
     expect(memberStatus).toBeDefined();
     expect(memberStatus?.status).toBe("pending");
     expect(memberStatus?.status).not.toBe("skipped");
   });
 
-  it("TC-038: single-member all-skip round triggers ROUND_ALL_MEMBERS_SKIPPED (not just multi-member)", async () => {
-    // Edge case: 1 member that skips is still "all members skipped"
+  it("TC-002/TC-038: single-member all-skip round is structural skip (approved), not just multi-member", async () => {
+    // TC-002: a single reviewer that skips is still "all members skipped" = structural skip.
+    // Edge case verification: the structural skip behavior applies to 1-member configs.
+    //
+    // CHANGE: previously single-member all-skip returned "escalation".
+    // New behavior: "approved" (structural skip, gate pass-through).
     const state = makeBaseState();
     const store = makeStore();
     const { executor } = makeSkippedExecutor();
@@ -425,8 +450,8 @@ describe("TC-006/TC-009/TC-038: all members skipped → escalation, members stay
 
     const { outcome } = await round.run(COORDINATOR, state, makeDeps(store));
 
-    // TC-038: single-member all-skip still escalates
-    expect(outcome).toBe("escalation");
+    // TC-002/TC-038: single-member all-skip → approved (structural skip)
+    expect(outcome).toBe("approved");
   });
 });
 
@@ -529,6 +554,111 @@ describe("TC-010: new approval after canonical change → bound to new revision 
     expect(memberStatus?.approvedAtCommit).toBe("C2");
     expect(memberStatus?.canonHash).toBe(H2);
     expect(memberStatus?.canonHash).not.toBe(H1); // new hash, not old
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-015: 全 skip round が sticky ROUND_ALL_MEMBERS_SKIPPED error を null にクリアする
+// (backward recovery foundation — requirement 6)
+// ---------------------------------------------------------------------------
+
+describe("TC-015: all-skip round clears sticky ROUND_ALL_MEMBERS_SKIPPED error from state", () => {
+  it("TC-015: state.error is null after all-skip round when base state had ROUND_ALL_MEMBERS_SKIPPED error", async () => {
+    // TC-015: verify that when base state carries a stale ROUND_ALL_MEMBERS_SKIPPED error
+    // (e.g. from a job that stopped under the old behavior), a subsequent all-skip round
+    // clears it via commitRound's state.error = roundError (where roundError = null now).
+    //
+    // This is the backward recovery foundation (requirement 6):
+    // resume.ts clears error on transition-to-running, but commitRound also overwrites state.error.
+    // Both paths converge: the round commit sets state.error = null when roundError is null.
+    //
+    // Destruction confirmation (TC-015): restoring ROUND_ALL_MEMBERS_SKIPPED roundError causes
+    // state.error to remain ROUND_ALL_MEMBERS_SKIPPED → TC-010 (backward recovery E2E) fails
+    // (terminal seam still routes to awaiting-resume instead of awaiting-archive).
+    const staleError = {
+      code: "ROUND_ALL_MEMBERS_SKIPPED",
+      message: "All reviewers returned skipped verdict; no reviewer has approved the round.",
+      hint: "Check reviewer activation conditions.",
+    };
+    // Seed base state with the stale error (simulates old job that stopped with this error)
+    const state = makeBaseState({
+      error: staleError,
+      // reviewerStatuses: members pending (as if resume cleared them)
+      reviewerStatuses: [{ name: MEMBER_A, status: "pending" }],
+    });
+    const store = makeStore();
+    const runtimeStrategy = makeCanonRuntimeStrategy({});
+
+    const { executor } = makeSkippedExecutor();
+    const round = makeRound(executor);
+
+    const { state: resultState, outcome } = await round.run(
+      COORDINATOR,
+      state,
+      makeDeps(store, runtimeStrategy as never),
+    );
+
+    // TC-015: sticky error must be cleared (state.error === null)
+    expect(resultState.error).toBeNull();
+    // TC-015: outcome must be "approved" (structural skip, gate pass-through)
+    expect(outcome).toBe("approved");
+    // TC-009: member must still be "pending" (D3 guard maintained)
+    const memberStatus = resultState.reviewerStatuses?.find((s) => s.name === MEMBER_A);
+    expect(memberStatus?.status).toBe("pending");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-006 (new): skip と error の混在は停止する（error は skip に紛れない）
+// (round-all-skip-pass-through requirement 3)
+// ---------------------------------------------------------------------------
+
+describe("TC-006 (new): skip と error の混在は escalation → pipeline stops", () => {
+  it("TC-006: round with 1 skipped + 1 halt member produces escalation (not structural skip)", async () => {
+    // TC-006: a mix of "skipped" and "escalation" (halt→escalation) verdicts must NOT be
+    // treated as a structural skip. aggregateVerdict(["skipped","escalation"]) → "escalation".
+    // The pipeline must stop (awaiting-resume), not proceed to awaiting-archive.
+    //
+    // This validates requirement 3: error and skip remain distinct.
+    //
+    // Destruction confirmation (TC-006): loosening the error/skip distinction (e.g. treating
+    // halt as skip in verdictOfResult or aggregateVerdict) causes this test to fail →
+    // fail-open: broken reviewers silently pass as structural skips.
+    const state = makeBaseState({}, [MEMBER_A, MEMBER_B]);
+    const store = makeStore();
+
+    // Member A: skipped (activation not matched)
+    // Member B: halt (session error → escalation)
+    const haltError = { code: "AGENT_STEP_FAILED", message: "agent crashed", hint: "" };
+    const mixedSpy = vi.fn()
+      .mockResolvedValueOnce({
+        kind: "skipped",
+        skipReason: "no changed files matched paths [src/auth/**]",
+      } as StepExecutionResult)
+      .mockResolvedValueOnce({
+        kind: "halt",
+        halt: {
+          kind: "failed",
+          error: haltError,
+          thrownErr: new Error("agent crashed"),
+        },
+      } as StepExecutionResult);
+
+    const mixedExecutor: StepExecutor = { produceResult: mixedSpy } as unknown as StepExecutor;
+    const round = makeRound(mixedExecutor, [MEMBER_A, MEMBER_B]);
+
+    const { outcome, state: resultState } = await round.run(COORDINATOR, state, makeDeps(store));
+
+    // TC-006: mixed skip+error → escalation (not approved structural skip)
+    expect(outcome).toBe("escalation");
+    // TC-006: coordinator run should reflect escalation
+    const coordinatorRun = resultState.steps?.[COORDINATOR]?.[0];
+    expect(coordinatorRun?.outcome.verdict).toBe("escalation");
+    // TC-006: member B (halt) should not be finalized as "skipped"
+    const memberBStatus = resultState.reviewerStatuses?.find((s) => s.name === MEMBER_B);
+    if (memberBStatus) {
+      expect(memberBStatus.status).not.toBe("skipped");
+    }
   });
 });
 
