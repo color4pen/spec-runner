@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.3](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.2...specrunner-v0.4.3) (2026-07-23)
+
+
+### Bug Fixes
+
+* setupWorkspace 後の in-memory state を store から reload し、field 手動 mirror を廃止する ([#903](https://github.com/color4pen/spec-runner/issues/903)) ([6c10a27](https://github.com/color4pen/spec-runner/commit/6c10a270b9f5f03c6e7cee7b2f4ca2ef54e829e8))
+
 ## [0.4.2](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.1...specrunner-v0.4.2) (2026-07-22)
 
 
