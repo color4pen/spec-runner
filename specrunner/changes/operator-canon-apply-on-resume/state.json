@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a2ed8343-bae5-4510-9bf2-2da0088ab101",
   "createdAt": "2026-07-23T04:40:21.606Z",
-  "updatedAt": "2026-07-23T06:25:24.978Z",
+  "updatedAt": "2026-07-23T06:36:20.661Z",
   "request": {
     "title": "canon escalation の operator 適用を resume が第一級で受け付ける — 編集の破棄と手順欠落を解消する",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "fix/operator-canon-apply-on-resume-a2ed8343",
   "error": null,
   "pipelineId": "standard",
@@ -72,12 +72,47 @@
     "6463e0bcef6908122cf0234e292f67d4cb69c233",
     "d16df554ad4782d97c62b58dd0815c8dfaed81d2",
     "05f20184e3927ea8f0e3aebebc6a79ddfec2e4c7",
-    "e591f6ff64a5849ebbace2872449818b5f897bb1"
+    "e591f6ff64a5849ebbace2872449818b5f897bb1",
+    "ec7dd0d1e0fad6042a7f062332971bca9c1255cc",
+    "199bc4f23be04fca180d84cba088d885d253b6da"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -87,7 +122,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
