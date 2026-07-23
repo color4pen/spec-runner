@@ -1,0 +1,11 @@
+{
+  "requestHash": "sha256:7b3145308df349609c2c27a698853215619c69631e00d2fac5660a8eb17bbacb",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/archive/merge-then-archive.ts:52 NONE_CHECK_GRACE_MS = 60_000",
+    "src/core/archive/merge-then-archive.ts:163 effectiveTimeoutMs = waitTimeoutMs === undefined ? DEFAULT_MERGE_WAIT_TIMEOUT_MS : waitTimeoutMs",
+    "src/core/archive/merge-then-archive.ts:280-290 runArchiveOrchestrator call + archiveSha = archiveRecordResult.headSha",
+    "src/core/archive/merge-then-archive.ts:608-625 rollup.state === 'none' grace exhausted -> 'Assuming CI-less repo; proceeding to merge...' -> break"
+  ],
+  "sourceRevision": "6a9864cd18614107112de26483a4caf94b96d3ec"
+}
