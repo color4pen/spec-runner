@@ -47,8 +47,16 @@ export const judgeEffectiveFixer: (f: Finding) => FixTarget = () => "code-fixer"
 export const conformanceEffectiveFixer: (f: Finding) => FixTarget = (f) =>
   f.fixTarget ?? "implementer";
 
+/**
+ * Effective fixer resolver for the spec-review path.
+ * The spec-review step always routes to spec-fixer regardless of finding.fixTarget.
+ * Rationale: loopFixerPairs[SPEC_REVIEW] = SPEC_FIXER makes spec-fixer structurally
+ * the one-and-only fixer for the spec-review round; no agent fixTarget declaration needed.
+ */
+export const specReviewEffectiveFixer: (f: Finding) => FixTarget = () => "spec-fixer";
+
 // ---------------------------------------------------------------------------
-// Core filter
+// Core filters
 // ---------------------------------------------------------------------------
 
 /**
@@ -75,6 +83,35 @@ export function selectUnroutableCanonFindings(
     const effectiveFixer = resolveEffectiveFixer(f);
     const writable = scope.writableByFixer.get(effectiveFixer) ?? new Set<string>();
     return !writable.has(f.file);
+  });
+}
+
+/**
+ * Select findings that are fixable AND can be legally written by their effective fixer.
+ *
+ * A finding is "routable" when ALL of the following hold:
+ *   1. resolution === "fixable"
+ *   2. finding.file is in scope.canonPaths
+ *   3. The effective fixer's declared write set INCLUDES finding.file
+ *
+ * This is the complement of selectUnroutableCanonFindings for the same resolver.
+ *
+ * @param findings            - All findings from the step result.
+ * @param scope               - Canon write scope (canon paths + per-fixer writable sets).
+ * @param resolveEffectiveFixer - Maps each finding to its effective FixTarget.
+ * @returns                   Subset of findings that meet all three conditions.
+ */
+export function selectRoutableCanonFindings(
+  findings: Finding[],
+  scope: CanonWriteScope,
+  resolveEffectiveFixer: (f: Finding) => FixTarget,
+): Finding[] {
+  return findings.filter((f) => {
+    if (f.resolution !== "fixable") return false;
+    if (!scope.canonPaths.has(f.file)) return false;
+    const effectiveFixer = resolveEffectiveFixer(f);
+    const writable = scope.writableByFixer.get(effectiveFixer) ?? new Set<string>();
+    return writable.has(f.file);
   });
 }
 
