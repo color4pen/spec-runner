@@ -251,19 +251,24 @@ export function applyRoundResults(
  * Aggregate individual member verdicts into a single coordinator verdict.
  *
  * Priority: escalation > needs-fix > approved
- * - Any escalation → "escalation"
+ * - Any escalation → "escalation" (error/halt verdict — NOT absorbed by structural skip)
  * - No escalation, any needs-fix → "needs-fix"
- * - Non-empty, all skipped → "escalation" (D6 / TC-034: all-skip is non-green)
+ * - Non-empty, all skipped → "approved" (structural skip, gate pass-through / D-journal)
  * - All approved or mixed approved+skipped → "approved"
- * - Empty list → "approved" (TC-035/TC-007: feature unused, member 0 → gate pass-through)
+ * - Empty list → "approved" (feature unused, member 0 → gate pass-through)
  *
- * Design D5/D6 update (custom-reviewer-canon-binding):
- *   When a non-empty reviewer set produces ALL skipped verdicts, the round has no positive
- *   opinion — this is a non-green outcome (escalation). A single non-skipped approved verdict
- *   in a mixed result overrides this and produces "approved".
+ * Design (round-all-skip-pass-through):
+ *   When all members return "skipped" (activation-condition mismatch), the round is a
+ *   structural skip — the configuration is authoritative and "all out-of-scope" is a
+ *   valid, green outcome. aggregateVerdict returns "approved" so the pipeline proceeds.
+ *   per-member skip evidence is preserved in the journal via commitRound.
  *
- * Destruction confirmation (TC-048): removing the all-skip branch causes
- * aggregateVerdict(["skipped","skipped"]) to return "approved" instead of "escalation".
+ *   Error (escalation) is still short-circuited above — skip and error remain distinct.
+ *   A single escalation in a mixed set overrides structural skip (requirement 3).
+ *
+ * Destruction confirmation (TC-003/TC-007): reverting the all-skip case to return
+ * "escalation" causes TC-001/TC-002 (awaiting-archive E2E) to fail; removing the
+ * escalation short-circuit causes TC-006/TC-007 (error-skip mix) to fail.
  *
  * @param memberVerdicts - Array of verdict strings from each member's last run.
  */
@@ -271,19 +276,13 @@ export function aggregateVerdict(
   memberVerdicts: string[],
 ): "approved" | "needs-fix" | "escalation" {
   let hasNeedsFix = false;
-  let hasNonSkipped = false;
   for (const v of memberVerdicts) {
     if (v === "escalation") return "escalation";
     if (v === "needs-fix") {
       hasNeedsFix = true;
-      hasNonSkipped = true;
-    } else if (v !== "skipped") {
-      // "approved" or any other non-skip, non-escalation verdict
-      hasNonSkipped = true;
     }
   }
-  // Non-empty but all skipped → escalation (D6: no positive opinion from any reviewer)
-  if (memberVerdicts.length > 0 && !hasNonSkipped) return "escalation";
+  // Non-empty all-skip or empty → approved (structural skip / feature unused)
   return hasNeedsFix ? "needs-fix" : "approved";
 }
 

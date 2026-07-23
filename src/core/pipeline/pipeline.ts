@@ -381,47 +381,23 @@ export class Pipeline {
         // Print final pipeline summary if spec-review was in the pipeline
         this.printPipelineFinished(state);
 
-        // Normal completion → awaiting-archive
-        // Exception: ROUND_ALL_MEMBERS_SKIPPED — when all custom reviewers skipped, the
-        // coordinator routed through regression-gate → conformance → pr-create via the
-        // all-members-skipped escalation transition (reviewer-chain.ts), so those steps ran.
-        // However, the job is not green: no reviewer produced a positive opinion.
-        // state.error carries ROUND_ALL_MEMBERS_SKIPPED from commitRound and persists through
-        // subsequent steps until a fresh coordinator round clears it (roundError=null on success).
-        // Escalate here so the operator can fix activation conditions and resume.
+        // Normal completion → awaiting-archive.
+        // All-skip structural skip (round-all-skip-pass-through): coordinator returns "approved"
+        // for all-skip rounds (aggregateVerdict), so this seam always routes to awaiting-archive.
         //
-        // Destruction confirmation: removing the ROUND_ALL_MEMBERS_SKIPPED branch causes
-        // TC-ACT-01/TC-ACT-02/TC-ACT-04 to return "awaiting-archive" instead of "awaiting-resume".
+        // Destruction confirmation (TC-001/TC-016): restoring the old all-skip error-and-resume
+        // branch causes TC-ACT-01/TC-ACT-02/TC-ACT-04 to return "awaiting-resume" instead of
+        // "awaiting-archive".
         if (nextStep === "end" && state.status === "running") {
-          if (state.error?.code === "ROUND_ALL_MEMBERS_SKIPPED") {
-            // All reviewers skipped: escalate after pipeline arc completes.
-            // commitFinalState for awaiting-resume is handled by the post-loop seam below.
-            const coordinatorName = this.parallelReview?.coordinator ?? currentStep;
-            const { state: escalateState } = transitionJob(state, "awaiting-resume", {
-              trigger: "pipeline",
-              reason: state.error.message,
-              patch: {
-                resumePoint: {
-                  step: toStepName(coordinatorName),
-                  reason: state.error.message,
-                  iterationsExhausted: budget.getLoopIter(coordinatorName),
-                },
-              },
-            });
-            state = escalateState;
-            const endStore = deps.storeFactory(state.jobId);
-            await endStore.persist(state);
-          } else {
-            const { state: mergeState } = transitionJob(state, "awaiting-archive", {
-              trigger: "pipeline",
-              reason: "pipeline complete",
-            });
-            state = mergeState;
-            const endStore = deps.storeFactory(state.jobId);
-            await endStore.persist(state);
-            // D5: commit slug canonical state (state.json / events.jsonl) to feature branch
-            await deps.runtimeStrategy?.commitFinalState(deps, state);
-          }
+          const { state: mergeState } = transitionJob(state, "awaiting-archive", {
+            trigger: "pipeline",
+            reason: "pipeline complete",
+          });
+          state = mergeState;
+          const endStore = deps.storeFactory(state.jobId);
+          await endStore.persist(state);
+          // D5: commit slug canonical state (state.json / events.jsonl) to feature branch
+          await deps.runtimeStrategy?.commitFinalState(deps, state);
         }
 
         // Escalation → awaiting-resume (unless fatal error)

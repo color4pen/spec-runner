@@ -342,14 +342,17 @@ export class ParallelReviewRound {
         aggregateVerdictResult = aggregateVerdict([...memberVerdicts.values()]);
       }
 
-      // --- 7a. Detect all-members-skipped (T-05) ---
-      // When all members return "skipped" (non-empty verdict set), the round has no positive
-      // opinion — this is a non-green outcome. aggregateVerdict already returns "escalation"
-      // for this case. We track allMembersSkipped separately to:
-      //   1. Suppress applyRoundResults (keep members pending, not "skipped", for resume).
-      //   2. Set ROUND_ALL_MEMBERS_SKIPPED roundError (overridden by inspection error if present).
-      // Destruction confirmation (TC-048): removing this flag causes TC-009/TC-038 to fail
-      // (applyRoundResults would set members to "skipped", bypassing the fan-out on resume).
+      // --- 7a. Detect all-members-skipped (round-all-skip-pass-through) ---
+      // When all members return "skipped", the round is a structural skip.
+      // aggregateVerdict returns "approved" for all-skip (gate pass-through, not escalation).
+      // We track allMembersSkipped separately to suppress applyRoundResults (D3 guard):
+      //   Suppress applyRoundResults: keep members PENDING (not "skipped") so the next round
+      //   re-evaluates them with fresh conditions. "skipped" would become a permanent free-pass,
+      //   bypassing the fan-out on resume (requirement 5).
+      // roundError is NOT set for all-skip — structural skip is green (approved).
+      //
+      // Destruction confirmation (TC-009 gate): removing this flag causes members to be set to
+      // "skipped", permanently excluding them from future rounds (free-pass violation).
       const allMembersSkipped =
         memberVerdicts.size > 0 && [...memberVerdicts.values()].every((v) => v === "skipped");
 
@@ -458,24 +461,20 @@ export class ParallelReviewRound {
       // inspectionEscalated: git effects inspection found issues → members stay pending
       //   for resume so the fan-out re-runs and re-inspects (ROUND_NONDECLARED_CHANGE bypass fix).
       //
-      // allMembersSkipped: all members returned "skipped" → members stay PENDING (not "skipped").
-      //   If we set status="skipped", resume would treat them as permanently skipped and bypass
-      //   the fan-out — but we want to re-run on next resume after the user fixes activation
-      //   conditions. ROUND_ALL_MEMBERS_SKIPPED error signals the operator to investigate.
+      // allMembersSkipped: all members returned "skipped" → structural skip (approved, green).
+      //   Members stay PENDING (not "skipped") so the next round re-evaluates them with fresh
+      //   conditions. "skipped" status would become a permanent free-pass, bypassing the fan-out.
+      //   roundError is NOT set — structural skip is not an error (round-all-skip-pass-through).
       //
-      // Destruction confirmation (TC-048): removing the allMembersSkipped guard causes TC-009 to
-      // fail (members would be set to "skipped" instead of staying "pending").
+      // Destruction confirmation (TC-009 gate): removing the allMembersSkipped guard causes TC-009 to
+      // fail (members would be set to "skipped" instead of staying "pending", creating free-pass).
       if (!inspectionEscalated && !allMembersSkipped) {
         statuses = applyRoundResults(statuses, memberVerdicts, headSha, currentCanonHash);
       }
-      // Set all-skip roundError only when inspection did not already set one.
-      // Git-effects inspection errors take priority over all-skip (both lead to escalation).
+      // All-skip structural skip: diagnostic log for observability only (D-journal).
+      // roundError is NOT set — structural skip is green (approved, gate pass-through).
+      // per-member skip evidence is in members[] → journal via commitRound.
       if (allMembersSkipped && !inspectionEscalated) {
-        roundError = {
-          code: "ROUND_ALL_MEMBERS_SKIPPED",
-          message: "All reviewers returned skipped verdict; no reviewer has approved the round.",
-          hint: "Check reviewer activation conditions (paths / requestTypes). If all reviewers are configured with conditions that do not match the current change, the round will not produce a positive verdict.",
-        };
         logPipelineDiag(
           "pipeline:coordinator:all-members-skipped",
           `coordinator=${coordinatorName}, members=[${[...memberVerdicts.keys()].join(",")}]`,
