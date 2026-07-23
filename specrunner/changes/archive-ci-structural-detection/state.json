@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8c330d56-64ef-441d-9150-7c5760d10489",
   "createdAt": "2026-07-23T09:04:31.477Z",
-  "updatedAt": "2026-07-23T12:43:47.228Z",
+  "updatedAt": "2026-07-23T12:48:21.977Z",
   "request": {
     "title": "archive --with-merge の CI 有無判定を時間観測から構造判定に変える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/archive-ci-structural-detection-8c330d56",
   "error": null,
@@ -78,7 +78,9 @@
     "24438d6203893ba68c2572be808cd7b3d283c57a",
     "69c599193624e8623a0044b2617693c816a66258",
     "c7bb6912680dc9f82b3481996723be85f09ea6e7",
-    "ddf449c1c68cfb450d57ba8b07ff4865e3ac0312"
+    "ddf449c1c68cfb450d57ba8b07ff4865e3ac0312",
+    "b5e2940c3dedf99dbaea53df68a2c43b2a23c82e",
+    "d560634336f7b9485807b45f6a3360360a1514b2"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -117,7 +119,7 @@
     "createdAt": "2026-07-23T10:10:42.166Z"
   },
   "_journal": {
-    "historyCount": 91,
+    "historyCount": 100,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -126,14 +128,14 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 3,
+      "verification": 4,
       "build-fixer": 1,
       "code-review": 1,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
       "regression-gate": 2,
-      "conformance": 1,
+      "conformance": 2,
       "adr-gen": 1,
       "pr-create": 1
     }
