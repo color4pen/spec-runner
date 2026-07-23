@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a2ed8343-bae5-4510-9bf2-2da0088ab101",
   "createdAt": "2026-07-23T04:40:21.606Z",
-  "updatedAt": "2026-07-23T05:04:35.708Z",
+  "updatedAt": "2026-07-23T05:08:24.152Z",
   "request": {
     "title": "canon escalation の operator 適用を resume が第一級で受け付ける — 編集の破棄と手順欠落を解消する",
     "type": "bug-fix",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "fix/operator-canon-apply-on-resume-a2ed8343",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/operator-canon-apply-on-resume/tasks.md, title: \"T-01 Acceptance Criteria と T-07 TC-U4 が F2 fix の throw 仕様と矛盾する\"\n\nfixer は write-scope により当該 file を修正できない。operator の適用が必要。",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正し、job resume で再開してください。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -65,16 +69,21 @@
     "201d41b2c5078e81bb7de456382ff77da4e3c500",
     "8ed3a58e92d75283215813b6d141b5f84cfd8912",
     "d46f50cbf7956fe17f8ea68a7f07d911660de2dd",
-    "a8b2c9a8e88fde0d7f91a6044b9efaa3d0847c8c"
+    "a8b2c9a8e88fde0d7f91a6044b9efaa3d0847c8c",
+    "d43b0fea2fbb95a7e00cbf7b0cc472df3dd4e3c6"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/operator-canon-apply-on-resume/tasks.md, title: \"T-01 Acceptance Criteria と T-07 TC-U4 が F2 fix の throw 仕様と矛盾する\"\n\nfixer は write-scope により当該 file を修正できない。operator の適用が必要。",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 15,
+    "historyCount": 18,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 2
     }
   }
 }
