@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4f35ee5a-8f08-4574-a7ac-db1795bdb450",
   "createdAt": "2026-07-23T13:24:18.438Z",
-  "updatedAt": "2026-07-23T14:52:16.262Z",
+  "updatedAt": "2026-07-23T14:56:25.169Z",
   "request": {
     "title": "spec-fixer の書込集合に tasks.md を加え、tasks.md への fixable finding を pipeline 内で収束させる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/spec-fixer-tasks-md-writable-4f35ee5a",
   "error": null,
@@ -79,7 +79,8 @@
     "1d60579c33737f4751fde046ee198fd3fc8ab932",
     "b808fb0666028a25daeee5387437383928bcc518",
     "32cedd32bfc2aea7255d3b745f9c622465b7850a",
-    "fe5b31df8f1b352f03bf9b8af75b2f2cced3f13c"
+    "fe5b31df8f1b352f03bf9b8af75b2f2cced3f13c",
+    "791f35d2e2440d5569a2bbe3c919c881ab905a93"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -114,7 +115,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 66,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -129,7 +130,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 2
+      "regression-gate": 3
     }
   }
 }
