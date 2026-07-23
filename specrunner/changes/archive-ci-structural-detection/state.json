@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8c330d56-64ef-441d-9150-7c5760d10489",
   "createdAt": "2026-07-23T09:04:31.477Z",
-  "updatedAt": "2026-07-23T10:06:52.142Z",
+  "updatedAt": "2026-07-23T10:10:42.891Z",
   "request": {
     "title": "archive --with-merge の CI 有無判定を時間観測から構造判定に変える",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-resume",
   "branch": "change/archive-ci-structural-detection-8c330d56",
   "error": {
     "code": "ROUND_ALL_MEMBERS_SKIPPED",
@@ -81,9 +81,14 @@
     "b006a10ebaaa704666da08f2340487768535f7eb",
     "24438d6203893ba68c2572be808cd7b3d283c57a",
     "69c599193624e8623a0044b2617693c816a66258",
-    "c7bb6912680dc9f82b3481996723be85f09ea6e7"
+    "c7bb6912680dc9f82b3481996723be85f09ea6e7",
+    "ddf449c1c68cfb450d57ba8b07ff4865e3ac0312"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "All reviewers returned skipped verdict; no reviewer has approved the round.",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -114,8 +119,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/910",
+    "number": 910,
+    "createdAt": "2026-07-23T10:10:42.166Z"
+  },
   "_journal": {
-    "historyCount": 71,
+    "historyCount": 76,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -131,7 +141,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
