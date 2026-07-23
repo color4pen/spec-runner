@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4f35ee5a-8f08-4574-a7ac-db1795bdb450",
   "createdAt": "2026-07-23T13:24:18.438Z",
-  "updatedAt": "2026-07-23T15:03:32.254Z",
+  "updatedAt": "2026-07-23T15:06:34.876Z",
   "request": {
     "title": "spec-fixer の書込集合に tasks.md を加え、tasks.md への fixable finding を pipeline 内で収束させる",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/spec-fixer-tasks-md-writable-4f35ee5a",
   "error": null,
   "pipelineId": "standard",
@@ -82,7 +82,8 @@
     "fe5b31df8f1b352f03bf9b8af75b2f2cced3f13c",
     "791f35d2e2440d5569a2bbe3c919c881ab905a93",
     "6b9eaf38fe3aa73f1a738d812b9334927145223a",
-    "9fb877adba779bfcce15c278708bf7f5bb44303c"
+    "9fb877adba779bfcce15c278708bf7f5bb44303c",
+    "0417052c055c324da5e8ff935f5d43c9198ad335"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -116,8 +117,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/923",
+    "number": 923,
+    "createdAt": "2026-07-23T15:06:33.742Z"
+  },
   "_journal": {
-    "historyCount": 80,
+    "historyCount": 85,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -133,7 +139,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 3,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
