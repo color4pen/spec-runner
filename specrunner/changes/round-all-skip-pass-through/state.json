@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9141b6e6-fd3b-40a1-8b2c-c0270fb9d9ab",
   "createdAt": "2026-07-23T10:56:38.330Z",
-  "updatedAt": "2026-07-23T12:26:36.101Z",
+  "updatedAt": "2026-07-23T12:27:40.883Z",
   "request": {
     "title": "custom reviewer round の全員 skip をエラーでなく構造的 skip として通す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/round-all-skip-pass-through-9141b6e6",
   "error": null,
@@ -79,7 +79,8 @@
     "20ae23404ed1af334c8dbe91af3b44b04317b4cd",
     "28ea0ea89af3a093649729e1b10190bda3003071",
     "8f48c3cb0739b251a934810853845036d32444ea",
-    "c80d84faea8fb2dfc4bb4fef2a3ea5df0c718808"
+    "c80d84faea8fb2dfc4bb4fef2a3ea5df0c718808",
+    "e8de8eb449e9b9774a1bc25a39c40044328f8592"
   ],
   "reviewerStatuses": [
     {
@@ -114,7 +115,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 72,
+    "historyCount": 77,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -129,7 +130,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 2
+      "regression-gate": 3
     }
   }
 }
