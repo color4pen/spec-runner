@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "02f1c48b-d37b-4d5e-a3fc-42d2a9a17a2d",
   "createdAt": "2026-07-23T14:40:54.462Z",
-  "updatedAt": "2026-07-23T15:37:54.307Z",
+  "updatedAt": "2026-07-23T15:41:14.028Z",
   "request": {
     "title": "既存テストによる must TC 充足をトレーサビリティコメントで正規に表明できるようにする",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/test-materialize-existing-coverage-02f1c48b",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,8 @@
     "130d68e9d395386d0a5c61f8edfea535a8c55b47",
     "59295b89adfbb7cf6d2d535a9770b494c40eefdd",
     "c59a35b936e47c69f5e8dbca2de45e2341ca562c",
-    "a740c51b425a6a7f0d36bcc0b04622afddb29954"
+    "a740c51b425a6a7f0d36bcc0b04622afddb29954",
+    "ff8d4833101adf127f3b649c2d1c902400038f1d"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -108,8 +109,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/924",
+    "number": 924,
+    "createdAt": "2026-07-23T15:41:13.180Z"
+  },
   "_journal": {
-    "historyCount": 63,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -124,7 +130,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
