@@ -666,3 +666,29 @@ describe("TC-014: implementer D5 map entry remains {tasks.md} after write-set ex
     expect(implementer.has(DESIGN_MD)).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-015: FAST pipeline — needs-fix:spec-fixer has no transition row (design D3)
+//
+// FAST_TRANSITIONS intentionally has no `needs-fix:spec-fixer` row, so a fixable
+// conformance finding on tasks.md with fixTarget: spec-fixer derives
+// `needs-fix:spec-fixer` and falls through the no-matching-transition default to
+// the `escalate` terminal (pipeline.ts `transition?.to ?? "escalate"`), WITHOUT a
+// CANON_FINDING_ESCALATION escalationReason. This pins the reason-less fail-closed
+// halt as a documented contract (design.md D3 Consequence), not an accident.
+// ---------------------------------------------------------------------------
+
+describe("TC-015: FAST pipeline routes needs-fix:spec-fixer to the escalate fallback (design D3)", () => {
+  it("TC-015: FAST_TRANSITIONS has no needs-fix:spec-fixer row", async () => {
+    const { FAST_TRANSITIONS } = await import("../../../../src/core/pipeline/types.js");
+    expect(FAST_TRANSITIONS.some((t) => t.on === "needs-fix:spec-fixer")).toBe(false);
+  });
+
+  it("TC-015: STANDARD_TRANSITIONS has the conformance needs-fix:spec-fixer → spec-fixer row (contrast pin)", async () => {
+    const { STANDARD_TRANSITIONS } = await import("../../../../src/core/pipeline/types.js");
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "conformance" && t.on === "needs-fix:spec-fixer",
+    );
+    expect(row?.to).toBe("spec-fixer");
+  });
+});

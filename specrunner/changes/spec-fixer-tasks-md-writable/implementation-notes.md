@@ -22,3 +22,7 @@
 ### `tests/unit/step/step-io-contracts.test.ts`
 
 - **SpecFixerStep writes() test**: strengthened to also assert `${folder}/tasks.md` is in the declared output paths, pinning the new writable path.
+
+### `tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts`（operator 追補）
+
+- **TC-015 追加**: design.md D3 Consequence が約束した FAST-profile の pin テスト。`FAST_TRANSITIONS` に `needs-fix:spec-fixer` 行が無いこと（escalate fallback 契約）と、`STANDARD_TRANSITIONS` には conformance の当該行があること（対照）を固定する。
