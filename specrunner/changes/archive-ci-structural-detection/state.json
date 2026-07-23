@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8c330d56-64ef-441d-9150-7c5760d10489",
   "createdAt": "2026-07-23T09:04:31.477Z",
-  "updatedAt": "2026-07-23T10:10:42.891Z",
+  "updatedAt": "2026-07-23T12:43:47.228Z",
   "request": {
     "title": "archive --with-merge の CI 有無判定を時間観測から構造判定に変える",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-resume",
+  "step": "conformance",
+  "status": "running",
   "branch": "change/archive-ci-structural-detection-8c330d56",
-  "error": {
-    "code": "ROUND_ALL_MEMBERS_SKIPPED",
-    "message": "All reviewers returned skipped verdict; no reviewer has approved the round.",
-    "hint": "Check reviewer activation conditions (paths / requestTypes). If all reviewers are configured with conditions that do not match the current change, the round will not produce a positive verdict."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -84,11 +80,7 @@
     "c7bb6912680dc9f82b3481996723be85f09ea6e7",
     "ddf449c1c68cfb450d57ba8b07ff4865e3ac0312"
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "All reviewers returned skipped verdict; no reviewer has approved the round.",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -125,7 +117,7 @@
     "createdAt": "2026-07-23T10:10:42.166Z"
   },
   "_journal": {
-    "historyCount": 76,
+    "historyCount": 91,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -137,10 +129,10 @@
       "verification": 3,
       "build-fixer": 1,
       "code-review": 1,
-      "cross-boundary-invariants": 1,
-      "scale-tolerance": 1,
-      "custom-reviewers": 1,
-      "regression-gate": 1,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 2,
+      "custom-reviewers": 2,
+      "regression-gate": 2,
       "conformance": 1,
       "adr-gen": 1,
       "pr-create": 1
