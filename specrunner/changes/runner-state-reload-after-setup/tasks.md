@@ -151,7 +151,18 @@ File: `tests/unit/core/runtime/runner-reload-egress-e2e.test.ts`
   7. Call `verifyEgressLedger({ cwd: workspace.cwd, ledger: reloadedState.synthesizedCommits!, spawnFn })` with a step commit added after bootstrap
   8. Assert: `verifyEgressLedger` resolves without throwing (`EGRESS_UNKNOWN_COMMIT` is absent)
 
-  DESTROY comment: "DESTROY: remove the `reloadJobState` call in runner.ts and restore the mirror lines (worktreePath/branch only). The test at step 6 fails because `reloadedState.synthesizedCommits` would be whatever the store contains — but the in-memory state passed to pipeline.run() would NOT have synthesizedCommits (it would be the pre-seed bootstrapState). The egress check at step 8 would fail with EGRESS_UNKNOWN_COMMIT."
+  DESTROY comment: "DESTROY: `LocalRuntime.reloadJobState()` の実装を破壊する（メソッド削除または store 読取りを bootstrapState 返却に差し替え）→ step 6 の synthesizedCommits assert が fail する。注意: 本 TC は runtime 層のテストであり、runner.ts の配線（reload 呼び出しの有無）は封鎖しない — runner 経路の封鎖は TC-013b が担う（spec-review F-02）。"
+
+- [ ] **TC-013b: runner 経路の封鎖 — pipeline に渡る state が reload 由来であること**
+  `CommandRunner.execute()` 経由の統合テスト。fake RuntimeStrategy を注入する:
+  1. fake の `setupWorkspace()` は WorkspaceContext を返し、`reloadJobState()` は sentinel を含む state
+     （`synthesizedCommits: ["sentinel-oid-123"]`）を返す
+  2. pipeline 側は最小 stub（既存の runner テストの fake pipeline / buildDeps seam を利用）とし、
+     `pipeline.run()`（または runner が state を引き渡す seam）が受け取った state を capture する
+  3. Assert: capture した state の `synthesizedCommits` に `"sentinel-oid-123"` が含まれる
+     （= runner が reload 結果を下流へ渡している。受け入れ基準「in-memory 経路の直接 assert」の充足点）
+
+  DESTROY comment: "DESTROY: runner.ts の `reloadJobState` 呼び出しを削除し旧 mirror（worktreePath/branch のみ）を復元する → capture した state に sentinel が含まれず TC-013b が fail する。"
 
 - [ ] **TC-014: halt-path persist does not revert synthesizedCommits (non-destructive halt)**
   1. Set up state with `synthesizedCommits: [bootstrapOid]` in the store (extend TC-013 setup or standalone)

@@ -93,16 +93,22 @@ absent or an empty Record — the cast is safe.
 completes. A direct `JobStateStore.load()` in the implementation is correct and does not
 require introducing a new abstraction layer.*
 
-### D3: ManagedRuntime.reloadJobState — passthrough for now
+### D3: ManagedRuntime.reloadJobState — fail-closed throw (load 実装は条件付きで許容)
 
-`ManagedRuntime.reloadJobState()` returns the passed-in `jobState` unchanged (identity
-function). This preserves the current managed-runtime behavior (no regression) while
-satisfying the `RealRuntimeStrategy` compile-time contract.
+`reloadJobState(jobId, slug, workspace)` は元の `jobState` を引数に受け取らないため、
+「passthrough / identity」は実装不可能である(spec-review F-01)。ManagedRuntime の実装は
+T-03 と同一の選択とする:
 
-*Rationale: managed runtime uses a different store path (`.specrunner/local/<slug>/`)
-with a different seeding contract. The same-type fix for managed runtime requires
-independent verification and is deferred to a separate request. A passthrough here
-does not worsen the managed runtime behavior relative to today.*
+- **一次案(fail-closed)**: `throw new Error("reloadJobState not implemented for managed runtime")`。
+  managed runtime の store 構成(`.specrunner/local/<slug>/`)での reload 安全性は独立検証が必要で、
+  別 request に委ねる。検証されるまで managed の run は setup 時点で明示的に停止する
+  (state 不明のまま pipeline を走らせない — 本 request の fail-closed 方針と一貫)。
+- **代替(実装者が安全性を確認できた場合のみ)**: `this.managedLocalStore(jobId, slug)` からの load。
+  managed の seed が updateJobState 群より先に行われること(local と同じ順序保証)を確認できた
+  場合に限り採用してよく、選択理由をコードコメントに記す。
+
+*Rationale: 両案とも「真実は store」の一本化と両立する。identity passthrough は in-memory の
+古い state を正として温存するため、本 request が消そうとしている二重真実そのものであり不可。*
 
 ### D4: runner.ts — replace mirror block with reload + fail-closed
 
