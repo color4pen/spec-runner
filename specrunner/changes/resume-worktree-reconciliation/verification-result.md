@@ -6,11 +6,11 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 0.3s | 0 |
-| 2 | typecheck | passed | 4.7s | 0 |
-| 3 | test | passed | 31.0s | 0 |
+| 1 | build | passed | 0.4s | 0 |
+| 2 | typecheck | passed | 4.8s | 0 |
+| 3 | test | passed | 31.2s | 0 |
 | 4 | lint | passed | 5.2s | 0 |
-| 5 | changed-line-coverage | passed | 37.3s | 0 |
+| 5 | changed-line-coverage | passed | 41.3s | 0 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.31 MB
-ESM ⚡️ Build success in 66ms
+ESM ⚡️ Build success in 75ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -53,8 +53,8 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	203d
 
  Test Files  634 passed (634)
       Tests  9369 passed | 1 skipped (9370)
-   Start at  19:26:45
-   Duration  30.69s (transform 6.10s, setup 0ms, import 24.70s, tests 49.23s, environment 31ms)
+   Start at  21:50:17
+   Duration  30.86s (transform 5.83s, setup 0ms, import 24.37s, tests 50.38s, environment 31ms)
 
 
 $ vitest run
@@ -67,24 +67,24 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-DJRzmX/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-lJmzwb/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Z4TVyB/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-LbrAXH/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
@@ -98,6 +98,26 @@ Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] resumed job slug=fix-login-bug (issue#10)
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
+  start    issue#1 → slug=fix-login-bug
+  resume   fix-login-bug (issue#10)
+[inbox] recovered stale job slug=my-feature (attempt 1)
+[inbox] escalated stale job slug=my-feature to awaiting-resume
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 0 start(s), 0 reject(s), 0 resume(s), 1 recover(s), 1 escalate(s)
+  recover  my-feature (attempt 1)
+  escalate other-feat (step=design)
+[inbox] warn: recover my-feature: disk full
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=old-feature (issue#50)
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -127,45 +147,25 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-[inbox] started job slug=fix-login-bug from issue#1
-[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
-[inbox] started job slug=fix-login-bug from issue#1
-[inbox] resumed job slug=fix-login-bug (issue#10)
-[inbox] dry-run: no effects will be executed.
-[inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
-  start    issue#1 → slug=fix-login-bug
-  resume   fix-login-bug (issue#10)
-[inbox] recovered stale job slug=my-feature (attempt 1)
-[inbox] escalated stale job slug=my-feature to awaiting-resume
-[inbox] dry-run: no effects will be executed.
-[inbox] plan: 0 start(s), 0 reject(s), 0 resume(s), 1 recover(s), 1 escalate(s)
-  recover  my-feature (attempt 1)
-  escalate other-feat (step=design)
-[inbox] warn: recover my-feature: disk full
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=old-feature (issue#50)
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
 ERROR: file not found
 spawn ENOENT
+Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
-Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
@@ -183,6 +183,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (25 changed files checked, 23 skipped)
-  Skipped (not in coverage surface): docs/operations.md, specrunner/changes/resume-worktree-reconciliation/bite-evidence-result.md, specrunner/changes/resume-worktree-reconciliation/conformance-result-001.md, specrunner/changes/resume-worktree-reconciliation/design.md, specrunner/changes/resume-worktree-reconciliation/events.jsonl, specrunner/changes/resume-worktree-reconciliation/regression-gate-result-001.md, specrunner/changes/resume-worktree-reconciliation/regression-gate-result-002.md, specrunner/changes/resume-worktree-reconciliation/request-review-attestation.json, specrunner/changes/resume-worktree-reconciliation/request-review-result-001.md, specrunner/changes/resume-worktree-reconciliation/request.md, specrunner/changes/resume-worktree-reconciliation/review-feedback-001.md, specrunner/changes/resume-worktree-reconciliation/rules.md, specrunner/changes/resume-worktree-reconciliation/spec-review-result-001.md, specrunner/changes/resume-worktree-reconciliation/spec.md, specrunner/changes/resume-worktree-reconciliation/state.json, specrunner/changes/resume-worktree-reconciliation/tasks.md, specrunner/changes/resume-worktree-reconciliation/test-cases.md, specrunner/changes/resume-worktree-reconciliation/usage.json, specrunner/changes/resume-worktree-reconciliation/verification-result.md, src/core/command/__tests__/resume-reconcile.test.ts, src/core/resume/__tests__/reconcile-worktree.test.ts, tests/resume-worktree-reconciliation-e2e.test.ts, tests/unit/docs/operations-recovery-contract.test.ts
+changed-line-coverage: passed (29 changed files checked, 27 skipped)
+  Skipped (not in coverage surface): docs/operations.md, specrunner/adr/2026-07-23-resume-worktree-reconciliation.md, specrunner/changes/resume-worktree-reconciliation/bite-evidence-result.md, specrunner/changes/resume-worktree-reconciliation/conformance-result-001.md, specrunner/changes/resume-worktree-reconciliation/conformance-result-002.md, specrunner/changes/resume-worktree-reconciliation/design.md, specrunner/changes/resume-worktree-reconciliation/events.jsonl, specrunner/changes/resume-worktree-reconciliation/pr-create-result.md, specrunner/changes/resume-worktree-reconciliation/regression-gate-result-001.md, specrunner/changes/resume-worktree-reconciliation/regression-gate-result-002.md, specrunner/changes/resume-worktree-reconciliation/regression-gate-result-003.md, specrunner/changes/resume-worktree-reconciliation/request-review-attestation.json, specrunner/changes/resume-worktree-reconciliation/request-review-result-001.md, specrunner/changes/resume-worktree-reconciliation/request.md, specrunner/changes/resume-worktree-reconciliation/review-feedback-001.md, specrunner/changes/resume-worktree-reconciliation/rules.md, specrunner/changes/resume-worktree-reconciliation/spec-review-result-001.md, specrunner/changes/resume-worktree-reconciliation/spec.md, specrunner/changes/resume-worktree-reconciliation/state.json, specrunner/changes/resume-worktree-reconciliation/tasks.md, specrunner/changes/resume-worktree-reconciliation/test-cases.md, specrunner/changes/resume-worktree-reconciliation/usage.json, specrunner/changes/resume-worktree-reconciliation/verification-result.md, src/core/command/__tests__/resume-reconcile.test.ts, src/core/resume/__tests__/reconcile-worktree.test.ts, tests/resume-worktree-reconciliation-e2e.test.ts, tests/unit/docs/operations-recovery-contract.test.ts
 ```
