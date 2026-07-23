@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4f35ee5a-8f08-4574-a7ac-db1795bdb450",
   "createdAt": "2026-07-23T13:24:18.438Z",
-  "updatedAt": "2026-07-23T13:50:27.312Z",
+  "updatedAt": "2026-07-23T13:52:18.785Z",
   "request": {
     "title": "spec-fixer の書込集合に tasks.md を加え、tasks.md への fixable finding を pipeline 内で収束させる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/spec-fixer-tasks-md-writable-4f35ee5a",
   "error": null,
@@ -68,16 +68,18 @@
     "954412a8158b62d758fa247dba98fb9ac67b0dd9",
     "f3ae645549537800e2f254fc012885f57664ddd9",
     "338b00522182c08926080d46ee286a7727661e1f",
-    "dfe75868a4fc6a07c256d34b39a4e6b21d8ab057"
+    "dfe75868a4fc6a07c256d34b39a4e6b21d8ab057",
+    "e04bc60b52f1f3a1092d97d55f85901d13635b99"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 22,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 2
+      "spec-review": 2,
+      "test-case-gen": 1
     }
   }
 }
