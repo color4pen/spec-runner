@@ -86,9 +86,17 @@
       fixtures, asserting:
       (a) push/pull_request workflow → past grace → no merge → `mergeWaitTimeoutMs`
       exceeded → escalation (`exitCode: 1`, `mergePullRequest` not called);
+      in at least one such multi-poll-iteration test, assert the detection is
+      computed at most once per run: the keyed `spawn` records `git ls-tree`
+      invocations and the count is 1 across all poll iterations (spec.md
+      Requirement 1 MUST);
       (b) no workflow definition → past grace → merge proceeds (extends/mirrors the
       existing TBG-05 regression, now explicit that detection = CI-less);
-      (c) schedule-only workflow → CI-less → merge proceeds.
+      (c) schedule-only workflow → CI-less → merge proceeds;
+      (d) `archiveSha === undefined` (runArchiveOrchestrator returns
+      `headSha: undefined`) → detector is not invoked (`git ls-tree` spawn count 0)
+      → treated as CI-present → past grace → no merge → `mergeWaitTimeoutMs`
+      exceeded → escalation (spec.md Scenario 4 case A, D5 fail-closed path).
 - [ ] Ensure the existing merge-then-archive tests remain green: the default fake
       `spawn` (empty `git ls-tree` output) yields `no-workflows` → CI-less, so the
       current `"none"` → merge regression (TBG-05) still holds.
@@ -96,6 +104,10 @@
 **Acceptance Criteria**:
 - Each of the three request acceptance behaviors is fixed by a test.
 - The schedule-only tree resolves to CI-less in a test.
+- The `archiveSha === undefined` fail-closed path (Scenario 4 case A) is fixed by a
+  wait-loop test.
+- The at-most-once detection invariant (spec.md Requirement 1) is fixed by a spawn
+  call-count assertion.
 - Pre-existing merge-then-archive tests pass without behavioral changes to their
   expectations.
 
