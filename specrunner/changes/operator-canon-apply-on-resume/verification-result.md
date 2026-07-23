@@ -6,11 +6,11 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 0.9s | 0 |
-| 2 | typecheck | passed | 4.7s | 0 |
-| 3 | test | passed | 29.7s | 0 |
-| 4 | lint | passed | 5.5s | 0 |
-| 5 | changed-line-coverage | passed | 37.3s | 0 |
+| 1 | build | passed | 0.3s | 0 |
+| 2 | typecheck | passed | 4.6s | 0 |
+| 3 | test | passed | 29.8s | 0 |
+| 4 | lint | passed | 5.1s | 0 |
+| 5 | changed-line-coverage | passed | 36.2s | 0 |
 
 ## Phase: build
 
@@ -22,8 +22,8 @@ CLI Using tsup config: tsup.config.ts
 CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
-ESM dist/specrunner.js 1.30 MB
-ESM ⚡️ Build success in 69ms
+ESM dist/specrunner.js 1.31 MB
+ESM ⚡️ Build success in 65ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -52,23 +52,23 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	203d
 }
 
  Test Files  630 passed (630)
-      Tests  9315 passed | 1 skipped (9316)
-   Start at  15:08:40
-   Duration  29.48s (transform 5.64s, setup 0ms, import 23.77s, tests 46.31s, environment 30ms)
+      Tests  9319 passed | 1 skipped (9320)
+   Start at  16:09:58
+   Duration  29.59s (transform 5.66s, setup 0ms, import 23.51s, tests 47.21s, environment 30ms)
 
 
 $ vitest run
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-pVH8uh/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-TjNdug/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Ro5pls/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-KFoSnP/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
@@ -80,24 +80,24 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -107,10 +107,6 @@ Retrying worktree add: lock contention (attempt 2/3)
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
@@ -131,12 +127,10 @@ Retrying worktree add: lock contention (attempt 2/3)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=old-feature (issue#50)
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -157,19 +151,25 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
 ERROR: file not found
 spawn ENOENT
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
 Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 
 ```
 
@@ -183,6 +183,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (27 changed files checked, 21 skipped)
-  Skipped (not in coverage surface): .release-please-manifest.json, CHANGELOG.md, package.json, specrunner/changes/operator-canon-apply-on-resume/design.md, specrunner/changes/operator-canon-apply-on-resume/events.jsonl, specrunner/changes/operator-canon-apply-on-resume/request-review-attestation.json, specrunner/changes/operator-canon-apply-on-resume/request-review-result-001.md, specrunner/changes/operator-canon-apply-on-resume/request.md, specrunner/changes/operator-canon-apply-on-resume/rules.md, specrunner/changes/operator-canon-apply-on-resume/spec-review-result-001.md, specrunner/changes/operator-canon-apply-on-resume/spec-review-result-002.md, specrunner/changes/operator-canon-apply-on-resume/spec-review-result-003.md, specrunner/changes/operator-canon-apply-on-resume/spec.md, specrunner/changes/operator-canon-apply-on-resume/state.json, specrunner/changes/operator-canon-apply-on-resume/tasks.md, specrunner/changes/operator-canon-apply-on-resume/test-cases.md, specrunner/changes/operator-canon-apply-on-resume/usage.json, src/cli/__tests__/command-registry-apply-canon.test.ts, src/core/command/__tests__/resume-apply-canon.test.ts, src/core/resume/__tests__/apply-canon.test.ts, tests/operator-canon-apply-on-resume-e2e.test.ts
+changed-line-coverage: passed (36 changed files checked, 30 skipped)
+  Skipped (not in coverage surface): .release-please-manifest.json, CHANGELOG.md, package.json, specrunner/changes/operator-canon-apply-on-resume/bite-evidence-result.md, specrunner/changes/operator-canon-apply-on-resume/conformance-result-001.md, specrunner/changes/operator-canon-apply-on-resume/cross-boundary-invariants-result-001.md, specrunner/changes/operator-canon-apply-on-resume/cross-boundary-invariants-result-002.md, specrunner/changes/operator-canon-apply-on-resume/design.md, specrunner/changes/operator-canon-apply-on-resume/events.jsonl, specrunner/changes/operator-canon-apply-on-resume/regression-gate-result-001.md, specrunner/changes/operator-canon-apply-on-resume/regression-gate-result-002.md, specrunner/changes/operator-canon-apply-on-resume/request-review-attestation.json, specrunner/changes/operator-canon-apply-on-resume/request-review-result-001.md, specrunner/changes/operator-canon-apply-on-resume/request.md, specrunner/changes/operator-canon-apply-on-resume/review-feedback-001.md, specrunner/changes/operator-canon-apply-on-resume/rules.md, specrunner/changes/operator-canon-apply-on-resume/spec-review-result-001.md, specrunner/changes/operator-canon-apply-on-resume/spec-review-result-002.md, specrunner/changes/operator-canon-apply-on-resume/spec-review-result-003.md, specrunner/changes/operator-canon-apply-on-resume/spec.md, specrunner/changes/operator-canon-apply-on-resume/state.json, specrunner/changes/operator-canon-apply-on-resume/tasks.md, specrunner/changes/operator-canon-apply-on-resume/test-cases.md, specrunner/changes/operator-canon-apply-on-resume/usage.json, specrunner/changes/operator-canon-apply-on-resume/verification-result.md, src/cli/__tests__/command-registry-apply-canon.test.ts, src/core/command/__tests__/resume-apply-canon.test.ts, src/core/resume/__tests__/apply-canon.test.ts, tests/operator-canon-apply-on-resume-e2e.test.ts, tests/unit/architecture/write-scope-invariants.test.ts
 ```
