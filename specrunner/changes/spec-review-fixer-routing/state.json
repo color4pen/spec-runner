@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2095ac19-12f4-4dcc-92fe-e6a0fa04526a",
   "createdAt": "2026-07-23T09:04:31.027Z",
-  "updatedAt": "2026-07-23T10:40:19.712Z",
+  "updatedAt": "2026-07-23T10:43:20.879Z",
   "request": {
     "title": "spec-review の fixable canon finding を spec-fixer round で収束させる — 一律 operator escalation の解消",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/spec-review-fixer-routing-2095ac19",
   "error": null,
   "pipelineId": "standard",
@@ -82,7 +82,8 @@
     "3ac421a1b60cf2d46e2ebed7cd6daad395fff2fb",
     "c36ffe1837f4da5e43be307b2384edc32d70f7d6",
     "2b93849f146fb43d0b05a0fc3972b13302af1838",
-    "74c7830695e990b37be1226b921c000a22d71370"
+    "74c7830695e990b37be1226b921c000a22d71370",
+    "80189e1505bd53d269b1f5e79afde32969d8b66c"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -116,8 +117,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/913",
+    "number": 913,
+    "createdAt": "2026-07-23T10:43:19.976Z"
+  },
   "_journal": {
-    "historyCount": 82,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -134,7 +140,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
