@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "02f1c48b-d37b-4d5e-a3fc-42d2a9a17a2d",
   "createdAt": "2026-07-23T14:40:54.462Z",
-  "updatedAt": "2026-07-23T15:33:19.134Z",
+  "updatedAt": "2026-07-23T15:37:54.307Z",
   "request": {
     "title": "既存テストによる must TC 充足をトレーサビリティコメントで正規に表明できるようにする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/test-materialize-existing-coverage-02f1c48b",
   "error": null,
@@ -73,7 +73,9 @@
     "c3aa124f3a9647669155dc1addc0bfadcee77059",
     "70d6675cfa26ad2f15bc57aca6ce957d2711feba",
     "130d68e9d395386d0a5c61f8edfea535a8c55b47",
-    "59295b89adfbb7cf6d2d535a9770b494c40eefdd"
+    "59295b89adfbb7cf6d2d535a9770b494c40eefdd",
+    "c59a35b936e47c69f5e8dbca2de45e2341ca562c",
+    "a740c51b425a6a7f0d36bcc0b04622afddb29954"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -107,7 +109,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 63,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -116,12 +118,13 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
