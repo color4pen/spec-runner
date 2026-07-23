@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:f6dd89605c1fac8cf7fab8f5bb694b08fee4922e503103c7f92830e65484323d",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/command/runner.ts:169-181: worktreePath and branch manual mirror only, no synthesizedCommits mirror",
+    "src/core/runtime/workspace-materializer.ts new-run case lines 154-256: seed → updateJobState(worktreePath) → updateJobState(request.path) → updateJobState(appendSynthesizedCommit) → updateJobState(branch)",
+    "src/core/step/commit-push.ts:528: egress check reads state.synthesizedCommits from in-memory state (scoped mode)",
+    "src/core/step/commit-push.ts:597: egress check reads state.synthesizedCommits from in-memory state (guarded mode)",
+    "tests/unit/core/runtime/bootstrap-egress-ledger-wm.test.ts: TC-001 uses mock host.updateJobState, no test verifies in-memory pipeline state has bootstrap OID",
+    "tests/unit/core/runtime/bootstrap-egress-ledger-local.test.ts: TC-002 reads from store directly, no test verifies in-memory pipeline path",
+    "src/core/command/pipeline-run.ts:143-156: reviewers/noWorktree/issueNumber set on jobState before bootstrapState seed",
+    "src/core/runtime/local.ts:331-442: setupWorkspaceNoWorktree has same pattern — no in-memory reload after synthesizedCommits update",
+    "src/state/schema/types.ts: synthesizedCommits?: string[] (optional field, absent = undefined in in-memory state)"
+  ],
+  "sourceRevision": "3c38f98d8a6b84d1126540df806fe96276f37eeb"
+}
