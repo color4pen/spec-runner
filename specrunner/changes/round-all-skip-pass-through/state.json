@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9141b6e6-fd3b-40a1-8b2c-c0270fb9d9ab",
   "createdAt": "2026-07-23T10:56:38.330Z",
-  "updatedAt": "2026-07-23T11:35:47.861Z",
+  "updatedAt": "2026-07-23T11:47:05.309Z",
   "request": {
     "title": "custom reviewer round の全員 skip をエラーでなく構造的 skip として通す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/round-all-skip-pass-through-9141b6e6",
   "error": null,
@@ -68,16 +68,21 @@
     "67751db2ff6c715401ce360eb51f4245d748af6d",
     "43cee016446343f10498a3990890310292d99d0e",
     "62239b0f7fcf25f92232149918dc1dc5522aa254",
-    "99b7021ba6df0d2981263665031278578c8f7ed7"
+    "99b7021ba6df0d2981263665031278578c8f7ed7",
+    "9a2fab0a5ee042cfd4a0e4938b25cf77e43560c1",
+    "40f76f45505c4d305a42269d074f7f07d87ad52d"
   ],
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
