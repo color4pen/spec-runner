@@ -44,7 +44,7 @@ ${PIPELINE_MAP}
 | request-review | request-review-result file のみ | source code, spec, design, tasks（read-only review） |
 | design | \`specrunner/changes/<slug>/\` 配下 (design.md, tasks.md, spec.md) | source code, change folder 外の全ファイル |
 | spec-review | spec-review-result file のみ | source code, spec, design, tasks |
-| spec-fixer | change folder 内の spec.md, design.md | source code |
+| spec-fixer | change folder 内の spec.md, design.md, tasks.md | source code |
 | test-case-gen | test-cases.md | source code, specs, design, tasks |
 | test-materialize | test code files のみ | production code, test-cases.md, tasks.md |
 | implementer | source code, tests, tasks.md (checkbox 更新) | specs (read-only), design.md |
