@@ -12,7 +12,8 @@
   ```
   Place it adjacent to `persistJobState` with a JSDoc comment explaining:
   - local: loads from slug store using `workspace.worktreePath ?? cwd` as stateRoot
-  - managed: passthrough (returns unchanged jobState)
+  - managed: fail-closed throw（store 構成の reload 安全性が別 request で検証されるまで。
+    seed 順序の安全性を確認できた場合のみ managedLocalStore からの load を許容 — D3 / T-03 と同一の選択）
   - throws on load error (caller is fail-closed)
 - [ ] Add `reloadJobState` as required (non-optional) to `RealRuntimeStrategy`:
   ```ts
@@ -43,10 +44,10 @@
 
 ---
 
-## T-03: Implement `reloadJobState` passthrough in ManagedRuntime
+## T-03: Implement `reloadJobState` fail-closed throw in ManagedRuntime
 
 - [ ] Add `async reloadJobState(_jobId: string, _slug: string, _workspace: WorkspaceContext): Promise<JobState>` to `ManagedRuntime` in `src/core/runtime/managed.ts`
-- [ ] The implementation is a passthrough: it does NOT have access to the original `jobState`, so it cannot return it. Use an alternative: throw `new Error("reloadJobState not implemented for managed runtime")` — this makes managed runtime fail-closed on reload (consistent with D3).
+- [ ] The signature does NOT receive the original `jobState`, so a passthrough is impossible (spec-review F-01). Implement fail-closed: throw `new Error("reloadJobState not implemented for managed runtime")` — this makes managed runtime fail-closed on reload (consistent with D3).
   > Note: the optional-chaining call in runner.ts (D4) uses `?.`, so if managed runtime does NOT have the method, the fallback is used instead. But since `RealRuntimeStrategy` requires it, it must be present. The safest production behavior for managed is to throw — the pipeline won't start until managed runtime is fixed in a separate request.
   >
   > Alternative: load from `this.managedLocalStore(jobId, slug)` — this would actually fix managed runtime too. If the implementer determines this is safe (managed local store is seeded before any updateJobState calls, same as local), they may implement the full load. Document the choice in a code comment.
