@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4f35ee5a-8f08-4574-a7ac-db1795bdb450",
   "createdAt": "2026-07-23T13:24:18.438Z",
-  "updatedAt": "2026-07-23T13:24:21.481Z",
+  "updatedAt": "2026-07-23T13:27:36.029Z",
   "request": {
     "title": "spec-fixer の書込集合に tasks.md を加え、tasks.md への fixable finding を pipeline 内で収束させる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/spec-fixer-tasks-md-writable-4f35ee5a",
   "error": null,
@@ -63,10 +63,13 @@
   ],
   "issueNumber": 919,
   "synthesizedCommits": [
-    "f131c0408dfaa3faf9a9ee374a6c1a11aae30f7d"
+    "f131c0408dfaa3faf9a9ee374a6c1a11aae30f7d",
+    "d7b32461f4a5b0801e2209dbcde4822b3ad9da86"
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
