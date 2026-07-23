@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2095ac19-12f4-4dcc-92fe-e6a0fa04526a",
   "createdAt": "2026-07-23T09:04:31.027Z",
-  "updatedAt": "2026-07-23T10:16:39.396Z",
+  "updatedAt": "2026-07-23T10:31:04.620Z",
   "request": {
     "title": "spec-review の fixable canon finding を spec-fixer round で収束させる — 一律 operator escalation の解消",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/spec-review-fixer-routing-2095ac19",
   "error": null,
@@ -75,12 +75,44 @@
     "48efefd251c9c32f8e8417f735e7c5b4c9ae3b20",
     "7b3af2d22334b7adf660f9c30fa3167cc9a0ea58",
     "d34578dcedc86a4677df44ec6d50924009eef9d4",
-    "6b73b753b3df2ed0b76c941c2fcb67dc89ebb585"
+    "6b73b753b3df2ed0b76c941c2fcb67dc89ebb585",
+    "ad6d5ae5d4241a4469fc03f16d3ca7dfa113c284",
+    "a5803fb58b1d8021fe44fabf362621bb5fcdca21"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "ad6d5ae5d4241a4469fc03f16d3ca7dfa113c284",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/spec-review-fixer-routing/design.md:sha256:afb73def6a28cda809ff8ec1fb69b69bcd5a238a98d8ec2098219cc3dc712f6a|specrunner/changes/spec-review-fixer-routing/request.md:sha256:dcdf5971016a79354792723c4c58be56397e9308ab4317d777c9f5e34e44a4b8|specrunner/changes/spec-review-fixer-routing/spec.md:sha256:f4710252643034bced3a68750f32fe3d2fb90550c035c8545fabcb6564d76d21|specrunner/changes/spec-review-fixer-routing/tasks.md:sha256:8d4e6f017d7ec85e4916252997ebf75dc0a83105a2c27157129b30dc3d19d6b1|specrunner/changes/spec-review-fixer-routing/test-cases.md:sha256:bf1a6c4890edc85c8e2b7903833d4ea407f09faaa6c10ba696ce643da46c9b21"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -91,7 +123,11 @@
       "bite-evidence": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
