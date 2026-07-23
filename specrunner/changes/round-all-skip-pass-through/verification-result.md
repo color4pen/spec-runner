@@ -6,11 +6,11 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 1.0s | 0 |
-| 2 | typecheck | passed | 4.7s | 0 |
-| 3 | test | passed | 29.6s | 0 |
-| 4 | lint | passed | 5.5s | 0 |
-| 5 | changed-line-coverage | passed | 36.1s | 0 |
+| 1 | build | passed | 0.3s | 0 |
+| 2 | typecheck | passed | 4.6s | 0 |
+| 3 | test | passed | 30.0s | 0 |
+| 4 | lint | passed | 5.1s | 0 |
+| 5 | changed-line-coverage | passed | 37.1s | 0 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.30 MB
-ESM ⚡️ Build success in 94ms
+ESM ⚡️ Build success in 64ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -53,8 +53,8 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	203d
 
  Test Files  632 passed (632)
       Tests  9374 passed | 1 skipped (9375)
-   Start at  20:45:52
-   Duration  29.33s (transform 5.82s, setup 0ms, import 23.94s, tests 45.47s, environment 30ms)
+   Start at  21:31:43
+   Duration  29.79s (transform 5.97s, setup 0ms, import 24.35s, tests 46.81s, environment 30ms)
 
 
 $ vitest run
@@ -67,11 +67,11 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-fqf18E/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-vVtkMR/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-IQpUmb/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-7Rlwhb/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
@@ -80,24 +80,24 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -107,26 +107,6 @@ Retrying worktree add: lock contention (attempt 2/3)
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
-GitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...
-GitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...
-GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
-GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...
-GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
-GitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...
-GitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...
-GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
@@ -147,25 +127,45 @@ GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=old-feature (issue#50)
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Repository is in an unstable state. Please wait and try again., retrying (1/3)...
+GitHub PR merge retry: Merge failed: branch locked (status 423), retrying (1/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (2/3)...
+GitHub PR merge retry: Base branch was modified. Review and try the merge again., retrying (3/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...
+GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 [specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
 ERROR: file not found
 spawn ENOENT
 Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
@@ -183,6 +183,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (20 changed files checked, 16 skipped)
-  Skipped (not in coverage surface): specrunner/changes/round-all-skip-pass-through/design.md, specrunner/changes/round-all-skip-pass-through/events.jsonl, specrunner/changes/round-all-skip-pass-through/request-review-attestation.json, specrunner/changes/round-all-skip-pass-through/request-review-result-001.md, specrunner/changes/round-all-skip-pass-through/request.md, specrunner/changes/round-all-skip-pass-through/rules.md, specrunner/changes/round-all-skip-pass-through/spec-review-result-001.md, specrunner/changes/round-all-skip-pass-through/spec.md, specrunner/changes/round-all-skip-pass-through/state.json, specrunner/changes/round-all-skip-pass-through/tasks.md, specrunner/changes/round-all-skip-pass-through/test-cases.md, specrunner/changes/round-all-skip-pass-through/usage.json, src/core/pipeline/__tests__/parallel-review-round-canon.test.ts, src/core/pipeline/__tests__/reviewer-status.test.ts, tests/reviewer-activation-e2e.test.ts, tests/unit/pipeline/round-all-skip-pass-through-static.test.ts
+changed-line-coverage: passed (31 changed files checked, 26 skipped)
+  Skipped (not in coverage surface): specrunner/changes/round-all-skip-pass-through/bite-evidence-result.md, specrunner/changes/round-all-skip-pass-through/conformance-result-001.md, specrunner/changes/round-all-skip-pass-through/cross-boundary-invariants-result-001.md, specrunner/changes/round-all-skip-pass-through/cross-boundary-invariants-result-002.md, specrunner/changes/round-all-skip-pass-through/design.md, specrunner/changes/round-all-skip-pass-through/events.jsonl, specrunner/changes/round-all-skip-pass-through/implementation-notes.md, specrunner/changes/round-all-skip-pass-through/regression-gate-result-001.md, specrunner/changes/round-all-skip-pass-through/regression-gate-result-002.md, specrunner/changes/round-all-skip-pass-through/regression-gate-result-003.md, specrunner/changes/round-all-skip-pass-through/request-review-attestation.json, specrunner/changes/round-all-skip-pass-through/request-review-result-001.md, specrunner/changes/round-all-skip-pass-through/request.md, specrunner/changes/round-all-skip-pass-through/review-feedback-001.md, specrunner/changes/round-all-skip-pass-through/rules.md, specrunner/changes/round-all-skip-pass-through/spec-review-result-001.md, specrunner/changes/round-all-skip-pass-through/spec.md, specrunner/changes/round-all-skip-pass-through/state.json, specrunner/changes/round-all-skip-pass-through/tasks.md, specrunner/changes/round-all-skip-pass-through/test-cases.md, specrunner/changes/round-all-skip-pass-through/usage.json, specrunner/changes/round-all-skip-pass-through/verification-result.md, src/core/pipeline/__tests__/parallel-review-round-canon.test.ts, src/core/pipeline/__tests__/reviewer-status.test.ts, tests/reviewer-activation-e2e.test.ts, tests/unit/pipeline/round-all-skip-pass-through-static.test.ts
 ```
