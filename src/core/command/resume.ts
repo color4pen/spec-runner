@@ -29,6 +29,7 @@ import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 import { detectCanonDirtyPaths, commitOperatorCanon } from "../resume/apply-canon.js";
+import { reconcileWorktreeArtifacts } from "../resume/reconcile-worktree.js";
 import { defaultSpawnFn, runSubprocess } from "../../util/git-exec.js";
 
 export interface ResumeOptions {
@@ -321,6 +322,23 @@ export class ResumeCommand extends CommandRunner {
           stderrWrite(`Hint: Use --apply-canon to commit these changes as an operator-apply commit, or discard them (git checkout HEAD -- <path>) before resuming.`);
           throw new PrepareError(1, "Protected canon paths are dirty; use --apply-canon or discard");
         }
+      }
+
+      // Reconcile worktree: quarantine and remove interrupted-attempt residue.
+      // Runs after the apply-canon gate (canon paths handled above) and before step start.
+      // Best-effort detection: git status failure → no-op (D7).
+      // Quarantine failure → fail-closed (evidence not lost, removal not attempted).
+      let reconcileResult;
+      try {
+        reconcileResult = await reconcileWorktreeArtifacts(resolvedSlug, resolvedWorktreePath, defaultSpawnFn);
+      } catch (err) {
+        logError(`Failed to reconcile worktree residue: ${(err as Error).message}`);
+        stderrWrite("Hint: interrupted-attempt residue was preserved and NOT removed. Check .specrunner/local/<slug>/ writability, then resume again.");
+        throw new PrepareError(1, "Failed to reconcile worktree residue (fail-closed)");
+      }
+      if (reconcileResult.reconciled.length > 0) {
+        logInfo(`[reconcile] quarantined + removed interrupted-attempt residue: ${reconcileResult.reconciled.join(", ")}` +
+          (reconcileResult.quarantineDir ? ` — 退避先: ${reconcileResult.quarantineDir}` : ""));
       }
     } else if (this.options.applyCanon) {
       // --apply-canon has no effect without a worktree — warn but continue.

@@ -4,16 +4,16 @@
 
 New module providing the pure classifier and the I/O orchestrator for worktree reconcile.
 
-- [ ] Create `src/core/resume/reconcile-worktree.ts`.
-- [ ] Export `interface ReconcileResult { reconciled: string[]; quarantineDir: string | null }`.
-- [ ] Export `isReconcilableArtifact(path: string, slug: string): boolean` (pure):
+- [x] Create `src/core/resume/reconcile-worktree.ts`.
+- [x] Export `interface ReconcileResult { reconciled: string[]; quarantineDir: string | null }`.
+- [x] Export `isReconcilableArtifact(path: string, slug: string): boolean` (pure):
   - Let `folder = changeFolderPath(slug)`.
   - Return `false` when `path !== folder && !path.startsWith(folder + "/")` (outside the change
     folder — src/ etc.; guard against same-prefix-different-dir like `specrunner/changes/<slug>-x/...`).
   - Return `false` when `protectedCanonPaths(slug)` includes `path` (protected canon).
   - Return `false` when `pipelineManagedPaths(slug)` includes `path` (state journal / managed).
   - Otherwise return `true` (reconcilable pipeline-managed artifact).
-- [ ] Export `reconcileWorktreeArtifacts(slug: string, worktreePath: string, spawnFn: SpawnFn): Promise<ReconcileResult>`:
+- [x] Export `reconcileWorktreeArtifacts(slug: string, worktreePath: string, spawnFn: SpawnFn): Promise<ReconcileResult>`:
   - Run `git status --porcelain -z --no-renames` via `runSubprocess(spawnFn, "git", [...], { cwd: worktreePath })`
     inside a `try`. If the call rejects (spawn failure), OR `exitCode !== 0`, **return the no-op
     result** `{ reconciled: [], quarantineDir: null }` (D7: detection is best-effort — a
@@ -39,14 +39,14 @@ New module providing the pure classifier and the I/O orchestrator for worktree r
     - `tracked` → `git checkout HEAD -- <paths>`
     Use `gitExecResult`; on `!ok || exitCode !== 0` throw an `Error` (fail-closed removal failure).
   - Return `{ reconciled: <reconcilable filePaths>, quarantineDir }`.
-- [ ] Imports:
+- [x] Imports:
   - `protectedCanonPaths` from `../step/write-scope.js`
   - `pipelineManagedPaths` from `../pipeline/round-git-scope.js`
   - `changeFolderPath`, `localSidecarDir` from `../../util/paths.js`
   - `runSubprocess`, `gitExec`, `gitExecResult`, `type SpawnFn` from `../../util/git-exec.js`
   - `mkdir`, `writeFile`, `readFile` from `node:fs/promises`; `join` from `node:path`
-- [ ] Do NOT import `defaultSpawnFn` — the caller injects it.
-- [ ] Do NOT modify `apply-canon.ts`, `write-scope.ts`, `round-git-scope.ts`, or `commit-push.ts`.
+- [x] Do NOT import `defaultSpawnFn` — the caller injects it.
+- [x] Do NOT modify `apply-canon.ts`, `write-scope.ts`, `round-git-scope.ts`, or `commit-push.ts`.
 
 **Acceptance Criteria**:
 - `isReconcilableArtifact` returns `true` only for change-folder paths that are neither in
@@ -62,7 +62,7 @@ New module providing the pure classifier and the I/O orchestrator for worktree r
 
 ## T-02: Wire reconcile into `ResumeCommand.prepare()`
 
-- [ ] In `src/core/command/resume.ts`, inside the existing
+- [x] In `src/core/command/resume.ts`, inside the existing
   `if (resolvedWorktreePath !== null && resolvedSlug !== null) { ... }` block, **after** the
   apply-canon gate logic and **before** the `else if (this.options.applyCanon)` branch, add the
   reconcile call:
@@ -80,9 +80,9 @@ New module providing the pure classifier and the I/O orchestrator for worktree r
       (reconcileResult.quarantineDir ? ` — 退避先: ${reconcileResult.quarantineDir}` : ""));
   }
   ```
-- [ ] Import `reconcileWorktreeArtifacts` from `../resume/reconcile-worktree.js` (`defaultSpawnFn`,
+- [x] Import `reconcileWorktreeArtifacts` from `../resume/reconcile-worktree.js` (`defaultSpawnFn`,
   `logError`, `logInfo`, `stderrWrite`, and `PrepareError` are already in scope).
-- [ ] Do NOT change the apply-canon gate block, the `--no-worktree` warning branch, or any
+- [x] Do NOT change the apply-canon gate block, the `--no-worktree` warning branch, or any
   other part of `prepare()`.
 
 **Acceptance Criteria**:
@@ -99,7 +99,7 @@ New module providing the pure classifier and the I/O orchestrator for worktree r
 
 ## T-03: Document the recovery contract in `docs/operations.md`
 
-- [ ] In `docs/operations.md`, under the `## 障害への耐性` section, add a subsection titled
+- [x] In `docs/operations.md`, under the `## 障害への耐性` section, add a subsection titled
   `### halt → resume の回復契約` that documents, on one page, the classification × processing ×
   timing contract as a table with the three classes:
   - **protected canon** (`protectedCanonPaths(slug)`) → apply-canon gate (`--apply-canon` /
@@ -108,9 +108,9 @@ New module providing the pure classifier and the I/O orchestrator for worktree r
     quarantine to `.specrunner/local/<slug>/` then remove; quarantine failure is fail-closed;
     after the apply-canon gate, before step start.
   - **non-managed path** (src/ etc., and the `pipelineManagedPaths` state journal) → no processing.
-- [ ] State explicitly that the state journal (`state.json` / `events.jsonl` / `usage.json`) is
+- [x] State explicitly that the state journal (`state.json` / `events.jsonl` / `usage.json`) is
   preserved because resume is actively writing it.
-- [ ] Keep it prose-minimal (docs/README.md placement principle: keep the file count minimal — add a
+- [x] Keep it prose-minimal (docs/README.md placement principle: keep the file count minimal — add a
   section, do not create a new file).
 
 **Acceptance Criteria**:
@@ -126,16 +126,16 @@ New module providing the pure classifier and the I/O orchestrator for worktree r
 Use the mocked `SpawnFn` harness pattern from `apply-canon.test.ts` for the orchestrator, and
 direct calls for the pure classifier.
 
-- [ ] **TC-U1**: `isReconcilableArtifact("specrunner/changes/<slug>/spec-review-result-002.md", slug)` → `true`.
-- [ ] **TC-U2**: `isReconcilableArtifact(p, slug)` → `false` for every path in `protectedCanonPaths(slug)`.
-- [ ] **TC-U3**: `isReconcilableArtifact(p, slug)` → `false` for every path in `pipelineManagedPaths(slug)`
+- [x] **TC-U1**: `isReconcilableArtifact("specrunner/changes/<slug>/spec-review-result-002.md", slug)` → `true`.
+- [x] **TC-U2**: `isReconcilableArtifact(p, slug)` → `false` for every path in `protectedCanonPaths(slug)`.
+- [x] **TC-U3**: `isReconcilableArtifact(p, slug)` → `false` for every path in `pipelineManagedPaths(slug)`
   (`state.json`, `events.jsonl`, `usage.json`, `bite-evidence-result.md`, `pr-create-result.md`).
-- [ ] **TC-U4**: `isReconcilableArtifact("src/foo.ts", slug)` → `false`.
-- [ ] **TC-U5**: `isReconcilableArtifact("specrunner/changes/<slug>-other/x.md", slug)` → `false`
+- [x] **TC-U4**: `isReconcilableArtifact("src/foo.ts", slug)` → `false`.
+- [x] **TC-U5**: `isReconcilableArtifact("specrunner/changes/<slug>-other/x.md", slug)` → `false`
   (same-prefix-different-directory is not under the change folder).
-- [ ] **TC-U6**: `reconcileWorktreeArtifacts` returns `{ reconciled: [], quarantineDir: null }` when the
+- [x] **TC-U6**: `reconcileWorktreeArtifacts` returns `{ reconciled: [], quarantineDir: null }` when the
   mocked `git status` returns empty output (clean worktree) — no quarantine/removal git calls made.
-- [ ] **TC-U7**: `reconcileWorktreeArtifacts` returns the no-op result (does NOT throw) when the mocked
+- [x] **TC-U7**: `reconcileWorktreeArtifacts` returns the no-op result (does NOT throw) when the mocked
   `git status` exits non-zero, and when the spawn rejects (D7 detection best-effort).
 
 **Acceptance Criteria**:
@@ -150,7 +150,7 @@ direct calls for the pure classifier.
 Use real git repos in `$TMPDIR` (no mocking of git operations), mirroring
 `operator-canon-apply-on-resume-e2e.test.ts`.
 
-- [ ] **TC-R1 (封鎖 / journal-observed scenario)**: reconcile clears interrupted residue and the
+- [x] **TC-R1 (封鎖 / journal-observed scenario)**: reconcile clears interrupted residue and the
   next step's write-set check passes.
   - Init a real repo; make an initial commit; create feature branch; commit a change folder with a
     prior `spec-review-result-001.md` (tracked, clean).
@@ -165,17 +165,17 @@ Use real git repos in `$TMPDIR` (no mocking of git operations), mirroring
     returns `[]` AND `findWriteScopeViolations("spec-review", slug, <post-reconcile worktree paths>, <declared>)`
     returns `[]` (the residue that previously halted is gone). Preferred: additionally drive a scoped
     `commitAndPush` for a spec-review step declaring iteration 003 and assert no `WRITE_SCOPE_VIOLATION`.
-- [ ] **TC-R2 (fail-closed on quarantine failure)**: with a reconcilable residue present, force the
+- [x] **TC-R2 (fail-closed on quarantine failure)**: with a reconcilable residue present, force the
   quarantine write to fail (e.g. pre-create `.specrunner/local/<slug>` as a regular **file** so
   `mkdir` under it fails). Assert `reconcileWorktreeArtifacts` throws AND the residue file is still
   present in the worktree (not removed).
-- [ ] **TC-R3 (idempotent no-op)**: a repo whose change folder is fully committed and clean.
+- [x] **TC-R3 (idempotent no-op)**: a repo whose change folder is fully committed and clean.
   Call `reconcileWorktreeArtifacts` → assert `{ reconciled: [], quarantineDir: null }`, no new files
   under `.specrunner/local/<slug>/`, and `git status` is unchanged before/after.
-- [ ] **TC-R4 (state journal + non-managed preserved)**: worktree with (a) untracked residue under
+- [x] **TC-R4 (state journal + non-managed preserved)**: worktree with (a) untracked residue under
   the change folder, (b) dirty `specrunner/changes/<slug>/state.json`, (c) dirty `src/foo.ts`.
   After reconcile: only (a) is removed; (b) and (c) remain dirty with unchanged content.
-- [ ] **TC-R5 (removal kinds)**: assert an untracked residue is removed via clean (absent afterward)
+- [x] **TC-R5 (removal kinds)**: assert an untracked residue is removed via clean (absent afterward)
   and a tracked-modified non-canon change-folder artifact (e.g. `verification-result.md`) is restored
   to its HEAD content.
 
@@ -191,18 +191,18 @@ Use real git repos in `$TMPDIR` (no mocking of git operations), mirroring
 Add `src/core/command/__tests__/resume-reconcile.test.ts` using the mock harness pattern from
 `resume-apply-canon.test.ts` (mock `../../resume/reconcile-worktree.js`).
 
-- [ ] **TC-I1**: default resume (clean canon) calls `reconcileWorktreeArtifacts` with the resolved
+- [x] **TC-I1**: default resume (clean canon) calls `reconcileWorktreeArtifacts` with the resolved
   slug and worktree path.
-- [ ] **TC-I2**: `--from <step>` resume also calls `reconcileWorktreeArtifacts` (not bypassed).
-- [ ] **TC-I3**: `--apply-canon` with dirty canon commits canon (mocked) and then still calls
+- [x] **TC-I2**: `--from <step>` resume also calls `reconcileWorktreeArtifacts` (not bypassed).
+- [x] **TC-I3**: `--apply-canon` with dirty canon commits canon (mocked) and then still calls
   `reconcileWorktreeArtifacts`.
-- [ ] **TC-I4**: when `reconcileWorktreeArtifacts` throws, `prepare()` throws `PrepareError` with
+- [x] **TC-I4**: when `reconcileWorktreeArtifacts` throws, `prepare()` throws `PrepareError` with
   exit code 1 and the step is not started.
-- [ ] **TC-I5**: `--no-worktree` mode (`resolvedWorktreePath` null) does NOT call
+- [x] **TC-I5**: `--no-worktree` mode (`resolvedWorktreePath` null) does NOT call
   `reconcileWorktreeArtifacts`.
-- [ ] **TC-I6**: dirty canon without `--apply-canon` throws at the apply-canon gate and
+- [x] **TC-I6**: dirty canon without `--apply-canon` throws at the apply-canon gate and
   `reconcileWorktreeArtifacts` is NOT called (canon gate precedence).
-- [ ] **TC-I7 (destruction confirmation)**: document inline that removing the reconcile call from
+- [x] **TC-I7 (destruction confirmation)**: document inline that removing the reconcile call from
   `prepare()` reinstates the residue-misattribution halt (TC-R1 regresses). Optionally implement as
   a sabotage assertion.
 
@@ -217,8 +217,8 @@ Add `src/core/command/__tests__/resume-reconcile.test.ts` using the mock harness
 Add a drift guard under `tests/unit/docs/` (e.g. `operations-recovery-contract.test.ts`) that reads
 `docs/operations.md` and asserts the recovery-contract subsection is present.
 
-- [ ] Assert the file contains the `halt → resume の回復契約` heading.
-- [ ] Assert it names all three classes (protected canon, pipeline-managed artifact, non-managed path)
+- [x] Assert the file contains the `halt → resume の回復契約` heading.
+- [x] Assert it names all three classes (protected canon, pipeline-managed artifact, non-managed path)
   and the `.specrunner/local/` quarantine destination.
 
 **Acceptance Criteria**:
@@ -229,7 +229,7 @@ Add a drift guard under `tests/unit/docs/` (e.g. `operations-recovery-contract.t
 
 ## T-08: Existing apply-canon tests remain green unchanged
 
-- [ ] Run `src/core/resume/__tests__/apply-canon.test.ts`,
+- [x] Run `src/core/resume/__tests__/apply-canon.test.ts`,
   `src/core/command/__tests__/resume-apply-canon.test.ts`, and
   `tests/operator-canon-apply-on-resume-e2e.test.ts` **without modification** and confirm they pass
   (the apply-canon gate is unchanged; reconcile no-ops on the fake worktree paths those tests use, per D7).
@@ -241,8 +241,8 @@ Add a drift guard under `tests/unit/docs/` (e.g. `operations-recovery-contract.t
 
 ## T-09: `typecheck && test` green
 
-- [ ] Run `bun run typecheck` — zero type errors.
-- [ ] Run `bun run test` — all tests pass (no regression in existing tests).
+- [x] Run `bun run typecheck` — zero type errors.
+- [x] Run `bun run test` — all tests pass (no regression in existing tests).
 
 **Acceptance Criteria**:
 - Both commands exit 0.

@@ -69,6 +69,20 @@ tick 内の起動は逐次（1 つの tick プロセスが pipeline を完走ま
 | セッション実行中のスリープ・回線断 | transient エラーとして上限つき自動リトライ。上限超過で escalation 通知 → `/resume` |
 | 実行プロセスの死（kill・クラッシュ） | 次の tick が孤児を検出し自動 resume。進捗のない再起動が続く場合は上限後に escalation |
 
+### halt → resume の回復契約
+
+step 実行中の停止（write-scope violation halt / crash / process kill）は worktree に未コミットの step 成果物を残すことがある。resume は単一の回復点として「一貫した開始状態の機械的確立」を契約にする。停止の態様によらず、resume が到達すれば以下の分類・処理が実行される（`--from` / `--apply-canon` 併用を含む全経路）。
+
+| クラス | 対象パスの例 | 処理 | 実行タイミング |
+|--------|-------------|------|--------------|
+| **protected canon** (`protectedCanonPaths(slug)`) | `spec.md`, `tasks.md`, `request.md`, `design.md`, `test-cases.md` | apply-canon gate が処理（`--apply-canon` で operator-apply commit、無指定なら fail-closed 停止） | reconcile より先に実行 |
+| **pipeline-managed artifact**（change folder 内かつ canon でも `pipelineManagedPaths` でもないパス） | `spec-review-result-NNN.md`, `conformance-result-NNN.md` 等の step 成果物 | `.specrunner/local/<slug>/` に quarantine 退避した上で worktree から除去。退避失敗は fail-closed（証拠を失わず停止、除去しない） | apply-canon gate 後、step 開始前 |
+| **non-managed path**（`src/` 等、および `pipelineManagedPaths` のジャーナル） | `src/foo.ts`, `state.json`, `events.jsonl`, `usage.json` | 処理しない（現状維持）。ジャーナルは resume が能動的に書き込み中のため保存される | — |
+
+**fail-closed on quarantine failure**: quarantine ディレクトリの作成またはファイル書き込みが失敗した場合、resume は停止し除去を行わない。`.specrunner/local/<slug>/` の書き込み権限を確認して再試行する。
+
+**検知のベストエフォート**: `git status` が失敗した場合（非 git ディレクトリ等）、reconcile は no-op として成功する。git 管理外のディレクトリには git 追跡の残骸は存在しないためこの挙動は安全である。
+
 ## スケジューリング例
 
 ### launchd (macOS)
