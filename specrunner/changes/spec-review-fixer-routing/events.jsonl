@@ -100,3 +100,10 @@
 {"type":"transition","ts":"2026-07-23T10:33:36.372Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-07-23T10:33:36.373Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-07-23T10:33:36.374Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-23T10:34:36.658Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"4c875b50-c9fd-4c2f-9da7-86eae072b1dc","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/spec-review-fixer-routing/regression-gate-result-002.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"evidence":{"checked":3,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-23T10:33:36.426Z","endedAt":"2026-07-23T10:34:35.158Z","commitOid":"c36ffe1837f4da5e43be307b2384edc32d70f7d6"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-23T10:34:35.158Z","outputs":[{"path":"specrunner/changes/spec-review-fixer-routing/regression-gate-result-002.md","hash":"sha256:b5247624261247e177d669147c512b40c7c8750859f0e564570c413d904cec10"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-23T10:34:36.663Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-23T10:34:36.663Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-23T10:34:36.664Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-07-23T10:34:36.665Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
