@@ -2,24 +2,24 @@
 
 ## T-01: Add the structural workflow-CI detection module
 
-- [ ] Create `src/core/archive/workflow-ci-detection.ts`.
-- [ ] Export an async detection function (suggested name `detectWorkflowCiPresence`)
+- [x] Create `src/core/archive/workflow-ci-detection.ts`.
+- [x] Export an async detection function (suggested name `detectWorkflowCiPresence`)
       taking `{ spawn: SpawnFn; cwd: string; ref: string }` and returning
       `{ present: boolean; reason: "trigger-match" | "no-workflows" | "no-trigger" | "inspection-failed" }`.
-- [ ] Enumerate workflow files with `spawn("git", ["ls-tree", ref, "--", ".github/workflows/"], { cwd })`
+- [x] Enumerate workflow files with `spawn("git", ["ls-tree", ref, "--", ".github/workflows/"], { cwd })`
       (non-recursive). Parse `<mode> blob <sha>\t<path>` lines; keep `blob` entries whose
       path ends in `.yml` / `.yaml`; skip `tree` entries.
-- [ ] `git ls-tree` exit ≠ 0 → return `{ present: true, reason: "inspection-failed" }` (fail-closed).
-- [ ] exit 0 with no matching workflow blobs → return `{ present: false, reason: "no-workflows" }`.
-- [ ] For each candidate blob, read its body with `spawn("git", ["cat-file", "-p", sha], { cwd })`.
+- [x] `git ls-tree` exit ≠ 0 → return `{ present: true, reason: "inspection-failed" }` (fail-closed).
+- [x] exit 0 with no matching workflow blobs → return `{ present: false, reason: "no-workflows" }`.
+- [x] For each candidate blob, read its body with `spawn("git", ["cat-file", "-p", sha], { cwd })`.
       Any read exit ≠ 0 → return `{ present: true, reason: "inspection-failed" }`.
-- [ ] Classify a body as CI-triggering when it contains a `push` or `pull_request`
+- [x] Classify a body as CI-triggering when it contains a `push` or `pull_request`
       trigger token, using a text-level matcher (no YAML parser). Bias the matcher to
       over-detect (false positives resolve to the waiting side); treat `pull_request`
       as a prefix so `pull_request_target` / `pull_request_review` also match.
       First matching body → `{ present: true, reason: "trigger-match" }`.
-- [ ] Workflows exist but none matched → `{ present: false, reason: "no-trigger" }`.
-- [ ] The module MUST NOT import the GitHub client or the archive orchestrator, and
+- [x] Workflows exist but none matched → `{ present: false, reason: "no-trigger" }`.
+- [x] The module MUST NOT import the GitHub client or the archive orchestrator, and
       MUST NOT add any package dependency.
 
 **Acceptance Criteria**:
@@ -36,20 +36,20 @@
 
 ## T-02: Gate the `"none"`-grace merge on structural CI presence in `merge-then-archive.ts`
 
-- [ ] In `runMergeThenArchive`, add a cached CI-presence variable (computed once,
+- [x] In `runMergeThenArchive`, add a cached CI-presence variable (computed once,
       reused across poll iterations) alongside `noneGraceStart` (near line 450).
-- [ ] In the `rollup.state === "none"` branch, keep the existing `isBlocked`
+- [x] In the `rollup.state === "none"` branch, keep the existing `isBlocked`
       branch-protection escalation and the grace-still-running wait unchanged. Only at
       grace-exhausted **and not** `isBlocked`, resolve CI presence:
       if `archiveSha === undefined` → treat as CI-present (fail-closed, D5);
       otherwise call the T-01 detector with `{ spawn, cwd: recordDir, ref: archiveSha }`.
-- [ ] CI-less (`present === false`) → preserve today's behavior: emit the CI-less
+- [x] CI-less (`present === false`) → preserve today's behavior: emit the CI-less
       "Assuming CI-less repo; proceeding to merge..." log and `break` to merge.
-- [ ] CI-present (`present === true`) → do not merge; bound the continued wait by the
+- [x] CI-present (`present === true`) → do not merge; bound the continued wait by the
       overall deadline: if `effectiveTimeoutMs !== null` and `nowFn() - start >=
       effectiveTimeoutMs`, return a merge-gate escalation (see T-03); otherwise
       `sleepFn(pollIntervalMs)` and `continue` (same shape as the pending path).
-- [ ] Use the injected `spawn` (not the transport-auth-wrapped spawn); detection is a
+- [x] Use the injected `spawn` (not the transport-auth-wrapped spawn); detection is a
       read-only local inspection.
 
 **Acceptance Criteria**:
@@ -62,13 +62,13 @@
 
 ## T-03: Fail-closed timeout escalation for the CI-present `"none"` path
 
-- [ ] When CI is present and the rollup remains `"none"` until `mergeWaitTimeoutMs`
+- [x] When CI is present and the rollup remains `"none"` until `mergeWaitTimeoutMs`
       is exceeded, return an `exitCode: 1` escalation built with `formatEscalation`,
       distinct from the pending-timeout message. It MUST state that a
       `push` / `pull_request` workflow is present but no checks appeared within the
       timeout, that the PR was **not** merged (fail-closed), and provide the
       `specrunner job archive --with-merge <slug>` resume command.
-- [ ] Emit an informative "waiting" log for the CI-present `"none"` iterations that
+- [x] Emit an informative "waiting" log for the CI-present `"none"` iterations that
       distinguishes it from both the CI-less assumption and the pending wait.
 
 **Acceptance Criteria**:
@@ -78,10 +78,10 @@
 
 ## T-04: Tests fixing the three acceptance behaviors and the CI-less regression
 
-- [ ] Unit tests for `workflow-ci-detection.ts` using a keyed fake `SpawnFn`
+- [x] Unit tests for `workflow-ci-detection.ts` using a keyed fake `SpawnFn`
       (dispatch on `git ls-tree` / `git cat-file`), covering: trigger-match,
       no-workflows, no-trigger (schedule-only), and inspection-failed.
-- [ ] In `src/core/archive/__tests__/merge-then-archive.test.ts`, add wait-loop tests
+- [x] In `src/core/archive/__tests__/merge-then-archive.test.ts`, add wait-loop tests
       driving `getCheckStatus` → `"none"` with a keyed `spawn` that returns workflow
       fixtures, asserting:
       (a) push/pull_request workflow → past grace → no merge → `mergeWaitTimeoutMs`
@@ -97,7 +97,7 @@
       `headSha: undefined`) → detector is not invoked (`git ls-tree` spawn count 0)
       → treated as CI-present → past grace → no merge → `mergeWaitTimeoutMs`
       exceeded → escalation (spec.md Scenario 4 case A, D5 fail-closed path).
-- [ ] Ensure the existing merge-then-archive tests remain green: the default fake
+- [x] Ensure the existing merge-then-archive tests remain green: the default fake
       `spawn` (empty `git ls-tree` output) yields `no-workflows` → CI-less, so the
       current `"none"` → merge regression (TBG-05) still holds.
 
@@ -113,9 +113,9 @@
 
 ## T-05: Dependency and verification gate
 
-- [ ] Confirm `package.json` `dependencies` are unchanged (no YAML parser or other
+- [x] Confirm `package.json` `dependencies` are unchanged (no YAML parser or other
       package added).
-- [ ] `bun run typecheck` and `bun run test` are green.
+- [x] `bun run typecheck` and `bun run test` are green.
 
 **Acceptance Criteria**:
 - `git diff` shows no change to `package.json` `dependencies`.

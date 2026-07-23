@@ -37,6 +37,8 @@ import type { AssuranceProvenanceRuntime } from "./achieved-assurance.js";
 import type { ArchiveResult } from "./orchestrator.js";
 import { runPostMergeCleanup } from "./post-merge-cleanup.js";
 import { runPostMergeIntegrityCheck } from "./post-merge-integrity.js";
+import { detectWorkflowCiPresence } from "./workflow-ci-detection.js";
+import type { CiPresenceResult } from "./workflow-ci-detection.js";
 import { formatEscalation } from "../finish/escalation.js";
 import { logResult, stderrWrite } from "../../logger/stdout.js";
 import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS } from "../../config/schema.js";
@@ -450,6 +452,13 @@ export async function runMergeThenArchive(
   let noneGraceStart: number | null = null;
   /** Set-once timestamp (ms) of the first "success+BLOCKED" observation. Never reset. */
   let blockedGraceStart: number | null = null;
+  /**
+   * Cached result of structural CI-presence detection (computed once, reused across
+   * poll iterations). undefined = not yet determined. Detection is performed only on
+   * the grace-exhausted, non-BLOCKED "none" path. D5: archiveSha undefined → skips
+   * detection entirely and treats the repo as CI-present (fail-closed).
+   */
+  let cachedCiPresence: CiPresenceResult | undefined;
 
   stdoutWrite(`Waiting for PR #${prNumber} checks to resolve...`);
 
@@ -618,11 +627,48 @@ export async function runMergeThenArchive(
           // No checks appeared and PR is still BLOCKED — a non-check branch-protection requirement is unmet.
           return blockedAfterChecksEscalation(slug, "no checks");
         }
-        // Grace period exhausted: no CI on this repo — proceed to merge.
+
+        // Compute CI presence structurally once and cache the result across poll
+        // iterations. D5: archiveSha undefined → skip detection → treat as CI-present
+        // (fail-closed; the archive commit SHA is required for local git inspection).
+        if (cachedCiPresence === undefined) {
+          if (archiveSha === undefined) {
+            cachedCiPresence = { present: true, reason: "inspection-failed" };
+          } else {
+            cachedCiPresence = await detectWorkflowCiPresence({ spawn, cwd: recordDir, ref: archiveSha });
+          }
+        }
+
+        if (!cachedCiPresence.present) {
+          // CI-less repo (no workflow with push/pull_request trigger): preserve today's behavior.
+          stdoutWrite(
+            `PR #${prNumber} no checks appeared after ${NONE_CHECK_GRACE_MS / 1000}s. Assuming CI-less repo; proceeding to merge...`,
+          );
+          break;
+        }
+
+        // CI-present: fail-closed — do not merge; wait for the overall deadline.
+        if (effectiveTimeoutMs !== null && nowFn() - start >= effectiveTimeoutMs) {
+          return {
+            exitCode: 1,
+            escalation: formatEscalation({
+              failedStep: "merge gate (CI-present: no checks appeared)",
+              detectedState:
+                `A push/pull_request workflow is present in this repository but no checks appeared ` +
+                `on PR #${prNumber} within the timeout. The PR was not merged (fail-closed).`,
+              recommendedAction:
+                `Wait for CI checks to appear on the PR, then re-run: specrunner job archive --with-merge ${slug}`,
+              resumeCommand: `specrunner job archive --with-merge ${slug}`,
+            }),
+          };
+        }
+
         stdoutWrite(
-          `PR #${prNumber} no checks appeared after ${NONE_CHECK_GRACE_MS / 1000}s. Assuming CI-less repo; proceeding to merge...`,
+          `PR #${prNumber} CI-present (push/pull_request workflow detected) but no checks yet after ` +
+          `${Math.round(elapsed / 1000)}s. Waiting ${pollIntervalMs / 1000}s...`,
         );
-        break;
+        await sleepFn(pollIntervalMs);
+        continue;
       }
       // Grace still running: wait for checks to appear.
       stdoutWrite(
