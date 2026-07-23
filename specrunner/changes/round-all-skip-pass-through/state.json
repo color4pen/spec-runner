@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9141b6e6-fd3b-40a1-8b2c-c0270fb9d9ab",
   "createdAt": "2026-07-23T10:56:38.330Z",
-  "updatedAt": "2026-07-23T11:55:50.535Z",
+  "updatedAt": "2026-07-23T12:03:02.793Z",
   "request": {
     "title": "custom reviewer round の全員 skip をエラーでなく構造的 skip として通す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/round-all-skip-pass-through-9141b6e6",
   "error": null,
@@ -71,10 +71,42 @@
     "99b7021ba6df0d2981263665031278578c8f7ed7",
     "9a2fab0a5ee042cfd4a0e4938b25cf77e43560c1",
     "40f76f45505c4d305a42269d074f7f07d87ad52d",
-    "4c82b22523a7b1fd714faeb36309f5bc3bd8dbce"
+    "4c82b22523a7b1fd714faeb36309f5bc3bd8dbce",
+    "8c97845a0d37a2ef5a8b5ed8a501c59dc84b0772",
+    "11840e2548f99ca09e1edb15f7d4d0817597ac06"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "8c97845a0d37a2ef5a8b5ed8a501c59dc84b0772",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/round-all-skip-pass-through/design.md:sha256:d000b92939a3b3ad4ae1ed7ff6fae22b7ae78e25c9b73a477b65b70e555e791e|specrunner/changes/round-all-skip-pass-through/request.md:sha256:751cd6da817641ff19dbe31e7f780f710090443070cd13e7256ab89143874ba0|specrunner/changes/round-all-skip-pass-through/spec.md:sha256:67887b3c5aad777724649ed2a2bdbc8bb7246f3f98c55f8fa8bdb729555077b8|specrunner/changes/round-all-skip-pass-through/tasks.md:sha256:bf008a7dd928be04ed824c66757ab579d6a0bfa2a8f9477405164e2f542b06ff|specrunner/changes/round-all-skip-pass-through/test-cases.md:sha256:cf044c6a6ee0815950ba8aba2635f6c13935d17fd6df2403627c6eb23d6ef49f"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 35,
+    "historyCount": 46,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -84,7 +116,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
