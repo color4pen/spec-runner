@@ -64,7 +64,7 @@ import { LocalRuntime } from "../../../../src/core/runtime/local.js";
 import { JobStateStore, buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import { CommandRunner } from "../../../../src/core/command/runner.js";
 import type { PrepareResult } from "../../../../src/core/command/runner.js";
-import type { RuntimeStrategy, WorkspaceContext, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
+import type { RuntimeStrategy, CleanupHandle } from "../../../../src/core/port/runtime-strategy.js";
 import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import { verifyEgressLedger } from "../../../../src/core/step/commit-push.js";

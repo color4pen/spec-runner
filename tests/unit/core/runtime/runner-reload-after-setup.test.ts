@@ -185,29 +185,6 @@ function buildRuntimeWithRejectingReload(reloadError = new Error("store unreadab
   return runtime as RuntimeStrategy;
 }
 
-/** Build a full RuntimeStrategy mock with reloadJobState returning a sentinel state. */
-function buildRuntimeWithSentinelReload(sentinelState: Partial<JobState> = {}) {
-  const base = buildRuntimeWithRejectingReload(new Error("unused"));
-  const sentinelJobState: JobState = {
-    version: 1,
-    jobId: "test-job-id",
-    createdAt: "2026-01-01",
-    updatedAt: "2026-01-01",
-    request: { path: "/req.md", title: "Test", type: "new-feature", slug: "test-slug" },
-    repository: { owner: "testowner", name: "testrepo" },
-    session: null,
-    step: "pr-create" as const,
-    status: "awaiting-archive" as const,
-    branch: "feat/test",
-    history: [],
-    error: null,
-    ...sentinelState,
-  };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (base as any).reloadJobState = vi.fn().mockResolvedValue(sentinelJobState);
-  return base;
-}
-
 /** Minimal CommandRunner subclass for testing. */
 class TestCommand extends CommandRunner {
   constructor(
