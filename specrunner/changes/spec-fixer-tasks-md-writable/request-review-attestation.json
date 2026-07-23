@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:85e4809fe739c8ae1659c88b77ba1fab5e1adb52bc5f79aede44e6ef68ceaf8e",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/spec-fixer.ts:99-105 — writes() returns [{design.md}, {spec.md}] only",
+    "src/core/step/canon-write-scope.ts:45-52 — D5 map spec-fixer entry is {spec.md, design.md}",
+    "tests/unit/core/step/canon-write-scope.test.ts TC-019 — spec-fixer writable = {spec.md, design.md}, tasks.md excluded",
+    "tests/unit/core/step/canon-write-scope.test.ts TC-029 — drift-guard validates writes() ∩ protectedCanonPaths matches D5 map",
+    "src/core/step/judge-verdict.ts — deriveSpecReviewVerdict uses canonScope + specReviewEffectiveFixer for routable/unroutable classification",
+    "src/core/step/spec-fixer.ts:135 — conformance entry prompt reads 'fix the spec.md or design.md artifact'",
+    "src/core/step/__tests__/spec-review-fixer-routing.test.ts TC-013 — tasks.md fixable finding expects escalation (lines 921-936)",
+    "src/core/step/judge-verdict.ts:148-167 — deriveConformanceVerdict uses conformanceEffectiveFixer (note: request.md cites lines 100-119 but actual location is 148-167; substance is correct)",
+    "src/prompts/spec-fixer-system.ts:24 — system prompt write-set limited to spec.md / design.md (update target)"
+  ],
+  "sourceRevision": "c0a5c4eb62ff477f87d88a4594b2d842979c3b80"
+}
