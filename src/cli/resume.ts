@@ -36,6 +36,8 @@ export interface ResumeOptions {
   prompt?: string;
   json?: boolean;
   noWorktree?: boolean;
+  /** When true, commit dirty protected canon paths as an operator-apply commit before resuming. */
+  applyCanon?: boolean;
 }
 
 export async function runResumeCore(slug: string, options: ResumeOptions): Promise<number> {
@@ -66,7 +68,7 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
     heartbeatIntervalSec: resolveHeartbeatInterval(config),
   });
   try {
-    return await new ResumeCommand(runtime, events, slug, { ...options, noWorktree: options.noWorktree }).execute();
+    return await new ResumeCommand(runtime, events, slug, { ...options, noWorktree: options.noWorktree, applyCanon: options.applyCanon }).execute();
   } catch (err) {
     logError((err as Error).message);
     return 1;

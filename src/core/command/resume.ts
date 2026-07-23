@@ -14,6 +14,7 @@ import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
 import { logInfo, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
 import { SpecRunnerError, worktreeGuardError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
+import { appendSynthesizedCommit } from "../../state/schema.js";
 import { toStepName } from "../step/step-names.js";
 import { parseRequestMd } from "../../parser/request-md.js";
 import { resolveJobStateBySlug } from "../resume/resolve-job.js";
@@ -27,6 +28,8 @@ import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
+import { detectCanonDirtyPaths, commitOperatorCanon } from "../resume/apply-canon.js";
+import { defaultSpawnFn } from "../../util/git-exec.js";
 
 export interface ResumeOptions {
   from?: string;
@@ -36,6 +39,8 @@ export interface ResumeOptions {
   prompt?: string;
   json?: boolean;
   noWorktree?: boolean;
+  /** When true, commit dirty protected canon paths as an operator-apply commit before resuming. */
+  applyCanon?: boolean;
 }
 
 /**
@@ -199,6 +204,7 @@ export class ResumeCommand extends CommandRunner {
 
     // State preparation: transition to "running"
     let updatedState: JobState;
+    let runStore: JobStateStore | null = null;
     try {
       const { state: transitioned } = transitionJob(state, "running", {
         trigger: "resume",
@@ -207,11 +213,15 @@ export class ResumeCommand extends CommandRunner {
       });
       if (this.options.noWorktree) {
         // no-worktree mode: state.json lives in cwd (no worktree path to find)
+        // Do NOT capture runStore here — no-worktree uses a dedicated store for initial persist only.
+        // Prefer resolveStateStoreByJobId (sidecar lookup; also works in mocked test environments);
+        // fall back to direct construction when no sidecar entry exists (real no-worktree usage).
         const slug = getJobSlug(transitioned) ?? this.slug;
-        const runStore = new JobStateStore(transitioned.jobId, cwd, { slug, stateRoot: cwd });
-        await runStore.persist(transitioned);
+        const noWorktreeStore = await resolveStateStoreByJobId(cwd, transitioned.jobId)
+          ?? new JobStateStore(transitioned.jobId, cwd, { slug, stateRoot: cwd });
+        await noWorktreeStore.persist(transitioned);
       } else {
-        const runStore = await resolveStateStoreByJobId(cwd, state.jobId);
+        runStore = await resolveStateStoreByJobId(cwd, state.jobId);
         if (runStore) await runStore.persist(transitioned);
       }
       updatedState = transitioned;
@@ -253,6 +263,48 @@ export class ResumeCommand extends CommandRunner {
       } catch {
         // No sidecar or mismatch — will create a new worktree on resume
       }
+    }
+
+    // Apply-canon gate: check for dirty protected canon paths before starting the step.
+    // Only runs when a worktree is available (resolvedWorktreePath non-null) and the slug is known.
+    if (resolvedWorktreePath !== null && resolvedSlug !== null) {
+      let dirtyCanonPaths: string[] = [];
+      try {
+        dirtyCanonPaths = await detectCanonDirtyPaths(resolvedSlug, resolvedWorktreePath, defaultSpawnFn);
+      } catch (err) {
+        const msg = (err as Error).message ?? "";
+        if (msg.includes("exit 128")) {
+          // worktreePath is not inside a git repository (e.g. a test or in-development environment).
+          // A non-git directory cannot have git-dirty files; treat as clean and continue.
+        } else {
+          logError(`Failed to detect dirty canon paths: ${msg}`);
+          stderrWrite("Hint: Use --apply-canon to commit protected canon changes as an operator-apply commit, or discard them (git checkout HEAD -- <path>) before resuming.");
+          throw new PrepareError(1, "Failed to detect dirty canon paths (fail-closed)");
+        }
+      }
+
+      if (dirtyCanonPaths.length > 0) {
+        if (this.options.applyCanon) {
+          // Commit dirty canon paths as an operator-apply commit and record OID in ledger.
+          try {
+            const oid = await commitOperatorCanon(resolvedSlug, resolvedWorktreePath, dirtyCanonPaths, defaultSpawnFn);
+            updatedState = appendSynthesizedCommit(updatedState, oid);
+            if (runStore) await runStore.persist(updatedState);
+            logInfo(`[apply-canon] operator-apply commit ${oid} (paths: ${dirtyCanonPaths.join(", ")})`);
+          } catch (err) {
+            logError(`Failed to create operator-apply commit: ${(err as Error).message}`);
+            throw new PrepareError(1, "Failed to create operator-apply commit");
+          }
+        } else {
+          // fail-closed: do not start the step; require operator to make an explicit choice.
+          logError(`Protected canon paths are dirty in the worktree: ${dirtyCanonPaths.join(", ")}`);
+          stderrWrite(`Hint: Use --apply-canon to commit these changes as an operator-apply commit, or discard them (git checkout HEAD -- <path>) before resuming.`);
+          throw new PrepareError(1, "Protected canon paths are dirty; use --apply-canon or discard");
+        }
+      }
+    } else if (this.options.applyCanon) {
+      // --apply-canon has no effect without a worktree — warn but continue.
+      stderrWrite("Warning: --apply-canon has no effect without a worktree (no-worktree mode or worktree not found). Continuing normally.");
     }
 
     return {
