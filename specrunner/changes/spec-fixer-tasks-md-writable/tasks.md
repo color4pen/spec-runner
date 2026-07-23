@@ -10,6 +10,11 @@
 - [ ] Update the doc comments in `canon-write-scope.ts` that quote the spec-fixer set (the
       "Single source of truth" block and the `writableByFixer` block) to read
       `{spec.md, design.md, tasks.md}`.
+- [ ] Update the `deriveSpecReviewVerdict` JSDoc in `src/core/step/judge-verdict.ts`, which
+      currently states that fixable findings on canon files spec-fixer cannot write
+      "(request.md, tasks.md, etc.)" remain escalation — remove `tasks.md` from that
+      enumeration and name it among the spec-fixer-writable files (spec.md, design.md,
+      tasks.md). Comment-only change; no behavior change in this file.
 - [ ] Do NOT change the `code-fixer` (∅) or `implementer` (`{tasks.md}`) entries.
 
 **Acceptance Criteria**:
