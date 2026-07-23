@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.3...specrunner-v0.4.4) (2026-07-23)
+
+
+### Bug Fixes
+
+* canon escalation の operator 適用を resume が第一級で受け付ける — 編集の破棄と手順欠落を解消する ([#905](https://github.com/color4pen/spec-runner/issues/905)) ([7bf3665](https://github.com/color4pen/spec-runner/commit/7bf36654d0c9782cbfa2a20d27ff7598c5fff9d6))
+
 ## [0.4.3](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.2...specrunner-v0.4.3) (2026-07-23)
 
 
