@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "02f1c48b-d37b-4d5e-a3fc-42d2a9a17a2d",
   "createdAt": "2026-07-23T14:40:54.462Z",
-  "updatedAt": "2026-07-23T15:11:06.527Z",
+  "updatedAt": "2026-07-23T15:13:15.871Z",
   "request": {
     "title": "既存テストによる must TC 充足をトレーサビリティコメントで正規に表明できるようにする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/test-materialize-existing-coverage-02f1c48b",
   "error": null,
@@ -68,16 +68,18 @@
     "2237a09acc2b526a44c516dfd32439b167bf24f3",
     "eef08ee7313ae420143e1d109a632488239ec1d3",
     "58cb0ec6e25cab39849aab090deffdbbe8de2b83",
-    "57288678398fa2748282ed89bcfbef1e7d9e0d5a"
+    "57288678398fa2748282ed89bcfbef1e7d9e0d5a",
+    "d6a6ddda1ac37d1e798255897cf07854781d9386"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 22,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 2
+      "spec-review": 2,
+      "test-case-gen": 1
     }
   }
 }
