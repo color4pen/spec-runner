@@ -319,11 +319,15 @@ describe("TC-CR-007: awaiting-merge without pullRequest outputs branch line only
 });
 
 // TC-CR-008: worktreePath from setupWorkspace is reflected in jobState passed to pipeline
+// (via reloadJobState — the store carries worktreePath written by setupWorkspace)
 describe("TC-CR-008: worktreePath from workspace is reflected in jobState passed to pipeline", () => {
   it("pipeline receives jobState with worktreePath set by setupWorkspace", async () => {
     const runtime = buildMockRuntime();
     // Override setupWorkspace to return a workspace with worktreePath
     (runtime.setupWorkspace as ReturnType<typeof vi.fn>).mockResolvedValue(WORKTREE_WORKSPACE);
+    // Override reloadJobState: simulates store reload that carries worktreePath from setupWorkspace
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (runtime as any).reloadJobState = vi.fn().mockResolvedValue(buildJobState({ worktreePath: "/worktree" }));
 
     const command = new TestCommand(runtime, buildPrepareResult());
 

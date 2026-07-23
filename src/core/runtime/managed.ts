@@ -579,6 +579,19 @@ export class ManagedRuntime implements RealRuntimeStrategy {
     return false;
   }
 
+  /**
+   * Managed runtime: reload not verified for this store topology. See separate request.
+   *
+   * fail-closed: throws to prevent pipeline start until managed runtime store safety
+   * is confirmed in a separate request (D3 / T-03 choice).
+   * The optional-chaining call in runner.ts uses `?.`, so if this method were absent
+   * the fallback would be used — but RealRuntimeStrategy requires it, so it must be
+   * present. The safest production behavior for managed is to throw.
+   */
+  async reloadJobState(_jobId: string, _slug: string, _workspace: import("../port/runtime-strategy.js").WorkspaceContext): Promise<JobState> {
+    throw new Error("reloadJobState not implemented for managed runtime");
+  }
+
   /** Out of scope for the duplicate-live-job guard (managed uses marker.json). No-op. */
   async assertNoDuplicateLiveJob(_repoRoot: string, _slug: string): Promise<void> {
     // no-op
