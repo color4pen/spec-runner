@@ -112,6 +112,15 @@ tasks.md fix to it converges in-pipeline regardless of which round surfaced the 
 - Rationale: the request explicitly notes the conformance `needs-fix:spec-fixer` routing
   "naturally follows the write-set expansion". Suppressing this to preserve the old
   conformance behavior would reintroduce the special-casing D1 rejects.
+- Consequence (FAST pipeline): `FAST_TRANSITIONS` intentionally has no
+  `needs-fix:spec-fixer` row, so a fixable conformance finding on tasks.md with
+  `fixTarget: spec-fixer` now derives `needs-fix:spec-fixer` and falls through the
+  no-matching-transition default to the `escalate` terminal. Unlike the previous
+  unroutable-canon escalation, this path does NOT set `escalationReason` (the verdict at
+  derivation time is `needs-fix:spec-fixer`, not `escalation`). The FAST profile still
+  fails closed — the job halts — but the operator sees a plain escalation without a
+  CANON_FINDING_ESCALATION reason. This behavior is pinned by a FAST-profile test so the
+  reason-less halt is a documented contract, not an accident.
 - Consequence: the existing conformance-path test that asserted "tasks.md + fixTarget
   spec-fixer → escalation" changes to `needs-fix:spec-fixer` and is enumerated in
   implementation-notes.
