@@ -235,16 +235,23 @@ describe('TC-021: `src/` に裸の `git add -A` が存在しない', () => {
     ).toHaveLength(0);
   });
 
-  it('src/core/step/ 配下の全 .ts ファイルに pathspec なし git add -A が存在しない', () => {
-    // Broader check: no bare add -A in any step file.
-    // TC-031 destruction confirmation: reverting to bare add -A will make this test FAIL.
+  it('src/ 配下の全 .ts ファイルに pathspec なし git add -A が存在しない (再帰・全域)', () => {
+    // Recursive whole-src check (mirrors the F-012 bare-commit walker). The former
+    // scan covered only src/core/step/, leaving other directories as a blind spot —
+    // exploited in practice by a bare `git add -A` in src/core/resume/apply-canon.ts
+    // (cross-boundary Finding 1: index-pollution laundering via later guarded sweep).
+    // TC-031 destruction confirmation: reverting any add to bare -A makes this FAIL.
 
-    const stepDir = path.join(ROOT, "src/core/step");
-    if (!existsSync(stepDir)) return;
+    const srcDir = path.join(ROOT, "src");
+    if (!existsSync(srcDir)) return;
 
-    const tsFiles = (readdirSync(stepDir) as string[])
+    const entries = readdirSync(srcDir, { recursive: true }) as string[];
+    const tsFiles = entries
       .filter((f) => f.endsWith(".ts"))
-      .map((f) => path.join(stepDir, f));
+      // Test fixtures create commits in throwaway repos — the invariant targets
+      // production staging paths only.
+      .filter((f) => !f.includes("__tests__") && !f.endsWith(".test.ts"))
+      .map((f) => path.join(srcDir, f));
 
     const violations: string[] = [];
     for (const filePath of tsFiles) {
@@ -253,15 +260,15 @@ describe('TC-021: `src/` に裸の `git add -A` が存在しない', () => {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         if (line.includes('"add"') && line.includes('"-A"') && !line.includes('"--"')) {
-          violations.push(`${path.basename(filePath)}:${i + 1}: ${line.trim()}`);
+          violations.push(`${path.relative(ROOT, filePath)}:${i + 1}: ${line.trim()}`);
         }
       }
     }
 
     expect(
       violations,
-      `Bare 'git add -A' found in src/core/step/ files:\n${violations.join("\n")}\n` +
-      "(TC-021: all bare add -A must be replaced with explicit pathspec staging — RED until T-04/T-05)",
+      `Bare 'git add -A' found in src/:\n${violations.join("\n")}\n` +
+      "(TC-021: all bare add -A must be replaced with explicit pathspec staging)",
     ).toHaveLength(0);
   });
 });

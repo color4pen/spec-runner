@@ -29,7 +29,7 @@ import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 import { detectCanonDirtyPaths, commitOperatorCanon } from "../resume/apply-canon.js";
-import { defaultSpawnFn } from "../../util/git-exec.js";
+import { defaultSpawnFn, runSubprocess } from "../../util/git-exec.js";
 
 export interface ResumeOptions {
   from?: string;
@@ -286,12 +286,32 @@ export class ResumeCommand extends CommandRunner {
       if (dirtyCanonPaths.length > 0) {
         if (this.options.applyCanon) {
           // Commit dirty canon paths as an operator-apply commit and record OID in ledger.
+          let committedOid: string | null = null;
           try {
             const oid = await commitOperatorCanon(resolvedSlug, resolvedWorktreePath, dirtyCanonPaths, defaultSpawnFn);
+            committedOid = oid;
             updatedState = appendSynthesizedCommit(updatedState, oid);
             if (runStore) await runStore.persist(updatedState);
             logInfo(`[apply-canon] operator-apply commit ${oid} (paths: ${dirtyCanonPaths.join(", ")})`);
           } catch (err) {
+            // Split-brain guard (cross-boundary Finding 3): if the commit was created but
+            // the ledger persist failed, an OID would exist in git history without a ledger
+            // entry — the next resume would see clean canon, skip this gate, and the step's
+            // egress check would halt with EGRESS_UNKNOWN_COMMIT (recoverable only via the
+            // manual-push tribal knowledge this feature removes). Roll the commit back with
+            // a mixed reset: the operator's canon edits return to the worktree as dirty
+            // files, and the retry re-runs this gate from a consistent state.
+            if (committedOid !== null) {
+              const resetResult = await runSubprocess(defaultSpawnFn, "git", ["reset", "--mixed", "HEAD~1"], { cwd: resolvedWorktreePath });
+              if (resetResult.exitCode !== 0) {
+                logError(
+                  `Failed to roll back operator-apply commit ${committedOid} after persist failure ` +
+                  `(git reset exit ${resetResult.exitCode}). Manual recovery: push the branch, then resume.`,
+                );
+              } else {
+                logInfo(`[apply-canon] rolled back operator-apply commit ${committedOid}; canon edits preserved in worktree — retry resume --apply-canon`);
+              }
+            }
             logError(`Failed to create operator-apply commit: ${(err as Error).message}`);
             throw new PrepareError(1, "Failed to create operator-apply commit");
           }

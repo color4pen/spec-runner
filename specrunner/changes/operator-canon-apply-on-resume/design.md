@@ -189,6 +189,14 @@ the OID. This avoids a second `resolveStateStoreByJobId` call.
   with no process; stale-detection recovers it on next resume.
   Mitigation: clear error message; stale-detection already handles orphaned
   "running" jobs.
+- [Risk] **Split-brain: commit 成功 + ledger persist 失敗**（cross-boundary Finding 3）。
+  OID が git 歴史にのみ存在すると、次回 resume は正典 clean と判定して gate を素通りし、
+  step の egress 照合が EGRESS_UNKNOWN_COMMIT で halt する（回復が手 push という
+  本 request が廃止する運用への逆戻り）。
+  Mitigation: persist 失敗を検出したら **operator-apply commit を `git reset --mixed HEAD~1`
+  で巻き戻す**。operator の正典編集は dirty として worktree に戻り、再実行時に gate が
+  一貫した状態から再試行できる。reset 自体も失敗した二重障害時のみ、手 push による
+  回復手順をエラーメッセージで明示する。
 - [Risk] `--apply-canon` does not verify whether the worktree changes relate
   to the `CANON_FINDING_ESCALATION` (the operator could run it on an
   unrelated dirty worktree).

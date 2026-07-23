@@ -92,7 +92,7 @@ export async function detectCanonDirtyPaths(
  * Create an operator-apply commit containing only the specified protected canon paths.
  *
  * Steps:
- *   1. `git add -A` — stage everything; non-canon files remain staged but are not committed.
+ *   1. `git add -A -- <paths>` — stage only the canon paths (pathspec-limited; never bare -A).
  *   2. `git commit -m "operator-apply: <slug>" -- <paths>` — commit only the specified canon paths.
  *   3. `git rev-parse HEAD` — retrieve the new commit OID.
  *
@@ -110,14 +110,15 @@ export async function commitOperatorCanon(
   paths: string[],
   spawnFn: SpawnFn,
 ): Promise<string> {
-  // Step 1: git add -A — stage everything (including non-canon files) so that git can
-  // see canon paths even when they live in a completely untracked directory.
-  // Non-canon files remain staged after the commit, making them visible as individual
-  // entries (e.g. `A  src/feature.ts`) rather than collapsed directory entries.
+  // Step 1: git add -A -- <paths> — stage ONLY the canon paths (explicit pathspec;
+  // -A within the pathspec also stages deletions/untracked for the listed paths).
+  // A bare `git add -A` would stage unrelated non-canon files into the index, where
+  // scoped steps leave them undetected and the first guarded step sweeps them into
+  // its own commit (index-pollution laundering — cross-boundary Finding 1).
   const addResult = await runSubprocess(
     spawnFn,
     "git",
-    ["add", "-A"],
+    ["add", "-A", "--", ...paths],
     { cwd: worktreePath },
   );
   if (addResult.exitCode !== 0) {

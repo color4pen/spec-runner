@@ -334,7 +334,7 @@ describe("TC-013 (TC-U5, TC-U6): commitOperatorCanon — creates commit with cor
     await commitOperatorCanon(SLUG, tempDir, [CANON_PATH], defaultSpawnFn);
 
     // THEN: non-canon path is still dirty (in working tree)
-    const statusResult = spawnSync("git", ["status", "--porcelain"], {
+    const statusResult = spawnSync("git", ["status", "--porcelain", "-uall"], {
       cwd: tempDir, encoding: "utf8",
     });
     expect(statusResult.stdout).toContain(NON_CANON_PATH);

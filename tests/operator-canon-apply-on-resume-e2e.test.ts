@@ -211,7 +211,7 @@ describe("TC-001 (TC-R1): canon escalation → hand-edit → resume --apply-cano
       ).resolves.toBeUndefined();
 
       // ── Step 6: non-canon file is still dirty in the worktree ───────────────
-      const statusResult = spawnSync("git", ["status", "--porcelain"], {
+      const statusResult = spawnSync("git", ["status", "--porcelain", "-uall"], {
         cwd: repoDir, encoding: "utf8",
       });
       expect(statusResult.stdout).toContain(NON_CANON_PATH);
@@ -308,10 +308,24 @@ describe("TC-003 (TC-R2): --apply-canon scope restriction — non-canon dirty st
       expect(changedFiles).toHaveLength(1);
 
       // THEN: non-canon file is STILL dirty in the worktree
-      const status = spawnSync("git", ["status", "--porcelain"], {
+      const status = spawnSync("git", ["status", "--porcelain", "-uall"], {
         cwd: repoDir, encoding: "utf8",
       });
       expect(status.stdout).toContain(NON_CANON_PATH);
+
+      // THEN: index purity (cross-boundary Finding 1/2) — the non-canon file must NOT be
+      // staged. A bare `git add -A` inside commitOperatorCanon would leave it in the index,
+      // where scoped steps pass it undetected and the first guarded step sweeps it into its
+      // own commit (index-pollution laundering).
+      // DESTROY: revert the add to bare `git add -A` → this assertion fails.
+      const staged = spawnSync("git", ["diff", "--cached", "--name-only"], {
+        cwd: repoDir, encoding: "utf8",
+      });
+      expect(
+        staged.stdout,
+        "non-canon file must not be staged after apply-canon (index purity)",
+      ).not.toContain(NON_CANON_PATH);
+      expect(staged.stdout.trim(), "index must be fully clean after the pathspec commit").toBe("");
     },
     15000,
   );
