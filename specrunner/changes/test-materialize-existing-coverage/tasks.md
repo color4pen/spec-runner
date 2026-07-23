@@ -25,6 +25,10 @@
 
 - `TEST_MATERIALIZE_SYSTEM_PROMPT` に、既存テスト充足時のトレーサビリティコメント手順・コメント形式
   （`// TC-`）・重複作成しない旨・停止しない旨が含まれる（prompt contract テストで固定される）。
+- prompt contract テストは、上記手順の文言を prompt 全文でなく **`## Method` 節の抽出結果**
+  （セクション抽出ヘルパで `## Method` から次の `##` までを切り出した範囲）に対して assert し、
+  Method 節外への追記が AC を通過する経路を塞ぐ（5 節構成 drift-guard は節の存在・順序のみで
+  位置を検証しないため）。
 - `TEST_MATERIALIZE_SYSTEM_PROMPT` に `architecture/` が含まれない。
 - `TEST_MATERIALIZE_SYSTEM_PROMPT` の Question/Contract/Method/Evidence/Completion 5 節構成と順序が
   維持される（`prompt-skeleton-drift-guard.test.ts` が green）。
