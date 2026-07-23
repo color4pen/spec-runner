@@ -258,6 +258,7 @@ describe("TC-003: fixable finding on request.md escalates with reason", () => {
 
   afterEach(() => {
     vi.restoreAllMocks();
+    void stderrSpy;
   });
 
   it("TC-003: verdict is escalation for fixable finding on request.md", () => {
@@ -515,7 +516,7 @@ describe("TC-009: repeated needs-fix exhausts at the existing limit (integration
     };
   }
 
-  function makeStepWithVerdict(name: string, verdict: string): Step {
+  function makeStepWithVerdict(name: string, _verdict: string): Step {
     return {
       kind: "agent",
       name,
