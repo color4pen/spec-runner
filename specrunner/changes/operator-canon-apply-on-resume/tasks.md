@@ -10,7 +10,10 @@ New module in `src/core/resume/` providing two exported functions.
   - Parse NUL-delimited output: each entry is `"XY PATH"` (2-char status + space + path). Entries shorter than 4 chars are skipped.
   - A path is dirty when X ≠ `' '` (staged change) OR Y ≠ `' '` and Y ≠ `'?'` (worktree change). Untracked-only files (XY = `'??'`) are included only if in `protectedCanonPaths` (rare but valid if operator added a new canon file).
   - Return paths that are in `new Set(protectedCanonPaths(slug))` (intersect dirty paths with protected set).
-  - Return `[]` on any git failure (fail-open for detection; the downstream fail-closed stop handles the gap).
+  - **Throw on any git failure**（fail-closed — spec-review F2）: `git status` が失敗した場合に `[]` を
+    返すと「dirty なし」と区別できず、R2 の無言破棄廃止が「status が成功した場合に限る」条件付き保証に
+    劣化する。検出不能 = 判定不能として resume を開始しない（scoped 残余検査の status 失敗 fail-closed
+    と同じ規則 — #893 D5）。caller（resume 入口）は throw を fail-closed 停止 + 案内表示として扱う。
 - [ ] Export `commitOperatorCanon(slug: string, worktreePath: string, paths: string[], spawnFn: SpawnFn): Promise<string>`
   - `git add -- <paths>` via `runSubprocess`; throw `Error` on non-zero exit.
   - `git commit -m "operator-apply: <slug>" -- <paths>` via `runSubprocess`; throw `Error` on non-zero exit.
@@ -91,7 +94,9 @@ New module in `src/core/resume/` providing two exported functions.
 
 - [ ] At the `hint:` property (currently line 369), replace the current value:
   - **Old**: `"保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正し、job resume で再開してください。"`
-  - **New**: `"保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。git commit / git push の手動操作は不要です。"`
+  - **New**: `"保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"`
+    (注: spec.md の negative assertion は部分文字列 `git commit` / `git push` の非含有を検査する。
+    「手動の git 操作 (commit / push)」はこの 2 語連結を含まないため両立する — spec-review F1)
 
 **Acceptance Criteria**:
 - The updated hint contains `--apply-canon`.

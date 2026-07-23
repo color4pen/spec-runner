@@ -112,6 +112,10 @@ A new module `src/core/resume/apply-canon.ts` provides two pure-ish functions:
   delimited output (same format as `getWorktreeChangedPaths` in
   `commit-push.ts`), and returns paths that are both dirty in the worktree or
   index AND are in `protectedCanonPaths(slug)`.
+  **git status 失敗は throw（fail-closed — spec-review F2）**: `[]` へ縮退させると
+  「dirty なし」と区別できず、R2 の無言破棄廃止が status 成功時限定の条件付き保証に
+  劣化する。検出不能 = 判定不能として resume を開始しない（#893 D5 の status 失敗
+  fail-closed と同一規則）。
 - `commitOperatorCanon(slug, worktreePath, paths, spawnFn)` — stages the
   specified paths with `git add -- <paths>`, commits with message
   `operator-apply: <slug>`, and returns the new HEAD OID via `git rev-parse HEAD`.
