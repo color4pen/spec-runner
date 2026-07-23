@@ -47,6 +47,8 @@ set an `escalationReason` carrying the `CANON_FINDING_ESCALATION` code and the o
 `request.md` (unroutable) and a fixable finding on `spec.md` (routable)
 **When** the spec-review verdict is derived
 **Then** the verdict is `escalation`
+**And** escalationReason is set and contains `CANON_FINDING_ESCALATION` (referencing the
+unroutable `request.md` finding)
 
 ### Requirement: spec-review verdict derivation and escalationReason computation shall reference the same effective fixer resolver
 

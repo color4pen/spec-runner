@@ -67,6 +67,8 @@
 - [ ] `lastCanonResolver` は `lastUndecidedFindings` と同じ typed branch でのみ設定されるため、
       escalationReason の guard（`lastUndecidedFindings !== null` かつ causal attribution 条件）成立時は
       非 null であることを不変条件として保つ（null の場合は escalationReason を計算しない）。
+      参照時は non-null assertion（`!`）ではなく明示的 null ガード
+      （`if (lastCanonResolver !== null)`）を用い、invariant 違反時は安全に no-op へ倒す。
 - [ ] escalationReason の causal attribution 条件（`lastVerdictOk` / vacuous / decision-needed の除外）は変更しない。
 
 **Acceptance Criteria**:
@@ -94,6 +96,9 @@
 - [ ] 有界性テスト: spec-review が毎 iteration で canon fixable finding により `needs-fix` を返すとき、
       `maxIterations` で `SPEC_REVIEW_RETRIES_EXHAUSTED`（status `awaiting-resume`）に有界に落ちることを固定する
       （既存 loop exhaustion テストの構成を流用する）。
+- [ ] 配線 identity テスト: `SpecReviewStep.judgeVerdictFn === deriveSpecReviewVerdict` の参照一致を
+      専用ケースで固定する（regression-gate の先例: `judge-verdict.test.ts` の
+      `createRegressionGateStep().judgeVerdictFn === deriveRegressionGateVerdict` identity check に倣う）。
 - [ ] judge / conformance / regression-gate / request-review の既存テストは無変更で green を維持する。
       `judge-verdict.test.ts` の TC-021（inline step + 非 canon file）の assertion は unchanged。実 `SpecReviewStep`
       の新挙動を表すケースが必要なら別ケースとして追加する（既存 assertion は書き換えない）。
