@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8c330d56-64ef-441d-9150-7c5760d10489",
   "createdAt": "2026-07-23T09:04:31.477Z",
-  "updatedAt": "2026-07-23T12:48:21.977Z",
+  "updatedAt": "2026-07-23T12:49:54.234Z",
   "request": {
     "title": "archive --with-merge の CI 有無判定を時間観測から構造判定に変える",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/archive-ci-structural-detection-8c330d56",
   "error": null,
   "pipelineId": "standard",
@@ -80,7 +80,8 @@
     "c7bb6912680dc9f82b3481996723be85f09ea6e7",
     "ddf449c1c68cfb450d57ba8b07ff4865e3ac0312",
     "b5e2940c3dedf99dbaea53df68a2c43b2a23c82e",
-    "d560634336f7b9485807b45f6a3360360a1514b2"
+    "d560634336f7b9485807b45f6a3360360a1514b2",
+    "ab24a1a73c439834416261a704c55a3afad7d036"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -116,10 +117,10 @@
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/910",
     "number": 910,
-    "createdAt": "2026-07-23T10:10:42.166Z"
+    "createdAt": "2026-07-23T12:49:53.276Z"
   },
   "_journal": {
-    "historyCount": 100,
+    "historyCount": 105,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -136,8 +137,8 @@
       "custom-reviewers": 2,
       "regression-gate": 2,
       "conformance": 2,
-      "adr-gen": 1,
-      "pr-create": 1
+      "adr-gen": 2,
+      "pr-create": 2
     }
   }
 }

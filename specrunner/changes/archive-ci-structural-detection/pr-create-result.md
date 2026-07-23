@@ -6,5 +6,5 @@
 
 - **URL**: https://github.com/color4pen/spec-runner/pull/910
 - **Number**: 910
-- **CreatedAt**: 2026-07-23T10:10:42.166Z
-- **Action**: created
+- **CreatedAt**: 2026-07-23T12:49:53.276Z
+- **Action**: existing-open (idempotent)
