@@ -841,7 +841,7 @@ describe("TC-012: selectRoutableCanonFindings returns only findings on spec-fixe
     expect(selectRoutableCanonFindings).toBeDefined();
   });
 
-  it("TC-012: only spec.md and design.md fixable findings are returned (request.md and src/ excluded)", () => {
+  it("TC-012: only spec-fixer-writable fixable findings are returned (request.md and src/ excluded)", () => {
     expect(selectRoutableCanonFindings).toBeDefined();
     expect(specReviewEffectiveFixer).toBeDefined();
 
@@ -855,7 +855,7 @@ describe("TC-012: selectRoutableCanonFindings returns only findings on spec-fixe
 
     const routable = selectRoutableCanonFindings!(findings, scope, specReviewEffectiveFixer!);
 
-    // Only spec.md and design.md are routable
+    // spec.md and design.md are routable (tasks.md also routable but not in this test data)
     const routedFiles = routable.map((f) => f.file);
     expect(routedFiles).toContain(SPEC_MD);
     expect(routedFiles).toContain(DESIGN_MD);
