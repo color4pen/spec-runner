@@ -119,10 +119,9 @@ export interface StepResultInput {
  * via `{ ...state, steps: {...}, updatedAt: ... }`, which spreads the existing
  * `state.error` field unchanged. If a prior step (e.g. commitRound failure) set
  * `state.error`, that value persists across subsequent pushStepResult calls even
- * when those steps succeed. This is intentional: error codes such as
- * ROUND_NONDECLARED_CHANGE set by commitRound remain present after later steps
- * (regression-gate / conformance / pr-create) so the end-of-pipeline check can
- * act on them. Callers that need to clear `state.error` must do so explicitly by
+ * when those steps succeed. This is intentional: an error recorded mid-pipeline
+ * stays visible in persisted state until it is explicitly cleared. Callers that
+ * need to clear `state.error` must do so explicitly by
  * spreading `{ error: null }` into the returned state.
  */
 export function pushStepResult(
