@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bebea595-e07c-4d7f-844e-83c141f96d64",
   "createdAt": "2026-07-23T09:09:58.037Z",
-  "updatedAt": "2026-07-23T12:43:51.574Z",
+  "updatedAt": "2026-07-23T12:44:41.617Z",
   "request": {
     "title": "resume が中断 attempt の残骸を機械的に後始末する — halt→resume 回復契約",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/resume-worktree-reconciliation-bebea595",
   "error": null,
@@ -78,7 +78,8 @@
     "240134ffd84abbc278ae1814fab992a592f37bb3",
     "d3d5cc8e13f688f9fc0c0d38b20df66281d40cd7",
     "0b5372bfd813d6dc90dd0461bad8f3aa9e930e95",
-    "6d2125653aaecd05ac4ea272380908de7cfcc063"
+    "6d2125653aaecd05ac4ea272380908de7cfcc063",
+    "16c99902a54ff6720b69d24521dd3cfd9c1ff2fb"
   ],
   "reviewerStatuses": [
     {
@@ -117,7 +118,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 83,
+    "historyCount": 88,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -132,7 +133,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
-      "regression-gate": 2,
+      "regression-gate": 3,
       "conformance": 1,
       "adr-gen": 1,
       "pr-create": 1
