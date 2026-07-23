@@ -27,7 +27,7 @@ New module in `src/core/resume/` providing two exported functions.
 **Acceptance Criteria**:
 - `detectCanonDirtyPaths` returns only paths that are both in `protectedCanonPaths(slug)` and dirty in the worktree or index.
 - `detectCanonDirtyPaths` returns `[]` when the worktree is clean.
-- `detectCanonDirtyPaths` returns `[]` (not throws) when `git status` fails.
+- `detectCanonDirtyPaths` throws when `git status` fails（fail-closed — spec-review F2。caller は resume 不開始 + 案内表示として扱う）.
 - `commitOperatorCanon` creates a git commit whose message equals `operator-apply: <slug>` and whose changed-file list contains exactly the specified paths.
 - `commitOperatorCanon` returns the new HEAD OID as a non-empty string.
 - `commitOperatorCanon` throws when `git add` or `git commit` fails.
@@ -171,7 +171,7 @@ Create a new integration test file using real git repos in `$TMPDIR`.
 - [ ] **TC-U1**: `detectCanonDirtyPaths` returns `[]` when worktree is clean (mocked `git status` returns empty output).
 - [ ] **TC-U2**: `detectCanonDirtyPaths` returns only the canon-path subset when multiple dirty paths are present (mocked `git status` returns a mix of protected and non-protected paths).
 - [ ] **TC-U3**: `detectCanonDirtyPaths` returns `[]` when only non-protected-canon files are dirty.
-- [ ] **TC-U4**: `detectCanonDirtyPaths` returns `[]` (not throws) when `git status` exits non-zero.
+- [ ] **TC-U4**: `detectCanonDirtyPaths` throws when `git status` exits non-zero（fail-closed — R2 を無条件保証にする。DESTROY: [] 縮退へ戻すと本 TC が fail）.
 - [ ] **TC-U5**: `commitOperatorCanon` creates a commit with correct message using a real tmp git repo.
 - [ ] **TC-U6**: `commitOperatorCanon` returns a non-empty OID string.
 - [ ] **TC-U7**: `commitOperatorCanon` throws when `git add` returns non-zero (mocked spawnFn).
