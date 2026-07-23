@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2095ac19-12f4-4dcc-92fe-e6a0fa04526a",
   "createdAt": "2026-07-23T09:04:31.027Z",
-  "updatedAt": "2026-07-23T09:29:06.694Z",
+  "updatedAt": "2026-07-23T09:31:04.805Z",
   "request": {
     "title": "spec-review の fixable canon finding を spec-fixer round で収束させる — 一律 operator escalation の解消",
     "type": "spec-change",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/spec-review-fixer-routing-2095ac19",
-  "error": {
-    "code": "CANON_FINDING_ESCALATION",
-    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/spec-review-fixer-routing/tasks.md, title: \"T-05 に SpecReviewStep.judgeVerdictFn === deriveSpecReviewVerdict の identity assertion が明示されていない\"\n  - file: specrunner/changes/spec-review-fixer-routing/spec.md, title: \"coexistence シナリオ（unroutable + routable 共存）に escalationReason の検証が含まれていない\"\n  - file: specrunner/changes/spec-review-fixer-routing/tasks.md, title: \"T-04: lastCanonResolver 参照時の TypeScript null-safety 実装パターンが未指定\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
-    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -70,15 +66,13 @@
     "3447257f54f01ec0b35857c9899dcbfd1cfb3a6c",
     "6de5adb5e402c93a26bdd58433a1b002d2da9eaa",
     "19dffa901be7ec3bb2f4c00e10e721d44ddb7e97",
-    "433ccdaac9d627ddf7b689c6e73dff28144b5ca4"
+    "433ccdaac9d627ddf7b689c6e73dff28144b5ca4",
+    "9d9aeb896bde9a69194aa8745450cebb33cbebd5"
   ],
-  "resumePoint": {
-    "step": "spec-review",
-    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/spec-review-fixer-routing/tasks.md, title: \"T-05 に SpecReviewStep.judgeVerdictFn === deriveSpecReviewVerdict の identity assertion が明示されていない\"\n  - file: specrunner/changes/spec-review-fixer-routing/spec.md, title: \"coexistence シナリオ（unroutable + routable 共存）に escalationReason の検証が含まれていない\"\n  - file: specrunner/changes/spec-review-fixer-routing/tasks.md, title: \"T-04: lastCanonResolver 参照時の TypeScript null-safety 実装パターンが未指定\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 15,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
