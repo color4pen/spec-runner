@@ -851,6 +851,24 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
+   * Reload job state from the slug store after setupWorkspace() completes.
+   *
+   * Constructs a JobStateStore using `workspace.worktreePath ?? this.cwd` as stateRoot
+   * and calls `.load()`, returning the result cast as JobState.
+   *
+   * // Safe cast: steps is always {} at reload point (no step runs yet)
+   *
+   * Errors are NOT caught here — they propagate to the caller (fail-closed is the
+   * caller's responsibility: reload failure prevents pipeline start).
+   */
+  async reloadJobState(jobId: string, slug: string, workspace: WorkspaceContext): Promise<JobState> {
+    const stateRoot = workspace.worktreePath ?? this.cwd;
+    const store = new JobStateStore(jobId, this.cwd, { slug, stateRoot });
+    // Safe cast: steps is always {} at reload point (no step runs yet)
+    return (await store.load()) as JobState;
+  }
+
+  /**
    * Reject a second run while a live job already holds this slug.
    * Delegates to checkDuplicateLiveJob using real fs and isProcessAlive.
    */

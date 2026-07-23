@@ -114,7 +114,8 @@ export abstract class CommandRunner {
     // Note: re-throw any error so callers (e.g. ResumeCommand.execute) can inspect it
     const prepared = await this.prepare();
 
-    const { jobState, startStep, request, config, slug, workspaceOpts, repoRoot } = prepared;
+    const { startStep, request, config, slug, workspaceOpts, repoRoot } = prepared;
+    let { jobState } = prepared;
     const json = prepared.json ?? false;
 
     // Register per-job exit guard so that beforeExit writes awaiting-resume to slug-based state.
@@ -166,18 +167,32 @@ export abstract class CommandRunner {
         return 1;
       }
 
-      // Reflect worktreePath into in-memory jobState so pipeline persist does not overwrite it.
-      // setupWorkspace() persists to the state store, but the in-memory object passed to
-      // pipeline.run() must also carry the value — otherwise step-level persist() reverts it.
-      if (workspace.worktreePath !== undefined) {
-        jobState.worktreePath = workspace.worktreePath;
-      }
-
-      // Reflect branch set by setupWorkspace() into in-memory jobState (D3).
-      // setupWorkspace() already persisted branch to the state store; mirror it in-memory
-      // so pipeline steps see the pre-set branch and setsBranch fallback is not triggered.
-      if (workspace.branch !== undefined && !jobState.branch) {
-        jobState.branch = workspace.branch;
+      // Reload in-memory state from slug store so pipeline receives all fields written
+      // by setupWorkspace() (worktreePath, synthesizedCommits, branch). Deletes the
+      // former manual mirror — the store is the single source of truth post-setup.
+      // Skip reload on the resume path (existingWorktreePath !== undefined): the
+      // resume prepare() already loaded the full state, and setupWorkspace() in the
+      // resume/recreate branch does not write synthesizedCommits to the store.
+      if (this.runtime.reloadJobState && workspaceOpts.existingWorktreePath === undefined) {
+        try {
+          jobState = await this.runtime.reloadJobState(jobState.jobId, slug, workspace);
+        } catch (err) {
+          // fail-closed: reload failure prevents pipeline start
+          const reloadError = { code: "RELOAD_FAILED", message: (err as Error).message, hint: "" };
+          const { state: reloadFailedState } = transitionJob(jobState, "failed", {
+            trigger: "store-fail",
+            reason: reloadError.message,
+            patch: { error: reloadError, step: "init" },
+          });
+          await this.runtime.persistJobState(jobState.jobId, slug, workspace, reloadFailedState);
+          logError(`Failed to reload job state after workspace setup: ${(err as Error).message}`);
+          if (json) {
+            stdoutWrite(formatRunResultJson(buildRunResult(reloadFailedState, slug)));
+          }
+          closeVerboseLog();
+          closePipelineLog();
+          return 1;
+        }
       }
 
       // Step 3: buildDeps

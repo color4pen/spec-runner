@@ -587,6 +587,31 @@ export interface RuntimeStrategy {
    */
   assertProviderReadiness?(env: Record<string, string | undefined>): Promise<void>;
 
+  /**
+   * Reload job state from the canonical slug store after setupWorkspace() completes.
+   *
+   * Called by CommandRunner.execute() immediately after setupWorkspace() succeeds so that
+   * all fields written to the store during setup (worktreePath, synthesizedCommits, branch,
+   * request.path, etc.) are reflected in the in-memory state passed to the pipeline.
+   * Replaces the former manual mirror (worktreePath / branch only) with a single store reload
+   * that picks up every field, regardless of which fields setupWorkspace() writes in the future.
+   *
+   * - local:   constructs a JobStateStore with `workspace.worktreePath ?? cwd` as stateRoot
+   *            and calls `.load()`. Returns the loaded state cast as JobState (safe: no step
+   *            runs have occurred at this lifecycle point, so steps is always {}).
+   * - managed: fail-closed throw (store topology not verified for managed runtime; reload
+   *            safety must be confirmed in a separate request — D3 / T-03 choice).
+   * - throws on load error (caller is fail-closed: reload failure prevents pipeline start).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
+   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
+   */
+  reloadJobState?(
+    jobId: string,
+    slug: string,
+    workspace: WorkspaceContext,
+  ): Promise<JobState>;
+
   // ---------------------------------------------------------------------------
   // Isolated test execution for bite-evidence gate (R4, bite-evidence-forward T-04)
   // ---------------------------------------------------------------------------
@@ -727,6 +752,7 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
   canDeriveChangedFiles(): boolean;
   assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void>;
   assertProviderReadiness(env: Record<string, string | undefined>): Promise<void>;
+  reloadJobState(jobId: string, slug: string, workspace: WorkspaceContext): Promise<JobState>;
   snapshotMainCheckoutGuard(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
   listWorktreeChanges(cwd: string): Promise<WorktreeInspectionResult>;
   commitRoundArtifacts(
