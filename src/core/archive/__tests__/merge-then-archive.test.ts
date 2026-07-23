@@ -1007,3 +1007,568 @@ describe("merge-then-archive — blocked-grace wait loop", () => {
     expect(mergePullRequest).toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Structural CI detection integration tests
+// TC-001 (must)  CI-present → fail-closed → timeout escalation
+// TC-002 (must)  no workflow definition → CI-less → merge after grace
+// TC-003 (must)  schedule-only workflow → CI-less → merge after grace
+// TC-004 (must)  git ls-tree exits non-zero → inspection-failed → fail-closed → escalation
+// TC-015 (must)  archiveSha undefined → ls-tree not invoked → CI-present → escalation
+// TC-016 (must)  CI detection cached — ls-tree invoked exactly once across all poll iterations
+// TC-017 (should) BLOCKED escalation fires before CI detection is consulted
+// TC-018 (should) CI-present timeout escalation message content
+// TC-019 (should) no merge/cleanup/markJobArchived on CI-present timeout path
+// TC-023 (could)  mergeWaitTimeoutMs null + CI-present → deadline check skipped → loop continues
+// ---------------------------------------------------------------------------
+
+describe("merge-then-archive — structural CI detection", () => {
+  // -------------------------------------------------------------------------
+  // Shared constants
+  // -------------------------------------------------------------------------
+
+  /** Matches the headSha returned by runArchiveOrchestrator mock below. */
+  const ARCHIVE_SHA = "abc1234";
+
+  const PUSH_WORKFLOW_BLOB_SHA = "cafebabe00000001";
+  /** git ls-tree output with a single push-trigger .yml blob. */
+  const PUSH_WORKFLOW_LS_TREE =
+    `100644 blob ${PUSH_WORKFLOW_BLOB_SHA}\t.github/workflows/ci.yml\n`;
+  /** Workflow file content that contains a push: trigger. */
+  const PUSH_WORKFLOW_CONTENT =
+    `name: CI\non:\n  push:\n    branches: [main]\njobs:\n  test:\n    runs-on: ubuntu-latest\n`;
+
+  const SCHEDULE_WORKFLOW_BLOB_SHA = "cafebabe00000002";
+  /** git ls-tree output with a single schedule-only .yml blob. */
+  const SCHEDULE_WORKFLOW_LS_TREE =
+    `100644 blob ${SCHEDULE_WORKFLOW_BLOB_SHA}\t.github/workflows/nightly.yml\n`;
+  /** Workflow file content that contains only schedule: (no push/pull_request). */
+  const SCHEDULE_WORKFLOW_CONTENT =
+    `name: Nightly\non:\n  schedule:\n    - cron: '0 2 * * *'\njobs:\n  build:\n    runs-on: ubuntu-latest\n`;
+
+  // -------------------------------------------------------------------------
+  // Helpers
+  // -------------------------------------------------------------------------
+
+  /**
+   * Build a SpawnFn that dispatches on git subcommand.
+   * Returns the default `{ exitCode: 0, stdout: "", stderr: "" }` for any
+   * non-git or unknown git call so existing spawn paths are not disrupted.
+   */
+  function makeCiSpawn(opts: {
+    lsTreeStdout?: string;
+    lsTreeExitCode?: number;
+    catFileBody?: string;
+    catFileExitCode?: number;
+  }): SpawnFn {
+    return vi.fn().mockImplementation(
+      async (cmd: string, args: string[]) => {
+        if (cmd === "git" && args[0] === "ls-tree") {
+          return { exitCode: opts.lsTreeExitCode ?? 0, stdout: opts.lsTreeStdout ?? "", stderr: "" };
+        }
+        if (cmd === "git" && args[0] === "cat-file") {
+          return { exitCode: opts.catFileExitCode ?? 0, stdout: opts.catFileBody ?? "", stderr: "" };
+        }
+        return { exitCode: 0, stdout: "", stderr: "" };
+      },
+    );
+  }
+
+  /** Count `git ls-tree` invocations on a spawn mock. */
+  function lsTreeCallCount(spawnFn: SpawnFn): number {
+    const mock = spawnFn as ReturnType<typeof vi.fn>;
+    return (mock.mock.calls as [string, string[], unknown][]).filter(
+      ([cmd, args]) => cmd === "git" && args[0] === "ls-tree",
+    ).length;
+  }
+
+  /**
+   * Build a GitHubClient configured for the "none-rollup stays forever" scenario:
+   * - getPullRequest returns OPEN/CLEAN/headSha=ARCHIVE_SHA on every call
+   * - getCheckStatus returns "none" on every call
+   * - mergePullRequest is a tracked spy (returns merged: true if called)
+   */
+  function makeNoneRollupClient(
+    clientOverrides: Partial<GitHubClient> = {},
+  ): GitHubClient {
+    return makeGithubClient({
+      getPullRequest: vi.fn().mockResolvedValue({
+        state: "OPEN",
+        mergeStateStatus: "CLEAN",
+        mergeable: "MERGEABLE",
+        headSha: ARCHIVE_SHA,
+      }),
+      getCheckStatus: vi.fn().mockResolvedValue({
+        state: "none",
+        total: 0,
+        failing: [],
+        pending: [],
+      }),
+      mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "squash-merged" }),
+      ...clientOverrides,
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(JobStateStore.listWithSourceDirs).mockResolvedValue(makeActiveEntries());
+    // Default: runArchiveOrchestrator returns exitCode 0 with a defined archiveSha
+    vi.mocked(runArchiveOrchestrator).mockResolvedValue({ exitCode: 0, headSha: ARCHIVE_SHA });
+    vi.mocked(runPostMergeCleanup).mockResolvedValue(undefined);
+    vi.mocked(markJobArchived).mockResolvedValue(undefined as unknown as JobState);
+  });
+
+  // ─── TC-001 ────────────────────────────────────────────────────────────────
+  it(
+    "TC-001: push/pull_request workflow present → rollup none stays past grace → " +
+    "mergeWaitTimeoutMs exceeded → exitCode 1 escalation; mergePullRequest not called",
+    async () => {
+      const spawnFn = makeCiSpawn({
+        lsTreeStdout: PUSH_WORKFLOW_LS_TREE,
+        catFileBody: PUSH_WORKFLOW_CONTENT,
+      });
+      const githubClient = makeNoneRollupClient();
+
+      // nowFn:
+      //   [0] start=0
+      //   [1] iter1 grace: now=0, elapsed=0 < 60_000 → sleep+continue
+      //   [2+] iter2 grace: now=61_000 ≥ 60_000 → detect CI (CI-present);
+      //        deadline check: 61_000 - 0 = 61_000 ≥ 60_000 (waitTimeoutMs) → escalation
+      const nowFn = vi.fn()
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValue(61_000);
+
+      const result = await runMergeThenArchive(
+        {
+          slug: FAKE_SLUG,
+          cwd: FAKE_CWD,
+          spawn: spawnFn,
+          fs: makeFs(),
+          githubClient,
+          owner: "test",
+          repo: "repo",
+          sleepFn: noopSleep,
+          nowFn,
+          waitTimeoutMs: 60_000,
+        },
+        () => {},
+      );
+
+      // Must escalate (fail-closed), never merge
+      expect(result.exitCode).toBe(1);
+      expect("escalation" in result && result.escalation).toBeTruthy();
+      expect(vi.mocked(githubClient.mergePullRequest)).not.toHaveBeenCalled();
+    },
+  );
+
+  // ─── TC-002 ────────────────────────────────────────────────────────────────
+  it(
+    "TC-002: repo with no workflow definition → CI-less (no-workflows) → " +
+    "merge proceeds after none-check grace",
+    async () => {
+      // git ls-tree returns empty → no blobs → no-workflows → CI-less
+      const spawnFn = makeCiSpawn({ lsTreeStdout: "" });
+      const mergePullRequest = vi.fn().mockResolvedValue({ merged: true, message: "squash-merged" });
+      const githubClient = makeNoneRollupClient({ mergePullRequest });
+
+      const nowFn = vi.fn()
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValue(61_000);
+
+      const result = await runMergeThenArchive(
+        {
+          slug: FAKE_SLUG,
+          cwd: FAKE_CWD,
+          spawn: spawnFn,
+          fs: makeFs(),
+          githubClient,
+          owner: "test",
+          repo: "repo",
+          sleepFn: noopSleep,
+          nowFn,
+          waitTimeoutMs: null,
+        },
+        () => {},
+      );
+
+      expect(result.exitCode).toBe(0);
+      expect(mergePullRequest).toHaveBeenCalled();
+    },
+  );
+
+  // ─── TC-003 ────────────────────────────────────────────────────────────────
+  it(
+    "TC-003: schedule-only workflow (no push/pull_request trigger) → CI-less (no-trigger) → " +
+    "merge proceeds after none-check grace",
+    async () => {
+      const spawnFn = makeCiSpawn({
+        lsTreeStdout: SCHEDULE_WORKFLOW_LS_TREE,
+        catFileBody: SCHEDULE_WORKFLOW_CONTENT,
+      });
+      const mergePullRequest = vi.fn().mockResolvedValue({ merged: true, message: "squash-merged" });
+      const githubClient = makeNoneRollupClient({ mergePullRequest });
+
+      const nowFn = vi.fn()
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValue(61_000);
+
+      const result = await runMergeThenArchive(
+        {
+          slug: FAKE_SLUG,
+          cwd: FAKE_CWD,
+          spawn: spawnFn,
+          fs: makeFs(),
+          githubClient,
+          owner: "test",
+          repo: "repo",
+          sleepFn: noopSleep,
+          nowFn,
+          waitTimeoutMs: null,
+        },
+        () => {},
+      );
+
+      expect(result.exitCode).toBe(0);
+      expect(mergePullRequest).toHaveBeenCalled();
+    },
+  );
+
+  // ─── TC-004 ────────────────────────────────────────────────────────────────
+  it(
+    "TC-004: git ls-tree exits non-zero (bad ref) → inspection-failed → " +
+    "fail-closed (CI-present) → escalation; mergePullRequest not called",
+    async () => {
+      // archiveSha is defined (ARCHIVE_SHA) but ls-tree fails (e.g. bad ref)
+      const spawnFn = makeCiSpawn({ lsTreeExitCode: 128 });
+      const githubClient = makeNoneRollupClient();
+
+      const nowFn = vi.fn()
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValue(61_000);
+
+      const result = await runMergeThenArchive(
+        {
+          slug: FAKE_SLUG,
+          cwd: FAKE_CWD,
+          spawn: spawnFn,
+          fs: makeFs(),
+          githubClient,
+          owner: "test",
+          repo: "repo",
+          sleepFn: noopSleep,
+          nowFn,
+          waitTimeoutMs: 60_000,
+        },
+        () => {},
+      );
+
+      expect(result.exitCode).toBe(1);
+      expect("escalation" in result && result.escalation).toBeTruthy();
+      expect(vi.mocked(githubClient.mergePullRequest)).not.toHaveBeenCalled();
+    },
+  );
+
+  // ─── TC-015 ────────────────────────────────────────────────────────────────
+  it(
+    "TC-015: runArchiveOrchestrator returns headSha: undefined → " +
+    "git ls-tree not invoked (detection skipped) → treated as CI-present (fail-closed) → " +
+    "mergeWaitTimeoutMs exceeded → exitCode 1 escalation",
+    async () => {
+      // Simulate archive commit SHA unavailable
+      vi.mocked(runArchiveOrchestrator).mockResolvedValue({ exitCode: 0, headSha: undefined });
+
+      const spawnFn = makeCiSpawn({
+        lsTreeStdout: PUSH_WORKFLOW_LS_TREE,
+        catFileBody: PUSH_WORKFLOW_CONTENT,
+      });
+
+      // getPullRequest returns a valid headSha (archive SHA matching is skipped when archiveSha=undefined)
+      const githubClient = makeNoneRollupClient({
+        getPullRequest: vi.fn().mockResolvedValue({
+          state: "OPEN",
+          mergeStateStatus: "CLEAN",
+          mergeable: "MERGEABLE",
+          headSha: "some-other-sha",
+        }),
+      });
+
+      const nowFn = vi.fn()
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValue(61_000);
+
+      const result = await runMergeThenArchive(
+        {
+          slug: FAKE_SLUG,
+          cwd: FAKE_CWD,
+          spawn: spawnFn,
+          fs: makeFs(),
+          githubClient,
+          owner: "test",
+          repo: "repo",
+          sleepFn: noopSleep,
+          nowFn,
+          waitTimeoutMs: 60_000,
+        },
+        () => {},
+      );
+
+      // Must escalate (fail-closed)
+      expect(result.exitCode).toBe(1);
+      // git ls-tree must NOT have been invoked — detection is skipped when archiveSha is undefined
+      expect(lsTreeCallCount(spawnFn)).toBe(0);
+      // No merge
+      expect(vi.mocked(githubClient.mergePullRequest)).not.toHaveBeenCalled();
+    },
+  );
+
+  // ─── TC-016 ────────────────────────────────────────────────────────────────
+  it(
+    "TC-016: CI presence detection is computed at most once per job — " +
+    "git ls-tree spawn invoked exactly once across all poll iterations",
+    async () => {
+      const spawnFn = makeCiSpawn({
+        lsTreeStdout: PUSH_WORKFLOW_LS_TREE,
+        catFileBody: PUSH_WORKFLOW_CONTENT,
+      });
+      const githubClient = makeNoneRollupClient();
+
+      // Drive 3 poll iterations in the grace-exhausted, CI-present path before timeout fires.
+      // Designed for up to 2 nowFn calls per grace-exhausted iteration:
+      //   call[i] for grace check, call[i+1] for CI-present deadline check.
+      // Whether the implementation uses 1 or 2 nowFn calls per iteration, this sequence
+      // ensures ≥2 iterations with CI-present (cached) before the deadline fires.
+      const nowFn = vi.fn()
+        .mockReturnValueOnce(0)        // start
+        .mockReturnValueOnce(0)        // iter1 grace: 0 < 60_000 → sleep
+        .mockReturnValueOnce(61_000)   // iter2 grace: 61_000 ≥ 60_000 → detect CI (ls-tree called here)
+        .mockReturnValueOnce(61_000)   // iter2 possible deadline: 61_000 < 120_000 → sleep
+        .mockReturnValueOnce(90_000)   // iter3 grace: ≥ 60_000, CI cached (no ls-tree)
+        .mockReturnValueOnce(90_000)   // iter3 possible deadline: 90_000 < 120_000 → sleep
+        .mockReturnValueOnce(121_000)  // iter4 grace: ≥ 60_000, CI cached (no ls-tree)
+        .mockReturnValue(121_000);     // iter4 deadline: 121_000 ≥ 120_000 → escalation
+
+      const result = await runMergeThenArchive(
+        {
+          slug: FAKE_SLUG,
+          cwd: FAKE_CWD,
+          spawn: spawnFn,
+          fs: makeFs(),
+          githubClient,
+          owner: "test",
+          repo: "repo",
+          sleepFn: noopSleep,
+          nowFn,
+          waitTimeoutMs: 120_000,
+        },
+        () => {},
+      );
+
+      expect(result.exitCode).toBe(1);
+      // Detection must have been cached — ls-tree invoked exactly once
+      expect(lsTreeCallCount(spawnFn)).toBe(1);
+      // No merge
+      expect(vi.mocked(githubClient.mergePullRequest)).not.toHaveBeenCalled();
+    },
+  );
+
+  // ─── TC-017 ────────────────────────────────────────────────────────────────
+  it(
+    "TC-017: BLOCKED+none past grace → BLOCKED branch-protection escalation fires " +
+    "before CI detection is consulted; git ls-tree not invoked",
+    async () => {
+      // Workflow is present in spawn, but isBlocked=true should fire first
+      const spawnFn = makeCiSpawn({
+        lsTreeStdout: PUSH_WORKFLOW_LS_TREE,
+        catFileBody: PUSH_WORKFLOW_CONTENT,
+      });
+      const githubClient = makeGithubClient({
+        getPullRequest: vi.fn().mockResolvedValue({
+          state: "OPEN",
+          mergeStateStatus: "BLOCKED",
+          mergeable: "MERGEABLE",
+          headSha: ARCHIVE_SHA,
+        }),
+        getCheckStatus: vi.fn().mockResolvedValue({
+          state: "none",
+          total: 0,
+          failing: [],
+          pending: [],
+        }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "squash-merged" }),
+      });
+
+      const nowFn = vi.fn()
+        .mockReturnValueOnce(0)    // start
+        .mockReturnValueOnce(0)    // iter1 grace: 0 < 60_000 → sleep
+        .mockReturnValue(61_000);  // iter2 grace: ≥ 60_000, isBlocked=true → BLOCKED escalation (before CI detect)
+
+      const result = await runMergeThenArchive(
+        {
+          slug: FAKE_SLUG,
+          cwd: FAKE_CWD,
+          spawn: spawnFn,
+          fs: makeFs(),
+          githubClient,
+          owner: "test",
+          repo: "repo",
+          sleepFn: noopSleep,
+          nowFn,
+          waitTimeoutMs: null,
+        },
+        () => {},
+      );
+
+      // Branch-protection escalation fired
+      expect(result.exitCode).toBe(1);
+      expect("escalation" in result && result.escalation).toMatch(/branch protection/i);
+      // git ls-tree must NOT have been invoked — BLOCKED path fires before CI detection
+      expect(lsTreeCallCount(spawnFn)).toBe(0);
+      // No merge
+      expect(vi.mocked(githubClient.mergePullRequest)).not.toHaveBeenCalled();
+    },
+  );
+
+  // ─── TC-018 ────────────────────────────────────────────────────────────────
+  it(
+    "TC-018: CI-present timeout escalation message states push/pull_request workflow " +
+    "is present, PR was not merged, and provides the resume command",
+    async () => {
+      const spawnFn = makeCiSpawn({
+        lsTreeStdout: PUSH_WORKFLOW_LS_TREE,
+        catFileBody: PUSH_WORKFLOW_CONTENT,
+      });
+      const githubClient = makeNoneRollupClient();
+
+      const nowFn = vi.fn()
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValue(61_000);
+
+      const result = await runMergeThenArchive(
+        {
+          slug: FAKE_SLUG,
+          cwd: FAKE_CWD,
+          spawn: spawnFn,
+          fs: makeFs(),
+          githubClient,
+          owner: "test",
+          repo: "repo",
+          sleepFn: noopSleep,
+          nowFn,
+          waitTimeoutMs: 60_000,
+        },
+        () => {},
+      );
+
+      expect(result.exitCode).toBe(1);
+      const esc = "escalation" in result ? (result as { escalation: string }).escalation : "";
+      expect(esc).toBeTruthy();
+
+      // Must mention push/pull_request workflow trigger
+      expect(esc).toMatch(/push|pull_request/);
+
+      // Must indicate the PR was NOT merged (fail-closed)
+      expect(esc.toLowerCase()).toMatch(/not merged|no merge|fail.closed|did not merge/);
+
+      // Must include the specrunner resume command
+      expect(esc).toContain(`specrunner job archive --with-merge ${FAKE_SLUG}`);
+    },
+  );
+
+  // ─── TC-019 ────────────────────────────────────────────────────────────────
+  it(
+    "TC-019: CI-present timeout → mergePullRequest not called, " +
+    "runPostMergeCleanup not called, markJobArchived not called",
+    async () => {
+      const spawnFn = makeCiSpawn({
+        lsTreeStdout: PUSH_WORKFLOW_LS_TREE,
+        catFileBody: PUSH_WORKFLOW_CONTENT,
+      });
+      const githubClient = makeNoneRollupClient();
+
+      const nowFn = vi.fn()
+        .mockReturnValueOnce(0)
+        .mockReturnValueOnce(0)
+        .mockReturnValue(61_000);
+
+      const result = await runMergeThenArchive(
+        {
+          slug: FAKE_SLUG,
+          cwd: FAKE_CWD,
+          spawn: spawnFn,
+          fs: makeFs(),
+          githubClient,
+          owner: "test",
+          repo: "repo",
+          sleepFn: noopSleep,
+          nowFn,
+          waitTimeoutMs: 60_000,
+        },
+        () => {},
+      );
+
+      expect(result.exitCode).toBe(1);
+      // None of these side-effects must occur on the CI-present timeout path
+      expect(vi.mocked(githubClient.mergePullRequest)).not.toHaveBeenCalled();
+      expect(vi.mocked(runPostMergeCleanup)).not.toHaveBeenCalled();
+      expect(vi.mocked(markJobArchived)).not.toHaveBeenCalled();
+    },
+  );
+
+  // ─── TC-023 ────────────────────────────────────────────────────────────────
+  it(
+    "TC-023: waitTimeoutMs null + CI-present → overall deadline check skipped → " +
+    "loop continues sleeping without merging",
+    async () => {
+      const spawnFn = makeCiSpawn({
+        lsTreeStdout: PUSH_WORKFLOW_LS_TREE,
+        catFileBody: PUSH_WORKFLOW_CONTENT,
+      });
+      const mergePullRequest = vi.fn().mockResolvedValue({ merged: true, message: "squash-merged" });
+      const githubClient = makeNoneRollupClient({ mergePullRequest });
+
+      // sleepFn: allow 2 sleep calls then throw to bound the test
+      const sleepFn = vi.fn()
+        .mockResolvedValueOnce(undefined) // sleep in iter1 (grace still running)
+        .mockResolvedValueOnce(undefined) // sleep in iter2+ (CI-present, null deadline → no escalation → sleep)
+        .mockRejectedValue(new Error("TC-023: test boundary — loop iterated past deadline check"));
+
+      const nowFn = vi.fn()
+        .mockReturnValueOnce(0)       // start
+        .mockReturnValueOnce(0)       // iter1 grace: not exhausted
+        .mockReturnValueOnce(61_000)  // iter2 grace: exhausted, detect CI
+        .mockReturnValue(62_000);     // subsequent calls (null deadline: no extra nowFn needed)
+
+      let threw = false;
+      try {
+        await runMergeThenArchive(
+          {
+            slug: FAKE_SLUG,
+            cwd: FAKE_CWD,
+            spawn: spawnFn,
+            fs: makeFs(),
+            githubClient,
+            owner: "test",
+            repo: "repo",
+            sleepFn,
+            nowFn,
+            waitTimeoutMs: null,
+          },
+          () => {},
+        );
+      } catch {
+        threw = true;
+      }
+
+      // The test boundary (sleepFn reject) is expected — loop was still running
+      expect(threw).toBe(true);
+      // mergePullRequest must NOT have been called — CI-present path never merges
+      expect(mergePullRequest).not.toHaveBeenCalled();
+    },
+  );
+});
