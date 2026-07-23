@@ -705,10 +705,12 @@ export async function commitFinalState(params: {
   }
 
   // Push with one retry (best-effort — don't throw on failure).
-  const push1 = await spawnFn("git", ["push", "origin", branch], { cwd });
+  // -u: worktree branches are created with --no-track, so the first push binds the
+  // upstream to the feature branch itself (never the base branch). Idempotent.
+  const push1 = await spawnFn("git", ["push", "-u", "origin", branch], { cwd });
   if ((push1.exitCode ?? 1) === 0) return;
 
-  const push2 = await spawnFn("git", ["push", "origin", branch], { cwd });
+  const push2 = await spawnFn("git", ["push", "-u", "origin", branch], { cwd });
   if ((push2.exitCode ?? 1) === 0) return;
 
   stderrWrite(
@@ -797,7 +799,9 @@ export async function commitScopedPaths(
  * Throws pushFailedError if both attempts fail.
  */
 export async function pushOnly(branch: string, cwd: string, stepName: string, infra: CommitPushInfra): Promise<void> {
-  const tryPush = () => gitExecExitCode(infra.spawnFn, cwd, ["push", "origin", branch]);
+  // -u: worktree branches are created with --no-track, so the first push binds the
+  // upstream to the feature branch itself (never the base branch). Idempotent.
+  const tryPush = () => gitExecExitCode(infra.spawnFn, cwd, ["push", "-u", "origin", branch]);
 
   const firstPushCode = await tryPush();
   if (firstPushCode === 0) {

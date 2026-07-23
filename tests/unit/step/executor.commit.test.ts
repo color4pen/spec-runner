@@ -339,6 +339,10 @@ describe("TC-CAP-NEW-001: staged changes → commit + push (requiresCommit:true,
     expect(subcommands).toContain("diff");
     expect(subcommands).toContain("commit");
     expect(subcommands).toContain("push");
+    // -u binds the worktree branch's upstream to the feature branch itself
+    // (branches are created with --no-track, so nothing else sets it).
+    const pushArgs = calls.find((c) => c.args[0] === "push")?.args ?? [];
+    expect(pushArgs).toContain("-u");
     // rev-parse is called 4x in the synthesis model:
     //   1. Before step (headBeforeStep, via raw gitExec in executor)
     //   2. Inside commitAndPush — headAtEntry (synthesis model HEAD comparison)

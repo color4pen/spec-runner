@@ -107,9 +107,13 @@ export function createWorktreeManager(
       const worktreePath = buildWorktreePath(repoRoot, slug, jobId);
       const ref = baseRef ?? "HEAD";
 
-      // git worktree add [-b <branchName> | --detach] <path> <ref>
+      // git worktree add [--no-track -b <branchName> | --detach] <path> <ref>
+      // --no-track: when ref is a remote-tracking branch (origin/<base>), git's default
+      // auto-tracking would set the new branch's upstream to origin/<base>, making a bare
+      // `git push` in the worktree target the base branch (with push.default=upstream).
+      // The upstream is instead set to the feature branch itself on first pipeline push (-u).
       let wtArgs = branchName
-        ? ["worktree", "add", "-b", branchName, worktreePath, ref]
+        ? ["worktree", "add", "--no-track", "-b", branchName, worktreePath, ref]
         : ["worktree", "add", "--detach", worktreePath, ref];
 
       const MAX_RETRIES = 3;
