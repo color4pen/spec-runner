@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "66f2b8e7-e35a-4714-93e8-658f40d04af8",
   "createdAt": "2026-07-23T01:56:12.383Z",
-  "updatedAt": "2026-07-23T02:28:12.997Z",
+  "updatedAt": "2026-07-23T02:32:34.778Z",
   "request": {
     "title": "setupWorkspace 後の in-memory state を store から reload し、field 手動 mirror を廃止する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "fix/runner-state-reload-after-setup-66f2b8e7",
   "error": null,
@@ -65,16 +65,17 @@
     "c1f99f80a49c18ac280e3237e1f7afbb53690e58",
     "7591b90390112bbe94826f4b27e8f16bf4e98c3b",
     "03244dd145fdd61cc024ccc0b9c5eee0356ed608",
-    "2bc5c1094cdb22731aa2c73394366e4a1dc0e3d1"
+    "2bc5c1094cdb22731aa2c73394366e4a1dc0e3d1",
+    "cce4b0a0b35559a05e613a314d38e6752cd2bb0f"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 21,
+    "historyCount": 25,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 2
+      "spec-review": 3
     }
   }
 }
