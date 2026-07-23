@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8c330d56-64ef-441d-9150-7c5760d10489",
   "createdAt": "2026-07-23T09:04:31.477Z",
-  "updatedAt": "2026-07-23T09:16:04.864Z",
+  "updatedAt": "2026-07-23T09:23:29.654Z",
   "request": {
     "title": "archive --with-merge の CI 有無判定を時間観測から構造判定に変える",
     "type": "spec-change",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/archive-ci-structural-detection-8c330d56",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/archive-ci-structural-detection/tasks.md, title: \"T-04: spec.md Scenario 4 の archiveSha === undefined ケースにテストがない\"\n  - file: specrunner/changes/archive-ci-structural-detection/tasks.md, title: \"T-04: 「1 回のみ評価」キャッシュ不変条件（spec.md MUST）がテストで固定されていない\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -65,13 +69,20 @@
   "synthesizedCommits": [
     "f196f4ce9b455ad8142fe305c6ffd22d9ec8f3ee",
     "858ae45f95b7fb7626c1f195e8a60909cb215eef",
-    "bf4a89523de83133e798bdda91370d67ec46738d"
+    "bf4a89523de83133e798bdda91370d67ec46738d",
+    "a2c71faaf60e0113ce9dbbfb01c60074ed1d06bf"
   ],
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/archive-ci-structural-detection/tasks.md, title: \"T-04: spec.md Scenario 4 の archiveSha === undefined ケースにテストがない\"\n  - file: specrunner/changes/archive-ci-structural-detection/tasks.md, title: \"T-04: 「1 回のみ評価」キャッシュ不変条件（spec.md MUST）がテストで固定されていない\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
