@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9141b6e6-fd3b-40a1-8b2c-c0270fb9d9ab",
   "createdAt": "2026-07-23T10:56:38.330Z",
-  "updatedAt": "2026-07-23T12:27:40.883Z",
+  "updatedAt": "2026-07-23T12:32:57.324Z",
   "request": {
     "title": "custom reviewer round の全員 skip をエラーでなく構造的 skip として通す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/round-all-skip-pass-through-9141b6e6",
   "error": null,
@@ -80,7 +80,9 @@
     "28ea0ea89af3a093649729e1b10190bda3003071",
     "8f48c3cb0739b251a934810853845036d32444ea",
     "c80d84faea8fb2dfc4bb4fef2a3ea5df0c718808",
-    "e8de8eb449e9b9774a1bc25a39c40044328f8592"
+    "e8de8eb449e9b9774a1bc25a39c40044328f8592",
+    "0d97b014b827ab15715a262c53520573709d7420",
+    "0f834527d13d6620d589f7f26bd0b2a8c6ae43c5"
   ],
   "reviewerStatuses": [
     {
@@ -115,7 +117,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 77,
+    "historyCount": 86,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -124,13 +126,14 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 4,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 3
+      "regression-gate": 3,
+      "conformance": 1
     }
   }
 }
