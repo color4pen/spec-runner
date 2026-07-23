@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a2ed8343-bae5-4510-9bf2-2da0088ab101",
   "createdAt": "2026-07-23T04:40:21.606Z",
-  "updatedAt": "2026-07-23T07:11:11.419Z",
+  "updatedAt": "2026-07-23T07:16:09.527Z",
   "request": {
     "title": "canon escalation の operator 適用を resume が第一級で受け付ける — 編集の破棄と手順欠落を解消する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/operator-canon-apply-on-resume-a2ed8343",
   "error": null,
   "pipelineId": "standard",
@@ -80,7 +80,8 @@
     "9cc8acafe9fffed54e45a7cdb32886ab146e9476",
     "a8e027ceee4e36f48723f6423f491f58c3823690",
     "519e7682efb045b531b89b5aab31b0d9618a7c7e",
-    "46cc969ea97decfdaba0ce52cc9780a6d233f9e6"
+    "46cc969ea97decfdaba0ce52cc9780a6d233f9e6",
+    "556e23471157fd5647399c9e00d895d6feba1e21"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -114,8 +115,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/905",
+    "number": 905,
+    "createdAt": "2026-07-23T07:16:08.780Z"
+  },
   "_journal": {
-    "historyCount": 86,
+    "historyCount": 91,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -131,7 +137,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
