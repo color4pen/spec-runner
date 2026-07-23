@@ -1,0 +1,147 @@
+{
+  "version": 2,
+  "jobId": "4f35ee5a-8f08-4574-a7ac-db1795bdb450",
+  "createdAt": "2026-07-23T13:24:18.438Z",
+  "updatedAt": "2026-07-23T15:06:34.876Z",
+  "request": {
+    "title": "spec-fixer の書込集合に tasks.md を加え、tasks.md への fixable finding を pipeline 内で収束させる",
+    "type": "spec-change",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/spec-fixer-tasks-md-writable-4f35ee5a",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 919,
+  "synthesizedCommits": [
+    "f131c0408dfaa3faf9a9ee374a6c1a11aae30f7d",
+    "d7b32461f4a5b0801e2209dbcde4822b3ad9da86",
+    "954412a8158b62d758fa247dba98fb9ac67b0dd9",
+    "f3ae645549537800e2f254fc012885f57664ddd9",
+    "338b00522182c08926080d46ee286a7727661e1f",
+    "dfe75868a4fc6a07c256d34b39a4e6b21d8ab057",
+    "e04bc60b52f1f3a1092d97d55f85901d13635b99",
+    "dc7e34dd63b02314a8b45323c352a21dd82072e2",
+    "537a2bfa971be2a2183121da0d1ecce5e0c45f56",
+    "69babdfada69f6b8ee3568e29a2be15a73e7ce22",
+    "096517675fb2502267bbb44b3b5cd0e4075d5e20",
+    "3964c970f3bfb81cd3f983252484e0af3fc913dc",
+    "57ce1fe9d5040acf6a180ce594d679bcfd8dec5c",
+    "1d60579c33737f4751fde046ee198fd3fc8ab932",
+    "b808fb0666028a25daeee5387437383928bcc518",
+    "32cedd32bfc2aea7255d3b745f9c622465b7850a",
+    "fe5b31df8f1b352f03bf9b8af75b2f2cced3f13c",
+    "791f35d2e2440d5569a2bbe3c919c881ab905a93",
+    "6b9eaf38fe3aa73f1a738d812b9334927145223a",
+    "9fb877adba779bfcce15c278708bf7f5bb44303c",
+    "0417052c055c324da5e8ff935f5d43c9198ad335"
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "3964c970f3bfb81cd3f983252484e0af3fc913dc",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/spec-fixer-tasks-md-writable/design.md:sha256:50bf25bea40b77d28ede4411d18d771fc8cb958106f07869e443e6d9b2914519|specrunner/changes/spec-fixer-tasks-md-writable/request.md:sha256:85e4809fe739c8ae1659c88b77ba1fab5e1adb52bc5f79aede44e6ef68ceaf8e|specrunner/changes/spec-fixer-tasks-md-writable/spec.md:sha256:9da8cfd14894d305fc18d57988b8696391972cabd2616d0855e39b09478e4236|specrunner/changes/spec-fixer-tasks-md-writable/tasks.md:sha256:309026fb23a7f9f96530846dc34668271f0aa9bd5c268c7e18012fe0ec55d50c|specrunner/changes/spec-fixer-tasks-md-writable/test-cases.md:sha256:0618ad07e63c91236b7e20124386d113f56aae10b891d82d742ca442da74f42e"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/923",
+    "number": 923,
+    "createdAt": "2026-07-23T15:06:33.742Z"
+  },
+  "_journal": {
+    "historyCount": 85,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 2,
+      "test-case-gen": 1,
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 2,
+      "code-review": 1,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 3,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

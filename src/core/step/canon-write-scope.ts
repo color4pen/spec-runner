@@ -10,7 +10,7 @@
  * Single source of truth:
  *   - code-fixer:   ∅ (writes only gitState artifact, no canon files)
  *   - implementer:  {tasks.md} (declared for task checkbox updates)
- *   - spec-fixer:   {spec.md, design.md} (declared for spec/design corrections)
+ *   - spec-fixer:   {spec.md, design.md, tasks.md} (declared for spec/design/task corrections)
  */
 import type { FixTarget } from "../../kernel/report-result.js";
 import type { JobState } from "../../state/schema.js";
@@ -28,7 +28,7 @@ import type { CanonWriteScope } from "./canon-escalation.js";
  * writableByFixer uses an explicit map (D5) to avoid import cycles:
  *   - code-fixer:  ∅ (code-fixer and build-fixer write only gitState)
  *   - implementer: {tasks.md} (for task checkbox updates)
- *   - spec-fixer:  {spec.md, design.md} (for spec/design corrections)
+ *   - spec-fixer:  {spec.md, design.md, tasks.md} (for spec/design/task corrections)
  *
  * Drift-guard (TC-029): canon-write-scope.test.ts asserts that each entry matches
  * the corresponding fixer's writes() ∩ protectedCanonPaths at test time.
@@ -47,8 +47,8 @@ export function buildCanonWriteScope(_state: JobState, deps: StepDeps): CanonWri
     ["code-fixer", new Set<string>()],
     // implementer: tasks.md only (task checkbox updates)
     ["implementer", new Set<string>([`${folder}/tasks.md`])],
-    // spec-fixer: spec.md + design.md (spec/design corrections)
-    ["spec-fixer", new Set<string>([`${folder}/spec.md`, `${folder}/design.md`])],
+    // spec-fixer: spec.md + design.md + tasks.md (spec/design/task corrections)
+    ["spec-fixer", new Set<string>([`${folder}/spec.md`, `${folder}/design.md`, `${folder}/tasks.md`])],
   ]);
 
   return { canonPaths, writableByFixer };

@@ -61,7 +61,7 @@ export interface StepCompletionInput {
   sessionId?: string;
   agentBranch?: string;
   modelUsage?: Record<string, ModelUsage>;
-  toolResult?: BaseReportResult | null;
+  toolResult?: JudgeReportResult | ProducerReportResult | RequestReviewReportResult | BaseReportResult | null;
   followUpAttempts?: number;
   transientRetryAttempts?: number;
   completionReportDiagnostics?: CompletionReportDiagnostic[];

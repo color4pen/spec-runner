@@ -140,10 +140,10 @@ describe("TC-018: buildCanonWriteScope — implementer writable は {tasks.md}",
 });
 
 // ---------------------------------------------------------------------------
-// TC-019: spec-fixer writable は {spec.md, design.md}
+// TC-019: spec-fixer writable は {spec.md, design.md, tasks.md}
 // ---------------------------------------------------------------------------
 
-describe("TC-019: buildCanonWriteScope — spec-fixer writable は {spec.md, design.md}", () => {
+describe("TC-019: buildCanonWriteScope — spec-fixer writable は {spec.md, design.md, tasks.md}", () => {
   it("writableByFixer.get('spec-fixer') は spec.md を含む", () => {
     const state = makeState();
     const deps = makeDeps();
@@ -164,14 +164,23 @@ describe("TC-019: buildCanonWriteScope — spec-fixer writable は {spec.md, des
     expect(specFixer.has(`specrunner/changes/${SLUG}/design.md`)).toBe(true);
   });
 
-  it("spec-fixer writable に tasks.md / request.md / test-cases.md は含まれない", () => {
+  it("writableByFixer.get('spec-fixer') は tasks.md を含む", () => {
     const state = makeState();
     const deps = makeDeps();
 
     const scope = buildCanonWriteScope(state, deps);
     const specFixer = scope.writableByFixer.get("spec-fixer") ?? new Set();
 
-    expect(specFixer.has(`specrunner/changes/${SLUG}/tasks.md`)).toBe(false);
+    expect(specFixer.has(`specrunner/changes/${SLUG}/tasks.md`)).toBe(true);
+  });
+
+  it("spec-fixer writable に request.md / test-cases.md は含まれない", () => {
+    const state = makeState();
+    const deps = makeDeps();
+
+    const scope = buildCanonWriteScope(state, deps);
+    const specFixer = scope.writableByFixer.get("spec-fixer") ?? new Set();
+
     expect(specFixer.has(`specrunner/changes/${SLUG}/request.md`)).toBe(false);
     expect(specFixer.has(`specrunner/changes/${SLUG}/test-cases.md`)).toBe(false);
   });
@@ -273,7 +282,7 @@ describe("TC-029 (could): drift-guard — writableByFixer が writes() ∩ prote
     }
   });
 
-  it("spec-fixer: writes() ∩ canonPaths = {spec.md, design.md}（single source of truth）", async () => {
+  it("spec-fixer: writes() ∩ canonPaths = {spec.md, design.md, tasks.md}（single source of truth）", async () => {
     const { SpecFixerStep } = await import("../../../../src/core/step/spec-fixer.js");
     const state = makeState();
     const deps = makeDeps();

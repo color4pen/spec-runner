@@ -101,6 +101,7 @@ export const SpecFixerStep: AgentStep = {
     return [
       { path: `${folder}/design.md` },
       { path: `${folder}/spec.md` },
+      { path: `${folder}/tasks.md` },
     ];
   },
 
@@ -132,7 +133,7 @@ Branch: ${state.branch}
 ${findingsBlock}
 
 Please:
-1. For each finding above, fix the spec.md or design.md artifact as indicated by the rationale
+1. For each finding above, fix the spec.md, design.md, or tasks.md artifact as indicated by the rationale
 2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 3. Do NOT modify the conformance result file itself
 

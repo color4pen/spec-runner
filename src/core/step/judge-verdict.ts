@@ -64,8 +64,9 @@ export function deriveJudgeVerdict(
  *
  * Extends deriveJudgeVerdict with spec-review-specific canon routing:
  * spec-review routes fixable findings on spec-fixer-writable canon files (spec.md,
- * design.md) to spec-fixer via "needs-fix", regardless of severity. Fixable findings
- * on canon files spec-fixer cannot write (request.md, tasks.md, etc.) remain escalation.
+ * design.md, tasks.md) to spec-fixer via "needs-fix", regardless of severity. Fixable
+ * findings on canon files spec-fixer cannot write (request.md, test-cases.md, etc.)
+ * remain escalation.
  *
  * Priority order:
  * 1. ok=false → escalation
