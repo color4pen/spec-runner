@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9141b6e6-fd3b-40a1-8b2c-c0270fb9d9ab",
   "createdAt": "2026-07-23T10:56:38.330Z",
-  "updatedAt": "2026-07-23T12:03:02.793Z",
+  "updatedAt": "2026-07-23T12:04:41.921Z",
   "request": {
     "title": "custom reviewer round の全員 skip をエラーでなく構造的 skip として通す",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "regression-gate",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/round-all-skip-pass-through-9141b6e6",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,8 @@
     "40f76f45505c4d305a42269d074f7f07d87ad52d",
     "4c82b22523a7b1fd714faeb36309f5bc3bd8dbce",
     "8c97845a0d37a2ef5a8b5ed8a501c59dc84b0772",
-    "11840e2548f99ca09e1edb15f7d4d0817597ac06"
+    "11840e2548f99ca09e1edb15f7d4d0817597ac06",
+    "e7c67a2caad74cba31c4725cc38589bf5ce25d71"
   ],
   "reviewerStatuses": [
     {
@@ -105,8 +106,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": {
+    "step": "regression-gate",
+    "reason": "regression-gate escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -120,7 +126,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
