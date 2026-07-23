@@ -468,7 +468,7 @@ describe("TC-005: Dirty canon fail-closes before reconcile runs", () => {
 // TC-013 (should): Removal kind dispatch
 // ---------------------------------------------------------------------------
 
-describe("TC-013 (should): removal kind dispatch — untracked removed via clean, tracked-modified restored via checkout HEAD", () => {
+describe("TC-013 (should): removal kind dispatch — untracked, staged-new, and tracked-modified kinds", () => {
   it(
     "TC-013: untracked residue is absent after reconcile; tracked-modified non-canon artifact is restored to HEAD content",
     async () => {
@@ -529,6 +529,78 @@ describe("TC-013 (should): removal kind dispatch — untracked removed via clean
       const statusAfter = getWorktreeStatus(repoDir);
       expect(statusAfter.has(untrackedResiduePath), "untracked residue must not appear in git status after reconcile").toBe(false);
       expect(statusAfter.has(verificationResultPath), "tracked artifact must not be dirty after restore").toBe(false);
+    },
+    30000,
+  );
+
+  it(
+    "TC-013: staged-new residue (X='A') is quarantined, unstaged, and removed from worktree",
+    async () => {
+      // GIVEN: real git repo
+      // Simulates commit-push.ts being killed after `git add` but before `git commit`.
+      const repoDir = path.join(tempDir, "staged-new-repo");
+      await fs.mkdir(repoDir, { recursive: true });
+      await createGitRepo(repoDir);
+      await makeInitialCommit(repoDir);
+      gitSync(["checkout", "-b", `fix/${SLUG}`], repoDir);
+
+      // Commit the change folder base (state.json)
+      await fs.mkdir(path.join(repoDir, CHANGE_FOLDER), { recursive: true });
+      await fs.writeFile(
+        path.join(repoDir, `${CHANGE_FOLDER}/state.json`),
+        "{}",
+        "utf-8",
+      );
+      gitSync(["add", `${CHANGE_FOLDER}/state.json`], repoDir);
+      gitSync(["commit", "-m", `bootstrap: change folder for ${SLUG}`], repoDir);
+
+      // Simulate the interrupted commit-push: write an artifact and git-add it,
+      // but do NOT commit — leaves an X='A' staged-new entry in the index.
+      const stagedResiduePath = `${CHANGE_FOLDER}/spec-review-result-003.md`;
+      const residueContent = "# Staged-new residue (staged but not committed)\n";
+      await fs.writeFile(path.join(repoDir, stagedResiduePath), residueContent, "utf-8");
+      gitSync(["add", stagedResiduePath], repoDir);
+
+      // Verify precondition: entry shows as "A " (staged-new) in git status
+      const statusBefore = getWorktreeStatus(repoDir);
+      const xyBefore = statusBefore.get(stagedResiduePath);
+      expect(xyBefore, "staged-new residue must show as 'A ' in git status before reconcile").toBe("A ");
+
+      // WHEN
+      const result = await reconcileWorktreeArtifacts(SLUG, repoDir, defaultSpawnFn);
+
+      // THEN: the staged-new path was reconciled
+      expect(result.reconciled).toContain(stagedResiduePath);
+      expect(result.quarantineDir).not.toBeNull();
+
+      // THEN: the file no longer exists in the worktree
+      const fileExists = await fs
+        .access(path.join(repoDir, stagedResiduePath))
+        .then(() => true)
+        .catch(() => false);
+      expect(fileExists, "staged-new residue must be removed from worktree after reconcile").toBe(false);
+
+      // THEN: git status shows the path as completely clean (not in index, not untracked)
+      const statusAfter = getWorktreeStatus(repoDir);
+      expect(
+        statusAfter.has(stagedResiduePath),
+        "staged-new residue must not appear in git status after reconcile (index and worktree both clean)",
+      ).toBe(false);
+
+      // THEN: quarantine evidence was written and contains identifiable content
+      const quarantineDir = result.quarantineDir!;
+      const quarantineFiles = await fs.readdir(quarantineDir);
+      expect(quarantineFiles.length, "at least one quarantine evidence file must exist").toBeGreaterThan(0);
+      let foundEvidence = false;
+      for (const file of quarantineFiles) {
+        const content = await fs.readFile(path.join(quarantineDir, file), "utf-8");
+        // Evidence contains either the raw file content or `kind: staged-new`
+        if (content.includes("staged-new") || content.includes("Staged-new residue")) {
+          foundEvidence = true;
+          break;
+        }
+      }
+      expect(foundEvidence, "quarantine evidence must capture staged-new residue content or kind annotation").toBe(true);
     },
     30000,
   );
