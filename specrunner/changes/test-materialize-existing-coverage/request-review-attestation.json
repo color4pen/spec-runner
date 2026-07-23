@@ -1,0 +1,12 @@
+{
+  "requestHash": "sha256:6fa36ad6826c74dee3370a46fc02fa7d376f73cee2eb25469c7920a3616156d6",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/verification/test-coverage.ts:1-11 — TC ID リテラル走査 (出現形式を区別しない)",
+    "src/core/step/test-materialize.ts:47-50 — outputContracts() が test-coverage 契約を宣言",
+    "src/prompts/test-materialize-system.ts:61 — 既存テスト参照は配置パターン確認のみ",
+    "src/prompts/test-materialize-system.ts:117 — 既存テスト参照は配置パターン確認のみ (initial message)",
+    "src/core/step/write-scope.ts:33 — GUARDED_WRITE_STEPS に test-materialize が含まれる"
+  ],
+  "sourceRevision": "c0a5c4eb62ff477f87d88a4594b2d842979c3b80"
+}
