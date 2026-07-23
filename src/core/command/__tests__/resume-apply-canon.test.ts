@@ -460,6 +460,98 @@ describe("TC-016 (should): --no-worktree + --apply-canon issues warning and star
 });
 
 // ---------------------------------------------------------------------------
+// TC-019: exit-128 carve-out — detectCanonDirtyPaths が exit 128 で throw しても
+//         prepare() は clean 扱いで継続する（integration レベルの文書化）
+// ---------------------------------------------------------------------------
+
+describe("TC-019: exit-128 carve-out — prepare() treats non-git-dir as clean", () => {
+  /**
+   * BACKGROUND (integration-level documentation of the exit-128 carve-out):
+   *
+   * TC-012 tests that detectCanonDirtyPaths throws when git status exits non-zero
+   * (fail-closed at unit level). However, prepare() contains an intentional carve-out:
+   * when the thrown error message includes "exit 128" (git's signal for "not a git repo"),
+   * prepare() treats the worktree as having no dirty canon files and continues normally.
+   *
+   * Rationale: exit 128 means the worktreePath is not inside a git repository.
+   * A non-git directory cannot have git-tracked dirty files, so treating it as
+   * clean is correct and safe. This carve-out supports test/dev environments where
+   * the worktree is not a real git repo.
+   *
+   * This conditional behavior is INVISIBLE from TC-012 alone (which only tests
+   * detectCanonDirtyPaths in isolation). This test makes it observable at
+   * integration level so the carve-out cannot be silently removed.
+   */
+
+  beforeEach(() => {
+    const awaitingState = makeJobState({
+      status: "awaiting-resume",
+      step: "design",
+      worktreePath: FAKE_WORKTREE,
+    });
+    const runningState = makeRunningState();
+
+    vi.mocked(resolveJobStateBySlug).mockResolvedValue(awaitingState);
+    vi.mocked(transitionJob).mockReturnValue({ state: runningState, noop: false });
+  });
+
+  it("TC-019: prepare() does NOT throw when detectCanonDirtyPaths throws with exit 128", async () => {
+    // GIVEN: detectCanonDirtyPaths throws with an error message containing "exit 128"
+    //        (simulating a non-git directory scenario)
+    mockDetectCanonDirtyPaths.mockRejectedValue(new Error("git exited with exit 128"));
+
+    const cmd = new ResumeCommand(
+      {} as never,
+      {} as never,
+      "test-slug",
+      { cwd: "/repo" }, // no applyCanon
+    );
+
+    // WHEN / THEN: prepare() must NOT throw — exit 128 is treated as clean
+    await expect(callPrepare(cmd)).resolves.toBeDefined();
+  });
+
+  it("TC-019: prepare() DOES throw when detectCanonDirtyPaths throws with non-128 exit", async () => {
+    // GIVEN: detectCanonDirtyPaths throws with a generic git error (not exit 128)
+    mockDetectCanonDirtyPaths.mockRejectedValue(new Error("git status failed with exit 1"));
+
+    const cmd = new ResumeCommand(
+      {} as never,
+      {} as never,
+      "test-slug",
+      { cwd: "/repo" }, // no applyCanon
+    );
+
+    // WHEN / THEN: prepare() must throw — fail-closed for all non-128 git errors
+    await expect(callPrepare(cmd)).rejects.toThrow();
+  });
+
+  it("TC-019: commitOperatorCanon is NOT called when exit 128 treats worktree as clean", async () => {
+    // GIVEN: detectCanonDirtyPaths throws with exit 128
+    mockDetectCanonDirtyPaths.mockRejectedValue(new Error("git exited with exit 128"));
+
+    const cmd = new ResumeCommand(
+      {} as never,
+      {} as never,
+      "test-slug",
+      { cwd: "/repo", applyCanon: true },
+    );
+
+    try {
+      await callPrepare(cmd);
+    } catch {
+      // May throw for unrelated reasons
+    }
+
+    // No operator-apply commit should be created — the worktree was treated as clean
+    expect(
+      mockCommitOperatorCanon,
+      "exit 128 carve-out must treat worktree as clean: no operator-apply commit",
+    ).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-018: 破壊確認 — fail-closed guard を除去すると TC-004 が fail する
 // ---------------------------------------------------------------------------
 

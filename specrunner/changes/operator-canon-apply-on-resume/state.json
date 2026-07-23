@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a2ed8343-bae5-4510-9bf2-2da0088ab101",
   "createdAt": "2026-07-23T04:40:21.606Z",
-  "updatedAt": "2026-07-23T06:09:54.554Z",
+  "updatedAt": "2026-07-23T06:25:24.978Z",
   "request": {
     "title": "canon escalation の operator 適用を resume が第一級で受け付ける — 編集の破棄と手順欠落を解消する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "fix/operator-canon-apply-on-resume-a2ed8343",
   "error": null,
@@ -71,12 +71,13 @@
     "7392a0a5f0770b84e93bf37a7689029015843196",
     "6463e0bcef6908122cf0234e292f67d4cb69c233",
     "d16df554ad4782d97c62b58dd0815c8dfaed81d2",
-    "05f20184e3927ea8f0e3aebebc6a79ddfec2e4c7"
+    "05f20184e3927ea8f0e3aebebc6a79ddfec2e4c7",
+    "e591f6ff64a5849ebbace2872449818b5f897bb1"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -85,7 +86,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1
     }
   }
 }
