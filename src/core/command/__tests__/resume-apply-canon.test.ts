@@ -425,12 +425,38 @@ describe("TC-016 (should): --no-worktree + --apply-canon issues warning and star
       {
         cwd: "/repo",
         noWorktree: true,
-        // Note: applyCanon: true will be added by T-02; use type assertion for RED tests
-      } as Record<string, unknown> as never,
+        applyCanon: true,
+      },
     );
 
     // WHEN / THEN: must NOT throw (warning is acceptable)
     await expect(callPrepare(cmd)).resolves.toBeDefined();
+  });
+
+  it("TC-016: warning is written to stderr when --apply-canon is given with no worktree", async () => {
+    // GIVEN: --no-worktree mode + --apply-canon
+    const cmd = new ResumeCommand(
+      {} as never,
+      {} as never,
+      "test-slug",
+      {
+        cwd: "/repo",
+        noWorktree: true,
+        applyCanon: true,
+      },
+    );
+
+    await callPrepare(cmd);
+
+    // THEN: stderrWrite must have been called with the no-effect warning
+    const stderrMessages = vi.mocked(stderrWrite).mock.calls.map(([msg]) => String(msg));
+    const hasWarning = stderrMessages.some((msg) =>
+      msg.includes("--apply-canon") && msg.toLowerCase().includes("warning"),
+    );
+    expect(
+      hasWarning,
+      "stderr must contain a Warning mentioning --apply-canon when worktree is absent",
+    ).toBe(true);
   });
 
   it("TC-016: detectCanonDirtyPaths is NOT called when resolvedWorktreePath is null (no-worktree mode)", async () => {
@@ -441,13 +467,13 @@ describe("TC-016 (should): --no-worktree + --apply-canon issues warning and star
       {
         cwd: "/repo",
         noWorktree: true,
-      } as Record<string, unknown> as never,
+        applyCanon: true,
+      },
     );
 
     try {
       await callPrepare(cmd);
     } catch {
-      // May throw for other reasons (e.g. no-worktree mode not yet adjusted)
       // Focus on the assertion: detectCanonDirtyPaths must NOT be called
     }
 

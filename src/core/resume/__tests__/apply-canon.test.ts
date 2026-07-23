@@ -333,11 +333,24 @@ describe("TC-013 (TC-U5, TC-U6): commitOperatorCanon — creates commit with cor
     // WHEN
     await commitOperatorCanon(SLUG, tempDir, [CANON_PATH], defaultSpawnFn);
 
-    // THEN: non-canon path is still dirty (in working tree)
+    // THEN: non-canon path appears in git status (working-tree dirty)
     const statusResult = spawnSync("git", ["status", "--porcelain", "-uall"], {
       cwd: tempDir, encoding: "utf8",
     });
     expect(statusResult.stdout).toContain(NON_CANON_PATH);
+
+    // THEN: non-canon path must NOT be in the git index (staged) — guards against `git add -A` regression.
+    // A staged non-canon file would show as `A  src/feature.ts` in `git status --porcelain`,
+    // which the check above passes but would indicate index pollution.
+    // `git diff --cached --name-only` is the definitive test of the staged set.
+    const stagedResult = spawnSync("git", ["diff", "--cached", "--name-only"], {
+      cwd: tempDir, encoding: "utf8",
+    });
+    const stagedFiles = stagedResult.stdout.trim().split("\n").filter(Boolean);
+    expect(
+      stagedFiles,
+      "non-canon file must NOT be staged in the index after commitOperatorCanon (guards against git add -A regression)",
+    ).not.toContain(NON_CANON_PATH);
   });
 });
 
