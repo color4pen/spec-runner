@@ -51,7 +51,7 @@ function makeFixableFinding(overrides: Partial<Finding> = {}): Finding {
  * Mirrors what buildCanonWriteScope(state, deps) will return:
  *   - code-fixer: ∅
  *   - implementer: {tasks.md}
- *   - spec-fixer: {spec.md, design.md}
+ *   - spec-fixer: {spec.md, design.md, tasks.md}
  */
 function makeFullCanonScope(): CanonWriteScope {
   const canonPaths = new Set([
@@ -68,6 +68,7 @@ function makeFullCanonScope(): CanonWriteScope {
     ["spec-fixer", new Set([
       `specrunner/changes/${SLUG}/spec.md`,
       `specrunner/changes/${SLUG}/design.md`,
+      `specrunner/changes/${SLUG}/tasks.md`,
     ])],
   ]);
   return { canonPaths, writableByFixer };
@@ -267,7 +268,9 @@ describe("TC-005: tasks.md + fixTarget:implementer → needs-fix:implementer（�
 });
 
 // ---------------------------------------------------------------------------
-// TC-006: tasks.md への code-fixer finding は escalation
+// TC-006: tasks.md への fixer finding の escalation / routing
+//   code-fixer → escalation（tasks.md を書けない）
+//   spec-fixer → needs-fix:spec-fixer（tasks.md が spec-fixer の write-set に追加）
 // ---------------------------------------------------------------------------
 
 describe("TC-006: tasks.md + fixTarget:code-fixer → escalation", () => {
@@ -286,7 +289,7 @@ describe("TC-006: tasks.md + fixTarget:code-fixer → escalation", () => {
     expect(verdict).toBe("escalation");
   });
 
-  it("deriveConformanceVerdict — tasks.md fixable high fixTarget:spec-fixer + canonScope → escalation", () => {
+  it("deriveConformanceVerdict — tasks.md fixable high fixTarget:spec-fixer + canonScope → needs-fix:spec-fixer", () => {
     const finding = makeFixableFinding({
       file: `specrunner/changes/${SLUG}/tasks.md`,
       severity: "high",
@@ -297,8 +300,8 @@ describe("TC-006: tasks.md + fixTarget:code-fixer → escalation", () => {
 
     const verdict = deriveConformanceVerdict([finding], true, undefined, scope);
 
-    // spec-fixer's writable = {spec.md, design.md} → tasks.md not included → escalation
-    expect(verdict).toBe("escalation");
+    // spec-fixer's writable = {spec.md, design.md, tasks.md} → tasks.md included → needs-fix:spec-fixer (D3)
+    expect(verdict).toBe("needs-fix:spec-fixer");
   });
 });
 

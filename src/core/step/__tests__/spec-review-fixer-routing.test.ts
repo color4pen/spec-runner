@@ -105,7 +105,7 @@ function makeCanonScope(): CanonWriteScope {
   const writableByFixer = new Map<FixTarget, ReadonlySet<string>>([
     ["code-fixer", new Set<string>()],
     ["implementer", new Set<string>([TASKS_MD])],
-    ["spec-fixer", new Set<string>([SPEC_MD, DESIGN_MD])],
+    ["spec-fixer", new Set<string>([SPEC_MD, DESIGN_MD, TASKS_MD])],
   ]);
   return { canonPaths, writableByFixer };
 }
@@ -912,19 +912,32 @@ describe("TC-012: selectRoutableCanonFindings returns only findings on spec-fixe
 
 // ---------------------------------------------------------------------------
 // TC-013
-// Source: tasks.md > T-02
+// Source: tasks.md > T-02 (updated: tasks.md is now routable to spec-fixer)
 // GIVEN spec-review result with ok:true and fixable finding on tasks.md
 // WHEN deriveSpecReviewVerdict is called
-// THEN verdict is escalation (tasks.md is unroutable for spec-fixer)
+// THEN verdict is needs-fix (tasks.md is now in spec-fixer's writable set)
+//
+// test-cases.md remains unroutable (escalation with escalationReason).
 // ---------------------------------------------------------------------------
 
-describe("TC-013: deriveSpecReviewVerdict — fixable finding on tasks.md escalates", () => {
-  it("TC-013: fixable finding on tasks.md (unroutable for spec-fixer) → escalation", () => {
+describe("TC-013: deriveSpecReviewVerdict — fixable finding on tasks.md routes to spec-fixer", () => {
+  let stderrSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    void stderrSpy;
+  });
+
+  it("TC-013: fixable finding on tasks.md (routable to spec-fixer) → needs-fix", () => {
     expect(deriveSpecReviewVerdict).toBeDefined();
-    // tasks.md is in canonPaths but NOT in spec-fixer's writable set
+    // tasks.md is now in spec-fixer's writable set
     const findings = [makeFinding("medium", "fixable", TASKS_MD)];
     const verdict = deriveSpecReviewVerdict!(findings, true, undefined, makeCanonScope());
-    expect(verdict).toBe("escalation");
+    expect(verdict).toBe("needs-fix");
   });
 
   it("TC-013: fixable finding on test-cases.md (unroutable for spec-fixer) → escalation", () => {
@@ -932,6 +945,36 @@ describe("TC-013: deriveSpecReviewVerdict — fixable finding on tasks.md escala
     const findings = [makeFinding("medium", "fixable", TEST_CASES_MD)];
     const verdict = deriveSpecReviewVerdict!(findings, true, undefined, makeCanonScope());
     expect(verdict).toBe("escalation");
+  });
+
+  it("TC-013: deriveStepCompletion sets escalationReason containing CANON_FINDING_ESCALATION and test-cases.md", async () => {
+    expect(deriveSpecReviewVerdict).toBeDefined();
+    const step = makeMinimalJudgeStep(STEP_NAMES.SPEC_REVIEW, JUDGE_REPORT_TOOL);
+    (step as unknown as Record<string, unknown>).judgeVerdictFn = deriveSpecReviewVerdict;
+
+    const state = makeMinimalState(STEP_NAMES.SPEC_REVIEW);
+    const deps = makeMinimalDeps();
+
+    const agentResult = {
+      toolResult: {
+        ok: true,
+        findings: [makeFinding("medium", "fixable", TEST_CASES_MD)],
+      },
+      followUpAttempts: 0,
+    };
+
+    const completion = await deriveStepCompletion(
+      step,
+      state,
+      deps,
+      agentResult as never,
+      undefined,
+    );
+
+    expect(completion.verdict).toBe("escalation");
+    expect(completion.escalationReason).toBeDefined();
+    expect(completion.escalationReason).toContain("CANON_FINDING_ESCALATION");
+    expect(completion.escalationReason).toContain(TEST_CASES_MD);
   });
 });
 

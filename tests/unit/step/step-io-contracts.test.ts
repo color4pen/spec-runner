@@ -210,12 +210,13 @@ describe("SpecFixerStep reads/writes", () => {
     expect(fixerReads).toContain(specReviewResultPath(SLUG, 1));
   });
 
-  it("writes design.md and spec.md", () => {
+  it("writes design.md, spec.md, and tasks.md", () => {
     const refs = SpecFixerStep.writes!(makeState(), makeDeps());
     const paths = refs.map(r => r.path);
     const folder = changeFolderPath(SLUG);
     expect(paths).toContain(`${folder}/design.md`);
     expect(paths).toContain(`${folder}/spec.md`);
+    expect(paths).toContain(`${folder}/tasks.md`);
   });
 
   it("all reads are required by default", () => {

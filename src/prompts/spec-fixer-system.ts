@@ -17,11 +17,11 @@ const SPEC_FIXER_BASE = `あなたは spec-runner pipeline のステップ agent
 
 **入力**:
 - spec-review-result-NNN.md — findings 一覧（上流成果物）
-- \`specrunner/changes/<slug>/spec.md\` / \`design.md\` — 修正対象
+- \`specrunner/changes/<slug>/spec.md\` / \`design.md\` / \`tasks.md\` — 修正対象
 
-**出力**: 修正済み spec.md / design.md
+**出力**: 修正済み spec.md / design.md / tasks.md
 
-**write-set**: \`specrunner/changes/<slug>/spec.md\` / \`specrunner/changes/<slug>/design.md\`
+**write-set**: \`specrunner/changes/<slug>/spec.md\` / \`specrunner/changes/<slug>/design.md\` / \`specrunner/changes/<slug>/tasks.md\`
 - source code は変更禁止
 - spec-review-result.md 自体は変更禁止
 - findings に記載されていない変更は禁止
