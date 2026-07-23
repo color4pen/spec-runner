@@ -1,0 +1,15 @@
+{
+  "requestHash": "sha256:751cd6da817641ff19dbe31e7f780f710090443070cd13e7256ab89143874ba0",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/executor.ts:270-294 — activation gate: if (step.activation) block returns {kind:'skipped'} when !decision.activated",
+    "src/core/step/executor.ts:262-268 — fail-closed: canDeriveChangedFiles check before listChangedFiles",
+    "src/core/pipeline/parallel-review-round.ts:353-354 — allMembersSkipped: memberVerdicts.size > 0 && every v === 'skipped'",
+    "src/core/pipeline/parallel-review-round.ts:468-478 — allMembersSkipped guard on applyRoundResults; ROUND_ALL_MEMBERS_SKIPPED roundError set",
+    "src/core/pipeline/pipeline.ts:395-413 — terminal seam: state.error?.code === ROUND_ALL_MEMBERS_SKIPPED → awaiting-resume",
+    "src/core/pipeline/reviewer-chain.ts:446-464 — escalation → REGRESSION_GATE_STEP_NAME transition when error.code === ROUND_ALL_MEMBERS_SKIPPED",
+    "src/core/pipeline/reviewer-status.ts verdictOfResult — halt returns 'escalation', skipped returns 'skipped' (distinct verdicts)",
+    "src/core/step/commit-orchestrator.ts commitRound line 594 — error: roundError (null clears sticky state.error)"
+  ],
+  "sourceRevision": "ecb7737d73369836ff61f8fdd7a5868350f822fd"
+}
