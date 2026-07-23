@@ -174,16 +174,44 @@ describe("aggregateVerdict", () => {
     expect(aggregateVerdict(["approved"])).toBe("approved");
   });
 
-  // TC-034: reviewer 構成あり + 全 skipped → escalation（非 green 化、req 3）
-  // BREAKING CHANGE from old behavior ("approved"). Now returns "escalation".
-  // Destruction confirmation (TC-048): removing the all-skipped branch makes this test fail.
-  it("TC-034/TC-006: returns escalation when all verdicts are skipped (all-skip → non-green, D6)", () => {
-    expect(aggregateVerdict(["skipped", "skipped"])).toBe("escalation");
+  // TC-003: 全 member が "skipped" のとき集約は "approved"（構造的 skip = gate pass-through）
+  // CHANGE from custom-reviewer-canon-binding D6 behavior (which returned "escalation").
+  // New behavior: all-skip is a structural skip, approved aggregation, pipeline proceeds.
+  //
+  // Destruction confirmation (TC-003): reverting this to return "escalation" causes
+  // TC-001/TC-002 (awaiting-archive E2E) and TC-015 (sticky error cleanup) to fail.
+  it("TC-003: returns approved when all verdicts are skipped (structural skip, all-skip gate pass-through)", () => {
+    expect(aggregateVerdict(["skipped", "skipped"])).toBe("approved");
   });
 
-  // TC-036/TC-008: mixed approved + skipped → approved (not all-skip, gate passes)
-  it("TC-036/TC-008: returns approved for mixed approved and skipped", () => {
+  // TC-007: error（halt=escalation）と skip の混在 → escalation（error は skip に紛れない、要件 3）
+  // This verifies that the distinct verdict vocabulary is maintained:
+  // error/halt → "escalation" is NOT absorbed by "approved" structural-skip aggregation.
+  //
+  // Destruction confirmation (TC-007): relaxing error/skip distinction causes TC-006
+  // (E2E mixed-stop test) to fail with pipeline reaching awaiting-archive incorrectly.
+  it("TC-007: returns escalation when escalation (session error/halt) coexists with skipped", () => {
+    expect(aggregateVerdict(["skipped", "escalation"])).toBe("escalation");
+  });
+
+  // TC-011 (should): mixed approved + skipped → approved (approved 優先、旧挙動不変)
+  it("TC-011: returns approved for mixed approved and skipped (approved overrides skipped)", () => {
     expect(aggregateVerdict(["approved", "skipped"])).toBe("approved");
+  });
+
+  // TC-012 (should): needs-fix と skip の混在 → needs-fix（needs-fix 優先不変）
+  it("TC-012: returns needs-fix when needs-fix coexists with skipped", () => {
+    expect(aggregateVerdict(["needs-fix", "skipped"])).toBe("needs-fix");
+  });
+
+  // TC-013 (should): 空配列 → approved（機能未使用扱い、旧挙動不変）
+  it("TC-013: returns approved for empty verdict list (member 0 = feature unused)", () => {
+    expect(aggregateVerdict([])).toBe("approved");
+  });
+
+  // TC-014 (should): approved + escalation → escalation（escalation 短絡不変）
+  it("TC-014: returns escalation when escalation coexists with approved (escalation priority unchanged)", () => {
+    expect(aggregateVerdict(["approved", "escalation"])).toBe("escalation");
   });
 
   it("returns needs-fix when any verdict is needs-fix", () => {

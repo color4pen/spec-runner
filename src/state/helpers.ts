@@ -119,11 +119,10 @@ export interface StepResultInput {
  * via `{ ...state, steps: {...}, updatedAt: ... }`, which spreads the existing
  * `state.error` field unchanged. If a prior step (e.g. commitRound failure) set
  * `state.error`, that value persists across subsequent pushStepResult calls even
- * when those steps succeed. This is intentional: pipeline.ts relies on this
- * "sticky" behaviour to detect ROUND_ALL_MEMBERS_SKIPPED at the end-of-pipeline
- * check (the error set by commitRound is still present after regression-gate /
- * conformance / pr-create succeed). Callers that need to clear `state.error`
- * must do so explicitly by spreading `{ error: null }` into the returned state.
+ * when those steps succeed. This is intentional: an error recorded mid-pipeline
+ * stays visible in persisted state until it is explicitly cleared. Callers that
+ * need to clear `state.error` must do so explicitly by
+ * spreading `{ error: null }` into the returned state.
  */
 export function pushStepResult(
   state: JobState,

@@ -1,19 +1,30 @@
 /**
- * T-11: E2E mock pipeline tests for reviewer activation conditions.
+ * T-11 / round-all-skip-pass-through: E2E mock pipeline tests for reviewer activation conditions.
  *
  * Coverage:
- * - TC-ACT-01: paths 不一致 reviewer が skip され、verdict: "skipped" + skipReason が state に記録される
- * - TC-ACT-02: requestTypes 一致で起動、不一致で skip
+ * - TC-ACT-01 / TC-001: paths 不一致 reviewer が skip → job は "awaiting-archive" で完了（構造的 skip）
+ * - TC-ACT-02: requestTypes 一致で起動、不一致で skip → job は "awaiting-archive"（構造的 skip）
  * - TC-ACT-03: 条件無指定 reviewer は常時起動する
- * - TC-ACT-04: skip ≠ approved — skipped reviewer が後続 reviewer / conformance へ進む
+ * - TC-ACT-04 / TC-002: skip ≠ approved — skipped reviewer が後続 reviewer / conformance へ進む
+ *   - first test: 単一 reviewer skip → "awaiting-archive"（構造的 skip）
+ *   - second test: 1 skip + 1 approved → "awaiting-archive"（mixed → approved, 変わらず）
  * - TC-ACT-05: reviewers/ 空の場合は既存挙動と完全一致（regression）
  *
- * TC-040 (must): 単一 reviewer が activation 不一致で skip → job が "awaiting-resume" で停止
- *   (all-skip escalation per aggregateVerdict, req 3)
- *   Affects: TC-ACT-01, TC-ACT-02 (requestTypes不一致), TC-ACT-04 (first test / single-skip case)
- * TC-041 (must): reviewer が 1 名 skip + 1 名 approved → job は "awaiting-archive" で完了
- *   (mixed verdict = approved, not escalation)
+ * TC-040 (updated to new behavior): 単一 reviewer が activation 不一致で skip →
+ *   job は "awaiting-archive" で完了（構造的 skip per round-all-skip-pass-through）
+ *   CHANGE from old behavior: was "awaiting-resume" (all-skip escalation per D6).
+ *   Affects: TC-ACT-01, TC-ACT-02 (requestTypes不一致), TC-ACT-04 (first test)
+ *
+ * TC-041 (unchanged): reviewer が 1 名 skip + 1 名 approved → job は "awaiting-archive" で完了
+ *   (mixed verdict = approved, not all-skip — behavior unchanged)
  *   Affects: TC-ACT-04 (second test / mixed case) — stays "awaiting-archive"
+ *
+ * NEW for round-all-skip-pass-through:
+ *   TC-001: 全 member 担当外 skip の round で job が awaiting-archive まで到達する（E2E）
+ *   TC-002: 単一 reviewer の全 skip も構造的 skip として通る（E2E）
+ *   TC-004: skip した member の理由が journal step-attempt record に残る
+ *   TC-005: 全 skip round でも member 証跡が消えない
+ *   TC-010: 旧 ROUND_ALL_MEMBERS_SKIPPED 状態からの resume が完走する（後方回復経路）
  *
  * Note: These tests use the managed agent runner (mock client).
  * In managed mode, listChangedFiles is not available (runtimeStrategy not injected),
@@ -31,6 +42,10 @@ import type { SpawnFn } from "../src/util/spawn.js";
 import { makeStoreFactory } from "./helpers/store-factory.js";
 import { buildInitialJobState } from "../src/store/job-state-store.js";
 import type { ReviewerSnapshot } from "../src/kernel/reviewer-snapshot.js";
+import { fold } from "../src/store/event-journal.js";
+import { buildPipelineForJob } from "../src/core/pipeline/index.js";
+import type { JobState } from "../src/state/schema.js";
+import { CUSTOM_REVIEWERS_STEP_NAME } from "../src/core/pipeline/types.js";
 
 const noopSpawn: SpawnFn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
 
@@ -268,21 +283,26 @@ async function runPipelineWith(
 // TC-ACT-01: paths 不一致 reviewer → skipped
 // ---------------------------------------------------------------------------
 
-describe("TC-ACT-01: paths 不一致 reviewer is skipped", () => {
-  it("reviewer with paths condition is skipped when no files match (managed: changedFiles=[])", async () => {
+describe("TC-ACT-01 / TC-001: paths 不一致 reviewer is skipped → job reaches awaiting-archive (structural skip)", () => {
+  it("TC-001/TC-ACT-01: reviewer with paths condition is skipped; job reaches awaiting-archive (structural skip)", async () => {
     // paths: ["src/auth/**"] — managed runtime returns [] for changedFiles → skip
+    // TC-001: all-skip = structural skip → "awaiting-archive" (gate pass-through)
+    //
+    // CHANGE from custom-reviewer-canon-binding D6: was "awaiting-resume" (all-skip escalation).
+    // New behavior per round-all-skip-pass-through: structural skip proceeds to awaiting-archive.
+    //
+    // Destruction confirmation (TC-001): reverting aggregateVerdict all-skip to "escalation"
+    // and/or restoring ROUND_ALL_MEMBERS_SKIPPED terminal seam → result.status === "awaiting-resume".
     const reviewers = [
       makeSnapshot("security", { paths: ["src/auth/**"] }),
     ];
 
     const result = await runPipelineWith(reviewers);
 
-    // TC-040: all-skip → escalation → "awaiting-resume" (not "awaiting-archive")
-    // BREAKING CHANGE from old behavior ("awaiting-archive").
-    // Destruction confirmation (TC-048): reverting aggregateVerdict all-skip branch makes this fail.
-    expect(result.status).toBe("awaiting-resume");
+    // TC-001/TC-040 (updated): all-skip → structural skip → "awaiting-archive" (not "awaiting-resume")
+    expect(result.status).toBe("awaiting-archive");
 
-    // security reviewer should have been skipped
+    // TC-005: security reviewer should have been skipped with skip record preserved
     const securityRuns = result.steps?.["security"];
     expect(securityRuns, "security step should have a run record").toBeDefined();
     expect(securityRuns?.length).toBe(1);
@@ -291,8 +311,8 @@ describe("TC-ACT-01: paths 不一致 reviewer is skipped", () => {
     expect(run.outcome.skipReason).toBeDefined();
     expect(run.outcome.skipReason).toContain("src/auth/**");
 
-    // Pipeline should still complete (skip → conformance)
-    expect(result.steps?.["conformance"], "conformance should have run after skip").toBeDefined();
+    // Pipeline should still complete (skip → regression-gate → conformance → pr-create)
+    expect(result.steps?.["conformance"], "conformance should have run after structural skip").toBeDefined();
   });
 });
 
@@ -315,7 +335,15 @@ describe("TC-ACT-02: requestTypes condition", () => {
     expect(securityRuns![0]!.outcome.verdict).not.toBe("skipped");
   });
 
-  it("reviewer is skipped when requestType does NOT match", async () => {
+  it("TC-ACT-02 (requestTypes不一致): reviewer is skipped when requestType does NOT match → awaiting-archive (structural skip)", async () => {
+    // TC-ACT-02 (requestTypes不一致): request type "bug-fix" but reviewer activates only for "spec-change" → skip
+    // TC-040 (updated): all-skip → structural skip → "awaiting-archive" (not "awaiting-resume")
+    //
+    // CHANGE from custom-reviewer-canon-binding: was "awaiting-resume".
+    // New behavior: structural skip proceeds to awaiting-archive.
+    //
+    // Destruction confirmation: reverting aggregateVerdict all-skip to "escalation" causes
+    // result.status === "awaiting-resume" instead of "awaiting-archive".
     const reviewers = [
       makeSnapshot("security", { requestTypes: ["spec-change"] }),
     ];
@@ -329,8 +357,8 @@ describe("TC-ACT-02: requestTypes condition", () => {
     expect(securityRuns![0]!.outcome.skipReason).toContain("spec-change");
     expect(securityRuns![0]!.outcome.skipReason).toContain("bug-fix");
 
-    // TC-040: all-skip → escalation → "awaiting-resume" (not "awaiting-archive")
-    expect(result.status).toBe("awaiting-resume");
+    // TC-040 (updated): all-skip → structural skip → "awaiting-archive"
+    expect(result.status).toBe("awaiting-archive");
   });
 });
 
@@ -355,8 +383,18 @@ describe("TC-ACT-03: reviewer without conditions always activates", () => {
 // TC-ACT-04: skip ≠ approved — state has skipped, pipeline continues
 // ---------------------------------------------------------------------------
 
-describe("TC-ACT-04: skipped verdict is distinct from approved", () => {
-  it("skipped step has verdict 'skipped' (not 'approved') and pipeline completes", async () => {
+describe("TC-ACT-04 / TC-002: skipped verdict is distinct from approved; structural skip reaches awaiting-archive", () => {
+  it("TC-002/TC-ACT-04: skipped step has verdict 'skipped' (not 'approved'); structural skip reaches awaiting-archive", async () => {
+    // TC-002: single reviewer that skips is "all members skipped" = structural skip.
+    // The per-member verdict remains "skipped" (not "approved") — vocabulary is preserved.
+    // Only the aggregate changes from "escalation" to "approved" (structural skip).
+    //
+    // TC-040 (updated): all-skip → structural skip → "awaiting-archive" (not "awaiting-resume")
+    //
+    // CHANGE: was "awaiting-resume" (old all-skip escalation). Now "awaiting-archive".
+    //
+    // Destruction confirmation (TC-002): reverting aggregateVerdict all-skip to "escalation"
+    // causes result.status === "awaiting-resume" instead of "awaiting-archive".
     const reviewers = [
       makeSnapshot("security", { requestTypes: ["spec-change"] }),
     ];
@@ -364,10 +402,11 @@ describe("TC-ACT-04: skipped verdict is distinct from approved", () => {
     const result = await runPipelineWith(reviewers, "bug-fix");
 
     const run = result.steps?.["security"]?.[0];
+    // Per-member verdict stays "skipped" (vocabulary preserved, not "approved")
     expect(run?.outcome.verdict).toBe("skipped");
     expect(run?.outcome.verdict).not.toBe("approved");
-    // TC-040: single reviewer all-skip → escalation → "awaiting-resume"
-    expect(result.status).toBe("awaiting-resume");
+    // TC-002/TC-040 (updated): all-skip → structural skip → "awaiting-archive"
+    expect(result.status).toBe("awaiting-archive");
   });
 
   it("two reviewers: one skipped, one approved — pipeline still completes", async () => {
@@ -392,5 +431,147 @@ describe("TC-ACT-05: no reviewers — regression check", () => {
   it("pipeline completes normally with empty reviewers array", async () => {
     const result = await runPipelineWith([]);
     expect(result.status).toBe("awaiting-archive");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-004 / TC-005: per-member skip 証跡が journal に残る
+// (round-all-skip-pass-through requirement 2 / D-journal)
+// ---------------------------------------------------------------------------
+
+describe("TC-004 / TC-005: per-member skip evidence preserved in journal and state", () => {
+  it("TC-004/TC-005: skip member's step-attempt record is in events.jsonl with verdict 'skipped' and skipReason", async () => {
+    // TC-004: skip した member の理由が journal step-attempt record に残る
+    // TC-005: 全 skip round でも member 証跡が消えない
+    //
+    // Design D-journal: per-member skip records are written via projectSkip + commitRound
+    // regardless of the all-skip structural-skip change. The journaling path is not changed.
+    //
+    // This test verifies that:
+    //   1. state.steps["security"][0].outcome.verdict === "skipped" (TC-005: state has record)
+    //   2. state.steps["security"][0].outcome.skipReason contains the path pattern (TC-004)
+    //   3. events.jsonl fold() also contains the step-attempt record (TC-004: journal has record)
+    //   4. events.jsonl history contains the "security-skipped" transition record (TC-004)
+    //
+    // Destruction confirmation: removing the members.push() call in parallel-review-round.ts
+    // (the per-member skip push) would cause TC-004/TC-005 to fail — skip records would vanish.
+    const reviewers = [
+      makeSnapshot("security", { paths: ["src/auth/**"] }),
+    ];
+
+    const result = await runPipelineWith(reviewers);
+
+    // TC-005: state.steps has the skip record
+    const securityRun = result.steps?.["security"]?.[0];
+    expect(securityRun, "TC-005: state.steps must contain security skip record").toBeDefined();
+    expect(securityRun?.outcome.verdict).toBe("skipped");
+    expect(securityRun?.outcome.skipReason, "TC-004: skipReason must be set").toBeDefined();
+    expect(securityRun?.outcome.skipReason).toContain("src/auth/**");
+
+    // TC-004: events.jsonl also has the step-attempt record
+    // The changeDir for test store is: tempDir/.specrunner/test-jobs/<jobId>/
+    const eventsPath = path.join(
+      tempDir, ".specrunner", "test-jobs", result.jobId, "events.jsonl",
+    );
+    const eventsContent = await fs.readFile(eventsPath, "utf-8");
+    const folded = fold(eventsContent);
+
+    // TC-004: journal step-attempt record for "security" has verdict "skipped" + skipReason
+    const journalSecurityRun = folded.steps["security"]?.[0];
+    expect(journalSecurityRun, "TC-004: journal must contain security step-attempt record").toBeDefined();
+    expect(journalSecurityRun?.outcome.verdict).toBe("skipped");
+    expect(journalSecurityRun?.outcome.skipReason, "TC-004: journal skip record must have skipReason").toBeDefined();
+    expect(journalSecurityRun?.outcome.skipReason).toContain("src/auth/**");
+
+    // TC-004: transition record "security-skipped" must be in journal history
+    const skippedTransition = folded.history.find((h) => h.step === "security-skipped");
+    expect(skippedTransition, "TC-004: journal history must contain 'security-skipped' transition").toBeDefined();
+    expect(skippedTransition?.status).toBe("warning");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-010: 旧 ROUND_ALL_MEMBERS_SKIPPED 状態からの resume が完走する（後方回復経路）
+// (round-all-skip-pass-through requirement 6)
+// ---------------------------------------------------------------------------
+
+describe("TC-010: backward recovery — job stopped with ROUND_ALL_MEMBERS_SKIPPED resumes to awaiting-archive", () => {
+  it("TC-010: seeded ROUND_ALL_MEMBERS_SKIPPED awaiting-resume state re-runs and reaches awaiting-archive", async () => {
+    // TC-010: a job that was stopped at awaiting-resume with state.error.code ===
+    // "ROUND_ALL_MEMBERS_SKIPPED" under the old behavior must be recoverable under new semantics.
+    //
+    // Resume flow:
+    //   1. transitionJob(state, "running", { patch: { error: null, ... } }) — clears error
+    //   2. pipeline.run(coordinatorStep, state, deps) — starts from coordinator
+    //   3. All members skip → structural skip → approved → roundError = null
+    //   4. commitRound sets state.error = null (already null, but also clears any sticky error)
+    //   5. Terminal seam: nextStep="end", state.status="running", state.error=null → awaiting-archive
+    //
+    // This test simulates the post-resume state (error=null, status=running, step=coordinator)
+    // and runs the pipeline from the coordinator step.
+    //
+    // Destruction confirmation (TC-010): if aggregateVerdict all-skip returns "escalation" OR
+    // ROUND_ALL_MEMBERS_SKIPPED roundError is restored → terminal seam routes to "awaiting-resume"
+    // instead of "awaiting-archive", causing this test to fail.
+    const reviewers = [
+      makeSnapshot("security", { paths: ["src/auth/**"] }),
+    ];
+
+    // Build the initial job state with reviewer configured
+    const initialState = await makeJobState(reviewers, "bug-fix");
+
+    // Simulate resume: transition to "running", clear error, set step to coordinator
+    // (mirrors what resume.ts does: transitionJob + patch: { error: null })
+    const resumedState: JobState = {
+      ...initialState,
+      status: "running" as const,
+      step: CUSTOM_REVIEWERS_STEP_NAME,
+      error: null,
+      // reviewerStatuses: not set → deriveReviewerStatuses will init all as "pending"
+      reviewerStatuses: [{ name: "security", status: "pending", approvedAtCommit: null, invalidatedByCommit: null }],
+    };
+
+    // Persist the seeded state
+    await makeStoreFactory(tempDir)(resumedState.jobId).persist(resumedState);
+
+    // Build pipeline and run from the coordinator step (simulating resume)
+    const client = buildMockClient();
+    const githubClient = buildGithubClient();
+    const reviewerNames = reviewers.map((r) => r.name);
+    const deps = {
+      client,
+      config: buildConfig(reviewerNames) as Parameters<typeof buildPipelineForJob>[1]["config"],
+      request: {
+        type: "bug-fix" as const,
+        title: "Backward Recovery Test",
+        slug: "act-slug",
+        baseBranch: "main",
+        content: "test content",
+        adr: false,
+      },
+      slug: "act-slug",
+      cwd: tempDir,
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: createManagedAgentRunner({
+        sessionClient: client,
+        githubClient,
+        repo: { owner: "testowner", name: "testrepo" },
+        githubToken: "ghp_test",
+      }),
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+    };
+
+    // Run from the coordinator step (not from the beginning)
+    const pipeline = buildPipelineForJob(resumedState, deps as never);
+    const finalState = await pipeline.run(CUSTOM_REVIEWERS_STEP_NAME, resumedState, deps as never);
+
+    // TC-010: backward recovery — must reach awaiting-archive (not awaiting-resume)
+    expect(finalState.status).toBe("awaiting-archive");
+    // TC-010: state.error must be null (sticky error cleared by structural skip round)
+    expect(finalState.error).toBeNull();
   });
 });
