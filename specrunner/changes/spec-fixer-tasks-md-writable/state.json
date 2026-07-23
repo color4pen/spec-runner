@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4f35ee5a-8f08-4574-a7ac-db1795bdb450",
   "createdAt": "2026-07-23T13:24:18.438Z",
-  "updatedAt": "2026-07-23T14:56:25.169Z",
+  "updatedAt": "2026-07-23T15:03:32.254Z",
   "request": {
     "title": "spec-fixer の書込集合に tasks.md を加え、tasks.md への fixable finding を pipeline 内で収束させる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/spec-fixer-tasks-md-writable-4f35ee5a",
   "error": null,
@@ -80,7 +80,9 @@
     "b808fb0666028a25daeee5387437383928bcc518",
     "32cedd32bfc2aea7255d3b745f9c622465b7850a",
     "fe5b31df8f1b352f03bf9b8af75b2f2cced3f13c",
-    "791f35d2e2440d5569a2bbe3c919c881ab905a93"
+    "791f35d2e2440d5569a2bbe3c919c881ab905a93",
+    "6b9eaf38fe3aa73f1a738d812b9334927145223a",
+    "9fb877adba779bfcce15c278708bf7f5bb44303c"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -115,7 +117,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 71,
+    "historyCount": 80,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -124,13 +126,14 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 3
+      "regression-gate": 3,
+      "conformance": 1
     }
   }
 }
