@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bebea595-e07c-4d7f-844e-83c141f96d64",
   "createdAt": "2026-07-23T09:09:58.037Z",
-  "updatedAt": "2026-07-23T12:51:36.077Z",
+  "updatedAt": "2026-07-23T12:52:50.861Z",
   "request": {
     "title": "resume が中断 attempt の残骸を機械的に後始末する — halt→resume 回復契約",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/resume-worktree-reconciliation-bebea595",
   "error": null,
   "pipelineId": "standard",
@@ -81,7 +81,8 @@
     "6d2125653aaecd05ac4ea272380908de7cfcc063",
     "16c99902a54ff6720b69d24521dd3cfd9c1ff2fb",
     "4651eefeb9f09ecf011289b8fe881e49ced0140a",
-    "bb171459afa16c2eb83efffcd71756cd61137059"
+    "bb171459afa16c2eb83efffcd71756cd61137059",
+    "351c33bba501af30c73d3f76660b0314bb7f840c"
   ],
   "reviewerStatuses": [
     {
@@ -115,12 +116,12 @@
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/912",
     "number": 912,
-    "createdAt": "2026-07-23T10:32:07.302Z"
+    "createdAt": "2026-07-23T12:52:49.870Z"
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 97,
+    "historyCount": 102,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -137,8 +138,8 @@
       "custom-reviewers": 2,
       "regression-gate": 3,
       "conformance": 2,
-      "adr-gen": 1,
-      "pr-create": 1
+      "adr-gen": 2,
+      "pr-create": 2
     }
   }
 }
