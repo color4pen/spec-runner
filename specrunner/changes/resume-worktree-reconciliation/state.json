@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bebea595-e07c-4d7f-844e-83c141f96d64",
   "createdAt": "2026-07-23T09:09:58.037Z",
-  "updatedAt": "2026-07-23T09:45:53.571Z",
+  "updatedAt": "2026-07-23T10:08:08.967Z",
   "request": {
     "title": "resume が中断 attempt の残骸を機械的に後始末する — halt→resume 回復契約",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/resume-worktree-reconciliation-bebea595",
   "error": null,
@@ -68,16 +68,21 @@
     "0d929abd3f537cb727382f4a5ed6d78e2f5d702c",
     "2643756314d17d23bb32c36f4959bd599b9183b1",
     "fb24e4eb6d138a00ead5c3d11e16144b5991923e",
-    "93e28d1e937cfe5a1dd06fbee03762a16bcb5639"
+    "93e28d1e937cfe5a1dd06fbee03762a16bcb5639",
+    "e2b3e34563d49db9575279e78a16f62a601f304b",
+    "e562c5ec45c3197c0bcd47435bd06b28da63a12c"
   ],
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
