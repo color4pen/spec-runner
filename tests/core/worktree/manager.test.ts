@@ -241,6 +241,25 @@ describe("TC-WTM-009: create — branchName specified uses -b flag", () => {
     expect(addCall?.args).not.toContain("--detach");
   });
 
+  it("passes --no-track with -b so the branch does not inherit upstream from the base ref", async () => {
+    // Without --no-track, branching from origin/<base> sets the new branch's upstream to
+    // origin/<base>, making a bare `git push` in the worktree target the base branch
+    // (push.default=upstream). The upstream must instead be bound to the feature branch
+    // by the first pipeline push (-u).
+    const spawn = makeSpawn([
+      { exitCode: 0 }, // git worktree add
+      { exitCode: 0 }, // bun install
+    ]);
+
+    const manager = createWorktreeManager(spawn, undefined, undefined, makePmStub("bun"));
+    await manager.create("/repo", "my-slug", "abcdef1234567890", "origin/main", "feat/my-feature-abcdef12");
+
+    const addCall = spawn.calls.find(
+      (c) => c.cmd === "git" && c.args.includes("add"),
+    );
+    expect(addCall?.args).toContain("--no-track");
+  });
+
   it("uses --detach when branchName is omitted (backward compat)", async () => {
     const spawn = makeSpawn([
       { exitCode: 0 }, // git worktree add

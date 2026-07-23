@@ -67,6 +67,9 @@ describe("TC-CFS-001: staged changes → commit + push", () => {
     expect((commitCall![1] as string[]).join(" ")).toContain("finalize: my-slug");
     expect(pushCall).toBeDefined();
     expect((pushCall![1] as string[])).toContain("change/my-slug-abc");
+    // -u binds the worktree branch's upstream to the feature branch itself
+    // (branches are created with --no-track, so nothing else sets it).
+    expect((pushCall![1] as string[])).toContain("-u");
   });
 });
 
