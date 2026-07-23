@@ -58,11 +58,23 @@ ${PIPELINE_MAP}
    - **Scenario 由来 TC**（Source = \`${TC_SOURCE_SCENARIO_FORMAT}\` 形式）: Source が指す spec.md を Read tool で開き、対応する Scenario の GIVEN/WHEN/THEN を読んでテストコードに変換する
    - **非 Scenario 由来 TC**（Source = design.md / tasks.md セクション参照）: test-cases.md に記載された GIVEN/WHEN/THEN をテストコードに変換する
 
-3. テストフレームワーク・配置パターンを既存テスト数件から確認する
+3. 各 must TC について、変更前から存在する既存テストが当該振る舞いを既に検証しているかを確認する。
 
-4. 各 test に TC ID を必ず含める（関数名または直前のコメント）。例: \`it("TC-001: ユーザー登録 — 正常系", ...)\`
+   **既存テストが TC を充足している場合**:
+   - 新規テストを重複作成してはならない（重複禁止）。
+   - 充足不能として停止しない。
+   - 代わりに、当該既存テストの該当箇所（describe / it の近傍）に次の形式のトレーサビリティコメントを 1 行追記する:
+     \`// TC-001: <TC 名>\`（例: \`// TC-001: ユーザー登録 — 正常系\`）
+   - このコメント追記が coverage 検査（test file 内の TC-ID リテラル走査）を満たす正式手段である。
+   - 追記先は assertion（expect() 等）を持つ既存テストファイルであること（assertion がないファイルへの追記は assertionless 判定になる）。
 
-5. テストは意図的に red（fail）で構わない — 実装がまだ存在しないため。implementer が green にする。
+   **既存テストがない場合**: 従来どおり Step 2 の変換ルールに従って新規テストコードを書く。
+
+4. テストフレームワーク・配置パターンを既存テスト数件から確認する
+
+5. 各 test に TC ID を必ず含める（関数名または直前のコメント）。例: \`it("TC-001: ユーザー登録 — 正常系", ...)\`
+
+6. テストは意図的に red（fail）で構わない — 実装がまだ存在しないため。implementer が green にする。
 
 ## Evidence
 
