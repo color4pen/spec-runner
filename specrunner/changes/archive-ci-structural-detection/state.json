@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8c330d56-64ef-441d-9150-7c5760d10489",
   "createdAt": "2026-07-23T09:04:31.477Z",
-  "updatedAt": "2026-07-23T09:53:39.717Z",
+  "updatedAt": "2026-07-23T09:55:41.332Z",
   "request": {
     "title": "archive --with-merge の CI 有無判定を時間観測から構造判定に変える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/archive-ci-structural-detection-8c330d56",
   "error": null,
@@ -72,12 +72,14 @@
     "40d9fc4160ff866a7c0deed981d0c1b336471228",
     "7ffc46191f8a2d98e29eca81ebf9f8fbc54c7e80",
     "c1079a51b5a6a481a02c1c7d864a9212ce72356b",
-    "8584105aa23682e05a8134cb37e8ebecd30b0afa"
+    "8584105aa23682e05a8134cb37e8ebecd30b0afa",
+    "450b06d3c70773f5896b8fb390a9f8ba76f724f9",
+    "b006a10ebaaa704666da08f2340487768535f7eb"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -86,7 +88,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
