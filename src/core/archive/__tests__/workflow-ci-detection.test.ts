@@ -30,7 +30,6 @@ const FAKE_REF = "abc1234deadbeef";
 /** Fake SHA used as blob sha in ls-tree output. */
 const BLOB_SHA_1 = "blobsha0000000001";
 const BLOB_SHA_2 = "blobsha0000000002";
-const BLOB_SHA_3 = "blobsha0000000003";
 
 /**
  * Build a fake SpawnFn dispatching on git subcommand.
