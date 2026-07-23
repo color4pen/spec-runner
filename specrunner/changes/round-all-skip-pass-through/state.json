@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9141b6e6-fd3b-40a1-8b2c-c0270fb9d9ab",
   "createdAt": "2026-07-23T10:56:38.330Z",
-  "updatedAt": "2026-07-23T10:56:40.763Z",
+  "updatedAt": "2026-07-23T11:01:43.092Z",
   "request": {
     "title": "custom reviewer round の全員 skip をエラーでなく構造的 skip として通す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/round-all-skip-pass-through-9141b6e6",
   "error": null,
@@ -63,10 +63,13 @@
   ],
   "issueNumber": 915,
   "synthesizedCommits": [
-    "f2eb34faf60a1c9e78698a1bc92d115d6d492e6d"
+    "f2eb34faf60a1c9e78698a1bc92d115d6d492e6d",
+    "9f421f13ba6318f518c256800bbfc5f8e1422a9b"
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
