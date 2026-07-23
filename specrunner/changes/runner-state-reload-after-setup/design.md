@@ -103,6 +103,10 @@ T-03 と同一の選択とする:
   managed runtime の store 構成(`.specrunner/local/<slug>/`)での reload 安全性は独立検証が必要で、
   別 request に委ねる。検証されるまで managed の run は setup 時点で明示的に停止する
   (state 不明のまま pipeline を走らせない — 本 request の fail-closed 方針と一貫)。
+  **明示的な挙動変更(code-review F2)**: この選択により、managed runtime の**新規 run は
+  setup 直後に exit code 1 で停止する**(reload 検証が別 request で完了するまで)。封鎖は
+  TC-022(ManagedRuntime.reloadJobState が throw する)× TC-011(runner は reload の throw を
+  fail-closed に扱い pipeline を開始しない)の合成で担保する。
 - **代替(実装者が安全性を確認できた場合のみ)**: `this.managedLocalStore(jobId, slug)` からの load。
   managed の seed が updateJobState 群より先に行われること(local と同じ順序保証)を確認できた
   場合に限り採用してよく、選択理由をコードコメントに記す。

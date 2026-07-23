@@ -235,27 +235,43 @@ describe("TC-013 / TC-001: E2E — bootstrap → reload → in-memory synthesize
       const bootstrapOid = (reloadedState.synthesizedCommits ?? [])[0];
       expect(bootstrapOid, "bootstrap OID must be a non-empty string").toBeTruthy();
 
-      // Step 7: Add a step commit and push it to origin (so it's excluded from rev-list)
+      // Step 7: Add a step commit WITHOUT pushing — this is the production shape:
+      // egress verification runs BEFORE the first push, while both the bootstrap
+      // commit and the step commit are still in the unpushed publish range.
+      // (Pushing first would empty `rev-list HEAD --not --remotes=origin` and make
+      // the egress assertion vacuous — the mado-os incident would not be sealed.)
       const worktreeCwd = workspace.cwd;
       const stepFile = path.join(worktreeCwd, "src", "impl.ts");
       await fs.mkdir(path.dirname(stepFile), { recursive: true });
       await fs.writeFile(stepFile, "// step implementation\n", "utf-8");
       gitSync(["add", path.join("src", "impl.ts")], worktreeCwd);
       gitSync(["commit", "-m", "step: implementer"], worktreeCwd);
-      // Push the step commit so it's on origin (excluded from rev-list HEAD --not --remotes=origin)
-      gitSync(["push", "origin", E2E_BRANCH], worktreeCwd);
+      const stepOid = gitSync(["rev-parse", "HEAD"], worktreeCwd);
 
-      // Step 8: Assert — verifyEgressLedger passes
-      // After pushing the step commit, only the bootstrap commit remains in the "unpushed" set.
-      // The ledger (synthesizedCommits) contains the bootstrap OID → egress passes.
       const spawnFn = makeRealSpawnFn(worktreeCwd);
+
+      // Step 8a: Negative direction — a ledger WITHOUT the bootstrap OID (only the
+      // step commit) must be rejected: the unpushed range contains the bootstrap
+      // commit, which is unknown to this ledger. This is the exact mado-os failure
+      // (in-memory state lacking the bootstrap OID) reproduced at the egress level.
       await expect(
         verifyEgressLedger({
           cwd: worktreeCwd,
-          ledger: reloadedState.synthesizedCommits!,
+          ledger: [stepOid],
           spawnFn,
         }),
-        "verifyEgressLedger must not throw EGRESS_UNKNOWN_COMMIT (bootstrap OID is in ledger)",
+        "ledger missing the bootstrap OID must throw EGRESS_UNKNOWN_COMMIT (pre-push range)",
+      ).rejects.toMatchObject({ code: "EGRESS_UNKNOWN_COMMIT" });
+
+      // Step 8b: Positive direction — the reloaded ledger (bootstrap OID) plus the
+      // current step commit covers the entire unpushed range → egress passes.
+      await expect(
+        verifyEgressLedger({
+          cwd: worktreeCwd,
+          ledger: [...reloadedState.synthesizedCommits!, stepOid],
+          spawnFn,
+        }),
+        "reloaded ledger + step commit must pass egress before the first push",
       ).resolves.toBeUndefined();
     },
     60000,
