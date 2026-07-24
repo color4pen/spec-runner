@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d6fb0cfe-a873-484b-a9a5-bf2b5b973a13",
   "createdAt": "2026-07-24T01:02:42.852Z",
-  "updatedAt": "2026-07-24T01:26:25.775Z",
+  "updatedAt": "2026-07-24T01:27:42.646Z",
   "request": {
     "title": "spec-review に全量列挙の規律を課し、finding の後出しを機械検出する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/spec-review-full-enumeration-d6fb0cfe",
   "error": null,
@@ -65,14 +65,16 @@
     "0d5e9160aa15f99c73c82b5e16fda7cb70eabfba",
     "3abea134ab8a4713a77dc75217dc21b4e2490e87",
     "af0fb6506d91ef220e8f857f9adaa9ff9b5cc7b6",
-    "8be304956d0c2b18ff7310c02852c6b2483a6283"
+    "8be304956d0c2b18ff7310c02852c6b2483a6283",
+    "c2efdb5f0122b42e7f4c2bd7d8653786a46556a6"
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 17,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }
