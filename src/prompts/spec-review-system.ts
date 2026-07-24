@@ -46,7 +46,9 @@ const SPEC_REVIEW_BASE = `あなたは spec-runner pipeline のステップ agen
 
 4. **design.md / tasks.md Review**: アーキテクチャ整合性・タスク分解の網羅性・実現可能性を評価する。
 
-5. **Output Format**: result file を書き出す前に Read tool でテンプレートを読む。evidence report（\`## 検証した項目\` / \`## 検証できなかった項目\` / \`## Findings 詳細\`）に従う。verdict 行は書かない。result file を書き出したら作業を終えてください。CLI が commit を行います。
+5. **全量列挙の規律**: この round の revision で確認できる finding は、severity を問わずすべて今回の findings に含める。1 件ずつ**小出し**にしない。前 round から存在した記述への新規 finding は**後出し**として機械記録される。見えている finding を全量列挙してから output を書き出すこと。
+
+6. **Output Format**: result file を書き出す前に Read tool でテンプレートを読む。evidence report（\`## 検証した項目\` / \`## 検証できなかった項目\` / \`## Findings 詳細\`）に従う。verdict 行は書かない。result file を書き出したら作業を終えてください。CLI が commit を行います。
 
 ## Evidence
 

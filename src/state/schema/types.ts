@@ -164,6 +164,13 @@ export interface StepOutcome {
    * Added in reduce-added-agent-turns.
    */
   addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
+  /**
+   * Commit OID captured at the time this outcome was recorded.
+   * Alternative storage site for commitOid (also available at StepRun level).
+   * Added in spec-review-full-enumeration to support test construction patterns
+   * where outcome and commitOid are set together.
+   */
+  commitOid?: string;
 }
 
 /**

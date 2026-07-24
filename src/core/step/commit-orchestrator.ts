@@ -36,6 +36,8 @@ import { appendInvocation } from "../usage/store.js";
 import { usageJsonPath } from "../../util/paths.js";
 import { getBranchPrefix } from "../../config/type-config.js";
 import { logVerbose } from "../../logger/stdout.js";
+import { STEP_NAMES } from "./step-names.js";
+import { recordFindingRecency } from "./finding-recency.js";
 
 // ---------------------------------------------------------------------------
 // StepExecutionResult discriminated union
@@ -263,6 +265,36 @@ export class CommitOrchestrator {
         await store.appendLineage(lineageRecord);
       } catch {
         // Best-effort: lineage recording failure must not affect step completion
+      }
+    }
+
+    // finding-recency detection (spec-review only, iteration >= 2, best-effort)
+    if (step.name === STEP_NAMES.SPEC_REVIEW && deps.runtimeStrategy && deps.cwd) {
+      const stepRuns = state.steps?.[step.name] ?? [];
+      const iteration = stepRuns.length;
+
+      if (iteration >= 2) {
+        // Prior commitOid = second-to-last StepRun's commitOid
+        const priorOid = stepRuns[stepRuns.length - 2]?.commitOid ?? null;
+        // Filter out scope-derived findings (origin === "scope")
+        const agentFindings = (persistToolResult?.findings ?? []).filter(
+          (f) => f.origin !== "scope",
+        );
+
+        try {
+          await recordFindingRecency({
+            store,
+            stepName: step.name,
+            iteration,
+            priorOid,
+            findings: agentFindings,
+            cwd: deps.cwd,
+            branch: state.branch ?? null,
+            runtimeStrategy: deps.runtimeStrategy,
+          });
+        } catch {
+          // Best-effort: finding-recency failure must not affect step completion
+        }
       }
     }
 

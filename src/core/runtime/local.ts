@@ -1197,6 +1197,51 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
+   * Read a file's content at the current worktree revision and at a specific prior commitOid.
+   *
+   * Used by finding-recency to classify whether a finding's target line existed in the
+   * prior spec-review round's revision.
+   *
+   * - `current`: read from `path.join(cwd, file)` via fs.readFile (null on any error).
+   * - `prior`:   `git show <priorOid>:<file>` executed in cwd (null on non-zero exit or exception).
+   *
+   * Never throws — all errors fold to null in the respective field.
+   */
+  async readRevisionContent(
+    file: string,
+    priorOid: string,
+    cwd: string,
+    _branch: string | null,
+  ): Promise<import("../port/runtime-strategy.js").RevisionContentPair> {
+    // Read current file content
+    let current: string | null = null;
+    try {
+      const absPath = path.join(cwd, file);
+      current = await fs.readFile(absPath, "utf-8");
+    } catch {
+      // File absent or unreadable → null
+    }
+
+    // Read prior revision content via git show
+    let prior: string | null = null;
+    try {
+      const result = await this.spawnFn(
+        "git",
+        ["show", `${priorOid}:${file}`],
+        { cwd },
+      );
+      if (result.exitCode === 0) {
+        prior = result.stdout;
+      }
+      // Non-zero exit → OID or file not found → null
+    } catch {
+      // Spawn error → null
+    }
+
+    return { current, prior };
+  }
+
+  /**
    * Compute sha256 content hashes for a list of artifact paths (D4, artifact-observability).
    * Reads each file from disk; returns hash: null for missing/unreadable files.
    * Never throws — errors are silently swallowed per the best-effort lineage contract.
