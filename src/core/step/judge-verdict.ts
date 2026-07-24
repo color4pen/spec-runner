@@ -64,9 +64,12 @@ export function deriveJudgeVerdict(
  *
  * Extends deriveJudgeVerdict with spec-review-specific canon routing:
  * spec-review routes fixable findings on spec-fixer-writable canon files (spec.md,
- * design.md, tasks.md) to spec-fixer via "needs-fix", regardless of severity. Fixable
- * findings on canon files spec-fixer cannot write (request.md, test-cases.md, etc.)
- * remain escalation.
+ * design.md, tasks.md) to spec-fixer. The routing depends on severity:
+ *   - critical/high fixable on routable canon → needs-fix (spec-fixer + re-review)
+ *   - low/medium fixable on routable canon → approved (observation auto-fix: spec-fixer
+ *     consumes findings without re-review; regression-gate provides post-hoc verification)
+ * Fixable findings on canon files spec-fixer cannot write (request.md, test-cases.md,
+ * etc.) remain escalation regardless of severity.
  *
  * Priority order:
  * 1. ok=false → escalation
@@ -74,13 +77,14 @@ export function deriveJudgeVerdict(
  * 3. decision-needed ≥ 1 → escalation
  * 4. canonScope present:
  *    4a. unroutable canon fixable findings ≥ 1 → escalation (spec-fixer can't fix)
- *    4b. routable canon fixable findings ≥ 1 → needs-fix (spec-fixer can fix, severity-independent)
+ *    4b. routable canon fixable findings with critical|high severity ≥ 1 → needs-fix
+ *        (low/medium routable canon fixable fall through to approved: observation auto-fix)
  * 5. critical|high ≥ 1 → needs-fix (non-canon findings retain existing behavior)
  * 6. else → approved
  *
  * 4a is evaluated before 4b: when both unroutable and routable findings coexist,
  * escalation takes priority. Operator resolves the unroutable ones; then on resume
- * spec-review re-runs and 4b routes the routable ones to spec-fixer.
+ * spec-review re-runs and 4b routes the routable ones.
  */
 export function deriveSpecReviewVerdict(
   findings: Finding[],
@@ -96,10 +100,13 @@ export function deriveSpecReviewVerdict(
     if (selectUnroutableCanonFindings(findings, canonScope, specReviewEffectiveFixer).length > 0) {
       return "escalation";
     }
-    // 4b: routable canon fixable findings → needs-fix (severity-independent)
-    if (selectRoutableCanonFindings(findings, canonScope, specReviewEffectiveFixer).length > 0) {
+    // 4b: routable canon fixable findings with critical|high severity → needs-fix (requires re-review)
+    // low/medium routable canon fixable fall through to approved (observation auto-fix pass)
+    const routableCanon = selectRoutableCanonFindings(findings, canonScope, specReviewEffectiveFixer);
+    if (routableCanon.some((f) => f.severity === "critical" || f.severity === "high")) {
       return "needs-fix";
     }
+    // low/medium routable canon fixable: fall through to approved (observation auto-fix)
   }
   // 5: non-canon critical|high findings → needs-fix
   if (findings.some((f) => f.severity === "critical" || f.severity === "high")) return "needs-fix";

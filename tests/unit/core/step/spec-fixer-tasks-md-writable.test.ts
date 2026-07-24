@@ -231,28 +231,31 @@ describe("TC-002: D5 canon-write-scope map grants spec-fixer tasks.md and exclud
 });
 
 // ---------------------------------------------------------------------------
-// TC-003 (must): medium fixable finding on tasks.md yields needs-fix
+// TC-003 (must): medium fixable finding on tasks.md yields approved (observation auto-fix)
 //
 // Source: spec.md > Requirement: spec-review SHALL route fixable tasks.md findings
 //         to spec-fixer regardless of severity
 //         > Scenario: medium fixable finding on tasks.md yields needs-fix
 //
-// RED until: T-01 (canon-write-scope.ts D5 map adds tasks.md to spec-fixer set)
-// After impl: buildCanonWriteScope returns spec-fixer → {spec.md, design.md, tasks.md}
-// → deriveSpecReviewVerdict routes tasks.md finding to spec-fixer → needs-fix
+// Updated: #spec-observation-autofix — medium fixable on tasks.md now approves.
+// buildCanonWriteScope returns spec-fixer → {spec.md, design.md, tasks.md} (tasks.md is routable),
+// but low/medium routable canon fixable fall through to approved (observation auto-fix pass).
+// High/critical routable canon fixable would still yield needs-fix.
 // ---------------------------------------------------------------------------
 
-describe("TC-003: medium fixable finding on tasks.md yields needs-fix", () => {
-  it("TC-003: deriveSpecReviewVerdict(medium fixable on tasks.md, real canonScope) === 'needs-fix'", () => {
+describe("TC-003: medium fixable finding on tasks.md yields approved (observation auto-fix)", () => {
+  it("TC-003: deriveSpecReviewVerdict(medium fixable on tasks.md, real canonScope) === 'approved'", () => {
+    // Updated: #spec-observation-autofix — medium routable canon fixable → approved
     const state = makeState();
     const deps = makeDeps();
     const scope = buildCanonWriteScope(state, deps);
     const findings = [makeFinding("medium", "fixable", TASKS_MD)];
     const verdict = deriveSpecReviewVerdict(findings, true, undefined, scope);
-    expect(verdict).toBe("needs-fix");
+    expect(verdict).toBe("approved");
   });
 
-  it("TC-003: no escalationReason is set when tasks.md finding routes to spec-fixer", async () => {
+  it("TC-003: no escalationReason is set when tasks.md finding (medium) approves via observation auto-fix", async () => {
+    // Updated: #spec-observation-autofix — verdict is now approved (not needs-fix)
     const step = makeSpecReviewJudgeStep();
     // Wire judgeVerdictFn = deriveSpecReviewVerdict (post-implementation wiring)
     (step as unknown as Record<string, unknown>).judgeVerdictFn = deriveSpecReviewVerdict;
@@ -274,7 +277,7 @@ describe("TC-003: medium fixable finding on tasks.md yields needs-fix", () => {
       undefined,
     );
 
-    expect(completion.verdict).toBe("needs-fix");
+    expect(completion.verdict).toBe("approved");
     expect(completion.escalationReason).toBeUndefined();
   });
 });

@@ -17,6 +17,7 @@ import { EventBus } from "../../../../src/core/event/event-bus.js";
 import type { StepExecutor } from "../../../../src/core/step/executor.js";
 import type { Step } from "../../../../src/core/step/types.js";
 import type { JobState, StepRun } from "../../../../src/state/schema.js";
+import type { Finding } from "../../../../src/kernel/report-result.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { SpawnFn } from "../../../../src/util/spawn.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
@@ -101,7 +102,28 @@ function makeMinimalDeps(): PipelineDeps {
   };
 }
 
-function appendStepResult(state: JobState, stepName: string, verdict: string): JobState {
+/**
+ * Append a step result to state.
+ *
+ * @param opts.ts       - Optional timestamp override (ISO 8601). Defaults to
+ *   "2026-01-01T00:00:00.000Z". Use a strictly later value when the step must
+ *   appear more recent than a predecessor for recency-sensitive predicates
+ *   (e.g. getConformanceFixContext's `>=` check).
+ * @param opts.findings - Optional findings to embed in toolResult. Required when
+ *   the step is a conformance entry that must be detected as a conformance-triggered
+ *   context by getConformanceFixContext (step 4 requires toolResult.findings).
+ */
+function appendStepResult(
+  state: JobState,
+  stepName: string,
+  verdict: string,
+  opts?: {
+    ts?: string;
+    findings?: Finding[];
+  },
+): JobState {
+  const ts = opts?.ts ?? "2026-01-01T00:00:00.000Z";
+  const findings = opts?.findings;
   const existing = state.steps?.[stepName] ?? [];
   const run: StepRun = {
     attempt: existing.length + 1,
@@ -110,9 +132,12 @@ function appendStepResult(state: JobState, stepName: string, verdict: string): J
       verdict: verdict as import("../../../../src/state/schema.js").Verdict,
       findingsPath: null,
       error: null,
+      ...(findings && findings.length > 0
+        ? { toolResult: { ok: true, findings } }
+        : {}),
     },
-    startedAt: "2026-01-01T00:00:00.000Z",
-    endedAt: "2026-01-01T00:00:00.000Z",
+    startedAt: ts,
+    endedAt: ts,
   };
   return {
     ...state,
@@ -508,7 +533,18 @@ describe("TC-CONFRT-07: conformance → spec-fixer budget resets (no immediate e
       if (step.name === "test-materialize") return appendStepResult(currentState, "test-materialize", "success");
       if (step.name === "conformance") {
         conformanceCallCount++;
-        if (conformanceCallCount === 1) return appendStepResult(currentState, "conformance", "needs-fix:spec-fixer");
+        if (conformanceCallCount === 1) {
+          // Use a timestamp strictly after the default "2026-01-01T00:00:00.000Z" so that
+          // conformance.endedAt > spec-review.endedAt — required for getConformanceFixContext's
+          // recency check (step 3, inclusive >=) to NOT return null.
+          // Also provide toolResult.findings so step 4 returns non-null.
+          // Without both conditions, specFixerForwardsToTestGen silently returns true and
+          // spec-fixer#3 bypasses the required spec-review reverification path.
+          return appendStepResult(currentState, "conformance", "needs-fix:spec-fixer", {
+            ts: "2026-01-01T01:00:00.000Z",
+            findings: [{ severity: "high" as const, resolution: "fixable" as const, file: "specrunner/changes/test-slug/spec.md", title: "Conformance spec issue", rationale: "Spec requires update per conformance check" }],
+          });
+        }
         return appendStepResult(currentState, "conformance", "approved");
       }
       if (step.name === "adr-gen") return appendStepResult(currentState, "adr-gen", "success");
@@ -523,6 +559,9 @@ describe("TC-CONFRT-07: conformance → spec-fixer budget resets (no immediate e
 
     // spec-fixer was called 3 times: 2 for spec-review loop + 1 for conformance routing
     expect(specFixerCallCount).toBe(3);
+    // spec-review was called 4 times: 3 for the spec-review loop (including bypass) + 1 for
+    // conformance reverification (spec-fixer#3 must route back to spec-review, NOT test-case-gen)
+    expect(specReviewCallCount).toBe(4);
     expect(result.status).toBe("awaiting-archive");
     expect(result.error?.code).not.toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");
   });

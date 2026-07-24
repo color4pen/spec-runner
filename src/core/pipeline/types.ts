@@ -4,6 +4,7 @@ import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import type { Step } from "../step/types.js";
 import { buildReviewerChainTransitions } from "./reviewer-chain.js";
 import { reverificationNeeded, conformanceApprovedForVerifiedRevision } from "./reverification.js";
+import { specReviewHasRoutableFixables, specFixerForwardsToTestGen } from "./spec-observation.js";
 
 /**
  * Pipeline-level role of a step (convergence / resume semantics).
@@ -230,6 +231,8 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.DESIGN,      on: "success",   to: STEP_NAMES.SPEC_REVIEW },
   { step: STEP_NAMES.DESIGN,      on: "error",     to: "escalate" },
   // --- spec-review loop ---
+  // Observation auto-fix: spec-review approved + routable fixable findings → spec-fixer (guarded, must precede unconditional row)
+  { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.SPEC_FIXER,      when: specReviewHasRoutableFixables },
   { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.TEST_CASE_GEN },
   { step: STEP_NAMES.SPEC_REVIEW, on: "needs-fix", to: STEP_NAMES.SPEC_FIXER },
   // spec-review halts via loop exhaustion (SPEC_REVIEW_RETRIES_EXHAUSTED) or unroutable canon finding (CANON_FINDING_ESCALATION), whichever occurs first
@@ -237,7 +240,9 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.TEST_CASE_GEN,    on: "error",   to: "escalate" },
   { step: STEP_NAMES.TEST_MATERIALIZE, on: "success", to: STEP_NAMES.IMPLEMENTER },
   { step: STEP_NAMES.TEST_MATERIALIZE, on: "error",   to: "escalate" },
-  // spec-fixer → spec-review (direct)
+  // Observation auto-fix: spec-fixer approved after spec-review approved → test-case-gen (guarded, must precede unconditional row)
+  { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.TEST_CASE_GEN,   when: specFixerForwardsToTestGen },
+  // spec-fixer → spec-review (direct, for needs-fix and conformance reverification paths)
   { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.SPEC_REVIEW },
   { step: STEP_NAMES.SPEC_FIXER,  on: "error",     to: "escalate" },
   { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.BITE_EVIDENCE },

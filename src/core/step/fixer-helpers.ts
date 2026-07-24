@@ -113,7 +113,19 @@ export function getConformanceFixContext(state: JobState, stepName: string): Fin
   const target = verdict.slice(needsFixPrefix.length);
   if (target !== stepName) return null;
 
-  // Step 3: recency — conformance must be newer than the predecessor's last run
+  // Step 3: recency — conformance must be newer than the predecessor's last run.
+  //
+  // LOAD-BEARING: the inclusive `>=` is intentional. In production the pipeline
+  // executes steps sequentially, so conformance.endedAt is always strictly greater
+  // than predecessor.endedAt. The `>=` correctly handles that case AND also
+  // returns null for the degenerate equal-timestamp state.
+  //
+  // INVARIANT for callers that depend on this function as a conformance-entry guard
+  // (e.g. specFixerForwardsToTestGen in spec-observation.ts): test fixtures that
+  // represent a conformance-triggered entry MUST use distinct, ordered timestamps
+  // (predecessor.endedAt < conformance.endedAt) AND must provide toolResult.findings
+  // (step 4) for the function to return non-null. Fixtures with equal timestamps will
+  // produce a false null (not-a-conformance-entry) result via this step.
   const predecessorName = conformancePredecessorStep(state, stepName);
   const predecessorRuns = state.steps?.[predecessorName];
   if (predecessorRuns && predecessorRuns.length > 0) {
@@ -124,7 +136,12 @@ export function getConformanceFixContext(state: JobState, stepName: string): Fin
     }
   }
 
-  // Step 4: return findings from toolResult
+  // Step 4: return findings from toolResult.
+  //
+  // NOTE: callers that use the non-null return value solely as a boolean guard
+  // (e.g. specFixerForwardsToTestGen) depend on this step returning non-null.
+  // Test fixtures must therefore populate toolResult.findings on the conformance
+  // StepRun to correctly simulate a conformance-triggered entry.
   const toolResult = latestConformance.outcome.toolResult;
   if (!toolResult) return null;
   const findings = (toolResult as { findings?: Finding[] }).findings;

@@ -14,8 +14,10 @@ import { getLatestJudgeFindings } from "../step/fixer-helpers.js";
 import {
   selectUnroutableCanonFindings,
   judgeEffectiveFixer,
+  specReviewEffectiveFixer,
   type CanonWriteScope,
 } from "../step/canon-escalation.js";
+import { STEP_NAMES } from "../step/step-names.js";
 
 /**
  * Collect all fixable findings from every StepRun in the given reviewer chain.
@@ -105,6 +107,47 @@ export function collectParallelFixerFindings(
   if (!canonScope) return deduped;
   const unroutable = new Set(
     selectUnroutableCanonFindings(deduped, canonScope, judgeEffectiveFixer).map(
+      (f) => `${f.file}|${f.line ?? ""}|${f.title}`,
+    ),
+  );
+  return deduped.filter((f) => !unroutable.has(`${f.file}|${f.line ?? ""}|${f.title}`));
+}
+
+/**
+ * Collect fixable findings from all spec-review runs for the regression-gate ledger.
+ *
+ * Walks all StepRuns in state.steps[STEP_NAMES.SPEC_REVIEW] and collects findings
+ * where resolution === "fixable". Applies dedupeFindings before returning.
+ *
+ * When canonScope is provided, findings that are unroutable to spec-fixer
+ * (i.e. on canon files spec-fixer cannot write: request.md, test-cases.md, attestation)
+ * are excluded. Findings on spec-fixer-writable paths (spec.md, design.md, tasks.md)
+ * are retained. When canonScope is absent, no exclusion is applied.
+ *
+ * @param state      - Current job state.
+ * @param canonScope - Optional canon write scope for filtering unroutable findings.
+ * @returns Deduplicated set of fixable findings from all spec-review runs.
+ */
+export function collectSpecReviewLedger(state: JobState, canonScope?: CanonWriteScope): Finding[] {
+  const runs = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
+  const all: Finding[] = [];
+
+  for (const run of runs) {
+    const toolResult = run.outcome.toolResult as { findings?: Finding[] } | null | undefined;
+    const findings = toolResult?.findings;
+    if (!findings || findings.length === 0) continue;
+    const fixable = collectFixableFindings(findings);
+    all.push(...fixable);
+  }
+
+  const deduped = dedupeFindings(all);
+
+  if (!canonScope) return deduped;
+
+  // Exclude unroutable canon findings (request.md, test-cases.md, attestation)
+  // using specReviewEffectiveFixer (spec-fixer writes spec.md, design.md, tasks.md).
+  const unroutable = new Set(
+    selectUnroutableCanonFindings(deduped, canonScope, specReviewEffectiveFixer).map(
       (f) => `${f.file}|${f.line ?? ""}|${f.title}`,
     ),
   );

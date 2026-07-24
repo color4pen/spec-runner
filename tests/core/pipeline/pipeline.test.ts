@@ -570,17 +570,26 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
   it("contains all required spec-layer transitions", () => {
     const find = (step: string, on: string) =>
       STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on);
+    const findWithTo = (step: string, on: string, to: string) =>
+      STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on && t.to === to);
 
     // design routes directly to spec-review
     expect(find("design",       "success")).toMatchObject({ to: "spec-review" });
     expect(find("design",       "error")).toMatchObject({ to: "escalate" });
     // spec-review loop (R3 cutover: escalation transition removed — halt via loop exhaustion only)
-    expect(find("spec-review",  "approved")).toMatchObject({ to: "test-case-gen" });
+    // spec-review approved now has two rows:
+    //   guarded (observation pass: approved + routable fixable → spec-fixer) — comes first
+    //   unconditional fallback (approved → test-case-gen)
+    expect(find("spec-review",  "approved")).toMatchObject({ to: "spec-fixer" }); // guarded observation pass row (first)
+    expect(findWithTo("spec-review", "approved", "test-case-gen")).toBeDefined(); // unconditional fallback exists
     expect(find("spec-review",  "needs-fix")).toMatchObject({ to: "spec-fixer" });
     // spec-review escalation transition no longer exists (R3 cutover)
     expect(find("spec-review",  "escalation")).toBeUndefined();
-    // spec-fixer routes directly to spec-review
-    expect(find("spec-fixer",   "approved")).toMatchObject({ to: "spec-review" });
+    // spec-fixer approved has two rows:
+    //   guarded (observation pass: forward to test-case-gen) — comes first
+    //   unconditional fallback (approved → spec-review) for needs-fix and conformance paths
+    expect(find("spec-fixer",   "approved")).toMatchObject({ to: "test-case-gen" }); // guarded observation pass row (first)
+    expect(findWithTo("spec-fixer", "approved", "spec-review")).toBeDefined(); // unconditional fallback exists
     expect(find("spec-fixer",   "error")).toMatchObject({ to: "escalate" });
     // ADR-20260716 R3: test-case-gen → test-materialize (not implementer)
     expect(find("test-case-gen","success")).toMatchObject({ to: "test-materialize" });
