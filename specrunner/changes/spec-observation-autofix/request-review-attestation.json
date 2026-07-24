@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:c960fcea21ed4e5ba4110ac4aa6bb1a3bc3f4f3a40d8d3aac485901283021bce",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/reviewer-chain.ts:142-148 — impl 観測 auto-fix 遷移コメント (findingsRouting, active_reviewer check)",
+    "src/core/step/judge-verdict.ts:deriveSpecReviewVerdict — 4b routable canon fixable → needs-fix (severity-independent, lines 99-102)",
+    "src/core/step/judge-verdict.ts:collectFixableFindings — resolution==='fixable' filter (lines 181-183)",
+    "src/core/pipeline/types.ts:233 — SPEC_REVIEW approved → TEST_CASE_GEN",
+    "src/core/pipeline/types.ts:234 — SPEC_REVIEW needs-fix → SPEC_FIXER",
+    "src/core/pipeline/types.ts:241 — SPEC_FIXER approved → SPEC_REVIEW (unconditional)",
+    "src/core/pipeline/types.ts:266 — CONFORMANCE needs-fix:spec-fixer → SPEC_FIXER",
+    "src/core/pipeline/findings-ledger.ts:42 — collectFindingsLedger loop over reviewerChain",
+    "src/core/step/regression-gate.ts:112,141 — uses deriveImplReviewerChain (spec-review excluded)",
+    "src/core/step/spec-fixer.ts:writes() — write-set is {spec.md, design.md, tasks.md} (lines 99-106)",
+    "src/prompts/spec-review-system.ts:49 — 全量列挙規律 in Method step 5",
+    "src/core/step/commit-orchestrator.ts:271-276 — finding-recency fires on spec-review completion at iteration >= 2"
+  ],
+  "sourceRevision": "94c2ab5fcf55d5ed364da6f7bea2846efdb9574f"
+}
