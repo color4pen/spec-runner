@@ -104,9 +104,11 @@
   与えたとき、per-finding の recency を持つ record が 1 件 append されることをテストで
   固定する (受け入れ基準 3)。
 - `late` が 1 件以上の結果で `recordFindingRecency` が `stderrWrite` を呼び出し、stderr
-  に後出し件数内訳を含む要約 1 行を出力することをテストで固定する (受け入れ基準 7)。
+  に後出し件数内訳を含む要約 1 行を出力することをテストで固定する
+  (spec.md Requirement「後出しがある round では stderr に要約を出す」)。
 - `late` が 0 件（全件 `not-late` / `indeterminate`）の結果では `stderrWrite` を呼ばない
-  ことをテストで固定する (受け入れ基準 7)。
+  ことをテストで固定する
+  (spec.md Requirement「後出しがある round では stderr に要約を出す」)。
 - `computeFindingRecency` が `readRevisionContent` 未実装の runtimeStrategy で全 finding を
   `indeterminate` に倒すことをテストで固定する。
 
