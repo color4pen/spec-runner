@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "42be65c4-f721-4557-a3e8-c1ba71bd2c41",
   "createdAt": "2026-07-24T04:25:21.951Z",
-  "updatedAt": "2026-07-24T06:54:07.678Z",
+  "updatedAt": "2026-07-24T06:54:39.533Z",
   "request": {
     "title": "spec フェーズに observation auto-fix を導入する — minor 指摘は fixer 消化後に再レビューなしで前進する",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/spec-observation-autofix-42be65c4",
   "error": null,
   "pipelineId": "standard",
@@ -78,7 +78,8 @@
     "c5fb47903eac2092de676dc919b8e7936207a9a4",
     "7ce1032157f9fda8855a5835f274ef7816fa968b",
     "c82d280f2edd33bd4cf3d50c5a89c577973f2d36",
-    "d50cdc3f60bc21eb6beb4c4338fbdc0da6916e6b"
+    "d50cdc3f60bc21eb6beb4c4338fbdc0da6916e6b",
+    "795046c7bb860d12ff7d5ab8bc3acb6736b16267"
   ],
   "reviewerStatuses": [
     {
@@ -110,8 +111,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "code-fixer escalated",
+    "iterationsExhausted": 0
+  },
   "_journal": {
-    "historyCount": 71,
+    "historyCount": 73,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -126,7 +132,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "code-fixer": 1,
+      "code-fixer": 2,
       "regression-gate": 1
     }
   }
