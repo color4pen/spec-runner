@@ -58,7 +58,19 @@ export function specReviewHasRoutableFixables(state: JobState): boolean {
  * @returns true when spec-fixer should forward directly to test-case-gen.
  */
 export function specFixerForwardsToTestGen(state: JobState): boolean {
-  // Condition 1: not a conformance-triggered entry
+  // Condition 1: not a conformance-triggered entry.
+  //
+  // getConformanceFixContext returns non-null only when:
+  //   (a) the latest conformance run has verdict `needs-fix:spec-fixer`, AND
+  //   (b) conformance.endedAt > spec-review.endedAt (recency check, inclusive >=), AND
+  //   (c) the conformance run has toolResult.findings (non-null).
+  //
+  // All three conditions must hold for this guard to correctly detect a
+  // conformance-triggered entry. In production, (b) always holds because the
+  // pipeline executes steps sequentially. Test fixtures that simulate a
+  // conformance-triggered entry must use ordered timestamps AND provide
+  // toolResult.findings on the conformance StepRun; otherwise getConformanceFixContext
+  // returns null here and the guard silently passes, routing incorrectly to test-case-gen.
   if (getConformanceFixContext(state, STEP_NAMES.SPEC_FIXER) !== null) return false;
 
   // Condition 2: latest spec-review verdict must be "approved" (observation pass entry)
