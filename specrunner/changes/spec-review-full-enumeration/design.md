@@ -181,3 +181,5 @@ NormalizedJobState には materialize しない)。
 ## Open Questions
 
 なし。
+
+<!-- spec-fixer-deferred: [MEDIUM] request.md 受け入れ基準への stderr 要約出力テスト固定の追加 spec-fixer の write スコープに request.md が含まれないため、tasks.md T-04 の修正のみ実施した。request.md の受け入れ基準への対応項目追加は手動で行う必要がある: 「late が 1 件以上のとき recordFindingRecency が stderr に後出し件数内訳を含む要約 1 行を出力し、late が 0 件のときは stderr 出力を行わないことをテストで固定する」 -->
