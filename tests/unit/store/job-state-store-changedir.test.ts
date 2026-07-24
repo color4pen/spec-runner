@@ -12,6 +12,8 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { JobStateStore } from "../../../src/store/job-state-store.js";
 import type { JobState } from "../../../src/state/schema.js";
+import type { FindingRecencyRecord } from "../../../src/store/event-journal.js";
+import { fold } from "../../../src/store/event-journal.js";
 
 let tempDir: string;
 
@@ -130,5 +132,77 @@ describe("TC-CD-004: no changeDir → conventional slug-mode path (regression)",
 
     const raw = JSON.parse(await fs.readFile(path.join(slugDir, "state.json"), "utf-8")) as Record<string, unknown>;
     expect(raw["status"]).toBe("awaiting-archive");
+  });
+});
+
+// TC-CD-005: appendFindingRecency delegates to journal, does not mutate state.json
+describe("TC-CD-005: appendFindingRecency writes to events.jsonl without touching state.json", () => {
+  it("appends finding-recency record to events.jsonl; state.json is not written", async () => {
+    const customDir = path.join(tempDir, "specrunner", "changes", "archive", "2026-01-01-" + SLUG);
+    await fs.mkdir(customDir, { recursive: true });
+
+    const store = new JobStateStore(JOB_ID, tempDir, { slug: SLUG, stateRoot: tempDir, changeDir: customDir });
+
+    // Write an initial state.json so we can verify it is not modified
+    const state = makeInitialState();
+    await store.persist(state);
+    const stateBefore = await fs.stat(path.join(customDir, "state.json"));
+
+    const record: FindingRecencyRecord = {
+      type: "finding-recency",
+      step: "spec-review",
+      ts: new Date().toISOString(),
+      iteration: 2,
+      priorOid: "abc123deadbeef0000000000000000000000000000",
+      findings: [
+        {
+          file: "src/foo.ts",
+          line: 10,
+          title: "Late finding",
+          severity: "high",
+          recency: "late",
+        },
+      ],
+    };
+
+    await store.appendFindingRecency(record);
+
+    // events.jsonl must contain the finding-recency record
+    const eventsContent = await fs.readFile(path.join(customDir, "events.jsonl"), "utf-8");
+    const foldResult = fold(eventsContent);
+    const findingRecency = (foldResult as unknown as { findingRecency?: FindingRecencyRecord[] })
+      .findingRecency;
+    expect(findingRecency).toBeDefined();
+    expect(findingRecency).toHaveLength(1);
+    expect(findingRecency![0]!.iteration).toBe(2);
+    expect(findingRecency![0]!.findings[0]!.recency).toBe("late");
+
+    // state.json must not have been modified
+    const stateAfter = await fs.stat(path.join(customDir, "state.json"));
+    expect(stateAfter.mtimeMs).toBe(stateBefore.mtimeMs);
+  });
+
+  it("appendFindingRecency does not expose findingRecency in NormalizedJobState fields", async () => {
+    const customDir = path.join(tempDir, "specrunner", "changes", "archive", "2026-01-01-" + SLUG + "-b");
+    await fs.mkdir(customDir, { recursive: true });
+
+    const store = new JobStateStore(JOB_ID, tempDir, { slug: SLUG, stateRoot: tempDir, changeDir: customDir });
+    const state = makeInitialState();
+    await store.persist(state);
+
+    const record: FindingRecencyRecord = {
+      type: "finding-recency",
+      step: "spec-review",
+      ts: new Date().toISOString(),
+      iteration: 2,
+      priorOid: null,
+      findings: [],
+    };
+
+    await store.appendFindingRecency(record);
+
+    // load() returns NormalizedJobState — findingRecency must not appear
+    const loaded = await store.load();
+    expect(loaded).not.toHaveProperty("findingRecency");
   });
 });
