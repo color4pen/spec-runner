@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "42be65c4-f721-4557-a3e8-c1ba71bd2c41",
   "createdAt": "2026-07-24T04:25:21.951Z",
-  "updatedAt": "2026-07-24T07:07:27.011Z",
+  "updatedAt": "2026-07-24T07:09:04.340Z",
   "request": {
     "title": "spec フェーズに observation auto-fix を導入する — minor 指摘は fixer 消化後に再レビューなしで前進する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/spec-observation-autofix-42be65c4",
   "error": null,
@@ -80,7 +80,8 @@
     "c82d280f2edd33bd4cf3d50c5a89c577973f2d36",
     "d50cdc3f60bc21eb6beb4c4338fbdc0da6916e6b",
     "795046c7bb860d12ff7d5ab8bc3acb6736b16267",
-    "1a438d82bc97a7ba134825e0a3f8d37fc0e28d47"
+    "1a438d82bc97a7ba134825e0a3f8d37fc0e28d47",
+    "7e2ede71cef9f804d0ae16b43f1dafe3fe4889d4"
   ],
   "reviewerStatuses": [
     {
@@ -115,7 +116,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 84,
+    "historyCount": 89,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -131,7 +132,7 @@
       "scale-tolerance": 1,
       "custom-reviewers": 3,
       "code-fixer": 2,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
