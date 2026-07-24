@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d6fb0cfe-a873-484b-a9a5-bf2b5b973a13",
   "createdAt": "2026-07-24T01:02:42.852Z",
-  "updatedAt": "2026-07-24T03:15:22.997Z",
+  "updatedAt": "2026-07-24T03:19:35.066Z",
   "request": {
     "title": "spec-review に全量列挙の規律を課し、finding の後出しを機械検出する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/spec-review-full-enumeration-d6fb0cfe",
   "error": null,
   "pipelineId": "standard",
@@ -83,7 +83,8 @@
     "289e912ce7ff6915adaa900611151fe29a80089f",
     "8af5153a34b00d2b75c27af6fd9211ecd3ee6962",
     "dd7d53b986f81502999b8d7c1814725d3a833bb7",
-    "e59b167da86b58cdfb15ab38a9e81fd662e1df04"
+    "e59b167da86b58cdfb15ab38a9e81fd662e1df04",
+    "ee862f2d0ca2197694317dee1d12a3666f63fe25"
   ],
   "reviewerStatuses": [
     {
@@ -116,8 +117,13 @@
       "canonHash": "specrunner/changes/spec-review-full-enumeration/design.md:sha256:283751c7ce42fc92bce87b09e2d84261fd0d5d4837cb00431a4ae54c539f5e4a|specrunner/changes/spec-review-full-enumeration/request.md:sha256:5330dd82532457a8e6c2a348e30118badb2853df8d949442eb97ba0f0dcb62c3|specrunner/changes/spec-review-full-enumeration/spec.md:sha256:aaf5478628a38882a19167e91c7fca538e253dbe7452edcb8aa6b382a1aa03ce|specrunner/changes/spec-review-full-enumeration/tasks.md:sha256:430250f7e6ec193912bbc101263db706e7e157d10a6b63d88aab1d252df5e307|specrunner/changes/spec-review-full-enumeration/test-cases.md:sha256:7ac06a255f05e4ae41691a773df8d92d817e86070f1b20312f666cb9c8ba1a49"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/925",
+    "number": 925,
+    "createdAt": "2026-07-24T03:19:34.048Z"
+  },
   "_journal": {
-    "historyCount": 92,
+    "historyCount": 97,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -135,7 +141,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
