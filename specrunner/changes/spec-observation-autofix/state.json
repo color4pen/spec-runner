@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "42be65c4-f721-4557-a3e8-c1ba71bd2c41",
   "createdAt": "2026-07-24T04:25:21.951Z",
-  "updatedAt": "2026-07-24T05:04:22.902Z",
+  "updatedAt": "2026-07-24T05:05:42.528Z",
   "request": {
     "title": "spec フェーズに observation auto-fix を導入する — minor 指摘は fixer 消化後に再レビューなしで前進する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/spec-observation-autofix-42be65c4",
   "error": null,
@@ -65,14 +65,16 @@
     "8a515c3c9b23bca6d9c30e22f552589decd2a3f8",
     "470ab6a7a729c6fbeec585c3e220bade160daff8",
     "81bdb2238db55eb5583e65a0e5f8af70a856032c",
-    "2de1e99e57c349dd7f9348e7df3ae3c09c8dd73d"
+    "2de1e99e57c349dd7f9348e7df3ae3c09c8dd73d",
+    "50ce29c01f53885efa5b46f4e157341132a8dd62"
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 17,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }
