@@ -269,10 +269,10 @@ describe("TC-001/002/005/006/007/015: conformance transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 44 rows total (+4 for bite-evidence gate transitions, +2 for post-fixer reverification when-guards, +1 adr-gen skipped, +2 test-materialize)", () => {
-    // 40 previous + 4 (implementer→bite-evidence, bite-evidence→verification (passed/strategy-deferred), bite-evidence→escalate (failed/error))
-    // Note: implementer now routes to bite-evidence instead of directly to verification
-    expect(STANDARD_TRANSITIONS.length).toBe(44);
+  it("has 46 rows total (+2 for spec observation auto-fix guarded rows: spec-review approved → spec-fixer, spec-fixer approved → test-case-gen)", () => {
+    // 44 previous + 2 (guarded spec-review approved → spec-fixer, guarded spec-fixer approved → test-case-gen)
+    // Added by spec-observation-autofix: observation auto-fix guarded transition rows
+    expect(STANDARD_TRANSITIONS.length).toBe(46);
   });
 
   it("verification --passed→ end does NOT exist", () => {

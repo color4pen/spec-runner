@@ -188,10 +188,11 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // TC-WHEN-02: STANDARD_TRANSITIONS has expected row count
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has correct number of rows (+4 for bite-evidence gate transitions)", () => {
-    // 40 previous + 4 (bite-evidence: passed→verification, strategy-deferred→verification, failed→escalate, error→escalate)
-    // Note: implementer→verification row replaced by implementer→bite-evidence (same count), plus 4 new bite-evidence rows
-    expect(STANDARD_TRANSITIONS.length).toBe(44);
+  it("has correct number of rows (+2 for spec observation auto-fix guarded rows)", () => {
+    // 44 previous + 2 new guarded rows for spec observation auto-fix:
+    //   1. spec-review approved → spec-fixer (when: specReviewHasRoutableFixables)
+    //   2. spec-fixer approved → test-case-gen (when: specFixerForwardsToTestGen)
+    expect(STANDARD_TRANSITIONS.length).toBe(46);
   });
 });
 

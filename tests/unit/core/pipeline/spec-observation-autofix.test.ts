@@ -809,7 +809,14 @@ describe("TC-013: observation pass runs spec-review exactly once (integration)",
       owner: "octo",
       repo: "repo",
       spawn: vi.fn() as never,
-      storeFactory: (() => ({})) as never,
+      storeFactory: (() => ({
+        persist: async () => undefined,
+        fail: async (state: JobState) => state,
+        update: async (state: JobState, patch: Partial<JobState>) => ({ ...state, ...patch }),
+        appendHistory: async (state: JobState) => state,
+        appendInterruption: async () => undefined,
+        appendLineage: async () => undefined,
+      })) as never,
       runner: {} as never,
     } as never;
 

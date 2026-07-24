@@ -2,17 +2,17 @@
 
 ## T-01: `deriveSpecReviewVerdict` の 4b を routable critical/high のみ needs-fix に絞る
 
-- [ ] `src/core/step/judge-verdict.ts` の `deriveSpecReviewVerdict` の判定 4b を変更する。
+- [x] `src/core/step/judge-verdict.ts` の `deriveSpecReviewVerdict` の判定 4b を変更する。
       現行の「`selectRoutableCanonFindings(...).length > 0` → `needs-fix`」を、
       `selectRoutableCanonFindings(findings, canonScope, specReviewEffectiveFixer)` のうち
       `severity === "critical" || severity === "high"` のものが ≥ 1 のときのみ `needs-fix` に変更する。
       低位（low / medium）のみのときは fall-through する。
-- [ ] 4a（`selectUnroutableCanonFindings(..., specReviewEffectiveFixer).length > 0` → `escalation`）・
+- [x] 4a（`selectUnroutableCanonFindings(..., specReviewEffectiveFixer).length > 0` → `escalation`）・
       判定 1（`!ok` → escalation）・判定 2（vacuous → escalation）・判定 3（decision-needed → escalation）・
       判定 5（非 canon critical|high → needs-fix）・判定 6（`approved`）は変更しない。
-- [ ] 関数 doc コメントの優先順位記述（4b が severity-independent）を新挙動に更新する。
+- [x] 関数 doc コメントの優先順位記述（4b が severity-independent）を新挙動に更新する。
       `selectRoutableCanonFindings` の import は 4b で引き続き使用する。
-- [ ] `deriveJudgeVerdict` / `deriveConformanceVerdict` / `deriveRegressionGateVerdict` /
+- [x] `deriveJudgeVerdict` / `deriveConformanceVerdict` / `deriveRegressionGateVerdict` /
       `deriveRequestReviewVerdict` / `collectFixableFindings` は変更しない。
 
 **Acceptance Criteria**:
@@ -26,12 +26,12 @@
 
 ## T-02: state から canonScope を導出する `buildCanonWriteScopeFromState` を追加する
 
-- [ ] `src/core/step/canon-write-scope.ts` に `buildCanonWriteScopeFromState(state: JobState): CanonWriteScope`
+- [x] `src/core/step/canon-write-scope.ts` に `buildCanonWriteScopeFromState(state: JobState): CanonWriteScope`
       を追加する。slug は `getJobSlug(state)`（`src/state/job-slug.ts`）から導出する。
-- [ ] 内部の scope 構築を private helper（例 `buildScopeForSlug(slug: string): CanonWriteScope`）に切り出し、
+- [x] 内部の scope 構築を private helper（例 `buildScopeForSlug(slug: string): CanonWriteScope`）に切り出し、
       既存 `buildCanonWriteScope(state, deps)`（`deps.slug` 使用）と `buildCanonWriteScopeFromState(state)` の
       両方が同一 helper に委譲する。`buildCanonWriteScope(state, deps)` の外部挙動は不変。
-- [ ] `canonPaths` / `writableByFixer` の内容（code-fixer=∅ / implementer={tasks.md} /
+- [x] `canonPaths` / `writableByFixer` の内容（code-fixer=∅ / implementer={tasks.md} /
       spec-fixer={spec.md,design.md,tasks.md}）は不変。
 
 **Acceptance Criteria**:
@@ -42,7 +42,7 @@
 
 ## T-03: spec observation 遷移 predicate モジュールを追加する
 
-- [ ] `src/core/pipeline/spec-observation.ts`（純関数）を新設し、次の 2 関数を export する。
+- [x] `src/core/pipeline/spec-observation.ts`（純関数）を新設し、次の 2 関数を export する。
   - `specReviewHasRoutableFixables(state: JobState): boolean` —
     `getLatestJudgeFindings(state, STEP_NAMES.SPEC_REVIEW)` の findings に対し
     `selectRoutableCanonFindings(findings, buildCanonWriteScopeFromState(state), specReviewEffectiveFixer).length > 0`。
@@ -50,10 +50,10 @@
   - `specFixerForwardsToTestGen(state: JobState): boolean` —
     `getConformanceFixContext(state, STEP_NAMES.SPEC_FIXER) === null` かつ
     最新 spec-review run の `outcome.verdict === "approved"`（spec-review run が無ければ `false`）。
-- [ ] import 元: `getLatestJudgeFindings` / `getConformanceFixContext`（`step/fixer-helpers.js`）、
+- [x] import 元: `getLatestJudgeFindings` / `getConformanceFixContext`（`step/fixer-helpers.js`）、
       `selectRoutableCanonFindings` / `specReviewEffectiveFixer`（`step/canon-escalation.js`）、
       `buildCanonWriteScopeFromState`（`step/canon-write-scope.js`）、`STEP_NAMES`（`step/step-names.js`）。
-- [ ] 循環 import が生じないことを確認する（`types.ts` を import しない。predicate は `(state) => boolean` のみ）。
+- [x] 循環 import が生じないことを確認する（`types.ts` を import しない。predicate は `(state) => boolean` のみ）。
 
 **Acceptance Criteria**:
 - `specReviewHasRoutableFixables`: 最新 spec-review に routable canon fixable（spec/design/tasks）があれば `true`、
@@ -64,14 +64,14 @@
 
 ## T-04: STANDARD_TRANSITIONS に guarded 行を 2 本追加する
 
-- [ ] `src/core/pipeline/types.ts` の `STANDARD_TRANSITIONS` に次を追加する。順序は既存無条件行より**前**。
+- [x] `src/core/pipeline/types.ts` の `STANDARD_TRANSITIONS` に次を追加する。順序は既存無条件行より**前**。
   - 既存 `{ SPEC_REVIEW, "approved", TEST_CASE_GEN }`（:233）の直前に
     `{ step: SPEC_REVIEW, on: "approved", to: SPEC_FIXER, when: specReviewHasRoutableFixables }`。
   - 既存 `{ SPEC_FIXER, "approved", SPEC_REVIEW }`（:241）の直前に
     `{ step: SPEC_FIXER, on: "approved", to: TEST_CASE_GEN, when: specFixerForwardsToTestGen }`。
-- [ ] `spec-observation.js` から 2 predicate を import する。
-- [ ] `SPEC_REVIEW needs-fix → SPEC_FIXER`・`SPEC_FIXER error → escalate`・その他既存行は不変。
-- [ ] `FAST_TRANSITIONS` は不変（spec-review / spec-fixer / test-case-gen 行を持たない）。
+- [x] `spec-observation.js` から 2 predicate を import する。
+- [x] `SPEC_REVIEW needs-fix → SPEC_FIXER`・`SPEC_FIXER error → escalate`・その他既存行は不変。
+- [x] `FAST_TRANSITIONS` は不変（spec-review / spec-fixer / test-case-gen 行を持たない）。
 
 **Acceptance Criteria**:
 - 最新 spec-review が `approved` かつ routable fixable ≥ 1 → 遷移解決で `spec-review` on `approved` = `spec-fixer`。
@@ -83,17 +83,17 @@
 
 ## T-05: findings ledger に spec-review 由来 fixable finding を載せる
 
-- [ ] `src/core/pipeline/findings-ledger.ts` に
+- [x] `src/core/pipeline/findings-ledger.ts` に
       `collectSpecReviewLedger(state: JobState, canonScope?: CanonWriteScope): Finding[]` を追加する。
       `state.steps[STEP_NAMES.SPEC_REVIEW]` の全 StepRun を走査し `collectFixableFindings` で fixable を集め、
       `dedupeFindings` する。canonScope 指定時は `specReviewEffectiveFixer` 基準で
       `selectUnroutableCanonFindings` に該当するものを除外する（spec/design/tasks は保持、
       request.md / test-cases.md / attestation は除外）。canonScope 省略時は除外なし。
-- [ ] `src/core/step/regression-gate.ts` の `buildMessage` と `skipWhen` の 2 箇所で、既存
+- [x] `src/core/step/regression-gate.ts` の `buildMessage` と `skipWhen` の 2 箇所で、既存
       `collectFindingsLedger(deriveImplReviewerChain(state), state, canonScope)` の結果に
       `collectSpecReviewLedger(state, canonScope)` を合流させ、`dedupeFindings([...spec, ...impl])` を台帳とする。
       `skipWhen` は合流後の台帳が空のときのみ skip する。
-- [ ] `collectFindingsLedger` / `collectParallelFixerFindings` / `deriveImplReviewerChain` /
+- [x] `collectFindingsLedger` / `collectParallelFixerFindings` / `deriveImplReviewerChain` /
       `deriveRegressionGateVerdict` は変更しない。
 
 **Acceptance Criteria**:
@@ -105,21 +105,21 @@
 
 ## T-06: 受け入れ基準を固定する新規テストを追加する
 
-- [ ] verdict 単体テスト: medium/low fixable on spec.md/design.md/tasks.md → `approved`；
+- [x] verdict 単体テスト: medium/low fixable on spec.md/design.md/tasks.md → `approved`；
       high fixable on spec.md → `needs-fix`；request.md fixable → `escalation` + `escalationReason`。
-- [ ] 遷移テスト（observation pass）: 最新 spec-review が `approved` + `medium` fixable on spec.md の state で、
+- [x] 遷移テスト（observation pass）: 最新 spec-review が `approved` + `medium` fixable on spec.md の state で、
       標準遷移表が `spec-review` on `approved` → `spec-fixer`、続いて（conformance context なし）
       `spec-fixer` on `approved` → `test-case-gen` に解決し、spec-review が再実行されないことを固定する。
-- [ ] 遷移テスト（needs-fix 往復不変）: high fixable on spec.md → `needs-fix` → `spec-fixer` →
+- [x] 遷移テスト（needs-fix 往復不変）: high fixable on spec.md → `needs-fix` → `spec-fixer` →
       （最新 spec-review verdict needs-fix のため）`spec-fixer` on `approved` → `spec-review` を固定する。
       critical fixable on spec.md も同様に `needs-fix` → `spec-review` 往復となることを確認する。
-- [ ] 遷移テスト（conformance reverification 不変）: conformance `needs-fix:spec-fixer`（最新 spec-review より新しい）
+- [x] 遷移テスト（conformance reverification 不変）: conformance `needs-fix:spec-fixer`（最新 spec-review より新しい）
       起点の spec-fixer が `spec-fixer` on `approved` → `spec-review`（`test-case-gen` に直行しない）を固定する。
-- [ ] ledger テスト: observation pass で消化された spec-review の fixable finding が
+- [x] ledger テスト: observation pass で消化された spec-review の fixable finding が
       `collectSpecReviewLedger` / regression-gate の台帳入力に含まれることを固定する。
-- [ ] escalation 不変テスト: request.md への fixable finding（unroutable）が `escalation` + `escalationReason` で
+- [x] escalation 不変テスト: request.md への fixable finding（unroutable）が `escalation` + `escalationReason` で
       あることを **既存テスト無変更**で維持する（`spec-review-fixer-routing.test.ts` TC-003 / TC-006）。
-- [ ] 予算テスト: observation pass で spec-review が 1 回だけ実行され、ループ反復カウントが増えないことを固定する
+- [x] 予算テスト: observation pass で spec-review が 1 回だけ実行され、ループ反復カウントが増えないことを固定する
       （`spec-review-fixer-routing.test.ts` TC-009 の Pipeline 駆動構成を流用し、spec-review approved+fixable →
       spec-fixer → test-case-gen で spec-review 実行回数 = 1 を assert する）。
 
@@ -129,7 +129,7 @@
 
 ## T-07: 期待値を更新した既存テストを列挙し implementation-notes に記録する
 
-- [ ] `#913` の「severity 不問 needs-fix」を期待する既存単体テストを、新挙動（routable low/medium → approved）に
+- [x] `#913` の「severity 不問 needs-fix」を期待する既存単体テストを、新挙動（routable low/medium → approved）に
       合わせて更新する。少なくとも次を確認・更新する（実際に赤くなるものを実行で確定させる）:
   - `src/core/step/__tests__/spec-review-fixer-routing.test.ts`
     - TC-001: `deriveSpecReviewVerdict(medium fixable on spec.md)` の期待を `needs-fix` → `approved`。
@@ -157,7 +157,7 @@
       テストは赤くならないが、本来の conformance→spec-fixer→spec-review reverification フローは検証されなくなる。
       T-06 の新規テストが proper timestamps で reverification 不変条件をカバーしていることを実装時に確認する。
       **期待値変更は不要。ただし上記フロー変化をこのリストに記録する（implementation-notes にも転記すること）。**
-- [ ] 上記の「期待値を更新した既存テスト」の最終リスト（ファイル・TC ID・変更内容）を
+- [x] 上記の「期待値を更新した既存テスト」の最終リスト（ファイル・TC ID・変更内容）を
       `specrunner/changes/spec-observation-autofix/implementation-notes.md` に列挙する。
 
 **Acceptance Criteria**:
@@ -167,11 +167,11 @@
 
 ## T-08: 検証とスコープ確認
 
-- [ ] `typecheck && test` が green。
-- [ ] 変更が次に限定されることを確認する: `deriveSpecReviewVerdict` の 4b、`canon-write-scope.ts` の state 入口追加、
+- [x] `typecheck && test` が green。
+- [x] 変更が次に限定されることを確認する: `deriveSpecReviewVerdict` の 4b、`canon-write-scope.ts` の state 入口追加、
       `spec-observation.ts` の追加、`STANDARD_TRANSITIONS` の guarded 行 2 本、`findings-ledger.ts` の
       `collectSpecReviewLedger` 追加、`regression-gate.ts` の台帳合流、テスト更新。
-- [ ] 次に変更が無いことを確認する: impl 側 observation auto-fix（reviewer-chain / 並列遷移）、`FAST_TRANSITIONS`、
+- [x] 次に変更が無いことを確認する: impl 側 observation auto-fix（reviewer-chain / 並列遷移）、`FAST_TRANSITIONS`、
       spec-review / spec-fixer prompt、spec-fixer 書込集合・buildMessage・reads、conformance fixTarget routing、
       他 step の verdict 導出（judge / conformance / regression-gate / request-review）。
 

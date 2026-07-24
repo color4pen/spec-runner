@@ -24,7 +24,7 @@ import { REGRESSION_GATE_SYSTEM_PROMPT } from "../../prompts/regression-gate-sys
 import { resolveReviewerResultPath, changeFolderPath } from "../../util/paths.js";
 import { nextIteration } from "./io-iteration.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
-import { collectFindingsLedger } from "../pipeline/findings-ledger.js";
+import { collectFindingsLedger, collectSpecReviewLedger, dedupeFindings } from "../pipeline/findings-ledger.js";
 import { deriveImplReviewerChain } from "../pipeline/reviewer-chain.js";
 import { deriveRegressionGateVerdict } from "./judge-verdict.js";
 import { buildFindingsBlock } from "./fixer-helpers.js";
@@ -106,12 +106,15 @@ export function createRegressionGateStep(): AgentStep {
      * verdict "skipped" via the existing commitSkipped path.
      *
      * Uses the same ledger computation as buildMessage to stay consistent:
-     * deriveImplReviewerChain(state) + collectFindingsLedger(chain, state).
+     * merges spec-review fixable findings (collectSpecReviewLedger) with impl reviewer
+     * chain findings (collectFindingsLedger) via dedupeFindings.
      */
     skipWhen(state: JobState, deps: StepDeps): string | null {
-      const reviewerChain = deriveImplReviewerChain(state);
       const canonScope = buildCanonWriteScope(state, deps);
-      const ledger = collectFindingsLedger(reviewerChain, state, canonScope);
+      const specLedger = collectSpecReviewLedger(state, canonScope);
+      const reviewerChain = deriveImplReviewerChain(state);
+      const implLedger = collectFindingsLedger(reviewerChain, state, canonScope);
+      const ledger = dedupeFindings([...specLedger, ...implLedger]);
       if (ledger.length === 0) {
         return "findings ledger is empty — no fixable findings to verify";
       }
@@ -137,10 +140,12 @@ export function createRegressionGateStep(): AgentStep {
       const resultPath = resolveReviewerResultPath(deps.slug, REGRESSION_GATE_STEP_NAME, iteration);
       const changeFolder = changeFolderPath(deps.slug);
 
-      // Build the ledger from all reviewer chain steps (excludes this gate).
-      const reviewerChain = deriveImplReviewerChain(state);
+      // Build the merged ledger: spec-review fixable findings + impl reviewer chain findings.
       const canonScope = buildCanonWriteScope(state, deps);
-      const ledger = collectFindingsLedger(reviewerChain, state, canonScope);
+      const specLedger = collectSpecReviewLedger(state, canonScope);
+      const reviewerChain = deriveImplReviewerChain(state);
+      const implLedger = collectFindingsLedger(reviewerChain, state, canonScope);
+      const ledger = dedupeFindings([...specLedger, ...implLedger]);
 
       const ledgerBlock = buildLedgerBlock(ledger);
 

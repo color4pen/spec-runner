@@ -200,14 +200,15 @@ function makeMinimalJudgeStep(
 // Source: spec.md > Requirement: spec-review shall route fixable findings on spec-fixer-writable
 //         canon files to spec-fixer regardless of severity
 //         > Scenario: medium fixable finding on spec.md routes to spec-fixer
+// Updated: #spec-observation-autofix — medium fixable on spec.md now approves (observation auto-fix)
 // ---------------------------------------------------------------------------
 
 describe("TC-001: medium fixable finding on spec.md routes to spec-fixer", () => {
-  it("TC-001: deriveSpecReviewVerdict(medium fixable on spec.md) === 'needs-fix'", () => {
+  it("TC-001: deriveSpecReviewVerdict(medium fixable on spec.md) === 'approved'", () => {
     expect(deriveSpecReviewVerdict).toBeDefined();
     const findings = [makeFinding("medium", "fixable", SPEC_MD)];
     const verdict = deriveSpecReviewVerdict!(findings, true, undefined, makeCanonScope());
-    expect(verdict).toBe("needs-fix");
+    expect(verdict).toBe("approved");
   });
 
   it("TC-001: STANDARD_TRANSITIONS routes spec-review + needs-fix → spec-fixer", async () => {
@@ -224,14 +225,15 @@ describe("TC-001: medium fixable finding on spec.md routes to spec-fixer", () =>
 // Source: spec.md > Requirement: spec-review shall route fixable findings on spec-fixer-writable
 //         canon files to spec-fixer regardless of severity
 //         > Scenario: low fixable finding on design.md routes to spec-fixer
+// Updated: #spec-observation-autofix — low fixable on design.md now approves (observation auto-fix)
 // ---------------------------------------------------------------------------
 
 describe("TC-002: low fixable finding on design.md routes to spec-fixer", () => {
-  it("TC-002: deriveSpecReviewVerdict(low fixable on design.md) === 'needs-fix'", () => {
+  it("TC-002: deriveSpecReviewVerdict(low fixable on design.md) === 'approved'", () => {
     expect(deriveSpecReviewVerdict).toBeDefined();
     const findings = [makeFinding("low", "fixable", DESIGN_MD)];
     const verdict = deriveSpecReviewVerdict!(findings, true, undefined, makeCanonScope());
-    expect(verdict).toBe("needs-fix");
+    expect(verdict).toBe("approved");
   });
 });
 
@@ -375,7 +377,8 @@ describe("TC-005: routable spec.md finding yields no escalation reason", () => {
     void stderrSpy;
   });
 
-  it("TC-005: spec.md fixable finding → needs-fix AND no escalationReason", async () => {
+  it("TC-005: spec.md fixable (medium) finding → approved AND no escalationReason", async () => {
+    // Updated: #spec-observation-autofix — medium fixable on spec.md now approves (observation auto-fix)
     expect(deriveSpecReviewVerdict).toBeDefined();
     const step = makeMinimalJudgeStep(STEP_NAMES.SPEC_REVIEW, JUDGE_REPORT_TOOL);
     (step as unknown as Record<string, unknown>).judgeVerdictFn = deriveSpecReviewVerdict;
@@ -399,7 +402,7 @@ describe("TC-005: routable spec.md finding yields no escalation reason", () => {
       undefined,
     );
 
-    expect(completion.verdict).toBe("needs-fix");
+    expect(completion.verdict).toBe("approved");
     expect(completion.escalationReason).toBeUndefined();
   });
 });
@@ -912,10 +915,11 @@ describe("TC-012: selectRoutableCanonFindings returns only findings on spec-fixe
 
 // ---------------------------------------------------------------------------
 // TC-013
-// Source: tasks.md > T-02 (updated: tasks.md is now routable to spec-fixer)
+// Source: tasks.md > T-02 (updated: tasks.md is routable to spec-fixer)
 // GIVEN spec-review result with ok:true and fixable finding on tasks.md
 // WHEN deriveSpecReviewVerdict is called
-// THEN verdict is needs-fix (tasks.md is now in spec-fixer's writable set)
+// THEN verdict is approved (tasks.md is in spec-fixer's writable set; medium → observation auto-fix)
+// Updated: #spec-observation-autofix — medium fixable on tasks.md now approves
 //
 // test-cases.md remains unroutable (escalation with escalationReason).
 // ---------------------------------------------------------------------------
@@ -932,12 +936,12 @@ describe("TC-013: deriveSpecReviewVerdict — fixable finding on tasks.md routes
     void stderrSpy;
   });
 
-  it("TC-013: fixable finding on tasks.md (routable to spec-fixer) → needs-fix", () => {
+  it("TC-013: fixable finding on tasks.md (routable to spec-fixer, medium) → approved (observation auto-fix)", () => {
     expect(deriveSpecReviewVerdict).toBeDefined();
-    // tasks.md is now in spec-fixer's writable set
+    // tasks.md is in spec-fixer's writable set; medium severity → approved (observation auto-fix)
     const findings = [makeFinding("medium", "fixable", TASKS_MD)];
     const verdict = deriveSpecReviewVerdict!(findings, true, undefined, makeCanonScope());
-    expect(verdict).toBe("needs-fix");
+    expect(verdict).toBe("approved");
   });
 
   it("TC-013: fixable finding on test-cases.md (unroutable for spec-fixer) → escalation", () => {
@@ -1025,12 +1029,13 @@ describe("TC-015: deriveSpecReviewVerdict — vacuous evidence (checked=0) escal
     expect(verdict).toBe("escalation");
   });
 
-  it("TC-015: checked>0 with spec.md fixable finding → needs-fix (not vacuous)", () => {
+  it("TC-015: checked>0 with spec.md fixable (medium) finding → approved (observation auto-fix, not vacuous)", () => {
+    // Updated: #spec-observation-autofix — medium fixable on spec.md now approves (observation auto-fix)
     expect(deriveSpecReviewVerdict).toBeDefined();
     const evidence = { checked: 2, skipped: 0, unverified: 0 };
     const findings = [makeFinding("medium", "fixable", SPEC_MD)];
     const verdict = deriveSpecReviewVerdict!(findings, true, evidence as Evidence, makeCanonScope());
-    expect(verdict).toBe("needs-fix");
+    expect(verdict).toBe("approved");
   });
 });
 
