@@ -147,6 +147,15 @@
       `needs-fix` → `approved`（`escalationReason` 未設定は不変）。TC-004（needs-fix → spec-fixer 行）は不変。
   - `tests/unit/core/pipeline/pipeline.transitions.test.ts`
     - TC-030: `STANDARD_TRANSITIONS.length` の期待を `44` → `46`（guarded 行 +2）に更新し、コメントを更新する。
+  - `tests/unit/core/pipeline/pipeline.conformance-routing.test.ts`
+    - TC-CONFRT-07: すべてのステップに同一タイムスタンプ（`'2026-01-01T00:00:00.000Z'`）を使用する。
+      guarded 遷移追加後、conformance 起動の spec-fixer#3 において `getConformanceFixContext` の
+      recency check（`>=` 条件：同一タイムスタンプ → equal → null）が null を返すため、
+      `specFixerForwardsToTestGen` が true となり spec-fixer#3 は spec-review reverification をスキップして
+      test-case-gen へ直行する。最終アサーション（specFixerCallCount===3 / awaiting-archive）は通過するため
+      テストは赤くならないが、本来の conformance→spec-fixer→spec-review reverification フローは検証されなくなる。
+      T-06 の新規テストが proper timestamps で reverification 不変条件をカバーしていることを実装時に確認する。
+      **期待値変更は不要。ただし上記フロー変化をこのリストに記録する（implementation-notes にも転記すること）。**
 - [ ] 上記の「期待値を更新した既存テスト」の最終リスト（ファイル・TC ID・変更内容）を
       `specrunner/changes/spec-observation-autofix/implementation-notes.md` に列挙する。
 
