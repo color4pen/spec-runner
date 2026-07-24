@@ -1,16 +1,16 @@
 # Verification Result — spec-review-full-enumeration — iter 1
 
-## Verdict: failed
+## Verdict: passed
 
 ## Phase Results
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 1.0s | 0 |
+| 1 | build | passed | 0.3s | 0 |
 | 2 | typecheck | passed | 4.8s | 0 |
-| 3 | test | passed | 30.7s | 0 |
-| 4 | lint | passed | 5.6s | 0 |
-| 5 | changed-line-coverage | failed | 38.5s | 1 |
+| 3 | test | passed | 31.3s | 0 |
+| 4 | lint | passed | 5.3s | 0 |
+| 5 | changed-line-coverage | passed | 38.2s | 0 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.32 MB
-ESM ⚡️ Build success in 73ms
+ESM ⚡️ Build success in 68ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -52,9 +52,9 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	204d
 }
 
  Test Files  646 passed (646)
-      Tests  9553 passed | 1 skipped (9554)
-   Start at  11:31:01
-   Duration  30.42s (transform 5.77s, setup 0ms, import 24.66s, tests 47.92s, environment 31ms)
+      Tests  9559 passed | 1 skipped (9560)
+   Start at  11:35:03
+   Duration  30.96s (transform 5.87s, setup 0ms, import 24.95s, tests 48.76s, environment 31ms)
 
 
 $ vitest run
@@ -67,24 +67,24 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-jopKZg/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-SZ5pXL/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
-Warning: pr-create: attestation comment failed: GitHub API error
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-g3lh5J/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-e7ohx7/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: pr-create: attestation comment failed: GitHub API error
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
@@ -132,11 +132,6 @@ Retrying worktree add: lock contention (attempt 2/3)
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -157,15 +152,20 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
+Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 ERROR: file not found
 spawn ENOENT
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
-Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
@@ -182,11 +182,7 @@ $ eslint ./src ./tests --max-warnings 0
 
 ## Phase: changed-line-coverage
 
-Step 'changed-line-coverage' failed
-
 ```
-changed-line-coverage: failed — 2 file(s) did not meet coverage requirements
-  - src/core/runtime/managed.ts: changed DA lines were not executed
-  - src/store/job-state-store.ts: changed DA lines were not executed
-  Skipped (not in coverage surface): specrunner/changes/spec-review-full-enumeration/design.md, specrunner/changes/spec-review-full-enumeration/events.jsonl, specrunner/changes/spec-review-full-enumeration/request-review-attestation.json, specrunner/changes/spec-review-full-enumeration/request-review-result-001.md, specrunner/changes/spec-review-full-enumeration/request.md, specrunner/changes/spec-review-full-enumeration/rules.md, specrunner/changes/spec-review-full-enumeration/spec-review-result-001.md, specrunner/changes/spec-review-full-enumeration/spec-review-result-002.md, specrunner/changes/spec-review-full-enumeration/spec-review-result-003.md, specrunner/changes/spec-review-full-enumeration/spec.md, specrunner/changes/spec-review-full-enumeration/state.json, specrunner/changes/spec-review-full-enumeration/tasks.md, specrunner/changes/spec-review-full-enumeration/test-cases.md, specrunner/changes/spec-review-full-enumeration/usage.json, src/core/port/runtime-strategy.ts, src/prompts/__tests__/spec-review-full-enumeration-prompt.test.ts, tests/prompts/spec-review-system.test.ts, tests/unit/core/runtime/local-read-revision-content.test.ts, tests/unit/core/step/finding-recency.test.ts, tests/unit/core/step/spec-review-scope-exclusion.test.ts, tests/unit/store/finding-recency-journal.test.ts
+changed-line-coverage: passed (35 changed files checked, 25 skipped)
+  Skipped (not in coverage surface): specrunner/changes/spec-review-full-enumeration/bite-evidence-result.md, specrunner/changes/spec-review-full-enumeration/design.md, specrunner/changes/spec-review-full-enumeration/events.jsonl, specrunner/changes/spec-review-full-enumeration/request-review-attestation.json, specrunner/changes/spec-review-full-enumeration/request-review-result-001.md, specrunner/changes/spec-review-full-enumeration/request.md, specrunner/changes/spec-review-full-enumeration/rules.md, specrunner/changes/spec-review-full-enumeration/spec-review-result-001.md, specrunner/changes/spec-review-full-enumeration/spec-review-result-002.md, specrunner/changes/spec-review-full-enumeration/spec-review-result-003.md, specrunner/changes/spec-review-full-enumeration/spec.md, specrunner/changes/spec-review-full-enumeration/state.json, specrunner/changes/spec-review-full-enumeration/tasks.md, specrunner/changes/spec-review-full-enumeration/test-cases.md, specrunner/changes/spec-review-full-enumeration/usage.json, specrunner/changes/spec-review-full-enumeration/verification-result.md, src/core/port/runtime-strategy.ts, src/prompts/__tests__/spec-review-full-enumeration-prompt.test.ts, tests/prompts/spec-review-system.test.ts, tests/unit/core/runtime/local-read-revision-content.test.ts, tests/unit/core/runtime/managed.test.ts, tests/unit/core/step/finding-recency.test.ts, tests/unit/core/step/spec-review-scope-exclusion.test.ts, tests/unit/store/finding-recency-journal.test.ts, tests/unit/store/job-state-store-changedir.test.ts
 ```
