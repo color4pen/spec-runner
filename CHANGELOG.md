@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.6](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.5...specrunner-v0.4.6) (2026-07-24)
+
+
+### Features
+
+* spec フェーズに observation auto-fix を導入する — minor 指摘は fixer 消化後に再レビューなしで前進する ([#928](https://github.com/color4pen/spec-runner/issues/928)) ([10ab40d](https://github.com/color4pen/spec-runner/commit/10ab40da8a976a67deab2418b5de76575445da7b))
+* spec-review に全量列挙の規律を課し、finding の後出しを機械検出する ([#925](https://github.com/color4pen/spec-runner/issues/925)) ([94c2ab5](https://github.com/color4pen/spec-runner/commit/94c2ab5fcf55d5ed364da6f7bea2846efdb9574f))
+
 ## [0.4.5](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.4...specrunner-v0.4.5) (2026-07-23)
 
 
