@@ -1,0 +1,12 @@
+{
+  "requestHash": "sha256:5330dd82532457a8e6c2a348e30118badb2853df8d949442eb97ba0f0dcb62c3",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/prompts/spec-review-system.ts:34-49 — Method 節に全量列挙規律が存在しない",
+    "src/kernel/report-result.ts — Finding.file: string (required), Finding.line?: number (optional)",
+    "src/core/step/step-completion.ts:238-255 — runtimeStrategy.verifyFindingRefs 呼び出しブロック（runtimeStrategy アクセスと finding 走査が可能）",
+    "src/state/helpers.ts:106 — StepResultInput.commitOid?: string",
+    "src/store/event-journal.ts:31-66 — StepAttemptRecord (type: 'step-attempt') および appendEventRecord 関数が存在"
+  ],
+  "sourceRevision": "78a9ce0926f7c876e22539137fb4d62ccecad5ca"
+}
