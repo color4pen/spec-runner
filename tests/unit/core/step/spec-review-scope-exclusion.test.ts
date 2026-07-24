@@ -139,7 +139,9 @@ async function buildIteration2State(): Promise<JobState> {
     repository: { owner: "owner", name: "repo" },
   });
 
-  // Simulate iteration 1 already completed: spec-review has 1 StepRun
+  // Simulate iteration 1 already completed: spec-review has 1 StepRun.
+  // commitOid must be set at the StepRun top level — that is where
+  // commit-orchestrator.ts:278 resolves priorOid from (stepRuns[n-2]?.commitOid).
   const priorStepRun: StepRun = {
     attempt: 1,
     sessionId: null,
@@ -147,8 +149,8 @@ async function buildIteration2State(): Promise<JobState> {
       verdict: "needs-fix",
       findingsPath: null,
       error: null,
-      commitOid: PRIOR_COMMIT_OID,
     },
+    commitOid: PRIOR_COMMIT_OID,
     startedAt: "2026-01-01T00:00:00.000Z",
     endedAt: "2026-01-01T00:05:00.000Z",
   };
@@ -278,6 +280,14 @@ describe("TC-022: scope finding が後出し判定対象から除外される", 
         passedFindings.filter((f) => f.origin !== "scope"),
         "agent findings must be passed to recordFindingRecency",
       ).toHaveLength(2);
+
+      // priorOid must be resolved from the prior StepRun's top-level commitOid
+      // (commit-orchestrator.ts:278 reads stepRuns[n-2]?.commitOid, NOT outcome.commitOid)
+      const passedPriorOid = (calls[0]![0] as { priorOid?: string | null })?.priorOid;
+      expect(
+        passedPriorOid,
+        "priorOid passed to recordFindingRecency must equal the prior StepRun top-level commitOid",
+      ).toBe(PRIOR_COMMIT_OID);
     },
   );
 
