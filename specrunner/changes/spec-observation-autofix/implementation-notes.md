@@ -42,12 +42,14 @@
 
 ---
 
-## TC-CONFRT-07 フロー変化の記録（期待値変更なし）
+## TC-CONFRT-07 フロー変化の記録（期待値変更あり）
 
-`tests/unit/core/pipeline/pipeline.conformance-routing.test.ts` TC-CONFRT-07 は、すべてのステップに同一タイムスタンプ（`'2026-01-01T00:00:00.000Z'`）を使用している。
+`tests/unit/core/pipeline/pipeline.conformance-routing.test.ts` TC-CONFRT-07 は、code-fixer commit（7ce103215）で以下の修正を実施済み。
 
-guarded 遷移追加後、conformance 起動の spec-fixer#3 において `getConformanceFixContext` の recency check（`>=` 条件：同一タイムスタンプ → equal → null）が `null` を返すため、`specFixerForwardsToTestGen` が `true` となり spec-fixer#3 は spec-review reverification をスキップして test-case-gen へ直行する。
+**修正内容:**
+- conformance#1 呼び出しに `ts: "2026-01-01T01:00:00.000Z"`（spec-review のデフォルト `'2026-01-01T00:00:00.000Z'` より厳密に後）と `toolResult.findings` を付与。これにより `getConformanceFixContext` の recency check（step 3: `>=`）と findings check（step 4）が両方通過し、`specFixerForwardsToTestGen` が `false` を返して spec-fixer#3 が spec-review reverification へ正しくルーティングされる。
+- `expect(specReviewCallCount).toBe(4)` を追加。spec-review が spec-fixer#3 の後に 1 回（reverification）余分に呼ばれることを明示的にアサートし、`conformance→spec-fixer→spec-review reverification` 不変条件を Pipeline 統合レベルで固定する。
 
-最終アサーション（specFixerCallCount===3 / awaiting-archive）は引き続き通過するためテストは赤くならないが、本来の `conformance→spec-fixer→spec-review reverification` フローは検証されなくなる。
-
-T-06 の新規テスト（`tests/unit/core/pipeline/spec-observation-autofix.test.ts`）が proper timestamps を用いた reverification 不変条件をカバーしている。
+**reverification 不変条件のカバレッジ:**
+- TC-CONFRT-07（`tests/unit/core/pipeline/pipeline.conformance-routing.test.ts`）: Pipeline 統合レベル（budget-reset との組合せ）
+- TC-010（`tests/unit/core/pipeline/spec-observation-autofix.test.ts`）: predicate 単体レベル（proper timestamps + findings を持つ state で `specFixerForwardsToTestGen` が `false` を返すことを確認）
