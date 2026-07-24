@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "42be65c4-f721-4557-a3e8-c1ba71bd2c41",
   "createdAt": "2026-07-24T04:25:21.951Z",
-  "updatedAt": "2026-07-24T06:15:10.312Z",
+  "updatedAt": "2026-07-24T06:51:15.232Z",
   "request": {
     "title": "spec フェーズに observation auto-fix を導入する — minor 指摘は fixer 消化後に再レビューなしで前進する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/spec-observation-autofix-42be65c4",
   "error": null,
@@ -75,13 +75,15 @@
     "2d53daf5e8ad142cc540885d45dc6be4e27901c4",
     "1a01f680098585b7a594a87dfe1f2a0db0477cc1",
     "e64e3bd64d068a0497fa43153d84106e49e36a30",
-    "c5fb47903eac2092de676dc919b8e7936207a9a4"
+    "c5fb47903eac2092de676dc919b8e7936207a9a4",
+    "7ce1032157f9fda8855a5835f274ef7816fa968b",
+    "c82d280f2edd33bd4cf3d50c5a89c577973f2d36"
   ],
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "7ce1032157f9fda8855a5835f274ef7816fa968b",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -91,7 +93,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/spec-observation-autofix/design.md:sha256:953ce6fa01990e94a4c4ed86a18a679d6be9f06d46dcea821f79d93b1f1e1136|specrunner/changes/spec-observation-autofix/request.md:sha256:c960fcea21ed4e5ba4110ac4aa6bb1a3bc3f4f3a40d8d3aac485901283021bce|specrunner/changes/spec-observation-autofix/spec.md:sha256:714cbb56bf77ca629a9914ca0d74a3f30efb917b81fb98dce48fd5903ed4961e|specrunner/changes/spec-observation-autofix/tasks.md:sha256:c961f83a9757d387afb27e1f06348d4fa14b9b60b9ce563653130b798f215e50|specrunner/changes/spec-observation-autofix/test-cases.md:sha256:ce3c3f7989736cffe55ca52d8d0c9513bc31443740a0ce0c5addd0f3f804395a"
     },
     {
       "name": "scale-tolerance",
@@ -107,7 +110,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 58,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -119,9 +122,10 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 1,
-      "cross-boundary-invariants": 1,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2,
+      "code-fixer": 1
     }
   }
 }
