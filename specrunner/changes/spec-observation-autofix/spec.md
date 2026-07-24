@@ -34,6 +34,13 @@ canon fixable findings include a `critical` or `high` severity finding, the verd
 **When** the spec-review verdict is derived
 **Then** the verdict is `needs-fix`
 
+#### Scenario: critical fixable finding on spec.md remains needs-fix
+
+**Given** a spec-review result with `ok: true` and a single finding
+`severity: "critical"`, `resolution: "fixable"`, `file` = `specrunner/changes/<slug>/spec.md`
+**When** the spec-review verdict is derived
+**Then** the verdict is `needs-fix`
+
 #### Scenario: unroutable request.md fixable finding still escalates
 
 **Given** a spec-review result with `ok: true` and a single finding

@@ -112,6 +112,7 @@
       `spec-fixer` on `approved` → `test-case-gen` に解決し、spec-review が再実行されないことを固定する。
 - [ ] 遷移テスト（needs-fix 往復不変）: high fixable on spec.md → `needs-fix` → `spec-fixer` →
       （最新 spec-review verdict needs-fix のため）`spec-fixer` on `approved` → `spec-review` を固定する。
+      critical fixable on spec.md も同様に `needs-fix` → `spec-review` 往復となることを確認する。
 - [ ] 遷移テスト（conformance reverification 不変）: conformance `needs-fix:spec-fixer`（最新 spec-review より新しい）
       起点の spec-fixer が `spec-fixer` on `approved` → `spec-review`（`test-case-gen` に直行しない）を固定する。
 - [ ] ledger テスト: observation pass で消化された spec-review の fixable finding が
