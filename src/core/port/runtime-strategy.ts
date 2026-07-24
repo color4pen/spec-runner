@@ -27,6 +27,21 @@ import type { OutputContract, OutputCheckResult } from "./output-contract.js";
 // ---------------------------------------------------------------------------
 
 /**
+ * Port DTO for reading a file's content at the current revision and at a prior commitOid.
+ *
+ * Used by finding-recency to compare whether a finding's target line existed in the
+ * prior spec-review round's revision.
+ *
+ * - `current`: file content at the worktree/branch HEAD (null if file absent or read fails).
+ * - `prior`:   file content at the given priorOid commit (null if OID absent/invalid or
+ *              runtime cannot resolve arbitrary OIDs — e.g. managed runtime).
+ */
+export interface RevisionContentPair {
+  current: string | null;
+  prior: string | null;
+}
+
+/**
  * Port DTO for a single-moment snapshot of guarded main-checkout paths.
  *
  * Built from `git status --porcelain` filtered to monitored globs.
@@ -730,6 +745,34 @@ export interface RuntimeStrategy {
    * RealRuntimeStrategy requires the implementation (compile-time enforcement).
    */
   snapshotMainCheckoutGuard?(cwd: string, config: SpecRunnerConfig): Promise<MainCheckoutGuardSnapshot | null>;
+
+  /**
+   * Read a file's content at the current worktree revision and at a specific prior commitOid.
+   *
+   * Used by finding-recency to classify whether a judge finding's target line existed
+   * in the previous spec-review round's revision ("late") or is genuinely new ("not-late").
+   *
+   * Contract:
+   * - Never throws — returns null for any field that cannot be resolved.
+   * - `current`: read from `path.join(cwd, file)` (local) or `getRawFile(branch, file)` (managed).
+   *   Returns null if the file does not exist or a read error occurs.
+   * - `prior`: resolved via `git show <priorOid>:<file>` (local) or always null (managed,
+   *   because arbitrary OID resolution is not supported in the managed runtime).
+   *   Returns null if the OID does not exist, spawn fails, or any error occurs.
+   *
+   * - local:   reads current file from fs; prior via `git show <priorOid>:<file>` in cwd.
+   * - managed: current via `githubClient.getRawFile(branch, file)` (branch null → null);
+   *            prior is always null (cannot resolve arbitrary OIDs).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
+   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
+   */
+  readRevisionContent?(
+    file: string,
+    priorOid: string,
+    cwd: string,
+    branch: string | null,
+  ): Promise<RevisionContentPair>;
 }
 
 // ---------------------------------------------------------------------------
@@ -773,4 +816,10 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
     config: SpecRunnerConfig,
   ): Promise<IsolatedTestResult>;
   readFileAtCommit(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
+  readRevisionContent(
+    file: string,
+    priorOid: string,
+    cwd: string,
+    branch: string | null,
+  ): Promise<RevisionContentPair>;
 };

@@ -14,6 +14,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { StepRun, HistoryEntry, ErrorInfo } from "../state/schema.js";
 import type { BaseReportResult } from "../kernel/report-result.js";
+import type { FindingSeverity } from "../kernel/report-result.js";
 import type { CompletionReportDiagnostic } from "../kernel/completion-report-diagnostic.js";
 import type { Verdict } from "../state/schema.js";
 import type { ArtifactRef } from "../state/artifact-types.js";
@@ -129,8 +130,36 @@ export interface OperatorEventRecord {
   ts: string;
 }
 
+/**
+ * Records the per-finding recency classification for a spec-review round.
+ *
+ * Appended by recordFindingRecency() after iteration >= 2 spec-review completions.
+ * Journal-only: NOT materialized into state.json / NormalizedJobState.
+ *
+ * D4 (spec-review-full-enumeration): observation-only signal; does not change verdict.
+ */
+export interface FindingRecencyRecord {
+  type: "finding-recency";
+  /** Step name (always "spec-review" for current configuration). */
+  step: string;
+  /** ISO 8601 timestamp of the evaluation. */
+  ts: string;
+  /** Iteration number (>= 2 when recorded). */
+  iteration: number;
+  /** CommitOid of the prior spec-review round's revision (null if unresolvable). */
+  priorOid: string | null;
+  /** Per-finding recency classification results. */
+  findings: Array<{
+    file: string;
+    line?: number;
+    title: string;
+    severity: FindingSeverity;
+    recency: "late" | "not-late" | "indeterminate";
+  }>;
+}
+
 /** All valid event record types. */
-export type EventRecord = StepAttemptRecord | TransitionRecord | InterruptionRecord | LineageRecord | OperatorEventRecord;
+export type EventRecord = StepAttemptRecord | TransitionRecord | InterruptionRecord | LineageRecord | OperatorEventRecord | FindingRecencyRecord;
 
 // ---------------------------------------------------------------------------
 // Fold corruption
@@ -183,6 +212,14 @@ export interface FoldResult {
    * (empty array when no operator events exist).
    */
   operatorEvents: OperatorEventRecord[];
+  /**
+   * All finding-recency records in chronological order (D4, spec-review-full-enumeration).
+   * NOT materialized into state.json / NormalizedJobState — journal-only.
+   * Empty array if no finding-recency records have been appended.
+   * fold() always populates this field (empty array when absent).
+   * Optional so pre-existing hand-built FoldResult literals compile without change.
+   */
+  findingRecency?: FindingRecencyRecord[];
   /**
    * Present when a mid-journal corruption was detected (a committed line that is
    * not valid JSON or not a plain object). Absent when the journal is clean.
@@ -255,6 +292,7 @@ export function fold(content: string): FoldResult {
   let lastInterruption: InterruptionRecord | undefined;
   const lineageRecords: LineageRecord[] = [];
   const operatorEventRecords: OperatorEventRecord[] = [];
+  const findingRecencyRecords: FindingRecencyRecord[] = [];
   let corruption: FoldCorruption | undefined;
 
   for (let i = 0; i < committedLines.length; i++) {
@@ -306,6 +344,9 @@ export function fold(content: string): FoldResult {
     } else if (obj["type"] === "operator-event") {
       // Collect operator event records in chronological order (D1, reopen-journal)
       operatorEventRecords.push(obj as unknown as OperatorEventRecord);
+    } else if (obj["type"] === "finding-recency") {
+      // Collect finding-recency records (D4, spec-review-full-enumeration)
+      findingRecencyRecords.push(obj as unknown as FindingRecencyRecord);
     }
     // Unknown / legacy types (e.g. "history") are silently ignored for forward compat.
     // Unknown type is NOT a corruption — forward compatibility.
@@ -355,6 +396,7 @@ export function fold(content: string): FoldResult {
     historyCount: historyRecords.length,
     lineage: lineageRecords,
     operatorEvents: operatorEventRecords,
+    findingRecency: findingRecencyRecords,
     ...(lastInterruption !== undefined ? { lastInterruption } : {}),
     ...(corruption !== undefined ? { corruption } : {}),
   };

@@ -18,6 +18,47 @@ import type { AgentStep } from "../../src/core/step/types.js";
 import type { DynamicContext } from "../../src/git/dynamic-context.js";
 
 // ---------------------------------------------------------------------------
+// TC-001: ## Method 節が全量列挙規律を含む (spec-review-full-enumeration)
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the content of the ## Method section (up to but not including the next ## heading).
+ * Uses string indexing rather than regex to avoid multiline flag pitfalls.
+ */
+function extractMethodSection(prompt: string): string {
+  const startMarker = "## Method\n";
+  const startIdx = prompt.indexOf(startMarker);
+  if (startIdx === -1) return "";
+  const contentStart = startIdx + startMarker.length;
+  const nextSection = prompt.indexOf("\n## ", contentStart);
+  return nextSection === -1 ? prompt.slice(contentStart) : prompt.slice(contentStart, nextSection);
+}
+
+describe("TC-001: ## Method 節が全量列挙規律を含む", () => {
+  it("TC-001: ## Method 節が「全量列挙」を含む", () => {
+    const method = extractMethodSection(SPEC_REVIEW_SYSTEM_PROMPT);
+    expect(method, "## Method 節 (h2 boundary で抽出) に「全量列挙」が含まれること").toContain("全量列挙");
+  });
+
+  it("TC-001: ## Method 節が「小出し」を含む", () => {
+    const method = extractMethodSection(SPEC_REVIEW_SYSTEM_PROMPT);
+    expect(method, "## Method 節 (h2 boundary で抽出) に「小出し」が含まれること").toContain("小出し");
+  });
+
+  it("TC-001: ## Method 節が「後出し」を含む", () => {
+    const method = extractMethodSection(SPEC_REVIEW_SYSTEM_PROMPT);
+    expect(method, "## Method 節 (h2 boundary で抽出) に「後出し」が含まれること").toContain("後出し");
+  });
+
+  it("TC-001: extractMethodSection が ## Method 以外の h2 行を返さない", () => {
+    const method = extractMethodSection(SPEC_REVIEW_SYSTEM_PROMPT);
+    // The extracted section must not contain another h2 heading
+    const otherH2 = method.match(/^## (?!Method)/m);
+    expect(otherH2, "抽出した ## Method 節に他の h2 見出しが混入しないこと").toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-003: AgentStep interface has optional enrichContext
 // ---------------------------------------------------------------------------
 describe("TC-003: AgentStep interface has optional enrichContext", () => {

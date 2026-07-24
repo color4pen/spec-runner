@@ -683,6 +683,41 @@ export class ManagedRuntime implements RealRuntimeStrategy {
     return { kind: "unavailable", reason: "managed runtime has no local worktree for readFileAtCommit" };
   }
 
+  /**
+   * Read a file's content at the current branch revision and at a specific prior commitOid.
+   *
+   * Managed runtime:
+   * - `current`: fetched via `githubClient.getRawFile(branch, file)` (branch null → null).
+   * - `prior`:   always null — managed runtime cannot resolve arbitrary commit OIDs.
+   *
+   * Never throws.
+   */
+  async readRevisionContent(
+    file: string,
+    _priorOid: string,
+    _cwd: string,
+    branch: string | null,
+  ): Promise<import("../port/runtime-strategy.js").RevisionContentPair> {
+    let current: string | null = null;
+
+    if (branch !== null) {
+      try {
+        const raw = await this.githubClient.getRawFile(
+          this.repo.owner,
+          this.repo.name,
+          branch,
+          file,
+        );
+        current = raw ?? null;
+      } catch {
+        // Network error or file not found → null
+      }
+    }
+
+    // prior is always null: managed runtime cannot resolve arbitrary commit OIDs
+    return { current, prior: null };
+  }
+
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
     const slug = this.currentSlug;
 

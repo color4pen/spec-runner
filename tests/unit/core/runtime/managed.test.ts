@@ -287,6 +287,75 @@ describe("TC-036: managed marker write/clear タイミングと D7 スキーマ�
   });
 });
 
+// TC-MR-006: ManagedRuntime.readRevisionContent
+describe("TC-MR-006: ManagedRuntime.readRevisionContent", () => {
+  it("branch=null → current is null, prior is null, no exception", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo(), undefined, "");
+
+    const result = await runtime.readRevisionContent("src/foo.ts", "abc123", "/repo", null);
+
+    expect(result.current).toBeNull();
+    expect(result.prior).toBeNull();
+    expect(githubClient.getRawFile).not.toHaveBeenCalled();
+  });
+
+  it("branch set + getRawFile succeeds → current=content, prior=null", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    githubClient.getRawFile.mockResolvedValue("file content\n");
+    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo(), undefined, "");
+
+    const result = await runtime.readRevisionContent(
+      "src/bar.ts",
+      "def456",
+      "/repo",
+      "change/some-branch",
+    );
+
+    expect(result.current).toBe("file content\n");
+    expect(result.prior).toBeNull();
+    expect(githubClient.getRawFile).toHaveBeenCalledWith(
+      "testowner",
+      "testrepo",
+      "change/some-branch",
+      "src/bar.ts",
+    );
+  });
+
+  it("branch set + getRawFile returns undefined → current=null", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    githubClient.getRawFile.mockResolvedValue(undefined);
+    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo(), undefined, "");
+
+    const result = await runtime.readRevisionContent("src/baz.ts", "abc000", "/repo", "main");
+
+    expect(result.current).toBeNull();
+    expect(result.prior).toBeNull();
+  });
+
+  it("branch set + getRawFile throws → current=null, prior=null, no exception", async () => {
+    const sessionClient = buildMockSessionClient();
+    const githubClient = buildMockGitHubClient();
+    githubClient.getRawFile.mockRejectedValue(new Error("network error"));
+    const runtime = new ManagedRuntime("/repo", sessionClient, githubClient, buildRepo(), undefined, "");
+
+    let result: { current: string | null; prior: string | null } | undefined;
+    let threw = false;
+    try {
+      result = await runtime.readRevisionContent("src/qux.ts", "xyz999", "/repo", "feature-branch");
+    } catch {
+      threw = true;
+    }
+
+    expect(threw).toBe(false);
+    expect(result?.current).toBeNull();
+    expect(result?.prior).toBeNull();
+  });
+});
+
 // TC-MR-005: setupWorkspace writes rules.md to change folder via writeFile (string constant)
 describe("TC-MR-005: setupWorkspace writes rules.md to change folder via string constant", () => {
   it("writes RULES_MD_CONTENT to change folder and stages it with git add", async () => {

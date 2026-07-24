@@ -3,7 +3,7 @@ import type { JobState, StepRun, ErrorInfo, HistoryEntry, RequestInfo, Repositor
 import { STANDARD_PIPELINE_ID } from "../kernel/pipeline-ids.js";
 import { STANDARD_PROFILE } from "../state/profile.js";
 import { transitionJob } from "../state/lifecycle.js";
-import type { InterruptionRecord, LineageRecord, OperatorEventRecord } from "./event-journal.js";
+import type { InterruptionRecord, LineageRecord, OperatorEventRecord, FindingRecencyRecord } from "./event-journal.js";
 import { JobLocationResolver } from "./job-location-resolver.js";
 import { JobJournal } from "./job-journal.js";
 import { JobCatalog } from "./job-catalog.js";
@@ -280,6 +280,16 @@ export class JobStateStore {
    */
   async appendOperatorEvent(record: OperatorEventRecord): Promise<void> {
     return this._journal.appendOperatorEvent(record);
+  }
+
+  /**
+   * Append a finding-recency record to the events journal (D4, spec-review-full-enumeration).
+   * Does not update state.json — finding-recency is journal-only and never materialized
+   * into NormalizedJobState (observation signal, not state mutation).
+   * Best-effort: callers wrap in try/catch (same pattern as appendLineage).
+   */
+  async appendFindingRecency(record: FindingRecencyRecord): Promise<void> {
+    return this._journal.appendFindingRecency(record);
   }
 
   /**

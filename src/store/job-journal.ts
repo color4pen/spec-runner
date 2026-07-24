@@ -7,7 +7,7 @@ import {
   stepRunToRecord,
   historyEntryToRecord,
 } from "./event-journal.js";
-import type { FoldResult, InterruptionRecord, LineageRecord, OperatorEventRecord } from "./event-journal.js";
+import type { FoldResult, InterruptionRecord, LineageRecord, OperatorEventRecord, FindingRecencyRecord } from "./event-journal.js";
 import { detectCounterReversal, describeJournalIssue } from "./journal-integrity.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { appendHistoryEntry } from "../state/schema.js";
@@ -145,7 +145,7 @@ export class JobJournal {
     } catch (err: unknown) {
       const code = (err as NodeJS.ErrnoException).code;
       if (code === "ENOENT") {
-        foldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0, lineage: [], operatorEvents: [] };
+        foldResult = { steps: {}, history: [], stepsTotal: 0, stepCounts: {}, historyCount: 0, lineage: [], operatorEvents: [], findingRecency: [] };
       } else {
         throw err;
       }
@@ -236,6 +236,16 @@ export class JobJournal {
    * ensuring the event is durable even if the subsequent persist fails.
    */
   async appendOperatorEvent(record: OperatorEventRecord): Promise<void> {
+    await appendEventRecord(this.resolver.getEventsPath(), record);
+  }
+
+  /**
+   * Append a finding-recency record to the events journal (D4, spec-review-full-enumeration).
+   * Does not update state.json — finding-recency is journal-only and never materialized
+   * into NormalizedJobState (observation signal, not state mutation).
+   * Best-effort: callers wrap in try/catch (same pattern as appendLineage).
+   */
+  async appendFindingRecency(record: FindingRecencyRecord): Promise<void> {
     await appendEventRecord(this.resolver.getEventsPath(), record);
   }
 }
