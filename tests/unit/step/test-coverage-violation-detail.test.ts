@@ -211,7 +211,7 @@ describe("TC-001: OutputViolation.coverage preserves both missing and assertionl
     await writeTestFile(
       "mixed.test.ts",
       // TC-002 present but no assertion (comment only)
-      "// TC-002 placeholder — no expect() here\n",
+      "// TC-002 placeholder — no assertion here\n",
     );
 
     const runtime = makeLocalRuntime();
@@ -532,7 +532,7 @@ describe("TC-008: local runtime — mixed case detail is union, coverage maintai
     await writeTestFile(
       "mixed.test.ts",
       // TC-002 present but no assertion
-      "// TC-002 placeholder — no expect() call\n",
+      "// TC-002 placeholder — no assertion call\n",
     );
 
     const runtime = makeLocalRuntime();

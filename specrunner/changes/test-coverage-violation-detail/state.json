@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "fee973e6-33e7-42c1-8e8c-d68ce6f8caca",
   "createdAt": "2026-07-25T00:00:17.871Z",
-  "updatedAt": "2026-07-25T00:47:09.687Z",
+  "updatedAt": "2026-07-25T00:51:24.291Z",
   "request": {
     "title": "test-coverage 契約違反で欠落 TC-ID を agent と operator に伝え、同一セッションで修復可能にする",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "implementer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/test-coverage-violation-detail-fee973e6",
   "error": null,
   "pipelineId": "standard",
@@ -70,13 +70,10 @@
     "2f4812c4e01d826e64635a9e88cfe7b21197e74d",
     "c627518a9c0e392db5c6bb5077fca20a4ba5862a"
   ],
-  "resumePoint": {
-    "step": "implementer",
-    "reason": "implementer escalated",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 21,
+    "historyCount": 23,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
