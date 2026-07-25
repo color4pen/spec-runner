@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "fee973e6-33e7-42c1-8e8c-d68ce6f8caca",
   "createdAt": "2026-07-25T00:00:17.871Z",
-  "updatedAt": "2026-07-25T00:57:32.752Z",
+  "updatedAt": "2026-07-25T01:11:19.108Z",
   "request": {
     "title": "test-coverage 契約違反で欠落 TC-ID を agent と operator に伝え、同一セッションで修復可能にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/test-coverage-violation-detail-fee973e6",
   "error": null,
@@ -72,12 +72,44 @@
     "42b2dc273bf821e0e15eaed41d4f24141aaa4203",
     "e8ce93c26a8fd195e9ec4a7f70e0cdff545fbddd",
     "491f8845434f89b2f9f40632b6b9f0a6823fcd4c",
-    "c3840a42b0b75764d15c051e164d350e3ca0aaad"
+    "c3840a42b0b75764d15c051e164d350e3ca0aaad",
+    "755d722373215fd1aece104ebfcf8e371d26d930",
+    "f7a4150f4573686e940ed221d9e189bf0516b46e"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "755d722373215fd1aece104ebfcf8e371d26d930",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/test-coverage-violation-detail/design.md:sha256:98ebc18af6e044d935487ab9f54b4f604275c5634a4a9edaf536ae4b8ea36781|specrunner/changes/test-coverage-violation-detail/request.md:sha256:448e9d3c07863c9ad2148d01c8b656560db786e30510f6e8c7a3334d83594d1e|specrunner/changes/test-coverage-violation-detail/spec.md:sha256:f73161ca555f50e3c5dbb4e9b880f63d0fdbd9c137a1a6381fafe40bfff1a398|specrunner/changes/test-coverage-violation-detail/tasks.md:sha256:af9f5b686a5e48b9884d8c05bf086d5ed42483b7ac88c3924e16f2b2294ef575|specrunner/changes/test-coverage-violation-detail/test-cases.md:sha256:afb330504f265fad968c32dd9ebc34d085b38bfaaddef94725d8739bc80c5188"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 55,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -87,7 +119,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "build-fixer": 1
+      "build-fixer": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
