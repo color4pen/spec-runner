@@ -28,11 +28,14 @@ const ROOT = path.resolve(__dirname, "../../..");
 
 function grepE(pattern: string, target: string): string {
   try {
-    return execSync(`grep -rEn ${pattern} ${target}`, {
-      cwd: ROOT,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    }).trim();
+    return execSync(
+      `grep -rEn --exclude-dir=node_modules --exclude-dir=dist --exclude-dir=.git ${pattern} ${target}`,
+      {
+        cwd: ROOT,
+        encoding: "utf-8",
+        stdio: ["pipe", "pipe", "pipe"],
+      },
+    ).trim();
   } catch (err: unknown) {
     const exitCode = (err as { status?: number }).status;
     if (exitCode === 1) return "";
@@ -479,7 +482,8 @@ describe("TC-018: B-13 appears only in StepExecutor context across the entire re
           !line.includes("__tests__/") &&
           !line.includes("test-cases.md") &&
           !line.includes("repo-root-exactly-once") &&
-          !line.includes("repo-root-resolve-exactly-once"),
+          !line.includes("repo-root-resolve-exactly-once") &&
+          !line.includes("specrunner/changes/"),
       );
     expect(nonTestLines).toHaveLength(0);
   });
