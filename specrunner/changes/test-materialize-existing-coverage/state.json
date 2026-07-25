@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f76d4e36-c1b5-427e-abff-fc897989d9c3",
   "createdAt": "2026-07-25T00:01:02.621Z",
-  "updatedAt": "2026-07-25T01:08:56.523Z",
+  "updatedAt": "2026-07-25T01:13:21.551Z",
   "request": {
     "title": "既存テストによる must TC 充足の正規表明と、manual TC の coverage 集計除外",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/test-materialize-existing-coverage-f76d4e36",
   "error": null,
@@ -77,13 +77,14 @@
     "0fc15bdb287bba51bfa45c42a28e7f25386cea33",
     "689ed29da741a3e11aa19a7c2a6dace10e0322b6",
     "c27f91d4bba4763f0d41016ae1d172f1b2157213",
-    "3b324c73dc1a628d6d3121c3b4610620e13177e6"
+    "3b324c73dc1a628d6d3121c3b4610620e13177e6",
+    "9b4c91816dbbfb90a14aa8ca97e92f617434a795"
   ],
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "cc44d76772ed139be53e36f0e0350f2f6f1bb318",
+      "approvedAtCommit": "9b4c91816dbbfb90a14aa8ca97e92f617434a795",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -110,7 +111,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 69,
+    "historyCount": 77,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -121,10 +122,10 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 3,
-      "code-review": 1,
+      "code-review": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "custom-reviewers": 2,
       "regression-gate": 1,
       "conformance": 1,
       "build-fixer": 1
