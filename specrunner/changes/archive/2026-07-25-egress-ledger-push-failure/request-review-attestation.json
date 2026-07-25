@@ -1,0 +1,20 @@
+{
+  "requestHash": "sha256:3532157d8e2cfb10929f4e87beb9d6d645a1462cc0c3c35b2f2f082e00d131f0",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/commit-push.ts:299-329 verifyEgressLedger has no branch parameter",
+    "src/core/step/commit-push.ts:326 egressUnknownCommitError(oid, \"\") hardcoded empty branch",
+    "src/core/step/commit-push.ts:352-381 runInlineEgressCheck passes branch to egressUnknownCommitError",
+    "src/core/step/commit-push.ts:531 pushOnly called after commit in scoped mode",
+    "src/core/step/commit-push.ts:600 pushOnly called after commit in guarded mode",
+    "src/core/step/commit-push.ts:632-720 commitFinalState in-memory egress check only, no store.persist",
+    "src/core/step/commit-push.ts:693 design note 'terminal path — in-memory union is sufficient; no need to persist the OID'",
+    "src/core/step/commit-push.ts:801-820 pushOnly uses gitExecExitCode (stderr discarded), throws pushFailedError with exit code only",
+    "src/core/step/commit-push.ts:820 pushFailedError detail is 'exit code ${secondPushCode}' only",
+    "src/core/step/commit-push.ts:39-43 CommitPushInfra interface with spawnFn/sleepFn/events",
+    "src/core/step/commit-orchestrator.ts:409-421 appendSynthesizedCommit and store.persist only in commitSuccess",
+    "src/core/pipeline/parallel-review-round.ts:418-448 push failure OID captured via captureHeadSha and recorded in synthesizedCommits",
+    "src/util/git-exec.ts:57-68 gitExecExitCode discards stderr, returns exitCode only"
+  ],
+  "sourceRevision": "2e53269ff1d3242c06989ee7addabbf162b845ba"
+}

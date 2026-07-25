@@ -683,7 +683,25 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     const cwd = deps.cwd ?? process.cwd();
     await cleanupOutputTemplates(cwd, deps.slug, step.name, state);
     logPipelineDiag("executor:commit:pre", `step=${step.name}`);
-    await commitAndPush(step, state, deps, headBeforeStep, commitPushInfra);
+    // Persist-before-push invariant (egress-ledger-push-failure fix):
+    // Extend infra with a persistBeforePush callback so the synthesis commit OID is
+    // written to the synthesizedCommits ledger before push is attempted. This mirrors
+    // the existing implementation in parallel-review-round and prevents a push failure
+    // from leaving the ledger incomplete and blocking resume via EGRESS_UNKNOWN_COMMIT.
+    const slugOpts = this.slugStoreOpts();
+    const infra: CommitPushInfra = {
+      ...commitPushInfra,
+      persistBeforePush: slugOpts
+        ? async (oid: string) => {
+            await this.updateJobState(
+              state.jobId,
+              (s) => appendSynthesizedCommit(s, oid),
+              slugOpts,
+            );
+          }
+        : undefined,
+    };
+    await commitAndPush(step, state, deps, headBeforeStep, infra);
     logPipelineDiag("executor:commit:post", `step=${step.name}`);
   }
 
@@ -701,6 +719,10 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     const branch = state.branch ?? "";
     const slug = deps.slug;
     const messageLabel = state.status === "awaiting-resume" ? "checkpoint" : "finalize";
+    // Persist-before-push invariant: pass a persistBeforePush callback so the
+    // checkpoint/finalize commit OID is written to the synthesizedCommits ledger
+    // before push. Best-effort (commitFinalState warns on failure; push proceeds).
+    const slugOpts = this.slugStoreOpts();
     await commitFinalState({
       cwd,
       branch,
@@ -708,6 +730,19 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       spawnFn: this.wrappedSpawnFn,
       messageLabel,
       synthesizedCommits: state.synthesizedCommits,
+      persistBeforePush: slugOpts
+        ? async (oid: string) => {
+            await this.updateJobState(
+              state.jobId,
+              (s) => appendSynthesizedCommit(s, oid),
+              slugOpts,
+            );
+            // Keep the caller's in-memory state consistent with the disk ledger so any
+            // later wholesale store.persist of this state cannot roll back the append.
+            const ledger = (state.synthesizedCommits ??= []);
+            if (!ledger.includes(oid)) ledger.push(oid);
+          }
+        : undefined,
     });
   }
 
