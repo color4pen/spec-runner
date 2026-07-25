@@ -1322,14 +1322,23 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         try {
           content = await fs.readFile(absPath, "utf-8");
         } catch {
-          violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: ["test-cases.md not found"] });
+          violations.push({ kind: contract.kind, path: contract.path, policy: "halt", detail: ["test-cases.md not found"] });
           continue;
         }
         // Evaluate coverage. Test execution is NOT performed — red tests are accepted.
         const result = await evaluateTestCoverage(content, cwd);
         if (result.status === "failed") {
           const detail = [...result.missingTcIds, ...result.assertionlessTcIds];
-          violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail });
+          violations.push({
+            kind: contract.kind,
+            path: contract.path,
+            policy: contract.policy,
+            detail,
+            coverage: {
+              missingTcIds: result.missingTcIds,
+              assertionlessTcIds: result.assertionlessTcIds,
+            },
+          });
         }
         // status === "skipped" | "passed" → no violation
       }

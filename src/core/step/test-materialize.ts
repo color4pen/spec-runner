@@ -89,9 +89,11 @@ export const TestMaterializeStep: AgentStep = {
       {
         // Verify: each must TC in test-cases.md has at least one test file entry.
         // Test execution is not required — red tests (no implementation) are correct.
+        // policy: "follow-up" — violation triggers in-session repair with ID-explicit
+        // instructions before falling back to halt (T-05).
         kind: "test-coverage",
         path: `${changeFolderPath(deps.slug)}/test-cases.md`,
-        policy: "halt",
+        policy: "follow-up",
       },
     ];
   },

@@ -140,6 +140,7 @@ export function buildOutputFollowUpPrompt(violations: OutputViolation[]): string
   const tasksViolations = violations.filter((v) => v.kind === "tasks-complete");
   const producedViolations = violations.filter((v) => v.kind === "produced");
   const contentFormatViolations = violations.filter((v) => v.kind === "content-format");
+  const testCoverageViolations = violations.filter((v) => v.kind === "test-coverage");
 
   if (tasksViolations.length > 0) {
     lines.push("## Incomplete tasks (tasks.md)");
@@ -181,6 +182,53 @@ export function buildOutputFollowUpPrompt(violations: OutputViolation[]): string
     lines.push("");
     lines.push("Fix the format issues in the file(s) listed above. Do not use tool calls to submit results.");
     lines.push("");
+  }
+
+  if (testCoverageViolations.length > 0) {
+    lines.push("## Missing test coverage");
+    lines.push("");
+
+    // Aggregate coverage IDs across all test-coverage violations
+    const allMissing: string[] = [];
+    const allAssertionless: string[] = [];
+    const fallbackPaths: string[] = [];
+
+    for (const v of testCoverageViolations) {
+      const cov = v.coverage;
+      if (!cov || (cov.missingTcIds.length === 0 && cov.assertionlessTcIds.length === 0)) {
+        fallbackPaths.push(v.path);
+      } else {
+        allMissing.push(...cov.missingTcIds);
+        allAssertionless.push(...cov.assertionlessTcIds);
+      }
+    }
+
+    if (allMissing.length > 0) {
+      lines.push("### Missing TC-IDs — write tests");
+      lines.push("");
+      lines.push("Write tests for each of the following must TCs and include the TC-ID in the test file:");
+      lines.push("");
+      for (const id of allMissing) {
+        lines.push(`- ${id}`);
+      }
+      lines.push("");
+    }
+
+    if (allAssertionless.length > 0) {
+      lines.push("### Assertionless TC-IDs — add assertions");
+      lines.push("");
+      lines.push("The following must TCs appear in test files but have no assertion. Add at least one assertion (expect() / assert()) to each:");
+      lines.push("");
+      for (const id of allAssertionless) {
+        lines.push(`- ${id}`);
+      }
+      lines.push("");
+    }
+
+    for (const p of fallbackPaths) {
+      lines.push(`(see ${p} for uncovered must TCs)`);
+      lines.push("");
+    }
   }
 
   lines.push("After completing the work, commit and push your changes.");

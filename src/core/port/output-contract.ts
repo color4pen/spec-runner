@@ -98,9 +98,23 @@ export interface OutputViolation {
    * - "produced":       always []
    * - "tasks-complete": list of incomplete task labels extracted from the file
    * - "content-format": list of failed check labels (checks whose pattern did not match)
-   * - "test-coverage":  list of missing/assertionless TC IDs (union of missingTcIds and assertionlessTcIds)
+   * - "test-coverage":  list of missing/assertionless TC IDs (union of missingTcIds and
+   *                     assertionlessTcIds); see `coverage` for the categorized breakdown
    */
   detail: string[];
+  /**
+   * Structured breakdown of a "test-coverage" violation.
+   * Only set when kind === "test-coverage". Undefined for other kinds.
+   *
+   * - missingTcIds:       must TC IDs that did not appear in any test file
+   * - assertionlessTcIds: must TC IDs that appeared in test files but had no
+   *                       substantive assertion (expect( / assert( / assert.)
+   *
+   * The flat `detail` array contains the union of both sets for backward
+   * compatibility; `coverage` is the categorized source used for distinct
+   * repair instructions in halt messages and follow-up prompts.
+   */
+  coverage?: { missingTcIds: string[]; assertionlessTcIds: string[] };
 }
 
 /**
