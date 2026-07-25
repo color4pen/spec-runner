@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7cf560d7-7f84-4e87-a9e5-1b48dbfc510d",
   "createdAt": "2026-07-24T23:59:25.079Z",
-  "updatedAt": "2026-07-25T01:13:30.536Z",
+  "updatedAt": "2026-07-25T01:17:26.764Z",
   "request": {
     "title": "push 失敗時に synthesized commit の台帳追記が失われ、egress backstop が job を回復不能にする問題を修正する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "fix/egress-ledger-push-failure-7cf560d7",
   "error": null,
@@ -74,12 +74,14 @@
     "3cceec9af22606e1e6038367963e6b31d4897b4b",
     "044f5b45342a89765c96d40dd4de8806ce3e80c2",
     "c1602cd9ed1b409fa7c9579da14c4b9ce827cf01",
-    "80ad3774f9f6b97b043f56051e4f6dba64aeb7dc"
+    "80ad3774f9f6b97b043f56051e4f6dba64aeb7dc",
+    "6532a921f768deb44f8e1b4855e366ecdf8261a4",
+    "2597a34d5f6c5c3179ceb8f44f2ea0e4116b6615"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -89,8 +91,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 3,
-      "build-fixer": 2
+      "verification": 4,
+      "build-fixer": 3
     }
   }
 }
