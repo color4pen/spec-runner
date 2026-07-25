@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f76d4e36-c1b5-427e-abff-fc897989d9c3",
   "createdAt": "2026-07-25T00:01:02.621Z",
-  "updatedAt": "2026-07-25T00:43:18.161Z",
+  "updatedAt": "2026-07-25T00:53:43.784Z",
   "request": {
     "title": "既存テストによる must TC 充足の正規表明と、manual TC の coverage 集計除外",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/test-materialize-existing-coverage-f76d4e36",
   "error": null,
@@ -70,10 +70,42 @@
     "ab9579a8179d084dea5907bcbe5e797a9dc7d2b3",
     "c8d50d383b9ad736cc261763cba2a1579c8a09e0",
     "459b1b16472c6d84e4962a8490008064813ffef1",
-    "d96df1da2b27aa1bd41c0a3405f4208b91e60aa4"
+    "d96df1da2b27aa1bd41c0a3405f4208b91e60aa4",
+    "cc44d76772ed139be53e36f0e0350f2f6f1bb318",
+    "6bfd918f0e0f1c9c331476b9a651fc9b415cec52"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "cc44d76772ed139be53e36f0e0350f2f6f1bb318",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/test-materialize-existing-coverage/design.md:sha256:39fa39ebf5ee00d98e1b0d155530ffcab588cac05f76a5d03725bdce12b28227|specrunner/changes/test-materialize-existing-coverage/request.md:sha256:06df9034e7c4259bd51745b49682e24828542e8f0248b2305ad31cf17fb158d0|specrunner/changes/test-materialize-existing-coverage/spec.md:sha256:7d04bb17c98775c2f70ea73c0bd4704d990be7a50aebc7e1739851c00944e929|specrunner/changes/test-materialize-existing-coverage/tasks.md:sha256:af337d5497c09f2c42cfc27029e49429d9cbd619cc0ef4a69dd06514155b706c|specrunner/changes/test-materialize-existing-coverage/test-cases.md:sha256:dc52b2b4bd4b6229ddee4ae04cc91ba9ea918f6adeb5e775caca35a1e902100d"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 34,
+    "historyCount": 46,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -83,7 +115,11 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
