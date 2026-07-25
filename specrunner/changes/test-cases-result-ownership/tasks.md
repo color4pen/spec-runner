@@ -53,6 +53,8 @@ enum 意味の統一定義（T-01 / T-03 で同一に使う）:
 **Acceptance Criteria**:
 - `TEST_CASES_TEMPLATE` 直前の docstring に `Result YAML block (all keys)` を machine-parsed とする記述が
   残っていないことを、source テキストを `readFileSync` で読む新規テストで固定する。
+- 同 docstring に `Summary section (4 items)` を machine-parsed とする記述が残っていないことを
+  同テストで固定する（extractMustTcIds は Summary セクションも parse しない）。
 - 同 docstring に TC-NNN heading と `Priority` / `Category` を machine-parse 対象とする記述が含まれることを
   テストで固定する。
 - `typecheck` が green（docstring 変更のみ、export・型は不変）。

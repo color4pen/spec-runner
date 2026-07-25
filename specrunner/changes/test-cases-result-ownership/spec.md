@@ -70,7 +70,8 @@ TC-NNN heading と `Priority` / `Category` フィールドである。
 **Given** `src/templates/step-output-templates.ts` の source テキストから抽出した
 `TEST_CASES_TEMPLATE` 直前の docstring
 **When** テストが machine-parse 対象の記述を検査する
-**Then** 「Result YAML block (all keys)」を machine-parsed とする記述は存在せず、
+**Then** 「Result YAML block (all keys)」を machine-parsed とする記述と
+「Summary section (4 items)」を machine-parsed とする記述はいずれも存在せず、
 TC-NNN heading と `Priority` / `Category` を machine-parse 対象とする記述が含まれている
 
 ### Requirement: 意味の確定は schema・write-scope・coverage の挙動を変えない
