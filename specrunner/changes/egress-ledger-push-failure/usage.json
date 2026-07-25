@@ -39,6 +39,26 @@
       },
       "jobId": "7cf560d7-7f84-4e87-a9e5-1b48dbfc510d",
       "stepName": "design"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-07-25T00:14:32.754Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 6852,
+          "outputTokens": 18,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 27,
+          "outputTokens": 12732,
+          "cacheReadInputTokens": 1013169,
+          "cacheCreationInputTokens": 65740
+        }
+      },
+      "jobId": "7cf560d7-7f84-4e87-a9e5-1b48dbfc510d",
+      "stepName": "spec-review"
     }
   ]
 }

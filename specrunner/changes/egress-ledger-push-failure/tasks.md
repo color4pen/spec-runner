@@ -52,7 +52,7 @@ guarded モードの commit 成功後（:591-600 付近）、`runInlineEgressChe
 
 - [ ] `commitFinalState` の params 型に `persistBeforePush?: (oid: string) => Promise<void>` を追加する
 - [ ] commit 成功後（:685-689 付近）、`rev-parse HEAD` で OID を取得する
-- [ ] `persistBeforePush` が提供されていれば `await persistBeforePush(oid)` を呼ぶ（try-catch で best-effort: `commitFinalState` は best-effort パスのため失敗を warn として続行）
+- [ ] `persistBeforePush` が提供されていれば `await persistBeforePush(oid)` を呼ぶ（try-catch で best-effort: `commitFinalState` は best-effort パスのため失敗を warn として続行。警告メッセージは既存の "Warning: ..." 形式に揃え、`` `Warning: ${messageLabel} persistBeforePush failed for ${slug}: ${err instanceof Error ? err.message : String(err)}. Continuing with push.` `` を stderrWrite する）
 - [ ] 既存の `:693` の設計メモ「terminal path — in-memory union is sufficient; no need to persist the OID」を撤去し、新しい動作を説明するコメントに差し替える
 
 **Acceptance Criteria**:
@@ -102,7 +102,7 @@ guarded モードの commit 成功後（:591-600 付近）、`runInlineEgressChe
 - [ ] 第1試行の判定を `firstPushResult.exitCode === 0` に変更し、成功時は `commit:push` イベントを emit して return する
 - [ ] スリープ後の第2試行も同様に `secondPushResult` として取得する
 - [ ] 第2試行失敗時の `pushFailedError` の detail を構築: `exit code ${secondPushResult.exitCode}` に加え、`secondPushResult.stderr.trim()` が非空であれば `: ${secondPushResult.stderr.trim()}` を連結する
-- [ ] `commitFinalState` の push 失敗警告（:716-719）にも `push2.stderr.trim()` を含める（`spawnFn` の返す `SpawnResult.stderr` は既に利用可能）
+- [ ] `commitFinalState` の push 失敗警告（:716-719）にも `push2.stderr.trim()` を含める（`spawnFn` の返す `SpawnResult.stderr` は既に利用可能）。連結形式は既存メッセージへの末尾追記: `push2.stderr.trim()` が非空の場合に既存警告文字列の末尾に ` git stderr: ${push2.stderr.trim()}` を付加する
 
 **Acceptance Criteria**:
 - `pushOnly` が throw する `pushFailedError` の detail に最終試行の git stderr が含まれる（stderr が空の場合は exit code のみ）
