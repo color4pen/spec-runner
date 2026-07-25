@@ -2,10 +2,10 @@
 
 ## Summary
 
-- **Total**: 15 cases
-- **Automated** (unit/integration): 15
+- **Total**: 18 cases
+- **Automated** (unit/integration): 18
 - **Manual**: 0
-- **Priority**: must: 11, should: 3, could: 1
+- **Priority**: must: 14, should: 3, could: 1
 
 ---
 
@@ -161,14 +161,38 @@
 
 ---
 
+### TC-016: scoped モードで push 失敗後に in-memory state が台帳整合している
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: synthesis commit の OID は push 試行前に store へ永続化される > Scenario: 呼び出し元の in-memory state も台帳整合する
+
+---
+
+### TC-017: guarded モードで push 失敗後に in-memory state が台帳整合している
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: synthesis commit の OID は push 試行前に store へ永続化される > Scenario: 呼び出し元の in-memory state も台帳整合する
+
+---
+
+### TC-018: 実 store で halt 経路の丸ごと persist が台帳追記を巻き戻さない
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: synthesis commit の OID は push 試行前に store へ永続化される > Scenario: 呼び出し元の in-memory state も台帳整合する
+
+---
+
 ## Result
 
 ```yaml
 result: completed
-total: 15
-automated: 15
+total: 18
+automated: 18
 manual: 0
-must: 11
+must: 14
 should: 3
 could: 1
 blocked_reasons: []

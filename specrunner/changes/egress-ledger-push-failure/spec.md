@@ -18,6 +18,12 @@
 **When** `pushOnly` が 2 回とも失敗して `PUSH_FAILED` で throw する
 **Then** `persistBeforePush` コールバックが synthesis commit の OID で呼ばれている（push 前に呼ばれている）
 
+#### Scenario: 呼び出し元の in-memory state も台帳整合する
+
+**Given** `commitAndPush`（scoped / guarded いずれか）で `persistBeforePush` が OID の永続化に成功している
+**When** `pushOnly` が 2 回とも失敗して `PUSH_FAILED` で throw する
+**Then** 呼び出し元が渡した in-memory `JobState.synthesizedCommits` にも同じ OID が含まれている（halt 経路の丸ごと `store.persist` が disk 側の台帳追記を巻き戻さない）
+
 ---
 
 ### Requirement: commitFinalState の checkpoint / finalize commit OID は push 試行前に store へ永続化される

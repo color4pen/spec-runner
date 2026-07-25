@@ -737,6 +737,10 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
               (s) => appendSynthesizedCommit(s, oid),
               slugOpts,
             );
+            // Keep the caller's in-memory state consistent with the disk ledger so any
+            // later wholesale store.persist of this state cannot roll back the append.
+            const ledger = (state.synthesizedCommits ??= []);
+            if (!ledger.includes(oid)) ledger.push(oid);
           }
         : undefined,
     });

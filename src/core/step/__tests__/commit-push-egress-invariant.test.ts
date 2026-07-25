@@ -19,6 +19,9 @@
 
 import { describe, it, expect, vi } from "vitest";
 import { EventEmitter } from "node:events";
+import * as fsp from "node:fs/promises";
+import * as os from "node:os";
+import * as nodePath from "node:path";
 import type { ChildProcess, SpawnOptions } from "node:child_process";
 
 import {
@@ -34,6 +37,8 @@ import type { SpawnFn as PipelineSpawnFn } from "../../../util/spawn.js";
 import type { AgentStep } from "../types.js";
 import type { JobState } from "../../../state/schema.js";
 import type { PipelineDeps } from "../../types.js";
+import { JobStateStore } from "../../../store/job-state-store.js";
+import { appendSynthesizedCommit } from "../../../state/schema/operations.js";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -827,6 +832,140 @@ describe("TC-012 (could): verifyEgressLedger without branch — fallback to empt
         code: "EGRESS_UNKNOWN_COMMIT",
         message: expect.stringContaining("for branch ''"),
       });
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-016 / TC-017: persistBeforePush 後に呼び出し元の in-memory state も台帳整合する
+// （halt 経路の丸ごと store.persist が disk 側の追記を巻き戻さないための pin）
+// ---------------------------------------------------------------------------
+
+describe("TC-016: scoped mode — push fails → in-memory state.synthesizedCommits contains the OID", () => {
+  it(
+    // TC-016
+    "TC-016: after PUSH_FAILED, the caller's state object carries the synthesis OID (scoped)",
+    async () => {
+      const SYNTH_OID = "sha-inmem-scoped-016";
+
+      const { fn } = makeGitSpawnFn([
+        { exitCode: 0, stdout: "headBefore\n" },      // rev-parse HEAD (headAtEntry)
+        { exitCode: 0 },                              // add
+        { exitCode: 0, stdout: "" },                  // status (no residuals)
+        { exitCode: 1 },                              // diff (staged)
+        { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // commit
+        { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // rev-parse HEAD (persistBeforePush)
+        { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // rev-parse HEAD (egress check)
+        { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // rev-list
+        { exitCode: 1 },                              // push fail 1
+        { exitCode: 1 },                              // push fail 2
+      ]);
+
+      const infra = makeInfra(fn, vi.fn(async () => {}));
+      const state = makeState();
+
+      await expect(
+        commitAndPush(makeScopedStep(), state, makeDeps(), null, infra),
+      ).rejects.toMatchObject({ code: "PUSH_FAILED" });
+
+      // The in-memory state must carry the OID: downstream failure handling
+      // (commitHalt → store.persist, pipeline post-step store.persist) persists this
+      // object wholesale, and would otherwise roll back the disk-side ledger append.
+      expect(state.synthesizedCommits).toContain(SYNTH_OID);
+    },
+  );
+});
+
+describe("TC-017: guarded mode — push fails → in-memory state.synthesizedCommits contains the OID", () => {
+  it(
+    // TC-017
+    "TC-017: after PUSH_FAILED, the caller's state object carries the synthesis OID (guarded)",
+    async () => {
+      const SYNTH_OID = "sha-inmem-guarded-017";
+      const STATUS_OUTPUT = ` M ${GUARDED_CHANGED_PATH}\0`;
+
+      const { fn } = makeGitSpawnFn([
+        { exitCode: 0, stdout: "headBefore\n" },      // rev-parse HEAD (headAtEntry)
+        { exitCode: 0, stdout: STATUS_OUTPUT },        // status
+        { exitCode: 0 },                              // add
+        { exitCode: 1 },                              // diff (staged changes)
+        { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // commit
+        { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // rev-parse HEAD (persistBeforePush)
+        { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // rev-parse HEAD (egress)
+        { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // rev-list
+        { exitCode: 1 },                              // push fail 1
+        { exitCode: 1 },                              // push fail 2
+      ]);
+
+      const infra = makeInfra(fn, vi.fn(async () => {}));
+      const state = makeState({ step: "implementer" });
+
+      await expect(
+        commitAndPush(makeGuardedStep(), state, makeDeps(), null, infra),
+      ).rejects.toMatchObject({ code: "PUSH_FAILED" });
+
+      expect(state.synthesizedCommits).toContain(SYNTH_OID);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-018: 実 store での halt 経路 replay — 丸ごと persist が台帳追記を巻き戻さない
+// ---------------------------------------------------------------------------
+
+describe("TC-018: real-store replay — halt-path wholesale persist does not roll back the ledger append", () => {
+  it(
+    // TC-018
+    "TC-018: persistBeforePush (disk store) → PUSH_FAILED → wholesale persist of the in-memory state → reload keeps the OID",
+    async () => {
+      const SYNTH_OID = "sha-store-replay-018";
+      const tempDir = await fsp.mkdtemp(nodePath.join(os.tmpdir(), "specrunner-egress-replay-"));
+      try {
+        const state = makeState();
+        const jobId = state.jobId;
+        const slugOpts = { slug: SLUG, stateRoot: tempDir };
+
+        // Seed the slug store (as the pipeline does before the step runs).
+        await new JobStateStore(jobId, tempDir, slugOpts).persist(state);
+
+        // persistBeforePush mirrors LocalRuntime.finalizeStepArtifacts wiring:
+        // a SEPARATE store instance loads from disk, appends, persists.
+        const persistBeforePush = async (oid: string): Promise<void> => {
+          const store = new JobStateStore(jobId, tempDir, slugOpts);
+          const current = (await store.load()) as JobState;
+          await store.persist(appendSynthesizedCommit(current, oid));
+        };
+
+        const { fn } = makeGitSpawnFn([
+          { exitCode: 0, stdout: "headBefore\n" },      // rev-parse HEAD (headAtEntry)
+          { exitCode: 0 },                              // add
+          { exitCode: 0, stdout: "" },                  // status (no residuals)
+          { exitCode: 1 },                              // diff (staged)
+          { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // commit
+          { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // rev-parse HEAD (persistBeforePush)
+          { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // rev-parse HEAD (egress)
+          { exitCode: 0, stdout: `${SYNTH_OID}\n` },   // rev-list
+          { exitCode: 1 },                              // push fail 1
+          { exitCode: 1 },                              // push fail 2
+        ]);
+        const infra = makeInfra(fn, persistBeforePush);
+
+        await expect(
+          commitAndPush(makeScopedStep(), state, makeDeps(), null, infra),
+        ).rejects.toMatchObject({ code: "PUSH_FAILED" });
+
+        // Halt-path replay: commitHalt persists the caller's in-memory state WHOLESALE
+        // (commit-orchestrator.ts commitHalt → store.persist(s)). Without the in-memory
+        // append this write rolls back the disk-side ledger and reintroduces the
+        // EGRESS_UNKNOWN_COMMIT resume deadlock.
+        await new JobStateStore(jobId, tempDir, slugOpts).persist(state);
+
+        // Resume replay: the ledger loaded from disk must contain the synthesis OID.
+        const reloaded = await new JobStateStore(jobId, tempDir, slugOpts).load();
+        expect(reloaded.synthesizedCommits).toContain(SYNTH_OID);
+      } finally {
+        await fsp.rm(tempDir, { recursive: true, force: true });
+      }
     },
   );
 });

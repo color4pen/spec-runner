@@ -360,6 +360,22 @@ export async function verifyEgressLedger(params: {
  *
  * @param synthesizedCommits - Existing synthesizedCommits ledger (from job state or caller-supplied).
  */
+/**
+ * Append an OID to state.synthesizedCommits in place (idempotent).
+ *
+ * The disk-side persist (persistBeforePush → updateJobState) writes to the store via a
+ * separate load → mutate → persist cycle and does NOT update the caller's in-memory
+ * JobState. Downstream failure handling (commitHalt → store.persist, pipeline post-step
+ * store.persist) persists that in-memory state WHOLESALE, which would roll back the
+ * disk-side ledger append and reintroduce the EGRESS_UNKNOWN_COMMIT resume deadlock.
+ * Mutating the live state object here keeps every later wholesale persist consistent
+ * with the disk ledger.
+ */
+function appendOidInPlace(state: JobState, oid: string): void {
+  const ledger = (state.synthesizedCommits ??= []);
+  if (!ledger.includes(oid)) ledger.push(oid);
+}
+
 async function runInlineEgressCheck(
   spawnFn: SpawnFn,
   cwd: string,
@@ -543,6 +559,7 @@ export async function commitAndPush(
       const synthOidScoped = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
       if (synthOidScoped !== null) {
         await infra.persistBeforePush(synthOidScoped);
+        appendOidInPlace(state, synthOidScoped);
       }
     }
 
@@ -623,6 +640,7 @@ export async function commitAndPush(
       const synthOidGuarded = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
       if (synthOidGuarded !== null) {
         await infra.persistBeforePush(synthOidGuarded);
+        appendOidInPlace(state, synthOidGuarded);
       }
     }
 

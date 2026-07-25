@@ -38,7 +38,9 @@ egress backstop は「publish range のすべての commit が `synthesizedCommi
 
 **決定**: `commitAndPush` が commit を作成した直後（`pushOnly` 呼び出し前）に `rev-parse HEAD` で OID を取得し、注入された `persistBeforePush` コールバックで store に永続化する。`commitFinalState` でも同様に、checkpoint/finalize commit 直後・push 前に同コールバックを呼ぶ。
 
-**根拠**: push の成否が台帳の完全性に影響しない順序保証（作成 → 記録 → push）を実現する最小の変更。既に `parallel-review-round.ts:435-448` で実証済みの対処の逐次経路への移植であり、新機構の発明ではない。
+コールバック成功直後に、呼び出し元が渡した in-memory `JobState.synthesizedCommits` にも同じ OID を追記する（冪等）。disk 側の persist はコールバック内の別 store インスタンス（load → mutate → persist）で行われ、呼び出し元の in-memory state には反映されない。push 失敗後の halt 経路（`commitHalt` → `store.persist`、pipeline の step 後 persist）は in-memory state を丸ごと state.json に上書きするため、in-memory を整合させておかないと disk 側の台帳追記がここで巻き戻され、resume 時の `EGRESS_UNKNOWN_COMMIT` deadlock が再発する。
+
+**根拠**: push の成否が台帳の完全性に影響しない順序保証（作成 → 記録 → push）を実現する最小の変更。既に `parallel-review-round.ts:435-448` で実証済みの対処の逐次経路への移植であり、新機構の発明ではない。round 経路は単一 atomic persist の前に in-memory state を整合させる構造を持ち、in-memory 追記はその性質の逐次経路版である。
 
 **却下した代替案**:
 - **push 失敗時のみ persist**: 成功/失敗で分岐が生じ、push 結果を `commitAndPush` の呼び出し元まで伝播させる必要がある。経路分岐が増え検証が複雑になる。順序保証の方が単純
