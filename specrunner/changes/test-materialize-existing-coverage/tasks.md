@@ -84,7 +84,7 @@ characterization テストと異なる。新規テストは既存テストファ
 - prompt manual-scope contract（新規 `tests/unit/prompts/test-materialize-manual-scope-contract.test.ts`）:
   - `TEST_MATERIALIZE_SYSTEM_PROMPT` の `## Method` 節に manual 対象外記述が含まれることを固定
     （T-02 完了までは red）。
-- docs manual contract（新規ファイル、既存 docs-contract を壊さない追加）:
+- docs manual contract（新規 `tests/unit/docs/test-coverage-manual-contract.test.ts`、既存 docs-contract を壊さない追加）:
   - `docs/test-coverage.md` に manual 除外規約が記述されていることを固定（T-03 完了までは red）。
 
 ## T-04: 検証
