@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:448e9d3c07863c9ad2148d01c8b656560db786e30510f6e8c7a3334d83594d1e",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/runtime/local.ts:1317-1333 — evaluateTestCoverage call and detail=[...missingTcIds,...assertionlessTcIds]",
+    "src/core/step/step-halt.ts:257-292 — makeOutputGateHalt tasks-complete/content-format detail only; test-coverage falls through to v.path",
+    "src/core/step/step-halt.ts:263-269 — violationPaths map without test-coverage detail branch",
+    "src/core/step/output-verify.ts:134-189 — buildOutputFollowUpPrompt with no test-coverage section",
+    "src/core/step/step-context-builder.ts:108-122 — follow-up outputVerification policy construction",
+    "src/core/step/executor.ts:406-422 — final output contract gate with makeOutputGateHalt on residual violations",
+    "src/core/step/test-materialize.ts:87-97 — test-coverage outputContract with policy:halt",
+    "src/core/verification/test-coverage.ts — evaluateTestCoverage returns TestCoverageResult with distinct missingTcIds and assertionlessTcIds",
+    "src/core/port/output-contract.ts — OutputViolation.detail:string[] type definition"
+  ],
+  "sourceRevision": "2e53269ff1d3242c06989ee7addabbf162b845ba"
+}
