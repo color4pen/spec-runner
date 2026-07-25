@@ -70,6 +70,12 @@ ${PIPELINE_MAP}
 
    **既存テストがない場合**: 従来どおり Step 2 の変換ルールに従って新規テストコードを書く。
 
+   **\`**Category**: manual\` の must TC の扱い**:
+   - \`**Category**: manual\` の must TC は自動テスト化の対象外である。manual TC には自動テストを書かない。
+   - manual TC にはトレーサビリティコメント（\`// TC-XXX: ...\`）も追記しない。
+     検証実体（テストコード）を伴わないコメントは coverage gate の偽装 pass になるため作成しない。
+   - manual TC の検証は conformance / レビュー gate の管轄であり、test-materialize ステップは関与しない。
+
 4. テストフレームワーク・配置パターンを既存テスト数件から確認する
 
 5. 各 test に TC ID を必ず含める（関数名または直前のコメント）。例: \`it("TC-001: ユーザー登録 — 正常系", ...)\`

@@ -88,7 +88,11 @@ export async function collectProjectTestFiles(rootDir: string): Promise<string[]
  * 2. Within each TC section, scan subsequent lines until the next ## header
  * 3. If a line contains **Priority**: must, mark the TC as must
  *    (accepts both "- **Priority**: must" and "**Priority**: must" forms)
- * 4. Return IDs of all must TCs found
+ * 4. If a line contains **Category**: manual, mark the TC as manual (excluded from coverage)
+ *    (accepts both "- **Category**: manual" and "**Category**: manual" forms;
+ *     enum lines such as "**Category**: unit | integration | manual" do NOT match
+ *     because the value immediately following the colon is not "manual")
+ * 5. Return IDs of all must TCs that are NOT manual
  *
  * Exported for unit testing.
  */
@@ -100,18 +104,24 @@ export function extractMustTcIds(content: string): string[] {
   const tcSectionRe = /^##[#]?\s+(TC-\d+(?:-\d+)*)/;
   // Matches **Priority**: must (with or without leading "- ")
   const priorityMustRe = /\*\*Priority\*\*:\s*must/;
+  // Matches **Category**: manual (with or without leading "- ")
+  // Does NOT match "**Category**: unit | integration | manual" because \s*manual
+  // requires "manual" immediately after the colon+whitespace.
+  const categoryManualRe = /\*\*Category\*\*:\s*manual/;
   // Matches any ## level heading
   const anySectionRe = /^##/;
 
   let currentTcId: string | null = null;
   let currentIsMust = false;
+  let currentIsManual = false;
 
   const flushCurrent = (): void => {
-    if (currentTcId && currentIsMust) {
+    if (currentTcId && currentIsMust && !currentIsManual) {
       mustTcIds.push(currentTcId);
     }
     currentTcId = null;
     currentIsMust = false;
+    currentIsManual = false;
   };
 
   for (const line of lines) {
@@ -125,6 +135,8 @@ export function extractMustTcIds(content: string): string[] {
       flushCurrent();
     } else if (currentTcId && priorityMustRe.test(line)) {
       currentIsMust = true;
+    } else if (currentTcId && categoryManualRe.test(line)) {
+      currentIsManual = true;
     }
   }
 
