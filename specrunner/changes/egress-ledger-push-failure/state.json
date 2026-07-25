@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7cf560d7-7f84-4e87-a9e5-1b48dbfc510d",
   "createdAt": "2026-07-24T23:59:25.079Z",
-  "updatedAt": "2026-07-25T00:56:02.501Z",
+  "updatedAt": "2026-07-25T01:01:33.418Z",
   "request": {
     "title": "push 失敗時に synthesized commit の台帳追記が失われ、egress backstop が job を回復不能にする問題を修正する",
     "type": "bug-fix",
@@ -70,10 +70,12 @@
     "8256afcb6ed2ecf7c3ab1a9be2da96c42feb8fc4",
     "7696c3e3802adcc39d89cac26c1fcf1a0009470f",
     "773a61343d75f0d7bc321f323957326cc4a5c55f",
-    "65802d90f1ec576da444e363ac338bd9e011a1f8"
+    "65802d90f1ec576da444e363ac338bd9e011a1f8",
+    "3cceec9af22606e1e6038367963e6b31d4897b4b",
+    "044f5b45342a89765c96d40dd4de8806ce3e80c2"
   ],
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 41,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -83,7 +85,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
