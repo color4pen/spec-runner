@@ -6,11 +6,11 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 0.3s | 0 |
-| 2 | typecheck | passed | 4.8s | 0 |
-| 3 | test | passed | 42.0s | 0 |
-| 4 | lint | passed | 7.7s | 0 |
-| 5 | changed-line-coverage | passed | 53.1s | 0 |
+| 1 | build | passed | 0.4s | 0 |
+| 2 | typecheck | passed | 7.0s | 0 |
+| 3 | test | passed | 59.1s | 0 |
+| 4 | lint | passed | 17.8s | 0 |
+| 5 | changed-line-coverage | passed | 94.8s | 0 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.33 MB
-ESM ⚡️ Build success in 66ms
+ESM ⚡️ Build success in 105ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -53,22 +53,22 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	205d
 
  Test Files  650 passed (650)
       Tests  9653 passed | 1 skipped (9654)
-   Start at  10:07:12
-   Duration  41.70s (transform 9.18s, setup 0ms, import 42.85s, tests 55.73s, environment 38ms)
+   Start at  10:19:28
+   Duration  58.65s (transform 12.44s, setup 0ms, import 53.57s, tests 82.75s, environment 66ms)
 
 
 $ vitest run
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-mdJiMT/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-zkIkIL/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-KU9g08/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-SPLmwe/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
@@ -85,15 +85,6 @@ Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as e
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
@@ -107,12 +98,6 @@ Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
-[inbox] started job slug=fix-login-bug from issue#1
-[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -126,19 +111,30 @@ GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Head branch was modified. Review and try the merge again., retrying (1/3)...
 GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
-[inbox] started job slug=fix-login-bug from issue#1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
+GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
+[inbox] started job slug=fix-login-bug from issue#1
 [inbox] resumed job slug=fix-login-bug (issue#10)
 [inbox] dry-run: no effects will be executed.
 [inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
   start    issue#1 → slug=fix-login-bug
   resume   fix-login-bug (issue#10)
-GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
-GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 [inbox] recovered stale job slug=my-feature (attempt 1)
 [inbox] escalated stale job slug=my-feature to awaiting-resume
 [inbox] dry-run: no effects will be executed.
@@ -151,21 +147,25 @@ GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=old-feature (issue#50)
+Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
-Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
-ERROR: file not found
-spawn ENOENT
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
+ERROR: file not found
+spawn ENOENT
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
@@ -183,6 +183,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (26 changed files checked, 24 skipped)
-  Skipped (not in coverage surface): docs/README.md, docs/test-coverage.md, specrunner/changes/test-materialize-existing-coverage/bite-evidence-result.md, specrunner/changes/test-materialize-existing-coverage/conformance-result-001.md, specrunner/changes/test-materialize-existing-coverage/cross-boundary-invariants-result-001.md, specrunner/changes/test-materialize-existing-coverage/design.md, specrunner/changes/test-materialize-existing-coverage/events.jsonl, specrunner/changes/test-materialize-existing-coverage/regression-gate-result-001.md, specrunner/changes/test-materialize-existing-coverage/request-review-attestation.json, specrunner/changes/test-materialize-existing-coverage/request-review-result-001.md, specrunner/changes/test-materialize-existing-coverage/request.md, specrunner/changes/test-materialize-existing-coverage/review-feedback-001.md, specrunner/changes/test-materialize-existing-coverage/rules.md, specrunner/changes/test-materialize-existing-coverage/spec-review-result-001.md, specrunner/changes/test-materialize-existing-coverage/spec.md, specrunner/changes/test-materialize-existing-coverage/state.json, specrunner/changes/test-materialize-existing-coverage/tasks.md, specrunner/changes/test-materialize-existing-coverage/test-cases.md, specrunner/changes/test-materialize-existing-coverage/usage.json, specrunner/changes/test-materialize-existing-coverage/verification-result.md, tests/unit/cli/repo-root-exactly-once.test.ts, tests/unit/core/verification/test-coverage-manual-exclusion.test.ts, tests/unit/docs/test-coverage-manual-contract.test.ts, tests/unit/prompts/test-materialize-manual-scope-contract.test.ts
+changed-line-coverage: passed (29 changed files checked, 27 skipped)
+  Skipped (not in coverage surface): docs/README.md, docs/test-coverage.md, specrunner/changes/test-materialize-existing-coverage/bite-evidence-result.md, specrunner/changes/test-materialize-existing-coverage/conformance-result-001.md, specrunner/changes/test-materialize-existing-coverage/conformance-result-002.md, specrunner/changes/test-materialize-existing-coverage/cross-boundary-invariants-result-001.md, specrunner/changes/test-materialize-existing-coverage/design.md, specrunner/changes/test-materialize-existing-coverage/events.jsonl, specrunner/changes/test-materialize-existing-coverage/regression-gate-result-001.md, specrunner/changes/test-materialize-existing-coverage/regression-gate-result-002.md, specrunner/changes/test-materialize-existing-coverage/request-review-attestation.json, specrunner/changes/test-materialize-existing-coverage/request-review-result-001.md, specrunner/changes/test-materialize-existing-coverage/request.md, specrunner/changes/test-materialize-existing-coverage/review-feedback-001.md, specrunner/changes/test-materialize-existing-coverage/review-feedback-002.md, specrunner/changes/test-materialize-existing-coverage/rules.md, specrunner/changes/test-materialize-existing-coverage/spec-review-result-001.md, specrunner/changes/test-materialize-existing-coverage/spec.md, specrunner/changes/test-materialize-existing-coverage/state.json, specrunner/changes/test-materialize-existing-coverage/tasks.md, specrunner/changes/test-materialize-existing-coverage/test-cases.md, specrunner/changes/test-materialize-existing-coverage/usage.json, specrunner/changes/test-materialize-existing-coverage/verification-result.md, tests/unit/cli/repo-root-exactly-once.test.ts, tests/unit/core/verification/test-coverage-manual-exclusion.test.ts, tests/unit/docs/test-coverage-manual-contract.test.ts, tests/unit/prompts/test-materialize-manual-scope-contract.test.ts
 ```
