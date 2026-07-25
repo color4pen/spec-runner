@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:06df9034e7c4259bd51745b49682e24828542e8f0248b2305ad31cf17fb158d0",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/verification/test-coverage.ts:1-11 — must TC ID を test file 群のリテラル出現で検査する（コメント/文字列/identifier を区別しない）",
+    "src/core/verification/test-coverage.ts:95-135 — extractMustTcIds は **Priority**: must のみで判定し **Category**: manual を参照しない",
+    "src/templates/step-output-templates.ts — TC ごとに **Category**: unit | integration | manual が必須フィールドとして定義されている（line 123）",
+    "src/core/step/test-materialize.ts:47-50 — JSDoc コメントが outputContracts() による test-coverage 契約宣言を記述（実装は lines 87-97）",
+    "src/prompts/test-materialize-system.ts — 既存テスト充足時の指示が存在しないという前提は陳腐化: PR #924 により Step 3（line 61）が既に追加済み",
+    "src/core/step/write-scope.ts:33 — GUARDED_WRITE_STEPS に test-materialize が含まれる（line 37）"
+  ],
+  "sourceRevision": "2e53269ff1d3242c06989ee7addabbf162b845ba"
+}
