@@ -52,6 +52,19 @@ describe('user registration', () => {
 > **注意**: トレーサビリティコメントの追記先は、`expect()` 等の assertion を持つ既存テストファイルである
 > 必要があります。assertion を持たないファイルに追記するだけでは assertionless 判定になります。
 
+## Category: manual の must TC は集計から除外
+
+`**Category**: manual` かつ `**Priority**: must` の TC は、**must coverage 集計から除外**されます。
+
+- manual TC はテストファイルへの TC-ID 出現を要求されません（`missingTcIds` に入りません）。
+- `totalMustTcs` にも数えられません。
+- manual TC にトレーサビリティコメントを追記する必要はありません。
+  検証実体（テストコード）を伴わないコメントは gate の偽装 pass になるため、作成しないことが規約です。
+- manual TC の検証は conformance / レビュー gate の管轄であり、test-coverage フェーズは関与しません。
+
+> **例外なし**: Category が unit / integration の must TC、および Category 欄がない must TC は
+> 従来どおり coverage 集計に含まれ、テストファイルへの TC-ID 出現が要求されます。
+
 ## まとめ
 
 | ケース | 対応 |
@@ -59,3 +72,4 @@ describe('user registration', () => {
 | must TC に対応するテストコードがない | 新規テストコードを作成する |
 | must TC が既存テストで既に検証されている | 既存テストの該当箇所に `// TC-0XX: <TC 名>` コメントを追記する |
 | TC-ID はあるが assertion が一切ない | assertion を持つファイルへ追記先を変更する |
+| `**Category**: manual` の must TC | 集計から除外（自動テスト・コメント追記の対象外） |
