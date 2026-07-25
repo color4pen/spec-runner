@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f76d4e36-c1b5-427e-abff-fc897989d9c3",
   "createdAt": "2026-07-25T00:01:02.621Z",
-  "updatedAt": "2026-07-25T00:08:06.720Z",
+  "updatedAt": "2026-07-25T00:15:32.375Z",
   "request": {
     "title": "既存テストによる must TC 充足の正規表明と、manual TC の coverage 集計除外",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/test-materialize-existing-coverage-f76d4e36",
   "error": null,
@@ -63,12 +63,14 @@
   ],
   "synthesizedCommits": [
     "4f6f920085c7981d84fe3daee02fc681657a42c5",
-    "c45b8aa96932bdf7c14758aeb1f80b468ead3e46"
+    "c45b8aa96932bdf7c14758aeb1f80b468ead3e46",
+    "45eb73b5a9e9d8a11ecaf5ff0cff9917129581cf"
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
