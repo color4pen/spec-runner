@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.7](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.6...specrunner-v0.4.7) (2026-07-25)
+
+
+### Features
+
+* test-cases.md の Result YAML の所有権を test-case-gen に固定し、materialize の完了状態と誤読される意味の欠落を解消する ([#933](https://github.com/color4pen/spec-runner/issues/933)) ([7d4eaff](https://github.com/color4pen/spec-runner/commit/7d4eaffdc5df44ff0a8e14f63fdad97140089073))
+* test-coverage 契約違反で欠落 TC-ID を agent と operator に伝え、同一セッションで修復可能にする ([#930](https://github.com/color4pen/spec-runner/issues/930)) ([355a819](https://github.com/color4pen/spec-runner/commit/355a8197dd0844a6b9c1d165123c2b9491835d66))
+* 既存テストによる must TC 充足の正規表明と、manual TC の coverage 集計除外 ([#929](https://github.com/color4pen/spec-runner/issues/929)) ([1f9a25a](https://github.com/color4pen/spec-runner/commit/1f9a25ab95d5d80d18b7f8032497e03d2e6dd1d3))
+
+
+### Bug Fixes
+
+* push 失敗時に synthesized commit の台帳追記が失われ、egress backstop が job を回復不能にする問題を修正する ([#932](https://github.com/color4pen/spec-runner/issues/932)) ([c662117](https://github.com/color4pen/spec-runner/commit/c662117297a2740b9081924e4ef78ecd94d28f9d))
+
 ## [0.4.6](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.5...specrunner-v0.4.6) (2026-07-24)
 
 
