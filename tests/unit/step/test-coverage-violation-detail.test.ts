@@ -153,7 +153,7 @@ const TEST_CASES_SINGLE_MUST = `## TC-001: Feature works
 `;
 
 /** test-cases.md content with TC-001 (missing) and TC-002 (assertionless candidate) */
-const TEST_CASES_TWO_MUST = `## TC-001: Missing TC
+const _TEST_CASES_TWO_MUST = `## TC-001: Missing TC
 - **Priority**: must
 - Summary: this TC will be missing from test files
 

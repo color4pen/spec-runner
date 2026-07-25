@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "fee973e6-33e7-42c1-8e8c-d68ce6f8caca",
   "createdAt": "2026-07-25T00:00:17.871Z",
-  "updatedAt": "2026-07-25T00:51:24.291Z",
+  "updatedAt": "2026-07-25T00:54:20.651Z",
   "request": {
     "title": "test-coverage 契約違反で欠落 TC-ID を agent と operator に伝え、同一セッションで修復可能にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "build-fixer",
   "status": "running",
   "branch": "change/test-coverage-violation-detail-fee973e6",
   "error": null,
@@ -68,19 +68,23 @@
     "b490dbb2d00ef132396fcb2c9aa3176c33c8991d",
     "43bcba2b99586067437bbac76da43fbdda662df7",
     "2f4812c4e01d826e64635a9e88cfe7b21197e74d",
-    "c627518a9c0e392db5c6bb5077fca20a4ba5862a"
+    "c627518a9c0e392db5c6bb5077fca20a4ba5862a",
+    "42b2dc273bf821e0e15eaed41d4f24141aaa4203",
+    "e8ce93c26a8fd195e9ec4a7f70e0cdff545fbddd"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 23,
+    "historyCount": 34,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
       "test-materialize": 1,
-      "implementer": 1
+      "implementer": 2,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
