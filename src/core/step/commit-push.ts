@@ -40,6 +40,15 @@ export interface CommitPushInfra {
   spawnFn: SpawnFn;
   sleepFn: (ms: number) => Promise<void>;
   events: EventBus;
+  /**
+   * Optional callback invoked immediately after a synthesis commit is created and
+   * before push is attempted. Persists the commit OID to the synthesizedCommits
+   * ledger so that a push failure cannot leave the ledger incomplete.
+   *
+   * For commitAndPush: throw on failure → fail-closed (push is NOT attempted).
+   * For commitFinalState: best-effort (throw is caught and warned; push proceeds).
+   */
+  persistBeforePush?: (oid: string) => Promise<void>;
 }
 
 /**
@@ -300,6 +309,8 @@ export async function verifyEgressLedger(params: {
   cwd: string;
   ledger: string[];
   spawnFn: PipelineSpawnFn;
+  /** Branch name to include in EGRESS_UNKNOWN_COMMIT error messages. Defaults to "" when omitted. */
+  branch?: string;
 }): Promise<void> {
   const { cwd, ledger, spawnFn } = params;
   const ledgerSet = new Set(ledger);
@@ -323,7 +334,7 @@ export async function verifyEgressLedger(params: {
   const oids = result.stdout.split("\n").map((s) => s.trim()).filter(Boolean);
   for (const oid of oids) {
     if (!ledgerSet.has(oid)) {
-      throw egressUnknownCommitError(oid, "");
+      throw egressUnknownCommitError(oid, params.branch ?? "");
     }
   }
 }
@@ -524,6 +535,15 @@ export async function commitAndPush(
       throw commitEffectFailedError(step.name, branch, "commit", `exit code ${commitResult.exitCode}`);
     }
 
+    // Persist-before-push invariant: record the synthesis commit OID in the ledger
+    // before attempting push. This ensures a push failure cannot leave the ledger
+    // incomplete and cause EGRESS_UNKNOWN_COMMIT on resume.
+    // Rethrow on failure (fail-closed: do not push if ledger write is unconfirmed).
+    const synthOidScoped = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
+    if (synthOidScoped !== null && infra.persistBeforePush) {
+      await infra.persistBeforePush(synthOidScoped);
+    }
+
     // Egress verification: publish range ⊆ synthesizedCommits ledger.
     await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? []);
 
@@ -593,6 +613,15 @@ export async function commitAndPush(
       throw commitEffectFailedError(step.name, branch, "commit", `exit code ${commitResult.exitCode}`);
     }
 
+    // Persist-before-push invariant: record the synthesis commit OID in the ledger
+    // before attempting push. This ensures a push failure cannot leave the ledger
+    // incomplete and cause EGRESS_UNKNOWN_COMMIT on resume.
+    // Rethrow on failure (fail-closed: do not push if ledger write is unconfirmed).
+    const synthOidGuarded = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
+    if (synthOidGuarded !== null && infra.persistBeforePush) {
+      await infra.persistBeforePush(synthOidGuarded);
+    }
+
     // Egress verification: publish range ⊆ synthesizedCommits ledger.
     await runInlineEgressCheck(infra.spawnFn, cwd, branch, state.synthesizedCommits ?? []);
 
@@ -636,8 +665,13 @@ export async function commitFinalState(params: {
   spawnFn: PipelineSpawnFn;
   messageLabel?: string;
   synthesizedCommits?: string[];
+  /**
+   * Optional callback invoked after commit and before push to persist the commit OID
+   * to the synthesizedCommits ledger. Best-effort: throw is caught and warned; push proceeds.
+   */
+  persistBeforePush?: (oid: string) => Promise<void>;
 }): Promise<void> {
-  const { cwd, branch, slug, spawnFn, messageLabel = "finalize", synthesizedCommits } = params;
+  const { cwd, branch, slug, spawnFn, messageLabel = "finalize", synthesizedCommits, persistBeforePush } = params;
 
   const managedPaths = pipelineManagedPaths(slug);
 
@@ -688,14 +722,32 @@ export async function commitFinalState(params: {
     return;
   }
 
-  // D4: Egress verification before push (T-05).
+  // Persist-before-push invariant: record the checkpoint/finalize OID before push so
+  // that a push failure cannot leave the ledger incomplete. Best-effort: failure is
+  // warned and does not block push (commitFinalState is a terminal best-effort path).
+  if (persistBeforePush) {
+    const pbpOidResult = await spawnFn("git", ["rev-parse", "HEAD"], { cwd });
+    const pbpOid = (pbpOidResult.exitCode ?? 1) === 0 ? pbpOidResult.stdout.trim() : "";
+    if (pbpOid) {
+      try {
+        await persistBeforePush(pbpOid);
+      } catch (err) {
+        stderrWrite(
+          `Warning: ${messageLabel} persistBeforePush failed for ${slug}: ${err instanceof Error ? err.message : String(err)}. Continuing with push.`,
+        );
+      }
+    }
+  }
+
+  // D4: Egress verification before push.
   // Build ledger: existing synthesizedCommits ∪ this commit's OID.
-  // Design note: terminal path — in-memory union is sufficient; no need to persist the OID.
+  // The checkpoint/finalize OID is now persisted to disk before push so that a push
+  // failure leaves the ledger complete, preventing EGRESS_UNKNOWN_COMMIT on resume.
   try {
     const oidResult = await spawnFn("git", ["rev-parse", "HEAD"], { cwd });
     const newOid = (oidResult.exitCode ?? 1) === 0 ? oidResult.stdout.trim() : "";
     const ledger = [...(synthesizedCommits ?? []), ...(newOid ? [newOid] : [])];
-    await verifyEgressLedger({ cwd, ledger, spawnFn });
+    await verifyEgressLedger({ cwd, ledger, spawnFn, branch });
   } catch (err) {
     stderrWrite(
       `Warning: ${messageLabel} egress check failed for ${slug}: ${err instanceof Error ? err.message : String(err)}. ` +
@@ -713,9 +765,11 @@ export async function commitFinalState(params: {
   const push2 = await spawnFn("git", ["push", "-u", "origin", branch], { cwd });
   if ((push2.exitCode ?? 1) === 0) return;
 
+  const push2Stderr = (push2.stderr ?? "").trim();
   stderrWrite(
     `Warning: failed to push ${messageLabel} commit for ${slug} to origin/${branch}. ` +
-      `Push manually to ensure state is on the branch.`,
+      `Push manually to ensure state is on the branch.` +
+      (push2Stderr ? ` git stderr: ${push2Stderr}` : ""),
   );
 }
 
@@ -801,21 +855,23 @@ export async function commitScopedPaths(
 export async function pushOnly(branch: string, cwd: string, stepName: string, infra: CommitPushInfra): Promise<void> {
   // -u: worktree branches are created with --no-track, so the first push binds the
   // upstream to the feature branch itself (never the base branch). Idempotent.
-  const tryPush = () => gitExecExitCode(infra.spawnFn, cwd, ["push", "-u", "origin", branch]);
+  // Use runSubprocess (vs gitExecExitCode) to capture stderr for diagnostic detail.
+  const tryPush = () => runSubprocess(infra.spawnFn, "git", ["push", "-u", "origin", branch], { cwd });
 
-  const firstPushCode = await tryPush();
-  if (firstPushCode === 0) {
+  const firstPushResult = await tryPush();
+  if (firstPushResult.exitCode === 0) {
     infra.events.emit("commit:push", { step: stepName, branch });
     return;
   }
 
   // Retry after 5 seconds (injectable for testing)
   await infra.sleepFn(5000);
-  const secondPushCode = await tryPush();
-  if (secondPushCode === 0) {
+  const secondPushResult = await tryPush();
+  if (secondPushResult.exitCode === 0) {
     infra.events.emit("commit:push", { step: stepName, branch });
     return;
   }
 
-  throw pushFailedError(stepName, branch, `exit code ${secondPushCode}`);
+  const stderrMsg = secondPushResult.stderr.trim();
+  throw pushFailedError(stepName, branch, `exit code ${secondPushResult.exitCode}${stderrMsg ? `: ${stderrMsg}` : ""}`);
 }
