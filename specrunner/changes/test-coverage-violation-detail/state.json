@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "fee973e6-33e7-42c1-8e8c-d68ce6f8caca",
   "createdAt": "2026-07-25T00:00:17.871Z",
-  "updatedAt": "2026-07-25T01:11:19.108Z",
+  "updatedAt": "2026-07-25T01:13:19.073Z",
   "request": {
     "title": "test-coverage 契約違反で欠落 TC-ID を agent と operator に伝え、同一セッションで修復可能にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/test-coverage-violation-detail-fee973e6",
   "error": null,
@@ -74,7 +74,8 @@
     "491f8845434f89b2f9f40632b6b9f0a6823fcd4c",
     "c3840a42b0b75764d15c051e164d350e3ca0aaad",
     "755d722373215fd1aece104ebfcf8e371d26d930",
-    "f7a4150f4573686e940ed221d9e189bf0516b46e"
+    "f7a4150f4573686e940ed221d9e189bf0516b46e",
+    "128feba573defbd420675b02c994e711f34ba72e"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -109,7 +110,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -123,7 +124,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
