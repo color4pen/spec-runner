@@ -72,3 +72,5 @@
 {"type":"lineage","step":"verification","ts":"2026-07-25T01:08:24.679Z","outputs":[{"path":"specrunner/changes/egress-ledger-push-failure/verification-result.md","hash":"sha256:815a1432c220100e167222e8fde6c4d6f5bffa76837591377358ff0df75d6be3"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-07-25T01:08:24.696Z","step":"verification","status":"warning","message":"verification iteration 3 completed with verdict: failed"}
 {"type":"transition","ts":"2026-07-25T01:08:24.697Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: verification did not pass after 2 iterations"}
+{"type":"transition","ts":"2026-07-25T01:13:30.431Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'build-fixer'"}
+{"type":"transition","ts":"2026-07-25T01:13:30.536Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}

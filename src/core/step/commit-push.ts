@@ -5,7 +5,7 @@ import type { AgentStep } from "./types.js";
 import type { JobState } from "../../state/schema.js";
 import type { PipelineDeps } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
-import { gitExec, gitExecExitCode, gitExecResult, runSubprocess, type SpawnFn } from "../../util/git-exec.js";
+import { gitExec, gitExecResult, runSubprocess, type SpawnFn } from "../../util/git-exec.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../util/spawn.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import {
