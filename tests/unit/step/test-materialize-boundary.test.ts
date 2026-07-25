@@ -169,6 +169,8 @@ describe("TC-TMB-03: TestMaterializeStep writes — gitState only", () => {
 });
 
 describe("TC-TMB-04: TestMaterializeStep outputContracts — test-coverage kind", () => {
+  // TC-010: test-materialize の test-coverage 契約が follow-up policy を宣言する
+  // Updated expectation: policy must be "follow-up" (was "halt") — T-05
   it("outputContracts returns one 'test-coverage' contract pointing at test-cases.md", () => {
     expect(TestMaterializeStep.outputContracts).toBeDefined();
     const state = makeMinimalState();
@@ -177,7 +179,8 @@ describe("TC-TMB-04: TestMaterializeStep outputContracts — test-coverage kind"
     expect(contracts).toHaveLength(1);
     expect(contracts[0]?.kind).toBe("test-coverage");
     expect(contracts[0]?.path).toContain("test-cases.md");
-    expect(contracts[0]?.policy).toBe("halt");
+    // TC-010: policy must be "follow-up" so violations trigger in-session repair before halt
+    expect(contracts[0]?.policy).toBe("follow-up");
   });
 });
 
