@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "fee973e6-33e7-42c1-8e8c-d68ce6f8caca",
   "createdAt": "2026-07-25T00:00:17.871Z",
-  "updatedAt": "2026-07-25T01:21:58.861Z",
+  "updatedAt": "2026-07-25T01:25:46.286Z",
   "request": {
     "title": "test-coverage 契約違反で欠落 TC-ID を agent と operator に伝え、同一セッションで修復可能にする",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/test-coverage-violation-detail-fee973e6",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,8 @@
     "9c28dfa8261b877f282913a29da84e838b03dbcb",
     "9ca10ab8fdad9d5e922e84d6bf5b3ca0c491f11a",
     "724f472ebde8b5ea07c1e4536444df14fa386e77",
-    "c66a304bd1fa611f58d828dcb5109798c14af1da"
+    "c66a304bd1fa611f58d828dcb5109798c14af1da",
+    "5d921326141e1aa9fa1a226e7ed2da071224df2d"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -113,8 +114,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/930",
+    "number": 930,
+    "createdAt": "2026-07-25T01:25:45.291Z"
+  },
   "_journal": {
-    "historyCount": 77,
+    "historyCount": 82,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -131,7 +137,9 @@
       "custom-reviewers": 1,
       "regression-gate": 2,
       "code-fixer": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
