@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "be10d2d1-aab5-4076-9796-36c1d3c8e038",
   "createdAt": "2026-07-25T01:40:01.394Z",
-  "updatedAt": "2026-07-25T02:17:01.487Z",
+  "updatedAt": "2026-07-25T02:21:01.683Z",
   "request": {
     "title": "test-cases.md の Result YAML の所有権を test-case-gen に固定し、materialize の完了状態と誤読される意味の欠落を解消する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "change/test-cases-result-ownership-be10d2d1",
   "error": null,
@@ -71,12 +71,42 @@
     "3306b54dd272b9c49c0b21e2a3a108e51d745212",
     "934b93d8073fbbeb4af2a379906fbdfb99cd89f6",
     "8eebeb31004d401cfab3543d64d44f82ab2c0987",
-    "966872981fe0d101ec0a404c60860f94ca0225d2"
+    "966872981fe0d101ec0a404c60860f94ca0225d2",
+    "47b5853c6c7f133411cc4b96971b0f242c7ffcb4"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -85,7 +115,12 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
