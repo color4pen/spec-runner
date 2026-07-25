@@ -539,9 +539,11 @@ export async function commitAndPush(
     // before attempting push. This ensures a push failure cannot leave the ledger
     // incomplete and cause EGRESS_UNKNOWN_COMMIT on resume.
     // Rethrow on failure (fail-closed: do not push if ledger write is unconfirmed).
-    const synthOidScoped = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
-    if (synthOidScoped !== null && infra.persistBeforePush) {
-      await infra.persistBeforePush(synthOidScoped);
+    if (infra.persistBeforePush) {
+      const synthOidScoped = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
+      if (synthOidScoped !== null) {
+        await infra.persistBeforePush(synthOidScoped);
+      }
     }
 
     // Egress verification: publish range ⊆ synthesizedCommits ledger.
@@ -617,9 +619,11 @@ export async function commitAndPush(
     // before attempting push. This ensures a push failure cannot leave the ledger
     // incomplete and cause EGRESS_UNKNOWN_COMMIT on resume.
     // Rethrow on failure (fail-closed: do not push if ledger write is unconfirmed).
-    const synthOidGuarded = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
-    if (synthOidGuarded !== null && infra.persistBeforePush) {
-      await infra.persistBeforePush(synthOidGuarded);
+    if (infra.persistBeforePush) {
+      const synthOidGuarded = await gitExec(infra.spawnFn, cwd, ["rev-parse", "HEAD"]);
+      if (synthOidGuarded !== null) {
+        await infra.persistBeforePush(synthOidGuarded);
+      }
     }
 
     // Egress verification: publish range ⊆ synthesizedCommits ledger.
