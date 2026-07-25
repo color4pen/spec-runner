@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:0816fe2c5b514ea39a7b4c0f6e6b2412e6817fdb7e8da9ea56900caaa05eb9a6",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/templates/step-output-templates.ts:109-116 — docstring claims 'Result YAML block (all keys)' as machine-parsed",
+    "src/templates/step-output-templates.ts:117-163 — TEST_CASES_TEMPLATE Result block has no ownership/enum definition",
+    "src/core/step/test-case-gen.ts:89-99 — resultFilePath returns null, parseResult returns NULL_PARSE_RESULT (no Result YAML parsing)",
+    "src/prompts/test-case-gen-system.ts:71 — blocked_reasons recording format present, no enum meaning defined",
+    "src/prompts/test-case-gen-system.ts:75 — Result YAML placement instruction present, no finalization rule",
+    "src/prompts/test-materialize-system.ts:43 — 'test-cases.md は変更禁止' confirmed, Result YAML not individually addressed",
+    "src/core/step/write-scope.ts:33-38 — test-materialize in GUARDED_WRITE_STEPS confirmed",
+    "src/core/step/write-scope.ts:64-73 — test-cases.md in protectedCanonPaths confirmed",
+    "blocked_reasons grep: only 2 files in src/ — test-case-gen-system.ts and step-output-templates.ts"
+  ],
+  "sourceRevision": "1f9a25ab95d5d80d18b7f8032497e03d2e6dd1d3"
+}

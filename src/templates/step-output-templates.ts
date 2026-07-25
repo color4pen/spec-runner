@@ -109,10 +109,13 @@ export const REVIEW_FEEDBACK_TEMPLATE = `# Code Review Feedback — iteration NN
 /**
  * Template for test-cases.md (A-group).
  *
- * Machine-parsed fields:
- * - TC-NNN heading format
- * - Summary section (4 items)
- * - Result YAML block (all keys)
+ * Machine-parsed fields (consumed by extractMustTcIds in test-coverage.ts):
+ * - TC-NNN heading format (### TC-{NNN}: {Name})
+ * - Priority field per test case
+ * - Category field per test case
+ *
+ * Result YAML block is NOT machine-parsed by the pipeline; it is a generation
+ * record written once by test-case-gen and is not consumed by any downstream step.
  */
 export const TEST_CASES_TEMPLATE = `# Test Cases:
 
@@ -152,6 +155,14 @@ Result section MUST appear at the very end as a YAML code block:
   could: {count}
   blocked_reasons: []
   \`\`\`
+
+  所有権と書込時点: Result YAML は test-case-gen によるテストケース生成の結果記録である。
+  生成時に一度だけ書かれ、後続ステップ（test-materialize を含む）は更新しない。
+
+  \`result\` の値の意味:
+  - completed = 全 TC の設計が完了し blocked_reasons が空
+  - partial   = 一部 TC が設計不能で blocked_reasons に記録あり
+  - failed    = 生成自体が成立しなかった
 -->
 
 ## Summary

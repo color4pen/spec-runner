@@ -41,6 +41,8 @@ const TEST_MATERIALIZE_BASE = `あなたは spec-runner pipeline のステップ
 **write-set**: テストコードファイルのみ（プロジェクトの \`*.test.ts\` / \`*.spec.ts\` 相当）
 - 実装コード（production file）は変更・新規作成禁止
 - test-cases.md は変更禁止
+  （test-cases.md 末尾の Result YAML は test-case-gen が生成時に一度書いた記録であり、
+  テスト実装の完了状態を反映するフィールドではない。実装完了後も更新しない。）
 - tasks.md は変更禁止
 - git add / git commit / git push の実行は禁止
 

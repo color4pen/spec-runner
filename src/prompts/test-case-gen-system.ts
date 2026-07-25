@@ -70,6 +70,13 @@ server / handler / connection / initialization / resource-management の成果�
 
 **blocked_reasons**: 実装不可能な must TC は \`blocked_reasons: ["TC-NNN — 理由"]\` 形式で Result YAML に記録する。
 
+**\`result\` の値の意味**:
+- completed = 全 TC の設計が完了し blocked_reasons が空
+- partial   = 一部 TC が設計不能で blocked_reasons に記録あり
+- failed    = 生成自体が成立しなかった
+
+Result YAML は生成完了時点で確定し、後続ステップは書き換えない。
+
 Coverage: spec present の場合は全 Scenario が 1 TC 以上を持つ。spec absent の場合は全タスクが 1 must シナリオ以上を持つ。error paths / edge cases は should、非機能は could。
 
 test-cases.md を書く前に Read tool でテンプレートを読む。Summary セクション（Total / Automated / Manual / Priority count）を先頭に置き、Result YAML ブロックを末尾に置く。TC 番号は \`TC-{NNN}\` 形式（ゼロ埋め 3 桁）。
