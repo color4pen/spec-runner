@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "be10d2d1-aab5-4076-9796-36c1d3c8e038",
   "createdAt": "2026-07-25T01:40:01.394Z",
-  "updatedAt": "2026-07-25T01:55:38.751Z",
+  "updatedAt": "2026-07-25T01:58:07.570Z",
   "request": {
     "title": "test-cases.md の Result YAML の所有権を test-case-gen に固定し、materialize の完了状態と誤読される意味の欠落を解消する",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/test-cases-result-ownership-be10d2d1",
   "error": null,
   "pipelineId": "standard",
@@ -65,15 +65,13 @@
     "24f82596b1433c6d815265a98aaa80c16f82a691",
     "dc33689aeb7b3a75edd70307080987719ced5bf3",
     "c1e10682e004ebb1a371d7936ddf9bd01ec7a3eb",
-    "962920cb2ac218c5654260fc205fdd70e57a02ba"
+    "962920cb2ac218c5654260fc205fdd70e57a02ba",
+    "1be55360fed23a6b78c96a9cf82b6bb9d1bc8da2"
   ],
-  "resumePoint": {
-    "step": "spec-review",
-    "reason": "spec-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 17,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
