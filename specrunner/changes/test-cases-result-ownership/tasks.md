@@ -20,7 +20,7 @@ enum 意味の統一定義（T-01 / T-03 で同一に使う）:
 
 ## T-01: TEST_CASES_TEMPLATE の Result ブロックコメントに所有権・書込時点・enum 意味を追記する
 
-- [ ] `src/templates/step-output-templates.ts` の `TEST_CASES_TEMPLATE`（117-163 付近）の
+- [x] `src/templates/step-output-templates.ts` の `TEST_CASES_TEMPLATE`（117-163 付近）の
       Result セクション要求コメント（`Result section MUST appear at the very end...` の HTML コメント内、
       143-154 付近）に、次を明記する:
       - 所有者: Result YAML は **test-case-gen** によるテストケース生成の結果記録である。
@@ -29,9 +29,9 @@ enum 意味の統一定義（T-01 / T-03 で同一に使う）:
         `completed` = 全 TC の設計が完了し `blocked_reasons` が空 /
         `partial` = 一部 TC が設計不能で `blocked_reasons` に記録あり /
         `failed` = 生成自体が成立しなかった。
-- [ ] 既存の Result YAML キー行（`result:` / `total:` / `automated:` / `manual:` / `must:` / `should:` /
+- [x] 既存の Result YAML キー行（`result:` / `total:` / `automated:` / `manual:` / `must:` / `should:` /
       `could:` / `blocked_reasons:`）と Summary セクション形式は改変しない（追記は HTML コメント内の説明文に限定）。
-- [ ] 禁止文字列 `result determination:`（および `Category determination:` / `Priority determination:`）を
+- [x] 禁止文字列 `result determination:`（および `Category determination:` / `Priority determination:`）を
       導入しない。
 
 **Acceptance Criteria**:
@@ -43,12 +43,12 @@ enum 意味の統一定義（T-01 / T-03 で同一に使う）:
 
 ## T-02: TEST_CASES_TEMPLATE の docstring を machine-parse の実態に整合させる
 
-- [ ] `src/templates/step-output-templates.ts:109-116` の `TEST_CASES_TEMPLATE` 直前 docstring の
+- [x] `src/templates/step-output-templates.ts:109-116` の `TEST_CASES_TEMPLATE` 直前 docstring の
       `Machine-parsed fields:` 列挙から `Result YAML block (all keys)` を除去する。
-- [ ] docstring を実態に合わせる: machine-parse 対象は `### TC-NNN` heading と `**Priority**` / `**Category**`
+- [x] docstring を実態に合わせる: machine-parse 対象は `### TC-NNN` heading と `**Priority**` / `**Category**`
       フィールドである（`src/core/verification/test-coverage.ts` の `extractMustTcIds` が消費）。
       Result YAML は pipeline で parse されない旨を注記する。
-- [ ] docstring はコメントであり runtime 値に現れないため、検査は source テキスト読取りで行う（T-05 の新規テスト）。
+- [x] docstring はコメントであり runtime 値に現れないため、検査は source テキスト読取りで行う（T-05 の新規テスト）。
 
 **Acceptance Criteria**:
 - `TEST_CASES_TEMPLATE` 直前の docstring に `Result YAML block (all keys)` を machine-parsed とする記述が
@@ -61,14 +61,14 @@ enum 意味の統一定義（T-01 / T-03 で同一に使う）:
 
 ## T-03: test-case-gen system prompt に result の enum 意味と確定規則を追記する
 
-- [ ] `src/prompts/test-case-gen-system.ts` の `TEST_CASE_GEN_BASE` に、Result YAML の `result` について
+- [x] `src/prompts/test-case-gen-system.ts` の `TEST_CASE_GEN_BASE` に、Result YAML の `result` について
       次を散文で明記する（Result YAML の配置指示がある `## Method` 内の Summary Section 付近、75 行付近）:
       - `completed` / `partial` / `failed` の意味（T-01 と同一の統一定義）。
       - 確定規則: Result YAML は**生成完了時点で確定**し、後続ステップは書き換えない。
-- [ ] 既存の 5 部構成骨格（`## Question` / `## Contract` / `## Method` / `## Evidence` / `## Completion`）と
+- [x] 既存の 5 部構成骨格（`## Question` / `## Contract` / `## Method` / `## Evidence` / `## Completion`）と
       各節の順序、および既存 `### Testable Behaviors Extraction` → `### Repeat Invocation & Idempotency Axis`
       → `### Summary Section (Required)` の h3 順序を変えない。
-- [ ] 禁止文字列 `result determination:` を使わない。
+- [x] 禁止文字列 `result determination:` を使わない。
 
 **Acceptance Criteria**:
 - `TEST_CASE_GEN_SYSTEM_PROMPT` に `completed` / `partial` / `failed` の意味と
@@ -78,13 +78,13 @@ enum 意味の統一定義（T-01 / T-03 で同一に使う）:
 
 ## T-04: test-materialize system prompt に Result YAML の実装完了後非更新を追記する
 
-- [ ] `src/prompts/test-materialize-system.ts` の `TEST_MATERIALIZE_BASE` の `## Contract` 節、write-set の
+- [x] `src/prompts/test-materialize-system.ts` の `TEST_MATERIALIZE_BASE` の `## Contract` 節、write-set の
       `test-cases.md は変更禁止` 行（43 付近）の注記として、次を明記する:
       test-cases.md 末尾の Result YAML は test-case-gen が**生成時に一度書いた記録**であり、
       テスト実装の完了状態を反映するフィールドではない。**実装完了後も更新しない**。
-- [ ] 追記は `## Contract` 節内に置き、`## Method` 節に新規 h2 見出しを追加しない。5 部構成骨格
+- [x] 追記は `## Contract` 節内に置き、`## Method` 節に新規 h2 見出しを追加しない。5 部構成骨格
       （Question / Contract / Method / Evidence / Completion）と順序を保つ。
-- [ ] リポジトリ固有パス（`architecture/` 等）を導入しない。
+- [x] リポジトリ固有パス（`architecture/` 等）を導入しない。
 
 **Acceptance Criteria**:
 - `TEST_MATERIALIZE_SYSTEM_PROMPT` に「Result YAML は生成時の記録であり、実装完了後も更新しない」旨が
@@ -95,14 +95,14 @@ enum 意味の統一定義（T-01 / T-03 で同一に使う）:
 
 ## T-05: 検証テストを追加し、フルスイートを green にする
 
-- [ ] 新規テストファイルを追加する（既存テストファイルは改変しない）:
+- [x] 新規テストファイルを追加する（既存テストファイルは改変しない）:
       - テンプレート Result コメント文言テスト + docstring 実態整合テスト（T-01 / T-02 を固定）。
         docstring テストは `src/templates/step-output-templates.ts` の source を読み、`TEST_CASES_TEMPLATE`
         直前の docstring 領域を検査する。
       - test-case-gen prompt contract テスト（T-03 を固定）。
       - test-materialize prompt contract テスト（T-04 を固定）。
-- [ ] 追加テストは対応するソース変更前は赤、変更後に green になること（TDD の red→green を満たす）。
-- [ ] リポジトリ全体で `typecheck && test` を実行し green を確認する。既存の test-cases.md 関連テスト
+- [x] 追加テストは対応するソース変更前は赤、変更後に green になること（TDD の red→green を満たす）。
+- [x] リポジトリ全体で `typecheck && test` を実行し green を確認する。既存の test-cases.md 関連テスト
       （テンプレート形式・coverage 検査・drift-guard）が**無改変で green** であることを確認する。
 
 **Acceptance Criteria**:
