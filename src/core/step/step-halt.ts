@@ -254,6 +254,29 @@ export function makeDriftHalt(
  * @param stepName   Name of the step whose outputs failed the gate.
  * @param branch     Current branch (state.branch ?? null) for error message context.
  */
+/**
+ * Format a test-coverage violation path entry with categorized TC-IDs.
+ *
+ * When `coverage` is defined and has non-empty categories, renders:
+ *   `<path> (missing TCs: TC-001, TC-002; assertionless TCs: TC-003)`
+ * with only the non-empty parts included (joined by "; ").
+ *
+ * Falls back to `<path> (see file)` when coverage is undefined or both
+ * categories are empty.
+ */
+function formatTestCoverageViolationPath(v: OutputViolation): string {
+  const cov = v.coverage;
+  const parts: string[] = [];
+  if (cov && cov.missingTcIds.length > 0) {
+    parts.push(`missing TCs: ${cov.missingTcIds.join(", ")}`);
+  }
+  if (cov && cov.assertionlessTcIds.length > 0) {
+    parts.push(`assertionless TCs: ${cov.assertionlessTcIds.join(", ")}`);
+  }
+  const detail = parts.length > 0 ? parts.join("; ") : "see file";
+  return `${v.path} (${detail})`;
+}
+
 export function makeOutputGateHalt(
   violations: OutputViolation[],
   stepName: string,
@@ -265,7 +288,9 @@ export function makeOutputGateHalt(
       ? `${v.path} (incomplete tasks: ${v.detail.join(", ") || "see file"})`
       : v.kind === "content-format"
         ? `${v.path} (format violations: ${v.detail.join(", ") || "see file"})`
-        : v.path,
+        : v.kind === "test-coverage"
+          ? formatTestCoverageViolationPath(v)
+          : v.path,
   );
   const pathList = violationPaths.map((p) => `  - ${p}`).join("\n");
   const branchNote = branch ? ` on branch '${branch}'` : "";

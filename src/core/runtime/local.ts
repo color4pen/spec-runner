@@ -1329,7 +1329,16 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         const result = await evaluateTestCoverage(content, cwd);
         if (result.status === "failed") {
           const detail = [...result.missingTcIds, ...result.assertionlessTcIds];
-          violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail });
+          violations.push({
+            kind: contract.kind,
+            path: contract.path,
+            policy: contract.policy,
+            detail,
+            coverage: {
+              missingTcIds: result.missingTcIds,
+              assertionlessTcIds: result.assertionlessTcIds,
+            },
+          });
         }
         // status === "skipped" | "passed" → no violation
       }
