@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f76d4e36-c1b5-427e-abff-fc897989d9c3",
   "createdAt": "2026-07-25T00:01:02.621Z",
-  "updatedAt": "2026-07-25T00:53:43.784Z",
+  "updatedAt": "2026-07-25T00:54:17.989Z",
   "request": {
     "title": "既存テストによる must TC 充足の正規表明と、manual TC の coverage 集計除外",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/test-materialize-existing-coverage-f76d4e36",
   "error": null,
@@ -72,7 +72,8 @@
     "459b1b16472c6d84e4962a8490008064813ffef1",
     "d96df1da2b27aa1bd41c0a3405f4208b91e60aa4",
     "cc44d76772ed139be53e36f0e0350f2f6f1bb318",
-    "6bfd918f0e0f1c9c331476b9a651fc9b415cec52"
+    "6bfd918f0e0f1c9c331476b9a651fc9b415cec52",
+    "51171e3e292e799e5bb1f22b587805c4bd71fc9c"
   ],
   "reviewerStatuses": [
     {
@@ -105,7 +106,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -119,7 +120,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
