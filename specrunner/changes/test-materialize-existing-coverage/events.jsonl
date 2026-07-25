@@ -112,3 +112,10 @@
 {"type":"transition","ts":"2026-07-25T01:13:21.549Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-07-25T01:13:21.550Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-07-25T01:13:21.551Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-07-25T01:14:04.435Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"461c2017-f645-409c-9cc4-edc8d6a21927","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/test-materialize-existing-coverage/regression-gate-result-002.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"evidence":{"checked":1,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-25T01:13:21.603Z","endedAt":"2026-07-25T01:14:02.812Z","commitOid":"6c6af67cac651122e1f971eeae0b02008007777e"}
+{"type":"lineage","step":"regression-gate","ts":"2026-07-25T01:14:02.812Z","outputs":[{"path":"specrunner/changes/test-materialize-existing-coverage/regression-gate-result-002.md","hash":"sha256:38eb056e32e5d9dd4c88fbe81e8de51c027948cd940f4a5dd48b8c99ceaf1032"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-25T01:14:04.442Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-07-25T01:14:04.442Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-07-25T01:14:04.444Z","step":"conformance","status":"started","message":"conformance iteration 2 started"}
+{"type":"transition","ts":"2026-07-25T01:14:04.445Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
