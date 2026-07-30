@@ -61,3 +61,51 @@ jobs:
           echo "1. Go to **Actions → Publish to npm → Run workflow**" >> $GITHUB_STEP_SUMMARY
           echo "2. Enter tag: \`${{ env.TAG }}\`" >> $GITHUB_STEP_SUMMARY
           echo "3. Click **Run workflow**" >> $GITHUB_STEP_SUMMARY
+
+  publish-github:
+    name: Publish to GitHub Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          ref: ${{ env.TAG }}
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "20"
+          registry-url: "https://npm.pkg.github.com"
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+
+      - run: bun install --frozen-lockfile
+
+      - run: bun run build
+
+      # package.json の publishConfig.registry は npmjs.org 固定。GitHub Packages へ出すため、
+      # この job 内でだけ registry を上書きする（checkout は ephemeral なので revert 不要）。
+      # scope @color4pen は repo owner と一致するため GitHub Packages の命名要件を満たす。
+      - run: npm pkg set publishConfig.registry=https://npm.pkg.github.com
+
+      # provenance は付けない（sigstore/OIDC は npmjs.org 向け。GitHub Packages は GITHUB_TOKEN 認証）。
+      - run: npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summarize GitHub Packages publish success
+        if: success()
+        run: |
+          echo "## ✅ Published to GitHub Packages" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag**: \`${{ env.TAG }}\`" >> $GITHUB_STEP_SUMMARY
+
+      - name: Summarize GitHub Packages publish failure
+        if: failure()
+        run: |
+          echo "## ❌ GitHub Packages publish failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Tag**: \`${{ env.TAG }}\` — npmjs publish (separate job) is unaffected." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Re-run via **Actions → Publish to npm → Run workflow** with this tag." >> $GITHUB_STEP_SUMMARY
