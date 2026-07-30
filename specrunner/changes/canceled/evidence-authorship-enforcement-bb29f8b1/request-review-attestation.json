@@ -1,0 +1,26 @@
+{
+  "requestHash": "sha256:9ad74de2b4ec141883b78664f397b1bc81ddf8f5e2098d48d0d5a0257931df22",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/store/job-location-resolver.ts: journal paths (events.jsonl / state.json) derived via slugEventsPath / slugStateJsonPath when stateRoot=worktreePath",
+    "src/store/job-journal.ts: JobJournal.persist method — appends delta to events.jsonl and atomically overwrites state.json",
+    "src/core/step/commit-orchestrator.ts: CommitOrchestrator is sole caller of store.persist / store.appendHistory for sequential steps",
+    "src/core/step/commit-push.ts:48: commitAndPush uses `git add -A` (no path exclusion) in sequential path",
+    "src/core/step/commit-push.ts:105-146: commitFinalState with messageLabel='checkpoint' for awaiting-resume publish",
+    "src/core/step/executor.ts:404-420: output-contract gate (D3: step-completion-verification) — comment at 404, code at 405",
+    "src/core/step/executor.ts:436-459: finalizeStepArtifacts block guarded by !deps.roundOwnsGitEffects",
+    "src/core/step/executor.ts:461-466: captureHeadSha call after per-node commit for sequential steps",
+    "src/core/pipeline/round-git-scope.ts:54-56: pipelineManagedPaths(slug) returns [slugStateJsonPath, slugEventsPath, usageJsonPath]",
+    "src/core/pipeline/round-git-scope.ts:83-102: partitionRoundChanges excludes pipelineManagedPaths from both toStage and offending",
+    "src/core/resume/resolve-job.ts: resolveJobStateBySlug uses JobStateStore.list — no authenticity verification",
+    "src/store/job-state-projection.ts:162-175: loadSplitLayout rejects mid-journal corruption (corrupt-record) only — no authenticity check",
+    "src/core/attach/verify-checkpoint.ts: verifyCheckpoint checks fold/counter-reversal/profile-digest/identity self-consistency — no authenticity check",
+    "src/git/checkpoint-ref.ts: git show <ref>:<path> pattern for reading state.json and events.jsonl from remote ref",
+    "src/core/port/runtime-strategy.ts:442: digestArtifacts (working-tree hash)",
+    "src/core/port/runtime-strategy.ts:593,618,672,721-729: listCommitChangedFiles / diffPathsBetweenCommits / readFileAtCommit runtime primitives",
+    "src/core/step/step-halt.ts + src/core/step/executor.ts: StepHalt / makeDriftHalt / escalation pattern",
+    "architecture/adr/2026-07-18-pipeline-evidence-authorship-boundary.md: ADR-20260718 accepted — defines D1-D6 authorship invariants this request implements",
+    "architecture/adr/2026-07-17-assurance-provenance-boundary.md: ADR-20260717 exists — archive floor via recorded anchors referenced in request background"
+  ],
+  "sourceRevision": "491e2146cbf454ab5cdcfba6ceaec52620858b73"
+}
