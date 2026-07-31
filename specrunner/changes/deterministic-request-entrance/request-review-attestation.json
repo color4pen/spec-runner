@@ -1,0 +1,26 @@
+{
+  "requestHash": "sha256:78478a32a6e7980f0f6b9415ece3fbc2a59b33d6011ac47c2393232bd571fdb6",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/command-registry.ts:389 — generate subcommand exists",
+    "src/cli/command-registry.ts:76 — usage string contains 'request generate'",
+    "src/core/command/request-create.ts:6 — executeCreate(text, opts, client: OneShotQueryClient)",
+    "src/core/request/manager.ts:5 — create function",
+    "src/core/request/manager.ts:10 — generator.generate(text, cwd, client)",
+    "src/core/request/generator.ts:5 — REQUEST_GENERATE_SYSTEM_PROMPT import",
+    "src/core/request/generator.ts:20 — generate function",
+    "src/core/request/generator.ts:48-56 — appendInvocation call with command:'request-generate'",
+    "src/prompts/request-generate-system.ts — exists, 90 lines, uses buildSystemPrompt",
+    "src/core/port/one-shot-query-client.ts — OneShotQueryClient port interface exists",
+    "src/adapter/claude-code/one-shot-query-client.ts — ClaudeCodeOneShotQueryClient implementation exists",
+    "src/core/usage/types.ts:11 — CommandInvocation.command union is 'request-review' | 'request-generate' | 'job'",
+    "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts:68 — REQUEST_GENERATE_SYSTEM_PROMPT import",
+    "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts:121 — REQUEST_GENERATE_SYSTEM_PROMPT in ALL_15_AGENT_PROMPTS",
+    "architecture/components.md — ports table has no OneShotQueryClient (廃止後状態)",
+    "architecture/components.md — adapters table has no OneShotQueryClient adapter",
+    "architecture/adr/2026-07-31-deterministic-request-entrance.md — status: accepted, D1/D2/D3 documented",
+    "architecture/divergence-status.md:12 — divergence recorded as 既知の未収束",
+    "OneShotQueryClient consumers limited to generate chain (7 files only)"
+  ],
+  "sourceRevision": "aacac7a00d296903ba77bbac1db93e8064fe879e"
+}
