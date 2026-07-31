@@ -50,8 +50,9 @@ agent が構造に沿ったコードを書くために、何を読ませるか�
 | **B-15** round git 副作用の coordinator 所有 | `parallel-review-round.ts` が indiscriminate な `commitAndPush` を呼ばず、`partitionRoundChanges` で宣言/非宣言を分離し宣言出力だけを scoped stage（`git add -A -- <paths>`）するか | grep 検査（call-site, parallel-review-round.ts）|
 | **B-16** round 入力の不変性 | `executor.ts` / `parallel-review-round.ts` が共有 `deps` を in-place 書き換え（`deps.<field> =` 代入）していないか | grep 検査（call-site, 代入のみ・比較除外）|
 | **B-17** reopen opt-in call-site 限定 | `{ allowReopen: true }` が `src/core/command/reopen.ts` 以外から渡されていないか | grep 検査（`allowReopen: true` literal, reopen.ts のみ許可）|
+| **B-18** request 入口の LLM 到達封じ | `src/core/request/` / `src/core/command/request*.ts` が LLM 系 port（agent-runner / session-client / anthropic-client）・adapter（claude-code / managed-agent / codex / dispatching）・port barrel（`port/index`）を import していないか。`src/cli/command-registry.ts` が LLM 系 port / adapter を import していないか | grep 検査（import path literal、comment 行除外）|
 
-- 歯: `tests/unit/architecture/core-invariants.test.ts` が src 全体で上記 B-1〜B-17 を検査する。`arch-allowlist.ts` の grandfather 台帳は削除のみで縮む ratchet。`module-boundary.test.ts` も併存。
+- 歯: `tests/unit/architecture/core-invariants.test.ts` が src 全体で上記 B-1〜B-18 を検査する。`arch-allowlist.ts` の grandfather 台帳は削除のみで縮む ratchet。`module-boundary.test.ts` も併存。
 - closure: model.md §3 の許可行列にない edge を全て divergence にする（`allowed` whitelist 方式＝DSM 検査）。
 - 現状の divergence・実装状態は `divergence-status.md`（状況断面）を参照。
 

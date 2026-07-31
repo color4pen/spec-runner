@@ -1269,6 +1269,91 @@ describe("B-17 (arch pin): allowReopen: true は src/core/command/reopen.ts か�
   });
 });
 
+describe("B-18 (arch pin): request 系入口は LLM 系 port / adapter / port barrel を import しない", () => {
+  /**
+   * B-18: The request entrance (src/core/request/, src/core/command/request*.ts)
+   * must not import LLM-reachable ports (agent-runner / session-client /
+   * anthropic-client), their adapters (claude-code / managed-agent / codex /
+   * dispatching), or the port barrel (port/index) — the barrel type re-exports
+   * SessionClient / AnthropicClient and would act as a typed bypass route.
+   *
+   * The dispatch point src/cli/command-registry.ts must not import LLM ports or
+   * adapters either: it is historically the site that instantiated an LLM
+   * client and injected it into the entrance chain. Non-LLM barrel references
+   * remain allowed there (GitHubClient etc.).
+   *
+   * Canonical decision: architecture/adr/2026-07-31-deterministic-request-entrance.md
+   * (D2 / D3). A per-pattern detailed variant lives in
+   * request-entrance-llm-boundary.test.ts (change: deterministic-request-entrance);
+   * this block is the §4 catalog-parity tooth.
+   */
+
+  const LLM_PORT_PATTERNS = [
+    "port/agent-runner",
+    "port/session-client",
+    "port/anthropic-client",
+  ];
+  const LLM_ADAPTER_PATTERNS = [
+    "adapter/claude-code/",
+    "adapter/managed-agent/",
+    "adapter/codex/",
+    "adapter/dispatching/",
+  ];
+  const PORT_BARREL_PATTERN = "port/index";
+  const ENTRANCE_FORBIDDEN = [
+    ...LLM_PORT_PATTERNS,
+    ...LLM_ADAPTER_PATTERNS,
+    PORT_BARREL_PATTERN,
+  ];
+  const REGISTRY_FORBIDDEN = [...LLM_PORT_PATTERNS, ...LLM_ADAPTER_PATTERNS];
+
+  function findViolations(pattern: string, target: string): GrepMatch[] {
+    const raw = grepE(`"${pattern}"`, target);
+    return parseGrepOutput(raw).filter((m) => !isCommentLine(m.content));
+  }
+
+  it("src/core/request/ に LLM 系 port / adapter / barrel の import が存在しない", () => {
+    const violations = ENTRANCE_FORBIDDEN.flatMap((p) =>
+      findViolations(p, "src/core/request"),
+    );
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  it("src/core/command/request*.ts に LLM 系 port / adapter / barrel の import が存在しない", () => {
+    const violations = ENTRANCE_FORBIDDEN.flatMap((p) =>
+      findViolations(p, "src/core/command/request*.ts"),
+    );
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  it("src/cli/command-registry.ts に LLM 系 port / adapter の import が存在しない", () => {
+    const violations = REGISTRY_FORBIDDEN.flatMap((p) =>
+      findViolations(p, "src/cli/command-registry.ts"),
+    );
+    expect(violationLines(violations)).toEqual([]);
+  });
+
+  it("B-18 regression guard: 入口への LLM 系 import 追加が違反として検出される", () => {
+    // Simulate an entrance module importing an LLM port.
+    const injected: GrepMatch[] = [
+      {
+        file: "src/core/request/manager.ts",
+        line: 3,
+        content: 'import type { AgentRunner } from "../port/agent-runner.js";',
+      },
+      {
+        file: "src/core/request/manager.ts",
+        line: 4,
+        content: '// see "port/agent-runner" for the runner contract',
+      },
+    ];
+    const violations = injected.filter((m) => !isCommentLine(m.content));
+    // The real import is a violation; the comment mention is not.
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.line).toBe(3);
+  });
+});
+
 // ─── DSM closure: §3 全層 whitelist enforcement ───────────────────────────────
 
 /**

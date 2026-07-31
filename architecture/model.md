@@ -93,6 +93,7 @@ composition-root ─→ (all)
 | **B-15** | 並列 round の git 副作用は coordinator が所有する。member 実行経路は git stage/commit を行わず、coordinator が round の宣言出力（declared outputs）だけを scoped stage（`git add -A -- <paths>`、bare `git add -A` を使わない）する。宣言外の変更は round 全体を halt する（`partitionRoundChanges` の offending 判定）| 共有 worktree では member 単位の commit 帰属が実行順依存になるため、git 副作用を round 単位の単一所有点へ集約する。非宣言変更を混ぜ込まず、attribution を出力ファイル名・`StepRun`・history 側に保持する |
 | **B-16** | 並列 round の member 実行は共有 `deps`（orchestration 入力）を in-place で書き換えない（`deps.<field> =` 代入をしない）。resume 入力は round ごとの readonly execution input として配布する | 実行 seam を跨ぐ入力の不変性を保証する。どの member が最初に resume 入力を消費するかという非決定な破壊的共有を構造的に排除し、round 実行を再現可能にする |
 | **B-17** | `{ allowReopen: true }` は `src/core/command/reopen.ts` のみから渡せる。他のコマンド（resume 等）は `transitionJob` の operator-scoped opt-in を受け取らず、`awaiting-archive → running` 遷移を常時開放しない | reopen は「operator の明示判断 + journal 記録を伴う遷移」として設計されており（D1）、opt-in の call-site を reopen コマンドに限定することで FSM guard の迂回を構造的に防ぐ |
+| **B-18** | request 系入口（`src/core/request/` / `src/core/command/request*.ts`）は LLM 系 port（`AgentRunner` / `SessionClient` / `AnthropicClient`）・その adapter（claude-code / managed-agent / codex / dispatching）・port barrel（`port/index`）を import しない。dispatch 点（`src/cli/command-registry.ts`）も LLM 系 port / adapter を import しない（非 LLM port の barrel 参照は可） | LLM 到達境界を job 実行経路に閉じ、入口を決定的（オフライン・認証不要）に保つ（ADR-20260731）。barrel の type re-export による型迂回と、dispatch 点で LLM client を new して注入する再導入経路を import 面で封じる |
 
 ---
 
@@ -106,7 +107,7 @@ composition-root ─→ (all)
 
 ## 6. 強制（歯）と trust placement
 
-- **歯**: `tests/unit/architecture/core-invariants.test.ts` が §4 の B-1〜B-17 と §3 closure（DSM）を **src 全体**で grep / import 検査する。既知 divergence は `arch-allowlist.ts` に grandfather し、allowlist は**削除のみで縮む ratchet**（許可されない edge / seam 違反 / status 直書きを新たに足すと red）。`module-boundary.test.ts` も併存。
+- **歯**: `tests/unit/architecture/core-invariants.test.ts` が §4 の B-1〜B-18 と §3 closure（DSM）を **src 全体**で grep / import 検査する。B-18 は change 由来の `request-entrance-llm-boundary.test.ts` にも詳細検査（pattern 単位・sabotage guard）が併存する。既知 divergence は `arch-allowlist.ts` に grandfather し、allowlist は**削除のみで縮む ratchet**（許可されない edge / seam 違反 / status 直書きを新たに足すと red）。`module-boundary.test.ts` も併存。
 - **trust placement**: CI の required check に入れ、**merge は GitHub gate（branch protection）に委ね、CLI(archive) は merge を持たない**（`finish-respect-branch-protection` → `archive-command`）＋ **`CODEOWNERS` でこの model.md と歯をループ外固定**。
 - 現状の divergence・burn-down 履歴は構造でなく状況断面 → `divergence-status.md` を参照。
 
