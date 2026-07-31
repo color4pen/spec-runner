@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ba76155d-422e-4f3d-b4cf-2b9496fcfd3c",
   "createdAt": "2026-07-31T14:17:27.215Z",
-  "updatedAt": "2026-07-31T14:17:30.779Z",
+  "updatedAt": "2026-07-31T14:21:34.499Z",
   "request": {
     "title": "bite-evidence のテストファイル選別 — 非テストファイルの誤実行と誤 tamper 判定を解消する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/bite-evidence-test-file-selection-ba76155d",
   "error": null,
@@ -62,10 +62,13 @@
     }
   ],
   "synthesizedCommits": [
-    "8a25e37bd028e0438968d4b31e520e87dc4d95ec"
+    "8a25e37bd028e0438968d4b31e520e87dc4d95ec",
+    "a9e8a845bcad8ad9cbc22102cbec6d5a7ac772be"
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
