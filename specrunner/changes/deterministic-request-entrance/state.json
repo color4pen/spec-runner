@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1a03a42b-9deb-4208-98a6-9af1d5c84065",
   "createdAt": "2026-07-31T01:45:34.003Z",
-  "updatedAt": "2026-07-31T03:02:13.186Z",
+  "updatedAt": "2026-07-31T03:11:27.101Z",
   "request": {
     "title": "request 入口の決定化 — `request prompt` 新設と `request generate` 廃止",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/deterministic-request-entrance-1a03a42b",
   "error": null,
@@ -73,12 +73,44 @@
     "d8b56ecfeba4d2ea1d86ff4b87aa00038c24e046",
     "0b26354e291735eb657638954334aa0f1d9b424e",
     "2f6c6a353a2fcc53d961fbb4250d74ad45d39b39",
-    "dfc2e5db0e89c4b88a707e435479d10457c531ee"
+    "dfc2e5db0e89c4b88a707e435479d10457c531ee",
+    "da8cc4290c3b7ae6866f3dc9675d8ddc39f5ebbb",
+    "0081a34bba62fa096f976d6b61c1ce895a2c4094"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "da8cc4290c3b7ae6866f3dc9675d8ddc39f5ebbb",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/deterministic-request-entrance/design.md:sha256:d55c8a25b532c9bc64655614c1186db94deab507fe3fe0bec2a051b418e24c05|specrunner/changes/deterministic-request-entrance/request.md:sha256:78478a32a6e7980f0f6b9415ece3fbc2a59b33d6011ac47c2393232bd571fdb6|specrunner/changes/deterministic-request-entrance/spec.md:sha256:2aff908650434461c4392bb92fc961ab9cff34c55227d30366a2da3d1cda8b6a|specrunner/changes/deterministic-request-entrance/tasks.md:sha256:aebe75cea067d472e08eaf25eac5416554da350ab1510ceee42c8aa2d5731df4|specrunner/changes/deterministic-request-entrance/test-cases.md:sha256:ecea8f7c5d77361de95237dd76ab6f5c97158d110354a4a9f2524c9ef6c9a8d5"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 53,
+    "historyCount": 64,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -90,7 +122,11 @@
       "bite-evidence": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 2
+      "code-review": 2,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
