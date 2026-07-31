@@ -78,18 +78,32 @@ CLI サブコマンド `request generate`、その usage 案内、および実�
 
 ### Requirement: request 系入口は LLM 系 port / adapter を import しない（B-18 の歯）
 
-`src/core/request/` 配下、および request 系 command 経路（`src/core/command/request-*.ts`）は、
-LLM 系 port（`AgentRunner` / `SessionClient` / `AnthropicClient`）およびその adapter
-（`src/adapter/claude-code/` / `src/adapter/managed-agent/` / `src/adapter/codex/` /
-`src/adapter/dispatching/`）を import しない MUST。この不変条件は `tests/unit/architecture/` の
-import 検査テスト（歯）で強制される MUST。
+`src/core/request/` 配下、および request 系 command 経路（`src/core/command/request*.ts` —
+`request.ts` を含む）は、LLM 系 port（`AgentRunner` / `SessionClient` / `AnthropicClient`）および
+その adapter（`src/adapter/claude-code/` / `src/adapter/managed-agent/` / `src/adapter/codex/` /
+`src/adapter/dispatching/`）を import しない MUST。加えてこの入口スコープは、LLM 系 port を
+type re-export する port barrel（`src/core/port/index.ts`）経由の import も行わない MUST（型迂回路の封じ）。
+
+request コマンドの dispatch 点である `src/cli/command-registry.ts` も、LLM 系 port / adapter を
+import しない MUST（歴史的に LLM client を new して入口へ注入していた箇所であり、注入による再導入は
+ここから始まるため。非 LLM port の barrel 参照は妨げない）。
+
+これらの不変条件は `tests/unit/architecture/` の import 検査テスト（歯）で強制される MUST。
 
 > `model.md` §4 への B-18 昇格は out-of-loop 領域のため本 change では行わない（merge 後に人間が昇格する）。
 
 #### Scenario: 入口に LLM 系 import を仕込むと red になる
 
 **Given** B-18 の import 検査テスト
-**When** `src/core/request/` または `src/core/command/request-*.ts` のいずれかに LLM 系 port / adapter の
+**When** `src/core/request/` または `src/core/command/request*.ts` のいずれかに LLM 系 port / adapter の
+import を追加する（sabotage）
+**Then** import 検査テストが red になる
+
+#### Scenario: barrel / dispatch 点経由の迂回も red になる
+
+**Given** B-18 の import 検査テスト
+**When** 入口スコープ（`src/core/request/` / `src/core/command/request*.ts`）に port barrel
+（`port/index`）経由の import を追加する、または `src/cli/command-registry.ts` に LLM 系 port / adapter の
 import を追加する（sabotage）
 **Then** import 検査テストが red になる
 

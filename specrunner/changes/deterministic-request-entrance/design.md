@@ -144,9 +144,11 @@ client 生成なし）。
 
 - **Rationale**: ADR D3 が B-18 の歯の実装を本 change に委ねている。sabotage（入口へ該当 import を仕込む）で
   red になることが受け入れ基準。
-- **注意**: `request-*.ts` glob は `request.ts`（ハイフンなし）を含まないが、request 要件がこの pattern を
-  明示しているため踏襲する。`request.ts`（`executeTemplate` / `executeValidate`）も入口だが LLM import を
-  持たないため実害はない。
+- **スコープ拡張**: glob は `request*.ts`（`request.ts` を含む）とする — `executeTemplate` / `executeValidate`
+  も入口経路であり、除外すると歯に穴が残る。入口スコープはさらに port barrel（`port/index`）経由の import も
+  禁止する（barrel は `SessionClient` / `AnthropicClient` を type re-export しており型迂回路になる）。
+  `src/cli/command-registry.ts` も検査対象に含める — 歴史的に LLM client を new して入口へ注入していた
+  dispatch 点であり、注入による再導入はここから始まる（非 LLM port の barrel 参照は妨げない）。
 
 ### D7: 残存参照ガードと docs / usage 追随
 

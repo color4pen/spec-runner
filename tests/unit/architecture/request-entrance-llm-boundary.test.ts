@@ -7,11 +7,15 @@
  *
  * 検査スコープ:
  *   - src/core/request/ (ディレクトリ再帰)
- *   - src/core/command/request-*.ts (glob)
+ *   - src/core/command/request*.ts (glob — request.ts / request-new.ts / request-list.ts / request-prompt.ts)
+ *   - src/cli/command-registry.ts (request コマンドの dispatch 点 — 歴史的に LLM client を new して注入していた箇所)
  *
  * 禁止 import パターン:
  *   - LLM 系 port: port/agent-runner / port/session-client / port/anthropic-client
  *   - adapter: adapter/claude-code/ / adapter/managed-agent/ / adapter/codex/ / adapter/dispatching/
+ *   - 入口（core/request・core/command/request*.ts）はさらに port barrel（port/index）経由も禁止。
+ *     barrel は SessionClient / AnthropicClient を再輸出しており、型 import の迂回路になるため。
+ *     registry は非 LLM port（GitHubClient 等）を barrel 経由で参照しうるため barrel 禁止は課さない。
  *
  * 実装完了状態では 0 件で green。
  * sabotage（入口に該当 import を 1 行仕込む）で red になる歯。
@@ -71,10 +75,19 @@ const LLM_ADAPTER_PATTERNS = [
 
 const ALL_FORBIDDEN_PATTERNS = [...LLM_PORT_PATTERNS, ...LLM_ADAPTER_PATTERNS];
 
+/**
+ * port barrel（src/core/port/index.ts）。SessionClient / AnthropicClient を type re-export
+ * しているため、入口からの barrel import は LLM 系 port への型迂回路になる。
+ * 入口スコープ（core/request / core/command/request*.ts）に限り禁止に含める。
+ */
+const PORT_BARREL_PATTERN = "port/index";
+
+const ENTRANCE_FORBIDDEN_PATTERNS = [...ALL_FORBIDDEN_PATTERNS, PORT_BARREL_PATTERN];
+
 // ─── TC-006: src/core/request/ — LLM 系 port / adapter import 禁止 ────────────
 
-describe("B-18 (TC-006): src/core/request/ は LLM 系 port / adapter を import しない", () => {
-  for (const pattern of ALL_FORBIDDEN_PATTERNS) {
+describe("B-18 (TC-006): src/core/request/ は LLM 系 port / adapter / port barrel を import しない", () => {
+  for (const pattern of ENTRANCE_FORBIDDEN_PATTERNS) {
     it(`src/core/request/ に "${pattern}" の import が存在しない（sabotage で red になる歯）`, () => {
       // Grep for the pattern inside import statements in src/core/request/
       const result = grepE(`"${pattern}"`, "src/core/request");
@@ -89,15 +102,35 @@ describe("B-18 (TC-006): src/core/request/ は LLM 系 port / adapter を import
 // ─── TC-006: src/core/command/request-*.ts — LLM 系 port / adapter import 禁止 ─
 
 describe(
-  "B-18 (TC-006): src/core/command/request-*.ts は LLM 系 port / adapter を import しない",
+  "B-18 (TC-006): src/core/command/request*.ts は LLM 系 port / adapter / port barrel を import しない",
   () => {
-    for (const pattern of ALL_FORBIDDEN_PATTERNS) {
-      it(`src/core/command/request-*.ts に "${pattern}" の import が存在しない（sabotage で red になる歯）`, () => {
-        // Grep only request-*.ts files in src/core/command/
-        const result = grepE(`"${pattern}"`, "src/core/command", "request-*.ts");
+    for (const pattern of ENTRANCE_FORBIDDEN_PATTERNS) {
+      it(`src/core/command/request*.ts に "${pattern}" の import が存在しない（sabotage で red になる歯）`, () => {
+        // request*.ts covers request.ts (template / validate core) as well as request-*.ts
+        const result = grepE(`"${pattern}"`, "src/core/command", "request*.ts");
         expect(
           result,
-          `"${pattern}" への import が src/core/command/request-*.ts に見つかりました。B-18 違反です。`,
+          `"${pattern}" への import が src/core/command/request*.ts に見つかりました。B-18 違反です。`,
+        ).toBe("");
+      });
+    }
+  },
+);
+
+// ─── TC-018: src/cli/command-registry.ts — LLM 系 port / adapter import 禁止 ──
+
+describe(
+  "B-18 (TC-018): src/cli/command-registry.ts は LLM 系 port / adapter を import しない",
+  () => {
+    // The registry is the request-command dispatch point and historically the site
+    // that instantiated an LLM client and injected it into the entrance chain.
+    // Reintroduction via injection starts here, so the boundary covers this file.
+    for (const pattern of ALL_FORBIDDEN_PATTERNS) {
+      it(`src/cli/command-registry.ts に "${pattern}" の import が存在しない（sabotage で red になる歯）`, () => {
+        const result = grepE(`"${pattern}"`, "src/cli/command-registry.ts");
+        expect(
+          result,
+          `"${pattern}" への import が src/cli/command-registry.ts に見つかりました。B-18 違反です。`,
         ).toBe("");
       });
     }

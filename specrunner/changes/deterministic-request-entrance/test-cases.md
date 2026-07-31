@@ -263,14 +263,28 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
+### TC-018: barrel / dispatch 点経由の迂回も red になる
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: request 系入口は LLM 系 port / adapter を import しない（B-18 の歯）> Scenario: barrel / dispatch 点経由の迂回も red になる
+
+**GIVEN** B-18 の import 検査テスト
+
+**WHEN** 入口スコープ（`src/core/request/` / `src/core/command/request*.ts`）に port barrel（`port/index`）経由の import を追加する、または `src/cli/command-registry.ts` に LLM 系 port / adapter の import を追加する（sabotage）
+
+**THEN** import 検査テストが red になる
+
+---
+
 ## Result
 
 ```yaml
 result: completed
-total: 17
-automated: 17
+total: 18
+automated: 18
 manual: 0
-must: 16
+must: 17
 should: 1
 could: 0
 blocked_reasons: []
