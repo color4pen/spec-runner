@@ -53,3 +53,22 @@
 {"type":"transition","ts":"2026-07-31T02:50:28.953Z","step":"verification","status":"warning","message":"verification iteration 1 completed with verdict: failed"}
 {"type":"transition","ts":"2026-07-31T02:50:28.954Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
 {"type":"transition","ts":"2026-07-31T02:50:28.955Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-07-31T02:54:49.275Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"de9c0739-6572-4407-a66e-87137b083737","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"reason":"Added `vi.mock` for `request-prompt.js` and TC-006 dispatch test to `tests/unit/cli/removed-commands.test.ts`. The uncovered DA line `process.exit(executePrompt())` in the `prompt` handler of `command-registry.ts` is now exercised. All 654 test files pass (9790 tests).","status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-31T02:50:29.133Z","endedAt":"2026-07-31T02:54:47.397Z","commitOid":"0b26354e291735eb657638954334aa0f1d9b424e"}
+{"type":"lineage","step":"build-fixer","ts":"2026-07-31T02:54:47.397Z","outputs":[{"path":"specrunner/changes/deterministic-request-entrance","hash":null}],"inputs":[{"path":"specrunner/changes/deterministic-request-entrance/verification-result.md","hash":"sha256:bb0fedfb0e341a80e3cf6128e64855250438d214a3065c7d33f866eea2092456"}]}
+{"type":"transition","ts":"2026-07-31T02:54:49.280Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-07-31T02:54:49.281Z","step":"verification","status":"started","message":"verification iteration 2 started"}
+{"type":"transition","ts":"2026-07-31T02:54:49.282Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-07-31T02:56:10.695Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/deterministic-request-entrance/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-07-31T02:54:49.282Z","endedAt":"2026-07-31T02:56:10.683Z","commitOid":"0b26354e291735eb657638954334aa0f1d9b424e"}
+{"type":"lineage","step":"verification","ts":"2026-07-31T02:56:10.683Z","outputs":[{"path":"specrunner/changes/deterministic-request-entrance/verification-result.md","hash":"sha256:b8cb3baa065f96622c291befc98e8edb4b1714ed11cfd7f681b8fb9e8e891875"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-07-31T02:56:10.701Z","step":"verification","status":"ok","message":"verification iteration 2 completed with verdict: passed"}
+{"type":"transition","ts":"2026-07-31T02:56:10.701Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-07-31T02:56:10.702Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-31T02:56:10.703Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
+{"type":"interruption","reason":"signal","ts":"2026-07-31T02:56:11.145Z"}
+{"type":"transition","ts":"2026-07-31T02:56:11.145Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"step-attempt","step":"code-review","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CLAUDE_CODE_QUERY_FAILED","message":"Claude Code SDK query failed: Claude Code process terminated by signal SIGTERM","hint":""},"transientRetryAttempts":0},"startedAt":"2026-07-31T02:56:10.903Z","endedAt":"2026-07-31T02:56:11.147Z"}
+{"type":"transition","ts":"2026-07-31T02:56:48.946Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-review'"}
+{"type":"transition","ts":"2026-07-31T02:56:49.085Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-07-31T02:56:49.086Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
