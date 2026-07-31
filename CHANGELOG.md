@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.8](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.7...specrunner-v0.4.8) (2026-07-31)
+
+
+### Features
+
+* bite-evidence のテストファイル選別 — 非テストファイルの誤実行と誤 tamper 判定を解消する ([#942](https://github.com/color4pen/spec-runner/issues/942)) ([118b1b7](https://github.com/color4pen/spec-runner/commit/118b1b7d1dcc92c874655a3214426ee341fc7fba))
+* request 入口の決定化 — `request prompt` 新設と `request generate` 廃止 ([#939](https://github.com/color4pen/spec-runner/issues/939)) ([b920c14](https://github.com/color4pen/spec-runner/commit/b920c14aace86949439c87552ebb05f6bdce9881))
+
 ## [0.4.7](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.6...specrunner-v0.4.7) (2026-07-25)
 
 
