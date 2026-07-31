@@ -235,7 +235,7 @@ Polyglot and non-standard-naming repos should override this field to match their
 { "verification": { "scopedTestPatterns": ["**/*_test.go"] } }
 
 // Ruby project
-{ "verification": { "scopedTestPatterns": ["**/*.spec.rb"] } }
+{ "verification": { "scopedTestPatterns": ["**/*_spec.rb"] } }
 ```
 
 When the base commit of a test-materialize step contains no files matching the patterns, the bite-evidence gate returns `strategy-deferred` (unmeasurable) rather than `failed`. Whether `strategy-deferred` is acceptable for archiving is controlled by `archive.minimumAssurance.biteEvidence`.
