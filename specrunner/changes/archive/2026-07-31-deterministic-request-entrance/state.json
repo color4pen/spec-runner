@@ -81,9 +81,14 @@
     "cf9238c5c459b132ff36b731c76e4f91cfc29a31",
     "1ee2893d8e6dbd1dfdf38a043a2d35122ec8a54a",
     "152cfeac52915994946ec7c54210e2527f9e83b0",
-    "f44b91e39d8215f5d03ea9f4ccc638e9e3ba3967"
+    "f44b91e39d8215f5d03ea9f4ccc638e9e3ba3967",
+    "5b7a68926b1592a0730cb649e1f305286f67eda6"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "signal",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
