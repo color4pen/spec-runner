@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1a03a42b-9deb-4208-98a6-9af1d5c84065",
   "createdAt": "2026-07-31T01:45:34.003Z",
-  "updatedAt": "2026-07-31T03:39:33.365Z",
+  "updatedAt": "2026-07-31T03:42:40.026Z",
   "request": {
     "title": "request 入口の決定化 — `request prompt` 新設と `request generate` 廃止",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/deterministic-request-entrance-1a03a42b",
   "error": null,
   "pipelineId": "standard",
@@ -80,7 +80,8 @@
     "4f8df738f0991875b09643b3edea000f8c80bd4e",
     "cf9238c5c459b132ff36b731c76e4f91cfc29a31",
     "1ee2893d8e6dbd1dfdf38a043a2d35122ec8a54a",
-    "152cfeac52915994946ec7c54210e2527f9e83b0"
+    "152cfeac52915994946ec7c54210e2527f9e83b0",
+    "f44b91e39d8215f5d03ea9f4ccc638e9e3ba3967"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -114,8 +115,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/939",
+    "number": 939,
+    "createdAt": "2026-07-31T03:42:39.194Z"
+  },
   "_journal": {
-    "historyCount": 94,
+    "historyCount": 99,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -133,7 +139,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
