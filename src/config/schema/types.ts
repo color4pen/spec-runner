@@ -167,7 +167,7 @@ export interface VerificationConfig {
    *
    * Configured patterns fully replace the default — no merging. Polyglot / non-standard-naming
    * repos should override to match their test naming convention (e.g. `["**\/*_test.go"]` for Go,
-   * `["**\/*.spec.rb"]` for Ruby).
+   * `["**\/*_spec.rb"]` for Ruby).
    */
   scopedTestPatterns?: string[];
 }
