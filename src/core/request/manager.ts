@@ -1,15 +1,4 @@
 import * as store from "./store.js";
-import * as generator from "./generator.js";
-import type { OneShotQueryClient } from "../port/one-shot-query-client.js";
-
-export async function create(
-  text: string,
-  cwd: string,
-  client: OneShotQueryClient,
-): Promise<string> {
-  const result = await generator.generate(text, cwd, client);
-  return result.slug;
-}
 
 export async function list(
   cwd: string,

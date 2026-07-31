@@ -23,7 +23,7 @@ import { runJobStats } from "../core/command/job-stats.js";
 import { runInboxRun } from "./inbox.js";
 import { runConfigEffective } from "./config-effective.js";
 import { executeTemplate, executeValidate } from "../core/command/request.js";
-import { executeCreate } from "../core/command/request-create.js";
+import { executePrompt } from "../core/command/request-prompt.js";
 import { executeList } from "../core/command/request-list.js";
 import { executeNew } from "../core/command/request-new.js";
 import { executeRulesNew } from "../core/command/rules-new.js";
@@ -40,8 +40,6 @@ import { resolveGitHubApiBaseUrl, resolveGitHubHost } from "../config/github-hos
 import { logError, stderrWrite, resolveLogLevel } from "../logger/stdout.js";
 import { SpecRunnerError, EXIT_CODE } from "../errors.js";
 import type { CommandContext } from "./command-context.js";
-import { ClaudeCodeOneShotQueryClient } from "../adapter/claude-code/one-shot-query-client.js";
-import type { SpecRunnerConfig } from "../config/schema.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
 import { SLUG_REGEX } from "../util/validation-patterns.js";
 /** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
@@ -73,7 +71,7 @@ export const USAGE = `Usage: specrunner <command> [options]
 
 Request commands:
   request new <slug>              template から request.md を作る
-  request generate "<text>"       LLM 生成で request.md を作る
+  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）
   request ls                      active 配下の request 一覧
   request validate <file|slug>    構文 / 規律 check
   request template                雛形 markdown を stdout
@@ -385,26 +383,10 @@ export const COMMANDS: Record<string, CommandEntry> = {
           process.exit(await executeNew(slug, requestType, ctx!.repoRoot!));
         },
       },
-      /** Renamed from `create` */
-      generate: {
-        flags: {
-          stdin: { type: "boolean" },
-        },
-        positional: { name: "text", required: false },
-        handler: async (parsed) => {
-          let config: SpecRunnerConfig;
-          try {
-            config = await loadConfigWithOverlay();
-          } catch {
-            config = {} as SpecRunnerConfig;
-          }
-          const client = new ClaudeCodeOneShotQueryClient(config);
-          process.exit(
-            await executeCreate(parsed.positional ?? null, {
-              stdin: !!parsed.flags["stdin"],
-              cwd: process.cwd(),
-            }, client),
-          );
+      prompt: {
+        flags: {},
+        handler: async () => {
+          process.exit(executePrompt());
         },
       },
       /** Renamed from `list` */

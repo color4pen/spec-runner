@@ -118,7 +118,7 @@ const ALL_14_AGENT_PROMPTS: Array<[string, string]> = [
   ["REGRESSION_GATE_SYSTEM_PROMPT", REGRESSION_GATE_SYSTEM_PROMPT],
   ["buildCustomReviewerSystemPrompt()", buildCustomReviewerSystemPrompt(makeMinimalReviewerSnapshot())],
   ["ADR_GEN_SYSTEM_PROMPT", ADR_GEN_SYSTEM_PROMPT],
-  // TC-013: REQUEST_GENERATE_SYSTEM_PROMPT removed (deterministic-request-entrance)
+  // TC-013: generate-system prompt removed (deterministic-request-entrance)
 ];
 
 /** Producer steps: generate output artifacts (design / test-case-gen / test-materialize / implementer / adr-gen) */
@@ -744,7 +744,7 @@ describe("TC-024: initial message に判定基準が含まれない", () => {
 });
 
 // TC-025 block removed (deterministic-request-entrance):
-// REQUEST_GENERATE_SYSTEM_PROMPT and its tests are deleted with the generate chain.
+// The generate-system prompt and its tests are deleted with the generate chain.
 
 // ============================================================================
 // TC-026: code-fixer prompt が Fix 対応方針を Method 節に保持する
