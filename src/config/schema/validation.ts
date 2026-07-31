@@ -268,6 +268,12 @@ export const configSchema = object({
           array(shellCommandSchema, "must be an array."),
         ),
         scopedTestCommand: optional(nonEmptyString("must be a non-empty string.")),
+        scopedTestPatterns: optional(
+          array(
+            nonEmptyString("must be a non-empty string."),
+            "must be an array.",
+          ).check(minLength(1, "must be a non-empty array.")),
+        ),
         coverage: optional(
           object(
             {

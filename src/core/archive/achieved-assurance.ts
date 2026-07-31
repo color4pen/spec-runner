@@ -18,7 +18,8 @@ import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { AssuranceFloor } from "../../state/profile.js";
 import { resolveBaseCandidateOids } from "../step/bite-evidence/oids.js";
-import { isExcludedPath, FORWARD_TYPES } from "../step/bite-evidence/gate.js";
+import { FORWARD_TYPES } from "../step/bite-evidence/gate.js";
+import { selectMaterializedTestFiles } from "../step/bite-evidence/test-file-selection.js";
 import { STEP_NAMES } from "../../kernel/step-names.js";
 
 /**
@@ -89,7 +90,7 @@ function computeContentHash(content: string): string {
  * **biteEvidence** / **testDerivation**: only evaluated when the floor constrains either.
  *   Requires: baseOid resolvable + finalHeadOid defined + runtime available with all required
  *   methods (including readFileAtCommit) + config defined.
- *   (a) Enumerate materializedTestFiles via listCommitChangedFiles(baseOid) + isExcludedPath filter.
+ *   (a) Enumerate materializedTestFiles via listCommitChangedFiles(baseOid) + selectMaterializedTestFiles filter.
  *   (b) Blob freeze check: diffPathsBetweenCommits(baseOid, finalHeadOid, materializedTestFiles).
  *       → tamper (non-empty diff) → both absent.
  *   (c) Scenario revision binding (P0):
@@ -262,7 +263,7 @@ export async function deriveAchievedAssurance(
       diagnostics.push(`biteEvidence/testDerivation: listCommitChangedFiles unavailable: ${changedFilesResult.reason}`);
       return { achieved: achieved as ProfileAssurance, diagnostics };
     }
-    materializedTestFiles = changedFilesResult.files.filter((f) => !isExcludedPath(f));
+    materializedTestFiles = selectMaterializedTestFiles(changedFilesResult.files, config);
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     diagnostics.push(`biteEvidence/testDerivation: listCommitChangedFiles threw: ${reason}`);

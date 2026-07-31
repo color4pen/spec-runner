@@ -18,6 +18,13 @@ import type { RuntimeStrategy } from "../../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../../config/schema.js";
 import type { TamperStatus } from "./tamper.js";
 import { resolveBaseCandidateOids } from "./oids.js";
+import { selectMaterializedTestFiles } from "./test-file-selection.js";
+
+/**
+ * Re-export isExcludedPath from the shared module for backward compatibility.
+ * (Callers that previously imported isExcludedPath from gate.ts continue to work.)
+ */
+export { isExcludedPath } from "./test-file-selection.js";
 
 /**
  * Request types that use the forward strategy (base-red → candidate-green).
@@ -27,15 +34,6 @@ import { resolveBaseCandidateOids } from "./oids.js";
  * ADR-20260716 D2: type determines bite strategy.
  */
 export const FORWARD_TYPES: ReadonlySet<string> = new Set(["bug-fix", "new-feature"]);
-
-/**
- * Paths to exclude from materialized test files (pipeline artifacts).
- * Exported so that the archive floor gate (achieved-assurance.ts) can use the
- * same exclusion logic without duplicating the rule.
- */
-export function isExcludedPath(filePath: string): boolean {
-  return filePath.startsWith("specrunner/changes/") || filePath.startsWith(".specrunner/");
-}
 
 export type GateVerdict = "passed" | "failed" | "strategy-deferred";
 
@@ -73,7 +71,7 @@ export interface GateDeps {
  *   2. Tamper mismatch → failed.
  *   3. Missing base/candidate OIDs → strategy-deferred.
  *   4. Runtime unavailable (missing ports) → strategy-deferred.
- *   5. No materialized test files → failed.
+ *   5. No materialized test files → strategy-deferred.
  *   6. Run tests at base and candidate; build records; verify all base-red & candidate-green.
  *
  * Never throws — unexpected errors produce strategy-deferred with a reason.
@@ -151,16 +149,18 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
     };
   }
 
-  // Filter to materialized test files only (exclude pipeline artifacts).
-  const materializedTestFiles = changedFilesResult.files.filter(
-    (f) => !isExcludedPath(f),
-  );
+  // Select materialized test files: exclude pipeline artifacts AND apply test-file patterns.
+  const materializedTestFiles = selectMaterializedTestFiles(changedFilesResult.files, config);
 
+  // No matching test files → strategy-deferred (unmeasurable, not a failed bite).
+  // "Unmeasurable" and "measured and failed" are distinct outcomes (ADR D2).
+  // The archive floor's minimumAssurance.biteEvidence setting determines whether
+  // strategy-deferred is acceptable for archiving.
   if (materializedTestFiles.length === 0) {
     return {
-      verdict: "failed",
+      verdict: "strategy-deferred",
       records: [],
-      reason: "no materialized tests: the base commit contains no test files outside specrunner/changes/ and .specrunner/",
+      reason: "no matching test files: the base commit contains no files matching the test-file selection patterns (fixture, config, or non-test-named files are excluded from per-file bite execution)",
     };
   }
 

@@ -9,7 +9,7 @@
 
 ## T-01: Create the shared test-file selection module
 
-- [ ] Create `src/core/step/bite-evidence/test-file-selection.ts` with:
+- [x] Create `src/core/step/bite-evidence/test-file-selection.ts` with:
   - `export const DEFAULT_SCOPED_TEST_PATTERNS: readonly string[] = ["**/*.test.*", "**/*.spec.*", "**/*_test.*"]`.
   - `export function isExcludedPath(filePath: string): boolean` — moved verbatim from `gate.ts:36-38`
     (`startsWith("specrunner/changes/") || startsWith(".specrunner/")`). Keep its doc comment.
@@ -27,7 +27,7 @@
     where `patterns = resolveScopedTestPatterns(config)`.
   - `import type { SpecRunnerConfig } from "../../../config/schema.js"`.
   - Module MUST NOT import from `gate.ts` (keep it a leaf; avoids a module cycle).
-- [ ] In `src/core/step/bite-evidence/gate.ts`: remove the local `isExcludedPath` definition
+- [x] In `src/core/step/bite-evidence/gate.ts`: remove the local `isExcludedPath` definition
       (`:36-38`) and instead `export { isExcludedPath } from "./test-file-selection.js"` (preserves
       backward-compatible re-export). Keep `FORWARD_TYPES` in `gate.ts` unchanged.
 
@@ -45,7 +45,7 @@
 
 ## T-02: Unit tests for the selection predicate
 
-- [ ] Add `src/core/step/bite-evidence/__tests__/test-file-selection.test.ts` covering, at minimum:
+- [x] Add `src/core/step/bite-evidence/__tests__/test-file-selection.test.ts` covering, at minimum:
   - fixture JSON / `package.json` / `.rs` / implementation `index.ts` are NOT selected;
     `*.test.ts` / `*.spec.ts` / `*_test.ts` ARE selected (default patterns).
   - `scopedTestPatterns` set replaces the default (a configured pattern selects its target and the
@@ -60,16 +60,16 @@
 
 ## T-03: Add and validate the `scopedTestPatterns` config field
 
-- [ ] In `src/config/schema/types.ts`, add `scopedTestPatterns?: string[]` to the
+- [x] In `src/config/schema/types.ts`, add `scopedTestPatterns?: string[]` to the
       `VerificationConfig` interface (`types.ts:142-163`) with a doc comment: "Glob patterns that
       identify materialized test files for per-file bite execution. Paired with `scopedTestCommand`.
       When absent, defaults to `**/*.test.*`, `**/*.spec.*`, `**/*_test.*`. Provider-neutral."
-- [ ] In `src/config/schema/validation.ts`, add to the `verification` object schema
+- [x] In `src/config/schema/validation.ts`, add to the `verification` object schema
       (`validation.ts:264-299`), next to `scopedTestCommand`:
       `scopedTestPatterns: optional(array(nonEmptyString("must be a non-empty string."), "must be an array.").check(minLength(1, "must be a non-empty array.")))`
       (mirror the `coverage.include` pattern at `validation.ts:276-279`; `array`, `nonEmptyString`,
       `minLength` are already imported / defined).
-- [ ] Do NOT edit `.specrunner/config.json`.
+- [x] Do NOT edit `.specrunner/config.json`.
 
 **Acceptance Criteria**:
 - `verification.scopedTestPatterns: []` throws with `code: "CONFIG_INVALID"`.
@@ -83,7 +83,7 @@
 
 ## T-04: Add validation tests
 
-- [ ] Extend `src/config/__tests__/verification-scoped-command.test.ts` (or add a sibling
+- [x] Extend `src/config/__tests__/verification-scoped-command.test.ts` (or add a sibling
       `verification-scoped-patterns.test.ts`) with cases for: empty array → throws `CONFIG_INVALID`;
       non-string element → throws `CONFIG_INVALID`; valid `["**/*.test.ts"]` preserved; field absent
       validates unchanged. Assert on `err.code === "CONFIG_INVALID"` (match the existing project
@@ -95,13 +95,13 @@
 
 ## T-05: Wire the gate to the shared predicate and defer the empty set
 
-- [ ] In `src/core/step/bite-evidence/gate.ts`, replace the filter at `:154-157` with
+- [x] In `src/core/step/bite-evidence/gate.ts`, replace the filter at `:154-157` with
       `const materializedTestFiles = selectMaterializedTestFiles(changedFilesResult.files, config)`
       (import `selectMaterializedTestFiles` from `./test-file-selection.js`).
-- [ ] Change the empty-set branch at `:159-165` from `verdict: "failed"` to
+- [x] Change the empty-set branch at `:159-165` from `verdict: "failed"` to
       `verdict: "strategy-deferred"`, updating the `reason` to state that no changed file matched the
       test-file selection (so this is "unmeasurable", not "failed").
-- [ ] Update the step comment at `:76` ("No materialized test files → failed") to read
+- [x] Update the step comment at `:76` ("No materialized test files → failed") to read
       "strategy-deferred". Confirm the verdict doc at `:10-13` still reads correctly: `:13` already
       lists "no test files" under `strategy-deferred` — leave it, or tighten wording to "no matching
       test files". Do NOT change the `failed`/`passed` descriptions at `:11-12`.
@@ -117,14 +117,14 @@
 
 ## T-06: Wire the floor to the shared predicate
 
-- [ ] In `src/core/archive/achieved-assurance.ts`, replace the filter at `:265`
+- [x] In `src/core/archive/achieved-assurance.ts`, replace the filter at `:265`
       (`changedFilesResult.files.filter((f) => !isExcludedPath(f))`) with
       `selectMaterializedTestFiles(changedFilesResult.files, config)`.
-- [ ] Update the imports at `:21`: import `FORWARD_TYPES` from `../step/bite-evidence/gate.js` and
+- [x] Update the imports at `:21`: import `FORWARD_TYPES` from `../step/bite-evidence/gate.js` and
       `selectMaterializedTestFiles` from `../step/bite-evidence/test-file-selection.js`. Remove the
       now-unused `isExcludedPath` import. Update the enumeration doc at `:92` to say
       "listCommitChangedFiles(baseOid) + selectMaterializedTestFiles filter".
-- [ ] No change to the blob-freeze call at `:282`, base-red at `:429`, or HEAD-green at `:452`:
+- [x] No change to the blob-freeze call at `:282`, base-red at `:429`, or HEAD-green at `:452`:
       they already operate over `materializedTestFiles`, which is now correctly narrowed.
 
 **Acceptance Criteria** (floor tests, added to `tests/unit/core/archive/`):
@@ -141,7 +141,7 @@
 
 ## T-07: Guard the single-implementation-shared-via-imports invariant
 
-- [ ] Add a structural test (e.g. `src/core/step/bite-evidence/__tests__/shared-selection-imports.test.ts`)
+- [x] Add a structural test (e.g. `src/core/step/bite-evidence/__tests__/shared-selection-imports.test.ts`)
       that reads the source text of `gate.ts` and `achieved-assurance.ts` and asserts:
   - both import `selectMaterializedTestFiles` from `test-file-selection` (module specifier ending in
     `test-file-selection.js`);
@@ -154,7 +154,7 @@
 
 ## T-08: Document `scopedTestPatterns`
 
-- [ ] In `docs/configuration.md`, under `## Verification`, add a short subsection
+- [x] In `docs/configuration.md`, under `## Verification`, add a short subsection
       "### verification.scopedTestPatterns — bite-evidence test file selection" stating: the default
       `["**/*.test.*", "**/*.spec.*", "**/*_test.*"]`; that patterns select which materialized files
       are run per-file during bite evidence; that it pairs with `scopedTestCommand` to define the
@@ -168,11 +168,11 @@
 
 ## T-09: Full verification and dependency guard
 
-- [ ] Run `bun run typecheck` and `bun run test`; both green. The only pre-existing expectation
+- [x] Run `bun run typecheck` and `bun run test`; both green. The only pre-existing expectation
       permitted to change is any test that pinned the old empty-set→`failed` behavior — none is known
       to exist; if one surfaces, update it and attribute the change to requirement 3 (empty →
       strategy-deferred).
-- [ ] Confirm `git diff` shows NO change to `package.json` / lockfile (no new runtime dependency),
+- [x] Confirm `git diff` shows NO change to `package.json` / lockfile (no new runtime dependency),
       `.specrunner/config.json`, `src/core/port/runtime-strategy.ts`, or `src/core/runtime/local.ts`.
 
 **Acceptance Criteria**:
