@@ -136,7 +136,8 @@
       （必要に応じて定数名も 14 を反映するよう更新）。
 - [ ] `request-generate-system.ts` を import する prompt-coverage テストから該当エントリを除去する:
       `tests/unit/rules-md.test.ts`（:23 import / :36 エントリ）/
-      `tests/unit/prompts/common-context-catch.test.ts`（:23 import / :36 エントリ）/
+      `tests/unit/prompts/common-context-catch.test.ts`（:23 import / :36 エントリ、および :43 の
+      `expect(ALL_AGENT_PROMPTS.length).toBe(11)` を `toBe(10)` に更新する）/
       `tests/unit/prompts/fragment-coverage.test.ts`（:25 import / :40 エントリ）。
 - [ ] `tests/unit/cli/removed-commands.test.ts`: `request-create.js` の `vi.mock` 行（:38）を除去し、
       `specrunner request generate` が `Unknown request subcommand: generate` を出力し exit 2 になる TC を追加する
