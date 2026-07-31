@@ -20,7 +20,7 @@ import { ADR_GEN_SYSTEM_PROMPT } from "../../../src/prompts/adr-gen-system.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/spec-review-system.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/code-review-system.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT } from "../../../src/prompts/test-case-gen-system.js";
-import { REQUEST_GENERATE_SYSTEM_PROMPT } from "../../../src/prompts/request-generate-system.js";
+// REQUEST_GENERATE_SYSTEM_PROMPT removed (deterministic-request-entrance, T-07)
 import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/request-review-system.js";
 
 const ALL_AGENT_PROMPTS: Array<[string, string]> = [
@@ -33,14 +33,14 @@ const ALL_AGENT_PROMPTS: Array<[string, string]> = [
   ["SPEC_REVIEW", SPEC_REVIEW_SYSTEM_PROMPT],
   ["CODE_REVIEW", CODE_REVIEW_SYSTEM_PROMPT],
   ["TEST_CASE_GEN", TEST_CASE_GEN_SYSTEM_PROMPT],
-  ["REQUEST_GENERATE", REQUEST_GENERATE_SYSTEM_PROMPT],
+  // ["REQUEST_GENERATE", REQUEST_GENERATE_SYSTEM_PROMPT],  // removed (deterministic-request-entrance)
   ["REQUEST_REVIEW", REQUEST_REVIEW_SYSTEM_PROMPT],
 ];
 
 // TC-31: common-context-catch.test.ts structure verification
 describe("TC-31: common-context-catch.test.ts — structure", () => {
-  test("TC-31: tests all 11 agent prompts", () => {
-    expect(ALL_AGENT_PROMPTS.length).toBe(11);
+  test("TC-31: tests all 10 agent prompts (REQUEST_GENERATE removed, deterministic-request-entrance)", () => {
+    expect(ALL_AGENT_PROMPTS.length).toBe(10);
   });
 
   test("TC-31: all entries are [string, string] tuples", () => {

@@ -4,6 +4,18 @@ request.md は pipeline への唯一の入力であり、その解像度が pipe
 
 雛形は `specrunner request template`、構文検査は `specrunner request validate <file>` で得られる。
 
+## request prompt — セッションへの知識注入
+
+`specrunner request prompt` は、外部 LLM セッションが `specrunner/drafts/<slug>.md` へ request.md を起票するための自己完結プロンプト（規律 + 雛形 + 検証指示）を stdout に出力する。
+
+**運用フロー**:
+
+1. `specrunner request prompt` の出力をセッション（Claude Code など）に渡す
+2. セッションが出力されたプロンプトに従って `specrunner/drafts/<slug>.md` を起票する
+3. 起票後に `specrunner request validate specrunner/drafts/<slug>.md` で自己検証する
+
+このコマンドは LLM 呼び出し・ファイル書き込み・認証・ネットワークアクセスを一切行わず、決定的に完了する。起票の文脈（変更意図・背景）を持つのはセッション側であり、CLI はその知識注入の入口を提供する。
+
 ## 設計要素引用 — 設計レイヤとの紐付け（任意）
 
 設計レイヤ CLI（aozu）を導入しているプロジェクトでは、`## 設計要素引用` セクションに、この request が実装する設計要素の `[[id]]` を列挙できる。

@@ -65,7 +65,6 @@ import { CONFORMANCE_SYSTEM_PROMPT } from "../conformance-system.js";
 import { REGRESSION_GATE_SYSTEM_PROMPT } from "../regression-gate-system.js";
 import { buildCustomReviewerSystemPrompt } from "../custom-reviewer-system.js";
 import { ADR_GEN_SYSTEM_PROMPT } from "../adr-gen-system.js";
-import { REQUEST_GENERATE_SYSTEM_PROMPT } from "../request-generate-system.js";
 import { DESIGN_INITIAL_MESSAGE_TEMPLATE } from "../design-system.js";
 import { SPEC_REVIEW_INITIAL_MESSAGE_TEMPLATE } from "../spec-review-system.js";
 
@@ -101,9 +100,10 @@ function makeMinimalReviewerSnapshot(): ReviewerSnapshot {
  * The list must cover exactly:
  *   request-review / design / spec-review / spec-fixer / test-case-gen / test-materialize /
  *   implementer / build-fixer / code-review / code-fixer / conformance / regression-gate /
- *   custom-reviewer / adr-gen / request-generate
+ *   custom-reviewer / adr-gen
+ * (TC-013: request-generate was removed — deterministic-request-entrance)
  */
-const ALL_15_AGENT_PROMPTS: Array<[string, string]> = [
+const ALL_14_AGENT_PROMPTS: Array<[string, string]> = [
   ["REQUEST_REVIEW_SYSTEM_PROMPT", REQUEST_REVIEW_SYSTEM_PROMPT],
   ["DESIGN_SYSTEM_PROMPT", DESIGN_SYSTEM_PROMPT],
   ["SPEC_REVIEW_SYSTEM_PROMPT", SPEC_REVIEW_SYSTEM_PROMPT],
@@ -118,7 +118,7 @@ const ALL_15_AGENT_PROMPTS: Array<[string, string]> = [
   ["REGRESSION_GATE_SYSTEM_PROMPT", REGRESSION_GATE_SYSTEM_PROMPT],
   ["buildCustomReviewerSystemPrompt()", buildCustomReviewerSystemPrompt(makeMinimalReviewerSnapshot())],
   ["ADR_GEN_SYSTEM_PROMPT", ADR_GEN_SYSTEM_PROMPT],
-  ["REQUEST_GENERATE_SYSTEM_PROMPT", REQUEST_GENERATE_SYSTEM_PROMPT],
+  // TC-013: generate-system prompt removed (deterministic-request-entrance)
 ];
 
 /** Producer steps: generate output artifacts (design / test-case-gen / test-materialize / implementer / adr-gen) */
@@ -223,7 +223,7 @@ describe("TC-001: 各 system prompt 出力が 5 節見出しを含む", () => {
     "## Completion",
   ];
 
-  for (const [name, prompt] of ALL_15_AGENT_PROMPTS) {
+  for (const [name, prompt] of ALL_14_AGENT_PROMPTS) {
     for (const heading of REQUIRED_HEADINGS) {
       it(`TC-001: ${name} contains "${heading}"`, () => {
         expect(prompt).toContain(heading);
@@ -246,7 +246,7 @@ describe("TC-001: 各 system prompt 出力が 5 節見出しを含む", () => {
 // ============================================================================
 
 describe("TC-002: prompt 出力に独立した stage 表が存在しない", () => {
-  for (const [name, prompt] of ALL_15_AGENT_PROMPTS) {
+  for (const [name, prompt] of ALL_14_AGENT_PROMPTS) {
     for (const marker of STAGE_TABLE_MARKERS) {
       it(`TC-002: ${name} does not contain stage table marker "${marker}"`, () => {
         expect(prompt).not.toContain(marker);
@@ -286,7 +286,7 @@ describe("TC-003: stage 一覧は PIPELINE_MAP を埋め込む", () => {
 // ============================================================================
 
 describe("TC-004: 全 agent prompt が EVIDENCE_DISCIPLINE を含む", () => {
-  for (const [name, prompt] of ALL_15_AGENT_PROMPTS) {
+  for (const [name, prompt] of ALL_14_AGENT_PROMPTS) {
     it(`TC-004: ${name} contains EVIDENCE_DISCIPLINE`, () => {
       expect(prompt).toContain(EVIDENCE_DISCIPLINE);
     });
@@ -300,7 +300,7 @@ describe("TC-004: 全 agent prompt が EVIDENCE_DISCIPLINE を含む", () => {
 // ============================================================================
 
 describe("TC-005: 全 agent prompt が CAUSE_CLASSIFICATION を含む", () => {
-  for (const [name, prompt] of ALL_15_AGENT_PROMPTS) {
+  for (const [name, prompt] of ALL_14_AGENT_PROMPTS) {
     it(`TC-005: ${name} contains CAUSE_CLASSIFICATION`, () => {
       expect(prompt).toContain(CAUSE_CLASSIFICATION);
     });
@@ -350,7 +350,7 @@ describe("TC-006: build-fixer と code-fixer が同一ソースの coverage gate
 // ============================================================================
 
 describe("TC-007: prompt 出力に architecture/ 参照が存在しない", () => {
-  for (const [name, prompt] of ALL_15_AGENT_PROMPTS) {
+  for (const [name, prompt] of ALL_14_AGENT_PROMPTS) {
     it(`TC-007: ${name} does not contain "architecture/"`, () => {
       expect(prompt).not.toContain("architecture/");
     });
@@ -552,7 +552,7 @@ describe("TC-014: routing / gate 挙動不変の証明 — judge-verdict invaria
   });
 
   it("TC-014: prompt exports are all non-empty strings (module integrity)", () => {
-    for (const [name, prompt] of ALL_15_AGENT_PROMPTS) {
+    for (const [name, prompt] of ALL_14_AGENT_PROMPTS) {
       expect(prompt, `${name} must be a non-empty string`).toBeTruthy();
       expect(typeof prompt, `${name} must be a string`).toBe("string");
     }
@@ -743,31 +743,8 @@ describe("TC-024: initial message に判定基準が含まれない", () => {
   }
 });
 
-// ============================================================================
-// TC-025: request-generate prompt が既存の生成規律を保持する
-// Source: tasks.md > T-06 Acceptance Criteria
-// ============================================================================
-
-describe("TC-025: request-generate prompt が既存の生成規律を保持する", () => {
-  it("TC-025: REQUEST_GENERATE_SYSTEM_PROMPT contains required section names in Method", () => {
-    const methodSection = extractSection(REQUEST_GENERATE_SYSTEM_PROMPT, "Method");
-    expect(methodSection, "Method section must exist").toBeTruthy();
-    expect(methodSection).toContain("## Meta");
-    expect(methodSection).toContain("## 背景");
-    expect(methodSection).toContain("## 受け入れ基準");
-    expect(methodSection).toContain("## スコープ外");
-  });
-
-  it("TC-025: REQUEST_GENERATE_SYSTEM_PROMPT Method section contains type inference guidance", () => {
-    const methodSection = extractSection(REQUEST_GENERATE_SYSTEM_PROMPT, "Method");
-    expect(methodSection).toContain("type 推論");
-  });
-
-  it("TC-025: REQUEST_GENERATE_SYSTEM_PROMPT Method section contains adr field guidance", () => {
-    const methodSection = extractSection(REQUEST_GENERATE_SYSTEM_PROMPT, "Method");
-    expect(methodSection).toContain("adr フィールド");
-  });
-});
+// TC-025 block removed (deterministic-request-entrance):
+// The generate-system prompt and its tests are deleted with the generate chain.
 
 // ============================================================================
 // TC-026: code-fixer prompt が Fix 対応方針を Method 節に保持する
@@ -822,9 +799,10 @@ describe("TC-027: pipeline-map.ts がプロジェクト内 import を持たな�
 // Source: tasks.md > T-09 Acceptance Criteria
 // ============================================================================
 
-describe("TC-028: drift-guard テストが配列反復で全 prompt を網羅する構造を持つ", () => {
-  it("TC-028: ALL_15_AGENT_PROMPTS array contains exactly 15 entries", () => {
-    expect(ALL_15_AGENT_PROMPTS.length).toBe(15);
+describe("TC-028 (TC-013): drift-guard テストが配列反復で全 prompt を網羅する構造を持つ（14 エントリ）", () => {
+  it("TC-028 (TC-013): ALL_14_AGENT_PROMPTS array contains exactly 14 entries (request-generate removed)", () => {
+    // TC-013: drift-guard が request-generate エントリ除去後に count = 14 で green になる
+    expect(ALL_14_AGENT_PROMPTS.length).toBe(14);
   });
 
   it("TC-028: JUDGE_PROMPTS contains all 6 judge steps", () => {

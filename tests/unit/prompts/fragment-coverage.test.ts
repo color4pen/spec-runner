@@ -22,7 +22,7 @@ import { ADR_GEN_SYSTEM_PROMPT } from "../../../src/prompts/adr-gen-system.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/spec-review-system.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/code-review-system.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT } from "../../../src/prompts/test-case-gen-system.js";
-import { REQUEST_GENERATE_SYSTEM_PROMPT } from "../../../src/prompts/request-generate-system.js";
+// REQUEST_GENERATE_SYSTEM_PROMPT removed (deterministic-request-entrance, T-07)
 import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/request-review-system.js";
 
 type FragmentCoverageEntry = [name: string, prompt: string, required: readonly string[]];
@@ -37,7 +37,7 @@ const EXPECTED: FragmentCoverageEntry[] = [
   ["SPEC_REVIEW",       SPEC_REVIEW_SYSTEM_PROMPT,       [PIPELINE_RULES]],
   ["CODE_REVIEW",       CODE_REVIEW_SYSTEM_PROMPT,       [PIPELINE_RULES]],
   ["TEST_CASE_GEN",     TEST_CASE_GEN_SYSTEM_PROMPT,     []],
-  ["REQUEST_GENERATE",  REQUEST_GENERATE_SYSTEM_PROMPT,  []],
+  // ["REQUEST_GENERATE",  REQUEST_GENERATE_SYSTEM_PROMPT,  []],  // removed (deterministic-request-entrance)
   ["REQUEST_REVIEW",    REQUEST_REVIEW_SYSTEM_PROMPT,    []],
 ];
 

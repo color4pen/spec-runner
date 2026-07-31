@@ -3,7 +3,7 @@
  *
  * These tests catch PR #339 / #343 / #344 type ADR placement accidents:
  *   - RULES_MD_CONTENT contains ADR discipline section
- *   - All 11 agent system prompts contain a Read instruction for rules.md
+ *   - All 10 agent system prompts contain a Read instruction for rules.md
  *   - design / code-review / code-fixer prompts do NOT reference docs/adr/
  *     (prevents industry convention MADR from triggering wrong path)
  *
@@ -20,7 +20,7 @@ import { ADR_GEN_SYSTEM_PROMPT } from "../../src/prompts/adr-gen-system.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT } from "../../src/prompts/spec-review-system.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../src/prompts/code-review-system.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT } from "../../src/prompts/test-case-gen-system.js";
-import { REQUEST_GENERATE_SYSTEM_PROMPT } from "../../src/prompts/request-generate-system.js";
+// REQUEST_GENERATE_SYSTEM_PROMPT removed (deterministic-request-entrance, T-07)
 import { REQUEST_REVIEW_SYSTEM_PROMPT } from "../../src/prompts/request-review-system.js";
 
 const ALL_AGENT_PROMPTS: Array<[string, string]> = [
@@ -33,7 +33,7 @@ const ALL_AGENT_PROMPTS: Array<[string, string]> = [
   ["SPEC_REVIEW", SPEC_REVIEW_SYSTEM_PROMPT],
   ["CODE_REVIEW", CODE_REVIEW_SYSTEM_PROMPT],
   ["TEST_CASE_GEN", TEST_CASE_GEN_SYSTEM_PROMPT],
-  ["REQUEST_GENERATE", REQUEST_GENERATE_SYSTEM_PROMPT],
+  // ["REQUEST_GENERATE", REQUEST_GENERATE_SYSTEM_PROMPT],  // removed (deterministic-request-entrance)
   ["REQUEST_REVIEW", REQUEST_REVIEW_SYSTEM_PROMPT],
 ];
 
@@ -64,10 +64,11 @@ describe("rules.md — ADR placement discipline section", () => {
 });
 
 // ────────────────────────────────────────────
-// All 11 agent prompts contain rules.md Read instruction
+// All 10 agent prompts contain rules.md Read instruction
+// (REQUEST_GENERATE removed, deterministic-request-entrance)
 // ────────────────────────────────────────────
 
-describe("all 11 agent prompts — rules.md Read instruction", () => {
+describe("all 10 agent prompts — rules.md Read instruction", () => {
   test.each(ALL_AGENT_PROMPTS)(
     "%s contains rules.md path in Read instruction",
     (_name, prompt) => {
