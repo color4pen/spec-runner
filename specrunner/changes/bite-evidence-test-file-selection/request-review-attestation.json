@@ -1,0 +1,18 @@
+{
+  "requestHash": "sha256:19ecad3b0cd6489cc74bb9ef11abb34c463a53d9ad33f0fbd2b60c750b078f08",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/bite-evidence/gate.ts:154-157 — changedFilesResult.files.filter((f) => !isExcludedPath(f)) is the sole filter",
+    "src/core/step/bite-evidence/gate.ts:36-38 — isExcludedPath checks startsWith('specrunner/changes/') || startsWith('.specrunner/') only",
+    "src/core/step/bite-evidence/gate.ts:13 — doc comment lists 'no test files' under strategy-deferred",
+    "src/core/step/bite-evidence/gate.ts:76 — step comment says 'No materialized test files → failed'",
+    "src/core/step/bite-evidence/gate.ts:159-165 — empty materializedTestFiles returns verdict 'failed'",
+    "src/core/runtime/local.ts:1032 — runTestsAtCommit method signature at this line",
+    "src/core/runtime/local.ts:1064-area — scopedTestCommand path runs sh -c '<cmd> <file>' per-file",
+    "src/core/runtime/local.ts:1114-area — default path runs bun test <file> per-file",
+    "src/core/archive/achieved-assurance.ts:265 — changedFilesResult.files.filter((f) => !isExcludedPath(f)) only",
+    "src/core/archive/achieved-assurance.ts:21 — imports isExcludedPath from gate.ts (single shared implementation)",
+    "src/config/schema/types.ts — verification.scopedTestCommand exists at line 162, no scopedTestPatterns"
+  ],
+  "sourceRevision": "1adb8a4d7e4fbbda2ad9b0623a849da23a284430"
+}
