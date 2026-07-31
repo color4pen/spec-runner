@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1a03a42b-9deb-4208-98a6-9af1d5c84065",
   "createdAt": "2026-07-31T01:45:34.003Z",
-  "updatedAt": "2026-07-31T02:38:50.565Z",
+  "updatedAt": "2026-07-31T02:50:28.955Z",
   "request": {
     "title": "request 入口の決定化 — `request prompt` 新設と `request generate` 廃止",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "build-fixer",
   "status": "running",
   "branch": "change/deterministic-request-entrance-1a03a42b",
   "error": null,
@@ -68,19 +68,24 @@
     "a1b193d3b478c3ebb2268a65aa288e776cbaea4d",
     "bfe615585fb5114ba4fc63dd0685f3075799af60",
     "df9e6341a6de623c1d4564ba2547fdad8cf7412b",
-    "503da78d16bc271bec53a5f3594a0f4fb8a0f146"
+    "503da78d16bc271bec53a5f3594a0f4fb8a0f146",
+    "3d225041abc4be52a3eae9106abbe233d8863bbb",
+    "d8b56ecfeba4d2ea1d86ff4b87aa00038c24e046"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 25,
+    "historyCount": 36,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "spec-fixer": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
