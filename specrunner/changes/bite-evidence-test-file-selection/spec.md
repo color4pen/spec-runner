@@ -48,9 +48,9 @@ without adding a new runtime dependency.
 
 #### Scenario: configured patterns replace the default
 
-**Given** a config with `verification.scopedTestPatterns: ["**/*.spec.rb"]`
+**Given** a config with `verification.scopedTestPatterns: ["**/*_spec.rb"]`
 **When** files `spec/model_spec.rb` and `src/a.test.ts` are selected
-**Then** `spec/model_spec.rb` is selected and `src/a.test.ts` is not
+**Then** `spec/model_spec.rb` is selected and `src/a.test.ts` is not（`.` は glob で literal であり、`_spec.` を `**/*.spec.rb` で拾うような暗黙変換は行わない）
 
 ### Requirement: scopedTestPatterns is validated as a non-empty array of non-empty strings
 
