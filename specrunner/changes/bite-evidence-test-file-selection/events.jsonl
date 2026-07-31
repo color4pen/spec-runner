@@ -88,3 +88,9 @@
 {"type":"transition","ts":"2026-07-31T15:42:43.227Z","step":"regression-gate","status":"warning","message":"regression-gate iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-07-31T15:42:43.227Z","step":"step-transition","status":"ok","message":"regression-gate → code-fixer"}
 {"type":"transition","ts":"2026-07-31T15:42:43.229Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-07-31T15:43:28.244Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"e012c891-77a7-4b02-988f-f6837fc36381","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"reason":"docs/configuration.md:238 の Ruby example を **/*.spec.rb から **/*_spec.rb に修正。標準 RSpec 命名規約（アンダースコア区切り）と一致し、strict \\.  実装と整合する。","status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-07-31T15:42:43.286Z","endedAt":"2026-07-31T15:43:25.411Z","commitOid":"92e6dc3f7a05f9a7f3391879569599057760d380"}
+{"type":"lineage","step":"code-fixer","ts":"2026-07-31T15:43:25.411Z","outputs":[{"path":"specrunner/changes/bite-evidence-test-file-selection","hash":null}],"inputs":[{"path":"specrunner/changes/bite-evidence-test-file-selection/regression-gate-result-001.md","hash":"sha256:e94dfc6b64c72516b1643dee6383f8baf9aaec7349d9b9b4eb0929cfc7abf1b6"}]}
+{"type":"transition","ts":"2026-07-31T15:43:28.250Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
+{"type":"transition","ts":"2026-07-31T15:43:28.251Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
+{"type":"transition","ts":"2026-07-31T15:43:28.253Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
