@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ba76155d-422e-4f3d-b4cf-2b9496fcfd3c",
   "createdAt": "2026-07-31T14:17:27.215Z",
-  "updatedAt": "2026-07-31T15:13:49.188Z",
+  "updatedAt": "2026-07-31T15:26:03.049Z",
   "request": {
     "title": "bite-evidence のテストファイル選別 — 非テストファイルの誤実行と誤 tamper 判定を解消する",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/bite-evidence-test-file-selection-ba76155d",
   "error": null,
   "pipelineId": "standard",
@@ -70,10 +70,46 @@
     "d07e7a1f3f44c55d5da0b4429720696d7bef71d9",
     "7635d4b942b1f1d5cc2f08e28345add2a6d309b4",
     "0f3d1ca13bc24605156458307e7404500233bfd5",
-    "f1e430307e32bd9d348a5e6fdffd73e221729abf"
+    "f1e430307e32bd9d348a5e6fdffd73e221729abf",
+    "59c2421a6442bcbcf2bfdf0c59aa00d513aa4572",
+    "9ad78fc580775e7fbf41634c66ad4389aeea2486"
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 35,
+    "historyCount": 44,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -83,7 +119,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
