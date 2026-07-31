@@ -9,6 +9,7 @@
 - **B-1〜B-16 ＋ §3 DSM closure に対する実 divergence = ゼロ。**
 - `arch-allowlist.ts` の残エントリは `B-1` の `R2-*-adapter` 3件のみ。これは composition-root（`core/runtime/`）が adapter を import する §3 許可 edge の記録であり、**違反ではない**。
 - 定義 doc の追随: judge findings の検証 seam / Finding VO / 導出純関数の所在を `components.md`・`domain-model.md` に反映、構造 ADR `2026-06-10-findings-verification-seam` を ratify 済み。
+- **既知の未収束（2026-07-31）**: 構造 ADR `2026-07-31-deterministic-request-entrance` を accepted。`components.md` は `OneShotQueryClient` 廃止後の port surface を記述するが、src には port（`core/port/one-shot-query-client.ts`）・adapter 実装・request 生成の一本鎖が残存する（実装 change 待ち）。B-18（入口の LLM 系 port import 禁止）は歯の実装と同時に `model.md` §4 へ昇格する（それまで §4 に置かない）。
 - **scope/permission サブシステム ＋ pipeline 選択 ＋ fast profile を反映済み**（弧 #689→#692→#693→#694）: B-11（concrete runtime の能力 interface）を `model.md` §4 ＋歯に追加、`permissionScope` / `Finding.origin` / scope derivation（機械導出の第2 escalation 源）を `domain-model.md`・`components.md` に、pipeline 選択 / 着手前 capability gate / scope checkpoint 束縛を `dynamic-model.md` に反映。`PIPELINE_REGISTRY` は `standard` / `design-only` / `fast` の 3 本で、`permissionScope` 宣言は `fast` の1件。
 
 ## burn-down 履歴（どの change が何を解消したか）
