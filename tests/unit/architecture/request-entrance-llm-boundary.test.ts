@@ -19,6 +19,8 @@
 
 import { describe, it, expect } from "vitest";
 import { execSync } from "node:child_process";
+import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import * as os from "node:os";
 import * as path from "node:path";
 import * as url from "node:url";
 
@@ -110,25 +112,44 @@ describe(
     it(
       "src/core/request/ に AgentRunner port import を仕込んだ場合に grep が 0 件以外を返す（sabotage 模擬）",
       () => {
-        // Verify detection mechanism: if a port/agent-runner import were added to
-        // src/core/request/manager.ts, the grep would find it and the test above would fail.
-        //
-        // Regression guard via synthetic injection (same pattern as core-invariants.test.ts):
-        // We confirm the grep logic works by checking that a hypothetical match string
-        // would NOT be equal to "".
-        const syntheticMatch = 'src/core/request/manager.ts:3:import type { AgentRunner } from "../port/agent-runner.js";';
-        // A non-empty grep result means a violation was found.
-        expect(syntheticMatch).not.toBe("");
+        // Verify the grepE detection mechanism works by writing a real temp file with a
+        // forbidden import and confirming grepE finds it.
+        const tmpDir = mkdtempSync(path.join(os.tmpdir(), "b18-guard-"));
+        try {
+          writeFileSync(
+            path.join(tmpDir, "manager.ts"),
+            'import type { AgentRunner } from "../port/agent-runner.js";\n',
+          );
+          const result = grepE('"port/agent-runner"', tmpDir);
+          expect(
+            result,
+            "grepE が 'port/agent-runner' パターンを検知できませんでした（B-18 検知機構が壊れています）",
+          ).not.toBe("");
+        } finally {
+          rmSync(tmpDir, { recursive: true });
+        }
       },
     );
 
     it(
       "src/core/command/request-prompt.ts に adapter/claude-code/ import を仕込んだ場合に grep が 0 件以外を返す（sabotage 模擬）",
       () => {
-        // Same regression guard: verify the detection mechanism works.
-        const syntheticMatch =
-          'src/core/command/request-prompt.ts:5:import { ClaudeCodeOneShotQueryClient } from "../../adapter/claude-code/one-shot-query-client.js";';
-        expect(syntheticMatch).not.toBe("");
+        // Same regression guard: verify the detection mechanism works by writing a real
+        // temp file with a forbidden adapter import.
+        const tmpDir = mkdtempSync(path.join(os.tmpdir(), "b18-guard-"));
+        try {
+          writeFileSync(
+            path.join(tmpDir, "request-prompt.ts"),
+            'import { ClaudeCodeOneShotQueryClient } from "../../adapter/claude-code/one-shot-query-client.js";\n',
+          );
+          const result = grepE('"adapter/claude-code/"', tmpDir);
+          expect(
+            result,
+            "grepE が 'adapter/claude-code/' パターンを検知できませんでした（B-18 検知機構が壊れています）",
+          ).not.toBe("");
+        } finally {
+          rmSync(tmpDir, { recursive: true });
+        }
       },
     );
   },
