@@ -107,7 +107,7 @@ composition-root ─→ (all)
 
 ## 6. 強制（歯）と trust placement
 
-- **歯**: `tests/unit/architecture/core-invariants.test.ts` が §4 の B-1〜B-17 と §3 closure（DSM）を **src 全体**で grep / import 検査する。B-18 は `tests/unit/architecture/request-entrance-llm-boundary.test.ts` が入口スコープを grep 検査する。既知 divergence は `arch-allowlist.ts` に grandfather し、allowlist は**削除のみで縮む ratchet**（許可されない edge / seam 違反 / status 直書きを新たに足すと red）。`module-boundary.test.ts` も併存。
+- **歯**: `tests/unit/architecture/core-invariants.test.ts` が §4 の B-1〜B-18 と §3 closure（DSM）を **src 全体**で grep / import 検査する。B-18 は change 由来の `request-entrance-llm-boundary.test.ts` にも詳細検査（pattern 単位・sabotage guard）が併存する。既知 divergence は `arch-allowlist.ts` に grandfather し、allowlist は**削除のみで縮む ratchet**（許可されない edge / seam 違反 / status 直書きを新たに足すと red）。`module-boundary.test.ts` も併存。
 - **trust placement**: CI の required check に入れ、**merge は GitHub gate（branch protection）に委ね、CLI(archive) は merge を持たない**（`finish-respect-branch-protection` → `archive-command`）＋ **`CODEOWNERS` でこの model.md と歯をループ外固定**。
 - 現状の divergence・burn-down 履歴は構造でなく状況断面 → `divergence-status.md` を参照。
 
