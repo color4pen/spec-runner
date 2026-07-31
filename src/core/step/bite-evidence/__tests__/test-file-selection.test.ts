@@ -145,13 +145,14 @@ describe("TC-004: default patterns apply when scopedTestPatterns is unset", () =
 // ---------------------------------------------------------------------------
 
 describe("TC-005: configured patterns fully replace the default", () => {
-  it("TC-005: scopedTestPatterns: [\"**/*.spec.rb\"] selects spec.rb but not *.test.ts", () => {
-    // GIVEN a config with verification.scopedTestPatterns: ["**/*.spec.rb"]
+  it("TC-005: scopedTestPatterns: [\"**/*_spec.rb\"] selects _spec.rb but not *.test.ts", () => {
+    // GIVEN a config with verification.scopedTestPatterns: ["**/*_spec.rb"]
+    // (Ruby convention uses underscore separator: model_spec.rb, not model.spec.rb)
     const config = {
       version: 1 as const,
       agents: {},
       verification: {
-        scopedTestPatterns: ["**/*.spec.rb"],
+        scopedTestPatterns: ["**/*_spec.rb"],
       },
     };
 
@@ -239,6 +240,20 @@ describe("TC-017: literal `.` in a pattern is escaped and does not act as a rege
 
   it("TC-017: **/*.test.* DOES match foo.test.ts (literal dots)", () => {
     expect(matchesGlob("foo.test.ts", "**/*.test.*")).toBe(true);
+  });
+
+  it("TC-017: **/*.test.* does NOT match foo_test_ts (underscore in dot position)", () => {
+    // "." in the pattern compiles to "\." — underscore is not a match.
+    // A file named with underscores throughout has no literal "." where ".test." requires one.
+    expect(matchesGlob("foo_test_ts", "**/*.test.*")).toBe(false);
+  });
+
+  it("TC-017: default patterns do NOT select x_test_helpers.ts (no literal dot after _test)", () => {
+    // **/*_test.* requires "_test" followed immediately by a literal ".".
+    // "x_test_helpers.ts" has "_" after "_test", not ".", so it is a helper — not a test entry.
+    const selected = selectMaterializedTestFiles(["x_test_helpers.ts"], undefined);
+    expect(selected).not.toContain("x_test_helpers.ts");
+    expect(selected).toHaveLength(0);
   });
 });
 

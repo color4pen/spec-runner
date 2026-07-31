@@ -42,9 +42,8 @@ export function isExcludedPath(filePath: string): boolean {
  *   - double-star followed by slash: matches zero or more directory segments
  *   - double-star NOT followed by slash: matches across directory boundaries
  *   - single star: matches within one path segment, does not cross "/"
- *   - literal dot "." in the pattern: matches either "." or "_" in the file path
- *     (covers both JS/TS convention "foo.test.ts" and Go/Ruby convention "foo_test.go" / "foo_spec.rb")
- *   - all other characters: regex-escaped
+ *   - all other characters: regex-escaped (e.g., "." compiles to "\." and matches
+ *     only a literal dot — not underscore or any other character)
  *
  * No brace expansion, "?", or character-class support — out of scope.
  * The compiled RegExp is anchored as "^...$".
@@ -73,17 +72,10 @@ export function matchesGlob(filePath: string, pattern: string): boolean {
         regex += "[^/]*";
         i += 1;
       }
-    } else if (ch === ".") {
-      // Dot in the pattern matches either a literal dot or an underscore.
-      // This lets a single pattern like "**/*.test.*" or "**/*.spec.rb" cover
-      // both dot-separated ("foo.test.ts") and underscore-separated ("foo_test.go",
-      // "foo_spec.rb") test file naming conventions.
-      // "X" (any other character) does not match — TC-017 is preserved.
-      regex += "[._]";
-      i += 1;
     } else {
-      // Regex-escape special regex metacharacters so literal chars match literally
-      regex += ch.replace(/[+?^${}()|[\]\\]/g, "\\$&");
+      // Regex-escape all regex metacharacters (including ".") so literal chars match literally.
+      // "." compiles to "\." and matches only a literal dot — not underscore or any other char.
+      regex += ch.replace(/[.+?^${}()|[\]\\]/g, "\\$&");
       i += 1;
     }
   }
