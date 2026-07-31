@@ -160,6 +160,16 @@ export interface VerificationConfig {
    * enables scoped isolated execution under custom `commands`. Provider-neutral.
    */
   scopedTestCommand?: string;
+  /**
+   * Glob patterns that identify materialized test files for per-file bite execution. Paired with
+   * `scopedTestCommand`. When absent, defaults to `**\/*.test.*`, `**\/*.spec.*`,
+   * `**\/*_test.*`. Provider-neutral.
+   *
+   * Configured patterns fully replace the default — no merging. Polyglot / non-standard-naming
+   * repos should override to match their test naming convention (e.g. `["**\/*_test.go"]` for Go,
+   * `["**\/*_spec.rb"]` for Ruby).
+   */
+  scopedTestPatterns?: string[];
 }
 
 /**
