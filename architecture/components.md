@@ -111,7 +111,7 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 | **SessionClient** | `createSession` / `sendUserMessage` / `pollUntilComplete` / `streamEvents` / `getSessionUsage` …（managed session 操作）| managed-agent |
 | **GitHubClient** | `verifyBranch` / `getRawFile` / `getRefSha` / `createPullRequest` / `getPullRequest`（`mergeStateStatus`/`mergeable`/`headSha`）/ `mergePullRequest({mergeMethod:"squash"})` / `getCheckStatus` → `CheckRollup`（check runs + commit statuses を集約し success/pending/failure/none を返す） | github |
 | **ConfigStore** | `load()` / `save()` / `getAgentId(role: AgentStepName)` / `upsertAgent` | config |
-| **AnthropicClient** / **OneShotQueryClient** | managed agent 登録 / 一発 query | managed-agent / claude-code |
+| **AnthropicClient** | managed agent 登録 | managed-agent |
 
 主要 DTO（port 契約に属する型）:
 ```ts
@@ -175,7 +175,7 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 
 | adapter | 実装する port | 外部依存 |
 |---|---|---|
-| claude-code | AgentRunner / OneShotQueryClient | `@anthropic-ai/claude-agent-sdk` |
+| claude-code | AgentRunner | `@anthropic-ai/claude-agent-sdk` |
 | managed-agent | AgentRunner / SessionClient / AnthropicClient | `@anthropic-ai/sdk` |
 | codex | AgentRunner | `@openai/codex-sdk` |
 | dispatching | AgentRunner（runtime 振り分け）| — |
