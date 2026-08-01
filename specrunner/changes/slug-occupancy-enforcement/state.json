@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "576cab22-45b4-4e5a-a778-60a16b171d61",
   "createdAt": "2026-08-01T03:29:28.451Z",
-  "updatedAt": "2026-08-01T07:16:50.076Z",
+  "updatedAt": "2026-08-01T07:18:01.736Z",
   "request": {
     "title": "slug 占有不変条件の実装 — start guard・状態基準解決・sidecar 所有・修復口",
     "type": "spec-change",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/slug-occupancy-enforcement-576cab22",
-  "error": {
-    "code": "WRITE_SCOPE_VIOLATION",
-    "message": "Step 'code-fixer' on branch 'change/slug-occupancy-enforcement-576cab22' attempted to write outside its declared scope.\nForbidden paths changed:\n  - specrunner/changes/slug-occupancy-enforcement/design.md\n  - specrunner/changes/slug-occupancy-enforcement/tasks.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/slug-occupancy-enforcement-576cab22/.specrunner/local/slug-occupancy-enforcement/write-scope-violation-code-fixer-1785568610059.md",
-    "hint": "境界外への変更を検出したため commit を中止した。違反変更は worktree から復元済み（checkpoint commit への混入防止）。\nViolating paths:\n  - specrunner/changes/slug-occupancy-enforcement/design.md\n  - specrunner/changes/slug-occupancy-enforcement/tasks.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/slug-occupancy-enforcement-576cab22/.specrunner/local/slug-occupancy-enforcement/write-scope-violation-code-fixer-1785568610059.md"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -89,7 +85,8 @@
     "c00d9145131e180e98cc03ed93566d6c9be8e742",
     "6b589d318516de96533053c23b13df52d1e9ad79",
     "f9d0ef5ec57f274fc27e51d90017ad3a351a6a3d",
-    "a887f18524bc27d1582a2904f540adcca050ac2d"
+    "a887f18524bc27d1582a2904f540adcca050ac2d",
+    "1ef7d6ce45033330a4165346998e65afe8bdf687"
   ],
   "reviewerStatuses": [
     {
@@ -122,14 +119,10 @@
       "canonHash": "specrunner/changes/slug-occupancy-enforcement/design.md:sha256:84bb6980f43efd275f038388929ec74e0e566ca08d2a73980d3414b47be5a02d|specrunner/changes/slug-occupancy-enforcement/request.md:sha256:ee0c04b8d5716051834c4bdb98b68263e2b728dfc455a0fe0333cd2954b97747|specrunner/changes/slug-occupancy-enforcement/spec.md:sha256:2c2bee49c99503842ab1642846f806b6f80d71fea2f3f7ad0c3094e096ac3389|specrunner/changes/slug-occupancy-enforcement/tasks.md:sha256:8bb4bc22a9a6c414c3e26aed313a02122ad983962f9af50d14511845ae2c954d|specrunner/changes/slug-occupancy-enforcement/test-cases.md:sha256:7486c0c0b138ba390ddd96f5ef42d8e1a374bf477cf298b8e961386f7945ab4b"
     }
   ],
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "Step 'code-fixer' on branch 'change/slug-occupancy-enforcement-576cab22' attempted to write outside its declared scope.\nForbidden paths changed:\n  - specrunner/changes/slug-occupancy-enforcement/design.md\n  - specrunner/changes/slug-occupancy-enforcement/tasks.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/slug-occupancy-enforcement-576cab22/.specrunner/local/slug-occupancy-enforcement/write-scope-violation-code-fixer-1785568610059.md",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 94,
+    "historyCount": 96,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

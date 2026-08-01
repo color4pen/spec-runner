@@ -16,8 +16,7 @@ import { EventBus } from "../../../../src/core/event/event-bus.js";
 import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { PreflightResult } from "../../../../src/core/preflight.js";
 import type { ParsedRequest } from "../../../../src/parser/types.js";
-import { SpecRunnerError } from "../../../../src/errors.js";
-import { duplicateLiveJobError } from "../../../../src/errors.js";
+import { SpecRunnerError, slugOccupiedError } from "../../../../src/errors.js";
 
 // ---------------------------------------------------------------------------
 // Mock loadReviewerDefinitions to avoid real filesystem access
@@ -143,20 +142,20 @@ function makeCommand(
 // ---------------------------------------------------------------------------
 
 describe("TC-GUARD-01: assertNoDuplicateLiveJob throws → prepare() rejects, bootstrapJob not called", () => {
-  it("prepare() rejects with DUPLICATE_LIVE_JOB", async () => {
+  it("prepare() rejects with SLUG_OCCUPIED", async () => {
     const runtime = makeFakeRuntime(() => {
-      throw duplicateLiveJobError("test-slug", "job-A");
+      throw slugOccupiedError("test-slug", { jobId: "job-A", status: "running" });
     });
     const command = makeCommand(makeFakePreflightResult(), runtime);
 
     await expect(command.testPrepare()).rejects.toSatisfy(
-      (err: unknown) => err instanceof SpecRunnerError && err.code === "DUPLICATE_LIVE_JOB",
+      (err: unknown) => err instanceof SpecRunnerError && err.code === "SLUG_OCCUPIED",
     );
   });
 
   it("bootstrapJob is NOT called when guard fires", async () => {
     const runtime = makeFakeRuntime(() => {
-      throw duplicateLiveJobError("test-slug", "job-A");
+      throw slugOccupiedError("test-slug", { jobId: "job-A", status: "running" });
     });
     const command = makeCommand(makeFakePreflightResult(), runtime);
 
@@ -193,9 +192,9 @@ describe("TC-GUARD-02: assertNoDuplicateLiveJob resolves → prepare() succeeds,
 // ---------------------------------------------------------------------------
 
 describe("TC-GUARD-03: error message content validation", () => {
-  it("error code is DUPLICATE_LIVE_JOB", async () => {
+  it("error code is SLUG_OCCUPIED", async () => {
     const runtime = makeFakeRuntime(() => {
-      throw duplicateLiveJobError("test-slug", "job-A");
+      throw slugOccupiedError("test-slug", { jobId: "job-A", status: "running" });
     });
     const command = makeCommand(makeFakePreflightResult(), runtime);
 
@@ -204,13 +203,13 @@ describe("TC-GUARD-03: error message content validation", () => {
       expect.fail("should have thrown");
     } catch (err) {
       expect(err).toBeInstanceOf(SpecRunnerError);
-      expect((err as SpecRunnerError).code).toBe("DUPLICATE_LIVE_JOB");
+      expect((err as SpecRunnerError).code).toBe("SLUG_OCCUPIED");
     }
   });
 
   it("hint contains prior jobId and 'specrunner job cancel job-A'", async () => {
     const runtime = makeFakeRuntime(() => {
-      throw duplicateLiveJobError("test-slug", "job-A");
+      throw slugOccupiedError("test-slug", { jobId: "job-A", status: "running" });
     });
     const command = makeCommand(makeFakePreflightResult(), runtime);
 
@@ -223,9 +222,9 @@ describe("TC-GUARD-03: error message content validation", () => {
     }
   });
 
-  it("hint contains wait/re-running instruction", async () => {
+  it("hint contains actionable resolution instruction", async () => {
     const runtime = makeFakeRuntime(() => {
-      throw duplicateLiveJobError("test-slug", "job-A");
+      throw slugOccupiedError("test-slug", { jobId: "job-A", status: "running" });
     });
     const command = makeCommand(makeFakePreflightResult(), runtime);
 
@@ -233,7 +232,7 @@ describe("TC-GUARD-03: error message content validation", () => {
       await command.testPrepare();
       expect.fail("should have thrown");
     } catch (err) {
-      expect((err as SpecRunnerError).hint).toMatch(/wait|re-running/);
+      expect((err as SpecRunnerError).hint).toMatch(/resume|cancel|free/);
     }
   });
 });
