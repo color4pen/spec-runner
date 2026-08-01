@@ -129,6 +129,17 @@ describe("TC-LR-02: liveness.json absent → allowed (resolves)", () => {
 
 // ---------------------------------------------------------------------------
 // TC-015: managed runtime no-op – assertNoDuplicateLiveJob never throws
+//
+// TC-053 UPDATED: Under the new fail-closed slug occupancy invariant (R1/R2),
+// the managed runtime must ALSO enforce the occupancy invariant.
+// "Managed no-op" is replaced by: managed runtime rejects a start when the slug
+// has a non-terminal job, just like LocalRuntime.
+//
+// The updated expectation: if slug S has a non-terminal job recorded in state,
+// ManagedRuntime.assertNoDuplicateLiveJob throws SLUG_OCCUPIED (not silently allows).
+//
+// A sidecar-only fixture (liveness.json with live pid) is insufficient for the
+// state-based guard; the fixture must include a non-terminal state.json.
 // ---------------------------------------------------------------------------
 
 function buildMockSessionClient() {
@@ -143,16 +154,41 @@ function buildMockSessionClient() {
   };
 }
 
-describe("TC-015: ManagedRuntime.assertNoDuplicateLiveJob is a no-op (never throws)", () => {
-  it("resolves without throwing even when a liveness.json with live pid exists", async () => {
-    // Write a liveness.json that would cause LocalRuntime to throw
-    const sidecarPath = path.join(tempDir, livenessJsonPath(SLUG));
-    await fs.mkdir(path.dirname(sidecarPath), { recursive: true });
-    await fs.writeFile(
-      sidecarPath,
-      JSON.stringify({ pid: process.pid, jobId: "job-A", worktreePath: "/wt", session: null }),
-      "utf-8",
-    );
+async function writeManagedJobState(
+  repoRoot: string,
+  slug: string,
+  jobId: string,
+  status: string,
+): Promise<void> {
+  const slugDir = path.join(repoRoot, "specrunner", "changes", slug);
+  await fs.mkdir(slugDir, { recursive: true });
+  await fs.writeFile(
+    path.join(slugDir, "state.json"),
+    JSON.stringify({
+      version: 1,
+      jobId,
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: { path: `/specrunner/changes/${slug}/request.md`, title: "Test", type: "bug-fix", slug },
+      repository: { owner: "testowner", name: "testrepo" },
+      session: null,
+      step: "implementer",
+      status,
+      pid: null,
+      branch: null,
+      error: null,
+      history: [],
+      _journal: { historyCount: 0, stepCounts: {} },
+    }),
+    "utf-8",
+  );
+  await fs.writeFile(path.join(slugDir, "events.jsonl"), "", "utf-8");
+}
+
+describe("TC-015 / TC-053: ManagedRuntime.assertNoDuplicateLiveJob enforces occupancy (fail-closed)", () => {
+  it("throws SLUG_OCCUPIED when slug has a non-terminal awaiting-resume job (managed path)", async () => {
+    // TC-053: managed runtime now rejects occupied slugs (state-based, fail-closed)
+    await writeManagedJobState(tempDir, SLUG, "managed-job-A", "awaiting-resume");
 
     const runtime = new ManagedRuntime(
       tempDir,
@@ -163,11 +199,47 @@ describe("TC-015: ManagedRuntime.assertNoDuplicateLiveJob is a no-op (never thro
       "ghp_test",
     );
 
-    // ManagedRuntime ignores liveness sidecar entirely
+    // NEW EXPECTATION: managed runtime now rejects when slug is occupied
+    await expect(runtime.assertNoDuplicateLiveJob(tempDir, SLUG)).rejects.toBeInstanceOf(SpecRunnerError);
+  });
+
+  it("thrown error code is SLUG_OCCUPIED for managed runtime with non-terminal prior job", async () => {
+    await writeManagedJobState(tempDir, SLUG, "managed-job-B", "running");
+
+    const runtime = new ManagedRuntime(
+      tempDir,
+      buildMockSessionClient() as never,
+      buildMockGitHubClient() as never,
+      { owner: "testowner", name: "testrepo" },
+      undefined,
+      "ghp_test",
+    );
+
+    try {
+      await runtime.assertNoDuplicateLiveJob(tempDir, SLUG);
+      expect.fail("should have thrown");
+    } catch (err) {
+      expect((err as SpecRunnerError).code).toMatch(/SLUG_OCCUPIED/);
+    }
+  });
+
+  it("resolves without throwing when sidecar is absent and no non-terminal state exists", async () => {
+    // Absent state → no occupant → allow (this behavior is unchanged)
+    const runtime = new ManagedRuntime(
+      tempDir,
+      buildMockSessionClient() as never,
+      buildMockGitHubClient() as never,
+      { owner: "testowner", name: "testrepo" },
+      undefined,
+      "ghp_test",
+    );
+
     await expect(runtime.assertNoDuplicateLiveJob(tempDir, SLUG)).resolves.toBeUndefined();
   });
 
-  it("resolves without throwing when sidecar is absent", async () => {
+  it("resolves without throwing when slug has only terminal (canceled) jobs", async () => {
+    await writeManagedJobState(tempDir, SLUG, "managed-job-C", "canceled");
+
     const runtime = new ManagedRuntime(
       tempDir,
       buildMockSessionClient() as never,
@@ -177,6 +249,7 @@ describe("TC-015: ManagedRuntime.assertNoDuplicateLiveJob is a no-op (never thro
       "ghp_test",
     );
 
+    // Terminal job → slug is free → allow
     await expect(runtime.assertNoDuplicateLiveJob(tempDir, SLUG)).resolves.toBeUndefined();
   });
 });

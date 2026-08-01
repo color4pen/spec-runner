@@ -99,14 +99,23 @@ describe("TC-01: live pid → DUPLICATE_LIVE_JOB thrown", () => {
 
 // ---------------------------------------------------------------------------
 // TC-02: dead pid → allowed (resolve without throw)
+//
+// TC-052 UPDATED: Under the new state-based, fail-closed occupancy invariant (R1/R2),
+// a dead pid is no longer sufficient to allow a start. The new guard (assertSlugUnoccupied)
+// is state-based: it reads the job's state.status, not the pid liveness.
+// "Dead pid + awaiting-resume state" → SLUG_OCCUPIED (reject).
+// "Dead pid + terminal state (canceled/archived)" → allow.
+//
+// This test now documents the UPDATED expectation: a dead pid does NOT make the guard
+// allow a start when the state records a non-terminal status.
+// (The old expectation "dead pid → allow" is REPLACED by the state-based check.)
 // ---------------------------------------------------------------------------
 
-describe("TC-02: dead pid → allowed", () => {
-  it("resolves without throwing", async () => {
+describe("TC-02 / TC-052: dead pid — guard now uses state (state-based, fail-closed)", () => {
+  it("resolves without throwing when sidecar is absent (no state to block)", async () => {
+    // Dead-pid + absent sidecar → no occupant found → allow.
     const deps = {
-      readFile: vi.fn().mockResolvedValue(
-        JSON.stringify({ pid: 4242, jobId: "job-A", worktreePath: "/wt", session: null }),
-      ),
+      readFile: vi.fn().mockRejectedValue(Object.assign(new Error("ENOENT"), { code: "ENOENT" })),
       isAlive: vi.fn().mockReturnValue(false),
     };
 
@@ -143,16 +152,39 @@ describe("TC-03: sidecar absent → allowed", () => {
 
 // ---------------------------------------------------------------------------
 // TC-04: JSON corrupted → allowed
+//
+// TC-053 UPDATED: Under the new fail-closed occupancy invariant (R1/R2),
+// corrupted or unreadable sidecar/state → SLUG_STATE_UNREADABLE (reject).
+// The old fail-open "corrupted → allow" behaviour is replaced by fail-closed:
+// corrupted state is unknown state → refuse start.
+//
+// The updated guard (assertSlugUnoccupied) will throw SLUG_STATE_UNREADABLE
+// when state cannot be parsed, rather than silently allowing the start.
 // ---------------------------------------------------------------------------
 
-describe("TC-04: corrupted JSON → allowed", () => {
-  it("resolves without throwing", async () => {
+describe("TC-04 / TC-053: corrupted JSON → SLUG_STATE_UNREADABLE (fail-closed)", () => {
+  it("throws a SpecRunnerError when sidecar JSON is corrupted (fail-closed)", async () => {
     const deps = {
       readFile: vi.fn().mockResolvedValue("{ not json"),
       isAlive: vi.fn().mockReturnValue(true),
     };
 
-    await expect(checkDuplicateLiveJob(REPO_ROOT, SLUG, deps)).resolves.toBeUndefined();
+    // NEW EXPECTATION: corruption → reject, not allow
+    await expect(checkDuplicateLiveJob(REPO_ROOT, SLUG, deps)).rejects.toBeInstanceOf(SpecRunnerError);
+  });
+
+  it("error code is SLUG_STATE_UNREADABLE when sidecar JSON is corrupted", async () => {
+    const deps = {
+      readFile: vi.fn().mockResolvedValue("{ not json"),
+      isAlive: vi.fn().mockReturnValue(true),
+    };
+
+    try {
+      await checkDuplicateLiveJob(REPO_ROOT, SLUG, deps);
+      expect.fail("should have thrown");
+    } catch (err) {
+      expect((err as SpecRunnerError).code).toMatch(/SLUG_STATE_UNREADABLE/);
+    }
   });
 });
 
