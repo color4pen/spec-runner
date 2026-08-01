@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "576cab22-45b4-4e5a-a778-60a16b171d61",
   "createdAt": "2026-08-01T03:29:28.451Z",
-  "updatedAt": "2026-08-01T03:29:31.226Z",
+  "updatedAt": "2026-08-01T03:34:54.493Z",
   "request": {
     "title": "slug 占有不変条件の実装 — start guard・状態基準解決・sidecar 所有・修復口",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/slug-occupancy-enforcement-576cab22",
   "error": null,
@@ -62,10 +62,13 @@
     }
   ],
   "synthesizedCommits": [
-    "206bdb05ff6c6f34fc7fcaf2a77b06f9ea96ae54"
+    "206bdb05ff6c6f34fc7fcaf2a77b06f9ea96ae54",
+    "85f838c7db25ff961f21f108526308d38e92ca39"
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
