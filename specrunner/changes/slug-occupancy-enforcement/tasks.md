@@ -142,7 +142,9 @@
       state; `pid`/`session` null) via `claimLivenessSidecar`; if ≥2 non-terminal → refuse with an
       enumeration; if zero non-terminal or already correct → no-op with a clear message.
 - [ ] Wire the repair to the doctor surface (recommended `specrunner doctor repair <slug>`, D7): add
-      the CLI entry + command-registry wiring; keep plain `specrunner doctor` read-only.
+      the CLI entry + command-registry wiring; keep plain `specrunner doctor` read-only. The `slug`
+      argument MUST be validated against `SLUG_REGEX` (consistent with `request-new.ts:24` and
+      `command-registry.ts:417`); reject with a descriptive error if the argument fails validation.
 
 **Acceptance Criteria** (doctor scenario tooth, repair half):
 - Unit tests: unique non-terminal + mismatched sidecar → sidecar re-pointed to the non-terminal job;

@@ -214,6 +214,7 @@ The `pipeline:complete` handler SHALL branch on the payload's `state.status`:
 
 - `awaiting-archive` → `Next: specrunner job archive <slug>`.
 - `awaiting-resume` (halt) → `Next: specrunner job resume <slug>`.
+- any other status → no Next guidance is printed (the else branch is a no-op).
 
 The unconditional archive hint is removed.
 
