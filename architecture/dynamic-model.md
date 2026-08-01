@@ -28,6 +28,8 @@
   - Aggregate への**永続化**は `JobStateStore` 経由のみ（計算と永続化は別レイヤ）。
   - `awaiting-archive → archived` が正常完走の最終遷移（archive が client-closed に確定）。**merge は GitHub 上の外部イベントであり job status の遷移ではない**（CLI は merge を status 遷移として持たない）。`running → awaiting-resume` は異常終了 guard（exit-guard）が倒す checkpoint。
 - **単一 mutator 不変**: `JobState.status` の変更は `transitionJob` 経由のみ。`patch + persist` での status 直書きは禁止。この不変は `model.md` B-9 ＝ `tests/unit/architecture/core-invariants.test.ts` が機械強制する。
+- **slug 占有不変条件**: ある時点で非 terminal（`status ∉ TERMINAL_STATUSES`）の job は **slug につき高々一つ**。slug は作業単位の human-facing ハンドルであり（`domain-model.md` identity）、この不変条件が「slug 指定の変更系操作は一意に決まる」ことを成立させる。強制点は job 生成の入口（start guard）— 非 terminal の先住 job がいる slug では job を作らず、先住の状態を名指しして出口（`resume` / `cancel`）を案内して拒否する（検査して throw＝状態を作らない。capability gate と同じ着手前 preflight 位置）。guard は fail-closed: state が読めない（破損・IO 失敗）場合に「確認できないから通す」を選ばない（ADR-20260801）。
+- **状態基準の slug 解決**: 変更系コマンドの slug→job 解決は**状態**で決める — 非 terminal が一つならそれ／ゼロなら拒否（続行できる attempt が無い）／複数（占有不変条件の破れ）なら暗黙選択せず候補を列挙して停止。時刻順（`updatedAt`）は表示の並び専用であり、**変更対象の選択根拠にしない**（「最新＝唯一生きている」はヒューリスティックであり、不変条件の代用にしない）。参照系（履歴の閲覧）は terminal を含む全 attempt を対象にできる。
 - → `src/state/lifecycle.ts`（VALID_TRANSITIONS / TERMINAL_STATUSES / ACTIVE_STATUSES / transitionJob が正典）／ `src/state/schema.ts`（`JobStatus`。legacy の `success` / `awaiting-merge` は load 時に `awaiting-archive` へ remap）
 
 ### Pipeline 状態機械（steps × transitions）
@@ -46,6 +48,8 @@
 - **再導出**: `worktreePath` は規約 `.git/specrunner-worktrees/<slug>-<jobId8>` から、`pid` / `session` は run ごと新規。
 - **binder**: runtime ＋ `WorktreeManager`（worktree）。
 - **不変条件**: liveness は Aggregate に属さない。失っても（別マシン・CI・掃除）git から論理ジョブを復元でき、束縛は再 establish される。**reconstruction contract**: machine-local state は branch-borne checkpoint から**導出可能**、または**意味的連続性を失わず新規割当可能**でなければならない ―― 実行継続に必要な durable fact を machine-local にのみ持たない。`worktreePath` は規約導出、`pid` / `session` は attach 時の新規割当（導出ではなく連続性を保つ再割当）（ADR-20260715）。
+- **束縛の identity と縮退表現**: 束縛は attempt（jobId）に属する。置き場が `<slug>/` 単位の単一 sidecar であるのは、slug 占有不変条件（同時に生きる attempt は高々一つ）を前提とした**縮退表現**であり、slug が束縛の identity なのではない（ADR-20260801）。
+- **所有と解除**: 束縛の所有者は**非 terminal job のみ**。terminal へ遷移した job・state 上に存在しない job の sidecar は stale であり、後続 attempt が check-and-claim（先住の状態を確認してから上書き）で奪ってよい。同時 claim の競合は後着が決定的に敗北する。**解除（削除）は自 jobId と一致する記録に限る** — 他 job が establish した束縛を巻き添えで壊さない。占有不変条件が破れた断面（非 terminal 複数・sidecar と実体の食い違い）の裁定は機械が推測で行わず、人間の操作（doctor 経路）に委ねる。
 - → 確立・撤去・再導出の手順は behavior（spec / in-loop change）。
 
 ### reattachment — remote branch から quiescent job を materialize する束縛
