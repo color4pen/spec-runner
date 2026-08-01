@@ -94,6 +94,38 @@ function spawnGit(
 }
 
 /**
+ * Get the list of changed (added/modified, not deleted) files by comparing
+ * the current HEAD against baseBranch.
+ *
+ * Uses:
+ *   git diff --name-only --diff-filter=d <baseBranch>...HEAD
+ *
+ * Fail-closed: any git failure throws. Callers (e.g. runLockfileSyncGate)
+ * catch the throw and skip the gate rather than failing silently.
+ *
+ * @returns Array of repo-root-relative POSIX paths (empty lines excluded).
+ * @throws Error when git diff fails (non-0 exit, spawn error, etc.).
+ */
+export async function getChangedFileList(options: {
+  cwd: string;
+  baseBranch?: string;
+  spawn?: SpawnFn;
+}): Promise<string[]> {
+  const { cwd, baseBranch = "main", spawn = nodeSpawn } = options;
+
+  const output = await spawnGit(
+    ["diff", "--name-only", "--diff-filter=d", `${baseBranch}...HEAD`],
+    cwd,
+    spawn,
+  );
+
+  return output
+    .split("\n")
+    .map((f) => f.trim())
+    .filter((f) => f.length > 0);
+}
+
+/**
  * Options for getChangedFilesAndLines.
  */
 export interface ChangedFilesOptions {

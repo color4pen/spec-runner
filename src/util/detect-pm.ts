@@ -107,6 +107,64 @@ export function installCommand(pm: PackageManager): [string, ...string[]] {
   return [pm, "install", "--frozen-lockfile"];
 }
 
+/** Result returned by findLockfile. */
+export interface FindLockfileResult {
+  pm: PackageManager;
+  filename: string;
+  root: string;
+}
+
+/**
+ * Find the first lockfile by walking upward from `cwd`.
+ *
+ * Replicates the phase-1 upward search of `detectPackageManager` but returns
+ * structured data instead of only the pm. Stops when a lockfile is found,
+ * a `.git` entry is encountered, or the filesystem root is reached.
+ *
+ * @param cwd - Starting directory for lockfile search.
+ * @param fsLike - Optional fs abstraction for testing (only needs `existsSync`).
+ * @returns `{ pm, filename, root }` when a lockfile is found, `null` otherwise.
+ */
+export function findLockfile(
+  cwd: string,
+  fsLike?: { existsSync(path: string): boolean },
+): FindLockfileResult | null {
+  const exists = fsLike?.existsSync ?? nodeFs.existsSync;
+
+  let dir = cwd;
+  while (true) {
+    for (const [lockfile, pm] of LOCKFILE_MAP) {
+      if (exists(path.join(dir, lockfile))) {
+        return { pm, filename: lockfile, root: dir };
+      }
+    }
+
+    // Stop at git root
+    if (exists(path.join(dir, ".git"))) {
+      break;
+    }
+
+    // Stop at filesystem root
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      break;
+    }
+
+    dir = parent;
+  }
+
+  return null;
+}
+
+/**
+ * Returns true if `name` (basename) is one of the lockfile names tracked by LOCKFILE_MAP.
+ *
+ * @param name - Basename of the file to check (e.g. "bun.lock", "package-lock.json").
+ */
+export function isLockfileName(name: string): boolean {
+  return LOCKFILE_MAP.some(([lockfile]) => lockfile === name);
+}
+
 /**
  * Returns a factory that builds the run command for the given package manager.
  * All PMs: `<pm> run <script>`.

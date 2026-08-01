@@ -97,7 +97,8 @@ Please:
 2. Read ${changeFolderPath(slug)}/test-cases.md and the existing test files to understand the expected behavior
 3. Implement all tasks in tasks.md — write production code only, do NOT create or modify test files
 4. Update tasks.md: mark completed tasks with [x]
-5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+5. 依存を追加・変更した場合は lockfile（\`bun.lock\` / \`package-lock.json\` 等）を同期してから完了する
+6. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 
 Original request:
 ${requestContent}
@@ -116,7 +117,8 @@ Please:
 2. Read the relevant specs/ files for detailed specifications
 3. Implement all tasks in tasks.md (TDD: write tests first where applicable)
 4. Update tasks.md: mark completed tasks with [x]
-5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+5. 依存を追加・変更した場合は lockfile（\`bun.lock\` / \`package-lock.json\` 等）を同期してから完了する
+6. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 
 Original request:
 ${requestContent}
