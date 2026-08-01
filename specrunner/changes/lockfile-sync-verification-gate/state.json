@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9ed51f1b-4a0c-4c4d-b8d0-112b155b9224",
   "createdAt": "2026-08-01T09:56:26.806Z",
-  "updatedAt": "2026-08-01T10:42:52.492Z",
+  "updatedAt": "2026-08-01T11:03:09.120Z",
   "request": {
     "title": "verification に lockfile 整合 gate を追加 — 依存追加が CI の frozen-lockfile まで素通りする穴を塞ぐ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/lockfile-sync-verification-gate-9ed51f1b",
   "error": null,
@@ -69,17 +69,22 @@
     "b53f30a8a5909a9492079abf06b60c108bc627dd",
     "324ae876a3ea3a84fe9c7f2b9b40c09ebf712d65",
     "2872b617ff3dcdf1d1e1374d62924e5d910fc245",
-    "69addde37d9e50d1ba5f1f451dd1559c9301191f"
+    "69addde37d9e50d1ba5f1f451dd1559c9301191f",
+    "89a45748c8875f631712e0a0dd41b2be2818ae95",
+    "a892528459ab8ab16a821ef314c38c869312fdd0"
   ],
   "_journal": {
-    "historyCount": 22,
+    "historyCount": 34,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "spec-fixer": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
