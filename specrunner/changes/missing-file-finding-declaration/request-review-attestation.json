@@ -1,0 +1,18 @@
+{
+  "requestHash": "sha256:33ac2d8c44802e75944abbf2c3e6fe13de2ef7a26b6a439f21ab01a7e47f9a61",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/step-completion.ts:238-256 — verifyFindingRefs gate + escalation override",
+    "src/core/step/judge-verdict.ts:25-30 — collectVerdictAffectingFindings (critical/high/decision-needed)",
+    "src/core/step/step-completion.ts:300-321 — escalationReason suppressed when verdictOverriddenByFindingRef",
+    "src/kernel/report-result.ts:40-75 — Finding type with origin?: 'scope' only, no fileMissing field",
+    "src/core/step/report-tool.ts:108 — file: string() in findingSchema, no missing-file declaration",
+    "src/core/runtime/local.ts:752-781 — verifyFindingRefs filesystem implementation",
+    "src/core/runtime/managed.ts:381-422 — verifyFindingRefs GitHub API implementation",
+    "src/core/port/runtime-strategy.ts:428-443 — verifyFindingRefs seam contract (returns non-existent subset)",
+    "src/core/runtime/__tests__/managed-verify-finding-refs.test.ts:136-145 — null content → nonExistent fixture",
+    "no test directly covering step-completion nonExistent→escalation+escalationReason-suppression flow",
+    "no unit test for local.ts verifyFindingRefs"
+  ],
+  "sourceRevision": "333ebc7d66388c2e4090ca9ebbe5ed3418b564f1"
+}
