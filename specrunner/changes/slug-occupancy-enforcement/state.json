@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "576cab22-45b4-4e5a-a778-60a16b171d61",
   "createdAt": "2026-08-01T03:29:28.451Z",
-  "updatedAt": "2026-08-01T08:21:50.690Z",
+  "updatedAt": "2026-08-01T08:31:32.964Z",
   "request": {
     "title": "slug 占有不変条件の実装 — start guard・状態基準解決・sidecar 所有・修復口",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/slug-occupancy-enforcement-576cab22",
   "error": null,
   "pipelineId": "standard",
@@ -97,7 +97,9 @@
     "22abd192f64432e3ab84b0e66b380b107caedfc0",
     "10fb8652305845d566457830a2db97bcdde2a1cf",
     "93196bb299b7f587cc8c2347755c5f2051f5a239",
-    "4a52428bcfad93140c03369920f46e988b8a49a2"
+    "4a52428bcfad93140c03369920f46e988b8a49a2",
+    "6b54c5cf5b8a47c096f259f4eb03c6834bc2d2c0",
+    "f18f2e4c038f1ab5bb0ccf14b051f1d6c16bac91"
   ],
   "reviewerStatuses": [
     {
@@ -132,8 +134,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/945",
+    "number": 945,
+    "createdAt": "2026-08-01T08:31:32.063Z"
+  },
   "_journal": {
-    "historyCount": 147,
+    "historyCount": 161,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -143,7 +150,7 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 4,
+      "verification": 5,
       "build-fixer": 2,
       "code-review": 4,
       "code-fixer": 6,
@@ -151,7 +158,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 5,
       "regression-gate": 3,
-      "conformance": 2
+      "conformance": 3,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
