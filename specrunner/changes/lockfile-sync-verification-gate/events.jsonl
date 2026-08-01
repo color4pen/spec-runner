@@ -85,3 +85,10 @@
 {"type":"transition","ts":"2026-08-01T11:37:27.088Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-08-01T11:37:27.088Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-08-01T11:37:27.089Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-08-01T11:41:08.748Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"8c28f056-c5cf-4131-b6b7-207252626182","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/lockfile-sync-verification-gate/regression-gate-result-002.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"evidence":{"checked":8,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-08-01T11:37:27.138Z","endedAt":"2026-08-01T11:41:07.163Z","commitOid":"24503f5fa30d4bad38f3e9c42c3e354f1d0cacc0"}
+{"type":"lineage","step":"regression-gate","ts":"2026-08-01T11:41:07.163Z","outputs":[{"path":"specrunner/changes/lockfile-sync-verification-gate/regression-gate-result-002.md","hash":"sha256:04c0ee1084c3905494f0896922851089003bbec1e38e2eb505ea1996f9978336"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-08-01T11:41:08.752Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-08-01T11:41:08.752Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-08-01T11:41:08.753Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-08-01T11:41:08.754Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
