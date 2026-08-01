@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b8c84bb1-10f5-4857-8dec-0ef8454fc592",
   "createdAt": "2026-08-01T07:23:12.427Z",
-  "updatedAt": "2026-08-01T08:11:28.343Z",
+  "updatedAt": "2026-08-01T08:21:37.666Z",
   "request": {
     "title": "guarded staging のビルド産物封じ込め — 除外パターンと量ガード",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/guarded-staging-artifact-containment-b8c84bb1",
   "error": null,
@@ -67,16 +67,21 @@
     "73b385886472725da6f609e9efec0ed75514c38b",
     "62e3184191e767ba4deb008108ed2e4556994771",
     "82fd476ef456ad09c8223ca059ba8317a75f6dca",
-    "4345b4d9d397f88171d57c4f47d3a687d83dc7eb"
+    "4345b4d9d397f88171d57c4f47d3a687d83dc7eb",
+    "3a3a1302744d15838337e81ced9821260bb61d4a",
+    "d72c43a2217672e42baae25d6e8a9269078ce497"
   ],
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
