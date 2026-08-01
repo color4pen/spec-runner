@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "40db34c3-c363-4d44-8f1c-d063fba00eee",
   "createdAt": "2026-08-01T09:56:21.528Z",
-  "updatedAt": "2026-08-01T10:15:23.895Z",
+  "updatedAt": "2026-08-01T10:18:54.262Z",
   "request": {
     "title": "欠落指摘 finding の構造化宣言 — finding-ref 実在検証との衝突を解消し fixer routing を保つ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/missing-file-finding-declaration-40db34c3",
   "error": null,
@@ -66,14 +66,16 @@
     "66c30ecf5ada40f9035a6a60da4ecd2ce07d8c35",
     "383b290cff7210a0f3461bdfa5bf0069907ab6e1",
     "fbe98e566eaa7fc1676f199cdfac9a7ecce688c5",
-    "6d97f55bd4fa42e591ee6f5bca144977281ba741"
+    "6d97f55bd4fa42e591ee6f5bca144977281ba741",
+    "2d7b641338cf9d9e399119a3247f855c996be614"
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }
