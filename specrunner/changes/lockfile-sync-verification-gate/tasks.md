@@ -60,9 +60,10 @@
 - [ ] `src/core/verification/lockfile-sync.ts` に phase 名定数 `LOCKFILE_SYNC_PHASE = "lockfile-sync"` と orchestrator
   `runLockfileSyncGate(options: { slug: string; cwd: string; baseBranch: string; spawn?: SpawnFn; fsLike?: { existsSync(path: string): boolean } }): Promise<PhaseResult>` を追加する。手順:
   1. `getChangedFileList({ cwd, baseBranch, spawn })`（T-02）で変更ファイル集合を得る。**throw したら** `PhaseResult { phase: LOCKFILE_SYNC_PHASE, status: "skipped", exitCode: null, stdout: "<diff unavailable — lockfile 同期を検証できませんでした（fail はさせません）> …", ... }` を返す（design D6、silent pass にしない）。
-  2. 変更集合から (a) `package.json` で終わるパス集合、(b) `isLockfileName(basename(f))` が真のファイルが 1 つでもあるか（`lockfileInChangeSet`）を求める。
+  2. 変更集合から (a) `path.basename(f) === 'package.json'` が真のパス集合（`endsWith` ではなく `basename` 比較を使うこと。`some-package.json` の偽陽性を防ぐため）、(b) `isLockfileName(basename(f))` が真のファイルが 1 つでもあるか（`lockfileInChangeSet`）を求める。
   3. (a) が空 → `skipped`（package.json 変更なし）を返す。
   4. (a) の各 package.json について、base 版を `git show <baseBranch>:<path>`（差し替え可能 `spawn`、env は `stripSecrets`。失敗時 `null`）で、HEAD 版を `node:fs/promises` の `path.join(cwd, <path>)` 読取（失敗時 `null` → 当該ファイルは対象外）で取得し、`JSON.parse`（try/catch、HEAD parse 不能は「依存変更なし」扱い）した上で `depSectionsDiffer` を評価。差がある package.json パスを `depChangedPackageJsons` に集める。
+     - **ref 形式**: `origin/<baseBranch>` でなく `<baseBranch>` を使うこと。既存 `checkPackageJsonScriptsIntegrity` は `origin/${baseBranch}` を使うが、worktree 環境では fetch 済みの remote ref に依存しない `<baseBranch>` のほうが移植性が高い。同ファイル内の既存参照が `origin/` を使っていても、この gate では `origin/` なしで統一する。
   5. `lockfileTracked` を `findLockfile(cwd, fsLike) !== null || lockfileInChangeSet` で求め、`pm` を `findLockfile(cwd, fsLike)?.pm ?? (await detectPackageManager(cwd)).pm` で求める（design D5）。
   6. `evaluateLockfileSync({ depChangedPackageJsons, lockfileInChangeSet, lockfileTracked, pm })`（T-03）を呼び、`PhaseResult`（`exitCode`: passed=0 / failed=1 / skipped=null、`durationMs` 計測）にマップして返す。
 - [ ] git spawn は runner / changed-lines と同じく `node:child_process.spawn` を直接使い（`checkPackageJsonScriptsIntegrity` と同じ前例）、`spawn` を引数注入してテスト可能にする。

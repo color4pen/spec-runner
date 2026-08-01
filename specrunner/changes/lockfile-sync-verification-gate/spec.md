@@ -50,7 +50,7 @@ repo が lockfile を追跡しない場合（base にも HEAD にも `LOCKFILE_M
 
 **Given** base…HEAD の変更ファイル集合を git から導出できない（managed 等で worktree diff が非導出）
 **When** lockfile-sync gate が実行される
-**Then** status は failed にならず、stdout に検査不能（diff unavailable）である旨が明示される（黙って pass にしない）
+**Then** status は skipped で、stdout に検査不能（diff unavailable）である旨が明示される（failed にも pass にもならない）
 
 ### Requirement: gate は commands 経路 / phases 経路の両方で主検証の後に実行される
 
