@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d4a7f053-5ca8-4d19-8900-827af70e78df",
   "createdAt": "2026-08-01T09:56:17.296Z",
-  "updatedAt": "2026-08-01T11:00:03.293Z",
+  "updatedAt": "2026-08-01T11:12:19.686Z",
   "request": {
     "title": "no-op 検知に finding 対象 path の免除を導入 — 正当な文書修正が sabotage 停止する冤罪を解消",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/noop-detect-finding-target-exemption-d4a7f053",
   "error": null,
@@ -72,10 +72,42 @@
     "e61ca589b1a246dd8a1419af84c3240b973a1233",
     "0080a3c77a93538422070ac52fc16a81e0af9413",
     "789f4142f87a954f3a62b4d769d3f50cb7b2affc",
-    "82f693fe75ced381fd6bfd1acc01eb0ca394da6c"
+    "82f693fe75ced381fd6bfd1acc01eb0ca394da6c",
+    "b4fb50889c1bea170cdcc411615c6822c440d685",
+    "edced3144607e7580c57412366c3c25f9f7016cc"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "b4fb50889c1bea170cdcc411615c6822c440d685",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/noop-detect-finding-target-exemption/design.md:sha256:1ba50fa7f42e7fcc1c0079e68f46f144deebac9353bbd917a2521406a8a9c9da|specrunner/changes/noop-detect-finding-target-exemption/request.md:sha256:bed1385edcfa511c50010f2a632dded19e68dded8c84b2220e391e93eb419869|specrunner/changes/noop-detect-finding-target-exemption/spec.md:sha256:d3f769822a0ef99d038256ccf20ca58b498fa026353433aff71a2a4e54402b7d|specrunner/changes/noop-detect-finding-target-exemption/tasks.md:sha256:3971f8f0237fe8c090819c65ed645ea6f78f4354afcd98d86ff7ac4800e3cf93|specrunner/changes/noop-detect-finding-target-exemption/test-cases.md:sha256:5b3a98f616d8dfd9f10c4525d5d06a8075aa6616368c9c89d1848f3263c16dd6"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -86,7 +118,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
