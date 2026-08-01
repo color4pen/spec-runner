@@ -1,0 +1,18 @@
+{
+  "requestHash": "sha256:2b3242322f3d490dcfa441ea38471e6686e993d54958b8bc104824859fdf440e",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/prompts/implementer-system.ts:11-74 — IMPLEMENTER_BASE に lockfile 同期指示なし",
+    "src/core/step/implementer.ts:57-124 — buildImplementerInitialMessage の両分岐に lockfile 同期指示なし",
+    "src/core/verification/runner.ts:323-343 — runVerification が commands/phase 2 経路に分岐",
+    "src/core/verification/runner.ts:384-409 — commands 経路の changed-line-coverage gate 後段配置",
+    "src/core/verification/runner.ts:585-610 — phase 経路の changed-line-coverage gate 後段配置",
+    "src/core/verification/runner.ts:459-485 — package-json-integrity が phase 経路のみに存在",
+    "src/util/detect-pm.ts:25-31 — LOCKFILE_MAP (5 エントリ) + detectPackageManager seam",
+    "src/core/verification/changed-lines.ts:125 — getChangedFilesAndLines 関数定義",
+    "src/core/port/runtime-strategy.ts:479 — listChangedFiles interface method",
+    "src/config/schema/types.ts:375 — postMergeVerify field 定義",
+    "tests/unit/core/verification/runner-integrity.test.ts — テスト雛形ファイル（実際のパスは src/ 配下でなく tests/unit/ 配下）"
+  ],
+  "sourceRevision": "333ebc7d66388c2e4090ca9ebbe5ed3418b564f1"
+}
