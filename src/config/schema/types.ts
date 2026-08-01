@@ -244,6 +244,22 @@ export interface PipelineConfig {
    * Absent = fast pipeline has no forbidden surfaces (no breach detection).
    */
   fast?: FastPipelineConfig;
+  /**
+   * Glob patterns removed from the GUARDED staging set (implementer / build-fixer /
+   * code-fixer / test-materialize / adr-gen). Matched paths are not staged and remain
+   * in the worktree. Absent = no exclusions (the target repo's .gitignore is the first
+   * line of defense). Uses the shared bounded glob matcher (**\/, *, literal others).
+   * No effect on scoped steps.
+   *
+   * Configured patterns fully replace the default on deep-merge (array replacement,
+   * not concatenation — consistent with forbiddenSurfaces).
+   */
+  stagingExcludePatterns?: string[];
+  /**
+   * Fail-closed guard: max post-exclusion file count a GUARDED step may stage.
+   * Exceeding it halts (escalation) before commit. Default 2000. No effect on scoped steps.
+   */
+  maxStagedFiles?: number;
 }
 
 /**

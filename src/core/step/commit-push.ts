@@ -12,10 +12,17 @@ import {
   pushFailedError,
   commitEffectFailedError,
   writeScopeViolationError,
+  stagingLimitExceededError,
   egressUnknownCommitError,
   SpecRunnerError,
   ERROR_CODES,
 } from "../../errors.js";
+import {
+  resolveStagingExcludePatterns,
+  resolveMaxStagedFiles,
+  applyStagingExclusions,
+  summarizeTopDirectories,
+} from "./staging-containment.js";
 import { stagingModeFor, findWriteScopeViolations, findScopedCommitViolations } from "./write-scope.js";
 import { pipelineManagedPaths } from "./round-git-scope.js";
 
@@ -107,12 +114,17 @@ async function getWorktreeChangedPaths(
   spawnFn: SpawnFn,
   cwd: string,
   worktreeOnly = false,
+  untrackedMode: "normal" | "all" = "normal",
 ): Promise<{ ok: boolean; paths: string[]; untracked: string[]; stagedOnly: string[]; stagedNew: string[] }> {
   try {
+    const statusArgs = ["status", "--porcelain", "-z", "--no-renames"];
+    if (untrackedMode === "all") {
+      statusArgs.push("--untracked-files=all");
+    }
     const { stdout, exitCode } = await runSubprocess(
       spawnFn,
       "git",
-      ["status", "--porcelain", "-z", "--no-renames"],
+      statusArgs,
       { cwd },
     );
     if (exitCode !== 0) {
@@ -571,7 +583,9 @@ export async function commitAndPush(
   } else {
     // ── Guarded synthesis mode ────────────────────────────────────────────────
     // List all changed paths in the worktree (post-reset: reflects actual agent output).
-    const statusResult = await getWorktreeChangedPaths(infra.spawnFn, cwd);
+    // Use "--untracked-files=all" so individual files inside untracked directories are
+    // enumerated individually (D5: required for exclusion + volume guard to see full set).
+    const statusResult = await getWorktreeChangedPaths(infra.spawnFn, cwd, false, "all");
     if (!statusResult.ok) {
       // git status spawn failure or non-zero exit → fail-closed.
       throw commitEffectFailedError(step.name, branch, "stage", "git status failed");
@@ -583,6 +597,8 @@ export async function commitAndPush(
     const declaredWritePaths = writes.filter((r) => r.artifact !== "gitState").map((r) => r.path);
 
     // Write-scope violation check: halt if any protected canon path was modified.
+    // IMPORTANT: violation check runs on the FULL changedPaths (before exclusion).
+    // Exclusion patterns cannot suppress scope enforcement — they only affect what is staged.
     const violations = findWriteScopeViolations(step.name, slug, changedPaths, declaredWritePaths);
     if (violations.length > 0) {
       const quarantinePath = await quarantineViolationEvidence(
@@ -596,13 +612,32 @@ export async function commitAndPush(
       throw writeScopeViolationError(step.name, branch, violations, quarantinePath);
     }
 
-    // Stage all changed paths explicitly via pathspec.
-    // When changedPaths is empty (git status found no changes), skip add entirely:
-    // there is nothing to stage, and the diff check below will confirm no staged changes.
+    // Apply staging exclusion patterns (after scope check — exclusion cannot bypass scope).
+    const excludePatterns = resolveStagingExcludePatterns(deps.config);
+    const stagePaths = applyStagingExclusions(changedPaths, excludePatterns);
+
+    // Volume guard (fail-closed): halt before git add when post-exclusion file count
+    // exceeds the configured limit. Converts a push-time HTTP 400 (giant pack) into a
+    // pre-commit escalation with actionable remediation hints.
+    const limit = resolveMaxStagedFiles(deps.config);
+    if (stagePaths.length > limit) {
+      throw stagingLimitExceededError(
+        step.name,
+        branch,
+        stagePaths.length,
+        limit,
+        summarizeTopDirectories(stagePaths),
+      );
+    }
+
+    // Stage the post-exclusion paths explicitly via pathspec.
+    // When stagePaths is empty (all changed paths were excluded or git status found no changes),
+    // skip add entirely: there is nothing to stage, and the diff check below will confirm
+    // no staged changes.
     // The previous fallback `["add", "-A", "--", "."]` was equivalent to bare `git add -A`
     // (root pathspec = whole repo) and violated F-004 (explicit pathspec required). (Finding 3)
-    if (changedPaths.length > 0) {
-      const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ...changedPaths]);
+    if (stagePaths.length > 0) {
+      const addResult = await gitExecResult(infra.spawnFn, cwd, ["add", "-A", "--", ...stagePaths]);
       if (!addResult.ok || addResult.exitCode !== 0) {
         throw commitEffectFailedError(step.name, branch, "stage", `exit code ${addResult.exitCode}`);
       }
@@ -619,15 +654,15 @@ export async function commitAndPush(
     }
 
     // Commit with explicit pathspec — never fall back to a whole-index commit.
-    // changedPaths is non-empty here: an empty enumeration skips the add above and the
+    // stagePaths is non-empty here: an empty enumeration skips the add above and the
     // whole-index diff check returns early. If this invariant is ever broken, fail closed
     // rather than committing an index we did not enumerate (a bare commit would sweep in
     // pre-staged unauthorized entries).
     const commitMessage = `${step.name}: ${slug}`;
-    if (changedPaths.length === 0) {
+    if (stagePaths.length === 0) {
       throw commitEffectFailedError(step.name, branch, "commit", "staged changes present but enumeration is empty");
     }
-    const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage, "--", ...changedPaths]);
+    const commitResult = await gitExecResult(infra.spawnFn, cwd, ["commit", "-m", commitMessage, "--", ...stagePaths]);
     if (!commitResult.ok || commitResult.exitCode !== 0) {
       throw commitEffectFailedError(step.name, branch, "commit", `exit code ${commitResult.exitCode}`);
     }
