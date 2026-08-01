@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b8c84bb1-10f5-4857-8dec-0ef8454fc592",
   "createdAt": "2026-08-01T07:23:12.427Z",
-  "updatedAt": "2026-08-01T08:38:50.013Z",
+  "updatedAt": "2026-08-01T08:44:51.668Z",
   "request": {
     "title": "guarded staging のビルド産物封じ込め — 除外パターンと量ガード",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/guarded-staging-artifact-containment-b8c84bb1",
   "error": null,
@@ -71,7 +71,9 @@
     "3a3a1302744d15838337e81ced9821260bb61d4a",
     "d72c43a2217672e42baae25d6e8a9269078ce497",
     "1e87e75b109293cbf00653b0c8fef5dd593829f8",
-    "6b412aa5c2d061515271b5f1ad24bf1061f7a88a"
+    "6b412aa5c2d061515271b5f1ad24bf1061f7a88a",
+    "954d6fb5cd220b4f978f518fba673cf993ac14bb",
+    "acf2f0efb4ef88e23e767cdae3ce64d8dfc8eff6"
   ],
   "reviewerStatuses": [
     {
@@ -104,7 +106,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -113,12 +115,13 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
