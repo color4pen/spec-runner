@@ -1,0 +1,23 @@
+{
+  "requestHash": "sha256:ee0c04b8d5716051834c4bdb98b68263e2b728dfc455a0fe0333cd2954b97747",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/runtime/duplicate-slug-guard.ts:40-84 — checkDuplicateLiveJob: pid-only check, fail-open for absent/corrupted/dead-pid sidecar",
+    "src/core/resume/resolve-job.ts:18-35 — resolveJobStateBySlug: includeArchived:true, returns updatedAt-latest with no status filter",
+    "src/core/cancel/runner.ts:437-446 — --purge: fs.rm on localSidecarDir (no jobId check)",
+    "src/core/cancel/runner.ts:423-431 — managed marker fs.unlink unconditional (no jobId check)",
+    "src/core/runtime/local.ts:1423 (comment at 1416) — writeLivenessSidecar: fs.writeFile unconditional overwrite, no read-before-write",
+    "src/store/local-job-index.ts:42-89 — listLocalSidecars: slug-keyed directory scan, 1 sidecar entry per slug",
+    "src/core/job-access/load-by-job-id.ts:79-84 — JOB_NOT_FOUND throw for unknown jobId, no fallback",
+    "src/cli/progress.ts:162-166 — onPipelineComplete: unconditional 'Next: specrunner job archive <slug>' output",
+    "src/core/pipeline/pipeline.ts:145-148 — pipeline:complete emitted regardless of halt (awaiting-resume) vs normal completion",
+    "src/core/inbox/run-inbox.ts:339-376 — postRejectComment seam at line 350, startJob calls runRunCore at line 344",
+    "src/core/doctor/checks/index.ts — storage category exists with localStateWritableCheck/legacyJobsDirCheck/orphanSidecarsCheck/orphanWorktreesCheck/journalIntegrityCheck",
+    "src/state/lifecycle.ts:58 — TERMINAL_STATUSES = {archived, canceled}",
+    "src/state/lifecycle.ts:60 — ACTIVE_STATUSES = {running, awaiting-resume}",
+    "src/errors.ts:101 — DUPLICATE_LIVE_JOB in ERROR_CODES, duplicateLiveJobError factory exists at line 364",
+    "architecture/adr/2026-08-01-slug-occupancy-and-attempt-identity.md — ADR exists, D1-D4 decisions match request requirements",
+    "architecture/divergence-status.md — 2026-08-01 divergence entry matches request background (start guard / resolve-job / cancel sidecar)"
+  ],
+  "sourceRevision": "23001cbd1a80c82c6a6b686b2ad0df7ed4616c3c"
+}

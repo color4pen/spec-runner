@@ -1,35 +1,50 @@
 import { JobStateStore } from "../../store/job-state-store.js";
 import { getJobSlug } from "../../state/job-slug.js";
+import { TERMINAL_STATUSES } from "../../state/lifecycle.js";
+import { slugOccupancyAmbiguousError } from "../../errors.js";
 import type { JobState } from "../../state/schema.js";
 
 /**
- * Resolve a job by slug, returning the most recent matching JobState.
+ * Resolve a job by slug using state-based (not time-based) selection.
  *
- * Unlike resolveBySlug() in finish/resolve-target.ts, this function does NOT
- * require pullRequest or branch to be present. It is used by the resume command
- * which operates on jobs that may be pre-PR (awaiting-resume before pr-create).
+ * Scans active (non-archived) job states and filters by slug. Classifies by
+ * TERMINAL_STATUSES:
+ *   - exactly 1 non-terminal → return it
+ *   - 0 non-terminal → null (slug is free, no live job to resume)
+ *   - ≥2 non-terminal → throw SLUG_OCCUPANCY_AMBIGUOUS (breach)
  *
- * Returns null if no matching job is found.
- * When multiple jobs match, returns the one with the latest updatedAt.
+ * Terminal jobs are not returned (callers use this to find a resume target).
  *
- * Design D1: resolveBySlug() from finish/resolve-target.ts is NOT used here
- * because it requires PR info via buildResolvedTarget().
+ * Design D5: updatedAt is NOT used for selection — state status is the source of
+ * truth. Dead-pid running jobs are NOT auto-promoted: the caller is responsible for
+ * stale-running recovery.
  */
 export async function resolveJobStateBySlug(slug: string, repoRoot: string): Promise<JobState | null> {
-  const allStates = await JobStateStore.list(repoRoot, { includeArchived: true });
+  const allStates = await JobStateStore.list(repoRoot, { includeArchived: false });
   const matching = allStates.filter((s) => getJobSlug(s) === slug);
 
   if (matching.length === 0) {
     return null;
   }
 
-  if (matching.length === 1) {
-    return matching[0]!;
+  // Classify by terminal status
+  const nonTerminal = matching.filter((s) => !TERMINAL_STATUSES.has(s.status));
+  // terminal = matching but not non-terminal (for completeness, though not used here)
+
+  if (nonTerminal.length === 0) {
+    // All matching jobs are terminal → no live job to resume
+    return null;
   }
 
-  // Multiple matches: return the most recently updated one
-  matching.sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-  );
-  return matching[0]!;
+  if (nonTerminal.length === 1) {
+    return nonTerminal[0]!;
+  }
+
+  // ≥2 non-terminal: invariant breach — throw with enumeration
+  const candidates = nonTerminal.map((s) => ({
+    jobId: s.jobId,
+    status: s.status,
+    updatedAt: s.updatedAt,
+  }));
+  throw slugOccupancyAmbiguousError(slug, candidates);
 }

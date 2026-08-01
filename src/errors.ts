@@ -26,7 +26,8 @@ const EXIT_CODE_MAP: Record<string, ExitCode> = {
   WORKTREE_GUARD: EXIT_CODE.ARG_ERROR,
   SYMLINK_REJECTED: EXIT_CODE.ARG_ERROR,
   DESIGN_LAYER_CHECK_FAILED: EXIT_CODE.ARG_ERROR,
-  DUPLICATE_LIVE_JOB: EXIT_CODE.ARG_ERROR,
+  SLUG_OCCUPIED: EXIT_CODE.ARG_ERROR,
+  SLUG_STATE_UNREADABLE: EXIT_CODE.ARG_ERROR,
 };
 
 /**
@@ -46,6 +47,30 @@ export class SpecRunnerError extends Error {
     super(message);
     this.name = "SpecRunnerError";
     this.exitCode = exitCode ?? EXIT_CODE_MAP[code] ?? EXIT_CODE.GENERAL_ERROR;
+  }
+}
+
+/**
+ * SlugOccupiedError: structured error that exposes the prior occupant's
+ * jobId and status as typed fields so callers (inbox, tests) can dedup
+ * without parsing the message string.
+ */
+export class SlugOccupiedError extends SpecRunnerError {
+  public readonly priorJobId: string;
+  public readonly priorStatus: string;
+
+  constructor(
+    code: string,
+    hint: string,
+    message: string,
+    priorJobId: string,
+    priorStatus: string,
+    exitCode?: ExitCode,
+  ) {
+    super(code, hint, message, exitCode);
+    this.name = "SlugOccupiedError";
+    this.priorJobId = priorJobId;
+    this.priorStatus = priorStatus;
   }
 }
 
@@ -98,7 +123,6 @@ export const ERROR_CODES = {
   WORKTREE_DIRTY: "WORKTREE_DIRTY",
   ENVIRONMENT_NOT_SET: "ENVIRONMENT_NOT_SET",
   DESIGN_LAYER_CHECK_FAILED: "DESIGN_LAYER_CHECK_FAILED",
-  DUPLICATE_LIVE_JOB: "DUPLICATE_LIVE_JOB",
   JOURNAL_CORRUPTED: "JOURNAL_CORRUPTED",
   COMMIT_AND_PUSH_FAILED: "COMMIT_AND_PUSH_FAILED",
   CHECKPOINT_NOT_FOUND: "CHECKPOINT_NOT_FOUND",
@@ -109,6 +133,9 @@ export const ERROR_CODES = {
   WRITE_SCOPE_VIOLATION: "WRITE_SCOPE_VIOLATION",
   EGRESS_UNKNOWN_COMMIT: "EGRESS_UNKNOWN_COMMIT",
   ROUND_HEAD_ADVANCED: "ROUND_HEAD_ADVANCED",
+  SLUG_OCCUPIED: "SLUG_OCCUPIED",
+  SLUG_STATE_UNREADABLE: "SLUG_STATE_UNREADABLE",
+  SLUG_OCCUPANCY_AMBIGUOUS: "SLUG_OCCUPANCY_AMBIGUOUS",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -361,21 +388,6 @@ export function authoritySpecEditViolationError(
   );
 }
 
-export function duplicateLiveJobError(slug: string, priorJobId: string | null): SpecRunnerError {
-  if (priorJobId !== null) {
-    return new SpecRunnerError(
-      ERROR_CODES.DUPLICATE_LIVE_JOB,
-      `A live job (${priorJobId}) is already running for slug '${slug}'. Cancel it with 'specrunner job cancel ${priorJobId}', or wait for it to finish before re-running.`,
-      `Refusing to start a duplicate run: slug '${slug}' already has a live job (${priorJobId}).`,
-    );
-  }
-  return new SpecRunnerError(
-    ERROR_CODES.DUPLICATE_LIVE_JOB,
-    `A live job is already running for slug '${slug}'. Cancel it with 'specrunner job cancel <jobId>' (or run specrunner job ls to list all jobs), or wait for it to finish before re-running.`,
-    `Refusing to start a duplicate run: slug '${slug}' already has a live job.`,
-  );
-}
-
 export function journalCorruptedError(eventsPath: string, detail: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.JOURNAL_CORRUPTED,
@@ -451,6 +463,62 @@ export function egressUnknownCommitError(oid: string, branch: string): SpecRunne
     ERROR_CODES.EGRESS_UNKNOWN_COMMIT,
     "A commit not created by the pipeline was found in the push range. Investigate and resolve before retrying.",
     `Egress backstop: unknown commit ${oid} in publish range for branch '${branch}'.`,
+  );
+}
+
+/** Minimal shape of an occupant ref used in slugOccupiedError. */
+interface OccupantLike {
+  jobId: string;
+  status: string;
+  updatedAt?: string;
+  pid?: number | null;
+  worktreePath?: string | null;
+}
+
+/**
+ * Factory for SLUG_OCCUPIED: a prior non-terminal job is occupying the slug.
+ * Returns a SlugOccupiedError with structured priorJobId / priorStatus fields.
+ */
+export function slugOccupiedError(slug: string, prior: OccupantLike): SlugOccupiedError {
+  const { jobId, status } = prior;
+  const hint = status === "awaiting-archive"
+    ? `Run 'specrunner job archive ${slug}' or 'specrunner job cancel ${jobId}' to free the slug.`
+    : `Run 'specrunner job resume ${slug}' or 'specrunner job cancel ${jobId}' to free the slug.`;
+  return new SlugOccupiedError(
+    ERROR_CODES.SLUG_OCCUPIED,
+    hint,
+    `Slug '${slug}' is occupied by a non-terminal job (${jobId}, status: ${status}).`,
+    jobId,
+    status,
+  );
+}
+
+/**
+ * Factory for SLUG_STATE_UNREADABLE: state cannot be parsed/composed — fail closed.
+ */
+export function slugStateUnreadableError(slug: string, reason: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.SLUG_STATE_UNREADABLE,
+    `Inspect the state file under specrunner/changes/${slug}/ and repair or delete it.`,
+    `Slug '${slug}' state is unreadable: ${reason}`,
+  );
+}
+
+/**
+ * Factory for SLUG_OCCUPANCY_AMBIGUOUS: multiple non-terminal jobs for the same slug.
+ * Enumerates candidates and points to specrunner doctor for resolution.
+ */
+export function slugOccupancyAmbiguousError(
+  slug: string,
+  candidates: Array<{ jobId: string; status: string; updatedAt?: string }>,
+): SpecRunnerError {
+  const list = candidates
+    .map((c) => `  ${c.jobId} (status: ${c.status}${c.updatedAt ? ", updatedAt: " + c.updatedAt : ""})`)
+    .join("\n");
+  return new SpecRunnerError(
+    ERROR_CODES.SLUG_OCCUPANCY_AMBIGUOUS,
+    `Run 'specrunner doctor' to inspect the breach and cancel the unwanted job(s) manually.`,
+    `Slug '${slug}' has multiple non-terminal jobs:\n${list}\nRun specrunner doctor to diagnose.`,
   );
 }
 

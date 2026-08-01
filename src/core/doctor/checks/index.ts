@@ -48,6 +48,7 @@ import { legacyJobsDirCheck } from "./storage/legacy-jobs-dir.js";
 import { orphanSidecarsCheck } from "./storage/orphan-sidecars.js";
 import { orphanWorktreesCheck } from "./storage/orphan-worktrees.js";
 import { journalIntegrityCheck } from "./storage/journal-integrity.js";
+import { createSlugOccupancyCheck } from "./storage/slug-occupancy.js";
 
 export const commonChecks: DoctorCheck[] = [
   // Runtime (4 — gh CLI check removed: no longer required)
@@ -73,6 +74,7 @@ export const commonChecks: DoctorCheck[] = [
   orphanSidecarsCheck,
   orphanWorktreesCheck,
   journalIntegrityCheck,
+  createSlugOccupancyCheck(),
 ];
 
 export const managedChecks: DoctorCheck[] = [
@@ -124,4 +126,5 @@ export {
   orphanSidecarsCheck,
   orphanWorktreesCheck,
   journalIntegrityCheck,
+  createSlugOccupancyCheck,
 };

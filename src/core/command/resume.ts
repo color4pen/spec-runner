@@ -104,6 +104,22 @@ export class ResumeCommand extends CommandRunner {
     try {
       const resolved = await resolveJobStateBySlug(this.slug, cwd);
       if (resolved === null) {
+        // resolveJobStateBySlug returns null for terminal-only slugs.
+        // Before falling back to resolveId, check if this slug has any terminal jobs so we can
+        // show the appropriate "cannot transition to 'running'" message rather than "not found".
+        const allStates = await JobStateStore.list(cwd, { includeArchived: false });
+        const terminalForSlug = allStates.filter(
+          (s) => getJobSlug(s) === this.slug,
+        );
+        if (terminalForSlug.length > 0) {
+          // Pick the most recently updated terminal job and show the transition error
+          const terminalState = terminalForSlug.sort(
+            (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+          )[0]!;
+          logError(`Job '${this.slug}' has status '${terminalState.status}', cannot transition to 'running'.`);
+          throw new PrepareError(1, `Cannot resume from status '${terminalState.status}'`);
+        }
+
         // Slug not found — try resolving as short Job ID prefix
         let fullId: string;
         try {

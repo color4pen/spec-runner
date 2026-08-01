@@ -909,9 +909,29 @@ export const COMMANDS: Record<string, CommandEntry> = {
     flags: {
       json: { type: "boolean" },
     },
+    positional: { name: "subcommand", required: false },
     usage: DOCTOR_USAGE,
     // requiresRepo: false (default) — doctor is always runnable, even outside a repo
     handler: async (parsed, ctx) => {
+      // Support `specrunner doctor repair <slug>` as an inline subcommand
+      if (parsed.positionals[0] === "repair") {
+        const slug = parsed.positionals[1];
+        if (!slug) {
+          stderrWrite("Error: specrunner doctor repair requires a <slug> argument\n");
+          stderrWrite("Usage: specrunner doctor repair <slug>\n");
+          process.exit(2);
+        }
+        const repoRoot = ctx?.repoRoot ?? process.cwd();
+        try {
+          const { repairSlugOccupancySidecar } = await import("../core/occupancy/repair.js");
+          const result = await repairSlugOccupancySidecar(repoRoot, slug);
+          stderrWrite(result.message + "\n");
+          process.exit(0);
+        } catch (err: unknown) {
+          stderrWrite(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
+          process.exit(EXIT_CODE.GENERAL_ERROR);
+        }
+      }
       try {
         process.exit(await runDoctor({
           json: !!parsed.flags["json"],

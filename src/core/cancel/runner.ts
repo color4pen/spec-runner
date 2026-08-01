@@ -15,7 +15,8 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { loadStateByJobId } from "../job-access/load-by-job-id.js";
-import { transitionJob } from "../../state/lifecycle.js";
+import { transitionJob, TERMINAL_STATUSES } from "../../state/lifecycle.js";
+import type { JobStatus } from "../../state/schema.js";
 import { stdoutWrite } from "../../logger/stdout.js";
 import { ERROR_CODES, SpecRunnerError } from "../../errors.js";
 import { gracefulKill } from "./pid-kill.js";
@@ -25,6 +26,7 @@ import {
   livenessJsonPath,
   managedMarkerPath,
   localSidecarDir,
+  localSlugStateJsonPath,
   requestMdPath,
   draftPath,
   canceledChangeFolderPath,
@@ -416,15 +418,71 @@ export async function cancelSingleJob(opts: {
   await cleanupJobResources(state, deps, warnings);
 
   // ---------------------------------------------------------------------------
-  // Managed marker unlink — after canceled-state persist, best-effort
-  // (idempotent canceled path also runs this; local runtime marker is no-op)
+  // Liveness sidecar deletion — jobId-scoped, best-effort.
+  // Only delete if sidecar.jobId matches the job being canceled (TC-027/TC-028).
   // ---------------------------------------------------------------------------
 
   const slugForMarker = getJobSlug(state);
   if (slugForMarker) {
+    const sidecarAbsPath = path.join(deps.repoRoot, livenessJsonPath(slugForMarker));
+    try {
+      const sidecarRaw = await fs.readFile(sidecarAbsPath, "utf-8");
+      const sidecarObj = JSON.parse(sidecarRaw) as Record<string, unknown>;
+      if (sidecarObj["jobId"] === state.jobId) {
+        await fs.unlink(sidecarAbsPath);
+      }
+      // If jobId differs → foreign sidecar, leave intact
+    } catch {
+      // Absent or unreadable → nothing to do (best-effort)
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Managed-runtime: persist canceled state to .specrunner/local/<slug>/state.json
+  // before unlinking the marker (D6 order preserved).
+  //
+  // cancelSingleJob (non-purge) deletes marker.json but leaves state.json intact
+  // with the pre-cancel status (running / awaiting-resume). scanSlugOccupancy
+  // location 3 reads that state.json directly, so it would see a non-terminal
+  // occupant and block new starts even though job ls shows nothing (marker absent).
+  // Overwriting state.json with the canceled state before marker unlink ensures
+  // the guard sees "canceled" (terminal) at location 3. Best-effort: failure is
+  // appended to warnings so cancel itself is not aborted.
+  // ---------------------------------------------------------------------------
+
+  if (slugForMarker) {
+    const localStateAbsPath = path.join(deps.repoRoot, localSlugStateJsonPath(slugForMarker));
+    try {
+      const raw = await fs.readFile(localStateAbsPath, "utf-8");
+      const obj = JSON.parse(raw) as Record<string, unknown>;
+      if (typeof obj["jobId"] === "string" && obj["jobId"] === state.jobId) {
+        // This is our job's managed state.json — overwrite with the canceled state.
+        const managedStore = new JobStateStore(jobId, deps.repoRoot, {
+          changeDir: path.join(deps.repoRoot, localSidecarDir(slugForMarker)),
+        });
+        await managedStore.persist(canceledState);
+      }
+      // If jobId differs → foreign state, leave intact
+    } catch {
+      // ENOENT: local runtime job (no managed state.json) — fine.
+      // Other I/O or parse errors: best-effort.
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Managed marker unlink — jobId-scoped, after canceled-state persist, best-effort
+  // (TC-029/TC-032: only unlink if marker.jobId === state.jobId)
+  // ---------------------------------------------------------------------------
+
+  if (slugForMarker) {
     const markerAbsPath = path.join(deps.repoRoot, managedMarkerPath(slugForMarker));
     try {
-      await fs.unlink(markerAbsPath);
+      const markerRaw = await fs.readFile(markerAbsPath, "utf-8");
+      const markerObj = JSON.parse(markerRaw) as Record<string, unknown>;
+      if (markerObj["jobId"] === state.jobId) {
+        await fs.unlink(markerAbsPath);
+      }
+      // If jobId differs → foreign marker, leave intact
     } catch {
       // Best-effort — ENOENT is fine (local runtime has no marker)
     }
@@ -435,27 +493,65 @@ export async function cancelSingleJob(opts: {
   // ---------------------------------------------------------------------------
 
   if (purge) {
-    // Purge .specrunner/local/<slug>/ (machine-local sidecar — liveness / marker / managed state)
+    // Purge .specrunner/local/<slug>/ only if the sidecar belongs to this job (TC-030/TC-031).
+    // If the sidecar belongs to a different non-terminal job, leave the directory intact.
     if (slugForMarker) {
+      const sidecarAbsPath = path.join(deps.repoRoot, livenessJsonPath(slugForMarker));
+      let skipPurge = false;
       try {
-        await fs.rm(path.join(deps.repoRoot, localSidecarDir(slugForMarker)), {
-          recursive: true,
-          force: true,
-        });
+        const sidecarRaw = await fs.readFile(sidecarAbsPath, "utf-8");
+        const sidecarObj = JSON.parse(sidecarRaw) as Record<string, unknown>;
+        const foreignJobId = typeof sidecarObj["jobId"] === "string" ? sidecarObj["jobId"] : undefined;
+        // If sidecar belongs to a different job, check if that job is terminal
+        if (foreignJobId !== undefined && foreignJobId !== state.jobId) {
+          // Look up the foreign job's status to determine if it's still live
+          let foreignIsTerminal = false;
+          try {
+            const allStates = await JobStateStore.list(deps.repoRoot);
+            const foreignState = allStates.find((s) => s.jobId === foreignJobId);
+            foreignIsTerminal = foreignState === undefined || TERMINAL_STATUSES.has(foreignState.status as JobStatus);
+          } catch {
+            // Cannot determine foreign job status — err on the side of caution
+            foreignIsTerminal = false;
+          }
+          if (foreignIsTerminal) {
+            // Stale sidecar from a terminal foreign job → safe to purge
+          } else {
+            // Live non-terminal foreign job owns the sidecar → skip purge and warn
+            skipPurge = true;
+            warnings.push(
+              `Warning: --purge skipped for slug '${slugForMarker}': sidecar belongs to a different non-terminal job (${foreignJobId}). Cancel that job first.`,
+            );
+          }
+        }
       } catch {
-        // Best-effort — directory may not exist
+        // Absent or unreadable → safe to purge (no foreign occupant)
       }
+
+      if (!skipPurge) {
+        try {
+          await fs.rm(path.join(deps.repoRoot, localSidecarDir(slugForMarker)), {
+            recursive: true,
+            force: true,
+          });
+        } catch {
+          // Best-effort — directory may not exist
+        }
+      }
+
       // Purge the canonical change folder too. Evacuation was skipped for --purge, so the
       // no-worktree canonical changes/<slug>/ would otherwise remain. (Worktree-mode source
       // is removed with the worktree by cleanupJobResources above.) This makes --purge
       // leave no trace (D1).
-      try {
-        await fs.rm(path.join(deps.repoRoot, changeFolderPath(slugForMarker)), {
-          recursive: true,
-          force: true,
-        });
-      } catch {
-        // Best-effort — directory may not exist
+      if (!skipPurge) {
+        try {
+          await fs.rm(path.join(deps.repoRoot, changeFolderPath(slugForMarker)), {
+            recursive: true,
+            force: true,
+          });
+        } catch {
+          // Best-effort — directory may not exist
+        }
       }
     }
   }
@@ -519,6 +615,31 @@ export async function cancelAllTerminated(opts: {
       warnings.push(`Skipped ${state.jobId}: no slug to resolve sidecar path`);
       continue;
     }
+
+    // Transition non-terminal states (failed/terminated) to canceled so the
+    // state-based occupancy guard does not block new starts after bulk cleanup.
+    // canceled is already terminal — no transition needed.
+    if (!TERMINAL_STATUSES.has(state.status as JobStatus)) {
+      try {
+        const { state: canceledState } = transitionJob(state, "canceled", {
+          trigger: "bulk-cleanup",
+          reason: "Bulk canceled via job cancel --all-terminated",
+          patch: { pid: null },
+        });
+        // Write canceled state to main checkout location so the guard sees it
+        // as terminal. deduplicateByJobId picks the newest updatedAt, so this
+        // canceled entry wins over any stale failed/terminated file in a worktree.
+        const store = new JobStateStore(state.jobId, repoRoot, {
+          slug,
+          stateRoot: repoRoot,
+        });
+        await store.persist(canceledState);
+      } catch {
+        // Best-effort — persist failure leaves state as failed/terminated, which
+        // the sidecar removal below addresses for managed-runtime jobs.
+      }
+    }
+
     try {
       await fs.rm(path.join(repoRoot, localSidecarDir(slug)), { recursive: true, force: true });
       removed++;

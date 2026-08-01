@@ -48,7 +48,10 @@ import type { OutputContract, OutputCheckResult } from "../port/output-contract.
 import { parseIncompleteTaskLabels, evaluateContentFormatChecks } from "../step/output-verify.js";
 import { evaluateTestCoverage } from "../verification/test-coverage.js";
 import { SpecRunnerError, ERROR_CODES, worktreeDirtyError } from "../../errors.js";
-import { checkDuplicateLiveJob } from "./duplicate-slug-guard.js";
+import { assertSlugUnoccupied } from "../occupancy/guard.js";
+import { isProcessAlive } from "../resume/safety.js";
+import { claimLivenessSidecar } from "../occupancy/claim.js";
+import type { SidecarRecord } from "../occupancy/claim.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { markSignalHandlerFired } from "../lifecycle/signal-state.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
@@ -904,11 +907,13 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
-   * Reject a second run while a live job already holds this slug.
-   * Delegates to checkDuplicateLiveJob using real fs and isProcessAlive.
+   * Reject a second run while a non-terminal job already holds this slug.
+   * State-based, fail-closed: delegates to assertSlugUnoccupied (D1, D4).
    */
   async assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void> {
-    await checkDuplicateLiveJob(repoRoot, slug);
+    await assertSlugUnoccupied(repoRoot, slug, {
+      isAlive: (pid) => isProcessAlive(pid ?? 0),
+    });
   }
 
   /**
@@ -1418,19 +1423,47 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    * Contains: { pid, session: null, worktreePath, jobId }
    * worktreePath may be null for no-worktree mode.
    * pid defaults to process.pid; pass null for attach (not yet running).
-   * Best-effort: silently swallows errors to avoid blocking workspace setup.
+   *
+   * Uses check-and-claim (D3): an existing sidecar is checked before overwriting.
+   * - If the existing sidecar belongs to a non-terminal foreign job, throws SLUG_OCCUPIED
+   *   (second-line defense; guard normally prevents reaching this point).
+   * - I/O failures are swallowed (best-effort).
    */
   async writeLivenessSidecar(slug: string, jobId: string, worktreePath: string | null, pid: number | null = process.pid): Promise<void> {
+    const record: SidecarRecord = { pid, session: null, worktreePath, jobId };
     try {
-      const sidecarAbsPath = path.join(this.cwd, livenessJsonPath(slug));
-      await fs.mkdir(path.dirname(sidecarAbsPath), { recursive: true });
-      await fs.writeFile(
-        sidecarAbsPath,
-        JSON.stringify({ pid, session: null, worktreePath, jobId }, null, 2),
-        "utf-8",
-      );
-    } catch {
-      // Best-effort — sidecar absence is handled gracefully in resume/cancel
+      await claimLivenessSidecar(this.cwd, slug, record, {
+        readSidecar: async (repoRoot: string, s: string) => {
+          const sidecarPath = path.join(repoRoot, livenessJsonPath(s));
+          try {
+            const raw = await fs.readFile(sidecarPath, "utf-8");
+            const obj = JSON.parse(raw) as Record<string, unknown>;
+            return typeof obj["jobId"] === "string" ? { jobId: obj["jobId"] as string } : null;
+          } catch {
+            return null;
+          }
+        },
+        getJobStatus: async (repoRoot: string, _s: string, foreignJobId: string) => {
+          const states = await JobStateStore.list(repoRoot);
+          const match = states.find((st) => st.jobId === foreignJobId);
+          return match?.status ?? null;
+        },
+        writeSidecar: async (repoRoot: string, s: string, rec: SidecarRecord) => {
+          const sidecarAbsPath = path.join(repoRoot, livenessJsonPath(s));
+          await fs.mkdir(path.dirname(sidecarAbsPath), { recursive: true });
+          await fs.writeFile(
+            sidecarAbsPath,
+            JSON.stringify(rec, null, 2),
+            "utf-8",
+          );
+        },
+      });
+    } catch (err) {
+      if ((err as { code?: string }).code === ERROR_CODES.SLUG_OCCUPIED) {
+        // Claim refused by a foreign non-terminal sidecar → propagate (second-line defense)
+        throw err;
+      }
+      // I/O failures are best-effort — sidecar absence is handled gracefully in resume/cancel
     }
   }
 
