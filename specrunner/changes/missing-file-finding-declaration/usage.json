@@ -219,6 +219,26 @@
       },
       "jobId": "40db34c3-c363-4d44-8f1c-d063fba00eee",
       "stepName": "cross-boundary-invariants"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-01T11:07:33.152Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 7905,
+          "outputTokens": 20,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 14,
+          "outputTokens": 9106,
+          "cacheReadInputTokens": 369677,
+          "cacheCreationInputTokens": 44977
+        }
+      },
+      "jobId": "40db34c3-c363-4d44-8f1c-d063fba00eee",
+      "stepName": "regression-gate"
     }
   ]
 }
