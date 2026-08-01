@@ -26,6 +26,7 @@ import {
   livenessJsonPath,
   managedMarkerPath,
   localSidecarDir,
+  localSlugStateJsonPath,
   requestMdPath,
   draftPath,
   canceledChangeFolderPath,
@@ -433,6 +434,38 @@ export async function cancelSingleJob(opts: {
       // If jobId differs → foreign sidecar, leave intact
     } catch {
       // Absent or unreadable → nothing to do (best-effort)
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Managed-runtime: persist canceled state to .specrunner/local/<slug>/state.json
+  // before unlinking the marker (D6 order preserved).
+  //
+  // cancelSingleJob (non-purge) deletes marker.json but leaves state.json intact
+  // with the pre-cancel status (running / awaiting-resume). scanSlugOccupancy
+  // location 3 reads that state.json directly, so it would see a non-terminal
+  // occupant and block new starts even though job ls shows nothing (marker absent).
+  // Overwriting state.json with the canceled state before marker unlink ensures
+  // the guard sees "canceled" (terminal) at location 3. Best-effort: failure is
+  // appended to warnings so cancel itself is not aborted.
+  // ---------------------------------------------------------------------------
+
+  if (slugForMarker) {
+    const localStateAbsPath = path.join(deps.repoRoot, localSlugStateJsonPath(slugForMarker));
+    try {
+      const raw = await fs.readFile(localStateAbsPath, "utf-8");
+      const obj = JSON.parse(raw) as Record<string, unknown>;
+      if (typeof obj["jobId"] === "string" && obj["jobId"] === state.jobId) {
+        // This is our job's managed state.json — overwrite with the canceled state.
+        const managedStore = new JobStateStore(jobId, deps.repoRoot, {
+          changeDir: path.join(deps.repoRoot, localSidecarDir(slugForMarker)),
+        });
+        await managedStore.persist(canceledState);
+      }
+      // If jobId differs → foreign state, leave intact
+    } catch {
+      // ENOENT: local runtime job (no managed state.json) — fine.
+      // Other I/O or parse errors: best-effort.
     }
   }
 

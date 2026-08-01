@@ -105,8 +105,14 @@ export async function scanSlugOccupancy(
         unreadable = result.unreadable;
       }
     }
-  } catch {
-    // No worktrees dir → fine
+  } catch (err) {
+    // D4: only ENOENT (directory absent) is safe to swallow.
+    // Non-ENOENT (EACCES, EIO, etc.) means the directory exists but is unreadable —
+    // treat as unreadable to refuse start (fail-closed).
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code !== "ENOENT" && !unreadable) {
+      unreadable = `worktrees enumeration failure at ${worktreesDir}: ${(err as Error).message}`;
+    }
   }
 
   // 3. Machine-local managed state: .specrunner/local/<slug>/state.json

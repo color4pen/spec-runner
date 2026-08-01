@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "576cab22-45b4-4e5a-a778-60a16b171d61",
   "createdAt": "2026-08-01T03:29:28.451Z",
-  "updatedAt": "2026-08-01T06:35:16.614Z",
+  "updatedAt": "2026-08-01T06:38:21.428Z",
   "request": {
     "title": "slug 占有不変条件の実装 — start guard・状態基準解決・sidecar 所有・修復口",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/slug-occupancy-enforcement-576cab22",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,8 @@
     "72e1026473a28c8500d91724118c9cb2b5054915",
     "cb9a3e137fbce3d22fefb3fdf18c4c6943f7acf7",
     "84368b4bd4fde438834620ace5ecd95923239c1e",
-    "003633fdb92f89a42ac9a0064f8e795441560bdc"
+    "003633fdb92f89a42ac9a0064f8e795441560bdc",
+    "17d5d2779fc416a98bc6b8a4e01679a457bd1281"
   ],
   "reviewerStatuses": [
     {
@@ -111,13 +112,10 @@
       "canonHash": "specrunner/changes/slug-occupancy-enforcement/design.md:sha256:84bb6980f43efd275f038388929ec74e0e566ca08d2a73980d3414b47be5a02d|specrunner/changes/slug-occupancy-enforcement/request.md:sha256:ee0c04b8d5716051834c4bdb98b68263e2b728dfc455a0fe0333cd2954b97747|specrunner/changes/slug-occupancy-enforcement/spec.md:sha256:2c2bee49c99503842ab1642846f806b6f80d71fea2f3f7ad0c3094e096ac3389|specrunner/changes/slug-occupancy-enforcement/tasks.md:sha256:8bb4bc22a9a6c414c3e26aed313a02122ad983962f9af50d14511845ae2c954d|specrunner/changes/slug-occupancy-enforcement/test-cases.md:sha256:7486c0c0b138ba390ddd96f5ef42d8e1a374bf477cf298b8e961386f7945ab4b"
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 2
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 71,
+    "historyCount": 73,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
