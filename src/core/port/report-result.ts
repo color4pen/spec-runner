@@ -230,6 +230,10 @@ export function parseFindings(raw: unknown, strict = false): { ok: true; value: 
     if (f["origin"] === "scope") {
       finding.origin = "scope";
     }
+    // fileMissing: capture only the boolean true value; false/absent/non-boolean silently ignored
+    if (f["fileMissing"] === true) {
+      finding.fileMissing = true;
+    }
     findings.push(finding);
   }
   return { ok: true, value: findings };

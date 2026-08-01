@@ -72,6 +72,18 @@ export interface Finding {
    * pre-existing behavior.
    */
   origin?: "scope";
+  /**
+   * Structural declaration that this finding points to the absence of `file` itself.
+   *
+   * true  = this finding is reporting that `file` is missing (does not exist).
+   *         The ref-verification logic will check that `file` does NOT exist;
+   *         if the file is found to exist, the declaration is false and the verdict
+   *         is overridden to escalation (same as a hallucinated ref in the other direction).
+   * absent/false = 従来挙動 — `file` is expected to exist; ref-verification checks presence.
+   *
+   * Additive discriminator — absent/false is treated identically to all pre-existing behavior.
+   */
+  fileMissing?: boolean;
 }
 
 /**

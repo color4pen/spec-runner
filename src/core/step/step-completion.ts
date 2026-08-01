@@ -235,20 +235,56 @@ export async function deriveStepCompletion(
       persistToolResult = effectiveToolResult;
 
       // Post-verdict: verify finding refs for judge / request-review steps.
+      // Findings are split into two groups with inverted expectations:
+      //   - missingDecl (fileMissing===true): the file is EXPECTED to be absent.
+      //     If it is found to exist, the declaration is false → override to escalation.
+      //   - regular (no fileMissing): the file is EXPECTED to exist.
+      //     If it is not found, it is a hallucinated ref → override to escalation (existing behavior).
       if ((isJudgeStep || isRequestReviewStep) && deps.runtimeStrategy) {
         const tr = effectiveToolResult as JudgeReportResult | RequestReviewReportResult;
         const allFindings = tr.findings ?? [];
         const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
         const affectingFindings = collectVerdictAffectingFindings(undecidedFindings);
         if (affectingFindings.length > 0) {
-          const refs: FindingRef[] = affectingFindings.map((f) => ({ file: f.file, line: f.line }));
+          const missingDecl = affectingFindings.filter((f) => f.fileMissing === true);
+          const regular = affectingFindings.filter((f) => f.fileMissing !== true);
           const cwd = deps.cwd ?? process.cwd();
-          const nonExistent = await deps.runtimeStrategy.verifyFindingRefs(
-            refs,
-            cwd,
-            state.branch ?? null,
-          );
-          if (nonExistent.length > 0) {
+          let override = false;
+
+          if (regular.length > 0) {
+            const refs: FindingRef[] = regular.map((f) => ({ file: f.file, line: f.line }));
+            const nonExistent = await deps.runtimeStrategy.verifyFindingRefs(
+              refs,
+              cwd,
+              state.branch ?? null,
+            );
+            if (nonExistent.length > 0) override = true; // hallucinated ref — existing behavior
+          }
+
+          if (missingDecl.length > 0) {
+            const branch = state.branch ?? null;
+            if (branch === null) {
+              // Without a branch, verifyFindingRefs cannot distinguish "file truly absent" from
+              // "branch unavailable → all refs reported non-existent" (managed runtime behavior).
+              // Fail-closed: unverifiable missingDecl declarations → escalation override.
+              override = true;
+            } else {
+              // Pass only file (no line) for missing-file declarations (D4: line has no meaning for absent files).
+              const refs: FindingRef[] = missingDecl.map((f) => ({ file: f.file }));
+              const nonExistent = await deps.runtimeStrategy.verifyFindingRefs(
+                refs,
+                cwd,
+                branch,
+              );
+              // nonExistent = files that do NOT exist (correct: they are supposed to be absent).
+              // Files NOT in nonExistent = files that DO exist = false declarations.
+              const absentFiles = new Set(nonExistent.map((r) => r.file));
+              const falseDecl = missingDecl.filter((f) => !absentFiles.has(f.file));
+              if (falseDecl.length > 0) override = true; // file exists despite missing claim → false declaration
+            }
+          }
+
+          if (override) {
             verdict = "escalation";
             verdictOverriddenByFindingRef = true;
           }
