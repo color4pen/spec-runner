@@ -24,7 +24,8 @@
     code-fixer.buildMessage の precedence を mirror する:
     1. `const conformance = getConformanceFixContext(state, STEP_NAMES.CODE_FIXER); if (conformance !== null) return conformance;`
     2. `if (isCoordinatorLoopActive(state)) { const members = getNeedsFixMembers(state); return collectParallelFixerFindings(state, members, buildCanonWriteScopeFromState(state)); }`
-    3. `const chain = deriveImplFixerChain(state); const active = resolveActiveReviewer(state, chain); return getLatestJudgeFindings(state, active) ?? [];`
+    3. `const chain = deriveImplFixerChain(state); const active = resolveActiveReviewer(state, chain); return collectFixableFindings(getLatestJudgeFindings(state, active) ?? []);`
+       （fixable filter は免除集合を actionable finding 由来に限定する防御。informational 単独では needs-fix が立たないため buildMessage との実質差は無い — conformance 判定済み）
   - branch 2 の `canonScope` は buildMessage（`code-fixer.ts:208-209`）と同一にするため
     `buildCanonWriteScopeFromState(state)` を使う（deps 不要の state 駆動版）
   - JSDoc に「buildMessage の 3 分岐 precedence と同一の source of truth。分岐 predicate を共有するため
