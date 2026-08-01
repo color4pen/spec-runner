@@ -21,8 +21,10 @@ import { slugOccupiedError, slugStateUnreadableError, SlugOccupiedError, ERROR_C
 // ---------------------------------------------------------------------------
 
 export interface AssertSlugUnoccupiedDeps {
-  scanOccupancy: (repoRoot: string, slug: string) => Promise<OccupancyScanResult>;
-  isAlive: (pid: number | null) => boolean;
+  /** Override the occupancy scan (defaults to scanSlugOccupancy). */
+  scanOccupancy?: (repoRoot: string, slug: string) => Promise<OccupancyScanResult>;
+  /** Check if a pid is alive; when provided, enables live-pid message routing. */
+  isAlive?: (pid: number | null) => boolean;
 }
 
 // ---------------------------------------------------------------------------

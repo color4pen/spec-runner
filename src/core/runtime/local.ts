@@ -49,6 +49,7 @@ import { parseIncompleteTaskLabels, evaluateContentFormatChecks } from "../step/
 import { evaluateTestCoverage } from "../verification/test-coverage.js";
 import { SpecRunnerError, ERROR_CODES, worktreeDirtyError } from "../../errors.js";
 import { assertSlugUnoccupied } from "../occupancy/guard.js";
+import { isProcessAlive } from "../resume/safety.js";
 import { claimLivenessSidecar } from "../occupancy/claim.js";
 import type { SidecarRecord } from "../occupancy/claim.js";
 import { stderrWrite } from "../../logger/stdout.js";
@@ -910,7 +911,9 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
    * State-based, fail-closed: delegates to assertSlugUnoccupied (D1, D4).
    */
   async assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void> {
-    await assertSlugUnoccupied(repoRoot, slug);
+    await assertSlugUnoccupied(repoRoot, slug, {
+      isAlive: (pid) => isProcessAlive(pid ?? 0),
+    });
   }
 
   /**

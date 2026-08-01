@@ -30,6 +30,7 @@ import type { OutputContract, OutputCheckResult } from "../port/output-contract.
 import { parseIncompleteTaskLabels, evaluateContentFormatChecks } from "../step/output-verify.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { assertSlugUnoccupied } from "../occupancy/guard.js";
+import { isProcessAlive } from "../resume/safety.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import { stderrWrite } from "../../logger/stdout.js";
@@ -598,7 +599,9 @@ export class ManagedRuntime implements RealRuntimeStrategy {
    * State-based, fail-closed: delegates to assertSlugUnoccupied (D1, D4).
    */
   async assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void> {
-    await assertSlugUnoccupied(repoRoot, slug);
+    await assertSlugUnoccupied(repoRoot, slug, {
+      isAlive: (pid) => isProcessAlive(pid ?? 0),
+    });
   }
 
   /**
