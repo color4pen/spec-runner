@@ -1,5 +1,6 @@
 import type { EventBus } from "../core/event/event-bus.js";
 import { maskSensitive, type LogLevel } from "../logger/stdout.js";
+import type { JobState } from "../state/schema.js";
 
 /** Injectable timer function type (matches setInterval signature we use). */
 type TimerSetFn = (callback: () => void, ms: number) => ReturnType<typeof setInterval>;
@@ -159,10 +160,15 @@ export class ProgressDisplay {
     process.stderr.write(maskSensitive(`[${p.step}] verdict: ${p.outcome.verdict}\n`));
   }
 
-  private onPipelineComplete(_p: unknown): void {
+  private onPipelineComplete(p: { state: JobState }): void {
     this.stopHeartbeat();
     // Always output final result, even in quiet mode
-    process.stderr.write(maskSensitive(`\nNext: specrunner job archive ${this.options.slug}\n`));
+    if (p.state.status === "awaiting-archive") {
+      process.stderr.write(maskSensitive(`\nNext: specrunner job archive ${this.options.slug}\n`));
+    } else if (p.state.status === "awaiting-resume") {
+      process.stderr.write(maskSensitive(`\nNext: specrunner job resume ${this.options.slug}\n`));
+    }
+    // Other statuses → no hint
   }
 
   private onPipelineFail(p: { reason: string }): void {

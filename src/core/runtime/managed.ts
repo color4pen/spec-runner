@@ -29,6 +29,7 @@ import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels, evaluateContentFormatChecks } from "../step/output-verify.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
+import { assertSlugUnoccupied } from "../occupancy/guard.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
 import { stderrWrite } from "../../logger/stdout.js";
@@ -592,9 +593,12 @@ export class ManagedRuntime implements RealRuntimeStrategy {
     throw new Error("reloadJobState not implemented for managed runtime");
   }
 
-  /** Out of scope for the duplicate-live-job guard (managed uses marker.json). No-op. */
-  async assertNoDuplicateLiveJob(_repoRoot: string, _slug: string): Promise<void> {
-    // no-op
+  /**
+   * Reject a second run while a non-terminal job already holds this slug.
+   * State-based, fail-closed: delegates to assertSlugUnoccupied (D1, D4).
+   */
+  async assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void> {
+    await assertSlugUnoccupied(repoRoot, slug);
   }
 
   /**

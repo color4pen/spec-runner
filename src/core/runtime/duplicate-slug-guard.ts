@@ -13,7 +13,7 @@ import * as fsPromises from "node:fs/promises";
 import * as path from "node:path";
 import { livenessJsonPath } from "../../util/paths.js";
 import { isProcessAlive } from "../resume/safety.js";
-import { duplicateLiveJobError } from "../../errors.js";
+import { duplicateLiveJobError, slugStateUnreadableError, SpecRunnerError } from "../../errors.js";
 
 export interface DuplicateLiveJobDeps {
   readFile?: (absPath: string) => Promise<string>;
@@ -55,16 +55,17 @@ export async function checkDuplicateLiveJob(
     return;
   }
 
-  // Step 2: parse JSON; corrupted or non-object → allow
+  // Step 2: parse JSON; corrupted or non-object → fail-closed (SLUG_STATE_UNREADABLE)
   let data: Record<string, unknown>;
   try {
     const parsed: unknown = JSON.parse(raw);
     if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
-      return;
+      throw slugStateUnreadableError(slug, "sidecar is not a JSON object");
     }
     data = parsed as Record<string, unknown>;
-  } catch {
-    return;
+  } catch (parseErr) {
+    if (parseErr instanceof SpecRunnerError) throw parseErr;
+    throw slugStateUnreadableError(slug, `sidecar JSON parse failure: ${(parseErr as Error).message}`);
   }
 
   // Step 3: pid must be a number; otherwise → allow

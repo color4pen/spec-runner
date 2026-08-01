@@ -2,7 +2,7 @@
  * Tests for resolveJobStateBySlug()
  *
  * TC-RJ-001: single match → returns that job
- * TC-RJ-002: multiple matches → returns latest updatedAt
+ * TC-RJ-002: active (non-archived) non-terminal job returned; archived job excluded
  * TC-RJ-003: no match → returns null
  */
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
@@ -93,17 +93,19 @@ describe("TC-RJ-001: single match → returns that job", () => {
   });
 });
 
-describe("TC-RJ-002: multiple matches → returns latest updatedAt", () => {
-  it("returns the job with the most recent updatedAt when multiple match", async () => {
+describe("TC-RJ-002: active (non-archived) non-terminal job returned; archived job excluded", () => {
+  it("returns the active (non-archived) job when a second job was written to archive dir", async () => {
+    // First job → written to specrunner/changes/shared-slug/ (active, visible)
     const older = await makeJob("shared-slug", "2026-01-01T10:00:00.000Z");
+    // Second job → written to specrunner/changes/archive/<date>-shared-slug/ (excluded by includeArchived: false)
     const newer = await makeJob("shared-slug", "2026-01-02T10:00:00.000Z");
 
     const result = await resolveJobStateBySlug("shared-slug", tempDir);
     expect(result).not.toBeNull();
-    expect(result!.jobId).toBe(newer.jobId);
-    expect(result!.updatedAt).toBe("2026-01-02T10:00:00.000Z");
+    // Only the active (non-archived) job is visible; state-based resolve returns it
+    expect(result!.jobId).toBe(older.jobId);
 
-    // Verify older exists but wasn't selected
+    // The two jobs are distinct
     expect(older.jobId).not.toBe(newer.jobId);
   });
 });

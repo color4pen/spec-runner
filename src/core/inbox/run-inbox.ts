@@ -11,6 +11,7 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { planInbox } from "./planner.js";
 import type { InboxPlan, StartAction, RejectAction, ResumeAction, IssueComment } from "./types.js";
 import { buildRejectComment, notifyJobTerminal } from "../notify/issue-notifier.js";
+import { ERROR_CODES } from "../../errors.js";
 import { stderrWrite, logResult } from "../../logger/stdout.js";
 import { write as writeDraft } from "../request/store.js";
 import { getJobSlug } from "../../state/job-slug.js";
@@ -215,8 +216,44 @@ export async function runInboxOrchestrator(opts: RunInboxOptions): Promise<Inbox
         stderrWrite(`[inbox] started job slug=${action.slug} from issue#${action.issue.number}`);
       }
     } catch (err) {
-      const msg = `start issue#${action.issue.number}: ${(err as Error).message}`;
-      summary.errors.push({ action: `start:${action.issue.number}`, error: (err as Error).message });
+      const errAny = err as { code?: string; priorJobId?: string; priorStatus?: string } & Error;
+      // SLUG_OCCUPIED: propagate occupancy rejection to the issue (idempotent)
+      if (errAny.code === ERROR_CODES.SLUG_OCCUPIED && errAny.priorJobId) {
+        const priorJobId = errAny.priorJobId;
+        const priorStatus = errAny.priorStatus ?? "unknown";
+        const occupancyMarker = `<!-- specrunner:notification kind="slug-occupied" priorJobId="${priorJobId}" version="1" -->`;
+        // Dedup: skip if the marker already exists in comments for this issue
+        const existingComments = commentsByIssue.get(action.issue.number) ?? [];
+        const alreadyPosted = existingComments.some((c) =>
+          typeof c.body === "string" && c.body.includes(occupancyMarker),
+        );
+        if (!alreadyPosted) {
+          const resumeInstruction = `specrunner job resume ${action.slug}`;
+          const cancelInstruction = `specrunner job cancel ${priorJobId}`;
+          const body = [
+            `Slug \`${action.slug}\` is already occupied by a non-terminal job.`,
+            ``,
+            `**Prior job:** \`${priorJobId}\` (status: \`${priorStatus}\`)`,
+            ``,
+            `To unblock, either:`,
+            `- Resume the prior job: \`${resumeInstruction}\``,
+            `- Cancel the prior job: \`${cancelInstruction}\``,
+            ``,
+            occupancyMarker,
+          ].join("\n");
+          try {
+            await effects.postRejectComment(action.issue.number, body);
+          } catch (commentErr) {
+            stderrWrite(`[inbox] warn: failed to post occupancy reject comment for issue#${action.issue.number}: ${(commentErr as Error).message}`);
+          }
+        } else {
+          stderrWrite(`[inbox] skip: occupancy comment for priorJobId=${priorJobId} already posted on issue#${action.issue.number}`);
+        }
+        summary.errors.push({ action: `start:${action.issue.number}`, error: errAny.message });
+        continue;
+      }
+      const msg = `start issue#${action.issue.number}: ${errAny.message}`;
+      summary.errors.push({ action: `start:${action.issue.number}`, error: errAny.message });
       stderrWrite(`[inbox] warn: ${msg}`);
     }
   }

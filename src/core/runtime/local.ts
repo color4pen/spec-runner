@@ -48,7 +48,7 @@ import type { OutputContract, OutputCheckResult } from "../port/output-contract.
 import { parseIncompleteTaskLabels, evaluateContentFormatChecks } from "../step/output-verify.js";
 import { evaluateTestCoverage } from "../verification/test-coverage.js";
 import { SpecRunnerError, ERROR_CODES, worktreeDirtyError } from "../../errors.js";
-import { checkDuplicateLiveJob } from "./duplicate-slug-guard.js";
+import { assertSlugUnoccupied } from "../occupancy/guard.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { markSignalHandlerFired } from "../lifecycle/signal-state.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
@@ -904,11 +904,11 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
-   * Reject a second run while a live job already holds this slug.
-   * Delegates to checkDuplicateLiveJob using real fs and isProcessAlive.
+   * Reject a second run while a non-terminal job already holds this slug.
+   * State-based, fail-closed: delegates to assertSlugUnoccupied (D1, D4).
    */
   async assertNoDuplicateLiveJob(repoRoot: string, slug: string): Promise<void> {
-    await checkDuplicateLiveJob(repoRoot, slug);
+    await assertSlugUnoccupied(repoRoot, slug);
   }
 
   /**

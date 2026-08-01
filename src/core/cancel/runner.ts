@@ -416,15 +416,39 @@ export async function cancelSingleJob(opts: {
   await cleanupJobResources(state, deps, warnings);
 
   // ---------------------------------------------------------------------------
-  // Managed marker unlink — after canceled-state persist, best-effort
-  // (idempotent canceled path also runs this; local runtime marker is no-op)
+  // Liveness sidecar deletion — jobId-scoped, best-effort.
+  // Only delete if sidecar.jobId matches the job being canceled (TC-027/TC-028).
   // ---------------------------------------------------------------------------
 
   const slugForMarker = getJobSlug(state);
   if (slugForMarker) {
+    const sidecarAbsPath = path.join(deps.repoRoot, livenessJsonPath(slugForMarker));
+    try {
+      const sidecarRaw = await fs.readFile(sidecarAbsPath, "utf-8");
+      const sidecarObj = JSON.parse(sidecarRaw) as Record<string, unknown>;
+      if (sidecarObj["jobId"] === state.jobId) {
+        await fs.unlink(sidecarAbsPath);
+      }
+      // If jobId differs → foreign sidecar, leave intact
+    } catch {
+      // Absent or unreadable → nothing to do (best-effort)
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Managed marker unlink — jobId-scoped, after canceled-state persist, best-effort
+  // (TC-029/TC-032: only unlink if marker.jobId === state.jobId)
+  // ---------------------------------------------------------------------------
+
+  if (slugForMarker) {
     const markerAbsPath = path.join(deps.repoRoot, managedMarkerPath(slugForMarker));
     try {
-      await fs.unlink(markerAbsPath);
+      const markerRaw = await fs.readFile(markerAbsPath, "utf-8");
+      const markerObj = JSON.parse(markerRaw) as Record<string, unknown>;
+      if (markerObj["jobId"] === state.jobId) {
+        await fs.unlink(markerAbsPath);
+      }
+      // If jobId differs → foreign marker, leave intact
     } catch {
       // Best-effort — ENOENT is fine (local runtime has no marker)
     }
@@ -435,27 +459,46 @@ export async function cancelSingleJob(opts: {
   // ---------------------------------------------------------------------------
 
   if (purge) {
-    // Purge .specrunner/local/<slug>/ (machine-local sidecar — liveness / marker / managed state)
+    // Purge .specrunner/local/<slug>/ only if the sidecar belongs to this job (TC-030/TC-031).
+    // If the sidecar belongs to a different non-terminal job, leave the directory intact.
     if (slugForMarker) {
+      const sidecarAbsPath = path.join(deps.repoRoot, livenessJsonPath(slugForMarker));
+      let skipPurge = false;
       try {
-        await fs.rm(path.join(deps.repoRoot, localSidecarDir(slugForMarker)), {
-          recursive: true,
-          force: true,
-        });
+        const sidecarRaw = await fs.readFile(sidecarAbsPath, "utf-8");
+        const sidecarObj = JSON.parse(sidecarRaw) as Record<string, unknown>;
+        // If sidecar still exists and belongs to a different job → skip purge
+        if (sidecarObj["jobId"] !== undefined && sidecarObj["jobId"] !== state.jobId) {
+          skipPurge = true;
+        }
       } catch {
-        // Best-effort — directory may not exist
+        // Absent or unreadable → safe to purge (no foreign occupant)
       }
+
+      if (!skipPurge) {
+        try {
+          await fs.rm(path.join(deps.repoRoot, localSidecarDir(slugForMarker)), {
+            recursive: true,
+            force: true,
+          });
+        } catch {
+          // Best-effort — directory may not exist
+        }
+      }
+
       // Purge the canonical change folder too. Evacuation was skipped for --purge, so the
       // no-worktree canonical changes/<slug>/ would otherwise remain. (Worktree-mode source
       // is removed with the worktree by cleanupJobResources above.) This makes --purge
       // leave no trace (D1).
-      try {
-        await fs.rm(path.join(deps.repoRoot, changeFolderPath(slugForMarker)), {
-          recursive: true,
-          force: true,
-        });
-      } catch {
-        // Best-effort — directory may not exist
+      if (!skipPurge) {
+        try {
+          await fs.rm(path.join(deps.repoRoot, changeFolderPath(slugForMarker)), {
+            recursive: true,
+            force: true,
+          });
+        } catch {
+          // Best-effort — directory may not exist
+        }
       }
     }
   }
