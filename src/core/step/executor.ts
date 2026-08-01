@@ -17,6 +17,8 @@ import { evaluateActivation } from "../reviewers/activation.js";
 import { defaultSpawnFn, gitExec, type SpawnFn } from "../../util/git-exec.js";
 import { detectNoOp } from "./no-op-detect.js";
 import { codeReviewFindingsRoutingActive } from "../pipeline/reviewer-chain.js";
+import { collectRoutedFixerFindings } from "./routed-findings.js";
+import { pipelineManagedPaths } from "../pipeline/round-git-scope.js";
 import type { CommitPushInfra } from "./commit-push.js";
 import type { PermissionScope } from "../pipeline/types.js";
 import { diffGuardSnapshots } from "./main-checkout-guard.js";
@@ -468,6 +470,8 @@ export class StepExecutor {
         : undefined;
 
     // T-03 (no-op detection): delegate to sibling no-op-detect.ts.
+    // findingTargetPaths: derived from routed findings (machine-sourced, not agent self-reported).
+    // step.noOpDetect === true guard ensures routing derivation only runs for code-fixer.
     const noOpVerdictOverride: Verdict | undefined =
       deps.runtimeStrategy && headBeforeStep !== null
         ? await detectNoOp(step, deps.runtimeStrategy, {
@@ -476,6 +480,8 @@ export class StepExecutor {
             branch: state.branch ?? null,
             completionReason: runResult.completionReason,
             findingsRoutingApproved: step.noOpDetect === true ? codeReviewFindingsRoutingActive(state) : false,
+            findingTargetPaths: step.noOpDetect === true ? collectRoutedFixerFindings(state).map((f) => f.file) : [],
+            pipelineManagedPaths: pipelineManagedPaths(deps.slug),
           })
         : undefined;
 

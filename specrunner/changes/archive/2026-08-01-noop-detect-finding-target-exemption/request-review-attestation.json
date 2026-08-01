@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:bed1385edcfa511c50010f2a632dded19e68dded8c84b2220e391e93eb419869",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/no-op-detect.ts:16 — ARTIFACT_PREFIXES = [\"specrunner/changes/\", \".specrunner/\"]",
+    "src/core/step/no-op-detect.ts:64-77 — sourceFiles = changedFiles.filter(not ARTIFACT_PREFIXES); sourceFiles.length === 0 → needs-fix",
+    "src/core/step/no-op-detect.ts:34-50 — detectNoOp 引数に finding 情報（修正対象 file 一覧）は含まれない",
+    "src/core/step/executor.ts:471-480 — detectNoOp の唯一の呼び出し元。呼び出し地点で state が在圏（state.branch / codeReviewFindingsRoutingActive(state) を使用済み）",
+    "src/core/step/code-fixer.ts:120 — noOpDetect: true は code-fixer のみ（spec-fixer / build-fixer は未設定）",
+    "src/core/step/fixer-helpers.ts:52-65 — getLatestJudgeFindings(state, judgeStepName) が直近 judge run の findings を返す既存 seam",
+    "src/kernel/report-result.ts:40-75 — Finding.file は必須の worktree 相対パス（line 44: Worktree-relative file path where the issue was found）",
+    "src/core/pipeline/round-git-scope.ts:109-111 — pipelineManagedPaths(slug) = slugStateJsonPath / slugEventsPath / usageJsonPath / biteEvidenceResultPath / prCreateResultPath の個別列挙",
+    "src/core/step/__tests__/executor-no-op.test.ts:190-212 — 「artifact のみ変更（state.json / events.jsonl / liveness.json）→ needs-fix」を固定。finding が change folder 文書を名指しするケースの期待値は存在しない",
+    "src/core/pipeline/findings-ledger.ts:80 — collectParallelFixerFindings(state, members) が並列 round 由来の findings を返す既存 seam"
+  ],
+  "sourceRevision": "333ebc7d66388c2e4090ca9ebbe5ed3418b564f1"
+}

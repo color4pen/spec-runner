@@ -15,8 +15,8 @@ import { deriveImplFixerChain, resolveActiveReviewer } from "../pipeline/reviewe
 import { conformanceResultPath } from "../../util/paths.js";
 import { collectParallelFixerFindings } from "../pipeline/findings-ledger.js";
 import { buildCanonWriteScope } from "./canon-write-scope.js";
-import { CUSTOM_REVIEWERS_STEP_NAME } from "../pipeline/types.js";
-import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
+import { isCoordinatorLoopActive, getNeedsFixMembers } from "./routed-findings.js";
+// routing precedence は routed-findings.ts の collectRoutedFixerFindings と一致させること
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -54,56 +54,11 @@ const codeFixerAgentDefinition: AgentDefinition = {
  *
  * Design D7: resultFilePath = null, parseResult = NULL_PARSE_RESULT, completionVerdict = "approved".
  * Design D6: separate Agent with dedicated system prompt (gitWrite: true).
- */
-/**
- * Determine if the code-fixer is being invoked from the custom reviewer coordinator loop.
  *
- * Design D5 / D7 (reviewer-parallel-execution): in the composed path (custom reviewers
- * present), the code-fixer can be triggered by:
- * 1. conformance → code-fixer (conformanceFixInProgress — detected by getConformanceFixContext)
- * 2. regression-gate → code-fixer (regressionGateActive)
- * 3. code-review → code-fixer (standard, before coordinator starts)
- * 4. coordinator → code-fixer (custom reviewer needs-fix)
- *
- * This function detects case 4: composed path AND coordinator has run AND its latest
- * verdict is needs-fix.
- *
- * Standard path (no custom reviewers, state.reviewers empty) always returns false.
+ * isCoordinatorLoopActive and getNeedsFixMembers have been moved to routed-findings.ts
+ * and re-imported here. The routing precedence in buildMessage / reads must remain in
+ * sync with collectRoutedFixerFindings in routed-findings.ts.
  */
-function isCoordinatorLoopActive(state: JobState): boolean {
-  if (!state.reviewers?.length) return false; // standard path
-  if (getConformanceFixContext(state, STEP_NAMES.CODE_FIXER) !== null) return false; // conformance triggered
-
-  // Check if regression-gate is the active source
-  const gateRuns = state.steps?.[REGRESSION_GATE_STEP_NAME] ?? [];
-  if (gateRuns.length > 0) {
-    const lastGate = gateRuns[gateRuns.length - 1];
-    if (lastGate?.outcome.verdict === "needs-fix") return false; // regression-gate triggered
-  }
-
-  // Check if code-review is the active source (coordinator hasn't started yet)
-  const coordinatorRuns = state.steps?.[CUSTOM_REVIEWERS_STEP_NAME] ?? [];
-  if (coordinatorRuns.length === 0) return false; // coordinator hasn't run → code-review loop
-
-  // Coordinator has run and its latest verdict indicates needs-fix triggered this fixer
-  const lastCoordinator = coordinatorRuns[coordinatorRuns.length - 1];
-  return lastCoordinator?.outcome.verdict === "needs-fix";
-}
-
-/**
- * Get needs-fix member names from the coordinator's last round.
- * Used by reads() to determine which result files to pre-validate.
- */
-function getNeedsFixMembers(state: JobState): string[] {
-  return (state.reviewers ?? [])
-    .filter((r) => {
-      const runs = state.steps?.[r.name] ?? [];
-      if (runs.length === 0) return false;
-      const last = runs[runs.length - 1];
-      return last?.outcome.verdict === "needs-fix";
-    })
-    .map((r) => r.name);
-}
 
 export const CodeFixerStep: AgentStep = {
   kind: "agent",
@@ -163,6 +118,7 @@ export const CodeFixerStep: AgentStep = {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.CODE_FIXER);
     const branch = state.branch;
 
+    // routing precedence はこの 3 分岐が routed-findings.ts の collectRoutedFixerFindings と一致させること。
     // Conformance-triggered entry: use conformance findings
     const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.CODE_FIXER);
     if (conformanceFindings !== null) {
