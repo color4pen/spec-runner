@@ -112,6 +112,25 @@ export class ReopenCommand extends CommandRunner {
     try {
       const resolved = await resolveJobStateBySlug(this.slug, cwd);
       if (resolved === null) {
+        // resolveJobStateBySlug returns null for terminal-only slugs (new resolver behavior:
+        // D2 — only non-terminal jobs are returned). Before falling back to resolveId,
+        // check if this slug has any terminal jobs so we can show the status gate message
+        // ('only awaiting-archive is eligible') rather than a misleading 'Job not found'.
+        const allStates = await JobStateStore.list(cwd, { includeArchived: true });
+        const terminalForSlug = allStates.filter(
+          (s) => getJobSlug(s) === this.slug,
+        );
+        if (terminalForSlug.length > 0) {
+          const terminalState = terminalForSlug.sort(
+            (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+          )[0]!;
+          logError(
+            `Job '${this.slug}' has status '${terminalState.status}' and cannot be reopened. ` +
+            `Only 'awaiting-archive' jobs are eligible for reopen.`,
+          );
+          throw new PrepareError(1, `Cannot reopen from status '${terminalState.status}'`);
+        }
+
         // Slug not found — try resolving as short Job ID prefix
         let fullId: string;
         try {

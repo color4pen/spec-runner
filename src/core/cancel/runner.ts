@@ -582,6 +582,31 @@ export async function cancelAllTerminated(opts: {
       warnings.push(`Skipped ${state.jobId}: no slug to resolve sidecar path`);
       continue;
     }
+
+    // Transition non-terminal states (failed/terminated) to canceled so the
+    // state-based occupancy guard does not block new starts after bulk cleanup.
+    // canceled is already terminal — no transition needed.
+    if (!TERMINAL_STATUSES.has(state.status as JobStatus)) {
+      try {
+        const { state: canceledState } = transitionJob(state, "canceled", {
+          trigger: "bulk-cleanup",
+          reason: "Bulk canceled via job cancel --all-terminated",
+          patch: { pid: null },
+        });
+        // Write canceled state to main checkout location so the guard sees it
+        // as terminal. deduplicateByJobId picks the newest updatedAt, so this
+        // canceled entry wins over any stale failed/terminated file in a worktree.
+        const store = new JobStateStore(state.jobId, repoRoot, {
+          slug,
+          stateRoot: repoRoot,
+        });
+        await store.persist(canceledState);
+      } catch {
+        // Best-effort — persist failure leaves state as failed/terminated, which
+        // the sidecar removal below addresses for managed-runtime jobs.
+      }
+    }
+
     try {
       await fs.rm(path.join(repoRoot, localSidecarDir(slug)), { recursive: true, force: true });
       removed++;
