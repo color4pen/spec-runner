@@ -185,9 +185,16 @@ filesystem）と managed（mock GitHub API）が同じ非実在判定を返せ�
 [Risk] managed runtime で `branch === null` のとき seam は全 ref を非実在として返す。欠落宣言群では
 これが「全て非実在 = 宣言が正しい = 上書きしない」となり、検証不能なのに routing を保つ fail-open に
 見える。
-→ Mitigation: ref 検証が走る judge 系 step は design step で branch が確定した後にのみ実行される。
-判定時点で `state.branch` が null になる経路は存在しない。非宣言群の branch=null → 全上書き
-（fail-closed）は従来通り不変。seam 意味論を変えない Non-Goal と整合。
+→ Mitigation: **pipeline 順序不変条件** — ref 検証が走る judge 系 step（regression-gate /
+spec-review / custom-reviewer / code-review / conformance / request-review）は、pipeline の design step
+で `state.branch` が確定した後にのみ到達できる。pipeline descriptor の transition テーブル構造上、
+design step 完了前に judge 系 step が呼び出される経路は現状のコードベースに存在しない。したがって
+判定時点で `state.branch` が null になる経路は存在しない。
+この不変条件はコード（型/assertion）ではなく pipeline descriptor の遷移順序によって成立する構造的制約
+である（seam シグネチャ変更は Non-Goal）。将来 pipeline descriptor に branch 確定前の judge step
+遷移を追加した場合は不変条件が破れるため、pipeline 変更レビュー時にこの前提を確認すること。
+非宣言群の branch=null → 全上書き（fail-closed）は従来通り不変。seam 意味論を変えない Non-Goal と
+整合。
 
 [Risk] 欠落宣言フィールドの誤用（実在ファイルに `fileMissing:true` を付ける等）。
 → Mitigation: 虚偽宣言（宣言 missing だが実在）は D3 で機械照合され escalation 上書きされる。逆も
@@ -200,3 +207,5 @@ filesystem）と managed（mock GitHub API）が同じ非実在判定を返せ�
 
 なし。フィールド名は request で実装裁量とされているが、本設計では `fileMissing` に確定する
 （`Finding.fileMissing` / schema の同名フィールド）。
+
+<!-- spec-fixer-deferred: `branch = null` + 欠落宣言群の fail-open 緩和策が informal（コード保証なし） — pipeline 順序不変条件の ADR ファイル（specrunner/adr/2026-08-01-judge-step-branch-ordering-invariant.md）は spec-fixer の write scope 外（specrunner/adr/ が許可パスに含まれない）のため作成できず。不変条件の内容は上記 Risks 節に文書化した。adr-gen ステップで別途 ADR 化を推奨する。 -->

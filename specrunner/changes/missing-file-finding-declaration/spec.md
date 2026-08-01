@@ -58,6 +58,20 @@ decision-needed finding が `fileMissing:true` かつ実在しない `file` を�
 経由して検証する
 **Then** どちらの runtime でも上書き有無の判定は一致する
 
+### Note: `fileMissing: true` + `resolution: "decision-needed"` の組み合わせ挙動
+
+`collectVerdictAffectingFindings` は `resolution: "decision-needed"` の finding を検証対象に含む。
+よって `fileMissing: true` かつ `resolution: "decision-needed"` の finding も ref 検証対象になる。
+
+ただしこの組み合わせでは **escalation verdict は変わらない**。`deriveJudgeVerdict` の priority #3
+（decision-needed finding が 1 件以上 → escalation）が ref 検証とは独立して escalation を確定させる
+ため、ref 検証で override が発生してもしなくても最終 verdict は escalation になる。
+
+影響があるのは `escalationReason` の有無のみ: ref 検証 override 発生時は
+`verdictOverriddenByFindingRef = true` が立ち escalationReason 計算が抑止される（D5 と同様）。
+override が発生しない場合は escalationReason の canon 計算が走る。いずれの経路でも verdict は escalation
+のため、ユーザーから見える挙動（operator escalation）は同一である。
+
 ### Requirement: 欠落宣言 finding では line を検証に使わない
 
 欠落宣言 finding（`fileMissing:true`）の ref 検証では `line` を MUST 渡さず、file の有無のみで
