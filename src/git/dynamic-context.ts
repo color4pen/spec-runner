@@ -54,6 +54,19 @@ export interface DynamicContext {
     status: "valid" | "stale" | "absent";
     verifiedAssertions: string[];
   };
+  /**
+   * Prior-round context for spec-review (iteration ≥ 2).
+   * Populated by SpecReviewStep.prepareRoundContext() via buildStepContext().
+   * Contains the previous round's findings and the set of files changed by the prior spec-fixer
+   * (machine-derived from commit diff via listCommitChangedFiles).
+   * In-memory only — NOT persisted to state/journal (one-shot injection per round).
+   * Absent for iteration 1 and for all steps other than spec-review.
+   * Declared as an inline structural type to avoid cross-layer imports into src/git/.
+   */
+  priorRoundContext?: {
+    findings: { severity: string; resolution: string; file: string; title: string }[];
+    changedFiles: string[];
+  };
 }
 
 /**

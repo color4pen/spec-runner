@@ -148,7 +148,18 @@ export async function buildStepContext(
     forbiddenPaths,
   };
 
-  // 8. Assemble AgentRunContext.
+  // 8. Enrich dynamicContext via step.prepareRoundContext (best-effort, never throws).
+  let dynamicContext = deps.dynamicContext;
+  if (step.prepareRoundContext && dynamicContext) {
+    try {
+      const extra = await step.prepareRoundContext(state, cwd, deps.runtimeStrategy);
+      if (extra) dynamicContext = { ...dynamicContext, ...extra };
+    } catch {
+      // best-effort: enrich に失敗しても step を止めない（黙って degrade）
+    }
+  }
+
+  // 9. Assemble AgentRunContext.
   const ctx: AgentRunContext = {
     step,
     state,
@@ -161,7 +172,7 @@ export async function buildStepContext(
       requestContent: deps.request.content,
       requestAdr: deps.request.adr,
       requestBaseBranch: deps.request.baseBranch,
-      dynamicContext: deps.dynamicContext,
+      dynamicContext,
       projectContext,
     },
     session: {

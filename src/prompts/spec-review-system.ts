@@ -108,6 +108,7 @@ Request type: {{REQUEST_TYPE}}
 
 {{SPEC_REVIEW_MODE}}
 
+{{PRIOR_ROUND_CONTEXT}}
 <user-request>
 {{REQUEST_CONTENT}}
 </user-request>
@@ -137,6 +138,13 @@ export interface SpecReviewPromptInput {
    * Defaults to "full" when absent.
    */
   specReviewMode?: "full" | "lightweight";
+  /**
+   * Pre-rendered prior-round context block (from buildPriorRoundContextBlock).
+   * When present, injected at the {{PRIOR_ROUND_CONTEXT}} placeholder in the message template.
+   * When absent, the placeholder is replaced with an empty string (no injection block).
+   * Only populated for spec-review iteration ≥ 2; absent for iteration 1.
+   */
+  priorRoundContextBlock?: string;
 }
 
 /**
@@ -190,6 +198,7 @@ export function buildSpecReviewInitialMessage(input: SpecReviewPromptInput): str
     .replace(/{{SLUG}}/g, input.slug)
     .replace(/{{REQUEST_TYPE}}/g, input.requestType)
     .replace(/{{SPEC_REVIEW_MODE}}/g, specReviewModeInstruction)
+    .replace(/{{PRIOR_ROUND_CONTEXT}}/g, input.priorRoundContextBlock ?? "")
     .replace(/{{REQUEST_CONTENT}}/g, requestContent)
     .replace(/{{FINDINGS_PATH}}/g, findingsPath)
     .replace(/{{GIT_PUSH_INSTRUCTION}}/g, gitPushInstruction);

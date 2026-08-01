@@ -1,0 +1,20 @@
+{
+  "requestHash": "sha256:807ae058dd62ed6d5b6bf4ff48dbd1b0c57feda0c85f3326cb5f0c8425a9279a",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/spec-review.ts:82-90 — reads() returns request.md / spec.md / design.md / tasks.md only",
+    "src/core/step/spec-review.ts:102-114 — buildMessage passes slug/requestType/requestContent/branch/iteration/findingsPath/specReviewMode; no prior findings",
+    "src/prompts/spec-review-system.ts:174-196 — buildSpecReviewInitialMessage function; SpecReviewPromptInput has no prior-findings field",
+    "src/core/step/step-context-builder.ts:96-98 — session continuation is FIXER_STEP_NAMES only; spec-review gets fresh session every round",
+    "src/core/step/spec-fixer.ts:150 — getLatestJudgeFindings(state, SPEC_REVIEW) seam exists on fixer side",
+    "src/core/port/runtime-strategy.ts:651 — listCommitChangedFiles(oid, cwd) is optional on port interface",
+    "src/core/port/runtime-strategy.ts:810 — listCommitChangedFiles(oid, cwd) is required on concrete RuntimeStrategy",
+    "src/core/step/commit-orchestrator.ts:277-278 — priorOid resolved via stepRuns[stepRuns.length - 2]?.commitOid ?? null",
+    "src/core/step/finding-recency.ts — recordFindingRecency is observation-only (no verdict/state write-back path)",
+    "src/core/step/commit-orchestrator.ts:271-299 — finding-recency detection block exists, spec-review only, iteration >= 2",
+    "src/core/pipeline/types.ts:235-237 — spec-review approved/needs-fix → spec-fixer loop transitions",
+    "src/config/getAgentId.ts:33 — maxIterations default 2 (cfg.pipeline?.maxRetries ?? 2); location is getAgentId.ts not types.ts",
+    "specrunner/adr/2026-07-24-spec-review-full-enumeration.md D2 — gate化 deferred to future request"
+  ],
+  "sourceRevision": "333ebc7d66388c2e4090ca9ebbe5ed3418b564f1"
+}

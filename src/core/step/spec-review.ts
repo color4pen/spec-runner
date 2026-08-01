@@ -3,6 +3,7 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
+import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT, buildSpecReviewInitialMessage } from "../../prompts/spec-review-system.js";
 import { getSpecReviewMode } from "../../config/type-config.js";
 import { specReviewResultPath, changeFolderPath, requestMdPath } from "../../util/paths.js";
@@ -10,6 +11,7 @@ import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { deriveSpecReviewVerdict } from "./judge-verdict.js";
+import { derivePriorRoundContext, buildPriorRoundContextBlock } from "./prior-round-context.js";
 
 const SPEC_REVIEW_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -99,9 +101,22 @@ export const SpecReviewStep: AgentStep = {
     return dynamicContext;
   },
 
+  async prepareRoundContext(
+    state: JobState,
+    cwd: string,
+    runtimeStrategy: RuntimeStrategy | undefined,
+  ): Promise<Partial<DynamicContext> | null> {
+    const iteration = computeSpecReviewIteration(state);
+    const result = await derivePriorRoundContext({ state, iteration, cwd, runtimeStrategy });
+    if (!result) return null;
+    return { priorRoundContext: result };
+  },
+
   buildMessage(state: JobState, deps: StepDeps): string {
     const iteration = computeSpecReviewIteration(state);
     const findingsPath = buildFindingsPath(deps.slug, iteration);
+    const priorCtx = deps.dynamicContext?.priorRoundContext;
+    const priorRoundContextBlock = priorCtx ? buildPriorRoundContextBlock(priorCtx) : undefined;
     return buildSpecReviewInitialMessage({
       slug: deps.slug,
       requestType: state.request.type,
@@ -110,6 +125,7 @@ export const SpecReviewStep: AgentStep = {
       iteration,
       findingsPath,
       specReviewMode: getSpecReviewMode(state.request.type),
+      priorRoundContextBlock,
     });
   },
 

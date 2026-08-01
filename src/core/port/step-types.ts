@@ -239,8 +239,31 @@ export interface AgentStep {
    *
    * Design D1 (add-spec-review-baseline-check): optional hook for I/O-heavy context
    * preparation that cannot be done inside buildMessage (pure function constraint).
+   *
+   * Ordering: prepareRoundContext (core layer) runs BEFORE this hook and spread-merges
+   * its fields into dynamicContext. Implementations must not drop those fields —
+   * return `{ ...dynamicContext, ...newFields }` rather than a rebuilt object.
    */
   enrichContext?(dynamicContext: DynamicContext, cwd: string, slug: string): Promise<DynamicContext>;
+
+  /**
+   * Prepare additional dynamic context fields before buildMessage is called.
+   * Called by core's buildStepContext (step-context-builder.ts) — has access to
+   * runtimeStrategy because it runs in the core layer, not the adapter layer.
+   * This is the key difference from enrichContext, which is called by the adapter and
+   * has no access to RuntimeStrategy.
+   *
+   * Returns a Partial<DynamicContext> whose fields are spread-merged onto the existing
+   * dynamicContext before building the AgentRunContext. null means no enrichment.
+   *
+   * Use case: SpecReviewStep uses this for prior-round context injection (iteration ≥ 2).
+   * Other steps leave this undefined (backward-compatible).
+   */
+  prepareRoundContext?(
+    state: JobState,
+    cwd: string,
+    runtimeStrategy: RuntimeStrategy | undefined,
+  ): Promise<Partial<DynamicContext> | null>;
 
   /**
    * Declarative activation conditions for this reviewer step.
