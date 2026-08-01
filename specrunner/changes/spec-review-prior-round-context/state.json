@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "80e3dc6a-4d0d-4e7d-a7eb-4553030ece66",
   "createdAt": "2026-08-01T09:56:23.984Z",
-  "updatedAt": "2026-08-01T11:00:18.040Z",
+  "updatedAt": "2026-08-01T11:19:44.774Z",
   "request": {
     "title": "spec-review の周回間 context 注入 — 解消済み指摘の stale 再指摘を情報構造から潰す",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/spec-review-prior-round-context-80e3dc6a",
   "error": null,
   "pipelineId": "standard",
@@ -71,10 +71,46 @@
     "8a604e95db4daacea2700e9b92b6238940f88155",
     "384af692569899b29d5e569edcf5423034b94a4a",
     "98c1838f465f0e458b728767850d35171bd211ea",
-    "31a91e8da150c0a2545327595cac490a4abefb4b"
+    "31a91e8da150c0a2545327595cac490a4abefb4b",
+    "13c4d414a1a12928fca5c2f37c6576bcf0c7b2dd",
+    "d741dd0de01192cd96a5c9b282efad9a0484b07b"
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 34,
+    "historyCount": 44,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -84,7 +120,11 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
