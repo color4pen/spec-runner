@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "40db34c3-c363-4d44-8f1c-d063fba00eee",
   "createdAt": "2026-08-01T09:56:21.528Z",
-  "updatedAt": "2026-08-01T11:07:34.788Z",
+  "updatedAt": "2026-08-01T11:13:06.286Z",
   "request": {
     "title": "欠落指摘 finding の構造化宣言 — finding-ref 実在検証との衝突を解消し fixer routing を保つ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/missing-file-finding-declaration-40db34c3",
   "error": null,
@@ -76,7 +76,9 @@
     "d54145345463a95c07855536b8d56eadf62c860b",
     "f50ecfe2c24897a325cb699e2f6ea3babbd815f1",
     "7bf66d59c8a75d2e022ef07a9ac5674835a680d8",
-    "27a664f6860b14d5ee2107bd19d318ea39dfd36c"
+    "27a664f6860b14d5ee2107bd19d318ea39dfd36c",
+    "a84e8a8aba80a144eb25824c3a33ba025e523579",
+    "56378c84b1982d813016d9833e34cd753aa9d308"
   ],
   "reviewerStatuses": [
     {
@@ -109,7 +111,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 59,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -119,13 +121,14 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "code-fixer": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
