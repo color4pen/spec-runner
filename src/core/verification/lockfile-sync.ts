@@ -205,34 +205,25 @@ async function gitShowFile(
   spawnFn: SpawnFn,
 ): Promise<string | null> {
   return new Promise((resolve) => {
-    // Call spawnFn — it has the same signature as node:child_process.spawn.
-    // We call it with 3 args matching the (command, args, options) overload.
-    type SpawnWithOptions = (cmd: string, args: string[], opts: object) => {
-      stdout: { on(event: string, cb: (chunk: Buffer) => void): void } | null;
-      on(event: string, cb: (...args: unknown[]) => void): void;
-    };
-    let child: ReturnType<SpawnWithOptions>;
     try {
-      child = (spawnFn as unknown as SpawnWithOptions)("git", ["show", `${ref}:${filepath}`], {
+      const child = spawnFn("git", ["show", `${ref}:${filepath}`], {
         cwd,
         shell: false,
         env: stripSecrets(process.env as Record<string, string | undefined>),
       });
+      const chunks: Buffer[] = [];
+      child.stdout?.on("data", (chunk: Buffer) => chunks.push(chunk));
+      child.on("close", (code) => {
+        if (code !== 0) {
+          resolve(null);
+        } else {
+          resolve(Buffer.concat(chunks).toString("utf-8"));
+        }
+      });
+      child.on("error", () => resolve(null));
     } catch {
       resolve(null);
-      return;
     }
-
-    const chunks: Buffer[] = [];
-    child.stdout?.on("data", (chunk: Buffer) => chunks.push(chunk));
-    child.on("close", (code: unknown) => {
-      if (code !== 0) {
-        resolve(null);
-      } else {
-        resolve(Buffer.concat(chunks).toString("utf-8"));
-      }
-    });
-    child.on("error", () => resolve(null));
   });
 }
 
