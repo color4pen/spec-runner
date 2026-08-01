@@ -15,7 +15,7 @@
 「当該 code-fixer run に routing された findings」を、code-fixer.buildMessage と同一の routing precedence で
 導出する純粋関数を追加する。code-fixer の private predicate を中立モジュールへ移設して再利用する。
 
-- [ ] `src/core/step/routed-findings.ts` を新規作成する
+- [x] `src/core/step/routed-findings.ts` を新規作成する
   - `src/core/step/code-fixer.ts:73-91` の `isCoordinatorLoopActive(state: JobState): boolean` と
     `:97-106` の `getNeedsFixMembers(state: JobState): string[]` を**このモジュールへ移設**し `export` する
     （ロジックは不変。必要な import: `STEP_NAMES`, `getConformanceFixContext`,
@@ -29,14 +29,14 @@
     `buildCanonWriteScopeFromState(state)` を使う（deps 不要の state 駆動版）
   - JSDoc に「buildMessage の 3 分岐 precedence と同一の source of truth。分岐 predicate を共有するため
     SELECTION は drift しない。consumer は executor の no-op 免除集合導出」を明記する
-- [ ] `src/core/step/code-fixer.ts` を更新する
+- [x] `src/core/step/code-fixer.ts` を更新する
   - 移設した `isCoordinatorLoopActive` / `getNeedsFixMembers` の**ローカル定義を削除**し、
     `import { isCoordinatorLoopActive, getNeedsFixMembers } from "./routed-findings.js";` に置換する
   - 不要になった import（`CUSTOM_REVIEWERS_STEP_NAME` / `REGRESSION_GATE_STEP_NAME` が他で未使用なら）を整理する
   - buildMessage / reads の**出力（prose / 読む result file / findingsPath / verdict）は一切変更しない**
   - buildMessage の findings 解決箇所（`:167,209,285`）付近に「routing precedence は
     `routed-findings.ts` の `collectRoutedFixerFindings` と一致させること」の相互参照コメントを付す
-- [ ] import 循環が無いことを確認する（`routed-findings.ts` は agent/prompt 定義に依存しない light module に保つ）
+- [x] import 循環が無いことを確認する（`routed-findings.ts` は agent/prompt 定義に依存しない light module に保つ）
 
 **Acceptance Criteria**:
 - `collectRoutedFixerFindings` が純粋関数（副作用・I/O なし）であり、conformance / coordinator-loop /
@@ -52,12 +52,12 @@
 `detectNoOp` を generic なまま保ち、finding が名指しした path を仕事に数える。ただし
 `pipelineManagedPaths` は上限として検知器内で減算する。
 
-- [ ] `src/core/step/no-op-detect.ts` の `detectNoOp` の `params` 型に次を追加する（ともに optional）:
+- [x] `src/core/step/no-op-detect.ts` の `detectNoOp` の `params` 型に次を追加する（ともに optional）:
   - `findingTargetPaths?: string[]` — 当該 run に routing された findings の worktree 相対 `file` 集合（免除候補）
   - `pipelineManagedPaths?: string[]` — 免除の上限（この集合の path は名指しされても仕事に数えない）
   - JSDoc に「両者とも呼び出し側が算出。`exempt = findingTargetPaths − pipelineManagedPaths`。省略時は
     exempt = ∅ = 現行挙動」を明記する
-- [ ] `sourceFiles` 算出（現 `:64-67`）を次に変更する:
+- [x] `sourceFiles` 算出（現 `:64-67`）を次に変更する:
   ```
   const managed = new Set(params.pipelineManagedPaths ?? []);
   const exempt = new Set((params.findingTargetPaths ?? []).filter((f) => !managed.has(f)));
@@ -65,7 +65,7 @@
     exempt.has(f) ? true : !ARTIFACT_PREFIXES.some((prefix) => f.startsWith(prefix)),
   );
   ```
-- [ ] 以下は**不変**に保つ:
+- [x] 以下は**不変**に保つ:
   - `if (!step.noOpDetect) return undefined;` / `if (params.completionReason !== "success") return undefined;`
   - `sourceFiles.length === 0` 分岐内の `findingsRoutingApproved === true` 抑止と診断ログ
   - `sourceFiles.length > 0` のとき早期 `undefined`（source 変更ありは従来どおり no-op でない）
@@ -84,15 +84,15 @@
 
 `detectNoOp` の唯一の呼び出し元で、code-fixer に限って免除集合を導出し、上限とともに渡す。
 
-- [ ] `src/core/step/executor.ts` に import を追加する:
+- [x] `src/core/step/executor.ts` に import を追加する:
   - `import { collectRoutedFixerFindings } from "./routed-findings.js";`
   - `import { pipelineManagedPaths } from "../pipeline/round-git-scope.js";`
-- [ ] `executor.ts:471-480` の `detectNoOp` 呼び出しに次の 2 引数を追加する:
+- [x] `executor.ts:471-480` の `detectNoOp` 呼び出しに次の 2 引数を追加する:
   - `findingTargetPaths: step.noOpDetect === true ? collectRoutedFixerFindings(state).map((f) => f.file) : []`
   - `pipelineManagedPaths: pipelineManagedPaths(deps.slug)`
   - `step.noOpDetect === true` ガードにより、非 code-fixer step で routing 導出を走らせない
     （既存 `findingsRoutingApproved` 算出と同じイディオム）
-- [ ] 既存の他引数（`headBeforeStep` / `cwd` / `branch` / `completionReason` / `findingsRoutingApproved`）は不変
+- [x] 既存の他引数（`headBeforeStep` / `cwd` / `branch` / `completionReason` / `findingsRoutingApproved`）は不変
 
 **Acceptance Criteria**:
 - executor が code-fixer step（`noOpDetect === true`）に対してのみ `collectRoutedFixerFindings` を呼ぶ
@@ -105,31 +105,31 @@
 
 `executor-no-op.test.ts` に免除シナリオを追加する。既存 6 ケースは無変更で green を保つ。
 
-- [ ] `src/core/step/__tests__/executor-no-op.test.ts` に、active reviewer の finding に**任意の
+- [x] `src/core/step/__tests__/executor-no-op.test.ts` に、active reviewer の finding に**任意の
   `file` を指定できる** state 構築ヘルパを追加する（既存 `makeStateWithCodeReview` は `file: "src/foo.ts"` を
   ハードコードしているため、`file` を引数化した variant を追加するか拡張する。StepRun 形は既存の
   `{ attempt, sessionId, startedAt, endedAt, outcome: { verdict, findingsPath, error, toolResult: { ok, findings } } }`
   に準拠）
-- [ ] **シナリオ歯（#927 実例）**: code-review latest `needs-fix`（= `findingsRoutingApproved` が `false`）
+- [x] **シナリオ歯（#927 実例）**: code-review latest `needs-fix`（= `findingsRoutingApproved` が `false`）
   で finding が `specrunner/changes/example/implementation-notes.md` を名指し、`listChangedFiles` が
   `["specrunner/changes/example/implementation-notes.md"]` のみ → 記録 verdict が `approved`
   （no-op 発火せず override なし）
   - 補足コメントで「#927 の composed-path（regression-gate）も同じ active-reviewer branch を通る」ことを明記する
-- [ ] **finding 名指し外の change folder ファイルのみ**: 同じ finding（implementation-notes.md 名指し）で
+- [x] **finding 名指し外の change folder ファイルのみ**: 同じ finding（implementation-notes.md 名指し）で
   `listChangedFiles` が `["specrunner/changes/example/other-doc.md"]` のみ → 記録 verdict が `needs-fix`
-- [ ] **pipelineManagedPaths 名指し**: finding が `specrunner/changes/example/state.json` を名指し、
+- [x] **pipelineManagedPaths 名指し**: finding が `specrunner/changes/example/state.json` を名指し、
   `listChangedFiles` が `["specrunner/changes/example/state.json"]` のみ（code-review `needs-fix`）→ 記録
   verdict が `needs-fix`（上限で免除されない）
-- [ ] **ソース通常ケース**: finding が `src/foo.ts` を名指し、`listChangedFiles` が `["src/foo.ts"]` →
+- [x] **ソース通常ケース**: finding が `src/foo.ts` を名指し、`listChangedFiles` が `["src/foo.ts"]` →
   記録 verdict が `approved`（免除ロジック導入後も source 変更の通常経路が不変）
-- [ ] **conformance 分岐（branch 1）**: conformance が `needs-fix:code-fixer` で finding が
+- [x] **conformance 分岐（branch 1）**: conformance が `needs-fix:code-fixer` で finding が
   `specrunner/changes/example/implementation-notes.md` を名指し、`listChangedFiles` が
   `["specrunner/changes/example/implementation-notes.md"]` のみ → 記録 verdict が `approved`
   （`collectRoutedFixerFindings` が branch 1 を通り conformance findings を返す）
   - state 構築: `STEP_NAMES.CONFORMANCE` ステップに `needs-fix:code-fixer` verdict・当該ファイルを指す
     finding・`endedAt` を code-review の `endedAt` より後に設定（`getConformanceFixContext` の recency check
     が通るよう順序を保証）。ステップ構造は既存 Req 4 state と同形。
-- [ ] **coordinator-loop 分岐（branch 2）**: custom reviewer が `needs-fix` で finding が
+- [x] **coordinator-loop 分岐（branch 2）**: custom reviewer が `needs-fix` で finding が
   `specrunner/changes/example/implementation-notes.md` を名指し、`listChangedFiles` が
   `["specrunner/changes/example/implementation-notes.md"]` のみ → 記録 verdict が `approved`
   （`collectRoutedFixerFindings` が branch 2 を通り coordinator findings を返す）
@@ -137,7 +137,7 @@
     `"custom-reviewers"`）ステップに `needs-fix` verdict run を追加、当該 custom reviewer ステップに
     `needs-fix` verdict・当該ファイルを指す finding を追加（`isCoordinatorLoopActive` の条件を満たす最小
     構成）。conformance 未起動（conformance runs 空）・regression-gate 未起動（gate runs 空）とする。
-- [ ] 既存 6 ケース（no source / artifact only / source changed / noOpDetect false / undefined /
+- [x] 既存 6 ケース（no source / artifact only / source changed / noOpDetect false / undefined /
   runtimeStrategy 無し）と Req 1-4 ケースが**無変更で green** であることを確認する
 
 **Acceptance Criteria**:
@@ -154,11 +154,11 @@
 
 ## T-05: 検証（最終確認）
 
-- [ ] `bun run typecheck` が green
-- [ ] `bun run test` が green（新規テスト含む、既存テスト後退なし）
-- [ ] `no-op-detect.ts` の `ARTIFACT_PREFIXES` は不変（縮小・置換していない）／`round-git-scope.ts` の
+- [x] `bun run typecheck` が green
+- [x] `bun run test` が green（新規テスト含む、既存テスト後退なし）
+- [x] `no-op-detect.ts` の `ARTIFACT_PREFIXES` は不変（縮小・置換していない）／`round-git-scope.ts` の
   `pipelineManagedPaths` の列挙は不変であることを確認する
-- [ ] `code-fixer.ts` の buildMessage / reads の出力（prose / findingsPath / verdict）に変更が無いことを確認する
+- [x] `code-fixer.ts` の buildMessage / reads の出力（prose / findingsPath / verdict）に変更が無いことを確認する
 
 **Acceptance Criteria**:
 - `typecheck && test` が green
