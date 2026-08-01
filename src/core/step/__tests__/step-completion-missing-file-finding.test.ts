@@ -704,6 +704,54 @@ describe("TC-012: Finding type includes fileMissing optional boolean (type-level
 });
 
 // ---------------------------------------------------------------------------
+// TC-006b: branch=null + missingDecl → fail-closed (escalation override)
+// Covers HIGH finding: managed runtime branch=null + missingDecl → fail-open
+// Without the fix: all refs appear non-existent → falseDecl empty → no override → needs-fix (WRONG)
+// With the fix: branch=null → unverifiable → fail-closed → escalation
+// ---------------------------------------------------------------------------
+
+describe("TC-006b: branch=null + missingDecl → fail-closed (escalation)", () => {
+  it(
+    "TC-006b: branch=null + fileMissing:true → override=true → escalation (not needs-fix)",
+    async () => {
+      // Simulate managed runtime with branch=null: verifyFindingRefs returns all refs as non-existent.
+      // The reversed missingDecl logic would treat "all non-existent" as "all correctly absent"
+      // → falseDecl empty → no override → fail-open (the bug).
+      // Fix: branch=null → cannot verify → escalation override (fail-closed).
+      const mockVerifyFindingRefs = vi.fn(async (refs: FindingRef[]) => {
+        // Mirrors managed runtime branch=null behavior: return all refs as non-existent
+        return [...refs];
+      });
+
+      const deps = makeBaseDeps({
+        cwd: "/fake-cwd",
+        runtimeStrategy: { verifyFindingRefs: mockVerifyFindingRefs } as unknown as PipelineDeps["runtimeStrategy"],
+      });
+      const step = makeStep("regression-gate", true);
+      const state: ReturnType<typeof makeState> = { ...makeState("regression-gate"), branch: null };
+      const toolResult = makeToolResult([
+        {
+          severity: "high",
+          resolution: "fixable",
+          file: "docs/implementation-notes.md",
+          fileMissing: true,
+          title: "implementation-notes.md not created",
+          rationale: "The file was required but is absent",
+        },
+      ]);
+
+      const completion = await deriveStepCompletion(step, state, deps, { toolResult }, undefined);
+
+      // Fix: branch=null → unverifiable → escalation (fail-closed)
+      // Bug (without fix): branch=null → all refs non-existent → reversed: all absent → no override → needs-fix
+      expect(completion.verdict).toBe("escalation");
+      // verifyFindingRefs must NOT be called when branch is null (short-circuit before seam)
+      expect(mockVerifyFindingRefs).not.toHaveBeenCalled();
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
 // TC-013 and TC-014 notes:
 //
 // TC-013: bun run test が全 pass する — verified by running `bun run test` in CI.

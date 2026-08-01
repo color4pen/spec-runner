@@ -262,18 +262,26 @@ export async function deriveStepCompletion(
           }
 
           if (missingDecl.length > 0) {
-            // Pass only file (no line) for missing-file declarations (D4: line has no meaning for absent files).
-            const refs: FindingRef[] = missingDecl.map((f) => ({ file: f.file }));
-            const nonExistent = await deps.runtimeStrategy.verifyFindingRefs(
-              refs,
-              cwd,
-              state.branch ?? null,
-            );
-            // nonExistent = files that do NOT exist (correct: they are supposed to be absent).
-            // Files NOT in nonExistent = files that DO exist = false declarations.
-            const absentFiles = new Set(nonExistent.map((r) => r.file));
-            const falseDecl = missingDecl.filter((f) => !absentFiles.has(f.file));
-            if (falseDecl.length > 0) override = true; // file exists despite missing claim → false declaration
+            const branch = state.branch ?? null;
+            if (branch === null) {
+              // Without a branch, verifyFindingRefs cannot distinguish "file truly absent" from
+              // "branch unavailable → all refs reported non-existent" (managed runtime behavior).
+              // Fail-closed: unverifiable missingDecl declarations → escalation override.
+              override = true;
+            } else {
+              // Pass only file (no line) for missing-file declarations (D4: line has no meaning for absent files).
+              const refs: FindingRef[] = missingDecl.map((f) => ({ file: f.file }));
+              const nonExistent = await deps.runtimeStrategy.verifyFindingRefs(
+                refs,
+                cwd,
+                branch,
+              );
+              // nonExistent = files that do NOT exist (correct: they are supposed to be absent).
+              // Files NOT in nonExistent = files that DO exist = false declarations.
+              const absentFiles = new Set(nonExistent.map((r) => r.file));
+              const falseDecl = missingDecl.filter((f) => !absentFiles.has(f.file));
+              if (falseDecl.length > 0) override = true; // file exists despite missing claim → false declaration
+            }
           }
 
           if (override) {

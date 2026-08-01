@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "40db34c3-c363-4d44-8f1c-d063fba00eee",
   "createdAt": "2026-08-01T09:56:21.528Z",
-  "updatedAt": "2026-08-01T10:41:40.149Z",
+  "updatedAt": "2026-08-01T10:54:50.930Z",
   "request": {
     "title": "欠落指摘 finding の構造化宣言 — finding-ref 実在検証との衝突を解消し fixer routing を保つ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/missing-file-finding-declaration-40db34c3",
   "error": null,
@@ -71,10 +71,41 @@
     "f2be1146d3e3c7c8463192d12698bcfeb10a8f90",
     "07c9799a072eaa714f5944016c62f16aa2decdb8",
     "0db4843df3dd87c4495017f47c8ecd84e8c226fc",
-    "acdf65b7a18a9bafe27cd59cebcaaff605a715c7"
+    "acdf65b7a18a9bafe27cd59cebcaaff605a715c7",
+    "9b8e117f704d68b83e09393eb9b3ea6739a72f75",
+    "d54145345463a95c07855536b8d56eadf62c860b"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 34,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -84,7 +115,11 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
