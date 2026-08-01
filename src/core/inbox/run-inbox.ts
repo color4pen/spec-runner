@@ -11,14 +11,15 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { planInbox } from "./planner.js";
 import type { InboxPlan, StartAction, RejectAction, ResumeAction, IssueComment } from "./types.js";
 import { buildRejectComment, notifyJobTerminal } from "../notify/issue-notifier.js";
-import { ERROR_CODES } from "../../errors.js";
+import { ERROR_CODES, slugOccupiedError } from "../../errors.js";
 import { stderrWrite, logResult } from "../../logger/stdout.js";
 import { write as writeDraft } from "../request/store.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import { livenessJsonPath } from "../../util/paths.js";
 import { isStaleRunning } from "../resume/safety.js";
 import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
-import { transitionJob } from "../../state/lifecycle.js";
+import { transitionJob, TERMINAL_STATUSES } from "../../state/lifecycle.js";
+import type { JobStatus } from "../../state/schema.js";
 
 /** Effect functions injected by caller (allows mocking in tests). */
 export interface InboxEffects {
@@ -375,6 +376,24 @@ function buildEffects(opts: RunInboxOptions): InboxEffects {
 
   const defaultEffects: InboxEffects = {
     async startJob(slug: string, issueBody: string, issueNumber: number): Promise<void> {
+      // D10: occupancy pre-check before runRunCore, which swallows all exceptions internally.
+      // If a non-terminal job already occupies this slug, throw SlugOccupiedError so the
+      // inbox catch block can post a rejection comment (idempotent).
+      const allStates = await JobStateStore.list(repoRoot);
+      const nonTerminalForSlug = allStates.filter((s) => {
+        const sSlug = getJobSlug(s);
+        return sSlug === slug && !TERMINAL_STATUSES.has(s.status as JobStatus);
+      });
+      if (nonTerminalForSlug.length > 0) {
+        const prior = nonTerminalForSlug[0]!;
+        throw slugOccupiedError(slug, {
+          jobId: prior.jobId,
+          status: prior.status,
+          updatedAt: prior.updatedAt,
+          pid: prior.pid ?? null,
+        });
+      }
+
       await writeDraft(repoRoot, slug, issueBody);
       const draftPath = `specrunner/drafts/${slug}/request.md`;
       const { runRunCore } = await import("../../cli/run.js");

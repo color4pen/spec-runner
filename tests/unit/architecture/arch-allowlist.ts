@@ -565,5 +565,12 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     tracking: "CWD-config-store-debt",
     comment: "debt: config store derives project-local config path from process.cwd(). Follow-up burn-down.",
   },
+  {
+    file: "src/cli/command-registry.ts",
+    pattern: "ctx?.repoRoot ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-registry-doctor-repair-reporoot-fallback",
+    comment: "role-a: doctor repair uses ctx.repoRoot with process.cwd() fallback when repoRoot is unavailable (outside a repo).",
+  },
 
 ];

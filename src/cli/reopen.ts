@@ -55,7 +55,13 @@ export async function runReopenCore(slug: string, options: ReopenOptions): Promi
   setLogLevel(options.logLevel ?? "default");
   const cwd = options.cwd ?? process.cwd();
 
-  const state = await resolveJobStateBySlug(slug, cwd);
+  let state: Awaited<ReturnType<typeof resolveJobStateBySlug>>;
+  try {
+    state = await resolveJobStateBySlug(slug, cwd);
+  } catch (err) {
+    logError((err as Error).message);
+    return 1;
+  }
   const repo = state
     ? { owner: state.repository.owner, name: state.repository.name }
     : { owner: "", name: "" };

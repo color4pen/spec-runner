@@ -14,7 +14,7 @@
  */
 import { scanSlugOccupancy } from "./scan.js";
 import type { OccupancyScanResult } from "./scan.js";
-import { slugOccupiedError, slugStateUnreadableError } from "../../errors.js";
+import { slugOccupiedError, slugStateUnreadableError, SlugOccupiedError, ERROR_CODES } from "../../errors.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -51,6 +51,17 @@ export async function assertSlugUnoccupied(
   // If any non-terminal occupant exists → block start
   if (result.nonTerminal.length >= 1) {
     const prior = result.nonTerminal[0]!;
+    // D3: differentiate "running + alive pid" (wait/cancel) vs halted/dead-pid (resume/cancel)
+    const isAlive = deps?.isAlive;
+    if (prior.status === "running" && isAlive !== undefined && isAlive(prior.pid)) {
+      throw new SlugOccupiedError(
+        ERROR_CODES.SLUG_OCCUPIED,
+        `Wait for job '${prior.jobId}' to complete or run 'specrunner job cancel ${prior.jobId}' to cancel it.`,
+        `Slug '${slug}' is occupied by a running job with a live process (${prior.jobId}, status: ${prior.status}).`,
+        prior.jobId,
+        prior.status,
+      );
+    }
     throw slugOccupiedError(slug, prior);
   }
 }

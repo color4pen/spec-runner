@@ -15,7 +15,8 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { loadStateByJobId } from "../job-access/load-by-job-id.js";
-import { transitionJob } from "../../state/lifecycle.js";
+import { transitionJob, TERMINAL_STATUSES } from "../../state/lifecycle.js";
+import type { JobStatus } from "../../state/schema.js";
 import { stdoutWrite } from "../../logger/stdout.js";
 import { ERROR_CODES, SpecRunnerError } from "../../errors.js";
 import { gracefulKill } from "./pid-kill.js";
@@ -467,9 +468,28 @@ export async function cancelSingleJob(opts: {
       try {
         const sidecarRaw = await fs.readFile(sidecarAbsPath, "utf-8");
         const sidecarObj = JSON.parse(sidecarRaw) as Record<string, unknown>;
-        // If sidecar still exists and belongs to a different job → skip purge
-        if (sidecarObj["jobId"] !== undefined && sidecarObj["jobId"] !== state.jobId) {
-          skipPurge = true;
+        const foreignJobId = typeof sidecarObj["jobId"] === "string" ? sidecarObj["jobId"] : undefined;
+        // If sidecar belongs to a different job, check if that job is terminal
+        if (foreignJobId !== undefined && foreignJobId !== state.jobId) {
+          // Look up the foreign job's status to determine if it's still live
+          let foreignIsTerminal = false;
+          try {
+            const allStates = await JobStateStore.list(deps.repoRoot);
+            const foreignState = allStates.find((s) => s.jobId === foreignJobId);
+            foreignIsTerminal = foreignState === undefined || TERMINAL_STATUSES.has(foreignState.status as JobStatus);
+          } catch {
+            // Cannot determine foreign job status — err on the side of caution
+            foreignIsTerminal = false;
+          }
+          if (foreignIsTerminal) {
+            // Stale sidecar from a terminal foreign job → safe to purge
+          } else {
+            // Live non-terminal foreign job owns the sidecar → skip purge and warn
+            skipPurge = true;
+            warnings.push(
+              `Warning: --purge skipped for slug '${slugForMarker}': sidecar belongs to a different non-terminal job (${foreignJobId}). Cancel that job first.`,
+            );
+          }
         }
       } catch {
         // Absent or unreadable → safe to purge (no foreign occupant)
