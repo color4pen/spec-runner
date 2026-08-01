@@ -21,6 +21,12 @@ import type { VerificationConfig } from "../../config/schema.js";
 import { detectPackageManager, runCommand } from "../../util/detect-pm.js";
 import { runChangedLineCoverageGate, CHANGED_LINE_COVERAGE_PHASE } from "./changed-line-coverage.js";
 
+// Lockfile-sync phase name constant — kept local to avoid a static import of lockfile-sync.js.
+// A static import triggers the vi.mock factory at module-load time (before test code runs),
+// causing a TDZ error when the test's local `LOCKFILE_SYNC_PHASE` const is referenced inside
+// the factory. Using a dynamic import (below) defers factory evaluation until after test setup.
+const LOCKFILE_SYNC_PHASE = "lockfile-sync" as const;
+
 /** Result for a single verification phase. */
 export interface PhaseResult {
   /** Phase name or command label used for display. */
@@ -412,6 +418,29 @@ async function runVerificationCommands(
       "changed-line coverage gate: skipped (`verification.coverage` 未設定)";
   }
 
+  // Run lockfile-sync gate after all commands and coverage gate (when baseBranch is provided).
+  // Dynamic import defers module resolution until this point (after test setup completes).
+  if (baseBranch !== undefined) {
+    if (failed) {
+      // Fail-fast: prior commands/coverage failed — skip the gate.
+      phases.push({
+        phase: LOCKFILE_SYNC_PHASE,
+        status: "skipped",
+        stdout: "_(skipped — previous command failed)_",
+        stderr: "",
+        exitCode: null,
+        durationMs: 0,
+      });
+    } else {
+      const { runLockfileSyncGate } = await import("./lockfile-sync.js");
+      const gateResult = await runLockfileSyncGate({ slug, cwd, baseBranch, spawn });
+      phases.push(gateResult);
+      if (gateResult.status === "failed") {
+        failed = true;
+      }
+    }
+  }
+
   const nonSkipped = phases.filter((p) => p.status !== "skipped");
   const anyFailed = phases.some((p) => p.status === "failed");
   const allSkipped = nonSkipped.length === 0;
@@ -611,6 +640,28 @@ async function runVerificationPhases(
   } else {
     coverageSkipNote =
       "changed-line coverage gate: skipped (`verification.coverage` 未設定)";
+  }
+
+  // Run lockfile-sync gate after all phases and coverage gate (when baseBranch is provided).
+  if (baseBranch !== undefined) {
+    if (failed) {
+      // Fail-fast: prior phases/coverage failed — skip the gate.
+      phases.push({
+        phase: LOCKFILE_SYNC_PHASE,
+        status: "skipped",
+        stdout: "_(skipped — previous phase failed)_",
+        stderr: "",
+        exitCode: null,
+        durationMs: 0,
+      });
+    } else {
+      const { runLockfileSyncGate } = await import("./lockfile-sync.js");
+      const gateResult = await runLockfileSyncGate({ slug, cwd, baseBranch, spawn });
+      phases.push(gateResult);
+      if (gateResult.status === "failed") {
+        failed = true;
+      }
+    }
   }
 
   // Determine verdict: passed only if at least one phase ran and passed, or all non-skipped passed
