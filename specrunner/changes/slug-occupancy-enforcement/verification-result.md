@@ -6,11 +6,11 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 0.3s | 0 |
-| 2 | typecheck | passed | 5.0s | 0 |
-| 3 | test | passed | 31.2s | 0 |
-| 4 | lint | passed | 5.8s | 0 |
-| 5 | changed-line-coverage | passed | 39.3s | 0 |
+| 1 | build | passed | 0.4s | 0 |
+| 2 | typecheck | passed | 5.1s | 0 |
+| 3 | test | passed | 36.4s | 0 |
+| 4 | lint | passed | 6.1s | 0 |
+| 5 | changed-line-coverage | passed | 47.2s | 0 |
 
 ## Phase: build
 
@@ -23,7 +23,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.35 MB
-ESM ⚡️ Build success in 64ms
+ESM ⚡️ Build success in 82ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -53,32 +53,27 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	212d
 
  Test Files  670 passed (670)
       Tests  9949 passed | 1 skipped (9950)
-   Start at  17:02:15
-   Duration  30.89s (transform 6.30s, setup 0ms, import 26.74s, tests 43.99s, environment 33ms)
+   Start at  17:29:59
+   Duration  36.04s (transform 7.83s, setup 0ms, import 33.25s, tests 53.00s, environment 37ms)
 
 
 $ vitest run
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-qE7B4U/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-eB2nXm/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-KiDd7D/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-cchaXT/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 Warning: failed to push checkpoint commit for test-slug to origin/fix/test-branch-abc12345. Push manually to ensure state is on the branch.
 Warning: checkpoint persistBeforePush failed for test-slug: disk-full: cannot persist. Continuing with push.
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
@@ -87,6 +82,31 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
+[inbox] started job slug=fix-login-bug from issue#1
+[inbox] resumed job slug=fix-login-bug (issue#10)
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
+  start    issue#1 → slug=fix-login-bug
+  resume   fix-login-bug (issue#10)
+[inbox] recovered stale job slug=my-feature (attempt 1)
+[inbox] escalated stale job slug=my-feature to awaiting-resume
+[inbox] dry-run: no effects will be executed.
+[inbox] plan: 0 start(s), 0 reject(s), 0 resume(s), 1 recover(s), 1 escalate(s)
+  recover  my-feature (attempt 1)
+  escalate other-feat (step=design)
+[inbox] warn: recover my-feature: disk full
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=my-feature (issue#30)
+[inbox] resumed job slug=old-feature (issue#50)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
@@ -109,26 +129,6 @@ Retrying worktree add: lock contention (attempt 2/3)
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-[inbox] started job slug=fix-login-bug from issue#1
-[inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
-[inbox] started job slug=fix-login-bug from issue#1
-[inbox] resumed job slug=fix-login-bug (issue#10)
-[inbox] dry-run: no effects will be executed.
-[inbox] plan: 1 start(s), 0 reject(s), 1 resume(s), 0 recover(s), 0 escalate(s)
-  start    issue#1 → slug=fix-login-bug
-  resume   fix-login-bug (issue#10)
-[inbox] recovered stale job slug=my-feature (attempt 1)
-[inbox] escalated stale job slug=my-feature to awaiting-resume
-[inbox] dry-run: no effects will be executed.
-[inbox] plan: 0 start(s), 0 reject(s), 0 resume(s), 1 recover(s), 1 escalate(s)
-  recover  my-feature (attempt 1)
-  escalate other-feat (step=design)
-[inbox] warn: recover my-feature: disk full
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=my-feature (issue#30)
-[inbox] resumed job slug=old-feature (issue#50)
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -149,12 +149,12 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
@@ -186,6 +186,6 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (62 changed files checked, 44 skipped)
-  Skipped (not in coverage surface): architecture/divergence-status.md, specrunner/changes/slug-occupancy-enforcement/bite-evidence-result.md, specrunner/changes/slug-occupancy-enforcement/conformance-result-001.md, specrunner/changes/slug-occupancy-enforcement/conformance-result-002.md, specrunner/changes/slug-occupancy-enforcement/cross-boundary-invariants-result-001.md, specrunner/changes/slug-occupancy-enforcement/cross-boundary-invariants-result-002.md, specrunner/changes/slug-occupancy-enforcement/cross-boundary-invariants-result-003.md, specrunner/changes/slug-occupancy-enforcement/cross-boundary-invariants-result-004.md, specrunner/changes/slug-occupancy-enforcement/design.md, specrunner/changes/slug-occupancy-enforcement/events.jsonl, specrunner/changes/slug-occupancy-enforcement/regression-gate-result-001.md, specrunner/changes/slug-occupancy-enforcement/regression-gate-result-002.md, specrunner/changes/slug-occupancy-enforcement/request-review-attestation.json, specrunner/changes/slug-occupancy-enforcement/request-review-result-001.md, specrunner/changes/slug-occupancy-enforcement/request.md, specrunner/changes/slug-occupancy-enforcement/review-feedback-001.md, specrunner/changes/slug-occupancy-enforcement/review-feedback-002.md, specrunner/changes/slug-occupancy-enforcement/rules.md, specrunner/changes/slug-occupancy-enforcement/scale-tolerance-result-001.md, specrunner/changes/slug-occupancy-enforcement/spec-review-result-001.md, specrunner/changes/slug-occupancy-enforcement/spec.md, specrunner/changes/slug-occupancy-enforcement/state.json, specrunner/changes/slug-occupancy-enforcement/tasks.md, specrunner/changes/slug-occupancy-enforcement/test-cases.md, specrunner/changes/slug-occupancy-enforcement/usage.json, specrunner/changes/slug-occupancy-enforcement/verification-result.md, src/core/port/runtime-strategy.ts, tests/occupancy-e2e.test.ts, tests/unit/architecture/arch-allowlist.ts, tests/unit/cli/doctor-repair.test.ts, tests/unit/cli/progress-halt-guidance.test.ts, tests/unit/core/cancel/sidecar-teardown.test.ts, tests/unit/core/command/pipeline-run-duplicate-guard.test.ts, tests/unit/core/command/reopen-terminal-slug.test.ts, tests/unit/core/doctor/checks/storage/slug-occupancy.test.ts, tests/unit/core/occupancy/claim.test.ts, tests/unit/core/occupancy/errors.test.ts, tests/unit/core/occupancy/guard.test.ts, tests/unit/core/occupancy/repair.test.ts, tests/unit/core/occupancy/scan.test.ts, tests/unit/core/resume/resolve-job.test.ts, tests/unit/core/resume/state-based-resolve.test.ts, tests/unit/core/runtime/local-duplicate-guard.test.ts, tests/unit/inbox/occupancy-propagation.test.ts
+changed-line-coverage: passed (66 changed files checked, 48 skipped)
+  Skipped (not in coverage surface): architecture/divergence-status.md, specrunner/changes/slug-occupancy-enforcement/bite-evidence-result.md, specrunner/changes/slug-occupancy-enforcement/conformance-result-001.md, specrunner/changes/slug-occupancy-enforcement/conformance-result-002.md, specrunner/changes/slug-occupancy-enforcement/conformance-result-003.md, specrunner/changes/slug-occupancy-enforcement/cross-boundary-invariants-result-001.md, specrunner/changes/slug-occupancy-enforcement/cross-boundary-invariants-result-002.md, specrunner/changes/slug-occupancy-enforcement/cross-boundary-invariants-result-003.md, specrunner/changes/slug-occupancy-enforcement/cross-boundary-invariants-result-004.md, specrunner/changes/slug-occupancy-enforcement/design.md, specrunner/changes/slug-occupancy-enforcement/events.jsonl, specrunner/changes/slug-occupancy-enforcement/regression-gate-result-001.md, specrunner/changes/slug-occupancy-enforcement/regression-gate-result-002.md, specrunner/changes/slug-occupancy-enforcement/regression-gate-result-003.md, specrunner/changes/slug-occupancy-enforcement/request-review-attestation.json, specrunner/changes/slug-occupancy-enforcement/request-review-result-001.md, specrunner/changes/slug-occupancy-enforcement/request.md, specrunner/changes/slug-occupancy-enforcement/review-feedback-001.md, specrunner/changes/slug-occupancy-enforcement/review-feedback-002.md, specrunner/changes/slug-occupancy-enforcement/review-feedback-003.md, specrunner/changes/slug-occupancy-enforcement/review-feedback-004.md, specrunner/changes/slug-occupancy-enforcement/rules.md, specrunner/changes/slug-occupancy-enforcement/scale-tolerance-result-001.md, specrunner/changes/slug-occupancy-enforcement/spec-review-result-001.md, specrunner/changes/slug-occupancy-enforcement/spec.md, specrunner/changes/slug-occupancy-enforcement/state.json, specrunner/changes/slug-occupancy-enforcement/tasks.md, specrunner/changes/slug-occupancy-enforcement/test-cases.md, specrunner/changes/slug-occupancy-enforcement/usage.json, specrunner/changes/slug-occupancy-enforcement/verification-result.md, src/core/port/runtime-strategy.ts, tests/occupancy-e2e.test.ts, tests/unit/architecture/arch-allowlist.ts, tests/unit/cli/doctor-repair.test.ts, tests/unit/cli/progress-halt-guidance.test.ts, tests/unit/core/cancel/sidecar-teardown.test.ts, tests/unit/core/command/pipeline-run-duplicate-guard.test.ts, tests/unit/core/command/reopen-terminal-slug.test.ts, tests/unit/core/doctor/checks/storage/slug-occupancy.test.ts, tests/unit/core/occupancy/claim.test.ts, tests/unit/core/occupancy/errors.test.ts, tests/unit/core/occupancy/guard.test.ts, tests/unit/core/occupancy/repair.test.ts, tests/unit/core/occupancy/scan.test.ts, tests/unit/core/resume/resolve-job.test.ts, tests/unit/core/resume/state-based-resolve.test.ts, tests/unit/core/runtime/local-duplicate-guard.test.ts, tests/unit/inbox/occupancy-propagation.test.ts
 ```
