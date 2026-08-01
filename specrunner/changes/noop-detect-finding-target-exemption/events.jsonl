@@ -85,3 +85,10 @@
 {"type":"transition","ts":"2026-08-01T11:20:41.228Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-08-01T11:20:41.229Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-08-01T11:20:41.230Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-08-01T11:24:20.556Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"898dec75-6da8-4439-af21-be9dc8781975","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/noop-detect-finding-target-exemption/regression-gate-result-002.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"evidence":{"checked":4,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-08-01T11:20:41.280Z","endedAt":"2026-08-01T11:24:18.977Z","commitOid":"a7420a1c9c728644c09c8f676f9512f365056551"}
+{"type":"lineage","step":"regression-gate","ts":"2026-08-01T11:24:18.977Z","outputs":[{"path":"specrunner/changes/noop-detect-finding-target-exemption/regression-gate-result-002.md","hash":"sha256:7603cf1616aa789a2ad5148fdef7a045592261e26185bde99e015912b58f59c0"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-08-01T11:24:20.559Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-08-01T11:24:20.559Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-08-01T11:24:20.560Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-08-01T11:24:20.561Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
