@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "80e3dc6a-4d0d-4e7d-a7eb-4553030ece66",
   "createdAt": "2026-08-01T09:56:23.984Z",
-  "updatedAt": "2026-08-01T11:36:12.191Z",
+  "updatedAt": "2026-08-01T11:39:44.870Z",
   "request": {
     "title": "spec-review の周回間 context 注入 — 解消済み指摘の stale 再指摘を情報構造から潰す",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/spec-review-prior-round-context-80e3dc6a",
   "error": null,
   "pipelineId": "standard",
@@ -78,7 +78,8 @@
     "cd09d31a4de2722e3c4d11d17acfada625dd2898",
     "33e20f271c640d26fe5ae2e861cfe53366aae705",
     "a008715b034da0b30e0fba0690196583cf0dd986",
-    "b0bbe8671b60d793a93dc2ef36015e504aa20893"
+    "b0bbe8671b60d793a93dc2ef36015e504aa20893",
+    "253abb57e57a5c249cc269e24a238508c2902ba0"
   ],
   "reviewerStatuses": [
     {
@@ -112,8 +113,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/950",
+    "number": 950,
+    "createdAt": "2026-08-01T11:39:43.998Z"
+  },
   "_journal": {
-    "historyCount": 66,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -129,7 +135,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
