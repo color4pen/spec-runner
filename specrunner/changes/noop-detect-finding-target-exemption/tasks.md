@@ -122,14 +122,33 @@
   verdict が `needs-fix`（上限で免除されない）
 - [ ] **ソース通常ケース**: finding が `src/foo.ts` を名指し、`listChangedFiles` が `["src/foo.ts"]` →
   記録 verdict が `approved`（免除ロジック導入後も source 変更の通常経路が不変）
+- [ ] **conformance 分岐（branch 1）**: conformance が `needs-fix:code-fixer` で finding が
+  `specrunner/changes/example/implementation-notes.md` を名指し、`listChangedFiles` が
+  `["specrunner/changes/example/implementation-notes.md"]` のみ → 記録 verdict が `approved`
+  （`collectRoutedFixerFindings` が branch 1 を通り conformance findings を返す）
+  - state 構築: `STEP_NAMES.CONFORMANCE` ステップに `needs-fix:code-fixer` verdict・当該ファイルを指す
+    finding・`endedAt` を code-review の `endedAt` より後に設定（`getConformanceFixContext` の recency check
+    が通るよう順序を保証）。ステップ構造は既存 Req 4 state と同形。
+- [ ] **coordinator-loop 分岐（branch 2）**: custom reviewer が `needs-fix` で finding が
+  `specrunner/changes/example/implementation-notes.md` を名指し、`listChangedFiles` が
+  `["specrunner/changes/example/implementation-notes.md"]` のみ → 記録 verdict が `approved`
+  （`collectRoutedFixerFindings` が branch 2 を通り coordinator findings を返す）
+  - state 構築: `state.reviewers` に custom reviewer 1 件を追加、`CUSTOM_REVIEWERS_STEP_NAME`（=
+    `"custom-reviewers"`）ステップに `needs-fix` verdict run を追加、当該 custom reviewer ステップに
+    `needs-fix` verdict・当該ファイルを指す finding を追加（`isCoordinatorLoopActive` の条件を満たす最小
+    構成）。conformance 未起動（conformance runs 空）・regression-gate 未起動（gate runs 空）とする。
 - [ ] 既存 6 ケース（no source / artifact only / source changed / noOpDetect false / undefined /
   runtimeStrategy 無し）と Req 1-4 ケースが**無変更で green** であることを確認する
 
 **Acceptance Criteria**:
-- 上記 4 つの新シナリオがすべて green
+- 上記 6 つの新シナリオ（active-reviewer 4 件 + conformance 1 件 + coordinator-loop 1 件）がすべて green
 - 既存 `executor-no-op.test.ts` の全既存ケースが無変更で green
 - `pipelineManagedPaths(deps.slug)` の slug が state の slug（`example`）と一致し、state.json の path
   導出が finding の名指し path と突き合う
+- conformance シナリオでは `collectRoutedFixerFindings` が branch 1（conformance）を通ることで
+  `getConformanceFixContext` の recency 条件（conformance.endedAt > predecessor.endedAt）が適切に満たされる
+- coordinator シナリオでは `collectRoutedFixerFindings` が branch 2（coordinator-loop）を通ることで
+  `isCoordinatorLoopActive` の条件（reviewers 非空・coordinator run 済・最新 verdict needs-fix）が適切に満たされる
 
 ---
 

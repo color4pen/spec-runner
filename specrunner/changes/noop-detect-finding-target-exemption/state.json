@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d4a7f053-5ca8-4d19-8900-827af70e78df",
   "createdAt": "2026-08-01T09:56:17.296Z",
-  "updatedAt": "2026-08-01T10:12:47.317Z",
+  "updatedAt": "2026-08-01T10:21:07.210Z",
   "request": {
     "title": "no-op 検知に finding 対象 path の免除を導入 — 正当な文書修正が sabotage 停止する冤罪を解消",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "change/noop-detect-finding-target-exemption-d4a7f053",
   "error": null,
@@ -65,13 +65,15 @@
   "synthesizedCommits": [
     "3eacb69d0c3da353d773131757019d731b924e40",
     "3fb9f1d8a64b593a0069126a89bba3355e78fa70",
-    "194a423665e734ff1e8cf5f54ca72ff3bdeab634"
+    "194a423665e734ff1e8cf5f54ca72ff3bdeab634",
+    "c5111acd98c84701b9cbfc4f6e0a9a5034fd5e36"
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
