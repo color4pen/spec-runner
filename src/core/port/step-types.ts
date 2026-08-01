@@ -239,6 +239,10 @@ export interface AgentStep {
    *
    * Design D1 (add-spec-review-baseline-check): optional hook for I/O-heavy context
    * preparation that cannot be done inside buildMessage (pure function constraint).
+   *
+   * Ordering: prepareRoundContext (core layer) runs BEFORE this hook and spread-merges
+   * its fields into dynamicContext. Implementations must not drop those fields —
+   * return `{ ...dynamicContext, ...newFields }` rather than a rebuilt object.
    */
   enrichContext?(dynamicContext: DynamicContext, cwd: string, slug: string): Promise<DynamicContext>;
 
