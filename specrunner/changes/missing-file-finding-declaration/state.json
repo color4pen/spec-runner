@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "40db34c3-c363-4d44-8f1c-d063fba00eee",
   "createdAt": "2026-08-01T09:56:21.528Z",
-  "updatedAt": "2026-08-01T09:56:23.861Z",
+  "updatedAt": "2026-08-01T09:59:25.331Z",
   "request": {
     "title": "欠落指摘 finding の構造化宣言 — finding-ref 実在検証との衝突を解消し fixer routing を保つ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/missing-file-finding-declaration-40db34c3",
   "error": null,
@@ -63,10 +63,13 @@
   ],
   "issueNumber": 916,
   "synthesizedCommits": [
-    "66c30ecf5ada40f9035a6a60da4ecd2ce07d8c35"
+    "66c30ecf5ada40f9035a6a60da4ecd2ce07d8c35",
+    "383b290cff7210a0f3461bdfa5bf0069907ab6e1"
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
