@@ -12,7 +12,7 @@
 - **役割**: 1 作業単位（slug）の状態。**変更は `JobStateStore` 経由のみ**（外から直接書かない＝Aggregate 不変）。durability で 2 つに分解する:
   - **event journal（truth・append-only・branch-borne）**: step attempt（`verdict` / `toolResult` / 時刻）＋ transition（旧 `history`）＝ `changes/<slug>/events.jsonl`。起きた事実であり上書きしない。
   - **projection（cache・overwrite・branch-borne）**: descriptor（`jobId` / `request` / `repository` / `branch` / `pipelineId` / `version` / `createdAt`）＋ cursor（`step` / `status` / `resumePoint` / `updatedAt`）＋ `pullRequest`（pr-created event の materialize）＝ `changes/<slug>/state.json`。journal の fold で再構成できる cache であり truth ではない。
-- **identity**: slug ＝ 作業単位の identity（配置キー）。jobId ＝ run/attempt の identity（branch `<prefix><slug>-<jobId8>`・worktree 名に内在。同一 slug の attempt は複数併存しうる）。
+- **identity**: slug ＝ 作業単位の identity（配置キー）。jobId ＝ run/attempt の identity（branch `<prefix><slug>-<jobId8>`・worktree 名に内在。同一 slug の attempt は複数併存しうる。ただし**非 terminal の attempt は slug につき高々一つ** — `dynamic-model.md` の slug 占有不変条件）。
 - **不変条件**:
   - `events.jsonl` は append-only ＝ truth。projection は journal の fold で再構成可能な cache（truth ではない）。
   - state は branch-borne（step ごと commit）＝ **git が唯一の durable source**（clone / CI checkout で完全）。

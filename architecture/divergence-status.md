@@ -10,6 +10,7 @@
 - `arch-allowlist.ts` の残エントリは `B-1` の `R2-*-adapter` 3件のみ。これは composition-root（`core/runtime/`）が adapter を import する §3 許可 edge の記録であり、**違反ではない**。
 - 定義 doc の追随: judge findings の検証 seam / Finding VO / 導出純関数の所在を `components.md`・`domain-model.md` に反映、構造 ADR `2026-06-10-findings-verification-seam` を ratify 済み。
 - **収束済み（2026-07-31）**: 構造 ADR `2026-07-31-deterministic-request-entrance` の実装が完了（change `deterministic-request-entrance`）。`OneShotQueryClient` port・adapter・request 生成一本鎖を削除、B-18 の歯（`request-entrance-llm-boundary.test.ts` — 入口の LLM 系 port / adapter / barrel import 禁止 + dispatch 点検査）を実装し、`model.md` §4 に B-18 を ratify 済み。
+- **既知 divergence（2026-08-01 記録・実装未追随）**: ADR `2026-08-01-slug-occupancy-and-attempt-identity`（slug 占有不変条件・状態基準解決・束縛所有規則）に対し実装は未収束: start guard は liveness の pid 生存のみ検査し非 terminal 先住 job を見ない（`duplicate-slug-guard.ts`）／変更系 slug 解決は `updatedAt` 最新選択（`resolve-job.ts`）／cancel は jobId 一致に関わらず sidecar を残置（削除は `--purge` 時の無条件のみ）。解消は実装 change 側で行い、完了時に burn-down 表へ移す。
 - **scope/permission サブシステム ＋ pipeline 選択 ＋ fast profile を反映済み**（弧 #689→#692→#693→#694）: B-11（concrete runtime の能力 interface）を `model.md` §4 ＋歯に追加、`permissionScope` / `Finding.origin` / scope derivation（機械導出の第2 escalation 源）を `domain-model.md`・`components.md` に、pipeline 選択 / 着手前 capability gate / scope checkpoint 束縛を `dynamic-model.md` に反映。`PIPELINE_REGISTRY` は `standard` / `design-only` / `fast` の 3 本で、`permissionScope` 宣言は `fast` の1件。
 
 ## burn-down 履歴（どの change が何を解消したか）
