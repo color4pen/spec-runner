@@ -238,6 +238,18 @@ export const configSchema = object({
             "must be an object.",
           ),
         ),
+        stagingExcludePatterns: optional(
+          array(
+            nonEmptyString("must be a non-empty string."),
+            "must be an array.",
+          ).check(minLength(1, "must be a non-empty array.")),
+        ),
+        maxStagedFiles: optional(
+          number("must be a positive integer.").check(
+            int("must be a positive integer."),
+            gte(1, "must be a positive integer."),
+          ),
+        ),
       },
       "must be an object.",
     ),

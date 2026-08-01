@@ -13,13 +13,13 @@
 
 ## T-01: Relocate `matchesGlob` to the shared glob util
 
-- [ ] In `src/util/glob-match.ts`, add `export function matchesGlob(filePath: string, pattern: string):
+- [x] In `src/util/glob-match.ts`, add `export function matchesGlob(filePath: string, pattern: string):
       boolean` — the body moved verbatim from `src/core/step/bite-evidence/test-file-selection.ts:51-84`
       (anchored-RegExp translation: `**/`→`(?:.*/)?`, `**`→`.*`, `*`→`[^/]*`, other chars regex-escaped
       incl. literal `.`). Keep its doc comment. Do NOT modify the existing `globMatch` function; add a
       short note that `matchesGlob` coexists as a behavior-preserving relocation and that unifying the
       matchers is out of scope.
-- [ ] In `src/core/step/bite-evidence/test-file-selection.ts`: remove the local `matchesGlob`
+- [x] In `src/core/step/bite-evidence/test-file-selection.ts`: remove the local `matchesGlob`
       definition; add `import { matchesGlob } from "../../../util/glob-match.js";` and
       `export { matchesGlob };` (re-export so existing imports of `matchesGlob` from
       `./test-file-selection.js` keep working). `selectMaterializedTestFiles` continues to call
@@ -35,7 +35,7 @@
 
 ## T-02: Add the pure guarded-staging containment module
 
-- [ ] Create `src/core/step/staging-containment.ts` (leaf; imports only `matchesGlob` from
+- [x] Create `src/core/step/staging-containment.ts` (leaf; imports only `matchesGlob` from
       `../../util/glob-match.js` and the `SpecRunnerConfig` type). Export:
   - `export const DEFAULT_MAX_STAGED_FILES = 2000`.
   - `export function resolveStagingExcludePatterns(config: SpecRunnerConfig | undefined): string[]` —
@@ -61,7 +61,7 @@
 
 ## T-03: Add unit tests for the containment module
 
-- [ ] Add `src/core/step/__tests__/staging-containment.test.ts` covering: exclusion filtering
+- [x] Add `src/core/step/__tests__/staging-containment.test.ts` covering: exclusion filtering
       (artifact trees removed, real files kept; empty patterns → identity); `resolveMaxStagedFiles`
       default vs configured; `resolveStagingExcludePatterns` absent vs present; `summarizeTopDirectories`
       grouping / ordering / `topN` truncation; and a few direct `matchesGlob` cases proving the shared
@@ -73,9 +73,9 @@
 
 ## T-04: Add the `STAGING_LIMIT_EXCEEDED` error code and factory
 
-- [ ] In `src/errors.ts`, add `STAGING_LIMIT_EXCEEDED: "STAGING_LIMIT_EXCEEDED"` to `ERROR_CODES`
+- [x] In `src/errors.ts`, add `STAGING_LIMIT_EXCEEDED: "STAGING_LIMIT_EXCEEDED"` to `ERROR_CODES`
       (near `WRITE_SCOPE_VIOLATION`).
-- [ ] Add `export function stagingLimitExceededError(stepName: string, branch: string, total: number,
+- [x] Add `export function stagingLimitExceededError(stepName: string, branch: string, total: number,
       limit: number, topDirs: Array<{ dir: string; count: number }>): SpecRunnerError` — code
       `STAGING_LIMIT_EXCEEDED`; message states the total (`total`) exceeds `limit`, lists `topDirs` as
       `  - <dir>: <count>` lines, and names both exits: "既知の一時資材なら pipeline.stagingExcludePatterns
@@ -90,11 +90,11 @@
 
 ## T-05: Wire exclusion + volume guard into the guarded branch of `commitAndPush`
 
-- [ ] In `src/core/step/commit-push.ts`, extend `getWorktreeChangedPaths` (`:106`) with a new parameter
+- [x] In `src/core/step/commit-push.ts`, extend `getWorktreeChangedPaths` (`:106`) with a new parameter
       `untrackedMode: "normal" | "all" = "normal"`; when `"all"`, append `"--untracked-files=all"` to the
       `git status` args. Leave all other behavior identical. Do NOT change the two scoped-mode call sites
       (they keep the default `"normal"`).
-- [ ] In the guarded branch (`:572-652`):
+- [x] In the guarded branch (`:572-652`):
   1. Call `getWorktreeChangedPaths(infra.spawnFn, cwd, false, "all")` for the enumeration (per D5) so
      `changedPaths` reflects individual untracked files.
   2. Keep `findWriteScopeViolations(step.name, slug, changedPaths, declaredWritePaths)` on the FULL
@@ -110,7 +110,7 @@
      whole-index `git diff --cached --quiet` check and the "empty enumeration → fail closed" invariant,
      keyed off `stagePaths` (i.e. the fail-closed throw guards `stagePaths.length === 0` when staged
      changes are nonetheless present).
-- [ ] Import `resolveStagingExcludePatterns`, `resolveMaxStagedFiles`, `applyStagingExclusions`,
+- [x] Import `resolveStagingExcludePatterns`, `resolveMaxStagedFiles`, `applyStagingExclusions`,
       `summarizeTopDirectories` from `./staging-containment.js` and `stagingLimitExceededError` from
       `../../errors.js`. Do NOT touch the scoped branch.
 
@@ -124,7 +124,7 @@
 
 ## T-06: Integration tests for guarded exclusion + volume guard
 
-- [ ] Add `src/core/step/__tests__/commit-push-guarded-staging.test.ts` using the positional fake
+- [x] Add `src/core/step/__tests__/commit-push-guarded-staging.test.ts` using the positional fake
       `SpawnFn` pattern from `commit-push-egress-invariant.test.ts` (record `calls`, canned responses).
       Drive `commitAndPush` with a guarded step and cover:
   - **Exclusion (configured)**: status stdout lists `.cargo-tmp/…`, `vendor/…`, and `src/lib.rs`;
@@ -141,7 +141,7 @@
   - **Volume guard (under)**: files ≤ `maxStagedFiles` → commit + push proceed.
   - **Composite**: full set > limit but exclusion removes the artifact trees so survivors ≤ limit →
     no halt; `git add` pathspec is the survivors.
-- [ ] Assert the guarded `git status` call includes `--untracked-files=all` in at least one case.
+- [x] Assert the guarded `git status` call includes `--untracked-files=all` in at least one case.
 
 **Acceptance Criteria**:
 - All spec.md scenarios (exclusion configured/unset, scope-bypass halt, volume over/under, composite)
@@ -149,7 +149,7 @@
 
 ## T-07: Structural test — single shared `matchesGlob`
 
-- [ ] Add `src/core/step/__tests__/shared-glob-match-imports.test.ts` that reads the source text of
+- [x] Add `src/core/step/__tests__/shared-glob-match-imports.test.ts` that reads the source text of
       `src/core/step/bite-evidence/test-file-selection.ts` and `src/core/step/staging-containment.ts` and
       asserts: both reference `matchesGlob` from a module specifier ending in `glob-match.js` (import or
       re-export); neither contains a local `function matchesGlob` definition body; and
@@ -161,21 +161,21 @@
 
 ## T-08: Add `pipeline.stagingExcludePatterns` and `pipeline.maxStagedFiles` to the config type + schema
 
-- [ ] In `src/config/schema/types.ts`, extend `PipelineConfig` (`:236-247`) with:
+- [x] In `src/config/schema/types.ts`, extend `PipelineConfig` (`:236-247`) with:
   - `stagingExcludePatterns?: string[];` — doc: "Glob patterns removed from the GUARDED staging set
     (implementer / build-fixer / code-fixer / test-materialize / adr-gen). Matched paths are not staged
     and remain in the worktree. Absent = no exclusions (the target repo's .gitignore is the first line of
     defense). Uses the shared bounded glob matcher (`**/`, `*`, literal others). No effect on scoped steps."
   - `maxStagedFiles?: number;` — doc: "Fail-closed guard: max post-exclusion file count a GUARDED step may
     stage. Exceeding it halts (escalation) before commit. Default 2000. No effect on scoped steps."
-- [ ] In `src/config/schema/validation.ts`, in the `pipeline` object schema (`:205-244`), add:
+- [x] In `src/config/schema/validation.ts`, in the `pipeline` object schema (`:205-244`), add:
   - `stagingExcludePatterns: optional(array(nonEmptyString("must be a non-empty string."), "must be an
     array.").check(minLength(1, "must be a non-empty array.")))` (mirror `scopedTestPatterns` at
     `:271-276`; `array`, `nonEmptyString`, `minLength` already imported/defined).
   - `maxStagedFiles: optional(number("must be a positive integer.").check(int("must be a positive
     integer."), gte(1, "must be a positive integer.")))` (mirror `specReview.pollIntervalMs` at
     `:195-200`; `number`, `int`, `gte` already imported).
-- [ ] Do NOT edit `.specrunner/config.json`.
+- [x] Do NOT edit `.specrunner/config.json`.
 
 **Acceptance Criteria**:
 - `pipeline.stagingExcludePatterns: []`, an empty-string element, or a non-string element throws with
@@ -187,7 +187,7 @@
 
 ## T-09: Config validation tests
 
-- [ ] Add `src/config/__tests__/staging-config-validation.test.ts` (mirror the style of
+- [x] Add `src/config/__tests__/staging-config-validation.test.ts` (mirror the style of
       `verification-scoped-patterns.test.ts`) asserting on `err.code === "CONFIG_INVALID"` for: empty
       array, empty-string element, non-string element (`stagingExcludePatterns`); `0`, negative, and
       non-integer (`maxStagedFiles`). Add positive cases: valid values preserved; both fields omitted →
@@ -198,7 +198,7 @@
 
 ## T-10: Document both settings in `docs/configuration.md`
 
-- [ ] In `docs/configuration.md` under `## Pipeline` (`:361`), add rows/subsection for
+- [x] In `docs/configuration.md` under `## Pipeline` (`:361`), add rows/subsection for
       `pipeline.stagingExcludePatterns` (default `[]` / absent; purpose: exclude known scratch artifacts
       from guarded staging; matched paths stay in the worktree; guarded steps only; uses simple glob
       rules `**/`, `*`) and `pipeline.maxStagedFiles` (default `2000`; purpose: fail-closed halt before
@@ -214,8 +214,8 @@
 
 ## T-11: Full verification and dependency guard
 
-- [ ] Run `bun run typecheck` and `bun run test`; both green.
-- [ ] Confirm `git diff` shows NO change to `package.json` / lockfile (no new runtime dependency),
+- [x] Run `bun run typecheck` and `bun run test`; both green.
+- [x] Confirm `git diff` shows NO change to `package.json` / lockfile (no new runtime dependency),
       NO change to `.specrunner/config.json`, and NO change to the scoped branch of `commit-push.ts`
       or to `src/core/reviewers/glob-match.ts` / `src/util/glob-match.ts`'s `globMatch` body.
 

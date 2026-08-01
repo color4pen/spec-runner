@@ -131,6 +131,7 @@ export const ERROR_CODES = {
   ATTACH_RUNTIME_UNSUPPORTED: "ATTACH_RUNTIME_UNSUPPORTED",
   PROVIDER_NOT_READY: "PROVIDER_NOT_READY",
   WRITE_SCOPE_VIOLATION: "WRITE_SCOPE_VIOLATION",
+  STAGING_LIMIT_EXCEEDED: "STAGING_LIMIT_EXCEEDED",
   EGRESS_UNKNOWN_COMMIT: "EGRESS_UNKNOWN_COMMIT",
   ROUND_HEAD_ADVANCED: "ROUND_HEAD_ADVANCED",
   SLUG_OCCUPIED: "SLUG_OCCUPIED",
@@ -519,6 +520,32 @@ export function slugOccupancyAmbiguousError(
     ERROR_CODES.SLUG_OCCUPANCY_AMBIGUOUS,
     `Run 'specrunner doctor' to inspect the breach and cancel the unwanted job(s) manually.`,
     `Slug '${slug}' has multiple non-terminal jobs:\n${list}\nRun specrunner doctor to diagnose.`,
+  );
+}
+
+/**
+ * Error thrown when the post-exclusion staged file count in a guarded step exceeds
+ * `pipeline.maxStagedFiles`. Halts before commit so a giant pack never reaches push.
+ *
+ * Not added to EXIT_CODE_MAP — it halts via the pipeline escalation path, not a CLI exit override.
+ */
+export function stagingLimitExceededError(
+  stepName: string,
+  branch: string,
+  total: number,
+  limit: number,
+  topDirs: Array<{ dir: string; count: number }>,
+): SpecRunnerError {
+  const dirList = topDirs.map((d) => `  - ${d.dir}: ${d.count}`).join("\n");
+  const hint =
+    "既知の一時資材なら pipeline.stagingExcludePatterns か対象 repo の .gitignore に追加。" +
+    "正当な大変更なら pipeline.maxStagedFiles を引き上げてください。";
+  return new SpecRunnerError(
+    ERROR_CODES.STAGING_LIMIT_EXCEEDED,
+    hint,
+    `Step '${stepName}' on branch '${branch}': staging limit exceeded. ` +
+    `${total} files exceed the limit of ${limit}.\n` +
+    `Top directories by file count:\n${dirList}`,
   );
 }
 

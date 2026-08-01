@@ -408,6 +408,35 @@ When a changed file matches a forbidden surface, the conformance step synthesize
 
 **Array replacement on deep-merge**: when both user global (`~/.config/specrunner/config.json`) and project local (`.specrunner/config.json`) declare `forbiddenSurfaces`, the project local array **replaces** the user global array entirely (deep-merge replaces arrays, not concatenates).
 
+### Guarded staging containment
+
+Guarded write steps (implementer / build-fixer / code-fixer / test-materialize / adr-gen) stage all worktree changes after reset. Two optional settings limit what reaches the commit:
+
+**`pipeline.stagingExcludePatterns`** — glob patterns that remove paths from the guarded stage set. Matched paths are not staged and remain in the worktree. The target repo's `.gitignore` is the first line of defense; this is the second.
+
+**`pipeline.maxStagedFiles`** — fail-closed guard: if the post-exclusion file count exceeds this limit, the step halts (escalation) before any `git add` or commit. The error message lists the total count and the top contributing directories, along with two remediation exits: declare `stagingExcludePatterns` / `.gitignore` for known scratch artifacts, or raise `maxStagedFiles` for legitimately large changes.
+
+Both settings affect **GUARDED steps only** (implementer / build-fixer / code-fixer / test-materialize / adr-gen). They have no effect on scoped steps (design, spec-review, etc.).
+
+```jsonc
+// .specrunner/config.json
+{
+  "pipeline": {
+    "stagingExcludePatterns": [".cargo-tmp/**", "vendor/**"],
+    "maxStagedFiles": 5000
+  }
+}
+```
+
+| Key | Default | Description |
+|---|---|---|
+| `pipeline.stagingExcludePatterns` | absent (no exclusions) | Glob patterns removed from the guarded stage set. Matched paths stay in the worktree, not in the commit. Guarded steps only. Uses bounded glob rules (`**/`, `*`, literal others). |
+| `pipeline.maxStagedFiles` | `2000` | Max post-exclusion file count for a guarded step before the step halts. Guarded steps only. |
+
+**Glob syntax** for `stagingExcludePatterns`: `**/` matches zero or more directory segments; `*` matches within one segment (does not cross `/`); all other characters are literal (`.` matches only a literal dot).
+
+**Array replacement on deep-merge**: when both config layers declare `stagingExcludePatterns`, the project local array **replaces** the user global array entirely (consistent with `forbiddenSurfaces`).
+
 ## Logs
 
 ```jsonc
