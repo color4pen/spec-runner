@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d4a7f053-5ca8-4d19-8900-827af70e78df",
   "createdAt": "2026-08-01T09:56:17.296Z",
-  "updatedAt": "2026-08-01T11:24:20.561Z",
+  "updatedAt": "2026-08-01T11:32:13.888Z",
   "request": {
     "title": "no-op 検知に finding 対象 path の免除を導入 — 正当な文書修正が sabotage 停止する冤罪を解消",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/noop-detect-finding-target-exemption-d4a7f053",
   "error": null,
   "pipelineId": "standard",
@@ -77,7 +77,9 @@
     "edced3144607e7580c57412366c3c25f9f7016cc",
     "c8674dd2c467b92defcda7923e79062da36c4b5a",
     "9663c859d932ea75f30252da5569cf5323ae7dd8",
-    "a7420a1c9c728644c09c8f676f9512f365056551"
+    "a7420a1c9c728644c09c8f676f9512f365056551",
+    "76280b5a58188e7b9b94ab7b075a2c0bc08eba3e",
+    "eaf72d3cf491647e68a970a6eea5d2c8ab2f477c"
   ],
   "reviewerStatuses": [
     {
@@ -109,8 +111,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/949",
+    "number": 949,
+    "createdAt": "2026-08-01T11:32:13.074Z"
+  },
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 76,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -120,13 +127,16 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
