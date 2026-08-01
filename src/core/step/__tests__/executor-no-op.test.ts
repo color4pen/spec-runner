@@ -21,6 +21,7 @@
  * - TC-002: finding が名指ししない change folder ファイルのみの変更 → needs-fix
  * - TC-003: finding がソースを名指しし変更もソースのみの通常ケース → no override
  * - TC-004: finding が state.json を名指しても needs-fix (pipelineManagedPaths 上限)
+ * - TC-005: informational finding が doc を名指しし変更もその doc のみ → needs-fix (non-fixable は免除対象外)
  * - TC-006: 非 code-fixer step では免除集合が空 (noOpDetect not true → no exemption)
  * - TC-007: artifact のみの変更で finding が名指ししない (#734 escalate 維持)
  * - TC-008: approved findings-routing no-op は従来どおり抑止される
@@ -791,6 +792,44 @@ describe("StepExecutor — finding-target exemption (noop-detect-finding-target-
     const stepRuns = resultState.steps?.["code-fixer"] ?? [];
     const lastRun = stepRuns[stepRuns.length - 1];
     // state.json is in pipelineManagedPaths → even if finding names it, NOT exempt → needs-fix
+    expect(lastRun?.outcome.verdict).toBe("needs-fix");
+  });
+
+  // -------------------------------------------------------------------------
+  // TC-005: informational resolution finding が doc を名指しし変更もその doc のみ → needs-fix
+  // Source: routed-findings.ts branch 3 が collectFixableFindings を適用し、
+  //         non-fixable finding (informational) を exemption 集合から除外することを
+  //         executor 統合レベルで固定する。
+  //         collectFixableFindings が branch 3 から除去された場合にこのテストが失敗し、
+  //         unit test (routed-findings.test.ts TC-005 extended) と二重で捕捉できる。
+  // -------------------------------------------------------------------------
+  it("TC-005: informational finding names implementation-notes.md, change is implementation-notes.md only → needs-fix (non-fixable excluded from exemption)", async () => {
+    const runner = makeRunner();
+    // Only the finding-named doc was changed — but the finding is informational, not fixable
+    const runtimeStrategy = makeRuntimeStrategy([
+      "specrunner/changes/example/implementation-notes.md",
+    ]);
+    const store = makeStore();
+    const storeFactory = () => store as never;
+    const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
+
+    const step = makeStep(true); // noOpDetect: true (code-fixer)
+    // finding resolution is "informational" → collectFixableFindings excludes it from the exemption set
+    // Even though the changed file matches the finding's file, no exemption is granted
+    const state = makeStateWithFinding(
+      "needs-fix",
+      "specrunner/changes/example/implementation-notes.md",
+      "informational",
+    );
+    const deps = makeDeps(runtimeStrategy);
+    deps.storeFactory = storeFactory;
+
+    const resultState = await executor.execute(step, state, deps);
+
+    const stepRuns = resultState.steps?.["code-fixer"] ?? [];
+    const lastRun = stepRuns[stepRuns.length - 1];
+    // informational finding → not in exemption set → implementation-notes.md not exempt →
+    // artifact-only change → needs-fix
     expect(lastRun?.outcome.verdict).toBe("needs-fix");
   });
 
