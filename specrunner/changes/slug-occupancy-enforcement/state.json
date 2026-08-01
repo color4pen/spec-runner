@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "576cab22-45b4-4e5a-a778-60a16b171d61",
   "createdAt": "2026-08-01T03:29:28.451Z",
-  "updatedAt": "2026-08-01T08:14:23.123Z",
+  "updatedAt": "2026-08-01T08:17:05.894Z",
   "request": {
     "title": "slug 占有不変条件の実装 — start guard・状態基準解決・sidecar 所有・修復口",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/slug-occupancy-enforcement-576cab22",
   "error": null,
@@ -95,13 +95,14 @@
     "35a73092300bccc7a35bc76990d1934168a03859",
     "0268bab44fc5b6c6f61dd3e5f632d3134c3f96ea",
     "22abd192f64432e3ab84b0e66b380b107caedfc0",
-    "10fb8652305845d566457830a2db97bcdde2a1cf"
+    "10fb8652305845d566457830a2db97bcdde2a1cf",
+    "93196bb299b7f587cc8c2347755c5f2051f5a239"
   ],
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "c9669f165ae6c8e786febfb57a3b832b432d7c88",
+      "approvedAtCommit": "93196bb299b7f587cc8c2347755c5f2051f5a239",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -117,7 +118,7 @@
     {
       "name": "scale-tolerance",
       "status": "approved",
-      "approvedAtCommit": "c9669f165ae6c8e786febfb57a3b832b432d7c88",
+      "approvedAtCommit": "93196bb299b7f587cc8c2347755c5f2051f5a239",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
@@ -131,7 +132,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 134,
+    "historyCount": 142,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -143,11 +144,11 @@
       "bite-evidence": 1,
       "verification": 4,
       "build-fixer": 2,
-      "code-review": 3,
+      "code-review": 4,
       "code-fixer": 6,
       "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
-      "custom-reviewers": 4,
+      "custom-reviewers": 5,
       "regression-gate": 2,
       "conformance": 2
     }
