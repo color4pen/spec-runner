@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "576cab22-45b4-4e5a-a778-60a16b171d61",
   "createdAt": "2026-08-01T03:29:28.451Z",
-  "updatedAt": "2026-08-01T07:18:01.736Z",
+  "updatedAt": "2026-08-01T07:37:52.883Z",
   "request": {
     "title": "slug 占有不変条件の実装 — start guard・状態基準解決・sidecar 所有・修復口",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/slug-occupancy-enforcement-576cab22",
   "error": null,
@@ -86,13 +86,15 @@
     "6b589d318516de96533053c23b13df52d1e9ad79",
     "f9d0ef5ec57f274fc27e51d90017ad3a351a6a3d",
     "a887f18524bc27d1582a2904f540adcca050ac2d",
-    "1ef7d6ce45033330a4165346998e65afe8bdf687"
+    "1ef7d6ce45033330a4165346998e65afe8bdf687",
+    "c9669f165ae6c8e786febfb57a3b832b432d7c88",
+    "6b3ba2ef53c92a16c3623a7b69cb354d0e26e04f"
   ],
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "b46f65e78924127943246ca0061296afa82f385c",
+      "approvedAtCommit": "c9669f165ae6c8e786febfb57a3b832b432d7c88",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -108,7 +110,7 @@
     {
       "name": "scale-tolerance",
       "status": "approved",
-      "approvedAtCommit": "b46f65e78924127943246ca0061296afa82f385c",
+      "approvedAtCommit": "c9669f165ae6c8e786febfb57a3b832b432d7c88",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
@@ -122,7 +124,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 96,
+    "historyCount": 105,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -135,10 +137,10 @@
       "verification": 2,
       "build-fixer": 1,
       "code-review": 2,
-      "code-fixer": 5,
-      "cross-boundary-invariants": 3,
+      "code-fixer": 6,
+      "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
-      "custom-reviewers": 3,
+      "custom-reviewers": 4,
       "regression-gate": 1,
       "conformance": 1
     }
