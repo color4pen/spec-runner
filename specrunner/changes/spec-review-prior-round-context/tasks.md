@@ -23,6 +23,7 @@
 - [ ] `PriorRoundContext` 型をエクスポートする（`findings: { severity: string; resolution: string; file: string; title: string }[]` と `changedFiles: string[]`）。`DynamicContext.priorRoundContext` の型と構造一致させる。
 - [ ] 純関数 `resolvePriorFixerOid(state: JobState): string | null` — `state.steps?.[STEP_NAMES.SPEC_FIXER]` の末尾要素の `commitOid ?? null` を返す。run が無ければ null。
 - [ ] 純関数 `buildPriorRoundContextBlock(ctx: PriorRoundContext): string` — 以下を含むブロック文字列を生成する:
+  - ブロック全体を `<prior-round-context>...</prior-round-context>` XML タグで囲む（injection 境界の明示。finding title / changedFiles パスはスキーマ拘束済み・リポジトリ相対パスだが、外部入力由来の文字列を初期メッセージに埋め込む際の防護方針を実装者判断に委ねないために明示する）。
   - 見出し（iteration ≥ 2 の前周 context であることを示す）。
   - 前周 findings 一覧（各 finding の severity / resolution / file / title）。findings が空なら「前周指摘なし」を明示。
   - 前周 fixer 変更 file 集合（`changedFiles` の各パス）。空なら「変更 file なし（machine-derived）」を明示。fixer 自己申告でなく commit diff 由来である旨を注記。
@@ -43,7 +44,7 @@
   - 前周 fixer OID 解決不能 → `null`。
   - `listCommitChangedFiles` が `unavailable` → `null`。
   - `runtimeStrategy` / `listCommitChangedFiles` 不在（managed 相当の fake）→ `null`。
-- `buildPriorRoundContextBlock` の単体テスト: 読み直し・不十分理由の明示・全量列挙維持の各文言を含み、全量列挙を弱める免除文言を含まない。
+- `buildPriorRoundContextBlock` の単体テスト: 読み直し・不十分理由の明示・全量列挙維持の各文言を含み、全量列挙を弱める免除文言を含まない。出力が `<prior-round-context>` で始まり `</prior-round-context>` で終わることを検証する。
 
 ## T-03: `AgentStep` に `prepareRoundContext` フックを追加し `SpecReviewStep` で実装する
 
