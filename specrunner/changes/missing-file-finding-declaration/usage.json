@@ -119,6 +119,26 @@
       },
       "jobId": "40db34c3-c363-4d44-8f1c-d063fba00eee",
       "stepName": "test-materialize"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-01T10:38:40.751Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 7024,
+          "outputTokens": 23,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 33,
+          "outputTokens": 15746,
+          "cacheReadInputTokens": 1548660,
+          "cacheCreationInputTokens": 142613
+        }
+      },
+      "jobId": "40db34c3-c363-4d44-8f1c-d063fba00eee",
+      "stepName": "implementer"
     }
   ]
 }
