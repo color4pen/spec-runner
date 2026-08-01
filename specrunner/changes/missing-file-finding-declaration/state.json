@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "40db34c3-c363-4d44-8f1c-d063fba00eee",
   "createdAt": "2026-08-01T09:56:21.528Z",
-  "updatedAt": "2026-08-01T10:54:50.930Z",
+  "updatedAt": "2026-08-01T11:04:35.457Z",
   "request": {
     "title": "欠落指摘 finding の構造化宣言 — finding-ref 実在検証との衝突を解消し fixer routing を保つ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/missing-file-finding-declaration-40db34c3",
   "error": null,
@@ -73,13 +73,15 @@
     "0db4843df3dd87c4495017f47c8ecd84e8c226fc",
     "acdf65b7a18a9bafe27cd59cebcaaff605a715c7",
     "9b8e117f704d68b83e09393eb9b3ea6739a72f75",
-    "d54145345463a95c07855536b8d56eadf62c860b"
+    "d54145345463a95c07855536b8d56eadf62c860b",
+    "f50ecfe2c24897a325cb699e2f6ea3babbd815f1",
+    "7bf66d59c8a75d2e022ef07a9ac5674835a680d8"
   ],
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "f50ecfe2c24897a325cb699e2f6ea3babbd815f1",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -89,7 +91,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/missing-file-finding-declaration/design.md:sha256:d160ea433ddb124a1b6eba7d9c5ad5e2bb46c9ae81149155a0e8959e65dcac07|specrunner/changes/missing-file-finding-declaration/request.md:sha256:33ac2d8c44802e75944abbf2c3e6fe13de2ef7a26b6a439f21ab01a7e47f9a61|specrunner/changes/missing-file-finding-declaration/spec.md:sha256:e1eea992156d4a55eb0aca0b581a4f158e2d115be0c7b73a6ac585c3b631a5a9|specrunner/changes/missing-file-finding-declaration/tasks.md:sha256:4e6082caaaf6cede5f87619660a73de6587ceea123f3f22e647544f235059fdc|specrunner/changes/missing-file-finding-declaration/test-cases.md:sha256:88e016f95b127b6786d98612e478d287c6cf2abc57a7c508484453dc51ed5d51"
     },
     {
       "name": "scale-tolerance",
@@ -105,7 +108,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 45,
+    "historyCount": 54,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -117,9 +120,10 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 1,
-      "cross-boundary-invariants": 1,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2,
+      "code-fixer": 1
     }
   }
 }
