@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:2732f25729fd0ae292a8b85f77ecc5ab41c270095bc9b086d9065ffd4ca2dcf5",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/write-scope.ts:33 — GUARDED_WRITE_STEPS Set definition",
+    "src/core/step/write-scope.ts:33-39 — GUARDED_WRITE_STEPS members: implementer, build-fixer, code-fixer, test-materialize, adr-gen",
+    "src/core/step/write-scope.ts:51-53 — stagingModeFor function",
+    "src/core/step/write-scope.ts:64-74 — protectedCanonPaths function (6 canon paths)",
+    "src/core/step/commit-push.ts:602-605 — guarded staging git add -A -- changedPaths block",
+    "src/core/step/commit-push.ts:490 — scoped staging git add -A -- stagePaths",
+    "src/core/step/commit-push.ts:838 — pushScopedFiles scoped git add -A -- stagePaths",
+    "src/core/step/bite-evidence/test-file-selection.ts — matchesGlob function with **/ / * / literal-dot semantics",
+    "src/config/schema/types.ts:236-247 — PipelineConfig interface with maxRetries and fast only",
+    "src/config/schema/validation.ts:271-275 — scopedTestPatterns non-empty-string array validation pattern"
+  ],
+  "sourceRevision": "23001cbd1a80c82c6a6b686b2ad0df7ed4616c3c"
+}
