@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9ed51f1b-4a0c-4c4d-b8d0-112b155b9224",
   "createdAt": "2026-08-01T09:56:26.806Z",
-  "updatedAt": "2026-08-01T11:10:39.541Z",
+  "updatedAt": "2026-08-01T11:21:40.533Z",
   "request": {
     "title": "verification に lockfile 整合 gate を追加 — 依存追加が CI の frozen-lockfile まで素通りする穴を塞ぐ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/lockfile-sync-verification-gate-9ed51f1b",
   "error": null,
@@ -72,10 +72,42 @@
     "69addde37d9e50d1ba5f1f451dd1559c9301191f",
     "89a45748c8875f631712e0a0dd41b2be2818ae95",
     "a892528459ab8ab16a821ef314c38c869312fdd0",
-    "d90c6082376a5025ad9b6aefc28bb3245f5df1bd"
+    "d90c6082376a5025ad9b6aefc28bb3245f5df1bd",
+    "0b6d1009d857cab37c8d7e97c60e65c14502a93f",
+    "9662da20dd0e7ab4d1e875e96766bd9f58accab8"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "0b6d1009d857cab37c8d7e97c60e65c14502a93f",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/lockfile-sync-verification-gate/design.md:sha256:0ae212641a47c068ea4eeb4556938b70765dc0311a20d0880dbfd3ee0167be86|specrunner/changes/lockfile-sync-verification-gate/request.md:sha256:2b3242322f3d490dcfa441ea38471e6686e993d54958b8bc104824859fdf440e|specrunner/changes/lockfile-sync-verification-gate/spec.md:sha256:8fd2534b1e7f5a0538ebadbf6ae96c2e443bd477ac39f222fb2f5d340c4395fe|specrunner/changes/lockfile-sync-verification-gate/tasks.md:sha256:762eae280ac7bbb9fe1109ec93b6af4c7684be41395dfd6bf004aa1360f34d8e|specrunner/changes/lockfile-sync-verification-gate/test-cases.md:sha256:76df2f1e77ceebcc2e0c6453c0f284027c642da91dc610aac40f3d0ae18ec094"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -86,7 +118,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
