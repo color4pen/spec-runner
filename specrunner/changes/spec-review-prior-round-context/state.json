@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "80e3dc6a-4d0d-4e7d-a7eb-4553030ece66",
   "createdAt": "2026-08-01T09:56:23.984Z",
-  "updatedAt": "2026-08-01T10:26:00.840Z",
+  "updatedAt": "2026-08-01T10:29:32.218Z",
   "request": {
     "title": "spec-review の周回間 context 注入 — 解消済み指摘の stale 再指摘を情報構造から潰す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/spec-review-prior-round-context-80e3dc6a",
   "error": null,
@@ -67,15 +67,17 @@
     "7ac36f755b640e48d59cedeedbb956b4af5fd817",
     "d24608a551685c485300591f9a4628db7e633954",
     "65104f825612c26feda494d6a1125f85dc8e93ff",
-    "2469c58a7a69f1b0772617c5b1e864627bd3fcb2"
+    "2469c58a7a69f1b0772617c5b1e864627bd3fcb2",
+    "8a604e95db4daacea2700e9b92b6238940f88155"
   ],
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 19,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "test-case-gen": 1
     }
   }
 }
