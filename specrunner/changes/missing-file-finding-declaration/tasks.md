@@ -4,11 +4,11 @@
 
 対象: `src/kernel/report-result.ts`, `src/core/port/report-result.ts`
 
-- [ ] `src/kernel/report-result.ts` の `Finding` interface に optional フィールドを追加する:
+- [x] `src/kernel/report-result.ts` の `Finding` interface に optional フィールドを追加する:
       `fileMissing?: boolean`。doc コメントで「true = この finding は `file` の欠落自体を指摘する。
       absent/false = 従来挙動（file は実在する箇所を指す）」を明記する（`origin` と同様の additive
       discriminator）。
-- [ ] `src/core/port/report-result.ts` の `parseFindings` で、`f["fileMissing"] === true` のときのみ
+- [x] `src/core/port/report-result.ts` の `parseFindings` で、`f["fileMissing"] === true` のときのみ
       `finding.fileMissing = true` を設定する（`origin` の silent-capture パターンに倣う。true 以外は
       無視、missingFields には入れない）。strict モードの options 検証等は変更しない。
 
@@ -23,11 +23,11 @@
 
 対象: `src/core/step/report-tool.ts`
 
-- [ ] `findingSchema`（JUDGE / CODE_REVIEW / REQUEST_REVIEW が共有）に
+- [x] `findingSchema`（JUDGE / CODE_REVIEW / REQUEST_REVIEW が共有）に
       `fileMissing: optional(boolean())` を追加する（`boolean` は既に import 済み）。
-- [ ] `conformanceFindingSchema`（CONFORMANCE 専用）に同じく `fileMissing: optional(boolean())` を
+- [x] `conformanceFindingSchema`（CONFORMANCE 専用）に同じく `fileMissing: optional(boolean())` を
       追加する。
-- [ ] `JUDGE_REPORT_TOOL` / `CODE_REVIEW_REPORT_TOOL` / `CONFORMANCE_REPORT_TOOL` /
+- [x] `JUDGE_REPORT_TOOL` / `CODE_REVIEW_REPORT_TOOL` / `CONFORMANCE_REPORT_TOOL` /
       `REQUEST_REVIEW_REPORT_TOOL` の description の finding 要素説明に次の規約を追記する:
       「`fileMissing?: boolean` — あるべきファイルが存在しないこと自体を指摘する場合に true。
       このとき `file` には欠落している path を書く（line は不要）」。prompt 本文（system prompt）は
@@ -45,19 +45,19 @@
 
 対象: `src/core/step/step-completion.ts`（現行 :238-256 の ref 検証ブロック）
 
-- [ ] `affectingFindings`（`collectVerdictAffectingFindings` の結果、対象集合は不変）を
+- [x] `affectingFindings`（`collectVerdictAffectingFindings` の結果、対象集合は不変）を
       `fileMissing === true` の**欠落宣言群**と、それ以外の**非宣言群**に分割する。
-- [ ] 非宣言群: 従来通り `{ file, line }` の `FindingRef[]` を構築し `verifyFindingRefs` に渡す。
+- [x] 非宣言群: 従来通り `{ file, line }` の `FindingRef[]` を構築し `verifyFindingRefs` に渡す。
       返却（非実在部分集合）が 1 件でもあれば上書き条件を満たす（hallucination；従来挙動）。
-- [ ] 欠落宣言群: `{ file }` のみ（`line` を渡さない、D4）の `FindingRef[]` を構築し
+- [x] 欠落宣言群: `{ file }` のみ（`line` を渡さない、D4）の `FindingRef[]` を構築し
       `verifyFindingRefs` に渡す。返却された非実在集合の file 集合を作り、**その集合に含まれない**
       欠落宣言 file（= 実在してしまっている = 虚偽宣言）が 1 件でもあれば上書き条件を満たす。
-- [ ] いずれかの群が上書き条件を満たしたときのみ `verdict = "escalation"` と
+- [x] いずれかの群が上書き条件を満たしたときのみ `verdict = "escalation"` と
       `verdictOverriddenByFindingRef = true` を設定する。両群とも満たさなければ verdict 導出結果
       （routing 付き）をそのまま保持する。
-- [ ] seam のシグネチャ・呼び出し契約（`FindingRef[]` を渡し非実在部分集合を受け取る）は変更しない。
+- [x] seam のシグネチャ・呼び出し契約（`FindingRef[]` を渡し非実在部分集合を受け取る）は変更しない。
       `state.branch ?? null` / `deps.cwd ?? process.cwd()` の渡し方も従来通り。
-- [ ] `verdictOverriddenByFindingRef` を立てる経路は従来同様 escalationReason 計算を抑止する
+- [x] `verdictOverriddenByFindingRef` を立てる経路は従来同様 escalationReason 計算を抑止する
       （`:300-321` は無変更）。
 
 参考ロジック（両群を独立に評価し OR）:
@@ -106,15 +106,15 @@ if (override) { verdict = "escalation"; verdictOverriddenByFindingRef = true; }
 `JUDGE_REPORT_TOOL` を使い、必要に応じ `judgeVerdictFn = deriveRegressionGateVerdict` を設定して
 #916 の needs-fix 導出を再現する。
 
-- [ ] **シナリオ歯（#916 再現）**: verdict 導出が needs-fix 系を返す finding（critical/high または
+- [x] **シナリオ歯（#916 再現）**: verdict 導出が needs-fix 系を返す finding（critical/high または
       decision-needed）が `fileMissing:true` かつ実在しない file を指す（mock seam が当該 ref を
       非実在として返す）→ `completion.verdict` が needs-fix 系のまま（escalation でない）。
-- [ ] **虚偽宣言**: `fileMissing:true` だが file が実在する（mock seam が当該 ref を返さない）→
+- [x] **虚偽宣言**: `fileMissing:true` だが file が実在する（mock seam が当該 ref を返さない）→
       `completion.verdict === "escalation"`。
-- [ ] **回帰保護**: 非宣言 finding（`fileMissing` 無し）の file が実在しない（mock seam が非実在で返す）
+- [x] **回帰保護**: 非宣言 finding（`fileMissing` 無し）の file が実在しない（mock seam が非実在で返す）
       → `completion.verdict === "escalation"` かつ `completion.escalationReason === undefined`
       （上書き経路が escalationReason を抑止することを直接固定；この歯は本 request で新設）。
-- [ ] mock `verifyFindingRefs` は「入力 ref のうち mock が定義する非実在 file 集合に一致するものだけを
+- [x] mock `verifyFindingRefs` は「入力 ref のうち mock が定義する非実在 file 集合に一致するものだけを
       返す」実装とし、欠落宣言群で `line` を含まない ref が渡ることも合わせて確認する。
 
 **Acceptance Criteria**:
@@ -130,13 +130,13 @@ if (override) { verdict = "escalation"; verdictOverriddenByFindingRef = true; }
 呼び出し側の反転ロジックが runtime 非依存であることを、`deriveStepCompletion` に実 runtime を
 `deps.runtimeStrategy` として注入して固定する（seam 実装は無変更）。
 
-- [ ] **local**: `LocalRuntime` を temp worktree（`fs.mkdtemp`）上に構築。欠落宣言 finding が
+- [x] **local**: `LocalRuntime` を temp worktree（`fs.mkdtemp`）上に構築。欠落宣言 finding が
       「存在しない path」を指すケース → 上書きなし（routing 保持）、「存在する path」を指すケース →
       escalation 上書き、を確認する（`state.branch = "main"`, `deps.cwd = tempDir`）。
-- [ ] **managed**: `ManagedRuntime` を mock `githubClient.getRawFile` 付きで構築。`getRawFile` が
+- [x] **managed**: `ManagedRuntime` を mock `githubClient.getRawFile` 付きで構築。`getRawFile` が
       null を返す（欠落）→ 上書きなし、非 null を返す（実在）→ escalation 上書き、を確認する
       （`state.branch = "main"`）。
-- [ ] 同一入力条件（欠落宣言 + file 有無）に対し local / managed の判定（上書き有無）が一致することを
+- [x] 同一入力条件（欠落宣言 + file 有無）に対し local / managed の判定（上書き有無）が一致することを
       対（パラメタライズ可）で示す。
 
 **Acceptance Criteria**:
@@ -148,9 +148,9 @@ if (override) { verdict = "escalation"; verdictOverriddenByFindingRef = true; }
 
 ## T-06: 検証（typecheck && test）
 
-- [ ] `bun run typecheck` が error なし。
-- [ ] `bun run test` が全 pass（新規 T-04 / T-05 + 既存全て）。
-- [ ] 既存テスト（`managed-verify-finding-refs.test.ts`, `verify-finding-refs.test.ts`,
+- [x] `bun run typecheck` が error なし。
+- [x] `bun run test` が全 pass（新規 T-04 / T-05 + 既存全て）。
+- [x] 既存テスト（`managed-verify-finding-refs.test.ts`, `verify-finding-refs.test.ts`,
       step-completion / judge-verdict 系）が無変更で green。
 
 **Acceptance Criteria**:
