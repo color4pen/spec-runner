@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "b8c84bb1-10f5-4857-8dec-0ef8454fc592",
   "createdAt": "2026-08-01T07:23:12.427Z",
-  "updatedAt": "2026-08-01T08:21:37.666Z",
+  "updatedAt": "2026-08-01T08:38:50.013Z",
   "request": {
     "title": "guarded staging のビルド産物封じ込め — 除外パターンと量ガード",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "change/guarded-staging-artifact-containment-b8c84bb1",
   "error": null,
@@ -69,10 +69,42 @@
     "82fd476ef456ad09c8223ca059ba8317a75f6dca",
     "4345b4d9d397f88171d57c4f47d3a687d83dc7eb",
     "3a3a1302744d15838337e81ced9821260bb61d4a",
-    "d72c43a2217672e42baae25d6e8a9269078ce497"
+    "d72c43a2217672e42baae25d6e8a9269078ce497",
+    "1e87e75b109293cbf00653b0c8fef5dd593829f8",
+    "6b412aa5c2d061515271b5f1ad24bf1061f7a88a"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "1e87e75b109293cbf00653b0c8fef5dd593829f8",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/guarded-staging-artifact-containment/design.md:sha256:9b75c06a8af335312f4d60864207367c0e6ed47d89df18b94ca31fa47f4b2748|specrunner/changes/guarded-staging-artifact-containment/request.md:sha256:2732f25729fd0ae292a8b85f77ecc5ab41c270095bc9b086d9065ffd4ca2dcf5|specrunner/changes/guarded-staging-artifact-containment/spec.md:sha256:9fd381b74da3a37adb5aa343c38fcd77a97e9638e57472f572b39b876750fae1|specrunner/changes/guarded-staging-artifact-containment/tasks.md:sha256:c6ca69b171c573194858a35a572eac9829d034537c44b1ca4224c71cfa085b53|specrunner/changes/guarded-staging-artifact-containment/test-cases.md:sha256:b7bcf2cbfa65ec4f4ddc093a3a8ae66d0aea14fe34a6e986355b719166fb4498"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -81,7 +113,12 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
