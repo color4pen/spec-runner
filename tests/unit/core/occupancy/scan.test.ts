@@ -11,7 +11,7 @@
  *
  * Source: tasks.md > T-01 and design.md > D3
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";

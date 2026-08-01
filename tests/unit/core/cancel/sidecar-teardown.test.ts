@@ -19,7 +19,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { cancelSingleJob } from "../../../../src/core/cancel/runner.js";
 import type { CancelDeps } from "../../../../src/core/cancel/runner.js";
-import { buildInitialJobState, JobStateStore } from "../../../../src/store/job-state-store.js";
+import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 import type { JobStatus } from "../../../../src/state/schema.js";
 import type { WorktreeManager } from "../../../../src/core/worktree/manager.js";
 import type { SpawnResult } from "../../../../src/util/spawn.js";
@@ -88,7 +88,7 @@ async function makeJob(
   return { jobId, slug };
 }
 
-async function writeForeignSidecar(slug: string, foreignJobId: string, foreignStatus: string = "running"): Promise<void> {
+async function writeForeignSidecar(slug: string, foreignJobId: string, _foreignStatus: string = "running"): Promise<void> {
   const livenessDir = path.join(tempDir, ".specrunner", "local", slug);
   await nodefs.mkdir(livenessDir, { recursive: true });
   await nodefs.writeFile(
