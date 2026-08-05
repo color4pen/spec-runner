@@ -1,4 +1,4 @@
-import type { JobState } from "../../state/schema.js";
+import type { JobState, VerificationPhaseOutcome } from "../../state/schema.js";
 import type { StepContext } from "./step-context.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { CustomToolHandler } from "../../kernel/tool-types.js";
@@ -321,6 +321,21 @@ export interface AgentStep {
    * indicates the fixer did nothing useful (fail-closed).
    */
   noOpDetect?: boolean;
+}
+
+/**
+ * Structured outcome returned by multi-phase CLI steps (e.g. verification).
+ * CLI steps that don't return structured data can return void instead; only multi-phase
+ * steps like VerificationStep populate this.
+ *
+ * The executor captures the runtime return value (even when the CliStep.run interface
+ * declares void) and reads verificationPhases from it to store in StepRun.outcome.
+ *
+ * Added in verification-phase-outcome-record.
+ */
+export interface CliStepRunOutcome {
+  /** Per-phase execution results projected from VerificationResult.phases. */
+  verificationPhases?: VerificationPhaseOutcome[];
 }
 
 /**

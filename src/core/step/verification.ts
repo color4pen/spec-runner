@@ -1,5 +1,5 @@
 import type { CliStep, CliStepDeps, IoRef } from "./types.js";
-import type { JobState } from "../../state/schema.js";
+import type { JobState, VerificationPhaseOutcome } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import { runVerification } from "../verification/runner.js";
 import { propagateVerificationResult } from "../verification/propagate.js";
@@ -46,12 +46,22 @@ export const VerificationStep: CliStep = {
       ? { ...deps.config.verification, coverage: reload.coverage }
       : deps.config.verification;
 
-    await runVerification(deps.slug, verificationCwd, effectiveVerification, deps.request.baseBranch);
+    // Capture the full VerificationResult so we can project phase outcomes into StepRun.
+    // The executor reads the runtime return value to extract verificationPhases for recording.
+    const verificationResult = await runVerification(deps.slug, verificationCwd, effectiveVerification, deps.request.baseBranch);
+
+    // Project PhaseResult[] → VerificationPhaseOutcome[]: keep only phase/status/exitCode.
+    // stdout / stderr / durationMs / skippedCount are intentionally dropped (D3).
+    const verificationPhases: VerificationPhaseOutcome[] = verificationResult.phases.map((p) => ({
+      phase: p.phase,
+      status: p.status,
+      exitCode: p.exitCode,
+    }));
 
     // Propagate verification-result.md to branch so build-fixer can read it
     if (state.branch) {
       const iteration = (state.steps?.[STEP_NAMES.VERIFICATION]?.length ?? 0) + 1;
-      const result = await propagateVerificationResult({
+      const propagateResult = await propagateVerificationResult({
         slug: deps.slug,
         branch: state.branch,
         iteration,
@@ -60,15 +70,20 @@ export const VerificationStep: CliStep = {
         // D4 egress backstop: pass ledger so propagate can verify publish range before push.
         synthesizedCommits: state.synthesizedCommits ?? [],
       });
-      if (!result.ok) {
+      if (!propagateResult.ok) {
         stderrWrite(
-          `Warning: failed to propagate verification-result.md to branch ${state.branch}: ${result.error}\n`,
+          `Warning: failed to propagate verification-result.md to branch ${state.branch}: ${propagateResult.error}\n`,
         );
         stderrWrite(
           `build-fixer (if invoked next) may not see the verification result and fall back to running tests itself.\n`,
         );
       }
     }
+
+    // Return the projected phase outcomes. The CliStep interface declares Promise<void>,
+    // but the executor captures the runtime return value via cast to record verificationPhases
+    // in StepRun.outcome without affecting the verdict derivation path (parseResult).
+    return { verificationPhases } as unknown as void;
   },
 
   reads(_state: JobState, _deps: StepDeps): IoRef[] {

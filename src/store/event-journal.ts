@@ -12,7 +12,7 @@
 
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import type { StepRun, HistoryEntry, ErrorInfo } from "../state/schema.js";
+import type { StepRun, HistoryEntry, ErrorInfo, VerificationPhaseOutcome } from "../state/schema.js";
 import type { BaseReportResult } from "../kernel/report-result.js";
 import type { FindingSeverity } from "../kernel/report-result.js";
 import type { CompletionReportDiagnostic } from "../kernel/completion-report-diagnostic.js";
@@ -54,6 +54,12 @@ export interface StepAttemptRecord {
      * Added in added-turns-persist-and-review-trim.
      */
     addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
+    /**
+     * Per-phase execution results for the verification step.
+     * Absent for non-verification steps and legacy verification records (backward compat).
+     * Added in verification-phase-outcome-record.
+     */
+    verificationPhases?: VerificationPhaseOutcome[];
   };
   startedAt: string;
   endedAt: string;
@@ -371,6 +377,7 @@ export function fold(content: string): FoldResult {
         ...(r.outcome.skipReason !== undefined ? { skipReason: r.outcome.skipReason } : {}),
         ...(r.outcome.completionReportDiagnostics !== undefined ? { completionReportDiagnostics: r.outcome.completionReportDiagnostics } : {}),
         ...(r.outcome.addedTurns !== undefined ? { addedTurns: r.outcome.addedTurns } : {}),
+        ...(r.outcome.verificationPhases !== undefined ? { verificationPhases: r.outcome.verificationPhases } : {}),
       },
       startedAt: r.startedAt,
       endedAt: r.endedAt,
@@ -447,6 +454,7 @@ export function stepRunToRecord(step: string, run: StepRun): StepAttemptRecord &
       ...(outcome.skipReason !== undefined ? { skipReason: outcome.skipReason } : {}),
       ...(outcome.completionReportDiagnostics !== undefined ? { completionReportDiagnostics: outcome.completionReportDiagnostics } : {}),
       ...(outcome.addedTurns !== undefined ? { addedTurns: outcome.addedTurns } : {}),
+      ...(outcome.verificationPhases !== undefined ? { verificationPhases: outcome.verificationPhases } : {}),
     },
     startedAt: run.startedAt,
     endedAt: run.endedAt,
