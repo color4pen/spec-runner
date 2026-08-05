@@ -198,6 +198,31 @@ import type { CompletionReportDiagnostic } from "../../kernel/completion-report-
 export type { CompletionReportDiagnostic } from "../../kernel/completion-report-diagnostic.js";
 
 /**
+ * Metrics extracted from the SDK result message for a single agent invocation.
+ *
+ * All fields are optional because:
+ * - The managed runtime does not provide these values.
+ * - The Codex adapter does not provide these values.
+ * - SDK result messages may omit individual fields.
+ *
+ * Field origins (SDK result message):
+ * - numTurns: num_turns — number of conversation turns used.
+ * - durationMs: duration_ms — total wall-clock time for the invocation (ms).
+ * - durationApiMs: duration_api_ms — time spent waiting for API responses (ms).
+ * - totalCostUsd: total_cost_usd — SDK-measured cost in USD (no pricing table required).
+ */
+export interface AgentInvocationMetrics {
+  /** SDK result num_turns — number of turns used. undefined if not provided by this runtime. */
+  numTurns?: number;
+  /** SDK result duration_ms — total wall-clock time (ms). undefined if not provided. */
+  durationMs?: number;
+  /** SDK result duration_api_ms — API wait time (ms). undefined if not provided. */
+  durationApiMs?: number;
+  /** SDK result total_cost_usd — SDK-measured cost in USD. undefined if not provided. */
+  totalCostUsd?: number;
+}
+
+/**
  * Result returned by AgentRunner.run() after executing an agent step.
  *
  * TC-003: resultContent is fetched by the adapter via adapter-specific means.
@@ -265,6 +290,13 @@ export interface AgentRunResult {
    * Added in reduce-added-agent-turns.
    */
   addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
+  /**
+   * SDK-measured invocation metrics extracted from the result message.
+   * Populated by ClaudeCodeRunner (local runtime) for both success and error subtypes.
+   * ManagedAgentRunner and CodexAgentRunner leave it undefined.
+   * Added in agent-invocation-metrics.
+   */
+  invocationMetrics?: AgentInvocationMetrics;
 }
 
 /**

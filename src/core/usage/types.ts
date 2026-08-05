@@ -17,6 +17,32 @@ export interface CommandInvocation {
   jobId?: string;
   /** Step name (present for "job" entries only). */
   stepName?: string;
+  /**
+   * Number of SDK turns used in this invocation.
+   * SDK result num_turns. undefined if the runtime does not provide this value
+   * (managed runtime, Codex adapter) or if this entry was written before this
+   * feature was added (backward-compatible with pre-agent-invocation-metrics usage.json).
+   */
+  numTurns?: number;
+  /**
+   * Total wall-clock time for this invocation in milliseconds.
+   * SDK result duration_ms. undefined if the runtime does not provide this value
+   * or if this entry predates the agent-invocation-metrics feature.
+   */
+  durationMs?: number;
+  /**
+   * API wait time for this invocation in milliseconds.
+   * SDK result duration_api_ms. undefined if the runtime does not provide this value
+   * or if this entry predates the agent-invocation-metrics feature.
+   */
+  durationApiMs?: number;
+  /**
+   * SDK-measured cost in USD for this invocation.
+   * SDK result total_cost_usd. Does not require a pricing table lookup.
+   * undefined if the runtime does not provide this value or if this entry
+   * predates the agent-invocation-metrics feature.
+   */
+  totalCostUsd?: number;
 }
 
 /**

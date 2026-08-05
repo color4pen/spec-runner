@@ -517,6 +517,7 @@ export class StepExecutor {
       transientRetryAttempts: runResult.transientRetryAttempts,
       completionReportDiagnostics: runResult.completionReportDiagnostics,
       addedTurns: runResult.addedTurns,
+      invocationMetrics: runResult.invocationMetrics,
       ...(commitOid !== undefined ? { commitOid } : {}),
     };
   }

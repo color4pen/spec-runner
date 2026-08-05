@@ -33,7 +33,7 @@ import * as path from "node:path";
 import { defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import { isToolUse } from "./message-types.js";
 import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader, type ClaudeSdkCreateMcpServer } from "./sdk-loader.js";
-import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage, AgentWriteScope } from "../../core/port/agent-runner.js";
+import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage, AgentWriteScope, AgentInvocationMetrics } from "../../core/port/agent-runner.js";
 import { ADDED_TURNS_ZERO } from "../../core/port/agent-runner.js";
 import { classifyGitCommand } from "./git-command-classifier.js";
 import { dotSpecrunnerDirRel } from "../../util/paths.js";
@@ -374,6 +374,21 @@ type SDKResultSuccess = SDKResultMessage & {
   modelUsage?: Record<string, ModelUsage>;
 };
 
+/**
+ * Extract invocation metrics from a raw SDK result message.
+ *
+ * Uses typeof guards so that non-number values (null, string, object) become undefined
+ * rather than 0 or null. This satisfies AC #5 (fields are undefined when missing/wrong type).
+ */
+function extractInvocationMetrics(raw: Record<string, unknown>): AgentInvocationMetrics {
+  return {
+    numTurns: typeof raw["num_turns"] === "number" ? raw["num_turns"] : undefined,
+    durationMs: typeof raw["duration_ms"] === "number" ? raw["duration_ms"] : undefined,
+    durationApiMs: typeof raw["duration_api_ms"] === "number" ? raw["duration_api_ms"] : undefined,
+    totalCostUsd: typeof raw["total_cost_usd"] === "number" ? raw["total_cost_usd"] : undefined,
+  };
+}
+
 export type CreateMcpServerFn = ClaudeSdkCreateMcpServer;
 
 export interface ClaudeCodeRunnerDeps {
@@ -491,6 +506,7 @@ export class ClaudeCodeRunner implements AgentRunner {
     // TC-023: invoke SDK query() with cwd, allowedTools, permissionMode, maxTurns
     let extractedModelUsage: Record<string, ModelUsage> | undefined;
     let extractedSessionId: string | undefined;
+    let extractedMetrics: AgentInvocationMetrics | undefined;
 
     // Set up wall-clock timeout via AbortController
     const abortController = new AbortController();
@@ -817,6 +833,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           followUpAttempts: 0,
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           addedTurns: ADDED_TURNS_ZERO,
+          invocationMetrics: extractInvocationMetrics(errorResult as Record<string, unknown>),
           error: Object.assign(
             new Error(`Claude Code SDK query failed: ${errorResult.subtype}`),
             { code: "CLAUDE_CODE_QUERY_FAILED" },
@@ -824,7 +841,7 @@ export class ClaudeCodeRunner implements AgentRunner {
         };
       }
 
-      // Extract modelUsage from the success result for recording in step state
+      // Extract modelUsage and invocation metrics from the success result for recording in step state
       if (lastResult && lastResult.subtype === "success") {
         const successResult = lastResult as SDKResultSuccess;
         const rawUsage = successResult.modelUsage;
@@ -841,6 +858,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           extractedModelUsage = mappedUsage;
         }
         extractedSessionId = successResult.session_id;
+        extractedMetrics = extractInvocationMetrics(successResult as unknown as Record<string, unknown>);
       }
 
       // --- report_result follow-up retry (main work turn only) ---
@@ -1037,6 +1055,8 @@ export class ClaudeCodeRunner implements AgentRunner {
         // T-06 (reduce-added-agent-turns): per-type added-turn metrics.
         // Invariant: reportRetry + outputRepair === followUpAttempts.
         addedTurns: { reportRetry, postWork, outputRepair },
+        // agent-invocation-metrics: SDK-measured metrics from the success result.
+        invocationMetrics: extractedMetrics,
       };
       return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {

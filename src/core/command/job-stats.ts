@@ -35,6 +35,21 @@ export interface JobStatRow {
   convergence: number | null;
   costUsd: number | null;
   outcome: string;
+  /**
+   * Whether the costUsd value is based on SDK-measured values, pricing-table estimates, or a mix.
+   * "measured": all contributing invocations used totalCostUsd (SDK-measured).
+   * "estimated": all contributing invocations used computeCostUsd (pricing-table estimate).
+   * "mixed": some invocations used totalCostUsd and others used computeCostUsd.
+   * null: no cost contribution (costUsd is null).
+   * undefined: field absent (hand-crafted rows in tests that predate this field).
+   */
+  costBasis?: "measured" | "estimated" | "mixed" | null;
+  /**
+   * Sum of numTurns across all invocations for this run.
+   * null when no invocations have a numTurns value.
+   * undefined: field absent (hand-crafted rows in tests that predate this field).
+   */
+  turns?: number | null;
 }
 
 export interface JobStatsSummary {
@@ -143,37 +158,70 @@ export function deriveRunStat(state: NormalizedJobState, usageFile: UsageFile | 
     convergence = count;
   }
 
-  // ── costUsd ───────────────────────────────────────────────────────────────
+  // ── costUsd / costBasis / turns ──────────────────────────────────────────
   let costUsd: number | null = null;
+  let costBasis: "measured" | "estimated" | "mixed" | null = null;
+  let turns: number | null = null;
 
   if (usageFile !== null) {
     let total = 0;
-    let hasAny = false;
+    let hasMeasured = false;
+    let hasEstimated = false;
+    let turnsSum = 0;
+    let hasTurns = false;
     const stateJobId = state.jobId;
 
     for (const inv of usageFile.commandInvocations) {
       // Exclude invocations that belong to a different job.
       // Invocations without a jobId (legacy format) are always included.
       if (inv.jobId !== undefined && inv.jobId !== stateJobId) continue;
-      if (!inv.modelUsage) continue;
-      for (const [model, usage] of Object.entries(inv.modelUsage)) {
-        const c = computeCostUsd(model, usage);
-        if (c !== null) {
-          total += c;
-          hasAny = true;
+
+      // agent-invocation-metrics: per-invocation cost priority.
+      // If totalCostUsd is present (SDK-measured), use it and skip computeCostUsd for this inv.
+      // This prevents double-counting when both totalCostUsd and modelUsage are present.
+      const invRaw = inv as unknown as { totalCostUsd?: unknown; numTurns?: unknown };
+      if (typeof invRaw.totalCostUsd === "number") {
+        total += invRaw.totalCostUsd;
+        hasMeasured = true;
+      } else if (inv.modelUsage) {
+        // No totalCostUsd → fall back to pricing-table estimate
+        for (const [model, usage] of Object.entries(inv.modelUsage)) {
+          const c = computeCostUsd(model, usage);
+          if (c !== null) {
+            total += c;
+            hasEstimated = true;
+          }
         }
+      }
+      // (invocations with neither totalCostUsd nor priced modelUsage contribute nothing)
+
+      // agent-invocation-metrics: turn count accumulation.
+      if (typeof invRaw.numTurns === "number") {
+        turnsSum += invRaw.numTurns;
+        hasTurns = true;
       }
     }
 
-    if (hasAny) {
+    if (hasMeasured || hasEstimated) {
       costUsd = total;
+      if (hasMeasured && hasEstimated) {
+        costBasis = "mixed";
+      } else if (hasMeasured) {
+        costBasis = "measured";
+      } else {
+        costBasis = "estimated";
+      }
+    }
+
+    if (hasTurns) {
+      turns = turnsSum;
     }
   }
 
   // ── outcome ───────────────────────────────────────────────────────────────
   const outcome = state.status;
 
-  return { slug, date, durationSec, convergence, costUsd, outcome };
+  return { slug, date, durationSec, convergence, costUsd, outcome, costBasis, turns };
 }
 
 // ---------------------------------------------------------------------------
@@ -281,13 +329,14 @@ export function renderJobStatsTable(report: JobStatsReport): string {
   }
 
   // Build table rows
-  const headers = ["Slug", "Date", "Duration", "Convergence", "Cost", "Outcome"];
+  const headers = ["Slug", "Date", "Duration", "Convergence", "Cost", "Turns", "Outcome"];
   const dataRows = runs.map((r) => [
     r.slug || "-",
     r.date ?? "-",
     formatDuration(r.durationSec),
     r.convergence !== null ? String(r.convergence) : "-",
     r.costUsd !== null ? formatUsd(r.costUsd) : "-",
+    r.turns != null ? String(r.turns) : "-",
     r.outcome,
   ]);
 
