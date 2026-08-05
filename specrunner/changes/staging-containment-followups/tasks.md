@@ -183,8 +183,8 @@
   - **TC-032 (delete-pending → 0)**: status includes a delete-pending path (probe throws `ENOENT` for it)
     plus present files whose sizes sum ≤ `maxStagedBytes` → guard does NOT fire; commit + push proceed.
   - **TC-033 (measurement failure → fail-closed)**: probe throws a non-ENOENT error for a path → assert the
-    step halts (rejects) and `subcommands` contains NEITHER `commit` NOR `push`.
-  - **TC-034 (message)**: over-byte case → the thrown error message contains the total bytes, the
+    step halts (rejects) and `subcommands` contains NEITHER `add` NOR `commit` NOR `push`.
+  - **TC-042 (message)**: over-byte case → the thrown error message contains the total bytes, the
     threshold, and a size breakdown.
   - **TC-041 (independence)**: a set with count ≤ `maxStagedFiles` and bytes > `maxStagedBytes` halts on
     bytes (`STAGED_BYTES_LIMIT_EXCEEDED`), proving the byte guard fires where the file-count guard would
