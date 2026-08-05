@@ -123,7 +123,7 @@ export const TEST_CASES_TEMPLATE = `# Test Cases:
 Test Case heading format: \`### TC-{NNN}: {Name}\` (3-digit zero-padded, e.g. TC-001)
 
 Required fields per test case:
-  **Category**: unit | integration | manual
+  **Category**: unit | integration | manual | gate
   **Priority**: must | should | could
   **Source**: reference to spec Scenario (spec.md > Requirement: <name> > Scenario: <name>) or design.md / tasks.md section
 
@@ -135,6 +135,8 @@ GIVEN/WHEN/THEN structure (mixed format — depends on TC type):
     **GIVEN** <preconditions>
     **WHEN** <action>
     **THEN** <expected result>
+  gate TC:
+    GWT は記述しない。充足を担う verification phase 名（または verification.commands の command 名）を本文に記録する。
 
 Summary section MUST appear immediately after the title with ALL 4 items:
   ## Summary

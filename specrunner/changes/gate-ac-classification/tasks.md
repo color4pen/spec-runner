@@ -16,18 +16,18 @@
 
 ## T-01: extractMustTcIds に Category: gate 除外を追加する
 
-- [ ] `src/core/verification/test-coverage.ts` の `extractMustTcIds` の per-section 走査に、`**Category**: gate` を
+- [x] `src/core/verification/test-coverage.ts` の `extractMustTcIds` の per-section 走査に、`**Category**: gate` を
       検出する正規表現 `categoryGateRe = /\*\*Category\*\*:\s*gate/`（`categoryManualRe` と同型、bullet 有無の
       両形式を受理）を追加する。
-- [ ] `currentIsManual` と並べて `currentIsGate` フラグを持ち、TC section 内の該当行で true にする。
+- [x] `currentIsManual` と並べて `currentIsGate` フラグを持ち、TC section 内の該当行で true にする。
       `flushCurrent` は `currentTcId && currentIsMust && !currentIsManual && !currentIsGate` のときのみ
       `mustTcIds` に push し、`currentIsGate` は section 切替でリセットする。
-- [ ] 走査ループの分岐に `else if (currentTcId && categoryGateRe.test(line)) { currentIsGate = true; }` を
+- [x] 走査ループの分岐に `else if (currentTcId && categoryGateRe.test(line)) { currentIsGate = true; }` を
       manual 分岐と並べて追加する。
-- [ ] 関数頭の Algorithm JSDoc に gate 除外の 1 ステップを追記し、enum 行
+- [x] 関数頭の Algorithm JSDoc に gate 除外の 1 ステップを追記し、enum 行
       `**Category**: unit | integration | manual | gate` がコロン直後 `unit` のため gate / manual いずれの
       正規表現にもマッチしない旨の境界注記を追記する（既存の manual 境界注記と並記）。
-- [ ] manual 判定パス・走査方式・assertionless 判定（Step 4b）・`tcIdBoundaryRe` の境界一致は変更しない。
+- [x] manual 判定パス・走査方式・assertionless 判定（Step 4b）・`tcIdBoundaryRe` の境界一致は変更しない。
 
 **Acceptance Criteria**:
 
@@ -41,16 +41,16 @@
 
 ## T-02: test-case-gen prompt に gate 定義・分類規則を追加する
 
-- [ ] `src/prompts/test-case-gen-system.ts` の `## Method` 節内 Summary の Category 列挙を
+- [x] `src/prompts/test-case-gen-system.ts` の `## Method` 節内 Summary の Category 列挙を
       `**Category**: unit | integration | manual | gate` に更新する。
-- [ ] 既存の各カテゴリ定義行と同じ体裁で gate の定義行を追記する:
+- [x] 既存の各カテゴリ定義行と同じ体裁で gate の定義行を追記する:
   - gate: 充足基準がプロジェクト全体の検証 command の結果（build / typecheck / lint / テストスイート全体の
     green、CI green 等）である TC。
   - 分類規則: THEN がプロジェクト全体の command の成功（exit 0 / green）である TC は unit / integration では
     なく gate に分類する。
   - gate TC には GWT のテスト手順を書かず、充足を検証する verification phase 名（または
     `verification.commands` の command 名）を本文に記録する。
-- [ ] 追記は既存 5 節骨格の内側に置き、新規 h2 見出しを作らない。汎用語で記述し、リポジトリ固有のテスト
+- [x] 追記は既存 5 節骨格の内側に置き、新規 h2 見出しを作らない。汎用語で記述し、リポジトリ固有のテスト
       配置パスを参照しない。既存列挙 `unit | integration | manual` を部分文字列として残す。
 
 **Acceptance Criteria**:
@@ -62,17 +62,17 @@
 
 ## T-03: test-materialize prompt に gate 実体化スキップとツールチェーン再実行禁止を追加する
 
-- [ ] `src/prompts/test-materialize-system.ts` の `## Method` 節（manual スキップ block
+- [x] `src/prompts/test-materialize-system.ts` の `## Method` 節（manual スキップ block
       `test-materialize-system.ts:75-79` の同型）に gate TC の扱いを追記する:
   - gate TC には自動テストを書かない。
   - gate TC にはトレーサビリティコメント（`// TC-XXX`）を付けない（検証実体を伴わないコメントは coverage gate の
     偽装 pass になるため作らない）。
   - gate TC の充足は verification phase の管轄であり、test-materialize は関与しない。
-- [ ] 同ファイルの `## Contract` 節に禁止規則を追記する:
+- [x] 同ファイルの `## Contract` 節に禁止規則を追記する:
   - プロジェクト全体の検証 command（build / typecheck / lint / テストスイート起動）の再実行をテスト本体として
     書かない。それは gate TC として分類され verification phase が担う。
   - 対象挙動の検証として必要な subprocess 実行（CLI 自身の起動等）は禁止しない。
-- [ ] 両追記は既存 5 節骨格の内側に置き、新規 h2 見出しを作らない。汎用語で記述し、リポジトリ固有のテスト
+- [x] 両追記は既存 5 節骨格の内側に置き、新規 h2 見出しを作らない。汎用語で記述し、リポジトリ固有のテスト
       配置パスを参照しない。既存の manual スキップ block とトレーサビリティコメント手順は改変しない。
 
 **Acceptance Criteria**:
@@ -87,15 +87,15 @@
 
 ## T-04: template / docs を gate を含む形に追随する
 
-- [ ] `src/templates/step-output-templates.ts` の `TEST_CASES_TEMPLATE` の Category 必須フィールド行を
+- [x] `src/templates/step-output-templates.ts` の `TEST_CASES_TEMPLATE` の Category 必須フィールド行を
       `**Category**: unit | integration | manual | gate` に更新し、HTML コメント内に gate の一文定義を添える。
       `Category determination:` 等の判定基準表は追加しない（form のみ所有）。
-- [ ] `docs/test-coverage.md` に gate 除外の節を追記する（manual 除外節と同型）:
+- [x] `docs/test-coverage.md` に gate 除外の節を追記する（manual 除外節と同型）:
   - `**Category**: gate` の must TC は test-coverage の must 集計から除外されること。
   - その充足は verification phase（build / typecheck / test / lint 等）の管轄であること。
   - gate TC にトレーサビリティコメントを追記する必要はなく、検証実体を伴わないコメントは偽装 pass になること。
   - 既存の「TC-ID リテラル走査」「トレーサビリティコメント表明」「manual 除外」の記述は残す。
-- [ ] `docs/README.md` の docs 一覧の `test-coverage.md` 行の説明文に gate 除外を反映する（manual と並記）。
+- [x] `docs/README.md` の docs 一覧の `test-coverage.md` 行の説明文に gate 除外を反映する（manual と並記）。
 
 **Acceptance Criteria**:
 
@@ -143,8 +143,8 @@ gate 除外 fixture は実装前は RED（現状 `extractMustTcIds` が gate を
 
 ## T-05: 検証
 
-- [ ] `bun run typecheck` が green。
-- [ ] `bun run test` が green。
+- [x] `bun run typecheck` が green。
+- [x] `bun run test` が green。
 
 **Acceptance Criteria**:
 

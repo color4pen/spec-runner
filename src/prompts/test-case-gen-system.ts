@@ -62,10 +62,11 @@ server / handler / connection / initialization / resource-management の成果�
 
 ### Summary Section (Required)
 
-**Category**: unit | integration | manual
+**Category**: unit | integration | manual | gate
 - unit: 単一モジュール・関数レベルのテスト（*.test.ts / *.spec.ts として自動化）
 - integration: 複数コンポーネント連携テスト（*.test.ts / *.spec.ts として自動化）
 - manual: 自動化できない検証（UI 操作等）
+- gate: 充足基準がプロジェクト全体の検証 command の結果（build / typecheck / lint / テストスイート全体の green、CI green 等）である TC。THEN がプロジェクト全体の command の成功（exit 0 / green）である TC は unit / integration ではなく gate に分類する。gate TC には GWT のテスト手順を書かず、充足を検証する verification phase 名（または \`verification.commands\` の command 名）を本文に記録する。
 - **MUST NOT be** dogfood（LLM/API 呼び出しを伴う spec-runner 自身の実行）
 
 **blocked_reasons**: 実装不可能な must TC は \`blocked_reasons: ["TC-NNN — 理由"]\` 形式で Result YAML に記録する。
