@@ -99,6 +99,12 @@ export interface StepResultInput {
    */
   addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
   /**
+   * Per-phase execution results for the verification step.
+   * Present only when the CLI step returned phase outcomes; absent for all other steps.
+   * Added in verification-phase-outcome-record.
+   */
+  verificationPhases?: VerificationPhaseOutcome[];
+  /**
    * Commit OID captured after this step's per-node commit.
    * Set only for sequential steps that own their own git commit (not round members).
    * Added in bite-evidence-forward (R4).
@@ -145,12 +151,7 @@ export function pushStepResult(
       ...(partial.skipReason !== undefined ? { skipReason: partial.skipReason } : {}),
       ...(partial.completionReportDiagnostics !== undefined ? { completionReportDiagnostics: partial.completionReportDiagnostics } : {}),
       ...(partial.addedTurns !== undefined ? { addedTurns: partial.addedTurns } : {}),
-      // verificationPhases is NOT declared in StepResultInput (to preserve backward compat and
-      // allow callers to pass it via type cast without excess-property errors at the call site).
-      // Read it dynamically here: if the caller included it (e.g. executor projectSuccess), store it.
-      ...((partial as { verificationPhases?: VerificationPhaseOutcome[] }).verificationPhases !== undefined
-        ? { verificationPhases: (partial as { verificationPhases?: VerificationPhaseOutcome[] }).verificationPhases }
-        : {}),
+      ...(partial.verificationPhases !== undefined ? { verificationPhases: partial.verificationPhases } : {}),
     },
     startedAt: partial.startedAt ?? now,
     endedAt: partial.completedAt ?? now,

@@ -285,7 +285,6 @@ describe("TC-009: StepOutcome.verificationPhases is optional and existing record
       verdict: "failed",
       findingsPath: null,
       error: null,
-      // @ts-expect-error — verificationPhases not yet in StepResultInput; added by T-02
       verificationPhases: [{ phase: "build", status: "failed", exitCode: 1 }],
     });
 
@@ -336,7 +335,6 @@ describe("TC-010: pushStepResult conditional verificationPhases — present when
       verdict: "failed",
       findingsPath: null,
       error: null,
-      // @ts-expect-error — verificationPhases not yet in StepResultInput; added by T-02
       verificationPhases: phases,
     });
 

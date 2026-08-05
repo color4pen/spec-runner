@@ -121,8 +121,6 @@ function projectSuccess(
   const { completion, completedAt, startedAt, session, followUpAttempts, transientRetryAttempts, completionReportDiagnostics, addedTurns, commitOid, verificationPhases } = result;
   const { verdict, persistToolResult } = completion;
 
-  // verificationPhases is not declared in StepResultInput; pass via cast so
-  // pushStepResult can read it dynamically without excess-property type errors.
   return pushStepResult(state, step.name, {
     session,
     verdict: verdict as Verdict | null,
@@ -137,7 +135,7 @@ function projectSuccess(
     addedTurns,
     ...(commitOid !== undefined ? { commitOid } : {}),
     ...(verificationPhases !== undefined ? { verificationPhases } : {}),
-  } as Parameters<typeof pushStepResult>[2]);
+  });
 }
 
 /** Pure builder for the {step}-verdict history entry (shared by sequential + round). */
