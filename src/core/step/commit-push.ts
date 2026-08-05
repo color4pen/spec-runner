@@ -1,4 +1,4 @@
-import { access as fsAccess, mkdir as fsMkdir, writeFile as fsWriteFile, readFile as fsReadFile } from "node:fs/promises";
+import { access as fsAccess, mkdir as fsMkdir, writeFile as fsWriteFile, readFile as fsReadFile, lstat as fsLstat } from "node:fs/promises";
 import { join as pathJoin } from "node:path";
 import { localSidecarDir } from "../../util/paths.js";
 import type { AgentStep } from "./types.js";
@@ -13,6 +13,7 @@ import {
   commitEffectFailedError,
   writeScopeViolationError,
   stagingLimitExceededError,
+  stagedBytesLimitExceededError,
   egressUnknownCommitError,
   SpecRunnerError,
   ERROR_CODES,
@@ -20,11 +21,26 @@ import {
 import {
   resolveStagingExcludePatterns,
   resolveMaxStagedFiles,
+  resolveMaxStagedBytes,
   applyStagingExclusions,
   summarizeTopDirectories,
+  measureStagedBytes,
+  summarizeTopDirectoriesBySize,
+  type StagedPathSizeProbe,
 } from "./staging-containment.js";
 import { stagingModeFor, findWriteScopeViolations, findScopedCommitViolations } from "./write-scope.js";
 import { pipelineManagedPaths } from "./round-git-scope.js";
+
+/**
+ * Default worktree size probe for the staged byte-size guard.
+ *
+ * Uses `fs.lstat` — rejects with `{ code: "ENOENT" }` when the path is absent
+ * (delete-pending), which `measureStagedBytes` classifies as 0 bytes.
+ */
+async function defaultStagedPathSizeProbe(absPath: string): Promise<{ size: number }> {
+  const st = await fsLstat(absPath);
+  return { size: st.size };
+}
 
 /**
  * Return the subset of `paths` that actually exist in the filesystem at `cwd`.
@@ -56,6 +72,12 @@ export interface CommitPushInfra {
    * For commitFinalState: best-effort (throw is caught and warned; push proceeds).
    */
   persistBeforePush?: (oid: string) => Promise<void>;
+  /**
+   * Optional injectable worktree size probe for the guarded byte-size guard.
+   * Defaults to `fs.lstat`. Inject a fake probe in tests to avoid filesystem
+   * access.
+   */
+  statFn?: StagedPathSizeProbe;
 }
 
 /**
@@ -627,6 +649,35 @@ export async function commitAndPush(
         stagePaths.length,
         limit,
         summarizeTopDirectories(stagePaths),
+      );
+    }
+
+    // Byte-size guard (fail-closed): halt before git add when post-exclusion total
+    // worktree byte size exceeds the configured limit. Independent of the file-count
+    // guard — either excess halts before add/commit/push. Measurement uses lstat on
+    // the worktree paths (before git add) — pack size is NOT measured (pack is never
+    // created). Delete-pending paths (ENOENT) contribute 0 bytes. Any other measurement
+    // error halts fail-closed via commitEffectFailedError.
+    const byteLimit = resolveMaxStagedBytes(deps.config);
+    const probe = infra.statFn ?? defaultStagedPathSizeProbe;
+    let measured: Awaited<ReturnType<typeof measureStagedBytes>>;
+    try {
+      measured = await measureStagedBytes(stagePaths, cwd, probe);
+    } catch (err) {
+      throw commitEffectFailedError(
+        step.name,
+        branch,
+        "stage",
+        `staged byte measurement failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+    if (measured.totalBytes > byteLimit) {
+      throw stagedBytesLimitExceededError(
+        step.name,
+        branch,
+        measured.totalBytes,
+        byteLimit,
+        summarizeTopDirectoriesBySize(measured.entries),
       );
     }
 

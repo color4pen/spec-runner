@@ -250,6 +250,12 @@ export const configSchema = object({
             gte(1, "must be a positive integer."),
           ),
         ),
+        maxStagedBytes: optional(
+          number("must be a positive integer.").check(
+            int("must be a positive integer."),
+            gte(1, "must be a positive integer."),
+          ),
+        ),
       },
       "must be an object.",
     ),

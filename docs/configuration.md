@@ -416,14 +416,17 @@ Guarded write steps (implementer / build-fixer / code-fixer / test-materialize /
 
 **`pipeline.maxStagedFiles`** — fail-closed guard: if the post-exclusion file count exceeds this limit, the step halts (escalation) before any `git add` or commit. The error message lists the total count and the top contributing directories, along with two remediation exits: declare `stagingExcludePatterns` / `.gitignore` for known scratch artifacts, or raise `maxStagedFiles` for legitimately large changes.
 
-Both settings affect **GUARDED steps only** (implementer / build-fixer / code-fixer / test-materialize / adr-gen). They have no effect on scoped steps (design, spec-review, etc.).
+**`pipeline.maxStagedBytes`** — fail-closed guard: if the post-exclusion total worktree byte size (uncompressed, measured via `lstat` before `git add`) exceeds this limit, the step halts (escalation) before any `git add` or commit. The default of `52428800` (50 MiB) is chosen because legitimate source changes virtually never exceed 50 MiB uncompressed; exceedance is a strong signal of generated-artifact contamination. The error message states the total bytes, the threshold, and the top contributing directories, along with two remediation exits: declare `stagingExcludePatterns` / `.gitignore` for known scratch artifacts, or raise `maxStagedBytes` for legitimately large changes. The file-count guard and the byte-size guard are **independent** — either excess halts before commit.
+
+All three settings affect **GUARDED steps only** (implementer / build-fixer / code-fixer / test-materialize / adr-gen). They have no effect on scoped steps (design, spec-review, etc.).
 
 ```jsonc
 // .specrunner/config.json
 {
   "pipeline": {
     "stagingExcludePatterns": [".cargo-tmp/**", "vendor/**"],
-    "maxStagedFiles": 5000
+    "maxStagedFiles": 5000,
+    "maxStagedBytes": 104857600
   }
 }
 ```
@@ -432,6 +435,7 @@ Both settings affect **GUARDED steps only** (implementer / build-fixer / code-fi
 |---|---|---|
 | `pipeline.stagingExcludePatterns` | absent (no exclusions) | Glob patterns removed from the guarded stage set. Matched paths stay in the worktree, not in the commit. Guarded steps only. Uses bounded glob rules (`**/`, `*`, literal others). |
 | `pipeline.maxStagedFiles` | `2000` | Max post-exclusion file count for a guarded step before the step halts. Guarded steps only. |
+| `pipeline.maxStagedBytes` | `52428800` | Max post-exclusion total worktree byte size (uncompressed, via lstat) for a guarded step before the step halts. Independent of `maxStagedFiles`. Guarded steps only. |
 
 **Glob syntax** for `stagingExcludePatterns`: `**/` matches zero or more directory segments; `*` matches within one segment (does not cross `/`); all other characters are literal (`.` matches only a literal dot).
 
