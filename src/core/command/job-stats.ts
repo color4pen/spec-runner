@@ -310,9 +310,20 @@ function fmt1(value: number | null): string {
 }
 
 /**
+ * Format a cost basis value as a short table label.
+ * "measured" → "M", "estimated" → "~", "mixed" → "M+~", null/undefined → "-"
+ */
+function formatCostBasis(basis: "measured" | "estimated" | "mixed" | null | undefined): string {
+  if (basis === "measured") return "M";
+  if (basis === "estimated") return "~";
+  if (basis === "mixed") return "M+~";
+  return "-";
+}
+
+/**
  * Render a stats report as a human-readable table with summary footer.
  *
- * Columns: slug / date / duration / convergence / cost / outcome
+ * Columns: slug / date / duration / convergence / cost / basis / turns / outcome
  * Null values shown as "-".
  * No runs → shows a message.
  */
@@ -329,13 +340,14 @@ export function renderJobStatsTable(report: JobStatsReport): string {
   }
 
   // Build table rows
-  const headers = ["Slug", "Date", "Duration", "Convergence", "Cost", "Turns", "Outcome"];
+  const headers = ["Slug", "Date", "Duration", "Convergence", "Cost", "Basis", "Turns", "Outcome"];
   const dataRows = runs.map((r) => [
     r.slug || "-",
     r.date ?? "-",
     formatDuration(r.durationSec),
     r.convergence !== null ? String(r.convergence) : "-",
     r.costUsd !== null ? formatUsd(r.costUsd) : "-",
+    formatCostBasis(r.costBasis),
     r.turns != null ? String(r.turns) : "-",
     r.outcome,
   ]);

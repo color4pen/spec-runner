@@ -407,6 +407,154 @@ describe("job-stats metrics — renderJobStatsTable with Turns column", () => {
 });
 
 // ---------------------------------------------------------------------------
+// renderJobStatsTable — costBasis column (AC #8 table path)
+// ---------------------------------------------------------------------------
+
+describe("job-stats metrics — renderJobStatsTable costBasis column", () => {
+  let renderJobStatsTable: typeof import("../../../../src/core/command/job-stats.js")["renderJobStatsTable"];
+  let buildJobStatsReport: typeof import("../../../../src/core/command/job-stats.js")["buildJobStatsReport"];
+
+  beforeEach(async () => {
+    ({ renderJobStatsTable, buildJobStatsReport } = await import("../../../../src/core/command/job-stats.js"));
+  });
+
+  it("AC-8-table: shows 'Basis' column header in the table", () => {
+    const rows = [
+      {
+        slug: "measured-feature",
+        date: "2026-01-15",
+        durationSec: 300,
+        convergence: 2,
+        costUsd: 1.5,
+        outcome: "archived",
+        turns: 5,
+        costBasis: "measured" as const,
+      },
+    ];
+    const report = buildJobStatsReport(rows);
+    const output = renderJobStatsTable(report);
+
+    // The table must contain a Basis column header
+    expect(output).toMatch(/basis/i);
+  });
+
+  it("AC-8-table: costBasis='measured' renders as 'M' in table", () => {
+    const rows = [
+      {
+        slug: "measured-feature",
+        date: "2026-01-15",
+        durationSec: 300,
+        convergence: 2,
+        costUsd: 1.5,
+        outcome: "archived",
+        turns: 5,
+        costBasis: "measured" as const,
+      },
+    ];
+    const report = buildJobStatsReport(rows);
+    const output = renderJobStatsTable(report);
+
+    // "M" is the short label for measured
+    const lines = output.split("\n");
+    const dataLine = lines.find((l) => l.includes("measured-feature"));
+    expect(dataLine).toBeDefined();
+    expect(dataLine).toContain("M");
+  });
+
+  it("AC-8-table: costBasis='estimated' renders as '~' in table", () => {
+    const rows = [
+      {
+        slug: "estimated-feature",
+        date: "2026-01-15",
+        durationSec: 120,
+        convergence: 1,
+        costUsd: 3.0,
+        outcome: "archived",
+        turns: null,
+        costBasis: "estimated" as const,
+      },
+    ];
+    const report = buildJobStatsReport(rows);
+    const output = renderJobStatsTable(report);
+
+    const lines = output.split("\n");
+    const dataLine = lines.find((l) => l.includes("estimated-feature"));
+    expect(dataLine).toBeDefined();
+    expect(dataLine).toContain("~");
+  });
+
+  it("AC-8-table: costBasis='mixed' renders as 'M+~' in table", () => {
+    const rows = [
+      {
+        slug: "mixed-feature",
+        date: "2026-01-15",
+        durationSec: 180,
+        convergence: 3,
+        costUsd: 2.25,
+        outcome: "archived",
+        turns: 10,
+        costBasis: "mixed" as const,
+      },
+    ];
+    const report = buildJobStatsReport(rows);
+    const output = renderJobStatsTable(report);
+
+    const lines = output.split("\n");
+    const dataLine = lines.find((l) => l.includes("mixed-feature"));
+    expect(dataLine).toBeDefined();
+    expect(dataLine).toContain("M+~");
+  });
+
+  it("AC-8-table: costBasis=null renders as '-' in table", () => {
+    const rows = [
+      {
+        slug: "no-cost-feature",
+        date: "2026-01-15",
+        durationSec: 60,
+        convergence: 0,
+        costUsd: null,
+        outcome: "canceled",
+        turns: null,
+        costBasis: null,
+      },
+    ];
+    const report = buildJobStatsReport(rows);
+    const output = renderJobStatsTable(report);
+
+    // costBasis=null → "-" in Basis column
+    const lines = output.split("\n");
+    const dataLine = lines.find((l) => l.includes("no-cost-feature"));
+    expect(dataLine).toBeDefined();
+    // The data line contains "-" for both null costUsd and null costBasis
+    expect(dataLine).toContain("-");
+  });
+
+  it("AC-8-table: costBasis=undefined (legacy rows without field) renders as '-'", () => {
+    // Simulate a legacy row without costBasis field
+    const rows = [
+      {
+        slug: "legacy-feature",
+        date: "2026-01-15",
+        durationSec: 60,
+        convergence: 1,
+        costUsd: 1.0,
+        outcome: "archived",
+        // costBasis and turns intentionally omitted (legacy row)
+      },
+    ];
+    const report = buildJobStatsReport(rows);
+    const output = renderJobStatsTable(report);
+
+    // Should not throw, and Basis column should show "-" for undefined costBasis
+    const lines = output.split("\n");
+    const dataLine = lines.find((l) => l.includes("legacy-feature"));
+    expect(dataLine).toBeDefined();
+    // The Basis column shows "-" for undefined
+    expect(dataLine).toContain("-");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // renderJobStatsJson — turns and costBasis included in JSON
 // ---------------------------------------------------------------------------
 
