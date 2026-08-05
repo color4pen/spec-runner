@@ -712,3 +712,258 @@ describe("addedTurns backward compat — old records without addedTurns fold wit
     expect(runs![0]!.outcome.addedTurns).toBeUndefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-001: 失敗 iteration の phase が step-attempt から取得できる (must)
+// Source: spec.md > Requirement: verification は各 iteration の phase 結果を step-attempt outcome に
+//         構造化記録する > Scenario: 失敗 iteration の phase が step-attempt から取得できる
+//
+// RED: stepRunToRecord does not yet serialize verificationPhases.
+//      After T-01 + T-02 + T-03, the field is serialized and reconstructed by fold.
+// ---------------------------------------------------------------------------
+describe("TC-001: failed verification phase is retrievable from step-attempt (must)", () => {
+  it("outcome.verificationPhases has {phase:build, status:failed, exitCode:1} after stepRunToRecord → fold — no markdown parsing", async () => {
+    const filePath = path.join(tempDir, "events.jsonl");
+
+    // Construct a StepRun with verificationPhases embedded in outcome
+    // verificationPhases will be added to StepOutcome by T-01
+    const stepRun: StepRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: {
+        verdict: "failed",
+        findingsPath: null,
+        error: null,
+        verificationPhases: [{ phase: "build", status: "failed", exitCode: 1 }],
+      } as StepRun["outcome"],
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:05:00.000Z",
+    };
+
+    const record = stepRunToRecord("verification", stepRun);
+    await appendEventRecord(filePath, record);
+
+    const content = await fs.readFile(filePath, "utf-8");
+    const result = fold(content);
+
+    const runs = result.steps["verification"];
+    expect(runs).toHaveLength(1);
+    const outcome = runs![0]!.outcome;
+
+    // Phase info obtained directly from outcome — no markdown file parsed
+    expect(outcome).toHaveProperty("verificationPhases");
+    const phases = (outcome as unknown as Record<string, unknown>)["verificationPhases"] as Array<Record<string, unknown>>;
+    expect(phases).toHaveLength(1);
+    expect(phases[0]).toMatchObject({ phase: "build", status: "failed", exitCode: 1 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-002: passed iteration でも実行された全 phase の status が記録される (must)
+// Source: spec.md > Scenario: passed iteration でも実行された全 phase の status が記録される
+//
+// RED: same root cause as TC-001 — verificationPhases not threaded through journal.
+// ---------------------------------------------------------------------------
+describe("TC-002: passed iteration records all phase statuses (must)", () => {
+  it("verificationPhases contains passed and skipped entries for all phases after fold", async () => {
+    const filePath = path.join(tempDir, "events.jsonl");
+
+    // build/typecheck/test ran and passed; security/test-coverage were skipped
+    // verificationPhases will be added to StepOutcome by T-01
+    const phases = [
+      { phase: "build",         status: "passed",  exitCode: 0 },
+      { phase: "typecheck",     status: "passed",  exitCode: 0 },
+      { phase: "test",          status: "passed",  exitCode: 0 },
+      { phase: "security",      status: "skipped", exitCode: null },
+      { phase: "test-coverage", status: "skipped", exitCode: null },
+    ];
+
+    // verificationPhases will be added to StepOutcome by T-01 (as cast handles it for now)
+    const stepRun: StepRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: {
+        verdict: "passed",
+        findingsPath: null,
+        error: null,
+        verificationPhases: phases,
+      } as StepRun["outcome"],
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:05:00.000Z",
+    };
+
+    const record = stepRunToRecord("verification", stepRun);
+    await appendEventRecord(filePath, record);
+
+    const content = await fs.readFile(filePath, "utf-8");
+    const result = fold(content);
+
+    const runs = result.steps["verification"];
+    expect(runs).toHaveLength(1);
+    const outcome = runs![0]!.outcome;
+
+    expect(outcome).toHaveProperty("verificationPhases");
+    const storedPhases = (outcome as unknown as Record<string, unknown>)["verificationPhases"] as Array<Record<string, unknown>>;
+    expect(storedPhases).toHaveLength(5);
+
+    // Executed phases have passed status
+    expect(storedPhases.find((p) => p["phase"] === "build")).toMatchObject({ status: "passed", exitCode: 0 });
+    expect(storedPhases.find((p) => p["phase"] === "typecheck")).toMatchObject({ status: "passed", exitCode: 0 });
+    expect(storedPhases.find((p) => p["phase"] === "test")).toMatchObject({ status: "passed", exitCode: 0 });
+
+    // Skipped phases have skipped status
+    expect(storedPhases.find((p) => p["phase"] === "security")).toMatchObject({ status: "skipped", exitCode: null });
+    expect(storedPhases.find((p) => p["phase"] === "test-coverage")).toMatchObject({ status: "skipped", exitCode: null });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-003: 失敗 → 修正 → 成功で両 iteration の phase が残る (must)
+// Source: spec.md > Requirement: 複数 iteration の phase 結果は独立に記録され上書きされない
+//         > Scenario: 失敗 → 修正 → 成功で両 iteration の phase が残る
+//
+// RED: same root cause as TC-001. After fold, both records must have independent phases.
+// ---------------------------------------------------------------------------
+describe("TC-003: multiple verification iterations — phases are independent, not overwritten (must)", () => {
+  it("iter1=build failed and iter2=all passed both retain independent verificationPhases after fold", async () => {
+    const filePath = path.join(tempDir, "events.jsonl");
+
+    // Iteration 1: build phase failed
+    // verificationPhases will be added to StepOutcome by T-01 (as cast handles it for now)
+    const stepRun1: StepRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: {
+        verdict: "failed",
+        findingsPath: null,
+        error: null,
+        verificationPhases: [
+          { phase: "build", status: "failed", exitCode: 1 },
+        ],
+      } as StepRun["outcome"],
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:05:00.000Z",
+    };
+
+    // Iteration 2: all phases passed (after build-fixer fixed the issue)
+    // verificationPhases will be added to StepOutcome by T-01 (as cast handles it for now)
+    const stepRun2: StepRun = {
+      attempt: 2,
+      sessionId: null,
+      outcome: {
+        verdict: "passed",
+        findingsPath: null,
+        error: null,
+        verificationPhases: [
+          { phase: "build",     status: "passed", exitCode: 0 },
+          { phase: "typecheck", status: "passed", exitCode: 0 },
+          { phase: "test",      status: "passed", exitCode: 0 },
+        ],
+      } as StepRun["outcome"],
+      startedAt: "2026-01-01T00:10:00.000Z",
+      endedAt: "2026-01-01T00:15:00.000Z",
+    };
+
+    const record1 = stepRunToRecord("verification", stepRun1);
+    const record2 = stepRunToRecord("verification", stepRun2);
+    await appendEventRecord(filePath, record1);
+    await appendEventRecord(filePath, record2);
+
+    const content = await fs.readFile(filePath, "utf-8");
+    const result = fold(content);
+
+    const runs = result.steps["verification"];
+    expect(runs).toHaveLength(2);
+
+    // Iteration 1: build failed — independent record preserved
+    const outcome1 = runs![0]!.outcome;
+    expect(outcome1).toHaveProperty("verificationPhases");
+    const phases1 = (outcome1 as unknown as Record<string, unknown>)["verificationPhases"] as Array<Record<string, unknown>>;
+    expect(phases1).toHaveLength(1);
+    expect(phases1[0]).toMatchObject({ phase: "build", status: "failed", exitCode: 1 });
+
+    // Iteration 2: all passed — not overwritten by iter2
+    const outcome2 = runs![1]!.outcome;
+    expect(outcome2).toHaveProperty("verificationPhases");
+    const phases2 = (outcome2 as unknown as Record<string, unknown>)["verificationPhases"] as Array<Record<string, unknown>>;
+    expect(phases2).toHaveLength(3);
+    expect(phases2.every((p) => p["status"] === "passed")).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-011: journal round-trip — verificationPhases が stepRunToRecord → fold で同一内容に再構築される (must)
+// Source: tasks.md > T-03
+//
+// RED: stepRunToRecord does not serialize verificationPhases; fold does not reconstruct it.
+// ---------------------------------------------------------------------------
+describe("TC-011: verificationPhases round-trip — stepRunToRecord → fold restores identical content (must)", () => {
+  it("verificationPhases [{phase:build, status:failed, exitCode:1}] survives round-trip via stepRunToRecord → fold", async () => {
+    const filePath = path.join(tempDir, "events.jsonl");
+
+    const originalPhases = [{ phase: "build", status: "failed" as const, exitCode: 1 }];
+
+    // verificationPhases will be added to StepOutcome by T-01 (as cast handles it for now)
+    const stepRun: StepRun = {
+      attempt: 1,
+      sessionId: "sess-rt-001",
+      outcome: {
+        verdict: "failed",
+        findingsPath: "specrunner/changes/my-slug/verification-result.md",
+        error: null,
+        verificationPhases: originalPhases,
+      } as StepRun["outcome"],
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:05:00.000Z",
+    };
+
+    const record = stepRunToRecord("verification", stepRun);
+    await appendEventRecord(filePath, record);
+
+    const content = await fs.readFile(filePath, "utf-8");
+    const result = fold(content);
+
+    const runs = result.steps["verification"];
+    expect(runs).toHaveLength(1);
+    const outcome = runs![0]!.outcome;
+
+    expect(outcome).toHaveProperty("verificationPhases");
+    const roundTrippedPhases = (outcome as unknown as Record<string, unknown>)["verificationPhases"];
+    expect(roundTrippedPhases).toEqual(originalPhases);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-012: verificationPhases 不在の既存 record が fold で欠落・破損しない (should)
+// Source: tasks.md > T-03 (backward compat)
+//
+// GREEN: fold already handles absent fields gracefully (forward compat design).
+// Verifies the backward compat invariant remains after T-03 changes.
+// ---------------------------------------------------------------------------
+describe("TC-012: legacy records without verificationPhases fold without error (should)", () => {
+  it("step-attempt record without verificationPhases folds cleanly and outcome.verificationPhases is absent", () => {
+    const legacyRecord: StepAttemptRecord = {
+      type: "step-attempt",
+      step: "verification",
+      sessionId: null,
+      outcome: {
+        verdict: "failed",
+        findingsPath: "specrunner/changes/slug/verification-result.md",
+        error: null,
+        // verificationPhases intentionally absent (legacy record)
+      },
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:05:00.000Z",
+    };
+
+    const line = JSON.stringify(legacyRecord);
+    const result = fold(line);
+
+    const runs = result.steps["verification"];
+    expect(runs).toHaveLength(1);
+    // verdict and other fields are restored correctly
+    expect(runs![0]!.outcome.verdict).toBe("failed");
+    // verificationPhases is absent from legacy record — fold must not add it
+    expect((runs![0]!.outcome as unknown as Record<string, unknown>)["verificationPhases"]).toBeUndefined();
+  });
+});

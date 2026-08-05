@@ -117,6 +117,20 @@ export interface ResumePoint {
 // ---------------------------------------------------------------------------
 
 /**
+ * Phase-level outcome for a single verification phase or command.
+ * phase: phase name or command label (e.g. "build", "typecheck", "test", "lint").
+ * status: execution result — "passed", "failed", or "skipped" (phase was skipped due to config or fail-fast).
+ * exitCode: process exit code (0 = success, non-zero = failure), or null for skipped phases and
+ *   non-spawn phases where no process was launched.
+ * Added in verification-phase-outcome-record.
+ */
+export interface VerificationPhaseOutcome {
+  phase: string;
+  status: "passed" | "failed" | "skipped";
+  exitCode: number | null;
+}
+
+/**
  * Outcome of a single step execution.
  */
 export interface StepOutcome {
@@ -164,6 +178,14 @@ export interface StepOutcome {
    * Added in reduce-added-agent-turns.
    */
   addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
+  /**
+   * Per-phase execution results for the verification step.
+   * verification step 専用。他 step と legacy record では absent。
+   * Each entry records one phase's name, status (passed/failed/skipped), and process exit code.
+   * Absent on non-verification steps and legacy verification records (backward compat).
+   * Added in verification-phase-outcome-record.
+   */
+  verificationPhases?: VerificationPhaseOutcome[];
 }
 
 /**

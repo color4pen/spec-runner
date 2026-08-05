@@ -1,4 +1,4 @@
-import type { JobState, StepResult, StepRun, ModelUsage } from "./schema.js";
+import type { JobState, StepResult, StepRun, ModelUsage, VerificationPhaseOutcome } from "./schema.js";
 import type { BaseReportResult, Finding, Observation, Evidence } from "../kernel/report-result.js";
 import type { CompletionReportDiagnostic } from "../kernel/completion-report-diagnostic.js";
 
@@ -99,6 +99,12 @@ export interface StepResultInput {
    */
   addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
   /**
+   * Per-phase execution results for the verification step.
+   * Present only when the CLI step returned phase outcomes; absent for all other steps.
+   * Added in verification-phase-outcome-record.
+   */
+  verificationPhases?: VerificationPhaseOutcome[];
+  /**
    * Commit OID captured after this step's per-node commit.
    * Set only for sequential steps that own their own git commit (not round members).
    * Added in bite-evidence-forward (R4).
@@ -145,6 +151,7 @@ export function pushStepResult(
       ...(partial.skipReason !== undefined ? { skipReason: partial.skipReason } : {}),
       ...(partial.completionReportDiagnostics !== undefined ? { completionReportDiagnostics: partial.completionReportDiagnostics } : {}),
       ...(partial.addedTurns !== undefined ? { addedTurns: partial.addedTurns } : {}),
+      ...(partial.verificationPhases !== undefined ? { verificationPhases: partial.verificationPhases } : {}),
     },
     startedAt: partial.startedAt ?? now,
     endedAt: partial.completedAt ?? now,

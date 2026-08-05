@@ -173,7 +173,7 @@ export const LOOP_ERROR_CODES: Record<string, LoopErrorShape> = {
   [STEP_NAMES.VERIFICATION]: {
     code: "VERIFICATION_RETRIES_EXHAUSTED",
     message: (n) => `verification did not pass after ${n} iterations`,
-    hint: (nnn) => `Review verification-result-${nnn}.md and fix the build errors manually.`,
+    hint: (_nnn) => `Review verification-result.md and fix the build errors manually. Phase-level details (which phase failed and exit code) are available in the step-attempt outcome in events.jsonl.`,
   },
   [STEP_NAMES.CODE_REVIEW]: {
     code: "CODE_REVIEW_RETRIES_EXHAUSTED",

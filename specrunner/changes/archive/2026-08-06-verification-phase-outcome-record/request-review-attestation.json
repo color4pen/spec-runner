@@ -1,0 +1,22 @@
+{
+  "requestHash": "sha256:eaccd371dc17c51389569279a032bedf2d81b1001c4a237bf6899b99514c1950",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/util/paths.ts:67 verificationResultPath(slug) returns specrunner/changes/<slug>/verification-result.md with no iteration parameter",
+    "src/core/step/verification.ts:53 computes iteration as (state.steps?.[STEP_NAMES.VERIFICATION]?.length ?? 0) + 1",
+    "src/core/verification/propagate.ts:68 uses iteration only in commit message 'chore: verification result for <slug> (iter N)', not in filename",
+    "src/core/step/verification.ts:91-98 parseResult uses /^## Verdict: (passed|failed)$/m regex and discards phase-level results",
+    "src/util/paths.ts resolveReviewerResultPath returns iteration-numbered filenames for spec-review/regression-gate/etc, but verification uses no iteration",
+    "src/core/pipeline/types.ts:176 VERIFICATION hint references verification-result-${nnn}.md which is never generated (actual file is always verification-result.md)",
+    "src/core/verification/phases.ts:11 PhaseName = 'build' | 'typecheck' | 'test' | 'lint' | 'security' | 'test-coverage'",
+    "src/core/verification/runner.ts:329 export async function runVerification exists",
+    "src/core/step/build-fixer.ts:66 reads() declares verificationResultPath(deps.slug)",
+    "src/core/step/build-fixer.ts:77 enrichContext uses verificationResultPath as findingsPath",
+    "src/core/step/build-fixer.ts:94 buildMessage uses verificationResultPath as findingsPath",
+    "src/core/verification/runner.ts VerificationResult interface has phases: PhaseResult[] field",
+    "src/core/step/verification.ts run() discards the VerificationResult returned by runVerification",
+    "src/core/port/step-types.ts CliStep.run() returns Promise<void>",
+    "src/state/helpers.ts StepOutcome/StepResultInput has no phase-level field"
+  ],
+  "sourceRevision": "59225d3ae672d63774f43fdcf883371162d62f9e"
+}

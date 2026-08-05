@@ -15,7 +15,7 @@
 
 import * as path from "node:path";
 import type { Step, AgentStep, IoRef } from "./types.js";
-import type { JobState, Verdict, ModelUsage, StepRun, ErrorInfo, HistoryEntry } from "../../state/schema.js";
+import type { JobState, Verdict, ModelUsage, StepRun, ErrorInfo, HistoryEntry, VerificationPhaseOutcome } from "../../state/schema.js";
 import type { ReviewerStatus } from "../../kernel/reviewer-snapshot.js";
 import type { PipelineDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
@@ -90,6 +90,13 @@ export type StepExecutionResult =
        * Absent for agent steps (their synthesized commit is already captured in commitOid).
        */
       exitCommitOid?: string;
+      /**
+       * Per-phase execution results captured from VerificationStep.run().
+       * Populated only when the CLI step returns a CliStepRunOutcome with verificationPhases.
+       * Absent for agent steps and void-returning CLI steps.
+       * Added in verification-phase-outcome-record.
+       */
+      verificationPhases?: VerificationPhaseOutcome[];
     }
   | { kind: "halt"; halt: StepHalt }
   | { kind: "skipped"; skipReason: string };
@@ -111,7 +118,7 @@ function projectSuccess(
   result: StepExecutionResult & { kind: "success" },
   findingsPath: string | null,
 ): JobState {
-  const { completion, completedAt, startedAt, session, followUpAttempts, transientRetryAttempts, completionReportDiagnostics, addedTurns, commitOid } = result;
+  const { completion, completedAt, startedAt, session, followUpAttempts, transientRetryAttempts, completionReportDiagnostics, addedTurns, commitOid, verificationPhases } = result;
   const { verdict, persistToolResult } = completion;
 
   return pushStepResult(state, step.name, {
@@ -127,6 +134,7 @@ function projectSuccess(
     completionReportDiagnostics,
     addedTurns,
     ...(commitOid !== undefined ? { commitOid } : {}),
+    ...(verificationPhases !== undefined ? { verificationPhases } : {}),
   });
 }
 

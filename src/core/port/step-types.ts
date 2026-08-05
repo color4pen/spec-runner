@@ -1,4 +1,4 @@
-import type { JobState } from "../../state/schema.js";
+import type { JobState, VerificationPhaseOutcome } from "../../state/schema.js";
 import type { StepContext } from "./step-context.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { CustomToolHandler } from "../../kernel/tool-types.js";
@@ -324,6 +324,21 @@ export interface AgentStep {
 }
 
 /**
+ * Structured outcome returned by multi-phase CLI steps (e.g. verification).
+ * CLI steps that don't return structured data can return void instead; only multi-phase
+ * steps like VerificationStep populate this.
+ *
+ * The executor captures the runtime return value (even when the CliStep.run interface
+ * declares void) and reads verificationPhases from it to store in StepRun.outcome.
+ *
+ * Added in verification-phase-outcome-record.
+ */
+export interface CliStepRunOutcome {
+  /** Per-phase execution results projected from VerificationResult.phases. */
+  verificationPhases?: VerificationPhaseOutcome[];
+}
+
+/**
  * CliStep: a pipeline step that runs directly without a managed agent session.
  * kind: "cli" — StepExecutor calls step.run() and reads resultFilePath.
  * No agent field — CLI-resident steps (like verification) have no associated Agent.
@@ -335,8 +350,10 @@ export interface CliStep {
   /**
    * Execute the CLI step (spawn processes, write result files, etc.).
    * StepExecutor calls this instead of creating a session.
+   * May return a CliStepRunOutcome to pass structured data to the executor
+   * (e.g. verificationPhases). Returning void or undefined is also valid.
    */
-  run(state: JobState, deps: CliStepDeps): Promise<void>;
+  run(state: JobState, deps: CliStepDeps): Promise<CliStepRunOutcome | void>;
   /**
    * Compute the path of the result file written by this step.
    * Unlike AgentStep, this is non-null (CLI steps always produce a result file).

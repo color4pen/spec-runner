@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import { readdir as fsReaddir, readFile as fsReadFile } from "node:fs/promises";
-import type { Step, AgentStep, CliStep } from "./types.js";
+import type { Step, AgentStep, CliStep, CliStepRunOutcome } from "./types.js";
 import type { JobState, Verdict } from "../../state/schema.js";
 import type { PipelineDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
@@ -563,9 +563,13 @@ export class StepExecutor {
       ? (await deps.runtimeStrategy.captureHeadSha(cwd)) ?? undefined
       : undefined;
 
-    // Run the CLI step
+    // Run the CLI step.
+    // CliStep.run() returns Promise<CliStepRunOutcome | void>. Multi-phase steps
+    // (e.g. VerificationStep) return a CliStepRunOutcome so verificationPhases can
+    // be threaded into the StepExecutionResult and recorded in StepRun.outcome.
+    let cliRunResult: CliStepRunOutcome | undefined;
     try {
-      await step.run(state, deps);
+      cliRunResult = await step.run(state, deps) ?? undefined;
     } catch (err) {
       const halt = makeCliStepFailHalt(
         err as Error & { code?: string; hint?: string },
@@ -610,6 +614,10 @@ export class StepExecutor {
       this.permissionScope,
     );
 
+    // Extract verificationPhases from the CLI step's runtime return value (if present).
+    // void-returning steps leave cliRunResult as undefined → no verificationPhases in result.
+    const verificationPhases = cliRunResult?.verificationPhases;
+
     return {
       kind: "success",
       completion,
@@ -618,6 +626,7 @@ export class StepExecutor {
       session: null,
       ...(entryHeadSha !== undefined ? { commitOid: entryHeadSha } : {}),
       ...(exitCommitOid !== undefined ? { exitCommitOid } : {}),
+      ...(verificationPhases !== undefined ? { verificationPhases } : {}),
     };
   }
 }

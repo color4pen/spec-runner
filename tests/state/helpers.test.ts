@@ -268,3 +268,94 @@ describe("TC-startedAt-03: pushStepResult — startedAt and endedAt can differ",
     expect(run?.startedAt).not.toBe(run?.endedAt);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-009: VerificationPhaseOutcome 型が schema から参照でき StepOutcome.verificationPhases は optional (must)
+// Source: tasks.md > T-01
+//
+// RED: pushStepResult does not accept verificationPhases until T-02 is implemented.
+//      After T-01 + T-02: verificationPhases is stored when provided.
+// ---------------------------------------------------------------------------
+describe("TC-009: StepOutcome.verificationPhases is optional and existing records are backward-compatible (must)", () => {
+  it("pushStepResult with verificationPhases stores it in outcome (T-01+T-02 red until implemented)", () => {
+    const state = makeMinimalState();
+
+    const updated = pushStepResult(state, "verification", {
+      session: null,
+      verdict: "failed",
+      findingsPath: null,
+      error: null,
+      verificationPhases: [{ phase: "build", status: "failed", exitCode: 1 }],
+    });
+
+    const run = updated.steps?.["verification"]?.[0];
+    // After T-01 + T-02: verificationPhases is stored in outcome
+    expect(run?.outcome).toHaveProperty("verificationPhases");
+    expect((run?.outcome as unknown as Record<string, unknown>)["verificationPhases"]).toEqual([
+      { phase: "build", status: "failed", exitCode: 1 },
+    ]);
+  });
+
+  it("existing StepOutcome without verificationPhases remains valid (backward compat — green invariant)", () => {
+    const state = makeMinimalState();
+
+    // spec-review step — no verificationPhases — must be valid
+    const updated = pushStepResult(state, "spec-review", {
+      session: null,
+      verdict: "approved",
+      findingsPath: null,
+      error: null,
+    });
+
+    const run = updated.steps?.["spec-review"]?.[0];
+    expect(run).toBeDefined();
+    expect(run?.outcome.verdict).toBe("approved");
+    // verificationPhases must be absent (not forced to empty array or null)
+    expect((run?.outcome as unknown as Record<string, unknown>)["verificationPhases"]).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-010: pushStepResult が verificationPhases を格納し、渡さない呼び出しでは outcome に含めない (must)
+// Source: tasks.md > T-02
+//
+// RED: pushStepResult does not handle verificationPhases until T-02 is implemented.
+// ---------------------------------------------------------------------------
+describe("TC-010: pushStepResult conditional verificationPhases — present when provided, absent otherwise (must)", () => {
+  it("stores verificationPhases array in outcome when provided", () => {
+    const state = makeMinimalState();
+    const phases = [
+      { phase: "build",     status: "passed" as const, exitCode: 0 },
+      { phase: "typecheck", status: "passed" as const, exitCode: 0 },
+      { phase: "lint",      status: "failed" as const, exitCode: 1 },
+    ];
+
+    const updated = pushStepResult(state, "verification", {
+      session: null,
+      verdict: "failed",
+      findingsPath: null,
+      error: null,
+      verificationPhases: phases,
+    });
+
+    const run = updated.steps?.["verification"]?.[0];
+    expect(run?.outcome).toHaveProperty("verificationPhases");
+    expect((run?.outcome as unknown as Record<string, unknown>)["verificationPhases"]).toEqual(phases);
+  });
+
+  it("does NOT add verificationPhases key to outcome when not provided", () => {
+    const state = makeMinimalState();
+
+    const updated = pushStepResult(state, "verification", {
+      session: null,
+      verdict: "passed",
+      findingsPath: null,
+      error: null,
+      // verificationPhases intentionally omitted
+    });
+
+    const run = updated.steps?.["verification"]?.[0];
+    // verificationPhases must not be present — absence, not null
+    expect(Object.prototype.hasOwnProperty.call(run?.outcome, "verificationPhases")).toBe(false);
+  });
+});
