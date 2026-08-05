@@ -76,7 +76,7 @@
 
 ## T-05: テストで契約を固定する
 
-- [ ] `src/core/step/__tests__/post-fix-context.test.ts` を新規作成し、T-02 の Acceptance Criteria の各観点（`resolveCodeFixerRounds` / `findFindingsBeforeTimestamp` / `buildPostFixContextBlock` / `derivePostFixContext` 成功・各縮退経路）を固定する。fake `runtimeStrategy`（`listCommitChangedFiles` が success / unavailable / throw を返す）と JobState fixture を用いる（prior-round-context.test.ts の fixture 手法に倣う）。
+- [ ] `src/core/step/__tests__/post-fix-context.test.ts` を新規作成し、T-02 の Acceptance Criteria の各観点（`resolveCodeFixerRounds` / `findFindingsBeforeTimestamp` / `buildPostFixContextBlock` / `derivePostFixContext` 成功・各縮退経路）を固定する。fake `runtimeStrategy`（`listCommitChangedFiles` が success / unavailable / throw を返す）と JobState fixture を用いる（`src/core/step/__tests__/prior-round-context.test.ts` の fixture 手法に倣う）。
 - [ ] `tests/unit/core/step/adr-gen.test.ts` に以下を追加する:
   - **注入あり（破壊確認込み）**: commitOid を持つ code-fixer run + review findings を持つ state と、`postFixContext` を載せた `dynamicContext` を与え、`AdrGenStep.buildMessage` の返り値に round ごとの changed files + 指摘要約が含まれることを固定する。破壊確認として、`buildPostFixContextBlock` から changed files 出力を落とすと当該アサーションが fail することを確認する（実装差し替えでなく、期待 file 名が message に現れることの negative 対にする）。
   - **注入なし**: `dynamicContext.postFixContext` 不在（fixer なし run 相当）で、`buildMessage` の返り値が従来 message と一致し post-fix ブロックを含まないことを固定する。

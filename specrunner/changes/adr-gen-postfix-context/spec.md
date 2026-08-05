@@ -13,6 +13,13 @@
 **When** システムが adr-gen の initial message を構築する
 **Then** message には各 fixer round の changed files と、対応する review 指摘の要約（severity / resolution / file / title）が含まれる
 
+#### Scenario: 複数 fixer round の全件が post-fix ブロックに含まれる
+
+**Given** code-fixer の StepRun が 2 件以上あり、それぞれに commitOid が記録されている
+**And** `listCommitChangedFiles` が各 commit の changed files を返す（mock 経由）
+**When** システムが post-fix ブロックを構築する
+**Then** ブロックには全 round 分のエントリが含まれ、最新 round のみに限定されない
+
 #### Scenario: changed files と指摘要約は機械事実のみを真実源にする
 
 **Given** post-fix ブロックを注入する
@@ -45,7 +52,7 @@
 
 #### Scenario: listCommitChangedFiles port が不在（managed runtime 相当）
 
-**Given** `runtimeStrategy.listCommitChangedFiles` が存在しない
+**Given** `runtimeStrategy` 自体が undefined、または `runtimeStrategy.listCommitChangedFiles` が存在しない
 **When** システムが post-fix context を導出する
 **Then** 注入は省略され、message に post-fix ブロックは含まれず、step は正常続行する
 
