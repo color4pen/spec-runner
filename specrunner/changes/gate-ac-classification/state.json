@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c25efd28-b686-49f4-828a-aaaed4d840a4",
   "createdAt": "2026-08-05T13:46:40.512Z",
-  "updatedAt": "2026-08-05T14:39:27.288Z",
+  "updatedAt": "2026-08-05T14:55:29.220Z",
   "request": {
     "title": "TC 分類に gate カテゴリを導入 — 検証 phase の再実行をテスト化する冗長 TC と外部ツールチェーン実行 TC を構造で封じる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "change/gate-ac-classification-c25efd28",
   "error": null,
@@ -69,10 +69,42 @@
     "439852dc0f25e26356eadef4cbc54b6dc2edcd4e",
     "e192780c5123c1776269eb22f642f87efe656447",
     "61e85caed5ab2cc1266b1306b1bb74bbe220159a",
-    "116ad4a06df1e174f4cf4a52e700b9a700d1edd2"
+    "116ad4a06df1e174f4cf4a52e700b9a700d1edd2",
+    "6e095bc648ef5e15ed3cfed8024aa9d47f44edb5",
+    "bad22b77ca47721e2c6e02d2ac17f5be5c4ea402"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "6e095bc648ef5e15ed3cfed8024aa9d47f44edb5",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/gate-ac-classification/design.md:sha256:bc588afc6e6e9d10ea72b529d7ea9536b5afe5ed2ae03517bec31ec0454523f0|specrunner/changes/gate-ac-classification/request.md:sha256:3954ac80e9072892f9b537a7506d6959b030ab45191b5106380db69af10f7be4|specrunner/changes/gate-ac-classification/spec.md:sha256:31cbe71ea8db42602500795da10bbd27c682b21ab741c6099e40b2c2045cc3cf|specrunner/changes/gate-ac-classification/tasks.md:sha256:ec4fc819958890f29d126262113b5b2d237268aa14f79264bfb735188c36e11e|specrunner/changes/gate-ac-classification/test-cases.md:sha256:43453664676a9a4618404e6c87818fbd6e70886fb4fe079d41593f55875ee1ae"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -81,7 +113,12 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
