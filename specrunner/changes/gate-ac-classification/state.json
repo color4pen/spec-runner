@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c25efd28-b686-49f4-828a-aaaed4d840a4",
   "createdAt": "2026-08-05T13:46:40.512Z",
-  "updatedAt": "2026-08-05T14:55:29.220Z",
+  "updatedAt": "2026-08-05T15:05:48.409Z",
   "request": {
     "title": "TC 分類に gate カテゴリを導入 — 検証 phase の再実行をテスト化する冗長 TC と外部ツールチェーン実行 TC を構造で封じる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/gate-ac-classification-c25efd28",
   "error": null,
@@ -71,7 +71,9 @@
     "61e85caed5ab2cc1266b1306b1bb74bbe220159a",
     "116ad4a06df1e174f4cf4a52e700b9a700d1edd2",
     "6e095bc648ef5e15ed3cfed8024aa9d47f44edb5",
-    "bad22b77ca47721e2c6e02d2ac17f5be5c4ea402"
+    "bad22b77ca47721e2c6e02d2ac17f5be5c4ea402",
+    "4dd0e5cd0b661bba76d1f13354dc2b7049ef1f1a",
+    "b1bb1d5e0aaced4e8ea8a4be826e498f57f51d43"
   ],
   "reviewerStatuses": [
     {
@@ -104,7 +106,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -113,12 +115,13 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
