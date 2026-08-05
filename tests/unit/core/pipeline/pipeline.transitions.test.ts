@@ -417,10 +417,11 @@ describe("TC-014: LOOP_ERROR_CODES — verification cycle", () => {
     expect(msg).toMatch(/verification did not pass after 3 iterations/);
   });
 
-  it("hint starts with 'Review verification-result-'", () => {
+  it("hint references verification-result.md and events.jsonl outcome", () => {
     const entry = LOOP_ERROR_CODES["verification"];
     const hint = entry!.hint("001");
-    expect(hint).toMatch(/^Review verification-result-001\.md/);
+    expect(hint).toMatch(/verification-result\.md/);
+    expect(hint).toMatch(/events\.jsonl/);
   });
 });
 
