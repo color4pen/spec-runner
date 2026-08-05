@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
   "createdAt": "2026-08-05T13:46:49.264Z",
-  "updatedAt": "2026-08-05T23:31:00.088Z",
+  "updatedAt": "2026-08-05T23:43:04.604Z",
   "request": {
     "title": "issue 起点 run の開始前忠実性ゲート — 黙って弱められた request で pipeline が走ることを封じる",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/issue-request-fidelity-gate-d6b2552f",
   "error": null,
   "pipelineId": "standard",
@@ -76,12 +76,48 @@
     "1a79f2722fba837bce11a69c04b4ada9483af80e",
     "f5a0b97814748a1c0d4897507f633fcd3ae196ee",
     "7e831a6e3a1483efa3ed48fd5075ffc81a1e4e3d",
-    "c0116f36a693353feb2374c1f8fcd6395e4f205f"
+    "c0116f36a693353feb2374c1f8fcd6395e4f205f",
+    "68e701049551e0b0224b6704ea7fb106128fe9af",
+    "8fa3b11c036059b9703f94299b1cb5d330355504"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "68e701049551e0b0224b6704ea7fb106128fe9af",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/issue-request-fidelity-gate/design.md:sha256:0b9f9bdfb061b437787e3f17479c2e7255ddceb24e66d470e6422f0aff94673d|specrunner/changes/issue-request-fidelity-gate/request.md:sha256:cfb69f467e597495f75523429b09914e7891ea65f89db711d6b8b4e02ee8033f|specrunner/changes/issue-request-fidelity-gate/spec.md:sha256:6a8eec452d23e4dd4f22bf5a7aad2ac2f228225c407802f9ecd4c22426737507|specrunner/changes/issue-request-fidelity-gate/tasks.md:sha256:efe8e22431a3c3b61c76171b2a93afdd0b6d3c7d92efc764e833cf53bda12891|specrunner/changes/issue-request-fidelity-gate/test-cases.md:sha256:edc00afcb0529a06739aac9112ad44eabc0d4fab52a3165537f9768e3ce5ee9d"
+    }
+  ],
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 64,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -92,7 +128,11 @@
       "bite-evidence": 1,
       "verification": 3,
       "build-fixer": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
