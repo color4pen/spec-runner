@@ -1,0 +1,24 @@
+{
+  "requestHash": "sha256:3af454e132b7fea0af205bdde9fae1de417380ea4bcc4ee9881902a40a4c6e51",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts: SDKResultSuccess has num_turns, duration_ms, duration_api_ms, total_cost_usd, modelUsage, session_id (lines 3149-3169)",
+    "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts: SDKResultError has num_turns, duration_ms, duration_api_ms, total_cost_usd, modelUsage, session_id (lines 3127-3145)",
+    "src/adapter/claude-code/agent-runner.ts:370-374: local SDKResultSuccess declares result/session_id/modelUsage only; index signature via SDKResultMessage",
+    "src/adapter/claude-code/agent-runner.ts:827-844: extracts only modelUsage and session_id from success result; num_turns/duration_ms/duration_api_ms/total_cost_usd not extracted",
+    "src/adapter/claude-code/query-one-shot.ts:177-196: extracts modelUsage only",
+    "src/core/usage/types.ts:9-20: CommandInvocation has command/timestamp/modelUsage/jobId/stepName only — no metrics fields",
+    "src/core/command/job-stats.ts:147-170: costUsd computed via computeCostUsd totals only; null excluded",
+    "src/core/command/job-stats.ts:85: doc comment 'sum of computeCostUsd for all non-null modelUsage entries; null if no priced pairs'",
+    "src/core/usage/pricing.ts:210-220: computeCostUsd function present",
+    "src/core/usage/pricing.ts:211-212: returns null when lookupPricing returns null",
+    "src/core/usage/pricing.ts:38-172: pricing table has no claude-opus-5 / claude-sonnet-5 / claude-fable-5 entries (confirmed by grep)",
+    "src/core/usage/store.ts:42: appendInvocation function",
+    "src/core/step/commit-orchestrator.ts:233: appendInvocation call site (success path only)",
+    "src/adapter/managed-agent/usage.ts:22-24: ephemeral_1h_input_tokens + ephemeral_5m_input_tokens flattened to cacheCreationInputTokens",
+    "src/core/port/agent-runner.ts:205-245: AgentRunResult has no numTurns/durationMs/durationApiMs/totalCostUsd fields",
+    "src/adapter/claude-code/query-one-shot.ts:69-80: QueryOneShotResult has turnCount placeholder ('Reserved for future use')",
+    "queryOneShot has zero production callers in src/ — background claim that it is used by request-review/request-generate is inaccurate in current codebase"
+  ],
+  "sourceRevision": "59225d3ae672d63774f43fdcf883371162d62f9e"
+}
