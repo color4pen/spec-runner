@@ -24,7 +24,18 @@ export type GateDecision =
   /** Gate passed, or gate not applicable (no issue / not entrance / inbox skip). */
   | { kind: "proceed"; skipped?: { reason: string } }
   /** Gate halted: drop found, fetch failed, or wiring error. */
-  | { kind: "halt"; code: string; reason: string };
+  | {
+      kind: "halt";
+      code: string;
+      reason: string;
+      /**
+       * Discriminant for hint routing in runner.ts:
+       * - "undeclared-drop": issue requirements missing from request.md → fix request.md
+       * - "fetch-error": GitHub API / network failure fetching the issue → check network/token
+       * - "internal-error": wiring error (comparator not injected) or comparator threw → check logs
+       */
+      haltKind: "undeclared-drop" | "fetch-error" | "internal-error";
+    };
 
 export interface EvaluateIssueFidelityGateParams {
   /** The step from which the pipeline (or resume) will start. Gate only fires at request-review. */
@@ -106,6 +117,7 @@ export async function evaluateIssueFidelityGate(
       code: ERROR_CODES.ISSUE_FETCH_FAILED,
       reason:
         "entrance fidelity gate: comparator not injected (wiring error). Cannot evaluate issue fidelity.",
+      haltKind: "internal-error",
     };
   }
 
@@ -118,6 +130,7 @@ export async function evaluateIssueFidelityGate(
       kind: "halt",
       code: ERROR_CODES.ISSUE_FETCH_FAILED,
       reason: `entrance fidelity gate: failed to read request.md: ${(err as Error).message ?? String(err)}`,
+      haltKind: "internal-error",
     };
   }
 
@@ -130,6 +143,7 @@ export async function evaluateIssueFidelityGate(
       kind: "halt",
       code: ERROR_CODES.ISSUE_FETCH_FAILED,
       reason: `entrance fidelity gate: failed to fetch issue #${issueNumber}: ${(err as Error).message ?? String(err)}`,
+      haltKind: "fetch-error",
     };
   }
 
@@ -147,6 +161,7 @@ export async function evaluateIssueFidelityGate(
       kind: "halt",
       code: ERROR_CODES.ISSUE_FETCH_FAILED,
       reason: `entrance fidelity gate: comparator error: ${(err as Error).message ?? String(err)}`,
+      haltKind: "internal-error",
     };
   }
 
@@ -162,6 +177,7 @@ export async function evaluateIssueFidelityGate(
       reason:
         `Entrance fidelity gate: issue #${issueNumber} requirements not covered in request.md (undeclared drops):\n${dropList}\n\n` +
         `Fix: restore the requirements in request.md or add them to the スコープ外 section, then resume.`,
+      haltKind: "undeclared-drop",
     };
   }
 

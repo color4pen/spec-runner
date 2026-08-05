@@ -57,7 +57,8 @@ import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import { makeStoreFactory } from "../../../helpers/store-factory.js";
 import { ERROR_CODES } from "../../../../src/errors.js";
-import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
+import { buildInitialJobState, JobStateStore } from "../../../../src/store/job-state-store.js";
+import { checkConsecutiveEscalations } from "../../../../src/core/resume/safety.js";
 
 // ---------------------------------------------------------------------------
 // Mock pipeline — capture pipeline.run calls
@@ -299,6 +300,7 @@ describe("TC-002: undeclared drop あり — 全 step 未実行で halt", () => 
     mockEvaluateGate.mockResolvedValue({
       kind: "halt",
       code: ERROR_CODES.ISSUE_FIDELITY_UNDECLARED_DROP,
+      haltKind: "undeclared-drop",
       reason: "Undeclared drops: install into fixture project",
     });
 
@@ -325,6 +327,7 @@ describe("TC-002: undeclared drop あり — 全 step 未実行で halt", () => 
     mockEvaluateGate.mockResolvedValue({
       kind: "halt",
       code: ERROR_CODES.ISSUE_FIDELITY_UNDECLARED_DROP,
+      haltKind: "undeclared-drop",
       reason: dropReason, // contains drops but NOT the SENTINEL (issue body)
     });
 
@@ -540,6 +543,7 @@ describe("TC-008: issue fetch 失敗 — pass 扱いにならず halt する（f
     mockEvaluateGate.mockResolvedValue({
       kind: "halt",
       code: ERROR_CODES.ISSUE_FETCH_FAILED,
+      haltKind: "fetch-error",
       reason: "GitHub API 404: issue not found",
     });
 
@@ -570,6 +574,7 @@ describe("TC-011: halt 後に request.md を修正して resume — gate が再�
     mockEvaluateGate.mockResolvedValueOnce({
       kind: "halt",
       code: ERROR_CODES.ISSUE_FIDELITY_UNDECLARED_DROP,
+      haltKind: "undeclared-drop",
       reason: "Drops: missing-req",
     });
 
@@ -624,6 +629,7 @@ describe("TC-026: 破壊確認 — halt 分岐の有効性を証明", () => {
     mockEvaluateGate.mockResolvedValue({
       kind: "halt",
       code: ERROR_CODES.ISSUE_FIDELITY_UNDECLARED_DROP,
+      haltKind: "undeclared-drop",
       reason: "Drops: missing requirement",
     });
 
@@ -652,6 +658,7 @@ describe("TC-027: halt 時に linked issue へ escalation comment が書かれ�
     mockEvaluateGate.mockResolvedValue({
       kind: "halt",
       code: ERROR_CODES.ISSUE_FIDELITY_UNDECLARED_DROP,
+      haltKind: "undeclared-drop",
       reason: "Drops: missing requirement",
     });
 
@@ -669,5 +676,144 @@ describe("TC-027: halt 時に linked issue へ escalation comment が書かれ�
     expect(mockPipelineRun).not.toHaveBeenCalled();
     // createIssueComment called for linked issue (escalation notification)
     expect(createIssueCommentSpy).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-028: gate halt が checkConsecutiveEscalations カウンタを消費しない
+// ---------------------------------------------------------------------------
+
+describe("TC-028: gate halt が checkConsecutiveEscalations カウンタを消費しない", () => {
+  it("TC-028: gate halt を 3 回繰り返しても steps[request-review] が空のまま checkConsecutiveEscalations は false を返す（--force 不要）", async () => {
+    await writeRequestMd("test-slug", "# Test\n\n## Meta\n\n- **type**: new-feature\n");
+
+    const prepared = buildPrepareResult({ issueNumber: 875, startStep: "request-review" });
+    const jobId = prepared.jobState.jobId;
+
+    // Simulate 3 consecutive gate halts (operator keeps retrying without fixing request.md)
+    for (let i = 0; i < 3; i++) {
+      mockEvaluateGate.mockResolvedValueOnce({
+        kind: "halt",
+        code: ERROR_CODES.ISSUE_FIDELITY_UNDECLARED_DROP,
+        haltKind: "undeclared-drop",
+        reason: `Drops: missing requirement ${i + 1}`,
+      });
+
+      const githubClient = buildMockGithubClient();
+      const runtime = buildMockRuntime(githubClient);
+      const comparatorFactory = vi.fn().mockReturnValue({ compare: vi.fn() });
+      const command = new TestCommand(runtime, prepared, comparatorFactory);
+      await command.execute();
+    }
+
+    // Read the persisted state after 3 halts
+    const store = new JobStateStore(jobId, tempDir, {
+      changeDir: path.join(tempDir, ".specrunner", "test-jobs", jobId),
+    });
+    const persistedState = await store.load();
+
+    // Gate halt must NOT write to steps["request-review"] — counter is not consumed.
+    // (gate halt uses transitionJob to awaiting-resume but never records a StepRun)
+    expect(persistedState.steps?.["request-review"]).toBeUndefined();
+
+    // Therefore checkConsecutiveEscalations returns false — --force is NOT required
+    // after any number of gate halts. Operator can resume freely to fix request.md.
+    expect(checkConsecutiveEscalations(persistedState, "request-review")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-029: hint 分岐 — undeclared drop halt は request.md 修正を促す hint
+// ---------------------------------------------------------------------------
+
+describe("TC-029: undeclared drop halt の hint は request.md 修正を促す", () => {
+  it("TC-029: haltKind=undeclared-drop のとき state.error.hint に request.md 修正の指示が含まれる", async () => {
+    await writeRequestMd("test-slug", "# Test\n\n## Meta\n\n- **type**: new-feature\n");
+
+    mockEvaluateGate.mockResolvedValue({
+      kind: "halt",
+      code: ERROR_CODES.ISSUE_FIDELITY_UNDECLARED_DROP,
+      haltKind: "undeclared-drop",
+      reason: "Drops: missing requirement",
+    });
+
+    const githubClient = buildMockGithubClient();
+    const runtime = buildMockRuntime(githubClient);
+    const comparatorFactory = vi.fn().mockReturnValue({ compare: vi.fn() });
+    const prepared = buildPrepareResult({ issueNumber: 875, startStep: "request-review" });
+    const jobId = prepared.jobState.jobId;
+    const command = new TestCommand(runtime, prepared, comparatorFactory);
+    await command.execute();
+
+    const store = new JobStateStore(jobId, tempDir, {
+      changeDir: path.join(tempDir, ".specrunner", "test-jobs", jobId),
+    });
+    const persistedState = await store.load();
+
+    expect(persistedState.error?.hint).toContain("request.md を修正");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-030: hint 分岐 — fetch error halt は network/token 確認を促す hint
+// ---------------------------------------------------------------------------
+
+describe("TC-030: fetch error halt の hint は network/token 確認を促す", () => {
+  it("TC-030: haltKind=fetch-error のとき state.error.hint に GITHUB_TOKEN 確認の指示が含まれる", async () => {
+    await writeRequestMd("test-slug", "# Test\n\n## Meta\n\n- **type**: new-feature\n");
+
+    mockEvaluateGate.mockResolvedValue({
+      kind: "halt",
+      code: ERROR_CODES.ISSUE_FETCH_FAILED,
+      haltKind: "fetch-error",
+      reason: "entrance fidelity gate: failed to fetch issue #875: GitHub API 404",
+    });
+
+    const githubClient = buildMockGithubClient();
+    const runtime = buildMockRuntime(githubClient);
+    const comparatorFactory = vi.fn().mockReturnValue({ compare: vi.fn() });
+    const prepared = buildPrepareResult({ issueNumber: 875, startStep: "request-review" });
+    const jobId = prepared.jobState.jobId;
+    const command = new TestCommand(runtime, prepared, comparatorFactory);
+    await command.execute();
+
+    const store = new JobStateStore(jobId, tempDir, {
+      changeDir: path.join(tempDir, ".specrunner", "test-jobs", jobId),
+    });
+    const persistedState = await store.load();
+
+    expect(persistedState.error?.hint).toContain("GITHUB_TOKEN");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-031: hint 分岐 — internal error halt は state.json/log 確認を促す hint
+// ---------------------------------------------------------------------------
+
+describe("TC-031: internal error halt の hint は state.json/log 確認を促す", () => {
+  it("TC-031: haltKind=internal-error のとき state.error.hint に gate 内部エラーの確認指示が含まれる", async () => {
+    await writeRequestMd("test-slug", "# Test\n\n## Meta\n\n- **type**: new-feature\n");
+
+    mockEvaluateGate.mockResolvedValue({
+      kind: "halt",
+      code: ERROR_CODES.ISSUE_FETCH_FAILED,
+      haltKind: "internal-error",
+      reason: "entrance fidelity gate: comparator not injected (wiring error). Cannot evaluate issue fidelity.",
+    });
+
+    const githubClient = buildMockGithubClient();
+    const runtime = buildMockRuntime(githubClient);
+    const comparatorFactory = vi.fn().mockReturnValue({ compare: vi.fn() });
+    const prepared = buildPrepareResult({ issueNumber: 875, startStep: "request-review" });
+    const jobId = prepared.jobState.jobId;
+    const command = new TestCommand(runtime, prepared, comparatorFactory);
+    await command.execute();
+
+    const store = new JobStateStore(jobId, tempDir, {
+      changeDir: path.join(tempDir, ".specrunner", "test-jobs", jobId),
+    });
+    const persistedState = await store.load();
+
+    expect(persistedState.error?.hint).toContain("gate 内部エラー");
   });
 });

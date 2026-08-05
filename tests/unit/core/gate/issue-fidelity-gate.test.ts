@@ -116,7 +116,7 @@ describe("TC-022: startStep !== request-review では gate も fetch も発火�
 // ---------------------------------------------------------------------------
 
 describe("TC-023: comparator 未注入（wiring 欠落）— fail-closed halt", () => {
-  it("TC-023: applicable で comparator が undefined のとき { kind: 'halt' } が返る", async () => {
+  it("TC-023: applicable で comparator が undefined のとき { kind: 'halt', haltKind: 'internal-error' } が返る", async () => {
     const getIssue = makeGetIssue(SAMPLE_ISSUE);
 
     const result = await evaluateIssueFidelityGate({
@@ -132,6 +132,9 @@ describe("TC-023: comparator 未注入（wiring 欠落）— fail-closed halt", 
     });
 
     expect(result.kind).toBe("halt");
+    if (result.kind === "halt") {
+      expect(result.haltKind).toBe("internal-error");
+    }
   });
 });
 
@@ -140,7 +143,7 @@ describe("TC-023: comparator 未注入（wiring 欠落）— fail-closed halt", 
 // ---------------------------------------------------------------------------
 
 describe("TC-024: request.md 読み取り失敗 — fail-closed halt", () => {
-  it("TC-024: readRequestMd が throw するとき { kind: 'halt' } が返る（pass 扱いにしない）", async () => {
+  it("TC-024: readRequestMd が throw するとき { kind: 'halt', haltKind: 'internal-error' } が返る（pass 扱いにしない）", async () => {
     const getIssue = makeGetIssue(SAMPLE_ISSUE);
     const comparator = makeComparator([]);
 
@@ -157,6 +160,9 @@ describe("TC-024: request.md 読み取り失敗 — fail-closed halt", () => {
     });
 
     expect(result.kind).toBe("halt");
+    if (result.kind === "halt") {
+      expect(result.haltKind).toBe("internal-error");
+    }
   });
 });
 
@@ -165,7 +171,7 @@ describe("TC-024: request.md 読み取り失敗 — fail-closed halt", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-025: comparator が throw — fail-closed halt", () => {
-  it("TC-025: comparator.compare() が throw するとき { kind: 'halt' } が返る（pass 扱いにしない）", async () => {
+  it("TC-025: comparator.compare() が throw するとき { kind: 'halt', haltKind: 'internal-error' } が返る（pass 扱いにしない）", async () => {
     const getIssue = makeGetIssue(SAMPLE_ISSUE);
     const comparator = makeThrowingComparator();
 
@@ -182,6 +188,9 @@ describe("TC-025: comparator が throw — fail-closed halt", () => {
     });
 
     expect(result.kind).toBe("halt");
+    if (result.kind === "halt") {
+      expect(result.haltKind).toBe("internal-error");
+    }
   });
 });
 
@@ -262,7 +271,7 @@ describe("gate orchestrator: inboxOrigin === true → skip、log に残る（AC6
 });
 
 describe("gate orchestrator: undeclared drop ≥1 → halt（AC1）", () => {
-  it("comparator が drop ≥1 を返すとき { kind: 'halt', code: ISSUE_FIDELITY_UNDECLARED_DROP } が返る", async () => {
+  it("comparator が drop ≥1 を返すとき { kind: 'halt', code: ISSUE_FIDELITY_UNDECLARED_DROP, haltKind: 'undeclared-drop' } が返る", async () => {
     const getIssue = makeGetIssue(SAMPLE_ISSUE);
     const comparator = makeComparator(["install into fixture project", "run from subdirectory"]);
 
@@ -281,6 +290,7 @@ describe("gate orchestrator: undeclared drop ≥1 → halt（AC1）", () => {
     expect(result.kind).toBe("halt");
     if (result.kind === "halt") {
       expect(result.code).toBe(ERROR_CODES.ISSUE_FIDELITY_UNDECLARED_DROP);
+      expect(result.haltKind).toBe("undeclared-drop");
       // reason に drop が含まれる
       expect(result.reason).toContain("install into fixture project");
     }
@@ -341,7 +351,7 @@ describe("gate orchestrator: undeclared drop = 0 → proceed（AC2）", () => {
 });
 
 describe("gate orchestrator: getIssue throw → halt（AC7）", () => {
-  it("getIssue が throw するとき { kind: 'halt', code: ISSUE_FETCH_FAILED } が返る", async () => {
+  it("getIssue が throw するとき { kind: 'halt', code: ISSUE_FETCH_FAILED, haltKind: 'fetch-error' } が返る", async () => {
     const getIssue = makeGetIssue(); // throws
     const comparator = makeComparator([]);
 
@@ -360,6 +370,7 @@ describe("gate orchestrator: getIssue throw → halt（AC7）", () => {
     expect(result.kind).toBe("halt");
     if (result.kind === "halt") {
       expect(result.code).toBe(ERROR_CODES.ISSUE_FETCH_FAILED);
+      expect(result.haltKind).toBe("fetch-error");
     }
   });
 });

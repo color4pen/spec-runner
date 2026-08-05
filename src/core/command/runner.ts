@@ -294,7 +294,12 @@ export abstract class CommandRunner {
             error: {
               code: gateDecision.code,
               message: gateDecision.reason,
-              hint: "request.md を修正（要件復元 or スコープ外宣言追記）して resume してください。",
+              hint:
+                gateDecision.haltKind === "undeclared-drop"
+                  ? "request.md を修正（要件復元 or スコープ外宣言追記）して resume してください。"
+                  : gateDecision.haltKind === "fetch-error"
+                  ? "network / GITHUB_TOKEN / issue 番号を確認して resume してください（gate は fail-closed のため fetch 失敗を pass 扱いにしない）。"
+                  : "gate 内部エラー。state.json の reason と log を確認してください。",
             },
             pid: null,
           },

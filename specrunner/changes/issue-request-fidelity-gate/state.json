@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
   "createdAt": "2026-08-05T13:46:49.264Z",
-  "updatedAt": "2026-08-05T23:43:04.604Z",
+  "updatedAt": "2026-08-05T23:45:01.393Z",
   "request": {
     "title": "issue 起点 run の開始前忠実性ゲート — 黙って弱められた request で pipeline が走ることを封じる",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/issue-request-fidelity-gate-d6b2552f",
   "error": null,
   "pipelineId": "standard",
@@ -78,13 +78,11 @@
     "7e831a6e3a1483efa3ed48fd5075ffc81a1e4e3d",
     "c0116f36a693353feb2374c1f8fcd6395e4f205f",
     "68e701049551e0b0224b6704ea7fb106128fe9af",
-    "8fa3b11c036059b9703f94299b1cb5d330355504"
+    "8fa3b11c036059b9703f94299b1cb5d330355504",
+    "297f81f355cb7b36fe5d9ed8ad5e59b334319fbe",
+    "1daf0412d5245afda0b5aae6189c8ee676a60a15"
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -117,7 +115,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 64,
+    "historyCount": 66,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
