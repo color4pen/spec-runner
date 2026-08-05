@@ -14,10 +14,16 @@
  *      HTTP 400 (giant pack) into a pre-commit escalation with actionable
  *      remediation hints.
  *
- * Leaf module: imports only `matchesGlob` from shared util and the
- * `SpecRunnerConfig` type. No new runtime dependencies.
+ *   3. Byte-size guard — fail-closed halt before commit when the post-exclusion
+ *      total worktree byte size (uncompressed, via lstat) exceeds
+ *      `pipeline.maxStagedBytes`. Independent of the file-count guard.
+ *
+ * Leaf module: imports only `matchesGlob` from shared util, `join` from
+ * `node:path` (stdlib), and the `SpecRunnerConfig` type. No new runtime
+ * dependencies.
  */
 
+import { join as pathJoin } from "node:path";
 import { matchesGlob } from "../../util/glob-match.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 
@@ -26,6 +32,17 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
  * stage. Exceeding this halts (escalation) before commit.
  */
 export const DEFAULT_MAX_STAGED_FILES = 2000;
+
+/**
+ * Default maximum post-exclusion total worktree byte size (uncompressed, via
+ * lstat) that a GUARDED step may stage. Exceeding it halts (escalation) before
+ * commit.
+ *
+ * 52,428,800 bytes = 50 MiB. Legitimate source changes virtually never exceed
+ * this uncompressed; exceedance is a strong signal of generated-artifact
+ * contamination.
+ */
+export const DEFAULT_MAX_STAGED_BYTES = 52_428_800;
 
 /**
  * Resolve the effective staging exclude patterns from config.
@@ -56,6 +73,111 @@ export function resolveMaxStagedFiles(config: SpecRunnerConfig | undefined): num
     return configured;
   }
   return DEFAULT_MAX_STAGED_FILES;
+}
+
+/**
+ * Resolve the effective max-staged-bytes limit from config.
+ *
+ * Returns `config?.pipeline?.maxStagedBytes` when it is a positive integer,
+ * otherwise returns `DEFAULT_MAX_STAGED_BYTES` (52428800 = 50 MiB).
+ */
+export function resolveMaxStagedBytes(config: SpecRunnerConfig | undefined): number {
+  const configured = config?.pipeline?.maxStagedBytes;
+  if (typeof configured === "number" && Number.isInteger(configured) && configured > 0) {
+    return configured;
+  }
+  return DEFAULT_MAX_STAGED_BYTES;
+}
+
+/**
+ * Injectable lstat-like probe for the staged byte-size guard.
+ *
+ * Resolves with the entry's byte `size`. Rejects with an error whose
+ * `.code === "ENOENT"` when the path is absent (delete-pending / not in
+ * worktree). Any other rejection (e.g. EACCES) propagates to the caller
+ * as a fail-closed measurement error.
+ */
+export type StagedPathSizeProbe = (absPath: string) => Promise<{ size: number }>;
+
+/** Per-path byte-size entry produced by `measureStagedBytes`. */
+export interface StagedSizeEntry {
+  path: string;
+  bytes: number;
+}
+
+/**
+ * Measure the total worktree byte size of a post-exclusion staged path set.
+ *
+ * For each path `p`:
+ *   - Calls `probe(pathJoin(cwd, p))`.
+ *   - On success, contributes `size` bytes.
+ *   - On error with `code === "ENOENT"` (delete-pending / not in worktree),
+ *     contributes `0`.
+ *   - On any OTHER error, rethrows (fail-closed — does NOT swallow, does NOT
+ *     count as 0).
+ *
+ * Returns `{ totalBytes, entries }` where `entries` has one entry per path.
+ */
+export async function measureStagedBytes(
+  paths: string[],
+  cwd: string,
+  probe: StagedPathSizeProbe,
+): Promise<{ totalBytes: number; entries: StagedSizeEntry[] }> {
+  let totalBytes = 0;
+  const entries: StagedSizeEntry[] = [];
+
+  for (const p of paths) {
+    let bytes: number;
+    try {
+      const result = await probe(pathJoin(cwd, p));
+      bytes = result.size;
+    } catch (err) {
+      const errCode = (err as { code?: string }).code;
+      if (errCode === "ENOENT") {
+        // Delete-pending: path not in worktree → contributes 0
+        bytes = 0;
+      } else {
+        // Any other error → fail-closed: rethrow
+        throw err;
+      }
+    }
+    totalBytes += bytes;
+    entries.push({ path: p, bytes });
+  }
+
+  return { totalBytes, entries };
+}
+
+/**
+ * Group staged-size entries by their first path segment and return the top-N
+ * groups by total bytes, descending. Ties are broken by directory name
+ * ascending.
+ *
+ * Paths with no `/` are grouped under `"."`.
+ *
+ * Mirror of `summarizeTopDirectories` but summing bytes instead of counting.
+ *
+ * @param entries  Array of `{ path, bytes }` entries.
+ * @param topN     Maximum number of entries to return. Default 10.
+ * @returns        Array of `{ dir, bytes }` sorted by bytes descending.
+ */
+export function summarizeTopDirectoriesBySize(
+  entries: Array<{ path: string; bytes: number }>,
+  topN = 10,
+): Array<{ dir: string; bytes: number }> {
+  const totals = new Map<string, number>();
+  for (const e of entries) {
+    const slashIdx = e.path.indexOf("/");
+    const dir = slashIdx === -1 ? "." : e.path.slice(0, slashIdx);
+    totals.set(dir, (totals.get(dir) ?? 0) + e.bytes);
+  }
+  return Array.from(totals.entries())
+    .sort(([dirA, bytesA], [dirB, bytesB]) => {
+      if (bytesB !== bytesA) return bytesB - bytesA; // descending by bytes
+      return dirA < dirB ? -1 : dirA > dirB ? 1 : 0; // ascending by name
+    })
+    .slice(0, topN)
+    .map(([dir, bytes]) => ({ dir, bytes }));
 }
 
 /**

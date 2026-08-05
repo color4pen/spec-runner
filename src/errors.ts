@@ -132,6 +132,7 @@ export const ERROR_CODES = {
   PROVIDER_NOT_READY: "PROVIDER_NOT_READY",
   WRITE_SCOPE_VIOLATION: "WRITE_SCOPE_VIOLATION",
   STAGING_LIMIT_EXCEEDED: "STAGING_LIMIT_EXCEEDED",
+  STAGED_BYTES_LIMIT_EXCEEDED: "STAGED_BYTES_LIMIT_EXCEEDED",
   EGRESS_UNKNOWN_COMMIT: "EGRESS_UNKNOWN_COMMIT",
   ROUND_HEAD_ADVANCED: "ROUND_HEAD_ADVANCED",
   SLUG_OCCUPIED: "SLUG_OCCUPIED",
@@ -546,6 +547,32 @@ export function stagingLimitExceededError(
     `Step '${stepName}' on branch '${branch}': staging limit exceeded. ` +
     `${total} files exceed the limit of ${limit}.\n` +
     `Top directories by file count:\n${dirList}`,
+  );
+}
+
+/**
+ * Error thrown when the post-exclusion staged byte size in a guarded step exceeds
+ * `pipeline.maxStagedBytes`. Halts before commit so a giant pack never reaches push.
+ *
+ * Not added to EXIT_CODE_MAP — it halts via the pipeline escalation path, not a CLI exit override.
+ */
+export function stagedBytesLimitExceededError(
+  stepName: string,
+  branch: string,
+  totalBytes: number,
+  limitBytes: number,
+  topDirs: Array<{ dir: string; bytes: number }>,
+): SpecRunnerError {
+  const dirList = topDirs.map((d) => `  - ${d.dir}: ${d.bytes}`).join("\n");
+  const hint =
+    "既知の一時資材なら pipeline.stagingExcludePatterns か対象 repo の .gitignore に追加。" +
+    "正当な大変更なら pipeline.maxStagedBytes を引き上げてください。";
+  return new SpecRunnerError(
+    ERROR_CODES.STAGED_BYTES_LIMIT_EXCEEDED,
+    hint,
+    `Step '${stepName}' on branch '${branch}': staged byte size limit exceeded. ` +
+    `${totalBytes} bytes exceed the limit of ${limitBytes}.\n` +
+    `Top directories by size:\n${dirList}`,
   );
 }
 

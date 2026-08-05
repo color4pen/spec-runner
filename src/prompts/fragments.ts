@@ -12,11 +12,17 @@
  * (identity priming) rather than receiving it as a static system prompt fragment.
  */
 
-/** Prevents agents from running git commands (commit / push). */
+/** Prevents agents from running git commands (commit / push) and enforces generated-artifact hygiene. */
 export const COMMIT_DISCIPLINE = `## git operations
 
 あなたは file edit のみ行ってください。\`git add\` / \`git commit\` / \`git push\` の実行は禁止です。
 commit / push は pipeline executor が一括で行います。違反して自主 commit してしまっても pipeline は halt せず agent commit を許容しますが、commit message format が pipeline 規定 (\`<step>: <slug>\`) から外れて履歴が読みづらくなるため、必ず file edit のみで完了してください。
+
+## 生成物・scratch ファイルの衛生規律
+
+build 出力・生成物・scratch ファイルを、tracked / staged 対象になる場所へ出力しないでください。
+build の出力先が repo 内に固定されている場合は \`.gitignore\` で ignore されていることを確認し、ignore されていなければ \`.gitignore\` への追記を変更に含めてください。
+一時ファイルは既に ignore 済みの場所に置いてください。
 `;
 
 import { VERDICT_BLOCKING_RULES } from "./judge-rules.js";

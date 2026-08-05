@@ -260,6 +260,12 @@ export interface PipelineConfig {
    * Exceeding it halts (escalation) before commit. Default 2000. No effect on scoped steps.
    */
   maxStagedFiles?: number;
+  /**
+   * Fail-closed guard: max post-exclusion total worktree byte size (uncompressed, via lstat)
+   * a GUARDED step may stage. Exceeding it halts (escalation) before commit.
+   * Default 52428800 (50 MiB). Independent of maxStagedFiles. No effect on scoped steps.
+   */
+  maxStagedBytes?: number;
 }
 
 /**
