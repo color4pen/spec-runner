@@ -182,7 +182,6 @@ describe("TC-016: executor threads verificationPhases from run() to StepRun.outc
     const verificationStep: CliStep = {
       kind: "cli",
       name: "verification",
-      // @ts-expect-error — CliStep.run returns Promise<void> currently; widened to Promise<CliStepRunOutcome | void> by T-04
       run: async () => ({ verificationPhases: expectedPhases }),
       resultFilePath: () => resultFile,
       parseResult: () => ({ verdict: "failed" as const, findingsPath: null }),
@@ -217,7 +216,6 @@ describe("TC-016: executor threads verificationPhases from run() to StepRun.outc
     const verificationStep: CliStep = {
       kind: "cli",
       name: "verification",
-      // @ts-expect-error — CliStep.run returns Promise<void> currently; widened to Promise<CliStepRunOutcome | void> by T-04
       run: async () => ({ verificationPhases: [{ phase: "build", status: "failed" as const, exitCode: 1 }] }),
       resultFilePath: () => resultFile,
       // parseResult derives verdict independently of verificationPhases

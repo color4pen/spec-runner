@@ -564,13 +564,12 @@ export class StepExecutor {
       : undefined;
 
     // Run the CLI step.
-    // The CliStep interface declares run() as Promise<void>, but multi-phase steps
-    // (e.g. VerificationStep) return a CliStepRunOutcome at runtime via a type cast.
-    // Capture the runtime return value here so verificationPhases can be threaded into
-    // the StepExecutionResult and ultimately recorded in StepRun.outcome.
+    // CliStep.run() returns Promise<CliStepRunOutcome | void>. Multi-phase steps
+    // (e.g. VerificationStep) return a CliStepRunOutcome so verificationPhases can
+    // be threaded into the StepExecutionResult and recorded in StepRun.outcome.
     let cliRunResult: CliStepRunOutcome | undefined;
     try {
-      cliRunResult = await (step.run(state, deps) as unknown as Promise<CliStepRunOutcome | void>) ?? undefined;
+      cliRunResult = await step.run(state, deps) ?? undefined;
     } catch (err) {
       const halt = makeCliStepFailHalt(
         err as Error & { code?: string; hint?: string },

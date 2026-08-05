@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a1baaa-7216-4971-9ebb-10426db1618a",
   "createdAt": "2026-08-05T13:51:52.489Z",
-  "updatedAt": "2026-08-05T23:18:48.910Z",
+  "updatedAt": "2026-08-05T23:21:18.711Z",
   "request": {
     "title": "verification の失敗 phase を StepRun outcome に構造化記録する — 上書きで失敗原因が消える経路を塞ぐ",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/verification-phase-outcome-record-24a1baaa",
   "error": null,
@@ -74,7 +74,8 @@
     "bb1936d8c4d6f866cf0254b1d0e356d456200a2d",
     "686e5c00bd8e19a04781a1a2b7e7671a27eb692f",
     "6a6c17e302820605d35a69da5c584a9681a2e39f",
-    "de9b087d584bd4c17fa1b8028d4d20b9176b776c"
+    "de9b087d584bd4c17fa1b8028d4d20b9176b776c",
+    "24ac018ced6e4be8bee28a246324cc0846553448"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -110,7 +111,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 66,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -124,7 +125,8 @@
       "code-review": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

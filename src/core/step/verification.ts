@@ -1,4 +1,4 @@
-import type { CliStep, CliStepDeps, IoRef } from "./types.js";
+import type { CliStep, CliStepDeps, CliStepRunOutcome, IoRef } from "./types.js";
 import type { JobState, VerificationPhaseOutcome } from "../../state/schema.js";
 import type { StepDeps } from "./types.js";
 import { runVerification } from "../verification/runner.js";
@@ -31,7 +31,7 @@ export const VerificationStep: CliStep = {
   kind: "cli",
   name: STEP_NAMES.VERIFICATION,
 
-  async run(state: JobState, deps: CliStepDeps): Promise<void> {
+  async run(state: JobState, deps: CliStepDeps): Promise<CliStepRunOutcome | void> {
     const verificationCwd = deps.cwd ?? process.cwd();
 
     // Re-resolve coverage config from disk immediately before running verification.
@@ -80,10 +80,10 @@ export const VerificationStep: CliStep = {
       }
     }
 
-    // Return the projected phase outcomes. The CliStep interface declares Promise<void>,
-    // but the executor captures the runtime return value via cast to record verificationPhases
-    // in StepRun.outcome without affecting the verdict derivation path (parseResult).
-    return { verificationPhases } as unknown as void;
+    // Return the projected phase outcomes. The executor reads verificationPhases from
+    // the CliStepRunOutcome and stores it in StepRun.outcome without affecting the
+    // verdict derivation path (parseResult).
+    return { verificationPhases };
   },
 
   reads(_state: JobState, _deps: StepDeps): IoRef[] {

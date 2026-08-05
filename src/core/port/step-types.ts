@@ -350,8 +350,10 @@ export interface CliStep {
   /**
    * Execute the CLI step (spawn processes, write result files, etc.).
    * StepExecutor calls this instead of creating a session.
+   * May return a CliStepRunOutcome to pass structured data to the executor
+   * (e.g. verificationPhases). Returning void or undefined is also valid.
    */
-  run(state: JobState, deps: CliStepDeps): Promise<void>;
+  run(state: JobState, deps: CliStepDeps): Promise<CliStepRunOutcome | void>;
   /**
    * Compute the path of the result file written by this step.
    * Unlike AgentStep, this is non-null (CLI steps always produce a result file).
