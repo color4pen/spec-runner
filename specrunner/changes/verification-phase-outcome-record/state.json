@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a1baaa-7216-4971-9ebb-10426db1618a",
   "createdAt": "2026-08-05T13:51:52.489Z",
-  "updatedAt": "2026-08-05T15:04:50.102Z",
+  "updatedAt": "2026-08-05T15:14:49.551Z",
   "request": {
     "title": "verification の失敗 phase を StepRun outcome に構造化記録する — 上書きで失敗原因が消える経路を塞ぐ",
     "type": "new-feature",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
-  "status": "running",
+  "step": "code-review",
+  "status": "awaiting-resume",
   "branch": "feat/verification-phase-outcome-record-24a1baaa",
-  "error": null,
+  "error": {
+    "code": "CLAUDE_CODE_QUERY_FAILED",
+    "message": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
+    "hint": ""
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -69,10 +73,17 @@
     "9150cefdd43e218a61a9d193293faa168956b8ee",
     "61122eec5163f23a0c6c64b4f2e0ddb2c7191bc3",
     "699b4ec392a88597fcda24de11ce20d7a5cd3198",
-    "9800f1191c12b77cf8b770e0de75c1218f174690"
+    "9800f1191c12b77cf8b770e0de75c1218f174690",
+    "3392bfdee21e1a154ac96aa6ce12b1eba166f737",
+    "bb1936d8c4d6f866cf0254b1d0e356d456200a2d"
   ],
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 30,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -81,7 +92,9 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1,
+      "code-review": 1
     }
   }
 }
