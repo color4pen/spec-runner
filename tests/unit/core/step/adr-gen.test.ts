@@ -809,24 +809,10 @@ describe("TC-019: 破壊確認 — system prompt 規律を削除すると TC-009
     expect(ADR_GEN_SYSTEM_PROMPT).not.toContain(NONEXISTENT_SENTINEL);
   });
 
-  it("TC-019: ADR_GEN_SYSTEM_PROMPT does NOT currently contain the post-fix rules (RED — proves T-04 adds them)", () => {
-    // Before T-04 implementation, the specific post-fix priority rules are ABSENT.
-    // This is the RED state. After T-04, these rules WILL be present (TC-009 will be GREEN).
-    // We verify the current (pre-implementation) absence as a sabotage baseline.
-    //
-    // Note: this assertion will be reversed after T-04. If this test stays green after
-    // T-04 implementation, it means TC-009 was also green — confirming no false-green.
-    // (This test is intentionally expected to FAIL after T-04 is implemented,
-    //  at which point it should be updated to reflect the post-implementation state
-    //  or removed as its purpose is fulfilled.)
-    const postFixRuleText = "最終実装が正";
-    // In RED phase: this assertion is true (rule not yet added)
-    // In GREEN phase: this assertion will be false (implementer must update this test)
-    // The implementer updates this test per TC-020's contract (expected updates only)
-    const ruleIsAbsent = !ADR_GEN_SYSTEM_PROMPT.includes(postFixRuleText);
-    // We just verify the current state — whether absent (RED) or present (GREEN after T-04)
-    // The important thing is that TC-009 tests for presence, TC-019 documents sabotage proof
-    expect(typeof ruleIsAbsent).toBe("boolean"); // tautology: always passes, documents intent
+  it("TC-019: ADR_GEN_SYSTEM_PROMPT contains the post-fix priority rule (GREEN — T-04 implemented)", () => {
+    // After T-04 implementation, the post-fix priority rule is PRESENT in the system prompt.
+    // This confirms that deleting the rule from the system prompt would break this test.
+    expect(ADR_GEN_SYSTEM_PROMPT.includes("最終実装が正")).toBe(true);
   });
 });
 
