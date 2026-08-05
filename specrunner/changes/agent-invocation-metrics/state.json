@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f94950fe-34fd-496a-bba4-11c576680e10",
   "createdAt": "2026-08-05T13:51:00.030Z",
-  "updatedAt": "2026-08-05T15:15:45.362Z",
+  "updatedAt": "2026-08-05T23:03:27.381Z",
   "request": {
     "title": "SDK result の turn 数・所要時間・実コストを usage.json に記録する — 事後分析が試算に頼る状態を解消する",
     "type": "new-feature",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/agent-invocation-metrics-f94950fe",
-  "error": {
-    "code": "CLAUDE_CODE_QUERY_FAILED",
-    "message": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
-    "hint": ""
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -76,15 +72,13 @@
     "bba6f4d48699d379e76f15b24684159b36c45443",
     "6a9f8469aa7107ca859036b09fb6a20ea4962530",
     "17e18ba482148043be29275ca493697d73bed956",
-    "7632a6b49d91310b6642d8ca0fb19e1436b1c7cf"
+    "7632a6b49d91310b6642d8ca0fb19e1436b1c7cf",
+    "ca428ffc279988342006d7c4ac0bd78c0ef537bd"
   ],
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 45,
+    "historyCount": 53,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
