@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2d0de90f-280b-4b52-8839-fcd2768cd25f",
   "createdAt": "2026-08-05T13:46:47.179Z",
-  "updatedAt": "2026-08-05T14:45:30.730Z",
+  "updatedAt": "2026-08-05T14:52:10.683Z",
   "request": {
     "title": "staging containment の残口封じ — staged バイトサイズ閾値ガードと生成物衛生規律",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/staging-containment-followups-2d0de90f",
   "error": null,
   "pipelineId": "standard",
@@ -74,7 +74,9 @@
     "3e6eee2d1a0755487ae7a568208f6325b7b866ba",
     "15124bca973835b372c6e2e346e379e7890e9089",
     "1526ca39d5a4a047d3f12c8b5e3c8f55fe206753",
-    "37a7d54ea51ecfcc5b9f7d373d8ef5f5d5222173"
+    "37a7d54ea51ecfcc5b9f7d373d8ef5f5d5222173",
+    "2488d5aedce257690183d37fef05d878ebef956a",
+    "921f2b4ecd8a5c39632ff74cd480b9fb099fc5a9"
   ],
   "reviewerStatuses": [
     {
@@ -106,8 +108,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/953",
+    "number": 953,
+    "createdAt": "2026-08-05T14:52:09.719Z"
+  },
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -117,13 +124,16 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
