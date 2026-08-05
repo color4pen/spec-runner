@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "acfa2578-b9f3-4487-b839-b9760e8f947d",
   "createdAt": "2026-08-05T13:46:42.983Z",
-  "updatedAt": "2026-08-05T14:54:30.071Z",
+  "updatedAt": "2026-08-05T15:07:33.152Z",
   "request": {
     "title": "adr-gen が fixer 適用後の最終実装から ADR を導出する — pre-fix design 文脈による事実逆転を解消する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/adr-gen-postfix-context-acfa2578",
   "error": null,
@@ -71,10 +71,42 @@
     "5748378b0646b1d3590a10fe6286864edb43a0b8",
     "ed51cf486a8d3d251ff7da113c35df1224701e71",
     "dbc5ffad92026eb60fe8bf451a8a0f76a0649dfd",
-    "2ba182cd47ef53593398f5331497dffea226d4b1"
+    "2ba182cd47ef53593398f5331497dffea226d4b1",
+    "89fdc2ba6d5701114ce42908192d0bd7e93484f8",
+    "deef16883e5a51dd47722ab187f412c44b2e28ae"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "89fdc2ba6d5701114ce42908192d0bd7e93484f8",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/adr-gen-postfix-context/design.md:sha256:35cb6b783251a04d703ff2ef216a72e1e679ea026f1d4e286fbbcf090c449da1|specrunner/changes/adr-gen-postfix-context/request.md:sha256:ab5ec078e9503b82d13c0ad85ea59cd7f7fdc464e0969749929164adf8e431d0|specrunner/changes/adr-gen-postfix-context/spec.md:sha256:c0658dd04c1b5971cf98687a51a654146ff1d6183e135c2beb4f72a436ff406c|specrunner/changes/adr-gen-postfix-context/tasks.md:sha256:47eaad31e323c85016edbdc824a39faec8bd54335247256660072956185648d7|specrunner/changes/adr-gen-postfix-context/test-cases.md:sha256:b0f6a2748ef94b65e03688e535d886b0a9afe2abd8f9e0f7ef3195fc95757d16"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -85,7 +117,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
