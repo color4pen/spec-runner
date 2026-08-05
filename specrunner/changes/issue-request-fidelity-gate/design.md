@@ -111,8 +111,12 @@ gate は entrance でのみ動く。3 条件すべてを満たすときだけ照
   startStep が別 step になり gate を通らない（無駄な fetch/LLM を避ける）。
 - **既知の相互作用**: request-review step 自体が escalation した場合も resumePoint.step は request-review になるため、
   その resume では gate が再度動く（entrance の再入なので忠実性再確認として整合的。追加コストは fetch+LLM 一回）。
-  request-review anchor での連続 escalation は `checkConsecutiveEscalations`（`resume.ts:187`）の 3 回 → `--force`
-  要求と同じ counter を共有する（entrance で詰まっている状態として妥当）。
+- **カウンタ非消費（意図した挙動）**: request-review **step 自体**の escalation は StepRun として記録され
+  `checkConsecutiveEscalations`（`resume.ts:187`）の 3 回 → `--force` 要求の対象になるが、**gate halt は StepRun を
+  記録しないためこのカウンタを消費しない**。operator は `--force` なしで何度でも request.md 修正 → resume を
+  繰り返せる。`--force` は gate を迂回しない（fail-closed）ためカウンタ共有に安全網としての効果はなく、
+  gate halt の反復は request.md 修正の正常な収束過程である。この性質（3 回 gate halt 後も `--force` 不要）は
+  テストで固定する。
 
 ### D3: 照合は port `IssueFidelityComparator` に隠蔽し、test double で駆動する
 
