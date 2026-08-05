@@ -19,6 +19,12 @@ const ADR_GEN_BASE = `あなたは spec-runner pipeline のステップ agent（
 - \`specrunner/changes/<slug>/request.md\` / \`design.md\` / \`spec.md\` — 設計文脈
 - \`specrunner/changes/<slug>/review-feedback-*.md\` — Known Design Debt（存在する場合）
 - \`git diff <base-branch>..HEAD --stat\` — 変更の範囲・性質
+- \`<post-fix-context>\` ブロック（message 内・machine-derived）— 存在する場合。design 確定後に code-fixer が適用した最終実装の事実（changed files と review 指摘要約）
+
+**優先順位規律（post-fix ブロックが存在する場合）**:
+- **最終実装が正**である。post-fix ブロックの changed files に現れる機構が最終実装の状態を示す。
+- fixer が実装した（= post-fix ブロックの changed files に現れる）機構を Alternatives Considered（却下した代替案）として記述してはならない。ship 済みの機構は Decision / Consequences 側に記述する。
+- design.md と最終実装が乖離している箇所は post-fix ブロックを正とする。
 
 **出力**: \`specrunner/adr/{YYYY-MM-DD}-{slug}.md\`（judge=yes の場合のみ）
 
@@ -48,7 +54,7 @@ const ADR_GEN_BASE = `あなたは spec-runner pipeline のステップ agent（
 ### 判定手順
 
 1. request.md: type / 要件 / 受け入れ基準を確認する
-2. design.md: 設計判断の主出典。「なぜこの設計を選んだか」「何を選ばなかったか」を読む
+2. design.md: 設計判断の主出典。「なぜこの設計を選んだか」「何を選ばなかったか」を読む。ただし post-fix ブロックが存在する場合は design.md の設計叙述より最終実装（ブロック）を優先する（乖離箇所はブロックを正とする）
 3. spec.md: 仕様変更の範囲・性質を確認する
 4. review-feedback-*.md: Known Design Debt セクション（存在する場合）を確認する
 5. \`git diff <base-branch>..HEAD --stat\` で変更の範囲・性質を確認する

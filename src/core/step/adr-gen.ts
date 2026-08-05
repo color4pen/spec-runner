@@ -3,12 +3,15 @@ import { NULL_PARSE_RESULT } from "./types.js";
 import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
+import type { DynamicContext } from "../../git/dynamic-context.js";
+import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import { ADR_GEN_SYSTEM_PROMPT } from "../../prompts/adr-gen-system.js";
 import { changeFolderPath, requestMdPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { latestIteration } from "./io-iteration.js";
 import { reviewFeedbackPath } from "../../util/paths.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import { derivePostFixContext, buildPostFixContextBlock } from "./post-fix-context.js";
 
 const ADR_GEN_AGENT_MODEL = "claude-sonnet-4-6";
 
@@ -66,8 +69,12 @@ export function buildAdrGenInitialMessage(opts: {
   baseBranch: string;
   adr: boolean;
   requestContent: string;
+  /** Machine-derived post-fix context block (from buildPostFixContextBlock).
+   * Injected after Judge materials when code-fixer ran with a commitOid.
+   * When absent (undefined), output is byte-identical to the pre-change message. */
+  postFixContextBlock?: string;
 }): string {
-  const { slug, branch, baseBranch, adr, requestContent } = opts;
+  const { slug, branch, baseBranch, adr, requestContent, postFixContextBlock } = opts;
   const changeFolder = changeFolderPath(slug);
 
   if (!adr) {
@@ -79,6 +86,9 @@ No action required. Please end your turn immediately without reading any files o
   }
 
   const branchInfo = branch ? `Branch: ${branch}` : "";
+  const postFixSection = postFixContextBlock
+    ? `\n## Post-fix context（design 確定後の実装修正・machine-derived）\n\n${postFixContextBlock}\n`
+    : "";
   return `<user-request>
 This request has adr: true — please judge whether this change warrants an ADR and generate one if so.
 
@@ -95,7 +105,7 @@ Please read the following (if they exist) to make your judgment:
 3. spec: ${changeFolder}/spec.md
 4. review-feedback: ${changeFolder}/review-feedback-*.md (any numbered files)
 5. git diff: Run \`git diff ${baseBranch}..HEAD --stat\` to understand the scope of changes
-
+${postFixSection}
 ## Instructions
 
 1. Read the materials above
@@ -166,13 +176,28 @@ export const AdrGenStep: AgentStep = {
     ];
   },
 
+  async prepareRoundContext(
+    state: JobState,
+    cwd: string,
+    runtimeStrategy: RuntimeStrategy | undefined,
+  ): Promise<Partial<DynamicContext> | null> {
+    const result = await derivePostFixContext({ state, cwd, runtimeStrategy });
+    if (!result) return null;
+    return { postFixContext: result };
+  },
+
   buildMessage(state: JobState, deps: StepDeps): string {
+    const postFixContext = deps.dynamicContext?.postFixContext;
+    const postFixContextBlock = postFixContext
+      ? buildPostFixContextBlock(postFixContext)
+      : undefined;
     return buildAdrGenInitialMessage({
       slug: deps.slug,
       branch: state.branch ?? undefined,
       baseBranch: deps.request.baseBranch,
       adr: deps.request.adr,
       requestContent: deps.request.content,
+      postFixContextBlock,
     });
   },
 
