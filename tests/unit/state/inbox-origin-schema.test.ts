@@ -64,7 +64,6 @@ describe("TC-015: JobState.inboxOrigin の persist → load roundtrip", () => {
   });
 
   it("TC-015: inboxOrigin: false が persist → load 後に保持される（falsy roundtrip）", async () => {
-    const store = makeStore(JOB_ID + "1");
     const store2 = new JobStateStore(JOB_ID + "1", tempDir, {
       changeDir: path.join(tempDir, ".specrunner", "test-jobs", JOB_ID + "1"),
     });

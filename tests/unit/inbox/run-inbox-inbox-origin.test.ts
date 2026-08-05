@@ -8,7 +8,6 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { GitHubClient } from "../../../src/core/port/github-client.js";
-import type { JobState } from "../../../src/state/schema.js";
 
 // ---------------------------------------------------------------------------
 // Module-level mocks (hoisted by Vitest)
