@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
   "createdAt": "2026-08-05T13:46:49.264Z",
-  "updatedAt": "2026-08-05T13:51:44.901Z",
+  "updatedAt": "2026-08-05T14:14:20.101Z",
   "request": {
     "title": "issue 起点 run の開始前忠実性ゲート — 黙って弱められた request で pipeline が走ることを封じる",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/issue-request-fidelity-gate-d6b2552f",
   "error": null,
@@ -64,12 +64,14 @@
   "issueNumber": 875,
   "synthesizedCommits": [
     "fc29cbfd833db1d0837a8712e8c0d3aa2b1cd004",
-    "d23ffe76f49c5f23611c6e855063862ff7a5754d"
+    "d23ffe76f49c5f23611c6e855063862ff7a5754d",
+    "0e1c92adbe031088cf3be1be1130ec25e442fca9"
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
