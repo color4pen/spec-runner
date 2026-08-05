@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2d0de90f-280b-4b52-8839-fcd2768cd25f",
   "createdAt": "2026-08-05T13:46:47.179Z",
-  "updatedAt": "2026-08-05T14:31:58.529Z",
+  "updatedAt": "2026-08-05T14:41:20.686Z",
   "request": {
     "title": "staging containment の残口封じ — staged バイトサイズ閾値ガードと生成物衛生規律",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/staging-containment-followups-2d0de90f",
   "error": null,
@@ -71,10 +71,42 @@
     "d0ad550822fb99c9eae9ffe4fdcecd8c3a03699a",
     "f9e955f974ee5184a37509474c85b5900cf18c21",
     "8f8b115d5eb35a114ba77d9f20d95f63f67a80aa",
-    "3e6eee2d1a0755487ae7a568208f6325b7b866ba"
+    "3e6eee2d1a0755487ae7a568208f6325b7b866ba",
+    "15124bca973835b372c6e2e346e379e7890e9089",
+    "1526ca39d5a4a047d3f12c8b5e3c8f55fe206753"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "15124bca973835b372c6e2e346e379e7890e9089",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/staging-containment-followups/design.md:sha256:8371471a1dc957c8a573d3a41a13229605835344ae82eb61dec2dbc6508b66da|specrunner/changes/staging-containment-followups/request.md:sha256:5e845a078520f6cee676fd4e5d76a9eb487b955a6ba50f2fc3e06eaf68aa125f|specrunner/changes/staging-containment-followups/spec.md:sha256:ed1eca2a5ad09a3f6c2a2837f24fc470f5fec23834498eac2071d31a334ad781|specrunner/changes/staging-containment-followups/tasks.md:sha256:2fd0dafa91a9d1c3a0e96ae0eceeb135f1ccd8af4993cc00d30be83760008cf2|specrunner/changes/staging-containment-followups/test-cases.md:sha256:2034160b3a0121a2b25459a9fa5b20d6dd5edf07d58cd576ec6c191d58f23e5d"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -85,7 +117,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
