@@ -1,0 +1,18 @@
+{
+  "requestHash": "sha256:ab5ec078e9503b82d13c0ad85ea59cd7f7fdc464e0969749929164adf8e431d0",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/adr-gen.ts:89-97 — Judge materials block lists request.md/design.md/spec.md/review-feedback-*.md/git diff",
+    "src/prompts/adr-gen-system.ts:52 — design.md designated as 設計判断の主出典 in step 2 of 判定手順",
+    "src/core/step/adr-gen.ts:144-147 — reads() declares review-feedback for latestIteration only (single path)",
+    "src/core/step/adr-gen.ts:169-177 — buildMessage() does not reference dynamicContext",
+    "src/core/step/code-fixer.ts:303-310 — resultFilePath returns null; parseResult returns NULL_PARSE_RESULT",
+    "src/core/step/write-scope.ts:64-74 — protectedCanonPaths includes design.md",
+    "src/core/step/step-context-builder.ts:152-160 — prepareRoundContext called best-effort with try/catch, all failures degrade silently",
+    "src/core/step/prior-round-context.ts — derivePriorRoundContext exists with null-degrade on all failure paths",
+    "src/core/pipeline/types.ts:270 — conformance:approved with reverificationNeeded guard → verification",
+    "src/core/pipeline/types.ts:277-280 — adr-gen: success→pr-create, skipped→pr-create, error→escalate (no fixer edge)",
+    "src/core/port/runtime-strategy.ts:651 — listCommitChangedFiles(oid, cwd) optional port exists"
+  ],
+  "sourceRevision": "59225d3ae672d63774f43fdcf883371162d62f9e"
+}
