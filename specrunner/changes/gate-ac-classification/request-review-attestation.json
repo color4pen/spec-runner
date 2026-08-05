@@ -1,0 +1,20 @@
+{
+  "requestHash": "sha256:3954ac80e9072892f9b537a7506d6959b030ab45191b5106380db69af10f7be4",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/command/request.ts:72-80 — gate 型 AC の seed（`typecheck && test` が green）",
+    "src/core/command/request-prompt.ts:44-49 — 起票規律での gate 型 AC 推奨",
+    "docs/request-authoring.md:75-82 — 起票規律での gate 型 AC 推奨",
+    "src/prompts/test-case-gen-system.ts:65-69 — Category は unit | integration | manual の 3 値のみ（gate なし）",
+    "src/templates/step-output-templates.ts:127 — Category 行（実際は行 126、内容一致）",
+    "src/prompts/test-materialize-system.ts:75-79 — manual 除外の前例ブロック",
+    "src/core/verification/test-coverage.ts:99-147 — extractMustTcIds が manual を must 集合から除外",
+    "specrunner/adr/2026-07-25-test-coverage-manual-tc-exclusion.md — ADR 存在・Covered-by/agent 判定却下の確認",
+    "src/prompts/test-materialize-system.ts:93 — 実装不可能 TC の明示列挙規則",
+    "src/core/verification/phases.ts:11-44 — PHASE_NAMES に build/typecheck/test/lint/security/test-coverage",
+    "src/config/schema/types.ts:142-173 — VerificationConfig interface と commands フィールド",
+    "src/core/step/conformance.ts:63-71 — reads() に test-cases.md / verification-result.md が含まれない",
+    "src/prompts/conformance-system.ts:36-49 — Method 節が 4 成果物（tasks/design/spec/request）のみ参照"
+  ],
+  "sourceRevision": "59225d3ae672d63774f43fdcf883371162d62f9e"
+}
