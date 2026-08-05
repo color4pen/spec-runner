@@ -1,15 +1,15 @@
 /**
- * Unit tests for job-stats — invocation metrics: cost basis and turn count.
+ * Unit tests for job-stats — invocation metrics: measuredCostUsd and turn count.
  *
- * TC-010: totalCostUsd を持つ invocation は実測値で計上される
- * TC-011: totalCostUsd を持たない invocation は試算にフォールバックする
- * TC-012: 実測と試算が混在する run で二重計上しない
- * TC-013: 単価表に無いモデルでも totalCostUsd があれば集計に載る
+ * TC-010: totalCostUsd を持つ invocation は measuredCostUsd に記録される
+ * TC-011: totalCostUsd を持たない invocation は measuredCostUsd に寄与しない
+ * TC-012: 実測と試算は独立列 — costUsd は全 invocation の modelUsage 試算、measuredCostUsd は totalCostUsd の総和
+ * TC-013: 単価表に無いモデルでも totalCostUsd があれば measuredCostUsd に集計される
  * TC-014: numTurns を持つ invocation の総和を出力する
  * TC-015: numTurns を持つ invocation が無い run は null になる
- * TC-021: costBasis が "measured" になる (should)
- * TC-022: costBasis が "estimated" になる (should)
- * TC-023: costBasis が null になる (should)
+ * TC-021: measuredCostUsd は totalCostUsd を持つ invocation の総和になる
+ * TC-022: totalCostUsd を持つ invocation が無い run は measuredCostUsd が null になる
+ * TC-023: cost 寄与が無い場合は costUsd と measuredCostUsd がともに null
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import type { NormalizedJobState } from "../../../../src/store/job-state-store.js";
@@ -77,7 +77,7 @@ function makeInvocation(overrides: Partial<{
 // deriveRunStat (loaded dynamically to avoid module caching issues)
 // ---------------------------------------------------------------------------
 
-describe("job-stats metrics — deriveRunStat cost priority", () => {
+describe("job-stats metrics — deriveRunStat measuredCostUsd and costUsd", () => {
   let deriveRunStat: typeof import("../../../../src/core/command/job-stats.js")["deriveRunStat"];
 
   beforeEach(async () => {
@@ -86,16 +86,15 @@ describe("job-stats metrics — deriveRunStat cost priority", () => {
 
   // ── TC-010 ──────────────────────────────────────────────────────────────────
 
-  it("TC-010: totalCostUsd を持つ invocation は実測値で計上される (modelUsage 試算は加算されない)", () => {
-    // A single invocation that has both totalCostUsd AND priced modelUsage
-    // Only totalCostUsd should be used; modelUsage.computeCostUsd should NOT be added
+  it("TC-010: totalCostUsd を持つ invocation は measuredCostUsd に記録される", () => {
+    // A single invocation that has both totalCostUsd AND priced modelUsage.
+    // Design: costUsd uses computeCostUsd(modelUsage) independent of totalCostUsd.
+    //         measuredCostUsd uses totalCostUsd (SDK-measured, main-work-query only).
     const usageFile: UsageFile = {
       commandInvocations: [
         makeInvocation({
-          modelUsage: { [PRICED_MODEL]: PRICED_USAGE },
-          // totalCostUsd is the measured value (e.g., $1.50)
-          // modelUsage-based estimate would be ~$3.00
-          totalCostUsd: 1.50,
+          modelUsage: { [PRICED_MODEL]: PRICED_USAGE }, // computeCostUsd ~= $3.00
+          totalCostUsd: 1.50, // SDK-measured (main-work turn only)
         }) as unknown as import("../../../../src/core/usage/types.js").CommandInvocation,
       ],
     };
@@ -103,19 +102,17 @@ describe("job-stats metrics — deriveRunStat cost priority", () => {
     const state = makeState();
     const row = deriveRunStat(state, usageFile);
 
-    // TC-010: cost must equal the measured value, NOT the estimated value
-    // FAILS until implementation uses totalCostUsd when present
-    expect(row.costUsd).toBeCloseTo(1.50, 4);
+    // TC-010: measuredCostUsd must equal totalCostUsd
+    expect(row.measuredCostUsd).toBeCloseTo(1.50, 4);
 
-    // The measured cost of $1.50 must NOT be combined with estimated $3.00
-    // If both were added, it would be ~$4.50 (double-counting)
-    expect(row.costUsd).toBeLessThan(2.0);
+    // TC-010: costUsd must equal computeCostUsd(modelUsage) — independent of totalCostUsd
+    expect(row.costUsd).not.toBeNull();
+    expect(row.costUsd).toBeGreaterThan(2.0); // ~$3.00 from pricing table
   });
 
   // ── TC-011 ──────────────────────────────────────────────────────────────────
 
-  it("TC-011: totalCostUsd を持たない invocation は試算にフォールバックする", () => {
-    // An invocation with no totalCostUsd but priced modelUsage — must fall back to estimate
+  it("TC-011: totalCostUsd を持たない invocation は measuredCostUsd に寄与しない", () => {
     const usageFile: UsageFile = {
       commandInvocations: [
         makeInvocation({
@@ -128,37 +125,37 @@ describe("job-stats metrics — deriveRunStat cost priority", () => {
     const state = makeState();
     const row = deriveRunStat(state, usageFile);
 
-    // TC-011: cost must be the estimated value from computeCostUsd (should be ~$3.00 for 1M input tokens)
-    // This should already work with current code but we verify the behavior is preserved
+    // TC-011: measuredCostUsd must be null (no totalCostUsd provided)
+    expect(row.measuredCostUsd).toBeNull();
+
+    // TC-011: costUsd must still be computed from modelUsage
     expect(row.costUsd).not.toBeNull();
     expect(row.costUsd).toBeGreaterThan(0);
   });
 
   // ── TC-012 ──────────────────────────────────────────────────────────────────
 
-  it("TC-012: 実測と試算が混在する run で二重計上しない", () => {
-    // Two invocations: one with totalCostUsd (measured), one without (estimated)
-    // Total must be sum of measured + estimated, no double-counting
-    const measuredCost = 0.75;
+  it("TC-012: 実測と試算は独立 — costUsd は全 invocation の modelUsage 試算、measuredCostUsd は totalCostUsd の総和", () => {
+    // inv1 has totalCostUsd ($0.75) AND priced modelUsage (~$3.00)
+    // inv2 has no totalCostUsd, only priced modelUsage (~$1.50)
     const usageFile: UsageFile = {
       commandInvocations: [
-        // Invocation 1: has totalCostUsd → use measured value (0.75)
         makeInvocation({
           stepName: "design",
-          modelUsage: { [PRICED_MODEL]: PRICED_USAGE }, // would be ~$3.00 estimated
-          totalCostUsd: measuredCost,
+          modelUsage: { [PRICED_MODEL]: PRICED_USAGE }, // ~$3.00
+          totalCostUsd: 0.75, // SDK-measured (main-work only)
         }) as unknown as import("../../../../src/core/usage/types.js").CommandInvocation,
-        // Invocation 2: no totalCostUsd → use estimated value from modelUsage
         makeInvocation({
           stepName: "implementer",
           modelUsage: {
             [PRICED_MODEL]: {
-              inputTokens: 500_000, // ~$1.50 estimated
+              inputTokens: 500_000, // ~$1.50
               outputTokens: 0,
               cacheReadInputTokens: 0,
               cacheCreationInputTokens: 0,
             },
           },
+          // No totalCostUsd
         }) as unknown as import("../../../../src/core/usage/types.js").CommandInvocation,
       ],
     };
@@ -166,30 +163,25 @@ describe("job-stats metrics — deriveRunStat cost priority", () => {
     const state = makeState();
     const row = deriveRunStat(state, usageFile);
 
-    // Expected: measured(0.75) + estimated(~1.50) ≈ 2.25
-    // If double-counting: measured(0.75) + estimated_for_inv1(~3.00) + estimated_for_inv2(~1.50) ≈ 5.25
+    // TC-012: costUsd = sum of computeCostUsd for ALL invocations ≈ $3.00 + $1.50 = $4.50
     expect(row.costUsd).not.toBeNull();
-    // Strictly less than naive double-counted sum
-    expect(row.costUsd!).toBeLessThan(4.0);
-    // Must include the measured cost
-    expect(row.costUsd!).toBeGreaterThanOrEqual(measuredCost);
+    expect(row.costUsd!).toBeGreaterThan(3.0); // At least inv1's estimate
 
-    // TC-012: costBasis must indicate "mixed" (both measured and estimated)
-    // FAILS until implementation adds costBasis to JobStatRow
-    expect((row as unknown as Record<string, unknown>)["costBasis"]).toBe("mixed");
+    // TC-012: measuredCostUsd = only inv1's totalCostUsd = $0.75
+    expect(row.measuredCostUsd).toBeCloseTo(0.75, 4);
+    expect(row.measuredCostUsd!).toBeLessThan(2.0);
   });
 
   // ── TC-013 ──────────────────────────────────────────────────────────────────
 
-  it("TC-013: 単価表に無いモデルでも totalCostUsd があれば集計に載る", () => {
-    // An invocation with an unknown model AND totalCostUsd
-    // computeCostUsd would return null for unknown model (silent drop)
-    // but totalCostUsd should keep it in the total
+  it("TC-013: 単価表に無いモデルでも totalCostUsd があれば measuredCostUsd に集計される", () => {
+    // computeCostUsd returns null for unknown model → costUsd is null
+    // but totalCostUsd should still populate measuredCostUsd
     const usageFile: UsageFile = {
       commandInvocations: [
         makeInvocation({
-          modelUsage: { [UNKNOWN_MODEL]: PRICED_USAGE }, // unknown model → computeCostUsd returns null
-          totalCostUsd: 2.10, // SDK-measured cost (doesn't need pricing table)
+          modelUsage: { [UNKNOWN_MODEL]: PRICED_USAGE }, // unknown → computeCostUsd = null
+          totalCostUsd: 2.10, // SDK-measured
         }) as unknown as import("../../../../src/core/usage/types.js").CommandInvocation,
       ],
     };
@@ -197,15 +189,17 @@ describe("job-stats metrics — deriveRunStat cost priority", () => {
     const state = makeState();
     const row = deriveRunStat(state, usageFile);
 
-    // TC-013: totalCostUsd must be used even when modelUsage computeCostUsd returns null
-    // FAILS until implementation uses totalCostUsd priority
-    expect(row.costUsd).not.toBeNull();
-    expect(row.costUsd).toBeCloseTo(2.10, 4);
+    // TC-013: costUsd is null (unknown model, computeCostUsd returns null)
+    expect(row.costUsd).toBeNull();
+
+    // TC-013: measuredCostUsd captures totalCostUsd even for unknown models
+    expect(row.measuredCostUsd).not.toBeNull();
+    expect(row.measuredCostUsd).toBeCloseTo(2.10, 4);
   });
 
-  // ── TC-021: costBasis "measured" ─────────────────────────────────────────────
+  // ── TC-021: measuredCostUsd — sum of totalCostUsd ──────────────────────────
 
-  it("TC-021: costBasis は 'measured' になる — 全 invocation が totalCostUsd を持つ場合", () => {
+  it("TC-021: measuredCostUsd は totalCostUsd を持つ全 invocation の総和になる", () => {
     const usageFile: UsageFile = {
       commandInvocations: [
         makeInvocation({ totalCostUsd: 1.00 }) as unknown as import("../../../../src/core/usage/types.js").CommandInvocation,
@@ -216,14 +210,13 @@ describe("job-stats metrics — deriveRunStat cost priority", () => {
     const state = makeState();
     const row = deriveRunStat(state, usageFile);
 
-    // TC-021: costBasis === "measured" when all invocations have totalCostUsd
-    // FAILS until implementation adds costBasis logic
-    expect((row as unknown as Record<string, unknown>)["costBasis"]).toBe("measured");
+    // TC-021: measuredCostUsd = $1.00 + $0.50 = $1.50
+    expect(row.measuredCostUsd).toBeCloseTo(1.50, 4);
   });
 
-  // ── TC-022: costBasis "estimated" ────────────────────────────────────────────
+  // ── TC-022: measuredCostUsd null ─────────────────────────────────────────────
 
-  it("TC-022: costBasis は 'estimated' になる — 全 invocation が totalCostUsd を持たず priced modelUsage のみ", () => {
+  it("TC-022: totalCostUsd を持つ invocation が無い run は measuredCostUsd が null になる", () => {
     const usageFile: UsageFile = {
       commandInvocations: [
         makeInvocation({
@@ -236,14 +229,13 @@ describe("job-stats metrics — deriveRunStat cost priority", () => {
     const state = makeState();
     const row = deriveRunStat(state, usageFile);
 
-    // TC-022: costBasis === "estimated" when no totalCostUsd but priced modelUsage
-    // FAILS until implementation adds costBasis logic
-    expect((row as unknown as Record<string, unknown>)["costBasis"]).toBe("estimated");
+    // TC-022: measuredCostUsd is null when no invocations have totalCostUsd
+    expect(row.measuredCostUsd).toBeNull();
   });
 
-  // ── TC-023: costBasis null ────────────────────────────────────────────────────
+  // ── TC-023: no cost contribution ─────────────────────────────────────────────
 
-  it("TC-023: costBasis は null になる — cost 寄与が無い場合", () => {
+  it("TC-023: cost 寄与が無い場合は costUsd と measuredCostUsd がともに null", () => {
     const usageFile: UsageFile = {
       commandInvocations: [
         makeInvocation({ modelUsage: null }) as unknown as import("../../../../src/core/usage/types.js").CommandInvocation,
@@ -253,12 +245,11 @@ describe("job-stats metrics — deriveRunStat cost priority", () => {
     const state = makeState();
     const row = deriveRunStat(state, usageFile);
 
-    // costUsd must also be null
+    // costUsd: no modelUsage → null
     expect(row.costUsd).toBeNull();
 
-    // TC-023: costBasis === null when no cost contribution from any invocation
-    // FAILS until implementation adds costBasis logic
-    expect((row as unknown as Record<string, unknown>)["costBasis"]).toBeNull();
+    // measuredCostUsd: no totalCostUsd → null
+    expect(row.measuredCostUsd).toBeNull();
   });
 });
 
@@ -287,9 +278,8 @@ describe("job-stats metrics — deriveRunStat turn count", () => {
     const state = makeState();
     const row = deriveRunStat(state, usageFile);
 
-    // TC-014: turns must be the sum of numTurns across all invocations: 4 + 7 + 2 = 13
-    // FAILS until implementation adds turns calculation to deriveRunStat
-    expect((row as unknown as Record<string, unknown>)["turns"]).toBe(13);
+    // TC-014: turns = 4 + 7 + 2 = 13
+    expect(row.turns).toBe(13);
   });
 
   it("TC-014: only invocations with numTurns contribute to turns sum", () => {
@@ -305,7 +295,7 @@ describe("job-stats metrics — deriveRunStat turn count", () => {
     const row = deriveRunStat(state, usageFile);
 
     // Only invocations with numTurns contribute: 4 + 6 = 10 (not adding 0 for verification)
-    expect((row as unknown as Record<string, unknown>)["turns"]).toBe(10);
+    expect(row.turns).toBe(10);
   });
 
   // ── TC-015 ──────────────────────────────────────────────────────────────────
@@ -322,8 +312,7 @@ describe("job-stats metrics — deriveRunStat turn count", () => {
     const row = deriveRunStat(state, usageFile);
 
     // TC-015: turns must be null when no invocations have numTurns
-    // FAILS until implementation adds turns calculation to deriveRunStat
-    expect((row as unknown as Record<string, unknown>)["turns"]).toBeNull();
+    expect(row.turns).toBeNull();
   });
 
   it("TC-015: turns is null when usageFile is null", () => {
@@ -331,7 +320,7 @@ describe("job-stats metrics — deriveRunStat turn count", () => {
     const row = deriveRunStat(state, null);
 
     // No usage file → no invocations → no numTurns → null
-    expect((row as unknown as Record<string, unknown>)["turns"]).toBeNull();
+    expect(row.turns).toBeNull();
   });
 
   it("TC-015: turns is null when invocations have numTurns=null or undefined (not number)", () => {
@@ -346,15 +335,15 @@ describe("job-stats metrics — deriveRunStat turn count", () => {
     const row = deriveRunStat(state, usageFile);
 
     // null is not a number → should not contribute
-    expect((row as unknown as Record<string, unknown>)["turns"]).toBeNull();
+    expect(row.turns).toBeNull();
   });
 });
 
 // ---------------------------------------------------------------------------
-// renderJobStatsTable — new columns (TC-014 secondary, TC-021 secondary)
+// renderJobStatsTable — new columns (TC-014 secondary)
 // ---------------------------------------------------------------------------
 
-describe("job-stats metrics — renderJobStatsTable with Turns column", () => {
+describe("job-stats metrics — renderJobStatsTable with Turns and SDK$ columns", () => {
   let renderJobStatsTable: typeof import("../../../../src/core/command/job-stats.js")["renderJobStatsTable"];
   let buildJobStatsReport: typeof import("../../../../src/core/command/job-stats.js")["buildJobStatsReport"];
 
@@ -363,24 +352,22 @@ describe("job-stats metrics — renderJobStatsTable with Turns column", () => {
   });
 
   it("includes 'Turns' column header when rendering a table with turn data", () => {
-    // Use a row with turns set (would come from deriveRunStat in real usage)
     const rows = [
       {
         slug: "metrics-feature",
         date: "2026-01-15",
         durationSec: 300,
         convergence: 2,
-        costUsd: 1.5,
+        costUsd: 3.0,
         outcome: "archived",
         turns: 13,
-        costBasis: "measured" as const,
+        measuredCostUsd: 1.5,
       },
     ];
     const report = buildJobStatsReport(rows);
     const output = renderJobStatsTable(report);
 
     // TC-014: Turns column must appear in the table
-    // FAILS until implementation adds Turns column to renderJobStatsTable
     expect(output).toMatch(/turn/i);
     expect(output).toContain("13");
   });
@@ -395,7 +382,7 @@ describe("job-stats metrics — renderJobStatsTable with Turns column", () => {
         costUsd: 0.5,
         outcome: "archived",
         turns: null,
-        costBasis: null,
+        measuredCostUsd: null,
       },
     ];
     const report = buildJobStatsReport(rows);
@@ -407,10 +394,10 @@ describe("job-stats metrics — renderJobStatsTable with Turns column", () => {
 });
 
 // ---------------------------------------------------------------------------
-// renderJobStatsTable — costBasis column (AC #8 table path)
+// renderJobStatsTable — measuredCostUsd column (AC #8 table path)
 // ---------------------------------------------------------------------------
 
-describe("job-stats metrics — renderJobStatsTable costBasis column", () => {
+describe("job-stats metrics — renderJobStatsTable measuredCostUsd column", () => {
   let renderJobStatsTable: typeof import("../../../../src/core/command/job-stats.js")["renderJobStatsTable"];
   let buildJobStatsReport: typeof import("../../../../src/core/command/job-stats.js")["buildJobStatsReport"];
 
@@ -418,119 +405,74 @@ describe("job-stats metrics — renderJobStatsTable costBasis column", () => {
     ({ renderJobStatsTable, buildJobStatsReport } = await import("../../../../src/core/command/job-stats.js"));
   });
 
-  it("AC-8-table: shows 'Basis' column header in the table", () => {
+  it("AC-8-table: shows 'SDK $' column header in the table for measured cost", () => {
     const rows = [
       {
         slug: "measured-feature",
         date: "2026-01-15",
         durationSec: 300,
         convergence: 2,
-        costUsd: 1.5,
-        outcome: "archived",
-        turns: 5,
-        costBasis: "measured" as const,
-      },
-    ];
-    const report = buildJobStatsReport(rows);
-    const output = renderJobStatsTable(report);
-
-    // The table must contain a Basis column header
-    expect(output).toMatch(/basis/i);
-  });
-
-  it("AC-8-table: costBasis='measured' renders as 'M' in table", () => {
-    const rows = [
-      {
-        slug: "measured-feature",
-        date: "2026-01-15",
-        durationSec: 300,
-        convergence: 2,
-        costUsd: 1.5,
-        outcome: "archived",
-        turns: 5,
-        costBasis: "measured" as const,
-      },
-    ];
-    const report = buildJobStatsReport(rows);
-    const output = renderJobStatsTable(report);
-
-    // "M" is the short label for measured
-    const lines = output.split("\n");
-    const dataLine = lines.find((l) => l.includes("measured-feature"));
-    expect(dataLine).toBeDefined();
-    expect(dataLine).toContain("M");
-  });
-
-  it("AC-8-table: costBasis='estimated' renders as '~' in table", () => {
-    const rows = [
-      {
-        slug: "estimated-feature",
-        date: "2026-01-15",
-        durationSec: 120,
-        convergence: 1,
         costUsd: 3.0,
         outcome: "archived",
-        turns: null,
-        costBasis: "estimated" as const,
+        turns: 5,
+        measuredCostUsd: 1.5,
       },
     ];
     const report = buildJobStatsReport(rows);
     const output = renderJobStatsTable(report);
 
-    const lines = output.split("\n");
-    const dataLine = lines.find((l) => l.includes("estimated-feature"));
-    expect(dataLine).toBeDefined();
-    expect(dataLine).toContain("~");
+    // The table must contain an SDK $ column header (case-insensitive)
+    expect(output).toMatch(/sdk/i);
   });
 
-  it("AC-8-table: costBasis='mixed' renders as 'M+~' in table", () => {
+  it("AC-8-table: measuredCostUsd value appears in the table row", () => {
     const rows = [
       {
-        slug: "mixed-feature",
+        slug: "sdk-cost-feature",
         date: "2026-01-15",
-        durationSec: 180,
-        convergence: 3,
-        costUsd: 2.25,
+        durationSec: 300,
+        convergence: 2,
+        costUsd: 3.0,
         outcome: "archived",
-        turns: 10,
-        costBasis: "mixed" as const,
+        turns: 5,
+        measuredCostUsd: 1.50,
       },
     ];
     const report = buildJobStatsReport(rows);
     const output = renderJobStatsTable(report);
 
     const lines = output.split("\n");
-    const dataLine = lines.find((l) => l.includes("mixed-feature"));
+    const dataLine = lines.find((l) => l.includes("sdk-cost-feature"));
     expect(dataLine).toBeDefined();
-    expect(dataLine).toContain("M+~");
+    // The measured cost ($1.50) should appear in the data line
+    expect(dataLine).toContain("1.50");
   });
 
-  it("AC-8-table: costBasis=null renders as '-' in table", () => {
+  it("AC-8-table: measuredCostUsd=null renders as '-' in table", () => {
     const rows = [
       {
-        slug: "no-cost-feature",
+        slug: "no-sdk-cost",
         date: "2026-01-15",
         durationSec: 60,
         convergence: 0,
-        costUsd: null,
-        outcome: "canceled",
+        costUsd: 2.0,
+        outcome: "archived",
         turns: null,
-        costBasis: null,
+        measuredCostUsd: null,
       },
     ];
     const report = buildJobStatsReport(rows);
     const output = renderJobStatsTable(report);
 
-    // costBasis=null → "-" in Basis column
+    // measuredCostUsd=null → "-" in SDK $ column
     const lines = output.split("\n");
-    const dataLine = lines.find((l) => l.includes("no-cost-feature"));
+    const dataLine = lines.find((l) => l.includes("no-sdk-cost"));
     expect(dataLine).toBeDefined();
-    // The data line contains "-" for both null costUsd and null costBasis
     expect(dataLine).toContain("-");
   });
 
-  it("AC-8-table: costBasis=undefined (legacy rows without field) renders as '-'", () => {
-    // Simulate a legacy row without costBasis field
+  it("AC-8-table: measuredCostUsd=undefined (legacy rows without field) renders as '-'", () => {
+    // Simulate a legacy row without measuredCostUsd or turns
     const rows = [
       {
         slug: "legacy-feature",
@@ -539,26 +481,25 @@ describe("job-stats metrics — renderJobStatsTable costBasis column", () => {
         convergence: 1,
         costUsd: 1.0,
         outcome: "archived",
-        // costBasis and turns intentionally omitted (legacy row)
+        // measuredCostUsd and turns intentionally omitted (legacy row)
       },
     ];
     const report = buildJobStatsReport(rows);
     const output = renderJobStatsTable(report);
 
-    // Should not throw, and Basis column should show "-" for undefined costBasis
+    // Should not throw; SDK $ column shows "-" for undefined measuredCostUsd
     const lines = output.split("\n");
     const dataLine = lines.find((l) => l.includes("legacy-feature"));
     expect(dataLine).toBeDefined();
-    // The Basis column shows "-" for undefined
     expect(dataLine).toContain("-");
   });
 });
 
 // ---------------------------------------------------------------------------
-// renderJobStatsJson — turns and costBasis included in JSON
+// renderJobStatsJson — turns and measuredCostUsd included in JSON
 // ---------------------------------------------------------------------------
 
-describe("job-stats metrics — renderJobStatsJson includes turns and costBasis", () => {
+describe("job-stats metrics — renderJobStatsJson includes turns and measuredCostUsd", () => {
   let renderJobStatsJson: typeof import("../../../../src/core/command/job-stats.js")["renderJobStatsJson"];
   let buildJobStatsReport: typeof import("../../../../src/core/command/job-stats.js")["buildJobStatsReport"];
 
@@ -566,33 +507,30 @@ describe("job-stats metrics — renderJobStatsJson includes turns and costBasis"
     ({ renderJobStatsJson, buildJobStatsReport } = await import("../../../../src/core/command/job-stats.js"));
   });
 
-  it("JSON output from deriveRunStat-built rows includes turns and costBasis fields", () => {
-    // Simulate what deriveRunStat returns (with turns and costBasis always set)
+  it("JSON output includes turns and measuredCostUsd fields when set", () => {
     const rows = [
       {
         slug: "metrics-feature",
         date: "2026-01-15",
         durationSec: 300,
         convergence: 2,
-        costUsd: 1.5,
+        costUsd: 3.0,
         outcome: "archived",
         turns: 13,
-        costBasis: "measured" as const,
+        measuredCostUsd: 1.5,
       },
     ];
     const report = buildJobStatsReport(rows);
     const parsed = JSON.parse(renderJobStatsJson(report)) as { runs: Record<string, unknown>[] };
 
-    // TC-012/TC-021: costBasis must be in the JSON output
-    // FAILS until implementation always sets costBasis in deriveRunStat and renders it
     const run = parsed.runs[0]!;
     expect(run).toHaveProperty("turns");
     expect(run["turns"]).toBe(13);
-    expect(run).toHaveProperty("costBasis");
-    expect(run["costBasis"]).toBe("measured");
+    expect(run).toHaveProperty("measuredCostUsd");
+    expect(run["measuredCostUsd"]).toBe(1.5);
   });
 
-  it("JSON output with null turns and costBasis preserves null", () => {
+  it("JSON output with null turns and measuredCostUsd preserves null", () => {
     const rows = [
       {
         slug: "no-cost",
@@ -602,7 +540,7 @@ describe("job-stats metrics — renderJobStatsJson includes turns and costBasis"
         costUsd: null,
         outcome: "archived",
         turns: null,
-        costBasis: null,
+        measuredCostUsd: null,
       },
     ];
     const report = buildJobStatsReport(rows);
@@ -611,6 +549,6 @@ describe("job-stats metrics — renderJobStatsJson includes turns and costBasis"
     const run = parsed.runs[0]!;
     // null values must appear as null in JSON, not omitted
     expect(run["turns"]).toBeNull();
-    expect(run["costBasis"]).toBeNull();
+    expect(run["measuredCostUsd"]).toBeNull();
   });
 });

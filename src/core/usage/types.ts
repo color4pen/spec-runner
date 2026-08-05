@@ -19,26 +19,36 @@ export interface CommandInvocation {
   stepName?: string;
   /**
    * Number of SDK turns used in this invocation.
-   * SDK result num_turns. undefined if the runtime does not provide this value
-   * (managed runtime, Codex adapter) or if this entry was written before this
-   * feature was added (backward-compatible with pre-agent-invocation-metrics usage.json).
+   * SDK result num_turns. Covers the main-work query turn only; follow-up turns
+   * (postWorkPrompts / report_result retries / outputVerification repair) are each
+   * separate SDK queries and their num_turns are NOT included here.
+   * For the additional turn count, see StepRun.outcome.addedTurns.
+   * undefined if the runtime does not provide this value (managed runtime, Codex adapter)
+   * or if this entry was written before the agent-invocation-metrics feature was added
+   * (backward-compatible with pre-agent-invocation-metrics usage.json).
    */
   numTurns?: number;
   /**
    * Total wall-clock time for this invocation in milliseconds.
-   * SDK result duration_ms. undefined if the runtime does not provide this value
+   * SDK result duration_ms. Covers the main-work query turn only (same scope as numTurns).
+   * undefined if the runtime does not provide this value
    * or if this entry predates the agent-invocation-metrics feature.
    */
   durationMs?: number;
   /**
    * API wait time for this invocation in milliseconds.
-   * SDK result duration_api_ms. undefined if the runtime does not provide this value
+   * SDK result duration_api_ms. Covers the main-work query turn only (same scope as numTurns).
+   * undefined if the runtime does not provide this value
    * or if this entry predates the agent-invocation-metrics feature.
    */
   durationApiMs?: number;
   /**
    * SDK-measured cost in USD for this invocation.
    * SDK result total_cost_usd. Does not require a pricing table lookup.
+   * Covers the main-work query turn only; follow-up turns (postWorkPrompts /
+   * report_result retries / outputVerification repair) are NOT included.
+   * For all-turn cost, use modelUsage with computeCostUsd — modelUsage accumulates
+   * all turns in agent-runner.
    * undefined if the runtime does not provide this value or if this entry
    * predates the agent-invocation-metrics feature.
    */

@@ -64,12 +64,11 @@ export async function showUsage(slug: string, cwd: string): Promise<number> {
 
     // Display SDK-measured invocation metrics if any are present.
     // Fields are optional: entries written before agent-invocation-metrics feature omit them.
-    const invRaw = inv as unknown as { numTurns?: number; durationMs?: number; durationApiMs?: number; totalCostUsd?: number };
     const metricsParts: string[] = [];
-    if (typeof invRaw.numTurns === "number") metricsParts.push(`turns=${invRaw.numTurns}`);
-    if (typeof invRaw.durationMs === "number") metricsParts.push(`duration=${invRaw.durationMs}ms`);
-    if (typeof invRaw.durationApiMs === "number") metricsParts.push(`api=${invRaw.durationApiMs}ms`);
-    if (typeof invRaw.totalCostUsd === "number") metricsParts.push(`cost=${formatUsd(invRaw.totalCostUsd)}`);
+    if (typeof inv.numTurns === "number") metricsParts.push(`turns=${inv.numTurns}`);
+    if (typeof inv.durationMs === "number") metricsParts.push(`duration=${inv.durationMs}ms`);
+    if (typeof inv.durationApiMs === "number") metricsParts.push(`api=${inv.durationApiMs}ms`);
+    if (typeof inv.totalCostUsd === "number") metricsParts.push(`cost=${formatUsd(inv.totalCostUsd)}`);
     if (metricsParts.length > 0) {
       stdoutWrite(`  metrics: ${metricsParts.join("  ")}\n`);
     }

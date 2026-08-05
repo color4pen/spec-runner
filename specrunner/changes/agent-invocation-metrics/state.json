@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f94950fe-34fd-496a-bba4-11c576680e10",
   "createdAt": "2026-08-05T13:51:00.030Z",
-  "updatedAt": "2026-08-05T23:26:11.144Z",
+  "updatedAt": "2026-08-05T23:38:32.991Z",
   "request": {
     "title": "SDK result の turn 数・所要時間・実コストを usage.json に記録する — 事後分析が試算に頼る状態を解消する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/agent-invocation-metrics-f94950fe",
   "error": null,
   "pipelineId": "standard",
@@ -76,13 +76,10 @@
     "ca428ffc279988342006d7c4ac0bd78c0ef537bd",
     "b5e0113da8aa3ad19b55aebb1dae1c05a8437948",
     "5660e80c05b169e2f2183ab5cb9f25da2d6d3664",
-    "f5ef1fc5943a0b62471d7624c3bb26ca6bc0f7fa"
+    "f5ef1fc5943a0b62471d7624c3bb26ca6bc0f7fa",
+    "eb5ab9515b37472d4f843938fd77f563e50b824f"
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -114,7 +111,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 66,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

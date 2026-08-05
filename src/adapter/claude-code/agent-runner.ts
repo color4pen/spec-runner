@@ -919,6 +919,8 @@ export class ClaudeCodeRunner implements AgentRunner {
               followUpAttempts,
               ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
               addedTurns: { reportRetry, postWork, outputRepair },
+              // Main-work metrics are available (extractedMetrics was set when main work succeeded).
+              invocationMetrics: extractedMetrics,
               error: Object.assign(
                 new Error(`Claude Code SDK follow-up query failed: ${followErrorResult.subtype}`),
                 { code: "CLAUDE_CODE_QUERY_FAILED" },
