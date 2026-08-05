@@ -13,7 +13,7 @@ import type { InboxPlan, StartAction, RejectAction, ResumeAction, IssueComment }
 import { buildRejectComment, notifyJobTerminal } from "../notify/issue-notifier.js";
 import { ERROR_CODES, slugOccupiedError } from "../../errors.js";
 import { stderrWrite, logResult } from "../../logger/stdout.js";
-import { write as writeDraft } from "../request/store.js";
+import { writeDraft } from "./draft-writer.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import { livenessJsonPath } from "../../util/paths.js";
 import { isStaleRunning } from "../resume/safety.js";
@@ -397,7 +397,7 @@ function buildEffects(opts: RunInboxOptions): InboxEffects {
       await writeDraft(repoRoot, slug, issueBody);
       const draftPath = `specrunner/drafts/${slug}/request.md`;
       const { runRunCore } = await import("../../cli/run.js");
-      await runRunCore(draftPath, { cwd: repoRoot, issue: issueNumber });
+      await runRunCore(draftPath, { cwd: repoRoot, issue: issueNumber, inboxOrigin: true });
     },
     async resumeJob(slug: string, resumePrompt: string | undefined): Promise<void> {
       const { runResumeCore } = await import("../../cli/resume.js");

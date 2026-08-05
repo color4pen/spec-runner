@@ -10,8 +10,9 @@ import { logInfo, setLogLevel, type LogLevel } from "../../logger/stdout.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
+import { resolveDesignLayerConfig, type SpecRunnerConfig } from "../../config/schema.js";
+import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
 import { getBranchPrefix } from "../../config/type-config.js";
-import { resolveDesignLayerConfig } from "../../config/schema.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import { STANDARD_PIPELINE_ID } from "../../kernel/pipeline-ids.js";
 import { getPipelineDescriptor } from "../pipeline/registry.js";
@@ -36,6 +37,12 @@ export interface PipelineRunOptions {
   noWorktree?: boolean;
   /** GitHub issue number to link this job to. When set, terminal transitions write a comment. */
   issue?: number;
+  /**
+   * When true, this job was started from the inbox path where the issue body is used
+   * verbatim as the request.md. The entrance fidelity gate will be skipped for
+   * inbox-origin jobs because no transcription step means no divergence is possible.
+   */
+  inboxOrigin?: boolean;
 }
 
 // Canonical path pattern: specrunner/drafts/<slug>/request.md
@@ -55,8 +62,9 @@ export class PipelineRunCommand extends CommandRunner {
     private readonly absolutePath: string,
     private readonly preflightResult: PreflightResult,
     private readonly options: PipelineRunOptions = {},
+    comparatorFactory?: (config: SpecRunnerConfig) => IssueFidelityComparator,
   ) {
-    super(runtime, events);
+    super(runtime, events, comparatorFactory);
   }
 
   protected async prepare(): Promise<PrepareResult> {
@@ -154,6 +162,12 @@ export class PipelineRunCommand extends CommandRunner {
     // Set issueNumber on initial state so terminal notifications reach the linked issue.
     if (this.options.issue !== undefined) {
       jobState.issueNumber = this.options.issue;
+    }
+
+    // Set inboxOrigin flag: signals that the issue body == request.md (no transcription divergence).
+    // The entrance fidelity gate uses this flag to skip comparison for inbox jobs.
+    if (this.options.inboxOrigin === true) {
+      jobState.inboxOrigin = true;
     }
 
     // Compute branchName: CLI creates the branch before the agent runs

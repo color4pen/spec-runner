@@ -250,4 +250,21 @@ export interface GitHubClient {
    * @param label        Label name to remove.
    */
   removeLabel(owner: string, repo: string, issueNumber: number, label: string): Promise<void>;
+
+  /**
+   * Fetch a single issue by number.
+   * GET /repos/{owner}/{repo}/issues/{number}
+   *
+   * - 200 → returns { number, title, body } (body: null → "")
+   * - 401 → throws SpecRunnerError(GITHUB_TOKEN_EXPIRED) (via shared request() layer)
+   * - non-200 (404 included) → throws SpecRunnerError(GITHUB_API_ERROR)
+   *
+   * Used by the entrance fidelity gate to compare issue requirements with request.md.
+   * Never returns null — fail-closed: any non-200 response throws.
+   *
+   * @param owner        Repository owner (user or org name).
+   * @param repo         Repository name.
+   * @param issueNumber  GitHub issue number.
+   */
+  getIssue(owner: string, repo: string, issueNumber: number): Promise<{ number: number; title: string; body: string }>;
 }

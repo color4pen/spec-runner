@@ -27,6 +27,8 @@ import { canTransition, transitionJob } from "../../state/lifecycle.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
+import type { SpecRunnerConfig } from "../../config/schema.js";
+import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 import { detectCanonDirtyPaths, commitOperatorCanon } from "../resume/apply-canon.js";
 import { reconcileWorktreeArtifacts } from "../resume/reconcile-worktree.js";
@@ -65,8 +67,9 @@ export class ResumeCommand extends CommandRunner {
     events: EventBus,
     private readonly slug: string,
     private readonly options: ResumeOptions = {},
+    comparatorFactory?: (config: SpecRunnerConfig) => IssueFidelityComparator,
   ) {
-    super(runtime, events);
+    super(runtime, events, comparatorFactory);
   }
 
   async execute(): Promise<number> {

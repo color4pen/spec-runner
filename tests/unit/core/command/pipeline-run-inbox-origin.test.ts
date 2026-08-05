@@ -115,7 +115,7 @@ describe("TC-017: runRunCore({ inboxOrigin: true }) で jobState.inboxOrigin が
       {
         cwd: tempDir,
         inboxOrigin: true,
-      } as Parameters<typeof TestablePipelineRunCommand.prototype.testPrepare>[0],
+      },
     );
 
     const result = await command.testPrepare();

@@ -61,9 +61,11 @@ import { buildInitialJobState } from "../../../../src/store/job-state-store.js";
 
 // ---------------------------------------------------------------------------
 // Mock pipeline — capture pipeline.run calls
+// vi.hoisted() ensures the mock fn is available inside the vi.mock() factory
+// (vi.mock factories are hoisted above const declarations in the module).
 // ---------------------------------------------------------------------------
 
-const mockPipelineRun = vi.fn();
+const mockPipelineRun = vi.hoisted(() => vi.fn());
 
 vi.mock("../../../../src/core/pipeline/index.js", () => ({
   createStandardPipeline: vi.fn().mockReturnValue({ run: mockPipelineRun }),
@@ -75,7 +77,7 @@ vi.mock("../../../../src/core/pipeline/index.js", () => ({
 // The mock allows tests to control what decision the gate returns.
 // ---------------------------------------------------------------------------
 
-const mockEvaluateGate = vi.fn();
+const mockEvaluateGate = vi.hoisted(() => vi.fn());
 
 vi.mock("../../../../src/core/gate/issue-fidelity-gate.js", () => ({
   evaluateIssueFidelityGate: mockEvaluateGate,
@@ -208,14 +210,7 @@ class TestCommand extends CommandRunner {
     private readonly prepareResult: PrepareResult,
     comparatorFactory?: (config: SpecRunnerConfig) => IssueFidelityComparator,
   ) {
-    // T-09: CommandRunner constructor will accept comparatorFactory as 3rd argument.
-    // Until implementation, this call may need @ts-ignore or the constructor will be updated.
-    // We use a type assertion to future-proof the test.
-    (super as (
-      runtime: RuntimeStrategy,
-      events: EventBus,
-      comparatorFactory?: (config: SpecRunnerConfig) => IssueFidelityComparator,
-    ) => void)(runtime, new EventBus(), comparatorFactory);
+    super(runtime, new EventBus(), comparatorFactory);
   }
 
   protected async prepare(): Promise<PrepareResult> {

@@ -16,6 +16,7 @@ import { EventBus } from "../core/event/event-bus.js";
 import { wireProgressDisplay } from "./progress.js";
 import { ensureDotSpecrunnerGitignore } from "../util/gitignore.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
+import { createIssueFidelityComparator } from "../adapter/claude-code/issue-fidelity-comparator.js";
 
 /**
  * Resolve the heartbeat interval (seconds) from config → env → TTY-aware default.
@@ -41,7 +42,7 @@ function resolveHeartbeatInterval(config: SpecRunnerConfig): number {
 
 export async function runRunCore(
   requestMdPath: string,
-  options: { cwd?: string; logLevel?: LogLevel; json?: boolean; noWorktree?: boolean; issue?: number },
+  options: { cwd?: string; logLevel?: LogLevel; json?: boolean; noWorktree?: boolean; issue?: number; inboxOrigin?: boolean },
 ): Promise<number> {
   setLogLevel(options.logLevel ?? "default");
   const cwd = options.cwd ?? process.cwd();
@@ -96,7 +97,14 @@ export async function runRunCore(
     heartbeatIntervalSec: resolveHeartbeatInterval(config),
   });
   try {
-    return await new PipelineRunCommand(runtime, events, absolutePath, preflightResult, { ...options, noWorktree: options.noWorktree, issue: options.issue }).execute();
+    return await new PipelineRunCommand(
+      runtime,
+      events,
+      absolutePath,
+      preflightResult,
+      { ...options, noWorktree: options.noWorktree, issue: options.issue },
+      (config) => createIssueFidelityComparator(config),
+    ).execute();
   } catch (err) {
     logError((err as Error).message);
     return 1;
@@ -107,7 +115,7 @@ export async function runRunCore(
 
 export async function runRun(
   requestMdPath: string,
-  options: { cwd?: string; logLevel?: LogLevel; json?: boolean; noWorktree?: boolean; issue?: number },
+  options: { cwd?: string; logLevel?: LogLevel; json?: boolean; noWorktree?: boolean; issue?: number; inboxOrigin?: boolean },
 ): Promise<void> {
   process.exit(await runRunCore(requestMdPath, options));
 }

@@ -138,6 +138,17 @@ export const ERROR_CODES = {
   SLUG_OCCUPIED: "SLUG_OCCUPIED",
   SLUG_STATE_UNREADABLE: "SLUG_STATE_UNREADABLE",
   SLUG_OCCUPANCY_AMBIGUOUS: "SLUG_OCCUPANCY_AMBIGUOUS",
+  /**
+   * Entrance fidelity gate: issue requirements not present in request requirements
+   * or scope-out declarations (undeclared drop). Job is halted as awaiting-resume.
+   * Operator must restore requirements or add scope-out declarations before resuming.
+   */
+  ISSUE_FIDELITY_UNDECLARED_DROP: "ISSUE_FIDELITY_UNDECLARED_DROP",
+  /**
+   * Entrance fidelity gate: failed to fetch the linked GitHub issue
+   * (network error / 404 / 401). Gate is fail-closed — halt instead of pass.
+   */
+  ISSUE_FETCH_FAILED: "ISSUE_FETCH_FAILED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];

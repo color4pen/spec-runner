@@ -663,6 +663,25 @@ export class GitHubApiClient implements GitHubClient {
   }
 
   /**
+   * Fetch a single issue by number.
+   * GET /repos/{owner}/{repo}/issues/{number}
+   * 200 → { number, title, body: body ?? "" }; non-200 → throws GITHUB_API_ERROR.
+   */
+  async getIssue(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+  ): Promise<{ number: number; title: string; body: string }> {
+    const url = `${this.baseUrl}/repos/${owner}/${repo}/issues/${issueNumber}`;
+    const resp = await this.request(url);
+    if (resp.status !== 200) {
+      throw githubApiError(resp.status, `getIssue(${owner}/${repo}#${issueNumber})`);
+    }
+    const data = (await resp.json()) as { number: number; title: string; body: string | null };
+    return { number: data.number, title: data.title, body: data.body ?? "" };
+  }
+
+  /**
    * List all comments on an issue in ascending creation order.
    * Follows Link header pagination to fetch all pages.
    */

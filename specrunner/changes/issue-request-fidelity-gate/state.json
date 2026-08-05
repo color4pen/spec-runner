@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
   "createdAt": "2026-08-05T13:46:49.264Z",
-  "updatedAt": "2026-08-05T15:14:52.315Z",
+  "updatedAt": "2026-08-05T23:01:21.621Z",
   "request": {
     "title": "issue 起点 run の開始前忠実性ゲート — 黙って弱められた request で pipeline が走ることを封じる",
     "type": "new-feature",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "implementer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/issue-request-fidelity-gate-d6b2552f",
-  "error": {
-    "code": "CLAUDE_CODE_QUERY_FAILED",
-    "message": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
-    "hint": ""
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -72,15 +68,13 @@
     "0e1c92adbe031088cf3be1be1130ec25e442fca9",
     "f9f64718bfeeb08c353b45dadefb6ed216930c1b",
     "3a631d0fcff61b51f306254114dafcccdba1547b",
-    "5d000ce8d65de5a0580d0fe8ec05fd08bdb03aef"
+    "5d000ce8d65de5a0580d0fe8ec05fd08bdb03aef",
+    "637a5445216265fe4c3fdbdb094ea2eff6fc5ef9"
   ],
-  "resumePoint": {
-    "step": "implementer",
-    "reason": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 21,
+    "historyCount": 23,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

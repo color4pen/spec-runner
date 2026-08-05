@@ -30,3 +30,5 @@
 {"type":"transition","ts":"2026-08-05T15:14:52.308Z","step":"store-fail","status":"ok","message":"running → failed: Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)"}
 {"type":"step-attempt","step":"implementer","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CLAUDE_CODE_QUERY_FAILED","message":"Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)","hint":""},"transientRetryAttempts":0},"startedAt":"2026-08-05T14:46:22.543Z","endedAt":"2026-08-05T15:14:52.307Z"}
 {"type":"transition","ts":"2026-08-05T15:14:52.315Z","step":"pipeline","status":"ok","message":"failed → awaiting-resume: Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)"}
+{"type":"transition","ts":"2026-08-05T23:01:21.498Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'implementer'"}
+{"type":"transition","ts":"2026-08-05T23:01:21.621Z","step":"implementer-started","status":"started","message":"Starting implementer step"}

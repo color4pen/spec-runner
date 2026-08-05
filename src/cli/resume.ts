@@ -6,6 +6,7 @@ import { ResumeCommand } from "../core/command/resume.js";
 import { EventBus } from "../core/event/event-bus.js";
 import { wireProgressDisplay } from "./progress.js";
 import type { SpecRunnerConfig } from "../config/schema.js";
+import { createIssueFidelityComparator } from "../adapter/claude-code/issue-fidelity-comparator.js";
 
 /**
  * Resolve the heartbeat interval (seconds) from config → env → TTY-aware default.
@@ -74,7 +75,13 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
     heartbeatIntervalSec: resolveHeartbeatInterval(config),
   });
   try {
-    return await new ResumeCommand(runtime, events, slug, { ...options, noWorktree: options.noWorktree, applyCanon: options.applyCanon }).execute();
+    return await new ResumeCommand(
+      runtime,
+      events,
+      slug,
+      { ...options, noWorktree: options.noWorktree, applyCanon: options.applyCanon },
+      (config) => createIssueFidelityComparator(config),
+    ).execute();
   } catch (err) {
     logError((err as Error).message);
     return 1;
