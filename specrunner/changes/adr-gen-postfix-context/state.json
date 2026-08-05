@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "acfa2578-b9f3-4487-b839-b9760e8f947d",
   "createdAt": "2026-08-05T13:46:42.983Z",
-  "updatedAt": "2026-08-05T15:14:42.150Z",
+  "updatedAt": "2026-08-05T23:01:17.866Z",
   "request": {
     "title": "adr-gen が fixer 適用後の最終実装から ADR を導出する — pre-fix design 文脈による事実逆転を解消する",
     "type": "spec-change",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "conformance",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/adr-gen-postfix-context-acfa2578",
-  "error": {
-    "code": "CLAUDE_CODE_QUERY_FAILED",
-    "message": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
-    "hint": ""
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -78,7 +74,8 @@
     "2ba182cd47ef53593398f5331497dffea226d4b1",
     "89fdc2ba6d5701114ce42908192d0bd7e93484f8",
     "deef16883e5a51dd47722ab187f412c44b2e28ae",
-    "4fa8458cb7716033891032d5f7ae56de180d0388"
+    "4fa8458cb7716033891032d5f7ae56de180d0388",
+    "60634b37f0a5acfb1835f1db069a343b678275bb"
   ],
   "reviewerStatuses": [
     {
@@ -110,13 +107,10 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "conformance",
-    "reason": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
