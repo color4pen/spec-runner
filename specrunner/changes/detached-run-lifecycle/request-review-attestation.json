@@ -1,0 +1,25 @@
+{
+  "requestHash": "sha256:c30db1f70adabdf89d5823d5cebf35e322d54dd5febaba370ad53087f2cfbb83",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/run.ts:108-113 — process.exit(await runRunCore(...))",
+    "src/core/pipeline/pipeline.ts:216 — while (true)",
+    "src/state/schema/types.ts:417-418 — pid?: number | null",
+    "src/store/job-state-store.ts:78-79 — pid: process.pid at job creation",
+    "src/core/command/resume.ts:229 — pid: process.pid in resume patch",
+    "src/core/command/resume.ts:226-243 — resolveStateStoreByJobId persist, null skip",
+    "src/core/runtime/local.ts:1432-1468 — writeLivenessSidecar with pid",
+    "src/core/resume/safety.ts:13-24 — isProcessAlive (EPERM→alive / ESRCH→dead)",
+    "src/core/resume/safety.ts:40-67 — isStaleRunning (state.pid → sidecar pid → updatedAt 15min fallback)",
+    "src/cli/ps.ts:144-150 — isStaleRunning usage",
+    "src/core/job-list/operations-view.ts:326-337 — running (stale?) display",
+    "src/util/xdg.ts:44-53 — .specrunner/logs/<jobId>.log path",
+    "src/cli/job-show.ts:115-122 — Log: display",
+    "src/util/spawn.ts:73-107 — spawnBackground exists, no detached:true, stdio:ignore",
+    "src/state/lifecycle.ts:58-60 — TERMINAL_STATUSES={archived,canceled}, ACTIVE_STATUSES={running,awaiting-resume}",
+    "src/core/command/runner.ts:325-369 — awaiting-archive→0, awaiting-resume→1",
+    "src/errors.ts:3-7 — EXIT_CODE={SUCCESS:0,GENERAL_ERROR:1,ARG_ERROR:2}",
+    "src/core/command/pipeline-run.ts:69,147 — Starting/Job ID lines only"
+  ],
+  "sourceRevision": "59225d3ae672d63774f43fdcf883371162d62f9e"
+}
