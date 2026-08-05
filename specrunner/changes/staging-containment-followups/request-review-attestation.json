@@ -1,0 +1,25 @@
+{
+  "requestHash": "sha256:5e845a078520f6cee676fd4e5d76a9eb487b955a6ba50f2fc3e06eaf68aa125f",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/commit-push.ts:619-631 — file count guard (resolveMaxStagedFiles + stagingLimitExceededError) at pre-add point",
+    "src/core/step/commit-push.ts:113-170 — getWorktreeChangedPaths returns paths only, no size info",
+    "src/core/step/commit-push.ts:912-934 — pushOnly with 1 retry (5 seconds), no HTTP 400 special handling",
+    "src/errors.ts:532-550 — stagingLimitExceededError (STAGING_LIMIT_EXCEEDED, escalation path)",
+    "src/errors.ts:273-279 — pushFailedError",
+    "src/core/step/staging-containment.ts:28 — DEFAULT_MAX_STAGED_FILES = 2000",
+    "src/core/step/staging-containment.ts:39-59 — resolveStagingExcludePatterns (39-45) and resolveMaxStagedFiles (53-59)",
+    "src/config/schema/types.ts:247-262 — PipelineConfig: stagingExcludePatterns (257) and maxStagedFiles (262)",
+    "src/config/schema/validation.ts:241-252 — validation for stagingExcludePatterns (241-246) and maxStagedFiles (247-252)",
+    "docs/configuration.md:411-438 — Guarded staging containment section",
+    "src/prompts/fragments.ts:16-20 — COMMIT_DISCIPLINE: git operations prohibition only, no artifact hygiene",
+    "src/prompts/implementer-system.ts:26-31 — write-set scope constraints only",
+    "src/prompts/implementer-system.ts — COMMIT_DISCIPLINE imported and used",
+    "src/prompts/build-fixer-system.ts — COMMIT_DISCIPLINE imported and used",
+    "src/prompts/code-fixer-system.ts — COMMIT_DISCIPLINE imported and used",
+    "src/core/step/__tests__/commit-push-guarded-staging.test.ts — TC-004 asserts halt before git add/commit/push",
+    "src/core/step/__tests__/staging-containment.test.ts — resolver / error message tests",
+    "src/config/__tests__/staging-config-validation.test.ts — schema validation tests"
+  ],
+  "sourceRevision": "59225d3ae672d63774f43fdcf883371162d62f9e"
+}
