@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c25efd28-b686-49f4-828a-aaaed4d840a4",
   "createdAt": "2026-08-05T13:46:40.512Z",
-  "updatedAt": "2026-08-05T13:46:45.319Z",
+  "updatedAt": "2026-08-05T13:50:30.832Z",
   "request": {
     "title": "TC 分類に gate カテゴリを導入 — 検証 phase の再実行をテスト化する冗長 TC と外部ツールチェーン実行 TC を構造で封じる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/gate-ac-classification-c25efd28",
   "error": null,
@@ -62,10 +62,13 @@
     }
   ],
   "synthesizedCommits": [
-    "d8d95353db77d9e62ef61c7f2a739e4b205523c7"
+    "d8d95353db77d9e62ef61c7f2a739e4b205523c7",
+    "4cabcdae92cf63505a11c975f0d720750d80a912"
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
