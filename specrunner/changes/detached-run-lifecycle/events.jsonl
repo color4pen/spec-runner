@@ -8,3 +8,7 @@
 {"type":"transition","ts":"2026-08-05T15:15:37.771Z","step":"store-fail","status":"ok","message":"running → failed: Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)"}
 {"type":"step-attempt","step":"design","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CLAUDE_CODE_QUERY_FAILED","message":"Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)","hint":""},"transientRetryAttempts":0},"startedAt":"2026-08-05T14:56:18.821Z","endedAt":"2026-08-05T15:15:37.770Z"}
 {"type":"transition","ts":"2026-08-05T15:15:37.778Z","step":"pipeline","status":"ok","message":"failed → awaiting-resume: Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)"}
+{"type":"transition","ts":"2026-08-05T23:01:23.694Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'design'"}
+{"type":"transition","ts":"2026-08-05T23:02:18.264Z","step":"stale-detection","status":"ok","message":"running → awaiting-resume: Process not running"}
+{"type":"transition","ts":"2026-08-05T23:02:18.268Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'design'"}
+{"type":"transition","ts":"2026-08-05T23:02:18.395Z","step":"design-started","status":"started","message":"Starting design step"}

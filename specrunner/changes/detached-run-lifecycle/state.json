@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a250ec69-f049-4834-a522-76434a8948c6",
   "createdAt": "2026-08-05T14:51:11.064Z",
-  "updatedAt": "2026-08-05T15:15:37.778Z",
+  "updatedAt": "2026-08-05T23:02:18.395Z",
   "request": {
     "title": "run の detach 内蔵と job wait — pipeline の生存管理を agent の shell 手順から CLI へ移す",
     "type": "new-feature",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "design",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/detached-run-lifecycle-a250ec69",
-  "error": {
-    "code": "CLAUDE_CODE_QUERY_FAILED",
-    "message": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
-    "hint": ""
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -67,15 +63,13 @@
   ],
   "synthesizedCommits": [
     "4d6db681bd434e5c6df2956eae3f8cc4a0e4ae70",
-    "ff4d8db155492edd674748e1bb87448e6115a0ad"
+    "ff4d8db155492edd674748e1bb87448e6115a0ad",
+    "1444b00b0d67550e6afc5aa5b62f0f77842b4de3"
   ],
-  "resumePoint": {
-    "step": "design",
-    "reason": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 7,
+    "historyCount": 11,
     "stepCounts": {
       "request-review": 1,
       "design": 1
