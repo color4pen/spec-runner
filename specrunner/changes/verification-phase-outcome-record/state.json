@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a1baaa-7216-4971-9ebb-10426db1618a",
   "createdAt": "2026-08-05T13:51:52.489Z",
-  "updatedAt": "2026-08-05T13:51:55.109Z",
+  "updatedAt": "2026-08-05T13:58:45.793Z",
   "request": {
     "title": "verification の失敗 phase を StepRun outcome に構造化記録する — 上書きで失敗原因が消える経路を塞ぐ",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/verification-phase-outcome-record-24a1baaa",
   "error": null,
@@ -62,10 +62,13 @@
     }
   ],
   "synthesizedCommits": [
-    "722a480f183087d353201507dea97a0ae4255d3d"
+    "722a480f183087d353201507dea97a0ae4255d3d",
+    "e586575487a42c88d0bfa09973e22488753a999e"
   ],
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
