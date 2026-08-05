@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a1baaa-7216-4971-9ebb-10426db1618a",
   "createdAt": "2026-08-05T13:51:52.489Z",
-  "updatedAt": "2026-08-05T15:14:49.551Z",
+  "updatedAt": "2026-08-05T23:03:37.281Z",
   "request": {
     "title": "verification の失敗 phase を StepRun outcome に構造化記録する — 上書きで失敗原因が消える経路を塞ぐ",
     "type": "new-feature",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/verification-phase-outcome-record-24a1baaa",
-  "error": {
-    "code": "CLAUDE_CODE_QUERY_FAILED",
-    "message": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
-    "hint": ""
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -75,15 +71,13 @@
     "699b4ec392a88597fcda24de11ce20d7a5cd3198",
     "9800f1191c12b77cf8b770e0de75c1218f174690",
     "3392bfdee21e1a154ac96aa6ce12b1eba166f737",
-    "bb1936d8c4d6f866cf0254b1d0e356d456200a2d"
+    "bb1936d8c4d6f866cf0254b1d0e356d456200a2d",
+    "686e5c00bd8e19a04781a1a2b7e7671a27eb692f"
   ],
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

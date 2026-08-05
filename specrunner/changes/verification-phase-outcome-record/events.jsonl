@@ -61,3 +61,13 @@
 {"type":"step-attempt","step":"code-review","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CLAUDE_CODE_QUERY_FAILED","message":"Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)","hint":""},"transientRetryAttempts":0},"startedAt":"2026-08-05T15:09:49.770Z","endedAt":"2026-08-05T15:14:49.545Z"}
 {"type":"transition","ts":"2026-08-05T15:14:49.551Z","step":"code-review","status":"error","message":"code-review iteration 1 completed with verdict: error"}
 {"type":"transition","ts":"2026-08-05T15:14:49.551Z","step":"pipeline","status":"ok","message":"failed → awaiting-resume: Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)"}
+{"type":"transition","ts":"2026-08-05T23:01:51.485Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-review'"}
+{"type":"transition","ts":"2026-08-05T23:01:51.636Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-08-05T23:01:51.637Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
+{"type":"interruption","reason":"signal","ts":"2026-08-05T23:03:00.570Z"}
+{"type":"interruption","reason":"signal","ts":"2026-08-05T23:03:00.570Z"}
+{"type":"transition","ts":"2026-08-05T23:03:00.571Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-08-05T23:03:00.571Z","step":"signal-handler","status":"ok","message":"running → awaiting-resume: Interrupted by signal"}
+{"type":"transition","ts":"2026-08-05T23:03:37.106Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-review'"}
+{"type":"transition","ts":"2026-08-05T23:03:37.279Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-08-05T23:03:37.281Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
