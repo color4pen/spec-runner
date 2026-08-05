@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a1baaa-7216-4971-9ebb-10426db1618a",
   "createdAt": "2026-08-05T13:51:52.489Z",
-  "updatedAt": "2026-08-05T23:32:45.155Z",
+  "updatedAt": "2026-08-05T23:38:47.402Z",
   "request": {
     "title": "verification の失敗 phase を StepRun outcome に構造化記録する — 上書きで失敗原因が消える経路を塞ぐ",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "conformance",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/verification-phase-outcome-record-24a1baaa",
   "error": null,
   "pipelineId": "standard",
@@ -78,13 +78,10 @@
     "24ac018ced6e4be8bee28a246324cc0846553448",
     "fabf1c7031212f5325411440565b8761189af0e6",
     "b1ce690f6657a9850829d45ddee4b15d4cad08d3",
-    "735f72d42bf4ce0f3a78ff3bc3e769d44e244f56"
+    "735f72d42bf4ce0f3a78ff3bc3e769d44e244f56",
+    "a9d89b4b72fd06eccb05a68045cb77664affc062"
   ],
-  "resumePoint": {
-    "step": "conformance",
-    "reason": "conformance escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -118,7 +115,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 81,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
