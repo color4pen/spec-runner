@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f94950fe-34fd-496a-bba4-11c576680e10",
   "createdAt": "2026-08-05T13:51:00.030Z",
-  "updatedAt": "2026-08-05T15:04:55.875Z",
+  "updatedAt": "2026-08-05T15:15:45.362Z",
   "request": {
     "title": "SDK result の turn 数・所要時間・実コストを usage.json に記録する — 事後分析が試算に頼る状態を解消する",
     "type": "new-feature",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
-  "status": "running",
+  "step": "code-review",
+  "status": "awaiting-resume",
   "branch": "feat/agent-invocation-metrics-f94950fe",
-  "error": null,
+  "error": {
+    "code": "CLAUDE_CODE_QUERY_FAILED",
+    "message": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
+    "hint": ""
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -70,10 +74,17 @@
     "2033cdf4fe66c6ab3df582027da6ff76a05203c4",
     "46334da4b09fb43debdd84560e6f5c6c1df72547",
     "bba6f4d48699d379e76f15b24684159b36c45443",
-    "6a9f8469aa7107ca859036b09fb6a20ea4962530"
+    "6a9f8469aa7107ca859036b09fb6a20ea4962530",
+    "17e18ba482148043be29275ca493697d73bed956",
+    "7632a6b49d91310b6642d8ca0fb19e1436b1c7cf"
   ],
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "Claude Code SDK query failed: Claude Code returned an error result: You've hit your limit · resets 3:30am (Asia/Tokyo)",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -83,7 +94,9 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1,
+      "code-review": 1
     }
   }
 }
