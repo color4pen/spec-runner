@@ -131,3 +131,105 @@ describe("TC-11: VerificationStep.run passes deps.request.baseBranch to runVerif
     expect(spy.mock.calls[0]?.[3]).toBe("main");
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-014: VerificationStep.run が phases を phase/status/exitCode のみに投影して返す (must)
+// Source: tasks.md > T-05 / T-08 TC-04
+//
+// RED: VerificationStep.run currently returns void (undefined).
+//      After T-05: run() returns { verificationPhases: [...] } with stdout/stderr/durationMs dropped.
+// ---------------------------------------------------------------------------
+describe("TC-014: VerificationStep.run projects PhaseResult to phase/status/exitCode only (must)", () => {
+  it("run() returns {verificationPhases:[{phase,status,exitCode}]} — stdout/stderr/durationMs dropped", async () => {
+    vi.mocked(runVerification).mockClear();
+    vi.mocked(runVerification).mockResolvedValueOnce({
+      slug: "test-slug",
+      verdict: "failed",
+      phases: [
+        {
+          phase: "build",
+          status: "failed",
+          exitCode: 1,
+          stdout: "err output",
+          stderr: "trace info",
+          durationMs: 5,
+        },
+      ],
+    });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps("main", "/fake/cwd");
+
+    // VerificationStep.run returns void currently; returns CliStepRunOutcome after T-05
+    const result = await VerificationStep.run(state, deps);
+
+    // After T-05: run() returns { verificationPhases: [{ phase, status, exitCode }] }
+    // stdout / stderr / durationMs must be dropped (D3 in tasks.md)
+    expect(result).toEqual({
+      verificationPhases: [
+        { phase: "build", status: "failed", exitCode: 1 },
+      ],
+    });
+  });
+
+  it("run() does not include stdout, stderr, or durationMs in projected phases", async () => {
+    vi.mocked(runVerification).mockClear();
+    vi.mocked(runVerification).mockResolvedValueOnce({
+      slug: "test-slug",
+      verdict: "passed",
+      phases: [
+        {
+          phase: "test",
+          status: "passed",
+          exitCode: 0,
+          stdout: "All tests passed",
+          stderr: "",
+          durationMs: 1234,
+          skippedCount: 2,
+        },
+      ],
+    });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps("main", "/fake/cwd");
+
+    // VerificationStep.run returns void currently; returns CliStepRunOutcome after T-05
+    const result = await VerificationStep.run(state, deps);
+
+    expect(result).toBeDefined();
+    const phases = (result as unknown as Record<string, unknown>)?.["verificationPhases"] as Array<Record<string, unknown>>;
+    expect(phases).toHaveLength(1);
+    // Only phase/status/exitCode — no stdout/stderr/durationMs/skippedCount
+    expect(phases[0]).not.toHaveProperty("stdout");
+    expect(phases[0]).not.toHaveProperty("stderr");
+    expect(phases[0]).not.toHaveProperty("durationMs");
+    expect(phases[0]).not.toHaveProperty("skippedCount");
+    expect(phases[0]).toMatchObject({ phase: "test", status: "passed", exitCode: 0 });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-015: VerificationStep.run が空 phases のとき verificationPhases: [] を返す (should)
+// Source: tasks.md > T-05
+//
+// RED: VerificationStep.run currently returns void.
+//      After T-05: run() returns { verificationPhases: [] } for empty phases.
+// ---------------------------------------------------------------------------
+describe("TC-015: VerificationStep.run returns verificationPhases:[] for empty phases (should)", () => {
+  it("run() returns { verificationPhases: [] } when runVerification returns phases: []", async () => {
+    vi.mocked(runVerification).mockClear();
+    vi.mocked(runVerification).mockResolvedValueOnce({
+      slug: "test-slug",
+      verdict: "passed",
+      phases: [],
+    });
+
+    const state = makeMinimalState();
+    const deps = makeMinimalDeps("main", "/fake/cwd");
+
+    // VerificationStep.run returns void currently; returns CliStepRunOutcome after T-05
+    const result = await VerificationStep.run(state, deps);
+
+    expect(result).toEqual({ verificationPhases: [] });
+  });
+});
