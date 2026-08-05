@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f94950fe-34fd-496a-bba4-11c576680e10",
   "createdAt": "2026-08-05T13:51:00.030Z",
-  "updatedAt": "2026-08-05T14:46:10.176Z",
+  "updatedAt": "2026-08-05T15:04:55.875Z",
   "request": {
     "title": "SDK result の turn 数・所要時間・実コストを usage.json に記録する — 事後分析が試算に頼る状態を解消する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "build-fixer",
   "status": "running",
   "branch": "feat/agent-invocation-metrics-f94950fe",
   "error": null,
@@ -68,17 +68,22 @@
     "7b2b3528b09f82dea9939932bb9bea7651d24246",
     "230309bf4d236f189a8b871fd989209163ba397e",
     "2033cdf4fe66c6ab3df582027da6ff76a05203c4",
-    "46334da4b09fb43debdd84560e6f5c6c1df72547"
+    "46334da4b09fb43debdd84560e6f5c6c1df72547",
+    "bba6f4d48699d379e76f15b24684159b36c45443",
+    "6a9f8469aa7107ca859036b09fb6a20ea4962530"
   ],
   "_journal": {
-    "historyCount": 22,
+    "historyCount": 33,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "spec-fixer": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }

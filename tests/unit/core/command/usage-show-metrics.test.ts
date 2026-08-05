@@ -12,12 +12,12 @@ import { showUsage } from "../../../../src/core/command/usage-show.js";
 
 let tmpDir: string;
 let stdoutSpy: ReturnType<typeof vi.spyOn>;
-let stderrSpy: ReturnType<typeof vi.spyOn>;
+let _stderrSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(async () => {
   tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "usage-show-metrics-test-"));
   stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
-  stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+  _stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
