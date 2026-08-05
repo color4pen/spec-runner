@@ -34,6 +34,13 @@ env が設定される MUST。既定（`--detach` なし）の foreground 挙動
 **When** 実装から `detached: true` またはマーカー env 付与を除去する
 **Then** 当該テストが失敗する（歯が効いていることの確認）
 
+#### Scenario: `--detach` と `--json` の同時指定は ARG_ERROR（exit 2）
+
+**Given** `run <slug> --detach --json`（または `--json --detach`）のように両 flag を同時に指定した起動
+**When** CLI が flag を解析する
+**Then** pipeline を実行せず ARG_ERROR（exit 2）で終了する。`--detach` が非 JSON テキストを stdout に書いて
+exit 0 するため、`--json` 契約を前提にパースする自動化がパースエラーになることを防ぐためである。
+
 ### Requirement: 内部マーカー付きで起動された子は再 spawn しない
 
 内部マーカー env（`SPECRUNNER_DETACHED`）が設定された状態で起動されたプロセスは、`--detach` が引数に
@@ -118,8 +125,12 @@ gate** にする MUST。`state.pid`、無ければ liveness sidecar から解決
 
 `job wait` は settle 時に `slug` / `status` / 次アクションを 1 行で出力する MUST。終了コードは
 awaiting-archive / archived → 0、awaiting-resume / failed / terminated / canceled → 1、
-引数エラー（slug 欠落）・slug 不在 → 2 とする MUST。次アクションは status に応じて awaiting-resume なら
+引数エラー（slug 欠落）→ 2 とする MUST。次アクションは status に応じて awaiting-resume なら
 resume コマンド、awaiting-archive なら archive コマンド等を案内する MUST。
+
+slug 不在（どの job にも一致しない）の場合、`job wait` はループ開始前に **2 秒間隔 × 5 回**
+（計約 10 秒）リトライしてから exit 2 を返す MUST。これは detach 親が `job wait <slug>` 案内を出力して
+exit 0 した直後に子の preflight がまだ完了していない初期化ウィンドウでの誤報を防ぐためである。
 
 #### Scenario: awaiting-archive は 0 で archive アクションを案内する
 
@@ -139,11 +150,11 @@ resume コマンド、awaiting-archive なら archive コマンド等を案内�
 **When** `job wait` が settle する
 **Then** exit 1 を返す
 
-#### Scenario: slug 不在は exit 2 を返す
+#### Scenario: slug 不在は 2 秒 × 5 回リトライ後に exit 2 を返す
 
 **Given** どの job にも一致しない slug
 **When** `job wait <slug>` を実行する
-**Then** exit code 2 を返す
+**Then** 2 秒間隔 × 5 回（計約 10 秒）のリトライ後に exit code 2 を返す
 
 ### Requirement: 運用知識をコマンド出力面に注入する
 

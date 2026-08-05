@@ -28,6 +28,7 @@
 - `getDetachLogPath(root, "foo")` が `.specrunner/logs/` 配下の slug 由来 path を返す。
 - 既存 `getVerboseLogPath(root, jobId)` の返り値は無変更。
 - `typecheck` green。
+- detach log ファイルは `0o600` モードで作成されること（既存 verbose log の `openSync(path, 'a', 0o600)` 慣例と一致）。
 
 ## T-02: `spawnBackground` を detach 用途に拡張する（既存呼び出し元は無変更）
 
@@ -44,6 +45,7 @@
 **Acceptance Criteria**:
 - 新フィールド未指定の呼び出しで `detached` は渡されず、`stdio` は `"ignore"`、env は `stripSecrets` 適用。
 - `detached: true` + log redirect + full-env 指定で、それぞれ spawn へ正しく反映される（DI/spy で検証）。
+- log redirect で渡すファイル記述子は `openSync(path, 'a', 0o600)` で開くこと（owner-only 保護）。
 - `typecheck` green。
 
 ## T-03: detach モジュール（マーカー / args 除去 / guidance / self-respawn）を実装する
@@ -97,7 +99,10 @@
 **Acceptance Criteria**:
 - `run --detach` / `job start --detach` / `job resume --detach` が Unknown flag エラーにならない。
 - マーカー非設定 + `--detach` で detachSelf が呼ばれ pipeline は実行されない。マーカー設定時は foreground。
+- `--detach` と `--json` の同時指定は ARG_ERROR（exit 2）で終了し、pipeline も spawn も行わない（テストで固定）。
 - `job wait <slug>` が dispatch され、slug 欠落は exit 2。
+- `run` / `job start` の detach 経路で `parseRequestMdRaw` 後に `SLUG_REGEX` を検証し、不一致なら
+  spawn せず非ゼロ終了すること（テストで固定）。
 - USAGE に `job wait` と `--detach` が含まれる。
 - `typecheck` green。
 
@@ -119,7 +124,9 @@
 **Acceptance Criteria**:
 - pid 生存中は on-disk status が awaiting-* でも待ち続ける。死亡後に status を読む。
 - pid 不在 state で `isStaleRunning` fallback に従う。
-- settle 報告が status 別に正しい次アクションと終了コードを返す。slug 不在は exit 2。
+- settle 報告が status 別に正しい次アクションと終了コードを返す。
+- slug 不在は **2 秒間隔 × 5 回**（計約 10 秒）リトライしてから exit 2 を返す（detach 親の初期化ウィンドウ対応）。
+  リトライ間隔・回数は DI seam で注入可能にし、テストで実時間なしに検証する。
 - `typecheck` green。
 
 ## T-07: `job show` に detach log の所在を表示する
@@ -153,11 +160,12 @@
 - [ ] プロセス死亡後、status 別に 1 行報告と終了コード（awaiting-archive/archived → 0、
       awaiting-resume/failed/terminated/canceled → 1）を固定する。
 - [ ] pid 不在の後方互換 state で `isStaleRunning` fallback（running かつ updatedAt 15 分超 → settle）に従う。
-- [ ] slug 不在で exit 2。
+- [ ] slug 不在で **2 秒間隔 × 5 回リトライ**後に exit 2 を返す（DI 注入で実時間なしに検証する）。
 - [ ] 実プロセス・実時間なしで検証する（liveness 判定・clock・state ロードを DI 注入）。
 
 **Acceptance Criteria**:
 - 上記シナリオが green。破壊確認テストが process-death gate の有効性を示す。
+- slug 不在リトライテストが「5 回リトライ後に exit 2」を固定する。
 
 ## T-10: テスト — 出力契約（notice / guidance / help）と foreground 無変更
 
@@ -165,10 +173,12 @@
       `job wait` / `job show` を、USAGE が `job wait` と `--detach` を含むことを固定する。
 - [ ] foreground（`--detach` なし）の run / resume の stdout 出力・終了コードが無変更であることを、
       **既存テストを無変更のまま green** に保つことで確認する（新規 notice は stderr / quiet 抑制）。
+- [ ] `--detach --json` 同時指定で exit 2 を返し pipeline も spawn も行わないことをテストで固定する。
 
 **Acceptance Criteria**:
 - 3 種の文言存在テストが green。
 - 既存の foreground run / resume 出力・exit code テストが無改変で green。
+- `--detach --json` 排他テストが green。
 
 ## T-11: docs 追随
 

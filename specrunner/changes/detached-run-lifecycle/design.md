@@ -141,6 +141,8 @@ credentials の伝播が正しい。既存の外部プロセス経路は既定�
 - `run` / `job start`: positional は slug|file。親は run.ts と同じ解決（存在すれば file path、なければ
   `storeResolve` fallback）で request path を得たのち、request parser（`parseRequestMdRaw`、認証・network
   なしの決定的 parse）で slug を抽出する。これは子の preflight が `request.slug` として算出する値と同じ。
+  抽出後、`SLUG_REGEX = /^[a-z0-9][a-z0-9-]{0,63}$/` で検証し、不一致なら子を spawn せず非ゼロ終了する
+  （不正な slug 値で `job wait <invalid>` 案内を出して子を spawn する UX 混乱を防ぐ）。
 - slug 解決に失敗する入力（request を解決できない）では子も失敗するため、親は spawn せずに run.ts と同等の
   エラーを出して非ゼロ終了する（doomed child を作らない）。
 
