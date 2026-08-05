@@ -67,6 +67,23 @@ export interface DynamicContext {
     findings: { severity: string; resolution: string; file: string; title: string }[];
     changedFiles: string[];
   };
+  /**
+   * Post-fix context for adr-gen — machine-derived from code-fixer commit OIDs.
+   * Populated by AdrGenStep.prepareRoundContext() when code-fixer round(s) exist with a
+   * commitOid. Contains each fixer round's changed files (from listCommitChangedFiles) and
+   * the corresponding review findings (from state, not self-report).
+   * In-memory only — NOT persisted to state/journal (one-shot injection per round).
+   * Absent for steps other than adr-gen, and for runs where code-fixer never ran.
+   * Declared as an inline structural type to avoid cross-layer imports into src/git/.
+   */
+  postFixContext?: {
+    rounds: {
+      round: number;
+      commitOid: string;
+      changedFiles: string[];
+      findings: { severity: string; resolution: string; file: string; title: string }[];
+    }[];
+  };
 }
 
 /**
