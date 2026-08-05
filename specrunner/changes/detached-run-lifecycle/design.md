@@ -158,7 +158,9 @@ credentials の伝播が正しい。既存の外部プロセス経路は既定�
 1. pid を解決する（`state.pid` → 無ければ sidecar `.specrunner/local/<slug>/liveness.json` の pid）。
 2. **pid が解決できた場合**: `isProcessAlive(pid)` が真の間は **status に関わらず待ち続ける**（生存中は
    `awaiting-resume` / `awaiting-archive` が disk に見えても未確定として待つ = resume disk-lag の誤報吸収の歯）。
-   プロセス死亡後に初めて on-disk status を確定値として読む。
+   プロセス死亡後に初めて on-disk status を確定値として読む。このとき status が `running` のまま残っている場合
+   （SIGKILL やクラッシュなど beforeExit を経由しない終了）は、`awaiting-resume` として扱う。これは通常の
+   SIGTERM 経路（→ beforeExit → `awaiting-resume`）のセマンティクスと揃え、実装者の曖昧さを排除する。
 3. **pid が解決できない場合（後方互換 state）**: `isStaleRunning` の fallback に従う。status が `running`
    でなければ settled、`running` なら updatedAt 15 分閾値（`isStaleRunning` を再利用）。
 

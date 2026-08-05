@@ -115,6 +115,13 @@ gate** にする MUST。`state.pid`、無ければ liveness sidecar から解決
 **When** `job wait` の 1 tick 判定を評価する
 **Then** settled と判定し、当該 on-disk status を報告値として採用する
 
+#### Scenario: プロセス死亡後に disk status が `running` のままなら awaiting-resume として扱う
+
+**Given** 解決した pid が死亡しており、on-disk status が `running` のまま残っている state
+       （SIGKILL やクラッシュなど beforeExit を経由しない終了）
+**When** `job wait` の 1 tick 判定を評価する
+**Then** settled と判定し、status を `awaiting-resume` として扱って exit 1 を返す
+
 #### Scenario: pid 不在の後方互換 state は isStaleRunning fallback に従う
 
 **Given** `state.pid` も sidecar pid も存在しない state
