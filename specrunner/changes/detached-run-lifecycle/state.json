@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a250ec69-f049-4834-a522-76434a8948c6",
   "createdAt": "2026-08-05T14:51:11.064Z",
-  "updatedAt": "2026-08-05T23:33:06.361Z",
+  "updatedAt": "2026-08-05T23:34:10.660Z",
   "request": {
     "title": "run の detach 内蔵と job wait — pipeline の生存管理を agent の shell 手順から CLI へ移す",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/detached-run-lifecycle-a250ec69",
   "error": null,
@@ -69,17 +69,18 @@
     "bd8f244cf0f5e341e934998b3e6190a9be36811b",
     "825c79c1cf2dcddbd952f1b97e2cef174fb720e2",
     "1ccb91745a9d4f9cd738db1fbaa71ee450996139",
-    "272dea92b005143d5c9cdf7c56c24e5853cc03fe"
+    "272dea92b005143d5c9cdf7c56c24e5853cc03fe",
+    "71f74e211767d04742a88c9211ec3964d06ced73"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 28,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
       "spec-review": 2,
-      "spec-fixer": 1
+      "spec-fixer": 2
     }
   }
 }
