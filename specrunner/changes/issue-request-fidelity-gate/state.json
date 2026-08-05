@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
   "createdAt": "2026-08-05T13:46:49.264Z",
-  "updatedAt": "2026-08-05T23:16:34.234Z",
+  "updatedAt": "2026-08-05T23:19:00.464Z",
   "request": {
     "title": "issue 起点 run の開始前忠実性ゲート — 黙って弱められた request で pipeline が走ることを封じる",
     "type": "new-feature",
@@ -71,12 +71,14 @@
     "5d000ce8d65de5a0580d0fe8ec05fd08bdb03aef",
     "637a5445216265fe4c3fdbdb094ea2eff6fc5ef9",
     "14eec0bd741b5959e1f2cdbae6cd637cb3ab2b5a",
-    "e38c2a36ce1722d55f0f7f90be04c83003f66c88"
+    "e38c2a36ce1722d55f0f7f90be04c83003f66c88",
+    "7b28414829976622ef717674ade227eebcf94a9f",
+    "1a79f2722fba837bce11a69c04b4ada9483af80e"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 34,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -85,7 +87,8 @@
       "test-materialize": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
