@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "acfa2578-b9f3-4487-b839-b9760e8f947d",
   "createdAt": "2026-08-05T13:46:42.983Z",
-  "updatedAt": "2026-08-05T23:01:17.866Z",
+  "updatedAt": "2026-08-05T23:07:53.735Z",
   "request": {
     "title": "adr-gen が fixer 適用後の最終実装から ADR を導出する — pre-fix design 文脈による事実逆転を解消する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/adr-gen-postfix-context-acfa2578",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,9 @@
     "89fdc2ba6d5701114ce42908192d0bd7e93484f8",
     "deef16883e5a51dd47722ab187f412c44b2e28ae",
     "4fa8458cb7716033891032d5f7ae56de180d0388",
-    "60634b37f0a5acfb1835f1db069a343b678275bb"
+    "60634b37f0a5acfb1835f1db069a343b678275bb",
+    "5c16ab8e7a776e585b619a592c08a22c0c8bb95b",
+    "b4f0595802b6739417442b2f4420abfe737d5da0"
   ],
   "reviewerStatuses": [
     {
@@ -109,8 +111,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/955",
+    "number": 955,
+    "createdAt": "2026-08-05T23:07:52.408Z"
+  },
   "_journal": {
-    "historyCount": 60,
+    "historyCount": 74,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -120,14 +127,16 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
