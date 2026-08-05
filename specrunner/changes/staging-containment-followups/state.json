@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2d0de90f-280b-4b52-8839-fcd2768cd25f",
   "createdAt": "2026-08-05T13:46:47.179Z",
-  "updatedAt": "2026-08-05T14:26:24.912Z",
+  "updatedAt": "2026-08-05T14:31:58.529Z",
   "request": {
     "title": "staging containment の残口封じ — staged バイトサイズ閾値ガードと生成物衛生規律",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/staging-containment-followups-2d0de90f",
   "error": null,
@@ -70,10 +70,11 @@
     "0fd166e6b51fb28aeee3068822633d4f73809b37",
     "d0ad550822fb99c9eae9ffe4fdcecd8c3a03699a",
     "f9e955f974ee5184a37509474c85b5900cf18c21",
-    "8f8b115d5eb35a114ba77d9f20d95f63f67a80aa"
+    "8f8b115d5eb35a114ba77d9f20d95f63f67a80aa",
+    "3e6eee2d1a0755487ae7a568208f6325b7b866ba"
   ],
   "_journal": {
-    "historyCount": 34,
+    "historyCount": 38,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -83,7 +84,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1
     }
   }
 }
