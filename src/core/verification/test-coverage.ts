@@ -92,7 +92,11 @@ export async function collectProjectTestFiles(rootDir: string): Promise<string[]
  *    (accepts both "- **Category**: manual" and "**Category**: manual" forms;
  *     enum lines such as "**Category**: unit | integration | manual" do NOT match
  *     because the value immediately following the colon is not "manual")
- * 5. Return IDs of all must TCs that are NOT manual
+ * 5. If a line contains **Category**: gate, mark the TC as gate (excluded from coverage)
+ *    (accepts both "- **Category**: gate" and "**Category**: gate" forms;
+ *     enum lines such as "**Category**: unit | integration | manual | gate" do NOT match
+ *     because the value immediately following the colon is "unit", not "gate")
+ * 6. Return IDs of all must TCs that are NOT manual AND NOT gate
  *
  * Exported for unit testing.
  */
@@ -108,20 +112,26 @@ export function extractMustTcIds(content: string): string[] {
   // Does NOT match "**Category**: unit | integration | manual" because \s*manual
   // requires "manual" immediately after the colon+whitespace.
   const categoryManualRe = /\*\*Category\*\*:\s*manual/;
+  // Matches **Category**: gate (with or without leading "- ")
+  // Does NOT match "**Category**: unit | integration | manual | gate" because \s*gate
+  // requires "gate" immediately after the colon+whitespace (colon is followed by "unit").
+  const categoryGateRe = /\*\*Category\*\*:\s*gate/;
   // Matches any ## level heading
   const anySectionRe = /^##/;
 
   let currentTcId: string | null = null;
   let currentIsMust = false;
   let currentIsManual = false;
+  let currentIsGate = false;
 
   const flushCurrent = (): void => {
-    if (currentTcId && currentIsMust && !currentIsManual) {
+    if (currentTcId && currentIsMust && !currentIsManual && !currentIsGate) {
       mustTcIds.push(currentTcId);
     }
     currentTcId = null;
     currentIsMust = false;
     currentIsManual = false;
+    currentIsGate = false;
   };
 
   for (const line of lines) {
@@ -137,6 +147,8 @@ export function extractMustTcIds(content: string): string[] {
       currentIsMust = true;
     } else if (currentTcId && categoryManualRe.test(line)) {
       currentIsManual = true;
+    } else if (currentTcId && categoryGateRe.test(line)) {
+      currentIsGate = true;
     }
   }
 

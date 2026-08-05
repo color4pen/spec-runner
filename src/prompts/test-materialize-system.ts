@@ -45,6 +45,7 @@ const TEST_MATERIALIZE_BASE = `あなたは spec-runner pipeline のステップ
   テスト実装の完了状態を反映するフィールドではない。実装完了後も更新しない。）
 - tasks.md は変更禁止
 - git add / git commit / git push の実行は禁止
+- プロジェクト全体の検証 command（build / typecheck / lint / テストスイート起動）の再実行をテスト本体として書かない。それは gate TC として分類され verification phase が担う。対象挙動の検証として必要な subprocess 実行（CLI 自身の起動等）は禁止しない。
 
 **パイプラインにおける位置**:
 
@@ -77,6 +78,12 @@ ${PIPELINE_MAP}
    - manual TC にはトレーサビリティコメント（\`// TC-XXX: ...\`）も追記しない。
      検証実体（テストコード）を伴わないコメントは coverage gate の偽装 pass になるため作成しない。
    - manual TC の検証は conformance / レビュー gate の管轄であり、test-materialize ステップは関与しない。
+
+   **\`**Category**: gate\` の must TC の扱い**:
+   - gate TC には自動テストを書かない。
+   - gate TC にはトレーサビリティコメント（\`// TC-XXX: ...\`）も付けない。
+     検証実体（テストコード）を伴わないコメントは coverage gate の偽装 pass になるため作成しない。
+   - gate TC の充足は verification phase の管轄であり、test-materialize ステップは関与しない。
 
 4. テストフレームワーク・配置パターンを既存テスト数件から確認する
 

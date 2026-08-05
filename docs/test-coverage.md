@@ -65,6 +65,21 @@ describe('user registration', () => {
 > **例外なし**: Category が unit / integration の must TC、および Category 欄がない must TC は
 > 従来どおり coverage 集計に含まれ、テストファイルへの TC-ID 出現が要求されます。
 
+## Category: gate の must TC は集計から除外
+
+`**Category**: gate` かつ `**Priority**: must` の TC は、**must coverage 集計から除外**されます。
+
+gate TC の充足基準はプロジェクト全体の検証 command の結果（build / typecheck / lint / テストスイート全体の green 等）です。
+その充足は **verification phase**（build / typecheck / test / lint 等）の管轄であり、test-coverage フェーズは関与しません。
+
+- gate TC はテストファイルへの TC-ID 出現を要求されません（`missingTcIds` に入りません）。
+- `totalMustTcs` にも数えられません。
+- gate TC にトレーサビリティコメントを追記する必要はありません。
+  検証実体（テストコード）を伴わないコメントは偽装 pass になるため、作成しないことが規約です。
+
+> **例外なし**: Category が unit / integration の must TC、および Category 欄がない must TC は
+> 従来どおり coverage 集計に含まれ、テストファイルへの TC-ID 出現が要求されます。
+
 ## まとめ
 
 | ケース | 対応 |
@@ -73,3 +88,4 @@ describe('user registration', () => {
 | must TC が既存テストで既に検証されている | 既存テストの該当箇所に `// TC-0XX: <TC 名>` コメントを追記する |
 | TC-ID はあるが assertion が一切ない | assertion を持つファイルへ追記先を変更する |
 | `**Category**: manual` の must TC | 集計から除外（自動テスト・コメント追記の対象外） |
+| `**Category**: gate` の must TC | 集計から除外（verification phase の管轄、自動テスト・コメント追記の対象外） |
