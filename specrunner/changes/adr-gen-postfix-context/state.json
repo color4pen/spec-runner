@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "acfa2578-b9f3-4487-b839-b9760e8f947d",
   "createdAt": "2026-08-05T13:46:42.983Z",
-  "updatedAt": "2026-08-05T14:10:35.896Z",
+  "updatedAt": "2026-08-05T14:13:38.008Z",
   "request": {
     "title": "adr-gen が fixer 適用後の最終実装から ADR を導出する — pre-fix design 文脈による事実逆転を解消する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/adr-gen-postfix-context-acfa2578",
   "error": null,
@@ -66,15 +66,17 @@
     "d53ce795150e63ae47b98bf85bbb3b4128d5b810",
     "e95c91d66d5f0bc55d8eec4819211a3271df4bf3",
     "46ef20878164c86a5b4b93b14cdf05017246e212",
-    "d5c9c9cc49a42b0542633ebb11a112f5ace53b0e"
+    "d5c9c9cc49a42b0542633ebb11a112f5ace53b0e",
+    "0820bf086fa49d1e6ce10b9cf57ba27a9f764015"
   ],
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 19,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "test-case-gen": 1
     }
   }
 }
