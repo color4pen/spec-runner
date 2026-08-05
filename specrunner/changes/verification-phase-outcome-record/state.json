@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24a1baaa-7216-4971-9ebb-10426db1618a",
   "createdAt": "2026-08-05T13:51:52.489Z",
-  "updatedAt": "2026-08-05T23:03:37.281Z",
+  "updatedAt": "2026-08-05T23:18:48.910Z",
   "request": {
     "title": "verification の失敗 phase を StepRun outcome に構造化記録する — 上書きで失敗原因が消える経路を塞ぐ",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/verification-phase-outcome-record-24a1baaa",
   "error": null,
@@ -72,12 +72,45 @@
     "9800f1191c12b77cf8b770e0de75c1218f174690",
     "3392bfdee21e1a154ac96aa6ce12b1eba166f737",
     "bb1936d8c4d6f866cf0254b1d0e356d456200a2d",
-    "686e5c00bd8e19a04781a1a2b7e7671a27eb692f"
+    "686e5c00bd8e19a04781a1a2b7e7671a27eb692f",
+    "6a6c17e302820605d35a69da5c584a9681a2e39f",
+    "de9b087d584bd4c17fa1b8028d4d20b9176b776c"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "6a6c17e302820605d35a69da5c584a9681a2e39f",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/verification-phase-outcome-record/design.md:sha256:db2291fd083c29ebbee0106917c5f0e1dcffc22bafa2ff115f447092a84afe43|specrunner/changes/verification-phase-outcome-record/request.md:sha256:eaccd371dc17c51389569279a032bedf2d81b1001c4a237bf6899b99514c1950|specrunner/changes/verification-phase-outcome-record/spec.md:sha256:07294cb8bb150182d9ff29994cb2b400a10bf61b828020dce5f9d845bbfcf8bb|specrunner/changes/verification-phase-outcome-record/tasks.md:sha256:e36747b34ba509c359bc01ec3a21083704a21fd487ad7a0e1fa09305f9c3fdf2|specrunner/changes/verification-phase-outcome-record/test-cases.md:sha256:669e36b2b9288a09373b528a4dee4b89f9ef9177af948b6d3638ad0a041c41bf"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "6a6c17e302820605d35a69da5c584a9681a2e39f",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/verification-phase-outcome-record/design.md:sha256:db2291fd083c29ebbee0106917c5f0e1dcffc22bafa2ff115f447092a84afe43|specrunner/changes/verification-phase-outcome-record/request.md:sha256:eaccd371dc17c51389569279a032bedf2d81b1001c4a237bf6899b99514c1950|specrunner/changes/verification-phase-outcome-record/spec.md:sha256:07294cb8bb150182d9ff29994cb2b400a10bf61b828020dce5f9d845bbfcf8bb|specrunner/changes/verification-phase-outcome-record/tasks.md:sha256:e36747b34ba509c359bc01ec3a21083704a21fd487ad7a0e1fa09305f9c3fdf2|specrunner/changes/verification-phase-outcome-record/test-cases.md:sha256:669e36b2b9288a09373b528a4dee4b89f9ef9177af948b6d3638ad0a041c41bf"
+    }
+  ],
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +121,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1
+      "code-review": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
