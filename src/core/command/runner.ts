@@ -272,12 +272,6 @@ export abstract class CommandRunner {
       });
 
       // Step 5: runPipeline
-      // Emit scope-config warning once per run, before buildPipelineForJob is called.
-      const scopeWarning = scopeConfigWarningForJob(jobState, config);
-      if (scopeWarning !== null) {
-        logWarn(scopeWarning);
-      }
-
       let finalState: JobState;
       if (gateDecision.kind === "halt") {
         // Gate halted: build awaiting-resume state, persist, notify, and skip pipeline.
@@ -328,6 +322,13 @@ export abstract class CommandRunner {
 
         finalState = haltState;
       } else {
+        // Emit scope-config warning once per run, before buildPipelineForJob is called.
+        // Placed in the proceed branch so gate halt does not emit spurious warnings.
+        const scopeWarning = scopeConfigWarningForJob(jobState, config);
+        if (scopeWarning !== null) {
+          logWarn(scopeWarning);
+        }
+
         try {
           const pipeline = buildPipelineForJob(jobState, deps, this.events);
           finalState = await pipeline.run(startStep, jobState, deps);

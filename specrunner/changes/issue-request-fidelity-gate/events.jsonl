@@ -152,3 +152,5 @@
 {"type":"lineage","step":"regression-gate","ts":"2026-08-06T00:46:43.633Z","outputs":[{"path":"specrunner/changes/issue-request-fidelity-gate/regression-gate-result-001.md","hash":"sha256:5d4ad4f7940d82f48a1557c7f720240e97e2a02dc35a9cbf144951cb3d369e78"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-08-06T00:46:45.502Z","step":"regression-gate","status":"error","message":"regression-gate iteration 1 completed with verdict: escalation"}
 {"type":"transition","ts":"2026-08-06T00:46:45.503Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: regression-gate escalated"}
+{"type":"transition","ts":"2026-08-06T00:48:14.828Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-fixer'"}
+{"type":"transition","ts":"2026-08-06T00:48:15.139Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}

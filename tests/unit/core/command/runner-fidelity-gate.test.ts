@@ -85,6 +85,17 @@ vi.mock("../../../../src/core/gate/issue-fidelity-gate.js", () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// Mock scopeConfigWarningForJob — allows tests to inject a non-null warning
+// to verify that gate halt suppresses it (warning moved to proceed path).
+// ---------------------------------------------------------------------------
+
+const mockScopeConfigWarningForJob = vi.hoisted(() => vi.fn().mockReturnValue(null));
+
+vi.mock("../../../../src/core/pipeline/scope-warning.js", () => ({
+  scopeConfigWarningForJob: mockScopeConfigWarningForJob,
+}));
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -106,6 +117,7 @@ beforeEach(async () => {
   });
   mockPipelineRun.mockClear();
   mockEvaluateGate.mockClear();
+  mockScopeConfigWarningForJob.mockReturnValue(null);
 });
 
 afterEach(async () => {
@@ -723,11 +735,11 @@ describe("TC-029: gate halt が checkConsecutiveEscalations カウンタを消�
 });
 
 // ---------------------------------------------------------------------------
-// TC-029: hint 分岐 — undeclared drop halt は request.md 修正を促す hint
+// TC-032: hint 分岐 — undeclared drop halt は request.md 修正を促す hint
 // ---------------------------------------------------------------------------
 
-describe("TC-029: undeclared drop halt の hint は request.md 修正を促す", () => {
-  it("TC-029: haltKind=undeclared-drop のとき state.error.hint に request.md 修正の指示が含まれる", async () => {
+describe("TC-032: undeclared drop halt の hint は request.md 修正を促す", () => {
+  it("TC-032: haltKind=undeclared-drop のとき state.error.hint に request.md 修正の指示が含まれる", async () => {
     await writeRequestMd("test-slug", "# Test\n\n## Meta\n\n- **type**: new-feature\n");
 
     mockEvaluateGate.mockResolvedValue({
@@ -815,5 +827,61 @@ describe("TC-031: internal error halt の hint は state.json/log 確認を促�
     const persistedState = await store.load();
 
     expect(persistedState.error?.hint).toContain("gate 内部エラー");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-033: scope-config 警告が gate halt 時に emit されない（proceed 側のみ emit）
+// ---------------------------------------------------------------------------
+
+describe("TC-033: scope-config 警告が gate halt 時に emit されない", () => {
+  it("TC-033: gate halt のとき scopeConfigWarningForJob が非 null を返しても stderr に出力されない", async () => {
+    await writeRequestMd("test-slug", "# Test\n\n## Meta\n\n- **type**: new-feature\n");
+
+    // Inject a sentinel warning to detect whether it leaks to stderr
+    const SCOPE_WARN_SENTINEL = "SCOPE_CONFIG_WARN_SENTINEL_TC033";
+    mockScopeConfigWarningForJob.mockReturnValue(SCOPE_WARN_SENTINEL);
+
+    mockEvaluateGate.mockResolvedValue({
+      kind: "halt",
+      code: ERROR_CODES.ISSUE_FIDELITY_UNDECLARED_DROP,
+      haltKind: "undeclared-drop",
+      reason: "Drops: missing requirement",
+    });
+
+    const githubClient = buildMockGithubClient();
+    const runtime = buildMockRuntime(githubClient);
+    const comparatorFactory = vi.fn().mockReturnValue({ compare: vi.fn() });
+    const prepared = buildPrepareResult({ issueNumber: 875, startStep: "request-review" });
+    const command = new TestCommand(runtime, prepared, comparatorFactory);
+
+    await command.execute();
+
+    // Gate halted: scope-config warning must NOT appear in stderr output.
+    // (warning is in the proceed branch only)
+    const stderrAll = stderrOutput.join("");
+    expect(stderrAll).not.toContain(SCOPE_WARN_SENTINEL);
+  });
+
+  it("TC-033: gate proceed のとき scopeConfigWarningForJob の非 null 返値が stderr に出力される", async () => {
+    await writeRequestMd("test-slug", "# Test\n\n## Meta\n\n- **type**: new-feature\n");
+
+    const SCOPE_WARN_SENTINEL = "SCOPE_CONFIG_WARN_SENTINEL_TC033_PROCEED";
+    mockScopeConfigWarningForJob.mockReturnValue(SCOPE_WARN_SENTINEL);
+
+    mockEvaluateGate.mockResolvedValue({ kind: "proceed" });
+    mockPipelineRun.mockResolvedValue(buildSuccessFinalState("test-slug"));
+
+    const githubClient = buildMockGithubClient();
+    const runtime = buildMockRuntime(githubClient);
+    const comparatorFactory = vi.fn().mockReturnValue({ compare: vi.fn() });
+    const prepared = buildPrepareResult({ issueNumber: 875, startStep: "request-review" });
+    const command = new TestCommand(runtime, prepared, comparatorFactory);
+
+    await command.execute();
+
+    // Gate proceeded: warning appears in stderr (logWarn writes to stderr)
+    const stderrAll = stderrOutput.join("");
+    expect(stderrAll).toContain(SCOPE_WARN_SENTINEL);
   });
 });
