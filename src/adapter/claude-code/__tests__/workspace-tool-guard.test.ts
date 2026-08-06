@@ -424,6 +424,262 @@ describe("TC-FW-07: step-agent queryOptions freeze — with reportTool", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Helpers for report-tool-always-load tests (TC-001..TC-004)
+// ---------------------------------------------------------------------------
+
+/**
+ * Returns a CreateMcpServerFn mock that records every call in `capturedCalls`.
+ * The mock returns a McpSdkServerConfigWithInstance-shaped object (type: "sdk")
+ * so that queryOptions.mcpServers contains an in-process SDK server descriptor.
+ */
+function makeCapturingCreateMcpServerFn(): {
+  fn: CreateMcpServerFn;
+  capturedCalls: Array<Record<string, unknown>>;
+} {
+  const capturedCalls: Array<Record<string, unknown>> = [];
+  const fn = ((opts: unknown) => {
+    capturedCalls.push(opts as Record<string, unknown>);
+    const o = opts as { name: string; tools: Array<{ name: string }> };
+    return { type: "sdk" as const, name: o.name, instance: {} as unknown };
+  }) as unknown as CreateMcpServerFn;
+  return { fn, capturedCalls };
+}
+
+// ---------------------------------------------------------------------------
+// TC-001: reportTool が設定されている場合に alwaysLoad: true が渡る
+// Source: spec.md > Requirement: report MCP server は alwaysLoad: true で生成されなければならない
+//         > Scenario: reportTool が設定されている場合に alwaysLoad: true が渡る
+// ---------------------------------------------------------------------------
+
+describe("TC-001: reportTool が設定されている場合に alwaysLoad: true が渡る", () => {
+  it("createMcpServerFn に渡された options に alwaysLoad: true が含まれる", async () => {
+    const { fn: capturingFn, capturedCalls } = makeCapturingCreateMcpServerFn();
+
+    const queryFn = makeQueryFn();
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: capturingFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc-001"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { reportTool: makeReportTool() },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    // createMcpServerFn must be called exactly once
+    expect(capturedCalls).toHaveLength(1);
+    // The options passed to createMcpServerFn must include alwaysLoad: true
+    expect(capturedCalls[0]).toMatchObject({ alwaysLoad: true });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-002: report server が外部プロセス形式でない
+// Source: spec.md > Requirement: report MCP server は in-process の SDK MCP server でなければならない
+//         > Scenario: report server が外部プロセス形式でない
+// ---------------------------------------------------------------------------
+
+describe("TC-002: report server が外部プロセス形式でない", () => {
+  it("queryOptions.mcpServers['specrunner_report'] が command プロパティを持たない（stdio 形式でない）", async () => {
+    let capturedQueryParams:
+      | { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }
+      | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => {
+        capturedQueryParams = params;
+      },
+    });
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: makeMockCreateMcpServerFn(),
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc-002"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { reportTool: makeReportTool() },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedQueryParams).toBeDefined();
+    const mcpServers = capturedQueryParams!.options?.mcpServers as
+      | Record<string, unknown>
+      | undefined;
+    // mcpServers must exist and contain the report server
+    expect(mcpServers).toBeDefined();
+    const reportServer = mcpServers!["specrunner_report"] as Record<string, unknown>;
+    expect(reportServer).toBeDefined();
+
+    // In-process SDK MCP server: must NOT have stdio fields (command / args)
+    expect("command" in reportServer).toBe(false);
+    // In-process SDK MCP server: must NOT have network fields (url)
+    expect("url" in reportServer).toBe(false);
+  });
+
+  it("queryOptions.mcpServers['specrunner_report'] が type === 'sdk' である（in-process であることの直接確認）", async () => {
+    let capturedQueryParams:
+      | { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }
+      | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => {
+        capturedQueryParams = params;
+      },
+    });
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: makeMockCreateMcpServerFn(),
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc-002b"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { reportTool: makeReportTool() },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    const mcpServers = capturedQueryParams!.options?.mcpServers as
+      | Record<string, unknown>
+      | undefined;
+    const reportServer = mcpServers!["specrunner_report"] as Record<string, unknown>;
+    // type: "sdk" indicates this is an in-process SDK MCP server, not a subprocess or HTTP server
+    expect(reportServer["type"]).toBe("sdk");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-003: reportTool が undefined の場合に MCP server が生成されない
+// Source: spec.md > Requirement: reportTool が未設定の場合は MCP server を生成してはならない
+//         > Scenario: reportTool が undefined の場合に MCP server が生成されない
+// ---------------------------------------------------------------------------
+
+describe("TC-003: reportTool が undefined の場合に MCP server が生成されない", () => {
+  it("policy.reportTool が未設定の場合 createMcpServerFn は呼ばれず queryOptions に mcpServers が含まれない", async () => {
+    const { fn: capturingFn, capturedCalls } = makeCapturingCreateMcpServerFn();
+
+    let capturedQueryParams:
+      | { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }
+      | undefined;
+
+    const queryFn = makeQueryFn({
+      captureParams: (params) => {
+        capturedQueryParams = params;
+      },
+    });
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: capturingFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc-003"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: {}, // no reportTool
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    // createMcpServerFn must NOT have been called
+    expect(capturedCalls).toHaveLength(0);
+
+    // queryOptions must NOT have a mcpServers key
+    expect(capturedQueryParams).toBeDefined();
+    const opts = capturedQueryParams!.options ?? {};
+    expect("mcpServers" in opts).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-004: alwaysLoad: true を削除すると TC-001 が fail する（回帰検証）
+// Source: tasks.md > T-02 Acceptance Criteria
+// GIVEN:  agent-runner.ts の createMcpServerFn 呼び出しから alwaysLoad: true を削除した状態
+// WHEN:   TC-001 に対応するユニットテストを実行する
+// THEN:   テストが fail する（alwaysLoad の欠落を検出できる）
+//
+// この TC は TC-001 のアサーション強度を保証する回帰検証である。
+// `capturedCalls[0]?.alwaysLoad === true`（厳密等値）を使うことで
+// alwaysLoad を削除したときに確実に fail するよう設計している。
+// ---------------------------------------------------------------------------
+
+describe("TC-004: alwaysLoad: true を削除すると TC-001 が fail する（回帰検証）", () => {
+  it("createMcpServerFn に渡された options の alwaysLoad が厳密に true である", async () => {
+    const { fn: capturingFn, capturedCalls } = makeCapturingCreateMcpServerFn();
+
+    const queryFn = makeQueryFn();
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: capturingFn,
+    });
+
+    const ctx: AgentRunContext = {
+      step: makeAgentStep(),
+      state: makeJobState("tc-004"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { reportTool: makeReportTool() },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    await runner.run(ctx);
+
+    expect(capturedCalls).toHaveLength(1);
+    // Strict equality (=== true) — not just truthy.
+    // If alwaysLoad is removed from the production call, capturedCalls[0].alwaysLoad
+    // will be undefined, causing this assertion to fail.
+    // If alwaysLoad is set to a non-boolean truthy value (e.g. 1, "yes"), this also fails.
+    expect(capturedCalls[0]?.["alwaysLoad"]).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Helpers for scope-aware guard tests (TC-011..TC-036)
 // ---------------------------------------------------------------------------
 
