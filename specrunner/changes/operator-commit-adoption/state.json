@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "be9b1cb9-9fdf-4b10-95ae-ef2fe249b26b",
   "createdAt": "2026-08-06T08:58:21.025Z",
-  "updatedAt": "2026-08-06T09:01:35.582Z",
+  "updatedAt": "2026-08-06T09:10:19.174Z",
   "request": {
     "title": "operator が commit 済みの手当てを resume 時に採択する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/operator-commit-adoption-be9b1cb9",
   "error": null,
@@ -63,12 +63,14 @@
   ],
   "synthesizedCommits": [
     "e85a9513d54394e18b29c0d8a1eec392fd522e5b",
-    "0ad0847388f17846dfdfe0848731fa01cae4c52a"
+    "0ad0847388f17846dfdfe0848731fa01cae4c52a",
+    "d85b0c9314da4a393cacf1e584fb8ed63bbf6e17"
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
