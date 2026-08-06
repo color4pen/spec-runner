@@ -18,7 +18,9 @@ import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
 import { isProcessAlive as realIsProcessAlive, isStaleRunning as realIsStaleRunning } from "../core/resume/safety.js";
 import { livenessJsonPath } from "../util/paths.js";
-import { logResult, stderrWrite } from "../logger/stdout.js";
+import { logResult, stderrWrite, logError } from "../logger/stdout.js";
+import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
+import { worktreeGuardError } from "../errors.js";
 
 // ---------------------------------------------------------------------------
 // Dependency-injection seam
@@ -122,7 +124,7 @@ function makeDefaultDeps(repoRoot: string, slug: string): JobWaitDeps {
 
   return {
     loadState: async (s: string, root: string) => {
-      const all = await JobStateStore.list(root);
+      const all = await JobStateStore.list(root, { includeArchived: true });
       const matching = all.filter((j) => getJobSlug(j) === s);
       if (matching.length === 0) return null;
       return (
@@ -158,6 +160,18 @@ export async function runJobWait(
   opts: { repoRoot: string; deps?: JobWaitDeps },
 ): Promise<number> {
   const repoRoot = opts.repoRoot;
+
+  // Worktree guard: reject from inside a specrunner job worktree.
+  // Matches the guard style used by job show / job ls (T-05 AC).
+  const wtResult = await detectSpecrunnerWorktree(repoRoot);
+  if (wtResult.isSpecrunnerWorktree) {
+    const mainPath = wtResult.mainCheckoutPath ?? "<main checkout>";
+    const guardErr = worktreeGuardError("job wait", mainPath);
+    logError(guardErr.message);
+    stderrWrite(`Hint: ${guardErr.hint}`);
+    return 2;
+  }
+
   const deps: JobWaitDeps = opts.deps ?? makeDefaultDeps(repoRoot, slug);
 
   // Compute the sidecar path once (used for readSidecarPid).

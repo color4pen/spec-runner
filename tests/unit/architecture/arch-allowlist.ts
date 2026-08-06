@@ -143,6 +143,16 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "passing env to the Claude Agent SDK. process.env is not forwarded raw to any subprocess.",
   },
   {
+    file: "src/core/command/runner.ts",
+    pattern: "emitForegroundNotice(process.env",
+    invariant: "B-6",
+    tracking: "B6-runner-foreground-notice",
+    comment:
+      "emitForegroundNotice reads only the SPECRUNNER_DETACHED marker key to decide whether " +
+      "to emit the foreground guidance line to stderr. process.env is not forwarded to any " +
+      "subprocess or external SDK — the env object is consumed locally within the call.",
+  },
+  {
     file: "src/util/env-filter.ts",
     pattern: "SPECRUNNER_DEBUG",
     invariant: "B-6",
