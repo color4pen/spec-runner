@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "dff2a562-cd6e-47b0-8e1d-b722f38a7130",
   "createdAt": "2026-08-06T08:47:19.904Z",
-  "updatedAt": "2026-08-06T09:24:24.774Z",
+  "updatedAt": "2026-08-06T09:28:28.352Z",
   "request": {
     "title": "report tool を alwaysLoad にして ToolSearch 経由の cache 全破棄を止める",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/report-tool-always-load-dff2a562",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,9 @@
     "3c9a8b17a4ed7925d6f85f369f0d1b7809d964ee",
     "c78dec55d2bda8006e1765c5644ebcee16b4e788",
     "9b612d6897f505a51c7701814b3a2cca31195cb5",
-    "6dee898b14185c2b50416fbeaaa1078130bfc5aa"
+    "6dee898b14185c2b50416fbeaaa1078130bfc5aa",
+    "f73a13e9055764ecd05f645e2773f7d6f925e307",
+    "d91bc05ef00c4255e20a9399f73b279be3ebe991"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -107,8 +109,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/964",
+    "number": 964,
+    "createdAt": "2026-08-06T09:28:27.529Z"
+  },
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 64,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -117,12 +124,15 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
