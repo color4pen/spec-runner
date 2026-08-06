@@ -65,8 +65,6 @@ export interface SpawnBackgroundOptions {
    * existing stripSecrets behaviour.
    */
   rawEnv?: Record<string, string>;
-  /** Allow arbitrary property access for test type assertions (e.g. `opts as Record<string, unknown>`). */
-  [key: string]: unknown;
 }
 
 /**

@@ -197,10 +197,18 @@ describe("TC-010: pid 生存中は awaiting-resume でも待ち続ける", () =>
 describe("TC-011: 破壊確認 — process-death gate が効いている確認", () => {
   it("TC-011: pid alive + awaiting-archive should NOT settle (gate is active)", async () => {
     // Simulate a scenario where process is still alive but disk shows awaiting-archive.
-    // A broken implementation (status-first poll) would settle immediately.
-    // A correct implementation (process-death gate) would keep waiting.
+    // A broken implementation (status-first poll) would settle immediately without
+    // calling isProcessAlive.  A correct implementation (process-death gate) must
+    // call isProcessAlive before settling.
+    //
+    // Sabotage teeth:
+    //   1. isProcessAlive call count ≥ 1  — gate is consulted before settling.
+    //   2. exit code 0 (from TC-010 / TC-012)  — settled only after process dies.
+    //
+    // Note: sleep is called AFTER isProcessAlive returns true (alive path), so
+    // tickCount is already ≥ 1 inside the sleep callback; settledEarly-style
+    // assertions on tickCount inside sleep are always false and not meaningful here.
 
-    let settledEarly = false;
     let tickCount = 0;
 
     const deps: JobWaitDeps = {
@@ -218,12 +226,7 @@ describe("TC-011: 破壊確認 — process-death gate が効いている確認",
       }),
       isStaleRunning: vi.fn(() => false),
       readSidecarPid: vi.fn(() => null),
-      sleep: vi.fn(async () => {
-        // If we get here before second tick, gate did NOT work
-        if (tickCount === 0) {
-          settledEarly = true;
-        }
-      }),
+      sleep: vi.fn(async () => {}),
       pollIntervalMs: 0,
       notFoundRetryCount: 5,
       notFoundRetryIntervalMs: 0,
@@ -232,10 +235,8 @@ describe("TC-011: 破壊確認 — process-death gate が効いている確認",
     const restore = captureStdout();
     try {
       await runJobWait("test-slug", { repoRoot: "/repo", deps });
-      // The tooth: process-death gate must have been called
+      // Tooth: process-death gate must have been consulted at least once before settling.
       expect(vi.mocked(deps.isProcessAlive).mock.calls.length).toBeGreaterThanOrEqual(1);
-      // settledEarly should NOT be true (we should have polled pid before settling)
-      expect(settledEarly).toBe(false);
     } finally {
       restore();
     }

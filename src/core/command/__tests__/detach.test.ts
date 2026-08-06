@@ -151,7 +151,7 @@ describe("TC-001: detachSelf — detached spawn が正しい形で行われる",
     );
 
     expect(calls).toHaveLength(1);
-    const opts = calls[0]!.opts as Record<string, unknown>;
+    const opts = calls[0]!.opts as unknown as Record<string, unknown>;
     expect(opts["detached"]).toBe(true);
   });
 
@@ -186,7 +186,7 @@ describe("TC-001: detachSelf — detached spawn が正しい形で行われる",
       spawnFn,
     );
 
-    const opts = calls[0]!.opts as Record<string, unknown>;
+    const opts = calls[0]!.opts as unknown as Record<string, unknown>;
     // logFilePath must be set (the detach log path for slug "my-slug")
     expect(opts["logFilePath"]).toBeDefined();
     expect(typeof opts["logFilePath"]).toBe("string");
@@ -206,7 +206,7 @@ describe("TC-001: detachSelf — detached spawn が正しい形で行われる",
       spawnFn,
     );
 
-    const opts = calls[0]!.opts as Record<string, unknown>;
+    const opts = calls[0]!.opts as unknown as Record<string, unknown>;
     const rawEnv = opts["rawEnv"] as Record<string, string | undefined>;
     expect(rawEnv).toBeDefined();
     expect(rawEnv[DETACH_MARKER_ENV]).toBeTruthy();
@@ -328,7 +328,7 @@ describe("TC-003: 破壊確認 — 歯が効いている確認", () => {
         spawnFn,
       );
 
-      const opts = calls[0]!.opts as Record<string, unknown>;
+      const opts = calls[0]!.opts as unknown as Record<string, unknown>;
       // This assertion is the tooth: if implementation removes detached:true, this fails
       expect(opts["detached"]).toBe(true);
     } finally {
@@ -351,7 +351,7 @@ describe("TC-003: 破壊確認 — 歯が効いている確認", () => {
         spawnFn,
       );
 
-      const opts = calls[0]!.opts as Record<string, unknown>;
+      const opts = calls[0]!.opts as unknown as Record<string, unknown>;
       const rawEnv = opts["rawEnv"] as Record<string, string | undefined>;
       // This assertion is the tooth: if implementation removes marker, this fails
       expect(rawEnv).toBeDefined();

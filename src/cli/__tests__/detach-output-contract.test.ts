@@ -130,19 +130,19 @@ describe("TC-027: foreground notice は --quiet で抑制される", () => {
     expect(typeof emitForegroundNotice).toBe("function");
   });
 
-  it("TC-027: emitForegroundNotice does not emit when isLevelEnabled returns false (quiet mode)", () => {
-    // Simulate quiet mode: isLevelEnabled('default') returns false
+  it("TC-027: emitForegroundNotice delegates to logInfo even in quiet mode (seam contract)", () => {
+    // Simulate quiet mode: isLevelEnabled returns false.
+    // emitForegroundNotice must NOT implement quiet suppression itself — it must
+    // delegate to logInfo, which is the single seam responsible for suppression.
+    // Contract: logInfo IS called (delegation to the seam), not bypassed.
+    // The actual suppression behaviour (no output written) is enforced by logInfo
+    // internally and is verified by TC-026's direct stdout/stderr routing tests.
     vi.mocked(isLevelEnabled).mockReturnValue(false);
 
     emitForegroundNotice({});
 
-    // logInfo should still be called but it checks isLevelEnabled internally.
-    // Since the implementation uses logInfo, and logInfo is mocked here,
-    // we verify that either: logInfo is not called, or it's called with the notice.
-    // The real behavior (quiet suppression) is enforced by logInfo itself.
-    // Here we test the contract: emitForegroundNotice uses logInfo (not stderrWrite directly).
-    // See TC-026 for the direct stdout/stderr routing test.
-    expect(typeof emitForegroundNotice).toBe("function");
+    // logInfo must be called: emitForegroundNotice delegates suppression to logInfo.
+    expect(vi.mocked(logInfo)).toHaveBeenCalled();
   });
 });
 
