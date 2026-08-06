@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f94950fe-34fd-496a-bba4-11c576680e10",
   "createdAt": "2026-08-05T13:51:00.030Z",
-  "updatedAt": "2026-08-06T00:21:47.556Z",
+  "updatedAt": "2026-08-06T00:34:05.851Z",
   "request": {
     "title": "SDK result の turn 数・所要時間・実コストを usage.json に記録する — 事後分析が試算に頼る状態を解消する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/agent-invocation-metrics-f94950fe",
   "error": null,
@@ -85,15 +85,17 @@
     "172600a527804eab59111a58c2ceef958fbef476",
     "528bd6ffefa64aabcdabd890b32ed031337e381c",
     "0f6200ae0a167885bef4b39279c89b62a834b07d",
-    "fc7791d1843e4a0c58d8e1fddae6130d3b004dea"
+    "fc7791d1843e4a0c58d8e1fddae6130d3b004dea",
+    "a90a04fd5c88f514815fe2467f53749ab92cbb50",
+    "4d96dabf8ade41ef270c4ebe01b352282516275c"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "a90a04fd5c88f514815fe2467f53749ab92cbb50",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -103,7 +105,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/agent-invocation-metrics/design.md:sha256:e955ebd75a26410b81aa0d1a3f529fab0543695f19fdefc8a62dae0921874bf8|specrunner/changes/agent-invocation-metrics/request.md:sha256:2f148bbe7e433ebb1f9383b842a0b5c30d6962471ef9484eca226e90f7a5b9da|specrunner/changes/agent-invocation-metrics/spec.md:sha256:7e5c37b2928df27b141b61eb156a12903a7d1afbc6caff06ccfca2e575888302|specrunner/changes/agent-invocation-metrics/tasks.md:sha256:21b66cfdeac0c5fd607a1a7d99bf84d48f1c01ad7f4dbfe69791ea523d2a99c4|specrunner/changes/agent-invocation-metrics/test-cases.md:sha256:aa2dbe1fa95ad5405e5f5519badd1694636ed6987edb24ed57c9172725ec59a5"
     },
     {
       "name": "scale-tolerance",
@@ -119,7 +122,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 85,
+    "historyCount": 94,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -132,10 +135,10 @@
       "verification": 2,
       "build-fixer": 1,
       "code-review": 2,
-      "code-fixer": 4,
-      "cross-boundary-invariants": 2,
+      "code-fixer": 5,
+      "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
-      "custom-reviewers": 2
+      "custom-reviewers": 3
     }
   }
 }
