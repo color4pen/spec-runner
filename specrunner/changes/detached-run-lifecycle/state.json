@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a250ec69-f049-4834-a522-76434a8948c6",
   "createdAt": "2026-08-05T14:51:11.064Z",
-  "updatedAt": "2026-08-06T01:34:59.055Z",
+  "updatedAt": "2026-08-06T01:39:26.664Z",
   "request": {
     "title": "run の detach 内蔵と job wait — pipeline の生存管理を agent の shell 手順から CLI へ移す",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/detached-run-lifecycle-a250ec69",
   "error": null,
   "pipelineId": "standard",
@@ -85,7 +85,8 @@
     "1e6585f035402948026b1d0eae24ba96d1d39864",
     "2474928137d6826095fbe8f202d4c1708243622e",
     "4671082498fe45f6a9875e212b9ff43a6d951ecf",
-    "39a2cc62b4ee1d805cc57dca65e8c79a6e5d6479"
+    "39a2cc62b4ee1d805cc57dca65e8c79a6e5d6479",
+    "c1918703be20f5cdbd2ecc3ac0f3bf38254c139e"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -118,8 +119,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/960",
+    "number": 960,
+    "createdAt": "2026-08-06T01:39:25.732Z"
+  },
   "_journal": {
-    "historyCount": 102,
+    "historyCount": 107,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
@@ -137,7 +143,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
