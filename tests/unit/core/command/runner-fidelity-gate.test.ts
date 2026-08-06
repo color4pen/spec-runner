@@ -680,11 +680,11 @@ describe("TC-027: halt 時に linked issue へ escalation comment が書かれ�
 });
 
 // ---------------------------------------------------------------------------
-// TC-028: gate halt が checkConsecutiveEscalations カウンタを消費しない
+// TC-029: gate halt が checkConsecutiveEscalations カウンタを消費しない
 // ---------------------------------------------------------------------------
 
-describe("TC-028: gate halt が checkConsecutiveEscalations カウンタを消費しない", () => {
-  it("TC-028: gate halt を 3 回繰り返しても steps[request-review] が空のまま checkConsecutiveEscalations は false を返す（--force 不要）", async () => {
+describe("TC-029: gate halt が checkConsecutiveEscalations カウンタを消費しない", () => {
+  it("TC-029: gate halt を 3 回繰り返しても steps[request-review] が空のまま checkConsecutiveEscalations は false を返す（--force 不要）", async () => {
     await writeRequestMd("test-slug", "# Test\n\n## Meta\n\n- **type**: new-feature\n");
 
     const prepared = buildPrepareResult({ issueNumber: 875, startStep: "request-review" });
