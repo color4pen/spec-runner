@@ -465,6 +465,23 @@ export function commitEffectFailedError(
 }
 
 /**
+ * Returns the three operator-facing resolution options for an egress ledger mismatch.
+ *
+ * @param slugLabel - Job slug label to embed in the adopt command. Defaults to `"<slug>"`.
+ * @returns Multi-line text listing the three resolution options.
+ */
+export function egressResolutionOptions(slugLabel: string = "<slug>"): string {
+  return [
+    "To resolve, choose one of:",
+    `  1. Adopt the commit(s) into the egress ledger:`,
+    `       specrunner job resume ${slugLabel} --adopt-commits`,
+    `     (records the commit(s) in the ledger to allow the push)`,
+    `  2. Push the commit(s) to origin so they leave the publish range.`,
+    `  3. Remove or revert the commit(s) (git reset / git revert) so they leave the publish range.`,
+  ].join("\n");
+}
+
+/**
  * Error thrown when the egress backstop detects a commit OID in the push range that is not
  * recorded in the synthesizedCommits ledger. This means the commit was not created by the
  * pipeline — an agent self-commit or external commit slipped through.
@@ -474,7 +491,7 @@ export function commitEffectFailedError(
 export function egressUnknownCommitError(oid: string, branch: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.EGRESS_UNKNOWN_COMMIT,
-    "A commit not created by the pipeline was found in the push range. Investigate and resolve before retrying.",
+    `A commit not created by the pipeline was found in the push range. Investigate and resolve before retrying.\n${egressResolutionOptions()}`,
     `Egress backstop: unknown commit ${oid} in publish range for branch '${branch}'.`,
   );
 }

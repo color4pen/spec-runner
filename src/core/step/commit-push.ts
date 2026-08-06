@@ -386,7 +386,8 @@ export async function verifyEgressLedger(params: {
  * crash-and-resume an agent self-commit made in the crashed attempt becomes the
  * new entry HEAD and any entry-HEAD-based exclusion would blind the check to it.
  * Pre-existing legitimate commits are excluded because they are on origin
- * (pipeline pushes after every synthesis; operator hand-commits are hand-pushed).
+ * (pipeline pushes after every synthesis; operator hand-commits are either hand-pushed
+ * or registered in the ledger via `resume --adopt-commits`).
  * Test environments must therefore either provide an origin remote or seed
  * `state.synthesizedCommits` with the baseline `git rev-list HEAD` OIDs.
  *

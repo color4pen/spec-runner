@@ -31,6 +31,7 @@ import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 import { detectCanonDirtyPaths, commitOperatorCanon } from "../resume/apply-canon.js";
+import { detectUnadoptedCommits, buildAdoptEscalationMessage, type UnadoptedCommit } from "../resume/adopt-commits.js";
 import { reconcileWorktreeArtifacts } from "../resume/reconcile-worktree.js";
 import { defaultSpawnFn, runSubprocess } from "../../util/git-exec.js";
 
@@ -44,6 +45,8 @@ export interface ResumeOptions {
   noWorktree?: boolean;
   /** When true, commit dirty protected canon paths as an operator-apply commit before resuming. */
   applyCanon?: boolean;
+  /** When true, adopt publish-range commits not in the ledger into synthesizedCommits before resuming. */
+  adoptCommits?: boolean;
 }
 
 /**
@@ -343,6 +346,53 @@ export class ResumeCommand extends CommandRunner {
         }
       }
 
+      // Adopt gate: check for publish-range commits not in the synthesizedCommits ledger.
+      // Runs after the apply-canon gate so that an operator-apply commit from the same resume
+      // is already in the ledger (D4 composability: the apply-canon OID is not re-flagged).
+      {
+        const ledger = updatedState.synthesizedCommits ?? [];
+        let unadoptedCommits: UnadoptedCommit[] = [];
+        try {
+          unadoptedCommits = await detectUnadoptedCommits(resolvedWorktreePath, ledger, defaultSpawnFn);
+        } catch (err) {
+          const msg = (err as Error).message ?? "";
+          if (msg.includes("exit 128")) {
+            // Non-git directory (e.g. test/dev environment) — treat as empty range and continue.
+          } else {
+            logError(`Failed to check publish range: ${msg}`);
+            throw new PrepareError(1, "Failed to check publish range (fail-closed)");
+          }
+        }
+
+        if (unadoptedCommits.length > 0) {
+          if (this.options.adoptCommits) {
+            // Adopt each unknown OID by appending it to the ledger.
+            for (const commit of unadoptedCommits) {
+              updatedState = appendSynthesizedCommit(updatedState, commit.oid);
+            }
+            // Persist is mandatory (fail-closed): a null runStore or persist failure must
+            // prevent pipeline launch so the ledger is never out of sync with git history.
+            if (!runStore) {
+              logError("Cannot adopt commits: no state store available");
+              throw new PrepareError(1, "Failed to adopt commits: no runStore");
+            }
+            try {
+              await runStore.persist(updatedState);
+            } catch (err) {
+              logError(`Failed to persist adopted commits: ${(err as Error).message}`);
+              throw new PrepareError(1, "Failed to adopt commits");
+            }
+            logInfo(`[adopt-commits] adopted ${unadoptedCommits.length} commit(s): ${unadoptedCommits.map((c) => c.shortSha).join(", ")}`);
+          } else {
+            // fail-closed: escalate with per-commit details and three resolution options.
+            const msg = buildAdoptEscalationMessage(resolvedSlug, unadoptedCommits);
+            logError(`Unknown commits in publish range: ${unadoptedCommits.map((c) => c.shortSha).join(", ")}`);
+            stderrWrite(msg);
+            throw new PrepareError(1, "Unknown commits in publish range; use --adopt-commits");
+          }
+        }
+      }
+
       // Reconcile worktree: quarantine and remove interrupted-attempt residue.
       // Runs after the apply-canon gate (canon paths handled above) and before step start.
       // Best-effort detection: git status failure → no-op (D7).
@@ -359,9 +409,15 @@ export class ResumeCommand extends CommandRunner {
         logInfo(`[reconcile] quarantined + removed interrupted-attempt residue: ${reconcileResult.reconciled.join(", ")}` +
           (reconcileResult.quarantineDir ? ` — 退避先: ${reconcileResult.quarantineDir}` : ""));
       }
-    } else if (this.options.applyCanon) {
-      // --apply-canon has no effect without a worktree — warn but continue.
-      stderrWrite("Warning: --apply-canon has no effect without a worktree (no-worktree mode or worktree not found). Continuing normally.");
+    } else {
+      if (this.options.applyCanon) {
+        // --apply-canon has no effect without a worktree — warn but continue.
+        stderrWrite("Warning: --apply-canon has no effect without a worktree (no-worktree mode or worktree not found). Continuing normally.");
+      }
+      if (this.options.adoptCommits) {
+        // --adopt-commits cannot check the publish range without a worktree — warn but continue.
+        stderrWrite("Warning: --adopt-commits has no effect without a worktree (no-worktree mode or worktree not found). The publish range cannot be checked; commits will not be adopted.");
+      }
     }
 
     return {

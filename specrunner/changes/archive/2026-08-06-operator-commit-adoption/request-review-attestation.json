@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:305a8272626996a03be756e34b5d9141523c26daff629f1c260a0fb661984bae",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/commit-push.ts:342 — verifyEgressLedger function definition",
+    "src/core/step/commit-push.ts:342-374 — verifyEgressLedger full implementation",
+    "src/core/step/commit-push.ts:383-389 — publish range design comment with 'operator hand-commits are hand-pushed'",
+    "src/errors.ts:474-480 — egressUnknownCommitError function with message 'A commit not created by the pipeline was found in the push range. Investigate and resolve before retrying.'",
+    "src/core/command/resume.ts:290-306 — apply-canon gate (detectCanonDirtyPaths call)",
+    "src/core/command/resume.ts:307-315 — commitOperatorCanon + appendSynthesizedCommit + runStore.persist flow",
+    "src/core/command/resume.ts:316-334 — split-brain guard with git reset --mixed HEAD~1",
+    "src/core/resume/apply-canon.ts:42-89 — detectCanonDirtyPaths function (git status --porcelain based)",
+    "src/core/resume/apply-canon.ts:11-12 — 'commitOperatorCanon commits ONLY the specified paths. Non-canon dirty files in the worktree are intentionally left untouched'",
+    "src/core/step/write-scope.ts:64-74 — protectedCanonPaths returning 6 paths (request.md, spec.md, design.md, tasks.md, test-cases.md, factCheckAttestationPath)"
+  ],
+  "sourceRevision": "461ecbf8fa663758171b711dd2f3d8eb32465bd4"
+}
