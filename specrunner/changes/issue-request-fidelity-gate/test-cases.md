@@ -357,6 +357,42 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
+### TC-030: fetch error halt の hint は network/token 確認を促す
+
+**Category**: unit
+**Priority**: must
+**Source**: operator 裁定 > hint の halt 種別分岐
+
+**GIVEN** issue fetch が失敗して gate が halt した job state（haltKind = fetch-error）
+**WHEN** halt 処理が error.hint を組み立てる
+**THEN** hint に network / GITHUB_TOKEN / issue 番号の確認指示が含まれ、request.md 修正の指示は含まれない
+
+---
+
+### TC-031: internal error halt の hint は state.json/log 確認を促す
+
+**Category**: unit
+**Priority**: must
+**Source**: operator 裁定 > hint の halt 種別分岐
+
+**GIVEN** comparator 未注入または comparator throw で gate が halt した job state（haltKind = internal-error）
+**WHEN** halt 処理が error.hint を組み立てる
+**THEN** hint に gate 内部エラーとして state.json の reason / log の確認指示が含まれ、request.md 修正の指示は含まれない
+
+---
+
+### TC-032: undeclared drop halt の hint は request.md 修正を促す
+
+**Category**: unit
+**Priority**: must
+**Source**: operator 裁定 > hint の halt 種別分岐
+
+**GIVEN** undeclared drop（issue 要件の無宣言欠落）で gate が halt した job state（haltKind = undeclared-drop）
+**WHEN** halt 処理が error.hint を組み立てる
+**THEN** hint に request.md 修正（要件復元 or スコープ外宣言追記）→ resume の指示が含まれる
+
+---
+
 ## Result
 
 ```yaml
