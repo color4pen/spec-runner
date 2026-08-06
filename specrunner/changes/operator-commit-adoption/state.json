@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "be9b1cb9-9fdf-4b10-95ae-ef2fe249b26b",
   "createdAt": "2026-08-06T08:58:21.025Z",
-  "updatedAt": "2026-08-06T10:21:15.828Z",
+  "updatedAt": "2026-08-06T10:24:07.965Z",
   "request": {
     "title": "operator が commit 済みの手当てを resume 時に採択する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/operator-commit-adoption-be9b1cb9",
   "error": null,
@@ -75,7 +75,8 @@
     "47a1162419bd4e8994054e596d13096464b7b825",
     "5cf5ee8a1afa65d9b8b0597d27019723511f4c52",
     "de6562b4a3b90edd2f1ea27049230802081c75d1",
-    "65593ed3ee5c198a9b2a32ea3ee5fedc491f7a12"
+    "65593ed3ee5c198a9b2a32ea3ee5fedc491f7a12",
+    "ff927f9dd5a07ab1c858b1e706d6a6172de8b1a5"
   ],
   "reviewerStatuses": [
     {
@@ -108,7 +109,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -124,7 +125,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
