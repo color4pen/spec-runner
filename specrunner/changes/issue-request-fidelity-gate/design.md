@@ -258,8 +258,10 @@ X-GitHub-Api-Version、401 処理）を通し、200 を `{ number, title, body: 
   差し替えで改善可能。prompt を fail-closed 側（迷ったら drop として報告）に倒す（D4）。gate 挙動テストは fake で決定的に固定。
 - [Risk] **managed runtime で LLM 認証が無いと comparator が動かない** → Mitigation: D9 のとおり comparator throw は
   fail-closed halt（silent pass にならない）。managed native comparator は本 request 外だが同一 port で差し替え可能。
-- [Risk] **request-review anchor の counter 共有**（gate halt と request-review escalation が同一 step counter を消費） →
-  Mitigation: entrance で詰まっている状態として妥当。3 回連続で `--force` 要求（既存挙動）に合流するのは安全側。
+- [Risk] **gate halt の反復で operator が詰まる可能性** → Mitigation: gate halt は StepRun を記録せず
+  `checkConsecutiveEscalations` のカウンタを消費しない（D2「カウンタ非消費」参照）。operator は `--force` なしで
+  何度でも request.md 修正 → resume を繰り返せる。`--force` は gate を迂回しない（fail-closed）ため、
+  反復は request.md 修正の正常な収束過程であり、3 回 gate halt 後も `--force` 不要（TC-028 で機械固定）。
 - [Risk] **schema 追加 `inboxOrigin?` の後方互換** → Mitigation: optional。legacy state file（absent）は false 相当で
   扱い roundtrip テストで固定。
 - [Risk] **fetch/LLM の追加コスト**（`--issue` run ごとに 1 fetch + 1 LLM） → Mitigation: entrance のみ（D2）。未連携 run /
