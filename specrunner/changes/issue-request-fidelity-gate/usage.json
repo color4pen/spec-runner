@@ -287,6 +287,46 @@
       },
       "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
       "stepName": "scale-tolerance"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-06T00:23:24.561Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 12599,
+          "outputTokens": 20,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 8367,
+          "outputTokens": 40538,
+          "cacheReadInputTokens": 2935679,
+          "cacheCreationInputTokens": 129702
+        }
+      },
+      "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
+      "stepName": "cross-boundary-invariants"
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-06T00:14:46.481Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 12567,
+          "outputTokens": 25,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 29,
+          "outputTokens": 12554,
+          "cacheReadInputTokens": 1740592,
+          "cacheCreationInputTokens": 84765
+        }
+      },
+      "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
+      "stepName": "scale-tolerance"
     }
   ]
 }
