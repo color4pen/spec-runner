@@ -123,6 +123,7 @@ function makeMinimalDeps(clientOpts?: Parameters<typeof makeMockSessionClient>[0
     searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
     listIssueComments: vi.fn().mockResolvedValue([]),
     removeLabel: vi.fn().mockResolvedValue(undefined),
+    getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
     },
     owner: "user",
     repo: "repo",

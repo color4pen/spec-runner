@@ -468,6 +468,7 @@ describe("TC-009: managed runtime assertProviderReadiness is a no-op", () => {
       searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
       listIssueComments: vi.fn().mockResolvedValue([]),
       removeLabel: vi.fn().mockResolvedValue(undefined),
+      getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
     };
     const mockSessionClient = {} as import("../../src/core/port/session-client.js").SessionClient;
 

@@ -1,0 +1,165 @@
+{
+  "version": 2,
+  "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
+  "createdAt": "2026-08-05T13:46:49.264Z",
+  "updatedAt": "2026-08-06T01:19:56.849Z",
+  "request": {
+    "title": "issue 起点 run の開始前忠実性ゲート — 黙って弱められた request で pipeline が走ることを封じる",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/issue-request-fidelity-gate-d6b2552f",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 875,
+  "synthesizedCommits": [
+    "fc29cbfd833db1d0837a8712e8c0d3aa2b1cd004",
+    "d23ffe76f49c5f23611c6e855063862ff7a5754d",
+    "0e1c92adbe031088cf3be1be1130ec25e442fca9",
+    "f9f64718bfeeb08c353b45dadefb6ed216930c1b",
+    "3a631d0fcff61b51f306254114dafcccdba1547b",
+    "5d000ce8d65de5a0580d0fe8ec05fd08bdb03aef",
+    "637a5445216265fe4c3fdbdb094ea2eff6fc5ef9",
+    "14eec0bd741b5959e1f2cdbae6cd637cb3ab2b5a",
+    "e38c2a36ce1722d55f0f7f90be04c83003f66c88",
+    "7b28414829976622ef717674ade227eebcf94a9f",
+    "1a79f2722fba837bce11a69c04b4ada9483af80e",
+    "f5a0b97814748a1c0d4897507f633fcd3ae196ee",
+    "7e831a6e3a1483efa3ed48fd5075ffc81a1e4e3d",
+    "c0116f36a693353feb2374c1f8fcd6395e4f205f",
+    "68e701049551e0b0224b6704ea7fb106128fe9af",
+    "8fa3b11c036059b9703f94299b1cb5d330355504",
+    "297f81f355cb7b36fe5d9ed8ad5e59b334319fbe",
+    "1daf0412d5245afda0b5aae6189c8ee676a60a15",
+    "8e4ed6402e7db4281166d7f578ac8a59a7e9ced4",
+    "073c935ed7c1c13c140afabd96ac8c557bce1c87",
+    "6a8db79cea932aac633c4cedfd2dc7bfb24233d4",
+    "d73edc84303c4a2f51f0738c9848f66005129ccc",
+    "61ca4a9d74d9554b952153efc59f05815d2d06d6",
+    "1339b55954d53066989a6307ec2538fd989ad596",
+    "a9700cb73b67ca893f3eb0538b918338d3658d13",
+    "a1518b3245c458a44e49b978e06b5abb7612afc6",
+    "95cf61cdeef0b18b1044f425c1e0cd1c763f31ce",
+    "8c8f26c7421f508fc9d7831bb6090b724dfc3530",
+    "0a7ba61748fd6f2239eaa9bf4596163e3d34856f",
+    "b96d7b37860166c38b819a905dc0a2b530e307cd",
+    "93113e906ed8994a82e3d44a9100a8f6007ed033",
+    "4e31e4ee3a83011e1e9c271803925a2dd45e7e32",
+    "70e8b5324d41c142778904e72afe6f5cebb2d929",
+    "21a421d0a54cd4da13de7643b45c4bb19735dbf3",
+    "4fbef197625eed5068eeff16b07867ca0611927b",
+    "5bfe26cf3a8a1c9cee037fdf2b110a7e55a1c2d6",
+    "a2e2e6c72717751f921224a4f87fe82effa9b32d"
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "93113e906ed8994a82e3d44a9100a8f6007ed033",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/issue-request-fidelity-gate/design.md:sha256:18092147d94c1d88fc7ed787b7178db8c76da83cf3e3503839c82e7c5ab233d9|specrunner/changes/issue-request-fidelity-gate/request.md:sha256:cfb69f467e597495f75523429b09914e7891ea65f89db711d6b8b4e02ee8033f|specrunner/changes/issue-request-fidelity-gate/spec.md:sha256:6a8eec452d23e4dd4f22bf5a7aad2ac2f228225c407802f9ecd4c22426737507|specrunner/changes/issue-request-fidelity-gate/tasks.md:sha256:efe8e22431a3c3b61c76171b2a93afdd0b6d3c7d92efc764e833cf53bda12891|specrunner/changes/issue-request-fidelity-gate/test-cases.md:sha256:8034bd96286985144bf1f86542c4530282e723ae87a7d59ea729e2d08e1905ff"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "93113e906ed8994a82e3d44a9100a8f6007ed033",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/issue-request-fidelity-gate/design.md:sha256:18092147d94c1d88fc7ed787b7178db8c76da83cf3e3503839c82e7c5ab233d9|specrunner/changes/issue-request-fidelity-gate/request.md:sha256:cfb69f467e597495f75523429b09914e7891ea65f89db711d6b8b4e02ee8033f|specrunner/changes/issue-request-fidelity-gate/spec.md:sha256:6a8eec452d23e4dd4f22bf5a7aad2ac2f228225c407802f9ecd4c22426737507|specrunner/changes/issue-request-fidelity-gate/tasks.md:sha256:efe8e22431a3c3b61c76171b2a93afdd0b6d3c7d92efc764e833cf53bda12891|specrunner/changes/issue-request-fidelity-gate/test-cases.md:sha256:8034bd96286985144bf1f86542c4530282e723ae87a7d59ea729e2d08e1905ff"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/959",
+    "number": 959,
+    "createdAt": "2026-08-06T01:19:55.791Z"
+  },
+  "_journal": {
+    "historyCount": 131,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "test-materialize": 1,
+      "implementer": 2,
+      "bite-evidence": 1,
+      "verification": 4,
+      "build-fixer": 2,
+      "code-review": 1,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 5,
+      "scale-tolerance": 5,
+      "custom-reviewers": 5,
+      "regression-gate": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

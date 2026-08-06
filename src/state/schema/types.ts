@@ -464,6 +464,16 @@ export interface JobState {
    */
   staleRecovery?: { attempts: number; stepCount: number } | null;
   /**
+   * When true, this job was started from the inbox path where the issue body
+   * is used verbatim as the request.md content. Because there is no transcription
+   * step, no divergence between issue and request can occur, so the entrance
+   * fidelity gate is skipped for inbox-origin jobs.
+   *
+   * Legacy state files that lack this field are treated as false (gate applicable).
+   * Optional for backward compat — absent in legacy state files is valid.
+   */
+  inboxOrigin?: boolean;
+  /**
    * Snapshot of custom reviewer definitions captured at job start.
    * Used by composeReviewerDescriptor to build the pipeline shape for this job.
    * Absent in legacy state files and jobs with no custom reviewers (treated as []).

@@ -82,6 +82,7 @@ function makeGitHubClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
     searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
     listIssueComments: vi.fn().mockResolvedValue([]),
     removeLabel: vi.fn().mockResolvedValue(undefined),
+    getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
     createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://..." }),
     verifyBranch: vi.fn(),
     getRawFile: vi.fn(),
@@ -208,6 +209,7 @@ describe("runInboxOrchestrator — resume", () => {
       searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
       listIssueComments: vi.fn().mockResolvedValue(comments),
       removeLabel: vi.fn().mockResolvedValue(undefined),
+      getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
     });
     const effects = makeEffects();
 
@@ -228,6 +230,7 @@ describe("runInboxOrchestrator — resume", () => {
       searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
       listIssueComments: vi.fn().mockResolvedValue(comments),
       removeLabel: vi.fn().mockResolvedValue(undefined),
+      getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
     });
     const effects = makeEffects();
 
@@ -247,6 +250,7 @@ describe("runInboxOrchestrator — resume", () => {
       searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
       listIssueComments: vi.fn().mockResolvedValue(comments),
       removeLabel: vi.fn().mockResolvedValue(undefined),
+      getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
     });
     const effects = makeEffects();
 
@@ -267,6 +271,7 @@ describe("runInboxOrchestrator — resume", () => {
       searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
       listIssueComments: vi.fn().mockResolvedValue(comments),
       removeLabel: vi.fn().mockResolvedValue(undefined),
+      getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
     });
     const effects = makeEffects();
 
@@ -303,6 +308,7 @@ describe("runInboxOrchestrator — dry-run", () => {
       searchOpenIssuesByLabel: vi.fn().mockResolvedValue(issues),
       listIssueComments: vi.fn().mockResolvedValue(comments),
       removeLabel: vi.fn().mockResolvedValue(undefined),
+      getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
     });
     const effects = makeEffects();
 

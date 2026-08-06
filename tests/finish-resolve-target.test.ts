@@ -159,6 +159,7 @@ describe("TC-109: --pr <num> → headRefName → slug resolved", () => {
     searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
     listIssueComments: vi.fn().mockResolvedValue([]),
     removeLabel: vi.fn().mockResolvedValue(undefined),
+    getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
     };
 
     const result = await resolveTarget({ prNumber: 48, cwd: tempDir, githubClient: mockClient, owner: "user", repo: "repo" });

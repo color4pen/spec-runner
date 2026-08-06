@@ -20,6 +20,8 @@
  *   - soft errors (awaiting-resume, failed) → teardown("error-status") + return 1
  *   - success (awaiting-merge) → teardown("awaiting-merge") + return 0
  */
+import * as nodePath from "node:path";
+import * as nodeFs from "node:fs/promises";
 import { logInfo, logError, stderrWrite, stdoutWrite, logWarn, initVerboseLog, closeVerboseLog, getVerboseLogFilePath, isLevelEnabled } from "../../logger/stdout.js";
 import type { LogLevel } from "../../logger/stdout.js";
 import { initPipelineLog, closePipelineLog } from "../../logger/pipeline-logger.js";
@@ -39,10 +41,13 @@ import type { ParsedRequest } from "../../parser/request-md.js";
 import type { PipelineDeps } from "../types.js";
 import type { ResumeContextSnapshot } from "../resume/resume-context.js";
 import { collectDynamicContext } from "../../git/dynamic-context.js";
-import { specReviewResultPath } from "../../util/paths.js";
+import { specReviewResultPath, requestMdPath } from "../../util/paths.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import { buildRunResult, formatRunResultJson } from "./run-result.js";
 import { transitionJob } from "../../state/lifecycle.js";
+import { evaluateIssueFidelityGate } from "../gate/issue-fidelity-gate.js";
+import { notifyJobTerminal } from "../notify/issue-notifier.js";
+import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
 
 // ---------------------------------------------------------------------------
 // PrepareResult
@@ -82,6 +87,13 @@ export abstract class CommandRunner {
   constructor(
     protected readonly runtime: RuntimeStrategy,
     protected readonly events: EventBus,
+    /**
+     * Optional factory for the entrance fidelity gate's IssueFidelityComparator.
+     * When provided and a job is linked to an issue, the comparator is instantiated
+     * (lazy: only on gate evaluation) and used to detect undeclared requirement drops.
+     * When absent, the gate halts (fail-closed) for issue-linked jobs.
+     */
+    private readonly comparatorFactory?: (config: SpecRunnerConfig) => IssueFidelityComparator,
   ) {}
 
   /**
@@ -239,48 +251,119 @@ export abstract class CommandRunner {
         return 1;
       }
 
-      // Step 5: runPipeline
-      // Emit scope-config warning once per run, before buildPipelineForJob is called.
-      const scopeWarning = scopeConfigWarningForJob(jobState, config);
-      if (scopeWarning !== null) {
-        logWarn(scopeWarning);
-      }
+      // Step 4b: Entrance fidelity gate — evaluate before the first pipeline step.
+      // Fires only when startStep === "request-review" AND issueNumber is set AND
+      // not an inbox job. Fail-closed: any error (fetch / parse / wiring) halts.
+      // Non-propagation: issue body is never stored in state or logs.
+      const gateDecision = await evaluateIssueFidelityGate({
+        startStep,
+        issueNumber: jobState.issueNumber,
+        inboxOrigin: jobState.inboxOrigin,
+        owner: deps.owner,
+        repo: deps.repo,
+        getIssue: (owner, repo, n) => deps.githubClient.getIssue(owner, repo, n),
+        readRequestMd: () =>
+          nodeFs.readFile(
+            nodePath.join(workspace?.cwd ?? repoRoot, requestMdPath(slug)),
+            "utf-8",
+          ),
+        comparator: this.comparatorFactory?.(config),
+        log: logInfo,
+      });
 
+      // Step 5: runPipeline
       let finalState: JobState;
-      try {
-        const pipeline = buildPipelineForJob(jobState, deps, this.events);
-        finalState = await pipeline.run(startStep, jobState, deps);
-      } catch (err) {
-        // Defensive: if pipeline safety net did not transition state, mark as failed
-        const crashCode = err instanceof SpecRunnerError ? err.code : "PIPELINE_UNHANDLED_ERROR";
-        const crashMessage = (err as Error).message;
-        const crashErrorInfo = { code: crashCode, message: crashMessage, hint: "" };
-        let crashState: JobState | null = null;
+      if (gateDecision.kind === "halt") {
+        // Gate halted: build awaiting-resume state, persist, notify, and skip pipeline.
+        // Pipeline step are NOT executed (halt is the enforcement of the gate).
+        const { state: haltState } = transitionJob(jobState, "awaiting-resume", {
+          trigger: "issue-fidelity-gate",
+          reason: gateDecision.reason,
+          patch: {
+            resumePoint: {
+              step: STEP_NAMES.REQUEST_REVIEW as StepName,
+              reason: gateDecision.reason,
+              iterationsExhausted: 0,
+            },
+            error: {
+              code: gateDecision.code,
+              message: gateDecision.reason,
+              hint:
+                gateDecision.haltKind === "undeclared-drop"
+                  ? "request.md を修正（要件復元 or スコープ外宣言追記）して resume してください。"
+                  : gateDecision.haltKind === "fetch-error"
+                  ? "network / GITHUB_TOKEN / issue 番号を確認して resume してください（gate は fail-closed のため fetch 失敗を pass 扱いにしない）。"
+                  : "gate 内部エラー。state.json の reason と log を確認してください。",
+            },
+            pid: null,
+          },
+        });
+
+        // Persist halt state (best-effort).
         try {
-          const store = deps.storeFactory(jobState.jobId);
-          const diskState = await store.load();
-          if (diskState.status === "running") {
-            crashState = await store.fail(diskState as JobState, crashErrorInfo, jobState.step);
-          } else {
-            crashState = diskState as JobState;
-          }
+          await deps.storeFactory(haltState.jobId).persist(haltState);
         } catch {
-          // Disk state unavailable: derive failed state via lifecycle transition (no direct assignment)
-          const { state: inMemFailed } = transitionJob(jobState, "failed", {
-            trigger: "runner",
-            reason: crashMessage,
-            patch: { error: crashErrorInfo },
-          });
-          crashState = inMemFailed;
+          // Persist failure is not fatal — job can still be reported.
         }
-        outputPipelineThrowError(err, jobState.branch);
-        if (json && crashState !== null) {
-          stdoutWrite(formatRunResultJson(buildRunResult(crashState, slug)));
+
+        // Commit final state to remote (best-effort — managed runtime only).
+        try {
+          await deps.runtimeStrategy?.commitFinalState(deps, haltState);
+        } catch {
+          // Best-effort: do not let remote sync failure block local halt reporting.
         }
-        await this.runtime.teardown(handle, "error");
-        closeVerboseLog();
-        closePipelineLog();
-        return 1;
+
+        // Notify the linked issue of the escalation (best-effort; notifier catches errors).
+        await notifyJobTerminal(haltState, {
+          githubClient: deps.githubClient,
+          owner: deps.owner,
+          repo: deps.repo,
+        });
+
+        finalState = haltState;
+      } else {
+        // Emit scope-config warning once per run, before buildPipelineForJob is called.
+        // Placed in the proceed branch so gate halt does not emit spurious warnings.
+        const scopeWarning = scopeConfigWarningForJob(jobState, config);
+        if (scopeWarning !== null) {
+          logWarn(scopeWarning);
+        }
+
+        try {
+          const pipeline = buildPipelineForJob(jobState, deps, this.events);
+          finalState = await pipeline.run(startStep, jobState, deps);
+        } catch (err) {
+          // Defensive: if pipeline safety net did not transition state, mark as failed
+          const crashCode = err instanceof SpecRunnerError ? err.code : "PIPELINE_UNHANDLED_ERROR";
+          const crashMessage = (err as Error).message;
+          const crashErrorInfo = { code: crashCode, message: crashMessage, hint: "" };
+          let crashState: JobState | null = null;
+          try {
+            const store = deps.storeFactory(jobState.jobId);
+            const diskState = await store.load();
+            if (diskState.status === "running") {
+              crashState = await store.fail(diskState as JobState, crashErrorInfo, jobState.step);
+            } else {
+              crashState = diskState as JobState;
+            }
+          } catch {
+            // Disk state unavailable: derive failed state via lifecycle transition (no direct assignment)
+            const { state: inMemFailed } = transitionJob(jobState, "failed", {
+              trigger: "runner",
+              reason: crashMessage,
+              patch: { error: crashErrorInfo },
+            });
+            crashState = inMemFailed;
+          }
+          outputPipelineThrowError(err, jobState.branch);
+          if (json && crashState !== null) {
+            stdoutWrite(formatRunResultJson(buildRunResult(crashState, slug)));
+          }
+          await this.runtime.teardown(handle, "error");
+          closeVerboseLog();
+          closePipelineLog();
+          return 1;
+        }
       }
 
       // Step 6: handleResult (computes exit code)

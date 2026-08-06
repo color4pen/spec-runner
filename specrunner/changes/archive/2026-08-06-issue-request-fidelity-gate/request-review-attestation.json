@@ -1,0 +1,20 @@
+{
+  "requestHash": "sha256:cfb69f467e597495f75523429b09914e7891ea65f89db711d6b8b4e02ee8033f",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/command/pipeline-run.ts:155-157: jobState.issueNumber assigned from options.issue",
+    "src/core/notify/issue-notifier.ts:230-251: notifyJobTerminal function uses state.issueNumber for terminal comment only",
+    "src/prompts/request-review-system.ts: no issue body reference or injection",
+    "src/core/step/: no issueBody or issue body reference in any step definition",
+    "src/kernel/github-client.ts: GitHubClient interface has no getIssue method",
+    "src/adapter/github/github-client.ts: no GET /repos/{owner}/{repo}/issues/{number} endpoint exists",
+    "src/cli/run.ts:82: const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl)",
+    "src/core/preflight.ts:61-79: GitHub token resolved via resolveGitHubToken in Step 2.5",
+    "src/core/command/request.ts:126-177: executeValidate is offline and deterministic (no LLM, no network)",
+    "src/core/inbox/run-inbox.ts:397-400: writeDraft(repoRoot, slug, issueBody) writes issue body as request.md",
+    "src/core/command/pipeline-run.ts:165: startStep: STEP_NAMES.REQUEST_REVIEW",
+    "src/parser/request-md.ts:117-126: issue field is optional in Meta section",
+    "specrunner/adr/2026-07-31-deterministic-request-entrance.md: file exists"
+  ],
+  "sourceRevision": "59225d3ae672d63774f43fdcf883371162d62f9e"
+}
