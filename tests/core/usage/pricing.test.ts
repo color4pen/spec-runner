@@ -107,10 +107,10 @@ describe("TC-005: computeCostUsd — 4-token cost formula", () => {
       cacheReadInputTokens: 0,
       cacheCreationInputTokens: 0,
     };
-    // claude-haiku-4-5: input=$0.80, output=$4.00
-    // cost = 0.5*0.80 + 0.2*4.00 = 0.40 + 0.80 = 1.20
+    // claude-haiku-4-5: input=$1.00, output=$5.00
+    // cost = 0.5*1.00 + 0.2*5.00 = 0.50 + 1.00 = 1.50
     const cost = computeCostUsd("claude-haiku-4-5", usage);
-    expect(cost).toBeCloseTo(1.20, 6);
+    expect(cost).toBeCloseTo(1.50, 6);
   });
 });
 
