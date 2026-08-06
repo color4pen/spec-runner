@@ -71,12 +71,37 @@ export interface QueryOneShotResult {
   text: string;
   /** SDK session_id from the success result (managed runtime). undefined for local runtime. */
   sessionId?: string;
-  /** Reserved for future use — currently always undefined. */
+  /**
+   * @deprecated Removed in agent-invocation-metrics. Use numTurns instead.
+   * Kept in the type for backward-compatible type checking; never set in returned objects.
+   */
   turnCount?: number;
   /** Completion reason from SDKResultMessage.subtype (e.g. "success", "max_turns"). */
   stopReason?: string;
   /** Per-model token usage from the agent run. undefined if not available. */
   modelUsage?: Record<string, ModelUsage>;
+  /**
+   * Number of SDK turns used in this invocation.
+   * SDK result num_turns. undefined if not provided by the runtime.
+   * Replaces the former turnCount placeholder field.
+   */
+  numTurns?: number;
+  /**
+   * Total wall-clock time for this invocation in milliseconds.
+   * SDK result duration_ms. undefined if not provided.
+   */
+  durationMs?: number;
+  /**
+   * API wait time for this invocation in milliseconds.
+   * SDK result duration_api_ms. undefined if not provided.
+   */
+  durationApiMs?: number;
+  /**
+   * SDK-measured cost in USD for this invocation.
+   * SDK result total_cost_usd. Does not require a pricing table lookup.
+   * undefined if not provided by the runtime.
+   */
+  totalCostUsd?: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -173,10 +198,11 @@ export async function queryOneShot(
 
   // Step 6: Assemble result (raw text — structured parse is caller's responsibility)
   const successResult = lastResult as SDKResultSuccess;
+  const rawResult = successResult as unknown as Record<string, unknown>;
 
   // Extract modelUsage (same pattern as ClaudeCodeRunner)
   let modelUsage: Record<string, ModelUsage> | undefined;
-  const rawUsage = (successResult as Record<string, unknown>).modelUsage;
+  const rawUsage = rawResult.modelUsage;
   if (rawUsage && typeof rawUsage === "object" && Object.keys(rawUsage as object).length > 0) {
     modelUsage = {};
     for (const [model, usage] of Object.entries(rawUsage as Record<string, Record<string, number>>)) {
@@ -189,10 +215,22 @@ export async function queryOneShot(
     }
   }
 
+  // Extract invocation metrics (agent-invocation-metrics).
+  // Use typeof number guard: non-number values (null, string, object) become undefined.
+  const numTurns = typeof rawResult["num_turns"] === "number" ? rawResult["num_turns"] : undefined;
+  const durationMs = typeof rawResult["duration_ms"] === "number" ? rawResult["duration_ms"] : undefined;
+  const durationApiMs = typeof rawResult["duration_api_ms"] === "number" ? rawResult["duration_api_ms"] : undefined;
+  const totalCostUsd = typeof rawResult["total_cost_usd"] === "number" ? rawResult["total_cost_usd"] : undefined;
+
   return {
     text: successResult.result,
     sessionId: successResult.session_id,
     stopReason: lastResult.subtype,
     modelUsage,
+    // agent-invocation-metrics: 4 SDK metrics, absent from returned object when undefined
+    ...(numTurns !== undefined ? { numTurns } : {}),
+    ...(durationMs !== undefined ? { durationMs } : {}),
+    ...(durationApiMs !== undefined ? { durationApiMs } : {}),
+    ...(totalCostUsd !== undefined ? { totalCostUsd } : {}),
   };
 }

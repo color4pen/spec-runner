@@ -518,6 +518,64 @@ describe("renderJobStatsJson", () => {
     expect(parsed.runs[0]!["costUsd"]).toBeNull();
     expect(parsed.summary["costUsdTotal"]).toBeNull();
   });
+
+  // TC-JSTATS-024b: deriveRunStat always sets measuredCostUsd and turns (8-field output schema)
+  // TC-JSTATS-024 tests the 6-field hand-crafted row; this test verifies the real deriveRunStat schema.
+  it("TC-JSTATS-024b: deriveRunStat output always includes measuredCostUsd and turns (8-field schema)", async () => {
+    const { deriveRunStat } = await import("../../../../src/core/command/job-stats.js");
+    const state: NormalizedJobState = {
+      version: 2,
+      jobId: "schema-test-job-001",
+      createdAt: "2026-01-01T10:00:00.000Z",
+      updatedAt: "2026-01-01T11:00:00.000Z",
+      request: { path: "/r.md", title: "T", type: "new-feature", slug: "schema-test" },
+      repository: { owner: "owner", name: "repo" },
+      session: null,
+      step: "pr-create",
+      status: "archived",
+      branch: "feat/schema-test",
+      history: [],
+      error: null,
+      steps: {},
+    };
+    const usageFile: UsageFile = {
+      commandInvocations: [
+        {
+          command: "job",
+          timestamp: "2026-01-01T10:01:00.000Z",
+          modelUsage: {
+            "claude-sonnet-4-6": {
+              inputTokens: 1_000,
+              outputTokens: 0,
+              cacheReadInputTokens: 0,
+              cacheCreationInputTokens: 0,
+            },
+          },
+          jobId: "schema-test-job-001",
+          stepName: "implementer",
+          numTurns: 5,
+          totalCostUsd: 0.01,
+        },
+      ],
+    };
+    const row = deriveRunStat(state, usageFile);
+    const report = buildJobStatsReport([row]);
+    const parsed = JSON.parse(renderJobStatsJson(report)) as { runs: Record<string, unknown>[] };
+    const rowKeys = Object.keys(parsed.runs[0]!).sort();
+
+    // deriveRunStat always sets measuredCostUsd and turns (to a value or null),
+    // so the real output has 8 fields (vs. TC-JSTATS-024's hand-crafted 6-field row).
+    expect(rowKeys).toEqual([
+      "convergence",
+      "costUsd",
+      "date",
+      "durationSec",
+      "measuredCostUsd",
+      "outcome",
+      "slug",
+      "turns",
+    ]);
+  });
 });
 
 // ---------------------------------------------------------------------------

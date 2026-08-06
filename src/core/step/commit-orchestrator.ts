@@ -21,7 +21,7 @@ import type { PipelineDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
 import type { LineageRecord } from "../../store/event-journal.js";
-import type { CompletionReportDiagnostic } from "../port/agent-runner.js";
+import type { CompletionReportDiagnostic, AgentInvocationMetrics } from "../port/agent-runner.js";
 import type { PermissionScope } from "../pipeline/types.js";
 import type { StepCompletion } from "./step-completion.js";
 import type { StepHalt } from "./step-halt.js";
@@ -67,6 +67,12 @@ export type StepExecutionResult =
       completionReportDiagnostics?: CompletionReportDiagnostic[];
       /** Added-turn metrics by type. Only populated by ClaudeCodeRunner. */
       addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
+      /**
+       * SDK-measured invocation metrics from the agent runner.
+       * Populated by ClaudeCodeRunner (local runtime); undefined for managed and Codex runtimes.
+       * Added in agent-invocation-metrics.
+       */
+      invocationMetrics?: AgentInvocationMetrics;
       /**
        * Commit OID captured after this step's per-node commit (bite-evidence-forward R4).
        * Set only for sequential steps with roundOwnsGitEffects === false.
@@ -231,7 +237,7 @@ export class CommitOrchestrator {
     preWriteIo: IoRef[],
     preReadIo: IoRef[],
   ): Promise<void> {
-    const { completion, completedAt, modelUsage, followUpAttempts } = result;
+    const { completion, completedAt, modelUsage, followUpAttempts, invocationMetrics } = result;
     const { verdict, persistToolResult } = completion;
 
     // usage (appendInvocation — best-effort)
@@ -244,6 +250,8 @@ export class CommitOrchestrator {
           modelUsage,
           jobId: state.jobId,
           stepName: step.name,
+          // agent-invocation-metrics: spread metrics when provided; omit fields when absent.
+          ...(invocationMetrics ?? {}),
         });
       } catch {
         // Best-effort: usage append failure must not block step completion

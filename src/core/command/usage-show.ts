@@ -10,6 +10,7 @@ import * as path from "node:path";
 import { readUsageFile } from "../usage/store.js";
 import { usageJsonPath, archivedChangesDirRel, parseArchiveDirName } from "../../util/paths.js";
 import type { ModelUsage } from "../port/model-usage.js";
+import { formatUsd } from "../usage/pricing.js";
 import { stdoutWrite, stderrWrite } from "../../logger/stdout.js";
 
 /**
@@ -59,6 +60,17 @@ export async function showUsage(slug: string, cwd: string): Promise<number> {
       }
     } else {
       stdoutWrite(`  (no usage data)\n`);
+    }
+
+    // Display SDK-measured invocation metrics if any are present.
+    // Fields are optional: entries written before agent-invocation-metrics feature omit them.
+    const metricsParts: string[] = [];
+    if (typeof inv.numTurns === "number") metricsParts.push(`turns=${inv.numTurns}`);
+    if (typeof inv.durationMs === "number") metricsParts.push(`duration=${inv.durationMs}ms`);
+    if (typeof inv.durationApiMs === "number") metricsParts.push(`api=${inv.durationApiMs}ms`);
+    if (typeof inv.totalCostUsd === "number") metricsParts.push(`cost=${formatUsd(inv.totalCostUsd)}`);
+    if (metricsParts.length > 0) {
+      stdoutWrite(`  metrics: ${metricsParts.join("  ")}\n`);
     }
   }
 

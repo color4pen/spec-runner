@@ -35,6 +35,19 @@ export interface JobStatRow {
   convergence: number | null;
   costUsd: number | null;
   outcome: string;
+  /**
+   * Sum of SDK-measured totalCostUsd across invocations for this run.
+   * Reflects the main-work-query turn only (follow-up turns are not included in the SDK value).
+   * null when no invocations have a totalCostUsd value.
+   * undefined: field absent (hand-crafted rows in tests that predate this field).
+   */
+  measuredCostUsd?: number | null;
+  /**
+   * Sum of numTurns across all invocations for this run (main-work-query turn only per invocation).
+   * null when no invocations have a numTurns value.
+   * undefined: field absent (hand-crafted rows in tests that predate this field).
+   */
+  turns?: number | null;
 }
 
 export interface JobStatsSummary {
@@ -82,7 +95,11 @@ function reviewLoopStepNames(state: NormalizedJobState): Set<string> {
  * - durationSec: min(startedAt)..max(endedAt) across all StepRuns; null if no valid timestamps
  * - convergence: total non-skipped StepRun entries for review-loop steps;
  *     null if steps is empty (no step data), 0 if no review steps ran
- * - costUsd: sum of computeCostUsd for all non-null modelUsage entries; null if no priced pairs
+ * - costUsd: sum of computeCostUsd(model, modelUsage) across all invocations; null if no priced pairs
+ * - measuredCostUsd: sum of totalCostUsd across invocations that provide it (SDK-measured,
+ *     main-work-query turn only); null if no invocations have a totalCostUsd value
+ * - turns: sum of numTurns across invocations that provide it (main-work-query turn only);
+ *     null if no invocations have a numTurns value
  * - outcome: state.status
  */
 export function deriveRunStat(state: NormalizedJobState, usageFile: UsageFile | null): JobStatRow {
@@ -143,37 +160,67 @@ export function deriveRunStat(state: NormalizedJobState, usageFile: UsageFile | 
     convergence = count;
   }
 
-  // ── costUsd ───────────────────────────────────────────────────────────────
+  // ── costUsd / measuredCostUsd / turns ────────────────────────────────────
   let costUsd: number | null = null;
+  let measuredCostUsd: number | null = null;
+  let turns: number | null = null;
 
   if (usageFile !== null) {
-    let total = 0;
-    let hasAny = false;
+    let costTotal = 0;
+    let hasCost = false;
+    let measuredTotal = 0;
+    let hasMeasured = false;
+    let turnsSum = 0;
+    let hasTurns = false;
     const stateJobId = state.jobId;
 
     for (const inv of usageFile.commandInvocations) {
       // Exclude invocations that belong to a different job.
       // Invocations without a jobId (legacy format) are always included.
       if (inv.jobId !== undefined && inv.jobId !== stateJobId) continue;
-      if (!inv.modelUsage) continue;
-      for (const [model, usage] of Object.entries(inv.modelUsage)) {
-        const c = computeCostUsd(model, usage);
-        if (c !== null) {
-          total += c;
-          hasAny = true;
+
+      // costUsd: always use pricing-table estimate (sum across all invocations).
+      // modelUsage accumulates all turns (main + follow-up) in agent-runner, so this
+      // reflects the true all-turn cost for the step.
+      if (inv.modelUsage) {
+        for (const [model, usage] of Object.entries(inv.modelUsage)) {
+          const c = computeCostUsd(model, usage);
+          if (c !== null) {
+            costTotal += c;
+            hasCost = true;
+          }
         }
+      }
+
+      // measuredCostUsd: sum of SDK-reported totalCostUsd (main-work-query turn only).
+      // Independent of costUsd; null when no invocations provide this value.
+      if (typeof inv.totalCostUsd === "number") {
+        measuredTotal += inv.totalCostUsd;
+        hasMeasured = true;
+      }
+
+      // turns: sum of SDK-reported numTurns (main-work-query turn only).
+      if (typeof inv.numTurns === "number") {
+        turnsSum += inv.numTurns;
+        hasTurns = true;
       }
     }
 
-    if (hasAny) {
-      costUsd = total;
+    if (hasCost) {
+      costUsd = costTotal;
+    }
+    if (hasMeasured) {
+      measuredCostUsd = measuredTotal;
+    }
+    if (hasTurns) {
+      turns = turnsSum;
     }
   }
 
   // ── outcome ───────────────────────────────────────────────────────────────
   const outcome = state.status;
 
-  return { slug, date, durationSec, convergence, costUsd, outcome };
+  return { slug, date, durationSec, convergence, costUsd, outcome, measuredCostUsd, turns };
 }
 
 // ---------------------------------------------------------------------------
@@ -264,7 +311,7 @@ function fmt1(value: number | null): string {
 /**
  * Render a stats report as a human-readable table with summary footer.
  *
- * Columns: slug / date / duration / convergence / cost / outcome
+ * Columns: slug / date / duration / convergence / cost (pricing-table) / sdk $ (measured) / turns / outcome
  * Null values shown as "-".
  * No runs → shows a message.
  */
@@ -281,13 +328,15 @@ export function renderJobStatsTable(report: JobStatsReport): string {
   }
 
   // Build table rows
-  const headers = ["Slug", "Date", "Duration", "Convergence", "Cost", "Outcome"];
+  const headers = ["Slug", "Date", "Duration", "Convergence", "Cost", "SDK $", "Turns", "Outcome"];
   const dataRows = runs.map((r) => [
     r.slug || "-",
     r.date ?? "-",
     formatDuration(r.durationSec),
     r.convergence !== null ? String(r.convergence) : "-",
-    r.costUsd !== null ? formatUsd(r.costUsd) : "-",
+    r.costUsd != null ? formatUsd(r.costUsd) : "-",
+    r.measuredCostUsd != null ? formatUsd(r.measuredCostUsd) : "-",
+    r.turns != null ? String(r.turns) : "-",
     r.outcome,
   ]);
 
@@ -327,7 +376,8 @@ export function renderJobStatsTable(report: JobStatsReport): string {
  * Render a stats report as JSON.
  *
  * Top-level keys: { runs, summary }
- * Row keys: slug / date / durationSec / convergence / costUsd / outcome
+ * Row keys include: slug / date / durationSec / convergence / costUsd / measuredCostUsd / turns / outcome
+ * Optional fields (measuredCostUsd / turns) are omitted when undefined (hand-crafted test rows).
  * Summary keys: runCount / costUsdTotal / costUsdMedian / durationSecMedian / convergenceMean
  * Null values are preserved as null (not omitted).
  */
