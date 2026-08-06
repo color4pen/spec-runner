@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f94950fe-34fd-496a-bba4-11c576680e10",
   "createdAt": "2026-08-05T13:51:00.030Z",
-  "updatedAt": "2026-08-06T00:40:57.071Z",
+  "updatedAt": "2026-08-06T00:49:06.848Z",
   "request": {
     "title": "SDK result の turn 数・所要時間・実コストを usage.json に記録する — 事後分析が試算に頼る状態を解消する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/agent-invocation-metrics-f94950fe",
   "error": null,
   "pipelineId": "standard",
@@ -88,7 +88,9 @@
     "fc7791d1843e4a0c58d8e1fddae6130d3b004dea",
     "a90a04fd5c88f514815fe2467f53749ab92cbb50",
     "4d96dabf8ade41ef270c4ebe01b352282516275c",
-    "3eb69cc0125164674cb60e500d56b6a232f3320c"
+    "3eb69cc0125164674cb60e500d56b6a232f3320c",
+    "8ddd604e4e32757ff9bc7c8f061b880e0ed3f56b",
+    "39ff9442534e89b36a5d1f55739198081e8a48d6"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -122,8 +124,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/958",
+    "number": 958,
+    "createdAt": "2026-08-06T00:49:06.007Z"
+  },
   "_journal": {
-    "historyCount": 99,
+    "historyCount": 113,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -133,14 +140,17 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 2,
       "code-fixer": 5,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
       "custom-reviewers": 3,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
