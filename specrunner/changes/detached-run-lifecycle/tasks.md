@@ -19,10 +19,10 @@
 
 ## T-01: detach log path helper を追加する
 
-- [ ] `src/util/xdg.ts` に `getDetachLogPath(repoRoot: string, slug: string): string` を追加する。
+- [x] `src/util/xdg.ts` に `getDetachLogPath(repoRoot: string, slug: string): string` を追加する。
       返り値は既存 log dir（`getVerboseLogDir` = `.specrunner/logs/`）配下の slug-keyed path
       （例 `<repoRoot>/.specrunner/logs/<slug>.detach.log`）。既存 `<jobId>.log` と衝突しない命名にする。
-- [ ] 既存の `getVerboseLogDir` / `getVerboseLogPath` の挙動は変更しない。
+- [x] 既存の `getVerboseLogDir` / `getVerboseLogPath` の挙動は変更しない。
 
 **Acceptance Criteria**:
 - `getDetachLogPath(root, "foo")` が `.specrunner/logs/` 配下の slug 由来 path を返す。
@@ -32,15 +32,15 @@
 
 ## T-02: `spawnBackground` を detach 用途に拡張する（既存呼び出し元は無変更）
 
-- [ ] `src/util/spawn.ts` の `SpawnBackgroundOptions` に任意フィールドを追加する:
+- [x] `src/util/spawn.ts` の `SpawnBackgroundOptions` に任意フィールドを追加する:
       `detached?: boolean`、log redirect 指定（例 `logFilePath?: string`）、full-env passthrough
       （例 `inheritSecrets?: boolean` もしくは verbatim env を渡す口）。
-- [ ] `spawnBackground` 本体で、`detached` 指定時のみ `spawn(..., { detached: true, ... })` を渡す。
+- [x] `spawnBackground` 本体で、`detached` 指定時のみ `spawn(..., { detached: true, ... })` を渡す。
       log redirect 指定時のみ、追記モードで開いた fd を `stdio: ["ignore", fd, fd]` として渡す
       （未指定時は現状どおり `stdio: "ignore"`）。full-env passthrough 指定時のみ `stripSecrets` を経由せず
       full env（呼び出し元が渡すマーカー込み env）を使う（未指定時は現状どおり `stripSecrets(process.env) + opts.env`）。
-- [ ] `unref()` は現状どおり常時行う。`onError` ハンドラ同期付与も維持する。
-- [ ] `factory.ts` / `power-assertion.ts` の呼び出しは変更しない（新フィールド未指定のまま）。
+- [x] `unref()` は現状どおり常時行う。`onError` ハンドラ同期付与も維持する。
+- [x] `factory.ts` / `power-assertion.ts` の呼び出しは変更しない（新フィールド未指定のまま）。
 
 **Acceptance Criteria**:
 - 新フィールド未指定の呼び出しで `detached` は渡されず、`stdio` は `"ignore"`、env は `stripSecrets` 適用。
@@ -50,16 +50,16 @@
 
 ## T-03: detach モジュール（マーカー / args 除去 / guidance / self-respawn）を実装する
 
-- [ ] `src/core/command/detach.ts` を新設し、次を export する:
+- [x] `src/core/command/detach.ts` を新設し、次を export する:
       - `DETACH_MARKER_ENV`（= `"SPECRUNNER_DETACHED"`）と `isDetachedChild(env): boolean`。
       - `stripDetachFlag(args: string[]): string[]` — `--detach` および `--detach=...` トークンのみ除去。
       - `buildDetachGuidance(slug: string): string` — slug・`job wait <slug>`・`job show <slug>` を含む案内。
       - `detachSelf(opts): number` — 子を spawn（`process.execPath` + `process.argv[1]` +
         `stripDetachFlag(args)`、cwd=repoRoot、`detached: true`、log redirect=`getDetachLogPath`、
         full-env passthrough + マーカー付与）し、`buildDetachGuidance` を stdout に出力して `0` を返す。
-- [ ] spawn 境界はテスト注入可能にする（`spawnBackground` もしくは同型の `SpawnBackgroundFn` を DI し、
+- [x] spawn 境界はテスト注入可能にする（`spawnBackground` もしくは同型の `SpawnBackgroundFn` を DI し、
       既定で本物を使う）。実プロセスを起動せずに spawn 引数・env・stdio を固定できること。
-- [ ] guidance の出力先は stdout。preflight / auth / config / network は一切呼ばない。
+- [x] guidance の出力先は stdout。preflight / auth / config / network は一切呼ばない。
 
 **Acceptance Criteria**:
 - `isDetachedChild` がマーカー env の有無で真偽を返す。
@@ -70,10 +70,10 @@
 
 ## T-04: 案内文言を単一定義し foreground notice を配線する
 
-- [ ] foreground 起動時案内の文言を 1 箇所に定義する（例 `src/core/command/operational-guidance.ts` の
+- [x] foreground 起動時案内の文言を 1 箇所に定義する（例 `src/core/command/operational-guidance.ts` の
       定数/関数、もしくは T-03 の detach モジュール）。文言は pipeline が長時間走ること・agent session からは
       `--detach` + `job wait` を使うことを含む。
-- [ ] foreground の run / resume 起動経路の共通点（`CommandRunner.execute`、run と resume 双方が通る）で、
+- [x] foreground の run / resume 起動経路の共通点（`CommandRunner.execute`、run と resume 双方が通る）で、
       `!isDetachedChild(process.env)` のとき当該案内を `logInfo`（stderr、`--quiet` 抑制）で 1 回出す。
       stdout（`--json` 契約含む）と終了コードには触れない。detach 子では出さない。
 
@@ -85,15 +85,15 @@
 
 ## T-05: CLI に `--detach` flag と `job wait` を配線し USAGE を更新する
 
-- [ ] `src/cli/command-registry.ts` の `run`（alias）・`job start`・`job resume` の flags に
+- [x] `src/cli/command-registry.ts` の `run`（alias）・`job start`・`job resume` の flags に
       `detach: { type: "boolean" }` を追加する。
-- [ ] 各 handler で、`parsed.flags["detach"] && !isDetachedChild(process.env)` のとき `detachSelf(...)` を
+- [x] 各 handler で、`parsed.flags["detach"] && !isDetachedChild(process.env)` のとき `detachSelf(...)` を
       呼び `process.exit(0)`（slug は design D5 に従い解決: resume は positional、run/job start は
       request path 解決 → `parseRequestMdRaw` で slug 抽出。解決失敗時は spawn せず既存の run.ts 相当エラーで
       非ゼロ終了）。それ以外は従来どおり foreground（`runRun` / `runResume`）へ委譲する。
-- [ ] `job.subcommands.wait` を追加する（positional `slug` required、handler は `runJobWait` を呼び
+- [x] `job.subcommands.wait` を追加する（positional `slug` required、handler は `runJobWait` を呼び
       `process.exit(code)`）。worktree guard は `job show` / `job ls` と同じ様式（main checkout 外なら拒否）。
-- [ ] USAGE（`command-registry.ts` の `USAGE` 文字列）の Job commands ブロックに `job wait <slug>` を追記し、
+- [x] USAGE（`command-registry.ts` の `USAGE` 文字列）の Job commands ブロックに `job wait <slug>` を追記し、
       `job start` / `job resume` / `run` の各行に `--detach` を明記する。
 
 **Acceptance Criteria**:
@@ -108,18 +108,18 @@
 
 ## T-06: `job wait` コマンド（process-death gate）を実装する
 
-- [ ] `src/cli/job-wait.ts` を新設し `runJobWait(slug: string, opts): Promise<number>` を export する。
-- [ ] slug から state を解決する（`JobStateStore.list` の最新 updatedAt、`job show` と同様）。不一致 → exit 2。
-- [ ] settle 判定 `isSettled(state, sidecarPath)` を実装する（design D6）:
+- [x] `src/cli/job-wait.ts` を新設し `runJobWait(slug: string, opts): Promise<number>` を export する。
+- [x] slug から state を解決する（`JobStateStore.list` の最新 updatedAt、`job show` と同様）。不一致 → exit 2。
+- [x] settle 判定 `isSettled(state, sidecarPath)` を実装する（design D6）:
       pid 解決順は `state.pid` → sidecar（`.specrunner/local/<slug>/liveness.json`）pid。
       pid 解決可 → `isProcessAlive` が真の間は status に関わらず未 settle、死亡で settle。
       pid 不在 → `isStaleRunning`（`src/core/resume/safety.ts`）の fallback に従う。
       `isProcessAlive` / `isStaleRunning` は既存実装を再利用する。
-- [ ] poll ループ: 各 tick で state を再ロードし `isSettled` を評価。未 settle なら sleep して継続。
+- [x] poll ループ: 各 tick で state を再ロードし `isSettled` を評価。未 settle なら sleep して継続。
       poll 間隔・時刻・state ロード・liveness 判定・sidecar pid 解決を DI seam として注入可能にする。
-- [ ] settle 時に 1 行で `slug` / `status` / 次アクションを stdout 出力（design D7 の写像）。終了コード:
+- [x] settle 時に 1 行で `slug` / `status` / 次アクションを stdout 出力（design D7 の写像）。終了コード:
       awaiting-archive / archived → 0、awaiting-resume / failed / terminated / canceled → 1。
-- [ ] 1 行フォーマットと次アクション写像は 1 箇所に定義しテストで固定する。
+- [x] 1 行フォーマットと次アクション写像は 1 箇所に定義しテストで固定する。
 
 **Acceptance Criteria**:
 - pid 生存中は on-disk status が awaiting-* でも待ち続ける。死亡後に status を読む。
@@ -131,7 +131,7 @@
 
 ## T-07: `job show` に detach log の所在を表示する
 
-- [ ] `src/cli/job-show.ts` の `printJobState` に、slug に対応する detach log
+- [x] `src/cli/job-show.ts` の `printJobState` に、slug に対応する detach log
       （`getDetachLogPath(repoRoot, slug)`）が存在するとき `Detach log: <relpath>` 行を追加する
       （存在しないときは出さない）。既存の `Log:`（`<jobId>.log`）表示は無変更。
 
@@ -142,11 +142,11 @@
 
 ## T-08: テスト — detach spawn / 再帰防止 / spawnBackground 拡張
 
-- [ ] detach spawn 契約テスト（spawn 境界注入）: `detached: true` + stdio の log redirect + `unref` +
+- [x] detach spawn 契約テスト（spawn 境界注入）: `detached: true` + stdio の log redirect + `unref` +
       マーカー env + `--detach` 除去済み引数で spawn される。**破壊確認込み**（`detached` / マーカーを外すと落ちる）。
-- [ ] detach 親テスト: pipeline を実行せず slug と `job wait` / `job show` 案内を出力し exit 0。
-- [ ] 再帰防止テスト: マーカー付き（`isDetachedChild` 真）で起動された経路が spawn を呼ばず foreground に入る。
-- [ ] `spawnBackground` 拡張テスト: 新フィールド未指定で既存挙動（非 detached / `stdio:"ignore"` /
+- [x] detach 親テスト: pipeline を実行せず slug と `job wait` / `job show` 案内を出力し exit 0。
+- [x] 再帰防止テスト: マーカー付き（`isDetachedChild` 真）で起動された経路が spawn を呼ばず foreground に入る。
+- [x] `spawnBackground` 拡張テスト: 新フィールド未指定で既存挙動（非 detached / `stdio:"ignore"` /
       `stripSecrets`）を保つ。detach 経路で full-env（credential + マーカー）が保持される。
 
 **Acceptance Criteria**:
@@ -155,13 +155,13 @@
 
 ## T-09: テスト — `job wait` の gate / 終了コード / fallback / 不在
 
-- [ ] pid 生存中は on-disk status `awaiting-resume`（および `awaiting-archive`）でも待ち続ける。**破壊確認込み**
+- [x] pid 生存中は on-disk status `awaiting-resume`（および `awaiting-archive`）でも待ち続ける。**破壊確認込み**
       （status 先行 settle に改変すると落ちる）。
-- [ ] プロセス死亡後、status 別に 1 行報告と終了コード（awaiting-archive/archived → 0、
+- [x] プロセス死亡後、status 別に 1 行報告と終了コード（awaiting-archive/archived → 0、
       awaiting-resume/failed/terminated/canceled → 1）を固定する。
-- [ ] pid 不在の後方互換 state で `isStaleRunning` fallback（running かつ updatedAt 15 分超 → settle）に従う。
-- [ ] slug 不在で **2 秒間隔 × 5 回リトライ**後に exit 2 を返す（DI 注入で実時間なしに検証する）。
-- [ ] 実プロセス・実時間なしで検証する（liveness 判定・clock・state ロードを DI 注入）。
+- [x] pid 不在の後方互換 state で `isStaleRunning` fallback（running かつ updatedAt 15 分超 → settle）に従う。
+- [x] slug 不在で **2 秒間隔 × 5 回リトライ**後に exit 2 を返す（DI 注入で実時間なしに検証する）。
+- [x] 実プロセス・実時間なしで検証する（liveness 判定・clock・state ロードを DI 注入）。
 
 **Acceptance Criteria**:
 - 上記シナリオが green。破壊確認テストが process-death gate の有効性を示す。
@@ -169,11 +169,11 @@
 
 ## T-10: テスト — 出力契約（notice / guidance / help）と foreground 無変更
 
-- [ ] output contract テスト様式で、foreground notice が `--detach` と `job wait` を、detach guidance が slug と
+- [x] output contract テスト様式で、foreground notice が `--detach` と `job wait` を、detach guidance が slug と
       `job wait` / `job show` を、USAGE が `job wait` と `--detach` を含むことを固定する。
-- [ ] foreground（`--detach` なし）の run / resume の stdout 出力・終了コードが無変更であることを、
+- [x] foreground（`--detach` なし）の run / resume の stdout 出力・終了コードが無変更であることを、
       **既存テストを無変更のまま green** に保つことで確認する（新規 notice は stderr / quiet 抑制）。
-- [ ] `--detach --json` 同時指定で exit 2 を返し pipeline も spawn も行わないことをテストで固定する。
+- [x] `--detach --json` 同時指定で exit 2 を返し pipeline も spawn も行わないことをテストで固定する。
 
 **Acceptance Criteria**:
 - 3 種の文言存在テストが green。
@@ -182,19 +182,19 @@
 
 ## T-11: docs 追随
 
-- [ ] `docs/operations.md`（run の起動・監視の運用記述）に detach + wait の標準フローを追記する:
+- [x] `docs/operations.md`（run の起動・監視の運用記述）に detach + wait の標準フローを追記する:
       agent session からは `specrunner run <slug> --detach` で起動し `specrunner job wait <slug>` で待機、
       log は `specrunner job show <slug>` で辿る。SIGTERM idle-timeout の背景と、`--detach` が opt-in である
       （既定は foreground）ことを明記する。
-- [ ] repo 固有資源への不要な参照を持ち込まない（成果物は単体で読める記述にする）。
+- [x] repo 固有資源への不要な参照を持ち込まない（成果物は単体で読める記述にする）。
 
 **Acceptance Criteria**:
 - `docs/operations.md` に `--detach` と `job wait` を用いた標準フローが記載される。
 
 ## T-12: 最終検証
 
-- [ ] `typecheck && test` を green にする。
-- [ ] 受け入れ基準（request.md の全項目）と本 tasks / spec の対応を確認する。
+- [x] `typecheck && test` を green にする。
+- [x] 受け入れ基準（request.md の全項目）と本 tasks / spec の対応を確認する。
 
 **Acceptance Criteria**:
 - `bun run typecheck` と `bun run test` が green。

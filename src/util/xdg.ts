@@ -60,3 +60,19 @@ export function getVerboseLogPath(repoRoot: string, jobId: string): string {
 export function getAgentLogDir(repoRoot: string, jobId: string): string {
   return path.join(getVerboseLogDir(repoRoot), jobId);
 }
+
+/**
+ * Get the path to the detach log file for a slug.
+ * Detach logs capture stdout/stderr of the detach child process before pipeline
+ * logger initialisation. Keyed by slug (not jobId) because jobId is unknown at
+ * spawn time.
+ *
+ * Returns a path under .specrunner/logs/ (same dir as verbose logs) so that
+ * the existing log-dir observability path (job show) naturally covers it.
+ *
+ * Example: getDetachLogPath("/repo", "my-feature")
+ *          → "/repo/.specrunner/logs/my-feature.detach.log"
+ */
+export function getDetachLogPath(repoRoot: string, slug: string): string {
+  return path.join(getVerboseLogDir(repoRoot), `${slug}.detach.log`);
+}

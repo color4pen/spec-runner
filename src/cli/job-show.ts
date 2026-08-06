@@ -21,7 +21,7 @@ import type { JobState } from "../state/schema.js";
 import { logResult, stderrWrite } from "../logger/stdout.js";
 import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
 import { worktreeGuardError, SpecRunnerError, ERROR_CODES } from "../errors.js";
-import { getVerboseLogPath } from "../util/xdg.js";
+import { getVerboseLogPath, getDetachLogPath } from "../util/xdg.js";
 import { fold } from "../store/event-journal.js";
 import type { LineageRecord } from "../store/event-journal.js";
 import { inspectJournalDir, describeJournalIssue } from "../store/journal-integrity.js";
@@ -123,6 +123,15 @@ export async function printJobState(state: JobState, repoRoot: string = process.
 
   // Resolve the change dir for the slug (active → archive)
   const slug = getJobSlug(state);
+
+  // Show detach log path when it exists (slug-keyed, written by --detach parent)
+  if (slug) {
+    const detachLogPath = getDetachLogPath(repoRoot, slug);
+    if (fs.existsSync(detachLogPath)) {
+      const relDetachPath = path.relative(repoRoot, detachLogPath);
+      logResult(`Detach log: ${relDetachPath}`);
+    }
+  }
   if (!slug) return;
 
   const changeDir = await resolveChangeDir(slug, repoRoot);

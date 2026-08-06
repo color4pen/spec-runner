@@ -42,6 +42,9 @@ import { SpecRunnerError, EXIT_CODE } from "../errors.js";
 import type { CommandContext } from "./command-context.js";
 import { loadConfigWithOverlay } from "./load-config-with-overlay.js";
 import { SLUG_REGEX } from "../util/validation-patterns.js";
+import { isDetachedChild, detachSelf } from "../core/command/detach.js";
+import { parseRequestMdRaw } from "../parser/request-md.js";
+import { runJobWait } from "./job-wait.js";
 /** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
 const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
 
@@ -78,11 +81,14 @@ Request commands:
 
 Job commands:
   job start <request-slug|file>   pipeline 開始、jobId 発行
+  job start ... --detach          agent session 向け: detach して即座に return (job wait で監視)
   job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)
   job ls [--json]                 全 job 一覧（区分付き運用ビュー）
   job show <jobId|slug>           job state 詳細
+  job wait <slug>                 job が settle するまで block (process-death gate)
   job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)
   job resume <slug>               halted job を再開
+  job resume <slug> --detach      agent session 向け: detach して即座に return (job wait で監視)
   job attach --branch <branch>    remote branch の quiescent checkpoint を attach する
   job archive <slug>              change folder 移動・worktree 撤去・status 更新
   job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）
@@ -106,6 +112,7 @@ Inbox commands:
 
 Aliases:
   run <slug|file>                 job start の互換 alias
+  run <slug|file> --detach        agent session 向け: detach して即座に return (job wait で監視)
 
 Options:
   --help, -h    Show this help message
@@ -307,6 +314,59 @@ Options:
   --help, -h  Show this help message
 `;
 
+// ---------------------------------------------------------------------------
+// resolveSlugForDetach
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolve a slug string suitable for use in --detach mode from the given input.
+ *
+ * Resolution order:
+ *   1. Direct slug — input already matches SLUG_REGEX → returned as-is
+ *   2. File path — input resolves to an existing file → parse request.md for slug field
+ *   3. Store lookup — storeResolve(cwd, input) → parse resolved file for slug field
+ *
+ * Returns null if no valid slug can be extracted.
+ * This function is synchronous (uses fs.readFileSync) so it can be used in handlers
+ * without requiring await at the call site.
+ */
+function resolveSlugForDetach(input: string, cwd: string): string | null {
+  // 1. Direct slug match
+  if (SLUG_REGEX.test(input)) {
+    return input;
+  }
+
+  // 2. Try as a file path
+  const absPath = path.resolve(cwd, input);
+  if (fs.existsSync(absPath)) {
+    try {
+      const content = fs.readFileSync(absPath, "utf-8");
+      const raw = parseRequestMdRaw(content, absPath);
+      if (raw.slug && SLUG_REGEX.test(raw.slug)) {
+        return raw.slug;
+      }
+    } catch {
+      // ignore read/parse errors — fall through to store lookup
+    }
+  }
+
+  // 3. Try via active store (resolve slug → file path)
+  try {
+    const resolved = storeResolve(cwd, input);
+    if (fs.existsSync(resolved)) {
+      const content = fs.readFileSync(resolved, "utf-8");
+      const raw = parseRequestMdRaw(content, resolved);
+      if (raw.slug && SLUG_REGEX.test(raw.slug)) {
+        return raw.slug;
+      }
+    }
+  } catch {
+    // ignore resolution/parse errors
+  }
+
+  return null;
+}
+
 export const COMMANDS: Record<string, CommandEntry> = {
   init: {
     flags: {
@@ -344,10 +404,35 @@ export const COMMANDS: Record<string, CommandEntry> = {
       json: { type: "boolean" },
       "no-worktree": { type: "boolean" },
       issue: { type: "string" },
+      detach: { type: "boolean" },
     },
     positional: { name: "request.md|slug", required: true },
-    handler: async (parsed) => {
+    handler: async (parsed, ctx) => {
       const requestMdPath = parsed.positional!;
+
+      // --detach + --json are mutually exclusive (detach exits immediately, no JSON contract)
+      if (parsed.flags["detach"] && parsed.flags["json"]) {
+        logError("--detach and --json are mutually exclusive");
+        process.exit(EXIT_CODE.ARG_ERROR);
+      }
+
+      // Detach path: self-respawn and exit 0
+      if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
+        const repoRoot = ctx?.repoRoot ?? process.cwd();
+        const slug = resolveSlugForDetach(requestMdPath, ctx?.repoRoot ?? process.cwd());
+        if (!slug) {
+          logError(`Cannot resolve slug from '${requestMdPath}'. Provide a valid slug or request.md path with --detach.`);
+          process.exit(EXIT_CODE.GENERAL_ERROR);
+        }
+        const code = detachSelf({
+          args: process.argv.slice(2),
+          repoRoot,
+          slug,
+          env: process.env as Record<string, string | undefined>,
+        });
+        process.exit(code);
+      }
+
       const logLevel = resolveLogLevel({
         quiet: !!parsed.flags["quiet"],
         verbose: !!parsed.flags["verbose"],
@@ -442,10 +527,35 @@ export const COMMANDS: Record<string, CommandEntry> = {
           json: { type: "boolean" },
           "no-worktree": { type: "boolean" },
           issue: { type: "string" },
+          detach: { type: "boolean" },
         },
         positional: { name: "slug|file", required: true },
-        handler: async (parsed) => {
+        handler: async (parsed, ctx) => {
           const requestMdPath = parsed.positional!;
+
+          // --detach + --json are mutually exclusive
+          if (parsed.flags["detach"] && parsed.flags["json"]) {
+            logError("--detach and --json are mutually exclusive");
+            process.exit(EXIT_CODE.ARG_ERROR);
+          }
+
+          // Detach path: self-respawn and exit 0
+          if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
+            const repoRoot = ctx?.repoRoot ?? process.cwd();
+            const slug = resolveSlugForDetach(requestMdPath, ctx?.repoRoot ?? process.cwd());
+            if (!slug) {
+              logError(`Cannot resolve slug from '${requestMdPath}'. Provide a valid slug or request.md path with --detach.`);
+              process.exit(EXIT_CODE.GENERAL_ERROR);
+            }
+            const code = detachSelf({
+              args: process.argv.slice(2),
+              repoRoot,
+              slug,
+              env: process.env as Record<string, string | undefined>,
+            });
+            process.exit(code);
+          }
+
           const logLevel = resolveLogLevel({
             quiet: !!parsed.flags["quiet"],
             verbose: !!parsed.flags["verbose"],
@@ -512,6 +622,19 @@ export const COMMANDS: Record<string, CommandEntry> = {
           ));
         },
       },
+      wait: {
+        flags: {},
+        positional: { name: "slug", required: true },
+        handler: async (parsed, ctx) => {
+          const slug = parsed.positional;
+          if (!slug) {
+            stderrWrite("Error: 'job wait' requires a <slug> argument.");
+            process.exit(EXIT_CODE.ARG_ERROR);
+          }
+          const repoRoot = ctx?.repoRoot ?? process.cwd();
+          process.exit(await runJobWait(slug, { repoRoot }));
+        },
+      },
       cancel: {
         flags: {
           force: { type: "boolean" },
@@ -564,9 +687,33 @@ export const COMMANDS: Record<string, CommandEntry> = {
           json: { type: "boolean" },
           "no-worktree": { type: "boolean" },
           "apply-canon": { type: "boolean" },
+          detach: { type: "boolean" },
         },
         positional: { name: "slug", required: true },
         handler: async (parsed, ctx) => {
+          // --detach + --json are mutually exclusive
+          if (parsed.flags["detach"] && parsed.flags["json"]) {
+            logError("--detach and --json are mutually exclusive");
+            process.exit(EXIT_CODE.ARG_ERROR);
+          }
+
+          // Detach path: self-respawn and exit 0
+          if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
+            const slug = parsed.positional!;
+            if (!SLUG_REGEX.test(slug)) {
+              logError(`Invalid slug '${slug}' for --detach.`);
+              process.exit(EXIT_CODE.GENERAL_ERROR);
+            }
+            const repoRoot = ctx?.repoRoot ?? process.cwd();
+            const code = detachSelf({
+              args: process.argv.slice(2),
+              repoRoot,
+              slug,
+              env: process.env as Record<string, string | undefined>,
+            });
+            process.exit(code);
+          }
+
           const promptText = parsed.flags["prompt"] as string | undefined;
           const promptFile = parsed.flags["prompt-file"] as string | undefined;
 
