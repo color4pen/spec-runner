@@ -539,7 +539,11 @@ describe("TC-002: report server が外部プロセス形式でない", () => {
     expect("url" in reportServer).toBe(false);
   });
 
-  it("queryOptions.mcpServers['specrunner_report'] が type === 'sdk' である（in-process であることの直接確認）", async () => {
+  it("実 createSdkMcpServer 経由で生成した report server が type === 'sdk' で command / url を持たない", async () => {
+    // このテストは _createMcpServerFn を注入しない。production と同じ経路で
+    // SDK の createSdkMcpServer が呼ばれ、その戻り値が queryOptions.mcpServers に
+    // 載ることを確認する。mock を注入すると mock 自身の戻り値を検査するだけになり、
+    // 「report server が in-process である」ことの検証にならない。
     let capturedQueryParams:
       | { prompt: string | AsyncIterable<unknown>; options?: Record<string, unknown> }
       | undefined;
@@ -553,7 +557,7 @@ describe("TC-002: report server が外部プロセス形式でない", () => {
     const runner = new ClaudeCodeRunner({
       cwd: tempDir,
       _queryFn: queryFn,
-      _createMcpServerFn: makeMockCreateMcpServerFn(),
+      // _createMcpServerFn は注入しない — 実 SDK の createSdkMcpServer が使われる
     });
 
     const ctx: AgentRunContext = {
@@ -575,8 +579,10 @@ describe("TC-002: report server が外部プロセス形式でない", () => {
       | Record<string, unknown>
       | undefined;
     const reportServer = mcpServers!["specrunner_report"] as Record<string, unknown>;
-    // type: "sdk" indicates this is an in-process SDK MCP server, not a subprocess or HTTP server
+    // type: "sdk" は in-process の SDK MCP server を表す。subprocess (stdio) でも HTTP でもない。
     expect(reportServer["type"]).toBe("sdk");
+    expect("command" in reportServer).toBe(false);
+    expect("url" in reportServer).toBe(false);
   });
 });
 
