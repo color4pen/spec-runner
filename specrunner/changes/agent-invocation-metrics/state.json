@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f94950fe-34fd-496a-bba4-11c576680e10",
   "createdAt": "2026-08-05T13:51:00.030Z",
-  "updatedAt": "2026-08-06T00:01:31.185Z",
+  "updatedAt": "2026-08-06T00:02:37.962Z",
   "request": {
     "title": "SDK result の turn 数・所要時間・実コストを usage.json に記録する — 事後分析が試算に頼る状態を解消する",
     "type": "new-feature",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/agent-invocation-metrics-f94950fe",
-  "error": null,
+  "error": {
+    "code": "EGRESS_UNKNOWN_COMMIT",
+    "message": "Egress backstop: unknown commit 301645d7446ef2227d39fa1bb3fc326fbcf40b03 in publish range for branch 'feat/agent-invocation-metrics-f94950fe'.",
+    "hint": "A commit not created by the pipeline was found in the push range. Investigate and resolve before retrying."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -80,9 +84,14 @@
     "eb5ab9515b37472d4f843938fd77f563e50b824f",
     "99de2731ead545db29848a61a372a86d355402c7",
     "4727865136e75b2a259a3337cab65149bee06590",
-    "2eac1801098b7cb0a20548b92bdb294a02c3cde7"
+    "2eac1801098b7cb0a20548b92bdb294a02c3cde7",
+    "172600a527804eab59111a58c2ceef958fbef476"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "Egress backstop: unknown commit 301645d7446ef2227d39fa1bb3fc326fbcf40b03 in publish range for branch 'feat/agent-invocation-metrics-f94950fe'.",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -114,7 +123,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 77,
+    "historyCount": 79,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -127,7 +136,7 @@
       "verification": 2,
       "build-fixer": 1,
       "code-review": 2,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2
