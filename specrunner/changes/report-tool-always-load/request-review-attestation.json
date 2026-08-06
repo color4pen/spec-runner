@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:8a1908263e76e74d1beb8939ac45c4ea2bcd66aadf1530e6215e9c17aab8bc85",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/adapter/claude-code/agent-runner.ts:531-533 — createMcpServerFn({ name, tools }) called without alwaysLoad",
+    "src/adapter/claude-code/agent-runner.ts:582-585 — allowedTools is [\"Read\",\"Grep\",\"Glob\"] + MCP report tool name",
+    "src/adapter/claude-code/agent-runner.ts:529 — injectedCreateMcpServerFn used as factory",
+    "src/adapter/claude-code/agent-runner.ts:392 — export type CreateMcpServerFn = ClaudeSdkCreateMcpServer",
+    "src/adapter/claude-code/agent-runner.ts:399 — _createMcpServerFn?: CreateMcpServerFn in ClaudeCodeRunnerDeps",
+    "src/adapter/claude-code/agent-runner.ts:429 — this.injectedCreateMcpServerFn = deps._createMcpServerFn",
+    "src/adapter/claude-code/__tests__/workspace-tool-guard.test.ts:115-119 — makeMockCreateMcpServerFn() exists",
+    "src/adapter/claude-code/__tests__/workspace-tool-guard.test.ts:396 — _createMcpServerFn injected in test",
+    "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts:434 — alwaysLoad?: boolean in CreateSdkMcpServerOptions",
+    "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts:431 — per-tool tool({ alwaysLoad }) mentioned in comment"
+  ],
+  "sourceRevision": "461ecbf8fa663758171b711dd2f3d8eb32465bd4"
+}
