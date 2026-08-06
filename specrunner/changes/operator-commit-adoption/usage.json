@@ -47,6 +47,30 @@
       "durationMs": 515289,
       "durationApiMs": 515073,
       "totalCostUsd": 4.167732750000001
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-06T09:16:21.983Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 6999,
+          "outputTokens": 16,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 28,
+          "outputTokens": 17833,
+          "cacheReadInputTokens": 1234206,
+          "cacheCreationInputTokens": 72014
+        }
+      },
+      "jobId": "be9b1cb9-9fdf-4b10-95ae-ef2fe249b26b",
+      "stepName": "spec-review",
+      "numTurns": 34,
+      "durationMs": 356178,
+      "durationApiMs": 358806,
+      "totalCostUsd": 0.9149723000000001
     }
   ]
 }

@@ -191,6 +191,10 @@ Use the mock-harness pattern from `resume-apply-canon.test.ts` (mock
 - [ ] TC-I4 (persist failure → no launch): `adoptCommits: true`; the mocked store
       `persist` rejects. Assert `prepare()` throws `PrepareError(1)` (pipeline not
       launched).
+- [ ] TC-I4b (null runStore → no launch): `adoptCommits: true`; the mocked store
+      is null (no `runStore` available). Assert `prepare()` throws `PrepareError(1)`
+      (pipeline not launched). Confirms that a null `runStore` is treated identically
+      to a persist failure, as required by T-04.
 - [ ] TC-I5 (`--apply-canon` does not adopt): `detectCanonDirtyPaths` mocked to
       `[]` (clean worktree); `detectUnadoptedCommits` returns one commit;
       `applyCanon: true`, `adoptCommits: false`. Assert `prepare()` throws (adopt
@@ -203,14 +207,28 @@ Use the mock-harness pattern from `resume-apply-canon.test.ts` (mock
       whose message includes `exit 128`; no flags. Assert `prepare()` resolves
       (treated as clean). Add a companion asserting a non-128 rejection makes
       `prepare()` throw (fail-closed).
+- [ ] TC-I-combined (`--apply-canon --adopt-commits` composability): `applyCanon:
+      true`, `adoptCommits: true`; `detectCanonDirtyPaths` mocked to return dirty
+      paths so `commitOperatorCanon` produces an OID (e.g. `"apply-oid-abc"`)
+      appended to the ledger; `detectUnadoptedCommits` (called with the
+      post-apply-canon ledger that already contains `"apply-oid-abc"`) returns one
+      commit with OID `"operator-oid-xyz"` (the apply-canon OID is absent from the
+      return because it was already in the ledger when the gate ran). Assert
+      `prepare()` resolves; assert `synthesizedCommits` contains both
+      `"apply-oid-abc"` and `"operator-oid-xyz"`; assert `"apply-oid-abc"` appears
+      exactly once (not re-adopted), confirming D4's composability invariant: the
+      ledger read after apply-canon prevents the same-resume apply-canon OID from
+      being flagged as an unknown commit.
 - [ ] TC-I8 (destruction/sabotage record): inline comment documenting that
       removing the `commits.length > 0 && !adoptCommits` halt makes TC-I1 pass
       without throwing (the halt is load-bearing), plus an assertion that TC-I1's
       `prepare()` threw.
 
 **Acceptance Criteria**:
-- TC-I1–TC-I7 pass; TC-I8 recorded. The suite covers every request acceptance
-  criterion at the `prepare()` boundary.
+- TC-I1–TC-I7, TC-I4b, and TC-I-combined pass; TC-I8 recorded. The suite covers
+  every request acceptance criterion at the `prepare()` boundary, including the
+  D4 composability invariant (apply-canon OID is not re-flagged by the adopt gate)
+  and the null-runStore fail-closed guarantee from T-04.
 
 ---
 
