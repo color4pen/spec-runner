@@ -334,7 +334,7 @@ export function renderJobStatsTable(report: JobStatsReport): string {
     r.date ?? "-",
     formatDuration(r.durationSec),
     r.convergence !== null ? String(r.convergence) : "-",
-    r.costUsd !== null ? formatUsd(r.costUsd) : "-",
+    r.costUsd != null ? formatUsd(r.costUsd) : "-",
     r.measuredCostUsd != null ? formatUsd(r.measuredCostUsd) : "-",
     r.turns != null ? String(r.turns) : "-",
     r.outcome,

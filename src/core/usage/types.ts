@@ -49,6 +49,9 @@ export interface CommandInvocation {
    * report_result retries / outputVerification repair) are NOT included.
    * For all-turn cost, use modelUsage with computeCostUsd — modelUsage accumulates
    * all turns in agent-runner.
+   * Note: for models absent from the pricing table (e.g. claude-opus-5,
+   * claude-sonnet-5, claude-fable-5), computeCostUsd returns null; in those
+   * runs totalCostUsd is the only available cost value.
    * undefined if the runtime does not provide this value or if this entry
    * predates the agent-invocation-metrics feature.
    */
