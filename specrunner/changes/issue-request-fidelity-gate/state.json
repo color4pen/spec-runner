@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
   "createdAt": "2026-08-05T13:46:49.264Z",
-  "updatedAt": "2026-08-06T00:38:43.600Z",
+  "updatedAt": "2026-08-06T00:46:45.503Z",
   "request": {
     "title": "issue 起点 run の開始前忠実性ゲート — 黙って弱められた request で pipeline が走ることを封じる",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "regression-gate",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/issue-request-fidelity-gate-d6b2552f",
   "error": null,
   "pipelineId": "standard",
@@ -89,9 +89,14 @@
     "1339b55954d53066989a6307ec2538fd989ad596",
     "a9700cb73b67ca893f3eb0538b918338d3658d13",
     "a1518b3245c458a44e49b978e06b5abb7612afc6",
-    "95cf61cdeef0b18b1044f425c1e0cd1c763f31ce"
+    "95cf61cdeef0b18b1044f425c1e0cd1c763f31ce",
+    "8c8f26c7421f508fc9d7831bb6090b724dfc3530"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "regression-gate",
+    "reason": "regression-gate escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -125,7 +130,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 96,
+    "historyCount": 99,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -140,7 +145,8 @@
       "code-fixer": 3,
       "cross-boundary-invariants": 4,
       "scale-tolerance": 4,
-      "custom-reviewers": 4
+      "custom-reviewers": 4,
+      "regression-gate": 1
     }
   }
 }
