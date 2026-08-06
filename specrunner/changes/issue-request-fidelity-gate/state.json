@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
   "createdAt": "2026-08-05T13:46:49.264Z",
-  "updatedAt": "2026-08-06T00:48:15.139Z",
+  "updatedAt": "2026-08-06T01:01:42.751Z",
   "request": {
     "title": "issue 起点 run の開始前忠実性ゲート — 黙って弱められた request で pipeline が走ることを封じる",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/issue-request-fidelity-gate-d6b2552f",
   "error": null,
@@ -92,7 +92,9 @@
     "95cf61cdeef0b18b1044f425c1e0cd1c763f31ce",
     "8c8f26c7421f508fc9d7831bb6090b724dfc3530",
     "0a7ba61748fd6f2239eaa9bf4596163e3d34856f",
-    "b96d7b37860166c38b819a905dc0a2b530e307cd"
+    "b96d7b37860166c38b819a905dc0a2b530e307cd",
+    "93113e906ed8994a82e3d44a9100a8f6007ed033",
+    "4e31e4ee3a83011e1e9c271803925a2dd45e7e32"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -100,7 +102,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "a1518b3245c458a44e49b978e06b5abb7612afc6",
+      "approvedAtCommit": "93113e906ed8994a82e3d44a9100a8f6007ed033",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -111,12 +113,12 @@
         "src/core/verification/**"
       ],
       "invalidatedByCommit": null,
-      "canonHash": "specrunner/changes/issue-request-fidelity-gate/design.md:sha256:18092147d94c1d88fc7ed787b7178db8c76da83cf3e3503839c82e7c5ab233d9|specrunner/changes/issue-request-fidelity-gate/request.md:sha256:cfb69f467e597495f75523429b09914e7891ea65f89db711d6b8b4e02ee8033f|specrunner/changes/issue-request-fidelity-gate/spec.md:sha256:6a8eec452d23e4dd4f22bf5a7aad2ac2f228225c407802f9ecd4c22426737507|specrunner/changes/issue-request-fidelity-gate/tasks.md:sha256:efe8e22431a3c3b61c76171b2a93afdd0b6d3c7d92efc764e833cf53bda12891|specrunner/changes/issue-request-fidelity-gate/test-cases.md:sha256:6b05609bec3075a1dc1f2c2cfa753d33cdb8cc63e410406e8412750da6237a9d"
+      "canonHash": "specrunner/changes/issue-request-fidelity-gate/design.md:sha256:18092147d94c1d88fc7ed787b7178db8c76da83cf3e3503839c82e7c5ab233d9|specrunner/changes/issue-request-fidelity-gate/request.md:sha256:cfb69f467e597495f75523429b09914e7891ea65f89db711d6b8b4e02ee8033f|specrunner/changes/issue-request-fidelity-gate/spec.md:sha256:6a8eec452d23e4dd4f22bf5a7aad2ac2f228225c407802f9ecd4c22426737507|specrunner/changes/issue-request-fidelity-gate/tasks.md:sha256:efe8e22431a3c3b61c76171b2a93afdd0b6d3c7d92efc764e833cf53bda12891|specrunner/changes/issue-request-fidelity-gate/test-cases.md:sha256:8034bd96286985144bf1f86542c4530282e723ae87a7d59ea729e2d08e1905ff"
     },
     {
       "name": "scale-tolerance",
       "status": "approved",
-      "approvedAtCommit": "a1518b3245c458a44e49b978e06b5abb7612afc6",
+      "approvedAtCommit": "93113e906ed8994a82e3d44a9100a8f6007ed033",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
@@ -124,11 +126,11 @@
         "src/logger/**"
       ],
       "invalidatedByCommit": null,
-      "canonHash": "specrunner/changes/issue-request-fidelity-gate/design.md:sha256:18092147d94c1d88fc7ed787b7178db8c76da83cf3e3503839c82e7c5ab233d9|specrunner/changes/issue-request-fidelity-gate/request.md:sha256:cfb69f467e597495f75523429b09914e7891ea65f89db711d6b8b4e02ee8033f|specrunner/changes/issue-request-fidelity-gate/spec.md:sha256:6a8eec452d23e4dd4f22bf5a7aad2ac2f228225c407802f9ecd4c22426737507|specrunner/changes/issue-request-fidelity-gate/tasks.md:sha256:efe8e22431a3c3b61c76171b2a93afdd0b6d3c7d92efc764e833cf53bda12891|specrunner/changes/issue-request-fidelity-gate/test-cases.md:sha256:6b05609bec3075a1dc1f2c2cfa753d33cdb8cc63e410406e8412750da6237a9d"
+      "canonHash": "specrunner/changes/issue-request-fidelity-gate/design.md:sha256:18092147d94c1d88fc7ed787b7178db8c76da83cf3e3503839c82e7c5ab233d9|specrunner/changes/issue-request-fidelity-gate/request.md:sha256:cfb69f467e597495f75523429b09914e7891ea65f89db711d6b8b4e02ee8033f|specrunner/changes/issue-request-fidelity-gate/spec.md:sha256:6a8eec452d23e4dd4f22bf5a7aad2ac2f228225c407802f9ecd4c22426737507|specrunner/changes/issue-request-fidelity-gate/tasks.md:sha256:efe8e22431a3c3b61c76171b2a93afdd0b6d3c7d92efc764e833cf53bda12891|specrunner/changes/issue-request-fidelity-gate/test-cases.md:sha256:8034bd96286985144bf1f86542c4530282e723ae87a7d59ea729e2d08e1905ff"
     }
   ],
   "_journal": {
-    "historyCount": 101,
+    "historyCount": 112,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -140,10 +142,10 @@
       "verification": 3,
       "build-fixer": 2,
       "code-review": 1,
-      "code-fixer": 3,
-      "cross-boundary-invariants": 4,
-      "scale-tolerance": 4,
-      "custom-reviewers": 4,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 5,
+      "scale-tolerance": 5,
+      "custom-reviewers": 5,
       "regression-gate": 1
     }
   }
