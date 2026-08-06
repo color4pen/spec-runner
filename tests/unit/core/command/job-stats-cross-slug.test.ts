@@ -15,7 +15,7 @@ import * as fs from "node:fs/promises";
 // Helpers
 // ---------------------------------------------------------------------------
 
-/** claude-haiku-4-5 pricing: $0.8/MTok input */
+/** claude-haiku-4-5 pricing: $1.0/MTok input */
 const HAIKU_MODEL = "claude-haiku-4-5";
 
 function makeStateJson(opts: {
@@ -137,14 +137,14 @@ describe("TC-CROSS-001: same base-slug, two jobIds — no cost misassignment", (
     const ARCHIVED_JOB_ID = "aaaaaaaa-0000-0000-0000-000000000001";
     const ACTIVE_JOB_ID = "bbbbbbbb-0000-0000-0000-000000000002";
 
-    // Archive: 1M input tokens → $0.80 (haiku $0.8/MTok)
+    // Archive: 1M input tokens → $1.00 (haiku $1.0/MTok)
     await createArchiveFixture(tmpDir, "foo", {
       jobId: ARCHIVED_JOB_ID,
       date: "2026-05-01",
       invocations: [{ jobId: ARCHIVED_JOB_ID, inputTokens: 1_000_000 }],
     });
 
-    // Active: 2M input tokens → $1.60
+    // Active: 2M input tokens → $2.00
     await createActiveFixture(tmpDir, "foo", {
       jobId: ACTIVE_JOB_ID,
       date: "2026-06-01",
@@ -168,11 +168,11 @@ describe("TC-CROSS-001: same base-slug, two jobIds — no cost misassignment", (
 
     // Costs must be segregated, not merged or swapped
     const costs = parsed.runs.map((r) => r.costUsd).sort((a, b) => (a ?? 0) - (b ?? 0));
-    expect(costs[0]).toBeCloseTo(0.80, 4); // archived row: 1M * $0.8/MTok
-    expect(costs[1]).toBeCloseTo(1.60, 4); // active row: 2M * $0.8/MTok
+    expect(costs[0]).toBeCloseTo(1.00, 4); // archived row: 1M * $1.0/MTok
+    expect(costs[1]).toBeCloseTo(2.00, 4); // active row: 2M * $1.0/MTok
 
     // Total must equal sum (no double-counting)
-    expect(parsed.summary.costUsdTotal).toBeCloseTo(0.80 + 1.60, 4);
+    expect(parsed.summary.costUsdTotal).toBeCloseTo(1.00 + 2.00, 4);
   });
 });
 
@@ -199,14 +199,14 @@ describe("TC-CROSS-002: legacy (no-jobId) invocations do not cross-contaminate",
     const ARCHIVED_JOB_ID = "cccccccc-0000-0000-0000-000000000003";
     const ACTIVE_JOB_ID = "dddddddd-0000-0000-0000-000000000004";
 
-    // Archive: legacy invocation (no jobId), 1M input → $0.80
+    // Archive: legacy invocation (no jobId), 1M input → $1.00
     await createArchiveFixture(tmpDir, "bar", {
       jobId: ARCHIVED_JOB_ID,
       date: "2026-05-01",
       invocations: [{ inputTokens: 1_000_000 }], // no jobId = legacy
     });
 
-    // Active: legacy invocation (no jobId), 2M input → $1.60
+    // Active: legacy invocation (no jobId), 2M input → $2.00
     await createActiveFixture(tmpDir, "bar", {
       jobId: ACTIVE_JOB_ID,
       date: "2026-06-01",
@@ -227,11 +227,11 @@ describe("TC-CROSS-002: legacy (no-jobId) invocations do not cross-contaminate",
 
     // Each row should only see its own dir's legacy invocations
     const costs = parsed.runs.map((r) => r.costUsd).sort((a, b) => (a ?? 0) - (b ?? 0));
-    expect(costs[0]).toBeCloseTo(0.80, 4); // archived dir: 1M tokens
-    expect(costs[1]).toBeCloseTo(1.60, 4); // active dir: 2M tokens
+    expect(costs[0]).toBeCloseTo(1.00, 4); // archived dir: 1M tokens
+    expect(costs[1]).toBeCloseTo(2.00, 4); // active dir: 2M tokens
 
     // Total = sum, not doubled (no cross-contamination)
-    expect(parsed.summary.costUsdTotal).toBeCloseTo(0.80 + 1.60, 4);
+    expect(parsed.summary.costUsdTotal).toBeCloseTo(1.00 + 2.00, 4);
   });
 });
 

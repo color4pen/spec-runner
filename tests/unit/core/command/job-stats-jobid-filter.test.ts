@@ -45,8 +45,8 @@ function makeNormalizedState(opts: { jobId: string; slug?: string }): Normalized
 
 /**
  * Build a minimal ModelUsage that produces a known non-zero cost via claude-haiku-4-5
- * pricing ($0.8/MTok input, $4.0/MTok output, $0.08/MTok cacheRead, $1.0/MTok cacheWrite).
- * Using 1,000,000 input tokens → $0.80 cost.
+ * pricing ($1.0/MTok input, $5.0/MTok output, $0.1/MTok cacheRead, $1.25/MTok cacheWrite).
+ * Using 1,000,000 input tokens → $1.00 cost.
  */
 function makeModelUsage(inputTokens = 1_000_000) {
   return {
@@ -93,15 +93,15 @@ describe("TC-S01: same slug, two jobIds, shared usage file — no double-countin
     const rowA = deriveRunStat(stateA, usageFile);
     const rowB = deriveRunStat(stateB, usageFile);
 
-    // claude-haiku-4-5 input: $0.8/MTok
-    // job-A: 1M tokens → $0.80
-    // job-B: 2M tokens → $1.60
-    expect(rowA.costUsd).toBeCloseTo(0.80, 6);
-    expect(rowB.costUsd).toBeCloseTo(1.60, 6);
+    // claude-haiku-4-5 input: $1.0/MTok
+    // job-A: 1M tokens → $1.00
+    // job-B: 2M tokens → $2.00
+    expect(rowA.costUsd).toBeCloseTo(1.00, 6);
+    expect(rowB.costUsd).toBeCloseTo(2.00, 6);
 
     // Summary: costUsdTotal should be rowA + rowB (not doubled)
     const report = buildJobStatsReport([rowA, rowB]);
-    expect(report.summary.costUsdTotal).toBeCloseTo(0.80 + 1.60, 6);
+    expect(report.summary.costUsdTotal).toBeCloseTo(1.00 + 2.00, 6);
   });
 });
 
@@ -113,7 +113,7 @@ describe("TC-S02: legacy invocations without jobId are always included", () => {
   it("costUsd equals sum of all invocations when none have jobId", () => {
     const state = makeNormalizedState({ jobId: "job-X" });
 
-    // Two invocations with no jobId, each 1M input tokens → each $0.80
+    // Two invocations with no jobId, each 1M input tokens → each $1.00
     const usageFile = makeUsageFile([
       { modelUsage: { "claude-haiku-4-5": makeModelUsage(1_000_000) } },
       { modelUsage: { "claude-haiku-4-5": makeModelUsage(1_000_000) } },
@@ -121,8 +121,8 @@ describe("TC-S02: legacy invocations without jobId are always included", () => {
 
     const row = deriveRunStat(state, usageFile);
 
-    // Both should be included: 2 × $0.80 = $1.60
-    expect(row.costUsd).toBeCloseTo(1.60, 6);
+    // Both should be included: 2 × $1.00 = $2.00
+    expect(row.costUsd).toBeCloseTo(2.00, 6);
   });
 });
 
@@ -143,8 +143,8 @@ describe("TC-S03: mixed legacy + own-jobId invocations — both are included", (
 
     const row = deriveRunStat(state, usageFile);
 
-    // Both included: 2 × $0.80 = $1.60
-    expect(row.costUsd).toBeCloseTo(1.60, 6);
+    // Both included: 2 × $1.00 = $2.00
+    expect(row.costUsd).toBeCloseTo(2.00, 6);
   });
 });
 

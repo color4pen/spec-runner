@@ -4,7 +4,7 @@
  * All pricing values are in USD per 1,000,000 tokens (USD/MTok).
  *
  * Sources:
- *   Anthropic — https://www.anthropic.com/pricing (as of 2026-06-07)
+ *   Anthropic — SDK-reported modelUsage[].costUSD (measured 2026-08-06)
  *   OpenAI    — https://openai.com/api/pricing/   (as of 2026-06-12)
  */
 import type { ModelUsage } from "../port/model-usage.js";
@@ -25,12 +25,20 @@ export interface ModelPricing {
  * Static pricing table indexed by normalized model key.
  *
  * Sources:
- *   Anthropic — https://www.anthropic.com/pricing (as of 2026-06-07)
+ *   Anthropic — SDK-reported modelUsage[].costUSD (measured 2026-08-06)
  *   OpenAI    — https://openai.com/api/pricing/   (as of 2026-06-12)
  *
- * Note: [1m] suffix denotes the 1M-context tier. The per-token prices listed
- * here are a flat-rate approximation; Anthropic may apply per-prompt thresholds
- * for extended context usage.
+ * Anthropic rows are derived from single-turn probes whose reported costUSD was
+ * solved for the per-category rate. Every Claude row below reproduces its probe
+ * to at least 7 decimal places. Across all measured models the derived rates
+ * satisfy cacheRead = input x 0.1 and cacheWrite = input x 1.25; the 1.25 factor
+ * held even when the entire cache write carried a 1-hour TTL
+ * (cache_creation.ephemeral_1h_input_tokens), so TTL does not select a rate.
+ *
+ * Note: [1m] suffix denotes the 1M-context tier. Probes show the 1M-context tier
+ * billing at the same per-token rate as standard context, but every probe stayed
+ * below 200K tokens; a per-prompt threshold above that range would not appear in
+ * these measurements.
  *
  * OpenAI cache notes: cacheRead = cached-input tier price; cacheWrite = 0
  * (OpenAI does not charge for cache write operations).
@@ -38,45 +46,45 @@ export interface ModelPricing {
 export const MODEL_PRICING: Record<string, ModelPricing> = {
   // Claude Opus 4.8 — standard context
   "claude-opus-4-8": {
-    input: 15.0,
-    output: 75.0,
-    cacheRead: 1.5,
-    cacheWrite: 18.75,
+    input: 5.0,
+    output: 25.0,
+    cacheRead: 0.5,
+    cacheWrite: 6.25,
   },
-  // Claude Opus 4.8 — 1M-context tier (flat-rate approximation)
+  // Claude Opus 4.8 — 1M-context tier
   "claude-opus-4-8[1m]": {
-    input: 15.0,
-    output: 75.0,
-    cacheRead: 1.5,
-    cacheWrite: 18.75,
+    input: 5.0,
+    output: 25.0,
+    cacheRead: 0.5,
+    cacheWrite: 6.25,
   },
   // Claude Opus 4.7 — standard context
   "claude-opus-4-7": {
-    input: 15.0,
-    output: 75.0,
-    cacheRead: 1.5,
-    cacheWrite: 18.75,
+    input: 5.0,
+    output: 25.0,
+    cacheRead: 0.5,
+    cacheWrite: 6.25,
   },
   // Claude Opus 4.6 — standard context
   "claude-opus-4-6": {
-    input: 15.0,
-    output: 75.0,
-    cacheRead: 1.5,
-    cacheWrite: 18.75,
+    input: 5.0,
+    output: 25.0,
+    cacheRead: 0.5,
+    cacheWrite: 6.25,
   },
-  // Claude Opus 4.6 — 1M-context tier (flat-rate approximation)
+  // Claude Opus 4.6 — 1M-context tier
   "claude-opus-4-6[1m]": {
-    input: 15.0,
-    output: 75.0,
-    cacheRead: 1.5,
-    cacheWrite: 18.75,
+    input: 5.0,
+    output: 25.0,
+    cacheRead: 0.5,
+    cacheWrite: 6.25,
   },
   // Claude Opus 4.5 — standard context
   "claude-opus-4-5": {
-    input: 15.0,
-    output: 75.0,
-    cacheRead: 1.5,
-    cacheWrite: 18.75,
+    input: 5.0,
+    output: 25.0,
+    cacheRead: 0.5,
+    cacheWrite: 6.25,
   },
   // Claude Sonnet 4.6
   "claude-sonnet-4-6": {
@@ -94,10 +102,10 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
   // Claude Haiku 4.5
   "claude-haiku-4-5": {
-    input: 0.8,
-    output: 4.0,
-    cacheRead: 0.08,
-    cacheWrite: 1.0,
+    input: 1.0,
+    output: 5.0,
+    cacheRead: 0.1,
+    cacheWrite: 1.25,
   },
 
   // ---------------------------------------------------------------------------
