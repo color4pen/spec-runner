@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "dff2a562-cd6e-47b0-8e1d-b722f38a7130",
   "createdAt": "2026-08-06T08:47:19.904Z",
-  "updatedAt": "2026-08-06T08:56:56.532Z",
+  "updatedAt": "2026-08-06T08:59:16.788Z",
   "request": {
     "title": "report tool を alwaysLoad にして ToolSearch 経由の cache 全破棄を止める",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "fix/report-tool-always-load-dff2a562",
   "error": null,
@@ -65,14 +65,16 @@
   "synthesizedCommits": [
     "e3938db165cec55610bca9e99b714ce435217323",
     "7cad0df8d43b4e52daba6946e565811de098bd60",
-    "086d8a3515d0f7154a81504331f65c174f7d4b22"
+    "086d8a3515d0f7154a81504331f65c174f7d4b22",
+    "bbf9f548f8a7c61a5a1f4a1f69ded3148c890ebf"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 7,
+    "historyCount": 11,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
