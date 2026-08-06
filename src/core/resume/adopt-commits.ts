@@ -69,12 +69,20 @@ export async function detectUnadoptedCommits(
       { cwd: gitDir },
     );
   } catch (spawnErr) {
-    // Spawn failure (e.g. cwd does not exist — ENOENT). Treat as "exit 128" (not a git
-    // repository) so the caller's exit-128 carve-out applies and resumes continue normally
-    // in non-git environments (test harnesses, dev sandboxes without a real worktree).
-    throw new Error(
-      `git rev-list failed (exit 128): spawn failed — ${(spawnErr as Error).message}`,
-    );
+    // ENOENT means the working directory (or the git binary) is absent — the same situation
+    // git reports as exit 128 when the path exists but is not a repository. Only that case is
+    // rewritten so the caller's non-git carve-out applies and resumes continue normally in
+    // environments without a real worktree (test harnesses, dev sandboxes).
+    //
+    // Every other spawn failure (EACCES, EMFILE, ...) propagates unchanged so the caller
+    // fails closed. Reporting them as "exit 128" would make an unverifiable publish range
+    // indistinguishable from an empty one and silently skip this gate.
+    if ((spawnErr as NodeJS.ErrnoException).code === "ENOENT") {
+      throw new Error(
+        `git rev-list failed (exit 128): spawn failed — ${(spawnErr as Error).message}`,
+      );
+    }
+    throw spawnErr;
   }
 
   if (revListResult.exitCode !== 0) {

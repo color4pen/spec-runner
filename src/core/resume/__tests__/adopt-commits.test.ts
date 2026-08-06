@@ -324,6 +324,40 @@ describe("TC-010: detectUnadoptedCommits — throws with exit code in message on
 // TC-U5 (tasks.md T-05): buildAdoptEscalationMessage — contains commit info and three resolution options
 // ---------------------------------------------------------------------------
 
+describe("TC-010: detectUnadoptedCommits — spawn 失敗は ENOENT のみ非 git 扱い、他は fail-closed", () => {
+  it("ENOENT（作業ディレクトリ / git バイナリ不在）は 'exit 128' として報告される", async () => {
+    const enoent = Object.assign(new Error("spawn git ENOENT"), { code: "ENOENT" });
+    const spawnFn = (() => {
+      throw enoent;
+    }) as never;
+
+    await expect(detectUnadoptedCommits("/nonexistent", [], spawnFn)).rejects.toThrow(
+      /exit 128/,
+    );
+  });
+
+  it("ENOENT 以外の spawn 失敗は 'exit 128' に化けずそのまま伝播する（fail-closed）", async () => {
+    // 呼び出し側は message に "exit 128" が含まれるときだけ gate を素通りさせる。
+    // EACCES を "exit 128" として報告すると、検証不能な publish range が空の
+    // publish range と区別できなくなり gate が黙って無効化される。
+    const eacces = Object.assign(new Error("spawn git EACCES"), { code: "EACCES" });
+    const spawnFn = (() => {
+      throw eacces;
+    }) as never;
+
+    let caught: Error | null = null;
+    try {
+      await detectUnadoptedCommits("/some/worktree", [], spawnFn);
+    } catch (err) {
+      caught = err as Error;
+    }
+
+    expect(caught).not.toBeNull();
+    expect(caught!.message).not.toMatch(/exit 128/);
+    expect(caught).toBe(eacces);
+  });
+});
+
 describe("TC-U5 (tasks.md T-05): buildAdoptEscalationMessage contains commit info and three resolution options", () => {
   const SLUG = "operator-commit-adoption";
   const MOCK_COMMIT = {
