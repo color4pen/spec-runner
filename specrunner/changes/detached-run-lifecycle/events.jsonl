@@ -129,3 +129,10 @@
 {"type":"transition","ts":"2026-08-06T01:23:12.045Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-08-06T01:23:12.047Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-08-06T01:23:12.049Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-08-06T01:26:02.990Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"290682d7-9643-4858-affb-f0553bf84764","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/detached-run-lifecycle/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"evidence":{"checked":11,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-08-06T01:23:12.120Z","endedAt":"2026-08-06T01:26:01.233Z","commitOid":"2474928137d6826095fbe8f202d4c1708243622e"}
+{"type":"lineage","step":"regression-gate","ts":"2026-08-06T01:26:01.233Z","outputs":[{"path":"specrunner/changes/detached-run-lifecycle/regression-gate-result-001.md","hash":"sha256:64f29bb4e6a89b2933a3797f0e0fc35b3318628d014499c0e6e15ff903eba4eb"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-08-06T01:26:02.995Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-08-06T01:26:02.995Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-08-06T01:26:02.997Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-08-06T01:26:02.998Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
