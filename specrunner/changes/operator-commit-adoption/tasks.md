@@ -2,7 +2,7 @@
 
 ## T-01: Add shared egress resolution-options helper in `src/errors.ts`
 
-- [ ] Add an exported function `egressResolutionOptions(slugLabel?: string): string`
+- [x] Add an exported function `egressResolutionOptions(slugLabel?: string): string`
       that returns the three operator-facing resolution options as formatted
       multi-line text. Default `slugLabel` to `"<slug>"`.
   - Option 1 (adopt): references `specrunner job resume <slugLabel> --adopt-commits`
@@ -11,7 +11,7 @@
     they leave the publish range.
   - Option 3 (drop): states the operator should remove/revert the commit(s)
     (e.g. `git reset` / `git revert`) so they leave the publish range.
-- [ ] Update `egressUnknownCommitError(oid, branch)` (`src/errors.ts:474-480`) so
+- [x] Update `egressUnknownCommitError(oid, branch)` (`src/errors.ts:474-480`) so
       its operator-facing text (the `hint` argument) includes the output of
       `egressResolutionOptions()` (default `<slug>` placeholder). Keep the detail
       message (`Egress backstop: unknown commit ${oid} in publish range ...`)
@@ -32,10 +32,10 @@
 New leaf module mirroring `apply-canon.ts`, encapsulating publish-range
 reconciliation and escalation-message construction.
 
-- [ ] Create `src/core/resume/adopt-commits.ts`.
-- [ ] Export `interface UnadoptedCommit { oid: string; shortSha: string;
+- [x] Create `src/core/resume/adopt-commits.ts`.
+- [x] Export `interface UnadoptedCommit { oid: string; shortSha: string;
       subject: string; author: string; paths: string[]; }`.
-- [ ] Export `detectUnadoptedCommits(gitDir: string, ledger: readonly string[],
+- [x] Export `detectUnadoptedCommits(gitDir: string, ledger: readonly string[],
       spawnFn: SpawnFn): Promise<UnadoptedCommit[]>`:
   - Run `git rev-list HEAD --not --remotes=origin` in `gitDir` via
     `runSubprocess`. On non-zero exit, throw an `Error` whose message includes
@@ -51,7 +51,7 @@ reconciliation and escalation-message construction.
     - changed paths: `git diff-tree --no-commit-id --name-only -r <oid>`, split
       into non-empty lines (empty array on failure).
   - Return the `UnadoptedCommit[]` (empty when the range holds no unknown OIDs).
-- [ ] Export `buildAdoptEscalationMessage(slug: string, commits: UnadoptedCommit[]):
+- [x] Export `buildAdoptEscalationMessage(slug: string, commits: UnadoptedCommit[]):
       string`:
   - A header line stating unknown (non-pipeline) commits were found in the push
     range and no step was run.
@@ -59,9 +59,9 @@ reconciliation and escalation-message construction.
     paths.
   - The three resolution options via `egressResolutionOptions(slug)` (imported
     from `../../errors.js`), so the real slug is substituted.
-- [ ] Imports: `runSubprocess`, `gitExec`, `type SpawnFn` from
+- [x] Imports: `runSubprocess`, `gitExec`, `type SpawnFn` from
       `../../util/git-exec.js`; `egressResolutionOptions` from `../../errors.js`.
-- [ ] Do NOT import `defaultSpawnFn` — callers inject the spawn function.
+- [x] Do NOT import `defaultSpawnFn` — callers inject the spawn function.
 
 **Acceptance Criteria**:
 - `detectUnadoptedCommits` returns `[]` when every publish-range OID is in
@@ -77,14 +77,14 @@ reconciliation and escalation-message construction.
 
 ## T-03: Thread `--adopt-commits` through the CLI layer
 
-- [ ] `src/cli/command-registry.ts`: add `"adopt-commits": { type: "boolean" }`
+- [x] `src/cli/command-registry.ts`: add `"adopt-commits": { type: "boolean" }`
       to the `job resume` subcommand `flags` map (alongside `apply-canon`).
-- [ ] `src/cli/command-registry.ts`: pass `adoptCommits:
+- [x] `src/cli/command-registry.ts`: pass `adoptCommits:
       !!parsed.flags["adopt-commits"]` inside the object handed to `runResume`.
-- [ ] `src/cli/command-registry.ts`: add a one-line `--adopt-commits` description
+- [x] `src/cli/command-registry.ts`: add a one-line `--adopt-commits` description
       to the top-level `USAGE` string under the resume entry (e.g. "adopt
       operator-made commits into the egress ledger").
-- [ ] `src/cli/resume.ts`: add `adoptCommits?: boolean` to `ResumeOptions`; forward
+- [x] `src/cli/resume.ts`: add `adoptCommits?: boolean` to `ResumeOptions`; forward
       `adoptCommits: options.adoptCommits` when constructing `ResumeCommand`.
 
 **Acceptance Criteria**:
@@ -99,13 +99,13 @@ reconciliation and escalation-message construction.
 
 ## T-04: Add the adopt gate to `ResumeCommand.prepare()`
 
-- [ ] `src/core/command/resume.ts`: add `adoptCommits?: boolean` to the local
+- [x] `src/core/command/resume.ts`: add `adoptCommits?: boolean` to the local
       `ResumeOptions` interface.
-- [ ] Import `detectUnadoptedCommits`, `buildAdoptEscalationMessage` from
+- [x] Import `detectUnadoptedCommits`, `buildAdoptEscalationMessage` from
       `../resume/adopt-commits.js`. (`defaultSpawnFn`, `appendSynthesizedCommit`,
       and the `JobStateStore` `runStore` reference are already available in
       `prepare()`.)
-- [ ] Inside the existing `if (resolvedWorktreePath !== null && resolvedSlug !==
+- [x] Inside the existing `if (resolvedWorktreePath !== null && resolvedSlug !==
       null)` block, AFTER the apply-canon sub-block (and before / independent of
       `reconcileWorktreeArtifacts`), add the adopt gate:
   - Compute `ledger = updatedState.synthesizedCommits ?? []` (reads the
@@ -125,7 +125,7 @@ reconciliation and escalation-message construction.
     - When `this.options.adoptCommits` is false: build `msg =
       buildAdoptEscalationMessage(resolvedSlug, commits)`; `logError(msg)` (or
       `logError` a summary + `stderrWrite(msg)`); throw `PrepareError(1)`.
-- [ ] Ensure the ledger read happens after the apply-canon append so an
+- [x] Ensure the ledger read happens after the apply-canon append so an
       `operator-apply` commit from the same resume is not re-flagged.
 
 **Acceptance Criteria**:
@@ -149,18 +149,18 @@ reconciliation and escalation-message construction.
 
 ## T-05: Unit tests — `src/core/resume/__tests__/adopt-commits.test.ts`
 
-- [ ] TC-U1: `detectUnadoptedCommits` returns `[]` when all publish-range OIDs are
+- [x] TC-U1: `detectUnadoptedCommits` returns `[]` when all publish-range OIDs are
       in `ledger` (real tmp git repo + bare origin; ledger seeded with the range).
-- [ ] TC-U2: `detectUnadoptedCommits` returns only the unknown OID(s) when a
+- [x] TC-U2: `detectUnadoptedCommits` returns only the unknown OID(s) when a
       commit was added after the ledger snapshot (real tmp git repo). Assert
       `shortSha`, `subject`, `author`, and `paths` are populated from the commit.
-- [ ] TC-U3: `detectUnadoptedCommits` returns `[]` when the publish range is empty
+- [x] TC-U3: `detectUnadoptedCommits` returns `[]` when the publish range is empty
       (HEAD fully on origin).
-- [ ] TC-U4: `detectUnadoptedCommits` throws when `git rev-list` exits non-zero
+- [x] TC-U4: `detectUnadoptedCommits` throws when `git rev-list` exits non-zero
       (mocked `spawnFn` returning a non-zero exit); the message contains the exit
       code. (DESTROY note: degrading this to `return []` reintroduces the silent
       pass-through the gate removes.)
-- [ ] TC-U5: `buildAdoptEscalationMessage(slug, [commit])` contains the commit's
+- [x] TC-U5: `buildAdoptEscalationMessage(slug, [commit])` contains the commit's
       short SHA and all three resolution options (asserts `--adopt-commits`, an
       origin-push reference, and a remove/revert reference).
 
@@ -177,37 +177,37 @@ Use the mock-harness pattern from `resume-apply-canon.test.ts` (mock
 `transitionJob`, `resolveJobStateBySlug`, logger, etc.). Access the protected
 `prepare()` via the same type cast helper.
 
-- [ ] TC-I1 (no flag halts before any step): `detectUnadoptedCommits` mocked to
+- [x] TC-I1 (no flag halts before any step): `detectUnadoptedCommits` mocked to
       return one `UnadoptedCommit`; `applyCanon`/`adoptCommits` false. Assert
       `prepare()` throws (step not started). Verify the throw is the sole barrier —
       this maps to acceptance criterion "step が 1 つも実行されない".
-- [ ] TC-I2 (escalation content): same setup; assert the `logError`/`stderrWrite`
+- [x] TC-I2 (escalation content): same setup; assert the `logError`/`stderrWrite`
       output contains the mocked commit's short SHA and all three resolution
       options (`--adopt-commits`, origin-push, remove/revert).
-- [ ] TC-I3 (adopt appends + persists): `detectUnadoptedCommits` returns one
+- [x] TC-I3 (adopt appends + persists): `detectUnadoptedCommits` returns one
       commit; `adoptCommits: true`. Assert `runStore.persist` was called with a
       state whose `synthesizedCommits` includes the adopted OID, and `prepare()`
       resolves.
-- [ ] TC-I4 (persist failure → no launch): `adoptCommits: true`; the mocked store
+- [x] TC-I4 (persist failure → no launch): `adoptCommits: true`; the mocked store
       `persist` rejects. Assert `prepare()` throws `PrepareError(1)` (pipeline not
       launched).
-- [ ] TC-I4b (null runStore → no launch): `adoptCommits: true`; the mocked store
+- [x] TC-I4b (null runStore → no launch): `adoptCommits: true`; the mocked store
       is null (no `runStore` available). Assert `prepare()` throws `PrepareError(1)`
       (pipeline not launched). Confirms that a null `runStore` is treated identically
       to a persist failure, as required by T-04.
-- [ ] TC-I5 (`--apply-canon` does not adopt): `detectCanonDirtyPaths` mocked to
+- [x] TC-I5 (`--apply-canon` does not adopt): `detectCanonDirtyPaths` mocked to
       `[]` (clean worktree); `detectUnadoptedCommits` returns one commit;
       `applyCanon: true`, `adoptCommits: false`. Assert `prepare()` throws (adopt
       gate fires) and `commitOperatorCanon` was NOT called and the OID was NOT
       adopted — fixing that `--apply-canon` did not widen.
-- [ ] TC-I6 (regression — empty range): `detectUnadoptedCommits` returns `[]`;
+- [x] TC-I6 (regression — empty range): `detectUnadoptedCommits` returns `[]`;
       no flags. Assert `prepare()` resolves with `startStep` set and
       `synthesizedCommits` unchanged.
-- [ ] TC-I7 (exit-128 carve-out): `detectUnadoptedCommits` rejects with an error
+- [x] TC-I7 (exit-128 carve-out): `detectUnadoptedCommits` rejects with an error
       whose message includes `exit 128`; no flags. Assert `prepare()` resolves
       (treated as clean). Add a companion asserting a non-128 rejection makes
       `prepare()` throw (fail-closed).
-- [ ] TC-I-combined (`--apply-canon --adopt-commits` composability): `applyCanon:
+- [x] TC-I-combined (`--apply-canon --adopt-commits` composability): `applyCanon:
       true`, `adoptCommits: true`; `detectCanonDirtyPaths` mocked to return dirty
       paths so `commitOperatorCanon` produces an OID (e.g. `"apply-oid-abc"`)
       appended to the ledger; `detectUnadoptedCommits` (called with the
@@ -219,7 +219,7 @@ Use the mock-harness pattern from `resume-apply-canon.test.ts` (mock
       exactly once (not re-adopted), confirming D4's composability invariant: the
       ledger read after apply-canon prevents the same-resume apply-canon OID from
       being flagged as an unknown commit.
-- [ ] TC-I8 (destruction/sabotage record): inline comment documenting that
+- [x] TC-I8 (destruction/sabotage record): inline comment documenting that
       removing the `commits.length > 0 && !adoptCommits` halt makes TC-I1 pass
       without throwing (the halt is load-bearing), plus an assertion that TC-I1's
       `prepare()` threw.
@@ -234,9 +234,9 @@ Use the mock-harness pattern from `resume-apply-canon.test.ts` (mock
 
 ## T-07: CLI flag test — extend `src/cli/__tests__/command-registry-apply-canon.test.ts` (or a sibling)
 
-- [ ] Assert `job resume <slug> --adopt-commits` passes `adoptCommits: true` to
+- [x] Assert `job resume <slug> --adopt-commits` passes `adoptCommits: true` to
       `runResume`, and falsey when absent.
-- [ ] Assert combined flags `--adopt-commits --apply-canon --force` all reach
+- [x] Assert combined flags `--adopt-commits --apply-canon --force` all reach
       `runResume` with the correct values (no regression to existing flag wiring).
 
 **Acceptance Criteria**:
@@ -247,7 +247,7 @@ Use the mock-harness pattern from `resume-apply-canon.test.ts` (mock
 
 ## T-08: Update `egressUnknownCommitError` message test coverage
 
-- [ ] Add or extend a unit test asserting `egressUnknownCommitError` /
+- [x] Add or extend a unit test asserting `egressUnknownCommitError` /
       `egressResolutionOptions` output contains the three resolution option
       references (`--adopt-commits`, origin-push, remove/revert). Place it beside
       existing error-factory tests, or in the `adopt-commits.test.ts` file if no
@@ -261,8 +261,8 @@ Use the mock-harness pattern from `resume-apply-canon.test.ts` (mock
 
 ## T-09: `typecheck && test` green
 
-- [ ] Run `bun run typecheck` — zero type errors.
-- [ ] Run `bun run test` — all tests pass, including pre-existing resume /
+- [x] Run `bun run typecheck` — zero type errors.
+- [x] Run `bun run test` — all tests pass, including pre-existing resume /
       egress / apply-canon suites (no regression).
 
 **Acceptance Criteria**:

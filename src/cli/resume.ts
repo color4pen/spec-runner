@@ -39,6 +39,8 @@ export interface ResumeOptions {
   noWorktree?: boolean;
   /** When true, commit dirty protected canon paths as an operator-apply commit before resuming. */
   applyCanon?: boolean;
+  /** When true, adopt publish-range commits not in the ledger into synthesizedCommits before resuming. */
+  adoptCommits?: boolean;
 }
 
 export async function runResumeCore(slug: string, options: ResumeOptions): Promise<number> {
@@ -79,7 +81,7 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
       runtime,
       events,
       slug,
-      { ...options, noWorktree: options.noWorktree, applyCanon: options.applyCanon },
+      { ...options, noWorktree: options.noWorktree, applyCanon: options.applyCanon, adoptCommits: options.adoptCommits },
       (config) => createIssueFidelityComparator(config),
     ).execute();
   } catch (err) {

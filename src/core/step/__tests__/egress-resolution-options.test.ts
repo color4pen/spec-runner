@@ -17,9 +17,6 @@
 import { describe, it, expect } from "vitest";
 import { egressUnknownCommitError } from "../../../errors.js";
 
-// egressResolutionOptions does not exist yet — this import resolves to undefined (RED state).
-// After T-01 implementation the named export will exist and all TC-015 assertions will pass.
-// @ts-expect-error — egressResolutionOptions not yet exported; import will be undefined in red state
 import { egressResolutionOptions } from "../../../errors.js";
 
 // ---------------------------------------------------------------------------

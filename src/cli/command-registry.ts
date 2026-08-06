@@ -89,6 +89,7 @@ Job commands:
   job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)
   job resume <slug>               halted job を再開
   job resume <slug> --detach      agent session 向け: detach して即座に return (job wait で監視)
+  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger
   job attach --branch <branch>    remote branch の quiescent checkpoint を attach する
   job archive <slug>              change folder 移動・worktree 撤去・status 更新
   job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）
@@ -687,6 +688,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           json: { type: "boolean" },
           "no-worktree": { type: "boolean" },
           "apply-canon": { type: "boolean" },
+          "adopt-commits": { type: "boolean" },
           detach: { type: "boolean" },
         },
         positional: { name: "slug", required: true },
@@ -754,6 +756,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
               json: !!parsed.flags["json"],
               noWorktree: !!parsed.flags["no-worktree"],
               applyCanon: !!parsed.flags["apply-canon"],
+              adoptCommits: !!parsed.flags["adopt-commits"],
             });
           } catch (err: unknown) {
             if (err instanceof SpecRunnerError) {

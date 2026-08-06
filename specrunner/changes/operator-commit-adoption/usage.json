@@ -119,6 +119,30 @@
       "durationMs": 139108,
       "durationApiMs": 140459,
       "totalCostUsd": 0.3309899
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-06T09:39:32.756Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 7065,
+          "outputTokens": 16,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 59,
+          "outputTokens": 60212,
+          "cacheReadInputTokens": 5170299,
+          "cacheCreationInputTokens": 137976
+        }
+      },
+      "jobId": "be9b1cb9-9fdf-4b10-95ae-ef2fe249b26b",
+      "stepName": "test-materialize",
+      "numTurns": 55,
+      "durationMs": 1142940,
+      "durationApiMs": 1020440,
+      "totalCostUsd": 2.9790016999999995
     }
   ]
 }
