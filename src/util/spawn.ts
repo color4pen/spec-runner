@@ -5,6 +5,7 @@
  * Uses node:child_process.spawn (NOT bun:* / Bun.*) per project rules.
  */
 import { spawn } from "node:child_process";
+import { openSync } from "node:fs";
 import { stripSecrets } from "./env-filter.js";
 
 export interface SpawnResult {
@@ -46,6 +47,24 @@ export interface SpawnBackgroundOptions {
   cwd: string;
   env?: Record<string, string | undefined>;
   onError?: (err: Error) => void;
+  /**
+   * When true, spawn with `detached: true` so the child process can outlive
+   * the parent. Only used for the --detach self-respawn path.
+   * Callers that omit this field get the existing non-detached behaviour.
+   */
+  detached?: boolean;
+  /**
+   * When set, open this file path in append mode (0o600) and redirect the
+   * child's stdout and stderr to it.  Omitting preserves the existing
+   * `stdio: "ignore"` behaviour.
+   */
+  logFilePath?: string;
+  /**
+   * When set, use this env object verbatim (skipping stripSecrets) so that
+   * credentials are inherited by the detach child.  Omitting preserves the
+   * existing stripSecrets behaviour.
+   */
+  rawEnv?: Record<string, string>;
 }
 
 /**
@@ -75,16 +94,32 @@ export function spawnBackground(
   args: string[],
   opts: SpawnBackgroundOptions,
 ): BackgroundProcessHandle {
-  const env: Record<string, string> = opts.env
-    ? { ...stripSecrets(process.env as Record<string, string | undefined>), ...opts.env } as Record<string, string>
-    : stripSecrets(process.env as Record<string, string | undefined>) as Record<string, string>;
+  // Env resolution: rawEnv bypasses stripSecrets for the detach child path.
+  const env: Record<string, string> = opts.rawEnv
+    ? opts.rawEnv
+    : (opts.env
+      ? { ...stripSecrets(process.env as Record<string, string | undefined>), ...opts.env } as Record<string, string>
+      : stripSecrets(process.env as Record<string, string | undefined>) as Record<string, string>);
 
-  const proc = spawn(cmd, args, {
+  // stdio: open log file in append mode (owner-only) when logFilePath is set.
+  let stdio: "ignore" | ["ignore", number, number] = "ignore";
+  if (opts.logFilePath) {
+    const fd = openSync(opts.logFilePath, "a", 0o600);
+    stdio = ["ignore", fd, fd];
+  }
+
+  const spawnOpts: Parameters<typeof spawn>[2] = {
     cwd: opts.cwd,
     shell: false,
-    stdio: "ignore",
+    stdio,
     env,
-  });
+  };
+
+  if (opts.detached) {
+    (spawnOpts as Record<string, unknown>)["detached"] = true;
+  }
+
+  const proc = spawn(cmd, args, spawnOpts);
 
   // Attach error handler synchronously to prevent unhandled error events
   proc.on("error", (err: Error) => {

@@ -2,6 +2,47 @@
 
 issue を間口に、cron の定期実行（tick）が request の起動・再開・回復を自動で行う運用形態のセットアップと日常運用をまとめる。
 
+## デタッチ実行（`--detach` + `job wait`）
+
+agent セッション（LLM ループ）から pipeline を起動する標準フロー。パイプラインは 1〜2 時間かかることがあるため、セッションをブロックしないよう detached プロセスとして起動する。
+
+### 標準フロー
+
+```sh
+# 1. デタッチ起動 — 親プロセスは即座に終了し、子プロセスがバックグラウンドで実行される
+specrunner run <request-path> --detach
+
+# 2. 完了まで待機 — プロセス死活でゲートするため on-disk 状態のラグに影響されない
+specrunner job wait <slug>
+# 終了コード 0: awaiting-archive（正常完走）/ archived
+# 終了コード 1: awaiting-resume / failed / terminated / canceled（要確認）
+# 終了コード 2: slug が見つからない
+
+# 3. 詳細・ログ確認
+specrunner job show <slug>
+```
+
+`job resume` や `job start` も同様に `--detach` を指定できる。
+
+### 背景
+
+foreground 実行（`--detach` なし）は agent セッションがアクティブな間は問題ないが、セッションの idle timeout（SIGTERM）が pipeline より先に来ると強制終了される。`--detach` を使うと CLI が自身を `detached: true` で再起動し、子プロセスは親（agent セッション）の死後も生き続ける。
+
+- **デフォルトは foreground**（`--detach` はオプトイン）
+- **`--detach` と `--json` は同時指定不可**（exit 2）
+- **子プロセスの stdout/stderr はログファイルに書き込まれる**（`specrunner job show <slug>` の `Detach log:` 行で確認できる）
+- Windows の detach 挙動は現時点では検証対象外（POSIX 一次対象）
+
+### `job wait` の仕組み
+
+`job wait` は on-disk の `state.json` を直接参照するだけでなく、**プロセス死活（process-death gate）** を組み合わせて settle を判定する:
+
+1. pid（`state.pid` → sidecar → 直近観測 pid）が取得できる場合、プロセスが生きている間は `state.json` の status に関わらず待ち続ける
+2. pid が取得できない場合は `isStaleRunning`（updatedAt が 15 分以上前なら stale）で fallback 判定
+3. プロセス死亡後、`state.json` を再読み込みして最終 status を報告する。status が `running` のままの場合（クラッシュ等）は `awaiting-resume` として報告する
+
+
+
 ## 前提
 
 - `specrunner init` 済み・`specrunner doctor` が green であること

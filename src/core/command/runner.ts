@@ -48,6 +48,7 @@ import { transitionJob } from "../../state/lifecycle.js";
 import { evaluateIssueFidelityGate } from "../gate/issue-fidelity-gate.js";
 import { notifyJobTerminal } from "../notify/issue-notifier.js";
 import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
+import { emitForegroundNotice } from "./operational-guidance.js";
 
 // ---------------------------------------------------------------------------
 // PrepareResult
@@ -125,6 +126,11 @@ export abstract class CommandRunner {
     // Step 1: prepare — subclass override
     // Note: re-throw any error so callers (e.g. ResumeCommand.execute) can inspect it
     const prepared = await this.prepare();
+
+    // Emit foreground notice to stderr (skipped automatically when running as
+    // a detach child via SPECRUNNER_DETACHED marker).  Must run after prepare()
+    // so that log-level configuration is already applied by the subclass.
+    emitForegroundNotice(process.env as Record<string, string | undefined>);
 
     const { startStep, request, config, slug, workspaceOpts, repoRoot } = prepared;
     let { jobState } = prepared;
