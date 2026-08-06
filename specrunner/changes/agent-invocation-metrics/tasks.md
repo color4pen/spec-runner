@@ -66,25 +66,23 @@
 - metrics 付き invocation を含む usage.json で `showUsage` を実行 → 出力に turn 数・所要時間・実コストが含まれる（AC #6）。
 - metrics を一切持たない invocation だけの usage.json で `showUsage` を実行 → 例外なく exit 0 で、既存の modelUsage 出力が保たれる（AC #6）。
 
-## T-06: job stats が実測 cost を優先し、cost basis と turn 総和を出力する
+## T-06: job stats が試算 cost と実測 cost を別列で出力し、turn 総和を出力する
 
-- [x] `src/core/command/job-stats.ts` の `JobStatRow`（`:31-38`）に **optional** フィールド `costBasis?: "measured" | "estimated" | "mixed" | null` と `turns?: number | null` を追加する（D8。optional にすることで既存テストの手書きリテラルが型検査を通る）。
-- [x] `deriveRunStat`（`:88-177`）の cost 算出（`:146-171`）を invocation 単位のロジックに変える（既存の jobId フィルタ・legacy no-jobId 包含は不変）:
-  - `typeof inv.totalCostUsd === "number"` → 総和に `inv.totalCostUsd` を加算し `hasMeasured = true`。**同 invocation の `modelUsage` からは `computeCostUsd` を加えない**（二重計上防止、requirement 6）。
-  - そうでなく `inv.modelUsage` があれば → 各 priced モデルの `computeCostUsd` を加算（既存挙動）。1 つでも priced なら `hasEstimated = true`。
-  - どちらでもない invocation は寄与なし。
-  - `costUsd` は寄与があれば総和、無ければ `null`（既存と同じ）。
-  - `costBasis`: `hasMeasured && hasEstimated → "mixed"` / `hasMeasured → "measured"` / `hasEstimated → "estimated"` / どちらも無し → `null`。
+- [x] `src/core/command/job-stats.ts` の `JobStatRow` に **optional** フィールド `measuredCostUsd?: number | null` と `turns?: number | null` を追加する（D8。optional にすることで既存テストの手書きリテラルが型検査を通る）。
+- [x] `deriveRunStat` の cost 算出を 2 系列の独立した積み上げにする（既存の jobId フィルタ・legacy no-jobId 包含は不変）:
+  - `costUsd`: `inv.modelUsage` の各 priced モデルについて `computeCostUsd` を加算する。**既存挙動から変更しない**。1 件も寄与しなければ `null`。
+  - `measuredCostUsd`: `typeof inv.totalCostUsd === "number"` の値を加算する。1 件も持たなければ `null`。
+  - 同一 invocation は両系列に寄与するが列が異なるため二重計上にならない。`costBasis` は導入しない。
 - [x] `deriveRunStat` で turn 総和を算出する: 対象 job の各 invocation の `inv.numTurns`（`typeof === "number"`）を総和し、1 件も無ければ `null`。`turns` に設定する（requirement 7、AC #9）。
-- [x] `deriveRunStat` の戻り値は `turns` / `costBasis` を**常に**設定する（値または `null`）。これにより実出力（JSON / table）に常に含まれる（D8）。
-- [x] `renderJobStatsTable`（`:271-324`）に「Turns」列を追加し、cost basis を可視化する（Cost セルへの注記 or 独立列。undefined/null は `-`）。ヘッダ・null セルの既存表示（`-`）を壊さない。summary ブロックは**変えない**。
-- [x] `renderJobStatsJson`（`:334-336`）は `JobStatRow` を丸ごと `JSON.stringify` するため、`deriveRunStat` が `turns` / `costBasis` を設定すれば JSON に自動的に含まれる（追加改修不要、確認のみ）。summary schema・top-level keys（`runs` / `summary`）は変えない。
+- [x] `deriveRunStat` の戻り値は `turns` / `measuredCostUsd` を**常に**設定する（値または `null`）。これにより実出力（JSON / table）に常に含まれる（D8）。
+- [x] `renderJobStatsTable` に「Turns」列と SDK 実測 cost 列を追加する（undefined/null は `-`）。ヘッダ・null セルの既存表示（`-`）を壊さない。summary ブロックは**変えない**。
+- [x] `renderJobStatsJson` は `JobStatRow` を丸ごと `JSON.stringify` するため、`deriveRunStat` が `turns` / `measuredCostUsd` を設定すれば JSON に自動的に含まれる（追加改修不要、確認のみ）。summary schema・top-level keys（`runs` / `summary`）は変えない。
 
 **Acceptance Criteria**（`tests/unit/core/command/job-stats.test.ts` に新規 TC を追加）:
-- `totalCostUsd` を持つ invocation → その実測値で計上され、同 invocation の modelUsage 試算は加算されない（requirement 6、AC #7）。
-- `totalCostUsd` を持たず priced modelUsage を持つ invocation → `computeCostUsd` 試算で計上される（AC #7）。
-- 実測 invocation と試算 invocation が混在する run → 総和が二重計上されず、`costBasis === "mixed"`（AC #7/#8）。全て実測 → `"measured"`、全て試算 → `"estimated"`、cost 無し → `null`。
-- 単価表に無いモデル + `totalCostUsd` あり → `totalCostUsd` で計上され脱落しない（問題 1 の解消）。
+- `totalCostUsd` を持つ invocation → `measuredCostUsd` に計上され、`costUsd` は同 invocation の modelUsage 試算のまま（列が独立、AC #7）。
+- `totalCostUsd` を持たない invocation → `measuredCostUsd` に寄与せず、`costUsd` は `computeCostUsd` 試算で計上される（AC #7）。
+- `totalCostUsd` を持つ invocation が 1 件も無い run → `measuredCostUsd === null`、`costUsd` は従来どおり（AC #8）。
+- 単価表に無いモデル + `totalCostUsd` あり → `costUsd` は `null` のままだが `measuredCostUsd` には計上される（実額が見える）。
 - `numTurns` を持つ複数 invocation → run の `turns` がその総和（AC #9）。`numTurns` を持つ invocation が 1 件も無い run → `turns === null`（AC #9）。
 - **既存の job-stats テスト（TC-JSTATS-001..030）が無変更で green**（AC #10）。特に TC-JSTATS-008/009/010（cost）・TC-JSTATS-024（JSON row exact-key）・TC-JSTATS-025（summary exact-key）・TC-JSTATS-020/021/022（table）を回帰確認する。
 - `bun run typecheck` green。
@@ -99,7 +97,7 @@
   - legacy usage.json の後方互換読み書き（AC #4、T-07）。
   - 欠落フィールドが undefined（AC #5、T-02）。
   - usage show の metrics 表示 + 非保持でも例外なし（AC #6、T-05）。
-  - job stats の実測優先・二重計上なし（AC #7、T-06）・cost basis 判別（AC #8、T-06）・turn 総和と null（AC #9、T-06）。
+  - job stats の試算列と実測列の分離・二重計上なし（AC #7、T-06）・`measuredCostUsd` の null 挙動（AC #8、T-06）・turn 総和と null（AC #9、T-06）。
   - 既存 usage / job-stats テストが無変更で green（AC #10）。
 - [x] `package.json` に新規 runtime 依存が追加されていないことを確認する（実装は `node:*` + 既存 util のみ）。
 - [x] `bun run build && bun run typecheck && bun run test` が green。

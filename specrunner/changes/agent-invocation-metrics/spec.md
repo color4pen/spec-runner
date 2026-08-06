@@ -78,33 +78,35 @@ local runtime の agent step が成功したとき、その step の `CommandInv
 **When** `usage show <slug>` を実行する
 **Then** 例外を出さずに既存の modelUsage 出力を表示し、metrics 列は省略または `-` になる
 
-### Requirement: job stats は実測 cost を invocation 単位で優先し試算にフォールバックする
+### Requirement: job stats は試算 cost と実測 cost を別列で出力する
 
-`job stats` の run 単位 cost は、`totalCostUsd` を持つ invocation についてはその実測値を用い、持たない invocation についてのみ既存の単価表試算（`computeCostUsd`）にフォールバックする MUST。1 つの invocation が実測と試算の両方に計上されない（二重計上しない）SHALL。実測と試算が混在する run でも run 総和が二重計上されない MUST。run の cost が実測・試算・混在のいずれに基づくかを出力から判別できる情報を含める MUST。
+`job stats` の run 単位 cost は、単価表試算（`costUsd`）と SDK 実測（`measuredCostUsd`）を**独立した 2 列**として出力する MUST。`costUsd` は run 内の各 invocation の `modelUsage` から `computeCostUsd` で算出した総和とし、既存挙動を変更しない MUST。`measuredCostUsd` は `totalCostUsd` を持つ invocation の総和とし、1 件も持たない run では `null` になる MUST。同一 invocation が両列に寄与しても、列が異なるため二重計上にならない SHALL。
 
-#### Scenario: totalCostUsd を持つ invocation は実測値で計上される
+`costUsd` を実測値で置換しない理由は、`modelUsage` が follow-up query 分を加算した全 turn の値であるのに対し、`totalCostUsd` は本 work query 1 回分の値であり、置換すると follow-up を持つ step で費用が過小になるためである。
+
+#### Scenario: totalCostUsd を持つ invocation は measuredCostUsd に計上される
 
 **Given** run の invocation が `totalCostUsd` を持つ（`modelUsage` も持つ）
 **When** `job stats` が cost を算出する
-**Then** その invocation は `totalCostUsd` の値で計上され、同 invocation の `modelUsage` からの試算は加算されない
+**Then** その値は `measuredCostUsd` に加算され、`costUsd` は同 invocation の `modelUsage` からの試算のまま算出される
 
-#### Scenario: totalCostUsd を持たない invocation は試算にフォールバックする
+#### Scenario: totalCostUsd を持たない run では measuredCostUsd が null になる
 
-**Given** run の invocation が `totalCostUsd` を持たず、priced な `modelUsage` を持つ
+**Given** run のどの invocation も `totalCostUsd` を持たず、priced な `modelUsage` を持つ
 **When** `job stats` が cost を算出する
-**Then** その invocation は `computeCostUsd` の試算で計上される
+**Then** `measuredCostUsd` は `null` になり、`costUsd` は `computeCostUsd` の総和として従来どおり算出される
 
 #### Scenario: 実測と試算が混在する run で二重計上しない
 
 **Given** 同一 run に `totalCostUsd` を持つ invocation と持たない invocation が混在する
 **When** `job stats` が run 総和を算出する
-**Then** 実測分は `totalCostUsd`、試算分は `computeCostUsd` で各 invocation が高々 1 回だけ寄与し、cost が実測・試算・混在のいずれに基づくかを判別できる情報が出力に含まれる（この場合は「混在」）
+**Then** `costUsd` は全 invocation の試算総和、`measuredCostUsd` は実測を持つ invocation の総和となり、両者は別列なので互いに加算されない
 
-#### Scenario: 単価表に無いモデルでも totalCostUsd があれば集計に載る
+#### Scenario: 単価表に無いモデルでも totalCostUsd があれば実額が見える
 
 **Given** run の invocation が単価表に存在しないモデルの `modelUsage` を持つが、`totalCostUsd` も持つ
 **When** `job stats` が cost を算出する
-**Then** その invocation は `totalCostUsd` で計上され、集計から静かに脱落しない
+**Then** `costUsd` は試算不能のため `null` になるが、`measuredCostUsd` には実額が計上される
 
 ### Requirement: job stats は run 単位の turn 数総和を出力する
 

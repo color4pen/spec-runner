@@ -189,19 +189,19 @@
 
 ---
 
-## TC-021: costBasis が "measured" になる（全 invocation が totalCostUsd を持つ場合）
+## TC-021: measuredCostUsd が totalCostUsd の総和になる
 
 **Category**: unit
 **Priority**: should
 **Source**: design.md > D6
 
-**GIVEN** run 内の全 invocation が `totalCostUsd` を持ち、`modelUsage` の priced 試算は存在しない（または存在しても totalCostUsd を持つ）
+**GIVEN** run 内の複数 invocation が `totalCostUsd` を持つ
 **WHEN** `deriveRunStat` が run 統計を算出する
-**THEN** `costBasis === "measured"` になる
+**THEN** `measuredCostUsd` がそれらの総和になり、`costUsd` は同 invocation の `modelUsage` 試算のまま独立に算出される
 
 ---
 
-## TC-022: costBasis が "estimated" になる（全 invocation が totalCostUsd を持たず priced modelUsage を持つ場合）
+## TC-022: measuredCostUsd が null でも costUsd は従来どおり算出される
 
 **Category**: unit
 **Priority**: should
@@ -209,19 +209,19 @@
 
 **GIVEN** run 内のどの invocation も `totalCostUsd` を持たず、priced な `modelUsage` だけを持つ
 **WHEN** `deriveRunStat` が run 統計を算出する
-**THEN** `costBasis === "estimated"` になる
+**THEN** `measuredCostUsd === null` かつ `costUsd` は `computeCostUsd` の総和になる
 
 ---
 
-## TC-023: costBasis が null になる（cost 寄与が無い場合）
+## TC-023: 単価表に無いモデルでも measuredCostUsd には計上される
 
 **Category**: unit
 **Priority**: should
 **Source**: design.md > D6
 
-**GIVEN** run 内のどの invocation も `totalCostUsd` を持たず、`modelUsage` も無いか単価表に無いモデルのみ
+**GIVEN** run 内の invocation が単価表に無いモデルの `modelUsage` と `totalCostUsd` を持つ
 **WHEN** `deriveRunStat` が run 統計を算出する
-**THEN** `costBasis === null` かつ `costUsd === null` になる
+**THEN** `costUsd === null`（試算不能）だが `measuredCostUsd` には実額が計上される
 
 ---
 

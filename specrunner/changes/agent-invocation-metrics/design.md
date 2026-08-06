@@ -103,25 +103,18 @@ metrics は次の経路で usage.json に届く:
 - **Rationale**: 追加は additive。metrics 非保持エントリ（既存形式・managed）でも壊れないことが要件。
 - **Alternatives considered**: 常に列を出し欠落を `-` にする → どちらでも可。逐次テキスト出力なので「存在時のみ追記」が既存フォーマットへの侵襲が少なく、AC #6 の「省略または `-`」に合致する。
 
-### D6: `job stats` の cost は invocation 単位で実測優先・試算フォールバック。`costBasis` で判別可能にする
+### D6: `job stats` は試算 cost と実測 cost を別列で併記する（置換・優先はしない）
 
-`deriveRunStat`（`job-stats.ts:146-171`）の costUsd 算出を次に変える。対象 job の各 invocation（既存の jobId フィルタ・legacy no-jobId 包含は不変）について:
+`deriveRunStat`（`job-stats.ts`）の cost 算出は、対象 job の各 invocation（既存の jobId フィルタ・legacy no-jobId 包含は不変）について次の 2 系列を**独立に**積む。
 
-- `typeof inv.totalCostUsd === "number"` → その値を総和に加える。**この invocation の `modelUsage` からは computeCostUsd を加えない**（二重計上防止）。`hasMeasured = true`。
-- そうでなく `inv.modelUsage` があれば → 各 priced モデルの `computeCostUsd` を加える（既存挙動）。1 つでも priced なら `hasEstimated = true`。
-- どちらでもない invocation（totalCostUsd 無し + priced modelUsage 無し）は総和に寄与しない。
+- `costUsd`（既存フィールド、挙動不変）: `inv.modelUsage` の各 priced モデルについて `computeCostUsd` を加算する。1 件も寄与しなければ `null`。
+- `measuredCostUsd`（新規フィールド）: `typeof inv.totalCostUsd === "number"` の値を加算する。1 件も持たなければ `null`。
 
-`costUsd` は寄与があれば総和、無ければ `null`（既存と同じ）。判別情報として `JobStatRow` に `costBasis?: "measured" | "estimated" | "mixed" | null` を追加する:
+同一 invocation が両方に寄与するが、**列が違うので二重計上にはならない**。`costBasis` は導入しない（判別は `measuredCostUsd` が null か否かで足りる）。
 
-- `hasMeasured && hasEstimated` → `"mixed"`
-- `hasMeasured` のみ → `"measured"`
-- `hasEstimated` のみ → `"estimated"`
-- どちらも無い（costUsd も null） → `null`
-
-この設計により、**単価表に無いモデルでも `totalCostUsd` があれば集計に載る**（問題 1 の「静かな脱落」を解消）。
-
-- **Rationale**: invocation 単位で「実測があればそれ、無ければ試算」を選ぶと、同一 invocation の二重計上が構造的に起きない（各 invocation は高々 1 経路で寄与）。混在 run でも寄与は invocation ごとに 1 回。`costBasis` を run 単位に持たせれば「この run の $ は実測か試算か」が JSON / table から読める（AC #8）。
-- **Alternatives considered**: run 全体で「totalCostUsd が 1 つでもあれば全部実測、無ければ全部試算」 → 却下（一部 invocation だけ実測を持つ混在 run で試算分を落とすか二重計上する）。cost の判別を出力の注記文だけで表す → 却下（JSON からは機械判定できない。フィールドの方が固定しやすい）。
+- **Rationale**: 2 つの値は測る対象が違う。`modelUsage` は agent-runner が follow-up query 分（postWorkPrompts / report_result 再試行 / outputVerification repair）を**加算した全 turn の token** であり、SDK の `total_cost_usd` は**本 work query 1 回分の実額**である。同じ列で「実測があれば実測、無ければ試算」と切り替えると、follow-up を持つ step（実測では implementer と adr-gen）で follow-up 分の費用が落ち、既存の試算より不正確になる。列を分ければ両方の性質が保たれ、差分そのものが「単価表の誤差 + cache write の TTL 内訳誤差 + follow-up 分」の大きさとして読める。
+- **Alternatives considered**: invocation 単位で実測優先・試算フォールバックし `costBasis` で判別する → 却下（上記のとおり follow-up 分を落とす）。`total_cost_usd` を follow-up query 分も加算して実測を全 turn 化する → 却下（follow-up は別 query invocation であり、SDK は session 累計を返さない。加算は可能だが、本 request の目的は記録の追加であって adapter の集計責務を増やすことではない）。金額を記録から外し token だけにする → 却下（単価表に無いモデルの静かな脱落と TTL 内訳誤差が残る）。
+- **積み残し**: 単価表に現行世代モデル（`claude-opus-5` / `claude-sonnet-5` / `claude-fable-5`）が無い問題は本 request では解消しない。`measuredCostUsd` があればそれらの run でも実額は見えるが、`costUsd` は依然 `null` になる。単価表の更新は別 request とする。
 
 ### D7: `job stats` は run 単位の turn 数総和を出力する（無ければ null）
 
@@ -132,23 +125,23 @@ metrics は次の経路で usage.json に届く:
 
 ### D8: 新 `JobStatRow` フィールドは **optional** にして AC #10（既存 job-stats テスト無変更）を機械的に満たす
 
-`turns?` / `costBasis?` を `JobStatRow` の **optional** フィールドにする。これにより:
+`turns?` / `measuredCostUsd?` を `JobStatRow` の **optional** フィールドにする。これにより:
 
 - 既存テスト（TC-JSTATS-020/021/022/024/025 等）が `buildJobStatsReport` に渡す**手書き `JobStatRow` リテラル**は、新フィールドを省略しても TypeScript の型検査を通る（required だと全リテラルがコンパイルエラーになり AC #10 が広範に破れる）。
-- TC-JSTATS-024（JSON row のキー exact 一致）は手書きリテラルを使うため、`turns`/`costBasis` を省略したリテラルは `JSON.stringify` で当該キーが出ず、`["convergence","costUsd","date","durationSec","outcome","slug"]` の exact 一致が**そのまま成立**する。
-- 一方、実コード経路 `deriveRunStat` は `turns` / `costBasis` を**常に**設定する（値または `null`）ため、実際の `job stats` 出力（IO fixture 経由の JSON / table）には常に含まれる（AC #8/#9）。IO fixture テスト（TC-JSTATS-026..030）は row の exact-key 集合を検査せず個別フィールド（costUsd / durationSec 等）だけを見るため無変更で green。
-- table renderer は Turns 列・cost basis 表示を追加するが、`renderJobStatsTable` のヘッダ検査（TC-JSTATS-020, `toContain`）・null セル検査（TC-JSTATS-021, ダッシュ数 `>= 3`）・summary 検査（TC-JSTATS-022）はいずれも列追加で壊れない（undefined は `-` で描画）。summary schema は**変えない**ため TC-JSTATS-025 も無変更で green。
+- TC-JSTATS-024（JSON row のキー exact 一致）は手書きリテラルを使うため、`turns`/`measuredCostUsd` を省略したリテラルは `JSON.stringify` で当該キーが出ず、`["convergence","costUsd","date","durationSec","outcome","slug"]` の exact 一致が**そのまま成立**する。
+- 一方、実コード経路 `deriveRunStat` は `turns` / `measuredCostUsd` を**常に**設定する（値または `null`）ため、実際の `job stats` 出力（IO fixture 経由の JSON / table）には常に含まれる（AC #8/#9）。IO fixture テスト（TC-JSTATS-026..030）は row の exact-key 集合を検査せず個別フィールド（costUsd / durationSec 等）だけを見るため無変更で green。
+- table renderer は Turns 列・SDK 実測 cost 列を追加するが、`renderJobStatsTable` のヘッダ検査（TC-JSTATS-020, `toContain`）・null セル検査（TC-JSTATS-021, ダッシュ数 `>= 3`）・summary 検査（TC-JSTATS-022）はいずれも列追加で壊れない（undefined は `-` で描画）。summary schema は**変えない**ため TC-JSTATS-025 も無変更で green。
 
 - **Rationale**: request は「新出力の追加」（AC #8/#9）と「既存 job-stats テスト無変更 green」（AC #10）を同時に要求する。両者は「新フィールドを optional にし、実経路 `deriveRunStat` では常時設定・手書きリテラルでは省略可」とすることで、テスト改変なしに両立する。summary へ集計を足さないことで TC-JSTATS-025 も温存する。
 - **Alternatives considered**: 新フィールドを required にして既存テストのリテラルを一斉修正 → 却下（AC #10「無変更」に反し、修正範囲も広い）。turn 総和/cost basis を summary にも足す → 却下（TC-JSTATS-025 の summary exact-key を壊す。request は run 単位のみ要求）。
 
 ## Risks / Trade-offs
 
-- **[Risk] `JobStatRow` optional 化で実出力に `turns`/`costBasis` が入る一方、既存 exact-key テストは手書きリテラルで温存される二重基準になる** → **Mitigation**: 実経路 `deriveRunStat` が常時設定することを新規テスト（AC #8/#9 固定）で担保する。設計意図（optional はリテラル互換のため、実経路は常時設定）を design/tasks に明記し、レビューで「実出力に含まれる」ことを確認する。**[Permanent Trade-off]**: TC-JSTATS-024 は手書きリテラルを使い続けるため、`turns`/`costBasis` を含む行スキーマのロックとしては永続的に機能しなくなる。これは意図的な設計上のトレードオフであり、AC #10（既存テスト無変更）を優先した帰結。当該フィールドの実出力への含有は TC-JSTATS-024 ではなく AC #8/#9 の新テストが永続的に担保する役割を担う。
+- **[Risk] `JobStatRow` optional 化で実出力に `turns`/`measuredCostUsd` が入る一方、既存 exact-key テストは手書きリテラルで温存される二重基準になる** → **Mitigation**: 実経路 `deriveRunStat` が常時設定することを新規テスト（AC #8/#9 固定）で担保する。設計意図（optional はリテラル互換のため、実経路は常時設定）を design/tasks に明記し、レビューで「実出力に含まれる」ことを確認する。**[Permanent Trade-off]**: TC-JSTATS-024 は手書きリテラルを使い続けるため、`turns`/`measuredCostUsd` を含む行スキーマのロックとしては永続的に機能しなくなる。これは意図的な設計上のトレードオフであり、AC #10（既存テスト無変更）を優先した帰結。当該フィールドの実出力への含有は TC-JSTATS-024 ではなく AC #8/#9 の新テストが永続的に担保する役割を担う。
 - **[Known Limitation] `totalCostUsd` は main work turn 分のコストのみを反映し、follow-up ターン分のコストを含まない** → `agent-runner.ts` の reportRetry / postWorkPrompts / outputVerification の各 follow-up ターンは query invocation ごとに modelUsage を積算するが（`:918-929`, `:965-977`）、`extractedMetrics`（D2）は success result message から 1 回だけ抽出し follow-up ループでは更新しない。各 query invocation の `total_cost_usd` はその invocation 単体のコストを表す（コメント `:915-917`）。D6 のロジック（`totalCostUsd` 有 → `computeCostUsd` をスキップ）と組み合わせると、follow-up ターンが発生したステップでは job stats の cost が実際より低くなる可能性がある。request の目標「実額が得られる」に対して、follow-up ターンが多い run（多段 retry 等）では誤差が拡大するという既知制限。follow-up ターンが少ない通常の run では影響は小さい。根本解は SDK が累計コストを返す経路が整備されるまで保留とする。
 - **[Risk] error subtype の metrics が usage.json に載らない** → **Trade-off**: 既存の記録経路は success のみ（`applySuccessPostPersistEffects`）。requirement 4 も success 経路のみを対象にする。error subtype の抽出は adapter の `AgentRunResult` で固定（AC #2）し、永続化は将来課題とする（Open Questions）。silent な要件縮小ではなく明示的なスコープ確認。
 - **[Risk] metrics は modelUsage を伴うエントリにのみ相乗りするため、modelUsage 欠落 + metrics 有りの稀ケースで記録されない** → **Mitigation**: local runtime の agent step success では modelUsage が常在するため実害は無い。gate を変えると既存の record 生成条件に波及するため変えない（D3）。design に前提として明記。
-- **[Risk] `computeCostUsd` の試算（USD）と SDK の `total_cost_usd`（実測 USD）を同一 `costUsd` 総和に混ぜる** → **Trade-off**: 両者とも USD なので加算の単位は整合する。混在の事実は `costBasis: "mixed"` で可視化する（AC #8）。厳密な実測/試算の分離出力は Non-Goal。
+- **[解消済み] `computeCostUsd` の試算（USD）と SDK の `total_cost_usd`（実測 USD）の混在** → D6 の列分離により、両者が同一総和に混ざる経路自体が無くなった。`costUsd` は試算のみ、`measuredCostUsd` は実測のみを積む。
 - **[Risk] SDK ローカル型（`agent-runner.ts:370-374`）を拡張せず index-signature 経由の `unknown` 読取に頼る** → **Mitigation**: `extractInvocationMetrics` の `typeof number` ガードで型安全に number/undefined へ落とす。ローカル型に 4 フィールドを追記してもよいが、`unknown` 防御読取は欠落テスト（AC #5）とも整合するため必須ガードは残す。
 
 ## Open Questions

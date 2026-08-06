@@ -69,7 +69,7 @@ Claude Agent SDK は result message で `num_turns` / `duration_ms` / `duration_
 4. metrics フィールドを持たない既存形式の usage.json を `appendInvocation` で読み書きしても、既存エントリが保持され、パースエラーにならないことをテストで固定する。
 5. SDK result に該当フィールドが欠落している場合、対応する `CommandInvocation` フィールドが undefined になり、`0` や `null` で埋められないことをテストで固定する。
 6. `usage show` が metrics を含めて表示し、metrics を持たないエントリでも例外なく出力できることをテストで固定する。
-7. `job stats` の `costUsd` が、`totalCostUsd` を持つ invocation については実測値を、持たない invocation については `computeCostUsd` の試算を使い、両者が混在する run でも二重計上されないことをテストで固定する。
-8. `job stats` の出力が、その run の cost が実測・試算・混在のいずれに基づくかを判別できる情報を含むことをテストで固定する。
+7. `job stats` が試算 cost と実測 cost を別列で出力する。`costUsd` は `modelUsage` からの `computeCostUsd` 試算のまま（既存挙動を変更しない）、`measuredCostUsd` は `totalCostUsd` の総和とし、同一 invocation が両列に寄与しても二重計上にならないことをテストで固定する。
+8. `job stats` の `measuredCostUsd` が、`totalCostUsd` を持つ invocation が 1 件も無い run では `null` になり、その場合も `costUsd` が従来どおり算出されることをテストで固定する。
 9. `job stats` が run 単位の turn 数総和を出力し、`numTurns` を持つ invocation が 1 件も無い run では null になることをテストで固定する。
 10. 既存の usage 関連テストおよび `job stats` の既存テストが無変更で green。
