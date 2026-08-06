@@ -123,6 +123,7 @@ function makeDeps(overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     cwd: tempDir,
     githubClient: {
       verifyBranch: vi.fn().mockResolvedValue(true),
+      getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
       getRawFile: vi.fn().mockResolvedValue(null),
       verifyPath: vi.fn().mockResolvedValue(true),
       verifyTokenScopes: vi.fn().mockResolvedValue({ status: 200, scopes: ["repo"] }),
