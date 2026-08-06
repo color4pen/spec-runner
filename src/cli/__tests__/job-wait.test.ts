@@ -342,7 +342,11 @@ describe("TC-013: プロセス死亡後に disk status が running なら awaiti
       repoRoot: "/repo",
       aliveState,
       deadState,
-      aliveForTicks: 1,
+      // aliveForTicks: 2 so the poll loop sees the alive state once (setting
+      // lastKnownPid) before the process dies.  aliveForTicks: 1 would be
+      // consumed by the not-found retry loop, leaving lastKnownPid unset and
+      // causing an infinite loop on the no-PID path with status=running.
+      aliveForTicks: 2,
     });
 
     const restore = captureStdout();
@@ -364,7 +368,10 @@ describe("TC-013: プロセス死亡後に disk status が running なら awaiti
       repoRoot: "/repo",
       aliveState,
       deadState,
-      aliveForTicks: 1,
+      // Same reasoning as the test above: the not-found retry loop consumes
+      // tick 0, so aliveForTicks: 2 ensures the poll loop sees the alive pid
+      // (setting lastKnownPid) before the death transition.
+      aliveForTicks: 2,
     });
 
     const restore = captureStdout();
