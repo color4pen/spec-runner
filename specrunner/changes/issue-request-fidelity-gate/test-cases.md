@@ -345,6 +345,18 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
+### TC-029: gate halt が checkConsecutiveEscalations カウンタを消費しない
+
+**Category**: unit
+**Priority**: must
+**Source**: design.md > D2 カウンタ非消費（意図した挙動）
+
+**GIVEN** gate halt を 3 回繰り返した job state（`steps["request-review"]` に StepRun エントリなし）
+**WHEN** `checkConsecutiveEscalations` を評価する
+**THEN** false を返し、resume に `--force` が要求されない
+
+---
+
 ## Result
 
 ```yaml
