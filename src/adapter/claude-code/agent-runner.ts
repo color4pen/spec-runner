@@ -530,6 +530,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       const toolSpec = reportTool;
       reportMcpServer = createMcpServerFn({
         name: REPORT_MCP_SERVER_NAME,
+        alwaysLoad: true,
         tools: [
           {
             name: toolSpec.name,

@@ -4,7 +4,7 @@
 
 対象ファイル: `src/adapter/claude-code/agent-runner.ts`
 
-- [ ] `agent-runner.ts:531-533` の `createMcpServerFn({ name: REPORT_MCP_SERVER_NAME, tools: [...] })` 呼び出しに `alwaysLoad: true` を追加する
+- [x] `agent-runner.ts:531-533` の `createMcpServerFn({ name: REPORT_MCP_SERVER_NAME, tools: [...] })` 呼び出しに `alwaysLoad: true` を追加する
 
 変更前:
 ```ts
@@ -33,9 +33,9 @@ reportMcpServer = createMcpServerFn({
 
 `makeMockCreateMcpServerFn()` を拡張してキャプチャできる版を作るか、既存 mock を差し替える形で options を捕捉し、`alwaysLoad: true` を assert するテストを追加する。
 
-- [ ] `_createMcpServerFn` に渡す mock を「受け取った options を変数に保存して返す」形に作る（`makeMockCreateMcpServerFn` を拡張するか、新規の helper 関数を追加）
-- [ ] `reportTool` が設定されたコンテキストで `ClaudeCodeRunner.run()` を実行し、mock が受け取った options に `alwaysLoad: true` が含まれることを assert する
-- [ ] テスト説明文に TC 番号を付与する（例: `TC-FW-08` 等、既存 TC 番号と重複しない番号を使う）
+- [x] `_createMcpServerFn` に渡す mock を「受け取った options を変数に保存して返す」形に作る（`makeMockCreateMcpServerFn` を拡張するか、新規の helper 関数を追加）
+- [x] `reportTool` が設定されたコンテキストで `ClaudeCodeRunner.run()` を実行し、mock が受け取った options に `alwaysLoad: true` が含まれることを assert する
+- [x] テスト説明文に TC 番号を付与する（例: `TC-FW-08` 等、既存 TC 番号と重複しない番号を使う）
 
 **Acceptance Criteria**:
 - `_createMcpServerFn` に渡された options が `alwaysLoad: true` を含むことを assert するテストが存在する
@@ -48,11 +48,11 @@ reportMcpServer = createMcpServerFn({
 
 `queryOptions.mcpServers` に登録された report server オブジェクトが外部プロセス形式・ネットワーク形式でないことを assert する。
 
-- [ ] `queryFn` に渡された `options.mcpServers` を捕捉する（既存の `capturedParams` 機構を流用可能）
-- [ ] `options.mcpServers[REPORT_MCP_SERVER_NAME]` が存在することを assert する
-- [ ] そのオブジェクトが `command` プロパティを持たないことを assert する（stdio 形式でない）
-- [ ] そのオブジェクトが `url` プロパティを持たないことを assert する（SSE/HTTP 形式でない）
-- [ ] （オプション）`type === "sdk"` のように in-process であることをより直接的に示せる場合は追加 assert する
+- [x] `queryFn` に渡された `options.mcpServers` を捕捉する（既存の `capturedParams` 機構を流用可能）
+- [x] `options.mcpServers[REPORT_MCP_SERVER_NAME]` が存在することを assert する
+- [x] そのオブジェクトが `command` プロパティを持たないことを assert する（stdio 形式でない）
+- [x] そのオブジェクトが `url` プロパティを持たないことを assert する（SSE/HTTP 形式でない）
+- [x] （オプション）`type === "sdk"` のように in-process であることをより直接的に示せる場合は追加 assert する
 
 **Acceptance Criteria**:
 - `queryOptions.mcpServers` に載る report server が stdio 形式でも SSE/HTTP 形式でもないことを assert するテストが存在する
@@ -62,8 +62,8 @@ reportMcpServer = createMcpServerFn({
 
 対象ファイル: `src/adapter/claude-code/__tests__/workspace-tool-guard.test.ts`
 
-- [ ] 既存テストで `ctx.policy?.reportTool` が undefined の場合に `_createMcpServerFn` が呼ばれないこと、または `queryOptions.mcpServers` が含まれないことが既に assert されているか確認する
-- [ ] 上記 assert が存在しない場合のみ、新規テストを追加する（存在する場合は「確認済み」とコメントを残すだけでよい）
+- [x] 既存テストで `ctx.policy?.reportTool` が undefined の場合に `_createMcpServerFn` が呼ばれないこと、または `queryOptions.mcpServers` が含まれないことが既に assert されているか確認する
+- [x] 上記 assert が存在しない場合のみ、新規テストを追加する（存在する場合は「確認済み」とコメントを残すだけでよい）
 
 **Acceptance Criteria**:
 - `ctx.policy?.reportTool` が undefined の step では `_createMcpServerFn` が呼ばれず、`queryOptions` に `mcpServers` が含まれないことが既存または新規テストで固定されている
@@ -71,8 +71,8 @@ reportMcpServer = createMcpServerFn({
 
 ## T-05: 全テスト・型チェックの通過確認
 
-- [ ] `bun run typecheck` が green であることを確認する
-- [ ] `bun run test` が green であることを確認する（`src/adapter/claude-code/__tests__/` の既存テストを含む）
+- [x] `bun run typecheck` が green であることを確認する
+- [x] `bun run test` が green であることを確認する（`src/adapter/claude-code/__tests__/` の既存テストを含む）
 
 **Acceptance Criteria**:
 - `typecheck && test` が green
