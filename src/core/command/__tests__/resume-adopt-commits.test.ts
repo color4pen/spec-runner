@@ -646,9 +646,18 @@ describe("TC-005: persist failure prevents pipeline launch", () => {
   });
 
   it("TC-005: pipeline is NOT launched on persist failure (prepare() threw before execute())", async () => {
-    // Verify the throw from prepare() prevents the pipeline from starting
+    // Verify the throw from prepare() prevents the pipeline from starting.
+    // Use a counter-based mock so the FIRST persist (state-transition at resume.ts:248)
+    // succeeds and the SECOND persist (adoption) is the one that fails — specifically
+    // exercising the adoption persist guard, not the earlier state-transition guard.
     mockDetectUnadoptedCommits.mockResolvedValue([UNKNOWN_COMMIT]);
-    vi.mocked(MOCK_STORE.persist).mockRejectedValue(new Error("persist failed"));
+    let persistCallCount = 0;
+    vi.mocked(MOCK_STORE.persist).mockImplementation(async () => {
+      persistCallCount++;
+      if (persistCallCount >= 2) {
+        throw new Error("persist failed");
+      }
+    });
 
     const cmd = new ResumeCommand(
       {} as never,

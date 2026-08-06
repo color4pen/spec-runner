@@ -386,6 +386,7 @@ export class ResumeCommand extends CommandRunner {
           } else {
             // fail-closed: escalate with per-commit details and three resolution options.
             const msg = buildAdoptEscalationMessage(resolvedSlug, unadoptedCommits);
+            logError(`Unknown commits in publish range: ${unadoptedCommits.map((c) => c.shortSha).join(", ")}`);
             stderrWrite(msg);
             throw new PrepareError(1, "Unknown commits in publish range; use --adopt-commits");
           }
@@ -408,9 +409,15 @@ export class ResumeCommand extends CommandRunner {
         logInfo(`[reconcile] quarantined + removed interrupted-attempt residue: ${reconcileResult.reconciled.join(", ")}` +
           (reconcileResult.quarantineDir ? ` — 退避先: ${reconcileResult.quarantineDir}` : ""));
       }
-    } else if (this.options.applyCanon) {
-      // --apply-canon has no effect without a worktree — warn but continue.
-      stderrWrite("Warning: --apply-canon has no effect without a worktree (no-worktree mode or worktree not found). Continuing normally.");
+    } else {
+      if (this.options.applyCanon) {
+        // --apply-canon has no effect without a worktree — warn but continue.
+        stderrWrite("Warning: --apply-canon has no effect without a worktree (no-worktree mode or worktree not found). Continuing normally.");
+      }
+      if (this.options.adoptCommits) {
+        // --adopt-commits cannot check the publish range without a worktree — warn but continue.
+        stderrWrite("Warning: --adopt-commits has no effect without a worktree (no-worktree mode or worktree not found). The publish range cannot be checked; commits will not be adopted.");
+      }
     }
 
     return {
