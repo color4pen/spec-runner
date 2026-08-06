@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d6b2552f-67d1-40cf-962a-5e0aedd6307c",
   "createdAt": "2026-08-05T13:46:49.264Z",
-  "updatedAt": "2026-08-06T01:16:11.359Z",
+  "updatedAt": "2026-08-06T01:19:56.849Z",
   "request": {
     "title": "issue 起点 run の開始前忠実性ゲート — 黙って弱められた request で pipeline が走ることを封じる",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/issue-request-fidelity-gate-d6b2552f",
   "error": null,
   "pipelineId": "standard",
@@ -97,7 +97,8 @@
     "4e31e4ee3a83011e1e9c271803925a2dd45e7e32",
     "70e8b5324d41c142778904e72afe6f5cebb2d929",
     "21a421d0a54cd4da13de7643b45c4bb19735dbf3",
-    "4fbef197625eed5068eeff16b07867ca0611927b"
+    "4fbef197625eed5068eeff16b07867ca0611927b",
+    "5bfe26cf3a8a1c9cee037fdf2b110a7e55a1c2d6"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -132,8 +133,13 @@
       "canonHash": "specrunner/changes/issue-request-fidelity-gate/design.md:sha256:18092147d94c1d88fc7ed787b7178db8c76da83cf3e3503839c82e7c5ab233d9|specrunner/changes/issue-request-fidelity-gate/request.md:sha256:cfb69f467e597495f75523429b09914e7891ea65f89db711d6b8b4e02ee8033f|specrunner/changes/issue-request-fidelity-gate/spec.md:sha256:6a8eec452d23e4dd4f22bf5a7aad2ac2f228225c407802f9ecd4c22426737507|specrunner/changes/issue-request-fidelity-gate/tasks.md:sha256:efe8e22431a3c3b61c76171b2a93afdd0b6d3c7d92efc764e833cf53bda12891|specrunner/changes/issue-request-fidelity-gate/test-cases.md:sha256:8034bd96286985144bf1f86542c4530282e723ae87a7d59ea729e2d08e1905ff"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/959",
+    "number": 959,
+    "createdAt": "2026-08-06T01:19:55.791Z"
+  },
   "_journal": {
-    "historyCount": 126,
+    "historyCount": 131,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -150,7 +156,9 @@
       "scale-tolerance": 5,
       "custom-reviewers": 5,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
