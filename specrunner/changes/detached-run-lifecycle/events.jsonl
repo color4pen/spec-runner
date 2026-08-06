@@ -82,3 +82,16 @@
 {"type":"transition","ts":"2026-08-06T00:55:51.526Z","step":"verification","status":"warning","message":"verification iteration 2 completed with verdict: failed"}
 {"type":"transition","ts":"2026-08-06T00:55:51.527Z","step":"step-transition","status":"ok","message":"verification → build-fixer"}
 {"type":"transition","ts":"2026-08-06T00:55:51.529Z","step":"build-fixer-started","status":"started","message":"Starting build-fixer step"}
+{"type":"transition","ts":"2026-08-06T00:56:43.994Z","step":"build-fixer-verdict","status":"ok","message":"build-fixer verdict: success"}
+{"type":"step-attempt","step":"build-fixer","sessionId":"88fe7b52-8033-4f83-9a63-960bbb579144","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"reason":"ESLint 警告を2件修正。(1) `makeDepsWithPidTransition` 内の `isProcessAlive` mock の引数 `pid` を `_pid` にリネーム（unused arg）。(2) 未使用のヘルパー関数 `makeDepsAlwaysAlive` を削除。","status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-08-06T00:55:51.721Z","endedAt":"2026-08-06T00:56:42.277Z","commitOid":"0ec49420245a026d9581b9b9049bcab0fb5a49be"}
+{"type":"lineage","step":"build-fixer","ts":"2026-08-06T00:56:42.277Z","outputs":[{"path":"specrunner/changes/detached-run-lifecycle","hash":null}],"inputs":[{"path":"specrunner/changes/detached-run-lifecycle/verification-result.md","hash":"sha256:8c6c7054eebf0d174447126e940c25ccaa62b3125ddd6a2f7db9b1f77d8a2d70"}]}
+{"type":"transition","ts":"2026-08-06T00:56:43.999Z","step":"step-transition","status":"ok","message":"build-fixer → verification"}
+{"type":"transition","ts":"2026-08-06T00:56:44.000Z","step":"verification","status":"started","message":"verification iteration 3 started"}
+{"type":"transition","ts":"2026-08-06T00:56:44.001Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-08-06T00:58:10.590Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/detached-run-lifecycle/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-08-06T00:56:44.002Z","endedAt":"2026-08-06T00:58:10.574Z","commitOid":"0ec49420245a026d9581b9b9049bcab0fb5a49be"}
+{"type":"lineage","step":"verification","ts":"2026-08-06T00:58:10.574Z","outputs":[{"path":"specrunner/changes/detached-run-lifecycle/verification-result.md","hash":"sha256:8539373860f14ce46f5ab7e474bc898797575da7beb469e9974ad87dfc1268f6"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-08-06T00:58:10.595Z","step":"verification","status":"ok","message":"verification iteration 3 completed with verdict: passed"}
+{"type":"transition","ts":"2026-08-06T00:58:10.595Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-08-06T00:58:10.596Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-08-06T00:58:10.598Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
