@@ -98,7 +98,7 @@ function makeDepsWithPidTransition(opts: {
       }
       return opts.deadState;
     }),
-    isProcessAlive: vi.fn((pid: number) => {
+    isProcessAlive: vi.fn((_pid: number) => {
       // pid alive for first aliveForTicks checks, then dead
       if (isAlive && tick <= aliveForTicks) {
         return true;
@@ -111,42 +111,6 @@ function makeDepsWithPidTransition(opts: {
     sleep: vi.fn(async () => {
       // no actual sleep in tests
     }),
-    pollIntervalMs: 0,
-    notFoundRetryCount: 5,
-    notFoundRetryIntervalMs: 0,
-  };
-  return deps;
-}
-
-/**
- * Build deps where pid is always alive (no settle).
- * Returns a deps that will be cancelled after maxTicks.
- */
-function makeDepsAlwaysAlive(opts: {
-  slug: string;
-  state: JobState;
-  maxTicks?: number;
-}): JobWaitDeps & { tickCount: number } {
-  const maxTicks = opts.maxTicks ?? 3;
-  let tickCount = 0;
-  const shared = { tickCount: 0 };
-
-  const deps: JobWaitDeps & { tickCount: number } = {
-    tickCount: 0,
-    loadState: vi.fn(async () => opts.state),
-    isProcessAlive: vi.fn((_pid: number) => {
-      tickCount++;
-      shared.tickCount = tickCount;
-      deps.tickCount = tickCount;
-      if (tickCount > maxTicks) {
-        // Force a settle by throwing — this will cause the test to detect infinite loop
-        throw new Error(`Too many ticks: pid kept alive for ${tickCount} ticks`);
-      }
-      return true; // always alive
-    }),
-    isStaleRunning: vi.fn(() => false),
-    readSidecarPid: vi.fn(() => null),
-    sleep: vi.fn(async () => {}),
     pollIntervalMs: 0,
     notFoundRetryCount: 5,
     notFoundRetryIntervalMs: 0,

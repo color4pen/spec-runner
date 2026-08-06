@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a250ec69-f049-4834-a522-76434a8948c6",
   "createdAt": "2026-08-05T14:51:11.064Z",
-  "updatedAt": "2026-08-06T00:47:10.548Z",
+  "updatedAt": "2026-08-06T00:55:51.529Z",
   "request": {
     "title": "run の detach 内蔵と job wait — pipeline の生存管理を agent の shell 手順から CLI へ移す",
     "type": "new-feature",
@@ -74,12 +74,14 @@
     "ef48abbb6697de15f5c8c56d87cb18705c9767de",
     "9ba29604849fd2a51cb4f8f15cb6a2f2eb6447aa",
     "80d08529826a053a74573af1c8e319e2f0d30b1e",
-    "87e8358c6bfa692ac417de70007fffa010d991c3"
+    "87e8358c6bfa692ac417de70007fffa010d991c3",
+    "90d1305d26177018cf6b80c6022370baad1daaa0",
+    "991c47972c76177551d638423feef9f32f364ac0"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 2,
@@ -89,7 +91,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
