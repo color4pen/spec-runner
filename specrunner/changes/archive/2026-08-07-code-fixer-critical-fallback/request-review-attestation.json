@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:bde8dd56d9b74d6831e0e4d6c633021d84f2feaec2c9cb129e035e7822ddab90",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/code-fixer.ts:148 — Fix all HIGH and CRITICAL severity findings from the conformance review (mandatory)",
+    "src/core/step/code-fixer.ts:191 付近(実:192) — 1. Fix all HIGH and CRITICAL severity findings (mandatory) [findings 埋め込み block]",
+    "src/core/step/code-fixer.ts:219 — 2. Fix all HIGH severity findings (mandatory) [coordinator loop fallback、CRITICAL 欠落]",
+    "src/core/step/code-fixer.ts:270 — 1. Fix all HIGH and CRITICAL severity findings (mandatory) [standard path findings 埋め込み]",
+    "src/core/step/code-fixer.ts:291 — 2. Fix all HIGH severity findings (mandatory) [standard path fallback、CRITICAL 欠落]",
+    "tests/ 配下 Fix all HIGH（and CRITICAL なし）を期待する assertion: grep 0 件"
+  ],
+  "sourceRevision": "86586cdeac15089e20479c339f8fb308b7896332"
+}

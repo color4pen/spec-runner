@@ -216,7 +216,7 @@ Review feedback: ${findingsPath}
 
 Please:
 1. Read the review feedback at ${findingsPath}
-2. Fix all HIGH severity findings (mandatory)
+2. Fix all HIGH and CRITICAL severity findings (mandatory)
 3. Fix MEDIUM severity findings only if they do not require design changes
 4. Ignore LOW severity findings
 5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
@@ -288,7 +288,7 @@ Review feedback: ${findingsPath}
 
 Please:
 1. Read the review feedback at ${findingsPath}
-2. Fix all HIGH severity findings (mandatory)
+2. Fix all HIGH and CRITICAL severity findings (mandatory)
 3. Fix MEDIUM severity findings only if they do not require design changes
 4. Ignore LOW severity findings
 5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。

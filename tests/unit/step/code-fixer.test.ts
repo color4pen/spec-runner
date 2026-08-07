@@ -20,6 +20,7 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { StepDeps } from "../../../src/core/step/types.js";
 import { reviewFeedbackPath, changeFolderPath, resolveReviewerResultPath } from "../../../src/util/paths.js";
 import { REGRESSION_GATE_STEP_NAME } from "../../../src/core/step/regression-gate.js";
+import { CUSTOM_REVIEWERS_STEP_NAME } from "../../../src/core/pipeline/types.js";
 
 function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
   return {
@@ -385,5 +386,201 @@ describe("TC-BM-04: CodeFixerStep.buildMessage does NOT throw even in continuati
     const deps = makeMinimalDeps("my-change");
     const message = CodeFixerStep.buildMessage(state, deps);
     expect(message).toContain("review-feedback-000.md");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// prompt severity contract: CRITICAL must appear in all prompt branches
+// TC-001: coordinator-loop fallback
+// TC-002: standard-path fallback
+// TC-003: conformance path
+// TC-004: coordinator-loop findings-embedded
+// TC-005: standard-path findings-embedded
+// Continuation branches (isFixerContinuation === true → buildContinuationMessage in
+// fixer-helpers.ts) are intentionally excluded: they carry no severity language by
+// design — the mandate comes from the initial-entry turn's session context.
+// ---------------------------------------------------------------------------
+
+describe("prompt severity contract: all branches must include HIGH and CRITICAL (mandatory)", () => {
+  const SLUG = "my-change";
+
+  // State helpers for each branch
+
+  /** TC-003: conformance path — getConformanceFixContext returns non-null */
+  function makeConformanceState(): JobState {
+    return makeMinimalState({
+      steps: {
+        // predecessor (code-review) ran before conformance
+        "code-review": [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: { verdict: "needs-fix" as const, findingsPath: null, error: null },
+            startedAt: "2026-01-01T01:00:00.000Z",
+            endedAt: "2026-01-01T01:30:00.000Z",
+          },
+        ],
+        "conformance": [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: {
+              verdict: "needs-fix:code-fixer",
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: [
+                  {
+                    severity: "high" as const,
+                    resolution: "fixable" as const,
+                    file: "src/core/step/code-fixer.ts",
+                    title: "Missing CRITICAL",
+                    rationale: "CRITICAL findings must be mandatory",
+                  },
+                ],
+              },
+            },
+            startedAt: "2026-01-01T02:00:00.000Z",
+            endedAt: "2026-01-01T02:30:00.000Z",
+          },
+        ],
+      },
+    });
+  }
+
+  /** TC-004 & TC-001: coordinator-loop state base (custom-reviewers loop active) */
+  function makeCoordinatorLoopState(withEmbeddedFindings: boolean): JobState {
+    const reviewerOutcome = withEmbeddedFindings
+      ? {
+          verdict: "needs-fix" as const,
+          findingsPath: `specrunner/changes/${SLUG}/custom-reviewer-result-001.md`,
+          error: null,
+          toolResult: {
+            ok: true,
+            findings: [
+              {
+                severity: "high" as const,
+                resolution: "fixable" as const,
+                file: "src/core/step/code-fixer.ts",
+                title: "Missing CRITICAL",
+                rationale: "CRITICAL findings must be mandatory",
+              },
+            ],
+          },
+        }
+      : {
+          // No toolResult → collectParallelFixerFindings returns [] → fallback branch
+          verdict: "needs-fix" as const,
+          findingsPath: `specrunner/changes/${SLUG}/custom-reviewer-result-001.md`,
+          error: null,
+        };
+
+    return makeMinimalState({
+      reviewers: [
+        {
+          name: "custom-reviewer",
+          maxIterations: 3,
+          purpose: "Test reviewer",
+          criteria: "Test criteria",
+          judgment: "Test judgment",
+          freeText: "",
+        },
+      ],
+      steps: {
+        [CUSTOM_REVIEWERS_STEP_NAME]: [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: { verdict: "needs-fix" as const, findingsPath: null, error: null },
+            startedAt: "2026-01-01T01:00:00.000Z",
+            endedAt: "2026-01-01T01:30:00.000Z",
+          },
+        ],
+        "custom-reviewer": [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: reviewerOutcome,
+            startedAt: "2026-01-01T01:00:00.000Z",
+            endedAt: "2026-01-01T01:30:00.000Z",
+          },
+        ],
+      },
+    });
+  }
+
+  /** TC-005: standard-path with embedded findings in code-review outcome */
+  function makeStandardPathEmbeddedState(): JobState {
+    return makeMinimalState({
+      steps: {
+        "code-review": [
+          {
+            attempt: 1,
+            sessionId: null,
+            outcome: {
+              verdict: "needs-fix" as const,
+              findingsPath: null,
+              error: null,
+              toolResult: {
+                ok: true,
+                findings: [
+                  {
+                    severity: "high" as const,
+                    resolution: "fixable" as const,
+                    file: "src/core/step/code-fixer.ts",
+                    title: "Missing CRITICAL",
+                    rationale: "CRITICAL findings must be mandatory",
+                  },
+                ],
+              },
+            },
+            startedAt: "2026-01-01T01:00:00.000Z",
+            endedAt: "2026-01-01T01:30:00.000Z",
+          },
+        ],
+      },
+    });
+  }
+
+  // TC-003: conformance path
+  it("TC-003: conformance path includes CRITICAL", () => {
+    const state = makeConformanceState();
+    const deps = makeMinimalDeps(SLUG);
+    const message = CodeFixerStep.buildMessage(state, deps);
+    expect(message).toContain("Fix all HIGH and CRITICAL severity findings");
+  });
+
+  // TC-004: coordinator-loop findings-embedded path
+  it("TC-004: coordinator-loop findings-embedded path includes CRITICAL", () => {
+    const state = makeCoordinatorLoopState(/* withEmbeddedFindings */ true);
+    const deps = makeMinimalDeps(SLUG);
+    const message = CodeFixerStep.buildMessage(state, deps);
+    expect(message).toContain("Fix all HIGH and CRITICAL severity findings");
+  });
+
+  // TC-001: coordinator-loop fallback (no structured findings) — RED until T-01 is applied
+  it("TC-001: coordinator-loop fallback prompt includes CRITICAL", () => {
+    const state = makeCoordinatorLoopState(/* withEmbeddedFindings */ false);
+    const deps = makeMinimalDeps(SLUG);
+    const message = CodeFixerStep.buildMessage(state, deps);
+    expect(message).toContain("Fix all HIGH and CRITICAL severity findings");
+  });
+
+  // TC-005: standard-path findings-embedded path
+  it("TC-005: standard-path findings-embedded path includes CRITICAL", () => {
+    const state = makeStandardPathEmbeddedState();
+    const deps = makeMinimalDeps(SLUG);
+    const message = CodeFixerStep.buildMessage(state, deps);
+    expect(message).toContain("Fix all HIGH and CRITICAL severity findings");
+  });
+
+  // TC-002: standard-path fallback (findingsPath only, no inline findings) — RED until T-01 is applied
+  it("TC-002: standard-path fallback prompt includes CRITICAL", () => {
+    // makeStateWithCodeReviewResult sets findingsPath but no toolResult.findings → fallback branch
+    const state = makeStateWithCodeReviewResult(SLUG, 2);
+    const deps = makeMinimalDeps(SLUG);
+    const message = CodeFixerStep.buildMessage(state, deps);
+    expect(message).toContain("Fix all HIGH and CRITICAL severity findings");
   });
 });
