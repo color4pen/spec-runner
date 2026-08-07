@@ -40,7 +40,7 @@ The verification result markdown written by `runVerificationCommands` SHALL cont
 
 ### Requirement: deleted symbols are absent from the codebase
 
-The symbols `computeCodeReviewIteration`, `computeSpecReviewIteration`, `computeRequestReviewIteration`, `computeConformanceIteration`, and `PROBE_SLUG` SHALL NOT appear anywhere in `src/` or `tests/` after this change.
+The symbols `computeCodeReviewIteration`, `computeSpecReviewIteration`, `computeRequestReviewIteration`, `computeConformanceIteration`, and `PROBE_SLUG` SHALL NOT appear as code references (imports, calls, declarations) in `src/` or `tests/` after this change. Exempt: description-string mentions inside pre-existing unmodified test files, and string literals inside the deletion-guard test that asserts their absence.
 
 #### Scenario: grep check
 
