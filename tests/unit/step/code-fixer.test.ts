@@ -396,6 +396,9 @@ describe("TC-BM-04: CodeFixerStep.buildMessage does NOT throw even in continuati
 // TC-003: conformance path
 // TC-004: coordinator-loop findings-embedded
 // TC-005: standard-path findings-embedded
+// Continuation branches (isFixerContinuation === true → buildContinuationMessage in
+// fixer-helpers.ts) are intentionally excluded: they carry no severity language by
+// design — the mandate comes from the initial-entry turn's session context.
 // ---------------------------------------------------------------------------
 
 describe("prompt severity contract: all branches must include HIGH and CRITICAL (mandatory)", () => {
