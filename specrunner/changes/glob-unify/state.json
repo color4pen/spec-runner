@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d1252c16-cce5-420a-8db5-c3864d8f112e",
   "createdAt": "2026-08-07T11:43:58.528Z",
-  "updatedAt": "2026-08-07T12:18:38.588Z",
+  "updatedAt": "2026-08-07T12:23:22.166Z",
   "request": {
     "title": "glob matcher 3 実装を util/glob-match.ts の globMatch に統一する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/glob-unify-d1252c16",
   "error": null,
   "pipelineId": "standard",
@@ -71,7 +71,9 @@
     "4d2f2b7ec4392a62d3c5da94079954317d8a1308",
     "8802293e31691b0d51c5bb6beb82d795f7f06346",
     "7330a9321e46948f7a31662d58499e495f71ac29",
-    "61414d1c2537009c032d5779bae9db0abb5d5f91"
+    "61414d1c2537009c032d5779bae9db0abb5d5f91",
+    "0886adb44fafe952beae52309990e94117c6d3e8",
+    "78d4d57000e5a3ebb3625089e943c45c3a3591aa"
   ],
   "reviewerStatuses": [
     {
@@ -103,8 +105,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/967",
+    "number": 967,
+    "createdAt": "2026-08-07T12:23:21.490Z"
+  },
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -113,12 +120,15 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
