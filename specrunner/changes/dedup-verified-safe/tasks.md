@@ -25,7 +25,7 @@
 **Acceptance Criteria**:
 - `PROBE_SLUG` alias gone; `VALIDATOR_PROBE_SLUG` used directly at both call sites
 - Empty if block in `job-state-projection.ts` removed
-- Identity `enrichContext` in `spec-review.ts` removed
+- Identity `enrichContext` in `spec-review.ts` retained by design（既存テストが存在を assert するため。T-02 参照）
 - `typecheck` and `test` pass
 
 ---

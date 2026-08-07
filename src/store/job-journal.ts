@@ -16,7 +16,7 @@ import { journalCorruptedError } from "../errors.js";
 import type { NormalizedJobState } from "./job-state-store.js";
 
 // ---------------------------------------------------------------------------
-// JournalCounters — exported so job-state-projection.ts can import it as a type
+// JournalCounters — journal 圧縮 record の counters field の shape
 // ---------------------------------------------------------------------------
 
 /**

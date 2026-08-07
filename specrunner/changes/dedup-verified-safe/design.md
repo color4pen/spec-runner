@@ -97,7 +97,7 @@ Extract the liveness-sidecar lookup into a new exported function `resolveLivenes
 Three removals:
 1. `PROBE_SLUG` alias in `descriptor-input-completeness.ts`: Replace the two uses (lines 117, 121) with `VALIDATOR_PROBE_SLUG`, then delete the alias declaration.
 2. Empty if block in `job-state-projection.ts:79-86`: Delete the block. The condition had no body; removing it does not change behavior.
-3. Identity `enrichContext` in `spec-review.ts:100-102`: Delete the method. The interface declares `enrichContext?` as optional; when absent, the adapter skips enrichment and returns `dynamicContext` unchanged — the same result.
+3. Identity `enrichContext` in `spec-review.ts:100-102`: **意図的残置に決定変更**。削除自体は挙動中立（optional method 不在時は adapter が `dynamicContext` をそのまま返す）だが、既存テスト（`tests/prompts/spec-review-system.test.ts` TC-003/TC-010、`tests/pipeline-integration.test.ts:1239-1246`）が method の存在を assert しており、削除には既存テストの改変が必要になる。受け入れ基準「既存テスト無改変で green」を優先して残置した（tasks.md T-02・test-cases.md TC-016 の注記と同一の判断）。
 
 ## Risks / Trade-offs
 
