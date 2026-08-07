@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf18be5a-782b-4ea7-9139-5e9dd1a64fa3",
   "createdAt": "2026-08-07T11:43:55.397Z",
-  "updatedAt": "2026-08-07T13:04:26.751Z",
+  "updatedAt": "2026-08-07T13:04:57.228Z",
   "request": {
     "title": "同一性検証済みの重複コードを統合する",
     "type": "refactoring",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "refactor/dedup-verified-safe-bf18be5a",
   "error": null,
   "pipelineId": "standard",
@@ -75,12 +75,17 @@
     "2a6005e020f1f61222310ff2661b13665009d238",
     "d5caa404b91cc7cf3fbceabd14e60b2b9c3db8f8",
     "8ea17008917878374f5c4e7a4182d119e546d4eb",
-    "c23d7b6f1e2c05876c2d4cadcc47a2c68e4af1bb"
+    "c23d7b6f1e2c05876c2d4cadcc47a2c68e4af1bb",
+    "bc0e317e1cbe178b62f81031e5c9e171f9f489a2"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "code-fixer escalated",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -92,7 +97,7 @@
       "verification": 2,
       "build-fixer": 1,
       "code-review": 1,
-      "code-fixer": 1
+      "code-fixer": 2
     }
   }
 }
