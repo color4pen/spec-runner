@@ -73,7 +73,7 @@
   - Remove `this.spawnFn = deps._spawnFn ?? defaultSpawnFn;` from constructor (line ~427)
 - [ ] Delete `src/adapter/claude-code/git-exec.ts` (11-line re-export shim — now has zero src consumers)
 - [ ] In `tests/unit/adapter/claude-code/agent-runner.test.ts`:
-  - Repoint `SpawnFn` import from `agent-runner.js` to `../../../../src/util/git-exec.js` (line ~20; keep `QueryFn` and `CreateMcpServerFn` imports from `agent-runner.js`)
+  - Remove `SpawnFn` from the `agent-runner.js` import (line ~20; keep `QueryFn` and `CreateMcpServerFn` imports from `agent-runner.js`)
   - Remove `_spawnFn: spawnFn,` from the two `ClaudeCodeRunner` constructor calls (lines ~701 and ~749)
   - Delete the `makeGitSimulatingSpawnFn` helper function (line ~144) and its call sites — it is only used in those two constructor calls
 
@@ -111,20 +111,23 @@
   - Add a local fixture constant near the top of the test file:
     ```typescript
     // Local fixture — replaces the removed REPORT_TOOL production export
-    const REPORT_TOOL = {
+    const REPORT_TOOL_FIXTURE = {
       name: "report_result" as const,
       description: "Report the completion of this step.",
       zodSchema: {},
       parseInput: (input: unknown) => input,
     };
     ```
+  - Replace all usages of `REPORT_TOOL` in the test file with `REPORT_TOOL_FIXTURE`
   - Verify the fixture type is compatible with the `reportTool` field in test call sites (type annotation may need `as any` or a cast if strict typing requires it)
 - [ ] In `tests/adapter/codex/agent-runner-transient-retry.test.ts`:
   - Remove `import { REPORT_TOOL } from "../../../src/core/step/report-tool.js";` (line 14)
-  - Add the same local fixture constant as above
+  - Add the same local fixture constant as above (`REPORT_TOOL_FIXTURE`) and replace all usages of `REPORT_TOOL` with `REPORT_TOOL_FIXTURE`
 
 **Acceptance Criteria**:
-- `grep -r "REPORT_TOOL\b\|REPORT_TOOL_CUSTOM_TOOL_SPEC" src/ bin/ tests/` returns 0 matches (note: `PRODUCER_REPORT_TOOL`, `JUDGE_REPORT_TOOL`, etc. are unaffected)
+- `grep -r "REPORT_TOOL_CUSTOM_TOOL_SPEC" src/ bin/ tests/` returns 0 matches
+- `grep -r '\bREPORT_TOOL\b' tests/` returns 0 matches (note: `REPORT_TOOL_FIXTURE`, `PRODUCER_REPORT_TOOL`, `JUDGE_REPORT_TOOL`, etc. are unaffected)
+- `grep -r '\bREPORT_TOOL\b' src/ bin/` returns 0 matches
 - Both codex `agent-runner` test files compile and pass
 
 ---
@@ -242,7 +245,8 @@
 - [ ] In `src/cli/__tests__/detach-output-contract.test.ts`: remove the `getLogLevel: vi.fn().mockReturnValue("default"),` entry from the `vi.mock` factory (line ~26)
 
 **Acceptance Criteria**:
-- `grep -r "\blogDebug\b\|\bgetLogLevel\b\|\bLEVEL_ORDER\b" src/ bin/ tests/` returns 0 matches
+- `grep -r "\blogDebug\b\|\bgetLogLevel\b" src/ bin/ tests/` returns 0 matches
+- `grep -r "\bexport.*LEVEL_ORDER\b\|\bLEVEL_ORDER\b" src/ bin/ tests/ --include='*.ts' | grep -v 'src/logger/stdout.ts'` returns 0 matches
 - `LEVEL_ORDER` is present in `src/logger/stdout.ts` without `export` and used by `isLevelEnabled`
 - `isLevelEnabled` behavior is unchanged (verified by existing tests that call it)
 - Three CLI test files compile and pass
