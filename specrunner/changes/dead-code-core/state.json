@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "777c2e9f-1d3f-47f3-9c9f-ee4bdde31a96",
   "createdAt": "2026-08-07T11:43:50.821Z",
-  "updatedAt": "2026-08-07T13:05:28.052Z",
+  "updatedAt": "2026-08-07T13:17:01.741Z",
   "request": {
     "title": "core の検証済み死コードを削除する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/dead-code-core-777c2e9f",
   "error": null,
   "pipelineId": "standard",
@@ -78,7 +78,9 @@
     "14549c037d9841fad9278d201bb864517b003e18",
     "ed7dcb247e7bd79dc956815f7a436112b2df0603",
     "094ebca7ab4eaf1ba0883504e7808b453385fea3",
-    "87e97478db8ab55791b0f829e661204902e35c67"
+    "87e97478db8ab55791b0f829e661204902e35c67",
+    "ce4877bee6f6e5bfda8578f476c9c7083791427e",
+    "232e424051457361051350155eca260725ffa0ec"
   ],
   "reviewerStatuses": [
     {
@@ -111,8 +113,13 @@
       "canonHash": "specrunner/changes/dead-code-core/design.md:sha256:2c5f74bff7a0dbda085547273b8557fe5527bb459ad2796aaebbbe96250ddd0c|specrunner/changes/dead-code-core/request.md:sha256:9a056a4828a9c114ccaf80fa4910defe14289a1899b8250cf01d4cf9c0d118f5|specrunner/changes/dead-code-core/spec.md:sha256:f706fcd739d5ad626901ba3ee8217cf41f8c81253af0e5ad8d3f13ec410c8198|specrunner/changes/dead-code-core/tasks.md:sha256:2d96368ec889acb75e32f5c2c78273a9f51f7681a4a5e142bfa4448619ab2277|specrunner/changes/dead-code-core/test-cases.md:sha256:c268488c76abdbbba8532c8d0b3e25613f4a2b4b6248692c4b273c770155eecd"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/968",
+    "number": 968,
+    "createdAt": "2026-08-07T13:17:00.640Z"
+  },
   "_journal": {
-    "historyCount": 70,
+    "historyCount": 84,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -122,14 +129,17 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
