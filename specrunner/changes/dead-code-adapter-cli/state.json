@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f45ee501-b464-40de-bf32-dadf45998914",
   "createdAt": "2026-08-07T11:43:53.045Z",
-  "updatedAt": "2026-08-07T13:01:35.892Z",
+  "updatedAt": "2026-08-07T13:08:09.545Z",
   "request": {
     "title": "adapter / cli / config / logger の検証済み死コードを削除する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/dead-code-adapter-cli-f45ee501",
   "error": null,
@@ -73,10 +73,43 @@
     "7d9b53fd1a08e98f7dbafc415b46a11f31fc9aef",
     "1fed2045f2993aeb8cc66d7cfaf68c236d747cac",
     "a939a6bc289684269baadb889cf2d748e6310ed8",
-    "06f85fe443c888922d574e7eda02c62114245fd8"
+    "06f85fe443c888922d574e7eda02c62114245fd8",
+    "dbff253768f86746ce1cd1ea40426407edb53035",
+    "c280aee94f04b7888ca2dfbeb58b3dd6b2a6377d"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "dbff253768f86746ce1cd1ea40426407edb53035",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/dead-code-adapter-cli/design.md:sha256:52c4f20788cf868ff49a464bec7cce37c71eff7b193b52f9757f42057bcd0727|specrunner/changes/dead-code-adapter-cli/request.md:sha256:247c62f87cee395eededea0f4f1e720186973241b2e4a60cc748626c49e074e3|specrunner/changes/dead-code-adapter-cli/spec.md:sha256:47494b92e0cc1ed3251a6ffa522a89678e7e542017fe72cb37c87a671130b203|specrunner/changes/dead-code-adapter-cli/tasks.md:sha256:3bf3f9f8553f2f5b80a61d23f34355a2d049384f4cb2b2211f6922cad4127063|specrunner/changes/dead-code-adapter-cli/test-cases.md:sha256:d9c1f532ea559dfa774e7e2e146fae8dc07aa9c20b58a1c2df9cdeb7a66e2a32"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "dbff253768f86746ce1cd1ea40426407edb53035",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/dead-code-adapter-cli/design.md:sha256:52c4f20788cf868ff49a464bec7cce37c71eff7b193b52f9757f42057bcd0727|specrunner/changes/dead-code-adapter-cli/request.md:sha256:247c62f87cee395eededea0f4f1e720186973241b2e4a60cc748626c49e074e3|specrunner/changes/dead-code-adapter-cli/spec.md:sha256:47494b92e0cc1ed3251a6ffa522a89678e7e542017fe72cb37c87a671130b203|specrunner/changes/dead-code-adapter-cli/tasks.md:sha256:3bf3f9f8553f2f5b80a61d23f34355a2d049384f4cb2b2211f6922cad4127063|specrunner/changes/dead-code-adapter-cli/test-cases.md:sha256:d9c1f532ea559dfa774e7e2e146fae8dc07aa9c20b58a1c2df9cdeb7a66e2a32"
+    }
   ],
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -88,7 +121,11 @@
       "bite-evidence": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
