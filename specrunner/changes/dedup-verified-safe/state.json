@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf18be5a-782b-4ea7-9139-5e9dd1a64fa3",
   "createdAt": "2026-08-07T11:43:55.397Z",
-  "updatedAt": "2026-08-07T13:06:00.859Z",
+  "updatedAt": "2026-08-07T13:21:43.087Z",
   "request": {
     "title": "同一性検証済みの重複コードを統合する",
     "type": "refactoring",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "refactor/dedup-verified-safe-bf18be5a",
   "error": null,
   "pipelineId": "standard",
@@ -77,12 +77,48 @@
     "8ea17008917878374f5c4e7a4182d119e546d4eb",
     "c23d7b6f1e2c05876c2d4cadcc47a2c68e4af1bb",
     "bc0e317e1cbe178b62f81031e5c9e171f9f489a2",
-    "72db90bd70eccadcfd5f956d99a8b122ff72e213"
+    "72db90bd70eccadcfd5f956d99a8b122ff72e213",
+    "d42ae34eefacce0714d04aa12020cd1703babe20",
+    "130c28b18f8ccc1fbcb8cfc749fbd7de967d4190"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "d42ae34eefacce0714d04aa12020cd1703babe20",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/dedup-verified-safe/design.md:sha256:07933b01b996f76656dff0d76df47d6337d191e9955434e6d75aa9e17f8801e0|specrunner/changes/dedup-verified-safe/request.md:sha256:cd9da48d0b75e4d7fc61038a4e8d43bbfefd4f4fa0ebbbd1e1bca9df3cb5ef25|specrunner/changes/dedup-verified-safe/spec.md:sha256:8ea4602b4a97f218377c930fca0a5b249b6890fbf6528a427b4930b86a99ac75|specrunner/changes/dedup-verified-safe/tasks.md:sha256:d9c14a028cfbf948f0e99d22f796c3e7590c6753d95dee367202982ddc2ab342|specrunner/changes/dedup-verified-safe/test-cases.md:sha256:1c356a67c3095f9593f90a230f1596aaaa906841a7c061b40c15a4c6fec4fc55"
+    }
+  ],
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -93,8 +129,11 @@
       "bite-evidence": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1,
-      "code-fixer": 2
+      "code-review": 2,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
