@@ -530,12 +530,6 @@ describe("TC-015: archive --dry-run removed, inbox --dry-run unchanged", () => {
   it("src/cli/command-registry.ts does not pass dryRun to runArchive", async () => {
     const content = await readSrc("src/cli/command-registry.ts");
     // The archive handler must not reference dry-run or dryRun alongside runArchive
-    // Count occurrences of "dry-run" in the file: after deletion, only inbox+prune references remain
-    const dryRunOccurrences = (content.match(/"dry-run"/g) ?? []).length;
-    // Before: archive has "dry-run" flag (~867) + inbox has "dry-run" flag (~969) = at least 2 in flags
-    // After: only inbox "dry-run" flag remains (inbox ~969)
-    // inbox flags has: "dry-run": { type: "boolean" } at ~969
-    // The ARCHIVE_USAGE help text also counted above
     // Simplest correct check: dryRun alongside runArchive must not appear
     expect(content).not.toMatch(/runArchive\([^)]*dryRun/s);
   });
