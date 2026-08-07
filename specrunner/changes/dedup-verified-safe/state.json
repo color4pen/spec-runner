@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf18be5a-782b-4ea7-9139-5e9dd1a64fa3",
   "createdAt": "2026-08-07T11:43:55.397Z",
-  "updatedAt": "2026-08-07T13:43:27.354Z",
+  "updatedAt": "2026-08-07T13:48:03.344Z",
   "request": {
     "title": "同一性検証済みの重複コードを統合する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/dedup-verified-safe-bf18be5a",
   "error": null,
   "pipelineId": "standard",
@@ -86,7 +86,9 @@
     "f6c33b2cd0eda0fc67af5a745f6b04896fae4972",
     "835903e106b2581cbee0c3af4ab5b435ebdeccc5",
     "77e912a6e0528a98a06ce58ae285658fd5e04ea5",
-    "eb4728eeb4ef8e4cde2eae1d3d38b58de0448e83"
+    "eb4728eeb4ef8e4cde2eae1d3d38b58de0448e83",
+    "6c21a9a66f291e2020665bdc436021b2e2d2f02d",
+    "e55523f01f36e7d25064c63784a246f495688f0e"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -121,8 +123,13 @@
       "canonHash": "specrunner/changes/dedup-verified-safe/design.md:sha256:961eff0ab85f1ea99674883abbb8ba06cde350a7873eff0a99a14a6ad9258882|specrunner/changes/dedup-verified-safe/request.md:sha256:cd9da48d0b75e4d7fc61038a4e8d43bbfefd4f4fa0ebbbd1e1bca9df3cb5ef25|specrunner/changes/dedup-verified-safe/spec.md:sha256:8ea4602b4a97f218377c930fca0a5b249b6890fbf6528a427b4930b86a99ac75|specrunner/changes/dedup-verified-safe/tasks.md:sha256:e5e010ea1527f23f8dd6f357e8d1c9fba7275cdd36670958f1ecd7b5b44c0c21|specrunner/changes/dedup-verified-safe/test-cases.md:sha256:1c356a67c3095f9593f90a230f1596aaaa906841a7c061b40c15a4c6fec4fc55"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/970",
+    "number": 970,
+    "createdAt": "2026-08-07T13:48:02.277Z"
+  },
   "_journal": {
-    "historyCount": 86,
+    "historyCount": 100,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -131,7 +138,7 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 2,
       "code-fixer": 2,
@@ -139,7 +146,9 @@
       "scale-tolerance": 2,
       "custom-reviewers": 2,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
