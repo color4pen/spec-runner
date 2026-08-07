@@ -2,13 +2,13 @@
 
 ## T-01: Fix CRITICAL omission in the two fallback prompt branches
 
-- [ ] In `src/core/step/code-fixer.ts` around line 219 (coordinator loop fallback), change:
+- [x] In `src/core/step/code-fixer.ts` around line 219 (coordinator loop fallback), change:
   `2. Fix all HIGH severity findings (mandatory)` →
   `2. Fix all HIGH and CRITICAL severity findings (mandatory)`
-- [ ] In `src/core/step/code-fixer.ts` around line 291 (standard path fallback), change:
+- [x] In `src/core/step/code-fixer.ts` around line 291 (standard path fallback), change:
   `2. Fix all HIGH severity findings (mandatory)` →
   `2. Fix all HIGH and CRITICAL severity findings (mandatory)`
-- [ ] Verify with grep that `Fix all HIGH severity findings` (without `and CRITICAL`) no longer appears anywhere in `src/core/step/code-fixer.ts`
+- [x] Verify with grep that `Fix all HIGH severity findings` (without `and CRITICAL`) no longer appears anywhere in `src/core/step/code-fixer.ts`
 
 **Acceptance Criteria**:
 - `grep -n "Fix all HIGH severity findings" src/core/step/code-fixer.ts` returns 0 matches
@@ -42,8 +42,8 @@ State construction notes:
 
 ## T-03: Full verification
 
-- [ ] Run `bun run typecheck` — must exit 0
-- [ ] Run `bun run test` — must exit 0, all tests green including the new describe block from T-02
+- [x] Run `bun run typecheck` — must exit 0
+- [x] Run `bun run test` — must exit 0, all tests green including the new describe block from T-02
 
 **Acceptance Criteria**:
 - Both commands exit 0
