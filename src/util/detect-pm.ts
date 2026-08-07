@@ -55,27 +55,9 @@ export async function detectPackageManager(
   };
 
   // 1. Walk upward from cwd looking for lockfiles, stopping at .git or filesystem root
-  let dir = cwd;
-  while (true) {
-    // Check lockfiles in priority order (first match wins)
-    for (const [lockfile, pm] of LOCKFILE_MAP) {
-      if (fs.existsSync(path.join(dir, lockfile))) {
-        return { pm, root: dir };
-      }
-    }
-
-    // Stop at git root (.git directory or gitdir file)
-    if (fs.existsSync(path.join(dir, ".git"))) {
-      break;
-    }
-
-    // Stop at filesystem root
-    const parent = path.dirname(dir);
-    if (parent === dir) {
-      break;
-    }
-
-    dir = parent;
+  const found = findLockfile(cwd, fs);
+  if (found) {
+    return { pm: found.pm, root: found.root };
   }
 
   // 2. Fallback: packageManager field in cwd/package.json (not upward search)

@@ -23,13 +23,6 @@ export function buildReviewFeedbackPath(slug: string, iteration: number): string
 }
 
 /**
- * Compute the iteration number for the next code-review push.
- */
-function computeCodeReviewIteration(state: JobState): number {
-  return (state.steps?.[STEP_NAMES.CODE_REVIEW]?.length ?? 0) + 1;
-}
-
-/**
  * Full AgentDefinition owned by CodeReviewStep.
  * gitWrite: true — review-feedback file is committed and pushed by the agent.
  * Source code remains read-only (enforced by prompt: "Do NOT modify any source files").
@@ -168,7 +161,7 @@ export const CodeReviewStep: AgentStep = {
   maxTurns: 20,
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    const iteration = computeCodeReviewIteration(state);
+    const iteration = nextIteration(state, STEP_NAMES.CODE_REVIEW);
     const findingsPath = buildReviewFeedbackPath(deps.slug, iteration);
     return buildCodeReviewInitialMessage({
       slug: deps.slug,
@@ -181,7 +174,7 @@ export const CodeReviewStep: AgentStep = {
   },
 
   resultFilePath(state: JobState, deps: StepDeps): string {
-    const iteration = computeCodeReviewIteration(state);
+    const iteration = nextIteration(state, STEP_NAMES.CODE_REVIEW);
     return buildReviewFeedbackPath(deps.slug, iteration);
   },
 

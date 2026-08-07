@@ -15,8 +15,6 @@
  *   mainCheckoutDrift/pid); steps, reviewerStatuses, decisions, biteEvidence untouched.
  * Design D6: operator event is appended before the transition is persisted.
  */
-import * as nodePath from "node:path";
-import * as nodeFs from "node:fs/promises";
 import { loadConfig } from "../../config/store.js";
 import { resolveRepoRoot } from "../../util/repo-root.js";
 import { JobStateStore } from "../../store/job-state-store.js";
@@ -30,12 +28,12 @@ import { resolveJobStateBySlug } from "../resume/resolve-job.js";
 import { resolveRequestPath } from "../resume/resolve-request-path.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import { resolveResumeStep, buildAllowedStepSet } from "../resume/resolve-step.js";
-import { livenessJsonPath } from "../../util/paths.js";
 import { transitionJob } from "../../state/lifecycle.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
+import { resolveLivenessWorktreePath } from "../resume/resolve-worktree-path.js";
 import type { GitHubClient } from "../port/github-client.js";
 
 export interface ReopenOptions {
@@ -308,22 +306,7 @@ export class ReopenCommand extends CommandRunner {
     }
 
     // Resolve existing worktree path (mirror resume.ts logic)
-    let resolvedWorktreePath: string | null = updatedState.worktreePath ?? null;
-    if (!resolvedWorktreePath && resolvedSlug) {
-      try {
-        const sidecarAbsPath = nodePath.join(cwd, livenessJsonPath(resolvedSlug));
-        const raw = await nodeFs.readFile(sidecarAbsPath, "utf-8");
-        const sidecar = JSON.parse(raw) as Record<string, unknown>;
-        if (
-          typeof sidecar["worktreePath"] === "string" &&
-          sidecar["jobId"] === updatedState.jobId
-        ) {
-          resolvedWorktreePath = sidecar["worktreePath"];
-        }
-      } catch {
-        // No sidecar or mismatch — will create a new worktree on resume
-      }
-    }
+    const resolvedWorktreePath = await resolveLivenessWorktreePath(updatedState, resolvedSlug ?? "", cwd);
 
     return {
       jobState: updatedState,

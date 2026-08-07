@@ -60,9 +60,6 @@ export class DescriptorInputCompletenessError extends Error {
  */
 export const VALIDATOR_PROBE_SLUG = "__probe__";
 
-/** @internal Alias kept for backward compat within this module. */
-const PROBE_SLUG = VALIDATOR_PROBE_SLUG;
-
 /**
  * Normalize an iteration suffix from a path.
  * Strips the trailing `-NNN` before `.md` so that loop-back reads (fixer reads
@@ -114,11 +111,11 @@ function makeProbe(): { state: JobState; deps: StepContext } {
 
   const deps: StepContext = {
     config: { version: 1, agents: {} },
-    slug: PROBE_SLUG,
+    slug: VALIDATOR_PROBE_SLUG,
     request: {
       type: "spec-change",
       title: "Probe",
-      slug: PROBE_SLUG,
+      slug: VALIDATOR_PROBE_SLUG,
       baseBranch: "main",
       content: "",
       adr: true,

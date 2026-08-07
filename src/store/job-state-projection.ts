@@ -76,15 +76,6 @@ export async function composeSplitLayoutFromContent(
     foldResult = fold(eventsJsonl);
   }
 
-  // Crash recovery (D3): if fold count > stored counter, journal has more data
-  // than state.json knows about.
-  if (
-    foldResult.historyCount > storedCounters.historyCount ||
-    foldResult.stepsTotal > Object.values(storedCounters.stepCounts).reduce((a, b) => a + b, 0)
-  ) {
-    // Counters are stale — use fold result (next persist will fix counters)
-  }
-
   // Validate state.json fields (minus steps/history which come from journal)
   // Inject empty arrays so validateJobState doesn't fail
   const rawForValidation = { ...stateWithoutJournal, history: [], steps: {} };

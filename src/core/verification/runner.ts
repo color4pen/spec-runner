@@ -311,6 +311,105 @@ async function checkPackageJsonScriptsIntegrity(
 }
 
 /**
+ * Shared tail for both runVerificationCommands and runVerificationPhases:
+ * coverage-gate → lockfile-gate → verdict → write.
+ *
+ * The skip string is generated from `args.skipLabel` so that "command" and "phase"
+ * paths each produce their original byte-identical literal.
+ */
+async function finalizeVerificationRun(args: {
+  slug: string;
+  cwd: string;
+  phases: PhaseResult[];
+  failed: boolean;
+  coverage: import("../../config/schema.js").CoverageConfig | undefined;
+  baseBranch: string | undefined;
+  root: string;
+  skipLabel: "command" | "phase";
+}): Promise<VerificationResult> {
+  let { phases, failed } = args;
+
+  // Run changed-line coverage gate.
+  let coverageSkipNote: string | undefined;
+  if (args.coverage !== undefined) {
+    if (failed) {
+      phases.push({
+        phase: CHANGED_LINE_COVERAGE_PHASE,
+        status: "skipped",
+        stdout: `_(skipped — previous ${args.skipLabel} failed)_`,
+        stderr: "",
+        exitCode: null,
+        durationMs: 0,
+      });
+    } else {
+      const gateResult = await runChangedLineCoverageGate({
+        slug: args.slug,
+        cwd: args.cwd,
+        coverage: args.coverage,
+        baseBranch: args.baseBranch,
+        root: args.root,
+      });
+      phases.push(gateResult);
+      if (gateResult.status === "failed") {
+        failed = true;
+      }
+    }
+  } else {
+    coverageSkipNote =
+      "changed-line coverage gate: skipped (`verification.coverage` 未設定)";
+  }
+
+  // Run lockfile-sync gate (when baseBranch is provided).
+  if (args.baseBranch !== undefined) {
+    if (failed) {
+      phases.push({
+        phase: LOCKFILE_SYNC_PHASE,
+        status: "skipped",
+        stdout: `_(skipped — previous ${args.skipLabel} failed)_`,
+        stderr: "",
+        exitCode: null,
+        durationMs: 0,
+      });
+    } else {
+      const { runLockfileSyncGate } = await import("./lockfile-sync.js");
+      const gateResult = await runLockfileSyncGate({ slug: args.slug, cwd: args.cwd, baseBranch: args.baseBranch, spawn });
+      phases.push(gateResult);
+      if (gateResult.status === "failed") {
+        failed = true;
+      }
+    }
+  }
+
+  const nonSkipped = phases.filter((p) => p.status !== "skipped");
+  const anyFailed = phases.some((p) => p.status === "failed");
+  const allSkipped = nonSkipped.length === 0;
+
+  let verdict: "passed" | "failed";
+  let errorCode: string | undefined;
+
+  if (allSkipped) {
+    verdict = "failed";
+    errorCode = "VERIFICATION_NO_RUNNABLE_PHASES";
+  } else if (anyFailed) {
+    verdict = "failed";
+  } else {
+    verdict = "passed";
+  }
+
+  const result: VerificationResult = {
+    slug: args.slug,
+    verdict,
+    phases,
+    ...(errorCode ? { errorCode } : {}),
+  };
+
+  const outputPath = path.join(args.cwd, verificationResultPath(args.slug));
+  await writeVerificationResult(result, outputPath, args.cwd, coverageSkipNote);
+
+  return result;
+}
+
+/**
  * Run verification for the given slug.
  *
  * Two execution paths:
@@ -387,87 +486,7 @@ async function runVerificationCommands(
     }
   }
 
-  // Run changed-line coverage gate after all commands.
-  let coverageSkipNote: string | undefined;
-  if (coverage !== undefined) {
-    if (failed) {
-      // Fail-fast: prior commands failed — skip the gate.
-      phases.push({
-        phase: CHANGED_LINE_COVERAGE_PHASE,
-        status: "skipped",
-        stdout: "_(skipped — previous command failed)_",
-        stderr: "",
-        exitCode: null,
-        durationMs: 0,
-      });
-    } else {
-      const gateResult = await runChangedLineCoverageGate({
-        slug,
-        cwd,
-        coverage,
-        baseBranch,
-        root,
-      });
-      phases.push(gateResult);
-      if (gateResult.status === "failed") {
-        failed = true;
-      }
-    }
-  } else {
-    coverageSkipNote =
-      "changed-line coverage gate: skipped (`verification.coverage` 未設定)";
-  }
-
-  // Run lockfile-sync gate after all commands and coverage gate (when baseBranch is provided).
-  // Dynamic import defers module resolution until this point (after test setup completes).
-  if (baseBranch !== undefined) {
-    if (failed) {
-      // Fail-fast: prior commands/coverage failed — skip the gate.
-      phases.push({
-        phase: LOCKFILE_SYNC_PHASE,
-        status: "skipped",
-        stdout: "_(skipped — previous command failed)_",
-        stderr: "",
-        exitCode: null,
-        durationMs: 0,
-      });
-    } else {
-      const { runLockfileSyncGate } = await import("./lockfile-sync.js");
-      const gateResult = await runLockfileSyncGate({ slug, cwd, baseBranch, spawn });
-      phases.push(gateResult);
-      if (gateResult.status === "failed") {
-        failed = true;
-      }
-    }
-  }
-
-  const nonSkipped = phases.filter((p) => p.status !== "skipped");
-  const anyFailed = phases.some((p) => p.status === "failed");
-  const allSkipped = nonSkipped.length === 0;
-
-  let verdict: "passed" | "failed";
-  let errorCode: string | undefined;
-
-  if (allSkipped) {
-    verdict = "failed";
-    errorCode = "VERIFICATION_NO_RUNNABLE_PHASES";
-  } else if (anyFailed) {
-    verdict = "failed";
-  } else {
-    verdict = "passed";
-  }
-
-  const result: VerificationResult = {
-    slug,
-    verdict,
-    phases,
-    ...(errorCode ? { errorCode } : {}),
-  };
-
-  const outputPath = path.join(cwd, verificationResultPath(slug));
-  await writeVerificationResult(result, outputPath, cwd, coverageSkipNote);
-
-  return result;
+  return finalizeVerificationRun({ slug, cwd, phases, failed, coverage, baseBranch, root, skipLabel: "command" });
 }
 
 /**
@@ -611,86 +630,5 @@ async function runVerificationPhases(
     }
   }
 
-  // Run changed-line coverage gate after all phases.
-  let coverageSkipNote: string | undefined;
-  if (coverage !== undefined) {
-    if (failed) {
-      // Fail-fast: prior phases failed — skip the gate.
-      phases.push({
-        phase: CHANGED_LINE_COVERAGE_PHASE,
-        status: "skipped",
-        stdout: "_(skipped — previous phase failed)_",
-        stderr: "",
-        exitCode: null,
-        durationMs: 0,
-      });
-    } else {
-      const gateResult = await runChangedLineCoverageGate({
-        slug,
-        cwd,
-        coverage,
-        baseBranch,
-        root,
-      });
-      phases.push(gateResult);
-      if (gateResult.status === "failed") {
-        failed = true;
-      }
-    }
-  } else {
-    coverageSkipNote =
-      "changed-line coverage gate: skipped (`verification.coverage` 未設定)";
-  }
-
-  // Run lockfile-sync gate after all phases and coverage gate (when baseBranch is provided).
-  if (baseBranch !== undefined) {
-    if (failed) {
-      // Fail-fast: prior phases/coverage failed — skip the gate.
-      phases.push({
-        phase: LOCKFILE_SYNC_PHASE,
-        status: "skipped",
-        stdout: "_(skipped — previous phase failed)_",
-        stderr: "",
-        exitCode: null,
-        durationMs: 0,
-      });
-    } else {
-      const { runLockfileSyncGate } = await import("./lockfile-sync.js");
-      const gateResult = await runLockfileSyncGate({ slug, cwd, baseBranch, spawn });
-      phases.push(gateResult);
-      if (gateResult.status === "failed") {
-        failed = true;
-      }
-    }
-  }
-
-  // Determine verdict: passed only if at least one phase ran and passed, or all non-skipped passed
-  const nonSkipped = phases.filter((p) => p.status !== "skipped");
-  const anyFailed = phases.some((p) => p.status === "failed");
-  const allSkipped = nonSkipped.length === 0;
-
-  let verdict: "passed" | "failed";
-  let errorCode: string | undefined;
-
-  if (allSkipped) {
-    verdict = "failed";
-    errorCode = "VERIFICATION_NO_RUNNABLE_PHASES";
-  } else if (anyFailed) {
-    verdict = "failed";
-  } else {
-    verdict = "passed";
-  }
-
-  const result: VerificationResult = {
-    slug,
-    verdict,
-    phases,
-    ...(errorCode ? { errorCode } : {}),
-  };
-
-  // Write result file
-  const outputPath = path.join(cwd, verificationResultPath(slug));
-  await writeVerificationResult(result, outputPath, cwd, coverageSkipNote);
-
-  return result;
+  return finalizeVerificationRun({ slug, cwd, phases, failed, coverage, baseBranch, root, skipLabel: "phase" });
 }

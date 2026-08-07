@@ -365,6 +365,59 @@ function resolveSlugForDetach(input: string, cwd: string): string | null {
   return null;
 }
 
+const RUN_JOB_FLAGS = {
+  verbose: { type: "boolean" },
+  quiet: { type: "boolean" },
+  json: { type: "boolean" },
+  "no-worktree": { type: "boolean" },
+  issue: { type: "string" },
+  detach: { type: "boolean" },
+} as const satisfies Record<string, FlagDef>;
+
+async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
+  const requestMdPath = parsed.positional!;
+
+  // --detach + --json are mutually exclusive (detach exits immediately, no JSON contract)
+  if (parsed.flags["detach"] && parsed.flags["json"]) {
+    logError("--detach and --json are mutually exclusive");
+    process.exit(EXIT_CODE.ARG_ERROR);
+  }
+
+  // Detach path: self-respawn and exit 0
+  if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
+    const repoRoot = ctx?.repoRoot ?? process.cwd();
+    const slug = resolveSlugForDetach(requestMdPath, ctx?.repoRoot ?? process.cwd());
+    if (!slug) {
+      logError(`Cannot resolve slug from '${requestMdPath}'. Provide a valid slug or request.md path with --detach.`);
+      process.exit(EXIT_CODE.GENERAL_ERROR);
+    }
+    const code = detachSelf({
+      args: process.argv.slice(2),
+      repoRoot,
+      slug,
+      env: process.env as Record<string, string | undefined>,
+    });
+    process.exit(code);
+  }
+
+  const logLevel = resolveLogLevel({
+    quiet: !!parsed.flags["quiet"],
+    verbose: !!parsed.flags["verbose"],
+    debug: !!parsed.flags["debug"],
+  });
+  let issue: number | undefined;
+  const issueRaw = parsed.flags["issue"] as string | undefined;
+  if (issueRaw !== undefined) {
+    const n = Number(issueRaw);
+    if (!Number.isInteger(n) || n <= 0) {
+      logError(`--issue requires a positive integer (got: ${issueRaw})`);
+      process.exit(EXIT_CODE.ARG_ERROR);
+    }
+    issue = n;
+  }
+  await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"], issue });
+}
+
 export const COMMANDS: Record<string, CommandEntry> = {
   init: {
     flags: {
@@ -396,58 +449,9 @@ export const COMMANDS: Record<string, CommandEntry> = {
 
   /** Alias: job start <slug|file> */
   run: {
-    flags: {
-      verbose: { type: "boolean" },
-      quiet: { type: "boolean" },
-      json: { type: "boolean" },
-      "no-worktree": { type: "boolean" },
-      issue: { type: "string" },
-      detach: { type: "boolean" },
-    },
+    flags: RUN_JOB_FLAGS,
     positional: { name: "request.md|slug", required: true },
-    handler: async (parsed, ctx) => {
-      const requestMdPath = parsed.positional!;
-
-      // --detach + --json are mutually exclusive (detach exits immediately, no JSON contract)
-      if (parsed.flags["detach"] && parsed.flags["json"]) {
-        logError("--detach and --json are mutually exclusive");
-        process.exit(EXIT_CODE.ARG_ERROR);
-      }
-
-      // Detach path: self-respawn and exit 0
-      if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
-        const repoRoot = ctx?.repoRoot ?? process.cwd();
-        const slug = resolveSlugForDetach(requestMdPath, ctx?.repoRoot ?? process.cwd());
-        if (!slug) {
-          logError(`Cannot resolve slug from '${requestMdPath}'. Provide a valid slug or request.md path with --detach.`);
-          process.exit(EXIT_CODE.GENERAL_ERROR);
-        }
-        const code = detachSelf({
-          args: process.argv.slice(2),
-          repoRoot,
-          slug,
-          env: process.env as Record<string, string | undefined>,
-        });
-        process.exit(code);
-      }
-
-      const logLevel = resolveLogLevel({
-        quiet: !!parsed.flags["quiet"],
-        verbose: !!parsed.flags["verbose"],
-        debug: !!parsed.flags["debug"],
-      });
-      let issue: number | undefined;
-      const issueRaw = parsed.flags["issue"] as string | undefined;
-      if (issueRaw !== undefined) {
-        const n = Number(issueRaw);
-        if (!Number.isInteger(n) || n <= 0) {
-          logError(`--issue requires a positive integer (got: ${issueRaw})`);
-          process.exit(EXIT_CODE.ARG_ERROR);
-        }
-        issue = n;
-      }
-      await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"], issue });
-    },
+    handler: runJobHandler,
   },
 
   request: {
@@ -519,58 +523,9 @@ export const COMMANDS: Record<string, CommandEntry> = {
     guardedSubcommands: new Set(["start", "resume", "attach", "archive", "prune", "reopen"]),
     subcommands: {
       start: {
-        flags: {
-          verbose: { type: "boolean" },
-          quiet: { type: "boolean" },
-          json: { type: "boolean" },
-          "no-worktree": { type: "boolean" },
-          issue: { type: "string" },
-          detach: { type: "boolean" },
-        },
+        flags: RUN_JOB_FLAGS,
         positional: { name: "slug|file", required: true },
-        handler: async (parsed, ctx) => {
-          const requestMdPath = parsed.positional!;
-
-          // --detach + --json are mutually exclusive
-          if (parsed.flags["detach"] && parsed.flags["json"]) {
-            logError("--detach and --json are mutually exclusive");
-            process.exit(EXIT_CODE.ARG_ERROR);
-          }
-
-          // Detach path: self-respawn and exit 0
-          if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
-            const repoRoot = ctx?.repoRoot ?? process.cwd();
-            const slug = resolveSlugForDetach(requestMdPath, ctx?.repoRoot ?? process.cwd());
-            if (!slug) {
-              logError(`Cannot resolve slug from '${requestMdPath}'. Provide a valid slug or request.md path with --detach.`);
-              process.exit(EXIT_CODE.GENERAL_ERROR);
-            }
-            const code = detachSelf({
-              args: process.argv.slice(2),
-              repoRoot,
-              slug,
-              env: process.env as Record<string, string | undefined>,
-            });
-            process.exit(code);
-          }
-
-          const logLevel = resolveLogLevel({
-            quiet: !!parsed.flags["quiet"],
-            verbose: !!parsed.flags["verbose"],
-            debug: !!parsed.flags["debug"],
-          });
-          let issue: number | undefined;
-          const issueRaw = parsed.flags["issue"] as string | undefined;
-          if (issueRaw !== undefined) {
-            const n = Number(issueRaw);
-            if (!Number.isInteger(n) || n <= 0) {
-              logError(`--issue requires a positive integer (got: ${issueRaw})`);
-              process.exit(EXIT_CODE.ARG_ERROR);
-            }
-            issue = n;
-          }
-          await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"], issue });
-        },
+        handler: runJobHandler,
       },
       ls: {
         flags: {

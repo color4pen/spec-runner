@@ -30,13 +30,6 @@ const conformanceAgentDefinition: AgentDefinition = {
 };
 
 /**
- * Compute the iteration number for the next conformance push.
- */
-function computeConformanceIteration(state: JobState): number {
-  return (state.steps?.[STEP_NAMES.CONFORMANCE]?.length ?? 0) + 1;
-}
-
-/**
  * ConformanceStep: implements the conformance pipeline step as a plain Step object.
  *
  * Has its own dedicated AgentDefinition (role: "conformance").
@@ -77,7 +70,7 @@ export const ConformanceStep: AgentStep = {
   },
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    const iteration = computeConformanceIteration(state);
+    const iteration = nextIteration(state, STEP_NAMES.CONFORMANCE);
     const findingsPath = conformanceResultPath(deps.slug, iteration);
     const changeFolder = changeFolderPath(deps.slug);
 
@@ -107,7 +100,7 @@ ${deps.request.content}
   },
 
   resultFilePath(state: JobState, deps: StepDeps): string {
-    const iteration = computeConformanceIteration(state);
+    const iteration = nextIteration(state, STEP_NAMES.CONFORMANCE);
     return conformanceResultPath(deps.slug, iteration);
   },
 
