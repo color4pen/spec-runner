@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf18be5a-782b-4ea7-9139-5e9dd1a64fa3",
   "createdAt": "2026-08-07T11:43:55.397Z",
-  "updatedAt": "2026-08-07T12:05:49.892Z",
+  "updatedAt": "2026-08-07T12:07:48.997Z",
   "request": {
     "title": "同一性検証済みの重複コードを統合する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "refactor/dedup-verified-safe-bf18be5a",
   "error": null,
@@ -65,14 +65,16 @@
     "c197fc150baa4fd309af456c95e5ad4f7d8be632",
     "085b298836a4296e0914faa305e694a7ab9bc98c",
     "7ddf3ad6c0a4ded546f10aba51082deff910a94c",
-    "3e62f4817d6a5dc5ddbed980c10f03380f50e7d1"
+    "3e62f4817d6a5dc5ddbed980c10f03380f50e7d1",
+    "bb8fda7f86e8e17fc596718a59db169980f4b0c6"
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }
