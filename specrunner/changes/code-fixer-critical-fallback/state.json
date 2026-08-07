@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "badf72d3-6bb9-453a-9d72-e3e6193797b5",
   "createdAt": "2026-08-07T11:44:02.170Z",
-  "updatedAt": "2026-08-07T12:15:29.715Z",
+  "updatedAt": "2026-08-07T12:20:01.343Z",
   "request": {
     "title": "code-fixer の fallback prompt が CRITICAL findings の修正義務を欠落している",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/code-fixer-critical-fallback-badf72d3",
   "error": null,
   "pipelineId": "standard",
@@ -77,7 +77,9 @@
     "136eeb2f5f73a11d24175fce0fc85e1f2b89aa31",
     "afb12cc8d783b989d53fd650fe4dade8ee9e8626",
     "28747267d46927237d953e3783029048c0e7731f",
-    "c06e2db572a70328dad87062a83b0d4aeaf6c039"
+    "c06e2db572a70328dad87062a83b0d4aeaf6c039",
+    "b92a142625be9b7b572adab02e4e40b9bd3deaba",
+    "aa97431dc85548956c1079f499302aaa8481d149"
   ],
   "reviewerStatuses": [
     {
@@ -111,8 +113,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/966",
+    "number": 966,
+    "createdAt": "2026-08-07T12:20:00.604Z"
+  },
   "_journal": {
-    "historyCount": 63,
+    "historyCount": 77,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -122,13 +129,16 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "code-fixer": 2
+      "code-fixer": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
