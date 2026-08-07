@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f45ee501-b464-40de-bf32-dadf45998914",
   "createdAt": "2026-08-07T11:43:53.045Z",
-  "updatedAt": "2026-08-07T13:12:56.878Z",
+  "updatedAt": "2026-08-07T13:16:47.465Z",
   "request": {
     "title": "adapter / cli / config / logger の検証済み死コードを削除する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/dead-code-adapter-cli-f45ee501",
   "error": null,
@@ -77,7 +77,8 @@
     "dbff253768f86746ce1cd1ea40426407edb53035",
     "c280aee94f04b7888ca2dfbeb58b3dd6b2a6377d",
     "640c27713477ee186c691e914d9595aaa9256344",
-    "3e0c481a28a14f587224b7ff2599328083125ebd"
+    "3e0c481a28a14f587224b7ff2599328083125ebd",
+    "7fbe692c43bde59fe64e680dd1ad996773f4f948"
   ],
   "reviewerStatuses": [
     {
@@ -111,7 +112,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 65,
+    "historyCount": 70,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -128,7 +129,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
