@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f45ee501-b464-40de-bf32-dadf45998914",
   "createdAt": "2026-08-07T11:43:53.045Z",
-  "updatedAt": "2026-08-07T13:16:47.465Z",
+  "updatedAt": "2026-08-07T13:25:55.096Z",
   "request": {
     "title": "adapter / cli / config / logger の検証済み死コードを削除する",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/dead-code-adapter-cli-f45ee501",
   "error": null,
   "pipelineId": "standard",
@@ -78,7 +78,9 @@
     "c280aee94f04b7888ca2dfbeb58b3dd6b2a6377d",
     "640c27713477ee186c691e914d9595aaa9256344",
     "3e0c481a28a14f587224b7ff2599328083125ebd",
-    "7fbe692c43bde59fe64e680dd1ad996773f4f948"
+    "7fbe692c43bde59fe64e680dd1ad996773f4f948",
+    "e4662c29cb40709bb446c6a80803ec5294cb964f",
+    "c2f6eed8f12f5b4396c5e0d28910bee99be64769"
   ],
   "reviewerStatuses": [
     {
@@ -111,8 +113,13 @@
       "canonHash": "specrunner/changes/dead-code-adapter-cli/design.md:sha256:52c4f20788cf868ff49a464bec7cce37c71eff7b193b52f9757f42057bcd0727|specrunner/changes/dead-code-adapter-cli/request.md:sha256:247c62f87cee395eededea0f4f1e720186973241b2e4a60cc748626c49e074e3|specrunner/changes/dead-code-adapter-cli/spec.md:sha256:47494b92e0cc1ed3251a6ffa522a89678e7e542017fe72cb37c87a671130b203|specrunner/changes/dead-code-adapter-cli/tasks.md:sha256:3bf3f9f8553f2f5b80a61d23f34355a2d049384f4cb2b2211f6922cad4127063|specrunner/changes/dead-code-adapter-cli/test-cases.md:sha256:d9c1f532ea559dfa774e7e2e146fae8dc07aa9c20b58a1c2df9cdeb7a66e2a32"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/969",
+    "number": 969,
+    "createdAt": "2026-08-07T13:25:54.111Z"
+  },
   "_journal": {
-    "historyCount": 70,
+    "historyCount": 84,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -122,14 +129,17 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
