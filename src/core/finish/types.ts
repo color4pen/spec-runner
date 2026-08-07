@@ -1,33 +1,6 @@
 /**
  * Shared types for the finish command modules.
  */
-import type { SpawnFn } from "../../util/spawn.js";
-
-/**
- * Data returned from getPullRequest for the feature PR.
- * Shared between preflight.ts and pr-status.ts.
- */
-export interface PrViewData {
-  state: string;
-  mergeStateStatus?: string;
-  headRefName?: string;
-}
-
-/**
- * Resolved target from input resolution (jobId / --slug / active detection).
- */
-export interface ResolvedTarget {
-  jobId: string;
-  prNumber: number;
-  prUrl: string;
-  branch: string;
-  slug: string;
-  /**
-   * Path to the persistent job worktree (local runtime only).
-   * null for managed mode or crash recovery without a worktree.
-   */
-  worktreePath?: string | null;
-}
 
 /**
  * Injectable fs boundary for finish modules (mirrors DoctorFs pattern).
@@ -47,19 +20,3 @@ export interface FinishFs {
   rm(path: string, opts: { recursive: boolean; force: boolean }): Promise<void>;
 }
 
-/**
- * Context for finish step modules.
- */
-export interface FinishContext {
-  spawn: SpawnFn;
-  fs: FinishFs;
-  cwd: string;
-}
-
-/**
- * Input flags for the finish command.
- */
-export interface FinishFlags {
-  /** dry-run: Phase 0 only, no destructive ops */
-  dryRun?: boolean;
-}

@@ -379,7 +379,7 @@ describe("StepExecutor — polling-style step propagates state.branch to createS
 
 // T-05: requiresCommit removed — executor no longer checks branch HEAD advancement
 describe("StepExecutor — commit-and-push silently skips when no SHA change (T-05 regression)", () => {
-  it("does not throw NO_COMMIT_DETECTED when pre and post HEAD SHAs match (silent skip)", async () => {
+  it("silently skips when pre and post HEAD SHAs match (no commit, no error)", async () => {
     const events = new EventBus();
 
     const state = await setupJobState("requires-commit-no-advance");
@@ -599,7 +599,7 @@ describe("StepExecutor — commit-and-push silently skips when no SHA change (T-
     };
 
     const executor = makeExecutor(events, deps);
-    // Null post-SHA falls through (no NO_COMMIT_DETECTED) — only equal SHAs trigger
+    // Null post-SHA falls through (silent skip) — only equal SHAs trigger
     await expect(executor.execute(step, state, deps)).resolves.toBeDefined();
   });
 });

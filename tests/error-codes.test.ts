@@ -19,8 +19,6 @@ import * as os from "node:os";
 import {
   ERROR_CODES,
   sessionTerminatedError,
-  branchNotRegisteredError,
-  stateFileInvalidError,
   configIncompleteError,
 } from "../src/errors.js";
 import type { SpawnFn } from "../src/util/spawn.js";
@@ -77,20 +75,6 @@ describe("TC-023 (error-codes): SESSION_TERMINATED code is preserved", () => {
 
   it("ERROR_CODES.SESSION_TERMINATED string value is 'SESSION_TERMINATED'", () => {
     expect(ERROR_CODES.SESSION_TERMINATED).toBe("SESSION_TERMINATED");
-  });
-});
-
-// -------------------------------------------------------------------------
-// TC-024: BRANCH_NOT_REGISTERED code preserved
-// -------------------------------------------------------------------------
-describe("TC-024 (error-codes): BRANCH_NOT_REGISTERED code is preserved", () => {
-  it("branchNotRegisteredError produces code === 'BRANCH_NOT_REGISTERED'", () => {
-    const err = branchNotRegisteredError();
-    expect(err.code).toBe("BRANCH_NOT_REGISTERED");
-  });
-
-  it("ERROR_CODES.BRANCH_NOT_REGISTERED string value is 'BRANCH_NOT_REGISTERED'", () => {
-    expect(ERROR_CODES.BRANCH_NOT_REGISTERED).toBe("BRANCH_NOT_REGISTERED");
   });
 });
 
@@ -255,10 +239,8 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
     expect(result.error?.code).toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");
   });
 
-  it("STATE_FILE_INVALID is in ERROR_CODES and stateFileInvalidError produces that code", () => {
+  it("STATE_FILE_INVALID is in ERROR_CODES", () => {
     expect(ERROR_CODES.STATE_FILE_INVALID).toBe("STATE_FILE_INVALID");
-    const err = stateFileInvalidError("/path/to/file.json", "version mismatch");
-    expect(err.code).toBe("STATE_FILE_INVALID");
   });
 
   it("4 named codes are defined as string literals in ERROR_CODES (SESSION_TIMEOUT removed)", () => {

@@ -148,13 +148,6 @@ export interface SpecReviewPromptInput {
 }
 
 /**
- * Build the spec-review system prompt (static, no per-request injection needed).
- */
-export function buildSpecReviewSystemPrompt(_input: SpecReviewPromptInput): string {
-  return SPEC_REVIEW_SYSTEM_PROMPT;
-}
-
-/**
  * Build the spec-review mode instruction line for the initial message.
  */
 function buildSpecReviewModeInstruction(mode: "full" | "lightweight"): string {

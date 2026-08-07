@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { RuleRegistry } from "../../../../src/core/validation/registry.js";
-import type { ValidationRule } from "../../../../src/core/validation/types.js";
+import { RuleRegistry } from "../../../../src/parser/validation/registry.js";
+import type { ValidationRule } from "../../../../src/parser/validation/types.js";
 
 interface SimpleViolation {
   rule: string;

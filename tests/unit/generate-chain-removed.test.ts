@@ -15,9 +15,6 @@
  * TC-009: manager.ts に create / generator / OneShotQueryClient が現れない
  *   Source: tasks.md > T-03
  *
- * TC-010: port/index.ts から OneShotQueryClient 系 re-export が除去されている
- *   Source: tasks.md > T-03
- *
  * TC-011: CommandInvocation.command union に "request-generate" リテラルが残置されている
  *   Source: design.md > D4
  *
@@ -164,7 +161,7 @@ describe("TC-009: manager.ts に create / generator / OneShotQueryClient が現�
 
   it("TC-009: src/core/request/manager.ts に 'create' が現れない", () => {
     const source = readFileSync(MANAGER_PATH, "utf-8");
-    // "create" function should be removed; "list" and "resolve" remain
+    // "create" function should be removed; "list" remains
     // We check the function definition, not the general word "create"
     expect(source).not.toContain("export async function create(");
     expect(source).not.toContain("export function create(");
@@ -178,27 +175,6 @@ describe("TC-009: manager.ts に create / generator / OneShotQueryClient が現�
   it("TC-009: src/core/request/manager.ts に 'OneShotQueryClient' が現れない", () => {
     const source = readFileSync(MANAGER_PATH, "utf-8");
     expect(source).not.toContain("OneShotQueryClient");
-  });
-});
-
-// ─── TC-010: port/index.ts から OneShotQueryClient 系 re-export が除去 ──────────
-
-describe("TC-010: port/index.ts から OneShotQueryClient 系 re-export が除去されている", () => {
-  const PORT_INDEX_PATH = src("core/port/index.ts");
-
-  it("TC-010: src/core/port/index.ts に 'OneShotQueryClient' が含まれない", () => {
-    const source = readFileSync(PORT_INDEX_PATH, "utf-8");
-    expect(source).not.toContain("OneShotQueryClient");
-  });
-
-  it("TC-010: src/core/port/index.ts に 'OneShotQueryOptions' が含まれない", () => {
-    const source = readFileSync(PORT_INDEX_PATH, "utf-8");
-    expect(source).not.toContain("OneShotQueryOptions");
-  });
-
-  it("TC-010: src/core/port/index.ts に 'OneShotQueryResult' が含まれない", () => {
-    const source = readFileSync(PORT_INDEX_PATH, "utf-8");
-    expect(source).not.toContain("OneShotQueryResult");
   });
 });
 

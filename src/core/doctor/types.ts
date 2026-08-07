@@ -83,12 +83,7 @@ export interface DoctorGitHubClient {
  * DoctorContext: injectable dependencies for all doctor checks.
  * Unit tests provide a mock; production code provides real implementations.
  *
- * The const below co-exists with the interface in separate declaration spaces,
- * providing a runtime-accessible export so dynamic import destructuring works.
- * @internal
  */
-export const DoctorContext: undefined = undefined;
-
 export interface DoctorContext {
   /** Current working directory (invoker cwd — may be a subdirectory of the repo root) */
   cwd: string;

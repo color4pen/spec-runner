@@ -423,7 +423,7 @@ function makeAgentStepWithReportTool(): AgentStep {
 // When reportTool is set but agent never called it (toolResult === null),
 // executor now proceeds with step-class-based verdict instead of halting.
 describe("TC-040: executor proceeds (no halt) when reportTool is set and agent returns toolResult===null", () => {
-  it("returns success state (no STEP_HALTED_NO_TOOL_CALL, no awaiting-resume)", async () => {
+  it("returns success state (no halt, no awaiting-resume)", async () => {
     const jobState = await createRunningJobState();
     // makeCapturingRunner() returns toolResult: null
     const { runner } = makeCapturingRunner();

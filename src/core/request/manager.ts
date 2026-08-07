@@ -16,6 +16,3 @@ export async function list(
   return results;
 }
 
-export function resolve(cwd: string, slug: string): string {
-  return store.resolveWithFallback(cwd, slug);
-}

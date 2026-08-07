@@ -687,7 +687,7 @@ describe("TC-028: ClaudeCodeRunner — no requiresCommit guard (moved to StepExe
   it("does NOT return completionReason='error' for requiresCommit:true steps (guard removed from adapter)", async () => {
     // TC-028 updated: requiresCommit guard was removed from ClaudeCodeRunner.
     // StepExecutor.commitAndPush() now handles this via staged diff check.
-    // The adapter should NOT trigger NO_COMMIT_DETECTED — it just runs the agent.
+    // The adapter does not check for commit advancement — it just runs the agent.
     const SHA = "sha-abc123deadbeef";
 
     const gitResponses = {

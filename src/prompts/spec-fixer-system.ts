@@ -56,16 +56,3 @@ export const SPEC_FIXER_SYSTEM_PROMPT = buildSystemPrompt(SPEC_FIXER_BASE, [
   COMPLETION_DIRECTIVE,
 ]);
 
-export interface SpecFixerPromptInput {
-  slug: string;
-  branch: string;
-  findingsPath: string;
-}
-
-/**
- * Build the spec-fixer system prompt.
- * The prompt is static and does not vary per-request (it's embedded in the Agent definition).
- */
-export function buildSpecFixerSystemPrompt(_input?: SpecFixerPromptInput): string {
-  return SPEC_FIXER_SYSTEM_PROMPT;
-}
