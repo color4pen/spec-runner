@@ -74,55 +74,7 @@ function validateAndWrap(migrated: unknown): SpecRunnerConfig {
  * Throws SpecRunnerError if config is missing or invalid.
  */
 export async function loadConfig(repoRoot?: string): Promise<SpecRunnerConfig> {
-  const userGlobalPath = getConfigPath();
-
-  // Try to read user global config
-  let userGlobalMigrated: unknown | null = null;
-  try {
-    const content = await fs.readFile(userGlobalPath, "utf-8");
-    userGlobalMigrated = parseAndMigrate(content, "user global config");
-  } catch (err: unknown) {
-    if (err instanceof SpecRunnerError) throw err;
-    const code = (err as NodeJS.ErrnoException).code;
-    if (code !== "ENOENT") throw err;
-    // ENOENT → user global does not exist, continue
-  }
-
-  // Try to read project local config (only when repoRoot is provided)
-  let projectLocalMigrated: unknown | null = null;
-  if (repoRoot) {
-    const projectLocalPath = path.join(repoRoot, ".specrunner", "config.json");
-    try {
-      const content = await fs.readFile(projectLocalPath, "utf-8");
-      projectLocalMigrated = parseAndMigrate(content, "project local config");
-    } catch (err: unknown) {
-      if (err instanceof SpecRunnerError) throw err;
-      const code = (err as NodeJS.ErrnoException).code;
-      if (code !== "ENOENT") throw err;
-      // ENOENT → project local does not exist, continue
-    }
-  }
-
-  if (userGlobalMigrated !== null && projectLocalMigrated !== null) {
-    // Both exist: validate user global first, then deep merge with project local overlay,
-    // then validate the merged result (project local may be partial).
-    const userGlobal = validateAndWrap(userGlobalMigrated);
-    const merged = deepMergeConfig(userGlobal, projectLocalMigrated as Partial<SpecRunnerConfig>);
-    return validateAndWrap(merged);
-  }
-
-  if (projectLocalMigrated !== null) {
-    // Only project local: must be a complete standalone config (version: 1 + required fields).
-    return validateAndWrap(projectLocalMigrated);
-  }
-
-  if (userGlobalMigrated !== null) {
-    // Only user global: existing behavior.
-    return validateAndWrap(userGlobalMigrated);
-  }
-
-  // Neither exists
-  throw configMissingError();
+  return (await loadConfigWithSourceMetadata(repoRoot)).config;
 }
 
 export interface ConfigLayerMetadata {

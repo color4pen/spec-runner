@@ -1,0 +1,31 @@
+{
+  "requestHash": "sha256:cd9da48d0b75e4d7fc61038a4e8d43bbfefd4f4fa0ebbbd1e1bca9df3cb5ef25",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/command-registry.ts:400-454 (run handler) and :523-577 (job start handler) are logic-identical; diff is comment and positional.name only",
+    "bin/specrunner.ts:79 guardedSubcommands worktree check for job start",
+    "bin/specrunner.ts:125 WORKTREE_GUARDED_COMMANDS includes run",
+    "src/core/step/code-review.ts:28 computeCodeReviewIteration = (state.steps?.[STEP_NAMES.CODE_REVIEW]?.length ?? 0) + 1",
+    "src/core/step/spec-review.ts:51 computeSpecReviewIteration = (state.steps?.[STEP_NAMES.SPEC_REVIEW]?.length ?? 0) + 1",
+    "src/core/step/request-review.ts:40 computeRequestReviewIteration = (state.steps?.[STEP_NAMES.REQUEST_REVIEW]?.length ?? 0) + 1",
+    "src/core/step/conformance.ts:35 computeConformanceIteration = (state.steps?.[STEP_NAMES.CONFORMANCE]?.length ?? 0) + 1",
+    "src/core/step/io-iteration.ts:12 nextIteration = (state.steps?.[stepName]?.length ?? 0) + 1",
+    "All 4 step files already import nextIteration from ./io-iteration.js",
+    "src/util/detect-pm.ts:48 detectPackageManager phase-1 upward walk is logic-identical to findLockfile:128",
+    "src/config/store.ts:77 loadConfig and :144 loadConfigWithSourceMetadata share identical read→migrate→merge→validate flow",
+    "src/store/job-journal.ts:218 appendInterruption body = appendEventRecord(this.resolver.getEventsPath(), record)",
+    "src/store/job-journal.ts:228 appendLineage body = appendEventRecord(this.resolver.getEventsPath(), record)",
+    "src/store/job-journal.ts:238 appendOperatorEvent body = appendEventRecord(this.resolver.getEventsPath(), record)",
+    "src/store/job-journal.ts:248 appendFindingRecency body = appendEventRecord(this.resolver.getEventsPath(), record)",
+    "src/store/job-state-store.ts:261-293 all 4 append wrappers are single-line delegations to this._journal.appendX(record)",
+    "src/core/verification/runner.ts:351 runVerificationCommands skip string: _(skipped — previous command failed)_",
+    "src/core/verification/runner.ts:482 runVerificationPhases skip string: _(skipped — previous phase failed)_",
+    "verification runner tails share identical coverage-gate → lockfile-gate → verdict → writeVerificationResult structure",
+    "src/core/command/resume.ts:274-289 and src/core/command/reopen.ts:311-326 worktreePath resolution blocks are byte-identical",
+    "src/core/pipeline/descriptor-input-completeness.ts:63-64 PROBE_SLUG = VALIDATOR_PROBE_SLUG (same-file alias; used at lines 117 and 121)",
+    "src/store/job-state-projection.ts:79-86 empty if block (body is comment only)",
+    "src/core/step/spec-review.ts:100-102 enrichContext is identity implementation (return dynamicContext)",
+    "src/core/port/step-types.ts:247 enrichContext is optional (enrichContext?)"
+  ],
+  "sourceRevision": "86586cdeac15089e20479c339f8fb308b7896332"
+}

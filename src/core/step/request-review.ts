@@ -35,13 +35,6 @@ const requestReviewAgentDefinition: AgentDefinition = {
 };
 
 /**
- * Compute the iteration number for the next request-review execution.
- */
-function computeRequestReviewIteration(state: JobState): number {
-  return (state.steps?.[STEP_NAMES.REQUEST_REVIEW]?.length ?? 0) + 1;
-}
-
-/**
  * RequestReviewStep: implements the request-review pipeline step.
  *
  * First step in the standard pipeline. Evaluates request.md before design runs.
@@ -100,7 +93,7 @@ export const RequestReviewStep: AgentStep = {
   },
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    const iteration = computeRequestReviewIteration(state);
+    const iteration = nextIteration(state, STEP_NAMES.REQUEST_REVIEW);
     const findingsPath = requestReviewResultPath(deps.slug, iteration);
     return buildRequestReviewInitialMessage({
       slug: deps.slug,
@@ -117,7 +110,7 @@ export const RequestReviewStep: AgentStep = {
   },
 
   resultFilePath(state: JobState, deps: StepDeps): string {
-    const iteration = computeRequestReviewIteration(state);
+    const iteration = nextIteration(state, STEP_NAMES.REQUEST_REVIEW);
     return requestReviewResultPath(deps.slug, iteration);
   },
 

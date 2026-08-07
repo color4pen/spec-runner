@@ -46,13 +46,6 @@ export function buildFindingsPath(slug: string, iteration: number): string {
 }
 
 /**
- * Compute the iteration number for the next spec-review push.
- */
-function computeSpecReviewIteration(state: JobState): number {
-  return (state.steps?.[STEP_NAMES.SPEC_REVIEW]?.length ?? 0) + 1;
-}
-
-/**
  * SpecReviewStep: implements the spec-review pipeline step as a plain Step object.
  *
  * Has its own dedicated AgentDefinition (role: "spec-review").
@@ -106,14 +99,14 @@ export const SpecReviewStep: AgentStep = {
     cwd: string,
     runtimeStrategy: RuntimeStrategy | undefined,
   ): Promise<Partial<DynamicContext> | null> {
-    const iteration = computeSpecReviewIteration(state);
+    const iteration = nextIteration(state, STEP_NAMES.SPEC_REVIEW);
     const result = await derivePriorRoundContext({ state, iteration, cwd, runtimeStrategy });
     if (!result) return null;
     return { priorRoundContext: result };
   },
 
   buildMessage(state: JobState, deps: StepDeps): string {
-    const iteration = computeSpecReviewIteration(state);
+    const iteration = nextIteration(state, STEP_NAMES.SPEC_REVIEW);
     const findingsPath = buildFindingsPath(deps.slug, iteration);
     const priorCtx = deps.dynamicContext?.priorRoundContext;
     const priorRoundContextBlock = priorCtx ? buildPriorRoundContextBlock(priorCtx) : undefined;
@@ -130,7 +123,7 @@ export const SpecReviewStep: AgentStep = {
   },
 
   resultFilePath(state: JobState, deps: StepDeps): string {
-    const iteration = computeSpecReviewIteration(state);
+    const iteration = nextIteration(state, STEP_NAMES.SPEC_REVIEW);
     return buildFindingsPath(deps.slug, iteration);
   },
 

@@ -7,7 +7,7 @@ import {
   stepRunToRecord,
   historyEntryToRecord,
 } from "./event-journal.js";
-import type { FoldResult, InterruptionRecord, LineageRecord, OperatorEventRecord, FindingRecencyRecord } from "./event-journal.js";
+import type { FoldResult, EventRecord, InterruptionRecord, LineageRecord, OperatorEventRecord, FindingRecencyRecord } from "./event-journal.js";
 import { detectCounterReversal, describeJournalIssue } from "./journal-integrity.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { appendHistoryEntry } from "../state/schema.js";
@@ -16,7 +16,7 @@ import { journalCorruptedError } from "../errors.js";
 import type { NormalizedJobState } from "./job-state-store.js";
 
 // ---------------------------------------------------------------------------
-// JournalCounters — exported so job-state-projection.ts can import it as a type
+// JournalCounters — journal 圧縮 record の counters field の shape
 // ---------------------------------------------------------------------------
 
 /**
@@ -34,20 +34,6 @@ export interface JournalCounters {
 // Module-level helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Write ALL history entries and step runs to events.jsonl (used for fresh writes).
- */
-async function writeAllToJournal(eventsPath: string, state: JobState): Promise<void> {
-  for (const entry of state.history) {
-    await appendEventRecord(eventsPath, historyEntryToRecord(entry));
-  }
-  const steps = (state as NormalizedJobState).steps ?? {};
-  for (const [stepName, runs] of Object.entries(steps)) {
-    for (const run of runs) {
-      await appendEventRecord(eventsPath, stepRunToRecord(stepName, run));
-    }
-  }
-}
 
 /**
  * Build a stepCounts record from a steps object.
@@ -114,7 +100,7 @@ export class JobJournal {
 
     if (existingCounters === null) {
       // Fresh write: append all history and steps to events.jsonl
-      await writeAllToJournal(eventsPath, state);
+      await this._writeAllToJournal(state);
       const counters: JournalCounters = {
         historyCount: state.history.length,
         stepCounts: buildStepCounts((state as NormalizedJobState).steps),
@@ -179,7 +165,7 @@ export class JobJournal {
     // Compute and append history delta
     const historyDelta = state.history.slice(recoveredCounters.historyCount);
     for (const entry of historyDelta) {
-      await appendEventRecord(eventsPath, historyEntryToRecord(entry));
+      await this._appendRecord(historyEntryToRecord(entry));
     }
 
     // Compute and append steps delta
@@ -188,7 +174,7 @@ export class JobJournal {
       const storedCount = recoveredCounters.stepCounts[stepName] ?? 0;
       const deltaRuns = runs.slice(storedCount);
       for (const run of deltaRuns) {
-        await appendEventRecord(eventsPath, stepRunToRecord(stepName, run));
+        await this._appendRecord(stepRunToRecord(stepName, run));
       }
     }
 
@@ -200,6 +186,22 @@ export class JobJournal {
 
     // Write state.json
     await atomicWriteJson(stateJsonPath, { ...stateToStateJson(state, { slugMode: inSlugMode }), _journal: newCounters });
+  }
+
+  private async _appendRecord(record: EventRecord): Promise<void> {
+    await appendEventRecord(this.resolver.getEventsPath(), record);
+  }
+
+  private async _writeAllToJournal(state: JobState): Promise<void> {
+    for (const entry of state.history) {
+      await this._appendRecord(historyEntryToRecord(entry));
+    }
+    const steps = (state as NormalizedJobState).steps ?? {};
+    for (const [stepName, runs] of Object.entries(steps)) {
+      for (const run of runs) {
+        await this._appendRecord(stepRunToRecord(stepName, run));
+      }
+    }
   }
 
   /**
@@ -216,7 +218,7 @@ export class JobJournal {
    * Does not update state.json — callers should persist() separately if needed.
    */
   async appendInterruption(record: InterruptionRecord): Promise<void> {
-    await appendEventRecord(this.resolver.getEventsPath(), record);
+    return this._appendRecord(record);
   }
 
   /**
@@ -226,7 +228,7 @@ export class JobJournal {
    * Best-effort: callers catch and swallow errors (usage.json append pattern).
    */
   async appendLineage(record: LineageRecord): Promise<void> {
-    await appendEventRecord(this.resolver.getEventsPath(), record);
+    return this._appendRecord(record);
   }
 
   /**
@@ -236,7 +238,7 @@ export class JobJournal {
    * ensuring the event is durable even if the subsequent persist fails.
    */
   async appendOperatorEvent(record: OperatorEventRecord): Promise<void> {
-    await appendEventRecord(this.resolver.getEventsPath(), record);
+    return this._appendRecord(record);
   }
 
   /**
@@ -246,6 +248,6 @@ export class JobJournal {
    * Best-effort: callers wrap in try/catch (same pattern as appendLineage).
    */
   async appendFindingRecency(record: FindingRecencyRecord): Promise<void> {
-    await appendEventRecord(this.resolver.getEventsPath(), record);
+    return this._appendRecord(record);
   }
 }

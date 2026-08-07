@@ -5,7 +5,6 @@
  * start step, and transitions job to "running" status.
  */
 import * as nodePath from "node:path";
-import * as nodeFs from "node:fs/promises";
 import { loadConfig } from "../../config/store.js";
 import { resolveRepoRoot } from "../../util/repo-root.js";
 import { JobStateStore } from "../../store/job-state-store.js";
@@ -30,6 +29,7 @@ import type { EventBus } from "../event/event-bus.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
+import { resolveLivenessWorktreePath } from "../resume/resolve-worktree-path.js";
 import { detectCanonDirtyPaths, commitOperatorCanon } from "../resume/apply-canon.js";
 import { detectUnadoptedCommits, buildAdoptEscalationMessage, type UnadoptedCommit } from "../resume/adopt-commits.js";
 import { reconcileWorktreeArtifacts } from "../resume/reconcile-worktree.js";
@@ -271,22 +271,7 @@ export class ResumeCommand extends CommandRunner {
     // Resolve existing worktree path: prefer state field, fall back to liveness sidecar (T-09).
     // In slug-mode, state.worktreePath is stripped from branch-coupled state.json.
     // The sidecar (.specrunner/local/<slug>/liveness.json) stores the machine-local value.
-    let resolvedWorktreePath: string | null = updatedState.worktreePath ?? null;
-    if (!resolvedWorktreePath && resolvedSlug) {
-      try {
-        const sidecarAbsPath = nodePath.join(cwd, livenessJsonPath(resolvedSlug));
-        const raw = await nodeFs.readFile(sidecarAbsPath, "utf-8");
-        const sidecar = JSON.parse(raw) as Record<string, unknown>;
-        if (
-          typeof sidecar["worktreePath"] === "string" &&
-          sidecar["jobId"] === updatedState.jobId
-        ) {
-          resolvedWorktreePath = sidecar["worktreePath"];
-        }
-      } catch {
-        // No sidecar or mismatch — will create a new worktree on resume
-      }
-    }
+    const resolvedWorktreePath = await resolveLivenessWorktreePath(updatedState, resolvedSlug ?? "", cwd);
 
     // Apply-canon gate: check for dirty protected canon paths before starting the step.
     // Only runs when a worktree is available (resolvedWorktreePath non-null) and the slug is known.
