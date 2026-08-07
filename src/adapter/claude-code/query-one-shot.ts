@@ -78,7 +78,6 @@ export interface QueryOneShotResult {
   /**
    * Number of SDK turns used in this invocation.
    * SDK result num_turns. undefined if not provided by the runtime.
-   * Replaces the former turnCount placeholder field.
    */
   numTurns?: number;
   /**
