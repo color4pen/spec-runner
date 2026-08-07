@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf18be5a-782b-4ea7-9139-5e9dd1a64fa3",
   "createdAt": "2026-08-07T11:43:55.397Z",
-  "updatedAt": "2026-08-07T13:01:39.846Z",
+  "updatedAt": "2026-08-07T13:04:26.751Z",
   "request": {
     "title": "同一性検証済みの重複コードを統合する",
     "type": "refactoring",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "refactor/dedup-verified-safe-bf18be5a",
-  "error": {
-    "code": "WRITE_SCOPE_VIOLATION",
-    "message": "Step 'code-fixer' on branch 'refactor/dedup-verified-safe-bf18be5a' attempted to write outside its declared scope.\nForbidden paths changed:\n  - specrunner/changes/dedup-verified-safe/test-cases.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/dedup-verified-safe-bf18be5a/.specrunner/local/dedup-verified-safe/write-scope-violation-code-fixer-1786107699828.md",
-    "hint": "境界外への変更を検出したため commit を中止した。違反変更は worktree から復元済み（checkpoint commit への混入防止）。\nViolating paths:\n  - specrunner/changes/dedup-verified-safe/test-cases.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/dedup-verified-safe-bf18be5a/.specrunner/local/dedup-verified-safe/write-scope-violation-code-fixer-1786107699828.md"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -77,16 +73,14 @@
     "3b49d3cadbbb57bf8d3847b9da0dc8d91f6430cc",
     "70307433581ba13f4940b497dcfa296d134b35bc",
     "2a6005e020f1f61222310ff2661b13665009d238",
-    "d5caa404b91cc7cf3fbceabd14e60b2b9c3db8f8"
+    "d5caa404b91cc7cf3fbceabd14e60b2b9c3db8f8",
+    "8ea17008917878374f5c4e7a4182d119e546d4eb",
+    "c23d7b6f1e2c05876c2d4cadcc47a2c68e4af1bb"
   ],
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "Step 'code-fixer' on branch 'refactor/dedup-verified-safe-bf18be5a' attempted to write outside its declared scope.\nForbidden paths changed:\n  - specrunner/changes/dedup-verified-safe/test-cases.md\n違反内容の退避先（machine-local、commit されない）: /Users/seki/Documents/GitHub/spec-runner/.git/specrunner-worktrees/dedup-verified-safe-bf18be5a/.specrunner/local/dedup-verified-safe/write-scope-violation-code-fixer-1786107699828.md",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
