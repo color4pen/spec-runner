@@ -256,12 +256,6 @@ describe("TC-016: register_branch tool removed (D4)", () => {
     expect(hasBranchTool).toBe(false);
   });
 
-  it("register_branch does NOT exist in src/core/tools/ (only types.ts remains)", async () => {
-    const coreToolsDir = path.resolve(__dirname, "../../../../src/core/tools");
-    const files = await fs.readdir(coreToolsDir);
-    const hasBranchTool = files.some((f) => f.includes("register-branch"));
-    expect(hasBranchTool).toBe(false);
-  });
 });
 
 // ---------------------------------------------------------------------------

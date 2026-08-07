@@ -16,7 +16,6 @@ vi.mock("../../../src/core/doctor/runner.js", () => ({
   runChecks: vi.fn(),
 }));
 vi.mock("../../../src/core/doctor/checks/index.js", () => ({
-  allChecks: [],
   commonChecks: [],
   managedChecks: [],
   localChecks: [],

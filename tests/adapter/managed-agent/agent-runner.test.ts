@@ -28,7 +28,7 @@
  * TC-04-08: createOrResumePollingSession fallback createSession failure uses "fallback after resume failure" context
  * TC-04-09: createOrResumePollingSession fallback sendUserMessage failure calls throwSendMessageError
  * TC-04-10: guardCommit skips check when requiresCommit=false
- * TC-04-11: guardCommit throws NO_COMMIT_DETECTED when HEAD SHA unchanged
+ * TC-04-11: guardCommit silently skips when HEAD SHA unchanged
  * TC-04-12: fetchResultFile returns null when resultFilePath=null
  * TC-04-13: fetchResultFile returns file content on success
  * TC-04-14: fetchResultFile throws when file not found

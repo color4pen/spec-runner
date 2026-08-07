@@ -87,8 +87,6 @@ export interface DoctorGitHubClient {
  * providing a runtime-accessible export so dynamic import destructuring works.
  * @internal
  */
-export const DoctorContext: undefined = undefined;
-
 export interface DoctorContext {
   /** Current working directory (invoker cwd — may be a subdirectory of the repo root) */
   cwd: string;

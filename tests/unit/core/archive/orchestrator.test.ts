@@ -38,10 +38,6 @@ vi.mock("../../../../src/core/finish/job-state-update.js", () => ({
   markJobArchived: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../../../src/core/finish/derive-usage.js", () => ({
-  deriveAndWriteUsage: vi.fn().mockResolvedValue({ ok: true, skipped: true, message: "skipped" }),
-}));
-
 vi.mock("../../../../src/core/finish/archive-change-folder.js", () => ({
   archiveChangeFolder: vi.fn().mockResolvedValue({ ok: true, skipped: false, message: "archived" }),
 }));

@@ -5,7 +5,7 @@
  * and verify that valid names compile without error.
  */
 import { describe, expect, it } from "vitest";
-import type { ValidationRule } from "../../../../src/core/validation/types.js";
+import type { ValidationRule } from "../../../../src/parser/validation/types.js";
 import type {
   ParsedRequestRaw,
   RequestMdRuleName,

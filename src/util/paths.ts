@@ -4,7 +4,7 @@
  * All functions return relative paths (no leading slash, no cwd prefix).
  * Callers that need absolute paths should use: path.join(cwd, changeFolderPath(slug))
  *
- * Design D1: placed in src/util/ alongside other stateless utilities (slugify, spawn, etc.)
+ * Design D1: placed in src/util/ alongside other stateless utilities (spawn, atomic-write, etc.)
  * Design D2: pure functions only — no imports from other src/ modules.
  * TC-034: this file MUST NOT import from any other src/ module.
  */

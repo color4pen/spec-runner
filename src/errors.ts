@@ -92,15 +92,10 @@ export const ERROR_CODES = {
   SPEC_REVIEW_RESULT_NOT_FOUND: "SPEC_REVIEW_RESULT_NOT_FOUND",
   CODE_REVIEW_RESULT_NOT_FOUND: "CODE_REVIEW_RESULT_NOT_FOUND",
   SPEC_REVIEW_RETRIES_EXHAUSTED: "SPEC_REVIEW_RETRIES_EXHAUSTED",
-  SPEC_FIXER_NO_FINDINGS: "SPEC_FIXER_NO_FINDINGS",
   BRANCH_NOT_SET: "BRANCH_NOT_SET",
   JOB_NOT_FOUND: "JOB_NOT_FOUND",
   JOB_NOT_FINISHABLE: "JOB_NOT_FINISHABLE",
-  OPENSPEC_ARCHIVE_FAILED: "OPENSPEC_ARCHIVE_FAILED",
-  AUTO_MERGE_UNAVAILABLE: "AUTO_MERGE_UNAVAILABLE",
-  GH_SUBPROCESS_FAILED: "GH_SUBPROCESS_FAILED",
   GIT_SUBPROCESS_FAILED: "GIT_SUBPROCESS_FAILED",
-  NO_COMMIT_DETECTED: "NO_COMMIT_DETECTED",
   PUSH_FAILED: "PUSH_FAILED",
   WORKTREE_GUARD: "WORKTREE_GUARD",
   AMBIGUOUS_JOB_ID: "AMBIGUOUS_JOB_ID",
@@ -111,13 +106,11 @@ export const ERROR_CODES = {
   RUNTIME_PREREQ_MISSING: "RUNTIME_PREREQ_MISSING",
   PROVIDER_SDK_MISSING: "PROVIDER_SDK_MISSING",
   GITHUB_TOKEN_MISSING: "GITHUB_TOKEN_MISSING",
-  AUTHORITY_SPEC_EDIT_VIOLATION: "AUTHORITY_SPEC_EDIT_VIOLATION",
   ANTHROPIC_KEY_MISSING: "ANTHROPIC_KEY_MISSING",
   QUERY_ONE_SHOT_FAILED: "QUERY_ONE_SHOT_FAILED",
   QUERY_ONE_SHOT_TIMEOUT: "QUERY_ONE_SHOT_TIMEOUT",
   USER_CANCELED: "USER_CANCELED",
   SYMLINK_REJECTED: "SYMLINK_REJECTED",
-  STEP_HALTED_NO_TOOL_CALL: "STEP_HALTED_NO_TOOL_CALL",
   STEP_INPUT_MISSING: "STEP_INPUT_MISSING",
   STEP_OUTPUT_MISSING: "STEP_OUTPUT_MISSING",
   WORKTREE_DIRTY: "WORKTREE_DIRTY",
@@ -226,35 +219,11 @@ export function sessionTerminatedError(): SpecRunnerError {
   );
 }
 
-export function branchNotRegisteredError(): SpecRunnerError {
-  return new SpecRunnerError(
-    ERROR_CODES.BRANCH_NOT_REGISTERED,
-    "Check the agent's design output for errors.",
-    "Branch was not registered by the agent.",
-  );
-}
-
-export function stateFileInvalidError(path: string, detail: string): SpecRunnerError {
-  return new SpecRunnerError(
-    ERROR_CODES.STATE_FILE_INVALID,
-    "Delete the corrupted file and re-run specrunner.",
-    `State file invalid at ${path}: ${detail}`,
-  );
-}
-
 export function changeFolderNotFoundError(slug: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.CHANGE_FOLDER_NOT_FOUND,
     "Ensure the change folder exists in the repository.",
     `Change folder not found for slug: ${slug}`,
-  );
-}
-
-export function sessionCreateFailedError(detail: string): SpecRunnerError {
-  return new SpecRunnerError(
-    ERROR_CODES.SESSION_CREATE_FAILED,
-    "Check your API key and try again.",
-    `Failed to create session: ${detail}`,
   );
 }
 
@@ -271,14 +240,6 @@ export function environmentNotSetError(stepName: string): SpecRunnerError {
     ERROR_CODES.ENVIRONMENT_NOT_SET,
     "Run specrunner runtime setup to configure the managed runtime.",
     `Managed environment is not configured when entering '${stepName}'.`,
-  );
-}
-
-export function noCommitDetectedError(stepName: string, branch: string): SpecRunnerError {
-  return new SpecRunnerError(
-    ERROR_CODES.NO_COMMIT_DETECTED,
-    `The agent produced no staged changes. Re-run the step or inspect the agent session log.`,
-    `${stepName} completed with no staged changes on branch '${branch}'.`,
   );
 }
 
@@ -363,41 +324,11 @@ export function sessionReschedulingExhaustedError(sessionId: string): SpecRunner
   );
 }
 
-export function stepHaltedNoToolCallError(stepName: string): SpecRunnerError {
-  return new SpecRunnerError(
-    ERROR_CODES.STEP_HALTED_NO_TOOL_CALL,
-    "The agent did not call report_result after the maximum number of retries. Resume the job to retry, or check the agent session log for why the agent failed to call the tool.",
-    `Step '${stepName}' halted: agent did not call report_result tool after maximum retry attempts.`,
-  );
-}
-
 export function worktreeDirtyError(detail: string): SpecRunnerError {
   return new SpecRunnerError(
     ERROR_CODES.WORKTREE_DIRTY,
     "--no-worktree requires a clean working tree. Commit or stash your changes, then retry.",
     `Working tree is dirty: ${detail}`,
-  );
-}
-
-export function stepInputMissingError(missingPaths: string[], branch: string | null): SpecRunnerError {
-  const pathList = missingPaths.map(p => `  - ${p}`).join("\n");
-  const branchNote = branch ? ` on branch '${branch}'` : "";
-  return new SpecRunnerError(
-    ERROR_CODES.STEP_INPUT_MISSING,
-    `Required step input(s) not found${branchNote}. Ensure prior steps have completed successfully.\nMissing:\n${pathList}`,
-    `Required step input(s) not found: ${missingPaths.join(", ")}`,
-  );
-}
-
-export function authoritySpecEditViolationError(
-  stepName: string,
-  violatedPaths: string[],
-): SpecRunnerError {
-  const pathList = violatedPaths.map(p => `  - ${p}`).join("\n");
-  return new SpecRunnerError(
-    ERROR_CODES.AUTHORITY_SPEC_EDIT_VIOLATION,
-    `Authority spec files must not be edited directly. Use specrunner/changes/<slug>/spec.md to describe spec changes.\nViolating paths:\n${pathList}`,
-    `Agent step '${stepName}' attempted to edit authority spec files directly.`,
   );
 }
 

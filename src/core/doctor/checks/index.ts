@@ -5,7 +5,6 @@
  * commonChecks: checks run for all runtimes
  * managedChecks: checks run only for managed runtime (5)
  * localChecks: checks run only for local runtime (1)
- * allChecks: combined for backward compatibility
  */
 import type { DoctorCheck } from "../types.js";
 
@@ -92,39 +91,3 @@ export const localChecks: DoctorCheck[] = [
   codexCliCheck,
 ];
 
-/**
- * All checks combined (for backward compatibility).
- * For runtime-specific assembly, use commonChecks + managedChecks or commonChecks + localChecks.
- */
-export const allChecks: DoctorCheck[] = [...commonChecks, ...managedChecks, ...localChecks];
-
-// Re-export individual checks for direct import
-export {
-  nodeVersionCheck,
-  packageManagerCheck,
-  gitVersionCheck,
-  codexCliCheck,
-  aozuCliCheck,
-  configFileExistsCheck,
-  managedKeyPresentCheck,
-  githubTokenPresentCheck,
-  claudeCodeTokenPresentCheck,
-  githubClientIdCheck,
-  managedKeyValidCheck,
-  githubTokenValidCheck,
-  gitRepositoryCheck,
-  githubOriginCheck,
-  specrunnerProjectMdCheck,
-  workflowStructureCheck,
-  agentsRegisteredCheck,
-  environmentRegisteredCheck,
-  definitionDriftCheck,
-  agentProviderAliveCheck,
-  environmentProviderAliveCheck,
-  localStateWritableCheck,
-  legacyJobsDirCheck,
-  orphanSidecarsCheck,
-  orphanWorktreesCheck,
-  journalIntegrityCheck,
-  createSlugOccupancyCheck,
-};

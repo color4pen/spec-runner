@@ -2,7 +2,7 @@
  * Unit tests for StepExecutor HEAD comparison logic — agent self-commit tolerance.
  *
  * TC-CAP-NEW-001: staged + HEAD no advance → commit + push (existing behavior, regression check)
- * TC-CAP-NEW-002: staged 0 + HEAD no advance + requiresCommit:true → NO_COMMIT_DETECTED (existing)
+ * TC-CAP-NEW-002: staged 0 + HEAD no advance + requiresCommit:true → silent skip (existing)
  * TC-CAP-NEW-003: staged 0 + HEAD advance + requiresCommit:true → push only, no halt (NEW)
  * TC-CAP-NEW-004: staged + HEAD advance → commit staged + push (mixed scenario)
  * TC-CAP-NEW-005: staged 0 + HEAD no advance + requiresCommit:false → silent skip (existing)
@@ -355,10 +355,10 @@ describe("TC-CAP-NEW-001: staged changes → commit + push (requiresCommit:true,
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-CAP-NEW-002: staged 0 + HEAD no advance + requiresCommit:true → NO_COMMIT_DETECTED
+// TC-CAP-NEW-002: staged 0 + HEAD no advance + requiresCommit:true → silent skip
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe("TC-CAP-NEW-002: staged 0 + HEAD no advance → silent skip (no NO_COMMIT_DETECTED)", () => {
+describe("TC-CAP-NEW-002: staged 0 + HEAD no advance → silent skip", () => {
   it("silently skips without commit or push when no staged changes and HEAD did not advance", async () => {
     const jobId = "tc-cap-new-002-job";
     const state = makeJobState(jobId);
@@ -377,7 +377,7 @@ describe("TC-CAP-NEW-002: staged 0 + HEAD no advance → silent skip (no NO_COMM
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
     const step = makeAgentStep({ name: "implementer" });
-    // T-05: requiresCommit guard removed — no longer throws NO_COMMIT_DETECTED
+    // T-05: requiresCommit guard removed — silently skips instead of throwing
     const result = await executor.execute(step, state, makeLocalDeps({}, spawnFn));
     expect(result).toBeDefined();
 

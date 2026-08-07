@@ -430,13 +430,6 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     comment: "di-default: gh auth token subprocess run from process.cwd(); not an internal-state derivation.",
   },
   {
-    file: "src/core/finish/resolve-target.ts",
-    pattern: "input.cwd ?? process.cwd()",
-    invariant: "CWD",
-    tracking: "CWD-finish-resolve-target-di-default",
-    comment: "di-default: cwd DI param defaults to process.cwd(); callers inject the real cwd in production.",
-  },
-  {
     file: "src/core/pipeline/parallel-review-round.ts",
     pattern: "deps.cwd ?? process.cwd()",
     invariant: "CWD",

@@ -178,5 +178,3 @@ Do NOT modify request.md.
 ファイルを worktree に書き出したら、完了結果を報告して作業を終えてください。`;
 }
 
-// Re-export requestReviewResultPath for convenience (used by step implementation)
-export { requestReviewResultPath };

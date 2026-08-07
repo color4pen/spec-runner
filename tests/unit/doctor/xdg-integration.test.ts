@@ -65,9 +65,6 @@ describe("TC-021: XDG_CONFIG_HOME 設定下で config-file-exists が pass す�
       "../../../src/core/doctor/checks/config/file-exists.js"
     );
     const { buildMockContext } = await import("../../core/doctor/mock-context.js");
-    const { DoctorContext: _DC } = await import("../../../src/core/doctor/types.js").catch(
-      () => ({ DoctorContext: undefined }),
-    );
 
     // Real fs.stat for this integration test
     const realStat = async (p: string) => {

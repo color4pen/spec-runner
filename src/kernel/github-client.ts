@@ -110,7 +110,7 @@ export interface GitHubClient {
 
   /**
    * Get a pull request by number.
-   * Returns PrViewData-compatible shape for use by finish modules.
+   * Returns the shape used by finish modules.
    *
    * - state: "OPEN" / "MERGED" / "CLOSED"
    * - mergeStateStatus: "CLEAN" / "BLOCKED" / "DIRTY" / "UNKNOWN" etc. (uppercased)

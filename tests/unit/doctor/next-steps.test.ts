@@ -11,9 +11,10 @@ import { formatHuman, formatJson } from "../../../src/core/doctor/formatter.js";
 import type { DoctorResult } from "../../../src/core/doctor/types.js";
 
 // deriveNextSteps is exported from src/core/doctor/next-steps.ts (new module) or re-exported from index.ts
-// Module does not exist yet — dynamic import defers the failure to test execution (RED until implementation)
+// Tries index.ts first (re-export), falls back to next-steps.ts directly
 async function getDeriveNextSteps(): Promise<(results: DoctorResult[]) => string[]> {
   try {
+    // @ts-ignore — intentional: index.ts may not exist; fallback handles it
     const mod = await import("../../../src/core/doctor/index.js");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const fn = (mod as any).deriveNextSteps;

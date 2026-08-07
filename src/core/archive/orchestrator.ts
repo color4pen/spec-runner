@@ -23,7 +23,6 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import { TERMINAL_STATUSES } from "../../state/lifecycle.js";
 import { assertJobFinishable, markJobArchived } from "../finish/job-state-update.js";
-import { deriveAndWriteUsage } from "../finish/derive-usage.js";
 import { archiveChangeFolder } from "../finish/archive-change-folder.js";
 import { commitArchive } from "../finish/commit-archive.js";
 import { buildWorktreePath } from "../worktree/manager.js";
@@ -232,21 +231,6 @@ export async function runArchiveOrchestrator(
     }
 
     stdoutWrite(`Phase 1: recording archive on feature branch${branch ? ` ${branch}` : ""}...`);
-
-    // Derive pipeline usage into changes/<slug>/usage.json (before archive moves it)
-    try {
-      const usageResult = await deriveAndWriteUsage({
-        jobId,
-        slug,
-        cwd: recordDir,
-        repoRoot: recordDir,
-        spawn,
-        fs,
-      });
-      if (!usageResult.skipped) stdoutWrite(usageResult.message);
-    } catch {
-      stderrWrite(`Warning: failed to derive usage for ${slug}. Continuing archive.`);
-    }
 
     // Archive change folder (git mv; skips if already moved)
     const archiveResult = await archiveChangeFolder({ slug, cwd: recordDir, spawn, fs });
