@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "777c2e9f-1d3f-47f3-9c9f-ee4bdde31a96",
   "createdAt": "2026-08-07T11:43:50.821Z",
-  "updatedAt": "2026-08-07T11:56:15.965Z",
+  "updatedAt": "2026-08-07T12:02:25.498Z",
   "request": {
     "title": "core の検証済み死コードを削除する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "refactor/dead-code-core-777c2e9f",
   "error": null,
@@ -63,12 +63,14 @@
   ],
   "synthesizedCommits": [
     "c44a92eaaa31915f750e3fa2d968601eee7d4a1e",
-    "7e1cb0a7381fcbb711efda9b66d590efc2daf7d3"
+    "7e1cb0a7381fcbb711efda9b66d590efc2daf7d3",
+    "b0d2cdc7258432be37281172bbed332d3540ee8a"
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
