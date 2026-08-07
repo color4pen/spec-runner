@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "777c2e9f-1d3f-47f3-9c9f-ee4bdde31a96",
   "createdAt": "2026-08-07T11:43:50.821Z",
-  "updatedAt": "2026-08-07T13:03:44.376Z",
+  "updatedAt": "2026-08-07T13:05:28.052Z",
   "request": {
     "title": "core の検証済み死コードを削除する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/dead-code-core-777c2e9f",
   "error": null,
@@ -77,7 +77,8 @@
     "e3265f1ab564519608baad07c364cdbb7e4571f2",
     "14549c037d9841fad9278d201bb864517b003e18",
     "ed7dcb247e7bd79dc956815f7a436112b2df0603",
-    "094ebca7ab4eaf1ba0883504e7808b453385fea3"
+    "094ebca7ab4eaf1ba0883504e7808b453385fea3",
+    "87e97478db8ab55791b0f829e661204902e35c67"
   ],
   "reviewerStatuses": [
     {
@@ -111,7 +112,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 65,
+    "historyCount": 70,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -128,7 +129,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
