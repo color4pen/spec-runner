@@ -1,0 +1,24 @@
+{
+  "requestHash": "sha256:83ab5631373d75aa8fffbc7811e26de1607c1ed2064dc01d6b44b9af575c57b5",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/util/glob-match.ts:17 — export function globMatch(filePath, pattern)",
+    "src/util/glob-match.ts:95 — export function matchesGlob(filePath, pattern)",
+    "src/util/glob-match.ts:71-79 — '2 実装は独立・統一はスコープ外' 注記",
+    "src/core/reviewers/glob-match.ts:49 — export function matchGlob(pattern, filePath) (引数順が逆)",
+    "src/core/pipeline/scope.ts:16 — import { matchGlob } from '../reviewers/glob-match.js'",
+    "src/core/pipeline/scope.ts:67 — matchGlob(pattern, file) 呼び出し",
+    "src/core/reviewers/activation.ts:11 — import { matchGlob } from './glob-match.js'",
+    "src/core/reviewers/activation.ts:87 — matchGlob(pattern, file) 呼び出し",
+    "src/core/step/main-checkout-guard.ts:17 — import { matchGlob } from '../reviewers/glob-match.js'",
+    "src/core/step/main-checkout-guard.ts:76 — matchGlob(g, filePath) 呼び出し",
+    "src/core/step/staging-containment.ts:27 — import { matchesGlob } from '../../util/glob-match.js'",
+    "src/core/step/bite-evidence/test-file-selection.ts:16-17 — import { matchesGlob } + export { matchesGlob }",
+    "src/core/archive/protected-paths.ts — import { globMatch } (matchesGlob は使用せず)",
+    "src/core/verification/changed-line-coverage.ts — import { globMatch } (matchesGlob は使用せず)",
+    "tests/unit/util/glob-match.test.ts — 存在確認、? wildcard テスト含む",
+    "src/core/reviewers/__tests__/glob-match.test.ts — 存在確認",
+    "src/core/step/__tests__/shared-glob-match-imports.test.ts — /\\bfunction\\s+matchesGlob\\b/ pin 確認"
+  ],
+  "sourceRevision": "86586cdeac15089e20479c339f8fb308b7896332"
+}

@@ -9,7 +9,7 @@
  *   - Question mark matches one non-slash character
  */
 import { describe, it, expect } from "vitest";
-import { globMatch } from "../../../src/util/glob-match.js";
+import { globMatch, matchesGlob } from "../../../src/util/glob-match.js";
 
 describe("globMatch — single-segment wildcard (*)", () => {
   it("matches a filename within the same directory", () => {
@@ -104,4 +104,145 @@ describe("globMatch — edge cases", () => {
   it("bare ** matches any path", () => {
     expect(globMatch("any/path/here.txt", "**")).toBe(true);
   });
+});
+
+// ---------------------------------------------------------------------------
+// TC-007, TC-008: **/ segment-non-empty semantics (semantic-pinning)
+// ---------------------------------------------------------------------------
+
+describe("TC-007/TC-008: globMatch — **/segment non-empty semantics (semantic-pinning)", () => {
+  it(
+    // TC-007
+    "TC-007: a/**/b does NOT match a//b (empty segment rejected — git/minimatch semantics)",
+    () => {
+      // GIVEN globMatch("a//b", "a/**/b")
+      // WHEN executed
+      // THEN false — **/  requires at least one non-empty segment between a/ and b
+      expect(globMatch("a//b", "a/**/b")).toBe(false);
+    },
+  );
+
+  it(
+    // TC-008
+    "TC-008: a/**/b matches a/x/b (non-empty intermediate segment)",
+    () => {
+      // GIVEN globMatch("a/x/b", "a/**/b")
+      // WHEN executed
+      // THEN true
+      expect(globMatch("a/x/b", "a/**/b")).toBe(true);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-009: production pattern representative cases
+// ---------------------------------------------------------------------------
+
+describe("TC-009: globMatch — production pattern representative cases", () => {
+  it(
+    // TC-009
+    "TC-009: src/** matches src/foo.ts",
+    () => {
+      expect(globMatch("src/foo.ts", "src/**")).toBe(true);
+    },
+  );
+
+  it(
+    // TC-009
+    "TC-009: vendor/** matches vendor/lib.ts",
+    () => {
+      expect(globMatch("vendor/lib.ts", "vendor/**")).toBe(true);
+    },
+  );
+
+  it(
+    // TC-009
+    "TC-009: **/*.test.* matches top-level foo.test.ts",
+    () => {
+      expect(globMatch("foo.test.ts", "**/*.test.*")).toBe(true);
+    },
+  );
+
+  it(
+    // TC-009
+    "TC-009: **/*.test.* matches nested src/foo.test.ts",
+    () => {
+      expect(globMatch("src/foo.test.ts", "**/*.test.*")).toBe(true);
+    },
+  );
+
+  it(
+    // TC-009
+    "TC-009: exact path literal matches itself",
+    () => {
+      expect(globMatch("exact/path.ts", "exact/path.ts")).toBe(true);
+    },
+  );
+
+  it(
+    // TC-009
+    "TC-009: exact path literal does not match a different path",
+    () => {
+      expect(globMatch("other/path.ts", "exact/path.ts")).toBe(false);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-014, TC-015: injection safety (migrated from src/core/reviewers/__tests__/glob-match.test.ts)
+// ---------------------------------------------------------------------------
+
+describe("TC-014/TC-015: globMatch — injection safety", () => {
+  it(
+    // TC-014
+    "TC-014: literal '.' in pattern does not match arbitrary character (src/authXts ≠ src/auth.ts pattern)",
+    () => {
+      // GIVEN globMatch("src/auth.ts", "src/authXts")
+      // WHEN executed
+      // THEN false — '.' in pattern is escaped to '\.' and does not match 'X'
+      expect(globMatch("src/auth.ts", "src/authXts")).toBe(false);
+      expect(globMatch("src/auth.ts", "src/auth.ts")).toBe(true);
+    },
+  );
+
+  it(
+    // TC-015
+    "TC-015: parentheses in pattern are escaped and do not cause regex parse error",
+    () => {
+      // GIVEN globMatch("(invalid)", "(invalid)") and globMatch("(invalid)", "invalid")
+      // WHEN executed
+      // THEN true and false respectively
+      expect(globMatch("(invalid)", "(invalid)")).toBe(true);
+      expect(globMatch("(invalid)", "invalid")).toBe(false);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-006, TC-016: matchesGlob delegates to globMatch (? now works as wildcard)
+// ---------------------------------------------------------------------------
+
+describe("TC-006/TC-016: matchesGlob — delegation to globMatch (? wildcard)", () => {
+  it(
+    // TC-006
+    "TC-006: matchesGlob('src/foox.ts', 'src/foo?.ts') is true (? as wildcard via delegation)",
+    () => {
+      // GIVEN matchesGlob delegates to globMatch after T-01
+      // WHEN matchesGlob("src/foox.ts", "src/foo?.ts")
+      // THEN true — ? matches the single char 'x'
+      // RED until T-01 makes matchesGlob delegate to globMatch
+      expect(matchesGlob("src/foox.ts", "src/foo?.ts")).toBe(true);
+    },
+  );
+
+  it(
+    // TC-016
+    "TC-016: matchesGlob('src/foo.ts', 'src/foo?.ts') is false (? must match exactly 1 char)",
+    () => {
+      // GIVEN matchesGlob("src/foo.ts", "src/foo?.ts")
+      // WHEN executed
+      // THEN false — ? requires exactly 1 char; 'foo.ts' has 0 chars at the ? position
+      expect(matchesGlob("src/foo.ts", "src/foo?.ts")).toBe(false);
+    },
+  );
 });
