@@ -193,8 +193,6 @@ Options:
   --help    Show this help message
 `;
 
-/** @deprecated Use RUNTIME_RESET_USAGE */
-export const MANAGED_RESET_USAGE = RUNTIME_RESET_USAGE;
 
 export const NO_DETAILED_HELP_USAGE = "No detailed help available.\nRun 'specrunner --help' for the command list.\n";
 
@@ -278,7 +276,6 @@ Options:
   --with-merge           Wait for PR checks to pass, merge, then archive
   --merge-wait-ms <ms>   Override the wait timeout for --with-merge (in milliseconds).
                          For unlimited wait, set archive.mergeWaitTimeoutMs: null in config.
-  --dry-run              Reserved for future use
   --help, -h             Show this help message
 `;
 
@@ -864,7 +861,6 @@ export const COMMANDS: Record<string, CommandEntry> = {
         flags: {
           "with-merge": { type: "boolean" },
           "merge-wait-ms": { type: "string" },
-          "dry-run": { type: "boolean" },
         },
         positional: { name: "slug", required: true },
         usage: ARCHIVE_USAGE,
@@ -885,7 +881,6 @@ export const COMMANDS: Record<string, CommandEntry> = {
               await runArchive({
                 slug,
                 withMerge: !!parsed.flags["with-merge"],
-                dryRun: !!parsed.flags["dry-run"],
                 cwd: process.cwd(),
                 mergeWaitMs,
               }),

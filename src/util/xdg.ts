@@ -26,16 +26,6 @@ export function getCredentialsPath(): string {
   return path.join(resolveXdgConfigDir(), "specrunner", "credentials.json");
 }
 
-/**
- * Resolve XDG_STATE_HOME or fallback to ~/.local/state
- */
-export function resolveXdgStateDir(): string {
-  const xdgStateHome = process.env["XDG_STATE_HOME"];
-  if (xdgStateHome && xdgStateHome.length > 0) {
-    return xdgStateHome;
-  }
-  return path.join(os.homedir(), ".local", "state");
-}
 
 /**
  * Get the path to the specrunner verbose log directory.

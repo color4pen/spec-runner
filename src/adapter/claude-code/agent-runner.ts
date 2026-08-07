@@ -30,7 +30,6 @@
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { defaultSpawnFn, type SpawnFn } from "./git-exec.js";
 import { isToolUse } from "./message-types.js";
 import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader, type ClaudeSdkCreateMcpServer } from "./sdk-loader.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage, AgentWriteScope, AgentInvocationMetrics } from "../../core/port/agent-runner.js";
@@ -46,15 +45,14 @@ import { buildReportToolCompletionDirective } from "./completion-directive.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { logVerbose, stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../../logger/diagnostic.js";
-import { SessionLogWriter } from "./session-log-writer.js";
+import { SessionLogWriter } from "../shared/session-log-writer.js";
 import { stripSecrets } from "../../util/env-filter.js";
 import type { BaseReportResult, ReportToolSpec } from "../../core/port/report-result.js";
 import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import { retryWithBackoff } from "../../util/retry.js";
-import { isTransientAgentError } from "./transient-error.js";
+import { isTransientAgentError } from "../shared/transient-error.js";
 import { SpecRunnerError } from "../../errors.js";
 
-export type { SpawnFn } from "./git-exec.js";
 
 /**
  * Local type alias for the SDK's CanUseTool / PermissionResult, keeping this
@@ -393,7 +391,6 @@ export type CreateMcpServerFn = ClaudeSdkCreateMcpServer;
 
 export interface ClaudeCodeRunnerDeps {
   cwd?: string;
-  _spawnFn?: SpawnFn;
   _queryFn?: QueryFn;
   /** Injectable for testing: replaces createSdkMcpServer to capture tool handlers. */
   _createMcpServerFn?: CreateMcpServerFn;
@@ -415,7 +412,6 @@ export interface ClaudeCodeRunnerDeps {
  */
 export class ClaudeCodeRunner implements AgentRunner {
   private readonly defaultCwd: string;
-  private readonly spawnFn: SpawnFn;
   private readonly injectedQueryFn?: QueryFn;
   private readonly injectedCreateMcpServerFn?: CreateMcpServerFn;
   private readonly loadSdkFn: ClaudeAgentSdkLoader;
@@ -424,7 +420,6 @@ export class ClaudeCodeRunner implements AgentRunner {
 
   constructor(deps: ClaudeCodeRunnerDeps = {}) {
     this.defaultCwd = deps.cwd ?? process.cwd();
-    this.spawnFn = deps._spawnFn ?? defaultSpawnFn;
     this.injectedQueryFn = deps._queryFn;
     this.injectedCreateMcpServerFn = deps._createMcpServerFn;
     this.loadSdkFn = deps._loadSdkFn ?? loadClaudeAgentSdk;

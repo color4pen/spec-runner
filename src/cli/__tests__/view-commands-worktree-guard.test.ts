@@ -33,7 +33,6 @@ vi.mock("../../logger/stdout.js", () => ({
   logResult: vi.fn(),
   logError: vi.fn(),
   setLogLevel: vi.fn(),
-  getLogLevel: vi.fn().mockReturnValue("default"),
 }));
 
 // Mock resolveRepoRoot to avoid git detection in tests

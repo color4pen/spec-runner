@@ -24,11 +24,6 @@ export interface RunConfigEffectiveOptions {
   json?: boolean;
   /** Dispatch-resolved repo root. null/undefined = outside a repo (use global config only). */
   repoRoot?: string | null;
-  /**
-   * @deprecated Use repoRoot instead. Kept for backward compatibility with direct callers.
-   * When both repoRoot and cwd are provided, repoRoot takes precedence.
-   */
-  cwd?: string;
 }
 
 export interface ConfigEffectiveOutput {
@@ -66,11 +61,8 @@ export async function runConfigEffective(options: RunConfigEffectiveOptions): Pr
   }
 
   try {
-    // repoRoot takes precedence over cwd (backward compat); null/undefined = global config only.
-    const repoRoot = options.repoRoot !== undefined
-      ? options.repoRoot
-      : (options.cwd ?? undefined);
-    const loaded = await loadConfigWithSourceMetadata(repoRoot ?? undefined);
+    const repoRoot = options.repoRoot ?? undefined;
+    const loaded = await loadConfigWithSourceMetadata(repoRoot);
     const output: ConfigEffectiveOutput = {
       requestType: requestType ?? null,
       configPaths: {

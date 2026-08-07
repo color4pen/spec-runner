@@ -3,8 +3,7 @@ import * as fs from "node:fs/promises";
 import { getConfigPath } from "../util/xdg.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { validateConfig } from "./schema.js";
-import type { SpecRunnerConfig, AgentRecord } from "./schema.js";
-import type { AgentStepName } from "../state/schema.js";
+import type { SpecRunnerConfig } from "./schema.js";
 import { configMissingError, configIncompleteError } from "../errors.js";
 import { SpecRunnerError, ERROR_CODES } from "../errors.js";
 import { applyMigration } from "./migrate.js";
@@ -214,80 +213,3 @@ export async function saveConfig(cfg: SpecRunnerConfig): Promise<void> {
   await atomicWriteJson(configPath, toSave, { mode: CONFIG_MODE });
 }
 
-/**
- * Save a project local config overlay to <repoRoot>/.specrunner/config.json.
- * Uses atomic write + 0600 permissions (same as saveConfig).
- * The saved config may be a partial overlay — only fields that differ from user global
- * need to be included.
- *
- * Note: this function is provided for future CLI commands. No CLI command calls it yet.
- */
-export async function saveProjectConfig(
-  repoRoot: string,
-  cfg: Partial<SpecRunnerConfig>,
-): Promise<void> {
-  const projectLocalPath = path.join(repoRoot, ".specrunner", "config.json");
-  await atomicWriteJson(projectLocalPath, cfg, { mode: CONFIG_MODE });
-}
-
-/**
- * ConfigStore class implementation for use as a port.
- * Wraps loadConfig/saveConfig with in-memory caching and getAgentId.
- */
-export class FileConfigStore {
-  private cachedConfig: SpecRunnerConfig | undefined;
-
-  async load(repoRoot?: string): Promise<SpecRunnerConfig> {
-    this.cachedConfig = await loadConfig(repoRoot);
-    return this.cachedConfig;
-  }
-
-  async save(config: SpecRunnerConfig): Promise<void> {
-    this.cachedConfig = config;
-    await saveConfig(config);
-  }
-
-  /**
-   * Synchronously return agent ID for the given role.
-   * Throws CONFIG_INCOMPLETE if load() has not been called or role is missing.
-   */
-  getAgentId(role: AgentStepName): string {
-    if (!this.cachedConfig) {
-      throw new SpecRunnerError(
-        ERROR_CODES.CONFIG_INCOMPLETE,
-        "Call ConfigStore.load() before getAgentId().",
-        "ConfigStore not initialized — load() must complete before getAgentId().",
-      );
-    }
-    const record = this.cachedConfig.agents?.[role];
-    if (record?.agentId) {
-      return record.agentId;
-    }
-    throw new SpecRunnerError(
-      ERROR_CODES.CONFIG_INCOMPLETE,
-      `Run specrunner runtime setup to register the ${role} agent.`,
-      `Missing agent ID for role: ${role}.`,
-    );
-  }
-
-  /**
-   * Upsert an AgentRecord for the given role into in-memory config.
-   * Caller must call save() to persist.
-   */
-  async upsertAgent(role: AgentStepName, record: AgentRecord): Promise<void> {
-    if (!this.cachedConfig) {
-      throw new SpecRunnerError(
-        ERROR_CODES.CONFIG_INCOMPLETE,
-        "Call ConfigStore.load() first.",
-        "ConfigStore not initialized.",
-      );
-    }
-    this.cachedConfig = {
-      ...this.cachedConfig,
-      agents: {
-        ...this.cachedConfig.agents,
-        [role]: record,
-      },
-    };
-  }
-}

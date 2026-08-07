@@ -23,7 +23,6 @@ vi.mock("../../logger/stdout.js", async (importOriginal) => {
     stdoutWrite: vi.fn(),
     setLogLevel: vi.fn(),
     resolveLogLevel: vi.fn().mockReturnValue("normal"),
-    getLogLevel: vi.fn().mockReturnValue("default"),
     isLevelEnabled: vi.fn().mockReturnValue(true),
   };
 });

@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import {
   isSessionIdle,
   pollUntilComplete,
-  assertBreakAfterCompletion,
   DEFAULT_POLL_TIMEOUT_MS,
 } from "../src/adapter/managed-agent/completion.js";
 import type { BetaManagedAgentsSession } from "@anthropic-ai/sdk/resources/beta/sessions/sessions";
@@ -79,11 +78,6 @@ describe("TC-026: SSE break-after-completion", () => {
     expect(isEndTurnIdle(idleEvent)).toBe(true);
   });
 
-  it("assertBreakAfterCompletion does not throw for idle event", () => {
-    expect(() =>
-      assertBreakAfterCompletion({ type: "session.status_idle" }),
-    ).not.toThrow();
-  });
 });
 
 // TC-027: SSE break — requires_action では break しない

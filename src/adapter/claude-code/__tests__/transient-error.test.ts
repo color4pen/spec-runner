@@ -8,7 +8,7 @@
  *   - 5xx numeric codes require status context (no standalone digit match)
  */
 import { describe, it, expect } from "vitest";
-import { isTransientAgentError } from "../transient-error.js";
+import { isTransientAgentError } from "../../shared/transient-error.js";
 
 // ---------------------------------------------------------------------------
 // Helpers

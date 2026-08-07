@@ -175,13 +175,6 @@ export function draftPath(slug: string): string {
   return `${DRAFTS_DIR}/${slug}/request.md`;
 }
 
-/**
- * Returns the relative path to a draft request file in legacy flat-file format.
- * Example: draftPathLegacy("my-change") → "specrunner/drafts/my-change.md"
- */
-export function draftPathLegacy(slug: string): string {
-  return `${DRAFTS_DIR}/${slug}.md`;
-}
 
 /** Base directory for custom reviewer definitions. */
 const REVIEWERS_DIR = "specrunner/reviewers";
@@ -253,13 +246,6 @@ export function parseArchiveDirName(dirName: string): { date: string | null; slu
   return { date: null, slug: dirName };
 }
 
-/**
- * Returns the relative path to the usage.json file for a draft.
- * Example: draftUsageJsonPath("foo") → "specrunner/drafts/foo/usage.json"
- */
-export function draftUsageJsonPath(slug: string): string {
-  return `${DRAFTS_DIR}/${slug}/usage.json`;
-}
 
 /**
  * Returns the relative path to the usage.json file for a change folder.

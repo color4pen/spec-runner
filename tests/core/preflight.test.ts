@@ -10,7 +10,6 @@ vi.mock("../../src/config/store.js", () => ({
   loadConfig: vi.fn().mockResolvedValue({ runtime: "local" }),
 }));
 vi.mock("../../src/config/schema.js", () => ({
-  checkConfigComplete: vi.fn().mockReturnValue(null),
   resolveDesignLayerConfig: vi.fn().mockReturnValue({ enabled: false, command: "aozu", requireCitationTypes: [], topicEmission: false }),
 }));
 vi.mock("../../src/core/design-layer/check-gate.js", () => ({

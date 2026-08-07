@@ -11,11 +11,19 @@
 import { describe, it, expect, vi } from "vitest";
 import { CodexAgentRunner } from "../../../src/adapter/codex/agent-runner.js";
 import type { CodexThread, CodexAgentRunnerDeps } from "../../../src/adapter/codex/agent-runner.js";
-import { REPORT_TOOL } from "../../../src/core/step/report-tool.js";
 import type { AgentRunContext } from "../../../src/core/port/agent-runner.js";
 import type { JobState } from "../../../src/state/schema.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
+
+// Local fixture — replaces the removed REPORT_TOOL production export
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const REPORT_TOOL_FIXTURE: any = {
+  name: "report_result" as const,
+  description: "Report the completion of this step.",
+  zodSchema: {},
+  parseInput: (raw: unknown) => ({ ok: true as const, value: raw as any }), // eslint-disable-line @typescript-eslint/no-explicit-any
+};
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -351,7 +359,7 @@ describe("CodexAgentRunner transient retry — typed-outcome follow-up turn", ()
     });
     const runner = makeRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ emit: emitSpy, policy: { reportTool: REPORT_TOOL } });
+    const ctx = makeCtx({ emit: emitSpy, policy: { reportTool: REPORT_TOOL_FIXTURE } });
     const result = await runner.run(ctx);
 
     expect(result.completionReason).toBe("success");

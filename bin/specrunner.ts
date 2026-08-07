@@ -4,14 +4,13 @@
  * Registry-based dispatch — no switch/case.
  */
 
-import { COMMANDS, USAGE, RUNTIME_RESET_USAGE, NO_DETAILED_HELP_USAGE } from "../src/cli/command-registry.js";
+import { COMMANDS, USAGE, NO_DETAILED_HELP_USAGE } from "../src/cli/command-registry.js";
 import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
 import { detectWorktree } from "../src/core/worktree/detection.js";
 import { SpecRunnerError, EXIT_CODE, worktreeGuardError, repoRequiredError } from "../src/errors.js";
 import { getVersion } from "../src/cli/version.js";
 import { buildCommandContext } from "../src/cli/command-context.js";
 
-export { USAGE, RUNTIME_RESET_USAGE };
 
 function emitHelp(usage: string | undefined): never {
   process.stdout.write(usage ?? NO_DETAILED_HELP_USAGE);

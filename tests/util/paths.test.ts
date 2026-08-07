@@ -9,7 +9,6 @@ import {
   changesDirRel,
   parseArchiveDirName,
   stepRulesDirRel,
-  draftUsageJsonPath,
   usageJsonPath,
   slugStateJsonPath,
   slugEventsPath,
@@ -148,15 +147,6 @@ describe("parseArchiveDirName", () => {
   });
 });
 
-describe("draftUsageJsonPath", () => {
-  it("returns correct path for a slug", () => {
-    expect(draftUsageJsonPath("foo")).toBe("specrunner/drafts/foo/usage.json");
-  });
-
-  it("handles slugs with hyphens", () => {
-    expect(draftUsageJsonPath("my-feature")).toBe("specrunner/drafts/my-feature/usage.json");
-  });
-});
 
 describe("usageJsonPath", () => {
   it("returns correct path for a slug", () => {

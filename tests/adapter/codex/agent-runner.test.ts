@@ -12,7 +12,14 @@ import type { JobState } from "../../../src/state/schema.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
 import type { DynamicContext } from "../../../src/git/dynamic-context.js";
-import { REPORT_TOOL } from "../../../src/core/step/report-tool.js";
+// Local fixture — replaces the removed REPORT_TOOL production export
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const REPORT_TOOL_FIXTURE: any = {
+  name: "report_result" as const,
+  description: "Report the completion of this step.",
+  zodSchema: {},
+  parseInput: (raw: unknown) => ({ ok: true as const, value: raw as any }), // eslint-disable-line @typescript-eslint/no-explicit-any
+};
 
 // ---------------------------------------------------------------------------
 // Test helpers
@@ -625,7 +632,7 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
     const factory = makeCodexFactory(thread);
     const runner = makeRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
+    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL_FIXTURE } });
     await runner.run(ctx);
 
     const firstCallOpts = (mockRunStreamed.mock.calls[0] as [string, { signal?: AbortSignal; outputSchema?: unknown }])[1];
@@ -642,7 +649,7 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
     const factory = makeCodexFactory(thread);
     const runner = makeRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
+    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL_FIXTURE } });
     const result = await runner.run(ctx);
 
     expect(result.toolResult).toEqual({ ok: true });
@@ -671,7 +678,7 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
     });
     const runner = makeRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
+    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL_FIXTURE } });
     const result = await runner.run(ctx);
 
     expect(result.toolResult).toEqual({ ok: true });
@@ -702,7 +709,7 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
     });
     const runner = makeRunner({ _codexFactory: factory });
 
-    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
+    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL_FIXTURE } });
     await runner.run(ctx);
 
     expect(callCount).toBe(2); // main + 1 retry
@@ -720,7 +727,7 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
     const runner = makeRunner({ _codexFactory: factory });
 
     // DEFAULT_TOOL_RETRY.maxAttempts = 2
-    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL } });
+    const ctx = makeCtx({ policy: { reportTool: REPORT_TOOL_FIXTURE } });
     const result = await runner.run(ctx);
 
     expect(result.toolResult).toBeNull();
@@ -767,7 +774,7 @@ describe("CodexAgentRunner typed outcome (codex-typed-outcome)", () => {
 
     const ctx = makeCtx({
       policy: {
-        reportTool: REPORT_TOOL,
+        reportTool: REPORT_TOOL_FIXTURE,
         postWorkPrompts: ["follow up work"],
       },
     });

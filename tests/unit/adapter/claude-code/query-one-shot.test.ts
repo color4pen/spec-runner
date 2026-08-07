@@ -87,17 +87,6 @@ describe("TC-OSQ-01: success result is converted to QueryOneShotResult", () => {
     expect(result.stopReason).toBe("success");
   });
 
-  it("turnCount is undefined (reserved for future use)", async () => {
-    const queryFn = makeSuccessQueryFn("ok");
-
-    const result = await queryOneShot(
-      { systemPrompt: "sys", prompt: "user" },
-      makeConfig(),
-      queryFn,
-    );
-
-    expect(result.turnCount).toBeUndefined();
-  });
 });
 
 // ---------------------------------------------------------------------------

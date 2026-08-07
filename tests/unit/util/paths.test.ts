@@ -5,7 +5,7 @@
  * TC-PATHS-003: draftPathLegacy() returns "specrunner/drafts/<slug>.md"
  */
 import { describe, it, expect } from "vitest";
-import { draftPath, draftPathLegacy, archivedChangesDirRel, archivedChangeFolderPath, localSlugStateJsonPath, localSlugEventsPath, requestReviewResultPath } from "../../../src/util/paths.js";
+import { draftPath, archivedChangesDirRel, archivedChangeFolderPath, localSlugStateJsonPath, localSlugEventsPath, requestReviewResultPath } from "../../../src/util/paths.js";
 
 describe("TC-PATHS-001: draftPath()", () => {
   it("returns directory-format path specrunner/drafts/<slug>/request.md", () => {
@@ -19,17 +19,6 @@ describe("TC-PATHS-001: draftPath()", () => {
   });
 });
 
-describe("TC-PATHS-003: draftPathLegacy()", () => {
-  it("returns legacy flat-file path specrunner/drafts/<slug>.md", () => {
-    expect(draftPathLegacy("my-change")).toBe("specrunner/drafts/my-change.md");
-  });
-
-  it("handles slugs with hyphens", () => {
-    expect(draftPathLegacy("some-feature-slug")).toBe(
-      "specrunner/drafts/some-feature-slug.md",
-    );
-  });
-});
 
 describe("archivedChangesDirRel()", () => {
   it("returns specrunner/changes/archive", () => {

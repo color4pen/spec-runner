@@ -1,44 +1,14 @@
 /**
- * Shared report_result tool specification for all agent steps (phase 1).
+ * Shared report_result tool specification for all agent steps.
  *
- * Phase 1 uses BaseReportResult schema {ok, reason?} uniformly across all 10 steps.
- * Each step imports REPORT_TOOL and sets it as step.reportTool.
- *
- * Phase 3 (R2 expand): per-step-class typed specs added additively.
+ * Phase 3 (R2 expand): per-step-class typed specs.
  * PRODUCER_REPORT_TOOL / JUDGE_REPORT_TOOL / CODE_REVIEW_REPORT_TOOL extend {ok, reason?}
- * with step-class fields. The old REPORT_TOOL / REPORT_TOOL_CUSTOM_TOOL_SPEC remain for compat.
+ * with step-class fields.
  */
 import { boolean, number, optional, string, union, literal, object, array, toJSONSchema } from "zod/v4-mini";
-import type { ReportToolSpec, BaseReportResult, ProducerReportResult, JudgeReportResult, CodeReviewReportResult, RequestReviewReportResult, ConformanceReportResult } from "../port/report-result.js";
-import { parseBaseReportInput, parseProducerReportInput, parseJudgeReportInput, parseCodeReviewReportInput, parseRequestReviewReportInput, parseConformanceReportInput } from "../port/report-result.js";
+import type { ReportToolSpec, ProducerReportResult, JudgeReportResult, CodeReviewReportResult, RequestReviewReportResult, ConformanceReportResult } from "../port/report-result.js";
+import { parseProducerReportInput, parseJudgeReportInput, parseCodeReviewReportInput, parseRequestReviewReportInput, parseConformanceReportInput } from "../port/report-result.js";
 import type { CustomToolSpec } from "../agent/definition.js";
-
-/**
- * Shared ReportToolSpec for phase 1: {ok, reason?}.
- * All 10 agent steps use this same spec in phase 1.
- * Kept for backward compatibility — not removed in R2.
- */
-export const REPORT_TOOL: ReportToolSpec<BaseReportResult> = {
-  name: "report_result",
-  description: "Report the completion of this step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. You MUST call this tool before ending your turn.",
-  zodSchema: {
-    ok: boolean(),
-    reason: optional(string()),
-  },
-  parseInput: parseBaseReportInput,
-};
-
-/**
- * CustomToolSpec for the report_result tool, for use in AgentDefinition.tools.
- * input_schema is derived from REPORT_TOOL.zodSchema via z.toJSONSchema — single source of truth.
- * Kept for backward compatibility — not removed in R2.
- */
-export const REPORT_TOOL_CUSTOM_TOOL_SPEC: CustomToolSpec = {
-  type: "custom",
-  name: REPORT_TOOL.name,
-  description: REPORT_TOOL.description,
-  input_schema: toJSONSchema(object(REPORT_TOOL.zodSchema)) as CustomToolSpec["input_schema"],
-};
 
 // ---------------------------------------------------------------------------
 // R2 expand: per-step-class typed tool specs + toCustomToolSpec helper

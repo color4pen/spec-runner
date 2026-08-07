@@ -475,6 +475,8 @@ describe("TC-012: REPORT_TOOL deleted from production code, codex tests use loca
     const files = await collectTsFiles(TESTS);
     const hits: string[] = [];
     for (const file of files) {
+      // Skip this test file itself to avoid false positives from TC names
+      if (path.basename(file) === "dead-code-adapter-cli.test.ts") continue;
       const content = await fs.readFile(file, "utf-8");
       // Look specifically for import statements referencing REPORT_TOOL from report-tool.js
       if (/import.*\bREPORT_TOOL\b.*from.*report-tool/.test(content)) {

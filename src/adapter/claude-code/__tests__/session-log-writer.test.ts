@@ -11,7 +11,7 @@ import * as fs from "node:fs";
 import * as fsPromises from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { SessionLogWriter } from "../session-log-writer.js";
+import { SessionLogWriter } from "../../shared/session-log-writer.js";
 import { getAgentLogDir } from "../../../util/xdg.js";
 
 let tempDir: string;

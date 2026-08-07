@@ -76,7 +76,7 @@ describe("runConfigEffective", () => {
       },
     });
 
-    const code = await runConfigEffective({ cwd: repoRoot, requestType: "bug-fix", json: true });
+    const code = await runConfigEffective({ repoRoot, requestType: "bug-fix", json: true });
     const parsed = JSON.parse(stdoutText()) as ConfigEffectiveOutput;
     const design = parsed.steps.find((step) => step.step === "design");
 
@@ -100,7 +100,7 @@ describe("runConfigEffective", () => {
       },
     });
 
-    const code = await runConfigEffective({ cwd: repoRoot });
+    const code = await runConfigEffective({ repoRoot });
     const output = stdoutText();
 
     expect(code).toBe(0);

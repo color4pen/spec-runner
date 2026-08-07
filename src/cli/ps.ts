@@ -17,31 +17,6 @@ import type { ViewEntry } from "../core/job-list/operations-view.js";
 import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
 import { worktreeGuardError } from "../errors.js";
 
-/**
- * Format a job age in human-readable form.
- */
-export function formatAge(createdAt: string, nowMs?: number): string {
-  const now = nowMs ?? Date.now();
-  const created = new Date(createdAt).getTime();
-  const diffMs = now - created;
-  const diffSeconds = Math.floor(diffMs / 1000);
-  const diffMinutes = Math.floor(diffSeconds / 60);
-  const diffHours = Math.floor(diffMinutes / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffDays > 0) return `${diffDays}d`;
-  if (diffHours > 0) return `${diffHours}h`;
-  if (diffMinutes > 0) return `${diffMinutes}m`;
-  return `${diffSeconds}s`;
-}
-
-/**
- * Truncate a string to maxLength, appending "..." if needed.
- */
-export function truncate(str: string, maxLength: number): string {
-  if (str.length <= maxLength) return str;
-  return str.slice(0, maxLength - 3) + "...";
-}
 
 /**
  * Check if the PR for a given job has been merged.

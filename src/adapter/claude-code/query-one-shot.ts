@@ -71,11 +71,6 @@ export interface QueryOneShotResult {
   text: string;
   /** SDK session_id from the success result (managed runtime). undefined for local runtime. */
   sessionId?: string;
-  /**
-   * @deprecated Removed in agent-invocation-metrics. Use numTurns instead.
-   * Kept in the type for backward-compatible type checking; never set in returned objects.
-   */
-  turnCount?: number;
   /** Completion reason from SDKResultMessage.subtype (e.g. "success", "max_turns"). */
   stopReason?: string;
   /** Per-model token usage from the agent run. undefined if not available. */
