@@ -80,3 +80,9 @@
 {"type":"transition","ts":"2026-08-07T12:12:13.912Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: code-fixer escalated"}
 {"type":"transition","ts":"2026-08-07T12:14:16.112Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-fixer'"}
 {"type":"transition","ts":"2026-08-07T12:14:16.249Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-08-07T12:14:35.029Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"096fa56d-85f7-43a7-9a8f-6807cc41231a","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"reason":"Added 3-line clarifying comment after TC-005 in the preamble block explaining continuation branches are intentionally excluded.","status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-08-07T12:14:16.305Z","endedAt":"2026-08-07T12:14:33.138Z","commitOid":"28747267d46927237d953e3783029048c0e7731f"}
+{"type":"lineage","step":"code-fixer","ts":"2026-08-07T12:14:33.138Z","outputs":[{"path":"specrunner/changes/code-fixer-critical-fallback","hash":null}],"inputs":[{"path":"specrunner/changes/code-fixer-critical-fallback/regression-gate-result-001.md","hash":"sha256:be4c494aa82eac9d833df13078832bbe39290a7fe1de3e562bdd493f4eaa64f5"}]}
+{"type":"transition","ts":"2026-08-07T12:14:35.035Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
+{"type":"transition","ts":"2026-08-07T12:14:35.036Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
+{"type":"transition","ts":"2026-08-07T12:14:35.036Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}

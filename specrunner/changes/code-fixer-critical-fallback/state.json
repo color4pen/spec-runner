@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "badf72d3-6bb9-453a-9d72-e3e6193797b5",
   "createdAt": "2026-08-07T11:44:02.170Z",
-  "updatedAt": "2026-08-07T12:14:16.249Z",
+  "updatedAt": "2026-08-07T12:14:35.036Z",
   "request": {
     "title": "code-fixer の fallback prompt が CRITICAL findings の修正義務を欠落している",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "fix/code-fixer-critical-fallback-badf72d3",
   "error": null,
@@ -75,7 +75,8 @@
     "e4176a344076af26ff37c3076e5590b58653b244",
     "0cd0677571d23992316de128087c1a2bc117bfec",
     "136eeb2f5f73a11d24175fce0fc85e1f2b89aa31",
-    "afb12cc8d783b989d53fd650fe4dade8ee9e8626"
+    "afb12cc8d783b989d53fd650fe4dade8ee9e8626",
+    "28747267d46927237d953e3783029048c0e7731f"
   ],
   "reviewerStatuses": [
     {
@@ -110,7 +111,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 58,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -126,7 +127,7 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "code-fixer": 1
+      "code-fixer": 2
     }
   }
 }
