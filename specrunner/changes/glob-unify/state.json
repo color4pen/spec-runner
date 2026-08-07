@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d1252c16-cce5-420a-8db5-c3864d8f112e",
   "createdAt": "2026-08-07T11:43:58.528Z",
-  "updatedAt": "2026-08-07T12:09:35.619Z",
+  "updatedAt": "2026-08-07T12:18:38.588Z",
   "request": {
     "title": "glob matcher 3 実装を util/glob-match.ts の globMatch に統一する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/glob-unify-d1252c16",
   "error": null,
@@ -69,10 +69,42 @@
     "ce266004bf37af631989d13086707053172d0734",
     "17aa072c3a4fca9188c633e0eb737b625d9e9cd6",
     "4d2f2b7ec4392a62d3c5da94079954317d8a1308",
-    "8802293e31691b0d51c5bb6beb82d795f7f06346"
+    "8802293e31691b0d51c5bb6beb82d795f7f06346",
+    "7330a9321e46948f7a31662d58499e495f71ac29",
+    "61414d1c2537009c032d5779bae9db0abb5d5f91"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "7330a9321e46948f7a31662d58499e495f71ac29",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/glob-unify/design.md:sha256:38b383d68b8789546aaf2a7ed0f3800987f0e931a9784bcb6a617dac16bfb9f9|specrunner/changes/glob-unify/request.md:sha256:83ab5631373d75aa8fffbc7811e26de1607c1ed2064dc01d6b44b9af575c57b5|specrunner/changes/glob-unify/spec.md:sha256:60f43068d259ab93cb7c697a7e04f41238012790387152fa6d2e189dd9ba4ad2|specrunner/changes/glob-unify/tasks.md:sha256:c0cac405bf9389ca62c829178bc6dd5574cb92b040ab20dbd00e2744059af45c|specrunner/changes/glob-unify/test-cases.md:sha256:765b551037220beec552880cae192fcfe3d051bd98199ed9224b6b421c7175c9"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -81,7 +113,12 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
