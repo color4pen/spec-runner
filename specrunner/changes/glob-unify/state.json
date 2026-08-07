@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d1252c16-cce5-420a-8db5-c3864d8f112e",
   "createdAt": "2026-08-07T11:43:58.528Z",
-  "updatedAt": "2026-08-07T11:53:21.849Z",
+  "updatedAt": "2026-08-07T11:58:32.929Z",
   "request": {
     "title": "glob matcher 3 実装を util/glob-match.ts の globMatch に統一する",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "refactor/glob-unify-d1252c16",
   "error": null,
@@ -64,13 +64,15 @@
   "synthesizedCommits": [
     "a661335db8e57c38cd00ae8277e9edfee0362835",
     "36c3778623941286fde91024059fbadf84fe7b01",
-    "6c43134ee9ddef985772a17881faed3a387845a6"
+    "6c43134ee9ddef985772a17881faed3a387845a6",
+    "19377dbba1619bbbd3ec20149c254c01c07ec08a"
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
