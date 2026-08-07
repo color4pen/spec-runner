@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "badf72d3-6bb9-453a-9d72-e3e6193797b5",
   "createdAt": "2026-08-07T11:44:02.170Z",
-  "updatedAt": "2026-08-07T12:11:55.503Z",
+  "updatedAt": "2026-08-07T12:12:13.912Z",
   "request": {
     "title": "code-fixer の fallback prompt が CRITICAL findings の修正義務を欠落している",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "fix/code-fixer-critical-fallback-badf72d3",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,8 @@
     "a769c51787a7ed8fa3fb91c08268621f22367812",
     "989162cdc7919ff1b61acf7772842f483deac208",
     "e4176a344076af26ff37c3076e5590b58653b244",
-    "0cd0677571d23992316de128087c1a2bc117bfec"
+    "0cd0677571d23992316de128087c1a2bc117bfec",
+    "136eeb2f5f73a11d24175fce0fc85e1f2b89aa31"
   ],
   "reviewerStatuses": [
     {
@@ -105,8 +106,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "code-fixer escalated",
+    "iterationsExhausted": 0
+  },
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -121,7 +127,8 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "code-fixer": 1
     }
   }
 }
