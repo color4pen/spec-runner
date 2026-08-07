@@ -2,7 +2,6 @@
  * Unit tests for src/util/paths.ts — draft-related path helpers
  *
  * TC-PATHS-001: draftPath() returns "specrunner/drafts/<slug>/request.md"
- * TC-PATHS-003: draftPathLegacy() returns "specrunner/drafts/<slug>.md"
  */
 import { describe, it, expect } from "vitest";
 import { draftPath, archivedChangesDirRel, archivedChangeFolderPath, localSlugStateJsonPath, localSlugEventsPath, requestReviewResultPath } from "../../../src/util/paths.js";
