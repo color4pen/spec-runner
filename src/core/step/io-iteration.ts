@@ -4,7 +4,7 @@ import type { JobState } from "../../state/schema.js";
  * Compute the next iteration number for the given step's own writes.
  * = (past execution count) + 1
  *
- * Matches the inline formula used by getOutputTemplates and computeCodeReviewIteration.
+ * Matches the inline formula used by getOutputTemplates.
  * Used in each step's writes() declaration to resolve {n} for the current execution.
  *
  * Example: spec-review has run once → nextIteration(state, "spec-review") === 2
