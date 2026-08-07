@@ -118,7 +118,6 @@ export async function runArchiveOrchestrator(
   // Phase 0: resolve job state + finishable gate
   // ---------------------------------------------------------------------------
 
-  let jobId: string;
   let worktreePath: string | null;
   let branch: string | null;
   let noWorktree = false;
@@ -138,7 +137,6 @@ export async function runArchiveOrchestrator(
     const state = matching[0]!;
     jobState = state;
 
-    jobId = state.jobId;
     worktreePath = await resolveWorktreePathForArchive(state, cwd);
     branch = state.branch;
     noWorktree = state.noWorktree === true;

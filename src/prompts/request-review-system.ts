@@ -7,7 +7,7 @@
  * This is a read-only pipeline step — the agent writes findings to a result file
  * and reports its completion result to declare its verdict.
  */
-import { changesDirRel, requestReviewResultPath } from "../util/paths.js";
+import { changesDirRel } from "../util/paths.js";
 import { buildSystemPrompt } from "./builder.js";
 import { EVIDENCE_DISCIPLINE, CAUSE_CLASSIFICATION } from "./fragments.js";
 import { DECISION_NEEDED_DEFINITION, OBSERVATION_DEFINITION, VERDICT_BLOCKING_RULES, REQUEST_REVIEW_SEVERITY_DEFINITION, EVIDENCE_COUNTS_DEFINITION } from "./judge-rules.js";
