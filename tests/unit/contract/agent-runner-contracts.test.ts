@@ -70,7 +70,7 @@ export interface RunnerFixture {
 // Shared report tool spec used by contract 2 (reportTool)
 // ---------------------------------------------------------------------------
 
-const REPORT_TOOL: ReportToolSpec = {
+const REPORT_TOOL_SPEC: ReportToolSpec = {
   name: "report_result",
   description: "Report completion",
   zodSchema: { ok: boolean() },
@@ -463,7 +463,7 @@ function describeAgentRunnerContracts(fixture: RunnerFixture): void {
   describe(`AgentRunner contract [${fixture.name}] — reportTool`, () => {
     it("result.toolResult is non-null and ok=true when agent reports", async () => {
       const runner = fixture.makeWithReportToolSuccess({ tempDir, sleepFn });
-      const ctx = makeMinCtx({ tempDir, policy: { reportTool: REPORT_TOOL } });
+      const ctx = makeMinCtx({ tempDir, policy: { reportTool: REPORT_TOOL_SPEC } });
       const result = await runner.run(ctx);
       expect(result.toolResult).not.toBeNull();
       expect(result.toolResult!.ok).toBe(true);

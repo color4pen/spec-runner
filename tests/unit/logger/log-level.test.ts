@@ -14,7 +14,6 @@ import {
   logInfo,
   logStep,
   logSuccess,
-  logDebug,
 } from "../../../src/logger/stdout.js";
 
 let originalLogLevel: string | undefined;
@@ -257,33 +256,3 @@ describe("TC-20: logSuccess suppressed at quiet level", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// TC-21 & TC-22 & TC-23: logDebug
-// ---------------------------------------------------------------------------
-
-describe("TC-21: logDebug outputs at debug level", () => {
-  it("logDebug writes to stderr at debug level", () => {
-    const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-    setLogLevel("debug");
-    logDebug("internal state");
-    expect(spy).toHaveBeenCalledWith(expect.stringContaining("internal state"));
-  });
-});
-
-describe("TC-22: logDebug suppressed at verbose level", () => {
-  it("logDebug does not write at verbose level", () => {
-    const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-    setLogLevel("verbose");
-    logDebug("internal state");
-    expect(spy).not.toHaveBeenCalled();
-  });
-});
-
-describe("TC-23: logDebug suppressed at default level", () => {
-  it("logDebug does not write at default level (no DEBUG env)", () => {
-    const spy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-    setLogLevel("default");
-    logDebug("internal state");
-    expect(spy).not.toHaveBeenCalled();
-  });
-});

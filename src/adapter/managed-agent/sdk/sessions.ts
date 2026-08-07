@@ -81,15 +81,6 @@ export async function sendEvents(
   await client.beta.sessions.events.send(sessionId, params);
 }
 
-/**
- * Delete a session.
- */
-export async function deleteSession(
-  client: Anthropic,
-  sessionId: string,
-): Promise<void> {
-  await client.beta.sessions.delete(sessionId);
-}
 
 /**
  * Narrowing helper: check if event is a custom tool use event.

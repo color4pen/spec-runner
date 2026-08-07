@@ -15,7 +15,6 @@ import {
   isEndTurnIdle,
   isRetryStatusRetrying,
 } from "./sdk/sessions.js";
-import { assertBreakAfterCompletion } from "./completion.js";
 import { buildInitialMessage } from "../../prompts/design-system.js";
 import { stderrWrite, logVerbose } from "../../logger/stdout.js";
 import type { CustomToolContext, CustomToolHandler } from "../../kernel/tool-types.js";
@@ -128,7 +127,6 @@ export async function runSseStream(deps: SseStreamDeps): Promise<SseStreamResult
       } else if (isStatusIdleEvent(event)) {
         if (isEndTurnIdle(event)) {
           logVerbose("sse", "status_idle event", { stopReason: "end_turn" });
-          assertBreakAfterCompletion(event);
           idleEndTurnDetected = true;
           terminationReason = "end_turn";
           break;

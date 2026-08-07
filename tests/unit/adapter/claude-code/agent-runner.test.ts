@@ -14,10 +14,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { EventEmitter } from "node:events";
-import type { SpawnOptions, ChildProcess } from "node:child_process";
 import { ClaudeCodeRunner } from "../../../../src/adapter/claude-code/agent-runner.js";
-import type { SpawnFn, QueryFn, CreateMcpServerFn } from "../../../../src/adapter/claude-code/agent-runner.js";
+import type { QueryFn, CreateMcpServerFn } from "../../../../src/adapter/claude-code/agent-runner.js";
 import type { AgentRunContext } from "../../../../src/core/port/agent-runner.js";
 import type { ReportToolSpec } from "../../../../src/core/port/report-result.js";
 import { parseBaseReportInput } from "../../../../src/core/port/report-result.js";
@@ -136,33 +134,6 @@ function makeQueryFn(opts: {
       } as unknown;
     }
   } as QueryFn;
-}
-
-/**
- * Create a spawn function that simulates git behavior for requiresCommit tests.
- */
-function makeGitSimulatingSpawnFn(gitResponses: Record<string, { stdout: string; exitCode: number }>): SpawnFn {
-  return (_bin: string, args: string[], _spawnOpts: SpawnOptions): ChildProcess => {
-    const gitCmd = args[0] ?? "unknown";
-    const response = gitResponses[gitCmd] ?? { stdout: "", exitCode: 0 };
-
-    const stdoutEm = new EventEmitter();
-    const procEm = new EventEmitter();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const procAny = procEm as any;
-    procAny.stdin = { write: () => true, end: () => {} };
-    procAny.stdout = stdoutEm;
-    procAny.stderr = new EventEmitter();
-
-    setImmediate(() => {
-      if (response.stdout) {
-        stdoutEm.emit("data", Buffer.from(response.stdout + "\n"));
-      }
-      procEm.emit("close", response.exitCode);
-    });
-
-    return procEm as unknown as ChildProcess;
-  };
 }
 
 // ---------------------------------------------------------------------------
@@ -688,17 +659,9 @@ describe("TC-028: ClaudeCodeRunner — no requiresCommit guard (moved to StepExe
     // TC-028 updated: requiresCommit guard was removed from ClaudeCodeRunner.
     // StepExecutor.commitAndPush() now handles this via staged diff check.
     // The adapter does not check for commit advancement — it just runs the agent.
-    const SHA = "sha-abc123deadbeef";
-
-    const gitResponses = {
-      "rev-parse": { stdout: SHA, exitCode: 0 },
-      "branch": { stdout: "  feat/foo-bar", exitCode: 0 },
-    };
-
-    const spawnFn = makeGitSimulatingSpawnFn(gitResponses);
     const queryFn = makeQueryFn();
 
-    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn, _queryFn: queryFn });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const state = makeJobState("tc028-job", "feat/foo-bar");
 
     const ctx: AgentRunContext = {
@@ -738,15 +701,9 @@ describe("TC-029: ClaudeCodeRunner — no requiresCommit guard (moved to StepExe
   it("returns completionReason='success' regardless of branch state (adapter no longer checks requiresCommit)", async () => {
     // TC-029 updated: requiresCommit guard was removed from ClaudeCodeRunner.
     // StepExecutor.commitAndPush() now handles commit detection via staged diff check.
-    const gitResponses = {
-      "rev-parse": { stdout: "sha-abc123", exitCode: 0 },
-      "branch": { stdout: "", exitCode: 0 },
-    };
-
-    const spawnFn = makeGitSimulatingSpawnFn(gitResponses);
     const queryFn = makeQueryFn();
 
-    const runner = new ClaudeCodeRunner({ cwd: tempDir, _spawnFn: spawnFn, _queryFn: queryFn });
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const state = makeJobState("tc029-job", "feat/foo-bar");
 
     const ctx: AgentRunContext = {

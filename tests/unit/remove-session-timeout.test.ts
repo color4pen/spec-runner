@@ -3,7 +3,7 @@
  *
  * TC-007: StepExecutor.getTimeoutMs メソッドが存在しない
  * TC-008: pollUntilComplete の status === "timeout" 分岐が存在しない
- * TC-010: session-runner.ts の timeoutMs 引数と SESSION_TIMEOUT フォールバックが削除されている
+ * TC-010: timeoutMs 引数と SESSION_TIMEOUT フォールバックが削除されている
  * TC-011: completion.ts の SESSION_TIMEOUT フォールバックと timeoutMs が削除されている
  * TC-012: ConfigStore.load が timeoutMs を含む旧 config を warn/error なしで読み込む
  * TC-015: doctor の network/CLI check timeout が削除されていない
@@ -83,27 +83,6 @@ describe("TC-008: pollUntilComplete の timeout 分岐が存在しない", () =>
     expect(content).not.toContain("SESSION_TIMEOUT");
     // timeout status variant removed
     expect(content).not.toContain('"timeout"');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-010: session-runner.ts の timeoutMs 引数と SESSION_TIMEOUT フォールバックが削除されている
-// ---------------------------------------------------------------------------
-describe("TC-010: session-runner.ts の timeoutMs と SESSION_TIMEOUT フォールバックが削除済み", () => {
-  it("session-runner.ts のソースに timeoutMs と SESSION_TIMEOUT が含まれない", async () => {
-    const runnerPath = path.resolve(
-      import.meta.dirname ?? __dirname,
-      "../../src/adapter/managed-agent/session-runner.ts",
-    );
-    const content = await fs.readFile(runnerPath, "utf-8");
-    expect(content).not.toContain("timeoutMs");
-    expect(content).not.toContain("SESSION_TIMEOUT");
-  });
-
-  it("ManagedAgentSessionInput 型に timeoutMs フィールドがない", async () => {
-    const { runManagedAgentSession } = await import("../../src/adapter/managed-agent/session-runner.js");
-    // Verify the function exists (not removed entirely — used by legacy callers if any)
-    expect(typeof runManagedAgentSession).toBe("function");
   });
 });
 

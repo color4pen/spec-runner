@@ -172,12 +172,3 @@ async function getIdleStopReason(
     return "end_turn";
   }
 }
-
-/**
- * Guard function to assert break-after-completion pattern.
- */
-export function assertBreakAfterCompletion(event: { type: string }): void {
-  if (event.type === "session.status_idle") {
-    return;
-  }
-}

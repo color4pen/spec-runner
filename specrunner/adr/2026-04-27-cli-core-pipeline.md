@@ -21,7 +21,7 @@ ADR-20260427-cli-first-architecture で SpecRunner を CLI ファーストに転
 ### D1. 完了検知は polling primary、SSE は Custom Tool 受信専用
 
 - 完了判定は `client.beta.sessions.retrieve()` をポーリングし、`status === "idle"` を確定条件とする（指数バックオフ 2s → 30s 上限、×1.5 増、ジッタ ±20%）
-- SSE stream は **Custom Tool（`register_branch`）受信のためのみ** に接続する。SSE で `session.status_idle` + `stop_reason: "end_turn"` を観測した時点で **必ず break** する（`completion.ts` の `assertBreakAfterCompletion` ガードで検証）
+- SSE stream は **Custom Tool（`register_branch`）受信のためのみ** に接続する。SSE で `session.status_idle` + `stop_reason: "end_turn"` を観測した時点で **必ず break** する（`sse-stream.ts` の break ステートメントで実装）
 - SSE 切断時はリトライせず polling fallback に切替える。完了経路を明示区別するため `SessionResult.terminationReason: "end_turn" | "terminated" | "disconnected" | "interrupted"` の enum で SSE / polling 経路を識別する（code-review HIGH-2 由来の設計改善）
 
 ### D2. Custom Tool は colocate factory + 単一 registry に強制

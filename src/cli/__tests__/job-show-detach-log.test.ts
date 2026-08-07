@@ -61,7 +61,6 @@ vi.mock("../../logger/stdout.js", () => ({
   stdoutWrite: vi.fn(),
   logError: vi.fn(),
   setLogLevel: vi.fn(),
-  getLogLevel: vi.fn().mockReturnValue("default"),
 }));
 
 // ---------------------------------------------------------------------------

@@ -4,7 +4,7 @@
  */
 
 import { loadConfig } from "../config/store.js";
-import { checkConfigComplete, resolveDesignLayerConfig } from "../config/schema.js";
+import { resolveDesignLayerConfig } from "../config/schema.js";
 import { getOriginInfo } from "../git/remote.js";
 import { parseRequestMd } from "../parser/request-md.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
@@ -47,16 +47,6 @@ export async function runPreflight(
   // resolveRepoRoot returns null gracefully when not in a git repo (loadConfig handles null → user-global-only).
   const repoRoot = await resolveRepoRoot(cwd);
   const config = await loadConfig(repoRoot ?? undefined);
-
-  // Step 2: Config complete (all required fields present — github check moved here)
-  const incomplete = checkConfigComplete(config);
-  if (incomplete) {
-    throw new SpecRunnerError(
-      "CONFIG_INCOMPLETE",
-      incomplete.hint,
-      incomplete.hint,
-    );
-  }
 
   // Step 2.5: GitHub token (required for PR operations via REST API)
   const githubHost = resolveGitHubHost(config.github);

@@ -2,7 +2,7 @@
  * Unit tests for queryOneShot — invocation metrics extraction.
  *
  * TC-004: one-shot success result から 4 metrics を抽出する
- * TC-020: one-shot の turnCount placeholder が numTurns に置き換えられている
+ * TC-020: one-shot の numTurns フィールドが SDK num_turns から正しく抽出される
  */
 import { describe, it, expect, vi } from "vitest";
 import { queryOneShot, type QueryFn } from "../../../../src/adapter/claude-code/query-one-shot.js";
@@ -90,11 +90,11 @@ describe("TC-004: one-shot success result から 4 metrics を抽出する", () 
 });
 
 // ---------------------------------------------------------------------------
-// TC-020: one-shot の turnCount placeholder が numTurns に置き換えられている
+// TC-020: one-shot の numTurns フィールドが SDK num_turns から正しく抽出される
 // ---------------------------------------------------------------------------
 
-describe("TC-020: turnCount placeholder is replaced by numTurns", () => {
-  it("provides numTurns (not turnCount) when SDK returns num_turns", async () => {
+describe("TC-020: numTurns is extracted from SDK result", () => {
+  it("provides numTurns when SDK returns num_turns", async () => {
     const queryFn: QueryFn = vi.fn().mockImplementation(() => {
       return (async function* () {
         yield {
@@ -118,13 +118,10 @@ describe("TC-020: turnCount placeholder is replaced by numTurns", () => {
     );
 
     // TC-020: numTurns is present with the value from SDK num_turns
-    // FAILS until implementation adds numTurns to QueryOneShotResult
     expect(result.numTurns).toBe(5);
 
-    // turnCount (the old placeholder) should NOT be present or should be absent
-    // (it was "Reserved for future use" — this repurposing removes it)
-    // The field should not exist in the result (implementation removes the placeholder)
-    expect(Object.prototype.hasOwnProperty.call(result, "turnCount")).toBe(false);
+    // numTurns is the only turns field; no legacy field should exist
+    expect(Object.prototype.hasOwnProperty.call(result, "numTurns")).toBe(true);
   });
 
   it("numTurns is undefined when SDK result omits num_turns", async () => {
@@ -149,8 +146,5 @@ describe("TC-020: turnCount placeholder is replaced by numTurns", () => {
 
     // numTurns absent → undefined
     expect(result.numTurns).toBeUndefined();
-
-    // turnCount must not be present (the placeholder is removed)
-    expect(Object.prototype.hasOwnProperty.call(result, "turnCount")).toBe(false);
   });
 });

@@ -17,7 +17,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { validateConfig, checkConfigComplete } from "../../../src/config/schema.js";
+import { validateConfig } from "../../../src/config/schema.js";
 import { applyMigration } from "../../../src/config/migrate.js";
 
 let tempDir: string;
@@ -327,32 +327,6 @@ describe("TC-040: managed-agent and claude-code adapters do not import each othe
   });
 });
 
-// ---------------------------------------------------------------------------
-// TC-041: --runtime local accepts missing apiKey
-// ---------------------------------------------------------------------------
-
-describe("TC-041: checkConfigComplete always returns null (GitHub token check moved to runPreflight)", () => {
-  it("checkConfigComplete with local runtime: returns null when github token is set", () => {
-    const config = {
-      version: 1 as const,
-      runtime: "local" as const,
-      agents: {},
-    };
-
-    const result = checkConfigComplete(config);
-    expect(result).toBeNull();
-  });
-
-  it("checkConfigComplete always returns null (GitHub token moved to runPreflight)", () => {
-    const config = {
-      version: 1 as const,
-      agents: {},
-    };
-
-    const result = checkConfigComplete(config);
-    expect(result).toBeNull();
-  });
-});
 
 // ---------------------------------------------------------------------------
 // TC-042: specrunner init --runtime local writes config with runtime: "local"

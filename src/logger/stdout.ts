@@ -11,7 +11,7 @@ import { getVerboseLogDir, getVerboseLogPath } from "../util/xdg.js";
 
 export type LogLevel = "quiet" | "default" | "verbose" | "debug";
 
-export const LEVEL_ORDER: Record<LogLevel, number> = {
+const LEVEL_ORDER: Record<LogLevel, number> = {
   quiet: 0,
   default: 1,
   verbose: 2,
@@ -40,12 +40,6 @@ export function setLogLevel(level: LogLevel): void {
   currentLevel = level;
 }
 
-/**
- * Return current log level.
- */
-export function getLogLevel(): LogLevel {
-  return currentLevel;
-}
 
 /**
  * Return true if the given level is enabled (currentLevel >= level in LEVEL_ORDER).
@@ -209,13 +203,6 @@ export function logError(message: string): void {
   process.stderr.write("Error: " + maskSensitive(message) + "\n");
 }
 
-/**
- * Log a debug message to stderr. Only output at debug level.
- */
-export function logDebug(message: string): void {
-  if (!isLevelEnabled("debug")) return;
-  process.stderr.write("[debug] " + maskSensitive(message) + "\n");
-}
 
 /**
  * Write raw message to stderr (for fallback/operational messages).

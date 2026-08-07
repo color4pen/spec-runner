@@ -6,7 +6,7 @@
  * No LLM involvement — purely deterministic.
  *
  * CLI input contract:
- *   specrunner job archive <slug> [--with-merge] [--dry-run]
+ *   specrunner job archive <slug> [--with-merge]
  */
 import * as nodeFsPromises from "node:fs/promises";
 import * as path from "node:path";
@@ -76,8 +76,6 @@ export interface RunArchiveOptions {
   slug: string;
   /** --with-merge: merge the PR before archiving. */
   withMerge?: boolean;
-  /** --dry-run: reserved for future use (currently no-op). */
-  dryRun?: boolean;
   cwd: string;
   /** Override merge wait timeout in ms (from --merge-wait-ms flag). */
   mergeWaitMs?: number;

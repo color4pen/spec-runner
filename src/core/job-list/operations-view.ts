@@ -338,7 +338,6 @@ function buildStatusCell(row: JobViewRow): string {
 
 /**
  * Format a job's age in human-readable form.
- * Re-uses the formatAge logic from ps.ts (copied here to stay import-clean).
  */
 function formatAgeInternal(createdAt: string, nowMs: number): string {
   const created = new Date(createdAt).getTime();

@@ -710,19 +710,3 @@ export function validateConfig(raw: unknown): SpecRunnerConfig {
   return raw as SpecRunnerConfig;
 }
 
-/**
- * Check if config has all fields needed to run the pipeline.
- * Returns error message or null if complete.
- *
- * Managed-runtime specific checks (apiKey, agents, environment) have moved to
- * `checkRuntimePrereqs` in preflight.ts to allow a cleaner separation.
- * TC-033: CONFIG_INCOMPLETE not raised for local runtime with missing apiKey.
- * TC-052: local runtime allows missing spec-review agent ID.
- */
-export function checkConfigComplete(
-  _cfg: SpecRunnerConfig,
-): { field: string; hint: string } | null {
-  // GitHub token check moved to runPreflight (resolveGitHubToken via credentials file / env var).
-  // Config no longer stores secrets.
-  return null;
-}

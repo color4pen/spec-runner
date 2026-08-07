@@ -12,7 +12,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import * as fs from "node:fs/promises";
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { loadConfig, saveConfig, saveProjectConfig } from "../../src/config/store.js";
+import { loadConfig, saveConfig } from "../../src/config/store.js";
 import type { SpecRunnerConfig } from "../../src/config/schema.js";
 import { SpecRunnerError } from "../../src/errors.js";
 
@@ -308,33 +308,3 @@ describe("saveConfig", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// saveProjectConfig
-// ---------------------------------------------------------------------------
-
-describe("saveProjectConfig", () => {
-  let dirs: TempDirs;
-
-  beforeEach(async () => { dirs = await makeTempDirs(); });
-  afterEach(async () => { await cleanup(dirs.tmpDir); });
-
-  it("writes config to <repoRoot>/.specrunner/config.json", async () => {
-    const cfg = {
-      steps: { "code-review": { model: "claude-opus-4-6" } },
-    };
-
-    await saveProjectConfig(dirs.repoRoot, cfg as never);
-
-    const written = JSON.parse(
-      await fs.readFile(path.join(dirs.repoRoot, ".specrunner", "config.json"), "utf-8"),
-    );
-    expect(written.steps?.["code-review"]?.model).toBe("claude-opus-4-6");
-  });
-
-  it("creates the .specrunner directory if it does not exist", async () => {
-    await saveProjectConfig(dirs.repoRoot, { version: 1, agents: {} } as never);
-
-    const stat = await fs.stat(path.join(dirs.repoRoot, ".specrunner", "config.json"));
-    expect(stat.isFile()).toBe(true);
-  });
-});
