@@ -68,7 +68,7 @@ async function makeSlugJob(slug: string, status: JobState["status"] = "awaiting-
   return jobId;
 }
 
-/** Helper replacing the removed loadJobState(id) from state/store.ts */
+/** Helper: load job state from disk */
 async function loadJobState(jobId: string): Promise<JobState> {
   try {
     return (await makeStoreFactory(tempDir)(jobId).load()) as JobState;

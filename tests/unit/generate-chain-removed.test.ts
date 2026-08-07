@@ -161,7 +161,7 @@ describe("TC-009: manager.ts に create / generator / OneShotQueryClient が現�
 
   it("TC-009: src/core/request/manager.ts に 'create' が現れない", () => {
     const source = readFileSync(MANAGER_PATH, "utf-8");
-    // "create" function should be removed; "list" and "resolve" remain
+    // "create" function should be removed; "list" remains
     // We check the function definition, not the general word "create"
     expect(source).not.toContain("export async function create(");
     expect(source).not.toContain("export function create(");

@@ -118,7 +118,6 @@ export class ManagedRuntime implements RealRuntimeStrategy {
 
   /**
    * Update job state atomically: load → mutate → persist.
-   * Replaces the deprecated updateJobState() from state/store.ts.
    */
   private async updateJobState(jobId: string, mutator: (s: JobState) => JobState): Promise<void> {
     const store = this.managedLocalStore(jobId, this.currentSlug!);
