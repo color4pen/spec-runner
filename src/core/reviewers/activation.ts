@@ -8,7 +8,7 @@
  * Both conditions absent ⇒ always activate (no restriction).
  */
 import type { ReviewerActivation } from "../../kernel/reviewer-snapshot.js";
-import { matchGlob } from "./glob-match.js";
+import { globMatch } from "../../util/glob-match.js";
 
 /**
  * Runtime facts available at activation-check time.
@@ -84,7 +84,7 @@ export function evaluateActivation(
       return { activated: true, reason: "activated" };
     }
     const matched = facts.changedFiles.some((file) =>
-      cond.paths!.some((pattern) => matchGlob(pattern, file)),
+      cond.paths!.some((pattern) => globMatch(file, pattern)),
     );
     if (!matched) {
       return {

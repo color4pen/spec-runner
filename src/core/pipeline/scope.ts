@@ -13,7 +13,7 @@
 import type { PermissionScope } from "./types.js";
 import type { JobState } from "../../state/schema.js";
 import type { Finding, DecisionOption } from "../../kernel/report-result.js";
-import { matchGlob } from "../reviewers/glob-match.js";
+import { globMatch } from "../../util/glob-match.js";
 
 // ---------------------------------------------------------------------------
 // ScopeBreach — result of deriveScopeBreach
@@ -64,7 +64,7 @@ export function deriveScopeBreach(input: DeriveScopeBreachInput): ScopeBreach {
   const breachedIds = new Set<string>();
   for (const surface of scope.forbidden) {
     for (const file of changedFiles) {
-      if (surface.paths.some((pattern) => matchGlob(pattern, file))) {
+      if (surface.paths.some((pattern) => globMatch(file, pattern))) {
         breachedIds.add(surface.id);
         break;
       }

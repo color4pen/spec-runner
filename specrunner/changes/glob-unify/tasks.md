@@ -4,9 +4,9 @@
 
 対象: `src/util/glob-match.ts`
 
-- [ ] L71-79（`// ---` 区切り・注記コメントブロック「2 実装は独立・統一はスコープ外」）を削除する
-- [ ] `matchesGlob` の独立実装（`while` ループ・`regex` 変数・`new RegExp(...)` 呼び出し）を `return globMatch(filePath, pattern);` 1 行に置き換える
-- [ ] `matchesGlob` の JSDoc コメントから `?` 非対応の記述（「No brace expansion, "?", or character-class support」）を削除し、`globMatch` への委譲であることを記述する
+- [x] L71-79（`// ---` 区切り・注記コメントブロック「2 実装は独立・統一はスコープ外」）を削除する
+- [x] `matchesGlob` の独立実装（`while` ループ・`regex` 変数・`new RegExp(...)` 呼び出し）を `return globMatch(filePath, pattern);` 1 行に置き換える
+- [x] `matchesGlob` の JSDoc コメントから `?` 非対応の記述（「No brace expansion, "?", or character-class support」）を削除し、`globMatch` への委譲であることを記述する
 
 **Acceptance Criteria**:
 - `src/util/glob-match.ts` に `function matchesGlob` が 1 件存在する（grep count = 1）
@@ -18,7 +18,7 @@
 
 ## T-02: `src/core/reviewers/glob-match.ts` を削除する
 
-- [ ] `src/core/reviewers/glob-match.ts` を削除する
+- [x] `src/core/reviewers/glob-match.ts` を削除する
 
 **Acceptance Criteria**:
 - `src/core/reviewers/glob-match.ts` が存在しない
@@ -30,17 +30,17 @@
 import パスはいずれも `../../util/glob-match.js`（3 ファイルとも `src/core/<subdir>/` に位置するため同一）。
 
 **`src/core/pipeline/scope.ts`**:
-- [ ] L16 の import を `import { globMatch } from '../../util/glob-match.js';` に変更する
-- [ ] L67 の `matchGlob(pattern, file)` → `globMatch(file, pattern)` に変更する
+- [x] L16 の import を `import { globMatch } from '../../util/glob-match.js';` に変更する
+- [x] L67 の `matchGlob(pattern, file)` → `globMatch(file, pattern)` に変更する
 
 **`src/core/reviewers/activation.ts`**:
-- [ ] L11 の import を `import { globMatch } from '../../util/glob-match.js';` に変更する
-- [ ] L87 の `matchGlob(pattern, file)` → `globMatch(file, pattern)` に変更する
+- [x] L11 の import を `import { globMatch } from '../../util/glob-match.js';` に変更する
+- [x] L87 の `matchGlob(pattern, file)` → `globMatch(file, pattern)` に変更する
 
 **`src/core/step/main-checkout-guard.ts`**:
-- [ ] L17 の import を `import { globMatch } from '../../util/glob-match.js';` に変更する
-- [ ] L76 の `matchGlob(g, filePath)` → `globMatch(filePath, g)` に変更する
-- [ ] L12 の doc comment 内 `step → reviewers: matchGlob` を `step → util: globMatch` に更新する
+- [x] L17 の import を `import { globMatch } from '../../util/glob-match.js';` に変更する
+- [x] L76 の `matchGlob(g, filePath)` → `globMatch(filePath, g)` に変更する
+- [x] L12 の doc comment 内 `step → reviewers: matchGlob` を `step → util: globMatch` に更新する
 
 **Acceptance Criteria**:
 - `src/` および `tests/` を `\bmatchGlob\b` でgrep して 0 件
@@ -51,8 +51,8 @@ import パスはいずれも `../../util/glob-match.js`（3 ファイルとも `
 
 ## T-04: テストを整理し、意味論固定テストを追加する
 
-- [ ] `src/core/reviewers/__tests__/glob-match.test.ts` を削除する
-- [ ] `tests/unit/util/glob-match.test.ts` に以下のテストを追加する:
+- [x] `src/core/reviewers/__tests__/glob-match.test.ts` を削除する
+- [x] `tests/unit/util/glob-match.test.ts` に以下のテストを追加する:
 
   **`matchesGlob` 委譲テスト（`matchesGlob` が `globMatch` と同動作）**:
   - `matchesGlob("src/foox.ts", "src/foo?.ts")` → `true`（`?` が wildcard として動く）
@@ -87,11 +87,11 @@ import パスはいずれも `../../util/glob-match.js`（3 ファイルとも `
 
 ## T-05: 全体検証
 
-- [ ] `bun run typecheck` が通る
-- [ ] `bun run test` が通る（既存テスト無改変 + 新規テスト green）
-- [ ] `grep -rn '\bmatchGlob\b' src/ tests/` が 0 件
-- [ ] `grep -c 'function matchesGlob' src/util/glob-match.ts` が 1
-- [ ] `shared-glob-match-imports.test.ts` が無改変で通る
+- [x] `bun run typecheck` が通る
+- [x] `bun run test` が通る（既存テスト無改変 + 新規テスト green）
+- [x] `grep -rn '\bmatchGlob\b' src/ tests/` が 0 件
+- [x] `grep -c 'function matchesGlob' src/util/glob-match.ts` が 1
+- [x] `shared-glob-match-imports.test.ts` が無改変で通る
 
 **Acceptance Criteria**:
 - 受け入れ基準 6 項目が全て満たされている:

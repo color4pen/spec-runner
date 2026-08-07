@@ -8,13 +8,13 @@
  * Layer dependencies (all existing, permitted edges):
  *   step → port   : MainCheckoutGuardSnapshot
  *   step → config : resolvePipelineForbiddenSurfaces
- *   step → reviewers: matchGlob
+ *   step → util: globMatch
  */
 
 import type { MainCheckoutGuardSnapshot } from "../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import { resolvePipelineForbiddenSurfaces } from "../../config/schema.js";
-import { matchGlob } from "../reviewers/glob-match.js";
+import { globMatch } from "../../util/glob-match.js";
 
 // ---------------------------------------------------------------------------
 // GuardDrift
@@ -73,7 +73,7 @@ export function resolveMonitoredGuardGlobs(config: SpecRunnerConfig): string[] {
  */
 export function matchesMonitored(filePath: string, globs: string[]): boolean {
   for (const g of globs) {
-    if (matchGlob(g, filePath)) return true;
+    if (globMatch(filePath, g)) return true;
   }
   return false;
 }
