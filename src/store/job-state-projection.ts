@@ -8,7 +8,6 @@ import { changeFolderPath } from "../util/paths.js";
 import { journalCorruptedError } from "../errors.js";
 import { describeJournalIssue } from "./journal-integrity.js";
 import { migrateSteps } from "./legacy-state-migrator.js";
-import type { JournalCounters } from "./job-journal.js";
 import type { NormalizedJobState } from "./job-state-store.js";
 
 // Re-export for consumers that need it
@@ -47,14 +46,6 @@ export async function composeSplitLayoutFromContent(
   const parsedState = JSON.parse(stateJson) as Record<string, unknown>;
 
   // Extract journal counters (internal — not part of JobState)
-  let storedCounters: JournalCounters = {
-    historyCount: 0,
-    stepCounts: {},
-  };
-  if (parsedState["_journal"] && typeof parsedState["_journal"] === "object") {
-    storedCounters = parsedState["_journal"] as JournalCounters;
-  }
-
   // Strip internal fields before validation
   const { _journal: _j, ...stateWithoutJournal } = parsedState as Record<string, unknown> & { _journal?: unknown };
   void _j; // suppress unused warning

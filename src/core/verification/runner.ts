@@ -327,7 +327,8 @@ async function finalizeVerificationRun(args: {
   root: string;
   skipLabel: "command" | "phase";
 }): Promise<VerificationResult> {
-  let { phases, failed } = args;
+  const { phases } = args;
+  let { failed } = args;
 
   // Run changed-line coverage gate.
   let coverageSkipNote: string | undefined;
