@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "badf72d3-6bb9-453a-9d72-e3e6193797b5",
   "createdAt": "2026-08-07T11:44:02.170Z",
-  "updatedAt": "2026-08-07T12:02:49.216Z",
+  "updatedAt": "2026-08-07T12:09:14.718Z",
   "request": {
     "title": "code-fixer の fallback prompt が CRITICAL findings の修正義務を欠落している",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "fix/code-fixer-critical-fallback-badf72d3",
   "error": null,
@@ -70,10 +70,42 @@
     "11abfa9eff9fa7d5b421886c80281feaf8a1980d",
     "49fe398aab1ae9d2574f34717d3ba5f4c593be14",
     "d3f36721882c993ff32c3d22e2a5c50a0428b969",
-    "a769c51787a7ed8fa3fb91c08268621f22367812"
+    "a769c51787a7ed8fa3fb91c08268621f22367812",
+    "989162cdc7919ff1b61acf7772842f483deac208",
+    "e4176a344076af26ff37c3076e5590b58653b244"
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "989162cdc7919ff1b61acf7772842f483deac208",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/code-fixer-critical-fallback/design.md:sha256:31f4d63df5bc43cfcaea4fab4effe80218c9e51ca04d0031999dd2d6dc5e68cb|specrunner/changes/code-fixer-critical-fallback/request.md:sha256:bde8dd56d9b74d6831e0e4d6c633021d84f2feaec2c9cb129e035e7822ddab90|specrunner/changes/code-fixer-critical-fallback/spec.md:sha256:f7b71d3c81d54a9539754aa7da1e547a927e516a0784f6218b9477141847695d|specrunner/changes/code-fixer-critical-fallback/tasks.md:sha256:76635ac37948049033f8558437f74d81167e0ac39498ec9d7c9a0e178a21a84b|specrunner/changes/code-fixer-critical-fallback/test-cases.md:sha256:42d4730943df25185de27be3ae799ebc5c738f8c21cf82e921424a9e38d26973"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
   ],
   "_journal": {
-    "historyCount": 34,
+    "historyCount": 46,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -83,7 +115,11 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
