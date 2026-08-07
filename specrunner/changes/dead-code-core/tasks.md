@@ -127,7 +127,8 @@
 - [ ] `src/core/doctor/checks/index.ts` の個別 re-export block（:101-130）を削除する（`commonChecks`・`managedChecks`・`localChecks` の定義と `DoctorCheck` import は残す）
 - [ ] `src/core/doctor/types.ts` の `export const DoctorContext: undefined = undefined`（:90）を削除する（`export interface DoctorContext` は残す）
 - [ ] 削除した `allChecks` のみを test している `tests/core/doctor/checks/all-checks.test.ts` をファイルごと削除する
-- [ ] `tests/core/doctor/doctor-cli.test.ts` で `allChecks` を mock しているブロックを削除し、他の assertion は残す
+- [ ] `tests/core/doctor/doctor-cli.test.ts` の `vi.mock("...checks/index.js", ...)` ブロック内の `allChecks: [],` の **1 行のみ**を削除する（`commonChecks: []`・`managedChecks: []`・`localChecks: []` の行と vi.mock ブロック自体は残す）
+- [ ] `tests/unit/doctor/next-steps.test.ts` の line 14 のコメント `// Module does not exist yet — dynamic import defers the failure to test execution (RED until implementation)` を `// Tries index.ts first (re-export), falls back to next-steps.ts directly` に書き換える
 
 **Acceptance Criteria**:
 - `src/core/doctor/index.ts` が存在しない
