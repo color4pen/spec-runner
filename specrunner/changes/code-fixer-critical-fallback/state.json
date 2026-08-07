@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "badf72d3-6bb9-453a-9d72-e3e6193797b5",
   "createdAt": "2026-08-07T11:44:02.170Z",
-  "updatedAt": "2026-08-07T11:48:11.597Z",
+  "updatedAt": "2026-08-07T11:52:29.331Z",
   "request": {
     "title": "code-fixer の fallback prompt が CRITICAL findings の修正義務を欠落している",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "fix/code-fixer-critical-fallback-badf72d3",
   "error": null,
@@ -64,13 +64,15 @@
   "synthesizedCommits": [
     "40159dfe86468189eea028f1befa48b3df2205b3",
     "6e4c913cc6add2581686696c3723832f4bd77083",
-    "14fe20779b0e1749deb5b1a56185e2137f9c549a"
+    "14fe20779b0e1749deb5b1a56185e2137f9c549a",
+    "2289be3c6e349b7d1e672611e272a5833ff035ed"
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }

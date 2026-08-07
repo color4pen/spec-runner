@@ -20,7 +20,7 @@ Add a new `describe` block to `tests/unit/step/code-fixer.test.ts` titled `"prom
 
 The block must contain one test per branch:
 
-1. **Conformance path** — build a state where `getConformanceFixContext` returns non-null (a `code-fixer` entry in steps with a conformance outcome verdict). Call `buildMessage` and assert the result contains `"Fix all HIGH and CRITICAL severity findings"`.
+1. **Conformance path** — build a state where `getConformanceFixContext` returns non-null (a `conformance` entry in `state.steps` with verdict `needs-fix:code-fixer` and `toolResult.findings` populated). Call `buildMessage` and assert the result contains `"Fix all HIGH and CRITICAL severity findings"`.
 
 2. **Coordinator loop — findings embedded** — build a state where `isCoordinatorLoopActive` is true AND `collectParallelFixerFindings` returns at least one finding (set up a reviewer with structured findings in its outcome). Call `buildMessage` and assert the result contains `"Fix all HIGH and CRITICAL severity findings"`.
 
@@ -32,7 +32,7 @@ The block must contain one test per branch:
 
 State construction notes:
 - Coordinator-loop state needs: `state.reviewers` non-empty, `state.steps["custom-reviewers"]` with `verdict: "needs-fix"`, individual reviewer step with `verdict: "needs-fix"`. Use `CUSTOM_REVIEWERS_STEP_NAME` from `"../../../src/core/pipeline/types.js"`.
-- Conformance state needs: a code-fixer step entry with conformance-triggered outcome. Check `getConformanceFixContext` in `src/core/step/code-fixer.ts` to see what shape the outcome must have (look for how it detects the conformance path near L93).
+- Conformance state needs: a conformance step entry with verdict `needs-fix:code-fixer` and `toolResult.findings` populated. Check `getConformanceFixContext` in `src/core/step/fixer-helpers.ts` to see what shape the outcome must have.
 - Standard path with embedded findings: add a `findings` array to the code-review outcome (look at the `Finding` type used by `buildFindingsBlock`).
 
 **Acceptance Criteria**:
