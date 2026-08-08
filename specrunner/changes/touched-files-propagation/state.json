@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "77d619b3-1fc3-4211-bff6-0c01f9d88a65",
   "createdAt": "2026-08-08T19:07:44.900Z",
-  "updatedAt": "2026-08-08T21:24:21.586Z",
+  "updatedAt": "2026-08-08T21:27:59.345Z",
   "request": {
     "title": "先行 step の touched files を後続 step prompt に伝搬する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/touched-files-propagation-77d619b3",
   "error": null,
@@ -80,7 +80,8 @@
     "3c118d63753ee013b905b5d65cfc10ddc86bb308",
     "7f6ed60f8d4237ce44ca49580d7231143b0f6eee",
     "955fe93f9e9e61ab89e251eda662ac0d7833a0b5",
-    "daf2fd0d73f8ead233232bc4195ea35bbec7fb8a"
+    "daf2fd0d73f8ead233232bc4195ea35bbec7fb8a",
+    "93a140402385944c4dfec98faa210c224a81da42"
   ],
   "reviewerStatuses": [
     {
@@ -116,7 +117,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 76,
+    "historyCount": 81,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -133,7 +134,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
