@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "77d619b3-1fc3-4211-bff6-0c01f9d88a65",
   "createdAt": "2026-08-08T19:07:44.900Z",
-  "updatedAt": "2026-08-08T19:25:28.901Z",
+  "updatedAt": "2026-08-08T19:33:29.848Z",
   "request": {
     "title": "先行 step の touched files を後続 step prompt に伝搬する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "feat/touched-files-propagation-77d619b3",
   "error": null,
@@ -64,13 +64,15 @@
   "synthesizedCommits": [
     "ac223387fb4b5fffb24e8fd724324942bdad97df",
     "79ba6329e73618852dd5753f0999d2c88b7ce0dd",
-    "5964f2ff59db1985c31337fcb85cd03b344db4e3"
+    "5964f2ff59db1985c31337fcb85cd03b344db4e3",
+    "27817653bfceb38b99fa8e36d4a649d068312ba3"
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }

@@ -38,7 +38,7 @@
     `content_block_start`（partial input）は対象にしない。
   - 正規化関数: `path.resolve(cwd, filePath)` → `path.relative(cwd, resolved)`。相対パスが `..` 始まり or
     絶対パス → 除外（`createWorkspaceToolGuard` の `isInside` と同じ boundary）。posix 化した相対パスが
-    `changesDirRel()`（`specrunner/changes`）配下 → 除外。除外は `null` を返す。
+    `changesDirRel() + '/'`（`specrunner/changes/`）で始まる → 除外（trailing slash 必須。`startsWith(changesDirRel())` だけでは `specrunner/changes-archive/` 等を誤除外する）。除外は `null` を返す。
   - accumulator: 挿入順を保ちつつ重複排除、最大 100 件で打ち切る。
 - [ ] `ClaudeCodeRunner.run`（`src/adapter/claude-code/agent-runner.ts`）で、`runQuery` の main work
       for-await ループ（626 行付近、`emitToolProgress` と同じ場所）で assistant message を accumulator に流す。

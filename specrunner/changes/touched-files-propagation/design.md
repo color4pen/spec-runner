@@ -114,8 +114,8 @@ claude-code adapter は run 中に記録し、`AgentRunResult.touchedFiles?: str
 1. `path.resolve(cwd, filePath)` → `path.relative(cwd, resolved)` で worktree 相対化。
 2. worktree 外を除外: 相対パスが `..` で始まる、または絶対パスなら除外
    （`createWorkspaceToolGuard` の `isInside` 判定と同じ boundary ロジック）。
-3. change folder 配下を除外: posix 正規化した相対パスが `specrunner/changes/`（`changesDirRel()`）配下なら除外
-   （artifact 同梱で既知のため）。
+3. change folder 配下を除外: posix 正規化した相対パスが `changesDirRel() + '/'`（`"specrunner/changes/"`）で始まるなら除外
+   （trailing slash 必須。`startsWith(changesDirRel())` だけでは `specrunner/changes-archive/` 等を誤除外する。artifact 同梱で既知のため）。
 4. step 内で重複排除（挿入順を保持）。
 5. 最大 100 件で打ち切る（101 件目以降は捨てる）。
 
@@ -145,6 +145,9 @@ claude-code / codex 両 adapter の prompt 組成点で、`artifactSection` と�
 - **turn 境界**: 記録は `runQuery` の main work ループ（`agent-runner.ts:626` の for-await）でのみ行う。
   report_result retry / postWorkPrompts / output-repair の follow-up turn では記録しない。これらの turn は
   report tool 再送・検証再送が主で、実質的な Read/Edit/Write の主役ではない。
+- **transient retry 時の accumulator**: `retryWithBackoff` が `runMainWorkTurn`（= `runQuery`）を N 回呼ぶ場合、
+  同一 `run()` スコープの accumulator に N 回分のメッセージが蓄積される。同一パスの重複排除（D4）が効くため
+  実害はなく、最終的な確定リストは dedup 済みの正確な記録となる。
 - **step 境界**: 記録の state 書き込みは sequential step の `commitSuccess` 経路のみ。並列 reviewer round member
   （custom reviewer、read-only）は `commitRound` 経路で、主役ファイルの生成者ではないため今回は記録しない。
   主要な file 生成 step（design / implementer / 各 fixer）は全て sequential であり、この境界で網羅される。
