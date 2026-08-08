@@ -85,9 +85,9 @@ export function extractTouchedFilesFromMessages(
       if (normalized === null) continue;
 
       if (seen.has(normalized)) continue;
+      seen.add(normalized);
       if (result.length >= MAX_TOUCHED_FILES) continue;
 
-      seen.add(normalized);
       result.push(normalized);
     }
   }
