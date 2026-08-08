@@ -1,0 +1,12 @@
+{
+  "requestHash": "sha256:0152160e87faa26a418e7ee8154fe2fc2a90b420d196a6c855eaf8275546c79d",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/adapter/claude-code/agent-runner.ts:626-638 — for-await loop (626), emitToolProgress (627), isToolUse check (638)",
+    "src/adapter/claude-code/message-types.ts:34-35 — isToolUse narrows content_block_start; line 34: type:\"content_block_start\", line 35: content_block shape with partial input",
+    "src/adapter/shared/artifact-bundle.ts:buildArtifactBundle — fail-open (returns \"\" on size excess or empty)",
+    "src/adapter/claude-code/agent-runner.ts:462-464 — buildArtifactBundle called at 462, artifactSection built at 463, baseFullPrompt includes artifactSection",
+    "src/adapter/codex/agent-runner.ts:335-336 — same buildArtifactBundle + artifactSection pattern at lines 335-336"
+  ],
+  "sourceRevision": "763348d794474f189eaa517c8edbba2c47fe778a"
+}
