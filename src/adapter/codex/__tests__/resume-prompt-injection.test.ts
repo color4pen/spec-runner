@@ -139,6 +139,7 @@ describe("CodexAgentRunner resumePrompt injection", () => {
     expect(calls[0]!.prompt).toContain("Human judgment: accept HIGH finding");
   });
 
+  // TC-015: byte-identical when no artifacts — testCwd has no change folder, so artifactBundle == ""
   it("leaves the main turn prompt byte-identical when resumePrompt is unset", async () => {
     const { thread, calls } = makeCapturingMockThread(["approved"]);
     const runner = new CodexAgentRunner({
