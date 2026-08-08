@@ -297,6 +297,20 @@ export interface AgentRunResult {
    * Added in agent-invocation-metrics.
    */
   invocationMetrics?: AgentInvocationMetrics;
+  /**
+   * Worktree-relative paths of files touched by the agent during this step execution.
+   *
+   * Semantics:
+   *   - undefined: this runtime does not record touched files (managed / codex).
+   *     CommitOrchestrator will NOT add an entry for this step to state.touchedFiles.
+   *   - []: recorded, but no eligible files were touched (e.g. agent only ran Grep).
+   *     CommitOrchestrator WILL write an empty entry for this step.
+   *   - non-empty: worktree-relative paths, deduplicated, capped at 100.
+   *
+   * Populated by ClaudeCodeRunner only; ManagedAgentRunner and CodexAgentRunner leave it undefined.
+   * Added in touched-files-propagation.
+   */
+  touchedFiles?: string[];
 }
 
 /**

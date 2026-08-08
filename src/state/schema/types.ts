@@ -534,6 +534,18 @@ export interface JobState {
    * Optional for backward compat — absent in legacy state is valid.
    */
   synthesizedCommits?: string[];
+  /**
+   * Per-step record of files touched by the agent during execution.
+   * key = step name, value = worktree-relative paths touched by that step.
+   *
+   * state.json projection で round-trip、event-journal threading 不要。
+   * Same top-level field pattern as reviewerStatuses / synthesizedCommits / biteEvidence.
+   *
+   * Populated by claude-code adapter only; codex / managed leave it undefined.
+   * Absent in legacy state files — treated as undefined (no records).
+   * Optional for backward compat — absent in legacy state is valid.
+   */
+  touchedFiles?: Record<string, string[]>;
 }
 
 /**

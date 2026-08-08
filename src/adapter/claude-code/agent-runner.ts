@@ -42,6 +42,8 @@ import { getStepExecutionConfig } from "../../config/step-config.js";
 import { resolveTransientRetryConfig } from "../../config/schema.js";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
 import { buildArtifactBundle } from "../shared/artifact-bundle.js";
+import { buildTouchedFilesSection } from "../shared/touched-files-bundle.js";
+import { extractTouchedFilesFromMessages } from "./touched-files-recorder.js";
 import { buildReportToolCompletionDirective } from "./completion-directive.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { logVerbose, stderrWrite } from "../../logger/stdout.js";
@@ -461,13 +463,17 @@ export class ClaudeCodeRunner implements AgentRunner {
 
     const artifactBundle = await buildArtifactBundle(cwd, ctx.slug);
     const artifactSection = artifactBundle ? `\n\n${artifactBundle}` : "";
+    // D5 (touched-files-propagation): inject prior step touched files as a hint section.
+    // Pure function — no I/O. Returns "" when no prior records exist (fail-open).
+    const touchedFilesSection = buildTouchedFilesSection(state, step.name);
+    const touchedFilesSectionStr = touchedFilesSection ? `\n\n${touchedFilesSection}` : "";
     const additionalInstructions = buildAdditionalInstructions(ctx);
     const resumeSection = ctx.session.resumePrompt
       ? `\n\n<resume-context>\n${ctx.session.resumePrompt}\n</resume-context>`
       : "";
     const baseFullPrompt = additionalInstructions
-      ? `${baseMessage}${artifactSection}${resumeSection}\n\n${additionalInstructions}`
-      : `${baseMessage}${artifactSection}${resumeSection}`;
+      ? `${baseMessage}${artifactSection}${touchedFilesSectionStr}${resumeSection}\n\n${additionalInstructions}`
+      : `${baseMessage}${artifactSection}${touchedFilesSectionStr}${resumeSection}`;
 
     // write-scope-guard-redo D3: single-sourced MCP server name used in both createSdkMcpServer
     // (mcpServers key / name field) and the allowedTools MCP pre-approval entry.
@@ -618,6 +624,11 @@ export class ClaudeCodeRunner implements AgentRunner {
     // Open session log writer if sessionLogPath is configured (debug level)
     const sessionLogWriter = ctx.session.logPath ? new SessionLogWriter(ctx.session.logPath) : null;
 
+    // D1/D3 (touched-files-propagation): accumulate assistant messages from main work turns.
+    // Declared at run() scope so resume fallback re-runs accumulate into the same array.
+    // Follow-up / postWork / output-repair turns do NOT use runQuery, so they don't accumulate.
+    const touchedFileMessages: unknown[] = [];
+
     const runQuery = async (): Promise<{ lastResult: SDKResultMessage | null }> => {
       let lastResult: SDKResultMessage | null = null;
       logPipelineDiag("query:start", `step=${step.name}`);
@@ -625,6 +636,10 @@ export class ClaudeCodeRunner implements AgentRunner {
       const messages = effectiveQueryFn({ prompt: fullPrompt, options: queryOptions });
       for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
         emitToolProgress(message, ctx.emit, step.name);
+        // Collect assistant messages for touched-files recording (main work turn only)
+        if ((message as SDKMessage).type === "assistant") {
+          touchedFileMessages.push(message);
+        }
         // Write message to session log if enabled
         if (sessionLogWriter) {
           const msgAny = message as Record<string, unknown>;
@@ -1045,6 +1060,10 @@ export class ClaudeCodeRunner implements AgentRunner {
         }
       }
 
+      // D1/D3 (touched-files-propagation): extract touched files from accumulated assistant messages.
+      // claude-code always returns an array ([] when no eligible files were touched).
+      const touchedFiles = extractTouchedFilesFromMessages(touchedFileMessages, cwd);
+
       const baseResult: AgentRunResult = {
         completionReason: "success",
         resultContent: null,
@@ -1058,6 +1077,8 @@ export class ClaudeCodeRunner implements AgentRunner {
         addedTurns: { reportRetry, postWork, outputRepair },
         // agent-invocation-metrics: SDK-measured metrics from the success result.
         invocationMetrics: extractedMetrics,
+        // touched-files-propagation: worktree-relative paths touched during this step.
+        touchedFiles,
       };
       return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {

@@ -519,6 +519,7 @@ export class StepExecutor {
       addedTurns: runResult.addedTurns,
       invocationMetrics: runResult.invocationMetrics,
       ...(commitOid !== undefined ? { commitOid } : {}),
+      ...(runResult.touchedFiles !== undefined ? { touchedFiles: runResult.touchedFiles } : {}),
     };
   }
 
