@@ -86,10 +86,15 @@
       含まれないことを assert
 - [ ] (d) 合計サイズ上限超過時は同梱なし: 単一ファイルが 64KB 超（例 `"x".repeat(70000)`）のケースで
       返り値が `""` であることを assert。加えて 2 ファイルの合計が 64KB 超のケースでも `""` を assert
-- [ ] (e) change folder / 入力 artifact 不在: change folder を掘らない slug で返り値が `""` を assert
+- [ ] (e) change folder / 入力 artifact 不在:
+  - (e-1) change folder を掘らない slug で返り値が `""` を assert
+  - (e-2) change folder は存在するが入力 artifact を 1 件も書かない場合でも返り値が `""` を assert
+- [ ] (f) 非 ENOENT の per-file エラーをスキップする: `fs.readFile` が `EACCES`（権限エラー）を throw する
+      ケースを vi.spyOn 等でモックし、他の artifact は正常収集されること・エラーファイルが結果に含まれない
+      ことを assert（D4 の「ENOENT / 権限等はすべて per-file skip」を検証）
 
 **Acceptance Criteria**:
-- (a)〜(e) の各 case が test として存在し green
+- (a)〜(f) の各 case が test として存在し green
 - `bun run test tests/unit/adapter/shared/artifact-bundle.test.ts` が green
 
 ---
@@ -104,9 +109,13 @@
       `calls[0].prompt` に `<bundled-change-artifacts>` と `specrunner/changes/<slug>/design.md` および
       design.md の内容が含まれることを assert
 - [ ] claude-code: `src/adapter/claude-code/__tests__/credential-injection.test.ts` の
-      `makeCaptureQueryFn`（`params.prompt` をキャプチャ可能）パターンを流用した test を追加する:
+      `makeCaptureQueryFn` をベースに **`params.prompt` も収集する拡張版 helper**
+      （既存の `capturedOptions` に加え `capturedPrompts: string[]` を返す）を
+      同テストファイルか別ファイルで定義する（既存の `makeCaptureQueryFn` は `params.options` のみ収集するため
+      そのままでは prompt キャプチャ不可 — 拡張または新規 helper が必要）。
       `ctx.cwd`（temp dir）に `specrunner/changes/<slug>/design.md` を書いてから `runner.run(ctx)` を実行、
-      キャプチャした prompt に同梱ブロックと design.md の内容が含まれることを assert
+      キャプチャした prompt に `<bundled-change-artifacts>` と `specrunner/changes/<slug>/design.md` および
+      design.md の内容が含まれることを assert
 
 **Acceptance Criteria**:
 - codex / claude-code 各 1 件の配線 test が green
