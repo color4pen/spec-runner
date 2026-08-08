@@ -74,7 +74,7 @@ function makeJobState(
     steps: {},
   };
   if (touchedFiles !== undefined) {
-    (state as Record<string, unknown>)["touchedFiles"] = touchedFiles;
+    state.touchedFiles = touchedFiles;
   }
   return state;
 }
@@ -149,7 +149,7 @@ describe("TC-024: codex job — no touchedFiles generated, no injection", () => 
     const result = await runner.run(ctx);
 
     // codex adapter must NOT set touchedFiles (it doesn't record)
-    expect((result as Record<string, unknown>)["touchedFiles"]).toBeUndefined();
+    expect(result.touchedFiles).toBeUndefined();
   });
 
   it("codex prompt is byte-identical to pre-injection when no prior touchedFiles exist", async () => {
@@ -193,7 +193,7 @@ describe("TC-024: codex job — no touchedFiles generated, no injection", () => 
     const result = await runner.run(ctx);
 
     // Result.touchedFiles is undefined → CommitOrchestrator will not add a codex entry
-    expect((result as Record<string, unknown>)["touchedFiles"]).toBeUndefined();
+    expect(result.touchedFiles).toBeUndefined();
   });
 });
 

@@ -546,13 +546,6 @@ export interface JobState {
    * Optional for backward compat — absent in legacy state is valid.
    */
   touchedFiles?: Record<string, string[]>;
-  /**
-   * Open index signature — allows safe casts to Record<string, unknown> in utilities and tests.
-   * Named property types (e.g. version: number) still win over the index signature in TypeScript
-   * intersections and dot-notation access. Only bracket-notation access is widened to unknown.
-   * Added in touched-files-propagation (required to support the touchedFiles feature test patterns).
-   */
-  [key: string]: unknown;
 }
 
 /**

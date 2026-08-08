@@ -67,7 +67,7 @@ function makeJobState(
     steps: {},
   };
   if (touchedFiles !== undefined) {
-    (state as Record<string, unknown>)["touchedFiles"] = touchedFiles;
+    state.touchedFiles = touchedFiles;
   }
   return state;
 }

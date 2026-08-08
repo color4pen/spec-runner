@@ -311,12 +311,6 @@ export interface AgentRunResult {
    * Added in touched-files-propagation.
    */
   touchedFiles?: string[];
-  /**
-   * Open index signature — mirrors JobState's index signature; allows safe casts to
-   * Record<string, unknown> in test utilities without breaking named-property types.
-   * Added in touched-files-propagation.
-   */
-  [key: string]: unknown;
 }
 
 /**

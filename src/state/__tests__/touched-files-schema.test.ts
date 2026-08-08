@@ -44,8 +44,7 @@ describe("TC-019: validateJobState accepts legacy state without touchedFiles (ba
   it("returns a state where touchedFiles is undefined when absent", () => {
     const raw = makeMinimalRaw();
     const state = validateJobState(raw);
-    const asAny = state as Record<string, unknown>;
-    expect(asAny["touchedFiles"]).toBeUndefined();
+    expect(state.touchedFiles).toBeUndefined();
   });
 
   it("accepts valid touchedFiles with string array values", () => {
@@ -59,9 +58,8 @@ describe("TC-019: validateJobState accepts legacy state without touchedFiles (ba
     expect(() => validateJobState(raw)).not.toThrow();
 
     const state = validateJobState(raw);
-    const asAny = state as Record<string, unknown>;
-    const tf = asAny["touchedFiles"] as Record<string, string[]>;
-    expect(tf["implementer"]).toEqual(["src/core/foo.ts", "src/adapter/bar.ts"]);
+    const tf = state.touchedFiles;
+    expect(tf!["implementer"]).toEqual(["src/core/foo.ts", "src/adapter/bar.ts"]);
   });
 
   it("accepts touchedFiles with empty array values", () => {
@@ -91,9 +89,8 @@ describe("TC-019: validateJobState accepts legacy state without touchedFiles (ba
     const reparsed = JSON.parse(json) as Record<string, unknown>;
     const reloaded = validateJobState(reparsed);
 
-    const asAny = reloaded as Record<string, unknown>;
-    const tf = asAny["touchedFiles"] as Record<string, string[]>;
-    expect(tf["implementer"]).toEqual(["src/core/foo.ts"]);
+    const tf = reloaded.touchedFiles;
+    expect(tf!["implementer"]).toEqual(["src/core/foo.ts"]);
   });
 });
 

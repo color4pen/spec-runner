@@ -13,7 +13,7 @@ import { loadSplitLayout } from "./job-state-projection.js";
  * Normalized view of a JobState with steps as StepRun[].
  * This is the type returned by JobStateStore after normalization.
  */
-export type NormalizedJobState = JobState & {
+export type NormalizedJobState = Omit<JobState, "steps"> & {
   steps: Record<string, StepRun[]>;
 };
 

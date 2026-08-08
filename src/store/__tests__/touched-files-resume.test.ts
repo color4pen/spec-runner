@@ -18,8 +18,7 @@ import type { JobState } from "../../state/schema.js";
 // Helpers
 // ---------------------------------------------------------------------------
 
-// Use Record<string, unknown> to allow touchedFiles before T-01 adds it to JobState type
-function makeBaseState(overrides: Record<string, unknown> = {}): JobState {
+function makeBaseState(overrides: Partial<JobState> = {}): JobState {
   return {
     version: 2,
     jobId: "resume-test-job",
@@ -67,8 +66,7 @@ describe("TC-022: touchedFiles survives state.json round-trip (validateJobState)
     reparsed["steps"] = {};
     const loaded = validateJobState(reparsed);
 
-    const asAny = loaded as Record<string, unknown>;
-    const tf = asAny["touchedFiles"] as Record<string, string[]> | undefined;
+    const tf = loaded.touchedFiles;
 
     expect(tf).toBeDefined();
     expect(tf!["implementer"]).toEqual(["src/core/foo.ts", "src/adapter/bar.ts"]);
@@ -89,8 +87,7 @@ describe("TC-022: touchedFiles survives state.json round-trip (validateJobState)
     // composeSplitLayoutFromContent = the real resume read path
     const { state: loaded } = await composeSplitLayoutFromContent(jsonStr, "");
 
-    const asAny = loaded as Record<string, unknown>;
-    const tf = asAny["touchedFiles"] as Record<string, string[]> | undefined;
+    const tf = loaded.touchedFiles;
 
     expect(tf).toBeDefined();
     expect(tf!["implementer"]).toEqual(["src/core/real.ts"]);
@@ -104,8 +101,7 @@ describe("TC-022: touchedFiles survives state.json round-trip (validateJobState)
 
     const { state: loaded } = await composeSplitLayoutFromContent(jsonStr, "");
 
-    const asAny = loaded as Record<string, unknown>;
-    expect(asAny["touchedFiles"]).toBeUndefined();
+    expect(loaded.touchedFiles).toBeUndefined();
   });
 });
 

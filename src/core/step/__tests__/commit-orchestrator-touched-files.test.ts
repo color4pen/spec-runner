@@ -21,8 +21,7 @@ import type { Verdict } from "../../../state/schema.js";
 // Helpers (mirroring commit-orchestrator.test.ts patterns)
 // ---------------------------------------------------------------------------
 
-// Use Record<string, unknown> to allow touchedFiles before T-01 adds it to JobState type
-function makeState(overrides: Record<string, unknown> = {}): JobState {
+function makeState(overrides: Partial<JobState> = {}): JobState {
   return {
     version: 2,
     jobId: "tf-test-job",
@@ -120,8 +119,7 @@ function makeCompletion(verdict: Verdict = "approved"): StepCompletion {
 }
 
 function makeSuccessResult(
-  // Use Record<string, unknown> to allow touchedFiles before T-02/T-06 add it to the type
-  overrides: Record<string, unknown> = {},
+  overrides: Partial<StepExecutionResult & { kind: "success" }> = {},
 ): StepExecutionResult & { kind: "success" } {
   return {
     kind: "success",
@@ -160,9 +158,7 @@ describe("TC-009: successful sequential step with touchedFiles writes records to
     await orchestrator.commitSuccess(step, state, deps, result);
 
     expect(persistedState).toBeDefined();
-    const tf = (persistedState as Record<string, unknown>)["touchedFiles"] as
-      | Record<string, string[]>
-      | undefined;
+    const tf = persistedState!.touchedFiles;
     expect(tf).toBeDefined();
     expect(tf!["implementer"]).toEqual(["src/core/foo.ts", "src/adapter/bar.ts"]);
   });
@@ -190,8 +186,7 @@ describe("TC-009: successful sequential step with touchedFiles writes records to
     );
 
     expect(capturedPersistArgs).toHaveLength(1);
-    const persisted = capturedPersistArgs[0] as Record<string, unknown>;
-    const tf = persisted["touchedFiles"] as Record<string, string[]> | undefined;
+    const tf = capturedPersistArgs[0]!.touchedFiles;
     expect(tf?.["implementer"]).toEqual(["src/core/foo.ts"]);
   });
 });
@@ -234,8 +229,7 @@ describe("TC-010: re-run of same step replaces touchedFiles record (not append)"
     );
 
     expect(persistedStates).toHaveLength(2);
-    const finalState = persistedStates[1] as Record<string, unknown>;
-    const tf = finalState["touchedFiles"] as Record<string, string[]> | undefined;
+    const tf = persistedStates[1]!.touchedFiles;
 
     // Must be ["b.ts", "c.ts"] — not ["a.ts", "b.ts", "c.ts"]
     expect(tf!["implementer"]).toEqual(["b.ts", "c.ts"]);
@@ -267,9 +261,8 @@ describe("TC-011: runtime that does not record (touchedFiles === undefined) leav
     await orchestrator.commitSuccess(step, state, deps, result);
 
     expect(persistedState).toBeDefined();
-    const asAny = persistedState as Record<string, unknown>;
     // touchedFiles should not exist on state at all (or remain undefined)
-    expect(asAny["touchedFiles"]).toBeUndefined();
+    expect(persistedState!.touchedFiles).toBeUndefined();
   });
 
   it("does not overwrite existing touchedFiles from prior steps when result.touchedFiles is undefined", async () => {
@@ -293,8 +286,7 @@ describe("TC-011: runtime that does not record (touchedFiles === undefined) leav
     await orchestrator.commitSuccess(step, state, deps, makeSuccessResult());
 
     expect(persistedState).toBeDefined();
-    const asAny = persistedState as Record<string, unknown>;
-    const tf = asAny["touchedFiles"] as Record<string, string[]> | undefined;
+    const tf = persistedState!.touchedFiles;
     // Prior implementer entry must be preserved
     expect(tf?.["implementer"]).toEqual(["src/core/prior.ts"]);
     // No code-review entry added
@@ -330,8 +322,7 @@ describe("TC-012: empty array touchedFiles (touch-nothing run) is recorded as []
     );
 
     expect(persistedState).toBeDefined();
-    const asAny = persistedState as Record<string, unknown>;
-    const tf = asAny["touchedFiles"] as Record<string, string[]> | undefined;
+    const tf = persistedState!.touchedFiles;
 
     // Entry must exist as [] — not undefined
     expect(tf).toBeDefined();
