@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "77d619b3-1fc3-4211-bff6-0c01f9d88a65",
   "createdAt": "2026-08-08T19:07:44.900Z",
-  "updatedAt": "2026-08-08T21:27:59.345Z",
+  "updatedAt": "2026-08-08T21:43:56.040Z",
   "request": {
     "title": "先行 step の touched files を後続 step prompt に伝搬する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/touched-files-propagation-77d619b3",
   "error": null,
   "pipelineId": "standard",
@@ -81,7 +81,9 @@
     "7f6ed60f8d4237ce44ca49580d7231143b0f6eee",
     "955fe93f9e9e61ab89e251eda662ac0d7833a0b5",
     "daf2fd0d73f8ead233232bc4195ea35bbec7fb8a",
-    "93a140402385944c4dfec98faa210c224a81da42"
+    "93a140402385944c4dfec98faa210c224a81da42",
+    "83f31fd2591feed056036ff123d504705bfad109",
+    "b4c0c0ca524e5e6b2bd79d01c15a4e30cea5e4bc"
   ],
   "reviewerStatuses": [
     {
@@ -116,8 +118,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/972",
+    "number": 972,
+    "createdAt": "2026-08-08T21:43:55.202Z"
+  },
   "_journal": {
-    "historyCount": 81,
+    "historyCount": 95,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -127,14 +134,17 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 1,
       "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
