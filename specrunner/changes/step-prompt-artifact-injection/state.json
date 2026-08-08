@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ede4848e-8af8-47a9-b4a0-e8c916799940",
   "createdAt": "2026-08-08T14:40:21.027Z",
-  "updatedAt": "2026-08-08T14:44:25.344Z",
+  "updatedAt": "2026-08-08T14:52:06.334Z",
   "request": {
     "title": "step prompt に change folder 入力 artifact を同梱する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/step-prompt-artifact-injection-ede4848e",
   "error": null,
@@ -63,12 +63,14 @@
   ],
   "synthesizedCommits": [
     "33390799a0fcdf6e9ef561acdb1fdb7ae1a6064f",
-    "f9ae08b7aad7faddd88eee5cf4fdea4a60b83304"
+    "f9ae08b7aad7faddd88eee5cf4fdea4a60b83304",
+    "c2c131a1a13bb969c85e0a1b7e650bb9d190fdfd"
   ],
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
