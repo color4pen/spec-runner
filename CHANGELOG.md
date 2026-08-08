@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.4.9](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.8...specrunner-v0.4.9) (2026-08-08)
+
+
+### Features
+
+* adr-gen が fixer 適用後の最終実装から ADR を導出する — pre-fix design 文脈による事実逆転を解消する ([#955](https://github.com/color4pen/spec-runner/issues/955)) ([0043a8f](https://github.com/color4pen/spec-runner/commit/0043a8ffe9254f96a4f6a5df7f8efe0c722f429c))
+* guarded staging のビルド産物封じ込め — 除外パターンと量ガード ([#947](https://github.com/color4pen/spec-runner/issues/947)) ([333ebc7](https://github.com/color4pen/spec-runner/commit/333ebc7d66388c2e4090ca9ebbe5ed3418b564f1))
+* issue 起点 run の開始前忠実性ゲート — 黙って弱められた request で pipeline が走ることを封じる ([#959](https://github.com/color4pen/spec-runner/issues/959)) ([7065ba3](https://github.com/color4pen/spec-runner/commit/7065ba3734c69ab39a211a18b44fad58332b29a9))
+* no-op 検知に finding 対象 path の免除を導入 — 正当な文書修正が sabotage 停止する冤罪を解消 ([#949](https://github.com/color4pen/spec-runner/issues/949)) ([7d8b1e3](https://github.com/color4pen/spec-runner/commit/7d8b1e31ffb40a8359b89dc03fe2893db6c7d2d2))
+* operator が commit 済みの手当てを resume 時に採択する ([#965](https://github.com/color4pen/spec-runner/issues/965)) ([86586cd](https://github.com/color4pen/spec-runner/commit/86586cdeac15089e20479c339f8fb308b7896332))
+* run の detach 内蔵と job wait — pipeline の生存管理を agent の shell 手順から CLI へ移す ([#960](https://github.com/color4pen/spec-runner/issues/960)) ([97c8b0d](https://github.com/color4pen/spec-runner/commit/97c8b0db341c0637eeb8aa49e0c7577b884a68eb))
+* SDK result の turn 数・所要時間・実コストを usage.json に記録する — 事後分析が試算に頼る状態を解消する ([#958](https://github.com/color4pen/spec-runner/issues/958)) ([05784ca](https://github.com/color4pen/spec-runner/commit/05784ca78d1d5cd2699341f01095d9cf437737f3))
+* slug 占有不変条件の実装 — start guard・状態基準解決・sidecar 所有・修復口 ([#945](https://github.com/color4pen/spec-runner/issues/945)) ([0854494](https://github.com/color4pen/spec-runner/commit/08544947e1b87360db8d86b17aa49cf26d0c8d82))
+* spec-review の周回間 context 注入 — 解消済み指摘の stale 再指摘を情報構造から潰す ([#950](https://github.com/color4pen/spec-runner/issues/950)) ([aa3ad4c](https://github.com/color4pen/spec-runner/commit/aa3ad4cf840ac13fe04600a1c9b57cc0566b0452))
+* staging containment の残口封じ — staged バイトサイズ閾値ガードと生成物衛生規律 ([#953](https://github.com/color4pen/spec-runner/issues/953)) ([655ce20](https://github.com/color4pen/spec-runner/commit/655ce203105eb9187040654159ee3881e8da8429))
+* step prompt に change folder 入力 artifact を同梱する ([#971](https://github.com/color4pen/spec-runner/issues/971)) ([763348d](https://github.com/color4pen/spec-runner/commit/763348d794474f189eaa517c8edbba2c47fe778a))
+* TC 分類に gate カテゴリを導入 — 検証 phase の再実行をテスト化する冗長 TC と外部ツールチェーン実行 TC を構造で封じる ([#954](https://github.com/color4pen/spec-runner/issues/954)) ([c8ccdb4](https://github.com/color4pen/spec-runner/commit/c8ccdb4e880d8444aaf5d4d9e156767e730adf4a))
+* verification に lockfile 整合 gate を追加 — 依存追加が CI の frozen-lockfile まで素通りする穴を塞ぐ ([#951](https://github.com/color4pen/spec-runner/issues/951)) ([59225d3](https://github.com/color4pen/spec-runner/commit/59225d3ae672d63774f43fdcf883371162d62f9e))
+* verification の失敗 phase を StepRun outcome に構造化記録する — 上書きで失敗原因が消える経路を塞ぐ ([#956](https://github.com/color4pen/spec-runner/issues/956)) ([d6f7e5b](https://github.com/color4pen/spec-runner/commit/d6f7e5b1aedbd131bdcbe492f63d1a0ae3506fa2))
+* 欠落指摘 finding の構造化宣言 — finding-ref 実在検証との衝突を解消し fixer routing を保つ ([#948](https://github.com/color4pen/spec-runner/issues/948)) ([f5848d1](https://github.com/color4pen/spec-runner/commit/f5848d116bc400ac2b0834cddd2453b4594e3222))
+
+
+### Bug Fixes
+
+* code-fixer の fallback prompt が CRITICAL findings の修正義務を欠落している ([#966](https://github.com/color4pen/spec-runner/issues/966)) ([cde5184](https://github.com/color4pen/spec-runner/commit/cde518423d1bbf8a7ff6abd77f720262d5635446))
+* MODEL_PRICING の Claude 単価を SDK 実測値に合わせる ([#963](https://github.com/color4pen/spec-runner/issues/963)) ([461ecbf](https://github.com/color4pen/spec-runner/commit/461ecbf8fa663758171b711dd2f3d8eb32465bd4))
+* report tool を alwaysLoad にして ToolSearch 経由の cache 全破棄を止める ([#964](https://github.com/color4pen/spec-runner/issues/964)) ([ac27ed0](https://github.com/color4pen/spec-runner/commit/ac27ed0850dfa0a0c126f84087ddda37de10279a))
+
 ## [0.4.8](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.7...specrunner-v0.4.8) (2026-07-31)
 
 
