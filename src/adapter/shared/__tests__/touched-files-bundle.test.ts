@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { buildTouchedFilesSection } from "../touched-files-bundle.js";
+import { buildTouchedFilesSection, isChangeFolderPath } from "../touched-files-bundle.js";
 import type { JobState } from "../../../state/schema.js";
 
 // ---------------------------------------------------------------------------
@@ -77,6 +77,38 @@ describe("TC-013: prior step records → section with step name and restriction-
     expect(section).toContain("implementer");
     expect(section).toContain("src/core/foo.ts");
     expect(section).toContain("src/core/bar.ts");
+    // change-folder paths are filtered at injection time (defense in depth)
+    expect(section).not.toContain("specrunner/changes/my-change/design.md");
+  });
+
+  it("change-folder paths in state.touchedFiles are not injected (defense in depth)", () => {
+    const state = makeStateWithTouchedFiles({
+      implementer: [
+        "src/core/real.ts",
+        "specrunner/changes/my-slug/design.md",
+        "src/adapter/foo.ts",
+      ],
+    });
+
+    const section = buildTouchedFilesSection(state, "code-review");
+
+    expect(section).toContain("src/core/real.ts");
+    expect(section).toContain("src/adapter/foo.ts");
+    expect(section).not.toContain("specrunner/changes/my-slug/design.md");
+  });
+
+  it("step whose only files are change-folder paths produces no section entry", () => {
+    const state = makeStateWithTouchedFiles({
+      design: ["specrunner/changes/slug/design.md", "specrunner/changes/slug/spec.md"],
+      implementer: ["src/core/real.ts"],
+    });
+
+    const section = buildTouchedFilesSection(state, "code-review");
+
+    // design step's files are all change-folder → filtered; design step not in section
+    expect(section).not.toContain("design");
+    expect(section).toContain("implementer");
+    expect(section).toContain("src/core/real.ts");
   });
 });
 
@@ -183,5 +215,28 @@ describe("TC-016: section exceeding 16KB returns empty string", () => {
 
     // Small state should produce a non-empty section
     expect(section).not.toBe("");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isChangeFolderPath: single-source predicate (D4/item-3)
+// ---------------------------------------------------------------------------
+
+describe("isChangeFolderPath: change-folder exclusion predicate", () => {
+  it("returns true for a path under specrunner/changes/", () => {
+    expect(isChangeFolderPath("specrunner/changes/my-slug/design.md")).toBe(true);
+  });
+
+  it("returns false for a src/ path", () => {
+    expect(isChangeFolderPath("src/core/foo.ts")).toBe(false);
+  });
+
+  it("returns false for specrunner/changes-archive/ (trailing-slash boundary)", () => {
+    expect(isChangeFolderPath("specrunner/changes-archive/foo/bar.ts")).toBe(false);
+  });
+
+  it("returns false for specrunner/changes itself (no trailing slash)", () => {
+    // The directory itself is not a file under the change folder
+    expect(isChangeFolderPath("specrunner/changes")).toBe(false);
   });
 });

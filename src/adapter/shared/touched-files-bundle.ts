@@ -5,15 +5,30 @@
  * D5: pure function (no I/O), shared by claude-code and codex adapters.
  *     Fail-open: returns "" when records are empty, section exceeds 16KB, or
  *     no prior step records exist.
+ * D4/item-3: change-folder exclusion predicate is defined here (single source of truth)
+ *     and used by both the recording layer (touched-files-recorder.ts) and this injection layer.
  */
 import type { JobState } from "../../state/schema.js";
+import { changesDirRel } from "../../util/paths.js";
 
 /** Maximum UTF-8 byte size for the injected section. Fail-open above this. */
 const MAX_SECTION_BYTES = 16 * 1024;
 
 /**
+ * Returns true when a posix-relative path is under the change folder (specrunner/changes/).
+ * Trailing slash required to avoid false matches on "specrunner/changes-archive/".
+ *
+ * Exported so the recording layer (touched-files-recorder.ts) can share this predicate
+ * instead of maintaining a parallel implementation.
+ */
+export function isChangeFolderPath(posixRelative: string): boolean {
+  return posixRelative.startsWith(changesDirRel() + "/");
+}
+
+/**
  * Build a prompt section listing files touched by prior steps.
  * Excludes the currentStepName's own records (inject only predecessor steps).
+ * Filters change-folder paths from each step's file list (defense in depth).
  *
  * Returns "" when:
  * - state.touchedFiles is absent or empty.
@@ -24,13 +39,16 @@ export function buildTouchedFilesSection(
   state: JobState,
   currentStepName: string,
 ): string {
-  const touchedFiles = (state as unknown as { touchedFiles?: Record<string, string[]> }).touchedFiles;
+  const touchedFiles = state.touchedFiles;
   if (!touchedFiles) return "";
 
-  // Collect prior step entries (exclude currentStepName, exclude empty arrays)
-  const entries = Object.entries(touchedFiles).filter(
-    ([stepName, files]) => stepName !== currentStepName && files.length > 0,
-  );
+  // Collect prior step entries: exclude currentStepName and filter change-folder paths
+  const entries: Array<[string, string[]]> = [];
+  for (const [stepName, files] of Object.entries(touchedFiles)) {
+    if (stepName === currentStepName) continue;
+    const filtered = files.filter((f) => !isChangeFolderPath(f));
+    if (filtered.length > 0) entries.push([stepName, filtered]);
+  }
 
   if (entries.length === 0) return "";
 

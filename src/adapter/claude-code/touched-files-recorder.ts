@@ -12,7 +12,7 @@
  *     deduplicates in insertion order, caps at 100.
  */
 import * as path from "node:path";
-import { changesDirRel } from "../../util/paths.js";
+import { isChangeFolderPath } from "../shared/touched-files-bundle.js";
 
 const FILE_TOOLS = new Set(["Read", "Edit", "Write"]);
 const MAX_TOUCHED_FILES = 100;
@@ -35,10 +35,8 @@ export function normalizeTouchedFilePath(filePath: string, cwd: string): string 
   // Normalize separators to forward slashes (POSIX-style)
   const posixRelative = relative.split(path.sep).join("/");
 
-  // Exclude change folder paths — trailing slash required to avoid partial prefix matches
-  // e.g. "specrunner/changes/" but NOT "specrunner/changes-archive/"
-  const changesDirPrefix = changesDirRel() + "/";
-  if (posixRelative.startsWith(changesDirPrefix)) return null;
+  // Exclude change folder paths — predicate shared with injection layer (touched-files-bundle.ts)
+  if (isChangeFolderPath(posixRelative)) return null;
 
   return posixRelative;
 }

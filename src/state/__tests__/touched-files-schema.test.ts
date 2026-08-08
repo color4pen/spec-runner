@@ -157,3 +157,62 @@ describe("TC-021: validateJobState throws when touchedFiles value is not an arra
     expect(() => validateJobState(raw)).toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Element-level validation: non-string elements → fail-open (drop entry, not crash)
+// ---------------------------------------------------------------------------
+
+describe("validateJobState: non-string array elements → drop entry (fail-open)", () => {
+  it("drops an entry whose array contains a number element (- 123 not injected)", () => {
+    const raw = makeMinimalRaw({
+      touchedFiles: {
+        implementer: ["src/core/foo.ts", 123, "src/adapter/bar.ts"],
+        design: ["src/design.ts"],
+      },
+    });
+
+    const state = validateJobState(raw);
+    const tf = state.touchedFiles;
+
+    expect(tf).toBeDefined();
+    // implementer has a non-string element → whole entry dropped
+    expect(tf!["implementer"]).toBeUndefined();
+    // design has only strings → preserved
+    expect(tf!["design"]).toEqual(["src/design.ts"]);
+  });
+
+  it("drops an entry whose array contains null (- null not injected)", () => {
+    const raw = makeMinimalRaw({
+      touchedFiles: {
+        implementer: ["src/core/foo.ts", null],
+      },
+    });
+
+    const state = validateJobState(raw);
+    expect(state.touchedFiles?.["implementer"]).toBeUndefined();
+  });
+
+  it("preserves entries where all elements are strings", () => {
+    const raw = makeMinimalRaw({
+      touchedFiles: {
+        implementer: ["src/core/foo.ts", "src/adapter/bar.ts"],
+      },
+    });
+
+    const state = validateJobState(raw);
+    expect(state.touchedFiles?.["implementer"]).toEqual([
+      "src/core/foo.ts",
+      "src/adapter/bar.ts",
+    ]);
+  });
+
+  it("does not throw when an entry has non-string elements (fail-open)", () => {
+    const raw = makeMinimalRaw({
+      touchedFiles: {
+        implementer: ["src/core/foo.ts", 42, null, undefined],
+      },
+    });
+
+    expect(() => validateJobState(raw)).not.toThrow();
+  });
+});

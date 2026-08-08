@@ -321,15 +321,23 @@ export function validateJobState(raw: unknown): JobState {
 
   // Validate touchedFiles when present (backward compat: absence is OK → treated as undefined)
   // Design D2 (touched-files-propagation): lightweight check — non-array object with array values.
+  // Fail-open at the element level: entries with non-string elements are dropped (not a crash)
+  // because touchedFiles is a hint; a corrupted entry skips injection for that step only.
   if ("touchedFiles" in obj && obj["touchedFiles"] !== null && obj["touchedFiles"] !== undefined) {
     if (typeof obj["touchedFiles"] !== "object" || Array.isArray(obj["touchedFiles"])) {
       throw new Error("touchedFiles must be a non-array object when present.");
     }
-    for (const [, value] of Object.entries(obj["touchedFiles"] as Record<string, unknown>)) {
+    const sanitized: Record<string, string[]> = {};
+    for (const [stepName, value] of Object.entries(obj["touchedFiles"] as Record<string, unknown>)) {
       if (!Array.isArray(value)) {
         throw new Error("touchedFiles values must be arrays when present.");
       }
+      // Fail-open: drop entries containing non-string elements (corrupt hint → skip injection)
+      if (value.every((el) => typeof el === "string")) {
+        sanitized[stepName] = value as string[];
+      }
     }
+    obj["touchedFiles"] = sanitized;
   }
 
   return raw as JobState;

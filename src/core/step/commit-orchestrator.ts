@@ -444,8 +444,13 @@ export class CommitOrchestrator {
     // touchedFiles: merge this step's touched file list into state.touchedFiles map.
     // undefined = runtime does not record → skip (do not write empty entry for codex/managed).
     // [] or non-empty = record (ClaudeCodeRunner always returns an array).
+    //
+    // NOTE: touchedFiles is applied here (write 2) AFTER appendHistory (write 1) above.
+    // If the process crashes between write 1 and write 2, this step's touchedFiles will be
+    // absent from state.json. touchedFiles is a fail-open hint; missing it means the subsequent
+    // step receives no injection for this step — acceptable. Do NOT reorder writes to "fix" this.
     if (result.touchedFiles !== undefined) {
-      const existing = (s as unknown as { touchedFiles?: Record<string, string[]> }).touchedFiles ?? {};
+      const existing = s.touchedFiles ?? {};
       s = { ...s, touchedFiles: { ...existing, [step.name]: result.touchedFiles } } as JobState;
     }
 

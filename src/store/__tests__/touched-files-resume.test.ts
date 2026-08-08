@@ -158,4 +158,21 @@ describe("TC-023: after resume, touched-files section is injected into subsequen
 
     expect(section).toBe("");
   });
+
+  it("change-folder paths in resumed state are not injected (defense in depth)", async () => {
+    const state = makeBaseState({
+      touchedFiles: {
+        implementer: ["src/core/real.ts", "specrunner/changes/resume-test/design.md"],
+      },
+    });
+
+    const stateJson = stateToStateJson(state);
+    const jsonStr = JSON.stringify({ ...stateJson, history: [], steps: {} });
+    const { state: resumed } = await composeSplitLayoutFromContent(jsonStr, "");
+
+    const section = buildTouchedFilesSection(resumed as JobState, "code-review");
+
+    expect(section).toContain("src/core/real.ts");
+    expect(section).not.toContain("specrunner/changes/resume-test/design.md");
+  });
 });
