@@ -8,6 +8,7 @@ export default defineConfig({
     maxWorkers: 4,
     testTimeout: 30000,
     globalSetup: "./tests/global-setup.ts",
+    setupFiles: ["./tests/setup-fs-spy.ts"],
     clearMocks: true,
     coverage: {
       provider: "v8",

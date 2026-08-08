@@ -41,6 +41,7 @@ import type { StepContext } from "../../core/port/step-context.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
 import { resolveTransientRetryConfig } from "../../config/schema.js";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
+import { buildArtifactBundle } from "../shared/artifact-bundle.js";
 import { buildReportToolCompletionDirective } from "./completion-directive.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { logVerbose, stderrWrite } from "../../logger/stdout.js";
@@ -458,13 +459,15 @@ export class ClaudeCodeRunner implements AgentRunner {
 
     const baseMessage = step.buildMessage(state, stepCtx);
 
+    const artifactBundle = await buildArtifactBundle(cwd, ctx.slug);
+    const artifactSection = artifactBundle ? `\n\n${artifactBundle}` : "";
     const additionalInstructions = buildAdditionalInstructions(ctx);
     const resumeSection = ctx.session.resumePrompt
       ? `\n\n<resume-context>\n${ctx.session.resumePrompt}\n</resume-context>`
       : "";
     const baseFullPrompt = additionalInstructions
-      ? `${baseMessage}${resumeSection}\n\n${additionalInstructions}`
-      : `${baseMessage}${resumeSection}`;
+      ? `${baseMessage}${artifactSection}${resumeSection}\n\n${additionalInstructions}`
+      : `${baseMessage}${artifactSection}${resumeSection}`;
 
     // write-scope-guard-redo D3: single-sourced MCP server name used in both createSdkMcpServer
     // (mcpServers key / name field) and the allowedTools MCP pre-approval entry.

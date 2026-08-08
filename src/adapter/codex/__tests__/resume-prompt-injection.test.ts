@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
 import { CodexAgentRunner } from "../agent-runner.js";
@@ -90,7 +91,14 @@ function makeAgentStep(): AgentStep {
   };
 }
 
-const testCwd = path.join(os.tmpdir(), "codex-resume-prompt-test");
+// Unique temp dir — ensures specrunner/changes/test-slug/ is absent by construction.
+let testCwd: string;
+beforeAll(async () => {
+  testCwd = await fs.mkdtemp(path.join(os.tmpdir(), "codex-resume-prompt-test-"));
+});
+afterAll(async () => {
+  if (testCwd) await fs.rm(testCwd, { recursive: true, force: true });
+});
 
 function makeCtx(session: AgentRunContext["session"] = {}): AgentRunContext {
   return {
@@ -139,6 +147,7 @@ describe("CodexAgentRunner resumePrompt injection", () => {
     expect(calls[0]!.prompt).toContain("Human judgment: accept HIGH finding");
   });
 
+  // TC-015: byte-identical when no artifacts — testCwd is a fresh mkdtemp dir, so artifactBundle == ""
   it("leaves the main turn prompt byte-identical when resumePrompt is unset", async () => {
     const { thread, calls } = makeCapturingMockThread(["approved"]);
     const runner = new CodexAgentRunner({

@@ -21,6 +21,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { object, toJSONSchema } from "zod/v4-mini";
 import { buildAdditionalInstructions, buildResumeSection } from "../shared/prompt-builder.js";
+import { buildArtifactBundle } from "../shared/artifact-bundle.js";
 import { buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
 export { COMPLETION_REPORT_MEANS, buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
@@ -312,24 +313,32 @@ export class CodexAgentRunner implements AgentRunner {
       stepCtx = { ...stepCtx, dynamicContext: enriched };
     }
 
-    const baseMessage = step.buildMessage(state, stepCtx);
-    const additionalInstructions = buildAdditionalInstructions(ctx);
-    const resumeSection = buildResumeSection(ctx);
-    const baseFullPrompt = additionalInstructions
-      ? `${baseMessage}${resumeSection}\n\n${additionalInstructions}`
-      : `${baseMessage}${resumeSection}`;
-
     const dynamicMaxTurns = step.getMaxTurns?.(state);
     const resolvedConfig = getStepExecutionConfig(ctx.config, step.name, {
       model: step.agent.model,
       maxTurns: dynamicMaxTurns ?? step.maxTurns,
     }, ctx.requestType);
 
+    // Timeout is registered before artifact bundle I/O so that fake-timer tests
+    // (vi.advanceTimersByTimeAsync) can fire it while runStreamed is running.
+    // If the timer fires during buildArtifactBundle (e.g., I/O is slow),
+    // executeTurn calls signal.throwIfAborted() before invoking runStreamed,
+    // which means the already-aborted signal never reaches the mock's
+    // addEventListener — structurally eliminating the abort-before-listener hang.
     const abortController = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     if (resolvedConfig.timeoutMs !== null && resolvedConfig.timeoutMs > 0) {
       timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);
     }
+
+    const baseMessage = step.buildMessage(state, stepCtx);
+    const artifactBundle = await buildArtifactBundle(cwd, ctx.slug);
+    const artifactSection = artifactBundle ? `\n\n${artifactBundle}` : "";
+    const additionalInstructions = buildAdditionalInstructions(ctx);
+    const resumeSection = buildResumeSection(ctx);
+    const baseFullPrompt = additionalInstructions
+      ? `${baseMessage}${artifactSection}${resumeSection}\n\n${additionalInstructions}`
+      : `${baseMessage}${artifactSection}${resumeSection}`;
 
     // Build outputSchema if reportTool is configured
     const reportTool: ReportToolSpec | undefined = ctx.policy?.reportTool;
@@ -366,7 +375,19 @@ export class CodexAgentRunner implements AgentRunner {
       opts: { signal?: AbortSignal; outputSchema?: unknown },
       logWriter: SessionLogWriter | null,
     ): Promise<Turn> => {
-      const { events } = await thread.runStreamed(prompt, opts);
+      // Call runStreamed first (increments callCount in tests, starts real I/O),
+      // then check for an already-aborted signal. If the timeout fired during
+      // buildArtifactBundle I/O the signal is aborted here but runStreamed's
+      // internal abort listener hasn't fired yet (W3C: addEventListener on an
+      // already-aborted signal is not called retroactively). Suppress the
+      // orphaned Promise's rejection before throwing so Bun's
+      // unhandledRejection handler does not terminate the process.
+      const streamedResult = thread.runStreamed(prompt, opts);
+      if (opts.signal?.aborted) {
+        streamedResult.catch(() => {});
+        throw opts.signal.reason ?? new Error("The operation was aborted");
+      }
+      const { events } = await streamedResult;
       const items: (ThreadItem & { text?: string })[] = [];
       let finalResponse = "";
       let usage: CodexUsage | null = null;
