@@ -1,0 +1,15 @@
+{
+  "requestHash": "sha256:40be96c4ef601a04a6593934287ec01e22dbeb3fa7c9e04e13d16023b2257d4e",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/adapter/claude-code/agent-runner.ts:459-486 — fullPrompt assembled from baseMessage + resumeSection + additionalInstructions + completionDirective",
+    "src/adapter/shared/prompt-builder.ts — exports buildAdditionalInstructions and buildResumeSection (both sync)",
+    "src/adapter/claude-code/agent-runner.ts:43 — imports buildAdditionalInstructions from ../shared/prompt-builder.js",
+    "src/adapter/codex/agent-runner.ts:23 — imports buildAdditionalInstructions, buildResumeSection from ../shared/prompt-builder.js",
+    "src/core/step/implementer.ts:96 — Read changeFolderPath(slug)/tasks.md instruction",
+    "src/core/step/conformance.ts:85-86 — Read changeFolder/tasks.md and changeFolder/design.md instructions",
+    "src/core/step/code-review.ts:78 — Read changeFolderPath(opts.slug)/ instruction",
+    "src/core/step/custom-reviewer.ts:62 — Read changeFolderPath(opts.slug)/ instruction"
+  ],
+  "sourceRevision": "f750841b9629de5728d9bff64e0e3ab3f49e69c1"
+}
