@@ -375,15 +375,16 @@ export class CodexAgentRunner implements AgentRunner {
       opts: { signal?: AbortSignal; outputSchema?: unknown },
       logWriter: SessionLogWriter | null,
     ): Promise<Turn> => {
-      // Call runStreamed first (increments callCount in tests, starts real I/O).
-      // Then check for an already-aborted signal: if the timeout fired during
-      // buildArtifactBundle I/O, the signal is aborted here but runStreamed's
+      // Call runStreamed first (increments callCount in tests, starts real I/O),
+      // then check for an already-aborted signal. If the timeout fired during
+      // buildArtifactBundle I/O the signal is aborted here but runStreamed's
       // internal abort listener hasn't fired yet (W3C: addEventListener on an
-      // already-aborted signal is not called retroactively). Throwing after the
-      // call — but before awaiting — lets the outer catch return "timeout"
-      // rather than hanging on a never-resolving Promise.
+      // already-aborted signal is not called retroactively). Suppress the
+      // orphaned Promise's rejection before throwing so Bun's
+      // unhandledRejection handler does not terminate the process.
       const streamedResult = thread.runStreamed(prompt, opts);
       if (opts.signal?.aborted) {
+        streamedResult.catch(() => {});
         throw opts.signal.reason ?? new Error("The operation was aborted");
       }
       const { events } = await streamedResult;
