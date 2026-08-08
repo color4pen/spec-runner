@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ede4848e-8af8-47a9-b4a0-e8c916799940",
   "createdAt": "2026-08-08T14:40:21.027Z",
-  "updatedAt": "2026-08-08T18:50:55.694Z",
+  "updatedAt": "2026-08-08T18:52:11.141Z",
   "request": {
     "title": "step prompt に change folder 入力 artifact を同梱する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/step-prompt-artifact-injection-ede4848e",
   "error": null,
@@ -78,7 +78,8 @@
     "a830138ec51579ccbc63f6a77f3877938073b3bc",
     "0c0efaf53490e10605160b90e52c68018ebc27b6",
     "f4763fa906b88c77949ca2392d7d9066e503c2a3",
-    "c81ade09e304c06878bbc5b99542f7185cdfd799"
+    "c81ade09e304c06878bbc5b99542f7185cdfd799",
+    "50f317e0f135db695e7c721b9af93598ad78b39a"
   ],
   "reviewerStatuses": [
     {
@@ -113,7 +114,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 66,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -129,7 +130,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
