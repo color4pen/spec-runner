@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ede4848e-8af8-47a9-b4a0-e8c916799940",
   "createdAt": "2026-08-08T14:40:21.027Z",
-  "updatedAt": "2026-08-08T18:01:46.075Z",
+  "updatedAt": "2026-08-08T18:04:37.744Z",
   "request": {
     "title": "step prompt に change folder 入力 artifact を同梱する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/step-prompt-artifact-injection-ede4848e",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,8 @@
     "8a7fbed5150a77067664bde6e2e3a742f3bdfeb1",
     "f780295d205e37a2657ccc7c9da331d7304a0fe7",
     "fef46abc33cf9ad5fbab4b562a362ffb1f950d8d",
-    "d03b1e8e34ce8b239955c5e345cf00387890920f"
+    "d03b1e8e34ce8b239955c5e345cf00387890920f",
+    "0ad28f007796e5748a1a461a1dcbf727a0a532db"
   ],
   "reviewerStatuses": [
     {
@@ -104,13 +105,10 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

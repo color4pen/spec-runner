@@ -313,15 +313,18 @@ export class CodexAgentRunner implements AgentRunner {
       stepCtx = { ...stepCtx, dynamicContext: enriched };
     }
 
-    // Resolve config and set up timeout before any async work so the timer is
-    // registered synchronously (required for fake-timer tests: setTimeout must
-    // be called before vi.advanceTimersByTimeAsync fires).
     const dynamicMaxTurns = step.getMaxTurns?.(state);
     const resolvedConfig = getStepExecutionConfig(ctx.config, step.name, {
       model: step.agent.model,
       maxTurns: dynamicMaxTurns ?? step.maxTurns,
     }, ctx.requestType);
 
+    // Timeout is registered before artifact bundle I/O so that fake-timer tests
+    // (vi.advanceTimersByTimeAsync) can fire it while runStreamed is running.
+    // If the timer fires during buildArtifactBundle (e.g., I/O is slow),
+    // executeTurn calls signal.throwIfAborted() before invoking runStreamed,
+    // which means the already-aborted signal never reaches the mock's
+    // addEventListener — structurally eliminating the abort-before-listener hang.
     const abortController = new AbortController();
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     if (resolvedConfig.timeoutMs !== null && resolvedConfig.timeoutMs > 0) {
@@ -372,7 +375,18 @@ export class CodexAgentRunner implements AgentRunner {
       opts: { signal?: AbortSignal; outputSchema?: unknown },
       logWriter: SessionLogWriter | null,
     ): Promise<Turn> => {
-      const { events } = await thread.runStreamed(prompt, opts);
+      // Call runStreamed first (increments callCount in tests, starts real I/O).
+      // Then check for an already-aborted signal: if the timeout fired during
+      // buildArtifactBundle I/O, the signal is aborted here but runStreamed's
+      // internal abort listener hasn't fired yet (W3C: addEventListener on an
+      // already-aborted signal is not called retroactively). Throwing after the
+      // call — but before awaiting — lets the outer catch return "timeout"
+      // rather than hanging on a never-resolving Promise.
+      const streamedResult = thread.runStreamed(prompt, opts);
+      if (opts.signal?.aborted) {
+        throw opts.signal.reason ?? new Error("The operation was aborted");
+      }
+      const { events } = await streamedResult;
       const items: (ThreadItem & { text?: string })[] = [];
       let finalResponse = "";
       let usage: CodexUsage | null = null;

@@ -12,6 +12,11 @@
  * TC-009: change folder present, zero artifacts → returns ""
  * TC-010: non-ENOENT per-file error is skipped, other artifacts still collected (should)
  * TC-011: only INPUT_ARTIFACT_NAMES are read, output/unknown files are not touched (should)
+ *
+ * NOTE: TC-010 and TC-011 use vi.spyOn(fs, 'readFile'). This works only because
+ * vitest.config.ts setupFiles includes tests/setup-fs-spy.ts, which wraps
+ * node:fs/promises in a mutable object (ESM sealed namespaces cannot be spied on
+ * directly). Removing that setupFiles entry will crash TC-010/TC-011.
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
