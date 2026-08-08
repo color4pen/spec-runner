@@ -8,7 +8,6 @@
  * - Empty result (0 artifacts collected) returns "".
  */
 import * as fs from "node:fs/promises";
-import { statSync } from "node:fs";
 import * as path from "node:path";
 import { changeFolderPath } from "../../util/paths.js";
 
@@ -31,18 +30,6 @@ export const MAX_ARTIFACT_BUNDLE_BYTES = 64 * 1024;
  */
 export async function buildArtifactBundle(cwd: string, slug: string): Promise<string> {
   const folderRel = changeFolderPath(slug);
-
-  // Fast-path: synchronous existence check before any async I/O.
-  // If the change folder is absent, skip straight to "" without entering the
-  // libuv thread pool — this also keeps the function's await count near zero
-  // (one resolved-Promise tick) when there is nothing to read, which is important
-  // for fake-timer tests where the thread-pool scheduling delay would otherwise
-  // push the first await past the check phase.
-  try {
-    statSync(path.join(cwd, folderRel));
-  } catch {
-    return "";
-  }
 
   // Read all artifacts in parallel so libuv can batch the I/O in one poll
   // phase — keeps the total await count to 1 regardless of how many files exist.
