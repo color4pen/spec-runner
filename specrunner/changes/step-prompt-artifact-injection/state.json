@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ede4848e-8af8-47a9-b4a0-e8c916799940",
   "createdAt": "2026-08-08T14:40:21.027Z",
-  "updatedAt": "2026-08-08T18:52:11.141Z",
+  "updatedAt": "2026-08-08T18:58:56.141Z",
   "request": {
     "title": "step prompt に change folder 入力 artifact を同梱する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/step-prompt-artifact-injection-ede4848e",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,9 @@
     "0c0efaf53490e10605160b90e52c68018ebc27b6",
     "f4763fa906b88c77949ca2392d7d9066e503c2a3",
     "c81ade09e304c06878bbc5b99542f7185cdfd799",
-    "50f317e0f135db695e7c721b9af93598ad78b39a"
+    "50f317e0f135db695e7c721b9af93598ad78b39a",
+    "562b6c9c7bf4e87885164e65263ebcba632f287b",
+    "18bad08dbfe34dcdc5e31a3b5ce0dc556e94ae17"
   ],
   "reviewerStatuses": [
     {
@@ -113,8 +115,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/971",
+    "number": 971,
+    "createdAt": "2026-08-08T18:58:55.205Z"
+  },
   "_journal": {
-    "historyCount": 71,
+    "historyCount": 85,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -124,13 +131,16 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
