@@ -15,7 +15,6 @@ import type { AgentRunContext } from "../../../core/port/agent-runner.js";
 import type { AgentStep } from "../../../core/step/types.js";
 import type { SpecRunnerConfig } from "../../../config/schema.js";
 import type { JobState } from "../../../state/schema.js";
-import { buildAdditionalInstructions } from "../../shared/prompt-builder.js";
 import { buildTouchedFilesSection } from "../../shared/touched-files-bundle.js";
 
 // ---------------------------------------------------------------------------
