@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ede4848e-8af8-47a9-b4a0-e8c916799940",
   "createdAt": "2026-08-08T14:40:21.027Z",
-  "updatedAt": "2026-08-08T18:04:37.744Z",
+  "updatedAt": "2026-08-08T18:45:33.846Z",
   "request": {
     "title": "step prompt に change folder 入力 artifact を同梱する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/step-prompt-artifact-injection-ede4848e",
   "error": null,
@@ -74,13 +74,15 @@
     "f780295d205e37a2657ccc7c9da331d7304a0fe7",
     "fef46abc33cf9ad5fbab4b562a362ffb1f950d8d",
     "d03b1e8e34ce8b239955c5e345cf00387890920f",
-    "0ad28f007796e5748a1a461a1dcbf727a0a532db"
+    "0ad28f007796e5748a1a461a1dcbf727a0a532db",
+    "a830138ec51579ccbc63f6a77f3877938073b3bc",
+    "0c0efaf53490e10605160b90e52c68018ebc27b6"
   ],
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "a830138ec51579ccbc63f6a77f3877938073b3bc",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -90,7 +92,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/step-prompt-artifact-injection/design.md:sha256:9f16e21608b67d7858528362f5bc1d02814d97a12f434d5e81eaf6d3a0d67088|specrunner/changes/step-prompt-artifact-injection/request.md:sha256:40be96c4ef601a04a6593934287ec01e22dbeb3fa7c9e04e13d16023b2257d4e|specrunner/changes/step-prompt-artifact-injection/spec.md:sha256:77615c7a2e3448cc5efc3031e18e89bbc3f0d2c859c7b7bca0198911d0f57574|specrunner/changes/step-prompt-artifact-injection/tasks.md:sha256:3d3512a693f95551a81d64d21b5e968eaf52239d43554f5f11abb80936f89409|specrunner/changes/step-prompt-artifact-injection/test-cases.md:sha256:6b778ca8d5fde21dc4155cb5fe0ffe47315b3a65fafc3636e8ad06023b941253"
     },
     {
       "name": "scale-tolerance",
@@ -108,7 +111,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 58,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -120,10 +123,10 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 1,
-      "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
