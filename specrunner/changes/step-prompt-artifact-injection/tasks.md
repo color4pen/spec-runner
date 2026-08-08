@@ -4,10 +4,10 @@
 
 新規ファイル: `src/adapter/shared/artifact-bundle.ts`
 
-- [ ] `INPUT_ARTIFACT_NAMES` を export 定数として定義する（この順で走査 = 同梱順）:
+- [x] `INPUT_ARTIFACT_NAMES` を export 定数として定義する（この順で走査 = 同梱順）:
       `["request.md", "design.md", "tasks.md", "spec.md", "test-cases.md", "rules.md"]`
-- [ ] `MAX_ARTIFACT_BUNDLE_BYTES = 64 * 1024`（65536）を export 定数として定義する
-- [ ] `export async function buildArtifactBundle(cwd: string, slug: string): Promise<string>` を実装する:
+- [x] `MAX_ARTIFACT_BUNDLE_BYTES = 64 * 1024`（65536）を export 定数として定義する
+- [x] `export async function buildArtifactBundle(cwd: string, slug: string): Promise<string>` を実装する:
   - `changeFolderPath(slug)`（`src/util/paths.js` から import）で change folder 相対パスを得て、
     `path.join(cwd, changeFolderPath(slug), name)` を各 `name` について組み立てる
   - 各 allowlist ファイルを `fs.readFile(..., "utf-8")` で読み、成功したものだけ
@@ -21,7 +21,7 @@
       （Read してもよい）／artifact の Read・その他ファイルの探索は従来どおり許可」旨）
     - 各ファイルを `<artifact path="${changeFolderPath(slug)}/${name}">\n${content}\n</artifact>` で包む
     - 末尾を `</bundled-change-artifacts>` で閉じる
-- [ ] `fs`（`node:fs/promises`）・`path`（`node:path`）・`changeFolderPath` 以外の src/ 依存を増やさない
+- [x] `fs`（`node:fs/promises`）・`path`（`node:path`）・`changeFolderPath` 以外の src/ 依存を増やさない
 
 **Acceptance Criteria**:
 - `src/adapter/shared/artifact-bundle.ts` が存在し、`buildArtifactBundle` / `INPUT_ARTIFACT_NAMES` /
@@ -35,14 +35,14 @@
 
 対象: `src/adapter/claude-code/agent-runner.ts`（`run()` 内、L459-467 近傍）
 
-- [ ] `artifact-bundle.js` から `buildArtifactBundle` を import する
-- [ ] `const baseMessage = step.buildMessage(state, stepCtx);` の直後に
+- [x] `artifact-bundle.js` から `buildArtifactBundle` を import する
+- [x] `const baseMessage = step.buildMessage(state, stepCtx);` の直後に
       `const artifactBundle = await buildArtifactBundle(cwd, ctx.slug);` を追加する
-- [ ] `const artifactSection = artifactBundle ? \`\n\n${artifactBundle}\` : "";` を追加する
-- [ ] `baseFullPrompt` の連結を baseMessage 直後に artifactSection を挟む形へ変更する:
+- [x] `const artifactSection = artifactBundle ? \`\n\n${artifactBundle}\` : "";` を追加する
+- [x] `baseFullPrompt` の連結を baseMessage 直後に artifactSection を挟む形へ変更する:
       同梱あり → `${baseMessage}${artifactSection}${resumeSection}\n\n${additionalInstructions}`、
       additionalInstructions 無し分岐 → `${baseMessage}${artifactSection}${resumeSection}`
-- [ ] `step.buildMessage` の呼び出し・引数・step 側文言は一切変更しない
+- [x] `step.buildMessage` の呼び出し・引数・step 側文言は一切変更しない
 
 **Acceptance Criteria**:
 - `artifactBundle` が空文字のとき `baseFullPrompt` が変更前とバイト同一（artifactSection == ""）
@@ -55,12 +55,12 @@
 
 対象: `src/adapter/codex/agent-runner.ts`（`run()` 内、L315-320 近傍）
 
-- [ ] `../shared/artifact-bundle.js` から `buildArtifactBundle` を import する
-- [ ] `const baseMessage = step.buildMessage(state, stepCtx);` の直後に
+- [x] `../shared/artifact-bundle.js` から `buildArtifactBundle` を import する
+- [x] `const baseMessage = step.buildMessage(state, stepCtx);` の直後に
       `const artifactBundle = await buildArtifactBundle(cwd, ctx.slug);` を追加する
-- [ ] `const artifactSection = artifactBundle ? \`\n\n${artifactBundle}\` : "";` を追加する
-- [ ] `baseFullPrompt` の連結を T-02 と同形へ変更する（baseMessage 直後に artifactSection）
-- [ ] `step.buildMessage` の呼び出し・step 側文言は一切変更しない
+- [x] `const artifactSection = artifactBundle ? \`\n\n${artifactBundle}\` : "";` を追加する
+- [x] `baseFullPrompt` の連結を T-02 と同形へ変更する（baseMessage 直後に artifactSection）
+- [x] `step.buildMessage` の呼び出し・step 側文言は一切変更しない
 
 **Acceptance Criteria**:
 - `artifactBundle` が空文字のとき `baseFullPrompt` が変更前とバイト同一
@@ -74,22 +74,22 @@
 
 新規ファイル: `tests/unit/adapter/shared/artifact-bundle.test.ts`
 
-- [ ] `fs.mkdtemp(path.join(os.tmpdir(), "artifact-bundle-test-"))` で temp cwd を作り、
+- [x] `fs.mkdtemp(path.join(os.tmpdir(), "artifact-bundle-test-"))` で temp cwd を作り、
       `specrunner/changes/<slug>/` を掘る helper を用意する（afterEach で `fs.rm(..., recursive)`）
-- [ ] (a) 存在する入力 artifact が同梱される: `design.md`（内容 "DESIGN"）と `tasks.md`（内容 "TASKS"）を書き、
+- [x] (a) 存在する入力 artifact が同梱される: `design.md`（内容 "DESIGN"）と `tasks.md`（内容 "TASKS"）を書き、
       返り値に `specrunner/changes/<slug>/design.md` と `.../tasks.md` のパスヘッダおよび
       "DESIGN" / "TASKS" が含まれることを assert
-- [ ] (b) 存在しない artifact はスキップされる: `design.md` のみ書き、返り値に `design.md` は含まれ、
+- [x] (b) 存在しない artifact はスキップされる: `design.md` のみ書き、返り値に `design.md` は含まれ、
       `tasks.md` / `spec.md` のパスヘッダが含まれないことを assert
-- [ ] (c) 出力系 artifact は同梱されない: `design.md` に加え `verification-result.md`・
+- [x] (c) 出力系 artifact は同梱されない: `design.md` に加え `verification-result.md`・
       `code-review-result-001.md`・`implementation-notes.md` を書き、返り値にこれら 3 つが
       含まれないことを assert
-- [ ] (d) 合計サイズ上限超過時は同梱なし: 単一ファイルが 64KB 超（例 `"x".repeat(70000)`）のケースで
+- [x] (d) 合計サイズ上限超過時は同梱なし: 単一ファイルが 64KB 超（例 `"x".repeat(70000)`）のケースで
       返り値が `""` であることを assert。加えて 2 ファイルの合計が 64KB 超のケースでも `""` を assert
-- [ ] (e) change folder / 入力 artifact 不在:
+- [x] (e) change folder / 入力 artifact 不在:
   - (e-1) change folder を掘らない slug で返り値が `""` を assert
   - (e-2) change folder は存在するが入力 artifact を 1 件も書かない場合でも返り値が `""` を assert
-- [ ] (f) 非 ENOENT の per-file エラーをスキップする: `fs.readFile` が `EACCES`（権限エラー）を throw する
+- [x] (f) 非 ENOENT の per-file エラーをスキップする: `fs.readFile` が `EACCES`（権限エラー）を throw する
       ケースを vi.spyOn 等でモックし、他の artifact は正常収集されること・エラーファイルが結果に含まれない
       ことを assert（D4 の「ENOENT / 権限等はすべて per-file skip」を検証）
 
@@ -103,12 +103,12 @@
 
 要件 #2「同梱が実際に行われる」を機械検証する。既存の prompt キャプチャ harness を流用する。
 
-- [ ] codex: `src/adapter/codex/__tests__/resume-prompt-injection.test.ts` の
+- [x] codex: `src/adapter/codex/__tests__/resume-prompt-injection.test.ts` の
       `makeCapturingMockThread` パターンを流用した test を追加する（別ファイルでも可）:
       `ctx.cwd` を temp dir にし `specrunner/changes/<slug>/design.md` を書いてから `runner.run(ctx)` を実行、
       `calls[0].prompt` に `<bundled-change-artifacts>` と `specrunner/changes/<slug>/design.md` および
       design.md の内容が含まれることを assert
-- [ ] claude-code: `src/adapter/claude-code/__tests__/credential-injection.test.ts` の
+- [x] claude-code: `src/adapter/claude-code/__tests__/credential-injection.test.ts` の
       `makeCaptureQueryFn` をベースに **`params.prompt` も収集する拡張版 helper**
       （既存の `capturedOptions` に加え `capturedPrompts: string[]` を返す）を
       同テストファイルか別ファイルで定義する（既存の `makeCaptureQueryFn` は `params.options` のみ収集するため
@@ -125,11 +125,11 @@
 
 ## T-06: 全体検証
 
-- [ ] `bun run typecheck` が通る
-- [ ] `bun run test` が通る（新規 test 含む）
-- [ ] `src/core/step/` 配下の既存 buildMessage テストが無改変で green（同梱が step 個別文言を
+- [x] `bun run typecheck` が通る
+- [x] `bun run test` が通る（新規 test 含む）
+- [x] `src/core/step/` 配下の既存 buildMessage テストが無改変で green（同梱が step 個別文言を
       変えないことの機械検証）
-- [ ] 既存の adapter プロンプト系テスト（resume-prompt-injection 等）が無改変で green
+- [x] 既存の adapter プロンプト系テスト（resume-prompt-injection 等）が無改変で green
 
 **Acceptance Criteria**:
 - 受け入れ基準 3 項目が全て満たされている:

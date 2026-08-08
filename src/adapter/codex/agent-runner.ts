@@ -21,6 +21,7 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { object, toJSONSchema } from "zod/v4-mini";
 import { buildAdditionalInstructions, buildResumeSection } from "../shared/prompt-builder.js";
+import { buildArtifactBundle } from "../shared/artifact-bundle.js";
 import { buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
 export { COMPLETION_REPORT_MEANS, buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
@@ -312,13 +313,9 @@ export class CodexAgentRunner implements AgentRunner {
       stepCtx = { ...stepCtx, dynamicContext: enriched };
     }
 
-    const baseMessage = step.buildMessage(state, stepCtx);
-    const additionalInstructions = buildAdditionalInstructions(ctx);
-    const resumeSection = buildResumeSection(ctx);
-    const baseFullPrompt = additionalInstructions
-      ? `${baseMessage}${resumeSection}\n\n${additionalInstructions}`
-      : `${baseMessage}${resumeSection}`;
-
+    // Resolve config and set up timeout before any async work so the timer is
+    // registered synchronously (required for fake-timer tests: setTimeout must
+    // be called before vi.advanceTimersByTimeAsync fires).
     const dynamicMaxTurns = step.getMaxTurns?.(state);
     const resolvedConfig = getStepExecutionConfig(ctx.config, step.name, {
       model: step.agent.model,
@@ -330,6 +327,15 @@ export class CodexAgentRunner implements AgentRunner {
     if (resolvedConfig.timeoutMs !== null && resolvedConfig.timeoutMs > 0) {
       timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);
     }
+
+    const baseMessage = step.buildMessage(state, stepCtx);
+    const artifactBundle = await buildArtifactBundle(cwd, ctx.slug);
+    const artifactSection = artifactBundle ? `\n\n${artifactBundle}` : "";
+    const additionalInstructions = buildAdditionalInstructions(ctx);
+    const resumeSection = buildResumeSection(ctx);
+    const baseFullPrompt = additionalInstructions
+      ? `${baseMessage}${artifactSection}${resumeSection}\n\n${additionalInstructions}`
+      : `${baseMessage}${artifactSection}${resumeSection}`;
 
     // Build outputSchema if reportTool is configured
     const reportTool: ReportToolSpec | undefined = ctx.policy?.reportTool;
