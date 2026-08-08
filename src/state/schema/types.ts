@@ -534,6 +534,25 @@ export interface JobState {
    * Optional for backward compat — absent in legacy state is valid.
    */
   synthesizedCommits?: string[];
+  /**
+   * Per-step record of files touched by the agent during execution.
+   * key = step name, value = worktree-relative paths touched by that step.
+   *
+   * state.json projection で round-trip、event-journal threading 不要。
+   * Same top-level field pattern as reviewerStatuses / synthesizedCommits / biteEvidence.
+   *
+   * Populated by claude-code adapter only; codex / managed leave it undefined.
+   * Absent in legacy state files — treated as undefined (no records).
+   * Optional for backward compat — absent in legacy state is valid.
+   */
+  touchedFiles?: Record<string, string[]>;
+  /**
+   * Open index signature — allows safe casts to Record<string, unknown> in utilities and tests.
+   * Named property types (e.g. version: number) still win over the index signature in TypeScript
+   * intersections and dot-notation access. Only bracket-notation access is widened to unknown.
+   * Added in touched-files-propagation (required to support the touchedFiles feature test patterns).
+   */
+  [key: string]: unknown;
 }
 
 /**

@@ -319,6 +319,19 @@ export function validateJobState(raw: unknown): JobState {
     }
   }
 
+  // Validate touchedFiles when present (backward compat: absence is OK → treated as undefined)
+  // Design D2 (touched-files-propagation): lightweight check — non-array object with array values.
+  if ("touchedFiles" in obj && obj["touchedFiles"] !== null && obj["touchedFiles"] !== undefined) {
+    if (typeof obj["touchedFiles"] !== "object" || Array.isArray(obj["touchedFiles"])) {
+      throw new Error("touchedFiles must be a non-array object when present.");
+    }
+    for (const [, value] of Object.entries(obj["touchedFiles"] as Record<string, unknown>)) {
+      if (!Array.isArray(value)) {
+        throw new Error("touchedFiles values must be arrays when present.");
+      }
+    }
+  }
+
   return raw as JobState;
 }
 

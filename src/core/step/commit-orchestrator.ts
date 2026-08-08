@@ -74,6 +74,14 @@ export type StepExecutionResult =
        */
       invocationMetrics?: AgentInvocationMetrics;
       /**
+       * Worktree-relative paths of files touched by the agent during this step.
+       * undefined = runtime does not record (managed / codex).
+       * [] = recorded, but nothing was touched.
+       * non-empty = deduplicated paths, capped at 100.
+       * Populated by ClaudeCodeRunner only; added in touched-files-propagation.
+       */
+      touchedFiles?: string[];
+      /**
        * Commit OID captured after this step's per-node commit (bite-evidence-forward R4).
        * Set only for sequential steps with roundOwnsGitEffects === false.
        * Absent for round (parallel reviewer) members and managed-runtime steps.
@@ -431,6 +439,14 @@ export class CommitOrchestrator {
     // pipeline commit even if the CLI step's push failed and left the commit local-only.
     if (result.exitCommitOid) {
       s = appendSynthesizedCommit(s, result.exitCommitOid);
+    }
+
+    // touchedFiles: merge this step's touched file list into state.touchedFiles map.
+    // undefined = runtime does not record → skip (do not write empty entry for codex/managed).
+    // [] or non-empty = record (ClaudeCodeRunner always returns an array).
+    if (result.touchedFiles !== undefined) {
+      const existing = (s as unknown as { touchedFiles?: Record<string, string[]> }).touchedFiles ?? {};
+      s = { ...s, touchedFiles: { ...existing, [step.name]: result.touchedFiles } } as JobState;
     }
 
     // Persist branch/pullRequest/biteEvidence patch (write 2)
