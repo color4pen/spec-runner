@@ -16,6 +16,7 @@ import { conformanceResultPath } from "../../util/paths.js";
 import { collectParallelFixerFindings } from "../pipeline/findings-ledger.js";
 import { buildCanonWriteScope } from "./canon-write-scope.js";
 import { isCoordinatorLoopActive, getNeedsFixMembers } from "./routed-findings.js";
+import { selectFixerTargetFindings } from "./judge-verdict.js";
 // routing precedence は routed-findings.ts の collectRoutedFixerFindings と一致させること
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
@@ -147,9 +148,8 @@ ${findingsBlock}
 Please:
 1. Fix all HIGH and CRITICAL severity findings from the conformance review (mandatory)
 2. Fix MEDIUM severity findings only if they do not require design changes
-3. Ignore LOW severity findings
-4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-5. Do NOT add new features or make specification changes
+3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+4. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -191,9 +191,8 @@ ${findingsBlock}
 Please:
 1. Fix all HIGH and CRITICAL severity findings (mandatory)
 2. Fix MEDIUM severity findings only if they do not require design changes
-3. Ignore LOW severity findings
-4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-5. Do NOT add new features or make specification changes
+3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+4. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -218,10 +217,9 @@ Please:
 1. Read the review feedback at ${findingsPath}
 2. Fix all HIGH and CRITICAL severity findings (mandatory)
 3. Fix MEDIUM severity findings only if they do not require design changes
-4. Ignore LOW severity findings
-5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-6. Do NOT modify the review-feedback file itself
-7. Do NOT add new features or make specification changes
+4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+5. Do NOT modify the review-feedback file itself
+6. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -237,8 +235,11 @@ ${deps.request.content}
     // Existence is guaranteed by pre-execution validation (STEP_INPUT_MISSING).
     const findingsPath = resolveReviewerResultPath(deps.slug, activeReviewer, latestIteration(state, activeReviewer));
 
-    // Get structured findings from the latest active reviewer run (if available)
-    const findings = getLatestJudgeFindings(state, activeReviewer);
+    // Get structured findings from the latest active reviewer run (if available).
+    // Apply selectFixerTargetFindings to match routing layer: LOW findings are excluded
+    // (single authoritative place is selectFixerTargetFindings, not the prompt).
+    const rawFindings = getLatestJudgeFindings(state, activeReviewer);
+    const findings = rawFindings ? selectFixerTargetFindings(rawFindings) : rawFindings;
 
     // For custom reviewers, include name in findings source identification.
     // Standard code-review uses no prefix (backward compat).
@@ -269,9 +270,8 @@ ${findingsBlock}
 Please:
 1. Fix all HIGH and CRITICAL severity findings (mandatory)
 2. Fix MEDIUM severity findings only if they do not require design changes
-3. Ignore LOW severity findings
-4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-5. Do NOT add new features or make specification changes
+3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+4. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -290,10 +290,9 @@ Please:
 1. Read the review feedback at ${findingsPath}
 2. Fix all HIGH and CRITICAL severity findings (mandatory)
 3. Fix MEDIUM severity findings only if they do not require design changes
-4. Ignore LOW severity findings
-5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-6. Do NOT modify the review-feedback file itself
-7. Do NOT add new features or make specification changes
+4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+5. Do NOT modify the review-feedback file itself
+6. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}

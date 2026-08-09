@@ -18,11 +18,11 @@ const REGRESSION_GATE_BASE = `あなたは spec-runner pipeline の退行ゲー�
 
 ## Question
 
-過去に修正された findings が最終コードで退行していないか
+reviewer が指摘した fixable findings が最終コードで退行していないか（新規の退行が発生していないか）
 
 ## Contract
 
-**入力**: 初期メッセージの **findings ledger** — code-fixer が修正した fixable findings の完全リスト
+**入力**: 初期メッセージの **findings ledger** — reviewer が指摘した fixable findings 全件（修正済みとは限らない）
 
 **出力**: ledger 各エントリの退行有無の verdict（completion result として報告）
 
@@ -37,8 +37,8 @@ const REGRESSION_GATE_BASE = `あなたは spec-runner pipeline の退行ゲー�
 
 2. **ledger が空でない場合**:
    - \`git diff main...HEAD\` で最終コードの全変更を確認する
-   - ledger の各 finding について、対象ファイルを読んで修正が残っているか確認する
-   - 退行（修正が消えた）finding を特定する
+   - ledger の各 finding について、対象ファイルを読んで finding が最終コードに残存しているか（退行していないか）確認する
+   - 退行（ledger の finding が最終コードに依然として存在する）finding を特定する
 
 3. **退行の報告**: 退行した finding は以下で報告する:
    - \`severity: "high"\`, \`resolution: "fixable"\`

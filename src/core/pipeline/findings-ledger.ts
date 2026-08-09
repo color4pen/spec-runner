@@ -155,6 +155,15 @@ export function collectSpecReviewLedger(state: JobState, canonScope?: CanonWrite
 }
 
 /**
+ * Compute the fingerprint for a finding.
+ * Fingerprint = `${file}|${line ?? ""}|${title}` — same key used by dedupeFindings.
+ * Export allows callers to reference the same key without drift.
+ */
+export function findingFingerprint(f: Finding): string {
+  return `${f.file}|${f.line ?? ""}|${f.title}`;
+}
+
+/**
  * Deduplicate findings using (file + line + title) as the key.
  * Line is coerced to empty string when absent.
  * The first occurrence of each key is retained; subsequent duplicates are dropped.
@@ -167,7 +176,7 @@ export function dedupeFindings(findings: Finding[]): Finding[] {
   const result: Finding[] = [];
 
   for (const f of findings) {
-    const key = `${f.file}|${f.line ?? ""}|${f.title}`;
+    const key = findingFingerprint(f);
     if (!seen.has(key)) {
       seen.add(key);
       result.push(f);
@@ -175,4 +184,59 @@ export function dedupeFindings(findings: Finding[]): Finding[] {
   }
 
   return result;
+}
+
+/**
+ * Compute the merged findings ledger for the regression-gate.
+ *
+ * Merges spec-review fixable findings (collectSpecReviewLedger) with impl reviewer
+ * chain findings (collectFindingsLedger) via dedupeFindings — the same computation
+ * used in regression-gate.ts skipWhen and buildMessage. Sharing this function
+ * prevents the two call-sites from drifting.
+ *
+ * **Signature note**: reviewerChain is supplied by the caller, NOT derived internally.
+ * This avoids an import cycle: findings-ledger.ts → reviewer-chain.ts →
+ * regression-gate.ts → findings-ledger.ts.
+ *
+ * @param reviewerChain - Ordered reviewer step names (from deriveImplReviewerChain).
+ * @param state         - Current job state.
+ * @param canonScope    - Optional canon write scope for filtering unroutable findings.
+ */
+export function computeRegressionLedger(
+  reviewerChain: string[],
+  state: JobState,
+  canonScope?: CanonWriteScope,
+): Finding[] {
+  const specLedger = collectSpecReviewLedger(state, canonScope);
+  const implLedger = collectFindingsLedger(reviewerChain, state, canonScope);
+  return dedupeFindings([...specLedger, ...implLedger]);
+}
+
+/**
+ * Filter gate findings to remove entries that correspond to known-unfixed findings
+ * from the ledger (i.e. findings that were routed via the one-shot approved path
+ * but never fixed by the code-fixer).
+ *
+ * The "known-unfixed" set = ledger entries with severity `"low"` (the severity
+ * level excluded from code-fixer routing by selectFixerTargetFindings). A gate
+ * finding is removed when its fingerprint matches a low-severity ledger entry.
+ *
+ * Pure function — no side effects, no I/O.
+ *
+ * @param gateFindings - Findings reported by the regression-gate agent.
+ * @param ledger       - The full findings ledger (all fixable findings, all severities).
+ * @returns Gate findings with known-unfixed entries removed.
+ */
+export function excludeKnownUnfixedRegressions(
+  gateFindings: Finding[],
+  ledger: Finding[],
+): Finding[] {
+  // Build fingerprint set of known-unfixed (low severity) ledger entries
+  const knownUnfixed = new Set<string>(
+    ledger
+      .filter((f) => f.severity === "low")
+      .map(findingFingerprint),
+  );
+  if (knownUnfixed.size === 0) return gateFindings;
+  return gateFindings.filter((f) => !knownUnfixed.has(findingFingerprint(f)));
 }

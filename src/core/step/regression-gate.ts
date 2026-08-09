@@ -24,7 +24,7 @@ import { REGRESSION_GATE_SYSTEM_PROMPT } from "../../prompts/regression-gate-sys
 import { resolveReviewerResultPath, changeFolderPath } from "../../util/paths.js";
 import { nextIteration } from "./io-iteration.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
-import { collectFindingsLedger, collectSpecReviewLedger, dedupeFindings } from "../pipeline/findings-ledger.js";
+import { computeRegressionLedger } from "../pipeline/findings-ledger.js";
 import { deriveImplReviewerChain } from "../pipeline/reviewer-chain.js";
 import { deriveRegressionGateVerdict } from "./judge-verdict.js";
 import { buildFindingsBlock } from "./fixer-helpers.js";
@@ -55,7 +55,7 @@ function buildLedgerBlock(findings: Finding[]): string {
   if (findings.length === 0) {
     return "## Findings Ledger\n\nNo fixable findings were recorded in the reviewer chain. Approve immediately with an empty findings array.";
   }
-  return `## Findings Ledger (${findings.length} item${findings.length === 1 ? "" : "s"})\n\nThe following findings were fixed during this job. Verify each one is still fixed in the current code.\n\n${buildFindingsBlock(findings)}`;
+  return `## Findings Ledger (${findings.length} item${findings.length === 1 ? "" : "s"})\n\nThe following findings were identified by reviewers during this job. Not all may have been fixed. Verify each one to determine whether it is still present in the current code (i.e. whether it has regressed).\n\n${buildFindingsBlock(findings)}`;
 }
 
 /**
@@ -111,10 +111,8 @@ export function createRegressionGateStep(): AgentStep {
      */
     skipWhen(state: JobState, deps: StepDeps): string | null {
       const canonScope = buildCanonWriteScope(state, deps);
-      const specLedger = collectSpecReviewLedger(state, canonScope);
       const reviewerChain = deriveImplReviewerChain(state);
-      const implLedger = collectFindingsLedger(reviewerChain, state, canonScope);
-      const ledger = dedupeFindings([...specLedger, ...implLedger]);
+      const ledger = computeRegressionLedger(reviewerChain, state, canonScope);
       if (ledger.length === 0) {
         return "findings ledger is empty — no fixable findings to verify";
       }
@@ -142,10 +140,8 @@ export function createRegressionGateStep(): AgentStep {
 
       // Build the merged ledger: spec-review fixable findings + impl reviewer chain findings.
       const canonScope = buildCanonWriteScope(state, deps);
-      const specLedger = collectSpecReviewLedger(state, canonScope);
       const reviewerChain = deriveImplReviewerChain(state);
-      const implLedger = collectFindingsLedger(reviewerChain, state, canonScope);
-      const ledger = dedupeFindings([...specLedger, ...implLedger]);
+      const ledger = computeRegressionLedger(reviewerChain, state, canonScope);
 
       const ledgerBlock = buildLedgerBlock(ledger);
 

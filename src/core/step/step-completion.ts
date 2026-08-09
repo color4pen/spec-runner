@@ -46,6 +46,9 @@ import {
 } from "./canon-escalation.js";
 import { STEP_NAMES } from "./step-names.js";
 import { buildCanonWriteScope } from "./canon-write-scope.js";
+import { computeRegressionLedger, excludeKnownUnfixedRegressions } from "../pipeline/findings-ledger.js";
+import { REGRESSION_GATE_STEP_NAME } from "./regression-gate.js";
+import { deriveImplReviewerChain } from "../pipeline/reviewer-chain.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -203,7 +206,16 @@ export async function deriveStepCompletion(
         if (tr.evidence?.checked === 0) {
           stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため判定不能として扱われます`);
         }
-        verdict = verdictFn(undecidedFindings, tr.ok, tr.evidence, canonScope);
+        // For regression-gate: exclude known-unfixed (low severity) ledger entries from
+        // the verdict inputs to avoid false loops (issue #952).
+        // Other judge steps use undecidedFindings as-is.
+        let verdictFindings = undecidedFindings;
+        if (step.name === REGRESSION_GATE_STEP_NAME) {
+          const reviewerChain = deriveImplReviewerChain(state);
+          const ledger = computeRegressionLedger(reviewerChain, state, canonScope);
+          verdictFindings = excludeKnownUnfixedRegressions(undecidedFindings, ledger);
+        }
+        verdict = verdictFn(verdictFindings, tr.ok, tr.evidence, canonScope);
         lastUndecidedFindings = undecidedFindings;
         lastCanonResolver =
           step.name === STEP_NAMES.SPEC_REVIEW ? specReviewEffectiveFixer : judgeEffectiveFixer;
@@ -234,6 +246,19 @@ export async function deriveStepCompletion(
           : (toolResult as BaseReportResult & { findings?: Finding[] });
       persistToolResult = effectiveToolResult;
 
+      // For regression-gate: align persisted findings with verdict-affecting findings so
+      // the approved+fixable→code-fixer transition (reviewer-chain.ts) and regressionGateActive
+      // do not fire on known-unfixed low entries. The verdict was computed with verdictFindings
+      // (excludeKnownUnfixedRegressions applied); store the same subset.
+      if (step.name === REGRESSION_GATE_STEP_NAME && isJudgeStep && persistToolResult !== null) {
+        const rChain = deriveImplReviewerChain(state);
+        const rLedger = computeRegressionLedger(rChain, state, canonScope);
+        persistToolResult = {
+          ...persistToolResult,
+          findings: excludeKnownUnfixedRegressions(persistToolResult.findings ?? [], rLedger),
+        };
+      }
+
       // Post-verdict: verify finding refs for judge / request-review steps.
       // Findings are split into two groups with inverted expectations:
       //   - missingDecl (fileMissing===true): the file is EXPECTED to be absent.
@@ -241,7 +266,7 @@ export async function deriveStepCompletion(
       //   - regular (no fileMissing): the file is EXPECTED to exist.
       //     If it is not found, it is a hallucinated ref → override to escalation (existing behavior).
       if ((isJudgeStep || isRequestReviewStep) && deps.runtimeStrategy) {
-        const tr = effectiveToolResult as JudgeReportResult | RequestReviewReportResult;
+        const tr = (persistToolResult ?? effectiveToolResult) as JudgeReportResult | RequestReviewReportResult;
         const allFindings = tr.findings ?? [];
         const undecidedFindings = filterUndecidedFindings(step.name, allFindings, state.decisions);
         const affectingFindings = collectVerdictAffectingFindings(undecidedFindings);
