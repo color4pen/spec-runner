@@ -71,6 +71,24 @@
       "durationMs": 117893,
       "durationApiMs": 117799,
       "totalCostUsd": 0.33144524999999997
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T14:46:45.954Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 34,
+          "outputTokens": 17960,
+          "cacheReadInputTokens": 2091494,
+          "cacheCreationInputTokens": 76381
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "test-materialize",
+      "numTurns": 32,
+      "durationMs": 325472,
+      "durationApiMs": 304192,
+      "totalCostUsd": 1.1833789499999996
     }
   ]
 }

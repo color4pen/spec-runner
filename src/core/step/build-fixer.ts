@@ -13,7 +13,7 @@ import { STEP_NAMES } from "./step-names.js";
 import { isFixerContinuation, buildContinuationMessage } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
-const BUILD_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
+const BUILD_FIXER_AGENT_MODEL = "claude-sonnet-5";
 
 /**
  * Full AgentDefinition owned by BuildFixerStep.

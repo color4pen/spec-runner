@@ -13,7 +13,7 @@ import { reviewFeedbackPath } from "../../util/paths.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { derivePostFixContext, buildPostFixContextBlock } from "./post-fix-context.js";
 
-const ADR_GEN_AGENT_MODEL = "claude-sonnet-4-6";
+const ADR_GEN_AGENT_MODEL = "claude-sonnet-5";
 
 /**
  * follow-prompt for AdrGenStep.

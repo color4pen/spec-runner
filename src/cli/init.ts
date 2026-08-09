@@ -114,7 +114,7 @@ export async function runInit(options: {
       };
       steps = { defaults: stepsDefaults };
       // Only write steps.design when designModel is defined (e.g. openai).
-      // For anthropic, design.ts built-in already handles claude-opus-4-6[1m]; omitting keeps
+      // For anthropic, design.ts built-in already handles claude-opus-5; omitting keeps
       // scaffold byte-identical to the legacy format.
       if (defaults.designModel !== undefined) {
         steps["design"] = { model: defaults.designModel };

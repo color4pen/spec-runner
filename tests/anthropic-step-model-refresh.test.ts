@@ -185,14 +185,22 @@ describe("TC-003: DesignStep の built-in 既定モデルは claude-opus-5 で�
 // ---------------------------------------------------------------------------
 
 let tempDir: string;
+let originalXdgConfigHome: string | undefined;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-model-refresh-test-"));
+  originalXdgConfigHome = process.env["XDG_CONFIG_HOME"];
+  process.env["XDG_CONFIG_HOME"] = tempDir;
   vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
 });
 
 afterEach(async () => {
+  if (originalXdgConfigHome !== undefined) {
+    process.env["XDG_CONFIG_HOME"] = originalXdgConfigHome;
+  } else {
+    delete process.env["XDG_CONFIG_HOME"];
+  }
   await fs.rm(tempDir, { recursive: true, force: true });
   vi.restoreAllMocks();
 });

@@ -37,7 +37,7 @@ describe("runInit — config scaffold generation", () => {
 
     expect(config.version).toBe(1);
     expect(config.steps?.defaults).toBeDefined();
-    expect(config.steps.defaults.model).toBe("claude-sonnet-4-6");
+    expect(config.steps.defaults.model).toBe("claude-sonnet-5");
     expect(config.steps.defaults.maxTurns).toBeNull();
     expect(config.steps.defaults.timeoutMs).toBeNull();
   });
@@ -99,7 +99,7 @@ describe("TC-010: specrunner init で steps.defaults が追加される", () => 
 
     expect(config.steps).toBeDefined();
     expect(config.steps.defaults).toBeDefined();
-    expect(config.steps.defaults.model).toBe("claude-sonnet-4-6");
+    expect(config.steps.defaults.model).toBe("claude-sonnet-5");
     expect(config.steps.defaults.maxTurns).toBeNull();
     expect(config.steps.defaults.timeoutMs).toBeNull();
   });
@@ -496,7 +496,7 @@ describe("runInit — provider: anthropic scaffold (legacy-compatible)", () => {
     const raw = await fs.readFile(configPath, "utf-8");
     const config = JSON.parse(raw);
 
-    expect(config.steps?.defaults?.model).toBe("claude-sonnet-4-6");
+    expect(config.steps?.defaults?.model).toBe("claude-sonnet-5");
     expect(config.steps?.design).toBeUndefined();
   });
 });
@@ -511,7 +511,7 @@ describe("runInit — no provider flag, non-TTY (CI compatibility)", () => {
     const raw = await fs.readFile(configPath, "utf-8");
     const config = JSON.parse(raw);
 
-    expect(config.steps?.defaults?.model).toBe("claude-sonnet-4-6");
+    expect(config.steps?.defaults?.model).toBe("claude-sonnet-5");
     expect(config.steps?.design).toBeUndefined();
   });
 });

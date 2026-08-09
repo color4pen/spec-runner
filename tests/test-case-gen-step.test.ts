@@ -65,9 +65,9 @@ describe("TC-001: TestCaseGenStep 構造検証", () => {
     expect(TestCaseGenStep.name).toBe("test-case-gen");
   });
 
-  it("step.agent.role === 'test-case-gen' かつ model === 'claude-sonnet-4-6'", () => {
+  it("step.agent.role === 'test-case-gen' かつ model === 'claude-sonnet-5'", () => {
     expect(TestCaseGenStep.agent.role).toBe("test-case-gen");
-    expect(TestCaseGenStep.agent.model).toBe("claude-sonnet-4-6");
+    expect(TestCaseGenStep.agent.model).toBe("claude-sonnet-5");
   });
 
   it("step.agent.capabilities.gitWrite === true", () => {

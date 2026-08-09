@@ -16,7 +16,7 @@ import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { getConformanceFixContext, buildFindingsBlock } from "./fixer-helpers.js";
 import { latestIteration } from "./io-iteration.js";
 
-const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-4-6";
+const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-5";
 
 /**
  * Full AgentDefinition owned by ImplementerStep.

@@ -11,7 +11,7 @@ import { buildRequestConstraintsBlock } from "../../parser/extract-section.js";
 import { CODE_REVIEW_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import type { OutputContract } from "../port/output-contract.js";
 
-const CODE_REVIEW_AGENT_MODEL = "claude-sonnet-4-6";
+const CODE_REVIEW_AGENT_MODEL = "claude-sonnet-5";
 
 /**
  * Build the review-feedback file path for a given iteration.

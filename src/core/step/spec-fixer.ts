@@ -11,7 +11,7 @@ import { latestIteration } from "./io-iteration.js";
 import { isFixerContinuation, buildContinuationMessage, getLatestJudgeFindings, buildFindingsBlock, getConformanceFixContext } from "./fixer-helpers.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
-const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
+const SPEC_FIXER_AGENT_MODEL = "claude-sonnet-5";
 
 /**
  * Full AgentDefinition owned by SpecFixerStep.

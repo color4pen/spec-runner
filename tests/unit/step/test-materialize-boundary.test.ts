@@ -105,9 +105,9 @@ describe("TC-TMB-01: TestMaterializeStep structure", () => {
     expect(TestMaterializeStep.completionVerdict).toBe("success");
   });
 
-  it("agent.role === 'test-materialize' and model === 'claude-sonnet-4-6'", () => {
+  it("agent.role === 'test-materialize' and model === 'claude-sonnet-5'", () => {
     expect(TestMaterializeStep.agent.role).toBe("test-materialize");
-    expect(TestMaterializeStep.agent.model).toBe("claude-sonnet-4-6");
+    expect(TestMaterializeStep.agent.model).toBe("claude-sonnet-5");
   });
 
   it("agent.capabilities.gitWrite === true", () => {

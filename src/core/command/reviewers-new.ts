@@ -22,7 +22,7 @@ function buildTemplate(name: string): string {
   return `---
 name: ${name}
 maxIterations: 3
-# model: claude-sonnet-4-6   # optional — override per-reviewer model
+# model: claude-sonnet-5   # optional — override per-reviewer model
 # Activation conditions (optional — omit to activate on every job):
 # paths:
 #   - src/auth/**
