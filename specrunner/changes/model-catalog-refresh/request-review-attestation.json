@@ -1,0 +1,14 @@
+{
+  "requestHash": "sha256:a3d5772e5de0b9faa21074135bae54d48afc856f54b4f459eff95aaf26e55eba",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/config/model-registry.ts:13-27 — BUILTIN_MODEL_REGISTRY: anthropic 9 entries (claude-opus-4-8, claude-opus-4-8[1m], claude-opus-4-7, claude-opus-4-6, claude-opus-4-6[1m], claude-sonnet-4-6, claude-sonnet-4-5, claude-opus-4-5, claude-haiku-4-5) + openai 4 entries (gpt-5.5, gpt-5.4, gpt-5.4-mini, gpt-5.3-codex-spark)",
+    "src/config/model-registry.ts:49-57 — PROVIDER_DEFAULTS.openai = { defaultModel: 'gpt-5.4-mini', designModel: 'gpt-5.5' }",
+    "src/config/model-registry.ts:77-86 — resolveProvider throws CONFIG_INVALID for unknown model names",
+    "src/core/usage/pricing.ts:46-180 — MODEL_PRICING table; gpt-5.5 row: input=10.0, output=40.0, cacheRead=2.5, cacheWrite=0, comment 'approximate using o3 tier'",
+    "src/core/usage/types.ts:50-54 — Comment: 'Note: for models absent from the pricing table (e.g. claude-opus-5, claude-sonnet-5, claude-fable-5), computeCostUsd returns null'",
+    "src/cli/init.ts:111-121 — scaffold writes defaults.defaultModel to steps.defaults.model (line 111); writes designModel to steps['design'].model when defined (lines 119-121)",
+    "src/core/usage/pricing.ts:194-206 — normalizeModelKey removes -YYYYMMDD suffix, preserves [1m] suffix"
+  ],
+  "sourceRevision": "6782004c3a0fdd1eb6f1844d2865520b4effaa18"
+}
