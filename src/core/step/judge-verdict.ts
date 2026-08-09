@@ -190,6 +190,19 @@ export function collectFixableFindings(findings: Finding[]): Finding[] {
 }
 
 /**
+ * Select findings that are valid targets for the code-fixer in the standard reviewer path.
+ *
+ * Policy: fixable findings with severity != "low".
+ * LOW severity findings are excluded at the routing layer (here) — this is the single
+ * authoritative place for the LOW exclusion. code-fixer prompts must NOT re-filter by severity.
+ *
+ * Pure function — no side effects, no I/O.
+ */
+export function selectFixerTargetFindings(findings: Finding[]): Finding[] {
+  return collectFixableFindings(findings).filter((f) => f.severity !== "low");
+}
+
+/**
  * Derive the verdict for regression-gate steps.
  *
  * Unlike deriveJudgeVerdict, ANY fixable finding (regardless of severity) triggers needs-fix.

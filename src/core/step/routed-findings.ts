@@ -17,7 +17,7 @@ import { collectParallelFixerFindings } from "../pipeline/findings-ledger.js";
 import { buildCanonWriteScopeFromState } from "./canon-write-scope.js";
 import { CUSTOM_REVIEWERS_STEP_NAME } from "../pipeline/types.js";
 import { REGRESSION_GATE_STEP_NAME } from "./regression-gate.js";
-import { collectFixableFindings } from "./judge-verdict.js";
+import { selectFixerTargetFindings } from "./judge-verdict.js";
 
 /**
  * Determine if the code-fixer is being invoked from the custom reviewer coordinator loop.
@@ -105,10 +105,10 @@ export function collectRoutedFixerFindings(state: JobState): Finding[] {
   }
 
   // Branch 3: active reviewer in the standard / non-coordinator path.
-  // Filter to fixable findings only — non-fixable (informational, decision-needed)
-  // findings cannot be fixed by the fixer and should not exempt paths from no-op detection.
+  // Apply severity policy (LOW excluded) — selectFixerTargetFindings is the single
+  // authoritative place for the LOW exclusion in the routing layer.
   const chain = deriveImplFixerChain(state);
   const active = resolveActiveReviewer(state, chain);
   const allFindings = getLatestJudgeFindings(state, active) ?? [];
-  return collectFixableFindings(allFindings);
+  return selectFixerTargetFindings(allFindings);
 }

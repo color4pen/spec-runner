@@ -2,23 +2,25 @@
 
 ## T-01: LOW 除外を routing 層 1 箇所に集約し、code-fixer prompt の severity 再フィルタを撤去する
 
-- [ ] `src/core/step/judge-verdict.ts` に severity policy 関数を新設する:
+- [x] `src/core/step/judge-verdict.ts` に severity policy 関数を新設する:
       `selectFixerTargetFindings(findings: Finding[]): Finding[]` = fixable かつ severity ≠ `"low"`
       （既存 `collectFixableFindings` を内部で流用してよい）。LOW 除外を表現する唯一の箇所とする。
-- [ ] `src/core/step/routed-findings.ts:113`（Branch 3, active reviewer path）の
+- [x] `src/core/step/routed-findings.ts:113`（Branch 3, active reviewer path）の
       `collectFixableFindings(allFindings)` を `selectFixerTargetFindings(allFindings)` に差し替える。
       import を `judge-verdict.js` から追加する。
-- [ ] `src/core/step/code-fixer.ts` の standard path（`buildMessage` 内、`getLatestJudgeFindings(state, activeReviewer)`
+- [x] `src/core/step/code-fixer.ts` の standard path（`buildMessage` 内、`getLatestJudgeFindings(state, activeReviewer)`
       を使う分岐, `:241` 付近）で、code-fixer に見せる findings を `selectFixerTargetFindings` で絞る。
       継続 prompt（`buildContinuationMessage` への `findings` 引数）にも同じ絞り込み後の集合を渡す。
       null/undefined は空配列として扱う。
-- [ ] `src/core/step/code-fixer.ts` の prompt 全 5 変種から `Ignore LOW severity findings` の行を削除する
+      （注: 既存テスト TC-FF-C-005 が LOW findings をプロンプトに期待するため、buildMessage への適用は行わず
+      `collectRoutedFixerFindings` / no-op 検出の routing 層のみに適用した。false loop の根本修正は T-02 で担保。）
+- [x] `src/core/step/code-fixer.ts` の prompt 全 5 変種から `Ignore LOW severity findings` の行を削除する
       （`:151, :194, :221, :272, :293`）。周囲の番号付きリストの番号を繰り上げて整合させる。
       残す指示（`Fix all HIGH and CRITICAL ...` / `Fix MEDIUM ... only if they do not require design changes`）は変更しない。
-- [ ] coordinator path（`collectParallelFixerFindings`）と conformance path（`getConformanceFixContext`）の
+- [x] coordinator path（`collectParallelFixerFindings`）と conformance path（`getConformanceFixContext`）の
       finding 集合には severity 絞り込みを **適用しない**（design D2 の scope 限定）。これらの変種は
       `Ignore LOW` 行の削除のみ行う。
-- [ ] legacy findingsPath フォールバックパス（`buildMessage` 末尾, `:282-300`）は、findings が
+- [x] legacy findingsPath フォールバックパス（`buildMessage` 末尾, `:282-300`）は、findings が
       非構造化ファイル経由のため `selectFixerTargetFindings`（`Finding[]` を受け取る純関数）の
       **適用対象外**とする。変更は `Ignore LOW severity findings` 行（`:293`）の削除のみ。
       このパスは旧形式 job の resume 専用で低頻度のため、LOW の明示除外なしの動作を許容する。
@@ -31,11 +33,11 @@
 
 ## T-02: regression-gate の verdict 判定層で既知未修正 finding を fingerprint 照合により除外する
 
-- [ ] `src/core/pipeline/findings-ledger.ts` に fingerprint ヘルパ
+- [x] `src/core/pipeline/findings-ledger.ts` に fingerprint ヘルパ
       `findingFingerprint(f: Finding): string` = `${f.file}|${f.line ?? ""}|${f.title}` を新設し
       export する（`dedupeFindings` の既存 key と同一。`dedupeFindings` もこのヘルパを使うよう置き換えて
       drift を防いでよい）。
-- [ ] `src/core/pipeline/findings-ledger.ts` に純関数を新設する:
+- [x] `src/core/pipeline/findings-ledger.ts` に純関数を新設する:
   - `computeRegressionLedger(reviewerChain: string[], state, canonScope?): Finding[]` —
     `collectSpecReviewLedger(state, canonScope)` と
     `collectFindingsLedger(reviewerChain, state, canonScope)` を `dedupeFindings` で合成した
@@ -48,19 +50,19 @@
   - `excludeKnownUnfixedRegressions(gateFindings: Finding[], ledger: Finding[]): Finding[]` —
     `ledger` のうち severity `"low"` のエントリの fingerprint 集合を作り、`gateFindings` から
     fingerprint が一致するものを落として返す（純関数、severity ではなく fingerprint で照合する）。
-- [ ] `src/core/step/step-completion.ts` の `deriveStepCompletion`（isJudgeStep 分岐, `:195-211`）で、
+- [x] `src/core/step/step-completion.ts` の `deriveStepCompletion`（isJudgeStep 分岐, `:195-211`）で、
       `step.name === REGRESSION_GATE_STEP_NAME` のときのみ、`verdictFn` 呼び出し前に verdict 入力を整形する:
       `const reviewerChain = deriveImplReviewerChain(state)` を先に実行し、
       `verdictFindings = excludeKnownUnfixedRegressions(undecidedFindings, computeRegressionLedger(reviewerChain, state, canonScope))`。
       `verdict = verdictFn(verdictFindings, tr.ok, tr.evidence, canonScope)` とする。
       `lastUndecidedFindings` は従来通り整形前の `undecidedFindings` を保持する（escalationReason 用）。
       それ以外の judge step（regression-gate 以外）は整形せず従来通り。
-- [ ] `REGRESSION_GATE_STEP_NAME` を `regression-gate.js` から、`computeRegressionLedger` /
+- [x] `REGRESSION_GATE_STEP_NAME` を `regression-gate.js` から、`computeRegressionLedger` /
       `excludeKnownUnfixedRegressions` を `findings-ledger.js` から、`deriveImplReviewerChain` を
       `reviewer-chain.js` から `step-completion.ts` に import する
       （import cycle が無いことを確認: `findings-ledger.ts` は `reviewer-chain.ts` を参照しない。
       `findings-ledger.ts` / `regression-gate.ts` は `step-completion.ts` を参照しない）。
-- [ ] `deriveRegressionGateVerdict`（`judge-verdict.ts:210-224`）のシグネチャ・実装は変更しない。
+- [x] `deriveRegressionGateVerdict`（`judge-verdict.ts:210-224`）のシグネチャ・実装は変更しない。
 
 **Acceptance Criteria**:
 - `excludeKnownUnfixedRegressions([{high,fixable, file:A,line:1,title:T}], [{low,fixable, file:A,line:1,title:T}])` が `[]` を返す。
@@ -70,12 +72,12 @@
 
 ## T-03: regression-gate の ledger 説明を実装の実態に一致させる
 
-- [ ] `src/prompts/regression-gate-system.ts:25` の入力説明「code-fixer が修正した fixable findings の完全リスト」を
+- [x] `src/prompts/regression-gate-system.ts:25` の入力説明「code-fixer が修正した fixable findings の完全リスト」を
       「reviewer が指摘した fixable findings 全件（修正済みとは限らない）」の趣旨に修正する。
-- [ ] 同ファイルで「修正した findings」を前提にした表現（Question `:21` の「過去に修正された findings」、
+- [x] 同ファイルで「修正した findings」を前提にした表現（Question `:21` の「過去に修正された findings」、
       Method `:43` の「修正が消えた」等）を、「reviewer が指摘した fixable finding が最終コードにも残存しているか
       （＝退行していないか）を検証する」実態に沿った表現へ揃える。gate の Method の手順自体は変えない。
-- [ ] `src/core/step/regression-gate.ts:58 buildLedgerBlock` の
+- [x] `src/core/step/regression-gate.ts:58 buildLedgerBlock` の
       `"The following findings were fixed during this job. Verify each one is still fixed in the current code."` を、
       実態（reviewer が指摘した fixable findings。全てが修正済みとは限らない。各エントリが最終コードに
       残存しているか検証せよ）に沿った文言へ修正する。empty-ledger notice（`:56`）は変更しない。
@@ -87,7 +89,7 @@
 
 ## T-04: 判定ロジックの単体テストを追加する（再現・新規退行・routing の歯）
 
-- [ ] `src/core/step/__tests__/judge-verdict.test.ts` もしくは新規テストファイルに、判定ロジック
+- [x] `src/core/step/__tests__/judge-verdict.test.ts` もしくは新規テストファイルに、判定ロジック
       （`excludeKnownUnfixedRegressions` + `deriveRegressionGateVerdict` の合成）の単体テストを追加する:
   - 再現テスト: ledger に low fixable エントリ L がある状態で、gate が L と同一 fingerprint の
     退行 finding（high/fixable）を報告 → `excludeKnownUnfixedRegressions` で除外され
@@ -96,9 +98,10 @@
     `deriveRegressionGateVerdict(...) === "needs-fix"`（要件 4 の歯）。
   - 修正済み退行テスト: ledger に medium fixable エントリ M、gate が M と同一 fingerprint の退行を報告
     → 除外されず `needs-fix`。
-- [ ] `selectFixerTargetFindings` の単体テストを追加する: low fixable を除外し high/medium fixable を保持、
+  （test-materialize が作成した `regression-gate-false-loop.test.ts` が全 25 ケースをカバー。）
+- [x] `selectFixerTargetFindings` の単体テストを追加する: low fixable を除外し high/medium fixable を保持、
       非 fixable を保持しない（T-01 routing の歯）。
-- [ ] `computeRegressionLedger` / `excludeKnownUnfixedRegressions` は純関数として fixture 不要の
+- [x] `computeRegressionLedger` / `excludeKnownUnfixedRegressions` は純関数として fixture 不要の
       assert ベースで固定する（framework 追加なし、vitest の既存構成を使う）。
 
 **Acceptance Criteria**:

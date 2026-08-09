@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ecae6e77-b2ae-42a4-9ebb-c9e94b448df0",
   "createdAt": "2026-08-09T00:13:25.380Z",
-  "updatedAt": "2026-08-09T01:01:23.594Z",
+  "updatedAt": "2026-08-09T01:09:44.827Z",
   "request": {
     "title": "low/medium finding の偽ループを解消し regression-gate を新規退行の検出に限定する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-materialize",
+  "step": "implementer",
   "status": "running",
   "branch": "change/regression-gate-false-loop-ecae6e77",
   "error": null,
@@ -69,7 +69,8 @@
     "04c818de1c2fe692461b9e6e15e213d0677f4055",
     "1581c50c085d6e1356652e86452ecabd522dcdb4",
     "b60d52b719ff3e1bb31fdd49dde4db22878d9def",
-    "5081567e8562fa5b8b1c84ec8350bfb626c60600"
+    "5081567e8562fa5b8b1c84ec8350bfb626c60600",
+    "921f4c3174095ee801338fb7fc84dea032cae176"
   ],
   "touchedFiles": {
     "request-review": [
@@ -116,16 +117,33 @@
       "src/core/pipeline/findings-ledger.ts",
       "src/core/step/code-fixer.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "test-materialize": [
+      "src/core/step/__tests__/judge-verdict.test.ts",
+      "src/core/step/__tests__/routed-findings.test.ts",
+      "src/core/pipeline/__tests__/findings-ledger.test.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/step/routed-findings.ts",
+      "src/core/step/__tests__/regression-gate-step.test.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/step/step-completion.ts",
+      "vitest.config.ts",
+      "src/core/step/__tests__/step-completion-missing-file-finding.test.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "src/core/step/__tests__/regression-gate-source-checks.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 2,
       "spec-fixer": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "test-materialize": 1
     }
   }
 }

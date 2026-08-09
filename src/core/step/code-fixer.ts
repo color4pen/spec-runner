@@ -147,9 +147,8 @@ ${findingsBlock}
 Please:
 1. Fix all HIGH and CRITICAL severity findings from the conformance review (mandatory)
 2. Fix MEDIUM severity findings only if they do not require design changes
-3. Ignore LOW severity findings
-4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-5. Do NOT add new features or make specification changes
+3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+4. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -191,9 +190,8 @@ ${findingsBlock}
 Please:
 1. Fix all HIGH and CRITICAL severity findings (mandatory)
 2. Fix MEDIUM severity findings only if they do not require design changes
-3. Ignore LOW severity findings
-4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-5. Do NOT add new features or make specification changes
+3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+4. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -218,10 +216,9 @@ Please:
 1. Read the review feedback at ${findingsPath}
 2. Fix all HIGH and CRITICAL severity findings (mandatory)
 3. Fix MEDIUM severity findings only if they do not require design changes
-4. Ignore LOW severity findings
-5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-6. Do NOT modify the review-feedback file itself
-7. Do NOT add new features or make specification changes
+4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+5. Do NOT modify the review-feedback file itself
+6. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -269,9 +266,8 @@ ${findingsBlock}
 Please:
 1. Fix all HIGH and CRITICAL severity findings (mandatory)
 2. Fix MEDIUM severity findings only if they do not require design changes
-3. Ignore LOW severity findings
-4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-5. Do NOT add new features or make specification changes
+3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+4. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -290,10 +286,9 @@ Please:
 1. Read the review feedback at ${findingsPath}
 2. Fix all HIGH and CRITICAL severity findings (mandatory)
 3. Fix MEDIUM severity findings only if they do not require design changes
-4. Ignore LOW severity findings
-5. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-6. Do NOT modify the review-feedback file itself
-7. Do NOT add new features or make specification changes
+4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+5. Do NOT modify the review-feedback file itself
+6. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}

@@ -46,6 +46,9 @@ import {
 } from "./canon-escalation.js";
 import { STEP_NAMES } from "./step-names.js";
 import { buildCanonWriteScope } from "./canon-write-scope.js";
+import { computeRegressionLedger, excludeKnownUnfixedRegressions } from "../pipeline/findings-ledger.js";
+import { REGRESSION_GATE_STEP_NAME } from "./regression-gate.js";
+import { deriveImplReviewerChain } from "../pipeline/reviewer-chain.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -203,7 +206,16 @@ export async function deriveStepCompletion(
         if (tr.evidence?.checked === 0) {
           stderrWrite(`[${step.name}] vacuous check: checked=0 — 検証実績ゼロのため判定不能として扱われます`);
         }
-        verdict = verdictFn(undecidedFindings, tr.ok, tr.evidence, canonScope);
+        // For regression-gate: exclude known-unfixed (low severity) ledger entries from
+        // the verdict inputs to avoid false loops (issue #952).
+        // Other judge steps use undecidedFindings as-is.
+        let verdictFindings = undecidedFindings;
+        if (step.name === REGRESSION_GATE_STEP_NAME) {
+          const reviewerChain = deriveImplReviewerChain(state);
+          const ledger = computeRegressionLedger(reviewerChain, state, canonScope);
+          verdictFindings = excludeKnownUnfixedRegressions(undecidedFindings, ledger);
+        }
+        verdict = verdictFn(verdictFindings, tr.ok, tr.evidence, canonScope);
         lastUndecidedFindings = undecidedFindings;
         lastCanonResolver =
           step.name === STEP_NAMES.SPEC_REVIEW ? specReviewEffectiveFixer : judgeEffectiveFixer;
