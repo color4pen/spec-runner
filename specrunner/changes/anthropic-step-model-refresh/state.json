@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
   "createdAt": "2026-08-09T14:23:20.716Z",
-  "updatedAt": "2026-08-09T15:08:55.922Z",
+  "updatedAt": "2026-08-09T15:12:25.506Z",
   "request": {
     "title": "Anthropic step 既定モデルの世代更新: sonnet-4-6 → sonnet-5、design opus-4-6[1m] → opus-5",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/anthropic-step-model-refresh-24370d32",
   "error": null,
@@ -71,7 +71,8 @@
     "dab881a991c5a4124fee1a3b59ffea043e9609b6",
     "a01b0e5784f343a69212c0724d671f6d071b44fb",
     "735d6e32834e59191a5108a298a622c023715914",
-    "a869c6af75b10c88979e95e7c960addec6c6d249"
+    "a869c6af75b10c88979e95e7c960addec6c6d249",
+    "71d4438b2f6d58422ac56fe970783b39bef0d4c4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -154,6 +155,11 @@
     "code-review": [
       "tests/anthropic-step-model-refresh.test.ts",
       "src/cli/init.ts"
+    ],
+    "regression-gate": [
+      "src/config/model-registry.ts",
+      "specrunner/project.md",
+      "specrunner/adr/2026-05-26-project-config-overlay.md"
     ]
   },
   "reviewerStatuses": [
@@ -187,7 +193,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -200,7 +206,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

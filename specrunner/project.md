@@ -101,18 +101,18 @@ exit 時 invariant として `process.on('beforeExit')` が running 状態の jo
 {
   "version": 1,
   "steps": {
-    "defaults": { "model": "claude-sonnet-4-6" },
+    "defaults": { "model": "claude-sonnet-5" },
     "design": {
-      "model": "claude-sonnet-4-6",
+      "model": "claude-sonnet-5",
       "byRequestType": {
-        "spec-change": { "model": "claude-opus-4-6[1m]" },
-        "new-feature": { "model": "claude-opus-4-6[1m]" }
+        "spec-change": { "model": "claude-opus-5" },
+        "new-feature": { "model": "claude-opus-5" }
       }
     },
     "code-review": {
-      "model": "claude-sonnet-4-6",
+      "model": "claude-sonnet-5",
       "byRequestType": {
-        "spec-change": { "model": "claude-opus-4-6[1m]" }
+        "spec-change": { "model": "claude-opus-5" }
       }
     }
   }
