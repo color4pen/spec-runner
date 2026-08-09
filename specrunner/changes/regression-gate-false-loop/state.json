@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ecae6e77-b2ae-42a4-9ebb-c9e94b448df0",
   "createdAt": "2026-08-09T00:13:25.380Z",
-  "updatedAt": "2026-08-09T01:59:01.872Z",
+  "updatedAt": "2026-08-09T02:14:42.697Z",
   "request": {
     "title": "low/medium finding の偽ループを解消し regression-gate を新規退行の検出に限定する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/regression-gate-false-loop-ecae6e77",
   "error": null,
@@ -79,7 +79,9 @@
     "19091f23cc67a26148f248b7be92681d0d14dafc",
     "cf9ad62e79293c13a296925a39d592b21c344f78",
     "fada34f111663729c1da1a861cc45954b2932d5d",
-    "d8507407fc150dc0199943c0f1cc899b1328e9f7"
+    "d8507407fc150dc0199943c0f1cc899b1328e9f7",
+    "420721bb0d106f261e950744638e72e4d799ec06",
+    "7fb5f3ee093af826732225da87362d9ddf7765d5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -174,9 +176,11 @@
       "tests/unit/step/fixer-findings.test.ts"
     ],
     "code-fixer": [
-      "src/core/step/code-fixer.ts",
-      "src/core/step/judge-verdict.ts",
-      "tests/unit/step/fixer-findings.test.ts"
+      "src/core/step/step-completion.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/step/__tests__/step-completion-missing-file-finding.test.ts"
     ]
   },
   "resumePoint": null,
@@ -184,8 +188,8 @@
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "420721bb0d106f261e950744638e72e4d799ec06",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -195,7 +199,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/regression-gate-false-loop/design.md:sha256:ce051e6b0ef5be44558f5e4f16f4c567256f13ad05e4d8bc46f924b687d2db9c|specrunner/changes/regression-gate-false-loop/request.md:sha256:d72e1afa9db0a42a92438f4fdd6084ce8328f58104233245166032b65561edcf|specrunner/changes/regression-gate-false-loop/spec.md:sha256:dcc6b4cef7de632bced0478bafa766ec5461b19cbdc7100107d7dafb2af8b9a4|specrunner/changes/regression-gate-false-loop/tasks.md:sha256:821cd8b993f23113f65b6ce165cfb9190a94e5eecc6d5950c453702ed975b3c8|specrunner/changes/regression-gate-false-loop/test-cases.md:sha256:a04a4cd5b0ab8739b51a05f79af63ad5f3799bc4c073d2bf37b449b45563d903"
     },
     {
       "name": "scale-tolerance",
@@ -211,7 +216,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -224,10 +229,10 @@
       "verification": 2,
       "build-fixer": 1,
       "code-review": 1,
-      "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
