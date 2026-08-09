@@ -1,16 +1,16 @@
 # Verification Result — regression-gate-false-loop — iter 1
 
-## Verdict: failed
+## Verdict: passed
 
 ## Phase Results
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 1.2s | 0 |
-| 2 | typecheck | passed | 5.5s | 0 |
-| 3 | test | failed | 35.2s | 1 |
-| 4 | lint | skipped | — | — |
-| 5 | changed-line-coverage | skipped | — | — |
+| 1 | build | passed | 0.4s | 0 |
+| 2 | typecheck | passed | 5.4s | 0 |
+| 3 | test | passed | 41.9s | 0 |
+| 4 | lint | passed | 7.0s | 0 |
+| 5 | changed-line-coverage | passed | 48.7s | 0 |
 | 6 | lockfile-sync | skipped | — | — |
 
 ## Phase: build
@@ -24,7 +24,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.41 MB
-ESM ⚡️ Build success in 90ms
+ESM ⚡️ Build success in 82ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -40,16 +40,18 @@ $ tsc --noEmit
 
 ## Phase: test
 
-Step 'test' failed
-
 ```
 
  RUN  v4.1.5 .
 
- ❯ src/core/step/__tests__/regression-gate-source-checks.test.ts (3 tests | 3 failed) 105ms
-     × TC-006: src/ 配下に 'Ignore LOW severity' が 0 件であること（全 5 変種から削除済） 104ms
-     × TC-007: regression-gate-system.ts に 'were fixed during this job' が残っていない 1ms
-     × TC-007: regression-gate.ts の buildLedgerBlock に 'were fixed during this job' が残っていない 0ms
+Usage for: metrics-show-test-slug
+────────────────────────────────────────────────────────────
+[2026-01-01T10:00:00.000Z] job / design
+  claude-opus-4-5: in=500 out=200 cacheRead=100 cacheCreate=50
+
+────────────────────────────────────────────────────────────
+Totals by model:
+  claude-opus-4-5: in=500 out=200 cacheRead=100 cacheCreate=50
 No jobs found.
 [実行中]
 JOB_ID	SLUG	STEP	STATUS	NEXT	AGE
@@ -73,29 +75,29 @@ Detached pipeline started for: my-slug
   Monitor: specrunner job wait my-slug
   Details: specrunner job show my-slug
 
- Test Files  1 failed | 732 passed (733)
-      Tests  3 failed | 10898 passed | 1 skipped (10902)
-   Start at  10:30:11
-   Duration  34.91s (transform 6.17s, setup 3.77s, import 26.73s, tests 52.22s, environment 36ms)
+ Test Files  733 passed (733)
+      Tests  10901 passed | 1 skipped (10902)
+   Start at  10:33:10
+   Duration  41.56s (transform 7.55s, setup 4.46s, import 32.96s, tests 63.33s, environment 40ms)
 
 
 $ vitest run
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-5d5MER/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-MrdIf0/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: failed to push checkpoint commit for test-slug to origin/fix/test-branch-abc12345. Push manually to ensure state is on the branch.
-Warning: checkpoint persistBeforePush failed for test-slug: disk-full: cannot persist. Continuing with push.
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-im58Ld/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-LGCoO9/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
+Warning: failed to push checkpoint commit for test-slug to origin/fix/test-branch-abc12345. Push manually to ensure state is on the branch.
+Warning: checkpoint persistBeforePush failed for test-slug: disk-full: cannot persist. Continuing with push.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
@@ -118,8 +120,8 @@ Retrying worktree add: lock contention (attempt 2/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -166,7 +168,6 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
 [specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -190,13 +191,11 @@ GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
 Error: No job found for slug: not-found-slug
 Error: No job found for slug: not-found-slug
 Error: No job found for slug: not-found-slug
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
 [inbox] skip: occupancy comment for priorJobId=abc-1234-5678-90ab-cdef already posted on issue#1
 ERROR: file not found
 spawn ENOENT
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
 Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
@@ -206,67 +205,30 @@ Warning: Could not parse verdict from agent step 'spec-review'. Treating as esca
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 [inbox] started job slug=fix-login-bug from issue#99
 
-⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
-
- FAIL  src/core/step/__tests__/regression-gate-source-checks.test.ts > TC-006: code-fixer prompt に severity 再フィルタ行が存在しない > TC-006: src/ 配下に 'Ignore LOW severity' が 0 件であること（全 5 変種から削除済）
-AssertionError: TC-006 FAILED: 'Ignore LOW severity' が src/ 内に 5 件残っています:
-  src/core/step/__tests__/regression-gate-source-checks.test.ts:6: *         verification: `grep -rn "Ignore LOW severity" src/` が 0 件
-  src/core/step/__tests__/regression-gate-source-checks.test.ts:28: it("TC-006: src/ 配下に 'Ignore LOW severity' が 0 件であること（全 5 変種から削除済）", () => {
-  src/core/step/__tests__/regression-gate-source-checks.test.ts:29: // verification command: `grep -rn "Ignore LOW severity" src/` が exit 0 かつ出力 0 件
-  src/core/step/__tests__/regression-gate-source-checks.test.ts:31: const matches = grepRecursive(SRC_ROOT, "Ignore LOW severity");
-  src/core/step/__tests__/regression-gate-source-checks.test.ts:36: `TC-006 FAILED: 'Ignore LOW severity' が src/ 内に ${matches.length} 件残っています:\n${detail}\n` +
-実装後は code-fixer.ts の prompt 全 5 変種からこの行を削除すること。
- ❯ src/core/step/__tests__/regression-gate-source-checks.test.ts:35:14
-     33|       // Show which files still contain the string to aid debugging
-     34|       const detail = matches.map((m) => `  ${m.file}:${m.line}: ${m.te…
-     35|       expect.fail(
-       |              ^
-     36|         `TC-006 FAILED: 'Ignore LOW severity' が src/ 内に ${matches.leng…
-     37|         `実装後は code-fixer.ts の prompt 全 5 変種からこの行を削除すること。`,
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
-
- FAIL  src/core/step/__tests__/regression-gate-source-checks.test.ts > TC-007: regression-gate-system.ts に「修正した findings」記述が残っていない > TC-007: regression-gate-system.ts に 'were fixed during this job' が残っていない
-Error: ENOENT: no such file or directory, open 'prompts/regression-gate-system.ts'
- ❯ src/core/step/__tests__/regression-gate-source-checks.test.ts:52:24
-     50|     // verification command: grep が 0 件
-     51|     const rgsPath = path.join(SRC_ROOT, "prompts/regression-gate-syste…
-     52|     const content = fs.readFileSync(rgsPath, "utf-8");
-       |                        ^
-     53|     const badPhrases = [
-     54|       "were fixed during this job",
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
-
- FAIL  src/core/step/__tests__/regression-gate-source-checks.test.ts > TC-007: regression-gate-system.ts に「修正した findings」記述が残っていない > TC-007: regression-gate.ts の buildLedgerBlock に 'were fixed during this job' が残っていない
-Error: ENOENT: no such file or directory, open 'core/step/regression-gate.ts'
- ❯ src/core/step/__tests__/regression-gate-source-checks.test.ts:74:24
-     72|   it("TC-007: regression-gate.ts の buildLedgerBlock に 'were fixed duri…
-     73|     const gatePath = path.join(SRC_ROOT, "core/step/regression-gate.ts…
-     74|     const content = fs.readFileSync(gatePath, "utf-8");
-       |                        ^
-     75|     const badPhrase = "were fixed during this job";
-     76|     if (content.includes(badPhrase)) {
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
-
-error: script "test" exited with code 1
-
 ```
 
 ## Phase: lint
 
-_(skipped — previous command failed)_
+```
+$ eslint ./src ./tests --max-warnings 0
+
+```
 
 ## Phase: changed-line-coverage
 
-_(skipped — previous command failed)_
+```
+changed-line-coverage: passed (24 changed files checked, 17 skipped)
+  Skipped (not in coverage surface): specrunner/changes/regression-gate-false-loop/bite-evidence-result.md, specrunner/changes/regression-gate-false-loop/design.md, specrunner/changes/regression-gate-false-loop/events.jsonl, specrunner/changes/regression-gate-false-loop/request-review-attestation.json, specrunner/changes/regression-gate-false-loop/request-review-result-001.md, specrunner/changes/regression-gate-false-loop/request.md, specrunner/changes/regression-gate-false-loop/rules.md, specrunner/changes/regression-gate-false-loop/spec-review-result-001.md, specrunner/changes/regression-gate-false-loop/spec-review-result-002.md, specrunner/changes/regression-gate-false-loop/spec.md, specrunner/changes/regression-gate-false-loop/state.json, specrunner/changes/regression-gate-false-loop/tasks.md, specrunner/changes/regression-gate-false-loop/test-cases.md, specrunner/changes/regression-gate-false-loop/usage.json, specrunner/changes/regression-gate-false-loop/verification-result.md, src/core/step/__tests__/regression-gate-false-loop.test.ts, src/core/step/__tests__/regression-gate-source-checks.test.ts
+```
 
 ## Phase: lockfile-sync
 
-_(skipped — previous command failed)_
+lockfile-sync: package.json の変更なし — スキップ
