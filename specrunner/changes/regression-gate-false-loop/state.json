@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ecae6e77-b2ae-42a4-9ebb-c9e94b448df0",
   "createdAt": "2026-08-09T00:13:25.380Z",
-  "updatedAt": "2026-08-09T02:28:05.298Z",
+  "updatedAt": "2026-08-09T02:35:01.801Z",
   "request": {
     "title": "low/medium finding の偽ループを解消し regression-gate を新規退行の検出に限定する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/regression-gate-false-loop-ecae6e77",
   "error": null,
@@ -84,7 +84,9 @@
     "7fb5f3ee093af826732225da87362d9ddf7765d5",
     "3cd90e12015d00a13e4304c14e5a02f796de23fc",
     "75051b8867a3b96708048639581594534bc43245",
-    "4172451e16f2a83eeb419753155bcc5bcac0dff4"
+    "4172451e16f2a83eeb419753155bcc5bcac0dff4",
+    "2c55284392a6f164fbca21bf03436bda6b58f2c1",
+    "0478f31a5bb9ea2179b5004329a4fb83fdf40e9c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -186,6 +188,18 @@
       "src/core/pipeline/findings-ledger.ts",
       "src/prompts/regression-gate-system.ts",
       "src/core/step/judge-verdict.ts"
+    ],
+    "conformance": [
+      "src/core/step/judge-verdict.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/routed-findings.ts",
+      "src/core/step/step-completion.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "src/core/step/__tests__/regression-gate-source-checks.test.ts"
     ]
   },
   "resumePoint": null,
@@ -221,7 +235,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 84,
+    "historyCount": 93,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -231,14 +245,15 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 1,
       "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
