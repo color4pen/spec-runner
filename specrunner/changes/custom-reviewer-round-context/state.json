@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4912c2d8-294b-4a1a-9e8b-23c99ca0a68d",
   "createdAt": "2026-08-09T03:30:27.884Z",
-  "updatedAt": "2026-08-09T05:23:41.727Z",
+  "updatedAt": "2026-08-09T05:27:34.996Z",
   "request": {
     "title": "custom reviewer に周回知識(前周 findings・operator 裁定)を注入する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/custom-reviewer-round-context-4912c2d8",
   "error": null,
   "pipelineId": "standard",
@@ -84,7 +84,8 @@
     "eb9b04e9d90f29e009a83bb031b637bbae359bd6",
     "e7c6809c38feb5e9abe5550a21511f146c615313",
     "c036aef680487de09f700c56549a7861d5ec798b",
-    "875f48590db0d5f8004cbe36e9e4393782da4efe"
+    "875f48590db0d5f8004cbe36e9e4393782da4efe",
+    "9541703e9cb2bba8e757869440008f8f18f936e1"
   ],
   "touchedFiles": {
     "request-review": [
@@ -248,6 +249,11 @@
       "src/core/step/__tests__/custom-reviewer-step.test.ts",
       "src/core/command/__tests__/resume-operator-adjudication.test.ts",
       "src/state/__tests__/operator-adjudication-schema.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-07-resume-point-as-canonical-source.md",
+      "specrunner/adr/2026-07-31-deterministic-request-entrance.md",
+      "specrunner/adr/2026-08-09-custom-reviewer-round-context-injection.md"
     ]
   },
   "reviewerStatuses": [
@@ -282,8 +288,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/975",
+    "number": 975,
+    "createdAt": "2026-08-09T05:27:34.249Z"
+  },
   "_journal": {
-    "historyCount": 88,
+    "historyCount": 93,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -301,7 +312,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
