@@ -1022,3 +1022,47 @@ describe("TC-022: buildOperatorAdjudicationBlock — operator 自由記述の XM
     expect(output).not.toMatch(/[^&]& /);
   });
 });
+
+// ---------------------------------------------------------------------------
+// malformed DecisionRecord: finding / selectedOption の field が欠落しても throw しない
+// ---------------------------------------------------------------------------
+
+describe("deriveOperatorAdjudicationContext — malformed decision entry does not throw", () => {
+  it("projects undefined fields as empty strings without throwing", () => {
+    expect(deriveOperatorAdjudicationContext).toBeDefined();
+
+    // DecisionRecord with all optional text fields absent / null
+    const malformed = {
+      id: "d1",
+      step: "security",
+      findingKey: "k1",
+      finding: {
+        // title, file, rationale absent
+        severity: "high" as const,
+      },
+      selectedOption: {
+        number: 1,
+        // label, consequence absent
+      },
+      decidedAt: T1,
+      source: "issue-comment" as const,
+    };
+
+    const state: JobState = {
+      ...makeBaseState(),
+      decisions: [malformed] as unknown as JobState["decisions"],
+    };
+
+    let result: ReturnType<DeriveOperatorAdjudicationContextFn> | undefined;
+    expect(() => {
+      result = deriveOperatorAdjudicationContext!(state);
+    }).not.toThrow();
+
+    expect(result).not.toBeNull();
+    expect(result!.decisions[0]!.title).toBe("");
+    expect(result!.decisions[0]!.file).toBe("");
+    expect(result!.decisions[0]!.rationale).toBe("");
+    expect(result!.decisions[0]!.selectedOption).toBe("");
+    expect(result!.decisions[0]!.consequence).toBe("");
+  });
+});

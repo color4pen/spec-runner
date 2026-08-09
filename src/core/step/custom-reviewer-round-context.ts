@@ -197,11 +197,11 @@ export function deriveOperatorAdjudicationContext(state: JobState): OperatorAdju
 
   const decisions = (state.decisions ?? []).map((d) => ({
     step: d.step,
-    title: d.finding.title,
-    file: d.finding.file,
-    selectedOption: d.selectedOption.label,
-    consequence: d.selectedOption.consequence,
-    rationale: d.finding.rationale,
+    title: d.finding.title ?? "",
+    file: d.finding.file ?? "",
+    selectedOption: d.selectedOption.label ?? "",
+    consequence: d.selectedOption.consequence ?? "",
+    rationale: d.finding.rationale ?? "",
   }));
 
   if (adjudications.length === 0 && decisions.length === 0) return null;

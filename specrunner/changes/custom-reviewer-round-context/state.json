@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4912c2d8-294b-4a1a-9e8b-23c99ca0a68d",
   "createdAt": "2026-08-09T03:30:27.884Z",
-  "updatedAt": "2026-08-09T04:54:14.165Z",
+  "updatedAt": "2026-08-09T04:56:54.585Z",
   "request": {
     "title": "custom reviewer に周回知識(前周 findings・operator 裁定)を注入する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/custom-reviewer-round-context-4912c2d8",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,9 @@
     "3db8169a76512bb4a07713b689f678f36776464c",
     "6536f454008bdf341042b2fd1729e759388458ba",
     "35cc503f02efba7889c0cfe47e4e937145b393ea",
-    "d6811fb993aa9c313c7454a2f401e068a8c79cb1"
+    "d6811fb993aa9c313c7454a2f401e068a8c79cb1",
+    "1d0c432084349332690936dbc9137ec4d8628173",
+    "1cdd3609d3ae5c37367416e6c0c9e2a9fb9c5e5f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -255,13 +257,10 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
