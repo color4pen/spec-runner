@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "12b383cc-2c7f-4143-8179-587cc12b832a",
   "createdAt": "2026-08-09T13:30:14.588Z",
-  "updatedAt": "2026-08-09T13:39:36.984Z",
+  "updatedAt": "2026-08-09T13:46:47.858Z",
   "request": {
     "title": "モデルカタログ更新: Claude 5 / GPT-5.6 世代の registry・pricing 追加と openai scaffold 既定の後継移行",
     "type": "spec-change",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/model-catalog-refresh-12b383cc",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/model-catalog-refresh/request.md, title: \"受け入れ基準「既存テスト無変更で green」が design.md D5 の必要なテスト更新と字義上衝突する\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -64,7 +68,8 @@
   "synthesizedCommits": [
     "91f2ac7e68054003837ec9adbd0f6df30432dd22",
     "edd7c73cf0f905642f8298c67ac3ab356bb89c69",
-    "2fa0987a0af94292a760a97d64fe194174fed918"
+    "2fa0987a0af94292a760a97d64fe194174fed918",
+    "935eecb60d028f2eb566d667466c1da84b51378b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -81,13 +86,28 @@
       "tests/config/model-registry.test.ts",
       "tests/core/usage/pricing.test.ts",
       "tests/init.test.ts"
+    ],
+    "spec-review": [
+      "src/config/model-registry.ts",
+      "src/core/usage/pricing.ts",
+      "src/core/usage/types.ts",
+      "src/cli/init.ts",
+      "tests/config/model-registry.test.ts",
+      "tests/core/usage/pricing.test.ts",
+      "tests/init.test.ts"
     ]
   },
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/model-catalog-refresh/request.md, title: \"受け入れ基準「既存テスト無変更で green」が design.md D5 の必要なテスト更新と字義上衝突する\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
