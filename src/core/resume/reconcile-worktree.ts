@@ -77,17 +77,17 @@ export function isReconcilableArtifact(path: string, slug: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Orchestrator
+// Internal core: quarantine + remove matching paths
 // ---------------------------------------------------------------------------
 
 /**
- * Reconcile the worktree by quarantining and removing residue left by interrupted attempts.
+ * Internal shared core for both reconcileWorktreeArtifacts and quarantinePartialCanon.
  *
  * Algorithm:
- *   1. Run `git status --porcelain -z --no-renames` in the worktree.
- *      On spawn failure OR non-zero exit → return no-op (D7: a non-git dir has no git residue).
- *   2. Parse entries; classify each reconcilable path by removal kind.
- *   3. If no reconcilable entries → return no-op (idempotent).
+ *   1. Run `git status --porcelain -z --no-renames [-- pathspecs]`.
+ *      Spawn failure OR non-zero exit → return no-op (best-effort: non-git dir has no residue).
+ *   2. Parse NUL-delimited entries; keep only those where `matches(filePath)` is true.
+ *   3. If no matching entries → return no-op (idempotent).
  *   4. **Quarantine-all first**: mkdir + writeFile evidence. Any failure → propagate (fail-closed).
  *   5. **Remove-all second** (only after all quarantines succeeded):
  *      - untracked    → git clean -f
@@ -95,27 +95,32 @@ export function isReconcilableArtifact(path: string, slug: string): boolean {
  *      - tracked      → git checkout HEAD
  *   6. Return { reconciled: <paths>, quarantineDir }.
  *
- * @param slug         - Job slug.
- * @param worktreePath - Absolute path to the git worktree.
- * @param spawnFn      - Injected spawn function (do NOT use defaultSpawnFn internally).
+ * @param slug              - Job slug (used to compute sidecar dir).
+ * @param worktreePath      - Absolute path to the git worktree.
+ * @param matches           - Predicate: returns true for paths to quarantine and remove.
+ * @param pathspecs         - Optional pathspecs for `git status` (after --). Empty = no pathspec.
+ * @param quarantinePrefix  - Directory name prefix under localSidecarDir (e.g. "reconcile" or "canon-quarantine").
+ * @param spawnFn           - Injected spawn function.
  */
-export async function reconcileWorktreeArtifacts(
+async function quarantineAndRemoveMatching(
   slug: string,
   worktreePath: string,
+  matches: (path: string) => boolean,
+  pathspecs: readonly string[],
+  quarantinePrefix: string,
   spawnFn: SpawnFn,
 ): Promise<ReconcileResult> {
   // ── 1. git status ──────────────────────────────────────────────────────────
+  const statusArgs = pathspecs.length > 0
+    ? ["status", "--porcelain", "-z", "--no-renames", "--", ...pathspecs]
+    : ["status", "--porcelain", "-z", "--no-renames"];
+
   let statusResult: { stdout: string; stderr: string; exitCode: number };
   try {
-    statusResult = await runSubprocess(
-      spawnFn,
-      "git",
-      ["status", "--porcelain", "-z", "--no-renames"],
-      { cwd: worktreePath },
-    );
+    statusResult = await runSubprocess(spawnFn, "git", statusArgs, { cwd: worktreePath });
   } catch {
     // Spawn failure (ENOENT etc.) — a non-existent / non-git worktree cannot hold
-    // git-tracked residue. Return no-op (D7: detection is best-effort).
+    // git-tracked residue. Return no-op (best-effort detection).
     return { reconciled: [], quarantineDir: null };
   }
 
@@ -136,7 +141,7 @@ export async function reconcileWorktreeArtifacts(
     const y = entry[1]!;
     const filePath = entry.slice(3);
 
-    if (!isReconcilableArtifact(filePath, slug)) continue;
+    if (!matches(filePath)) continue;
 
     let kind: RemovalKind;
     if (x === "?" && y === "?") {
@@ -155,13 +160,13 @@ export async function reconcileWorktreeArtifacts(
     return { reconciled: [], quarantineDir: null };
   }
 
-  // ── 4. Quarantine-all first (D4) ──────────────────────────────────────────
+  // ── 4. Quarantine-all first ────────────────────────────────────────────────
   // Evidence must be preserved before any removal. If mkdir or writeFile throws,
   // the error propagates (fail-closed) — nothing has been removed yet.
   const quarantineDir = pathJoin(
     worktreePath,
     localSidecarDir(slug),
-    `reconcile-${Date.now()}`,
+    `${quarantinePrefix}-${Date.now()}`,
   );
 
   // Best-effort: ensure .specrunner/local/ is gitignored so the machine-local sidecar
@@ -216,7 +221,7 @@ export async function reconcileWorktreeArtifacts(
     await fsWriteFile(evidencePath, evidenceContent, "utf-8");
   }
 
-  // ── 5. Remove-all second (D5) ─────────────────────────────────────────────
+  // ── 5. Remove-all second ──────────────────────────────────────────────────
   // Only reached after every quarantine write succeeded.
   // Split by removal kind (mirroring restoreViolatedPaths in commit-push.ts).
 
@@ -229,7 +234,7 @@ export async function reconcileWorktreeArtifacts(
     const cleanResult = await gitExecResult(spawnFn, worktreePath, ["clean", "-f", "--", ...untracked]);
     if (!cleanResult.ok || cleanResult.exitCode !== 0) {
       throw new Error(
-        `git clean -f failed (exit ${cleanResult.exitCode}) for untracked reconcilable paths: ${untracked.join(", ")}`,
+        `git clean -f failed (exit ${cleanResult.exitCode}) for untracked paths: ${untracked.join(", ")}`,
       );
     }
   }
@@ -239,7 +244,7 @@ export async function reconcileWorktreeArtifacts(
     const rmResult = await gitExecResult(spawnFn, worktreePath, ["rm", "--cached", "--", ...stagedNew]);
     if (!rmResult.ok || rmResult.exitCode !== 0) {
       throw new Error(
-        `git rm --cached failed (exit ${rmResult.exitCode}) for staged-new reconcilable paths: ${stagedNew.join(", ")}`,
+        `git rm --cached failed (exit ${rmResult.exitCode}) for staged-new paths: ${stagedNew.join(", ")}`,
       );
     }
     const cleanNewResult = await gitExecResult(spawnFn, worktreePath, ["clean", "-f", "--", ...stagedNew]);
@@ -255,7 +260,7 @@ export async function reconcileWorktreeArtifacts(
     const checkoutResult = await gitExecResult(spawnFn, worktreePath, ["checkout", "HEAD", "--", ...tracked]);
     if (!checkoutResult.ok || checkoutResult.exitCode !== 0) {
       throw new Error(
-        `git checkout HEAD failed (exit ${checkoutResult.exitCode}) for tracked reconcilable paths: ${tracked.join(", ")}`,
+        `git checkout HEAD failed (exit ${checkoutResult.exitCode}) for tracked paths: ${tracked.join(", ")}`,
       );
     }
   }
@@ -265,4 +270,69 @@ export async function reconcileWorktreeArtifacts(
     reconciled: reconcilable.map((r) => r.filePath),
     quarantineDir,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Reconcile the worktree by quarantining and removing residue left by interrupted attempts.
+ *
+ * Thin wrapper around the internal quarantineAndRemoveMatching core, using
+ * isReconcilableArtifact as the path predicate and "reconcile" as the directory prefix.
+ *
+ * @param slug         - Job slug.
+ * @param worktreePath - Absolute path to the git worktree.
+ * @param spawnFn      - Injected spawn function (do NOT use defaultSpawnFn internally).
+ */
+export async function reconcileWorktreeArtifacts(
+  slug: string,
+  worktreePath: string,
+  spawnFn: SpawnFn,
+): Promise<ReconcileResult> {
+  return quarantineAndRemoveMatching(
+    slug,
+    worktreePath,
+    (p) => isReconcilableArtifact(p, slug),
+    [],
+    "reconcile",
+    spawnFn,
+  );
+}
+
+/**
+ * Quarantine and remove a known set of protected canon paths (partial output of an interrupted step).
+ *
+ * Uses the same evidence-first / fail-closed discipline as reconcileWorktreeArtifacts:
+ *   - Evidence for all paths is written before any path is deleted.
+ *   - Any evidence write failure propagates immediately (fail-closed); no paths are deleted.
+ *   - Quarantine directory prefix is "canon-quarantine" (distinct from "reconcile").
+ *
+ * Returns no-op ({ reconciled: [], quarantineDir: null }) when canonPaths is empty or
+ * when git status reports no matching dirty entries for the given paths.
+ *
+ * @param slug         - Job slug.
+ * @param worktreePath - Absolute path to the git worktree.
+ * @param canonPaths   - Worktree-relative canon paths to quarantine (must be dirty).
+ * @param spawnFn      - Injected spawn function.
+ */
+export async function quarantinePartialCanon(
+  slug: string,
+  worktreePath: string,
+  canonPaths: string[],
+  spawnFn: SpawnFn,
+): Promise<ReconcileResult> {
+  if (canonPaths.length === 0) {
+    return { reconciled: [], quarantineDir: null };
+  }
+  const pathSet = new Set(canonPaths);
+  return quarantineAndRemoveMatching(
+    slug,
+    worktreePath,
+    (p) => pathSet.has(p),
+    canonPaths,
+    "canon-quarantine",
+    spawnFn,
+  );
 }

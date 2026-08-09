@@ -1,0 +1,20 @@
+{
+  "requestHash": "sha256:d03fec8a94e8dd34747df6c0e27bae976779b7fb5a7cc4d1979a2def7f979501",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/command/resume.ts:276-332 (apply-canon gate; actual entry at line 278)",
+    "src/core/command/resume.ts:334-379 (adopt-commits gate)",
+    "src/core/command/resume.ts:381-396 (reconcile-worktree call)",
+    "src/core/resume/apply-canon.ts:42-89 (detectCanonDirtyPaths function)",
+    "src/core/resume/apply-canon.ts:75-83 (XY='??' untracked included via isUntracked flag)",
+    "src/core/command/resume.ts:326-331 (fail-closed hint text)",
+    "src/core/step/write-scope.ts:64-74 (protectedCanonPaths: request.md/spec.md/design.md/tasks.md/test-cases.md/attestation.json)",
+    "src/core/resume/reconcile-worktree.ts:158-261 (quarantine-first evidence mechanism)",
+    "src/core/resume/reconcile-worktree.ts:66-69 (isReconcilableArtifact rule 2: protected canon excluded)",
+    "src/core/step/design.ts:135-144 (writes(): design.md, tasks.md, spec.md)",
+    "src/core/step/design.ts:146-160 (buildMessage: full regen from request.md, no partial-output input)",
+    "src/store/event-journal.ts:90-98 (InterruptionRecord interface)",
+    "src/core/step/commit-orchestrator.ts:344-346 (begin(): state.step persisted before agent runs)"
+  ],
+  "sourceRevision": "bbf506225412f9750b4ae32dbf058a949c56a03e"
+}
