@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "12b383cc-2c7f-4143-8179-587cc12b832a",
   "createdAt": "2026-08-09T13:30:14.588Z",
-  "updatedAt": "2026-08-09T14:10:58.946Z",
+  "updatedAt": "2026-08-09T14:17:00.679Z",
   "request": {
     "title": "モデルカタログ更新: Claude 5 / GPT-5.6 世代の registry・pricing 追加と openai scaffold 既定の後継移行",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/model-catalog-refresh-12b383cc",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,9 @@
     "397e1bc495034e1a5f6075ddc636ec8e636a0fcc",
     "0a3c3dc85017ac48c04c65d367d5792d5cb9b1fb",
     "f4e925fc598b28065785b557c0e63227cd874c0a",
-    "45348984f13c6f0137501997486de789d62a0be1"
+    "45348984f13c6f0137501997486de789d62a0be1",
+    "45940517890211ccf63bbaa9a3653646a1d56006",
+    "1b8538229f11c73cd6b2bb154709db0b74a996f9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -124,6 +126,14 @@
       "tests/core/usage/pricing.test.ts",
       "tests/init.test.ts",
       "tests/unit/core/command/job-stats-metrics.test.ts"
+    ],
+    "conformance": [
+      "src/config/model-registry.ts",
+      "src/core/usage/pricing.ts",
+      "src/core/usage/types.ts",
+      "tests/config/model-registry.test.ts",
+      "tests/core/usage/pricing.test.ts",
+      "tests/init.test.ts"
     ]
   },
   "resumePoint": null,
@@ -157,8 +167,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/976",
+    "number": 976,
+    "createdAt": "2026-08-09T14:16:59.968Z"
+  },
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -167,12 +182,15 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
