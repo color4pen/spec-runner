@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ecae6e77-b2ae-42a4-9ebb-c9e94b448df0",
   "createdAt": "2026-08-09T00:13:25.380Z",
-  "updatedAt": "2026-08-09T01:30:47.778Z",
+  "updatedAt": "2026-08-09T01:34:49.794Z",
   "request": {
     "title": "low/medium finding の偽ループを解消し regression-gate を新規退行の検出に限定する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/regression-gate-false-loop-ecae6e77",
   "error": null,
@@ -72,7 +72,9 @@
     "5081567e8562fa5b8b1c84ec8350bfb626c60600",
     "921f4c3174095ee801338fb7fc84dea032cae176",
     "d4a650cb487b9fa9b767dffd30bf54aa0c37e8ef",
-    "a56690f4f75b96bf98ef11b39cb71fdf661de50d"
+    "a56690f4f75b96bf98ef11b39cb71fdf661de50d",
+    "98b623b3015f1f7815d12bb8ac824ef15f18c55b",
+    "24ad588040852f5186fbb0359dbbcea53a799006"
   ],
   "touchedFiles": {
     "request-review": [
@@ -150,10 +152,13 @@
       "vitest.config.ts",
       "tests/setup-fs-spy.ts",
       "tests/unit/step/fixer-findings.test.ts"
+    ],
+    "build-fixer": [
+      "src/core/step/__tests__/regression-gate-source-checks.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -163,7 +168,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
