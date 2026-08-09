@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "419d618d-6ca4-4639-be7e-c469de6a24f8",
   "createdAt": "2026-08-09T03:30:44.772Z",
-  "updatedAt": "2026-08-09T04:01:42.401Z",
+  "updatedAt": "2026-08-09T04:04:50.918Z",
   "request": {
     "title": "中断 step の書きかけ canon を resume が自動隔離して再走する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/resume-partial-canon-quarantine-419d618d",
   "error": null,
@@ -66,7 +66,8 @@
     "1172bc05a9e00e7bb6a2b43eeff0c5201f005c13",
     "c6f269dc21a20b1647636781d1feb7bbe6d262b6",
     "76924793e60ffb39fdf0c0fdc0d8c542544e02e6",
-    "6eee5c5370024fdc2ea2d8b6b90cc170128d1dab"
+    "6eee5c5370024fdc2ea2d8b6b90cc170128d1dab",
+    "e28c7384215ef9fa07f005add63a0ce5149b4d84"
   ],
   "touchedFiles": {
     "request-review": [
@@ -138,15 +139,17 @@
       "src/core/step/executor.ts",
       "src/core/step/step-halt.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 19,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "test-case-gen": 1
     }
   }
 }
