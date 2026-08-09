@@ -79,8 +79,18 @@ gate agent は従来通り全 ledger エントリを検証してよい。除外�
 `step.name === REGRESSION_GATE_STEP_NAME` のときのみ、`verdictFn` 呼び出し前に findings を整形する。
 既存の `step.name === STEP_NAMES.SPEC_REVIEW` 特別扱い（`:208-209`）と同じパターン。
 既知未修正集合の算出と除外は純関数として `findings-ledger.ts` に置き、単体テスト可能にする。
-`step-completion.ts` は `findings-ledger.ts` からこの純関数 1 つを import するだけで済ませる
-（import cycle なし: `findings-ledger.ts` は `step-completion.ts` を参照しない）。
+
+**import cycle への注意**: `computeRegressionLedger` のシグネチャは
+`computeRegressionLedger(reviewerChain: string[], state, canonScope?)` とし、
+`deriveImplReviewerChain` を内部で呼ばない。理由: `findings-ledger.ts` が `reviewer-chain.ts` を
+import すると `findings-ledger.ts` → `reviewer-chain.ts` → `regression-gate.ts` → `findings-ledger.ts`
+の間接循環が成立するため。呼び出し元 `step-completion.ts` が `deriveImplReviewerChain(state)` を
+実行して reviewerChain を求め、`computeRegressionLedger` に渡す。
+
+`step-completion.ts` が import するのは: `computeRegressionLedger` / `excludeKnownUnfixedRegressions`
+（`findings-ledger.ts`）、`REGRESSION_GATE_STEP_NAME`（`regression-gate.ts`）、`deriveImplReviewerChain`
+（`reviewer-chain.ts`）。import cycle なし（`findings-ledger.ts` は `reviewer-chain.ts` を参照しない。
+`findings-ledger.ts` / `regression-gate.ts` は `step-completion.ts` を参照しない）。
 
 **Rationale: why not code-fixer 自己申告 / not ledger 判定基準変更。**
 gate 判定層に置くのは、（a）ledger を fixed-only にする案・fixer 自己申告を根拠にする案は

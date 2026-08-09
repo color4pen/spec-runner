@@ -18,6 +18,10 @@
 - [ ] coordinator path（`collectParallelFixerFindings`）と conformance path（`getConformanceFixContext`）の
       finding 集合には severity 絞り込みを **適用しない**（design D2 の scope 限定）。これらの変種は
       `Ignore LOW` 行の削除のみ行う。
+- [ ] legacy findingsPath フォールバックパス（`buildMessage` 末尾, `:282-300`）は、findings が
+      非構造化ファイル経由のため `selectFixerTargetFindings`（`Finding[]` を受け取る純関数）の
+      **適用対象外**とする。変更は `Ignore LOW severity findings` 行（`:293`）の削除のみ。
+      このパスは旧形式 job の resume 専用で低頻度のため、LOW の明示除外なしの動作を許容する。
 
 **Acceptance Criteria**:
 - `selectFixerTargetFindings([{low,fixable},{high,fixable},{low,decision-needed}])` が `high,fixable` のみを返す。
@@ -32,22 +36,30 @@
       export する（`dedupeFindings` の既存 key と同一。`dedupeFindings` もこのヘルパを使うよう置き換えて
       drift を防いでよい）。
 - [ ] `src/core/pipeline/findings-ledger.ts` に純関数を新設する:
-  - `computeRegressionLedger(state, canonScope?): Finding[]` — `collectSpecReviewLedger(state, canonScope)` と
-    `collectFindingsLedger(deriveImplReviewerChain(state), state, canonScope)` を `dedupeFindings` で合成した
+  - `computeRegressionLedger(reviewerChain: string[], state, canonScope?): Finding[]` —
+    `collectSpecReviewLedger(state, canonScope)` と
+    `collectFindingsLedger(reviewerChain, state, canonScope)` を `dedupeFindings` で合成した
     ledger を返す（`regression-gate.ts` の skipWhen/buildMessage と同じ合成。共有により drift を防ぐ。
     可能なら `regression-gate.ts` の 2 箇所もこの関数を呼ぶよう置き換える）。
+    **シグネチャ注意**: `deriveImplReviewerChain` を内部で呼ばず、呼び出し元から reviewerChain を
+    受け取る。理由: `findings-ledger.ts` が `reviewer-chain.ts` を import すると
+    `findings-ledger.ts` → `reviewer-chain.ts` → `regression-gate.ts` → `findings-ledger.ts` の
+    間接循環が成立するため。
   - `excludeKnownUnfixedRegressions(gateFindings: Finding[], ledger: Finding[]): Finding[]` —
     `ledger` のうち severity `"low"` のエントリの fingerprint 集合を作り、`gateFindings` から
     fingerprint が一致するものを落として返す（純関数、severity ではなく fingerprint で照合する）。
 - [ ] `src/core/step/step-completion.ts` の `deriveStepCompletion`（isJudgeStep 分岐, `:195-211`）で、
       `step.name === REGRESSION_GATE_STEP_NAME` のときのみ、`verdictFn` 呼び出し前に verdict 入力を整形する:
-      `verdictFindings = excludeKnownUnfixedRegressions(undecidedFindings, computeRegressionLedger(state, canonScope))`。
+      `const reviewerChain = deriveImplReviewerChain(state)` を先に実行し、
+      `verdictFindings = excludeKnownUnfixedRegressions(undecidedFindings, computeRegressionLedger(reviewerChain, state, canonScope))`。
       `verdict = verdictFn(verdictFindings, tr.ok, tr.evidence, canonScope)` とする。
       `lastUndecidedFindings` は従来通り整形前の `undecidedFindings` を保持する（escalationReason 用）。
       それ以外の judge step（regression-gate 以外）は整形せず従来通り。
 - [ ] `REGRESSION_GATE_STEP_NAME` を `regression-gate.js` から、`computeRegressionLedger` /
-      `excludeKnownUnfixedRegressions` を `findings-ledger.js` から `step-completion.ts` に import する
-      （import cycle が無いことを確認: `findings-ledger.ts` / `regression-gate.ts` は `step-completion.ts` を参照しない）。
+      `excludeKnownUnfixedRegressions` を `findings-ledger.js` から、`deriveImplReviewerChain` を
+      `reviewer-chain.js` から `step-completion.ts` に import する
+      （import cycle が無いことを確認: `findings-ledger.ts` は `reviewer-chain.ts` を参照しない。
+      `findings-ledger.ts` / `regression-gate.ts` は `step-completion.ts` を参照しない）。
 - [ ] `deriveRegressionGateVerdict`（`judge-verdict.ts:210-224`）のシグネチャ・実装は変更しない。
 
 **Acceptance Criteria**:

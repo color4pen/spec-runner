@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ecae6e77-b2ae-42a4-9ebb-c9e94b448df0",
   "createdAt": "2026-08-09T00:13:25.380Z",
-  "updatedAt": "2026-08-09T00:39:44.472Z",
+  "updatedAt": "2026-08-09T00:48:16.921Z",
   "request": {
     "title": "low/medium finding の偽ループを解消し regression-gate を新規退行の検出に限定する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "change/regression-gate-false-loop-ecae6e77",
   "error": null,
@@ -65,7 +65,8 @@
   "synthesizedCommits": [
     "87b88930629ec64f7e0953185658f91e2027535f",
     "da80f785c3cf06de758bbf870d39b630505ba80e",
-    "c5873c8557ae3eb5527e2ddbd4275929cd3de1e7"
+    "c5873c8557ae3eb5527e2ddbd4275929cd3de1e7",
+    "04c818de1c2fe692461b9e6e15e213d0677f4055"
   ],
   "touchedFiles": {
     "request-review": [
@@ -98,13 +99,28 @@
       "src/core/step/__tests__/routed-findings.test.ts",
       "src/core/step/__tests__/regression-gate-step.test.ts",
       "src/core/step/__tests__/step-completion-missing-file-finding.test.ts"
+    ],
+    "spec-review": [
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/routed-findings.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/regression-gate.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/__tests__/judge-verdict.test.ts",
+      "src/core/step/__tests__/routed-findings.test.ts",
+      "src/core/step/__tests__/regression-gate-step.test.ts",
+      "src/core/step/__tests__/step-completion-missing-file-finding.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
