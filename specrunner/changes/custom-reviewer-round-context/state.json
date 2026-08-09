@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4912c2d8-294b-4a1a-9e8b-23c99ca0a68d",
   "createdAt": "2026-08-09T03:30:27.884Z",
-  "updatedAt": "2026-08-09T03:59:46.252Z",
+  "updatedAt": "2026-08-09T04:20:31.574Z",
   "request": {
     "title": "custom reviewer に周回知識(前周 findings・operator 裁定)を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-materialize",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/custom-reviewer-round-context-4912c2d8",
   "error": null,
@@ -67,7 +67,8 @@
     "4aa39d7014ed426f8ddc205b2cf5c98e47df9fa8",
     "d2820af048c5b7ce65b4cfb4ef8573a99dedc835",
     "8968f42ee96a9cdeaf1d58a0cdd38f3eb5f68635",
-    "901d9502abcd157ef800ca15c1d880274e61b9b8"
+    "901d9502abcd157ef800ca15c1d880274e61b9b8",
+    "8116b4a481e31b63d86dc83462b27523069f55ec"
   ],
   "touchedFiles": {
     "request-review": [
@@ -149,16 +150,40 @@
       "src/core/step/__tests__/prior-round-context.test.ts",
       "src/core/step/__tests__/post-fix-context.test.ts",
       "src/state/__tests__/touched-files-schema.test.ts"
+    ],
+    "test-materialize": [
+      "src/core/step/__tests__/prior-round-context.test.ts",
+      "src/core/step/__tests__/post-fix-context.test.ts",
+      "src/core/step/__tests__/custom-reviewer-step.test.ts",
+      "src/state/__tests__/touched-files-schema.test.ts",
+      "src/state/schema/types.ts",
+      "src/core/step/custom-reviewer.ts",
+      "src/state/schema/operations.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/git/dynamic-context.ts",
+      "src/core/step/io-iteration.ts",
+      "src/core/command/resume.ts",
+      "src/core/step/step-names.ts",
+      "src/core/command/__tests__/resume-apply-canon.test.ts",
+      "src/kernel/step-names.ts",
+      "src/state/schema.ts",
+      "src/core/step/__tests__/custom-reviewer-round-context.test.ts",
+      "src/state/__tests__/operator-adjudication-schema.test.ts",
+      "src/core/command/__tests__/resume-hard-crash.test.ts",
+      "src/core/command/__tests__/resume-operator-adjudication.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 22,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "test-materialize": 1
     }
   }
 }

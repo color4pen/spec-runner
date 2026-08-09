@@ -25,6 +25,13 @@ import { nextIteration } from "./io-iteration.js";
 import { buildRequestConstraintsBlock } from "../../parser/extract-section.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
+import type { RuntimeStrategy } from "../port/runtime-strategy.js";
+import {
+  deriveCustomReviewerPriorRound,
+  deriveOperatorAdjudicationContext,
+  buildCustomReviewerPriorRoundBlock,
+  buildOperatorAdjudicationBlock,
+} from "./custom-reviewer-round-context.js";
 
 /** Default model for custom reviewer steps. */
 const DEFAULT_REVIEW_MODEL = "claude-sonnet-4-6";
@@ -48,6 +55,16 @@ export function buildCustomReviewerMessage(opts: {
   const constraintsBlock = buildRequestConstraintsBlock(opts.requestContent);
   const constraintsSection = constraintsBlock ? `\n\n${constraintsBlock}` : "";
 
+  // Inject prior-round context block (iteration ≥ 2 — populated by prepareRoundContext)
+  const priorRoundSection = opts.dynamicContext?.customReviewerPriorRound
+    ? `\n\n${buildCustomReviewerPriorRoundBlock(opts.dynamicContext.customReviewerPriorRound)}`
+    : "";
+
+  // Inject operator adjudication block (when adjudications or decisions exist)
+  const adjudicationSection = opts.dynamicContext?.operatorAdjudicationContext
+    ? `\n\n${buildOperatorAdjudicationBlock(opts.dynamicContext.operatorAdjudicationContext)}`
+    : "";
+
   return `<user-request>
 Please perform a ${opts.reviewerName} review for the following change:
 
@@ -67,7 +84,7 @@ Do NOT write a verdict line. Verdict is derived by CLI from typed findings (repo
 
 Original request:
 ${opts.requestContent}
-</user-request>${constraintsSection}${contextSection}
+</user-request>${constraintsSection}${contextSection}${priorRoundSection}${adjudicationSection}
 
 ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。`;
 }
@@ -117,6 +134,34 @@ export function createCustomReviewerStep(snapshot: ReviewerSnapshot): AgentStep 
     maxTurns: 20,
 
     activation,
+
+    async prepareRoundContext(
+      state: JobState,
+      cwd: string,
+      runtimeStrategy: RuntimeStrategy | undefined,
+    ): Promise<Partial<DynamicContext> | null> {
+      const iteration = nextIteration(state, snapshot.name);
+
+      // Derive prior-round context (null if iteration < 2 or derivation fails)
+      const priorRound = await deriveCustomReviewerPriorRound({
+        state,
+        reviewerName: snapshot.name,
+        iteration,
+        cwd,
+        runtimeStrategy,
+      });
+
+      // Derive operator adjudication context (null if both ledgers are empty)
+      const adjudicationCtx = deriveOperatorAdjudicationContext(state);
+
+      // If both are null, no enrichment needed
+      if (priorRound === null && adjudicationCtx === null) return null;
+
+      const result: Partial<DynamicContext> = {};
+      if (priorRound !== null) result.customReviewerPriorRound = priorRound;
+      if (adjudicationCtx !== null) result.operatorAdjudicationContext = adjudicationCtx;
+      return result;
+    },
 
     reads(state: JobState, deps: StepDeps): IoRef[] {
       const folder = changeFolderPath(deps.slug);

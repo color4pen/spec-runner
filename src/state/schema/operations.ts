@@ -1,7 +1,7 @@
 /**
  * Job state operations: history append and on-read validation/normalization.
  */
-import type { JobState, HistoryEntry, StepRun } from "./types.js";
+import type { JobState, HistoryEntry, StepRun, OperatorAdjudication } from "./types.js";
 
 export const MAX_HISTORY_SIZE = 100;
 
@@ -36,6 +36,26 @@ export function appendSynthesizedCommit(state: JobState, oid: string): JobState 
   const existing = state.synthesizedCommits ?? [];
   if (existing.includes(oid)) return state;
   return { ...state, synthesizedCommits: [...existing, oid] };
+}
+
+/**
+ * Append an operator adjudication record to the operatorAdjudications ledger (pure transform).
+ *
+ * Pattern mirrors appendSynthesizedCommit: returns a new state with the record appended.
+ * Never mutates the original state — creates a new array reference.
+ * When operatorAdjudications is absent, creates a 1-element array.
+ *
+ * @param state  - Current job state (not mutated).
+ * @param record - Operator adjudication record to append.
+ * @returns New state with record appended to operatorAdjudications.
+ */
+export function appendOperatorAdjudication(
+  state: JobState | Record<string, unknown>,
+  record: OperatorAdjudication,
+): JobState | Record<string, unknown> {
+  const s = state as Record<string, unknown>;
+  const existing = (s["operatorAdjudications"] as OperatorAdjudication[] | undefined) ?? [];
+  return { ...s, operatorAdjudications: [...existing, record] };
 }
 
 /**
@@ -315,6 +335,30 @@ export function validateJobState(raw: unknown): JobState {
             throw new Error(`biteEvidence entry "${beObj["testId"]}" field '${optField}' must be a string when present.`);
           }
         }
+      }
+    }
+  }
+
+  // Validate operatorAdjudications when present (backward compat: absence is OK → empty ledger)
+  // Design D4: array of { text, step, recordedAt } records. Non-array or missing required string
+  // fields are rejected. Absence is valid (treated as empty ledger).
+  if ("operatorAdjudications" in obj && obj["operatorAdjudications"] !== null && obj["operatorAdjudications"] !== undefined) {
+    if (!Array.isArray(obj["operatorAdjudications"])) {
+      throw new Error("operatorAdjudications must be an array when present.");
+    }
+    for (const entry of obj["operatorAdjudications"] as unknown[]) {
+      if (typeof entry !== "object" || entry === null) {
+        throw new Error("Each entry in operatorAdjudications must be an object.");
+      }
+      const e = entry as Record<string, unknown>;
+      if (typeof e["text"] !== "string") {
+        throw new Error("Each operatorAdjudications entry must have a string 'text' field.");
+      }
+      if (typeof e["step"] !== "string") {
+        throw new Error("Each operatorAdjudications entry must have a string 'step' field.");
+      }
+      if (typeof e["recordedAt"] !== "string") {
+        throw new Error("Each operatorAdjudications entry must have a string 'recordedAt' field.");
       }
     }
   }

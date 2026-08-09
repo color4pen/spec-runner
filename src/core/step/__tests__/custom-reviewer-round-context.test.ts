@@ -79,7 +79,6 @@ let buildOperatorAdjudicationBlock: BuildOperatorAdjudicationBlockFn | undefined
 
 beforeAll(async () => {
   try {
-    // @ts-expect-error — module does not exist yet (RED phase; implementer will create it)
     const mod = await import("../custom-reviewer-round-context.js") as Record<string, unknown>;
     deriveCustomReviewerPriorRound = mod["deriveCustomReviewerPriorRound"] as DeriveCustomReviewerPriorRoundFn | undefined;
     buildCustomReviewerPriorRoundBlock = mod["buildCustomReviewerPriorRoundBlock"] as BuildCustomReviewerPriorRoundBlockFn | undefined;
