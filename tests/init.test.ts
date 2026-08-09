@@ -467,8 +467,9 @@ describe("resolveInitProvider — TTY prompts user", () => {
 // runInit — provider scaffold tests
 // ---------------------------------------------------------------------------
 
+// TC-008: openai init scaffold writes the successor models
 describe("runInit — provider: openai scaffold", () => {
-  it("generates config with gpt-5.4-mini as defaults model and gpt-5.5 as design model", async () => {
+  it("generates config with gpt-5.6-luna as defaults model and gpt-5.6-sol as design model", async () => {
     const { runInit } = await import("../src/cli/init.js");
     const result = await runInit({ provider: "openai", repoRoot: tempDir });
 
@@ -478,13 +479,14 @@ describe("runInit — provider: openai scaffold", () => {
     const raw = await fs.readFile(configPath, "utf-8");
     const config = JSON.parse(raw);
 
-    expect(config.steps?.defaults?.model).toBe("gpt-5.4-mini");
+    expect(config.steps?.defaults?.model).toBe("gpt-5.6-luna");
     expect(config.steps?.defaults?.maxTurns).toBeNull();
     expect(config.steps?.defaults?.timeoutMs).toBeNull();
-    expect(config.steps?.design?.model).toBe("gpt-5.5");
+    expect(config.steps?.design?.model).toBe("gpt-5.6-sol");
   });
 });
 
+// TC-009: anthropic init scaffold is unaffected
 describe("runInit — provider: anthropic scaffold (legacy-compatible)", () => {
   it("generates config identical to legacy (no steps.design block)", async () => {
     const { runInit } = await import("../src/cli/init.js");
