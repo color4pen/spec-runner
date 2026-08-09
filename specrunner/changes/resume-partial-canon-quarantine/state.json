@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "419d618d-6ca4-4639-be7e-c469de6a24f8",
   "createdAt": "2026-08-09T03:30:44.772Z",
-  "updatedAt": "2026-08-09T04:48:28.747Z",
+  "updatedAt": "2026-08-09T04:50:38.994Z",
   "request": {
     "title": "中断 step の書きかけ canon を resume が自動隔離して再走する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/resume-partial-canon-quarantine-419d618d",
   "error": null,
@@ -72,7 +72,9 @@
     "7e7f0aea60d8dba93c67ada17c3436322b0fb861",
     "d5bccfbbecaa6631a4a4fc237fe5f86f7f1ca2ee",
     "fbd997f0a340ede3c59941863e2eb4fdbea39dd9",
-    "8cd748af00d34568f59c14a85e75849561fa26c5"
+    "8cd748af00d34568f59c14a85e75849561fa26c5",
+    "286bfa372df8895b4ed937a1607395961d3b6149",
+    "20420b3d9efc2d5ec890d5493db4d60d36d03e4e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -192,17 +194,11 @@
       "src/core/resume/canon-provenance.ts"
     ],
     "build-fixer": [
-      "src/core/resume/__tests__/apply-canon-provenance.test.ts",
-      "src/core/resume/apply-canon.ts",
-      "src/core/resume/canon-provenance.ts",
-      "src/core/step/design.ts",
-      "src/core/step/types.ts",
-      "src/core/port/step-types.ts",
-      "src/config/type-config.ts"
+      "src/core/resume/__tests__/apply-canon-provenance.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 41,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -212,8 +208,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
-      "build-fixer": 1
+      "verification": 3,
+      "build-fixer": 2
     }
   }
 }
