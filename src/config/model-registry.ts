@@ -20,10 +20,16 @@ export const BUILTIN_MODEL_REGISTRY: ModelsConfig = {
   "claude-sonnet-4-5": { provider: "anthropic" },
   "claude-opus-4-5":   { provider: "anthropic" },
   "claude-haiku-4-5":  { provider: "anthropic" },
+  "claude-opus-5":     { provider: "anthropic" },
+  "claude-sonnet-5":   { provider: "anthropic" },
+  "claude-fable-5":    { provider: "anthropic" },
   "gpt-5.5":           { provider: "openai" },
   "gpt-5.4":           { provider: "openai" },
   "gpt-5.4-mini":      { provider: "openai" },
   "gpt-5.3-codex-spark": { provider: "openai" },
+  "gpt-5.6-sol":       { provider: "openai" },
+  "gpt-5.6-terra":     { provider: "openai" },
+  "gpt-5.6-luna":      { provider: "openai" },
 };
 
 /**
@@ -51,8 +57,8 @@ export const PROVIDER_DEFAULTS: Record<Provider, ProviderDefaults> = {
     defaultModel: "claude-sonnet-4-6",
   },
   openai: {
-    defaultModel: "gpt-5.4-mini",
-    designModel: "gpt-5.5",
+    defaultModel: "gpt-5.6-luna",
+    designModel: "gpt-5.6-sol",
   },
 };
 
