@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4912c2d8-294b-4a1a-9e8b-23c99ca0a68d",
   "createdAt": "2026-08-09T03:30:27.884Z",
-  "updatedAt": "2026-08-09T04:31:24.470Z",
+  "updatedAt": "2026-08-09T04:33:50.592Z",
   "request": {
     "title": "custom reviewer に周回知識(前周 findings・operator 裁定)を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/custom-reviewer-round-context-4912c2d8",
   "error": null,
@@ -70,7 +70,9 @@
     "901d9502abcd157ef800ca15c1d880274e61b9b8",
     "8116b4a481e31b63d86dc83462b27523069f55ec",
     "8333445159b5196858b0210855409452918f3d63",
-    "4a31b485060c711f6463391bad47ab74b3b1c17c"
+    "4a31b485060c711f6463391bad47ab74b3b1c17c",
+    "53694573aaa6078604586170d3e47821d8e5259f",
+    "3db8169a76512bb4a07713b689f678f36776464c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -196,10 +198,13 @@
       "src/state/schema.ts",
       "src/core/step/__tests__/resume-apply-canon.test.ts",
       "src/core/step/custom-reviewer-round-context.ts"
+    ],
+    "build-fixer": [
+      "src/core/step/__tests__/custom-reviewer-step.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -209,7 +214,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
