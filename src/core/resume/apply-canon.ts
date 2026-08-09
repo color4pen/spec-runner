@@ -104,6 +104,17 @@ export async function detectCanonDirtyPaths(
  * @param spawnFn      - Spawn function (injected; callers must not use defaultSpawnFn here).
  * @returns            The new commit OID (trimmed HEAD) as a non-empty string.
  */
+// ---------------------------------------------------------------------------
+// Provenance helpers (T-02) — re-exported from canon-provenance.ts
+// ---------------------------------------------------------------------------
+// Kept as re-exports so tests that import directly from apply-canon.js continue to work.
+export {
+  INTERRUPTION_REASONS,
+  isInterruptionBacked,
+  declaredCanonWritesForStep,
+  isInterruptedStepPartialCanon,
+} from "./canon-provenance.js";
+
 export async function commitOperatorCanon(
   slug: string,
   worktreePath: string,

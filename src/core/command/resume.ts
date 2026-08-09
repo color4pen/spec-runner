@@ -31,9 +31,11 @@ import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.
 import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 import { resolveLivenessWorktreePath } from "../resume/resolve-worktree-path.js";
 import { detectCanonDirtyPaths, commitOperatorCanon } from "../resume/apply-canon.js";
+import { isInterruptionBacked, declaredCanonWritesForStep, isInterruptedStepPartialCanon } from "../resume/canon-provenance.js";
 import { detectUnadoptedCommits, buildAdoptEscalationMessage, type UnadoptedCommit } from "../resume/adopt-commits.js";
-import { reconcileWorktreeArtifacts } from "../resume/reconcile-worktree.js";
+import { reconcileWorktreeArtifacts, quarantinePartialCanon } from "../resume/reconcile-worktree.js";
 import { defaultSpawnFn, runSubprocess } from "../../util/git-exec.js";
+import type { StepDeps } from "../step/types.js";
 
 export interface ResumeOptions {
   from?: string;
@@ -155,8 +157,13 @@ export class ResumeCommand extends CommandRunner {
     const sidecarPath = resolvedSlugForSidecar
       ? nodePath.join(cwd, livenessJsonPath(resolvedSlugForSidecar))
       : undefined;
+    // Evaluate stale-running once and store the result so it can be used in the apply-canon
+    // provenance check later (SIGKILL / hard-crash path: no resumePoint, stale process).
+    // The real isStaleRunning returns false for non-"running" status; tests mock its return value
+    // to control staleRunningDetected in the apply-canon gate.
+    const staleRunningDetected = isStaleRunning(state, sidecarPath);
     if (state.status === "running") {
-      if (isStaleRunning(state, sidecarPath)) {
+      if (staleRunningDetected) {
         // Orphaned running state — transition to awaiting-resume and continue
         const { state: recovered } = transitionJob(state, "awaiting-resume", {
           trigger: "stale-detection",
@@ -293,6 +300,7 @@ export class ResumeCommand extends CommandRunner {
 
       if (dirtyCanonPaths.length > 0) {
         if (this.options.applyCanon) {
+          // D5: operator --apply-canon takes priority over auto-quarantine.
           // Commit dirty canon paths as an operator-apply commit and record OID in ledger.
           let committedOid: string | null = null;
           try {
@@ -324,10 +332,52 @@ export class ResumeCommand extends CommandRunner {
             throw new PrepareError(1, "Failed to create operator-apply commit");
           }
         } else {
-          // fail-closed: do not start the step; require operator to make an explicit choice.
-          logError(`Protected canon paths are dirty in the worktree: ${dirtyCanonPaths.join(", ")}`);
-          stderrWrite(`Hint: Use --apply-canon to commit these changes as an operator-apply commit, or discard them (git checkout HEAD -- <path>) before resuming.`);
-          throw new PrepareError(1, "Protected canon paths are dirty; use --apply-canon or discard");
+          // D1: check provenance before falling through to fail-closed halt.
+          // Condition 1 (D2): startStep must match the interrupted step (no --from redirect).
+          const interruptedStep = state.step;
+          if (startStep === interruptedStep) {
+            // Conditions 2/3/4: check if dirty canon is fully explained by the interrupted step.
+            const minimalDeps = { slug: resolvedSlug, request, config } as StepDeps;
+            const declaredCanon = declaredCanonWritesForStep(interruptedStep, updatedState, minimalDeps);
+            const interruptionBacked = isInterruptionBacked(resumePoint, staleRunningDetected);
+            const completedStepRunAbsent = !(state.steps?.[interruptedStep]?.length);
+
+            if (isInterruptedStepPartialCanon({
+              dirtyCanonPaths,
+              declaredCanonWrites: declaredCanon,
+              interruptionBacked,
+              completedStepRunAbsent,
+            })) {
+              // D4: auto-quarantine — evidence-first, then continue (no halt).
+              try {
+                const qResult = await quarantinePartialCanon(
+                  resolvedSlug, resolvedWorktreePath, dirtyCanonPaths, defaultSpawnFn,
+                );
+                logInfo(
+                  `[canon-quarantine] auto-quarantined partial output of interrupted step '${interruptedStep}': ` +
+                  `${qResult.reconciled.join(", ")}` +
+                  (qResult.quarantineDir ? ` → 退避先: ${qResult.quarantineDir}` : ""),
+                );
+                // Gate passes — continue to adopt-commits and reconcile.
+              } catch (err) {
+                // Evidence write failed — fail-closed (nothing deleted, evidence preserved).
+                logError(`Failed to quarantine partial canon output of step '${interruptedStep}': ${(err as Error).message}`);
+                stderrWrite("Hint: Quarantine evidence could not be written. Check .specrunner/local/<slug>/ writability, then resume again. Canon paths have NOT been deleted.");
+                throw new PrepareError(1, "Failed to quarantine partial canon output (fail-closed)");
+              }
+            } else {
+              // Conditions 2/3/4 not fully met — fail-closed halt (operator intent protection).
+              logError(`Protected canon paths are dirty in the worktree: ${dirtyCanonPaths.join(", ")}`);
+              stderrWrite(`Hint: Use --apply-canon to commit these changes as an operator-apply commit, or discard them (git checkout HEAD -- <path>) before resuming.`);
+              throw new PrepareError(1, "Protected canon paths are dirty; use --apply-canon or discard");
+            }
+          } else {
+            // Condition 1 not met: --from redirects to a different step than the interrupted one.
+            // Auto-quarantine must not fire (operator chose a different start point explicitly).
+            logError(`Protected canon paths are dirty in the worktree: ${dirtyCanonPaths.join(", ")}`);
+            stderrWrite(`Hint: Use --apply-canon to commit these changes as an operator-apply commit, or discard them (git checkout HEAD -- <path>) before resuming.`);
+            throw new PrepareError(1, "Protected canon paths are dirty; use --apply-canon or discard");
+          }
         }
       }
 
