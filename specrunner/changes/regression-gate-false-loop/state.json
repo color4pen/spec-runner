@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ecae6e77-b2ae-42a4-9ebb-c9e94b448df0",
   "createdAt": "2026-08-09T00:13:25.380Z",
-  "updatedAt": "2026-08-09T01:34:49.794Z",
+  "updatedAt": "2026-08-09T01:41:48.366Z",
   "request": {
     "title": "low/medium finding の偽ループを解消し regression-gate を新規退行の検出に限定する",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/regression-gate-false-loop-ecae6e77",
   "error": null,
   "pipelineId": "standard",
@@ -74,7 +74,8 @@
     "d4a650cb487b9fa9b767dffd30bf54aa0c37e8ef",
     "a56690f4f75b96bf98ef11b39cb71fdf661de50d",
     "98b623b3015f1f7815d12bb8ac824ef15f18c55b",
-    "24ad588040852f5186fbb0359dbbcea53a799006"
+    "24ad588040852f5186fbb0359dbbcea53a799006",
+    "91bb836b88fb9a45b0f2ddde9bc72ee64cca61cd"
   ],
   "touchedFiles": {
     "request-review": [
@@ -155,10 +156,27 @@
     ],
     "build-fixer": [
       "src/core/step/__tests__/regression-gate-source-checks.test.ts"
+    ],
+    "code-review": [
+      "src/core/step/judge-verdict.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/step/routed-findings.ts",
+      "src/core/step/regression-gate.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "src/core/step/__tests__/regression-gate-source-checks.test.ts",
+      "tests/unit/step/fixer-findings.test.ts"
     ]
   },
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "code-review escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -169,7 +187,8 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 2,
-      "build-fixer": 1
+      "build-fixer": 1,
+      "code-review": 1
     }
   }
 }
