@@ -13,7 +13,7 @@ import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
 import { logInfo, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
 import { SpecRunnerError, worktreeGuardError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
-import { appendSynthesizedCommit } from "../../state/schema.js";
+import { appendSynthesizedCommit, appendOperatorAdjudication } from "../../state/schema.js";
 import { toStepName } from "../step/step-names.js";
 import { parseRequestMd } from "../../parser/request-md.js";
 import { resolveJobStateBySlug } from "../resume/resolve-job.js";
@@ -241,20 +241,31 @@ export class ResumeCommand extends CommandRunner {
         reason: `Resuming from step '${startStep}'`,
         patch: { error: null, resumePoint: null, mainCheckoutDrift: null, pid: process.pid },
       });
+
+      // Persist operator adjudication when --prompt is provided (non-empty string only).
+      // The one-shot deps injection (resumePrompt → pipeline.ts <resume-context>) is unchanged.
+      const stateToWrite: JobState = (this.options.prompt && this.options.prompt.length > 0)
+        ? appendOperatorAdjudication(transitioned, {
+            text: this.options.prompt,
+            step: startStep,
+            recordedAt: new Date().toISOString(),
+          })
+        : transitioned;
+
       if (this.options.noWorktree) {
         // no-worktree mode: state.json lives in cwd (no worktree path to find)
         // Do NOT capture runStore here — no-worktree uses a dedicated store for initial persist only.
         // Prefer resolveStateStoreByJobId (sidecar lookup; also works in mocked test environments);
         // fall back to direct construction when no sidecar entry exists (real no-worktree usage).
-        const slug = getJobSlug(transitioned) ?? this.slug;
-        const noWorktreeStore = await resolveStateStoreByJobId(cwd, transitioned.jobId)
-          ?? new JobStateStore(transitioned.jobId, cwd, { slug, stateRoot: cwd });
-        await noWorktreeStore.persist(transitioned);
+        const slug = getJobSlug(stateToWrite) ?? this.slug;
+        const noWorktreeStore = await resolveStateStoreByJobId(cwd, stateToWrite.jobId)
+          ?? new JobStateStore(stateToWrite.jobId, cwd, { slug, stateRoot: cwd });
+        await noWorktreeStore.persist(stateToWrite);
       } else {
         runStore = await resolveStateStoreByJobId(cwd, state.jobId);
-        if (runStore) await runStore.persist(transitioned);
+        if (runStore) await runStore.persist(stateToWrite);
       }
-      updatedState = transitioned;
+      updatedState = stateToWrite;
     } catch (err) {
       logError(`Failed to update job state: ${(err as Error).message}`);
       throw new PrepareError(1, "Failed to update state");

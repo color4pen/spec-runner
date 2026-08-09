@@ -546,6 +546,39 @@ export interface JobState {
    * Optional for backward compat — absent in legacy state is valid.
    */
   touchedFiles?: Record<string, string[]>;
+  /**
+   * Operator adjudication ledger — append-only records of operator rulings made via
+   * `job resume --prompt <text>`. Distinct from issue-comment-derived `decisions`:
+   * DecisionRecord requires a findingKey + finding snapshot (structured), whereas
+   * OperatorAdjudication accepts free-form prose from the operator.
+   *
+   * Custom reviewer rounds use this ledger (together with `decisions`) to inject an
+   * "operator adjudication" block into their prompts, so previously-ruled findings are
+   * not re-escalated unnecessarily.
+   *
+   * backward compat: field absent is treated as an empty ledger (no adjudications).
+   * Optional for backward compat — absent in legacy state files is valid.
+   */
+  operatorAdjudications?: OperatorAdjudication[];
+}
+
+/**
+ * A single operator adjudication record persisted from `job resume --prompt <text>`.
+ * Distinct from DecisionRecord (issue-comment-derived, structured finding key) —
+ * OperatorAdjudication captures free-form prose from the operator at resume time.
+ *
+ * Fields:
+ *   text:       The free-form operator ruling text (from --prompt).
+ *   step:       The step name being resumed when the ruling was issued.
+ *   recordedAt: ISO 8601 timestamp when the ruling was persisted.
+ */
+export interface OperatorAdjudication {
+  /** Free-form operator ruling text (from --prompt). */
+  text: string;
+  /** Step name being resumed when the ruling was issued. */
+  step: string;
+  /** ISO 8601 timestamp when the ruling was persisted. */
+  recordedAt: string;
 }
 
 /**

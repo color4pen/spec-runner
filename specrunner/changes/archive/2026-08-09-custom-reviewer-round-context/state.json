@@ -1,0 +1,321 @@
+{
+  "version": 2,
+  "jobId": "4912c2d8-294b-4a1a-9e8b-23c99ca0a68d",
+  "createdAt": "2026-08-09T03:30:27.884Z",
+  "updatedAt": "2026-08-09T05:27:34.996Z",
+  "request": {
+    "title": "custom reviewer に周回知識(前周 findings・operator 裁定)を注入する",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/custom-reviewer-round-context-4912c2d8",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "66b7348856b55495f6caf29027eba6338e7b2e8c",
+    "625e03718f2f5f6169228177e82c52d5caa11e11",
+    "4aa39d7014ed426f8ddc205b2cf5c98e47df9fa8",
+    "d2820af048c5b7ce65b4cfb4ef8573a99dedc835",
+    "8968f42ee96a9cdeaf1d58a0cdd38f3eb5f68635",
+    "901d9502abcd157ef800ca15c1d880274e61b9b8",
+    "8116b4a481e31b63d86dc83462b27523069f55ec",
+    "8333445159b5196858b0210855409452918f3d63",
+    "4a31b485060c711f6463391bad47ab74b3b1c17c",
+    "53694573aaa6078604586170d3e47821d8e5259f",
+    "3db8169a76512bb4a07713b689f678f36776464c",
+    "6536f454008bdf341042b2fd1729e759388458ba",
+    "35cc503f02efba7889c0cfe47e4e937145b393ea",
+    "d6811fb993aa9c313c7454a2f401e068a8c79cb1",
+    "1d0c432084349332690936dbc9137ec4d8628173",
+    "1cdd3609d3ae5c37367416e6c0c9e2a9fb9c5e5f",
+    "1501188ea6a7f86a1cd8182ee1e863fdcc30e3f2",
+    "bf966f945f3d9eeb3bc5988dfbe989b8adb23e4a",
+    "95080bb15b3dffbd0f54190a67169274e5e41020",
+    "eb9b04e9d90f29e009a83bb031b637bbae359bd6",
+    "e7c6809c38feb5e9abe5550a21511f146c615313",
+    "c036aef680487de09f700c56549a7861d5ec798b",
+    "875f48590db0d5f8004cbe36e9e4393782da4efe",
+    "9541703e9cb2bba8e757869440008f8f18f936e1",
+    "fb7a5925171096f271cef6abac11120559d75d6a"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/step/custom-reviewer.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/adr-gen.ts",
+      "src/core/step/types.ts",
+      "src/core/command/resume.ts",
+      "src/core/command/runner.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/inbox/planner.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/state/schema.ts",
+      "src/git/dynamic-context.ts",
+      "src/state/schema/types.ts",
+      "src/core/port/step-types.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/core/step/executor.ts"
+    ],
+    "design": [
+      "src/core/step/custom-reviewer.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/git/dynamic-context.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/adr-gen.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/command/runner.ts",
+      "src/core/command/resume.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/core/inbox/planner.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/state/schema.ts",
+      "src/state/schema/types.ts",
+      "src/state/schema/operations.ts",
+      "src/store/job-state-projection.ts",
+      "src/core/step/io-iteration.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/__tests__/prior-round-context.test.ts",
+      "src/core/step/__tests__/custom-reviewer-step.test.ts",
+      "src/core/port/step-types.ts"
+    ],
+    "spec-review": [
+      "src/core/step/custom-reviewer.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/state/schema/types.ts",
+      "src/state/schema/operations.ts",
+      "src/git/dynamic-context.ts",
+      "src/core/command/resume.ts",
+      "src/core/step/types.ts",
+      "src/core/port/step-types.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/adr-gen.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/core/step/__tests__/custom-reviewer-step.test.ts",
+      "src/core/step/io-iteration.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/__tests__/prior-round-context.test.ts"
+    ],
+    "spec-fixer": [
+      "src/core/command/resume.ts"
+    ],
+    "test-case-gen": [
+      "src/core/step/__tests__/custom-reviewer-step.test.ts",
+      "src/core/step/__tests__/prior-round-context.test.ts",
+      "src/core/step/__tests__/post-fix-context.test.ts",
+      "src/state/__tests__/touched-files-schema.test.ts"
+    ],
+    "test-materialize": [
+      "src/core/step/__tests__/prior-round-context.test.ts",
+      "src/core/step/__tests__/post-fix-context.test.ts",
+      "src/core/step/__tests__/custom-reviewer-step.test.ts",
+      "src/state/__tests__/touched-files-schema.test.ts",
+      "src/state/schema/types.ts",
+      "src/core/step/custom-reviewer.ts",
+      "src/state/schema/operations.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/git/dynamic-context.ts",
+      "src/core/step/io-iteration.ts",
+      "src/core/command/resume.ts",
+      "src/core/step/step-names.ts",
+      "src/core/command/__tests__/resume-apply-canon.test.ts",
+      "src/kernel/step-names.ts",
+      "src/state/schema.ts",
+      "src/core/step/__tests__/custom-reviewer-round-context.test.ts",
+      "src/state/__tests__/operator-adjudication-schema.test.ts",
+      "src/core/command/__tests__/resume-hard-crash.test.ts",
+      "src/core/command/__tests__/resume-operator-adjudication.test.ts"
+    ],
+    "implementer": [
+      "src/core/step/__tests__/custom-reviewer-round-context.test.ts",
+      "src/state/__tests__/operator-adjudication-schema.test.ts",
+      "src/core/step/__tests__/custom-reviewer-step.test.ts",
+      "src/core/command/__tests__/resume-operator-adjudication.test.ts",
+      "src/state/schema/types.ts",
+      "src/state/schema/operations.ts",
+      "src/git/dynamic-context.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/core/step/custom-reviewer.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/command/resume.ts",
+      "src/core/step/io-iteration.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/types.ts",
+      "src/core/port/step-types.ts",
+      "src/state/schema.ts",
+      "src/core/step/__tests__/resume-apply-canon.test.ts",
+      "src/core/step/custom-reviewer-round-context.ts"
+    ],
+    "build-fixer": [
+      "src/core/step/__tests__/custom-reviewer-step.test.ts"
+    ],
+    "code-review": [
+      "src/core/step/custom-reviewer-round-context.ts",
+      "src/core/step/custom-reviewer.ts",
+      "src/state/schema/types.ts",
+      "src/state/schema/operations.ts",
+      "src/core/command/resume.ts",
+      "src/git/dynamic-context.ts",
+      "src/core/step/__tests__/custom-reviewer-round-context.test.ts",
+      "src/core/step/__tests__/custom-reviewer-step.test.ts",
+      "src/core/command/__tests__/resume-operator-adjudication.test.ts",
+      "src/state/__tests__/operator-adjudication-schema.test.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/state/schema.ts",
+      "src/core/step/step-context-builder.ts"
+    ],
+    "code-fixer": [
+      "src/core/step/custom-reviewer-round-context.ts"
+    ],
+    "regression-gate": [
+      "src/core/command/resume.ts",
+      "src/core/step/custom-reviewer-round-context.ts",
+      "src/state/schema/operations.ts"
+    ],
+    "conformance": [
+      "src/core/step/custom-reviewer-round-context.ts",
+      "src/core/step/custom-reviewer.ts",
+      "src/state/schema/types.ts",
+      "src/state/schema/operations.ts",
+      "src/core/command/resume.ts",
+      "src/git/dynamic-context.ts",
+      "src/core/step/__tests__/custom-reviewer-round-context.test.ts",
+      "src/core/step/__tests__/custom-reviewer-step.test.ts",
+      "src/core/command/__tests__/resume-operator-adjudication.test.ts",
+      "src/state/__tests__/operator-adjudication-schema.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-07-resume-point-as-canonical-source.md",
+      "specrunner/adr/2026-07-31-deterministic-request-entrance.md",
+      "specrunner/adr/2026-08-09-custom-reviewer-round-context-injection.md"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "1501188ea6a7f86a1cd8182ee1e863fdcc30e3f2",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/custom-reviewer-round-context/design.md:sha256:6bf318c2b6718ba5bda954f24e4e0f65f93991f86fbbfd3976c66597690bf42a|specrunner/changes/custom-reviewer-round-context/request.md:sha256:27065113fc90d724c401ccc3d515a52a2aa7935276f2e156617ca52e7132779d|specrunner/changes/custom-reviewer-round-context/spec.md:sha256:db1c45f170092238dea5adef25a924b968a8615762e566ad72b9f9945b9f941b|specrunner/changes/custom-reviewer-round-context/tasks.md:sha256:0499ab040adbc0e9888c5f57e68659ccf53c925e6b36410d840b7fdfe4bd37a8|specrunner/changes/custom-reviewer-round-context/test-cases.md:sha256:7b67a445e73a224656643e846897223cfc4eb72058747f0de255913447527dcc"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/975",
+    "number": 975,
+    "createdAt": "2026-08-09T05:27:34.249Z"
+  },
+  "_journal": {
+    "historyCount": 93,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "test-case-gen": 1,
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 3,
+      "build-fixer": 1,
+      "code-review": 1,
+      "code-fixer": 3,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 1,
+      "custom-reviewers": 2,
+      "regression-gate": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

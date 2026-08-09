@@ -1,0 +1,21 @@
+{
+  "requestHash": "sha256:27065113fc90d724c401ccc3d515a52a2aa7935276f2e156617ca52e7132779d",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/custom-reviewer.ts:35-73 buildCustomReviewerMessage (diffStat ref at :44-46)",
+    "src/core/step/custom-reviewer.ts:105-165 step object has no prepareRoundContext",
+    "src/core/step/step-context-builder.ts:151-160 prepareRoundContext best-effort seam",
+    "src/core/step/spec-review.ts:97-106 prepareRoundContext implementation",
+    "src/core/step/adr-gen.ts:179-187 prepareRoundContext implementation",
+    "src/core/command/resume.ts:435 resumePrompt: this.options.prompt",
+    "src/core/command/runner.ts:223-225 resumePrompt propagation into deps",
+    "src/core/pipeline/pipeline.ts:208-255 depsWithoutResume one-shot strip",
+    "src/core/inbox/planner.ts:288-316 resolveDecisions (issue-comment pathway only)",
+    "src/core/inbox/run-inbox.ts:289-294 decisions persisted to state",
+    "src/core/decision/decision-ledger.ts:66-73 filterUndecidedFindings (verdict layer only)",
+    "src/adapter/claude-code/agent-runner.ts:464-476 artifact bundle + touched-files injection (no findings/decisions)",
+    "src/core/step/regression-gate.ts:54-59 buildLedgerBlock",
+    "src/core/step/regression-gate.ts:136-172 buildMessage with ledger injection"
+  ],
+  "sourceRevision": "bbf506225412f9750b4ae32dbf058a949c56a03e"
+}

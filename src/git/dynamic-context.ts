@@ -84,6 +84,32 @@ export interface DynamicContext {
       findings: { severity: string; resolution: string; file: string; title: string }[];
     }[];
   };
+  /**
+   * Prior-round context for custom reviewer steps (iteration ≥ 2).
+   * Populated by custom reviewer's prepareRoundContext() via buildStepContext().
+   * Contains the previous round's findings (severity/resolution/file/title projection) and
+   * the set of files changed by the prior code-fixer round(s) (machine-derived from commit diff).
+   * In-memory only — NOT persisted to state/journal (one-shot injection per round).
+   * Absent for iteration 1 and for all steps other than custom reviewer steps.
+   * Declared as an inline structural type to avoid cross-layer imports into src/git/.
+   */
+  customReviewerPriorRound?: {
+    findings: { severity: string; resolution: string; file: string; title: string }[];
+    changedFiles: string[];
+  };
+  /**
+   * Operator adjudication context for custom reviewer steps.
+   * Populated by custom reviewer's prepareRoundContext() via buildStepContext().
+   * Combines state.operatorAdjudications (free-form resume --prompt records) and
+   * state.decisions (issue-comment-derived structured decisions) into a unified view.
+   * In-memory only — NOT persisted to state/journal (one-shot injection per round).
+   * Absent when both sources are empty, and for all steps other than custom reviewer steps.
+   * Declared as an inline structural type to avoid cross-layer imports into src/git/.
+   */
+  operatorAdjudicationContext?: {
+    adjudications: { text: string; step: string; recordedAt: string }[];
+    decisions: { step: string; title: string; file: string; selectedOption: string; consequence: string; rationale: string }[];
+  };
 }
 
 /**
