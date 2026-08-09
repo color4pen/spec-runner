@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "419d618d-6ca4-4639-be7e-c469de6a24f8",
   "createdAt": "2026-08-09T03:30:44.772Z",
-  "updatedAt": "2026-08-09T04:46:10.124Z",
+  "updatedAt": "2026-08-09T04:48:28.747Z",
   "request": {
     "title": "中断 step の書きかけ canon を resume が自動隔離して再走する",
     "type": "spec-change",
@@ -70,7 +70,9 @@
     "e28c7384215ef9fa07f005add63a0ce5149b4d84",
     "1de103b3274d68f1604903f341d3b5379ab58af2",
     "7e7f0aea60d8dba93c67ada17c3436322b0fb861",
-    "d5bccfbbecaa6631a4a4fc237fe5f86f7f1ca2ee"
+    "d5bccfbbecaa6631a4a4fc237fe5f86f7f1ca2ee",
+    "fbd997f0a340ede3c59941863e2eb4fdbea39dd9",
+    "8cd748af00d34568f59c14a85e75849561fa26c5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -188,10 +190,19 @@
       "src/core/command/__tests__/resume-reconcile.test.ts",
       "src/parser/types.ts",
       "src/core/resume/canon-provenance.ts"
+    ],
+    "build-fixer": [
+      "src/core/resume/__tests__/apply-canon-provenance.test.ts",
+      "src/core/resume/apply-canon.ts",
+      "src/core/resume/canon-provenance.ts",
+      "src/core/step/design.ts",
+      "src/core/step/types.ts",
+      "src/core/port/step-types.ts",
+      "src/config/type-config.ts"
     ]
   },
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 41,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -201,7 +212,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }

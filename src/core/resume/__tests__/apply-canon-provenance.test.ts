@@ -18,7 +18,7 @@
  * Uses namespace import + type cast to avoid TypeScript errors on non-existing exports.
  */
 
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect } from "vitest";
 import * as applyCanonModule from "../apply-canon.js";
 import type { JobState } from "../../../state/schema.js";
 import { protectedCanonPaths } from "../../step/write-scope.js";
