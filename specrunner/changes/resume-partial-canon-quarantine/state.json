@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "419d618d-6ca4-4639-be7e-c469de6a24f8",
   "createdAt": "2026-08-09T03:30:44.772Z",
-  "updatedAt": "2026-08-09T04:50:38.994Z",
+  "updatedAt": "2026-08-09T04:58:00.557Z",
   "request": {
     "title": "中断 step の書きかけ canon を resume が自動隔離して再走する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/resume-partial-canon-quarantine-419d618d",
   "error": null,
@@ -74,7 +74,8 @@
     "fbd997f0a340ede3c59941863e2eb4fdbea39dd9",
     "8cd748af00d34568f59c14a85e75849561fa26c5",
     "286bfa372df8895b4ed937a1607395961d3b6149",
-    "20420b3d9efc2d5ec890d5493db4d60d36d03e4e"
+    "20420b3d9efc2d5ec890d5493db4d60d36d03e4e",
+    "309931cc37d7612b4b23d4293b312e79d6414156"
   ],
   "touchedFiles": {
     "request-review": [
@@ -195,10 +196,52 @@
     ],
     "build-fixer": [
       "src/core/resume/__tests__/apply-canon-provenance.test.ts"
+    ],
+    "code-review": [
+      "src/core/resume/canon-provenance.ts",
+      "src/core/resume/apply-canon.ts",
+      "src/core/resume/reconcile-worktree.ts",
+      "src/core/command/resume.ts",
+      "src/core/resume/__tests__/apply-canon-provenance.test.ts",
+      "src/core/command/__tests__/resume-partial-canon.test.ts",
+      "tests/resume-partial-canon-quarantine-e2e.test.ts",
+      "src/core/step/design.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/types.ts",
+      "src/core/attach/verify-checkpoint.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -209,7 +252,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 3,
-      "build-fixer": 2
+      "build-fixer": 2,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
