@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "419d618d-6ca4-4639-be7e-c469de6a24f8",
   "createdAt": "2026-08-09T03:30:44.772Z",
-  "updatedAt": "2026-08-09T04:58:00.557Z",
+  "updatedAt": "2026-08-09T04:59:23.137Z",
   "request": {
     "title": "中断 step の書きかけ canon を resume が自動隔離して再走する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/resume-partial-canon-quarantine-419d618d",
   "error": null,
@@ -75,7 +75,8 @@
     "8cd748af00d34568f59c14a85e75849561fa26c5",
     "286bfa372df8895b4ed937a1607395961d3b6149",
     "20420b3d9efc2d5ec890d5493db4d60d36d03e4e",
-    "309931cc37d7612b4b23d4293b312e79d6414156"
+    "309931cc37d7612b4b23d4293b312e79d6414156",
+    "6f88bd365ceb1c70e2feadadb29f8563e9379a0c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -209,7 +210,8 @@
       "src/core/step/write-scope.ts",
       "src/core/step/types.ts",
       "src/core/attach/verify-checkpoint.ts"
-    ]
+    ],
+    "regression-gate": []
   },
   "reviewerStatuses": [
     {
@@ -241,7 +243,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -256,7 +258,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
