@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
   "createdAt": "2026-08-09T14:23:20.716Z",
-  "updatedAt": "2026-08-09T14:34:36.322Z",
+  "updatedAt": "2026-08-09T14:39:04.424Z",
   "request": {
     "title": "Anthropic step 既定モデルの世代更新: sonnet-4-6 → sonnet-5、design opus-4-6[1m] → opus-5",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/anthropic-step-model-refresh-24370d32",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "50d0ec56c95946e22255a70007aa5c6b60629040",
     "e936a73cd7662a3b9a4309fc009d51ff83547b45",
-    "10f6b752f3d4d96d04a1a38fe9440c7d5f690c37"
+    "10f6b752f3d4d96d04a1a38fe9440c7d5f690c37",
+    "6799e30809474897169fac2798309fb8a194f05b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -98,13 +99,19 @@
       "tests/config/model-registry.test.ts",
       "tests/init.test.ts",
       "tests/test-case-gen-step.test.ts"
+    ],
+    "spec-review": [
+      "src/config/model-registry.ts",
+      "src/cli/init.ts",
+      "src/core/step/test-case-gen.ts"
     ]
   },
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
