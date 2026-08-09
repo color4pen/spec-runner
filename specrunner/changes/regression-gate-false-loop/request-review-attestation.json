@@ -1,0 +1,22 @@
+{
+  "requestHash": "sha256:d72e1afa9db0a42a92438f4fdd6084ce8328f58104233245166032b65561edcf",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/judge-verdict.ts:188-192 — collectFixableFindings filters by resolution === 'fixable' only, severity-agnostic",
+    "src/core/step/routed-findings.ts:113 — collectFixableFindings(allFindings) used for code-fixer routing in Branch 3",
+    "src/core/step/code-fixer.ts:150 — 'Ignore LOW severity findings' in conformance path prompt",
+    "src/core/step/code-fixer.ts:194 — 'Ignore LOW severity findings' in coordinator structured-findings prompt",
+    "src/core/step/code-fixer.ts:221 — 'Ignore LOW severity findings' in coordinator fallback prompt",
+    "src/core/step/code-fixer.ts:272 — 'Ignore LOW severity findings' in standard path structured-findings prompt",
+    "src/core/step/code-fixer.ts:293 — 'Ignore LOW severity findings' in findingsPath fallback prompt",
+    "src/core/pipeline/reviewer-chain.ts:165-186 — approved+fixable→code-fixer (findingsRouting) and approved→next (clean) transitions in buildReviewerChainTransitions",
+    "src/core/pipeline/findings-ledger.ts:35 — collectFindingsLedger collects all fixable findings from all reviewer StepRuns, severity-agnostic",
+    "src/core/pipeline/findings-ledger.ts:131 — collectSpecReviewLedger collects all fixable findings from spec-review runs, severity-agnostic",
+    "src/core/step/regression-gate.ts:45 — REGRESSION_GATE_MAX_ITERATIONS = 3",
+    "src/core/step/regression-gate.ts:114-116 — skipWhen merges specLedger + implLedger via dedupeFindings",
+    "src/core/step/regression-gate.ts:145-147 — buildMessage merges specLedger + implLedger via dedupeFindings",
+    "src/core/step/judge-verdict.ts:210-224 — deriveRegressionGateVerdict returns needs-fix when findings.some(f => f.resolution === 'fixable') at L223",
+    "src/prompts/regression-gate-system.ts:25 — ledger described as 'code-fixer が修正した fixable findings の完全リスト' (inaccurate)"
+  ],
+  "sourceRevision": "2cee048506f3e876dac78d9914d1ba54a3706955"
+}
