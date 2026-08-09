@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "419d618d-6ca4-4639-be7e-c469de6a24f8",
   "createdAt": "2026-08-09T03:30:44.772Z",
-  "updatedAt": "2026-08-09T04:20:19.440Z",
+  "updatedAt": "2026-08-09T04:46:10.124Z",
   "request": {
     "title": "中断 step の書きかけ canon を resume が自動隔離して再走する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "build-fixer",
   "status": "running",
   "branch": "change/resume-partial-canon-quarantine-419d618d",
   "error": null,
@@ -68,7 +68,9 @@
     "76924793e60ffb39fdf0c0fdc0d8c542544e02e6",
     "6eee5c5370024fdc2ea2d8b6b90cc170128d1dab",
     "e28c7384215ef9fa07f005add63a0ce5149b4d84",
-    "1de103b3274d68f1604903f341d3b5379ab58af2"
+    "1de103b3274d68f1604903f341d3b5379ab58af2",
+    "7e7f0aea60d8dba93c67ada17c3436322b0fb861",
+    "d5bccfbbecaa6631a4a4fc237fe5f86f7f1ca2ee"
   ],
   "touchedFiles": {
     "request-review": [
@@ -163,17 +165,43 @@
       "src/core/resume/__tests__/apply-canon-provenance.test.ts",
       "src/core/command/__tests__/resume-partial-canon.test.ts",
       "tests/resume-partial-canon-quarantine-e2e.test.ts"
+    ],
+    "implementer": [
+      "src/core/resume/__tests__/apply-canon-provenance.test.ts",
+      "src/core/command/__tests__/resume-partial-canon.test.ts",
+      "tests/resume-partial-canon-quarantine-e2e.test.ts",
+      "src/core/resume/apply-canon.ts",
+      "src/core/resume/reconcile-worktree.ts",
+      "src/core/command/resume.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/design.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/state/pipeline-id.ts",
+      "src/core/step/types.ts",
+      "src/state/schema.ts",
+      "src/core/port/step-types.ts",
+      "src/core/port/step-context.ts",
+      "src/state/schema/types.ts",
+      "src/core/resume/safety.ts",
+      "src/config/type-config.ts",
+      "src/core/command/__tests__/resume-reconcile.test.ts",
+      "src/parser/types.ts",
+      "src/core/resume/canon-provenance.ts"
     ]
   },
   "_journal": {
-    "historyCount": 22,
+    "historyCount": 33,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "spec-fixer": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }

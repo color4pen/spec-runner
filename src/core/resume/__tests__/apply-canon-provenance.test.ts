@@ -190,9 +190,9 @@ describe("TC-015: declaredCanonWritesForStep('design') — isSpecRequired=true �
 
 describe("TC-016 (should): declaredCanonWritesForStep — isSpecRequired=false で spec.md を含まない", () => {
   it("TC-016: returns design.md and tasks.md but NOT spec.md for bug-fix (isSpecRequired=false)", () => {
-    // GIVEN: bug-fix type → isSpecRequired=false
-    const state = makeMinimalState({ request: { path: "", title: "", type: "bug-fix", slug: TEST_SLUG } });
-    const deps = { slug: TEST_SLUG, request: { type: "bug-fix" } };
+    // GIVEN: chore type → isSpecRequired=false (bug-fix has specRequired=true in TYPE_CONFIG)
+    const state = makeMinimalState({ request: { path: "", title: "", type: "chore", slug: TEST_SLUG } });
+    const deps = { slug: TEST_SLUG, request: { type: "chore" } };
     const FOLDER = `specrunner/changes/${TEST_SLUG}`;
     // WHEN
     const result = declaredCanonWritesForStep("design", state, deps);
