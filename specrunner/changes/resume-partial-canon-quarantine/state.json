@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "419d618d-6ca4-4639-be7e-c469de6a24f8",
   "createdAt": "2026-08-09T03:30:44.772Z",
-  "updatedAt": "2026-08-09T03:30:47.522Z",
+  "updatedAt": "2026-08-09T03:37:34.657Z",
   "request": {
     "title": "中断 step の書きかけ canon を resume が自動隔離して再走する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/resume-partial-canon-quarantine-419d618d",
   "error": null,
@@ -62,10 +62,32 @@
     }
   ],
   "synthesizedCommits": [
-    "8da9a01c75b780ca1c14025f9285b7ae6dbf24e1"
+    "8da9a01c75b780ca1c14025f9285b7ae6dbf24e1",
+    "1172bc05a9e00e7bb6a2b43eeff0c5201f005c13"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/command/resume.ts",
+      "src/core/resume/apply-canon.ts",
+      "src/core/resume/reconcile-worktree.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/design.ts",
+      "src/store/event-journal.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/resume/safety.ts",
+      "src/state/schema.ts",
+      "src/state/schema/types.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/step/types.ts",
+      "src/core/port/step-types.ts",
+      "src/core/port/step-context.ts",
+      "src/store/job-journal.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
