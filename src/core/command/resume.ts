@@ -249,7 +249,7 @@ export class ResumeCommand extends CommandRunner {
             text: this.options.prompt,
             step: startStep,
             recordedAt: new Date().toISOString(),
-          }) as JobState
+          })
         : transitioned;
 
       if (this.options.noWorktree) {

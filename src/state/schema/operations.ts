@@ -50,12 +50,11 @@ export function appendSynthesizedCommit(state: JobState, oid: string): JobState 
  * @returns New state with record appended to operatorAdjudications.
  */
 export function appendOperatorAdjudication(
-  state: JobState | Record<string, unknown>,
+  state: JobState,
   record: OperatorAdjudication,
-): JobState | Record<string, unknown> {
-  const s = state as Record<string, unknown>;
-  const existing = (s["operatorAdjudications"] as OperatorAdjudication[] | undefined) ?? [];
-  return { ...s, operatorAdjudications: [...existing, record] };
+): JobState {
+  const existing = state.operatorAdjudications ?? [];
+  return { ...state, operatorAdjudications: [...existing, record] };
 }
 
 /**
