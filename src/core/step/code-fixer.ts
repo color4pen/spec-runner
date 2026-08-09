@@ -16,6 +16,7 @@ import { conformanceResultPath } from "../../util/paths.js";
 import { collectParallelFixerFindings } from "../pipeline/findings-ledger.js";
 import { buildCanonWriteScope } from "./canon-write-scope.js";
 import { isCoordinatorLoopActive, getNeedsFixMembers } from "./routed-findings.js";
+import { selectFixerTargetFindings } from "./judge-verdict.js";
 // routing precedence は routed-findings.ts の collectRoutedFixerFindings と一致させること
 
 const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
@@ -234,8 +235,11 @@ ${deps.request.content}
     // Existence is guaranteed by pre-execution validation (STEP_INPUT_MISSING).
     const findingsPath = resolveReviewerResultPath(deps.slug, activeReviewer, latestIteration(state, activeReviewer));
 
-    // Get structured findings from the latest active reviewer run (if available)
-    const findings = getLatestJudgeFindings(state, activeReviewer);
+    // Get structured findings from the latest active reviewer run (if available).
+    // Apply selectFixerTargetFindings to match routing layer: LOW findings are excluded
+    // (single authoritative place is selectFixerTargetFindings, not the prompt).
+    const rawFindings = getLatestJudgeFindings(state, activeReviewer);
+    const findings = rawFindings ? selectFixerTargetFindings(rawFindings) : rawFindings;
 
     // For custom reviewers, include name in findings source identification.
     // Standard code-review uses no prefix (backward compat).

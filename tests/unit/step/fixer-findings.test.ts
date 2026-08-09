@@ -274,9 +274,10 @@ describe("CodeFixerStep.buildMessage — findings injection", () => {
     expect(msg).not.toContain("Missing null check");
   });
 
-  it("TC-FF-C-005: initial run with low/medium fixable findings → embedded in prompt, no findingsPath", () => {
-    // Verifies D4: approved + fixable findings route to code-fixer, and those
-    // findings are embedded in the prompt (not read from review-feedback file).
+  it("TC-FF-C-005: initial run with low/medium fixable findings → only medium embedded, low excluded", () => {
+    // Verifies D2/D4: selectFixerTargetFindings is applied in buildMessage (standard path),
+    // so LOW findings are excluded from the prompt (routing layer is the single authority).
+    // MEDIUM findings are still embedded.
     const lowMediumFixableFindings: Finding[] = [
       {
         severity: "medium",
@@ -306,18 +307,16 @@ describe("CodeFixerStep.buildMessage — findings injection", () => {
 
     const msg = CodeFixerStep.buildMessage!(state, deps);
 
-    // title must be embedded
+    // MEDIUM finding must be embedded
     expect(msg).toContain("Unused import");
-    expect(msg).toContain("Missing trailing newline");
-    // file must be embedded
     expect(msg).toContain("src/core/pipeline/types.ts");
-    expect(msg).toContain("src/core/step/executor.ts");
-    // rationale must be embedded
     expect(msg).toContain("Import is declared but never referenced");
-    expect(msg).toContain("File should end with a newline");
-    // Severity labels
     expect(msg).toContain("[MEDIUM]");
-    expect(msg).toContain("[LOW]");
+    // LOW finding must NOT be embedded (selectFixerTargetFindings excludes low)
+    expect(msg).not.toContain("Missing trailing newline");
+    expect(msg).not.toContain("src/core/step/executor.ts");
+    expect(msg).not.toContain("File should end with a newline");
+    expect(msg).not.toContain("[LOW]");
     // review-feedback file path should NOT appear — findings are directly embedded
     expect(msg).not.toContain("review-feedback-001.md");
   });

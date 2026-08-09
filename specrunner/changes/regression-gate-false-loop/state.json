@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ecae6e77-b2ae-42a4-9ebb-c9e94b448df0",
   "createdAt": "2026-08-09T00:13:25.380Z",
-  "updatedAt": "2026-08-09T01:41:48.366Z",
+  "updatedAt": "2026-08-09T01:45:43.412Z",
   "request": {
     "title": "low/medium finding の偽ループを解消し regression-gate を新規退行の検出に限定する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "awaiting-resume",
+  "step": "code-fixer",
+  "status": "running",
   "branch": "change/regression-gate-false-loop-ecae6e77",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,9 @@
     "a56690f4f75b96bf98ef11b39cb71fdf661de50d",
     "98b623b3015f1f7815d12bb8ac824ef15f18c55b",
     "24ad588040852f5186fbb0359dbbcea53a799006",
-    "91bb836b88fb9a45b0f2ddde9bc72ee64cca61cd"
+    "91bb836b88fb9a45b0f2ddde9bc72ee64cca61cd",
+    "19091f23cc67a26148f248b7be92681d0d14dafc",
+    "cf9ad62e79293c13a296925a39d592b21c344f78"
   ],
   "touchedFiles": {
     "request-review": [
@@ -170,13 +172,10 @@
       "tests/unit/step/fixer-findings.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "code-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

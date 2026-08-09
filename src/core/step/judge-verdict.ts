@@ -206,8 +206,11 @@ export function selectFixerTargetFindings(findings: Finding[]): Finding[] {
  * Derive the verdict for regression-gate steps.
  *
  * Unlike deriveJudgeVerdict, ANY fixable finding (regardless of severity) triggers needs-fix.
- * Rationale: the regression-gate ledger exclusively contains previously-fixed findings that
- * regressed; any regression (even low/medium severity) must be re-fixed.
+ * Rationale: the caller (step-completion.ts) applies excludeKnownUnfixedRegressions before
+ * invoking this function, so the findings received here have already had known-unfixed entries
+ * (low-severity ledger items that were never routed to code-fixer) removed. Any remaining
+ * fixable finding therefore represents a genuinely new regression or a regression of a
+ * previously-fixed finding — both warrant needs-fix.
  *
  * The vacuous check applies here as in deriveJudgeVerdict: the gate only runs when the
  * findings ledger is non-empty, so a checked=0 report means the agent verified none of the
