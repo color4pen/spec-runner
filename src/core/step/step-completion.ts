@@ -246,6 +246,19 @@ export async function deriveStepCompletion(
           : (toolResult as BaseReportResult & { findings?: Finding[] });
       persistToolResult = effectiveToolResult;
 
+      // For regression-gate: align persisted findings with verdict-affecting findings so
+      // the approved+fixable→code-fixer transition (reviewer-chain.ts) and regressionGateActive
+      // do not fire on known-unfixed low entries. The verdict was computed with verdictFindings
+      // (excludeKnownUnfixedRegressions applied); store the same subset.
+      if (step.name === REGRESSION_GATE_STEP_NAME && isJudgeStep && persistToolResult !== null) {
+        const rChain = deriveImplReviewerChain(state);
+        const rLedger = computeRegressionLedger(rChain, state, canonScope);
+        persistToolResult = {
+          ...persistToolResult,
+          findings: excludeKnownUnfixedRegressions(persistToolResult.findings ?? [], rLedger),
+        };
+      }
+
       // Post-verdict: verify finding refs for judge / request-review steps.
       // Findings are split into two groups with inverted expectations:
       //   - missingDecl (fileMissing===true): the file is EXPECTED to be absent.

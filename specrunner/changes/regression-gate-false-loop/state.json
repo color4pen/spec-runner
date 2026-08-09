@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "ecae6e77-b2ae-42a4-9ebb-c9e94b448df0",
   "createdAt": "2026-08-09T00:13:25.380Z",
-  "updatedAt": "2026-08-09T01:45:43.412Z",
+  "updatedAt": "2026-08-09T01:59:01.872Z",
   "request": {
     "title": "low/medium finding の偽ループを解消し regression-gate を新規退行の検出に限定する",
     "type": "spec-change",
@@ -77,7 +77,9 @@
     "24ad588040852f5186fbb0359dbbcea53a799006",
     "91bb836b88fb9a45b0f2ddde9bc72ee64cca61cd",
     "19091f23cc67a26148f248b7be92681d0d14dafc",
-    "cf9ad62e79293c13a296925a39d592b21c344f78"
+    "cf9ad62e79293c13a296925a39d592b21c344f78",
+    "fada34f111663729c1da1a861cc45954b2932d5d",
+    "d8507407fc150dc0199943c0f1cc899b1328e9f7"
   ],
   "touchedFiles": {
     "request-review": [
@@ -170,12 +172,46 @@
       "src/core/step/__tests__/regression-gate-false-loop.test.ts",
       "src/core/step/__tests__/regression-gate-source-checks.test.ts",
       "tests/unit/step/fixer-findings.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/step/code-fixer.ts",
+      "src/core/step/judge-verdict.ts",
+      "tests/unit/step/fixer-findings.test.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 52,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -187,7 +223,11 @@
       "bite-evidence": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
