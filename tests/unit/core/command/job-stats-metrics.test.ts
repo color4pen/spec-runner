@@ -54,7 +54,7 @@ const PRICED_USAGE = {
 // Expected estimated cost for above: $3.00
 
 /** An unknown model (not in pricing table) */
-const UNKNOWN_MODEL = "claude-opus-5";
+const UNKNOWN_MODEL = "totally-unknown-model-xyz";
 
 function makeInvocation(overrides: Partial<{
   jobId: string;

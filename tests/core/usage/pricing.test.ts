@@ -281,10 +281,71 @@ describe("unknown model returns null / formatUsd shows $?", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Drift guard: all BUILTIN_MODEL_REGISTRY entries must have pricing
+// TC-004: computeCostUsd returns request-specified cost for each new model
 // ---------------------------------------------------------------------------
 
-describe("drift guard — BUILTIN_MODEL_REGISTRY × MODEL_PRICING coverage", () => {
+describe("TC-004: computeCostUsd — new Claude 5 and GPT-5.6 models at 1M tokens each", () => {
+  // usage: 1M tokens per category
+  const usage: ModelUsage = {
+    inputTokens: 1_000_000,
+    outputTokens: 1_000_000,
+    cacheReadInputTokens: 1_000_000,
+    cacheCreationInputTokens: 1_000_000,
+  };
+
+  it("claude-opus-5: returns 36.75 (5+25+0.5+6.25)", () => {
+    expect(computeCostUsd("claude-opus-5", usage)).toBeCloseTo(36.75, 6);
+  });
+
+  it("claude-sonnet-5: returns 22.05 (3+15+0.3+3.75)", () => {
+    expect(computeCostUsd("claude-sonnet-5", usage)).toBeCloseTo(22.05, 6);
+  });
+
+  it("claude-fable-5: returns 73.5 (10+50+1+12.5)", () => {
+    expect(computeCostUsd("claude-fable-5", usage)).toBeCloseTo(73.5, 6);
+  });
+
+  it("gpt-5.6-sol: returns 35.5 (5+30+0.5+0)", () => {
+    expect(computeCostUsd("gpt-5.6-sol", usage)).toBeCloseTo(35.5, 6);
+  });
+
+  it("gpt-5.6-terra: returns 14.2 (2+12+0.2+0)", () => {
+    expect(computeCostUsd("gpt-5.6-terra", usage)).toBeCloseTo(14.2, 6);
+  });
+
+  it("gpt-5.6-luna: returns 1.42 (0.2+1.2+0.02+0)", () => {
+    expect(computeCostUsd("gpt-5.6-luna", usage)).toBeCloseTo(1.42, 6);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-005: corrected gpt-5.5 cost reflects the real price, not the o3 approximation
+// ---------------------------------------------------------------------------
+
+describe("TC-005: gpt-5.5 corrected pricing — 35.5, not the former o3-tier 52.5", () => {
+  const usage: ModelUsage = {
+    inputTokens: 1_000_000,
+    outputTokens: 1_000_000,
+    cacheReadInputTokens: 1_000_000,
+    cacheCreationInputTokens: 1_000_000,
+  };
+
+  it("returns 35.5 (input 5 + output 30 + cacheRead 0.5 + cacheWrite 0)", () => {
+    expect(computeCostUsd("gpt-5.5", usage)).toBeCloseTo(35.5, 6);
+  });
+
+  it("does NOT return the former o3-tier approximation of 52.5 (10+40+2.5+0)", () => {
+    const cost = computeCostUsd("gpt-5.5", usage);
+    expect(cost).not.toBeCloseTo(52.5, 1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Drift guard: all BUILTIN_MODEL_REGISTRY entries must have pricing
+// TC-006: every built-in registry model has pricing
+// ---------------------------------------------------------------------------
+
+describe("drift guard / TC-006 — BUILTIN_MODEL_REGISTRY × MODEL_PRICING coverage", () => {
   it("every model in BUILTIN_MODEL_REGISTRY has a non-null lookupPricing result", () => {
     for (const modelName of Object.keys(BUILTIN_MODEL_REGISTRY)) {
       const pricing = lookupPricing(modelName);
