@@ -62,7 +62,7 @@
 - [ ] 追加 6 モデルそれぞれについて `resolveProvider(name, mergeModelRegistry(config))` が正しい provider を返すことをテストで固定する
 - [ ] `computeCostUsd` が追加 6 モデルおよび修正後 gpt-5.5 について本 request 記載の単価に基づく期待値を返すことをテストで固定する
 - [ ] `PROVIDER_DEFAULTS.openai` が `{ defaultModel: "gpt-5.6-luna", designModel: "gpt-5.6-sol" }` であることをテストで固定する
-- [ ] 既存テスト無変更で green
+- [ ] 既存テスト無変更で green。ただし要件 4 で意図的に変更する `PROVIDER_DEFAULTS.openai` の旧値を pin している 2 テスト(tests/config/model-registry.test.ts の TC-009 の openai 2 assertion、tests/init.test.ts の openai scaffold テスト)の期待値更新のみ、意図的挙動変更への追随として許容する
 - [ ] `typecheck && test` が green
 
 ## 外部事実(本 request が正とする値 — コードベース外の情報のため pipeline では検証不能)
