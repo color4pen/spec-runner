@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "12b383cc-2c7f-4143-8179-587cc12b832a",
   "createdAt": "2026-08-09T13:30:14.588Z",
-  "updatedAt": "2026-08-09T13:30:17.531Z",
+  "updatedAt": "2026-08-09T13:33:26.391Z",
   "request": {
     "title": "モデルカタログ更新: Claude 5 / GPT-5.6 世代の registry・pricing 追加と openai scaffold 既定の後継移行",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/model-catalog-refresh-12b383cc",
   "error": null,
@@ -62,10 +62,21 @@
     }
   ],
   "synthesizedCommits": [
-    "91f2ac7e68054003837ec9adbd0f6df30432dd22"
+    "91f2ac7e68054003837ec9adbd0f6df30432dd22",
+    "edd7c73cf0f905642f8298c67ac3ab356bb89c69"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/config/model-registry.ts",
+      "src/core/usage/pricing.ts",
+      "src/core/usage/types.ts",
+      "src/cli/init.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
