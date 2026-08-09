@@ -169,6 +169,11 @@ rationale への反論を明示せよ」プロトコルを含める。
   → Mitigation: XML block（`<operator-adjudication>`）で「operator 由来の context」と明示ラベルし、
   裁定への盲従ではなく「反論するなら rationale を明示」という規律 text で囲う。reviewer の system
   prompt は既に `<user-request>` をデータとして扱う規律を持つ。
+- [Risk] operator 自由記述に XML 特殊文字（`<`、`>`、`&`）が含まれると `<operator-adjudication>` ブロック境界が
+  破壊され、reviewer がコンテキストと指示の境界を誤認する
+  → Mitigation: `buildOperatorAdjudicationBlock` は `operatorAdjudications[*].text` を埋め込む前に
+  XML 特殊文字をエスケープする（`<` → `&lt;`、`>` → `&gt;`、`&` → `&amp;`）。
+  decisions 由来の text（finding.title / finding.rationale 等）にも同じエスケープを適用する。
 - [Risk] endedAt ベースの「前周以降」判定は sequential 実行順に依存する
   → Mitigation: pipeline は step を sequential 実行し code-fixer.endedAt > reviewer 前周.endedAt が
   成立する。曖昧時（該当 fixer 無し）は changedFiles=[] に degrade し「変更なし」を明示。

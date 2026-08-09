@@ -83,3 +83,11 @@ ledger(issue-comment 由来)のいずれかが存在するとき、その内容�
 **Given** ある custom reviewer round で、JobState の operator 裁定記録と decisions ledger が共に空
 **When** その reviewer の user message を組み立てる
 **Then** user message は operator 裁定 block を含まない
+
+#### Scenario: iteration 1 かつ decisions が存在するとき前周 context block は注入されないが裁定 block は注入される
+
+**Given** ある custom reviewer がまだ一度も実行されていない(iteration 1)で、
+JobState に decisions ledger entry が 1 件以上存在する
+**When** その reviewer の user message を組み立てる
+**Then** user message は前周 context block を含まず、かつ裁定内容(step ラベル付き)と反論プロトコルを含む
+operator 裁定 block を含む

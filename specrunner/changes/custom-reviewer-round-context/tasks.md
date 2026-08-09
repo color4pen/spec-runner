@@ -55,9 +55,13 @@
       `state.operatorAdjudications ?? []` と `state.decisions ?? []` を projection する
       （decisions は step / finding.title / finding.file / selectedOption.label / selectedOption.consequence /
       finding.rationale を抽出）。両方空なら null。いずれか非空なら `{ adjudications, decisions }` を返す。
+      `DecisionRecord.resumeComment` は projection に含めない（`operatorAdjudications[*].text` と
+      内容が重複するため除外。operator の裁定文は `text` field 経由で注入される）。
 - [ ] `buildOperatorAdjudicationBlock(ctx)` を実装する（pure）: `<operator-adjudication>` XML タグで囲み、
       各裁定/decision を step ラベル付きで列挙し、「裁定済み事項を再指摘する場合は裁定 rationale への
       反論を明示せよ」プロトコル text を含む。
+      `operatorAdjudications[*].text` および decisions 由来の text フィールド（title / rationale 等）は
+      XML タグ内に埋め込む前に XML 特殊文字をエスケープする（`<` → `&lt;`、`>` → `&gt;`、`&` → `&amp;`）。
 
 **Acceptance Criteria**:
 - 4 関数が export され `typecheck` が通る。
@@ -90,12 +94,15 @@
 
 ## T-05: job resume --prompt の内容を JobState に永続化する
 
-- [ ] `src/core/command/resume.ts` の `prepare()` で「running」遷移直後（`updatedState = transitioned`
-      付近）、`this.options.prompt` が非空文字列なら
-      `appendOperatorAdjudication(updatedState, { text: this.options.prompt, step: startStep, recordedAt: new Date().toISOString() })`
-      を適用し、`updatedState` を更新する。
-- [ ] 既存の persist 経路（runStore.persist / no-worktree store.persist）が裁定込みの state を書くよう
-      配線する（append を persist の前に行う。既存の resume→running persist を裁定込みで 1 回にまとめる）。
+- [ ] `src/core/command/resume.ts` の `prepare()` で、`transitionJob()` の戻り値 `transitioned` を取得した
+      直後（worktree / no-worktree 両 path の `persist()` 呼び出しより前）に、
+      `this.options.prompt` が非空文字列なら
+      `appendOperatorAdjudication(transitioned, { text: this.options.prompt, step: startStep, recordedAt: new Date().toISOString() })`
+      を適用し、戻り値を `stateToWrite` に代入する。prompt が空の場合は `stateToWrite = transitioned`。
+- [ ] 既存の persist 経路（worktree path の `runStore.persist(transitioned)` / no-worktree path の
+      `noWorktreeStore.persist(transitioned)`）を `persist(stateToWrite)` に置き換える。
+      persist ブロック末尾の `updatedState = transitioned` は `updatedState = stateToWrite` に変更する。
+      これにより最初の「running」遷移 persist が裁定込みの state を 1 回にまとめて書き出す。
 - [ ] 既存の one-shot deps 注入（`resumePrompt: this.options.prompt` → pipeline.ts の `<resume-context>`）は
       変更しない（永続化は追加のみ）。
 
