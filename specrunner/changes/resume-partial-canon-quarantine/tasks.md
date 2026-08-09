@@ -62,7 +62,11 @@
       - `interruptedStep = updatedState.step`
       - `startStep === interruptedStep`（再走対象一致）
       - `declaredCanon = declaredCanonWritesForStep(interruptedStep, updatedState, minimalDeps)`
-        （minimalDeps = `{ slug: resolvedSlug, request, config }` を `StepDeps` として渡す）
+        （minimalDeps = `{ slug: resolvedSlug, request, config }` を `StepDeps` として渡す。
+        `writes()` が参照するフィールドは現在 `slug` / `request.type` のみだが、将来 `writes()` が
+        追加フィールドを参照するようになった場合は minimalDeps の構築を同期すること。
+        未同期でも例外は `declaredCanonWritesForStep` の try/catch が捕捉し `[]` を返すため
+        fail-closed になるが、runtime エラーになる前に minimalDeps を更新する義務がある。）
       - `interruptionBacked = isInterruptionBacked(resumePoint, staleRunningDetected)`
         （`resumePoint` は :189 で running 遷移前に capture 済みの値を使う）
       - `completedStepRunAbsent = !(updatedState.steps?.[interruptedStep]?.length)`
@@ -92,6 +96,7 @@
 
 **Acceptance Criteria**:
 - 上記 pure helper のテストが green。各判定分岐（成立 / 各条件欠落）を網羅する。
+- `isInterruptedStepPartialCanon` は条件 2/3/4 のみを検証する関数である。条件 1（`startStep === interruptedStep`）は gate 配線（T-03）側で `isInterruptedStepPartialCanon` の呼び出し前に独立チェックされる。本テストでは条件 1 不一致のケースを `isInterruptedStepPartialCanon` に混入させない（条件 1 の欠落テストは T-05 の gate 配線レベルで固定する）。
 
 ## T-05: resume prepare 統合テスト（モックハーネス）を追加する
 
@@ -110,12 +115,14 @@
 - [ ] TC: `quarantinePartialCanon` が throw → `PrepareError(1)` で halt。
 - [ ] TC: stale 経路（`isStaleRunning`=true、resumePoint 無し、`state.steps["design"]` 不在）+ dirty
       canon = design writes → 隔離して halt しない。
+- [ ] TC: `startStep !== interruptedStep`（`--from` で別 step へ redirect）+ 中断裏づけあり + dirty canon
+      = design writes → 隔離せず `PrepareError(1)` で halt する（条件 1 不成立で fail-closed）。
 - [ ] TC: destruction 記録 — 隔離配線（else-if 分岐）を除去すると上記 signal TC が halt に退行することを
       inline で記す。
 
 **Acceptance Criteria**:
 - 上記 TC が green。受け入れ基準（隔離続行 / 裏づけ無し halt / 混在 halt / `--apply-canon` 優先 /
-  退避失敗 halt / stale 経路）をモックレベルで固定する。
+  退避失敗 halt / stale 経路 / startStep 不一致 halt）をモックレベルで固定する。
 
 ## T-06: 実 git worktree による e2e テストを追加する（evidence readable + 冪等性）
 
