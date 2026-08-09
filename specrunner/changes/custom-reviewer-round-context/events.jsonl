@@ -105,3 +105,9 @@
 {"type":"transition","ts":"2026-08-09T05:14:27.780Z","step":"regression-gate","status":"warning","message":"regression-gate iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-08-09T05:14:27.781Z","step":"step-transition","status":"ok","message":"regression-gate → code-fixer"}
 {"type":"transition","ts":"2026-08-09T05:14:27.784Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-08-09T05:15:38.734Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"d611dbd7-6ecc-4790-ae77-d3010ae106a3","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-08-09T05:14:27.840Z","endedAt":"2026-08-09T05:15:37.081Z","commitOid":"eb9b04e9d90f29e009a83bb031b637bbae359bd6"}
+{"type":"lineage","step":"code-fixer","ts":"2026-08-09T05:15:37.081Z","outputs":[{"path":"specrunner/changes/custom-reviewer-round-context","hash":null}],"inputs":[{"path":"specrunner/changes/custom-reviewer-round-context/regression-gate-result-001.md","hash":"sha256:90a330cc5bc0a3b6031eb9578007ec5cda9de51b5f9bef804d245e5a689e06e2"}]}
+{"type":"transition","ts":"2026-08-09T05:15:38.738Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
+{"type":"transition","ts":"2026-08-09T05:15:38.739Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
+{"type":"transition","ts":"2026-08-09T05:15:38.740Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
