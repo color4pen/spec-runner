@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4912c2d8-294b-4a1a-9e8b-23c99ca0a68d",
   "createdAt": "2026-08-09T03:30:27.884Z",
-  "updatedAt": "2026-08-09T03:34:55.546Z",
+  "updatedAt": "2026-08-09T03:46:42.033Z",
   "request": {
     "title": "custom reviewer に周回知識(前周 findings・operator 裁定)を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/custom-reviewer-round-context-4912c2d8",
   "error": null,
@@ -63,7 +63,8 @@
   ],
   "synthesizedCommits": [
     "66b7348856b55495f6caf29027eba6338e7b2e8c",
-    "625e03718f2f5f6169228177e82c52d5caa11e11"
+    "625e03718f2f5f6169228177e82c52d5caa11e11",
+    "4aa39d7014ed426f8ddc205b2cf5c98e47df9fa8"
   ],
   "touchedFiles": {
     "request-review": [
@@ -88,12 +89,40 @@
       "src/core/step/regression-gate.ts",
       "src/core/inbox/run-inbox.ts",
       "src/core/step/executor.ts"
+    ],
+    "design": [
+      "src/core/step/custom-reviewer.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/git/dynamic-context.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/adr-gen.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/command/runner.ts",
+      "src/core/command/resume.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/core/inbox/planner.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/state/schema.ts",
+      "src/state/schema/types.ts",
+      "src/state/schema/operations.ts",
+      "src/store/job-state-projection.ts",
+      "src/core/step/io-iteration.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/__tests__/prior-round-context.test.ts",
+      "src/core/step/__tests__/custom-reviewer-step.test.ts",
+      "src/core/port/step-types.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
