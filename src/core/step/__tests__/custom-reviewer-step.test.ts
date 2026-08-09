@@ -16,7 +16,6 @@ import type { ReviewerSnapshot } from "../../reviewers/types.js";
 import type { JobState } from "../../../state/schema.js";
 import type { StepDeps } from "../types.js";
 import { getOutputTemplates } from "../../../templates/step-output-templates.js";
-import { STEP_NAMES } from "../step-names.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -185,7 +184,6 @@ describe("T-05: createCustomReviewerStep — step name", () => {
 // ---------------------------------------------------------------------------
 const T0 = "2026-01-01T00:00:00.000Z";
 const T1 = "2026-01-01T01:00:00.000Z";
-const T2 = "2026-01-01T02:00:00.000Z";
 
 // ---------------------------------------------------------------------------
 // TC-001 (must): iteration ≥ 2 で前周 findings + 変更 file + 再指摘プロトコルが注入される

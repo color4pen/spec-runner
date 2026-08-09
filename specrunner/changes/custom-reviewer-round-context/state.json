@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4912c2d8-294b-4a1a-9e8b-23c99ca0a68d",
   "createdAt": "2026-08-09T03:30:27.884Z",
-  "updatedAt": "2026-08-09T04:20:31.574Z",
+  "updatedAt": "2026-08-09T04:31:24.470Z",
   "request": {
     "title": "custom reviewer に周回知識(前周 findings・operator 裁定)を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "build-fixer",
   "status": "running",
   "branch": "feat/custom-reviewer-round-context-4912c2d8",
   "error": null,
@@ -68,7 +68,9 @@
     "d2820af048c5b7ce65b4cfb4ef8573a99dedc835",
     "8968f42ee96a9cdeaf1d58a0cdd38f3eb5f68635",
     "901d9502abcd157ef800ca15c1d880274e61b9b8",
-    "8116b4a481e31b63d86dc83462b27523069f55ec"
+    "8116b4a481e31b63d86dc83462b27523069f55ec",
+    "8333445159b5196858b0210855409452918f3d63",
+    "4a31b485060c711f6463391bad47ab74b3b1c17c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -173,17 +175,41 @@
       "src/state/__tests__/operator-adjudication-schema.test.ts",
       "src/core/command/__tests__/resume-hard-crash.test.ts",
       "src/core/command/__tests__/resume-operator-adjudication.test.ts"
+    ],
+    "implementer": [
+      "src/core/step/__tests__/custom-reviewer-round-context.test.ts",
+      "src/state/__tests__/operator-adjudication-schema.test.ts",
+      "src/core/step/__tests__/custom-reviewer-step.test.ts",
+      "src/core/command/__tests__/resume-operator-adjudication.test.ts",
+      "src/state/schema/types.ts",
+      "src/state/schema/operations.ts",
+      "src/git/dynamic-context.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/core/step/custom-reviewer.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/command/resume.ts",
+      "src/core/step/io-iteration.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/types.ts",
+      "src/core/port/step-types.ts",
+      "src/state/schema.ts",
+      "src/core/step/__tests__/resume-apply-canon.test.ts",
+      "src/core/step/custom-reviewer-round-context.ts"
     ]
   },
   "_journal": {
-    "historyCount": 22,
+    "historyCount": 33,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "spec-fixer": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
