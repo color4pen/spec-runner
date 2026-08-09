@@ -167,7 +167,12 @@ prompt からの `Ignore LOW` 行除去のみ行う。理由: (a) 偽ループ�
 
 ### D4: 既存テストの期待値変更（要件 5）
 
-期待値変更が必要な既存テスト: **なし（0 件）**。
+期待値変更が必要な既存テスト: **TC-FF-C-005（`tests/unit/step/fixer-findings.test.ts`）の 1 件**。
+
+- TC-FF-C-005 は standard path の buildMessage が LOW findings を prompt の findings block に
+  埋め込むことを期待している。D2 により buildMessage にも `selectFixerTargetFindings` を適用する
+  ため、期待値を「LOW findings は埋め込まれない」に変更する。routing 対象集合と prompt 対象集合の
+  一致（要件 2）はこの変更で成立する。
 
 根拠:
 

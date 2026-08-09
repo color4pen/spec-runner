@@ -12,8 +12,9 @@
       を使う分岐, `:241` 付近）で、code-fixer に見せる findings を `selectFixerTargetFindings` で絞る。
       継続 prompt（`buildContinuationMessage` への `findings` 引数）にも同じ絞り込み後の集合を渡す。
       null/undefined は空配列として扱う。
-      （注: 既存テスト TC-FF-C-005 が LOW findings をプロンプトに期待するため、buildMessage への適用は行わず
-      `collectRoutedFixerFindings` / no-op 検出の routing 層のみに適用した。false loop の根本修正は T-02 で担保。）
+      buildMessage（standard path）にも `selectFixerTargetFindings` を適用する。これに伴い
+      TC-FF-C-005（`tests/unit/step/fixer-findings.test.ts`）の期待値を design D4 の列挙に従い
+      「LOW findings は埋め込まれない」に変更する。
 - [x] `src/core/step/code-fixer.ts` の prompt 全 5 変種から `Ignore LOW severity findings` の行を削除する
       （`:151, :194, :221, :272, :293`）。周囲の番号付きリストの番号を繰り上げて整合させる。
       残す指示（`Fix all HIGH and CRITICAL ...` / `Fix MEDIUM ... only if they do not require design changes`）は変更しない。
@@ -107,4 +108,4 @@
 **Acceptance Criteria**:
 - 追加テストが 3 つの判定シナリオ（再現・新規退行・修正済み退行）と routing の歯を固定している。
 - `typecheck && test` が green。
-- design.md の「期待値変更した既存テスト = 0 件」と実際の diff（既存テストは無改変）が一致している。
+- design.md の D4 列挙（TC-FF-C-005 の 1 件）と実際に期待値変更した既存テストの diff が一致している。
