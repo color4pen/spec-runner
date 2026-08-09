@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4912c2d8-294b-4a1a-9e8b-23c99ca0a68d",
   "createdAt": "2026-08-09T03:30:27.884Z",
-  "updatedAt": "2026-08-09T05:11:52.202Z",
+  "updatedAt": "2026-08-09T05:14:27.784Z",
   "request": {
     "title": "custom reviewer に周回知識(前周 findings・operator 裁定)を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/custom-reviewer-round-context-4912c2d8",
   "error": null,
@@ -79,7 +79,8 @@
     "1d0c432084349332690936dbc9137ec4d8628173",
     "1cdd3609d3ae5c37367416e6c0c9e2a9fb9c5e5f",
     "1501188ea6a7f86a1cd8182ee1e863fdcc30e3f2",
-    "bf966f945f3d9eeb3bc5988dfbe989b8adb23e4a"
+    "bf966f945f3d9eeb3bc5988dfbe989b8adb23e4a",
+    "95080bb15b3dffbd0f54190a67169274e5e41020"
   ],
   "touchedFiles": {
     "request-review": [
@@ -227,6 +228,12 @@
     "code-fixer": [
       "src/core/step/custom-reviewer-round-context.ts",
       "src/core/step/__tests__/custom-reviewer-round-context.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/custom-reviewer-round-context.ts",
+      "src/core/command/resume.ts",
+      "src/state/schema/operations.ts",
+      "src/state/schema/types.ts"
     ]
   },
   "reviewerStatuses": [
@@ -262,7 +269,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 66,
+    "historyCount": 70,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -278,7 +285,8 @@
       "code-fixer": 2,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 2
+      "custom-reviewers": 2,
+      "regression-gate": 1
     }
   }
 }

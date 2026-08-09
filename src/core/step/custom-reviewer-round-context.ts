@@ -196,7 +196,7 @@ export function deriveOperatorAdjudicationContext(state: JobState): OperatorAdju
   }));
 
   const decisions = (state.decisions ?? []).map((d) => ({
-    step: d.step,
+    step: d.step ?? "",
     title: d.finding.title ?? "",
     file: d.finding.file ?? "",
     selectedOption: d.selectedOption.label ?? "",
