@@ -149,7 +149,10 @@ rationale への反論を明示せよ」プロトコルを含める。
 - **Rationale**: どちらも operator 由来の裁定であり、reviewer が respect すべき対象。block 内で
   step ラベルを併記するため、他 reviewer 宛の裁定が混ざっても害は小さい。要件は「decisions ledger
   の内容を注入」であり、絞り込みは要件に含まれない。
-- **Alternatives considered**: reviewer 名でのフィルタ → Open Question に送る（過剰スコープ回避）。
+- **Alternatives considered**: reviewer 名でのフィルタ（`d.step === reviewerName`）→ 却下（operator 裁定済み）。
+  裁定は change 単位の事実であり特定 reviewer の観点に限定されない — cross-step の裁定可視性が
+  本機構の目的そのもの。step ラベルで出所は判別可能。ノイズが顕在化した場合に別 request で
+  フィルタを導入する。
 
 ### D8: degrade 分岐
 
@@ -184,7 +187,7 @@ rationale への反論を明示せよ」プロトコルを含める。
 
 ## Open Questions
 
-- 裁定 block を reviewer 名でスコープするか（現状は全裁定を注入）。過剰スコープを避け初回は全注入とし、
-  ノイズが問題化したら reviewer 単位フィルタを検討する。
+- ~~裁定 block を reviewer 名でスコープするか~~ → 裁定済み: 全裁定を注入する（D7 参照）。
+  ノイズが問題化したら reviewer 単位フィルタを別 request で導入する。
 - DecisionRecord の `resumeComment` / `selectedOption.consequence` をどこまで block に展開するか
   （初回は step / title / file / 選択肢ラベル / rationale の projection に留める）。
