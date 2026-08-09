@@ -17,8 +17,8 @@ import { fileURLToPath } from "node:url";
 
 // Resolve src/ relative to this test file
 const __filename = fileURLToPath(import.meta.url);
-// __tests__/ → step/ → core/ → src/
-const SRC_ROOT = path.resolve(__filename, "../../../../..");
+// file → __tests__/ → step/ → core/ → src/
+const SRC_ROOT = path.resolve(__filename, "../../../..");
 
 // ---------------------------------------------------------------------------
 // TC-006: code-fixer prompt に severity 再フィルタ行が存在しない
@@ -105,8 +105,8 @@ function grepRecursive(rootDir: string, needle: string): GrepMatch[] {
     for (const entry of entries) {
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
-        // Skip node_modules and .git
-        if (entry.name === "node_modules" || entry.name === ".git") continue;
+        // Skip node_modules, .git, and test directories (avoid self-reference)
+        if (entry.name === "node_modules" || entry.name === ".git" || entry.name === "__tests__") continue;
         walk(fullPath);
       } else if (entry.isFile() && (entry.name.endsWith(".ts") || entry.name.endsWith(".js"))) {
         const content = fs.readFileSync(fullPath, "utf-8");
