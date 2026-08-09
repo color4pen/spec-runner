@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
   "createdAt": "2026-08-09T14:23:20.716Z",
-  "updatedAt": "2026-08-09T14:59:17.464Z",
+  "updatedAt": "2026-08-09T15:08:55.922Z",
   "request": {
     "title": "Anthropic step 既定モデルの世代更新: sonnet-4-6 → sonnet-5、design opus-4-6[1m] → opus-5",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/anthropic-step-model-refresh-24370d32",
   "error": null,
@@ -69,7 +69,9 @@
     "ec9b33b752cab60763f8ebb2eca61de2e8a57185",
     "ae19171b5cc12553e7ca7070c98ef2049ce2f68e",
     "dab881a991c5a4124fee1a3b59ffea043e9609b6",
-    "a01b0e5784f343a69212c0724d671f6d071b44fb"
+    "a01b0e5784f343a69212c0724d671f6d071b44fb",
+    "735d6e32834e59191a5108a298a622c023715914",
+    "a869c6af75b10c88979e95e7c960addec6c6d249"
   ],
   "touchedFiles": {
     "request-review": [
@@ -148,10 +150,44 @@
       "tests/unit/step/code-review.test.ts",
       "tests/unit/step/implementer.test.ts",
       "tests/unit/step/test-materialize-boundary.test.ts"
+    ],
+    "code-review": [
+      "tests/anthropic-step-model-refresh.test.ts",
+      "src/cli/init.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "735d6e32834e59191a5108a298a622c023715914",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/anthropic-step-model-refresh/design.md:sha256:1fee73c731e3c7964a44c43c98bb0db282e21e4df984141363c94825a05c9235|specrunner/changes/anthropic-step-model-refresh/request.md:sha256:c24d6ef35a18686708bcd5571ef4784001ade225b16512ebc7f532fd2df86dae|specrunner/changes/anthropic-step-model-refresh/spec.md:sha256:288eb3db9657be72b0ca41b20afb9a9314aff3f0bcf68f77b4cb84aaee006583|specrunner/changes/anthropic-step-model-refresh/tasks.md:sha256:537441967ff683ab9cf8dc20b0846014d325774a1cb10760d7b101ca92e2278e|specrunner/changes/anthropic-step-model-refresh/test-cases.md:sha256:421f054d072ac33826cf9569bd1f07ed071e3815468569c59dc9eac2c49a2cc6"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -160,7 +196,11 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
