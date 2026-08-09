@@ -45,7 +45,7 @@ export const REGRESSION_GATE_STEP_NAME = "regression-gate";
 export const REGRESSION_GATE_MAX_ITERATIONS = 3;
 
 /** Default review model for the regression-gate agent. */
-const DEFAULT_REVIEW_MODEL = "claude-sonnet-4-6";
+const DEFAULT_REVIEW_MODEL = "claude-sonnet-5";
 
 /**
  * Format the findings ledger for injection into the user message.

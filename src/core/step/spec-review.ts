@@ -13,7 +13,7 @@ import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { deriveSpecReviewVerdict } from "./judge-verdict.js";
 import { derivePriorRoundContext, buildPriorRoundContextBlock } from "./prior-round-context.js";
 
-const SPEC_REVIEW_AGENT_MODEL = "claude-sonnet-4-6";
+const SPEC_REVIEW_AGENT_MODEL = "claude-sonnet-5";
 
 /**
  * Full AgentDefinition owned by SpecReviewStep.

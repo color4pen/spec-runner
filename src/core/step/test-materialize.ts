@@ -10,7 +10,7 @@ import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
-const TEST_MATERIALIZE_AGENT_MODEL = "claude-sonnet-4-6";
+const TEST_MATERIALIZE_AGENT_MODEL = "claude-sonnet-5";
 
 /**
  * Full AgentDefinition owned by TestMaterializeStep.

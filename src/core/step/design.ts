@@ -13,7 +13,7 @@ import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import type { OutputContract } from "../port/output-contract.js";
 
-const DESIGN_AGENT_MODEL = "claude-opus-4-6[1m]";
+const DESIGN_AGENT_MODEL = "claude-opus-5";
 
 /**
  * Full AgentDefinition owned by DesignStep.

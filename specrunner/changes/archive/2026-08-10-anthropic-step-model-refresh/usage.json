@@ -1,0 +1,220 @@
+{
+  "commandInvocations": [
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T14:26:43.694Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 19,
+          "outputTokens": 11339,
+          "cacheReadInputTokens": 817965,
+          "cacheCreationInputTokens": 77294
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "request-review",
+      "numTurns": 31,
+      "durationMs": 192586,
+      "durationApiMs": 192378,
+      "totalCostUsd": 0.7053839999999999
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T14:34:34.306Z",
+      "modelUsage": {
+        "claude-opus-4-8[1m]": {
+          "inputTokens": 26,
+          "outputTokens": 33872,
+          "cacheReadInputTokens": 856731,
+          "cacheCreationInputTokens": 94343
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "design",
+      "numTurns": 21,
+      "durationMs": 460861,
+      "durationApiMs": 460665,
+      "totalCostUsd": 1.86493925
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T14:39:02.547Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 18,
+          "outputTokens": 13061,
+          "cacheReadInputTokens": 837718,
+          "cacheCreationInputTokens": 71860
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "spec-review",
+      "numTurns": 27,
+      "durationMs": 257853,
+      "durationApiMs": 255964,
+      "totalCostUsd": 0.7167594
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T14:41:10.423Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 7,
+          "outputTokens": 6896,
+          "cacheReadInputTokens": 174160,
+          "cacheCreationInputTokens": 46863
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "test-case-gen",
+      "numTurns": 5,
+      "durationMs": 117893,
+      "durationApiMs": 117799,
+      "totalCostUsd": 0.33144524999999997
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T14:46:45.954Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 34,
+          "outputTokens": 17960,
+          "cacheReadInputTokens": 2091494,
+          "cacheCreationInputTokens": 76381
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "test-materialize",
+      "numTurns": 32,
+      "durationMs": 325472,
+      "durationApiMs": 304192,
+      "totalCostUsd": 1.1833789499999996
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T14:57:29.751Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 47,
+          "outputTokens": 26484,
+          "cacheReadInputTokens": 2891974,
+          "cacheCreationInputTokens": 253155
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "implementer",
+      "numTurns": 63,
+      "durationMs": 597786,
+      "durationApiMs": 431962,
+      "totalCostUsd": 1.7194687499999997
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T15:02:38.342Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 25,
+          "outputTokens": 9895,
+          "cacheReadInputTokens": 1426828,
+          "cacheCreationInputTokens": 77170
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "code-review",
+      "numTurns": 26,
+      "durationMs": 194237,
+      "durationApiMs": 193085,
+      "totalCostUsd": 0.8659358999999999
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T15:08:54.286Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 29,
+          "outputTokens": 17187,
+          "cacheReadInputTokens": 1950076,
+          "cacheCreationInputTokens": 97203
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "cross-boundary-invariants",
+      "numTurns": 36,
+      "durationMs": 367807,
+      "durationApiMs": 363961,
+      "totalCostUsd": 1.20742605
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T15:12:23.854Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 11,
+          "outputTokens": 9484,
+          "cacheReadInputTokens": 437504,
+          "cacheCreationInputTokens": 54087
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "regression-gate",
+      "numTurns": 12,
+      "durationMs": 199614,
+      "durationApiMs": 198888,
+      "totalCostUsd": 0.47637045
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T15:12:50.400Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 6,
+          "outputTokens": 994,
+          "cacheReadInputTokens": 132479,
+          "cacheCreationInputTokens": 33802
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "code-fixer",
+      "numTurns": 4,
+      "durationMs": 18551,
+      "durationApiMs": 18469,
+      "totalCostUsd": 0.1814292
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T15:14:08.960Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 8,
+          "outputTokens": 3766,
+          "cacheReadInputTokens": 257779,
+          "cacheCreationInputTokens": 44560
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "regression-gate",
+      "numTurns": 8,
+      "durationMs": 70559,
+      "durationApiMs": 70412,
+      "totalCostUsd": 0.3009477
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-09T15:18:08.607Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 3115,
+          "outputTokens": 10882,
+          "cacheReadInputTokens": 1299935,
+          "cacheCreationInputTokens": 76133
+        }
+      },
+      "jobId": "24370d32-cd41-4644-893c-9d9e6af3e490",
+      "stepName": "conformance",
+      "numTurns": 29,
+      "durationMs": 231589,
+      "durationApiMs": 230924,
+      "totalCostUsd": 0.8480542499999998
+    }
+  ]
+}

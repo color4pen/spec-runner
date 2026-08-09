@@ -98,8 +98,8 @@ describe("resolveProvider", () => {
 // TC-009: PROVIDER_DEFAULTS の各フィールド値を直接検証
 // TC-007: PROVIDER_DEFAULTS.openai holds the successor models
 describe("PROVIDER_DEFAULTS (TC-009 / TC-007)", () => {
-  it("anthropic.defaultModel is claude-sonnet-4-6", () => {
-    expect(PROVIDER_DEFAULTS.anthropic.defaultModel).toBe("claude-sonnet-4-6");
+  it("anthropic.defaultModel is claude-sonnet-5", () => {
+    expect(PROVIDER_DEFAULTS.anthropic.defaultModel).toBe("claude-sonnet-5");
   });
 
   it("openai.defaultModel is gpt-5.6-luna", () => {

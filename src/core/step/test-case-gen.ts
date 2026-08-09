@@ -9,7 +9,7 @@ import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
-const TEST_CASE_GEN_AGENT_MODEL = "claude-sonnet-4-6";
+const TEST_CASE_GEN_AGENT_MODEL = "claude-sonnet-5";
 
 /**
  * Full AgentDefinition owned by TestCaseGenStep.
@@ -18,7 +18,7 @@ const TEST_CASE_GEN_AGENT_MODEL = "claude-sonnet-4-6";
  * capabilities.gitWrite = true — test-cases.md is committed and pushed by the agent.
  *
  * Design D1 (add-test-case-generation-step): completionVerdict type step.
- * Design D2: claude-sonnet-4-6 — design-reading task; Opus is overkill.
+ * Design D2: claude-sonnet-5 — design-reading task; Opus is overkill.
  */
 const testCaseGenAgentDefinition: AgentDefinition = {
   name: "specrunner-test-case-gen",

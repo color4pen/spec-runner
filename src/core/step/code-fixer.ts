@@ -19,7 +19,7 @@ import { isCoordinatorLoopActive, getNeedsFixMembers } from "./routed-findings.j
 import { selectFixerTargetFindings } from "./judge-verdict.js";
 // routing precedence は routed-findings.ts の collectRoutedFixerFindings と一致させること
 
-const CODE_FIXER_AGENT_MODEL = "claude-sonnet-4-6";
+const CODE_FIXER_AGENT_MODEL = "claude-sonnet-5";
 
 /**
  * Full AgentDefinition owned by CodeFixerStep.

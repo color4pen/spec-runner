@@ -14,7 +14,7 @@ import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { REQUEST_REVIEW_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 
-const REQUEST_REVIEW_AGENT_MODEL = "claude-sonnet-4-6";
+const REQUEST_REVIEW_AGENT_MODEL = "claude-sonnet-5";
 
 /**
  * Full AgentDefinition owned by RequestReviewStep.

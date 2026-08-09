@@ -34,7 +34,7 @@ import {
 } from "./custom-reviewer-round-context.js";
 
 /** Default model for custom reviewer steps. */
-const DEFAULT_REVIEW_MODEL = "claude-sonnet-4-6";
+const DEFAULT_REVIEW_MODEL = "claude-sonnet-5";
 
 /**
  * Build the initial user message for a custom reviewer session.

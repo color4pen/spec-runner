@@ -71,8 +71,8 @@ describe("TC-002: CodeReviewStep の agent.name / model / tools が仕様値と�
     expect(CodeReviewStep.agent.name).toBe("specrunner-code-review");
   });
 
-  it("step.agent.model === 'claude-sonnet-4-6'", () => {
-    expect(CodeReviewStep.agent.model).toBe("claude-sonnet-4-6");
+  it("step.agent.model === 'claude-sonnet-5'", () => {
+    expect(CodeReviewStep.agent.model).toBe("claude-sonnet-5");
   });
 
   it("step.agent.tools contains agent_toolset_20260401", () => {
