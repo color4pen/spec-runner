@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4912c2d8-294b-4a1a-9e8b-23c99ca0a68d",
   "createdAt": "2026-08-09T03:30:27.884Z",
-  "updatedAt": "2026-08-09T03:30:30.575Z",
+  "updatedAt": "2026-08-09T03:34:55.546Z",
   "request": {
     "title": "custom reviewer に周回知識(前周 findings・operator 裁定)を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/custom-reviewer-round-context-4912c2d8",
   "error": null,
@@ -62,10 +62,38 @@
     }
   ],
   "synthesizedCommits": [
-    "66b7348856b55495f6caf29027eba6338e7b2e8c"
+    "66b7348856b55495f6caf29027eba6338e7b2e8c",
+    "625e03718f2f5f6169228177e82c52d5caa11e11"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/step/custom-reviewer.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/prior-round-context.ts",
+      "src/core/step/post-fix-context.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/adr-gen.ts",
+      "src/core/step/types.ts",
+      "src/core/command/resume.ts",
+      "src/core/command/runner.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/inbox/planner.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/state/schema.ts",
+      "src/git/dynamic-context.ts",
+      "src/state/schema/types.ts",
+      "src/core/port/step-types.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/core/step/executor.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
