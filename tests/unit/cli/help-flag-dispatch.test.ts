@@ -129,16 +129,21 @@ describe("TC-HELP-DISPATCH-02: runtime reset --help", () => {
   });
 });
 
-// TC-HELP-DISPATCH-03: job resume --help → exit 0 + fallback (runResume not called)
+// TC-HELP-DISPATCH-03: job resume --help → exit 0 + detailed help (runResume not called)
+// Updated: JOB_RESUME_USAGE is now wired into the resume entry, so detailed help is shown.
+// The old "No detailed help available" assertion is replaced with new-behavior assertions.
 describe("TC-HELP-DISPATCH-03: job resume --help", () => {
   it("exits with code 0 even without slug", async () => {
     const result = await runMain(["job", "resume", "--help"]);
     expect(result).toBe("process.exit(0)");
   });
 
-  it("writes fallback help message (no detailed usage defined)", async () => {
+  it("writes detailed help (JOB_RESUME_USAGE) to stdout — not the fallback message", async () => {
     await runMain(["job", "resume", "--help"]);
-    expect(stdoutContains("No detailed help available")).toBe(true);
+    // JOB_RESUME_USAGE is now wired; detailed help must be shown.
+    expect(stdoutContains("No detailed help available")).toBe(false);
+    expect(stdoutContains("--from")).toBe(true);
+    expect(stdoutContains("--apply-canon")).toBe(true);
   });
 
   it("does not call runResume", async () => {

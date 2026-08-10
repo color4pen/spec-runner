@@ -1,0 +1,252 @@
+{
+  "version": 2,
+  "jobId": "861572f6-b599-472f-8c99-3d5faee8e6b2",
+  "createdAt": "2026-08-10T07:05:09.539Z",
+  "updatedAt": "2026-08-10T08:37:05.136Z",
+  "request": {
+    "title": "resume の operator 案内整備: 採用系 halt の preflight 統合と詳細ヘルプ",
+    "type": "spec-change",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/resume-operator-guidance-861572f6",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "3da292b915d31bbb94237e69587811a69b13323c",
+    "79d6f2d98980383931431decc1dddf93eb04ef95",
+    "6cf259cc5e59c21a6271f73fe8dfdd4aacfb9b3f",
+    "dc004eef55622b834f989f413642110cf22a8559",
+    "a375c080c3ae12c4ca9d0bae9e562596c01a09a8",
+    "77b3dd332b86144057af2d5b058fb2cbbb059232",
+    "f40ee4fa2a2af024d269b690d96e896719f2e48a",
+    "8711ece7bb2ce4c4b5915cae70c30c656a0ba0ee",
+    "d07857754977976a816b7437f980af62db2da466",
+    "7c451444117fef2b4c461460dfbe19a2c0364389",
+    "0ae2d47009b6d8937204ec8ca356f6f89bb4333b",
+    "7f56492868bb651b0ab2b2713420f5ff8196f8ed",
+    "405b4705f5267a76425cf1ec79a9310cc9c8d0ea",
+    "da202fc862c85581c726ad9587cb06794fe94f53",
+    "cb39ca76941267361686d3b9e08e3a80355fe5f8",
+    "217a756fe8ef0321415b86ad3a8e1b97af77b5a5",
+    "6ff90e14cf16f306e3e9aa8f3264da8978447b96"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/command/resume.ts",
+      "src/cli/command-registry.ts",
+      "src/errors.ts",
+      "src/store/job-catalog.ts",
+      "src/core/command/__tests__/resume-adopt-commits.test.ts",
+      "src/kernel/step-names.ts",
+      "tests/unit/cli/doctor-help.test.ts"
+    ],
+    "design": [
+      "src/core/command/resume.ts",
+      "src/errors.ts",
+      "src/core/resume/adopt-commits.ts",
+      "src/core/resume/apply-canon.ts",
+      "src/cli/command-registry.ts",
+      "tests/unit/cli/doctor-help.test.ts",
+      "src/store/job-catalog.ts",
+      "src/core/resume/resolve-job.ts",
+      "src/kernel/step-names.ts",
+      "src/core/command/__tests__/resume-adopt-commits.test.ts",
+      "src/core/resume/resolve-step.ts",
+      "tests/unit/cli/resume.test.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "bin/specrunner.ts"
+    ],
+    "spec-review": [
+      "src/core/command/resume.ts",
+      "src/core/resume/adopt-commits.ts",
+      "src/cli/command-registry.ts",
+      "src/kernel/step-names.ts",
+      "src/errors.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "tests/unit/cli/resume.test.ts",
+      "src/core/resume/__tests__/adopt-commits.test.ts"
+    ],
+    "spec-fixer": [],
+    "test-case-gen": [],
+    "test-materialize": [
+      "src/core/command/__tests__/resume-adopt-commits.test.ts",
+      "src/core/command/__tests__/resume-apply-canon.test.ts",
+      "src/core/resume/adopt-commits.ts",
+      "tests/unit/cli/doctor-help.test.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "src/core/command/resume.ts",
+      "tests/unit/cli/resume.test.ts",
+      "src/core/resume/__tests__/adopt-commits.test.ts",
+      "src/errors.ts",
+      "src/cli/command-registry.ts",
+      "vitest.config.ts",
+      "tests/setup-fs-spy.ts",
+      "src/core/worktree/detection.ts",
+      "src/core/resume/__tests__/adoption-halt.test.ts",
+      "src/core/command/__tests__/resume-operator-guidance.test.ts",
+      "tests/unit/cli/resume-help.test.ts"
+    ],
+    "implementer": [
+      "src/core/resume/adopt-commits.ts",
+      "src/core/command/resume.ts",
+      "src/core/resume/__tests__/adoption-halt.test.ts",
+      "src/core/command/__tests__/resume-operator-guidance.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "src/cli/command-registry.ts",
+      "src/kernel/step-names.ts",
+      "src/core/command/__tests__/resume-apply-canon.test.ts",
+      "src/core/command/__tests__/resume-adopt-commits.test.ts",
+      "src/core/command/__tests__/resume-partial-canon.test.ts",
+      "src/util/git-exec.ts",
+      "tests/unit/cli/resume.test.ts",
+      "vitest.config.ts"
+    ],
+    "code-review": [
+      "src/core/resume/adopt-commits.ts",
+      "src/core/command/resume.ts",
+      "src/core/resume/__tests__/adoption-halt.test.ts",
+      "src/core/command/__tests__/resume-operator-guidance.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "tests/unit/cli/resume.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/command/__tests__/resume-operator-guidance.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "src/cli/command-registry.ts",
+      "src/core/command/resume.ts"
+    ],
+    "regression-gate": [
+      "src/core/command/__tests__/resume-operator-guidance.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "src/core/command/resume.ts"
+    ],
+    "conformance": [
+      "src/core/resume/adopt-commits.ts",
+      "src/core/command/resume.ts",
+      "src/cli/command-registry.ts",
+      "src/core/resume/__tests__/adoption-halt.test.ts",
+      "src/core/command/__tests__/resume-operator-guidance.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "src/kernel/step-names.ts"
+    ]
+  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "spec-review escalation への裁定: (1) T-02 に、統合 halt メッセージ生成に渡す slug は resolvedSlug（getJobSlug(state) の正規 slug。Gate 2 が buildAdoptEscalationMessage に渡すものと同一、resume.ts:434 参照）であることを明記する。this.slug は short Job ID prefix の可能性があるため使用しない。 (2) --from 有効値一覧は全ステップ完全列挙のままとし、T-03 に bite-evidence へ『内部 step（通常の operator は使用しない）』である旨の注記を付ける指示を追加する。他の変更は不要。",
+      "step": "spec-fixer",
+      "recordedAt": "2026-08-10T07:29:46.181Z"
+    }
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/978",
+    "number": 978,
+    "createdAt": "2026-08-10T08:37:04.351Z"
+  },
+  "_journal": {
+    "historyCount": 74,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 2,
+      "spec-fixer": 1,
+      "test-case-gen": 1,
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 2,
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

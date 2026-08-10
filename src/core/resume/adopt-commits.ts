@@ -150,6 +150,102 @@ export async function detectUnadoptedCommits(
 }
 
 // ---------------------------------------------------------------------------
+// buildAdoptionHaltMessage
+// ---------------------------------------------------------------------------
+
+/**
+ * Build the unified operator-facing halt message for Gate 1 fail-closed halt.
+ *
+ * Covers three cases:
+ *   - canon-only: dirtyCanonPaths non-empty, unadoptedCommits empty
+ *   - canon+commits: both non-empty
+ *   - detection-failed: dirtyCanonPaths non-empty, commit detection failed
+ *
+ * The complete command in the output includes --apply-canon when dirtyCanonPaths is
+ * non-empty and --adopt-commits when unadoptedCommits is non-empty (and detection
+ * did not fail). If commitDetectionFailed is true, --adopt-commits is omitted
+ * (fail-closed: do not recommend adopting commits that could not be verified).
+ *
+ * @param args.slug                 - Job slug (substituted into the resume command).
+ * @param args.dirtyCanonPaths      - Dirty protected canon paths detected.
+ * @param args.unadoptedCommits     - Unknown commits detected (empty if none or detection failed).
+ * @param args.commitDetectionFailed - True when preflight adopt detection failed (non-128 error).
+ * @returns Formatted halt message string.
+ */
+export function buildAdoptionHaltMessage(args: {
+  slug: string;
+  dirtyCanonPaths: string[];
+  unadoptedCommits: UnadoptedCommit[];
+  commitDetectionFailed?: boolean;
+}): string {
+  const { slug, dirtyCanonPaths, unadoptedCommits, commitDetectionFailed = false } = args;
+
+  const lines: string[] = [];
+
+  // Header
+  if (commitDetectionFailed) {
+    lines.push("Protected canon changes detected. Unknown commit detection failed. No step was run.");
+  } else if (unadoptedCommits.length > 0) {
+    lines.push("Protected canon changes and unadopted commits detected. No step was run.");
+  } else {
+    lines.push("Protected canon changes detected. No step was run.");
+  }
+  lines.push("");
+
+  // Dirty canon path listing
+  if (dirtyCanonPaths.length > 0) {
+    lines.push("Modified canon paths:");
+    for (const p of dirtyCanonPaths) {
+      lines.push(`  ${p}`);
+    }
+    lines.push("");
+  }
+
+  // Unadopted commit listing or detection-failure note
+  if (commitDetectionFailed) {
+    lines.push("Note: detection of unadopted commits failed (non-fatal git error). Resolve canon changes first,");
+    lines.push("      then resume again so the adopt check can run.");
+    lines.push("");
+  } else if (unadoptedCommits.length > 0) {
+    lines.push("Unadopted commits:");
+    for (const commit of unadoptedCommits) {
+      lines.push(`  ${commit.shortSha} — ${commit.subject}`);
+      lines.push(`    Author: ${commit.author}`);
+      if (commit.paths.length > 0) {
+        lines.push("    Changed paths:");
+        for (const p of commit.paths) {
+          lines.push(`      ${p}`);
+        }
+      }
+    }
+    lines.push("");
+  }
+
+  // Complete command
+  const flags: string[] = ["--apply-canon"];
+  if (unadoptedCommits.length > 0 && !commitDetectionFailed) {
+    flags.push("--adopt-commits");
+  }
+  const cmd = `specrunner job resume ${slug} ${flags.join(" ")}`;
+
+  lines.push("To proceed:");
+  lines.push(`  ${cmd}`);
+  lines.push("");
+
+  // Alternatives
+  lines.push("Alternatives:");
+  for (const p of dirtyCanonPaths) {
+    lines.push(`  Discard canon changes:  git checkout HEAD -- ${p}`);
+  }
+  if (unadoptedCommits.length > 0 && !commitDetectionFailed) {
+    lines.push("  Push the commit(s) to origin so they leave the publish range.");
+    lines.push("  Remove or revert the commit(s) (git reset / git revert) so they leave the publish range.");
+  }
+
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
 // buildAdoptEscalationMessage
 // ---------------------------------------------------------------------------
 
