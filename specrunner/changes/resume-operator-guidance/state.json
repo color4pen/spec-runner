@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "861572f6-b599-472f-8c99-3d5faee8e6b2",
   "createdAt": "2026-08-10T07:05:09.539Z",
-  "updatedAt": "2026-08-10T07:58:20.783Z",
+  "updatedAt": "2026-08-10T08:17:47.966Z",
   "request": {
     "title": "resume の operator 案内整備: 採用系 halt の preflight 統合と詳細ヘルプ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/resume-operator-guidance-861572f6",
   "error": null,
@@ -70,7 +70,9 @@
     "77b3dd332b86144057af2d5b058fb2cbbb059232",
     "f40ee4fa2a2af024d269b690d96e896719f2e48a",
     "8711ece7bb2ce4c4b5915cae70c30c656a0ba0ee",
-    "d07857754977976a816b7437f980af62db2da466"
+    "d07857754977976a816b7437f980af62db2da466",
+    "7c451444117fef2b4c461460dfbe19a2c0364389",
+    "0ae2d47009b6d8937204ec8ca356f6f89bb4333b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -127,6 +129,22 @@
       "src/core/resume/__tests__/adoption-halt.test.ts",
       "src/core/command/__tests__/resume-operator-guidance.test.ts",
       "tests/unit/cli/resume-help.test.ts"
+    ],
+    "implementer": [
+      "src/core/resume/adopt-commits.ts",
+      "src/core/command/resume.ts",
+      "src/core/resume/__tests__/adoption-halt.test.ts",
+      "src/core/command/__tests__/resume-operator-guidance.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "src/cli/command-registry.ts",
+      "src/kernel/step-names.ts",
+      "src/core/command/__tests__/resume-apply-canon.test.ts",
+      "src/core/command/__tests__/resume-adopt-commits.test.ts",
+      "src/core/command/__tests__/resume-partial-canon.test.ts",
+      "src/util/git-exec.ts",
+      "tests/unit/cli/resume.test.ts",
+      "vitest.config.ts"
     ]
   },
   "resumePoint": null,
@@ -139,14 +157,17 @@
     }
   ],
   "_journal": {
-    "historyCount": 28,
+    "historyCount": 40,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 2,
       "spec-fixer": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
