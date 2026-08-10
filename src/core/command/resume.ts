@@ -11,7 +11,7 @@ import { JobStateStore } from "../../store/job-state-store.js";
 import { loadStateByJobId } from "../job-access/load-by-job-id.js";
 import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
 import { logInfo, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
-import { SpecRunnerError, worktreeGuardError } from "../../errors.js";
+import { SpecRunnerError, ERROR_CODES, worktreeGuardError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
 import { appendSynthesizedCommit, appendOperatorAdjudication } from "../../state/schema.js";
 import { toStepName } from "../step/step-names.js";
@@ -177,11 +177,16 @@ export class ResumeCommand extends CommandRunner {
         try {
           fullId = await JobStateStore.resolveId(cwd, this.slug);
         } catch (err) {
-          if (err instanceof SpecRunnerError) {
+          if (err instanceof SpecRunnerError && err.code === ERROR_CODES.JOB_NOT_FOUND) {
+            // Neither slug nor job ID prefix matched — report in slug vocabulary.
             logError(`Job not found: no active job with slug or job ID prefix '${this.slug}'`);
             if (err.hint) stderrWrite(`Hint: ${err.hint}`);
+          } else if (err instanceof SpecRunnerError) {
+            // Other resolution failures (e.g. ambiguous prefix) keep their own message.
+            logError(err.message);
+            if (err.hint) stderrWrite(`Hint: ${err.hint}`);
           } else {
-            logError(`Job not found: no active job with slug or job ID prefix '${this.slug}'`);
+            logError((err as Error).message);
           }
           throw new PrepareError(1, "Job not found");
         }

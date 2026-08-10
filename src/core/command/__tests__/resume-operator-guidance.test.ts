@@ -146,6 +146,7 @@ vi.mock("../../state/job-slug.js", () => ({
 // ---------------------------------------------------------------------------
 
 import { ResumeCommand } from "../resume.js";
+import { SpecRunnerError, ERROR_CODES } from "../../../errors.js";
 import { resolveJobStateBySlug } from "../../resume/resolve-job.js";
 import { isStaleRunning } from "../../resume/safety.js";
 import { transitionJob } from "../../../state/lifecycle.js";
@@ -945,9 +946,13 @@ describe("TC-008: 存在しない slug の resume で slug 語彙のエラーが
     // GIVEN: no active job matches the slug or job ID prefix
     vi.mocked(resolveJobStateBySlug).mockResolvedValue(null);
     mockJobStateStoreList.mockResolvedValue([]); // no terminal jobs either
-    // resolveId throws "not found"
+    // resolveId throws "not found" (faithful to JobStateStore.resolveId: SpecRunnerError with JOB_NOT_FOUND)
     mockJobStateStoreResolveId.mockRejectedValue(
-      new Error("Job not found: no job ID starts with 'nonexistent-slug'"),
+      new SpecRunnerError(
+        ERROR_CODES.JOB_NOT_FOUND,
+        "Run specrunner job ls to list available job IDs.",
+        "Job not found: no job ID starts with 'nonexistent-slug'",
+      ),
     );
   });
 
@@ -999,5 +1004,43 @@ describe("TC-008: 存在しない slug の resume で slug 語彙のエラーが
     }
     const allErr = allLogErrorOutput() + "\n" + allStderrOutput();
     expect(allErr).toContain("nonexistent-slug");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-008b: ambiguous job ID prefix は resolveId の文言を保持する
+// Source: spec.md > 未解決 slug の報告文言（「解決できない場合」限定 — ambiguous は対象外）
+// ---------------------------------------------------------------------------
+
+describe("TC-008b: ambiguous job ID prefix は not-found 文言に置換されない", () => {
+  beforeEach(() => {
+    vi.mocked(resolveJobStateBySlug).mockResolvedValue(null);
+    mockJobStateStoreList.mockResolvedValue([]);
+    // resolveId throws AMBIGUOUS_JOB_ID (faithful to job-catalog ambiguousJobIdError)
+    mockJobStateStoreResolveId.mockRejectedValue(
+      new SpecRunnerError(
+        ERROR_CODES.AMBIGUOUS_JOB_ID,
+        "Matching job IDs:\n  aa111111-0000-0000-0000-000000000000\n  aa222222-0000-0000-0000-000000000000",
+        "Ambiguous job ID prefix 'aa' matches 2 jobs. Use a longer prefix or the full UUID.",
+      ),
+    );
+  });
+
+  it("TC-008b: ambiguous エラーの文言と hint がそのまま報告される", async () => {
+    const cmd = new ResumeCommand(
+      {} as never,
+      {} as never,
+      "aa",
+      { cwd: "/repo" },
+    );
+    try {
+      await callPrepare(cmd);
+    } catch {
+      // expected
+    }
+    const allErr = allLogErrorOutput() + "\n" + allStderrOutput();
+    expect(allErr).toContain("Ambiguous job ID prefix 'aa'");
+    expect(allErr).toContain("Matching job IDs:");
+    expect(allErr).not.toContain("no active job with slug or job ID prefix");
   });
 });
