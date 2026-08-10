@@ -1,0 +1,23 @@
+{
+  "requestHash": "sha256:b84f3435a6d1284ee14ecb34cd545471a231ad191435cc4e0606cd715ce4eefa",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/command/resume.ts:296-393 — apply-canon gate if block",
+    "src/core/command/resume.ts:398-440 — adopt gate block",
+    "src/core/command/resume.ts:382 — dirty canon halt Hint (no slug)",
+    "src/core/command/resume.ts:389 — dirty canon halt Hint (no slug, --from path)",
+    "src/core/command/resume.ts:131-143 — slug not-found fallback to resolveId",
+    "src/errors.ts:404-413 — egressResolutionOptions(slugLabel) function",
+    "src/cli/command-registry.ts:632-646 — resume entry (no usage field)",
+    "src/cli/command-registry.ts:197 — NO_DETAILED_HELP_USAGE constant",
+    "src/cli/command-registry.ts:633-645 — resume flags (11 flags: from/force/verbose/quiet/prompt/prompt-file/json/no-worktree/apply-canon/adopt-commits/detach)",
+    "src/cli/command-registry.ts:649 — --detach + --json mutual exclusion",
+    "src/cli/command-registry.ts:674 — --prompt + --prompt-file mutual exclusion",
+    "src/cli/command-registry.ts:634 — --from values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES]",
+    "src/store/job-catalog.ts:288 — 'no job ID starts with' error message",
+    "src/kernel/step-names.ts:13 — AGENT_STEP_NAMES export",
+    "src/core/command/__tests__/resume-adopt-commits.test.ts:486 — toContain('--adopt-commits')",
+    "src/core/command/__tests__/resume-adopt-commits.test.ts:775 — toContain('--adopt-commits')"
+  ],
+  "sourceRevision": "8b3d6638cac9997f0332c6470a50082f8b3a2379"
+}
