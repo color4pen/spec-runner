@@ -853,6 +853,89 @@ describe("TC-006: 未知 commit 検出失敗時（非 exit 128）の fail-closed
 });
 
 // ---------------------------------------------------------------------------
+// TC-010: preflight exit 128 → empty range (non-git cwd carve-out)
+// Source: design.md > D3 / tasks.md > T-02
+// GIVEN: dirty canon + detectUnadoptedCommits rejects with "exit 128"
+// THEN: buildAdoptionHaltMessage called with commitDetectionFailed: false
+//       (exit 128 is non-git env → treated as empty range, not a detection failure)
+//       output: --apply-canon only, no detection-failure note
+// ---------------------------------------------------------------------------
+
+describe("TC-010: preflight exit 128 の adopt 検出は空扱い（非 git 環境 carve-out）", () => {
+  const EXIT_128_HALT_MSG =
+    "Protected canon changes detected. No step was run.\n\n" +
+    `Modified canon paths:\n  ${DIRTY_PATH}\n\n` +
+    "To proceed:\n" +
+    "  specrunner job resume test-slug --apply-canon\n\n" +
+    "Alternatives:\n" +
+    `  Discard canon: git checkout HEAD -- ${DIRTY_PATH}\n`;
+
+  beforeEach(() => {
+    // GIVEN: dirty canon + detectUnadoptedCommits fails with exit 128
+    mockDetectCanonDirtyPaths.mockResolvedValue([DIRTY_PATH]);
+    mockDetectUnadoptedCommits.mockRejectedValue(
+      new Error("git rev-list failed (exit 128): not a git repository"),
+    );
+    // exit 128 → treated as empty range → commitDetectionFailed stays false
+    // builder is called with empty unadoptedCommits and commitDetectionFailed: false
+    mockBuildAdoptionHaltMessage.mockReturnValue(EXIT_128_HALT_MSG);
+  });
+
+  it("TC-010: prepare() throws (pipeline does not start)", async () => {
+    const cmd = new ResumeCommand({} as never, {} as never, "test-slug", { cwd: "/repo" });
+    await expect(callPrepare(cmd)).rejects.toThrow();
+  });
+
+  it("TC-010: buildAdoptionHaltMessage is called with commitDetectionFailed: false (exit 128 = empty range)", async () => {
+    // exit 128 must NOT set commitDetectionFailed; it's the non-git-env carve-out
+    const cmd = new ResumeCommand({} as never, {} as never, "test-slug", { cwd: "/repo" });
+    try {
+      await callPrepare(cmd);
+    } catch {
+      // expected
+    }
+    const calls = mockBuildAdoptionHaltMessage.mock.calls;
+    expect(calls.length, "buildAdoptionHaltMessage must be called").toBeGreaterThan(0);
+    const firstCallArg = calls[0]?.[0] as {
+      commitDetectionFailed?: boolean;
+      unadoptedCommits: unknown[];
+    };
+    expect(
+      firstCallArg?.commitDetectionFailed,
+      "exit 128 must NOT set commitDetectionFailed (treated as empty range)",
+    ).toBeFalsy();
+    expect(firstCallArg?.unadoptedCommits, "unadoptedCommits must be empty for exit 128").toEqual(
+      [],
+    );
+  });
+
+  it("TC-010: output does NOT contain detection-failure note", async () => {
+    // exit 128 is silent (non-git env); no detection-failure message should appear
+    const cmd = new ResumeCommand({} as never, {} as never, "test-slug", { cwd: "/repo" });
+    try {
+      await callPrepare(cmd);
+    } catch {
+      // expected
+    }
+    const allOutput = allStderrOutput() + "\n" + allLogErrorOutput();
+    expect(allOutput).not.toContain("detection of unadopted commits failed");
+    expect(allOutput).not.toContain("Unknown commit detection failed");
+  });
+
+  it("TC-010: output contains --apply-canon only (no --adopt-commits)", async () => {
+    const cmd = new ResumeCommand({} as never, {} as never, "test-slug", { cwd: "/repo" });
+    try {
+      await callPrepare(cmd);
+    } catch {
+      // expected
+    }
+    const allOutput = allStderrOutput() + "\n" + allLogErrorOutput();
+    expect(allOutput).toContain("--apply-canon");
+    expect(allOutput).not.toContain("--adopt-commits");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-008: 存在しない slug の resume で slug 語彙のエラーを報告する
 // Source: spec.md > 未解決 slug の報告文言 > Scenario: 存在しない slug の resume
 // ---------------------------------------------------------------------------

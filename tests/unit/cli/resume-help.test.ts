@@ -198,6 +198,48 @@ describe("TC-007: job resume --help の出力が重要な flag を含む", () =>
 });
 
 // ---------------------------------------------------------------------------
+// TC-016: ヘルプに相互排他 2 組と --from 有効値が明記される
+// Source: test-cases.md > TC-016
+// ---------------------------------------------------------------------------
+
+describe("TC-016: job resume --help の出力に相互排他対と --from 有効値が含まれる", () => {
+  it("TC-016: 出力に 'Mutually exclusive' が含まれる", async () => {
+    await runMain(["job", "resume", "--help"]);
+    expect(getStdoutOutput()).toContain("Mutually exclusive");
+  });
+
+  it("TC-016: 出力に --detach と --json の相互排他が明記される", async () => {
+    await runMain(["job", "resume", "--help"]);
+    const output = getStdoutOutput();
+    // JOB_RESUME_USAGE contains "--detach  /  --json"
+    expect(output).toContain("--detach");
+    expect(output).toContain("--json");
+    // Verify they appear together in a mutually-exclusive context
+    expect(output).toMatch(/--detach\s*\/\s*--json|--detach.*--json.*exclusive|--json.*--detach.*exclusive/);
+  });
+
+  it("TC-016: 出力に --prompt と --prompt-file の相互排他が明記される", async () => {
+    await runMain(["job", "resume", "--help"]);
+    const output = getStdoutOutput();
+    expect(output).toMatch(/--prompt\s*\/\s*--prompt-file|Mutually exclusive with --prompt/);
+  });
+
+  it("TC-016: 出力に --from の有効値（step 名列挙）が含まれる", async () => {
+    await runMain(["job", "resume", "--help"]);
+    const output = getStdoutOutput();
+    // JOB_RESUME_USAGE lists valid steps after "Valid steps:"
+    expect(output).toContain("Valid steps:");
+  });
+
+  it("TC-016: 出力に複合 step が --from 対象外である注記が含まれる", async () => {
+    await runMain(["job", "resume", "--help"]);
+    const output = getStdoutOutput();
+    // JOB_RESUME_USAGE notes composite steps are not valid --from targets
+    expect(output).toContain("composite step");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-007: JOB_RESUME_USAGE 定数が command-registry.ts に定義されているかを確認
 // ---------------------------------------------------------------------------
 
