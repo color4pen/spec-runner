@@ -19,7 +19,7 @@
 - [ ] `src/core/command/resume.ts` の Gate 1（apply-canon gate）で、dirty canon による fail-closed halt に至る 2 つの else 枝（現 379-384 / 385-391）を、統合 halt に置き換える。`--apply-canon` 経路（313-344）と auto-quarantine 経路（356-378）は変更しない。
 - [ ] halt に至る直前で `detectUnadoptedCommits(resolvedWorktreePath, updatedState.synthesizedCommits ?? [], defaultSpawnFn)` を実行する（検出のみ、ledger 追記や commit は行わない）。
 - [ ] 検出失敗のハンドリングは Gate 2 と同一方針: message が `exit 128` を含むなら空配列扱い、それ以外は「検出失敗」として `commitDetectionFailed=true` で halt メッセージを組み立てる（fail-closed、pipeline 非起動）。
-- [ ] `buildAdoptionHaltMessage` を呼び、`logError` に検出サマリ（dirty canon paths）、`stderrWrite` に統合メッセージ本文を出力してから `throw new PrepareError(1, ...)` する。既存 Gate 2 の出力慣習（logError にサマリ、stderrWrite に詳細本文）に合わせる。
+- [ ] `buildAdoptionHaltMessage` を呼ぶ際、`slug` 引数には `resolvedSlug`（`getJobSlug(state)` で得られる正規 slug）を渡す。Gate 2 が `buildAdoptEscalationMessage` に渡す変数（resume.ts:434）と同一であり、`this.slug`（ユーザー入力 slug、short Job ID prefix の可能性あり）は使用しない。`logError` に検出サマリ（dirty canon paths）、`stderrWrite` に統合メッセージ本文を出力してから `throw new PrepareError(1, ...)` する。既存 Gate 2 の出力慣習（logError にサマリ、stderrWrite に詳細本文）に合わせる。
 - [ ] Gate 1 halt 時に Gate 2 が二重に評価されないこと（throw で抜ける現構造を維持）。
 
 **Acceptance Criteria**:
@@ -34,7 +34,7 @@
 - [ ] `src/cli/command-registry.ts` に `JOB_RESUME_USAGE` 定数を追加する（`ARCHIVE_USAGE` / `REOPEN_USAGE` と同じテンプレートリテラル形式）。
 - [ ] usage 内容: `Usage: specrunner job resume <slug> [options]`、`<slug>` 引数の説明（slug で解決し、見つからなければ Job ID prefix として fallback 解決する旨）、11 flag すべて（`--from` / `--force` / `--verbose` / `--quiet` / `--prompt` / `--prompt-file` / `--json` / `--no-worktree` / `--apply-canon` / `--adopt-commits` / `--detach`）と `--help, -h` の説明。
 - [ ] 相互排他 2 組を明記: `--detach` と `--json`、`--prompt` と `--prompt-file`。
-- [ ] `--from` の有効値を `[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ")` で列挙し（`REOPEN_USAGE` の書式に倣う）、複合 step（`custom-reviewers` fan-out / `regression-gate`）は `--from` の対象外である注記を添える。
+- [ ] `--from` の有効値を `[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ")` で列挙し（`REOPEN_USAGE` の書式に倣う）、複合 step（`custom-reviewers` fan-out / `regression-gate`）は `--from` の対象外である注記を添える。`CLI_STEP_NAMES` に含まれる `bite-evidence` は内部 step（通常の operator は使用しない）である旨を注記として添える。
 - [ ] `--apply-canon` / `--adopt-commits` の説明で、fail-closed で採用を要求する意味（operator の canon 編集 / operator 自身の commit を取り込む）を 1 行で示す。
 - [ ] resume サブコマンドエントリ（command-registry.ts 632-646 付近）に `usage: JOB_RESUME_USAGE` フィールドを追加する。handler・flags・positional は変更しない。
 

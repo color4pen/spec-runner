@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "861572f6-b599-472f-8c99-3d5faee8e6b2",
   "createdAt": "2026-08-10T07:05:09.539Z",
-  "updatedAt": "2026-08-10T07:28:25.130Z",
+  "updatedAt": "2026-08-10T07:29:46.312Z",
   "request": {
     "title": "resume の operator 案内整備: 採用系 halt の preflight 統合と詳細ヘルプ",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
-  "status": "awaiting-resume",
+  "step": "spec-fixer",
+  "status": "running",
   "branch": "change/resume-operator-guidance-861572f6",
   "error": null,
   "pipelineId": "standard",
@@ -65,7 +65,8 @@
     "3da292b915d31bbb94237e69587811a69b13323c",
     "79d6f2d98980383931431decc1dddf93eb04ef95",
     "6cf259cc5e59c21a6271f73fe8dfdd4aacfb9b3f",
-    "dc004eef55622b834f989f413642110cf22a8559"
+    "dc004eef55622b834f989f413642110cf22a8559",
+    "a375c080c3ae12c4ca9d0bae9e562596c01a09a8"
   ],
   "touchedFiles": {
     "request-review": [
@@ -111,13 +112,17 @@
       "tests/unit/cli/doctor-help.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "spec-review",
-    "reason": "spec-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "spec-review escalation への裁定: (1) T-02 に、統合 halt メッセージ生成に渡す slug は resolvedSlug（getJobSlug(state) の正規 slug。Gate 2 が buildAdoptEscalationMessage に渡すものと同一、resume.ts:434 参照）であることを明記する。this.slug は short Job ID prefix の可能性があるため使用しない。 (2) --from 有効値一覧は全ステップ完全列挙のままとし、T-03 に bite-evidence へ『内部 step（通常の operator は使用しない）』である旨の注記を付ける指示を追加する。他の変更は不要。",
+      "step": "spec-fixer",
+      "recordedAt": "2026-08-10T07:29:46.181Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 14,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
