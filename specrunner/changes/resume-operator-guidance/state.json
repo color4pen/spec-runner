@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "861572f6-b599-472f-8c99-3d5faee8e6b2",
   "createdAt": "2026-08-10T07:05:09.539Z",
-  "updatedAt": "2026-08-10T07:37:10.251Z",
+  "updatedAt": "2026-08-10T07:41:30.044Z",
   "request": {
     "title": "resume の operator 案内整備: 採用系 halt の preflight 統合と詳細ヘルプ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/resume-operator-guidance-861572f6",
   "error": null,
@@ -68,7 +68,8 @@
     "dc004eef55622b834f989f413642110cf22a8559",
     "a375c080c3ae12c4ca9d0bae9e562596c01a09a8",
     "77b3dd332b86144057af2d5b058fb2cbbb059232",
-    "f40ee4fa2a2af024d269b690d96e896719f2e48a"
+    "f40ee4fa2a2af024d269b690d96e896719f2e48a",
+    "8711ece7bb2ce4c4b5915cae70c30c656a0ba0ee"
   ],
   "touchedFiles": {
     "request-review": [
@@ -106,7 +107,8 @@
       "tests/unit/cli/resume.test.ts",
       "src/core/resume/__tests__/adopt-commits.test.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "test-case-gen": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -118,12 +120,13 @@
     }
   ],
   "_journal": {
-    "historyCount": 22,
+    "historyCount": 25,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 2,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "test-case-gen": 1
     }
   }
 }
