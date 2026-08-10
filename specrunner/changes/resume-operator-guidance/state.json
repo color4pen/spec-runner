@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "861572f6-b599-472f-8c99-3d5faee8e6b2",
   "createdAt": "2026-08-10T07:05:09.539Z",
-  "updatedAt": "2026-08-10T07:19:47.033Z",
+  "updatedAt": "2026-08-10T07:28:25.130Z",
   "request": {
     "title": "resume の operator 案内整備: 採用系 halt の preflight 統合と詳細ヘルプ",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/resume-operator-guidance-861572f6",
   "error": null,
   "pipelineId": "standard",
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "3da292b915d31bbb94237e69587811a69b13323c",
     "79d6f2d98980383931431decc1dddf93eb04ef95",
-    "6cf259cc5e59c21a6271f73fe8dfdd4aacfb9b3f"
+    "6cf259cc5e59c21a6271f73fe8dfdd4aacfb9b3f",
+    "dc004eef55622b834f989f413642110cf22a8559"
   ],
   "touchedFiles": {
     "request-review": [
@@ -91,13 +92,36 @@
       "tests/unit/cli/resume.test.ts",
       "tests/unit/cli/help-flag-dispatch.test.ts",
       "bin/specrunner.ts"
+    ],
+    "spec-review": [
+      "src/core/command/resume.ts",
+      "src/core/resume/adopt-commits.ts",
+      "src/cli/command-registry.ts",
+      "src/store/job-catalog.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "tests/unit/cli/resume.test.ts",
+      "src/core/resume/__tests__/adopt-commits.test.ts",
+      "src/core/command/__tests__/resume-adopt-commits.test.ts",
+      "src/core/command/__tests__/resume-apply-canon.test.ts",
+      "src/kernel/step-names.ts",
+      "src/core/resume/__tests__/apply-canon-provenance.test.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/command/__tests__/resume-partial-canon.test.ts",
+      "bin/specrunner.ts",
+      "tests/unit/cli/doctor-help.test.ts"
     ]
   },
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "spec-review escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }

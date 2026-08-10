@@ -35,6 +35,24 @@
       "durationMs": 589108,
       "durationApiMs": 588717,
       "totalCostUsd": 2.947012500000001
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-10T07:28:23.014Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 24,
+          "outputTokens": 24792,
+          "cacheReadInputTokens": 1463588,
+          "cacheCreationInputTokens": 93179
+        }
+      },
+      "jobId": "861572f6-b599-472f-8c99-3d5faee8e6b2",
+      "stepName": "spec-review",
+      "numTurns": 31,
+      "durationMs": 507693,
+      "durationApiMs": 506245,
+      "totalCostUsd": 1.1604496499999999
     }
   ]
 }
