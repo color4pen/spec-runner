@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "861572f6-b599-472f-8c99-3d5faee8e6b2",
   "createdAt": "2026-08-10T07:05:09.539Z",
-  "updatedAt": "2026-08-10T08:27:17.781Z",
+  "updatedAt": "2026-08-10T08:28:56.311Z",
   "request": {
     "title": "resume の operator 案内整備: 採用系 halt の preflight 統合と詳細ヘルプ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/resume-operator-guidance-861572f6",
   "error": null,
@@ -74,7 +74,8 @@
     "7c451444117fef2b4c461460dfbe19a2c0364389",
     "0ae2d47009b6d8937204ec8ca356f6f89bb4333b",
     "7f56492868bb651b0ab2b2713420f5ff8196f8ed",
-    "405b4705f5267a76425cf1ec79a9310cc9c8d0ea"
+    "405b4705f5267a76425cf1ec79a9310cc9c8d0ea",
+    "da202fc862c85581c726ad9587cb06794fe94f53"
   ],
   "touchedFiles": {
     "request-review": [
@@ -162,6 +163,11 @@
       "tests/unit/cli/resume-help.test.ts",
       "src/cli/command-registry.ts",
       "src/core/command/resume.ts"
+    ],
+    "regression-gate": [
+      "src/core/command/__tests__/resume-operator-guidance.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "src/core/command/resume.ts"
     ]
   },
   "resumePoint": null,
@@ -203,7 +209,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -218,7 +224,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
