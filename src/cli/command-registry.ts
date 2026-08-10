@@ -196,6 +196,47 @@ Options:
 
 export const NO_DETAILED_HELP_USAGE = "No detailed help available.\nRun 'specrunner --help' for the command list.\n";
 
+export const JOB_RESUME_USAGE = `Usage: specrunner job resume <slug> [options]
+
+Resume a halted or awaiting-resume job.
+
+Arguments:
+  <slug>              Job slug to resume. Resolved by slug first; if not found,
+                      falls back to a short Job ID prefix.
+
+Options:
+  --from <step>       Override the start step (default: recorded resumePoint step).
+                      Valid steps: ${[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ")}
+                      Note: composite steps (custom-reviewers fan-out, regression-gate)
+                      are not valid --from targets and are not listed above.
+                      Note: bite-evidence is an internal step not intended for regular
+                      operator use.
+  --force             Override the 3× consecutive escalation guard and resume anyway.
+  --verbose           More detailed log output.
+  --quiet             Suppress informational log output.
+  --prompt <text>     Inject operator guidance into the agent context at resume.
+                      ⚠  Do not pass untrusted external input directly.
+                      Mutually exclusive with --prompt-file.
+  --prompt-file <path>  Read operator guidance from a file (alternative to --prompt).
+                      Mutually exclusive with --prompt.
+  --json              Output structured JSON result. Mutually exclusive with --detach.
+  --no-worktree       Resume without a git worktree.
+  --apply-canon       Commit dirty protected canon paths as an operator-apply commit
+                      before resuming. Required (fail-closed) when you have edited
+                      protected canon files (e.g. spec.md, design.md) and want to adopt
+                      the changes into the synthesized-commits ledger.
+  --adopt-commits     Adopt publish-range commits not in the synthesized-commits ledger
+                      before resuming. Required (fail-closed) when you have made commits
+                      to the worktree branch outside the pipeline.
+  --detach            Start resume in detached mode (returns immediately). Use
+                      'job wait <slug>' to monitor progress. Mutually exclusive with --json.
+  --help, -h          Show this help message.
+
+Mutually exclusive pairs:
+  --detach  /  --json         (only one output mode can be active at a time)
+  --prompt  /  --prompt-file  (only one operator guidance source at a time)
+`;
+
 export const INBOX_RUN_USAGE = `Usage: specrunner inbox run [options]
 
 Scan GitHub issues for approval-labeled and /resume-triggered events.
@@ -644,6 +685,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
           detach: { type: "boolean" },
         },
         positional: { name: "slug", required: true },
+        usage: JOB_RESUME_USAGE,
         handler: async (parsed, ctx) => {
           // --detach + --json are mutually exclusive
           if (parsed.flags["detach"] && parsed.flags["json"]) {

@@ -32,7 +32,7 @@ import { detectSpecrunnerWorktree } from "../worktree/detection.js";
 import { resolveLivenessWorktreePath } from "../resume/resolve-worktree-path.js";
 import { detectCanonDirtyPaths, commitOperatorCanon } from "../resume/apply-canon.js";
 import { isInterruptionBacked, declaredCanonWritesForStep, isInterruptedStepPartialCanon } from "../resume/canon-provenance.js";
-import { detectUnadoptedCommits, buildAdoptEscalationMessage, type UnadoptedCommit } from "../resume/adopt-commits.js";
+import { detectUnadoptedCommits, buildAdoptEscalationMessage, buildAdoptionHaltMessage, type UnadoptedCommit } from "../resume/adopt-commits.js";
 import { reconcileWorktreeArtifacts, quarantinePartialCanon } from "../resume/reconcile-worktree.js";
 import { defaultSpawnFn, runSubprocess } from "../../util/git-exec.js";
 import type { StepDeps } from "../step/types.js";
@@ -60,6 +60,50 @@ class PrepareError extends Error {
   constructor(public readonly exitCode: 1 | 2, message: string) {
     super(message);
   }
+}
+
+/**
+ * Preflight adopt-detection + unified fail-closed halt for Gate 1.
+ *
+ * Called when dirty protected canon paths are detected and the fail-closed path is taken
+ * (auto-quarantine not applicable). Runs detectUnadoptedCommits read-only (no git commits,
+ * no ledger writes) to give the operator all required flags in a single halt message.
+ *
+ * Exit-128 (non-git cwd) is treated as empty range (same carve-out as Gate 2).
+ * Any other detection failure is reported as commitDetectionFailed=true (fail-closed).
+ *
+ * Always throws PrepareError(1).
+ */
+async function haltWithCanonPreflight(
+  slug: string,
+  worktreePath: string,
+  dirtyCanonPaths: string[],
+  state: { synthesizedCommits?: string[] | null },
+): Promise<never> {
+  let preflightCommits: UnadoptedCommit[] = [];
+  let preflightFailed = false;
+  try {
+    preflightCommits = await detectUnadoptedCommits(
+      worktreePath, state.synthesizedCommits ?? [], defaultSpawnFn,
+    );
+  } catch (preflightErr) {
+    const preflightMsg = (preflightErr as Error).message ?? "";
+    if (!preflightMsg.includes("exit 128")) {
+      preflightFailed = true;
+    }
+    // exit 128 → non-git cwd → treat as empty range (preflightCommits stays [])
+  }
+
+  const haltMsg = buildAdoptionHaltMessage({
+    slug,
+    dirtyCanonPaths,
+    unadoptedCommits: preflightCommits,
+    commitDetectionFailed: preflightFailed,
+  });
+
+  logError(`Protected canon paths are dirty in the worktree: ${dirtyCanonPaths.join(", ")}`);
+  stderrWrite(haltMsg);
+  throw new PrepareError(1, "Protected canon paths are dirty; use --apply-canon or discard");
 }
 
 /**
@@ -134,10 +178,10 @@ export class ResumeCommand extends CommandRunner {
           fullId = await JobStateStore.resolveId(cwd, this.slug);
         } catch (err) {
           if (err instanceof SpecRunnerError) {
-            logError(err.message);
+            logError(`Job not found: no active job with slug or job ID prefix '${this.slug}'`);
             if (err.hint) stderrWrite(`Hint: ${err.hint}`);
           } else {
-            logError((err as Error).message);
+            logError(`Job not found: no active job with slug or job ID prefix '${this.slug}'`);
           }
           throw new PrepareError(1, "Job not found");
         }
@@ -377,17 +421,14 @@ export class ResumeCommand extends CommandRunner {
                 throw new PrepareError(1, "Failed to quarantine partial canon output (fail-closed)");
               }
             } else {
-              // Conditions 2/3/4 not fully met — fail-closed halt (operator intent protection).
-              logError(`Protected canon paths are dirty in the worktree: ${dirtyCanonPaths.join(", ")}`);
-              stderrWrite(`Hint: Use --apply-canon to commit these changes as an operator-apply commit, or discard them (git checkout HEAD -- <path>) before resuming.`);
-              throw new PrepareError(1, "Protected canon paths are dirty; use --apply-canon or discard");
+              // Conditions 2/3/4 not fully met — preflight + unified fail-closed halt.
+              await haltWithCanonPreflight(resolvedSlug, resolvedWorktreePath, dirtyCanonPaths, updatedState);
             }
           } else {
             // Condition 1 not met: --from redirects to a different step than the interrupted one.
             // Auto-quarantine must not fire (operator chose a different start point explicitly).
-            logError(`Protected canon paths are dirty in the worktree: ${dirtyCanonPaths.join(", ")}`);
-            stderrWrite(`Hint: Use --apply-canon to commit these changes as an operator-apply commit, or discard them (git checkout HEAD -- <path>) before resuming.`);
-            throw new PrepareError(1, "Protected canon paths are dirty; use --apply-canon or discard");
+            // Preflight + unified fail-closed halt.
+            await haltWithCanonPreflight(resolvedSlug, resolvedWorktreePath, dirtyCanonPaths, updatedState);
           }
         }
       }
