@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "861572f6-b599-472f-8c99-3d5faee8e6b2",
   "createdAt": "2026-08-10T07:05:09.539Z",
-  "updatedAt": "2026-08-10T07:30:35.608Z",
+  "updatedAt": "2026-08-10T07:37:10.251Z",
   "request": {
     "title": "resume の operator 案内整備: 採用系 halt の preflight 統合と詳細ヘルプ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/resume-operator-guidance-861572f6",
   "error": null,
@@ -67,7 +67,8 @@
     "6cf259cc5e59c21a6271f73fe8dfdd4aacfb9b3f",
     "dc004eef55622b834f989f413642110cf22a8559",
     "a375c080c3ae12c4ca9d0bae9e562596c01a09a8",
-    "77b3dd332b86144057af2d5b058fb2cbbb059232"
+    "77b3dd332b86144057af2d5b058fb2cbbb059232",
+    "f40ee4fa2a2af024d269b690d96e896719f2e48a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -99,18 +100,11 @@
       "src/core/command/resume.ts",
       "src/core/resume/adopt-commits.ts",
       "src/cli/command-registry.ts",
-      "src/store/job-catalog.ts",
+      "src/kernel/step-names.ts",
+      "src/errors.ts",
       "tests/unit/cli/help-flag-dispatch.test.ts",
       "tests/unit/cli/resume.test.ts",
-      "src/core/resume/__tests__/adopt-commits.test.ts",
-      "src/core/command/__tests__/resume-adopt-commits.test.ts",
-      "src/core/command/__tests__/resume-apply-canon.test.ts",
-      "src/kernel/step-names.ts",
-      "src/core/resume/__tests__/apply-canon-provenance.test.ts",
-      "src/core/resume/resolve-step.ts",
-      "src/core/command/__tests__/resume-partial-canon.test.ts",
-      "bin/specrunner.ts",
-      "tests/unit/cli/doctor-help.test.ts"
+      "src/core/resume/__tests__/adopt-commits.test.ts"
     ],
     "spec-fixer": []
   },
@@ -124,11 +118,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 18,
+    "historyCount": 22,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1,
+      "spec-review": 2,
       "spec-fixer": 1
     }
   }
