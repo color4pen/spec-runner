@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "861572f6-b599-472f-8c99-3d5faee8e6b2",
   "createdAt": "2026-08-10T07:05:09.539Z",
-  "updatedAt": "2026-08-10T07:29:46.312Z",
+  "updatedAt": "2026-08-10T07:30:35.608Z",
   "request": {
     "title": "resume の operator 案内整備: 採用系 halt の preflight 統合と詳細ヘルプ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/resume-operator-guidance-861572f6",
   "error": null,
@@ -66,7 +66,8 @@
     "79d6f2d98980383931431decc1dddf93eb04ef95",
     "6cf259cc5e59c21a6271f73fe8dfdd4aacfb9b3f",
     "dc004eef55622b834f989f413642110cf22a8559",
-    "a375c080c3ae12c4ca9d0bae9e562596c01a09a8"
+    "a375c080c3ae12c4ca9d0bae9e562596c01a09a8",
+    "77b3dd332b86144057af2d5b058fb2cbbb059232"
   ],
   "touchedFiles": {
     "request-review": [
@@ -110,7 +111,8 @@
       "src/core/command/__tests__/resume-partial-canon.test.ts",
       "bin/specrunner.ts",
       "tests/unit/cli/doctor-help.test.ts"
-    ]
+    ],
+    "spec-fixer": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -122,11 +124,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 14,
+    "historyCount": 18,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }
