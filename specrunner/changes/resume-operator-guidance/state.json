@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "861572f6-b599-472f-8c99-3d5faee8e6b2",
   "createdAt": "2026-08-10T07:05:09.539Z",
-  "updatedAt": "2026-08-10T07:09:49.126Z",
+  "updatedAt": "2026-08-10T07:19:47.033Z",
   "request": {
     "title": "resume の operator 案内整備: 採用系 halt の preflight 統合と詳細ヘルプ",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/resume-operator-guidance-861572f6",
   "error": null,
@@ -63,7 +63,8 @@
   ],
   "synthesizedCommits": [
     "3da292b915d31bbb94237e69587811a69b13323c",
-    "79d6f2d98980383931431decc1dddf93eb04ef95"
+    "79d6f2d98980383931431decc1dddf93eb04ef95",
+    "6cf259cc5e59c21a6271f73fe8dfdd4aacfb9b3f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -74,12 +75,29 @@
       "src/core/command/__tests__/resume-adopt-commits.test.ts",
       "src/kernel/step-names.ts",
       "tests/unit/cli/doctor-help.test.ts"
+    ],
+    "design": [
+      "src/core/command/resume.ts",
+      "src/errors.ts",
+      "src/core/resume/adopt-commits.ts",
+      "src/core/resume/apply-canon.ts",
+      "src/cli/command-registry.ts",
+      "tests/unit/cli/doctor-help.test.ts",
+      "src/store/job-catalog.ts",
+      "src/core/resume/resolve-job.ts",
+      "src/kernel/step-names.ts",
+      "src/core/command/__tests__/resume-adopt-commits.test.ts",
+      "src/core/resume/resolve-step.ts",
+      "tests/unit/cli/resume.test.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "bin/specrunner.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
