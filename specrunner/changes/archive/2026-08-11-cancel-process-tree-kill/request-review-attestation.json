@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:9eef1f298dc4ba55929c58bac89fe6e27ab1d310e9d103d9b1d2f1b59f7d4dce",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/cancel/runner.ts:348-361 — kill block gated by state.status === 'running', state.pid null check",
+    "src/core/cancel/pid-kill.ts:31-94 — gracefulKill single-pid SIGTERM→poll→SIGKILL, no group kill",
+    "src/util/spawn.ts:118-122 — detached: true set when opts.detached",
+    "src/core/command/detach.ts:119-124 — spawnFn called with detached: true",
+    "src/core/runtime/local.ts:1518-1550 — SIGINT/SIGTERM handler: interruption record + awaiting-resume persist + releasePowerAssertion + process.exit(130), no child abort",
+    "src/core/runtime/local.ts:1432 — writeLivenessSidecar writes { pid, session, worktreePath, jobId }",
+    "src/adapter/claude-code/agent-runner.ts:515-520 — AbortController locally scoped, no signal handler seam in local.ts",
+    "src/cli/job-wait.ts:209-218 — pid resolution: state.pid → sidecar → last-known",
+    "src/cli/cancel.ts:104-122 — cancelSingleJob call, CancelDeps has no sidecar fallback",
+    "src/core/runtime/power-assertion.ts:64-70 — caffeinate spawned with -i -w <pid>"
+  ],
+  "sourceRevision": "3bc5907dda7841c4b7d9b4db305270fac22adfcb"
+}

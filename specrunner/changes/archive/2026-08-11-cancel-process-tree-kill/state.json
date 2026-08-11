@@ -1,0 +1,317 @@
+{
+  "version": 2,
+  "jobId": "f28a2862-fe19-4bd7-9f0c-c148629707ae",
+  "createdAt": "2026-08-11T05:45:08.535Z",
+  "updatedAt": "2026-08-11T08:25:15.625Z",
+  "request": {
+    "title": "job cancel の process-tree kill — status gate を pid 生存 gate に置き換え、detach 子孫プロセスを回収する",
+    "type": "spec-change",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/cancel-process-tree-kill-f28a2862",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "37a155813b83cc530110a1496707e3a5c131abee",
+    "f757c1a4dc11705353702c0714d6118e7ee3b998",
+    "752c3326a17be7d39978ff901cfd3be56f243dbd",
+    "ca587c02d137f185347557d9efee32845e5fccf6",
+    "fde7a8d905def1eb1d9ed1913c1b4bc945d549cb",
+    "2755ca3b1ada107894dd7569b4985442a6aa9e01",
+    "f9e1c64f6e41325ed2ee03f7ceaa0771d4a6f01e",
+    "4009bc07b1f91e73a0d946209db4eb4c0cf9ef9a",
+    "4de44cd7f19f6ec76a3d02d99d5590ff0b50e1b8",
+    "6cba2db0d0ee6a048d63486938c100d919d19f7c",
+    "e7f6b3cf8a11d04e6dd7c022530341cd3d65026e",
+    "2d9735b1d2fe1dd0fac44d90d7eca9ddec4416ce",
+    "58d15ed4a48be557548d852a700261ecb6cab8e1",
+    "a385047c3f0e9fd18b403c5fa63e350cd25e6368",
+    "244e61b0b708afcab81b10a980391353bace6c53",
+    "0c857acc54a94e5274869497e4b4714f5fd16a16",
+    "1ef5a6180c22133a1f02ac024985cc2fe56ada28",
+    "0d7f2e631025e4f522ef6eda6cc276d2472b7d7f",
+    "09c9acf6d9e7ca533a02985e9a13eadac675e054",
+    "e8232375a5c87ddf34f1660be90f0016648f19a1",
+    "843d8c53251aae9f0e492d24b743531acd192dc4",
+    "f4cd95e79455a148a836a6e7460c2838ede98447",
+    "a744aff1ad4925819ef2200ddf98dbb1d2b96856",
+    "3dce40a450e878fca4db635ffbab72910fd8ef9f",
+    "617204374736e724e13d2f46a48f37fd0ddd89f8",
+    "a3bd944e772843711e9371fa3f2652dd54733550",
+    "1d8b0f8208c340ad5e4c9974a00ff4a52226ee7b",
+    "76892f8a65d81a34f68609c56425499f30801690",
+    "234b2f62b62406b75e403a881905f7510202179d",
+    "d02be3155da6b41563b986d861e83cb08ebcd1f2"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/cancel/runner.ts",
+      "src/core/cancel/pid-kill.ts",
+      "src/util/spawn.ts",
+      "src/core/command/detach.ts",
+      "src/core/runtime/local.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/cli/job-wait.ts",
+      "src/cli/cancel.ts",
+      "src/core/runtime/power-assertion.ts",
+      "src/core/occupancy/claim.ts",
+      "tests/unit/core/cancel/runner.test.ts"
+    ],
+    "design": [
+      "src/core/cancel/runner.ts",
+      "src/core/cancel/pid-kill.ts",
+      "src/cli/job-wait.ts",
+      "src/core/runtime/local.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/cli/cancel.ts",
+      "src/util/spawn.ts",
+      "src/core/command/detach.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/runtime/__tests__/signal-handler-order.test.ts",
+      "src/core/lifecycle/signal-state.ts",
+      "src/core/occupancy/claim.ts",
+      "tests/unit/core/cancel/pid-kill.test.ts",
+      "tests/unit/core/cancel/runner.test.ts",
+      "tests/finish-ps-integration.test.ts"
+    ],
+    "spec-review": [
+      "src/core/cancel/runner.ts",
+      "src/core/cancel/pid-kill.ts",
+      "src/cli/cancel.ts",
+      "src/cli/job-wait.ts",
+      "src/core/runtime/local.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/util/spawn.ts",
+      "src/core/command/detach.ts",
+      "src/core/runtime/__tests__/signal-handler-order.test.ts",
+      "tests/unit/core/cancel/runner.test.ts",
+      "tests/unit/core/cancel/pid-kill.test.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/lifecycle/signal-state.ts",
+      "tests/unit/core/cancel/sidecar-teardown.test.ts",
+      "src/core/cancel/__tests__/runner-branch-delete.test.ts"
+    ],
+    "spec-fixer": [],
+    "test-case-gen": [],
+    "test-materialize": [
+      "tests/unit/core/cancel/pid-kill.test.ts",
+      "tests/unit/core/cancel/runner.test.ts",
+      "src/core/cancel/pid-kill.ts",
+      "src/core/cancel/runner.ts",
+      "src/core/runtime/__tests__/signal-handler-order.test.ts",
+      "src/core/runtime/local.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/util/paths.ts",
+      "tests/finish-ps-integration.test.ts",
+      "src/core/lifecycle/signal-state.ts",
+      "tests/unit/adapter/claude-code/agent-runner.test.ts",
+      "tests/unit/core/lifecycle/exit-guard.test.ts",
+      "tests/unit/core/liveness/resolve-pid.test.ts",
+      "tests/unit/core/cancel/pid-kill-group.test.ts",
+      "tests/unit/core/lifecycle/query-abort-hub.test.ts",
+      "tests/unit/core/cancel/runner-process-gate.test.ts",
+      "tests/unit/core/runtime/runner-abort-hub.test.ts",
+      "src/core/port/agent-runner.ts",
+      "tests/unit/adapter/claude-code/agent-runner-hub.test.ts",
+      "tests/cancel-process-group-integration.test.ts"
+    ],
+    "implementer": [
+      "src/core/cancel/pid-kill.ts",
+      "src/core/cancel/runner.ts",
+      "tests/unit/core/liveness/resolve-pid.test.ts",
+      "tests/unit/core/cancel/pid-kill-group.test.ts",
+      "tests/unit/core/cancel/runner-process-gate.test.ts",
+      "tests/unit/core/lifecycle/query-abort-hub.test.ts",
+      "tests/unit/core/runtime/runner-abort-hub.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-hub.test.ts",
+      "tests/cancel-process-group-integration.test.ts",
+      "tests/unit/core/cancel/pid-kill.test.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/runtime/local.ts",
+      "src/core/lifecycle/signal-state.ts",
+      "src/util/paths.ts",
+      "src/cli/cancel.ts",
+      "tests/unit/core/cancel/runner.test.ts",
+      "src/state/job-slug.ts",
+      "src/core/liveness/resolve-pid.ts",
+      "src/core/port/query-abort.ts",
+      "src/core/lifecycle/query-abort-hub.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/store/local-job-index.ts",
+      "src/store/job-state-store.ts",
+      "src/core/finish/resolve-canonical-state-dir.ts",
+      "src/store/job-catalog.ts",
+      "tests/unit/core/cancel/sidecar-teardown.test.ts"
+    ],
+    "build-fixer": [
+      "src/cli/cancel.ts",
+      "tests/unit/cli/cancel.test.ts"
+    ],
+    "code-review": [
+      "src/core/liveness/resolve-pid.ts",
+      "src/core/cancel/pid-kill.ts",
+      "src/core/cancel/runner.ts",
+      "src/core/port/query-abort.ts",
+      "src/core/lifecycle/query-abort-hub.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/cli/cancel.ts",
+      "src/core/runtime/local.ts",
+      "tests/unit/core/cancel/runner-process-gate.test.ts",
+      "tests/unit/core/cancel/pid-kill-group.test.ts",
+      "tests/unit/core/runtime/runner-abort-hub.test.ts",
+      "tests/cancel-process-group-integration.test.ts",
+      "tests/unit/core/liveness/resolve-pid.test.ts",
+      "tests/unit/core/lifecycle/query-abort-hub.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-hub.test.ts",
+      "tests/unit/core/cancel/pid-kill.test.ts",
+      "tests/unit/cli/cancel.test.ts",
+      "tests/unit/core/cancel/runner.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/runtime/__tests__/signal-handler-order.test.ts",
+      "tests/unit/core/runtime/runner-abort-hub.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/cancel/pid-kill.ts",
+      "tests/unit/core/cancel/pid-kill-group.test.ts",
+      "src/core/cancel/runner.ts",
+      "src/core/runtime/__tests__/signal-handler-order.test.ts",
+      "tests/unit/core/cancel/pid-kill.test.ts",
+      "tests/unit/core/runtime/runner-abort-hub.test.ts"
+    ],
+    "conformance": [
+      "src/core/liveness/resolve-pid.ts",
+      "src/core/cancel/pid-kill.ts",
+      "src/core/cancel/runner.ts",
+      "src/core/lifecycle/query-abort-hub.ts",
+      "src/core/port/query-abort.ts",
+      "src/cli/cancel.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/runtime/local.ts",
+      "tests/unit/core/cancel/pid-kill-group.test.ts",
+      "tests/unit/core/cancel/pid-kill.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-05-26-process-lifecycle-keepalive.md",
+      "specrunner/adr/2026-08-11-cancel-process-tree-kill.md"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "1ef5a6180c22133a1f02ac024985cc2fe56ada28",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/cancel-process-tree-kill/design.md:sha256:d5d697de1901376eca0bd2b34c3d352b2e276a1fdd946543aacc4c496ec59573|specrunner/changes/cancel-process-tree-kill/request.md:sha256:9eef1f298dc4ba55929c58bac89fe6e27ab1d310e9d103d9b1d2f1b59f7d4dce|specrunner/changes/cancel-process-tree-kill/spec.md:sha256:91b0603650ce52d8aca94e5f16a71276f0ff17c7e259cbd7f69a1c2c62d7bdef|specrunner/changes/cancel-process-tree-kill/tasks.md:sha256:d087b4954e0c8e2d6e6277acb3758d43fa8bb2cfb96eddd376decab3505f6fdc|specrunner/changes/cancel-process-tree-kill/test-cases.md:sha256:a60f3bc326284589dbddf0a09b4155e0e19fe820708daf7c8bdb9cb6c30070cd"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "custom-reviewers (cross-boundary-invariants) escalation への operator 裁定。spec.md / design.md は operator commit で実装に追随済み（group reap は leader 死亡を観測した全経路で発火が正、SIGKILL 昇格限定という旧記述が狭すぎた）。code-fixer は以下のテスト追加のみ行うこと:\n\n[F-001] tests/unit/core/cancel/pid-kill.test.ts に poll-death 経路の group reap テストを 2 本追加:\n1. leader pid が SIGTERM 後の poll 中に死亡（isAlive が false を返す）し、isGroupLeader が true → kill(-pid, SIGKILL) が送出され result.groupKilled === true を assert\n2. 非 leader pid が poll 中に死亡 → 負 pid への送出が一切ないことを assert\n既存の SIGKILL 昇格系テスト（TC-006/TC-007）は無変更のまま green を維持する。\n\n[F-002] tests/unit/core/cancel/runner-process-gate.test.ts に status=failed + jobId 一致 sidecar pid（dead pid）のテストを 1 本追加: gracefulKill が試行され（SIGTERM 送出）、ESRCH で killed 扱いとなり cancel が exitCode 0 で完走することを assert。terminated でも同挙動である旨は it.each で failed/terminated 両方を回してよい。\n\n[F-003] 対応不要（runner-abort-hub.test.ts の TC-008/009/010 が順序不変を既に pin 済み、と裁定）。TC-016 は変更しないこと。\n\nsrc/ の実装コードは変更しないこと（挙動は正と裁定済み）。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-11T07:36:33.192Z"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/982",
+    "number": 982,
+    "createdAt": "2026-08-11T08:25:14.529Z"
+  },
+  "_journal": {
+    "historyCount": 107,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "test-case-gen": 1,
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 3,
+      "build-fixer": 1,
+      "code-review": 1,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 1,
+      "custom-reviewers": 2,
+      "regression-gate": 3,
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

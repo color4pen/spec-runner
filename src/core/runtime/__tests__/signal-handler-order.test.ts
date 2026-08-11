@@ -4,9 +4,10 @@
  * Validates the ordering contract in local.ts:registerCleanup():
  *   const signalCleanup = async (): Promise<void> => {
  *     markSignalHandlerFired();      ← synchronous, before any await
- *     try {
- *       const store = makeStore();
- *       const current = await store.load();  ← first await
+ *     hub.abortActive();             ← synchronous
+ *     await hub.drain(...);          ← first await
+ *     ...
+ *     const current = await store.load();  ← subsequent await
  *       ...
  *
  * The test mocks store.load to capture isSignalHandlerFired() at the exact
@@ -15,6 +16,8 @@
  * This ordering is a future-edit risk: if markSignalHandlerFired() is moved
  * to after the first await, exit-guard's beforeExit handler can fire between
  * the signal and the flag set, causing a duplicate interruption record.
+ *
+ * The drain → store.load ordering is separately pinned in runner-abort-hub.test.ts.
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { LocalRuntime } from "../local.js";

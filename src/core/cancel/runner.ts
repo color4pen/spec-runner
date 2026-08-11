@@ -20,6 +20,7 @@ import type { JobStatus } from "../../state/schema.js";
 import { stdoutWrite } from "../../logger/stdout.js";
 import { ERROR_CODES, SpecRunnerError } from "../../errors.js";
 import { gracefulKill } from "./pid-kill.js";
+import { readLivenessSidecar, resolveJobPid } from "../liveness/resolve-pid.js";
 import { buildWorktreePath } from "../worktree/manager.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import {
@@ -60,6 +61,14 @@ export interface CancelDeps {
   repoRoot: string;
   /** Resolved GitHub token for authenticating git push --delete (C10). Optional. */
   githubToken?: string;
+  /**
+   * Returns true when `pid` is a process-group leader (detached job).
+   *
+   * D3 (design.md): production probe is `kill(-pid, 0)`.
+   * Optional — defaults to `() => false` so unwired callers never group-signal.
+   * The CLI wires the real probe; existing tests stay green without it.
+   */
+  isGroupLeader?: (pid: number) => boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -342,22 +351,39 @@ export async function cancelSingleJob(opts: {
   }
 
   // ---------------------------------------------------------------------------
-  // Process kill for running jobs
+  // Process kill — pid-resolution gate (D2: process-death-gate, not status-gate)
+  //
+  // Resolution: state.pid → liveness sidecar (jobId-matched).
+  // Kill is attempted whenever a pid resolves; on-disk status is NOT consulted
+  // (disk-lag: state.json may show awaiting-resume while the real process runs).
   // ---------------------------------------------------------------------------
 
-  if (state.status === "running") {
-    if (state.pid != null) {
-      const killResult = await gracefulKill(state.pid, GRACEFUL_KILL_TIMEOUT_MS, {
-        kill: deps.kill,
-        sleep: deps.sleep,
-        isAlive: deps.isAlive,
-      });
-      if (!killResult.killed && killResult.warning) {
-        warnings.push(killResult.warning);
-      }
-    } else {
-      warnings.push("Warning: no PID recorded for running job, skipping process kill.");
+  const slug = getJobSlug(state);
+  const sidecarAbsPath = slug
+    ? path.join(deps.repoRoot, livenessJsonPath(slug))
+    : null;
+  const sidecar = sidecarAbsPath ? await readLivenessSidecar(sidecarAbsPath) : null;
+  const { pid: resolvedPid } = resolveJobPid({
+    statePid: state.pid,
+    sidecar,
+    expectedJobId: state.jobId,
+  });
+
+  if (resolvedPid != null) {
+    const killResult = await gracefulKill(resolvedPid, GRACEFUL_KILL_TIMEOUT_MS, {
+      kill: deps.kill,
+      sleep: deps.sleep,
+      isAlive: deps.isAlive,
+      isGroupLeader: deps.isGroupLeader ?? (() => false),
+    });
+    if (!killResult.killed && killResult.warning) {
+      warnings.push(killResult.warning);
     }
+    if (killResult.groupKilled) {
+      info.push(`Process group -${resolvedPid} reaped (SIGKILL sent to group)`);
+    }
+  } else {
+    warnings.push("Warning: no PID recorded for job, skipping process kill.");
   }
 
   // ---------------------------------------------------------------------------
@@ -422,9 +448,8 @@ export async function cancelSingleJob(opts: {
   // Only delete if sidecar.jobId matches the job being canceled (TC-027/TC-028).
   // ---------------------------------------------------------------------------
 
-  const slugForMarker = getJobSlug(state);
-  if (slugForMarker) {
-    const sidecarAbsPath = path.join(deps.repoRoot, livenessJsonPath(slugForMarker));
+  if (slug) {
+    const sidecarAbsPath = path.join(deps.repoRoot, livenessJsonPath(slug));
     try {
       const sidecarRaw = await fs.readFile(sidecarAbsPath, "utf-8");
       const sidecarObj = JSON.parse(sidecarRaw) as Record<string, unknown>;
@@ -450,15 +475,15 @@ export async function cancelSingleJob(opts: {
   // appended to warnings so cancel itself is not aborted.
   // ---------------------------------------------------------------------------
 
-  if (slugForMarker) {
-    const localStateAbsPath = path.join(deps.repoRoot, localSlugStateJsonPath(slugForMarker));
+  if (slug) {
+    const localStateAbsPath = path.join(deps.repoRoot, localSlugStateJsonPath(slug));
     try {
       const raw = await fs.readFile(localStateAbsPath, "utf-8");
       const obj = JSON.parse(raw) as Record<string, unknown>;
       if (typeof obj["jobId"] === "string" && obj["jobId"] === state.jobId) {
         // This is our job's managed state.json — overwrite with the canceled state.
         const managedStore = new JobStateStore(jobId, deps.repoRoot, {
-          changeDir: path.join(deps.repoRoot, localSidecarDir(slugForMarker)),
+          changeDir: path.join(deps.repoRoot, localSidecarDir(slug)),
         });
         await managedStore.persist(canceledState);
       }
@@ -474,8 +499,8 @@ export async function cancelSingleJob(opts: {
   // (TC-029/TC-032: only unlink if marker.jobId === state.jobId)
   // ---------------------------------------------------------------------------
 
-  if (slugForMarker) {
-    const markerAbsPath = path.join(deps.repoRoot, managedMarkerPath(slugForMarker));
+  if (slug) {
+    const markerAbsPath = path.join(deps.repoRoot, managedMarkerPath(slug));
     try {
       const markerRaw = await fs.readFile(markerAbsPath, "utf-8");
       const markerObj = JSON.parse(markerRaw) as Record<string, unknown>;
@@ -495,8 +520,8 @@ export async function cancelSingleJob(opts: {
   if (purge) {
     // Purge .specrunner/local/<slug>/ only if the sidecar belongs to this job (TC-030/TC-031).
     // If the sidecar belongs to a different non-terminal job, leave the directory intact.
-    if (slugForMarker) {
-      const sidecarAbsPath = path.join(deps.repoRoot, livenessJsonPath(slugForMarker));
+    if (slug) {
+      const sidecarAbsPath = path.join(deps.repoRoot, livenessJsonPath(slug));
       let skipPurge = false;
       try {
         const sidecarRaw = await fs.readFile(sidecarAbsPath, "utf-8");
@@ -509,7 +534,9 @@ export async function cancelSingleJob(opts: {
           try {
             const allStates = await JobStateStore.list(deps.repoRoot);
             const foreignState = allStates.find((s) => s.jobId === foreignJobId);
-            foreignIsTerminal = foreignState === undefined || TERMINAL_STATUSES.has(foreignState.status as JobStatus);
+            // Conservative: if the foreign job's state can't be found, treat as non-terminal.
+            // Only conclude "terminal" when we can positively confirm it via state.status.
+            foreignIsTerminal = foreignState !== undefined && TERMINAL_STATUSES.has(foreignState.status as JobStatus);
           } catch {
             // Cannot determine foreign job status — err on the side of caution
             foreignIsTerminal = false;
@@ -520,7 +547,7 @@ export async function cancelSingleJob(opts: {
             // Live non-terminal foreign job owns the sidecar → skip purge and warn
             skipPurge = true;
             warnings.push(
-              `Warning: --purge skipped for slug '${slugForMarker}': sidecar belongs to a different non-terminal job (${foreignJobId}). Cancel that job first.`,
+              `Warning: --purge skipped for slug '${slug}': sidecar belongs to a different non-terminal job (${foreignJobId}). Cancel that job first.`,
             );
           }
         }
@@ -530,7 +557,7 @@ export async function cancelSingleJob(opts: {
 
       if (!skipPurge) {
         try {
-          await fs.rm(path.join(deps.repoRoot, localSidecarDir(slugForMarker)), {
+          await fs.rm(path.join(deps.repoRoot, localSidecarDir(slug)), {
             recursive: true,
             force: true,
           });
@@ -545,7 +572,7 @@ export async function cancelSingleJob(opts: {
       // leave no trace (D1).
       if (!skipPurge) {
         try {
-          await fs.rm(path.join(deps.repoRoot, changeFolderPath(slugForMarker)), {
+          await fs.rm(path.join(deps.repoRoot, changeFolderPath(slug)), {
             recursive: true,
             force: true,
           });

@@ -116,6 +116,18 @@ export async function runCancel(opts: RunCancelOptions): Promise<number> {
           process.kill(pid, 0);
           return true;
         },
+        // D3 (design.md): group-leader probe — succeeds iff process group `pid` exists.
+        // A detached child is its own group leader (pgid == pid) → true.
+        // A foreground job is in the shell's group → ESRCH → false.
+        // Any error → false (conservative: never group-signal on ambiguity).
+        isGroupLeader: (pid) => {
+          try {
+            process.kill(-pid, 0);
+            return true;
+          } catch {
+            return false;
+          }
+        },
         repoRoot: repoRoot!,
         githubToken: cancelToken,
       },
