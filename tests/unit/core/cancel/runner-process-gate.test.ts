@@ -287,6 +287,41 @@ describe("TC-011: group reap is reported in cancel output", () => {
 });
 
 // ---------------------------------------------------------------------------
+// F-002: failed/terminated + jobId-matched sidecar pid (dead) → kill attempted, cancel 0
+//
+// Pins the new behaviour: status gate is gone, so even failed/terminated jobs attempt
+// gracefulKill when a pid resolves from the sidecar. A dead pid → ESRCH → killed:true.
+// If someone reintroduces a status restriction this test will fail on "failed"/"terminated".
+// ---------------------------------------------------------------------------
+
+describe("F-002: failed/terminated + sidecar pid (dead) → gracefulKill attempted", () => {
+  it.each(["failed", "terminated"] as const)(
+    "status=%s: SIGTERM sent via sidecar pid, ESRCH → cancel exits 0",
+    async (status) => {
+      const { jobId } = await makeJobWithPids({
+        status,
+        statePid: null,
+        sidecarPid: 9001,
+        // jobId matches → sidecar adopted
+      });
+      // Simulate a dead pid: kill throws ESRCH on the very first call (SIGTERM)
+      const kill = vi.fn().mockImplementation((_pid: number, _sig: string) => {
+        const err = new Error("ESRCH") as NodeJS.ErrnoException;
+        err.code = "ESRCH";
+        throw err;
+      });
+      const deps = makeDeps({ kill });
+
+      const result = await cancelSingleJob({ jobId, force: false, purge: false, deps });
+
+      expect(result.exitCode).toBe(0);
+      // SIGTERM must have been attempted against the sidecar pid (not silently skipped)
+      expect(kill).toHaveBeenCalledWith(9001, "SIGTERM");
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
 // TC-012: skipped kill reported in cancel output
 // ---------------------------------------------------------------------------
 

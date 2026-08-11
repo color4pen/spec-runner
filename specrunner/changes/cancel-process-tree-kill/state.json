@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f28a2862-fe19-4bd7-9f0c-c148629707ae",
   "createdAt": "2026-08-11T05:45:08.535Z",
-  "updatedAt": "2026-08-11T07:33:40.169Z",
+  "updatedAt": "2026-08-11T07:36:33.368Z",
   "request": {
     "title": "job cancel の process-tree kill — status gate を pid 生存 gate に置き換え、detach 子孫プロセスを回収する",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/cancel-process-tree-kill-f28a2862",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,9 @@
     "e7f6b3cf8a11d04e6dd7c022530341cd3d65026e",
     "2d9735b1d2fe1dd0fac44d90d7eca9ddec4416ce",
     "58d15ed4a48be557548d852a700261ecb6cab8e1",
-    "a385047c3f0e9fd18b403c5fa63e350cd25e6368"
+    "a385047c3f0e9fd18b403c5fa63e350cd25e6368",
+    "244e61b0b708afcab81b10a980391353bace6c53",
+    "0c857acc54a94e5274869497e4b4714f5fd16a16"
   ],
   "touchedFiles": {
     "request-review": [
@@ -236,13 +238,17 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "custom-reviewers (cross-boundary-invariants) escalation への operator 裁定。spec.md / design.md は operator commit で実装に追随済み（group reap は leader 死亡を観測した全経路で発火が正、SIGKILL 昇格限定という旧記述が狭すぎた）。code-fixer は以下のテスト追加のみ行うこと:\n\n[F-001] tests/unit/core/cancel/pid-kill.test.ts に poll-death 経路の group reap テストを 2 本追加:\n1. leader pid が SIGTERM 後の poll 中に死亡（isAlive が false を返す）し、isGroupLeader が true → kill(-pid, SIGKILL) が送出され result.groupKilled === true を assert\n2. 非 leader pid が poll 中に死亡 → 負 pid への送出が一切ないことを assert\n既存の SIGKILL 昇格系テスト（TC-006/TC-007）は無変更のまま green を維持する。\n\n[F-002] tests/unit/core/cancel/runner-process-gate.test.ts に status=failed + jobId 一致 sidecar pid（dead pid）のテストを 1 本追加: gracefulKill が試行され（SIGTERM 送出）、ESRCH で killed 扱いとなり cancel が exitCode 0 で完走することを assert。terminated でも同挙動である旨は it.each で failed/terminated 両方を回してよい。\n\n[F-003] 対応不要（runner-abort-hub.test.ts の TC-008/009/010 が順序不変を既に pin 済み、と裁定）。TC-016 は変更しないこと。\n\nsrc/ の実装コードは変更しないこと（挙動は正と裁定済み）。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-11T07:36:33.192Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
