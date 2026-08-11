@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T06:15:02.035Z",
+  "updatedAt": "2026-08-11T06:22:29.520Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/detach-start-ack-7ea031d6",
   "error": null,
   "pipelineId": "standard",
@@ -69,7 +69,8 @@
     "f8740ff39895fd4c28feca332be26a4dff721e37",
     "7df996c629328c90b56b026e4bf455700f7be0c5",
     "58b158b94bfc281ad9fd46e386daf5f787992ca5",
-    "b08d004924b081140805e4fa6e0059d358b9f685"
+    "b08d004924b081140805e4fa6e0059d358b9f685",
+    "36ef54a302056bb0d5638701d5ce1e4c00e8bfbe"
   ],
   "touchedFiles": {
     "request-review": [
@@ -108,10 +109,29 @@
       "src/core/resume/safety.ts",
       "src/core/command/__tests__/detach.test.ts"
     ],
-    "spec-review": [],
+    "spec-review": [
+      "src/core/command/detach.ts",
+      "src/util/spawn.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/job-wait.ts",
+      "src/core/command/resume.ts",
+      "src/util/paths.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts",
+      "src/core/command/__tests__/detach.test.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts",
+      "src/cli/__tests__/job-wait.test.ts",
+      "src/core/resume/safety.ts",
+      "src/errors.ts"
+    ],
     "spec-fixer": []
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "spec-review escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -126,11 +146,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 2,
+      "spec-review": 3,
       "spec-fixer": 1
     }
   }
