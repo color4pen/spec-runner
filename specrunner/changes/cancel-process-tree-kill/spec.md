@@ -51,15 +51,20 @@ resolved pid is a live process
 **Then** cancel emits a warning containing "no PID recorded" and still transitions
 the job to `canceled`
 
-### Requirement: Graceful kill reaps the process group on SIGKILL escalation only for group leaders
+### Requirement: Graceful kill reaps the process group only for group leaders, on every observed death path
 
-On SIGKILL escalation, `gracefulKill` SHALL send SIGKILL to the target pid and,
-**only when** the target pid is a process-group leader, additionally send SIGKILL
-to the process group (`-pid`) to reap descendants. It MUST NOT send any
-group-directed signal when the pid is not a group leader. The result MUST report
-whether a group signal was sent. A group-signal error (EPERM/ESRCH) SHALL be
-treated as best-effort and MUST NOT affect the pid-kill outcome (i.e., MUST NOT
-flip the `killed` field of the result).
+`gracefulKill` SHALL reap the process group by sending SIGKILL to `-pid`
+**only when** the target pid is a process-group leader, and SHALL do so on every
+path where the target's death is observed: the SIGTERM poll paths (the pid dies
+during polling, whether observed via `isAlive` returning false or via ESRCH) and
+the SIGKILL escalation path. Reaping on the poll paths is required because a
+leader that dies from SIGTERM can leave surviving descendants keeping the group
+alive — the exact orphan case this change exists to close. It MUST NOT send any
+group-directed signal when the pid is not a group leader (a dead leader still
+counts as a leader while surviving members keep the group alive). The result
+MUST report whether a group signal was sent. A group-signal error (EPERM/ESRCH)
+SHALL be treated as best-effort and MUST NOT affect the pid-kill outcome (i.e.,
+MUST NOT flip the `killed` field of the result).
 
 #### Scenario: leader pid escalation reaps the group
 
@@ -69,6 +74,14 @@ leader
 **Then** it sends SIGKILL to the pid and SIGKILL to the group `-pid`
 **And** the result reports the group was killed
 
+#### Scenario: leader that dies from SIGTERM with surviving descendants still gets its group reaped
+
+**Given** a group-leader pid that dies during the SIGTERM poll window while
+descendant processes keep the process group alive
+**When** `gracefulKill` observes the death during polling
+**Then** it sends SIGKILL to the group `-pid`
+**And** the result reports the group was killed
+
 #### Scenario: non-leader pid escalation does not touch the group
 
 **Given** a pid that stays alive through the SIGTERM poll window and is not a
@@ -76,6 +89,12 @@ group leader
 **When** `gracefulKill` escalates to SIGKILL
 **Then** it sends SIGKILL to the pid only
 **And** no group-directed (`-pid`) signal is sent
+
+#### Scenario: non-leader pid that dies during polling does not touch the group
+
+**Given** a non-leader pid that dies during the SIGTERM poll window
+**When** `gracefulKill` observes the death during polling
+**Then** no group-directed (`-pid`) signal is sent
 
 ### Requirement: The runner aborts in-flight agent queries on SIGINT/SIGTERM before exit
 

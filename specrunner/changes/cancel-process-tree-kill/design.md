@@ -44,9 +44,12 @@ no signal handler can reach it.
   chain as `job wait`, adopting the sidecar pid only when its `jobId` matches.
 - Decide whether to kill from **process liveness**, never from on-disk status, so
   the resume disk-lag path is covered.
-- On SIGKILL escalation, reap the process **group** — but only when the target
-  pid is a group leader (detached job). Never signal the group of a foreground
-  job (would hit the caller's shell / sibling processes).
+- Reap the process **group** on every path where the target's death is observed
+  (SIGTERM poll paths and SIGKILL escalation) — but only when the target pid is
+  a group leader (detached job). A leader that dies from SIGTERM can leave
+  surviving descendants keeping the group alive; reaping there is the point of
+  this change. Never signal the group of a foreground job (would hit the
+  caller's shell / sibling processes).
 - Give the runner's own SIGINT/SIGTERM handler a seam to abort the in-flight
   agent query before exit, so the SDK subprocess is torn down gracefully; bound
   the wait; keep the existing `awaiting-resume` persist.
@@ -116,16 +119,19 @@ test, which sends SIGTERM even when the poll immediately reports dead.
 **Residual risk**: pid reuse (a dead runner's pid reclaimed by an unrelated live
 process). This is pre-existing (the running path and `job wait` share it), and is
 bounded by (a) jobId-gated sidecar adoption, (b) sidecars being deleted on
-terminal transitions, and (c) group escalation only firing after the pid stayed
-continuously alive across the SIGTERM poll window (so it cannot have been reused
-mid-call). See Risks.
+terminal transitions, and (c) group signals only firing on a clean positive
+`isGroupLeader` probe — for the poll-death paths the group can only be signalled
+while it still exists (surviving members hold the pgid), and for the escalation
+path the pid stayed continuously alive across the SIGTERM poll window. See Risks.
 
-### D3: Group reap on SIGKILL escalation, gated by leader detection
+### D3: Group reap on every observed death path, gated by leader detection
 
 `gracefulKill` gains an injected `isGroupLeader(pid) → boolean` in `KillDeps`.
-At the SIGKILL-escalation step it keeps sending SIGKILL to the pid (unchanged),
-and **additionally**, when `isGroupLeader(pid)` is true, sends SIGKILL to the
-group (`kill(-pid, "SIGKILL")`). `KillResult` gains `groupKilled: boolean`.
+On every path where the target's death is observed — the SIGTERM poll paths
+(death seen via `isAlive` false or ESRCH) and the SIGKILL-escalation step (which
+keeps sending SIGKILL to the pid, unchanged) — when `isGroupLeader(pid)` is
+true, it sends SIGKILL to the group (`kill(-pid, "SIGKILL")`) to reap surviving
+descendants. `KillResult` gains `groupKilled: boolean`.
 Group-signal errors are best-effort (same EPERM/ESRCH handling) and do not flip
 the pid-kill outcome.
 
