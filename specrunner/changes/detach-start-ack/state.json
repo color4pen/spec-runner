@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T07:35:37.222Z",
+  "updatedAt": "2026-08-11T07:43:11.644Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/detach-start-ack-7ea031d6",
   "error": null,
@@ -91,7 +91,9 @@
     "9d1e1d7109c6484db6534e9e24441ccc94388874",
     "e6232ae9c4e094f15bc38e9a0916f698766c3fab",
     "7f3e76d05d011457732f9e51e07b3a826bf25911",
-    "3f03c39de36e0a7151bfcca7fd969bc3d0a4db0c"
+    "3f03c39de36e0a7151bfcca7fd969bc3d0a4db0c",
+    "b6fb182efc41b62fd7f73f8e5ec3c87fe9b0b3ce",
+    "b6c99fee31acdc4a4d480404263267a1084af263"
   ],
   "touchedFiles": {
     "request-review": [
@@ -201,6 +203,21 @@
     ],
     "regression-gate": [
       "src/cli/command-registry.ts"
+    ],
+    "conformance": [
+      "src/core/command/detach.ts",
+      "src/util/spawn.ts",
+      "src/util/xdg.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/job-wait.ts",
+      "src/core/command/__tests__/detach-ack.test.ts",
+      "src/core/command/__tests__/detach-integration.test.ts",
+      "src/core/command/__tests__/detach.test.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts",
+      "src/cli/__tests__/job-wait.test.ts",
+      "src/util/__tests__/spawn-background-detach.test.ts",
+      "src/util/__tests__/xdg-read-sidecar-tail.test.ts"
     ]
   },
   "resumePoint": null,
@@ -247,7 +264,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 108,
+    "historyCount": 117,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -257,14 +274,15 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 5,
+      "verification": 6,
       "build-fixer": 4,
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
