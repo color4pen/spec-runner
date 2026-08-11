@@ -242,8 +242,7 @@ describe("TC-021: integration destructive — GENERAL_ERROR when child dies with
     expect(code).not.toBe(EXIT_CODE.SUCCESS);
 
     // Simulate: a subsequent loadState call returns null (job never on disk)
-    const fakeLoadState = async (s: string) =>
-      sidecarCallCount > 0 && false ? { slug: s } : null; // always null (never registered)
+    const fakeLoadState = async (_s: string): Promise<{ slug: string } | null> => null;
     const found = await fakeLoadState(slug);
     expect(found).toBeNull(); // Confirms the job is NOT discoverable
   });

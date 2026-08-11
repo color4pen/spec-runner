@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T07:12:44.768Z",
+  "updatedAt": "2026-08-11T07:15:06.035Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -78,7 +78,9 @@
     "f2baf184179452e77d528dc6b80f18157c2e439a",
     "bfa5cb3470705c3cd80e7d9231848ec7225bc406",
     "0039620cdf40704e68b2fc7e5e2bec25872e2da9",
-    "8df890d5ef9f3b6911b4993bb1a151793355f4db"
+    "8df890d5ef9f3b6911b4993bb1a151793355f4db",
+    "a229d01cd1c12d9434ba78b4aed05a06541eaa2f",
+    "78390a97c5b7d8beb16951208cf294a976f64de3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -161,6 +163,11 @@
       "src/util/xdg.ts",
       "src/util/paths.ts",
       "src/util/__tests__/spawn-background-detach.test.ts"
+    ],
+    "build-fixer": [
+      "src/core/command/detach.ts",
+      "src/logger/stdout.ts",
+      "tests/unit/architecture/core-invariants.test.ts"
     ]
   },
   "resumePoint": null,
@@ -178,7 +185,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -188,7 +195,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
