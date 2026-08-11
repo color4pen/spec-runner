@@ -141,6 +141,24 @@ describe("gracefulKill", () => {
   // F-001: pin group-reap behaviour on the SIGTERM poll-death path (isAlive=false / ESRCH).
   // reapGroup is called on all observed-death paths, not only SIGKILL escalation.
 
+  it("ESRCH poll-death + leader: group SIGKILL sent when isAlive throws ESRCH and isGroupLeader=true", async () => {
+    const kill = vi.fn();
+    const deps = makeDeps({
+      kill,
+      isAlive: vi.fn().mockImplementation(() => { throw makeErrnoError("ESRCH"); }),
+      isGroupLeader: vi.fn().mockReturnValue(true),
+    });
+
+    const result = await gracefulKill(8888, 1000, deps);
+
+    expect(result.killed).toBe(true);
+    expect(kill).toHaveBeenCalledWith(8888, "SIGTERM");
+    expect(kill).not.toHaveBeenCalledWith(8888, "SIGKILL");
+    // group SIGKILL must fire on the ESRCH poll-death path for a leader
+    expect(kill).toHaveBeenCalledWith(-8888, "SIGKILL");
+    expect(result.groupKilled).toBe(true);
+  });
+
   it("poll-death + leader: group SIGKILL sent when pid dies during SIGTERM poll (isAlive=false)", async () => {
     const kill = vi.fn();
     const deps = makeDeps({
