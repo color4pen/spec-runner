@@ -1,6 +1,9 @@
 /**
  * Output contract tests for detach guidance and foreground notice.
  *
+ * TC-009 (new): help no longer promises immediate return
+ * TC-010 (new): failure message is a single pinnable definition (buildDetachStartFailure)
+ * TC-016 (new): detach-output-contract adds pins for failure message and reworded help
  * TC-019: foreground 起動時案内・detach 親出力・help の文言が存在する
  * TC-026: foreground notice は stderr にのみ書かれ stdout に一切書かない
  * TC-027: foreground notice は --quiet で抑制される
@@ -33,6 +36,11 @@ vi.mock("../../logger/stdout.js", async (importOriginal) => {
 
 // These modules are expected to be created by the implementer:
 import { buildDetachGuidance, DETACH_MARKER_ENV } from "../../core/command/detach.js";
+// buildDetachStartFailure is imported via namespace to avoid breaking existing tests when the export
+// does not yet exist. TC-010 asserts it is exported once the implementation is complete.
+import * as _detachModule from "../../core/command/detach.js";
+const buildDetachStartFailure = (_detachModule as Record<string, unknown>)["buildDetachStartFailure"] as
+  ((slug: string, logPath: string, logTail: string) => string) | undefined;
 import { FOREGROUND_NOTICE, emitForegroundNotice } from "../../core/command/operational-guidance.js";
 import { USAGE } from "../command-registry.js";
 import { logInfo, isLevelEnabled } from "../../logger/stdout.js";
@@ -178,5 +186,70 @@ describe("TC-028: detach 子（マーカー設定）は foreground notice を出
     // undefined marker = not a child = notice SHOULD be emitted
     // (this tests that undefined is treated as "no marker")
     expect(vi.mocked(logInfo)).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-009 / TC-016: help no longer promises immediate return
+// ---------------------------------------------------------------------------
+
+describe("TC-009 / TC-016: --detach help no longer promises immediate return", () => {
+  it("TC-009: USAGE still contains '--detach' and 'job wait' (preserved keywords)", () => {
+    // Per request AC: TC-019 asserts these, so they must remain
+    expect(USAGE).toContain("--detach");
+    expect(USAGE).toContain("job wait");
+  });
+
+  it("TC-009: USAGE does NOT contain 'returns immediately'", () => {
+    // The old help text claimed the parent returns immediately;
+    // the new contract waits for registration — this phrase must be removed.
+    expect(USAGE).not.toContain("returns immediately");
+  });
+
+  it("TC-009: USAGE does NOT contain '即座に return'", () => {
+    // Japanese variant of the immediate-return promise — must also be removed.
+    expect(USAGE).not.toContain("即座に return");
+  });
+
+  it("TC-009: USAGE does NOT contain '即座に'", () => {
+    // Catch any remaining Japanese phrasing about immediate return.
+    expect(USAGE).not.toContain("即座に");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-010 / TC-016: failure message is a single pinnable definition
+// ---------------------------------------------------------------------------
+
+describe("TC-010 / TC-016: buildDetachStartFailure is a single pinnable definition", () => {
+  it("TC-010: buildDetachStartFailure is exported from detach.ts", () => {
+    expect(typeof buildDetachStartFailure).toBe("function");
+  });
+
+  it("TC-010: buildDetachStartFailure output includes the slug", () => {
+    const msg = buildDetachStartFailure("my-slug", "/repo/.specrunner/logs/my-slug.detach.log", "error line");
+    expect(msg).toContain("my-slug");
+  });
+
+  it("TC-010: buildDetachStartFailure output includes the full detach-log path", () => {
+    const logPath = "/repo/.specrunner/logs/my-slug.detach.log";
+    const msg = buildDetachStartFailure("my-slug", logPath, "error output");
+    expect(msg).toContain(logPath);
+  });
+
+  it("TC-010: buildDetachStartFailure output includes the transcribed log tail", () => {
+    const tail = "preflight failed: API key missing\ncredential error";
+    const msg = buildDetachStartFailure("my-slug", "/path/to.log", tail);
+    expect(msg).toContain(tail);
+  });
+
+  it("TC-016: buildDetachStartFailure is a callable builder (not a raw string constant)", () => {
+    // Verify it's a function that can be called with different slugs/paths/tails
+    const msg1 = buildDetachStartFailure("slug-a", "/path/a.log", "err-a");
+    const msg2 = buildDetachStartFailure("slug-b", "/path/b.log", "err-b");
+    // Different inputs produce different outputs
+    expect(msg1).not.toBe(msg2);
+    expect(msg1).toContain("slug-a");
+    expect(msg2).toContain("slug-b");
   });
 });

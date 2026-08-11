@@ -36,7 +36,8 @@ vi.mock("../../core/command/detach.js", () => ({
   isDetachedChild: vi.fn().mockReturnValue(false),
   stripDetachFlag: vi.fn((args: string[]) => args.filter((a) => a !== "--detach" && !a.startsWith("--detach="))),
   buildDetachGuidance: vi.fn().mockReturnValue("detach guidance"),
-  detachSelf: vi.fn().mockReturnValue(0),
+  // TC-015: updated from mockReturnValue to mockResolvedValue — detachSelf is now async
+  detachSelf: vi.fn().mockResolvedValue(0),
 }));
 
 // Mock job-wait to prevent real filesystem access when the handler is called
@@ -213,7 +214,7 @@ describe("TC-024: SLUG_REGEX 検証失敗時は spawn せず非ゼロ終了す�
     // causes non-zero exit without spawning.
 
     const { detachSelf } = await import("../../core/command/detach.js");
-    vi.mocked(detachSelf).mockReturnValue(0); // would only be called if spawn happens
+    vi.mocked(detachSelf).mockResolvedValue(0); // TC-015: mockResolvedValue (detachSelf is now async)
 
     const runCmd = COMMANDS["run"] as CommandDef;
     const exitCodes: number[] = [];

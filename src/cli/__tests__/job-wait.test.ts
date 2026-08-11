@@ -603,6 +603,93 @@ describe("TC-029: archived status は exit 0 を返す", () => {
 });
 
 // ---------------------------------------------------------------------------
+// TC-008 (new): not-found output carries the detach-log hint
+// ---------------------------------------------------------------------------
+
+describe("TC-008: not-found output carries the detach-log hint", () => {
+  it("TC-008: stderr includes a detach-log hint when slug is not found after retries", async () => {
+    const stderrOutput: string[] = [];
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      stderrOutput.push(typeof chunk === "string" ? chunk : chunk.toString());
+      return true;
+    });
+
+    const deps: JobWaitDeps = {
+      loadState: vi.fn(async () => null), // always null (not found)
+      isProcessAlive: vi.fn(() => false),
+      isStaleRunning: vi.fn(() => false),
+      readSidecarPid: vi.fn(() => null),
+      sleep: vi.fn(async () => {}),
+      pollIntervalMs: 0,
+      notFoundRetryCount: 5,
+      notFoundRetryIntervalMs: 0,
+    };
+
+    try {
+      const code = await runJobWait("not-found-slug", { repoRoot: "/test-repo", deps });
+      expect(code).toBe(2);
+    } finally {
+      stderrSpy.mockRestore();
+    }
+
+    const combined = stderrOutput.join("");
+    // "No job found" message must still be present
+    expect(combined).toContain("No job found");
+    expect(combined).toContain("not-found-slug");
+    // Detach-log hint must be present (references the detach log path for the slug)
+    expect(combined).toContain("not-found-slug.detach.log");
+  });
+
+  it("TC-008: exit code is still 2 after adding the hint (hint does not change exit code)", async () => {
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    const deps: JobWaitDeps = {
+      loadState: vi.fn(async () => null),
+      isProcessAlive: vi.fn(() => false),
+      isStaleRunning: vi.fn(() => false),
+      readSidecarPid: vi.fn(() => null),
+      sleep: vi.fn(async () => {}),
+      pollIntervalMs: 0,
+      notFoundRetryCount: 5,
+      notFoundRetryIntervalMs: 0,
+    };
+
+    try {
+      const code = await runJobWait("not-found-slug", { repoRoot: "/test-repo", deps });
+      expect(code).toBe(2);
+    } finally {
+      stderrSpy.mockRestore();
+    }
+  });
+
+  it("TC-008: retry count is unaffected by the hint (still 5 retries)", async () => {
+    const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    // Use a separate variable to avoid vi.mocked() (not available in this vitest version)
+    const loadStateMock = vi.fn(async () => null);
+    const deps: JobWaitDeps = {
+      loadState: loadStateMock,
+      isProcessAlive: vi.fn(() => false),
+      isStaleRunning: vi.fn(() => false),
+      readSidecarPid: vi.fn(() => null),
+      sleep: vi.fn(async () => {}),
+      pollIntervalMs: 0,
+      notFoundRetryCount: 5,
+      notFoundRetryIntervalMs: 0,
+    };
+
+    try {
+      await runJobWait("not-found-slug", { repoRoot: "/test-repo", deps });
+    } finally {
+      stderrSpy.mockRestore();
+    }
+
+    // loadState still called exactly notFoundRetryCount times
+    expect(loadStateMock.mock.calls.length).toBe(5);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Sidecar pid resolution — used in TC-010 / TC-012
 // ---------------------------------------------------------------------------
 
