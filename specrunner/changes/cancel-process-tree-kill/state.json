@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f28a2862-fe19-4bd7-9f0c-c148629707ae",
   "createdAt": "2026-08-11T05:45:08.535Z",
-  "updatedAt": "2026-08-11T07:36:33.368Z",
+  "updatedAt": "2026-08-11T07:50:29.934Z",
   "request": {
     "title": "job cancel の process-tree kill — status gate を pid 生存 gate に置き換え、detach 子孫プロセスを回収する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/cancel-process-tree-kill-f28a2862",
   "error": null,
@@ -77,7 +77,9 @@
     "58d15ed4a48be557548d852a700261ecb6cab8e1",
     "a385047c3f0e9fd18b403c5fa63e350cd25e6368",
     "244e61b0b708afcab81b10a980391353bace6c53",
-    "0c857acc54a94e5274869497e4b4714f5fd16a16"
+    "0c857acc54a94e5274869497e4b4714f5fd16a16",
+    "1ef5a6180c22133a1f02ac024985cc2fe56ada28",
+    "0d7f2e631025e4f522ef6eda6cc276d2472b7d7f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -204,16 +206,15 @@
       "tests/unit/core/cancel/runner.test.ts"
     ],
     "code-fixer": [
-      "src/core/cancel/pid-kill.ts",
-      "src/core/cancel/runner.ts",
-      "tests/unit/core/cancel/pid-kill-group.test.ts"
+      "tests/unit/core/cancel/pid-kill.test.ts",
+      "tests/unit/core/cancel/runner-process-gate.test.ts"
     ]
   },
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "1ef5a6180c22133a1f02ac024985cc2fe56ada28",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -223,7 +224,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/cancel-process-tree-kill/design.md:sha256:d5d697de1901376eca0bd2b34c3d352b2e276a1fdd946543aacc4c496ec59573|specrunner/changes/cancel-process-tree-kill/request.md:sha256:9eef1f298dc4ba55929c58bac89fe6e27ab1d310e9d103d9b1d2f1b59f7d4dce|specrunner/changes/cancel-process-tree-kill/spec.md:sha256:91b0603650ce52d8aca94e5f16a71276f0ff17c7e259cbd7f69a1c2c62d7bdef|specrunner/changes/cancel-process-tree-kill/tasks.md:sha256:d087b4954e0c8e2d6e6277acb3758d43fa8bb2cfb96eddd376decab3505f6fdc|specrunner/changes/cancel-process-tree-kill/test-cases.md:sha256:a60f3bc326284589dbddf0a09b4155e0e19fe820708daf7c8bdb9cb6c30070cd"
     },
     {
       "name": "scale-tolerance",
@@ -248,7 +250,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 66,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -261,10 +263,10 @@
       "verification": 2,
       "build-fixer": 1,
       "code-review": 1,
-      "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
