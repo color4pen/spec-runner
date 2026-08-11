@@ -246,14 +246,42 @@ verification phase: 以下 4 スイートが原則無変更で green である�
 
 ---
 
+## TC-024: leader poll-death reaps the group
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: Graceful kill reaps the process group only for group leaders, on every observed death path > Scenario: leader that dies from SIGTERM with surviving descendants still gets its group reaped
+
+**GIVEN** a group-leader pid that dies during the SIGTERM poll window (observed via `isAlive` returning false or throwing ESRCH) while `isGroupLeader` reports true
+**WHEN** `gracefulKill` observes the death during polling
+**THEN** SIGKILL is sent to the group `-pid` and `result.groupKilled === true`
+
+実装: `tests/unit/core/cancel/pid-kill.test.ts` の poll-death + leader 系（isAlive=false / ESRCH の両観測経路）。
+
+---
+
+## TC-025: non-leader poll-death does not touch the group
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: Graceful kill reaps the process group only for group leaders, on every observed death path > Scenario: non-leader pid that dies during polling does not touch the group
+
+**GIVEN** a non-leader pid that dies during the SIGTERM poll window
+**WHEN** `gracefulKill` observes the death during polling
+**THEN** no group-directed (`-pid`) signal is sent
+
+実装: `tests/unit/core/cancel/pid-kill.test.ts` の poll-death + non-leader 系。
+
+---
+
 ## Result
 
 ```yaml
 result: completed
-total: 23
-automated: 21
+total: 25
+automated: 23
 manual: 0
-must: 17
+must: 19
 should: 2
 could: 1
 blocked_reasons: []
