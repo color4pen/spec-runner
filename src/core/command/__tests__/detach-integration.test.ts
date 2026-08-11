@@ -217,17 +217,14 @@ describe("TC-021: integration destructive — GENERAL_ERROR when child dies with
     const slug = "failure-discoverability-slug";
     const spawn = makeSpawnFn(CHILD_PID);
 
-    let sidecarCallCount = 0;
+    const readSidecarPid = vi.fn((): number | null => null); // job never registers
     let sleepCount = 0;
 
     const code = await detachSelf(
       { args: ["run", slug, "--detach"], repoRoot: "/repo", slug, env: {} },
       {
         spawnFn: spawn.spawnFn,
-        readSidecarPid: () => {
-          sidecarCallCount++;
-          return null; // job never registers
-        },
+        readSidecarPid,
         readDetachLogTail: () => "preflight: provider not ready",
         sleep: async () => {
           sleepCount++;
@@ -242,7 +239,7 @@ describe("TC-021: integration destructive — GENERAL_ERROR when child dies with
     expect(code).not.toBe(EXIT_CODE.SUCCESS);
 
     // The ack loop polled registration (and never saw it) before the child died
-    expect(sidecarCallCount).toBeGreaterThan(0);
+    expect(readSidecarPid).toHaveBeenCalled();
 
     // Simulate: a subsequent loadState call returns null (job never on disk)
     const fakeLoadState = async (_s: string): Promise<{ slug: string } | null> => null;

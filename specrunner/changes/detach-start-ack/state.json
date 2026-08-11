@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T07:16:42.958Z",
+  "updatedAt": "2026-08-11T07:19:31.474Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "verification",
-  "status": "awaiting-resume",
+  "step": "build-fixer",
+  "status": "running",
   "branch": "change/detach-start-ack-7ea031d6",
-  "error": {
-    "code": "VERIFICATION_RETRIES_EXHAUSTED",
-    "message": "verification did not pass after 2 iterations",
-    "hint": "Review verification-result.md and fix the build errors manually. Phase-level details (which phase failed and exit code) are available in the step-attempt outcome in events.jsonl."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -86,7 +82,9 @@
     "a229d01cd1c12d9434ba78b4aed05a06541eaa2f",
     "78390a97c5b7d8beb16951208cf294a976f64de3",
     "b7bc1c3408668ef18988982ebd0fbe8383662def",
-    "9fa4e0ed3484b3063b626ed585c43d70772ff2dd"
+    "9fa4e0ed3484b3063b626ed585c43d70772ff2dd",
+    "369fb68f7f018606892f8a1c14fd35f202e45547",
+    "0cfb3421e7d525e381ee7ab15a23231f9e021cae"
   ],
   "touchedFiles": {
     "request-review": [
@@ -174,12 +172,7 @@
       "src/core/command/__tests__/detach-integration.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "build-fixer",
-    "reason": "verification did not pass after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -194,7 +187,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 69,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
