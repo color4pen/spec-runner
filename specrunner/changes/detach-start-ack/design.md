@@ -253,5 +253,3 @@ at call sites) are rejected — they cannot be pinned without coupling to wordin
 - Factoring: design assumes the ack loop folded into `detachSelf` with a deps
   object (D5); a standalone `waitForStartAck` is an equivalent factoring left to
   the implementer.
-
-<!-- spec-fixer-deferred: [LOW] resume.ts:291 参照が liveness sidecar の更新を誤記している request.md は spec-fixer の宣言済み書き込みパス外（design.md / spec.md / tasks.md のみ許可）のため修正不能。request.md の該当行「resume 子は pid を自身のものに更新して persist する（src/core/command/resume.ts:291）」を「resume 時の liveness sidecar 更新は workspace-materializer.ts:91（resume-existing）/ :117（resume-recreated）で行われる。resume.ts:291 の transitionJob は state.json の pid フィールドの更新である」に置換する必要がある。 -->

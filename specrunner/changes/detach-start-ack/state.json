@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T06:27:38.856Z",
+  "updatedAt": "2026-08-11T06:32:22.795Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "change/detach-start-ack-7ea031d6",
   "error": null,
@@ -72,7 +72,8 @@
     "b08d004924b081140805e4fa6e0059d358b9f685",
     "36ef54a302056bb0d5638701d5ce1e4c00e8bfbe",
     "270ecb10a6bee2dbd5c93b56e6ea838026b2f841",
-    "a90dbc2c0e0819d7c336ce37d9ba6d30f10b0bf4"
+    "a90dbc2c0e0819d7c336ce37d9ba6d30f10b0bf4",
+    "bfde135151ff2e1abeefce2860d511f65a53e99c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -113,19 +114,15 @@
     ],
     "spec-review": [
       "src/core/command/detach.ts",
-      "src/util/spawn.ts",
-      "src/cli/command-registry.ts",
       "src/cli/job-wait.ts",
       "src/core/command/resume.ts",
-      "src/util/paths.ts",
       "src/core/runtime/workspace-materializer.ts",
-      "src/core/runtime/local.ts",
+      "src/cli/command-registry.ts",
+      "src/util/spawn.ts",
+      "src/util/paths.ts",
       "src/cli/__tests__/detach-flag-cli.test.ts",
       "src/core/command/__tests__/detach.test.ts",
-      "src/cli/__tests__/detach-output-contract.test.ts",
-      "src/cli/__tests__/job-wait.test.ts",
-      "src/core/resume/safety.ts",
-      "src/errors.ts"
+      "src/core/runtime/local.ts"
     ],
     "spec-fixer": []
   },
@@ -144,11 +141,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 30,
+    "historyCount": 34,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 3,
+      "spec-review": 4,
       "spec-fixer": 1
     }
   }
