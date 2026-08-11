@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T05:45:13.158Z",
+  "updatedAt": "2026-08-11T05:51:20.595Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/detach-start-ack-7ea031d6",
   "error": null,
@@ -62,10 +62,31 @@
     }
   ],
   "synthesizedCommits": [
-    "1c7be6639c707300e6f0079b04ceb1fb9f4347da"
+    "1c7be6639c707300e6f0079b04ceb1fb9f4347da",
+    "daa772940906b5f0bef3129eb42e2578d65a04cd"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/cli/command-registry.ts",
+      "src/core/command/detach.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
+      "src/cli/run.ts",
+      "src/core/command/runner.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/cli/job-wait.ts",
+      "src/core/command/resume.ts",
+      "src/store/job-state-store.ts",
+      "src/errors.ts",
+      "src/util/xdg.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
