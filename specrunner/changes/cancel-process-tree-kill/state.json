@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f28a2862-fe19-4bd7-9f0c-c148629707ae",
   "createdAt": "2026-08-11T05:45:08.535Z",
-  "updatedAt": "2026-08-11T08:15:32.578Z",
+  "updatedAt": "2026-08-11T08:21:43.829Z",
   "request": {
     "title": "job cancel の process-tree kill — status gate を pid 生存 gate に置き換え、detach 子孫プロセスを回収する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/cancel-process-tree-kill-f28a2862",
   "error": null,
@@ -87,7 +87,9 @@
     "a744aff1ad4925819ef2200ddf98dbb1d2b96856",
     "3dce40a450e878fca4db635ffbab72910fd8ef9f",
     "617204374736e724e13d2f46a48f37fd0ddd89f8",
-    "a3bd944e772843711e9371fa3f2652dd54733550"
+    "a3bd944e772843711e9371fa3f2652dd54733550",
+    "1d8b0f8208c340ad5e4c9974a00ff4a52226ee7b",
+    "76892f8a65d81a34f68609c56425499f30801690"
   ],
   "touchedFiles": {
     "request-review": [
@@ -231,16 +233,11 @@
       "src/core/cancel/runner.ts",
       "src/core/lifecycle/query-abort-hub.ts",
       "src/core/port/query-abort.ts",
-      "src/core/runtime/local.ts",
-      "src/adapter/claude-code/agent-runner.ts",
       "src/cli/cancel.ts",
-      "tests/unit/core/cancel/runner-process-gate.test.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/runtime/local.ts",
       "tests/unit/core/cancel/pid-kill-group.test.ts",
-      "tests/unit/core/cancel/pid-kill.test.ts",
-      "tests/unit/core/runtime/runner-abort-hub.test.ts",
-      "tests/cancel-process-group-integration.test.ts",
-      "tests/unit/core/lifecycle/query-abort-hub.test.ts",
-      "tests/unit/core/cancel/runner.test.ts"
+      "tests/unit/core/cancel/pid-kill.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -283,7 +280,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 93,
+    "historyCount": 102,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -293,7 +290,7 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 1,
       "code-fixer": 4,
@@ -301,7 +298,7 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 3,
-      "conformance": 1
+      "conformance": 2
     }
   }
 }
