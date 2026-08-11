@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T07:19:31.474Z",
+  "updatedAt": "2026-08-11T07:24:04.454Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -84,7 +84,9 @@
     "b7bc1c3408668ef18988982ebd0fbe8383662def",
     "9fa4e0ed3484b3063b626ed585c43d70772ff2dd",
     "369fb68f7f018606892f8a1c14fd35f202e45547",
-    "0cfb3421e7d525e381ee7ab15a23231f9e021cae"
+    "0cfb3421e7d525e381ee7ab15a23231f9e021cae",
+    "400cfb369d2423cca12ed6fff9c8c5246e9ee084",
+    "dc4329be239fea9dbb9f46714c9615821716a6b4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -187,7 +189,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 71,
+    "historyCount": 79,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -197,8 +199,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 3,
-      "build-fixer": 2
+      "verification": 4,
+      "build-fixer": 3
     }
   }
 }
