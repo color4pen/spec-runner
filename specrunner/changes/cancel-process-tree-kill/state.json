@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f28a2862-fe19-4bd7-9f0c-c148629707ae",
   "createdAt": "2026-08-11T05:45:08.535Z",
-  "updatedAt": "2026-08-11T07:15:17.344Z",
+  "updatedAt": "2026-08-11T07:33:40.169Z",
   "request": {
     "title": "job cancel の process-tree kill — status gate を pid 生存 gate に置き換え、detach 子孫プロセスを回収する",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/cancel-process-tree-kill-f28a2862",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,9 @@
     "4de44cd7f19f6ec76a3d02d99d5590ff0b50e1b8",
     "6cba2db0d0ee6a048d63486938c100d919d19f7c",
     "e7f6b3cf8a11d04e6dd7c022530341cd3d65026e",
-    "2d9735b1d2fe1dd0fac44d90d7eca9ddec4416ce"
+    "2d9735b1d2fe1dd0fac44d90d7eca9ddec4416ce",
+    "58d15ed4a48be557548d852a700261ecb6cab8e1",
+    "a385047c3f0e9fd18b403c5fa63e350cd25e6368"
   ],
   "touchedFiles": {
     "request-review": [
@@ -198,10 +200,49 @@
       "tests/unit/core/cancel/pid-kill.test.ts",
       "tests/unit/cli/cancel.test.ts",
       "tests/unit/core/cancel/runner.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/cancel/pid-kill.ts",
+      "src/core/cancel/runner.ts",
+      "tests/unit/core/cancel/pid-kill-group.test.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 55,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -213,7 +254,11 @@
       "bite-evidence": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
