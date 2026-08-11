@@ -115,6 +115,48 @@ describe("T-045: --all-terminated does not call initPipelineLog", () => {
   });
 });
 
+// T-cancel-leader: isGroupLeader dep exercises both branches of the process.kill(-pid,0) probe
+describe("T-cancel-leader: isGroupLeader dep covers both branches", () => {
+  it("isGroupLeader returns true when process.kill(-pid, 0) succeeds", async () => {
+    const cancelRunner = await import("../../../src/core/cancel/runner.js");
+    let capturedDeps: Record<string, unknown> | null = null;
+    (cancelRunner.cancelSingleJob as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: { deps: Record<string, unknown> }) => {
+        capturedDeps = opts.deps;
+        return { exitCode: 0, message: "ok", info: [], warnings: [] };
+      },
+    );
+
+    const { runCancel } = await import("../../../src/cli/cancel.js");
+    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false, repoRoot: "/repo" });
+
+    const isGroupLeader = capturedDeps!["isGroupLeader"] as (pid: number) => boolean;
+    const killSpy = vi.spyOn(process, "kill").mockImplementation(() => true);
+    expect(isGroupLeader(1234)).toBe(true);
+    expect(killSpy).toHaveBeenCalledWith(-1234, 0);
+    killSpy.mockRestore();
+  });
+
+  it("isGroupLeader returns false when process.kill(-pid, 0) throws", async () => {
+    const cancelRunner = await import("../../../src/core/cancel/runner.js");
+    let capturedDeps: Record<string, unknown> | null = null;
+    (cancelRunner.cancelSingleJob as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      async (opts: { deps: Record<string, unknown> }) => {
+        capturedDeps = opts.deps;
+        return { exitCode: 0, message: "ok", info: [], warnings: [] };
+      },
+    );
+
+    const { runCancel } = await import("../../../src/cli/cancel.js");
+    await runCancel({ jobId: "test-job", force: false, purge: false, allTerminated: false, yes: false, restoreDraft: false, repoRoot: "/repo" });
+
+    const isGroupLeader = capturedDeps!["isGroupLeader"] as (pid: number) => boolean;
+    const killSpy = vi.spyOn(process, "kill").mockImplementation(() => { throw Object.assign(new Error("ESRCH"), { code: "ESRCH" }); });
+    expect(isGroupLeader(1234)).toBe(false);
+    killSpy.mockRestore();
+  });
+});
+
 // T-046: --all-terminated --restore-draft exits 2 without calling runner
 describe("T-046: --all-terminated --restore-draft exits 2", () => {
   it("returns exit 2 when --restore-draft and --all-terminated are combined", async () => {
