@@ -1,0 +1,29 @@
+{
+  "requestHash": "sha256:dad09ef8dde7776a69732cb4c3147b6b6494723003b91821cf7e0bbd84506a0f",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/command-registry.ts:428-442 — run --detach branch (detachSelf call + process.exit)",
+    "src/cli/command-registry.ts:697-711 — resume --detach branch (detachSelf call + process.exit)",
+    "src/core/command/detach.ts:105-130 — detachSelf function definition",
+    "src/core/command/detach.ts:110 — getDetachLogPath call (const logFilePath = getDetachLogPath(...))",
+    "src/util/xdg.ts — getDetachLogPath function exists at line 66",
+    "src/core/runtime/workspace-materializer.ts:114-117 — resume case: sidecar at line 117 (writeLivenessSidecar)",
+    "src/core/runtime/workspace-materializer.ts:149 — attach-from-checkpoint case: sidecar write",
+    "src/core/runtime/workspace-materializer.ts:177 — new-run case: sidecar write",
+    "src/core/runtime/local.ts:371-376 — no-worktree mode initial disk registration (sidecar at line 376)",
+    "src/cli/run.ts:61-75 — preflight execution (runPreflight call with try/catch)",
+    "src/core/command/runner.ts:105-124 — provider readiness probe (assertProviderReadiness)",
+    "src/core/command/pipeline-run.ts:90-133 — reviewer/pipeline descriptor validation (loadReviewerDefinitions, validateReviewerDefinitions, getPipelineDescriptor, assertRuntimeSupportsScope)",
+    "src/cli/job-wait.ts:141-143 — default deps: notFoundRetryCount:5, notFoundRetryIntervalMs:2000",
+    "src/cli/job-wait.ts:180-193 — not-found retry loop",
+    "src/core/command/resume.ts:291 — pid patch in transitionJob (patch: { pid: process.pid })",
+    "src/store/job-state-store.ts:78-79 — initial JobState: status:'running', pid:process.pid",
+    "src/errors.ts — EXIT_CODE = { SUCCESS:0, GENERAL_ERROR:1, ARG_ERROR:2 }",
+    "src/cli/__tests__/detach-flag-cli.test.ts — file exists",
+    "src/cli/__tests__/detach-output-contract.test.ts — file exists",
+    "src/util/__tests__/spawn-background-detach.test.ts — file exists",
+    "src/util/__tests__/xdg-detach-log.test.ts — file exists",
+    "src/cli/__tests__/job-wait.test.ts — file exists"
+  ],
+  "sourceRevision": "3bc5907dda7841c4b7d9b4db305270fac22adfcb"
+}

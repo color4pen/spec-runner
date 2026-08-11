@@ -81,14 +81,14 @@ Request commands:
 
 Job commands:
   job start <request-slug|file>   pipeline 開始、jobId 発行
-  job start ... --detach          agent session 向け: detach して即座に return (job wait で監視)
+  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)
   job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)
   job ls [--json]                 全 job 一覧（区分付き運用ビュー）
   job show <jobId|slug>           job state 詳細
   job wait <slug>                 job が settle するまで block (process-death gate)
   job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)
   job resume <slug>               halted job を再開
-  job resume <slug> --detach      agent session 向け: detach して即座に return (job wait で監視)
+  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)
   job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger
   job attach --branch <branch>    remote branch の quiescent checkpoint を attach する
   job archive <slug>              change folder 移動・worktree 撤去・status 更新
@@ -113,7 +113,7 @@ Inbox commands:
 
 Aliases:
   run <slug|file>                 job start の互換 alias
-  run <slug|file> --detach        agent session 向け: detach して即座に return (job wait で監視)
+  run <slug|file> --detach        agent session 向け: 登録完了まで待機後に return (job wait で監視)
 
 Options:
   --help, -h    Show this help message
@@ -228,7 +228,8 @@ Options:
   --adopt-commits     Adopt publish-range commits not in the synthesized-commits ledger
                       before resuming. Required (fail-closed) when you have made commits
                       to the worktree branch outside the pipeline.
-  --detach            Start resume in detached mode (returns immediately). Use
+  --detach            Start resume in detached mode. Parent waits until the job is registered
+                      (or reports a start failure), then exits. Use
                       'job wait <slug>' to monitor progress. Mutually exclusive with --json.
   --help, -h          Show this help message.
 
@@ -418,7 +419,7 @@ const RUN_JOB_FLAGS = {
 async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
   const requestMdPath = parsed.positional!;
 
-  // --detach + --json are mutually exclusive (detach exits immediately, no JSON contract)
+  // --detach + --json are mutually exclusive (detach waits for registration, no JSON contract)
   if (parsed.flags["detach"] && parsed.flags["json"]) {
     logError("--detach and --json are mutually exclusive");
     process.exit(EXIT_CODE.ARG_ERROR);
@@ -432,7 +433,7 @@ async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<
       logError(`Cannot resolve slug from '${requestMdPath}'. Provide a valid slug or request.md path with --detach.`);
       process.exit(EXIT_CODE.GENERAL_ERROR);
     }
-    const code = detachSelf({
+    const code = await detachSelf({
       args: process.argv.slice(2),
       repoRoot,
       slug,
@@ -701,7 +702,7 @@ export const COMMANDS: Record<string, CommandEntry> = {
               process.exit(EXIT_CODE.GENERAL_ERROR);
             }
             const repoRoot = ctx?.repoRoot ?? process.cwd();
-            const code = detachSelf({
+            const code = await detachSelf({
               args: process.argv.slice(2),
               repoRoot,
               slug,

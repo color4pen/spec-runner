@@ -74,7 +74,7 @@ describe("TC-008: spawnBackground — 新オプション未指定で既存挙動
     spawnBackground("cmd", ["arg"], { cwd: "/repo" });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     // detached must NOT be true
     expect(spawnOpts["detached"]).toBeFalsy();
   });
@@ -83,7 +83,7 @@ describe("TC-008: spawnBackground — 新オプション未指定で既存挙動
     spawnBackground("cmd", ["arg"], { cwd: "/repo" });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     expect(spawnOpts["stdio"]).toBe("ignore");
   });
 
@@ -97,7 +97,7 @@ describe("TC-008: spawnBackground — 新オプション未指定で既存挙動
       spawnBackground("cmd", ["arg"], { cwd: "/repo" });
 
       const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-      const spawnOpts = spawnCall[2] as Record<string, unknown>;
+      const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
       const usedEnv = spawnOpts["env"] as Record<string, string | undefined>;
 
       expect(usedEnv["GITHUB_TOKEN"]).toBeUndefined();
@@ -149,7 +149,7 @@ describe("TC-009: spawnBackground — detach 経路で credential とマーカ�
     });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     const usedEnv = spawnOpts["env"] as Record<string, string | undefined>;
 
     // Credential keys must be preserved (full env passthrough)
@@ -167,7 +167,7 @@ describe("TC-009: spawnBackground — detach 経路で credential とマーカ�
     });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     expect(spawnOpts["detached"]).toBe(true);
   });
 
@@ -184,7 +184,7 @@ describe("TC-009: spawnBackground — detach 経路で credential とマーカ�
     });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     const usedEnv = spawnOpts["env"] as Record<string, string | undefined>;
 
     // Must have the custom secret from rawEnv
@@ -249,9 +249,102 @@ describe("TC-022: log redirect fd は追記モード（'a'）で開かれる", (
     });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     // stdio should be ["ignore", fd, fd] where fd is the opened log fd
     const stdio = spawnOpts["stdio"] as unknown[];
     expect(stdio).toEqual(["ignore", fakeFd, fakeFd]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-012 (new): onExit callback is registered on the child handle when provided
+// ---------------------------------------------------------------------------
+
+describe("TC-012: onExit callback is registered on the child handle when provided", () => {
+  it("TC-012: proc.on('exit', onExit) is registered when onExit is provided", () => {
+    const fakeProc = makeFakeProc(1234);
+    vi.mocked(childProcess.spawn).mockReturnValue(fakeProc as never);
+
+    const onExit = vi.fn();
+
+    spawnBackground("cmd", ["arg"], {
+      cwd: "/repo",
+      onExit,
+    });
+
+    // proc.on must have been called with "exit" and the onExit callback
+    const onCalls = fakeProc.on.mock.calls as Array<[string, unknown]>;
+    const exitCall = onCalls.find(([event]) => event === "exit");
+    expect(exitCall).toBeDefined();
+    expect(exitCall![1]).toBe(onExit);
+  });
+
+  it("TC-012: proc.on('exit', ...) is NOT registered when onExit is omitted", () => {
+    const fakeProc = makeFakeProc(1234);
+    vi.mocked(childProcess.spawn).mockReturnValue(fakeProc as never);
+
+    spawnBackground("cmd", ["arg"], {
+      cwd: "/repo",
+      // no onExit
+    });
+
+    const onCalls = fakeProc.on.mock.calls as Array<[string, unknown]>;
+    const exitCall = onCalls.find(([event]) => event === "exit");
+    expect(exitCall).toBeUndefined();
+  });
+
+  it("TC-012: existing onError behavior is unaffected when onExit is also provided", () => {
+    const fakeProc = makeFakeProc(1234);
+    vi.mocked(childProcess.spawn).mockReturnValue(fakeProc as never);
+
+    const onError = vi.fn();
+    const onExit = vi.fn();
+
+    spawnBackground("cmd", ["arg"], {
+      cwd: "/repo",
+      onError,
+      onExit,
+    });
+
+    const onCalls = fakeProc.on.mock.calls as Array<[string, unknown]>;
+    const errorCall = onCalls.find(([event]) => event === "error");
+    const exitCall = onCalls.find(([event]) => event === "exit");
+
+    // Both handlers must be registered
+    expect(errorCall).toBeDefined();
+    expect(exitCall).toBeDefined();
+    expect(errorCall![1]).toBe(onError);
+    expect(exitCall![1]).toBe(onExit);
+  });
+
+  it("TC-012: other existing option behaviors (detached, logFilePath, rawEnv, unref) are unaffected when onExit is added", () => {
+    const fakeProc = makeFakeProc(1234);
+    vi.mocked(childProcess.spawn).mockReturnValue(fakeProc as never);
+    vi.mocked(nodeFs.openSync).mockReturnValue(99);
+
+    const onExit = vi.fn();
+
+    spawnBackground("cmd", ["arg"], {
+      cwd: "/repo",
+      detached: true,
+      logFilePath: "/repo/.specrunner/logs/test.detach.log",
+      rawEnv: { PATH: "/usr/bin", SPECRUNNER_DETACHED: "1" },
+      onExit,
+    });
+
+    // detached is still passed
+    const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
+    expect(spawnOpts["detached"]).toBe(true);
+
+    // stdio is still redirected to log fd
+    expect(vi.mocked(nodeFs.openSync)).toHaveBeenCalled();
+
+    // unref is still called
+    expect(fakeProc.unref).toHaveBeenCalledTimes(1);
+
+    // rawEnv still passed through
+    const usedEnv = spawnOpts["env"] as Record<string, string>;
+    expect(usedEnv["SPECRUNNER_DETACHED"]).toBe("1");
   });
 });

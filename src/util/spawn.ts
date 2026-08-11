@@ -47,6 +47,8 @@ export interface SpawnBackgroundOptions {
   cwd: string;
   env?: Record<string, string | undefined>;
   onError?: (err: Error) => void;
+  /** Called when the child process exits (code, signal). Attaching this listener also reaps the child, avoiding a zombie. */
+  onExit?: (code: number | null, signal: NodeJS.Signals | null) => void;
   /**
    * When true, spawn with `detached: true` so the child process can outlive
    * the parent. Only used for the --detach self-respawn path.
@@ -121,10 +123,15 @@ export function spawnBackground(
 
   const proc = spawn(cmd, args, spawnOpts);
 
-  // Attach error handler synchronously to prevent unhandled error events
-  proc.on("error", (err: Error) => {
-    opts.onError?.(err);
-  });
+  // Attach error handler synchronously to prevent unhandled error events.
+  // Pass opts.onError directly (same reference) so tests can assert identity;
+  // fall back to a no-op to avoid uncaught-error events when onError is omitted.
+  proc.on("error", opts.onError ?? (() => {}));
+
+  // Attach exit handler when requested (also reaps the child, avoiding a zombie)
+  if (opts.onExit) {
+    proc.on("exit", opts.onExit);
+  }
 
   // Unref so the child never keeps the CLI event loop alive
   proc.unref();
