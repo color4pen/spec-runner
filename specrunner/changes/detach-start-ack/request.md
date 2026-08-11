@@ -23,7 +23,7 @@
 - 子側の初回 disk 登録（state.json + liveness sidecar の persist）は workspace setup 時: worktree mode は `src/core/runtime/workspace-materializer.ts:114-117`（sidecar は :117・:149・:177）、no-worktree mode は `src/core/runtime/local.ts:371-376`。それ以前に preflight（`src/cli/run.ts:61-75`）→ provider readiness probe（`src/core/command/runner.ts:105-124`）→ reviewer / pipeline descriptor 検証（`src/core/command/pipeline-run.ts:90-133`）→ git fetch + worktree add が走る
 - `job wait` の not-found retry は 5 回 × 2000ms の固定窓（`src/cli/job-wait.ts:141-143` の default deps、retry loop は :180-193）。尽きると stderr "No job found for slug" + exit 2
 - 子が preflight で失敗した場合、state は一切作られない。`job wait` は同じ exit 2 を返し、失敗理由は detach log にのみ残る
-- resume の場合、前回 run の state.json / liveness sidecar が既に存在する（sidecar pid は死んだ前プロセスのもの）。resume 子は pid を自身のものに更新して persist する（`src/core/command/resume.ts:291`）
+- resume の場合、前回 run の state.json / liveness sidecar が既に存在する（sidecar pid は死んだ前プロセスのもの）。resume 時の liveness sidecar 更新は `src/core/runtime/workspace-materializer.ts:91`（resume-existing）/ `:117`（resume-recreated）で行われる。`src/core/command/resume.ts:291` の transitionJob は state.json の pid フィールドの更新である
 - 初期 JobState は `status: "running"` + `pid: process.pid` で生成される（`src/store/job-state-store.ts:78-79`）
 - `EXIT_CODE = { SUCCESS: 0, GENERAL_ERROR: 1, ARG_ERROR: 2 }`（`src/errors.ts`）
 
