@@ -419,7 +419,7 @@ const RUN_JOB_FLAGS = {
 async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
   const requestMdPath = parsed.positional!;
 
-  // --detach + --json are mutually exclusive (detach exits immediately, no JSON contract)
+  // --detach + --json are mutually exclusive (detach waits for registration, no JSON contract)
   if (parsed.flags["detach"] && parsed.flags["json"]) {
     logError("--detach and --json are mutually exclusive");
     process.exit(EXIT_CODE.ARG_ERROR);

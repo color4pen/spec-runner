@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T07:27:17.168Z",
+  "updatedAt": "2026-08-11T07:33:43.888Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/detach-start-ack-7ea031d6",
   "error": null,
@@ -88,7 +88,8 @@
     "400cfb369d2423cca12ed6fff9c8c5246e9ee084",
     "dc4329be239fea9dbb9f46714c9615821716a6b4",
     "fbac33791f56fa0c67ac77d341d59a1f85a491ed",
-    "9d1e1d7109c6484db6534e9e24441ccc94388874"
+    "9d1e1d7109c6484db6534e9e24441ccc94388874",
+    "e6232ae9c4e094f15bc38e9a0916f698766c3fab"
   ],
   "touchedFiles": {
     "request-review": [
@@ -176,6 +177,22 @@
       "src/util/xdg.ts",
       "src/util/__tests__/xdg-detach-log.test.ts",
       "src/util/__tests__/xdg-read-sidecar-tail.test.ts"
+    ],
+    "code-review": [
+      "src/core/command/detach.ts",
+      "src/util/spawn.ts",
+      "src/util/xdg.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/job-wait.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts",
+      "src/core/command/__tests__/detach-ack.test.ts",
+      "src/core/command/__tests__/detach-integration.test.ts",
+      "src/core/command/__tests__/detach.test.ts",
+      "src/cli/__tests__/job-wait.test.ts",
+      "src/util/__tests__/spawn-background-detach.test.ts",
+      "src/logger/stdout.ts",
+      "src/util/__tests__/xdg-read-sidecar-tail.test.ts"
     ]
   },
   "resumePoint": null,
@@ -193,7 +210,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 88,
+    "historyCount": 92,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -204,7 +221,8 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 5,
-      "build-fixer": 4
+      "build-fixer": 4,
+      "code-review": 1
     }
   }
 }
