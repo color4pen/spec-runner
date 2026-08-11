@@ -15,7 +15,7 @@ import * as process from "node:process";
 import { getDetachLogPath, readDetachLogTail, readSidecarPid } from "../../util/xdg.js";
 import { spawnBackground } from "../../util/spawn.js";
 import type { SpawnBackgroundFn } from "../../util/spawn.js";
-import { stdoutWrite } from "../../logger/stdout.js";
+import { stdoutWrite, stderrWrite } from "../../logger/stdout.js";
 import { EXIT_CODE } from "../../errors.js";
 
 // ---------------------------------------------------------------------------
@@ -206,7 +206,7 @@ export async function detachSelf(
     if (childEnded) {
       const tail = readDetachLogTailFn(logFilePath, 40);
       const msg = buildDetachStartFailure(opts.slug, logFilePath, tail);
-      process.stderr.write(msg + "\n");
+      stderrWrite(msg);
       return EXIT_CODE.GENERAL_ERROR;
     }
 
