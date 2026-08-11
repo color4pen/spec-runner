@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T06:09:32.404Z",
+  "updatedAt": "2026-08-11T06:12:13.614Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/detach-start-ack-7ea031d6",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/detach-start-ack/request.md, title: \"resume.ts:291 参照が liveness sidecar の更新を誤記している\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -66,7 +70,8 @@
     "daa772940906b5f0bef3129eb42e2578d65a04cd",
     "7161f88d2146c1268f3cbd68dc57dd2db8936623",
     "cd85f177514622ad51e5a0dc5c925354f23cb4d5",
-    "f8740ff39895fd4c28feca332be26a4dff721e37"
+    "f8740ff39895fd4c28feca332be26a4dff721e37",
+    "7df996c629328c90b56b026e4bf455700f7be0c5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -105,23 +110,13 @@
       "src/core/resume/safety.ts",
       "src/core/command/__tests__/detach.test.ts"
     ],
-    "spec-review": [
-      "src/core/command/detach.ts",
-      "src/util/spawn.ts",
-      "src/cli/command-registry.ts",
-      "src/cli/job-wait.ts",
-      "src/core/runtime/local.ts",
-      "src/core/runtime/workspace-materializer.ts",
-      "src/util/paths.ts",
-      "src/core/command/__tests__/detach.test.ts",
-      "src/cli/__tests__/detach-flag-cli.test.ts",
-      "src/cli/__tests__/detach-output-contract.test.ts",
-      "src/core/command/resume.ts",
-      "src/errors.ts",
-      "src/cli/__tests__/job-wait.test.ts"
-    ]
+    "spec-review": []
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/detach-start-ack/request.md, title: \"resume.ts:291 参照が liveness sidecar の更新を誤記している\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -131,11 +126,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 15,
+    "historyCount": 18,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 2
     }
   }
 }
