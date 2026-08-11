@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T07:15:06.035Z",
+  "updatedAt": "2026-08-11T07:16:42.958Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
-  "status": "running",
+  "step": "verification",
+  "status": "awaiting-resume",
   "branch": "change/detach-start-ack-7ea031d6",
-  "error": null,
+  "error": {
+    "code": "VERIFICATION_RETRIES_EXHAUSTED",
+    "message": "verification did not pass after 2 iterations",
+    "hint": "Review verification-result.md and fix the build errors manually. Phase-level details (which phase failed and exit code) are available in the step-attempt outcome in events.jsonl."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -80,7 +84,9 @@
     "0039620cdf40704e68b2fc7e5e2bec25872e2da9",
     "8df890d5ef9f3b6911b4993bb1a151793355f4db",
     "a229d01cd1c12d9434ba78b4aed05a06541eaa2f",
-    "78390a97c5b7d8beb16951208cf294a976f64de3"
+    "78390a97c5b7d8beb16951208cf294a976f64de3",
+    "b7bc1c3408668ef18988982ebd0fbe8383662def",
+    "9fa4e0ed3484b3063b626ed585c43d70772ff2dd"
   ],
   "touchedFiles": {
     "request-review": [
@@ -165,12 +171,15 @@
       "src/util/__tests__/spawn-background-detach.test.ts"
     ],
     "build-fixer": [
-      "src/core/command/detach.ts",
-      "src/logger/stdout.ts",
-      "tests/unit/architecture/core-invariants.test.ts"
+      "src/core/command/__tests__/detach-integration.test.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "build-fixer",
+    "reason": "verification did not pass after 2 iterations",
+    "iterationsExhausted": 2,
+    "exhaustionPhase": "review-after-final-fix"
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -185,7 +194,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 69,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -195,8 +204,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
-      "build-fixer": 1
+      "verification": 3,
+      "build-fixer": 2
     }
   }
 }
