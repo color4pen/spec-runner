@@ -39,3 +39,6 @@
 {"type":"finding-recency","step":"spec-review","ts":"2026-08-11T06:22:29.518Z","iteration":3,"priorOid":"7df996c629328c90b56b026e4bf455700f7be0c5","findings":[{"file":"specrunner/changes/detach-start-ack/request.md","title":"resume.ts:291 が liveness sidecar の更新を誤記している（前周から継続、spec-fixer-deferred）","severity":"low","recency":"indeterminate"}]}
 {"type":"transition","ts":"2026-08-11T06:22:29.519Z","step":"spec-review","status":"error","message":"spec-review iteration 1 completed with verdict: escalation"}
 {"type":"transition","ts":"2026-08-11T06:22:29.520Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: spec-review escalated"}
+{"type":"transition","ts":"2026-08-11T06:27:38.690Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'spec-review'"}
+{"type":"transition","ts":"2026-08-11T06:27:38.854Z","step":"spec-review","status":"started","message":"spec-review iteration 1 started"}
+{"type":"transition","ts":"2026-08-11T06:27:38.856Z","step":"spec-review-started","status":"started","message":"Starting spec-review step"}
