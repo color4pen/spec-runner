@@ -67,8 +67,6 @@ export interface SpawnBackgroundOptions {
    * existing stripSecrets behaviour.
    */
   rawEnv?: Record<string, string>;
-  /** Index signature so test casts via `as Record<string, unknown>` compile without going through `unknown`. */
-  [key: string]: unknown;
 }
 
 /**

@@ -543,7 +543,7 @@ describe("TC-013: spawn is called synchronously before any await inside async de
     });
 
     expect(spawn.calls).toHaveLength(1);
-    const opts = spawn.calls[0]!.opts as Record<string, unknown>;
+    const opts = spawn.calls[0]!.opts as unknown as Record<string, unknown>;
     expect(opts["detached"]).toBe(true);
     expect(opts["logFilePath"]).toBeDefined();
     expect((opts["logFilePath"] as string)).toContain("test-slug");
@@ -560,7 +560,7 @@ describe("TC-013: spawn is called synchronously before any await inside async de
       pollIntervalMs: 0,
     });
 
-    const opts = spawn.calls[0]!.opts as Record<string, unknown>;
+    const opts = spawn.calls[0]!.opts as unknown as Record<string, unknown>;
     const rawEnv = opts["rawEnv"] as Record<string, string | undefined>;
     expect(rawEnv).toBeDefined();
     expect(rawEnv[DETACH_MARKER_ENV]).toBeTruthy();

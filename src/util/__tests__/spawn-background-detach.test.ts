@@ -74,7 +74,7 @@ describe("TC-008: spawnBackground — 新オプション未指定で既存挙動
     spawnBackground("cmd", ["arg"], { cwd: "/repo" });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     // detached must NOT be true
     expect(spawnOpts["detached"]).toBeFalsy();
   });
@@ -83,7 +83,7 @@ describe("TC-008: spawnBackground — 新オプション未指定で既存挙動
     spawnBackground("cmd", ["arg"], { cwd: "/repo" });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     expect(spawnOpts["stdio"]).toBe("ignore");
   });
 
@@ -97,7 +97,7 @@ describe("TC-008: spawnBackground — 新オプション未指定で既存挙動
       spawnBackground("cmd", ["arg"], { cwd: "/repo" });
 
       const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-      const spawnOpts = spawnCall[2] as Record<string, unknown>;
+      const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
       const usedEnv = spawnOpts["env"] as Record<string, string | undefined>;
 
       expect(usedEnv["GITHUB_TOKEN"]).toBeUndefined();
@@ -149,7 +149,7 @@ describe("TC-009: spawnBackground — detach 経路で credential とマーカ�
     });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     const usedEnv = spawnOpts["env"] as Record<string, string | undefined>;
 
     // Credential keys must be preserved (full env passthrough)
@@ -167,7 +167,7 @@ describe("TC-009: spawnBackground — detach 経路で credential とマーカ�
     });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     expect(spawnOpts["detached"]).toBe(true);
   });
 
@@ -184,7 +184,7 @@ describe("TC-009: spawnBackground — detach 経路で credential とマーカ�
     });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     const usedEnv = spawnOpts["env"] as Record<string, string | undefined>;
 
     // Must have the custom secret from rawEnv
@@ -249,7 +249,7 @@ describe("TC-022: log redirect fd は追記モード（'a'）で開かれる", (
     });
 
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     // stdio should be ["ignore", fd, fd] where fd is the opened log fd
     const stdio = spawnOpts["stdio"] as unknown[];
     expect(stdio).toEqual(["ignore", fakeFd, fakeFd]);
@@ -334,7 +334,7 @@ describe("TC-012: onExit callback is registered on the child handle when provide
 
     // detached is still passed
     const spawnCall = vi.mocked(childProcess.spawn).mock.calls[0]!;
-    const spawnOpts = spawnCall[2] as Record<string, unknown>;
+    const spawnOpts = spawnCall[2] as unknown as Record<string, unknown>;
     expect(spawnOpts["detached"]).toBe(true);
 
     // stdio is still redirected to log fd
