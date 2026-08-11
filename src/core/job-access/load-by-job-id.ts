@@ -76,7 +76,27 @@ export async function loadStateByJobId(
     }
   }
 
-  // No sidecar entry, or local entry with no accessible slug state: unresolvable.
+  // Fallback: sidecar index had no match (e.g. liveness.json carries a foreign jobId).
+  // Scan specrunner/changes/<slug>/state.json directly for a matching jobId.
+  const changesDir = path.join(repoRoot, "specrunner", "changes");
+  try {
+    const entries = await fs.readdir(changesDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name === "archive" || entry.name === "canceled") continue;
+      const slug = entry.name;
+      const stateJsonPath = path.join(changesDir, slug, "state.json");
+      try {
+        const raw = JSON.parse(await fs.readFile(stateJsonPath, "utf-8")) as Record<string, unknown>;
+        if (raw["jobId"] !== jobId) continue;
+        return new JobStateStore(jobId, repoRoot, { slug, stateRoot: repoRoot }).load();
+      } catch {
+        continue;
+      }
+    }
+  } catch {
+    // ENOENT on changesDir or other I/O error — fall through to JOB_NOT_FOUND
+  }
+
   throw new SpecRunnerError(
     ERROR_CODES.JOB_NOT_FOUND,
     "Run specrunner job ls to list available job IDs.",

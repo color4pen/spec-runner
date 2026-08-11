@@ -54,6 +54,7 @@ import { claimLivenessSidecar } from "../occupancy/claim.js";
 import type { SidecarRecord } from "../occupancy/claim.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { markSignalHandlerFired } from "../lifecycle/signal-state.js";
+import { QueryAbortHub } from "../lifecycle/query-abort-hub.js";
 import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { stripSecrets } from "../../util/env-filter.js";
 import { resolveWorkspaceSetupPlan } from "../worktree/setup.js";
@@ -63,6 +64,9 @@ import { WorkspaceMaterializer, type MaterializerHost } from "./workspace-materi
 import type { WorktreeMaterializationPlan } from "./workspace-materializer.js";
 import { appendSynthesizedCommit } from "../../state/schema/operations.js";
 import { describeGitFetchFailure } from "./git-fetch-error.js";
+
+/** Bound for hub.drain() in the signal handler — keeps signal cleanup bounded. */
+const ABORT_DRAIN_BOUND_MS = 2000;
 
 // Internal structure stored inside CleanupHandle
 interface LocalCleanupInternals {
@@ -141,6 +145,13 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   private workspace: WorkspaceContext | null = null;
   // Set by setupWorkspace(); slug for slug-based store in buildDeps() / registerCleanup()
   private currentSlug: string | null = null;
+
+  /**
+   * Hub for in-flight query AbortControllers.
+   * D4 (design.md): signal handler calls hub.abortActive() + hub.drain() before exit
+   * so SDK subprocesses are torn down gracefully before SIGKILL (group kill) acts.
+   */
+  private readonly hub: QueryAbortHub = new QueryAbortHub();
 
   constructor(opts: LocalRuntimeOptions) {
     this.cwd = opts.cwd;
@@ -321,6 +332,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       cwd: worktreeCwd,
       _queryFn: this.queryFn,
       _resolveClaudeCodeOAuthTokenFn: resolveClaudeCodeOAuthToken,
+      queryAbortHub: this.hub,
     });
     return new DispatchingAgentRunner(claudeRunner);
   }
@@ -1472,6 +1484,9 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     const cwd = this.cwd;
     const manager = this.manager;
     const slugOpts = this.slugStoreOpts();
+    // Capture hub reference for the signal handler closure (this is the same hub
+    // that createAgentRunner() passes into the ClaudeCodeRunner).
+    const hub = this.hub;
 
     const makeStore = () => {
       if (slugOpts) {
@@ -1516,7 +1531,13 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
 
     // Signal handler (layer 1 of 3-layer cleanup)
     const signalCleanup = async (): Promise<void> => {
+      // markSignalHandlerFired MUST be the first synchronous statement — called before
+      // any await so the flag is set before the beforeExit event fires (TC-016 invariant).
       markSignalHandlerFired();
+      // D4 (design.md): abort in-flight agent queries, then drain with a bound so
+      // SDK subprocesses begin tearing down before the awaiting-resume persist and exit.
+      hub.abortActive();
+      await hub.drain(ABORT_DRAIN_BOUND_MS, (ms) => new Promise<void>((r) => setTimeout(r, ms)));
       try {
         const store = makeStore();
         const current = await store.load();

@@ -55,6 +55,7 @@ import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import { retryWithBackoff } from "../../util/retry.js";
 import { isTransientAgentError } from "../shared/transient-error.js";
 import { SpecRunnerError } from "../../errors.js";
+import type { QueryAbortRegistration } from "../../core/port/query-abort.js";
 
 
 /**
@@ -407,6 +408,14 @@ export interface ClaudeCodeRunnerDeps {
    * When undefined, token injection is skipped (tests and environments without credential file).
    */
   _resolveClaudeCodeOAuthTokenFn?: ClaudeCodeOAuthTokenResolver;
+  /**
+   * Optional hub for registering in-flight query AbortControllers.
+   * Injected by LocalRuntime so its signal handler can abort active queries on SIGTERM/SIGINT.
+   * When absent (managed runtime / unwired tests), behavior is unchanged.
+   *
+   * D4 (design.md): import from core/port/ only — no core/lifecycle runtime import.
+   */
+  queryAbortHub?: QueryAbortRegistration;
 }
 
 /**
@@ -420,6 +429,7 @@ export class ClaudeCodeRunner implements AgentRunner {
   private readonly loadSdkFn: ClaudeAgentSdkLoader;
   private readonly sleepFn: (ms: number) => Promise<void>;
   private readonly resolveClaudeCodeOAuthTokenFn?: ClaudeCodeOAuthTokenResolver;
+  private readonly queryAbortHub?: QueryAbortRegistration;
 
   constructor(deps: ClaudeCodeRunnerDeps = {}) {
     this.defaultCwd = deps.cwd ?? process.cwd();
@@ -428,6 +438,7 @@ export class ClaudeCodeRunner implements AgentRunner {
     this.loadSdkFn = deps._loadSdkFn ?? loadClaudeAgentSdk;
     this.resolveClaudeCodeOAuthTokenFn = deps._resolveClaudeCodeOAuthTokenFn;
     this.sleepFn = deps._sleepFn ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+    this.queryAbortHub = deps.queryAbortHub;
   }
 
   async run(ctx: AgentRunContext): Promise<AgentRunResult> {
@@ -514,6 +525,9 @@ export class ClaudeCodeRunner implements AgentRunner {
 
     // Set up wall-clock timeout via AbortController
     const abortController = new AbortController();
+    // D4 (design.md): register with the abort hub so the signal handler can abort this query.
+    // deregister is called in the finally block (all exit paths: success, error, throw).
+    const deregisterFromHub = this.queryAbortHub?.register(abortController);
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
     if (resolvedConfig.timeoutMs !== null && resolvedConfig.timeoutMs > 0) {
       timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);
@@ -1118,6 +1132,8 @@ export class ClaudeCodeRunner implements AgentRunner {
       };
     } finally {
       if (timeoutId !== undefined) clearTimeout(timeoutId);
+      // D4: deregister from hub on every exit path (success, error, throw).
+      deregisterFromHub?.();
     }
   }
 }

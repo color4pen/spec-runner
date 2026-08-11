@@ -20,6 +20,7 @@ import type { JobStatus } from "../../state/schema.js";
 import { stdoutWrite } from "../../logger/stdout.js";
 import { ERROR_CODES, SpecRunnerError } from "../../errors.js";
 import { gracefulKill } from "./pid-kill.js";
+import { readLivenessSidecar, resolveJobPid } from "../liveness/resolve-pid.js";
 import { buildWorktreePath } from "../worktree/manager.js";
 import { getJobSlug } from "../../state/job-slug.js";
 import {
@@ -60,6 +61,14 @@ export interface CancelDeps {
   repoRoot: string;
   /** Resolved GitHub token for authenticating git push --delete (C10). Optional. */
   githubToken?: string;
+  /**
+   * Returns true when `pid` is a process-group leader (detached job).
+   *
+   * D3 (design.md): production probe is `kill(-pid, 0)`.
+   * Optional — defaults to `() => false` so unwired callers never group-signal.
+   * The CLI wires the real probe; existing tests stay green without it.
+   */
+  isGroupLeader?: (pid: number) => boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -342,22 +351,39 @@ export async function cancelSingleJob(opts: {
   }
 
   // ---------------------------------------------------------------------------
-  // Process kill for running jobs
+  // Process kill — pid-resolution gate (D2: process-death-gate, not status-gate)
+  //
+  // Resolution: state.pid → liveness sidecar (jobId-matched).
+  // Kill is attempted whenever a pid resolves; on-disk status is NOT consulted
+  // (disk-lag: state.json may show awaiting-resume while the real process runs).
   // ---------------------------------------------------------------------------
 
-  if (state.status === "running") {
-    if (state.pid != null) {
-      const killResult = await gracefulKill(state.pid, GRACEFUL_KILL_TIMEOUT_MS, {
-        kill: deps.kill,
-        sleep: deps.sleep,
-        isAlive: deps.isAlive,
-      });
-      if (!killResult.killed && killResult.warning) {
-        warnings.push(killResult.warning);
-      }
-    } else {
-      warnings.push("Warning: no PID recorded for running job, skipping process kill.");
+  const slugForKill = getJobSlug(state);
+  const sidecarAbsPath = slugForKill
+    ? path.join(deps.repoRoot, livenessJsonPath(slugForKill))
+    : null;
+  const sidecar = sidecarAbsPath ? await readLivenessSidecar(sidecarAbsPath) : null;
+  const { pid: resolvedPid } = resolveJobPid({
+    statePid: state.pid,
+    sidecar,
+    expectedJobId: state.jobId,
+  });
+
+  if (resolvedPid != null) {
+    const killResult = await gracefulKill(resolvedPid, GRACEFUL_KILL_TIMEOUT_MS, {
+      kill: deps.kill,
+      sleep: deps.sleep,
+      isAlive: deps.isAlive,
+      isGroupLeader: deps.isGroupLeader ?? (() => false),
+    });
+    if (!killResult.killed && killResult.warning) {
+      warnings.push(killResult.warning);
     }
+    if (killResult.groupKilled) {
+      info.push(`Process group -${resolvedPid} reaped (SIGKILL sent to group)`);
+    }
+  } else {
+    warnings.push("Warning: no PID recorded for job, skipping process kill.");
   }
 
   // ---------------------------------------------------------------------------
@@ -509,7 +535,9 @@ export async function cancelSingleJob(opts: {
           try {
             const allStates = await JobStateStore.list(deps.repoRoot);
             const foreignState = allStates.find((s) => s.jobId === foreignJobId);
-            foreignIsTerminal = foreignState === undefined || TERMINAL_STATUSES.has(foreignState.status as JobStatus);
+            // Conservative: if the foreign job's state can't be found, treat as non-terminal.
+            // Only conclude "terminal" when we can positively confirm it via state.status.
+            foreignIsTerminal = foreignState !== undefined && TERMINAL_STATUSES.has(foreignState.status as JobStatus);
           } catch {
             // Cannot determine foreign job status — err on the side of caution
             foreignIsTerminal = false;
