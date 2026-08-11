@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T06:32:22.795Z",
+  "updatedAt": "2026-08-11T06:32:45.479Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/detach-start-ack-7ea031d6",
   "error": null,
@@ -73,7 +73,8 @@
     "36ef54a302056bb0d5638701d5ce1e4c00e8bfbe",
     "270ecb10a6bee2dbd5c93b56e6ea838026b2f841",
     "a90dbc2c0e0819d7c336ce37d9ba6d30f10b0bf4",
-    "bfde135151ff2e1abeefce2860d511f65a53e99c"
+    "bfde135151ff2e1abeefce2860d511f65a53e99c",
+    "b2f41d308ddf09f3f1d8e244ca8adfb8513b0400"
   ],
   "touchedFiles": {
     "request-review": [
@@ -141,12 +142,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 34,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 4,
-      "spec-fixer": 1
+      "spec-fixer": 2
     }
   }
 }
