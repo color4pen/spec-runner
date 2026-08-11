@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7ea031d6-b6ff-4338-9a91-207cb09880da",
   "createdAt": "2026-08-11T05:45:10.697Z",
-  "updatedAt": "2026-08-11T06:12:13.614Z",
+  "updatedAt": "2026-08-11T06:13:16.493Z",
   "request": {
     "title": "--detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
-  "status": "awaiting-resume",
+  "step": "spec-fixer",
+  "status": "running",
   "branch": "change/detach-start-ack-7ea031d6",
-  "error": {
-    "code": "CANON_FINDING_ESCALATION",
-    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/detach-start-ack/request.md, title: \"resume.ts:291 参照が liveness sidecar の更新を誤記している\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
-    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -71,7 +67,8 @@
     "7161f88d2146c1268f3cbd68dc57dd2db8936623",
     "cd85f177514622ad51e5a0dc5c925354f23cb4d5",
     "f8740ff39895fd4c28feca332be26a4dff721e37",
-    "7df996c629328c90b56b026e4bf455700f7be0c5"
+    "7df996c629328c90b56b026e4bf455700f7be0c5",
+    "58b158b94bfc281ad9fd46e386daf5f787992ca5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -112,21 +109,22 @@
     ],
     "spec-review": []
   },
-  "resumePoint": {
-    "step": "spec-review",
-    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/detach-start-ack/request.md, title: \"resume.ts:291 参照が liveness sidecar の更新を誤記している\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
       "text": "spec-review escalation への operator 裁定:\n\n[F-1 fixable/medium] tasks.md に T-06 を新設する: 「統合テスト: job start --detach が exit 0 した直後の job wait <slug> が exit 2 にならないことを固定する」。実装は seam 注入でよいが、detach 親の ack 完了(exit 0)と job wait の loadState 成功を同一 fixture 上で連続実行する形にすること。\n\n[F-2 decision-needed/medium] Open Questions を次で確定する: detach log tail は N=40 行、ack poll 間隔は 200ms。理由: ack は数十秒オーダーの短命待機であり success レイテンシ優先。job wait の 2000ms は時間単位の長時間待機用で文脈が異なるため統一しない。design.md の Open Questions セクションをこの確定値で置換し、値はテストで pin すること。\n\n[F-3 fixable/low] spec.md の「A child that dies before registering」Requirement に spawn 自体の失敗 Scenario を追加する: Given spawnFn が ENOENT で onError を発火 or handle.pid が undefined / When detach 親が ack 待機を開始 / Then hang せず GENERAL_ERROR で exit する。\n\n[F-4 fixable/low] change folder の request.md の現状コード前提を修正する: 「resume 子は pid を自身のものに更新して persist する（src/core/command/resume.ts:291）」を「resume 時の liveness sidecar 更新は workspace-materializer.ts:91（resume-existing）/ :117（resume-recreated）で行われる。resume.ts:291 の transitionJob は state.json の pid フィールドの更新である」に置換する。",
       "step": "spec-review",
       "recordedAt": "2026-08-11T06:09:32.266Z"
+    },
+    {
+      "text": "spec-review escalation (iteration 2) の operator 裁定は確定済み。以下 4 件を change folder に適用すること:\n\n1. tasks.md: T-06 を新設する — 「統合テスト: job start --detach が exit 0 した直後の job wait <slug> が exit 2 にならないことを固定する。detach 親の ack 完了(exit 0)と job wait の loadState 成功を同一 fixture 上で連続実行する形で実装する（seam 注入可）」。\n\n2. design.md: Open Questions セクションを確定値で置換する — 「detach log tail は N=40 行、ack poll 間隔は 200ms で確定（operator 裁定）。理由: ack は数十秒オーダーの短命待機であり success レイテンシ優先。job wait の 2000ms は時間単位の長時間待機用で文脈が異なるため統一しない。両値はテストの seam 注入で pin する（pollIntervalMs: 200、readDetachLogTail(..., 40)）」。\n\n3. spec.md: 「A child that dies before registering」Requirement に Scenario を追加する — Given spawnFn が ENOENT で onError を発火 or handle.pid が undefined / When detach 親が ack 待機を開始 / Then hang せず GENERAL_ERROR で exit する。\n\n4. request.md: 現状コード前提の記述を置換する — 旧「resume 子は pid を自身のものに更新して persist する（src/core/command/resume.ts:291）」→ 新「resume 時の liveness sidecar 更新は workspace-materializer.ts:91（resume-existing）/ :117（resume-recreated）で行われる。resume.ts:291 の transitionJob は state.json の pid フィールドの更新である」。",
+      "step": "spec-fixer",
+      "recordedAt": "2026-08-11T06:13:16.358Z"
     }
   ],
   "_journal": {
-    "historyCount": 18,
+    "historyCount": 20,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

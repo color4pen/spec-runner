@@ -62,6 +62,13 @@ writing a liveness sidecar carrying the child's pid
 **And** stderr contains the transcribed tail of the detach log and the full detach
 log path
 
+#### Scenario: spawn failure does not hang the parent
+
+**Given** the spawn function fires `onError` (e.g. ENOENT — executable not found)
+or returns a handle whose `pid` is `undefined`
+**When** the detach parent begins the ack wait
+**Then** it does not hang; it exits with `EXIT_CODE.GENERAL_ERROR` immediately
+
 #### Scenario: registration observed on the same tick as death is treated as success
 
 **Given** the liveness sidecar has been written with the child's pid

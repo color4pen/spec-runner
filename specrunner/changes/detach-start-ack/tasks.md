@@ -1,7 +1,7 @@
 # Tasks: --detach start-ack
 
 <!-- Ordering: T-01 (spawn seam) → T-02 (ack in detachSelf) → T-03 (wire + help)
-     → T-04 (job wait hint) → T-05 (update existing pin tests). -->
+     → T-04 (job wait hint) → T-05 (update existing pin tests) → T-06 (integration). -->
 
 ## T-01: Add `onExit` callback to `spawnBackground` (child-exit + reaping seam)
 
@@ -69,3 +69,15 @@
 - `detach.test.ts`, `detach-flag-cli.test.ts`, `detach-output-contract.test.ts` are updated to the new async / registration-gated contract and pass.
 - `spawn-background-detach.test.ts`, `xdg-detach-log.test.ts`, and the pre-existing `job-wait.test.ts` it()s pass unchanged.
 - Full `typecheck && test` is green.
+
+## T-06: Integration test — `job start --detach` exit 0 followed by `job wait` does not exit 2
+
+- [ ] Add an integration-level test (may use seam injection) that runs the full ack loop in `detachSelf` with a fake sidecar observer that returns the child pid after one poll, then immediately calls the `job wait` not-found logic against a store that has the state.json present.
+- [ ] The test MUST assert that the sequence "detach parent exits 0" → "job wait finds the job" succeeds without exit 2. Specifically: after `detachSelf` resolves `EXIT_CODE.SUCCESS`, the slug must be discoverable (state.json / sidecar present at the observed paths), so that `loadState` in `job wait` succeeds.
+- [ ] Use the same seam-injection style as T-02 (`spawnFn`, `readSidecarPid`, `sleep`) so no real child process or git worktree is needed. The fixture sets up state.json and the sidecar on disk (or injects a fake store), runs `detachSelf`, then asserts that `loadState(slug)` returns a job record (not null / not-found).
+- [ ] Place the test in `src/core/command/__tests__/detach-integration.test.ts`.
+
+**Acceptance Criteria**:
+- The test exercises `detachSelf` (ack resolves SUCCESS) and then a `loadState`-equivalent call in sequence on the same fixture, asserting the job is found.
+- The "ack guarantees discoverability" contract fails if registration is removed (destructive check: if `readSidecarPid` never returns the child pid and `childEnded` fires, `detachSelf` returns `GENERAL_ERROR` and the subsequent `loadState` call is irrelevant — the test asserts `GENERAL_ERROR` in that branch instead).
+- `typecheck && test` is green.
