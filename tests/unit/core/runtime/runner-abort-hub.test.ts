@@ -149,6 +149,47 @@ describe("TC-008/009/010: LocalRuntime signal handler + QueryAbortHub", () => {
     vi.useRealTimers();
   });
 
+  // Pin: hub.drain() must complete before store.load() is called.
+  // If a future edit swaps their order, this test fails even though TC-016 still passes.
+  it("hub.drain() completes before store.load() is called in signalCleanup", async () => {
+    const order: string[] = [];
+    const jobId = "drain-order-0000-0000-000000000001";
+
+    vi.spyOn(JobStateStore.prototype, "load").mockImplementation(async () => {
+      order.push("load");
+      return makeFakeState(jobId);
+    });
+    vi.spyOn(JobStateStore.prototype, "appendInterruption").mockResolvedValue(undefined);
+    vi.spyOn(JobStateStore.prototype, "persist").mockResolvedValue(undefined);
+    vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
+
+    const runtime = new LocalRuntime({ cwd: "/tmp/tc-hub-repo", githubClient: {} as never });
+    const rt = runtime as unknown as Record<string, unknown>;
+    rt["currentSlug"] = "drain-order-slug";
+    rt["workspace"] = { cwd: "/tmp/tc-hub-repo", worktreePath: undefined };
+
+    const hub = rt["hub"] as QueryAbortHub;
+    // Wrap drain to record when it resolves
+    const originalDrain = hub.drain.bind(hub);
+    hub.drain = async (timeoutMs: number, sleep: (ms: number) => Promise<void>) => {
+      await originalDrain(timeoutMs, sleep);
+      order.push("drain");
+    };
+
+    // Register a controller that deregisters on abort so drain resolves fast
+    const controller = new AbortController();
+    const deregister = hub.register(controller);
+    controller.signal.addEventListener("abort", deregister, { once: true });
+
+    const handle = runtime.registerCleanup(jobId, "implementer");
+    const { signalCleanup } = handle as unknown as { signalCleanup: () => Promise<void> };
+    await signalCleanup();
+
+    expect(order).toContain("drain");
+    expect(order).toContain("load");
+    expect(order.indexOf("drain")).toBeLessThan(order.indexOf("load"));
+  });
+
   // Regression: markSignalHandlerFired still runs before first await (TC-016 invariant preserved)
   it("isSignalHandlerFired() is true before first await even with hub drain", async () => {
     const jobId = "tc-hub-016-0000-0000-000000000001";
