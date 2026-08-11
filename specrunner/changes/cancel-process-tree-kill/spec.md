@@ -57,7 +57,9 @@ On SIGKILL escalation, `gracefulKill` SHALL send SIGKILL to the target pid and,
 **only when** the target pid is a process-group leader, additionally send SIGKILL
 to the process group (`-pid`) to reap descendants. It MUST NOT send any
 group-directed signal when the pid is not a group leader. The result MUST report
-whether a group signal was sent.
+whether a group signal was sent. A group-signal error (EPERM/ESRCH) SHALL be
+treated as best-effort and MUST NOT affect the pid-kill outcome (i.e., MUST NOT
+flip the `killed` field of the result).
 
 #### Scenario: leader pid escalation reaps the group
 
@@ -95,6 +97,14 @@ runner's abort hub
 **Given** the runner's signal handler aborts an in-flight query
 **When** the handler completes
 **Then** the job state is persisted as `awaiting-resume` before the process exits
+
+#### Scenario: drain timeout does not block awaiting-resume persist and exit
+
+**Given** an in-flight agent query whose `AbortController` is registered with the
+runner's abort hub and never deregisters within the drain bound
+**When** the runner's signal handler runs and the drain bound elapses
+**Then** the job state is still persisted as `awaiting-resume` before the process
+exits
 
 ### Requirement: Cancel output distinguishes a skipped kill from a group reap
 

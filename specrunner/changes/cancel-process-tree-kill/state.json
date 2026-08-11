@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f28a2862-fe19-4bd7-9f0c-c148629707ae",
   "createdAt": "2026-08-11T05:45:08.535Z",
-  "updatedAt": "2026-08-11T06:07:03.626Z",
+  "updatedAt": "2026-08-11T06:14:45.714Z",
   "request": {
     "title": "job cancel の process-tree kill — status gate を pid 生存 gate に置き換え、detach 子孫プロセスを回収する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "change/cancel-process-tree-kill-f28a2862",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "37a155813b83cc530110a1496707e3a5c131abee",
     "f757c1a4dc11705353702c0714d6118e7ee3b998",
-    "752c3326a17be7d39978ff901cfd3be56f243dbd"
+    "752c3326a17be7d39978ff901cfd3be56f243dbd",
+    "ca587c02d137f185347557d9efee32845e5fccf6"
   ],
   "touchedFiles": {
     "request-review": [
@@ -96,13 +97,31 @@
       "tests/unit/core/cancel/pid-kill.test.ts",
       "tests/unit/core/cancel/runner.test.ts",
       "tests/finish-ps-integration.test.ts"
+    ],
+    "spec-review": [
+      "src/core/cancel/runner.ts",
+      "src/core/cancel/pid-kill.ts",
+      "src/cli/cancel.ts",
+      "src/cli/job-wait.ts",
+      "src/core/runtime/local.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/util/spawn.ts",
+      "src/core/command/detach.ts",
+      "src/core/runtime/__tests__/signal-handler-order.test.ts",
+      "tests/unit/core/cancel/runner.test.ts",
+      "tests/unit/core/cancel/pid-kill.test.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/lifecycle/signal-state.ts",
+      "tests/unit/core/cancel/sidecar-teardown.test.ts",
+      "src/core/cancel/__tests__/runner-branch-delete.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
