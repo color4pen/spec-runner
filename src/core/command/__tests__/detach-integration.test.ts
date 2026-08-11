@@ -241,6 +241,9 @@ describe("TC-021: integration destructive — GENERAL_ERROR when child dies with
     expect(code).toBe(EXIT_CODE.GENERAL_ERROR);
     expect(code).not.toBe(EXIT_CODE.SUCCESS);
 
+    // The ack loop polled registration (and never saw it) before the child died
+    expect(sidecarCallCount).toBeGreaterThan(0);
+
     // Simulate: a subsequent loadState call returns null (job never on disk)
     const fakeLoadState = async (_s: string): Promise<{ slug: string } | null> => null;
     const found = await fakeLoadState(slug);
