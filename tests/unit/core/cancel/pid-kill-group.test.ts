@@ -127,4 +127,27 @@ describe("gracefulKill — group reap on SIGKILL escalation", () => {
     expect(deps.kill).not.toHaveBeenCalledWith(expect.any(Number), "SIGKILL");
     expect((result as { groupKilled?: boolean }).groupKilled).toBe(false);
   });
+
+  // F-001 coverage: reapGroup is called on SIGTERM-poll death (isAlive=false), not only on
+  // SIGKILL escalation. This is intentional: if the leader died during the SIGTERM poll
+  // its group members may still be orphaned, so we attempt the group reap there too.
+  it("leader dies during SIGTERM poll (isAlive=false) — group signal is sent, groupKilled=true", async () => {
+    const kill = vi.fn();
+    const deps: KillDeps = {
+      kill,
+      sleep: vi.fn().mockResolvedValue(undefined),
+      isAlive: vi.fn().mockReturnValue(false), // dies after first poll, no SIGKILL escalation
+      isGroupLeader: vi.fn().mockReturnValue(true),
+    };
+
+    const result = await gracefulKill(3333, 1000, deps);
+
+    expect(result.killed).toBe(true);
+    // SIGTERM sent; SIGKILL escalation must NOT fire (pid died in poll)
+    expect(kill).toHaveBeenCalledWith(3333, "SIGTERM");
+    expect(kill).not.toHaveBeenCalledWith(3333, "SIGKILL");
+    // Group reap fires even on SIGTERM-poll death for a leader
+    expect(kill).toHaveBeenCalledWith(-3333, "SIGKILL");
+    expect((result as { groupKilled?: boolean }).groupKilled).toBe(true);
+  });
 });
