@@ -1,16 +1,16 @@
 # Verification Result — cancel-process-tree-kill — iter 1
 
-## Verdict: failed
+## Verdict: passed
 
 ## Phase Results
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 1.1s | 0 |
+| 1 | build | passed | 0.4s | 0 |
 | 2 | typecheck | passed | 5.8s | 0 |
-| 3 | test | passed | 40.0s | 0 |
-| 4 | lint | passed | 6.7s | 0 |
-| 5 | changed-line-coverage | failed | 51.1s | 1 |
+| 3 | test | passed | 42.7s | 0 |
+| 4 | lint | passed | 6.6s | 0 |
+| 5 | changed-line-coverage | passed | 51.9s | 0 |
 | 6 | lockfile-sync | skipped | — | — |
 
 ## Phase: build
@@ -24,7 +24,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.44 MB
-ESM ⚡️ Build success in 100ms
+ESM ⚡️ Build success in 80ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -68,9 +68,9 @@ Detached pipeline started for: my-slug
   Details: specrunner job show my-slug
 
  Test Files  750 passed (750)
-      Tests  11183 passed | 1 skipped (11184)
-   Start at  15:57:49
-   Duration  39.62s (transform 7.49s, setup 4.24s, import 32.18s, tests 60.25s, environment 38ms)
+      Tests  11185 passed | 1 skipped (11186)
+   Start at  16:01:39
+   Duration  42.39s (transform 7.93s, setup 4.53s, import 33.91s, tests 66.19s, environment 43ms)
 
 
 $ vitest run
@@ -83,26 +83,16 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-5EACFB/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-MLWzM2/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: failed to push checkpoint commit for test-slug to origin/fix/test-branch-abc12345. Push manually to ensure state is on the branch.
-Warning: checkpoint persistBeforePush failed for test-slug: disk-full: cannot persist. Continuing with push.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
-Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-msLW76/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-FaZ84x/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
+Warning: failed to push checkpoint commit for test-slug to origin/fix/test-branch-abc12345. Push manually to ensure state is on the branch.
+Warning: checkpoint persistBeforePush failed for test-slug: disk-full: cannot persist. Continuing with push.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -112,6 +102,16 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
@@ -185,25 +185,25 @@ Error: No job found for slug: not-found-slug
 Error: No job found for slug: not-found-slug
 Error: No job found for slug: not-found-slug
 Warning: issue-notifier: failed to write comment to issue #42: network error
+Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 [inbox] skip: occupancy comment for priorJobId=abc-1234-5678-90ab-cdef already posted on issue#1
 ERROR: file not found
 spawn ENOENT
-Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op in approved findings-routing path — no mandatory findings, not escalating
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 [inbox] started job slug=fix-login-bug from issue#99
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 
 ```
 
@@ -216,15 +216,12 @@ $ eslint ./src ./tests --max-warnings 0
 
 ## Phase: changed-line-coverage
 
-Step 'changed-line-coverage' failed
-
 ```
-changed-line-coverage: failed — 1 file(s) did not meet coverage requirements
-  - src/cli/cancel.ts: changed DA lines were not executed
-  Skipped (not in coverage surface): specrunner/changes/cancel-process-tree-kill/design.md, specrunner/changes/cancel-process-tree-kill/events.jsonl, specrunner/changes/cancel-process-tree-kill/request-review-attestation.json, specrunner/changes/cancel-process-tree-kill/request-review-result-001.md, specrunner/changes/cancel-process-tree-kill/request.md, specrunner/changes/cancel-process-tree-kill/rules.md, specrunner/changes/cancel-process-tree-kill/spec-review-result-001.md, specrunner/changes/cancel-process-tree-kill/spec.md, specrunner/changes/cancel-process-tree-kill/state.json, specrunner/changes/cancel-process-tree-kill/tasks.md, specrunner/changes/cancel-process-tree-kill/test-cases.md, specrunner/changes/cancel-process-tree-kill/usage.json, tests/cancel-process-group-integration.test.ts, tests/unit/adapter/claude-code/agent-runner-hub.test.ts, tests/unit/core/cancel/pid-kill-group.test.ts, tests/unit/core/cancel/runner-process-gate.test.ts, tests/unit/core/lifecycle/query-abort-hub.test.ts, tests/unit/core/liveness/resolve-pid.test.ts, tests/unit/core/runtime/runner-abort-hub.test.ts
+changed-line-coverage: passed (31 changed files checked, 22 skipped)
+  Skipped (not in coverage surface): specrunner/changes/cancel-process-tree-kill/bite-evidence-result.md, specrunner/changes/cancel-process-tree-kill/design.md, specrunner/changes/cancel-process-tree-kill/events.jsonl, specrunner/changes/cancel-process-tree-kill/request-review-attestation.json, specrunner/changes/cancel-process-tree-kill/request-review-result-001.md, specrunner/changes/cancel-process-tree-kill/request.md, specrunner/changes/cancel-process-tree-kill/rules.md, specrunner/changes/cancel-process-tree-kill/spec-review-result-001.md, specrunner/changes/cancel-process-tree-kill/spec.md, specrunner/changes/cancel-process-tree-kill/state.json, specrunner/changes/cancel-process-tree-kill/tasks.md, specrunner/changes/cancel-process-tree-kill/test-cases.md, specrunner/changes/cancel-process-tree-kill/usage.json, specrunner/changes/cancel-process-tree-kill/verification-result.md, tests/cancel-process-group-integration.test.ts, tests/unit/adapter/claude-code/agent-runner-hub.test.ts, tests/unit/cli/cancel.test.ts, tests/unit/core/cancel/pid-kill-group.test.ts, tests/unit/core/cancel/runner-process-gate.test.ts, tests/unit/core/lifecycle/query-abort-hub.test.ts, tests/unit/core/liveness/resolve-pid.test.ts, tests/unit/core/runtime/runner-abort-hub.test.ts
   Type-only (no runtime code, absent from lcov): src/core/port/query-abort.ts
 ```
 
 ## Phase: lockfile-sync
 
-_(skipped — previous command failed)_
+lockfile-sync: package.json の変更なし — スキップ
