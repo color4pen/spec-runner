@@ -1,5 +1,7 @@
+import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
+import { livenessJsonPath } from "./paths.js";
 
 /**
  * Resolve XDG_CONFIG_HOME or fallback to ~/.config
@@ -65,4 +67,32 @@ export function getAgentLogDir(repoRoot: string, jobId: string): string {
  */
 export function getDetachLogPath(repoRoot: string, slug: string): string {
   return path.join(getVerboseLogDir(repoRoot), `${slug}.detach.log`);
+}
+
+/**
+ * Read the last `lines` lines of the detach log at `logPath`.
+ * Returns an empty string when the file is absent or unreadable.
+ * ponytail: whole-file read — switch to reverse-chunked read if logs grow large before child death.
+ */
+export function readDetachLogTail(logPath: string, lines: number): string {
+  try {
+    const content = fs.readFileSync(logPath, "utf-8");
+    return content.split("\n").slice(-lines).join("\n");
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Read the PID from the liveness sidecar for a slug.
+ * Returns null when the sidecar is absent, unreadable, or has no numeric pid.
+ */
+export function readSidecarPid(repoRoot: string, slug: string): number | null {
+  try {
+    const raw = fs.readFileSync(path.join(repoRoot, livenessJsonPath(slug)), "utf-8");
+    const pid = (JSON.parse(raw) as Record<string, unknown>)["pid"];
+    return typeof pid === "number" ? pid : null;
+  } catch {
+    return null;
+  }
 }

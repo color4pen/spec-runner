@@ -4,19 +4,19 @@
  * Provides the primitives used by the --detach flag:
  *   - DETACH_MARKER_ENV / isDetachedChild  — recursion guard
  *   - stripDetachFlag                       — arg sanitisation before re-spawn
- *   - buildDetachGuidance                  — human-readable parent output
- *   - detachSelf                            — the actual self-respawn logic
+ *   - buildDetachGuidance                  — human-readable parent output (success path)
+ *   - buildDetachStartFailure              — single-source failure message (failure path)
+ *   - detachSelf                            — async self-respawn with ack loop
  *
- * Design: D1 / D2 / D3 / D4 in design.md.
- * The function is kept dependency-free (no auth / config / network) so the
- * parent process can exit quickly after spawning the child.
+ * Design: D1 / D2 / D3 / D4 / D5 / D7 in design.md.
  */
 
 import * as process from "node:process";
-import { getDetachLogPath } from "../../util/xdg.js";
+import { getDetachLogPath, readDetachLogTail, readSidecarPid } from "../../util/xdg.js";
 import { spawnBackground } from "../../util/spawn.js";
 import type { SpawnBackgroundFn } from "../../util/spawn.js";
 import { stdoutWrite } from "../../logger/stdout.js";
+import { EXIT_CODE } from "../../errors.js";
 
 // ---------------------------------------------------------------------------
 // Re-export SpawnBackgroundFn so tests can import it from here
@@ -57,14 +57,12 @@ export function stripDetachFlag(args: string[]): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Guidance text (D8 / D1)
+// Guidance text (D7)
 // ---------------------------------------------------------------------------
 
 /**
- * Build the guidance string printed by the parent process after spawning
- * the child.  The string includes the slug, the `job wait` command, and
- * the `job show` command so that the caller (human or LLM agent) knows
- * how to track progress.
+ * Build the guidance string printed by the parent process after the child
+ * has registered (success path).  Includes slug, `job wait`, and `job show`.
  */
 export function buildDetachGuidance(slug: string): string {
   return [
@@ -74,8 +72,54 @@ export function buildDetachGuidance(slug: string): string {
   ].join("\n");
 }
 
+/**
+ * Build the failure message emitted to stderr when the detach child dies
+ * before registering.  Single exported definition so output-contract tests
+ * can pin it by substring (design D7).
+ *
+ * Must include: slug, full detach-log path, transcribed log tail.
+ */
+export function buildDetachStartFailure(slug: string, logPath: string, logTail: string): string {
+  return [
+    `Error: Detached pipeline for '${slug}' failed to start.`,
+    `Detach log: ${logPath}`,
+    logTail ? `--- log tail ---\n${logTail}` : "(detach log is empty)",
+  ].join("\n");
+}
+
 // ---------------------------------------------------------------------------
-// detachSelf — self-respawn (D1)
+// DetachSelfDeps — dependency-injection seam (D5)
+// ---------------------------------------------------------------------------
+
+/**
+ * Injectable dependencies for `detachSelf` (mirrors JobWaitDeps style).
+ * Production defaults are supplied internally; tests inject stubs.
+ */
+export interface DetachSelfDeps {
+  /** Spawn function — defaults to real `spawnBackground`. */
+  spawnFn: SpawnBackgroundFn;
+  /**
+   * Read the pid from the liveness sidecar for this (repoRoot, slug) pair.
+   * The closure captures repoRoot and slug.
+   * Returns null when the sidecar is absent, unreadable, or has no pid field.
+   */
+  readSidecarPid: () => number | null;
+  /**
+   * Read the last `lines` lines of the detach log at `logPath`.
+   * Called only on the failure path.
+   */
+  readDetachLogTail: (logPath: string, lines: number) => string;
+  /** Async sleep (injected so tests run without real delays). */
+  sleep: (ms: number) => Promise<void>;
+  /**
+   * Polling interval in ms between registration checks.
+   * Design: 200 ms (operator-confirmed).
+   */
+  pollIntervalMs: number;
+}
+
+// ---------------------------------------------------------------------------
+// detachSelf — async self-respawn with ack loop (D5)
 // ---------------------------------------------------------------------------
 
 export interface DetachSelfOptions {
@@ -93,19 +137,22 @@ export interface DetachSelfOptions {
 }
 
 /**
- * Self-respawn: spawn a copy of the current CLI process with `detached: true`
- * and redirect its stdio to a slug-keyed log file.  The parent writes the
- * detach guidance to stdout and returns 0 (exit code for the parent).
+ * Self-respawn: spawn a copy of the current CLI process with `detached: true`,
+ * redirect its stdio to a slug-keyed log file, then wait (process-death-gated)
+ * until the child registers its liveness sidecar OR dies before doing so.
+ *
+ * Exit 0 contract: "pipeline process is alive and job is discoverable by
+ * `job wait <slug>` / `job ls`".
  *
  * @param opts  Detach configuration.
- * @param spawnFn  Inject a different spawn implementation (for tests).
- *                 Defaults to the real `spawnBackground`.
- * @returns Exit code for the **parent** process (always 0).
+ * @param deps  Injected dependencies (for tests). Production defaults are used
+ *              when omitted.
+ * @returns Exit code for the **parent** process: 0 on registration, 1 on failure.
  */
-export function detachSelf(
+export async function detachSelf(
   opts: DetachSelfOptions,
-  spawnFn: SpawnBackgroundFn = spawnBackground,
-): number {
+  deps?: DetachSelfDeps,
+): Promise<number> {
   const childArgs = stripDetachFlag(opts.args);
   const logFilePath = getDetachLogPath(opts.repoRoot, opts.slug);
 
@@ -116,15 +163,54 @@ export function detachSelf(
   }
   rawEnv[DETACH_MARKER_ENV] = "1";
 
-  spawnFn(process.execPath, [process.argv[1]!, ...childArgs], {
+  // Resolve deps (use production defaults when not injected).
+  const spawnFn = deps?.spawnFn ?? spawnBackground;
+  const readSidecarPidFn = deps?.readSidecarPid ?? (() => readSidecarPid(opts.repoRoot, opts.slug));
+  const readDetachLogTailFn = deps?.readDetachLogTail ?? readDetachLogTail;
+  const sleep = deps?.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const pollIntervalMs = deps?.pollIntervalMs ?? 200;
+
+  // Death-gate flag — set by onExit or onError.
+  let childEnded = false;
+
+  // Spawn the child synchronously up-front (shape assertions can be made immediately).
+  const handle = spawnFn(process.execPath, [process.argv[1]!, ...childArgs], {
     cwd: opts.repoRoot,
     detached: true,
     logFilePath,
     rawEnv,
+    onExit: (code, signal) => {
+      void code; void signal;
+      childEnded = true;
+    },
+    onError: (_err) => {
+      childEnded = true;
+    },
   });
 
-  // Output guidance to stdout so the caller (human / LLM agent) can track progress.
-  stdoutWrite(buildDetachGuidance(opts.slug) + "\n");
+  // Treat missing pid as an immediate failure (D2).
+  const childPid = handle.pid;
+  if (childPid === undefined) {
+    childEnded = true;
+  }
 
-  return 0;
+  // Ack loop: registration-first ordering (D3).
+  for (;;) {
+    // 1. Registration check (first).
+    if (childPid !== undefined && readSidecarPidFn() === childPid) {
+      stdoutWrite(buildDetachGuidance(opts.slug) + "\n");
+      return EXIT_CODE.SUCCESS;
+    }
+
+    // 2. Death check.
+    if (childEnded) {
+      const tail = readDetachLogTailFn(logFilePath, 40);
+      const msg = buildDetachStartFailure(opts.slug, logFilePath, tail);
+      process.stderr.write(msg + "\n");
+      return EXIT_CODE.GENERAL_ERROR;
+    }
+
+    // 3. Not yet registered and child is alive — wait.
+    await sleep(pollIntervalMs);
+  }
 }

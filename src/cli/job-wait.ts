@@ -19,6 +19,7 @@ import { getJobSlug } from "../state/job-slug.js";
 import { isProcessAlive as realIsProcessAlive, isStaleRunning as realIsStaleRunning } from "../core/resume/safety.js";
 import { livenessJsonPath } from "../util/paths.js";
 import { logResult, stderrWrite, logError } from "../logger/stdout.js";
+import { getDetachLogPath } from "../util/xdg.js";
 import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
 import { worktreeGuardError } from "../errors.js";
 
@@ -189,6 +190,7 @@ export async function runJobWait(
 
   if (state === null) {
     stderrWrite(`Error: No job found for slug: ${slug}`);
+    stderrWrite(`Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: ${getDetachLogPath(repoRoot, slug)}`);
     return 2;
   }
 

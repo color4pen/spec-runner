@@ -227,26 +227,26 @@ describe("TC-010 / TC-016: buildDetachStartFailure is a single pinnable definiti
   });
 
   it("TC-010: buildDetachStartFailure output includes the slug", () => {
-    const msg = buildDetachStartFailure("my-slug", "/repo/.specrunner/logs/my-slug.detach.log", "error line");
+    const msg = buildDetachStartFailure!("my-slug", "/repo/.specrunner/logs/my-slug.detach.log", "error line");
     expect(msg).toContain("my-slug");
   });
 
   it("TC-010: buildDetachStartFailure output includes the full detach-log path", () => {
     const logPath = "/repo/.specrunner/logs/my-slug.detach.log";
-    const msg = buildDetachStartFailure("my-slug", logPath, "error output");
+    const msg = buildDetachStartFailure!("my-slug", logPath, "error output");
     expect(msg).toContain(logPath);
   });
 
   it("TC-010: buildDetachStartFailure output includes the transcribed log tail", () => {
     const tail = "preflight failed: API key missing\ncredential error";
-    const msg = buildDetachStartFailure("my-slug", "/path/to.log", tail);
+    const msg = buildDetachStartFailure!("my-slug", "/path/to.log", tail);
     expect(msg).toContain(tail);
   });
 
   it("TC-016: buildDetachStartFailure is a callable builder (not a raw string constant)", () => {
     // Verify it's a function that can be called with different slugs/paths/tails
-    const msg1 = buildDetachStartFailure("slug-a", "/path/a.log", "err-a");
-    const msg2 = buildDetachStartFailure("slug-b", "/path/b.log", "err-b");
+    const msg1 = buildDetachStartFailure!("slug-a", "/path/a.log", "err-a");
+    const msg2 = buildDetachStartFailure!("slug-b", "/path/b.log", "err-b");
     // Different inputs produce different outputs
     expect(msg1).not.toBe(msg2);
     expect(msg1).toContain("slug-a");
