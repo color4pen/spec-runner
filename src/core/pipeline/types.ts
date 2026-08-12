@@ -5,6 +5,7 @@ import type { Step } from "../step/types.js";
 import { buildReviewerChainTransitions } from "./reviewer-chain.js";
 import { reverificationNeeded, conformanceApprovedForVerifiedRevision } from "./reverification.js";
 import { specReviewHasRoutableFixables, specFixerForwardsToTestGen } from "./spec-observation.js";
+import { isTestGenExempt, specFixerForwardsToImplementer } from "./test-gen-exemption.js";
 
 /**
  * Pipeline-level role of a step (convergence / resume semantics).
@@ -233,6 +234,8 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   // --- spec-review loop ---
   // Observation auto-fix: spec-review approved + routable fixable findings → spec-fixer (guarded, must precede unconditional row)
   { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.SPEC_FIXER,      when: specReviewHasRoutableFixables },
+  // Test-gen bypass: exempt type routes directly to implementer (first-match-wins; must precede unconditional TEST_CASE_GEN row)
+  { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.IMPLEMENTER,     when: isTestGenExempt },
   { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.TEST_CASE_GEN },
   { step: STEP_NAMES.SPEC_REVIEW, on: "needs-fix", to: STEP_NAMES.SPEC_FIXER },
   // spec-review halts via loop exhaustion (SPEC_REVIEW_RETRIES_EXHAUSTED) or unroutable canon finding (CANON_FINDING_ESCALATION), whichever occurs first
@@ -240,11 +243,15 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.TEST_CASE_GEN,    on: "error",   to: "escalate" },
   { step: STEP_NAMES.TEST_MATERIALIZE, on: "success", to: STEP_NAMES.IMPLEMENTER },
   { step: STEP_NAMES.TEST_MATERIALIZE, on: "error",   to: "escalate" },
+  // Test-gen bypass: exempt type's observation pass forwards to implementer (must precede specFixerForwardsToTestGen row)
+  { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.IMPLEMENTER,    when: specFixerForwardsToImplementer },
   // Observation auto-fix: spec-fixer approved after spec-review approved → test-case-gen (guarded, must precede unconditional row)
   { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.TEST_CASE_GEN,   when: specFixerForwardsToTestGen },
   // spec-fixer → spec-review (direct, for needs-fix and conformance reverification paths)
   { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.SPEC_REVIEW },
   { step: STEP_NAMES.SPEC_FIXER,  on: "error",     to: "escalate" },
+  // Test-gen bypass: exempt type skips bite-evidence and routes directly to verification (must precede unconditional BITE_EVIDENCE row)
+  { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.VERIFICATION,    when: isTestGenExempt },
   { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.BITE_EVIDENCE },
   { step: STEP_NAMES.IMPLEMENTER, on: "error",     to: "escalate" },
   // --- bite-evidence gate (R4, forward strategy) ---

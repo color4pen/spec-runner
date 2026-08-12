@@ -23,6 +23,12 @@ export interface TypeConfigEntry {
    * true → spec-required: design step must produce a non-empty spec.md.
    */
   specRequired: boolean;
+  /**
+   * Whether this request type requires test generation (test-case-gen / test-materialize / bite-evidence).
+   * false → test-gen-exempt: pipeline bypasses test-case-gen, test-materialize, and bite-evidence.
+   * true → test-gen-required: pipeline runs the full test generation workflow.
+   */
+  testGenRequired: boolean;
 }
 
 export const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
@@ -33,6 +39,7 @@ export const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
     description: "新機能の追加",
     conventionalPrefix: "feat",
     specRequired: true,
+    testGenRequired: true,
   },
   "spec-change": {
     branchPrefix: "change/",
@@ -41,6 +48,7 @@ export const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
     description: "既存仕様の変更",
     conventionalPrefix: "feat",
     specRequired: true,
+    testGenRequired: true,
   },
   "refactoring": {
     branchPrefix: "refactor/",
@@ -49,6 +57,7 @@ export const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
     description: "コードの内部構造改善（振る舞い不変）",
     conventionalPrefix: "refactor",
     specRequired: true,
+    testGenRequired: true,
   },
   "bug-fix": {
     branchPrefix: "fix/",
@@ -57,6 +66,7 @@ export const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
     description: "バグ修正",
     conventionalPrefix: "fix",
     specRequired: true,
+    testGenRequired: true,
   },
   "chore": {
     branchPrefix: "chore/",
@@ -65,6 +75,7 @@ export const TYPE_CONFIG: Record<string, TypeConfigEntry> = {
     description: "CI、依存更新、ドキュメントなど",
     conventionalPrefix: "chore",
     specRequired: false,
+    testGenRequired: false,
   },
 };
 
@@ -104,4 +115,19 @@ export function getConventionalPrefix(type: string): string {
  */
 export function isSpecRequired(type: string): boolean {
   return TYPE_CONFIG[type]?.specRequired ?? true;
+}
+
+/**
+ * Whether the given request type requires test generation
+ * (test-case-gen / test-materialize / bite-evidence steps).
+ *
+ * Returns false for test-gen-exempt types (e.g. "chore") — pipeline bypasses
+ * the test generation workflow and routes directly to implementer and then verification.
+ * Returns true for all other known types and unknown types (fail-closed).
+ *
+ * Unknown types default to true (test-gen-required) to prevent silently skipping
+ * test generation for unrecognised types.
+ */
+export function isTestGenRequired(type: string): boolean {
+  return TYPE_CONFIG[type]?.testGenRequired ?? true;
 }

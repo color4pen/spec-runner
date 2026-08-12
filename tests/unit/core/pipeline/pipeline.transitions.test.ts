@@ -270,10 +270,10 @@ describe("TC-001/002/005/006/007/015: conformance transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 46 rows total (+2 for spec observation auto-fix guarded rows: spec-review approved → spec-fixer, spec-fixer approved → test-case-gen)", () => {
-    // 44 previous + 2 (guarded spec-review approved → spec-fixer, guarded spec-fixer approved → test-case-gen)
-    // Added by spec-observation-autofix: observation auto-fix guarded transition rows
-    expect(STANDARD_TRANSITIONS.length).toBe(46);
+  it("has 49 rows total (+2 spec observation auto-fix, +3 test-gen-exempt bypass rows)", () => {
+    // 44 previous + 2 (spec observation auto-fix guarded rows)
+    // + 3 (test-gen-exempt bypass: SPEC_REVIEW→IMPLEMENTER, SPEC_FIXER→IMPLEMENTER, IMPLEMENTER→VERIFICATION)
+    expect(STANDARD_TRANSITIONS.length).toBe(49);
   });
 
   it("verification --passed→ end does NOT exist", () => {

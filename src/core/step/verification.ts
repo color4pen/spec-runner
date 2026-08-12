@@ -48,7 +48,7 @@ export const VerificationStep: CliStep = {
 
     // Capture the full VerificationResult so we can project phase outcomes into StepRun.
     // The executor reads the runtime return value to extract verificationPhases for recording.
-    const verificationResult = await runVerification(deps.slug, verificationCwd, effectiveVerification, deps.request.baseBranch);
+    const verificationResult = await runVerification(deps.slug, verificationCwd, effectiveVerification, deps.request.baseBranch, deps.request.type);
 
     // Project PhaseResult[] → VerificationPhaseOutcome[]: keep only phase/status/exitCode.
     // stdout / stderr / durationMs / skippedCount are intentionally dropped (D3).

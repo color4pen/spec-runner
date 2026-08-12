@@ -1460,12 +1460,16 @@ describe("TC-028: request.md spec-review fixable finding is excluded from ledger
 // RED: currently 44 rows (guarded rows not yet added)
 // ---------------------------------------------------------------------------
 
-describe("TC-029: STANDARD_TRANSITIONS length is 46 after adding two guarded rows", () => {
-  it("TC-029: STANDARD_TRANSITIONS.length === 46 (+2 guarded rows for spec observation auto-fix)", () => {
-    // Previously 44 rows (+2 for the two new guarded rows):
+describe("TC-029: STANDARD_TRANSITIONS length is 49 after adding guarded rows", () => {
+  it("TC-029: STANDARD_TRANSITIONS.length === 49 (+2 spec observation auto-fix, +3 test-gen-exempt bypass)", () => {
+    // Previously 44 rows + 2 spec observation auto-fix guarded rows:
     // 1. spec-review approved → spec-fixer when specReviewHasRoutableFixables
     // 2. spec-fixer approved → test-case-gen when specFixerForwardsToTestGen
-    expect(STANDARD_TRANSITIONS.length).toBe(46);
+    // + 3 test-gen-exempt bypass rows (this change):
+    // 3. spec-review approved → implementer when isTestGenExempt
+    // 4. spec-fixer approved → implementer when specFixerForwardsToImplementer
+    // 5. implementer success → verification when isTestGenExempt
+    expect(STANDARD_TRANSITIONS.length).toBe(49);
   });
 
   it("TC-029: the two new guarded rows are distinct from the existing unconditional rows", () => {

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "82b67f30-7f9d-42a8-bab1-427a6b780737",
   "createdAt": "2026-08-12T15:27:33.568Z",
-  "updatedAt": "2026-08-12T15:54:54.353Z",
+  "updatedAt": "2026-08-12T16:04:24.018Z",
   "request": {
     "title": "chore type のテスト生成免除: TYPE_CONFIG によるテスト生成工程の宣言的 skip",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-materialize",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/test-generation-type-gate-82b67f30",
   "error": null,
@@ -67,7 +67,8 @@
     "2a316485f0eabebe98115c0d41f5cf31b830201c",
     "9c880ee4c88c12187e57c7e1b2f31fd879efeee5",
     "8b4da16df5256851b8fd1c624884357dbbba8094",
-    "89b325d11cf1dd432ed904bd21c873d904781617"
+    "89b325d11cf1dd432ed904bd21c873d904781617",
+    "ce0f881c18a0e4ccc706f600ea0b1c1cd183bed7"
   ],
   "touchedFiles": {
     "request-review": [
@@ -104,16 +105,37 @@
       "src/core/pipeline/__tests__/standard-transitions.test.ts",
       "tests/unit/verification/runner-commands.test.ts",
       "src/core/pipeline/spec-observation.ts"
+    ],
+    "test-materialize": [
+      "src/config/type-config.ts",
+      "tests/config/type-config.test.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "tests/unit/verification/runner-commands.test.ts",
+      "src/core/verification/runner.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/state/schema.ts",
+      "src/core/step/step-names.ts",
+      "src/state/schema/types.ts",
+      "src/kernel/step-names.ts",
+      "tests/pipeline.test.ts",
+      "src/core/verification/changed-line-coverage.ts",
+      "src/store/job-state-store.ts",
+      "src/core/pipeline/reverification.ts",
+      "src/config/schema/types.ts",
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "tests/unit/verification/runner-test-gen-exemption.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 22,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "test-materialize": 1
     }
   }
 }

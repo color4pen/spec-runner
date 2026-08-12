@@ -170,11 +170,13 @@ describe("TC-004: STANDARD_TRANSITIONS に spec-review:approved → test-case-ge
     expect(found).toBeDefined();
   });
 
-  it("spec-review --approved→ implementer は存在しない（旧 transition が削除されている）", () => {
-    const old = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "spec-review" && t.on === "approved" && t.to === "implementer",
+  it("spec-review --approved→ implementer の unconditional (when なし) row は存在しない", () => {
+    // A guarded (when: isTestGenExempt) row exists for exempt types, but there must be no
+    // unconditional fallback routing to implementer — non-exempt types always go to test-case-gen.
+    const unconditional = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "spec-review" && t.on === "approved" && t.to === "implementer" && !t.when,
     );
-    expect(old).toBeUndefined();
+    expect(unconditional).toBeUndefined();
   });
 });
 
