@@ -1,0 +1,12 @@
+{
+  "requestHash": "sha256:fb1eb6cedd595929d481577619eb5ff53eaefc287d74a901b89c3596865126a2",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/resume/safety.ts:49-62 — isStaleRunning Priority 2 reads sidecar pid without jobId check",
+    "src/cli/job-wait.ts:106-116 — realReadSidecarPid reads only pid field, not jobId",
+    "src/core/liveness/resolve-pid.ts:60-80 — resolveJobPid pure function with sidecar.jobId === expectedJobId guard",
+    "src/core/runtime/local.ts:1445 — SidecarRecord shape is { pid, session: null, worktreePath, jobId }",
+    "src/core/runtime/local.ts:258 — worktreePath sidecar read already checks sidecar[\"jobId\"] === jobId"
+  ],
+  "sourceRevision": "c2afa3c5210ca28a1bcb70ff4a7231e633fab639"
+}
