@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9a650cd8-219f-49e6-8671-5f6638976c42",
   "createdAt": "2026-08-12T12:47:52.393Z",
-  "updatedAt": "2026-08-12T13:27:11.612Z",
+  "updatedAt": "2026-08-12T13:32:38.534Z",
   "request": {
     "title": "過大 request の粒度ゲート: validate 規模警告と request-review 縫い目判定",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/request-granularity-gate-9a650cd8",
   "error": null,
@@ -70,7 +70,9 @@
     "90bea2c8b20770c82d6763a7a467d295edeba28e",
     "d0ef26bad3af567f310b1524adf7f526a31e5045",
     "678d68c1e018fc6354670e6c348109c915e92aac",
-    "22880ea505f60812dd9fe677e6fb831368f97c87"
+    "22880ea505f60812dd9fe677e6fb831368f97c87",
+    "340ac788f67c8b50b35e49e472e834014f457334",
+    "1a47d1dfb9d7626c42482ca6fe4c3d5d598c9e57"
   ],
   "touchedFiles": {
     "request-review": [
@@ -152,6 +154,16 @@
       "tests/unit/docs/request-authoring-granularity.test.ts",
       "tests/unit/docs/doc-drift-sync.test.ts",
       "src/logger/stdout.ts"
+    ],
+    "conformance": [
+      "src/parser/extract-section.ts",
+      "src/core/command/request.ts",
+      "src/prompts/request-review-system.ts",
+      "docs/request-authoring.md",
+      "tests/unit/core/command/request.test.ts",
+      "tests/prompts/request-review-seam.test.ts",
+      "tests/unit/parser/extract-section.test.ts",
+      "tests/unit/docs/request-authoring-granularity.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -184,7 +196,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -193,12 +205,13 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
