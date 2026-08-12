@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
   "createdAt": "2026-08-12T15:38:18.764Z",
-  "updatedAt": "2026-08-12T16:25:29.603Z",
+  "updatedAt": "2026-08-12T16:31:12.386Z",
   "request": {
     "title": "liveness 生存判定の sidecar pid 採用に jobId 照合を追加する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/liveness-probe-jobid-scope-70893096",
   "error": null,
   "pipelineId": "standard",
@@ -70,7 +70,9 @@
     "97208b2a7796c22af8f2b27260f2cbc51afb8f08",
     "4fbf4535d8aa9a55c26c8016c1e5be0d06466216",
     "ff80c9f637ab482a41b0c589553073d965c07a40",
-    "49d220de6b6eb92c1ff53683c5d61555cbb6a65b"
+    "49d220de6b6eb92c1ff53683c5d61555cbb6a65b",
+    "bfa7bf8418714ae65d8e16a85419b2d9cd982693",
+    "f499b2cfb529267bbeda322c13a87c7cb0b9bdd5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -131,6 +133,13 @@
       "src/core/resume/__tests__/safety.test.ts",
       "src/cli/__tests__/job-wait.test.ts",
       "src/state/schema.ts"
+    ],
+    "conformance": [
+      "src/core/resume/safety.ts",
+      "src/cli/job-wait.ts",
+      "src/core/liveness/resolve-pid.ts",
+      "src/core/resume/__tests__/safety.test.ts",
+      "src/cli/__tests__/job-wait.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -162,8 +171,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/986",
+    "number": 986,
+    "createdAt": "2026-08-12T16:31:11.711Z"
+  },
   "_journal": {
-    "historyCount": 48,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -172,12 +186,15 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
