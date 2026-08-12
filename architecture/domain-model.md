@@ -10,12 +10,12 @@
 
 ### JobState — 1 作業単位（slug）の状態（event-sourced）— 整合性境界
 - **役割**: 1 作業単位（slug）の状態。**変更は `JobStateStore` 経由のみ**（外から直接書かない＝Aggregate 不変）。durability で 2 つに分解する:
-  - **event journal（truth・append-only・branch-borne）**: step attempt（`verdict` / `toolResult` / 時刻）＋ transition（旧 `history`）＝ `changes/<slug>/events.jsonl`。起きた事実であり上書きしない。
-  - **projection（cache・overwrite・branch-borne）**: descriptor（`jobId` / `request` / `repository` / `branch` / `pipelineId` / `version` / `createdAt`）＋ cursor（`step` / `status` / `resumePoint` / `updatedAt`）＋ `pullRequest`（pr-created event の materialize）＝ `changes/<slug>/state.json`。journal の fold で再構成できる cache であり truth ではない。
+  - **event journal（append-only・branch-borne）**: 6 record 種 ＝ step attempt（`verdict` / `toolResult` / 時刻）／ transition（旧 `history`）／ interruption（中断記録。resume の `resumePoint` materialize 源）／ lineage ／ operator-event（reopen 等の operator 操作）／ finding-recency ＝ `changes/<slug>/events.jsonl`。起きた事実であり上書きしない。
+  - **projection（overwrite・branch-borne）**: descriptor（`jobId` / `request` / `repository` / `branch` / `pipelineId` / `version` / `createdAt`）＋ cursor（`step` / `status` / `resumePoint` / `updatedAt`）＋ `pullRequest`（pr-created event の materialize）＋ **projection-only の台帳・フラグ群**（`decisions` / `reviewers` / `reviewerStatuses` / `touchedFiles`（step ごとの触ったファイル hint・fail-open sanitize）/ `operatorAdjudications` / `synthesizedCommits` / `biteEvidence` / `staleRecovery` / `inboxOrigin` / `issueNumber` / `profile` / `pid` / `worktreePath` 等）＝ `changes/<slug>/state.json`。
 - **identity**: slug ＝ 作業単位の identity（配置キー）。jobId ＝ run/attempt の identity（branch `<prefix><slug>-<jobId8>`・worktree 名に内在。同一 slug の attempt は複数併存しうる。ただし**非 terminal の attempt は slug につき高々一つ** — `dynamic-model.md` の slug 占有不変条件）。
 - **不変条件**:
-  - `events.jsonl` は append-only ＝ truth。projection は journal の fold で再構成可能な cache（truth ではない）。
-  - state は branch-borne（step ごと commit）＝ **git が唯一の durable source**（clone / CI checkout で完全）。
+  - `events.jsonl` は append-only ＝ 起きた事実の truth。projection のうち **fold 由来の面**（`steps` / `history` / `lineage` / operator events / finding recency）は journal から再構成可能。**projection-only の面**（上記の台帳・フラグ群）は journal に書かれず **`state.json` が唯一の記録**（journal threading しない設計 — 台帳は「起きた事実」でなく「現在の宣言」であり fold 対象にしない）。
+  - どちらも branch-borne（step ごと commit）＝ **git が唯一の durable source**（clone / CI checkout で完全）。
   - **remote-resumable** は送信側フラグではなく `origin/<branch>` HEAD tree に対する検証可能述語 ―― `state.status` が quiescent ∧ journal / projection / 必須成果物が**同一 tree で自己整合**。単一 commit の atomic 更新で保証し、二相コミットを要さない（ADR-20260715）。
   - resume・routing が読む `verdict`・`toolResult` は journal の fold で保持される。
   - `version` は `1 | 2`（新規 state は 2、旧 version 1 は read 時に 2 へ normalize）。`status` は `JobStatus` の列挙内（validateJobState が強制）。
@@ -23,13 +23,16 @@
 
 ### StepRun / StepOutcome — 1 step の 1 実行（journal の record）
 ```ts
-interface StepRun { attempt: number; sessionId: string | null; outcome: StepOutcome; startedAt; endedAt }
-interface StepOutcome { verdict: Verdict | null; findingsPath: string | null;
-  error: ErrorInfo | null; toolResult?: BaseReportResult | null; followUpAttempts? }
+interface StepRun { attempt: number; sessionId: string | null; outcome: StepOutcome;
+  startedAt; endedAt; modelUsage?: Record<string, ModelUsage>; commitOid?: string }
+interface StepOutcome { verdict: Verdict | string | null; findingsPath: string | null;
+  error: ErrorInfo | null; toolResult?: BaseReportResult | null; followUpAttempts?;
+  transientRetryAttempts?; skipReason?; completionReportDiagnostics?; addedTurns?;
+  verificationPhases?: VerificationPhaseOutcome[] }
 ```
-- **不変条件**: `attempt` は 1-origin 連番。`events.jsonl`（append-only journal）の record。
-- **truth の所在**: 成果物の中身は実ファイル（worktree / git）が正典 ―― `fileContent` は Aggregate に持たない。cost（`modelUsage`）は **state ではない** ―― Aggregate 外の cost 追跡ファイル `changes/<slug>/usage.json`（`usageStore` が書く・`JobStateStore` 経由でない）が持つ。
-- → `src/state/schema.ts`（正確なフィールドはコードが正典）
+- **不変条件**: `attempt` は 1-origin 連番。`events.jsonl`（append-only journal）の record。`commitOid` は捕捉点が非対称 — agent step は session exit 時 HEAD / CLI step は entry 時 HEAD（bite-evidence gate と conformance の「検証済み revision」判定が依存）。`verificationPhases` は verification step の phase 別結果（`passed` / `failed` / `skipped` ＋ exitCode）を構造化記録し、上書きで失敗原因が消える経路を塞ぐ。
+- **truth の所在**: 成果物の中身は実ファイル（worktree / git）が正典 ―― `fileContent` は Aggregate に持たない。cost は `StepRun.modelUsage` に記録される（journal record には書かれない ＝ state.json 面のみ）。`changes/<slug>/usage.json`（`usageStore` が書く・`JobStateStore` 経由でない）は state から**導出**した集計に、SDK 実測の invocation メトリクス（turn 数 / 所要時間 / 実測コスト）を加えた Aggregate 外の記録面。
+- → `src/state/schema/types.ts`（正確なフィールドはコードが正典）
 
 ---
 
@@ -38,45 +41,60 @@ interface StepOutcome { verdict: Verdict | null; findingsPath: string | null;
 ### Verdict — step の結果区分
 ```ts
 type Verdict = "approved" | "needs-fix" | "escalation" | "passed" | "failed" | "success" | "error"
+             | "skipped" | "strategy-deferred"
 ```
-- → `src/state/schema.ts`（step-class 別の verdict 意味論は契約側＝型 `report-result.ts` ＋ `tests/unit/contract/` が正典）
+- `"skipped"` は reviewer activation 不一致（approved と別値で記録）、`"strategy-deferred"` は runtime 戦略による後送り。journal / `StepOutcome` 上は前方互換のため `Verdict | string | null` に widening されている（閉じた列挙は新規書き込み側の契約）。
+- → `src/state/schema/types.ts`（step-class 別の verdict 意味論は契約側＝型 `report-result.ts` ＋ `tests/unit/contract/` が正典）
 
-### StepName 系 — step 名の型安全 union
+### VerificationPhaseOutcome — verification phase の構造化結果
 ```ts
-type StepName = ...STEP_NAMES;  type AgentStepName = ...AGENT_STEP_NAMES;  type CliStepName = ...CLI_STEP_NAMES
+interface VerificationPhaseOutcome { phase: string; status: "passed" | "failed" | "skipped"; exitCode: number | null }
 ```
-- **不変条件**: 新 step は `step-names` の whitelist に追加して初めて型に出る。`ConfigStore.getAgentId(role)` は `AgentStepName` のみ受ける（CliStep 名は compile error）。
-- → `src/core/step/step-names.ts`（**現状 `core/step` 配下。ruling D4 で shared-kernel へ降格予定** = model.md §5 R3）
+- verification step の phase 別結果。`StepOutcome.verificationPhases` と journal record の両方に同型で載る。
+- → `src/state/schema/types.ts`
+
+### StepName 系 — step 名
+```ts
+type StepName = string;  type AgentStepName = ...AGENT_STEP_NAMES;  type CliStepName = ...CLI_STEP_NAMES
+```
+- **不変条件**: `StepName` は open（string alias）— custom reviewer step 名を許容するため型レベル whitelist ではない。標準名の判定は実行時 `isStandardStepName`。`AgentStepName` / `CliStepName` は whitelist 由来の閉じた union で、`ConfigStore.getAgentId(role)` は `AgentStepName` のみ受ける（CliStep 名は compile error）。
+- → `src/kernel/step-names.ts`（正典。shared-kernel 降格済み＝ model.md §5 R3 解消。`src/core/step/step-names.ts` は re-export shim ＋ 実行時判定）
 
 ### report_result の typed outcome（agent 自己申告）
 ```ts
 interface BaseReportResult { ok: boolean; reason?: string }
 interface ProducerReportResult extends BaseReportResult { status?: "success" | "error" }
-interface JudgeReportResult   extends BaseReportResult { approved?: boolean; findings?: Finding[]; observations?: Observation[] }
+interface JudgeReportResult   extends BaseReportResult { approved?: boolean; findings?: Finding[]; observations?: Observation[]; evidence?: Evidence }
 interface CodeReviewReportResult extends JudgeReportResult { fixableCount?: number }
+interface RequestReviewReportResult extends BaseReportResult { ... }   // request-review 専用
+interface ConformanceReportResult   extends BaseReportResult { ... }   // conformance 専用（fixTarget routing）
 ```
-- → `src/core/port/report-result.ts`（`ok` の意味論・routing が読むフィールドは契約側＝型 ＋ `tests/unit/contract/` が正典）
+- judge 系の `ok: true` 報告は `evidence` が**必須**（欠落は parse 失敗として reject）。
+- → 型の正典は `src/kernel/report-result.ts`（`src/core/port/report-result.ts` は re-export ＋ parse 純関数群）。`ok` の意味論・routing が読むフィールドは契約側＝型 ＋ `tests/unit/contract/` が正典。
 
 ### Finding — judge の指摘単位（verdict 導出の入力）
 ```ts
 interface Finding { severity: "critical" | "high" | "medium" | "low";
-  resolution: "fixable" | "decision-needed"; file: string; line?: number; title: string; rationale: string; options?: DecisionOption[]; origin?: "scope" }
+  resolution: "fixable" | "decision-needed"; file: string; line?: number; title: string; rationale: string;
+  options?: DecisionOption[]; origin?: "scope"; fileMissing?: boolean; fixTarget?: FixTarget }
 ```
 - **不変条件**:
   - judge 系 step（spec-review / code-review / request-review）の verdict は agent 申告値ではなく findings から CLI が決定的に導出する（純関数 `deriveJudgeVerdict` / `deriveRequestReviewVerdict` / `collectFixableFindings`）。`approved` / `fixableCount` / 申告 `verdict` は導出・routing に影響しない（受理のみ）。
-  - verdict に影響する findings（severity critical / high、または resolution decision-needed）は RuntimeStrategy の実在検証（file / line の存在確認）を通る。
+  - verdict に影響する findings（severity critical / high、または resolution decision-needed）は RuntimeStrategy の実在検証を通る。検証は 2 群 — 通常 finding は file / line の**存在**確認、`fileMissing: true` の finding（欠落指摘の構造化宣言）は**不在**確認（存在したら escalation override。branch 不明は fail-closed override）。`fixTarget` は conformance 専用の fixer routing 判別子。
   - `resolution: "decision-needed"` の finding は選択肢 `options`（各 `{label, consequence}`）を ≥2 持つ（新規 tool 入力は strict 検証で拒否、legacy state read は寛容）。2 案を articulate できないものは定義上 `fixable`。
   - decision ledger（`JobState.decisions`）に決定済みの finding は verdict 導出から除外される＝ 同一論点の再報告は re-escalation を起こさない。
   - `origin?: "scope"` は finding の**出自**の discriminator（粗く「scope 由来か否か」のみ。absent = in-scope = 現行。細かい理由は `rationale` に接地）。出自は resolution（解消形）とは別軸で、新 resolution 値は導入しない。
   - **verdict 導出の入力は2源**: agent 申告の finding ＋ **CLI が機械導出する scope finding**。後者は `permissionScope` の breach（または評価不能）から純関数で `origin:"scope"` の decision-needed finding として**合成**され、agent 申告の finding と**同一の `deriveJudgeVerdict` → escalation → decision-ledger 経路**を通る（並行機構を作らない）。「判断は導出する、自己申告させない」を境界（権限）にも適用した形。
 - → `src/kernel/report-result.ts`（型）/ `src/core/step/judge-verdict.ts`（導出の純関数。fs / child_process を import しない＝B-5）
 
-### DecisionOption / Observation — finding 周辺の VO
+### DecisionOption / Observation / Evidence — finding 周辺の VO
 ```ts
 interface DecisionOption { label: string; consequence: string }   // decision-needed finding の選択肢
 interface Observation { severity: "critical"|"high"|"medium"|"low"; file: string; line?: number; title: string; rationale: string }  // resolution 無し
+interface Evidence { checked: number; skipped: number; unverified: number }  // 検証実施量の自己申告
 ```
 - **Observation**: 「対応不要・記録のみ」の観察。findings と対の独立チャネルで、**verdict に影響しない**（judge / request-review の typed outcome に `observations?` として載る）。「要対応」は finding、「対応不要の記録」は observation という振り分け。
+- **Evidence**: judge 系 `ok: true` 報告の必須フィールド。「確認ゼロ＝findings ゼロ」を approve と区別し、検証不実施を verdict 導出の入力にする。
 - → `src/kernel/report-result.ts`
 
 ### Decision ledger — 人間判断の台帳（`JobState.decisions`）
@@ -89,6 +107,14 @@ interface DecisionRecord { id: string; step: string; findingKey: string;
 - **役割**: escalation した `decision-needed` finding への人間の選択を構造化し JobState に記録する（projection 側 `JobState.decisions?: DecisionRecord[]`、legacy 欠落 = 空台帳）。
 - **不変条件**: `findingKey` は `computeFindingKey`（step / file / line / 正規化 title / 正規化 rationale）で決定的に導出。verdict 導出は台帳に合致する finding を blocking として数えない（蒸し返しの構造的封殺）。
 - → `src/core/decision/decision-ledger.ts`（key 導出・台帳照合の純関数）/ `src/state/schema.ts`（`DecisionRecord` / `JobState.decisions`）
+
+### Operator adjudication — 第2の人間判断台帳（`JobState.operatorAdjudications`）
+```ts
+interface OperatorAdjudication { text: string; step: StepName; recordedAt: string }
+```
+- **役割**: resume `--prompt` の全文を運用指示として台帳化する（純関数 `appendOperatorAdjudication`）。後続の custom reviewer 周回へ「operator 裁定」として prompt 注入される。
+- **decisions との役割分担**: `decisions` は escalation への**構造化**裁定で verdict 導出から finding を除外する歯を持つ。`operatorAdjudications` は**自由文**の台帳で **verdict 導出に一切影響しない**（prompt 注入のみ）。人間判断の台帳は 2 系統であり、片方に統合しない（構造化できる裁定は decisions、文脈指示は adjudication）。
+- → `src/state/schema/types.ts` / `src/state/schema/operations.ts`（append 純関数）/ `src/core/step/custom-reviewer-round-context.ts`（注入点）
 
 ### PermissionScope / ForbiddenSurface — pipeline profile の権限スコープ宣言
 ```ts
@@ -119,18 +145,18 @@ interface AgentDefinition { readonly name; readonly role: AgentStepName; readonl
 interface ParsedStepResult { verdict: Verdict | null; findingsPath: string | null; fileContent?; scores?; pullRequest? }
 interface Transition { step; on: Verdict | string; to: string | "end" | "escalate"; when?(state): boolean }
 ```
-- → `src/core/agent/definition.ts` / `src/core/step/types.ts` / `src/core/pipeline/types.ts`
+- → `src/kernel/agent-definition.ts`（`AgentDefinition` 正典。`src/core/agent/definition.ts` は re-export shim）/ `src/core/step/types.ts`（`ParsedStepResult`。`Step` union の正典は `src/core/port/step-types.ts`）/ `src/core/pipeline/types.ts`（`Transition`）
 
 ---
 
 ## 型の所在と層（model.md との整合）
 
-| 型 | 現在地 | あるべき層（ruling）|
+| 型 | 現在地 | 層 |
 |---|---|---|
 | JobState / StepRun / Verdict / StepName | `src/state/` | shared-kernel（schema）。不変条件ロジックは domain |
-| ParsedRequest / ParsedRequestSections | `src/core/request/` | **shared-kernel へ降格**（循環解消、model.md §5 R1）|
-| step-names | `src/core/step/` | **shared-kernel へ降格**（model.md §5 R3）|
-| port DTO（AgentRunContext 等）| `src/core/port/` | ports（domain VO のみ参照可）|
+| ParsedRequest / ParsedRequestSections | `src/parser/` | shared-kernel（R1 降格済み）|
+| step-names / AgentDefinition / DomainEvent / report-result / GitHubClient | `src/kernel/` | shared-kernel（降格済み。旧所在の `core/` 側ファイルは re-export shim）|
+| port DTO（AgentRunContext / Step union 等）| `src/core/port/` | ports（domain VO のみ参照可）|
 
 ---
 

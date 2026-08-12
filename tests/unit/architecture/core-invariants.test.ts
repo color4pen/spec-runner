@@ -1273,8 +1273,9 @@ describe("B-18 (arch pin): request 系入口は LLM 系 port / adapter / port ba
   /**
    * B-18: The request entrance (src/core/request/, src/core/command/request*.ts)
    * must not import LLM-reachable ports (agent-runner / session-client /
-   * anthropic-client), their adapters (claude-code / managed-agent / codex /
-   * dispatching), or the port barrel (port/index) — the barrel type re-exports
+   * anthropic-client / issue-fidelity-comparator), their adapters (claude-code /
+   * managed-agent / codex / dispatching), or the port barrel (port/index) — the
+   * barrel (now deleted; pattern kept as a reintroduction guard) type re-exported
    * SessionClient / AnthropicClient and would act as a typed bypass route.
    *
    * The dispatch point src/cli/command-registry.ts must not import LLM ports or
@@ -1292,6 +1293,7 @@ describe("B-18 (arch pin): request 系入口は LLM 系 port / adapter / port ba
     "port/agent-runner",
     "port/session-client",
     "port/anthropic-client",
+    "port/issue-fidelity-comparator",
   ];
   const LLM_ADAPTER_PATTERNS = [
     "adapter/claude-code/",
