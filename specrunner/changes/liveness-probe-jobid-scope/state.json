@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
   "createdAt": "2026-08-12T15:38:18.764Z",
-  "updatedAt": "2026-08-12T15:50:06.378Z",
+  "updatedAt": "2026-08-12T15:53:26.932Z",
   "request": {
     "title": "liveness 生存判定の sidecar pid 採用に jobId 照合を追加する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "fix/liveness-probe-jobid-scope-70893096",
   "error": null,
@@ -65,7 +65,8 @@
     "9f38939b7bedf21d427a2e568d6d27aaf6872bd4",
     "8c5b0a58826b8bda53aaaf1ebbe6364997dca724",
     "fd2b254635a2be38391baef480b17214e1bd4df0",
-    "c8895f1187451a1853d9dcb0484b7e7dd27fc332"
+    "c8895f1187451a1853d9dcb0484b7e7dd27fc332",
+    "e1dba612e7a9cb3b0066439bad4386b94b05f798"
   ],
   "touchedFiles": {
     "request-review": [
@@ -93,14 +94,16 @@
       "src/state/schema.ts",
       "src/state/schema/types.ts",
       "architecture/divergence-status.md"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }
