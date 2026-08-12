@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "82b67f30-7f9d-42a8-bab1-427a6b780737",
   "createdAt": "2026-08-12T15:27:33.568Z",
-  "updatedAt": "2026-08-12T15:51:53.655Z",
+  "updatedAt": "2026-08-12T15:54:54.353Z",
   "request": {
     "title": "chore type のテスト生成免除: TYPE_CONFIG によるテスト生成工程の宣言的 skip",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "feat/test-generation-type-gate-82b67f30",
   "error": null,
@@ -66,7 +66,8 @@
     "213e5061a1e2b9797470df91f0c37a80ccf23463",
     "2a316485f0eabebe98115c0d41f5cf31b830201c",
     "9c880ee4c88c12187e57c7e1b2f31fd879efeee5",
-    "8b4da16df5256851b8fd1c624884357dbbba8094"
+    "8b4da16df5256851b8fd1c624884357dbbba8094",
+    "89b325d11cf1dd432ed904bd21c873d904781617"
   ],
   "touchedFiles": {
     "request-review": [
@@ -97,15 +98,22 @@
       "src/core/archive/achieved-assurance.ts",
       "tests/unit/verification/runner-commands.test.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "test-case-gen": [
+      "tests/config/type-config.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "tests/unit/verification/runner-commands.test.ts",
+      "src/core/pipeline/spec-observation.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 19,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "test-case-gen": 1
     }
   }
 }
