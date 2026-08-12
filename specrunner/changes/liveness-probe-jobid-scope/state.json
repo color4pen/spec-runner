@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
   "createdAt": "2026-08-12T15:38:18.764Z",
-  "updatedAt": "2026-08-12T15:53:26.932Z",
+  "updatedAt": "2026-08-12T16:14:30.861Z",
   "request": {
     "title": "liveness 生存判定の sidecar pid 採用に jobId 照合を追加する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-materialize",
+  "step": "implementer",
   "status": "running",
   "branch": "fix/liveness-probe-jobid-scope-70893096",
   "error": null,
@@ -66,7 +66,8 @@
     "8c5b0a58826b8bda53aaaf1ebbe6364997dca724",
     "fd2b254635a2be38391baef480b17214e1bd4df0",
     "c8895f1187451a1853d9dcb0484b7e7dd27fc332",
-    "e1dba612e7a9cb3b0066439bad4386b94b05f798"
+    "e1dba612e7a9cb3b0066439bad4386b94b05f798",
+    "97208b2a7796c22af8f2b27260f2cbc51afb8f08"
   ],
   "touchedFiles": {
     "request-review": [
@@ -95,15 +96,32 @@
       "src/state/schema/types.ts",
       "architecture/divergence-status.md"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "test-materialize": [
+      "src/cli/__tests__/job-wait.test.ts",
+      "src/core/resume/safety.ts",
+      "src/core/liveness/resolve-pid.ts",
+      "src/cli/job-wait.ts",
+      "src/state/schema.ts",
+      "src/core/resume/__tests__/resolve-step.test.ts",
+      "src/core/resume/__tests__/reconcile-worktree.test.ts",
+      "tests/setup-fs-spy.ts",
+      "src/core/credentials/__tests__/credentials-io.test.ts",
+      "src/util/__tests__/spawn-background-detach.test.ts",
+      "src/state/schema/types.ts",
+      "src/cli/__tests__/view-commands-worktree-guard.test.ts",
+      "src/core/worktree/detection.ts",
+      "src/core/resume/__tests__/safety.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 19,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "test-materialize": 1
     }
   }
 }

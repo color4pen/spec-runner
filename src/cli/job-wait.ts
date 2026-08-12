@@ -17,6 +17,7 @@ import type { JobState, JobStatus } from "../state/schema.js";
 import { JobStateStore } from "../store/job-state-store.js";
 import { getJobSlug } from "../state/job-slug.js";
 import { isProcessAlive as realIsProcessAlive, isStaleRunning as realIsStaleRunning } from "../core/resume/safety.js";
+import { resolveJobPid, type SidecarContent } from "../core/liveness/resolve-pid.js";
 import { livenessJsonPath } from "../util/paths.js";
 import { logResult, stderrWrite, logError } from "../logger/stdout.js";
 import { getDetachLogPath } from "../util/xdg.js";
@@ -42,10 +43,10 @@ export interface JobWaitDeps {
   /** Fallback: is a running job whose PID is unknown actually stale? */
   isStaleRunning: (state: JobState) => boolean;
   /**
-   * Read the PID from the liveness sidecar at the given absolute path.
+   * Read the pid and jobId from the liveness sidecar at the given absolute path.
    * Returns null when the sidecar is absent or unreadable.
    */
-  readSidecarPid: (sidecarAbsPath: string) => number | null;
+  readSidecarPid: (sidecarAbsPath: string) => SidecarContent | null;
   /** Async sleep (injected so tests run without real delays). */
   sleep: (ms: number) => Promise<void>;
   /** Polling interval in ms between liveness checks. */
@@ -103,13 +104,14 @@ function exitCodeForStatus(status: string): number {
 // Real sidecar pid reader
 // ---------------------------------------------------------------------------
 
-function realReadSidecarPid(sidecarAbsPath: string): number | null {
+export function realReadSidecarPid(sidecarAbsPath: string): SidecarContent | null {
   try {
     const raw = fs.readFileSync(sidecarAbsPath, "utf-8");
-    const sidecar = JSON.parse(raw) as Record<string, unknown>;
-    const pid = sidecar["pid"];
-    if (typeof pid === "number") return pid;
-    return null;
+    const obj = JSON.parse(raw) as Record<string, unknown>;
+    return {
+      pid: typeof obj["pid"] === "number" ? obj["pid"] : null,
+      jobId: typeof obj["jobId"] === "string" ? obj["jobId"] : null,
+    };
   } catch {
     return null;
   }
@@ -208,12 +210,15 @@ export async function runJobWait(
       break;
     }
 
-    // Resolve current pid: state.pid → sidecar → last known.
+    // Resolve current pid: state.pid → sidecar (jobId-matched) → last known.
     const statePid =
       currentState.pid !== undefined && currentState.pid !== null
         ? currentState.pid
         : null;
-    const sidecarPid = statePid === null ? deps.readSidecarPid(sidecarAbs) : null;
+    const sidecarRecord = statePid === null ? deps.readSidecarPid(sidecarAbs) : null;
+    const sidecarPid = sidecarRecord !== null
+      ? resolveJobPid({ statePid: null, sidecar: sidecarRecord, expectedJobId: currentState.jobId }).pid
+      : null;
     const resolvedPid: number | null = statePid ?? sidecarPid ?? lastKnownPid;
 
     // Update the last-known pid for the next iteration.

@@ -1,5 +1,6 @@
 import * as fs from "node:fs";
 import type { JobState } from "../../state/schema.js";
+import { resolveJobPid, type SidecarContent } from "../liveness/resolve-pid.js";
 
 /**
  * Check if a process with the given PID is alive.
@@ -46,14 +47,19 @@ export function isStaleRunning(state: JobState, sidecarPath?: string): boolean {
   }
 
   // Priority 2: pid from liveness sidecar (slug mode, T-13)
+  // Only adopt sidecar pid when its jobId matches state.jobId (ownership rule).
   if (sidecarPath) {
     try {
-      const sidecar = JSON.parse(fs.readFileSync(sidecarPath, "utf-8")) as Record<string, unknown>;
-      const pid = sidecar["pid"];
-      if (pid != null && typeof pid === "number") {
-        return !isProcessAlive(pid);
+      const obj = JSON.parse(fs.readFileSync(sidecarPath, "utf-8")) as Record<string, unknown>;
+      const sidecarContent: SidecarContent = {
+        pid: typeof obj["pid"] === "number" ? obj["pid"] : null,
+        jobId: typeof obj["jobId"] === "string" ? obj["jobId"] : null,
+      };
+      const resolved = resolveJobPid({ statePid: null, sidecar: sidecarContent, expectedJobId: state.jobId });
+      if (resolved.pid != null) {
+        return !isProcessAlive(resolved.pid);
       }
-      // Sidecar present but no pid field → treat as stale
+      // jobId mismatch, missing, or no pid → stale
       return true;
     } catch {
       // Sidecar missing or unreadable → stale (CI fresh checkout)
