@@ -1,0 +1,12 @@
+{
+  "requestHash": "sha256:e2a5cbb7eaf22619a026cf793e4cea2cc74d004083e947351f71f0eda860c4f9",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/prompts/test-materialize-system.ts:92 — Method Step 6 に「テストは意図的に red（fail）で構わない — 実装がまだ存在しないため。implementer が green にする。」が存在する",
+    "src/prompts/test-materialize-system.ts Evidence 節（lines 98–102）— テスト実行結果の記録要求が含まれていないことを確認",
+    "src/prompts/test-materialize-system.ts Method Step 3（lines 63–86）— 既存テスト充足時はトレーサビリティコメント追記で対応（green 経路が正当）",
+    "src/core/pipeline/types.ts:248 — IMPLEMENTER on success → BITE_EVIDENCE",
+    "src/core/pipeline/types.ts:252 — BITE_EVIDENCE on strategy-deferred → VERIFICATION（素通り）"
+  ],
+  "sourceRevision": "dafcca67a631c767f14c54883634b1863caf7b8c"
+}
