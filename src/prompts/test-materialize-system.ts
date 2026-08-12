@@ -158,7 +158,7 @@ Please:
 6. Do NOT write any production implementation code
 7. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 
-The tests will intentionally fail (red) — implementation does not exist yet.
+New tests MUST be run before completing — confirm they fail (red) as expected (implementation does not yet exist).
 The next step (implementer) will write the implementation to make them green.
 
 Original request:
