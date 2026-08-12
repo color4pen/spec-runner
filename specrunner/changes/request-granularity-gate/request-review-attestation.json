@@ -1,0 +1,12 @@
+{
+  "requestHash": "sha256:36664e91cdbb9784f73e045b469def5ec21c5456bc4160b86c975aa9681685f0",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/command/request.ts:126 — executeValidate function starts at line 126, parse+design-layer gate only",
+    "src/parser/extract-section.ts:82 — '受け入れ基準' entry in REQUEST_CONSTRAINT_HEADINGS at line 82",
+    "src/prompts/request-review-system.ts:54 — Method 5 Scope & Complexity Evaluation at line 54, no seam judgment",
+    "src/core/step/request-review.ts — buildMessage has no previous findings/operator judgment injection",
+    "docs/request-authoring.md:60 — 粒度 section heading at line 60, 3 qualitative split criteria, no quantitative guidance"
+  ],
+  "sourceRevision": "e474e19aa1354692a02902377b98735779c84e61"
+}
