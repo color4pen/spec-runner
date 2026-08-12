@@ -20,6 +20,7 @@ import {
   extractMarkdownSections,
   buildRequestConstraintsBlock,
   REQUEST_CONSTRAINT_HEADINGS,
+  countTopLevelAcceptanceCriteria,
 } from "../../../src/parser/extract-section.js";
 
 // ---------------------------------------------------------------------------
@@ -195,5 +196,110 @@ describe("TC-13: ブロック内の説明文 (CLI-injected 注記) が含まれ�
       "## スコープ外\n\n- item\n\n## 受け入れ基準\n\n- criteria\n\n## architect 評価済みの設計判断\n\n- decision\n";
     const result = buildRequestConstraintsBlock(content)!;
     expect(result).toContain("request.md から CLI が抽出した制約情報");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// countTopLevelAcceptanceCriteria
+// ---------------------------------------------------------------------------
+
+describe("TC-007: countTopLevelAcceptanceCriteria — 15 項目の受け入れ基準で 15 を返す", () => {
+  it("行頭無インデントの - マーカー項目が 15 行ある場合 15 を返す", () => {
+    const items = Array.from({ length: 15 }, (_, i) => `- [ ] 基準 ${i + 1}`).join("\n");
+    const content = `# Test\n\n## 受け入れ基準\n\n${items}\n`;
+    expect(countTopLevelAcceptanceCriteria(content)).toBe(15);
+  });
+});
+
+describe("TC-008: countTopLevelAcceptanceCriteria — インデント済みネスト項目を数えない", () => {
+  it("top-level 3 行 + 2 スペースインデントのサブ項目 5 行で 3 を返す", () => {
+    const content = [
+      "# Test",
+      "",
+      "## 受け入れ基準",
+      "",
+      "- [ ] 基準 1",
+      "- [ ] 基準 2",
+      "- [ ] 基準 3",
+      "  - サブ項目 1",
+      "  - サブ項目 2",
+      "  - サブ項目 3",
+      "  - サブ項目 4",
+      "  - サブ項目 5",
+      "",
+    ].join("\n");
+    expect(countTopLevelAcceptanceCriteria(content)).toBe(3);
+  });
+});
+
+describe("TC-009: countTopLevelAcceptanceCriteria — HTML コメント内のリスト行を数えない", () => {
+  it("コメント内の - 行を除外し top-level 2 行で 2 を返す", () => {
+    const content = [
+      "# Test",
+      "",
+      "## 受け入れ基準",
+      "",
+      "<!-- - コメント内の項目 -->",
+      "- [ ] 基準 1",
+      "- [ ] 基準 2",
+      "",
+    ].join("\n");
+    expect(countTopLevelAcceptanceCriteria(content)).toBe(2);
+  });
+
+  it("複数行 HTML コメント内の - 行を除外する", () => {
+    const content = [
+      "# Test",
+      "",
+      "## 受け入れ基準",
+      "",
+      "<!--",
+      "- コメント行 1",
+      "- コメント行 2",
+      "-->",
+      "- [ ] 基準 1",
+      "",
+    ].join("\n");
+    expect(countTopLevelAcceptanceCriteria(content)).toBe(1);
+  });
+});
+
+describe("TC-010: countTopLevelAcceptanceCriteria — 受け入れ基準節が無いとき 0 を返す", () => {
+  it("受け入れ基準見出しが存在しない場合 0 を返す", () => {
+    const content = [
+      "# Test",
+      "",
+      "## 背景",
+      "",
+      "背景の説明",
+      "",
+      "## 要件",
+      "",
+      "1. 要件 1",
+      "",
+    ].join("\n");
+    expect(countTopLevelAcceptanceCriteria(content)).toBe(0);
+  });
+
+  it("空文字列に対して 0 を返す", () => {
+    expect(countTopLevelAcceptanceCriteria("")).toBe(0);
+  });
+});
+
+describe("TC-014: countTopLevelAcceptanceCriteria — `-` / `*` / `+` / `1.` / `1)` の各マーカーを top-level として認識する", () => {
+  it("5 種類のマーカー（各 1 行）で 5 を返す", () => {
+    const content = [
+      "# Test",
+      "",
+      "## 受け入れ基準",
+      "",
+      "- 項目1",
+      "* 項目2",
+      "+ 項目3",
+      "1. 項目4",
+      "1) 項目5",
+      "",
+    ].join("\n");
+    expect(countTopLevelAcceptanceCriteria(content)).toBe(5);
   });
 });

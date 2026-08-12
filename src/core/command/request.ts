@@ -7,14 +7,23 @@
  */
 import * as fs from "node:fs/promises";
 import { parseRequestMdContent } from "../../parser/request-md.js";
+import { countTopLevelAcceptanceCriteria } from "../../parser/extract-section.js";
 import { SpecRunnerError } from "../../errors.js";
-import { stdoutWrite, logError, stderrWrite } from "../../logger/stdout.js";
+import { stdoutWrite, logError, stderrWrite, logWarn } from "../../logger/stdout.js";
 import { resolveDesignLayerConfig } from "../../config/schema.js";
 import { runDesignLayerCheckGate } from "../design-layer/check-gate.js";
 import { loadConfig } from "../../config/store.js";
 import { resolveRepoRoot } from "../../util/repo-root.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
+
+/**
+ * Acceptance-criteria count threshold for a non-blocking size warning.
+ * Calibrated from 499-archive empirical data (2026-08):
+ *   15+ items → first-run completion 8%, exhausted 23%.
+ * Not config-izable — this is an empirical calibration value, not a user preference.
+ */
+const ACCEPTANCE_CRITERIA_WARN_THRESHOLD = 15;
 
 /**
  * Build a scaffold template for request.md.
@@ -74,7 +83,9 @@ export function buildScaffoldTemplate(params: {
 <!-- コツ: 機械検証できる文にする（「〜をテストで固定する」「既存テスト無変更で green」）。
      「適切に動作する」のような判定不能な文は conformance が照合できない。
      繰り返し実行・冪等性: server / handler / 接続 / 初期化 / 資源管理系の成果物を含む場合は、
-     2 回目の呼び出しが成功／冪等であることを受け入れ基準に含めること。 -->
+     2 回目の呼び出しが成功／冪等であることを受け入れ基準に含めること。
+     規模の目安: 15 項目以上で \`specrunner request validate\` が警告を出す（archive 499 件の実測で一発完走率 8%）。
+     分割不要と判断した場合は ## 分割検討済み 節に理由を記載する（docs/request-authoring.md 参照）。 -->
 
 - [ ] <基準 1>
 - [ ] \`typecheck && test\` が green
@@ -144,6 +155,17 @@ export async function executeValidate(filePath: string, opts?: ValidateOpts): Pr
       logError((err as Error).message);
     }
     return 1;
+  }
+
+  // Acceptance-criteria size warning (non-blocking — exit code unchanged)
+  const acCount = countTopLevelAcceptanceCriteria(content);
+  if (acCount >= ACCEPTANCE_CRITERIA_WARN_THRESHOLD) {
+    logWarn(
+      `受け入れ基準が ${acCount} 項目あります（閾値 ${ACCEPTANCE_CRITERIA_WARN_THRESHOLD}）。` +
+      `archive 499 件の実測では 15 本以上で一発完走率 8%・exhausted 率 23% です。` +
+      `分割（土台→上物）の検討、または分割しない理由を ## 分割検討済み 節に記載することを検討してください。` +
+      `詳細: docs/request-authoring.md`,
+    );
   }
 
   // Design-layer gate (opt-in; no-op when disabled or opts absent)
