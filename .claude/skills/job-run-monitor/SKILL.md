@@ -95,7 +95,7 @@ bun ./bin/specrunner.ts job archive <slug> --with-merge   # main checkout から
 - merge を `gh` で分割しない。archive --with-merge が push → CI 待ち → merge → cleanup を一括で行う。
 - **完了判定に `job ls` を使わない** (= CI 待ち中に job が一覧から消える)。
   archive プロセスの終了 + ログの「PR #N merged successfully」「marked as archived」で判定する。
-- PR への手修正は job 自身の worktree (= `.git/specrunner-worktrees/<slug>-<jobId>`) 内で
+- PR への手修正は job 自身の worktree (= `.git/specrunner-worktrees/<slug>-<jobId 先頭8桁>`) 内で
   commit する。別 worktree から push すると archive Phase 1 が non-fast-forward で拒否される。
 
 ## 5. 掃除
