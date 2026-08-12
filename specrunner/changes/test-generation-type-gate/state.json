@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "82b67f30-7f9d-42a8-bab1-427a6b780737",
   "createdAt": "2026-08-12T15:27:33.568Z",
-  "updatedAt": "2026-08-12T16:27:30.270Z",
+  "updatedAt": "2026-08-12T16:39:53.260Z",
   "request": {
     "title": "chore type のテスト生成免除: TYPE_CONFIG によるテスト生成工程の宣言的 skip",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/test-generation-type-gate-82b67f30",
   "error": null,
@@ -71,7 +71,9 @@
     "ce0f881c18a0e4ccc706f600ea0b1c1cd183bed7",
     "ce847964bdd00132556420520e8140b78357d558",
     "f574027387496d5fc4d09fd3650094264f7612d0",
-    "e28b292bb2e6b654407e591e7106a5b121ddebcf"
+    "e28b292bb2e6b654407e591e7106a5b121ddebcf",
+    "3d54dbcc48141472247304119fa79df4ca3656ed",
+    "135ddf8d07557a8c46020c40a115ee0e3a00919c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -163,10 +165,43 @@
       "src/core/pipeline/compose-reviewers.ts",
       "src/core/pipeline/pipeline.ts",
       "tests/unit/core/pipeline/pipeline.transitions.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "3d54dbcc48141472247304119fa79df4ca3656ed",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/test-generation-type-gate/design.md:sha256:2904dd2653697d7a278a08ef592638d40ae373cf51a23d9edcaf632112818754|specrunner/changes/test-generation-type-gate/request.md:sha256:babb161b5adb03abbd64ccf0dbd98e0fb12bac055a8e4df14ed8c498afd7ade3|specrunner/changes/test-generation-type-gate/spec.md:sha256:34c6a19af55d652c52caf6426e59717898c29516cf5449a837f507319bf93bfc|specrunner/changes/test-generation-type-gate/tasks.md:sha256:51946310ec89b18d35dc9a8569202f61053e870dd702e68be1b3abc0b14a8543|specrunner/changes/test-generation-type-gate/test-cases.md:sha256:e9a6c5a42311c544e97cbff6adb809422622475a447df108134a19631bcc59d5"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -177,7 +212,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
