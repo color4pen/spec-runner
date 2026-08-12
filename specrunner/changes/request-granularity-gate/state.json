@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9a650cd8-219f-49e6-8671-5f6638976c42",
   "createdAt": "2026-08-12T12:47:52.393Z",
-  "updatedAt": "2026-08-12T13:32:38.534Z",
+  "updatedAt": "2026-08-12T13:35:55.044Z",
   "request": {
     "title": "過大 request の粒度ゲート: validate 規模警告と request-review 縫い目判定",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/request-granularity-gate-9a650cd8",
   "error": null,
   "pipelineId": "standard",
@@ -72,7 +72,8 @@
     "678d68c1e018fc6354670e6c348109c915e92aac",
     "22880ea505f60812dd9fe677e6fb831368f97c87",
     "340ac788f67c8b50b35e49e472e834014f457334",
-    "1a47d1dfb9d7626c42482ca6fe4c3d5d598c9e57"
+    "1a47d1dfb9d7626c42482ca6fe4c3d5d598c9e57",
+    "e45e9709c7a49d1aedc0327d7bafc2596a04fb0c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -164,6 +165,10 @@
       "tests/prompts/request-review-seam.test.ts",
       "tests/unit/parser/extract-section.test.ts",
       "tests/unit/docs/request-authoring-granularity.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-08-11-detach-start-ack.md",
+      "specrunner/adr/2026-08-12-request-granularity-gate.md"
     ]
   },
   "reviewerStatuses": [
@@ -195,8 +200,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/983",
+    "number": 983,
+    "createdAt": "2026-08-12T13:35:54.051Z"
+  },
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -211,7 +221,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
