@@ -15,21 +15,21 @@
 
 ## T-01: Method 節に実行・fail 観測・期待分類を追加する
 
-- [ ] `src/prompts/test-materialize-system.ts` の `## Method` Step 6（現行 `test-materialize-system.ts:92` の
+- [x] `src/prompts/test-materialize-system.ts` の `## Method` Step 6（現行 `test-materialize-system.ts:92` の
       「テストは意図的に red（fail）で構わない — 実装がまだ存在しないため。implementer が green にする。」の 1 行）を、
       新規テストの実行と fail 観測を義務化する記述に置換する:
   - 新規に書いた各テストは、完了報告の **前に** 実行し、fail（red）することを観測してから完了する。
   - fail しなかった新挙動テストは「何も見張っていないテスト」であり、書き直してから再実行する。
   - 実行は新規テストファイル単位でまとめて行ってよい（turn 消費を抑える）。実行方法はプロジェクトの既存テスト
     コマンドへのファイル指定など agent の裁量とし、新しい設定・CLI 機構は導入しない。
-- [ ] 同 Step 6 に `expected-red` / `expected-green` の 2 分類と一致確認を追加する:
+- [x] 同 Step 6 に `expected-red` / `expected-green` の 2 分類と一致確認を追加する:
   - `expected-red`: 新挙動を検証するテスト。base（現在の worktree、実装なし）で fail が正常。green は欠陥
     （何も見張っていないテスト）。implementer が後続で green にする。
   - `expected-green`: 既存挙動の保持確認テスト、および Method Step 3 の既存テストへのトレーサビリティコメント追記。
     base で green が正常。
   - 期待と観測の不一致（`expected-red` が green / `expected-green` が red）は完了不可とし、`expected-red` が green の
     テストは書き直して再実行する。修正または再分類する場合はその根拠を Evidence に記す。
-- [ ] 追記は `## Method` 節の内側に置き、新規 h2 見出しを作らない。既存 Step 1〜5・manual/gate スキップ block・
+- [x] 追記は `## Method` 節の内側に置き、新規 h2 見出しを作らない。既存 Step 1〜5・manual/gate スキップ block・
       トレーサビリティコメント手順は改変しない。リポジトリ固有のテスト配置パスを参照しない。
 
 **Acceptance Criteria**:
@@ -44,14 +44,14 @@
 
 ## T-02: Evidence 節に実行観測記録を追加する
 
-- [ ] `src/prompts/test-materialize-system.ts` の `## Evidence` 節の step 固有 evidence 要求
+- [x] `src/prompts/test-materialize-system.ts` の `## Evidence` 節の step 固有 evidence 要求
       （現行 `test-materialize-system.ts:98-102`）に、新規テストの実行観測記録の項目を追加する:
   - 実行したコマンド。
   - 対象テストファイル。
   - 観測結果（fail / pass の件数）。
   - 各テスト（または describe 単位）の期待分類（`expected-red` / `expected-green`）。
   - 期待と観測の不一致があればその内容と対応（書き直し / 再分類の根拠）。
-- [ ] 既存の evidence 要求（変換した TC ID の一覧を記録する / 実装不可能 TC の明示列挙 / 各テストコードが対応
+- [x] 既存の evidence 要求（変換した TC ID の一覧を記録する / 実装不可能 TC の明示列挙 / 各テストコードが対応
       TC ID を含む確認）は保持したまま追記する。記録先は完了報告（Evidence）とし、"result file" を記録先として
       名指ししない。新規 h2 見出しを作らない。
 
@@ -87,8 +87,8 @@ implementer は T-01 / T-02 でこれらを green にする。新規テストは
 
 ## T-03: 検証
 
-- [ ] `bun run typecheck` が green。
-- [ ] `bun run test` が green。
+- [x] `bun run typecheck` が green。
+- [x] `bun run test` が green。
 
 **Acceptance Criteria**:
 
