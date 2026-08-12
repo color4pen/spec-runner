@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "82b67f30-7f9d-42a8-bab1-427a6b780737",
   "createdAt": "2026-08-12T15:27:33.568Z",
-  "updatedAt": "2026-08-12T16:18:38.090Z",
+  "updatedAt": "2026-08-12T16:27:30.270Z",
   "request": {
     "title": "chore type のテスト生成免除: TYPE_CONFIG によるテスト生成工程の宣言的 skip",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/test-generation-type-gate-82b67f30",
   "error": null,
@@ -70,7 +70,8 @@
     "89b325d11cf1dd432ed904bd21c873d904781617",
     "ce0f881c18a0e4ccc706f600ea0b1c1cd183bed7",
     "ce847964bdd00132556420520e8140b78357d558",
-    "f574027387496d5fc4d09fd3650094264f7612d0"
+    "f574027387496d5fc4d09fd3650094264f7612d0",
+    "e28b292bb2e6b654407e591e7106a5b121ddebcf"
   ],
   "touchedFiles": {
     "request-review": [
@@ -147,10 +148,25 @@
       "tests/test-case-gen-step.test.ts",
       "tests/unit/pipeline/transition-when.test.ts",
       "tests/core/pipeline/pipeline.test.ts"
+    ],
+    "code-review": [
+      "src/config/type-config.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/verification/runner.ts",
+      "src/core/step/verification.ts",
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "tests/unit/verification/runner-test-gen-exemption.test.ts",
+      "tests/config/type-config.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/pipeline/__tests__/bite-evidence-pipeline.test.ts",
+      "src/core/pipeline/compose-reviewers.ts",
+      "src/core/pipeline/pipeline.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 34,
+    "historyCount": 38,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -160,7 +176,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1
     }
   }
 }

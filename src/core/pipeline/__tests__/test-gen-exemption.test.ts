@@ -190,6 +190,26 @@ describe("TC-012: SPEC_REVIEW→IMPLEMENTER (exempt) row precedes SPEC_REVIEW→
     expect(exemptIdx).toBeLessThan(unconditionalIdx);
   });
 
+  it("TC-012: SPEC_REVIEW→SPEC_FIXER (specReviewHasRoutableFixables) row precedes SPEC_REVIEW→IMPLEMENTER (isTestGenExempt) row", () => {
+    const specFixerIdx = STANDARD_TRANSITIONS.findIndex(
+      (t) =>
+        t.step === STEP_NAMES.SPEC_REVIEW &&
+        t.on === "approved" &&
+        t.to === STEP_NAMES.SPEC_FIXER &&
+        t.when !== undefined,
+    );
+    const exemptIdx = STANDARD_TRANSITIONS.findIndex(
+      (t) =>
+        t.step === STEP_NAMES.SPEC_REVIEW &&
+        t.on === "approved" &&
+        t.to === STEP_NAMES.IMPLEMENTER &&
+        t.when !== undefined,
+    );
+    expect(specFixerIdx).toBeGreaterThan(-1);
+    expect(exemptIdx).toBeGreaterThan(-1);
+    expect(specFixerIdx).toBeLessThan(exemptIdx);
+  });
+
   it("TC-012: guarded IMPLEMENTER→VERIFICATION (exempt) row precedes unconditional IMPLEMENTER→BITE_EVIDENCE row", () => {
     const exemptIdx = STANDARD_TRANSITIONS.findIndex(
       (t) =>
