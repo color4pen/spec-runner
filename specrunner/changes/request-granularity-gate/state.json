@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9a650cd8-219f-49e6-8671-5f6638976c42",
   "createdAt": "2026-08-12T12:47:52.393Z",
-  "updatedAt": "2026-08-12T12:58:53.407Z",
+  "updatedAt": "2026-08-12T13:04:02.564Z",
   "request": {
     "title": "過大 request の粒度ゲート: validate 規模警告と request-review 縫い目判定",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/request-granularity-gate-9a650cd8",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "98ccf01e3f6233289d9afb8864b5139a9c67fa2a",
     "005518ccdc31201935feb60a28c16e28a0b0e197",
-    "4da4225fd2c584cc71e00e61a38164d42d5460f8"
+    "4da4225fd2c584cc71e00e61a38164d42d5460f8",
+    "603df5dd438b09652ba862da3acb9067f76527cd"
   ],
   "touchedFiles": {
     "request-review": [
@@ -88,13 +89,28 @@
       "src/prompts/issue-fidelity-system.ts",
       "src/prompts/judge-rules.ts",
       "src/logger/stdout.ts"
+    ],
+    "spec-review": [
+      "src/core/command/request.ts",
+      "src/parser/extract-section.ts",
+      "src/prompts/request-review-system.ts",
+      "src/logger/stdout.ts",
+      "docs/request-authoring.md",
+      "tests/unit/core/command/request.test.ts",
+      "src/parser/request-md.ts",
+      "src/prompts/judge-rules.ts",
+      "tests/prompts/request-review-system.test.ts",
+      "src/core/step/request-review.ts",
+      "src/prompts/issue-fidelity-system.ts",
+      "tests/unit/parser/extract-section.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
