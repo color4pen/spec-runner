@@ -84,6 +84,33 @@ export const REQUEST_CONSTRAINT_HEADINGS = [
 ] as const;
 
 /**
+ * Count the number of top-level acceptance criteria items in a request.md content string.
+ *
+ * Extracts the `受け入れ基準` section, strips HTML comments, then counts unindented
+ * list markers (`-`, `*`, `+`, `N.`, `N)`) as top-level items. Nested (indented) items
+ * and items inside HTML comments are excluded.
+ *
+ * @returns Number of top-level items, or 0 if the section is absent.
+ */
+export function countTopLevelAcceptanceCriteria(content: string): number {
+  const sections = extractMarkdownSections(content, ["受け入れ基準"]);
+  const body = sections.get("受け入れ基準");
+  if (!body) return 0;
+
+  // Strip HTML comments (including multiline) before counting
+  const stripped = body.replace(/<!--[\s\S]*?-->/g, "");
+
+  let count = 0;
+  for (const line of stripped.split("\n")) {
+    // Unindented list markers only: - / * / + / 1. / 1)
+    if (/^[-*+]\s|^\d+[.)]\s/.test(line)) {
+      count++;
+    }
+  }
+  return count;
+}
+
+/**
  * Build a formatted constraints block from request.md content.
  *
  * Extracts the three constraint sections (`スコープ外`, `受け入れ基準`,

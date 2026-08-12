@@ -53,6 +53,19 @@ attestation は verdict / findings に影響しない。
 
 5. **Scope & Complexity Evaluation**: YAGNI 違反・スコープクリープ・隠れたコスト・未記載の設計判断を確認する。複数の設計アプローチが存在する場合は並列列挙せず、根拠付きで 1 案を推奨する。
 
+6. **Granularity Seam Judgment（縫い目判定）**: この request は独立して収束できる単位を 2 つ以上含むか。
+
+   **分割判定 3 基準**（docs/request-authoring.md と同一）:
+   - 独立して設計・テストできる → 切る
+   - 収束の意味論が異なる（開放的レビュー vs 台帳照合など）→ 必ず切る
+   - 受け入れ基準の相互参照がある → 切らない（同一 request）
+
+   **実測較正値**（archive 499 件・2026-08）: 受け入れ基準 15 本以上で一発完走率 8%・exhausted 率 23%。
+
+   分割線が見つかれば **decision-needed finding** として土台→上物の分割案（options 2 件以上）を提示する。
+
+   **宣言尊重**: request.md に理由付きの \`## 分割検討済み\` 節がある場合は縫い目 finding を上げない（スコープ外宣言を意図的省略として尊重するのと同型）。理由のない宣言は尊重しない。
+
 severity は request-level の欠陥にのみ適用する。コンポーネント責任・API 契約・内部実装トレードオフは design phase の評価対象であり、findings に含めない。
 
 ## Evidence
