@@ -40,6 +40,15 @@ export function isTestGenExempt(state: JobState): boolean {
  * Used as the `when` guard on:
  *   - SPEC_FIXER approved → IMPLEMENTER (exempt type's observation forward path)
  *
+ * ⚠ Fixture invariant (inherited from specFixerForwardsToTestGen):
+ * The conformance-path exclusion inside specFixerForwardsToTestGen requires:
+ *   (a) conformance StepRun has verdict `needs-fix:spec-fixer`, AND
+ *   (b) conformance.endedAt >= spec-review.endedAt (ordered timestamps), AND
+ *   (c) conformance StepRun has toolResult.findings (non-null).
+ * Test fixtures that simulate a conformance-triggered entry MUST supply ordered
+ * timestamps AND toolResult.findings; omitting either causes getConformanceFixContext
+ * to return null, making the guard silently pass and route to implementer incorrectly.
+ *
  * @param state - Current job state.
  * @returns true when spec-fixer should forward to implementer (exempt observation pass).
  */
