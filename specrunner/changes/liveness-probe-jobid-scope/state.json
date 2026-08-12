@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
   "createdAt": "2026-08-12T15:38:18.764Z",
-  "updatedAt": "2026-08-12T15:41:24.845Z",
+  "updatedAt": "2026-08-12T15:46:22.971Z",
   "request": {
     "title": "liveness 生存判定の sidecar pid 採用に jobId 照合を追加する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "fix/liveness-probe-jobid-scope-70893096",
   "error": null,
@@ -63,7 +63,8 @@
   ],
   "synthesizedCommits": [
     "9f38939b7bedf21d427a2e568d6d27aaf6872bd4",
-    "8c5b0a58826b8bda53aaaf1ebbe6364997dca724"
+    "8c5b0a58826b8bda53aaaf1ebbe6364997dca724",
+    "fd2b254635a2be38391baef480b17214e1bd4df0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -74,12 +75,20 @@
       "architecture/divergence-status.md",
       "src/cli/__tests__/job-wait.test.ts",
       "src/state/schema.ts"
+    ],
+    "design": [
+      "src/core/resume/safety.ts",
+      "src/cli/job-wait.ts",
+      "src/core/liveness/resolve-pid.ts",
+      "src/core/runtime/local.ts",
+      "src/cli/__tests__/job-wait.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
