@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d757d7b0-d872-448b-9349-77c9f2373522",
   "createdAt": "2026-08-12T15:27:17.494Z",
-  "updatedAt": "2026-08-12T15:27:20.419Z",
+  "updatedAt": "2026-08-12T15:29:38.442Z",
   "request": {
     "title": "test-materialize の自己 red 確認: 新規テストは fail を観測してから完了する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/test-materialize-red-check-d757d7b0",
   "error": null,
@@ -62,10 +62,22 @@
     }
   ],
   "synthesizedCommits": [
-    "ba6c39fc35cd4f1a694596aa2a61c92e54ff2af8"
+    "ba6c39fc35cd4f1a694596aa2a61c92e54ff2af8",
+    "9651d7d7ef2df1f91f4fb0c5d972a44c4fb0be58"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/prompts/test-materialize-system.ts",
+      "src/core/pipeline/types.ts",
+      "tests/unit/prompts/test-materialize-prompt-contract.test.ts",
+      "src/prompts/fragments.ts",
+      "tests/unit/prompts/test-materialize-gate-scope-contract.test.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
