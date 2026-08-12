@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "82b67f30-7f9d-42a8-bab1-427a6b780737",
   "createdAt": "2026-08-12T15:27:33.568Z",
-  "updatedAt": "2026-08-12T15:27:35.962Z",
+  "updatedAt": "2026-08-12T15:34:39.984Z",
   "request": {
     "title": "chore type のテスト生成免除: TYPE_CONFIG によるテスト生成工程の宣言的 skip",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/test-generation-type-gate-82b67f30",
   "error": null,
@@ -62,10 +62,27 @@
     }
   ],
   "synthesizedCommits": [
-    "2a0b4329ae46be96e02c764caa9e3c7ef8998305"
+    "2a0b4329ae46be96e02c764caa9e3c7ef8998305",
+    "213e5061a1e2b9797470df91f0c37a80ccf23463"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/config/type-config.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/step/implementer.ts",
+      "src/core/verification/test-coverage.ts",
+      "src/core/verification/runner.ts",
+      "tests/config/type-config.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/verification.ts",
+      "src/state/schema.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
