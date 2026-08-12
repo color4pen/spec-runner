@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9a650cd8-219f-49e6-8671-5f6638976c42",
   "createdAt": "2026-08-12T12:47:52.393Z",
-  "updatedAt": "2026-08-12T13:23:00.067Z",
+  "updatedAt": "2026-08-12T13:27:11.612Z",
   "request": {
     "title": "過大 request の粒度ゲート: validate 規模警告と request-review 縫い目判定",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/request-granularity-gate-9a650cd8",
   "error": null,
@@ -69,7 +69,8 @@
     "d4a6e2c31df43dd6f166bc07b5dd63c313170169",
     "90bea2c8b20770c82d6763a7a467d295edeba28e",
     "d0ef26bad3af567f310b1524adf7f526a31e5045",
-    "678d68c1e018fc6354670e6c348109c915e92aac"
+    "678d68c1e018fc6354670e6c348109c915e92aac",
+    "22880ea505f60812dd9fe677e6fb831368f97c87"
   ],
   "touchedFiles": {
     "request-review": [
@@ -139,10 +140,51 @@
       "docs/request-authoring.md",
       "tests/unit/docs/doc-drift-sync.test.ts",
       "src/logger/stdout.ts"
+    ],
+    "code-review": [
+      "src/parser/extract-section.ts",
+      "src/core/command/request.ts",
+      "src/prompts/request-review-system.ts",
+      "docs/request-authoring.md",
+      "tests/unit/parser/extract-section.test.ts",
+      "tests/unit/core/command/request.test.ts",
+      "tests/prompts/request-review-seam.test.ts",
+      "tests/unit/docs/request-authoring-granularity.test.ts",
+      "tests/unit/docs/doc-drift-sync.test.ts",
+      "src/logger/stdout.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -151,7 +193,12 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
