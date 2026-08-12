@@ -16,7 +16,7 @@ import * as fs from "node:fs/promises";
 
 export interface SidecarContent {
   pid: number | null;
-  jobId: string | null;
+  jobId?: string | null;
 }
 
 // ---------------------------------------------------------------------------

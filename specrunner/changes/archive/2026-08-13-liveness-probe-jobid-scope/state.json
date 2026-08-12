@@ -1,0 +1,201 @@
+{
+  "version": 2,
+  "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
+  "createdAt": "2026-08-12T15:38:18.764Z",
+  "updatedAt": "2026-08-12T16:31:12.386Z",
+  "request": {
+    "title": "liveness 生存判定の sidecar pid 採用に jobId 照合を追加する",
+    "type": "bug-fix",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/liveness-probe-jobid-scope-70893096",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "9f38939b7bedf21d427a2e568d6d27aaf6872bd4",
+    "8c5b0a58826b8bda53aaaf1ebbe6364997dca724",
+    "fd2b254635a2be38391baef480b17214e1bd4df0",
+    "c8895f1187451a1853d9dcb0484b7e7dd27fc332",
+    "e1dba612e7a9cb3b0066439bad4386b94b05f798",
+    "97208b2a7796c22af8f2b27260f2cbc51afb8f08",
+    "4fbf4535d8aa9a55c26c8016c1e5be0d06466216",
+    "ff80c9f637ab482a41b0c589553073d965c07a40",
+    "49d220de6b6eb92c1ff53683c5d61555cbb6a65b",
+    "bfa7bf8418714ae65d8e16a85419b2d9cd982693",
+    "f499b2cfb529267bbeda322c13a87c7cb0b9bdd5",
+    "e8a6efb611788d5f04d2e3bd5cba092f12ca47fb"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/resume/safety.ts",
+      "src/cli/job-wait.ts",
+      "src/core/liveness/resolve-pid.ts",
+      "src/core/runtime/local.ts",
+      "architecture/divergence-status.md",
+      "src/cli/__tests__/job-wait.test.ts",
+      "src/state/schema.ts"
+    ],
+    "design": [
+      "src/core/resume/safety.ts",
+      "src/cli/job-wait.ts",
+      "src/core/liveness/resolve-pid.ts",
+      "src/core/runtime/local.ts",
+      "src/cli/__tests__/job-wait.test.ts"
+    ],
+    "spec-review": [
+      "src/core/resume/safety.ts",
+      "src/cli/job-wait.ts",
+      "src/core/liveness/resolve-pid.ts",
+      "src/core/runtime/local.ts",
+      "src/cli/__tests__/job-wait.test.ts",
+      "src/state/schema.ts",
+      "src/state/schema/types.ts",
+      "architecture/divergence-status.md"
+    ],
+    "test-case-gen": [],
+    "test-materialize": [
+      "src/cli/__tests__/job-wait.test.ts",
+      "src/core/resume/safety.ts",
+      "src/core/liveness/resolve-pid.ts",
+      "src/cli/job-wait.ts",
+      "src/state/schema.ts",
+      "src/core/resume/__tests__/resolve-step.test.ts",
+      "src/core/resume/__tests__/reconcile-worktree.test.ts",
+      "tests/setup-fs-spy.ts",
+      "src/core/credentials/__tests__/credentials-io.test.ts",
+      "src/util/__tests__/spawn-background-detach.test.ts",
+      "src/state/schema/types.ts",
+      "src/cli/__tests__/view-commands-worktree-guard.test.ts",
+      "src/core/worktree/detection.ts",
+      "src/core/resume/__tests__/safety.test.ts"
+    ],
+    "implementer": [
+      "src/core/liveness/resolve-pid.ts",
+      "src/core/resume/safety.ts",
+      "src/cli/job-wait.ts",
+      "src/core/resume/__tests__/safety.test.ts",
+      "src/cli/__tests__/job-wait.test.ts",
+      "src/state/schema.ts"
+    ],
+    "code-review": [
+      "src/core/resume/safety.ts",
+      "src/cli/job-wait.ts",
+      "src/core/liveness/resolve-pid.ts",
+      "src/core/resume/__tests__/safety.test.ts",
+      "src/cli/__tests__/job-wait.test.ts",
+      "src/state/schema.ts"
+    ],
+    "conformance": [
+      "src/core/resume/safety.ts",
+      "src/cli/job-wait.ts",
+      "src/core/liveness/resolve-pid.ts",
+      "src/core/resume/__tests__/safety.test.ts",
+      "src/cli/__tests__/job-wait.test.ts"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/986",
+    "number": 986,
+    "createdAt": "2026-08-12T16:31:11.711Z"
+  },
+  "_journal": {
+    "historyCount": 62,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "test-case-gen": 1,
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 2,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

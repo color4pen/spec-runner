@@ -1,0 +1,148 @@
+{
+  "commandInvocations": [
+    {
+      "command": "job",
+      "timestamp": "2026-08-12T15:41:22.844Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 22,
+          "outputTokens": 8230,
+          "cacheReadInputTokens": 794463,
+          "cacheCreationInputTokens": 51866
+        }
+      },
+      "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
+      "stepName": "request-review",
+      "numTurns": 26,
+      "durationMs": 174599,
+      "durationApiMs": 174256,
+      "totalCostUsd": 0.5563524000000002
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-12T15:46:21.058Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 16,
+          "outputTokens": 15575,
+          "cacheReadInputTokens": 689167,
+          "cacheCreationInputTokens": 67658
+        }
+      },
+      "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
+      "stepName": "design",
+      "numTurns": 22,
+      "durationMs": 289461,
+      "durationApiMs": 289086,
+      "totalCostUsd": 0.6941406000000001
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-12T15:50:04.604Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 19,
+          "outputTokens": 10656,
+          "cacheReadInputTokens": 951822,
+          "cacheCreationInputTokens": 73182
+        }
+      },
+      "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
+      "stepName": "spec-review",
+      "numTurns": 23,
+      "durationMs": 215058,
+      "durationApiMs": 213824,
+      "totalCostUsd": 0.7198760999999999
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-12T15:53:24.863Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 8,
+          "outputTokens": 12718,
+          "cacheReadInputTokens": 217359,
+          "cacheCreationInputTokens": 38971
+        }
+      },
+      "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
+      "stepName": "test-case-gen",
+      "numTurns": 6,
+      "durationMs": 191385,
+      "durationApiMs": 190765,
+      "totalCostUsd": 0.40214295
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-12T16:14:27.163Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 62,
+          "outputTokens": 70523,
+          "cacheReadInputTokens": 5500472,
+          "cacheCreationInputTokens": 140507
+        }
+      },
+      "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
+      "stepName": "test-materialize",
+      "numTurns": 55,
+      "durationMs": 1251286,
+      "durationApiMs": 1173652,
+      "totalCostUsd": 3.2350738499999996
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-12T16:19:34.640Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 32,
+          "outputTokens": 10407,
+          "cacheReadInputTokens": 1747357,
+          "cacheCreationInputTokens": 159545
+        }
+      },
+      "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
+      "stepName": "implementer",
+      "numTurns": 27,
+      "durationMs": 266893,
+      "durationApiMs": 189842,
+      "totalCostUsd": 0.9434316000000001
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-12T16:25:27.767Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 16,
+          "outputTokens": 9603,
+          "cacheReadInputTokens": 838212,
+          "cacheCreationInputTokens": 78574
+        }
+      },
+      "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
+      "stepName": "code-review",
+      "numTurns": 20,
+      "durationMs": 187172,
+      "durationApiMs": 186589,
+      "totalCostUsd": 0.6902091
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-12T16:29:31.061Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 19,
+          "outputTokens": 11659,
+          "cacheReadInputTokens": 1073400,
+          "cacheCreationInputTokens": 81591
+        }
+      },
+      "jobId": "70893096-5bf6-4f4d-bf52-cb642e63b20b",
+      "stepName": "conformance",
+      "numTurns": 21,
+      "durationMs": 234410,
+      "durationApiMs": 234152,
+      "totalCostUsd": 0.8029282500000001
+    }
+  ]
+}

@@ -11,8 +11,26 @@
  * TC-017: failed / terminated / canceled は exit 1 を返す
  * TC-018: slug 不在は 2 秒 × 5 回リトライ後に exit 2 を返す
  * TC-029: archived status は exit 0 を返す
+ *
+ * --- New TCs for liveness-probe-jobid-scope ---
+ * TC-004: job wait — jobId 一致の sidecar pid でプロセス生存中 → pid 採用・待機継続
+ * TC-005: job wait — jobId 不一致の sidecar pid → pid 不採用・no-pid パス
+ * TC-006: job wait — jobId フィールドなしの sidecar（legacy）→ pid 不採用・no-pid パス
+ * TC-008: job wait poll ループが resolveJobPid を経由して jobId 照合を行う（行動検証）
+ * TC-013(new): realReadSidecarPid — SidecarContent 形式（{ pid, jobId }）を返す
  */
+
+// ---------------------------------------------------------------------------
+// Mocks — must be declared before any imports (hoisted by vitest)
+// ---------------------------------------------------------------------------
+
+vi.mock("node:fs", async () => {
+  const actual = await vi.importActual<typeof import("node:fs")>("node:fs");
+  return { ...actual, readFileSync: vi.fn() };
+});
+
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import * as fs from "node:fs";
 import type { JobState, JobStatus } from "../../state/schema.js";
 
 // ---------------------------------------------------------------------------
@@ -20,6 +38,8 @@ import type { JobState, JobStatus } from "../../state/schema.js";
 // ---------------------------------------------------------------------------
 
 import { runJobWait, type JobWaitDeps } from "../job-wait.js";
+// Namespace import for TC-013: access realReadSidecarPid once it is exported.
+import * as jobWaitExports from "../job-wait.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -707,7 +727,10 @@ describe("sidecar pid resolution", () => {
         return tick < 2; // alive first tick, dead after
       }),
       isStaleRunning: vi.fn(() => false),
-      readSidecarPid: vi.fn((_path: string) => 54321), // sidecar has a pid
+      // TC-W03: updated to SidecarContent so jobId matches state.jobId ("job-abc-0001")
+      // This makes the test RED with the current implementation (which expects number | null)
+      // and GREEN after the fix (which expects SidecarContent | null with jobId matching).
+      readSidecarPid: vi.fn((_path: string) => ({ pid: 54321, jobId: "job-abc-0001" })),
       sleep: vi.fn(async () => {}),
       pollIntervalMs: 0,
       notFoundRetryCount: 5,
@@ -721,5 +744,234 @@ describe("sidecar pid resolution", () => {
     } finally {
       restore();
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-004: job wait — jobId 一致の sidecar pid でプロセス生存中 → pid 採用・待機継続
+// Source: spec.md > Requirement: job wait の sidecar pid 採用も jobId 照合を要求する
+//         > Scenario: jobId 一致の sidecar pid でプロセス生存中
+// ---------------------------------------------------------------------------
+
+describe("TC-004: job wait — jobId 一致の sidecar pid でプロセス生存中", () => {
+  it("TC-004: sidecar pid is adopted when jobId matches — isProcessAlive called with numeric pid and waiting continues", async () => {
+    // Given: state.pid=null, sidecar has pid=5678 and matching jobId
+    const runningState = makeJobState({ status: "running", pid: null });
+    const settledState = makeJobState({ status: "awaiting-archive", pid: null });
+
+    let isAliveCallCount = 0;
+    let loadCount = 0;
+
+    const isProcessAliveMock = vi.fn((pid: number) => {
+      isAliveCallCount++;
+      // alive only on first call when pid is the expected numeric value
+      return pid === 5678 && isAliveCallCount === 1;
+    });
+
+    const deps: JobWaitDeps = {
+      loadState: vi.fn(async () => {
+        loadCount++;
+        // retry loop + first poll iteration: running; then settled
+        return loadCount <= 2 ? runningState : settledState;
+      }),
+      isProcessAlive: isProcessAliveMock,
+      isStaleRunning: vi.fn(() => false),
+      readSidecarPid: vi.fn(() => ({ pid: 5678, jobId: "job-abc-0001" })), // matches makeJobState's default jobId
+      sleep: vi.fn(async () => {}),
+      pollIntervalMs: 0,
+      notFoundRetryCount: 5,
+      notFoundRetryIntervalMs: 0,
+    };
+
+    const restore = captureStdout();
+    try {
+      await runJobWait("test-slug", { repoRoot: "/repo", deps });
+    } finally {
+      restore();
+    }
+
+    // After fix: isProcessAlive(5678) must be called (the numeric pid was adopted).
+    // Before fix: isProcessAlive is called with the SidecarContent object, not 5678 → test fails.
+    const callsWith5678 = isProcessAliveMock.mock.calls.filter((args) => args[0] === 5678);
+    expect(callsWith5678.length).toBeGreaterThan(0);
+
+    // Also: sleep must have been called at least once (process was alive → waiting continued)
+    expect(vi.mocked(deps.sleep).mock.calls.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-005: job wait — jobId 不一致の sidecar pid → pid 不採用・no-pid パス
+// Source: spec.md > Requirement: job wait の sidecar pid 採用も jobId 照合を要求する
+//         > Scenario: jobId 不一致の sidecar pid
+// ---------------------------------------------------------------------------
+
+describe("TC-005: job wait — jobId 不一致の sidecar pid", () => {
+  it("TC-005: mismatched sidecar jobId → no-pid path (isStaleRunning called, not isProcessAlive with sidecar pid)", async () => {
+    // Given: sidecar has pid=9999 but mismatched jobId "job-B" vs state.jobId "job-abc-0001"
+    const state = makeJobState({ status: "running", pid: null });
+
+    const isProcessAliveMock = vi.fn((_pid: number): boolean => false);
+    const isStaleRunningMock = vi.fn(() => true); // return true so the loop settles
+
+    const deps: JobWaitDeps = {
+      loadState: vi.fn(async () => state),
+      isProcessAlive: isProcessAliveMock,
+      isStaleRunning: isStaleRunningMock,
+      readSidecarPid: vi.fn(() => ({ pid: 9999, jobId: "job-B" })), // mismatch
+      sleep: vi.fn(async () => {}),
+      pollIntervalMs: 0,
+      notFoundRetryCount: 5,
+      notFoundRetryIntervalMs: 0,
+    };
+
+    const restore = captureStdout();
+    try {
+      await runJobWait("test-slug", { repoRoot: "/repo", deps });
+    } finally {
+      restore();
+    }
+
+    // After fix: resolvedPid = null (mismatch) → no-pid path → isStaleRunning called.
+    // Before fix: resolvedPid = sidecar object (truthy) → pid-gated path → isStaleRunning NOT called → test fails.
+    expect(isStaleRunningMock.mock.calls.length).toBeGreaterThan(0);
+
+    // The sidecar pid 9999 must never be passed to isProcessAlive.
+    const callsWith9999 = isProcessAliveMock.mock.calls.filter((args) => args[0] === 9999);
+    expect(callsWith9999).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-006: job wait — jobId フィールドなしの sidecar（legacy）→ pid 不採用・no-pid パス
+// Source: spec.md > Requirement: job wait の sidecar pid 採用も jobId 照合を要求する
+//         > Scenario: jobId フィールドなしの sidecar（legacy）
+// ---------------------------------------------------------------------------
+
+describe("TC-006: job wait — jobId フィールドなしの sidecar（legacy）", () => {
+  it("TC-006: legacy sidecar without jobId field → no-pid path", async () => {
+    // Given: sidecar has pid=9999 but no jobId field (legacy format)
+    const state = makeJobState({ status: "running", pid: null });
+
+    const isProcessAliveMock = vi.fn((_pid: number): boolean => false);
+    const isStaleRunningMock = vi.fn(() => true);
+
+    const deps: JobWaitDeps = {
+      loadState: vi.fn(async () => state),
+      isProcessAlive: isProcessAliveMock,
+      isStaleRunning: isStaleRunningMock,
+      readSidecarPid: vi.fn(() => ({ pid: 9999 })), // no jobId field (SidecarContent with null jobId after fix)
+      sleep: vi.fn(async () => {}),
+      pollIntervalMs: 0,
+      notFoundRetryCount: 5,
+      notFoundRetryIntervalMs: 0,
+    };
+
+    const restore = captureStdout();
+    try {
+      await runJobWait("test-slug", { repoRoot: "/repo", deps });
+    } finally {
+      restore();
+    }
+
+    // After fix: null jobId treated as mismatch → no-pid path → isStaleRunning called.
+    // Before fix: sidecar object is truthy → pid-gated path → isStaleRunning NOT called.
+    expect(isStaleRunningMock.mock.calls.length).toBeGreaterThan(0);
+
+    const callsWith9999 = isProcessAliveMock.mock.calls.filter((args) => args[0] === 9999);
+    expect(callsWith9999).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-008: job wait poll ループが resolveJobPid を経由して jobId 照合を行う（行動検証）
+// Source: spec.md > Requirement: sidecar pid 採用判定を resolveJobPid に集約する
+//         > Scenario: job wait poll ループが resolveJobPid を経由して jobId 照合を行う
+// ---------------------------------------------------------------------------
+
+describe("TC-008: job wait — poll ループが resolveJobPid を経由して jobId 照合を行う", () => {
+  it("TC-008: pid adoption consistent with resolveJobPid rules — mismatch sends loop to no-pid path", async () => {
+    // resolveJobPid rule: sidecar.jobId must equal expectedJobId for pid to be adopted.
+    // Observable evidence: with mismatch, the no-pid path (isStaleRunning) is exercised,
+    // not the pid-gated path (isProcessAlive with sidecar pid).
+    const state = makeJobState({ status: "running", pid: null });
+
+    const isStaleRunningMock = vi.fn(() => true);
+    const isProcessAliveMock = vi.fn((_pid: number): boolean => false);
+
+    const deps: JobWaitDeps = {
+      loadState: vi.fn(async () => state),
+      isProcessAlive: isProcessAliveMock,
+      isStaleRunning: isStaleRunningMock,
+      readSidecarPid: vi.fn(() => ({ pid: 8888, jobId: "completely-different-job" })),
+      sleep: vi.fn(async () => {}),
+      pollIntervalMs: 0,
+      notFoundRetryCount: 5,
+      notFoundRetryIntervalMs: 0,
+    };
+
+    const restore = captureStdout();
+    try {
+      await runJobWait("test-slug", { repoRoot: "/repo", deps });
+    } finally {
+      restore();
+    }
+
+    // resolveJobPid returns { pid: null } for mismatched jobId → no-pid path.
+    expect(isStaleRunningMock.mock.calls.length).toBeGreaterThan(0);
+
+    // isProcessAlive must never be called with the mismatched sidecar pid.
+    const callsWithSidecarPid = isProcessAliveMock.mock.calls.filter((args) => args[0] === 8888);
+    expect(callsWithSidecarPid).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-013: realReadSidecarPid — SidecarContent 形式（{ pid, jobId }）を返す
+// Source: tasks.md > T-02 Acceptance Criteria
+// ---------------------------------------------------------------------------
+
+describe("TC-013: realReadSidecarPid — SidecarContent 形式（{ pid, jobId }）を返す", () => {
+  it("TC-013: returns { pid, jobId } from sidecar file (not a bare number)", () => {
+    // Given: sidecar file contains pid, jobId, session, worktreePath
+    vi.mocked(fs.readFileSync).mockReturnValue(
+      JSON.stringify({ pid: 54321, jobId: "job-abc-0001", session: "s1", worktreePath: "/tmp/x" }),
+    );
+
+    // realReadSidecarPid must be exported from job-wait.ts for this test to pass.
+    // Currently it is private → jobWaitExports["realReadSidecarPid"] is undefined → throws → RED.
+    // After implementation: returns SidecarContent { pid: 54321, jobId: "job-abc-0001" }.
+    const fn = (jobWaitExports as Record<string, unknown>)["realReadSidecarPid"] as
+      | ((path: string) => unknown)
+      | undefined;
+    if (typeof fn !== "function") {
+      throw new Error(
+        "TC-013 RED: realReadSidecarPid is not exported from job-wait.ts. " +
+          "The implementer must export it so this test can verify the SidecarContent return type.",
+      );
+    }
+
+    const result = fn("/fake/.specrunner/local/test-slug/liveness.json");
+
+    // Must return an object with both pid and jobId (not a bare number)
+    expect(result).toMatchObject({ pid: 54321, jobId: "job-abc-0001" });
+    expect(typeof result).toBe("object");
+    expect(typeof result).not.toBe("number");
+  });
+
+  it("TC-013: returns null when sidecar file is missing", () => {
+    vi.mocked(fs.readFileSync).mockImplementation(() => {
+      throw Object.assign(new Error("ENOENT"), { code: "ENOENT" });
+    });
+
+    const fn = (jobWaitExports as Record<string, unknown>)["realReadSidecarPid"] as
+      | ((path: string) => unknown)
+      | undefined;
+    if (typeof fn !== "function") {
+      throw new Error("TC-013 RED: realReadSidecarPid is not exported from job-wait.ts.");
+    }
+
+    const result = fn("/fake/.specrunner/local/test-slug/liveness.json");
+    expect(result).toBeNull();
   });
 });
