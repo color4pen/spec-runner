@@ -397,6 +397,201 @@ describe("TC-RIA-02: buildScaffoldTemplate() — 繰り返し実行・冪等性�
 });
 
 // ---------------------------------------------------------------------------
+// Helper for granularity-gate tests
+// ---------------------------------------------------------------------------
+
+function buildLargeRequestMd(acCount: number): string {
+  const criteria = Array.from(
+    { length: acCount },
+    (_, i) => `- [ ] 受け入れ基準 ${i + 1}`,
+  ).join("\n");
+  return `# Large Feature
+
+## Meta
+
+- **type**: new-feature
+- **slug**: large-feature
+- **base-branch**: main
+- **adr**: false
+
+## 背景
+
+背景の説明
+
+## 要件
+
+1. 要件 1
+
+## スコープ外
+
+- スコープ外
+
+## 受け入れ基準
+
+${criteria}
+
+## Workflow Options
+
+- enabled: []
+`;
+}
+
+// ---------------------------------------------------------------------------
+// TC-001: validate — 15 項目以上で stderr 警告・exit 0 を維持する
+// Source: spec.md > Requirement: request validate は過大な受け入れ基準に非ブロッキング警告を出す
+//         > Scenario: 15 項目以上で警告し exit 0 を維持する
+// ---------------------------------------------------------------------------
+
+describe("TC-001: validate — 15 項目以上で stderr 警告・exit 0 を維持する", () => {
+  it("15 項目の request で exit 0 を返す", async () => {
+    const filePath = path.join(tempDir, "request.md");
+    await fs.writeFile(filePath, buildLargeRequestMd(15), "utf-8");
+    const result = await executeValidate(filePath);
+    expect(result).toBe(0);
+  });
+
+  it("15 項目の request で stderr に Warning が書き出される", async () => {
+    const filePath = path.join(tempDir, "request.md");
+    await fs.writeFile(filePath, buildLargeRequestMd(15), "utf-8");
+    await executeValidate(filePath);
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    expect(stderrMock).toHaveBeenCalled();
+    const written = stderrMock.mock.calls.map((c: unknown[]) => c[0]).join("");
+    expect(written).toContain("Warning:");
+  });
+
+  it("20 項目（閾値超え）の request でも exit 0 を返す", async () => {
+    const filePath = path.join(tempDir, "request.md");
+    await fs.writeFile(filePath, buildLargeRequestMd(20), "utf-8");
+    const result = await executeValidate(filePath);
+    expect(result).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-002: validate — 14 項目以下では stderr 警告が出ない
+// Source: spec.md > Requirement: request validate は過大な受け入れ基準に非ブロッキング警告を出す
+//         > Scenario: 14 項目以下では警告しない
+// ---------------------------------------------------------------------------
+
+describe("TC-002: validate — 14 項目以下では stderr 警告が出ない", () => {
+  it("14 項目の request で exit 0 を返す", async () => {
+    const filePath = path.join(tempDir, "request.md");
+    await fs.writeFile(filePath, buildLargeRequestMd(14), "utf-8");
+    const result = await executeValidate(filePath);
+    expect(result).toBe(0);
+  });
+
+  it("14 項目の request で Warning が stderr に書き出されない", async () => {
+    const filePath = path.join(tempDir, "request.md");
+    await fs.writeFile(filePath, buildLargeRequestMd(14), "utf-8");
+    await executeValidate(filePath);
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const written = stderrMock.mock.calls.map((c: unknown[]) => c[0]).join("");
+    expect(written).not.toContain("Warning:");
+  });
+
+  it("1 項目の request（既存 TC-REQ-004 と同型）で Warning が出ない", async () => {
+    const filePath = path.join(tempDir, "request.md");
+    await fs.writeFile(filePath, buildLargeRequestMd(1), "utf-8");
+    await executeValidate(filePath);
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const written = stderrMock.mock.calls.map((c: unknown[]) => c[0]).join("");
+    expect(written).not.toContain("Warning:");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-006: request template の受け入れ基準コメントに規模目安と宣言への言及が含まれる
+// Source: spec.md > Requirement: authoring guidance が崖の実測と宣言規約を記載する
+//         > Scenario: request template が規模目安と宣言への言及を含む
+// ---------------------------------------------------------------------------
+
+describe("TC-006: request template の受け入れ基準コメントに規模目安と宣言への言及が含まれる", () => {
+  it("受け入れ基準コメントに規模の目安（15 項目で validate が警告する旨）が含まれる", () => {
+    const content = buildScaffoldTemplate({
+      title: "Test",
+      type: "new-feature",
+      slug: "test",
+    });
+    const commentStart = content.indexOf("<!-- コツ: 機械検証できる文");
+    expect(commentStart).toBeGreaterThan(-1);
+    const commentEnd = content.indexOf("-->", commentStart);
+    const commentBlock = content.slice(commentStart, commentEnd + 3);
+    // 15 項目の閾値への言及が含まれる
+    expect(commentBlock).toMatch(/15/);
+  });
+
+  it("受け入れ基準コメントに分割検討済み宣言への言及が含まれる", () => {
+    const content = buildScaffoldTemplate({
+      title: "Test",
+      type: "new-feature",
+      slug: "test",
+    });
+    const commentStart = content.indexOf("<!-- コツ: 機械検証できる文");
+    expect(commentStart).toBeGreaterThan(-1);
+    const commentEnd = content.indexOf("-->", commentStart);
+    const commentBlock = content.slice(commentStart, commentEnd + 3);
+    expect(commentBlock).toMatch(/分割検討済み/);
+  });
+
+  it("template の top-level checkbox 数は変わらない（2 件）", () => {
+    const content = buildScaffoldTemplate({
+      title: "Test",
+      type: "new-feature",
+      slug: "test",
+    });
+    const checkboxCount = (content.match(/^- \[ \]/gm) ?? []).length;
+    expect(checkboxCount).toBe(2);
+  });
+
+  it("buildScaffoldTemplate 出力が parseRequestMdContent を通過する（契約不変）", () => {
+    const content = buildScaffoldTemplate({
+      title: "Test Feature",
+      type: "new-feature",
+      slug: "test-feature",
+    });
+    const parsed = parseRequestMdContent(content, "<test>");
+    expect(parsed.type).toBe("new-feature");
+    expect(parsed.slug).toBe("test-feature");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-011: validate 警告文に実測根拠・宣言案内・docs 参照が含まれる
+// Source: tasks.md > T-02: executeValidate に規模警告を追加（非ブロッキング）
+// ---------------------------------------------------------------------------
+
+describe("TC-011: validate 警告文に実測根拠・宣言案内・docs 参照が含まれる", () => {
+  it("警告文に実測根拠の数値（8% または 23%）が含まれる", async () => {
+    const filePath = path.join(tempDir, "request.md");
+    await fs.writeFile(filePath, buildLargeRequestMd(15), "utf-8");
+    await executeValidate(filePath);
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const written = stderrMock.mock.calls.map((c: unknown[]) => c[0]).join("");
+    expect(written).toMatch(/8%|23%/);
+  });
+
+  it("警告文に分割検討済み宣言への言及が含まれる", async () => {
+    const filePath = path.join(tempDir, "request.md");
+    await fs.writeFile(filePath, buildLargeRequestMd(15), "utf-8");
+    await executeValidate(filePath);
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const written = stderrMock.mock.calls.map((c: unknown[]) => c[0]).join("");
+    expect(written).toMatch(/分割検討/);
+  });
+
+  it("警告文に docs/request-authoring.md への参照が含まれる", async () => {
+    const filePath = path.join(tempDir, "request.md");
+    await fs.writeFile(filePath, buildLargeRequestMd(15), "utf-8");
+    await executeValidate(filePath);
+    const stderrMock = process.stderr.write as ReturnType<typeof vi.fn>;
+    const written = stderrMock.mock.calls.map((c: unknown[]) => c[0]).join("");
+    expect(written).toContain("docs/request-authoring.md");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-004: executeValidate() + gate failure → return 1
 // ---------------------------------------------------------------------------
 //
