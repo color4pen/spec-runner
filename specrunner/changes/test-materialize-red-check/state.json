@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d757d7b0-d872-448b-9349-77c9f2373522",
   "createdAt": "2026-08-12T15:27:17.494Z",
-  "updatedAt": "2026-08-12T15:59:15.985Z",
+  "updatedAt": "2026-08-12T16:00:08.161Z",
   "request": {
     "title": "test-materialize の自己 red 確認: 新規テストは fail を観測してから完了する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/test-materialize-red-check-d757d7b0",
   "error": null,
@@ -71,7 +71,8 @@
     "3957dd53566052b50ec4cbf2c7259d319b1e996e",
     "3b8e6fa1e83edc53cc1ed78b7dea8a4e91f29b95",
     "4463cacb1c9cd0d79df0af54fbd2f95148352798",
-    "3d0280dd69fc0e2dcba713c740a324d64f725af5"
+    "3d0280dd69fc0e2dcba713c740a324d64f725af5",
+    "0045b2a61d0106458a13711da8d51a08a227df99"
   ],
   "touchedFiles": {
     "request-review": [
@@ -119,6 +120,9 @@
     ],
     "code-fixer": [
       "src/prompts/test-materialize-system.ts"
+    ],
+    "regression-gate": [
+      "src/prompts/test-materialize-system.ts"
     ]
   },
   "reviewerStatuses": [
@@ -151,7 +155,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -165,7 +169,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
