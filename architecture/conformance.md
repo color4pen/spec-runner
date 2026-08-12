@@ -17,9 +17,9 @@ agent が構造に沿ったコードを書くために、何を読ませるか�
 | ドメイン型 + 不変条件 | どの型を使うか・store 経由で触る等 | `domain-model.md` |
 | B-x 不変条件（why つき）| 守るべき構造制約と判断原理 | `model.md` §4 |
 
-### 注入の配線（別セッションが実装）
-- spec-runner は既に design/implementer に `rules.md`（`copyRulesToChangeFolder`）と `project.md`（`needsProjectContext`）を注入している。**architecture/ の上記を同経路で writer に渡す**のが配線タスク。
-- 配線箇所: `src/prompts/`（system prompt 注入）/ `src/core/runtime/*`（`setupWorkspace` での change folder コピー）/ `src/core/step/`（`needsProjectContext` 相当の `needsArchitecture` 等）。
+### 注入の配線（architecture/ 注入は未配線）
+- spec-runner は既に design/implementer に `rules.md`（`copyRulesToChangeFolder`）と `project.md`（`needsProjectContext`）を注入している。**architecture/ の上記を同経路で writer に渡す**のが配線タスク（未着手 → `divergence-status.md`）。
+- **step prompt 組み立ての実在 seam は adapter 層**: per-step prompt は各 adapter の agent-runner が組み立て、同梱内容は `src/adapter/shared/` の共有 seam が持つ（change folder 入力 artifact の同梱 = `artifact-bundle.ts`、先行 step touched files = `touched-files-bundle.ts`）。周回知識（前周 findings / operator 裁定 / post-fix context）は domain 側 hook（`src/core/step/prior-round-context.ts` 等）で合成される。architecture/ を注入する場合もこの実在 seam に載せる。
 - 粒度方針: 1 step = 1 関心（Lost-in-the-Middle 回避、per-step-rule ADR）。implementer には components/domain を厚く、review 系には B-x 不変条件を criteria として。
 
 ---
@@ -45,14 +45,14 @@ agent が構造に沿ったコードを書くために、何を読ませるか�
 | **B-10** host↔token 束縛 | composition-root の全 `resolveGitHubToken` 呼び出しに host 引数、全 `createGitHubClient` 呼び出しに baseUrl 引数があるか（token を誤った host へ送らない構造前提）| grep 検査（call-site）|
 | **B-11** concrete runtime の能力 interface | `src/core/runtime/` に bare `implements RuntimeStrategy` が無い（具象は `RealRuntimeStrategy` を implements＝`canDeriveChangedFiles` を必須化）か | grep 検査（`tests/` の fake は対象外）|
 | **B-12** subprocess seam 限定 | `node:child_process` の直接 import が seam（`util/spawn.ts` / `util/git-exec.ts`）＋ allowlist 済み composition-internal の外に無いか（env-omission spawn の封じ込め）| grep 検査（import・`arch-allowlist.ts` の B-12 台帳）|
-| **B-13** StepExecutor 単一書き込み禁止 | `executor.ts` が `store.persist` / `store.fail` / `store.update` / `store.appendHistory` / `store.appendInterruption` / `store.appendLineage` / `store.appendStepRun` を直接呼んでいないか（CommitOrchestrator が唯一の書き込みオーナー）。並列 round も同一 — `parallel-review-round.ts` が store を直接 persist せず `CommitOrchestrator.commitRound` で一括書き込みするか | grep 検査（call-site, executor.ts / parallel-review-round.ts）|
+| **B-13** StepExecutor 単一書き込み禁止 | `executor.ts` が `store.persist` / `store.fail` / `store.update` / `store.appendHistory` / `store.appendInterruption` / `store.appendLineage` / `store.appendStepRun` / `store.appendOperatorEvent` を直接呼んでいないか（CommitOrchestrator が唯一の書き込みオーナー）。並列 round も同一 — `parallel-review-round.ts` が store を直接 persist せず `CommitOrchestrator.commitRound` で一括書き込みするか | grep 検査（call-site, executor.ts / parallel-review-round.ts）|
 | **B-14** StepHalt 適用オーナー集約 | `executor.ts` が `transitionJob` / `attachStateAndRethrow` を直接呼んでいないか（halt の FSM 遷移・rethrow は CommitOrchestrator のみ担う）| grep 検査（call-site, executor.ts 限定）|
 | **B-15** round git 副作用の coordinator 所有 | `parallel-review-round.ts` が indiscriminate な `commitAndPush` を呼ばず、`partitionRoundChanges` で宣言/非宣言を分離し宣言出力だけを scoped stage（`git add -A -- <paths>`）するか | grep 検査（call-site, parallel-review-round.ts）|
 | **B-16** round 入力の不変性 | `executor.ts` / `parallel-review-round.ts` が共有 `deps` を in-place 書き換え（`deps.<field> =` 代入）していないか | grep 検査（call-site, 代入のみ・比較除外）|
 | **B-17** reopen opt-in call-site 限定 | `{ allowReopen: true }` が `src/core/command/reopen.ts` 以外から渡されていないか | grep 検査（`allowReopen: true` literal, reopen.ts のみ許可）|
-| **B-18** request 入口の LLM 到達封じ | `src/core/request/` / `src/core/command/request*.ts` が LLM 系 port（agent-runner / session-client / anthropic-client）・adapter（claude-code / managed-agent / codex / dispatching）・port barrel（`port/index`）を import していないか。`src/cli/command-registry.ts` が LLM 系 port / adapter を import していないか | grep 検査（import path literal、comment 行除外）|
+| **B-18** request 入口の LLM 到達封じ | `src/core/request/` / `src/core/command/request*.ts` が LLM 系 port（agent-runner / session-client / anthropic-client / issue-fidelity-comparator）・adapter（claude-code / managed-agent / codex / dispatching）・port barrel（`port/index` — 削除済み。再導入検知）を import していないか。`src/cli/command-registry.ts` が LLM 系 port / adapter を import していないか | grep 検査（import path literal、comment 行除外）|
 
-- 歯: `tests/unit/architecture/core-invariants.test.ts` が src 全体で上記 B-1〜B-18 を検査する。`arch-allowlist.ts` の grandfather 台帳は削除のみで縮む ratchet。`module-boundary.test.ts` も併存。
+- 歯: `tests/unit/architecture/core-invariants.test.ts` が src 全体で上記 B-1〜B-18 を検査する。`arch-allowlist.ts` の grandfather 台帳は削除のみで縮む ratchet。併存: `request-entrance-llm-boundary.test.ts`（B-18 詳細）／ `module-boundary.test.ts` ／ `write-scope-invariants.test.ts`（write-scope leaf 化・bare `git add -A` 禁止・commit pathspec 必須）／ `invariant-catalog-parity.test.ts`（§4↔歯の B-x ID parity）。
 - closure: model.md §3 の許可行列にない edge を全て divergence にする（`allowed` whitelist 方式＝DSM 検査）。
 - 現状の divergence・実装状態は `divergence-status.md`（状況断面）を参照。
 

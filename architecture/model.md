@@ -36,6 +36,8 @@
 | **shared-kernel** | 全層が参照する schema / 値 / 共有語彙 / pure util 群 | `config/`, `state/`, `git/`, `parser/`, `prompts/`, `logger/`, `errors`, `templates/`, `kernel/`（import ゼロの共有型: `IEventBus`/`StepName`/`AgentDefinition`/`GitHubClient`/各 VO）|
 | **leaf** | 何も import しない最下層 | `util/` |
 
+> `src/types/`（ambient 型宣言 `.d.ts` のみ・どこからも import されない）は mapping / DSM 検査の対象外。
+
 ```
 composition-root ─→ (all)
    domain ─→ ports, persistence, shared-kernel, leaf
@@ -64,7 +66,7 @@ composition-root ─→ (all)
 
 - ¹ ports が参照してよい domain 型は **Value Object のみ**（`Verdict`/`StepName` 等）。理想は VO を shared-kernel に置くこと。
 - ² shared-kernel 内部は leaf 方向へのみ（上向き循環も ✗）。
-- ³ 表の **"kernel" 列 = §2 の shared-kernel 層**（列見出しの短縮）。物理ディレクトリ `src/kernel/` は import ゼロの shared-kernel で、この層に属する（§3 の "kernel" 列と同義ではなく、その実体の一部）。
+- ³ 表の **"kernel" 列 = §2 の shared-kernel 層**（列見出しの短縮）。物理ディレクトリ `src/kernel/` は import ゼロの shared-kernel で、この層に属する（§3 の "kernel" 列と同義ではなく、その実体の一部）。DSM の歯は `src/kernel/` を import ゼロの最下層（leaf 扱い）として検査する — shared-kernel の中で最も下、という同値だがより厳しい分類。
 - **closure rule**: 上表で ✗ の edge が `src/` に存在したら divergence。未知の逆流も自動的に divergence になる。closure の機械強制は §6 の歯が担う。
 
 ---
@@ -88,12 +90,12 @@ composition-root ─→ (all)
 | **B-10** | GitHub token は紐づく host にしか送らない（github.com 用 token を非 github.com host へ、enterprise token を github.com へ送らない）| credential を誤った送信先 host へ漏らさない（published security advisory パターン）。B-6（subprocess への入口の封じ込め）と対をなす**送信先**の封じ込め |
 | **B-11** | `src/core/runtime/` の具象 runtime は `RealRuntimeStrategy`（`RuntimeStrategy` に `canDeriveChangedFiles` を必須化した交差型）を implements する。bare `implements RuntimeStrategy` を使わない | `permissionScope` を宣言する pipeline が要求する「changed-files 導出能力」を、将来の real runtime が実装し忘れて fail-open に戻ることを、コンパイル時（必須メソッド）＋ grep（bare implements 禁止）で構造的に封じる |
 | **B-12** | `node:child_process` の直接 import は seam モジュール（`util/spawn.ts` / `util/git-exec.ts`）と、call-site で `stripSecrets` する allowlist 済み composition-internal（`arch-allowlist.ts` の B-12 台帳）に限定。他ファイルからの直接 import を禁止 | env を省略した spawn（`stripSecrets` を通さない子プロセス生成）を構造的に封じる。B-6 の `process.env` grep が検出できない「env 参照を一切書かない env-omission spawn」を、import 面で捕捉する補完（B-6 と対をなす入口封じ込め）|
-| **B-13** | `StepExecutor` は `store.persist` / `store.fail` / `store.update` / `store.appendHistory` / `store.appendInterruption` / `store.appendLineage` / `store.appendStepRun` を直接呼ばない。step 実行経路の状態永続化・履歴記録・イベント発火は `CommitOrchestrator`（step commit 適用の単一所有者）が行う。並列 round も同一 — `ParallelReviewRound` の member は state を persist せず、coordinator が `CommitOrchestrator.commitRound` で round 結果を一括書き込みする | producer（StepExecutor / round member）と committer（CommitOrchestrator）の責務を分離し、逐次・並列の両経路で step 実行経路の状態書き込みを単一適用オーナーに集約する（`Pipeline` の crash 耐性 persist は別軸で本不変の対象外）。複数箇所からの並行書き込みを構造的に禁止し、状態整合性を保証する |
+| **B-13** | `StepExecutor` は `store.persist` / `store.fail` / `store.update` / `store.appendHistory` / `store.appendInterruption` / `store.appendLineage` / `store.appendStepRun` / `store.appendOperatorEvent` を直接呼ばない。step 実行経路の状態永続化・履歴記録・イベント発火は `CommitOrchestrator`（step commit 適用の単一所有者）が行う。並列 round も同一 — `ParallelReviewRound` の member は state を persist せず、coordinator が `CommitOrchestrator.commitRound` で round 結果を一括書き込みする | producer（StepExecutor / round member）と committer（CommitOrchestrator）の責務を分離し、逐次・並列の両経路で step 実行経路の状態書き込みを単一適用オーナーに集約する（`Pipeline` の crash 耐性 persist は別軸で本不変の対象外）。複数箇所からの並行書き込みを構造的に禁止し、状態整合性を保証する |
 | **B-14** | `StepExecutor` は `transitionJob` / `attachStateAndRethrow` を直接呼ばない。StepHalt の適用（FSM 遷移・rethrow）は `CommitOrchestrator.commitHalt` が一括担う | halt の適用経路を CommitOrchestrator に集約し、遷移漏れ・rethrow 漏れを構造的に防ぐ。B-13 の補完：persist と halt-apply を同一オーナーに置く |
 | **B-15** | 並列 round の git 副作用は coordinator が所有する。member 実行経路は git stage/commit を行わず、coordinator が round の宣言出力（declared outputs）だけを scoped stage（`git add -A -- <paths>`、bare `git add -A` を使わない）する。宣言外の変更は round 全体を halt する（`partitionRoundChanges` の offending 判定）| 共有 worktree では member 単位の commit 帰属が実行順依存になるため、git 副作用を round 単位の単一所有点へ集約する。非宣言変更を混ぜ込まず、attribution を出力ファイル名・`StepRun`・history 側に保持する |
 | **B-16** | 並列 round の member 実行は共有 `deps`（orchestration 入力）を in-place で書き換えない（`deps.<field> =` 代入をしない）。resume 入力は round ごとの readonly execution input として配布する | 実行 seam を跨ぐ入力の不変性を保証する。どの member が最初に resume 入力を消費するかという非決定な破壊的共有を構造的に排除し、round 実行を再現可能にする |
 | **B-17** | `{ allowReopen: true }` は `src/core/command/reopen.ts` のみから渡せる。他のコマンド（resume 等）は `transitionJob` の operator-scoped opt-in を受け取らず、`awaiting-archive → running` 遷移を常時開放しない | reopen は「operator の明示判断 + journal 記録を伴う遷移」として設計されており（D1）、opt-in の call-site を reopen コマンドに限定することで FSM guard の迂回を構造的に防ぐ |
-| **B-18** | request 系入口（`src/core/request/` / `src/core/command/request*.ts`）は LLM 系 port（`AgentRunner` / `SessionClient` / `AnthropicClient`）・その adapter（claude-code / managed-agent / codex / dispatching）・port barrel（`port/index`）を import しない。dispatch 点（`src/cli/command-registry.ts`）も LLM 系 port / adapter を import しない（非 LLM port の barrel 参照は可） | LLM 到達境界を job 実行経路に閉じ、入口を決定的（オフライン・認証不要）に保つ（ADR-20260731）。barrel の type re-export による型迂回と、dispatch 点で LLM client を new して注入する再導入経路を import 面で封じる |
+| **B-18** | request 系入口（`src/core/request/` / `src/core/command/request*.ts`）は LLM 系 port（`AgentRunner` / `SessionClient` / `AnthropicClient` / `IssueFidelityComparator`）・その adapter（claude-code / managed-agent / codex / dispatching）・port barrel（`port/index` — 削除済み。再導入も import も禁止）を import しない。dispatch 点（`src/cli/command-registry.ts`）も LLM 系 port / adapter を import しない（非 LLM port の参照は可） | LLM 到達境界を job 実行経路に閉じ、入口を決定的（オフライン・認証不要）に保つ（ADR-20260731）。barrel の type re-export による型迂回と、dispatch 点で LLM client を new して注入する再導入経路を import 面で封じる。LLM query を実行する port が増えたら本列挙と歯に**同時に**追加する |
 
 ---
 
@@ -107,7 +109,8 @@ composition-root ─→ (all)
 
 ## 6. 強制（歯）と trust placement
 
-- **歯**: `tests/unit/architecture/core-invariants.test.ts` が §4 の B-1〜B-18 と §3 closure（DSM）を **src 全体**で grep / import 検査する。B-18 は change 由来の `request-entrance-llm-boundary.test.ts` にも詳細検査（pattern 単位・sabotage guard）が併存する。既知 divergence は `arch-allowlist.ts` に grandfather し、allowlist は**削除のみで縮む ratchet**（許可されない edge / seam 違反 / status 直書きを新たに足すと red）。`module-boundary.test.ts` も併存。
+- **歯**: `tests/unit/architecture/core-invariants.test.ts` が §4 の B-1〜B-18 と §3 closure（DSM）を **src 全体**で grep / import 検査する。B-18 は change 由来の `request-entrance-llm-boundary.test.ts` にも詳細検査（pattern 単位・sabotage guard）が併存する。既知 divergence は `arch-allowlist.ts` に grandfather し、allowlist は**削除のみで縮む ratchet**（許可されない edge / seam 違反 / status 直書きを新たに足すと red）。併存する歯: `module-boundary.test.ts`（module 境界）／ `write-scope-invariants.test.ts`（write-scope の leaf module 化・bare `git add -A` 禁止・`git commit` の pathspec 必須）／ `invariant-catalog-parity.test.ts`（§4 と歯の B-x ID parity — 片方だけの追加・削除を red にする）。
+- **B-x 外の delete-only ratchet**（core-invariants 内。§4 の番号を持たないが同じ運用強度）: `process.cwd()` の全出現を allowlist で gate する CWD ratchet ／ `resolveRepoRoot*` の呼び出し点を CLI 入口に限定する repo-root confinement ／ commit-projection 統一の structure gate。いずれも allowlist / 列挙の削除のみで縮む。
 - **trust placement**: CI の required check に入れ、**merge は GitHub gate（branch protection）に委ね、CLI(archive) は merge を持たない**（`finish-respect-branch-protection` → `archive-command`）＋ **`CODEOWNERS` でこの model.md と歯をループ外固定**。
 - 現状の divergence・burn-down 履歴は構造でなく状況断面 → `divergence-status.md` を参照。
 

@@ -11,7 +11,7 @@
  *   - src/cli/command-registry.ts (request コマンドの dispatch 点 — 歴史的に LLM client を new して注入していた箇所)
  *
  * 禁止 import パターン:
- *   - LLM 系 port: port/agent-runner / port/session-client / port/anthropic-client
+ *   - LLM 系 port: port/agent-runner / port/session-client / port/anthropic-client / port/issue-fidelity-comparator
  *   - adapter: adapter/claude-code/ / adapter/managed-agent/ / adapter/codex/ / adapter/dispatching/
  *   - 入口（core/request・core/command/request*.ts）はさらに port barrel（port/index）経由も禁止。
  *     barrel は SessionClient / AnthropicClient を再輸出しており、型 import の迂回路になるため。
@@ -53,13 +53,14 @@ function grepE(pattern: string, dir: string, includeGlob?: string): string {
 // ─── 禁止 import パターン ───────────────────────────────────────────────────
 
 /**
- * LLM 系 port モジュール（port/agent-runner / port/session-client / port/anthropic-client）
- * の import パスパターン。
+ * LLM 系 port モジュール（port/agent-runner / port/session-client / port/anthropic-client /
+ * port/issue-fidelity-comparator）の import パスパターン。
  */
 const LLM_PORT_PATTERNS = [
   "port/agent-runner",
   "port/session-client",
   "port/anthropic-client",
+  "port/issue-fidelity-comparator",
 ];
 
 /**
