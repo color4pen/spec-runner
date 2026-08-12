@@ -23,7 +23,7 @@
 
 ## T-02: テスト生成免除の pipeline predicate を追加
 
-`src/core/pipeline/` 配下に pure-predicate モジュールを新設（spec-observation.ts / reverification.ts と同配置・同スタイル）:
+`src/core/pipeline/test-gen-exemption.ts` を新設（spec-observation.ts / reverification.ts と同配置・同スタイル）:
 
 - [ ] `isTestGenExempt(state: JobState): boolean` を追加。実装は
       `!isTestGenRequired(state.request.type)`。`src/config/type-config.js` から `isTestGenRequired` を import。
@@ -103,6 +103,8 @@
       （＝免除されない）ことを assert する。
 - [ ] **coverage 明示 skip**: `coverage` 設定ありで免除 type の verification 実行が、
       `changed-line-coverage` phase を `skipped`（免除理由明示）として残し、verdict を fail にしないことを assert する。
+      build が失敗している場合でも coverage の skip 理由は `test-generation-exempt request type: chore` のままとなり、
+      `previous command failed` にならないことも assert する（D4: 免除チェックは failed チェックより前に評価される）。
 - [ ] **既存テスト実行の維持**: 免除 type でも build / typecheck / lint / test に相当する command / phase が
       実行される（結果 phases に現れる）ことを assert する。
 
