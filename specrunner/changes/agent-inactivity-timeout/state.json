@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a5ccae91-efaa-4109-8ef6-453177e30a68",
   "createdAt": "2026-08-13T02:43:03.779Z",
-  "updatedAt": "2026-08-13T04:59:20.187Z",
+  "updatedAt": "2026-08-13T05:01:46.746Z",
   "request": {
     "title": "agent 呼び出しの無活動タイムアウト: イベントが途切れたら timeout halt に落とす",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/agent-inactivity-timeout-a5ccae91",
   "error": null,
@@ -79,7 +79,8 @@
     "10cd4c34a8604a7dc2a5a331bd00d308351f950d",
     "9b65af930d02c21a7098b6c61a43bea01f343bd8",
     "323b67b2215b5368936984ef7f00257be5820189",
-    "bbd3498fcfb6a66aeda3fcfef8ddfbb059056f9a"
+    "bbd3498fcfb6a66aeda3fcfef8ddfbb059056f9a",
+    "f5db047d2b3deef008d06b28cb8aff03f6910ad9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -143,6 +144,11 @@
       "tests/adapter/codex/agent-runner-inactivity-timeout.test.ts",
       "src/adapter/codex/agent-runner.ts",
       "src/adapter/claude-code/agent-runner.ts"
+    ],
+    "regression-gate": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts"
     ]
   },
   "resumePoint": null,
@@ -178,7 +184,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 72,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -193,7 +199,8 @@
       "code-review": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

@@ -1110,6 +1110,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       };
       return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {
+      if (err instanceof SpecRunnerError) throw err;
       if (abortController.signal.aborted && (timeoutId !== undefined || watchdog.fired)) {
         clearTimeout(timeoutId);
         logVerbose("session", "query timeout", { stepName: step.name, runtime: "local", timeoutMs: resolvedConfig.timeoutMs });
@@ -1130,7 +1131,6 @@ export class ClaudeCodeRunner implements AgentRunner {
           ),
         };
       }
-      if (err instanceof SpecRunnerError) throw err;
 
       const cause = err as Error;
       logVerbose("session", "query error", { stepName: step.name, runtime: "local", error: cause.message });
