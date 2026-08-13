@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a5ccae91-efaa-4109-8ef6-453177e30a68",
   "createdAt": "2026-08-13T02:43:03.779Z",
-  "updatedAt": "2026-08-13T03:13:31.178Z",
+  "updatedAt": "2026-08-13T03:29:22.111Z",
   "request": {
     "title": "agent 呼び出しの無活動タイムアウト: イベントが途切れたら timeout halt に落とす",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-materialize",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/agent-inactivity-timeout-a5ccae91",
   "error": null,
@@ -69,7 +69,8 @@
     "e73517abc723559b466227e80f8c8cb399ecc4e1",
     "1cd5ac886e9e23eea1a709ada044f10e82a177ab",
     "5e1a9840bb211a623663ed0bba95492932f2d1d5",
-    "9c85326f08a7e052bd0256ae1208ee2ff0f7858b"
+    "9c85326f08a7e052bd0256ae1208ee2ff0f7858b",
+    "21ba97c3b6a473a4176cc20cd5309e2d2008e579"
   ],
   "touchedFiles": {
     "request-review": [
@@ -95,16 +96,27 @@
       "src/core/step/step-halt.ts"
     ],
     "spec-fixer": [],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "test-materialize": [
+      "tests/unit/adapter/claude-code/agent-runner.test.ts",
+      "tests/adapter/codex/agent-runner.test.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/shared/__tests__/inactivity-watchdog.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts",
+      "tests/adapter/codex/agent-runner-inactivity-timeout.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 30,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 2,
       "spec-fixer": 2,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "test-materialize": 1
     }
   }
 }

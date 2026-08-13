@@ -5,18 +5,18 @@
 新規ファイル `src/adapter/shared/inactivity-watchdog.ts` に、イベント無活動を見張る
 watchdog を実装する(design D5/D6)。
 
-- [ ] `export const DEFAULT_INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;`(900_000)を定義する。
-- [ ] `createInactivityWatchdog(onFire: () => void, timeoutMs?: number, now?: () => number)` を実装する。
+- [x] `export const DEFAULT_INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;`(900_000)を定義する。
+- [x] `createInactivityWatchdog(onFire: () => void, timeoutMs?: number, now?: () => number)` を実装する。
   - `timeoutMs` 既定 `DEFAULT_INACTIVITY_TIMEOUT_MS`、`now` 既定 `Date.now`。
   - `bump()`: 既存タイマーを clear し `setTimeout(timeoutMs)` で再 arm、`lastActivityAt = now()` を更新。
     既に `fired === true` の場合は no-op(再 arm しない)。
   - タイマー発火時: `fired = true`、`elapsedMs = now() - lastActivityAt` を確定し、`onFire()` を呼ぶ。
   - `clear()`: タイマーを clear(冪等、複数回呼んでも安全)。発火状態は保持する。
   - `fired`(boolean)/ `elapsedMs`(number、未発火時 0)を読み取り可能に露出する(getter でも可)。
-- [ ] `export function formatInactivityTimeoutMessage(stepName: string, elapsedMs: number): string` を実装する。
+- [x] `export function formatInactivityTimeoutMessage(stepName: string, elapsedMs: number): string` を実装する。
   文言に「inactivity timeout」であることと `elapsedMs`(最終イベントからの経過時間)を含める。
   例: ``Step '<step>' inactivity timeout: no agent event for <elapsedMs>ms``。
-- [ ] `src/adapter/shared/inactivity-watchdog.test.ts` を新設し、fake timers で下記を固定する。
+- [x] `src/adapter/shared/inactivity-watchdog.test.ts` を新設し、fake timers で下記を固定する。
   - bump しないまま `timeoutMs` 経過 → `onFire` が 1 回呼ばれ `fired === true`、`elapsedMs === timeoutMs`。
   - `timeoutMs` 未満で bump を繰り返す限り `onFire` は呼ばれない(巻き直し)。
   - 発火後の `bump()` は再 arm しない(以後 `onFire` が再度呼ばれない)。
@@ -34,26 +34,26 @@ watchdog を実装する(design D5/D6)。
 `src/adapter/claude-code/agent-runner.ts` の 3 つの message ループへ watchdog を適用する
 (design D3/D4/D5/D6)。既存 wall-clock timeout の意味論・message・code は変更しない。
 
-- [ ] `../shared/inactivity-watchdog.js` から `createInactivityWatchdog` /
+- [x] `../shared/inactivity-watchdog.js` から `createInactivityWatchdog` /
   `formatInactivityTimeoutMessage` を import する。
-- [ ] run() スコープ(`abortController` 生成後、:527-534 付近)で watchdog を 1 個生成する。
+- [x] run() スコープ(`abortController` 生成後、:527-534 付近)で watchdog を 1 個生成する。
   `onFire` は `abortController.abort()` を呼ぶ。wall-clock タイマー(timeoutId)とは独立。
-- [ ] main work ループ(:651)で `for await` 直前に `watchdog.bump()` を呼び、各 message 受信時に
+- [x] main work ループ(:651)で `for await` 直前に `watchdog.bump()` を呼び、各 message 受信時に
   `watchdog.bump()` を呼ぶ(query 発行〜最初の message の区間も見張る = 要件 2)。
-- [ ] follow-up ループ(:772、`runFollowUpQueryWithRetry` の inner)でも同様に、`for await` 直前と
+- [x] follow-up ループ(:772、`runFollowUpQueryWithRetry` の inner)でも同様に、`for await` 直前と
   各 message 受信時に `watchdog.bump()` を呼ぶ。
-- [ ] output-repair ループ(:1008)でも同様に `for await` 直前と各 message 受信時に `watchdog.bump()`。
-- [ ] output-repair catch(:1028)は `catch (err)` に変更し、冒頭に
+- [x] output-repair ループ(:1008)でも同様に `for await` 直前と各 message 受信時に `watchdog.bump()`。
+- [x] output-repair catch(:1028)は `catch (err)` に変更し、冒頭に
   `if (abortController.signal.aborted) throw err;` を追加する。watchdog 発火による abort が
   "best-effort" 扱いで飲み込まれず outer catch へ伝播するようにする。
-- [ ] catch 節(:1099)の timeout 判定を
+- [x] catch 節(:1099)の timeout 判定を
   `abortController.signal.aborted && (timeoutId !== undefined || watchdog.fired)` に拡張する。
   - `watchdog.fired` のとき error message を
     `formatInactivityTimeoutMessage(step.name, watchdog.elapsedMs)` にし、code は `STEP_TIMEOUT` のまま。
   - `watchdog.fired` でない(= wall-clock)ときは既存 message
     ``Step '${step.name}' timed out after ${resolvedConfig.timeoutMs}ms`` を維持する。
   - `completionReason: "timeout"` / `error.code: "STEP_TIMEOUT"` は両ケースとも不変。
-- [ ] finally 節(:1133-1137)で `watchdog.clear()` を呼ぶ(全 exit path で確実に停止)。
+- [x] finally 節(:1133-1137)で `watchdog.clear()` を呼ぶ(全 exit path で確実に停止)。
 
 **Acceptance Criteria**:
 - 3 ループすべてで message 受信ごとに watchdog が巻き直される。
@@ -69,22 +69,22 @@ watchdog を実装する(design D5/D6)。
 
 `src/adapter/codex/agent-runner.ts` の events ループへ watchdog を適用する(claude-code と同型)。
 
-- [ ] `../shared/inactivity-watchdog.js` から `createInactivityWatchdog` /
+- [x] `../shared/inactivity-watchdog.js` から `createInactivityWatchdog` /
   `formatInactivityTimeoutMessage` を import する。
-- [ ] run() スコープ(`abortController` 生成後、:329-333 付近)で watchdog を 1 個生成する。
+- [x] run() スコープ(`abortController` 生成後、:329-333 付近)で watchdog を 1 個生成する。
   `onFire` は `abortController.abort()`。
-- [ ] `executeTurn` の events ループ(:398)で `for await` 直前に `watchdog.bump()`、各 `ev` 受信時に
+- [x] `executeTurn` の events ループ(:398)で `for await` 直前に `watchdog.bump()`、各 `ev` 受信時に
   `watchdog.bump()` を呼ぶ。executeTurn は main/follow-up/repair の全 turn が経由するため、
   これ 1 箇所で全ループを見張れる。
-- [ ] output-repair catch(:691)は `catch (err)` に変更し、冒頭に
+- [x] output-repair catch(:691)は `catch (err)` に変更し、冒頭に
   `if (abortController.signal.aborted) throw err;` を追加する。watchdog 発火による abort が
   "best-effort" 扱いで飲み込まれず outer catch へ伝播するようにする。
-- [ ] catch 節(:747-764)の timeout 判定を
+- [x] catch 節(:747-764)の timeout 判定を
   `abortController.signal.aborted && (timeoutId !== undefined || watchdog.fired)` に拡張する。
   - `watchdog.fired` のとき error message を `formatInactivityTimeoutMessage(step.name, watchdog.elapsedMs)`
     にし、code は `STEP_TIMEOUT` のまま。
   - それ以外は既存 message を維持する。
-- [ ] finally 節(:779-781)で `watchdog.clear()` を呼ぶ。
+- [x] finally 節(:779-781)で `watchdog.clear()` を呼ぶ。
 
 **Acceptance Criteria**:
 - events ループで event 受信ごとに watchdog が巻き直される。
@@ -100,20 +100,20 @@ watchdog を実装する(design D5/D6)。
 `tests/unit/adapter/claude-code/agent-runner.test.ts` に受け入れ基準を pin するテストを追加する。
 既存テストは変更しない(純追加)。
 
-- [ ] **最初の message 未到着で発火**: fake timers 下で、abort に反応するが message を一切 yield
+- [x] **最初の message 未到着で発火**: fake timers 下で、abort に反応するが message を一切 yield
   しない queryFn を用意し、`vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS)` で
   `completionReason === "timeout"` かつ `error.code === "STEP_TIMEOUT"` になることを固定する(要件 2)。
-- [ ] **巻き直しで非発火**: message を閾値未満の間隔で複数回 yield する queryFn で、間に
+- [x] **巻き直しで非発火**: message を閾値未満の間隔で複数回 yield する queryFn で、間に
   `vi.advanceTimersByTimeAsync(< 閾値)` を挟んでも発火せず `completionReason === "success"` に
   なることを固定する。
-- [ ] **awaiting-resume 合流**: 上記発火ケースの結果を executor 経由(または `makeTimeoutHalt` の
+- [x] **awaiting-resume 合流**: 上記発火ケースの結果を executor 経由(または `makeTimeoutHalt` の
   既存経路)で検証し、`completionReason: "timeout"` が awaiting-resume(resume 可能)に落ちることを固定する。
   ※ agent-runner 単体では `completionReason === "timeout"` / code `STEP_TIMEOUT` を assert すれば
   合流点(executor.ts:367 の分岐)は既存テストが担保する。合流を明示する場合は executor レベルの
   既存テスト構成に倣うこと。
-- [ ] **halt 表示の内容**: 発火時の `result.error.message` が無活動タイムアウトの旨(例 "inactivity")
+- [x] **halt 表示の内容**: 発火時の `result.error.message` が無活動タイムアウトの旨(例 "inactivity")
   と経過時間(`elapsedMs`、fake timers 下では閾値と一致)を含むことを固定する。
-- [ ] **output-repair 中の発火**: output-repair turn 実行中(message ループではなく repair turn 期間中)に
+- [x] **output-repair 中の発火**: output-repair turn 実行中(message ループではなく repair turn 期間中)に
   watchdog が発火した場合でも `completionReason === "timeout"` / code `STEP_TIMEOUT` を返すことを固定する。
   repair catch が `if (abortController.signal.aborted) throw err;` により abort を re-throw し、
   outer catch が timeout として処理することをテストで確認する。
@@ -128,11 +128,11 @@ watchdog を実装する(design D5/D6)。
 `tests/adapter/codex/agent-runner.test.ts`(既存の codex timeout テストが属するファイル)に、
 T-04 と同型の最小テストを追加する。
 
-- [ ] fake timers 下で、events を一切 emit しない(abort に反応する)turn で
+- [x] fake timers 下で、events を一切 emit しない(abort に反応する)turn で
   `completionReason === "timeout"` / code `STEP_TIMEOUT` になることを固定する。
-- [ ] event を閾値未満で流し続ける限り発火しないことを固定する。
-- [ ] 発火時の error message が無活動の旨と elapsedMs を含むことを固定する。
-- [ ] **output-repair 中の発火**: output-repair turn 実行中に watchdog が発火した場合でも
+- [x] event を閾値未満で流し続ける限り発火しないことを固定する。
+- [x] 発火時の error message が無活動の旨と elapsedMs を含むことを固定する。
+- [x] **output-repair 中の発火**: output-repair turn 実行中に watchdog が発火した場合でも
   `completionReason === "timeout"` / code `STEP_TIMEOUT` を返すことを固定する。
   T-03 で追加した repair catch の `if (abortController.signal.aborted) throw err;` が
   abort を outer catch へ届けることをテストで確認する。
@@ -144,8 +144,8 @@ T-04 と同型の最小テストを追加する。
 
 ## T-06: 全体検証
 
-- [ ] `bun run typecheck` が green。
-- [ ] `bun run test`(vitest 全体)が green。既存 timeout 系 pin(claude-code / codex)が無変更で通る。
+- [x] `bun run typecheck` が green。
+- [x] `bun run test`(vitest 全体)が green。既存 timeout 系 pin(claude-code / codex)が無変更で通る。
 
 **Acceptance Criteria**:
 - `typecheck && test` が green。
