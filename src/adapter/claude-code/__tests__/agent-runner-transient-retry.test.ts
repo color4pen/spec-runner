@@ -386,7 +386,7 @@ describe("abort timeout bypass", () => {
 
     // Should be timeout or error (not infinite loop)
     expect(result.completionReason === "timeout" || result.completionReason === "error").toBe(true);
-    expect(callCount).toBe(1); // only called once (abort prevents retry)
+    expect(callCount).toBeLessThanOrEqual(1); // called at most once (abort prevents call or retry)
     void aborted; // suppress unused warning
   });
 });

@@ -1,0 +1,232 @@
+{
+  "version": 2,
+  "jobId": "a5ccae91-efaa-4109-8ef6-453177e30a68",
+  "createdAt": "2026-08-13T02:43:03.779Z",
+  "updatedAt": "2026-08-13T05:10:27.134Z",
+  "request": {
+    "title": "agent 呼び出しの無活動タイムアウト: イベントが途切れたら timeout halt に落とす",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/agent-inactivity-timeout-a5ccae91",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "3abb76d22e38648264ee36d9bfe636d71b23b255",
+    "3faee17df529f6bc2a0b6a1b3c8d2c3600d1a4b0",
+    "d42ec20f46eb344d22887c28d35bad965bbec1e4",
+    "32b81dfb019300d8557ec090c1e00621b430269d",
+    "e73517abc723559b466227e80f8c8cb399ecc4e1",
+    "1cd5ac886e9e23eea1a709ada044f10e82a177ab",
+    "5e1a9840bb211a623663ed0bba95492932f2d1d5",
+    "9c85326f08a7e052bd0256ae1208ee2ff0f7858b",
+    "21ba97c3b6a473a4176cc20cd5309e2d2008e579",
+    "741b589a95cfa1d6363fab25379eea4be678860e",
+    "63a2ca81e051133194b692fee1d11450870010e1",
+    "57a8e530106ca3b0544695db158a1d602c4b6055",
+    "67fe6a60aa3b2b6cf24a5704b89443fe0c031a30",
+    "cb28fd24c1e8d22421a66ac92ab7f9618824a235",
+    "10cd4c34a8604a7dc2a5a331bd00d308351f950d",
+    "9b65af930d02c21a7098b6c61a43bea01f343bd8",
+    "323b67b2215b5368936984ef7f00257be5820189",
+    "bbd3498fcfb6a66aeda3fcfef8ddfbb059056f9a",
+    "f5db047d2b3deef008d06b28cb8aff03f6910ad9",
+    "6d9d934975b616e1d5c16bdc9871b7de7649cdf5",
+    "4e256eb99ea20d446999d13c1b24b24632e68bbb",
+    "aba93c73eab4e5f17bd91975a027599132013038",
+    "6793941f7f35cd01707ca2c20acc7f1ce722ab28",
+    "36e12a7b3b185e154da8c51fb975a2b16da81a79"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/config/step-config.ts",
+      "src/core/step/executor.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/core/step/step-halt.ts",
+      "tests/unit/adapter/claude-code/agent-runner.test.ts"
+    ],
+    "design": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/config/step-config.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/executor.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "tests/unit/adapter/claude-code/agent-runner.test.ts"
+    ],
+    "spec-review": [
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/step-halt.ts"
+    ],
+    "spec-fixer": [],
+    "test-case-gen": [],
+    "test-materialize": [
+      "tests/unit/adapter/claude-code/agent-runner.test.ts",
+      "tests/adapter/codex/agent-runner.test.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/shared/__tests__/inactivity-watchdog.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts",
+      "tests/adapter/codex/agent-runner-inactivity-timeout.test.ts"
+    ],
+    "implementer": [
+      "src/adapter/shared/__tests__/inactivity-watchdog.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts",
+      "tests/adapter/codex/agent-runner-inactivity-timeout.test.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/shared/inactivity-watchdog.ts",
+      "vitest.config.ts",
+      "tests/unit/adapter/claude-code/agent-runner.test.ts",
+      "tests/adapter/codex/agent-runner.test.ts",
+      "src/config/step-config.ts",
+      "src/config/schema/resolution.ts",
+      "src/util/retry.ts",
+      "tests/setup-fs-spy.ts"
+    ],
+    "build-fixer": [
+      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts",
+      "src/adapter/claude-code/agent-runner.ts"
+    ],
+    "code-review": [
+      "src/adapter/shared/inactivity-watchdog.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts",
+      "src/adapter/shared/__tests__/inactivity-watchdog.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts",
+      "tests/adapter/codex/agent-runner-inactivity-timeout.test.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/claude-code/agent-runner.ts"
+    ],
+    "regression-gate": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts"
+    ],
+    "code-fixer": [
+      "src/adapter/claude-code/agent-runner.ts"
+    ],
+    "conformance": [
+      "src/adapter/shared/inactivity-watchdog.ts",
+      "src/adapter/shared/__tests__/inactivity-watchdog.test.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts",
+      "tests/adapter/codex/agent-runner-inactivity-timeout.test.ts"
+    ]
+  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "323b67b2215b5368936984ef7f00257be5820189",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/agent-inactivity-timeout/design.md:sha256:5a333ccae00acc1cafb4c2eff520d8f9280e55e4053f38199807c5375fe4df8d|specrunner/changes/agent-inactivity-timeout/request.md:sha256:11dfaa4aa71a336eb3120566113053f8b46ee1f79e48080043ab9d3607fad767|specrunner/changes/agent-inactivity-timeout/spec.md:sha256:382131d2895a0a636514d7e72e6bdecd3c1618a10f0f1a86f5f18061671f8f29|specrunner/changes/agent-inactivity-timeout/tasks.md:sha256:0c96ecbe7c2a9cce6d8e64ae9bf204511d55f5d8525517dd06db9cef267ad326|specrunner/changes/agent-inactivity-timeout/test-cases.md:sha256:f3b50118032b704a7a507e4c69c7ecdf605a366d48e02ec640d9ee88d85baa07"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/988",
+    "number": 988,
+    "createdAt": "2026-08-13T05:10:26.001Z"
+  },
+  "_journal": {
+    "historyCount": 95,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 2,
+      "spec-fixer": 2,
+      "test-case-gen": 1,
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 3,
+      "build-fixer": 1,
+      "code-review": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 2,
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

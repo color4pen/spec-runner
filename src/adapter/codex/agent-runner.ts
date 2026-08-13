@@ -41,6 +41,7 @@ import { DEFAULT_TOOL_RETRY } from "../../core/port/report-result.js";
 import { toOpenAIStrictSchema } from "./strict-schema.js";
 import { SpecRunnerError } from "../../errors.js";
 import { loadCodexSdk, type CodexSdkLoader } from "./sdk-loader.js";
+import { createInactivityWatchdog, formatInactivityTimeoutMessage } from "../shared/inactivity-watchdog.js";
 
 // Minimal interface for the Codex SDK types used here (avoids deep SDK type dependency in tests)
 interface Turn {
@@ -331,6 +332,13 @@ export class CodexAgentRunner implements AgentRunner {
     if (resolvedConfig.timeoutMs !== null && resolvedConfig.timeoutMs > 0) {
       timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);
     }
+    // Inactivity watchdog: fires if no SDK event arrives within 15 minutes (D5/D6 design).
+    // Always on; independent of wall-clock timeoutMs. fired flag expands the catch condition (D4).
+    const watchdog = createInactivityWatchdog(() => abortController.abort());
+    // Initial bump before any await — guarantees the timer is registered synchronously so
+    // vi.advanceTimersByTimeAsync in tests can fire it. buildArtifactBundle (below) is async;
+    // without this initial bump the timer would only be set inside executeTurn (post-await).
+    watchdog.bump();
 
     const baseMessage = step.buildMessage(state, stepCtx);
     const artifactBundle = await buildArtifactBundle(cwd, ctx.slug);
@@ -385,6 +393,7 @@ export class CodexAgentRunner implements AgentRunner {
       // already-aborted signal is not called retroactively). Suppress the
       // orphaned Promise's rejection before throwing so Bun's
       // unhandledRejection handler does not terminate the process.
+      watchdog.bump(); // arm before turn issuance (covers query→first-event interval, req.2)
       const streamedResult = thread.runStreamed(prompt, opts);
       if (opts.signal?.aborted) {
         streamedResult.catch(() => {});
@@ -396,6 +405,7 @@ export class CodexAgentRunner implements AgentRunner {
       let usage: CodexUsage | null = null;
 
       for await (const ev of events) {
+        watchdog.bump(); // reset on each event arrival
         // Write every event to JSONL log
         if (logWriter !== null) {
           const entry: Record<string, unknown> = { type: ev.type };
@@ -688,7 +698,9 @@ export class CodexAgentRunner implements AgentRunner {
                 }
               }
             }
-          } catch {
+          } catch (err) {
+            // Re-throw abort errors so watchdog-triggered timeouts reach the outer catch (D4 design).
+            if (abortController.signal.aborted) throw err;
             // best-effort: repair turn failure → preserve work turn result
             stderrWrite(
               `[specrunner] warn: output verification repair turn ${attempt} failed for '${step.name}'. Continuing.\n`,
@@ -746,10 +758,13 @@ export class CodexAgentRunner implements AgentRunner {
       return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {
       if (err instanceof SpecRunnerError) throw err;
-      if (abortController.signal.aborted && timeoutId !== undefined) {
+      if (abortController.signal.aborted && (timeoutId !== undefined || watchdog.fired)) {
         clearTimeout(timeoutId);
         sessionLogWriter?.writeSummary({ sessionId: threadId ?? undefined, model: resolvedConfig.model, modelUsage });
         sessionLogWriter?.close();
+        const timeoutMessage = watchdog.fired
+          ? formatInactivityTimeoutMessage(step.name, watchdog.elapsedMs)
+          : `Step '${step.name}' timed out after ${resolvedConfig.timeoutMs}ms`;
         return {
           completionReason: "timeout",
           resultContent: null,
@@ -757,7 +772,7 @@ export class CodexAgentRunner implements AgentRunner {
           followUpAttempts: 0,
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           error: Object.assign(
-            new Error(`Step '${step.name}' timed out after ${resolvedConfig.timeoutMs}ms`),
+            new Error(timeoutMessage),
             { code: "STEP_TIMEOUT" },
           ),
         };
@@ -778,6 +793,7 @@ export class CodexAgentRunner implements AgentRunner {
       };
     } finally {
       if (timeoutId !== undefined) clearTimeout(timeoutId);
+      watchdog.clear();
     }
   }
 }

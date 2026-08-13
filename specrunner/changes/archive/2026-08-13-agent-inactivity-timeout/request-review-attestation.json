@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:11dfaa4aa71a336eb3120566113053f8b46ee1f79e48080043ab9d3607fad767",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/adapter/claude-code/agent-runner.ts:531-534 — resolvedConfig.timeoutMs !== null check + AbortController timer setup",
+    "src/adapter/claude-code/agent-runner.ts:1099-1111 — catch block: abortController.signal.aborted && timeoutId !== undefined → completionReason: 'timeout'",
+    "src/config/step-config.ts:10 — timeoutMs final fallback is null (SDK default comment)",
+    "src/core/step/executor.ts:367 — completionReason === 'timeout' → makeTimeoutHalt → awaiting-resume",
+    "src/adapter/claude-code/agent-runner.ts:651 — main message loop: for await (const message of messages as AsyncGenerator<SDKMessage, void>)",
+    "src/adapter/claude-code/agent-runner.ts:772 — follow-up loop: for await (const message of messages as AsyncGenerator<SDKMessage, void>)",
+    "src/adapter/claude-code/agent-runner.ts:1008 — repair loop: for await (const message of repairMessages as AsyncGenerator<SDKMessage, void>)",
+    "src/adapter/codex/agent-runner.ts:329-332 — AbortController + timeoutMs timer (same pattern as claude-code adapter)",
+    "src/adapter/codex/agent-runner.ts:398 — events loop: for await (const ev of events)"
+  ],
+  "sourceRevision": "0b7eca24809f6e48a49eb421d69e99ba8eb1de84"
+}

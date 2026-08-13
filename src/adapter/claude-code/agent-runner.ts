@@ -56,6 +56,7 @@ import { retryWithBackoff } from "../../util/retry.js";
 import { isTransientAgentError } from "../shared/transient-error.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { QueryAbortRegistration } from "../../core/port/query-abort.js";
+import { createInactivityWatchdog, formatInactivityTimeoutMessage } from "../shared/inactivity-watchdog.js";
 
 
 /**
@@ -463,6 +464,24 @@ export class ClaudeCodeRunner implements AgentRunner {
       dynamicContext: ctx.input.dynamicContext,
     };
 
+    // Resolve execution config and arm abort/watchdog synchronously — before any await —
+    // so vi.advanceTimersByTimeAsync fires the watchdog in fake-timer tests (D5).
+    const dynamicMaxTurns = step.getMaxTurns?.(state);
+    const resolvedConfig = getStepExecutionConfig(ctx.config, step.name, {
+      model: step.agent.model,
+      maxTurns: dynamicMaxTurns ?? step.maxTurns,
+    }, ctx.requestType);
+    const abortController = new AbortController();
+    // D4 (design.md): register with the abort hub; deregister in the finally block.
+    const deregisterFromHub = this.queryAbortHub?.register(abortController);
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    if (resolvedConfig.timeoutMs !== null && resolvedConfig.timeoutMs > 0) {
+      timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);
+    }
+    // Inactivity watchdog: fires if no SDK event arrives within 15 minutes (D5/D6 design).
+    const watchdog = createInactivityWatchdog(() => abortController.abort());
+    watchdog.bump(); // sync registration before any await — D5: fake-timer test safety
+
     // D3 (add-spec-review-baseline-check): call enrichContext before buildMessage.
     // Errors propagate — no catch here (StepExecutor handles error lifecycle).
     if (step.enrichContext) {
@@ -505,14 +524,6 @@ export class ClaudeCodeRunner implements AgentRunner {
       ? `${baseFullPrompt}${firstTurnCompletionDirective}`
       : baseFullPrompt;
 
-    // Resolve execution config: step-level > config defaults > step hardcoded > SDK default
-    // D2/D3 (design.md): getStepExecutionConfig() resolves model, maxTurns, timeoutMs
-    const dynamicMaxTurns = step.getMaxTurns?.(state);
-    const resolvedConfig = getStepExecutionConfig(ctx.config, step.name, {
-      model: step.agent.model,
-      maxTurns: dynamicMaxTurns ?? step.maxTurns,
-    }, ctx.requestType);
-
     // TC-006/TC-007: maxTurns: null → omit maxTurns from options (unlimited)
     // TC-012: step.maxTurns ?? 30 fallback is replaced by getStepExecutionConfig resolution chain
     const maxTurnsOption: Record<string, unknown> =
@@ -522,16 +533,6 @@ export class ClaudeCodeRunner implements AgentRunner {
     let extractedModelUsage: Record<string, ModelUsage> | undefined;
     let extractedSessionId: string | undefined;
     let extractedMetrics: AgentInvocationMetrics | undefined;
-
-    // Set up wall-clock timeout via AbortController
-    const abortController = new AbortController();
-    // D4 (design.md): register with the abort hub so the signal handler can abort this query.
-    // deregister is called in the finally block (all exit paths: success, error, throw).
-    const deregisterFromHub = this.queryAbortHub?.register(abortController);
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    if (resolvedConfig.timeoutMs !== null && resolvedConfig.timeoutMs > 0) {
-      timeoutId = setTimeout(() => abortController.abort(), resolvedConfig.timeoutMs);
-    }
 
     // Build query options, adding resume if a previous session ID is available.
     const resumeOption: Record<string, unknown> =
@@ -648,7 +649,12 @@ export class ClaudeCodeRunner implements AgentRunner {
       logPipelineDiag("query:start", `step=${step.name}`);
       const effectiveQueryFn = queryFn ?? (await this.loadSdkFn()).query;
       const messages = effectiveQueryFn({ prompt: fullPrompt, options: queryOptions });
+      watchdog.bump(); // arm before first message (covers query→first-event interval, req.2)
+      // Guard: if signal fired during pre-query I/O, addEventListener in the generator
+      // body is never called retroactively (W3C spec) — for-await would hang. Throw now.
+      abortController.signal.throwIfAborted();
       for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
+        watchdog.bump(); // reset on each event arrival
         emitToolProgress(message, ctx.emit, step.name);
         // Collect assistant messages for touched-files recording (main work turn only)
         if ((message as SDKMessage).type === "assistant") {
@@ -769,7 +775,10 @@ export class ClaudeCodeRunner implements AgentRunner {
         const effectiveQueryFn = queryFn ?? (await this.loadSdkFn()).query;
         const messages = effectiveQueryFn({ prompt, options });
         let lastResult: SDKResultMessage | null = null;
+        watchdog.bump(); // arm before follow-up loop
+        abortController.signal.throwIfAborted(); // already-aborted guard (same as runQuery)
         for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
+          watchdog.bump(); // reset on each event arrival
           onMessage(message);
           if (message.type === "result") {
             lastResult = message as SDKResultMessage;
@@ -1005,7 +1014,10 @@ export class ClaudeCodeRunner implements AgentRunner {
           try {
             const effectiveQueryFn = queryFn ?? (await this.loadSdkFn()).query;
             const repairMessages = effectiveQueryFn({ prompt: repairPrompt, options: repairOptions });
+            watchdog.bump(); // arm before repair loop
+            abortController.signal.throwIfAborted(); // already-aborted guard
             for await (const message of repairMessages as AsyncGenerator<SDKMessage, void>) {
+              watchdog.bump(); // reset on each event arrival
               emitToolProgress(message, ctx.emit, step.name);
               if (message.type === "result" && (message as SDKResultMessage).subtype === "success") {
                 const su = (message as SDKResultSuccess);
@@ -1025,7 +1037,9 @@ export class ClaudeCodeRunner implements AgentRunner {
                 }
               }
             }
-          } catch {
+          } catch (err) {
+            // Re-throw abort errors so watchdog-triggered timeouts reach the outer catch (D4 design).
+            if (abortController.signal.aborted) throw err;
             // best-effort: repair turn failure → preserve work turn result
             stderrWrite(
               `[specrunner] warn: output verification repair turn ${attempt} failed for '${step.name}'. Continuing.\n`,
@@ -1096,10 +1110,14 @@ export class ClaudeCodeRunner implements AgentRunner {
       };
       return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {
-      if (abortController.signal.aborted && timeoutId !== undefined) {
+      if (err instanceof SpecRunnerError) throw err;
+      if (abortController.signal.aborted && (timeoutId !== undefined || watchdog.fired)) {
         clearTimeout(timeoutId);
         logVerbose("session", "query timeout", { stepName: step.name, runtime: "local", timeoutMs: resolvedConfig.timeoutMs });
         sessionLogWriter?.close();
+        const timeoutMessage = watchdog.fired
+          ? formatInactivityTimeoutMessage(step.name, watchdog.elapsedMs)
+          : `Step '${step.name}' timed out after ${resolvedConfig.timeoutMs}ms`;
         return {
           completionReason: "timeout",
           resultContent: null,
@@ -1108,12 +1126,11 @@ export class ClaudeCodeRunner implements AgentRunner {
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           addedTurns: ADDED_TURNS_ZERO,
           error: Object.assign(
-            new Error(`Step '${step.name}' timed out after ${resolvedConfig.timeoutMs}ms`),
+            new Error(timeoutMessage),
             { code: "STEP_TIMEOUT" },
           ),
         };
       }
-      if (err instanceof SpecRunnerError) throw err;
 
       const cause = err as Error;
       logVerbose("session", "query error", { stepName: step.name, runtime: "local", error: cause.message });
@@ -1132,6 +1149,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       };
     } finally {
       if (timeoutId !== undefined) clearTimeout(timeoutId);
+      watchdog.clear();
       // D4: deregister from hub on every exit path (success, error, throw).
       deregisterFromHub?.();
     }
