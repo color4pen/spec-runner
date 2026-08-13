@@ -87,7 +87,7 @@
 **Priority**: must
 **Source**: tasks.md > T-01
 
-**GIVEN** `createInactivityWatchdog(onFire, timeoutMs)` を生成し、`bump()` を一切呼ばない  
+**GIVEN** `createInactivityWatchdog(onFire, timeoutMs)` を生成し、`bump()` を 1 回だけ呼んでタイマーを arm する(追加の bump は行わない)  
 **WHEN** fake timers で `timeoutMs` 分の時間を進める  
 **THEN** `onFire` がちょうど 1 回呼ばれ、`watchdog.fired === true`、`watchdog.elapsedMs === timeoutMs`
 

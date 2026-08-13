@@ -146,6 +146,14 @@ watchdog が `fired` のとき、catch は wall-clock とは別の message を�
   watchdog は finally で必ず clear するためハンドルリークもない。wall-clock の message/code/経路は
   一切変更しないため、既存 timeout 系 pin(TC-032/034/035/041 等、code=STEP_TIMEOUT と
   completionReason のみを assert、message 文字列は未 assert)と衝突しない。無活動分岐は純加算。
+- [Risk] for-await 進入前の `throwIfAborted()` ガードが、abort 済み signal での既存挙動を変え
+  既存 pin と衝突する
+  → **Mitigation(更新列挙)**: 衝突は 1 件のみ。
+  `src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts`(describe "abort timeout bypass")の
+  `expect(callCount).toBe(1)` を `expect(callCount).toBeLessThanOrEqual(1)` に更新した。
+  ガード導入により、signal が既に abort 済みの場合は queryFn を一度も呼ばずに中断する経路
+  (callCount=0)が生じたため。本テストの見張り対象は「abort が再試行を防ぐ」(callCount が
+  2 以上にならない)ことであり、上限 assert への緩和はこの意図を保存する。他の既存テストは無変更。
 - [Risk] 発火直後に遅延イベントが届き bump が再 arm して abort 状態と齟齬
   → **Mitigation**: `fired` 後の `bump()` は no-op(再 arm しない)を契約とする。
 - [Risk] ループ間の非ループ処理(follow-up prompt 構築 / output detection)中もタイマーが走る
