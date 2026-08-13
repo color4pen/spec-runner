@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "82b67f30-7f9d-42a8-bab1-427a6b780737",
   "createdAt": "2026-08-12T15:27:33.568Z",
-  "updatedAt": "2026-08-13T02:10:20.916Z",
+  "updatedAt": "2026-08-13T02:14:08.171Z",
   "request": {
     "title": "chore type のテスト生成免除: TYPE_CONFIG によるテスト生成工程の宣言的 skip",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/test-generation-type-gate-82b67f30",
   "error": null,
   "pipelineId": "standard",
@@ -78,7 +78,8 @@
     "c1989ac5d53d7c9716c2b1055a18a4a6709f7f34",
     "e3206dfbf04cfadfe773a02302720b4c6239a621",
     "7d81bb241a91e54858912bc2f31c1b10b7e8e273",
-    "c4400ff1c3cffc630c67849995cd79c425b8a678"
+    "c4400ff1c3cffc630c67849995cd79c425b8a678",
+    "451ae7bd25c85a9744038ae7183ef1644478dc27"
   ],
   "touchedFiles": {
     "request-review": [
@@ -190,6 +191,12 @@
       "tests/unit/verification/runner-test-gen-exemption.test.ts",
       "tests/config/type-config.test.ts",
       "src/core/pipeline/spec-observation.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-07-16-assurance-profile-type-gate.md",
+      "specrunner/adr/2026-07-08-lcov-changed-line-gate.md",
+      "specrunner/adr/2026-07-22-coverage-type-only-structural-skip.md",
+      "specrunner/adr/2026-08-13-test-generation-type-gate.md"
     ]
   },
   "reviewerStatuses": [
@@ -224,8 +231,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/987",
+    "number": 987,
+    "createdAt": "2026-08-13T02:14:06.831Z"
+  },
   "_journal": {
-    "historyCount": 77,
+    "historyCount": 82,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -242,7 +254,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 2
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
