@@ -43,6 +43,9 @@ watchdog を実装する(design D5/D6)。
 - [ ] follow-up ループ(:772、`runFollowUpQueryWithRetry` の inner)でも同様に、`for await` 直前と
   各 message 受信時に `watchdog.bump()` を呼ぶ。
 - [ ] output-repair ループ(:1008)でも同様に `for await` 直前と各 message 受信時に `watchdog.bump()`。
+- [ ] output-repair catch(:1028)は `catch (err)` に変更し、冒頭に
+  `if (abortController.signal.aborted) throw err;` を追加する。watchdog 発火による abort が
+  "best-effort" 扱いで飲み込まれず outer catch へ伝播するようにする。
 - [ ] catch 節(:1099)の timeout 判定を
   `abortController.signal.aborted && (timeoutId !== undefined || watchdog.fired)` に拡張する。
   - `watchdog.fired` のとき error message を
@@ -56,6 +59,8 @@ watchdog を実装する(design D5/D6)。
 - 3 ループすべてで message 受信ごとに watchdog が巻き直される。
 - 無活動発火時に `completionReason: "timeout"` / code `STEP_TIMEOUT` を返し、message に
   無活動の旨と `elapsedMs` を含む。
+- output-repair ループ中に watchdog が発火した場合、abort エラーが repair catch で飲み込まれず
+  outer catch へ伝播し、`completionReason: "timeout"` として返る。
 - wall-clock timeout(timeoutMs 設定時)の completionReason / code / message は従来どおり不変。
 - watchdog が全 exit path(success/error/timeout/throw)で clear される。
 - 既存の TC-032/033/034/035/041 等 timeout 系テストが**無変更で** green。
@@ -71,6 +76,9 @@ watchdog を実装する(design D5/D6)。
 - [ ] `executeTurn` の events ループ(:398)で `for await` 直前に `watchdog.bump()`、各 `ev` 受信時に
   `watchdog.bump()` を呼ぶ。executeTurn は main/follow-up/repair の全 turn が経由するため、
   これ 1 箇所で全ループを見張れる。
+- [ ] output-repair catch(:691)は `catch (err)` に変更し、冒頭に
+  `if (abortController.signal.aborted) throw err;` を追加する。watchdog 発火による abort が
+  "best-effort" 扱いで飲み込まれず outer catch へ伝播するようにする。
 - [ ] catch 節(:747-764)の timeout 判定を
   `abortController.signal.aborted && (timeoutId !== undefined || watchdog.fired)` に拡張する。
   - `watchdog.fired` のとき error message を `formatInactivityTimeoutMessage(step.name, watchdog.elapsedMs)`
@@ -82,6 +90,8 @@ watchdog を実装する(design D5/D6)。
 - events ループで event 受信ごとに watchdog が巻き直される。
 - 無活動発火時に `completionReason: "timeout"` / code `STEP_TIMEOUT` を返し、message に
   無活動の旨と `elapsedMs` を含む。
+- output-repair ループ中に watchdog が発火した場合、abort エラーが repair catch で飲み込まれず
+  outer catch へ伝播し、`completionReason: "timeout"` として返る。
 - codex の既存 wall-clock timeout 系テストが無変更で green。
 - watchdog が全 exit path で clear される。
 
@@ -103,10 +113,14 @@ watchdog を実装する(design D5/D6)。
   既存テスト構成に倣うこと。
 - [ ] **halt 表示の内容**: 発火時の `result.error.message` が無活動タイムアウトの旨(例 "inactivity")
   と経過時間(`elapsedMs`、fake timers 下では閾値と一致)を含むことを固定する。
+- [ ] **output-repair 中の発火**: output-repair turn 実行中(message ループではなく repair turn 期間中)に
+  watchdog が発火した場合でも `completionReason === "timeout"` / code `STEP_TIMEOUT` を返すことを固定する。
+  repair catch が `if (abortController.signal.aborted) throw err;` により abort を re-throw し、
+  outer catch が timeout として処理することをテストで確認する。
 
 **Acceptance Criteria**:
-- 4 つの受け入れ基準(未到着発火 / 巻き直し非発火 / timeout+awaiting-resume 合流 / halt message 内容)が
-  fake timers で green に固定される。
+- 5 つの受け入れ基準(未到着発火 / 巻き直し非発火 / timeout+awaiting-resume 合流 / halt message 内容 /
+  output-repair 中の watchdog 発火)が fake timers で green に固定される。
 - 追加テストは既存テストを 1 件も改変しない。
 
 ## T-05: codex の無活動タイムアウト挙動をテストで固定する(fake timers)

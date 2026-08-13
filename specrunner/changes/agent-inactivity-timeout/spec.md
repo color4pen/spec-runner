@@ -32,6 +32,14 @@ local runtime の agent 呼び出し(claude-code / codex adapter)は、各 messa
 **Then** 無活動タイマーが発火し `AbortController` が abort され、agent run は
 `completionReason: "timeout"`(error.code `STEP_TIMEOUT`)を返す
 
+#### Scenario: output-repair ループ実行中に watchdog が発火しても timeout として返る
+
+**Given** agent run が output-repair turn を実行中であり、output-repair catch が best-effort として
+abort エラーを再 throw する(`if (abortController.signal.aborted) throw err;`)
+**When** 無活動タイマーが発火し `AbortController` が abort される
+**Then** abort エラーは repair catch を素通りして outer catch へ伝播し、agent run は
+`completionReason: "timeout"`(error.code `STEP_TIMEOUT`)を返す(success ではない)
+
 ### Requirement: 無活動発火は既存 timeout 経路に合流し awaiting-resume になる
 
 無活動タイマーの発火は、新しい halt 種別や interruption reason を新設せず、既存の wall-clock

@@ -151,6 +151,12 @@ watchdog が `fired` のとき、catch は wall-clock とは別の message を�
 - [Risk] ループ間の非ループ処理(follow-up prompt 構築 / output detection)中もタイマーが走る
   → **Trade-off**: これは容認する。ローカル CPU 処理は高速で、15 分の空白自体が異常であり
   捕捉対象として妥当。各ループ入口で bump するため通常運転では問題にならない。
+- [Risk] output-repair ループの best-effort `catch {}` が watchdog abort を飲み込み、
+  outer catch に到達せず `completionReason: "success"` を返す(timeout halt に合流しない)
+  → **Mitigation**: 両 adapter の repair catch を `catch (err)` に変え、冒頭に
+  `if (abortController.signal.aborted) throw err;` を追加する。abort 時のみ再 throw して
+  outer catch の D4 判定へ届ける。非 abort の repair 失敗は従来どおり best-effort のまま。
+  T-02 / T-03 の対象 catch を明示し、T-04 の受け入れ基準でテストを固定する。
 
 ## Open Questions
 
