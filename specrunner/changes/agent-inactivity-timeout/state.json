@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a5ccae91-efaa-4109-8ef6-453177e30a68",
   "createdAt": "2026-08-13T02:43:03.779Z",
-  "updatedAt": "2026-08-13T04:44:52.558Z",
+  "updatedAt": "2026-08-13T04:59:20.187Z",
   "request": {
     "title": "agent 呼び出しの無活動タイムアウト: イベントが途切れたら timeout halt に落とす",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/agent-inactivity-timeout-a5ccae91",
   "error": null,
@@ -77,7 +77,9 @@
     "67fe6a60aa3b2b6cf24a5704b89443fe0c031a30",
     "cb28fd24c1e8d22421a66ac92ab7f9618824a235",
     "10cd4c34a8604a7dc2a5a331bd00d308351f950d",
-    "9b65af930d02c21a7098b6c61a43bea01f343bd8"
+    "9b65af930d02c21a7098b6c61a43bea01f343bd8",
+    "323b67b2215b5368936984ef7f00257be5820189",
+    "bbd3498fcfb6a66aeda3fcfef8ddfbb059056f9a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -135,19 +137,48 @@
     ],
     "code-review": [
       "src/adapter/shared/inactivity-watchdog.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts",
       "src/adapter/shared/__tests__/inactivity-watchdog.test.ts",
-      "src/adapter/claude-code/agent-runner.ts",
-      "src/adapter/codex/agent-runner.ts",
       "tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts",
       "tests/adapter/codex/agent-runner-inactivity-timeout.test.ts",
-      "tests/unit/adapter/claude-code/agent-runner.test.ts",
-      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts"
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/claude-code/agent-runner.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "323b67b2215b5368936984ef7f00257be5820189",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/agent-inactivity-timeout/design.md:sha256:5a333ccae00acc1cafb4c2eff520d8f9280e55e4053f38199807c5375fe4df8d|specrunner/changes/agent-inactivity-timeout/request.md:sha256:11dfaa4aa71a336eb3120566113053f8b46ee1f79e48080043ab9d3607fad767|specrunner/changes/agent-inactivity-timeout/spec.md:sha256:382131d2895a0a636514d7e72e6bdecd3c1618a10f0f1a86f5f18061671f8f29|specrunner/changes/agent-inactivity-timeout/tasks.md:sha256:0c96ecbe7c2a9cce6d8e64ae9bf204511d55f5d8525517dd06db9cef267ad326|specrunner/changes/agent-inactivity-timeout/test-cases.md:sha256:f3b50118032b704a7a507e4c69c7ecdf605a366d48e02ec640d9ee88d85baa07"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -159,7 +190,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1
+      "code-review": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
