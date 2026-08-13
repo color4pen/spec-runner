@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a5ccae91-efaa-4109-8ef6-453177e30a68",
   "createdAt": "2026-08-13T02:43:03.779Z",
-  "updatedAt": "2026-08-13T04:20:20.548Z",
+  "updatedAt": "2026-08-13T04:24:16.258Z",
   "request": {
     "title": "agent 呼び出しの無活動タイムアウト: イベントが途切れたら timeout halt に落とす",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/agent-inactivity-timeout-a5ccae91",
   "error": null,
@@ -72,7 +72,9 @@
     "9c85326f08a7e052bd0256ae1208ee2ff0f7858b",
     "21ba97c3b6a473a4176cc20cd5309e2d2008e579",
     "741b589a95cfa1d6363fab25379eea4be678860e",
-    "63a2ca81e051133194b692fee1d11450870010e1"
+    "63a2ca81e051133194b692fee1d11450870010e1",
+    "57a8e530106ca3b0544695db158a1d602c4b6055",
+    "67fe6a60aa3b2b6cf24a5704b89443fe0c031a30"
   ],
   "touchedFiles": {
     "request-review": [
@@ -123,10 +125,14 @@
       "src/config/schema/resolution.ts",
       "src/util/retry.ts",
       "tests/setup-fs-spy.ts"
+    ],
+    "build-fixer": [
+      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts",
+      "src/adapter/claude-code/agent-runner.ts"
     ]
   },
   "_journal": {
-    "historyCount": 41,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -136,7 +142,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
