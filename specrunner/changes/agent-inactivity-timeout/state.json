@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a5ccae91-efaa-4109-8ef6-453177e30a68",
   "createdAt": "2026-08-13T02:43:03.779Z",
-  "updatedAt": "2026-08-13T02:47:12.922Z",
+  "updatedAt": "2026-08-13T02:55:03.569Z",
   "request": {
     "title": "agent 呼び出しの無活動タイムアウト: イベントが途切れたら timeout halt に落とす",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/agent-inactivity-timeout-a5ccae91",
   "error": null,
@@ -63,7 +63,8 @@
   ],
   "synthesizedCommits": [
     "3abb76d22e38648264ee36d9bfe636d71b23b255",
-    "3faee17df529f6bc2a0b6a1b3c8d2c3600d1a4b0"
+    "3faee17df529f6bc2a0b6a1b3c8d2c3600d1a4b0",
+    "d42ec20f46eb344d22887c28d35bad965bbec1e4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -73,12 +74,21 @@
       "src/adapter/codex/agent-runner.ts",
       "src/core/step/step-halt.ts",
       "tests/unit/adapter/claude-code/agent-runner.test.ts"
+    ],
+    "design": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/config/step-config.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/executor.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "tests/unit/adapter/claude-code/agent-runner.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
