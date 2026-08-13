@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a5ccae91-efaa-4109-8ef6-453177e30a68",
   "createdAt": "2026-08-13T02:43:03.779Z",
-  "updatedAt": "2026-08-13T03:10:41.841Z",
+  "updatedAt": "2026-08-13T03:13:31.178Z",
   "request": {
     "title": "agent 呼び出しの無活動タイムアウト: イベントが途切れたら timeout halt に落とす",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "feat/agent-inactivity-timeout-a5ccae91",
   "error": null,
@@ -68,7 +68,8 @@
     "32b81dfb019300d8557ec090c1e00621b430269d",
     "e73517abc723559b466227e80f8c8cb399ecc4e1",
     "1cd5ac886e9e23eea1a709ada044f10e82a177ab",
-    "5e1a9840bb211a623663ed0bba95492932f2d1d5"
+    "5e1a9840bb211a623663ed0bba95492932f2d1d5",
+    "9c85326f08a7e052bd0256ae1208ee2ff0f7858b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -93,15 +94,17 @@
       "src/core/step/executor.ts",
       "src/core/step/step-halt.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 2,
-      "spec-fixer": 2
+      "spec-fixer": 2,
+      "test-case-gen": 1
     }
   }
 }
