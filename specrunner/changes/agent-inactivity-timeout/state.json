@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a5ccae91-efaa-4109-8ef6-453177e30a68",
   "createdAt": "2026-08-13T02:43:03.779Z",
-  "updatedAt": "2026-08-13T05:02:32.734Z",
+  "updatedAt": "2026-08-13T05:04:21.469Z",
   "request": {
     "title": "agent 呼び出しの無活動タイムアウト: イベントが途切れたら timeout halt に落とす",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/agent-inactivity-timeout-a5ccae91",
   "error": null,
@@ -81,7 +81,8 @@
     "323b67b2215b5368936984ef7f00257be5820189",
     "bbd3498fcfb6a66aeda3fcfef8ddfbb059056f9a",
     "f5db047d2b3deef008d06b28cb8aff03f6910ad9",
-    "6d9d934975b616e1d5c16bdc9871b7de7649cdf5"
+    "6d9d934975b616e1d5c16bdc9871b7de7649cdf5",
+    "4e256eb99ea20d446999d13c1b24b24632e68bbb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -188,7 +189,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 76,
+    "historyCount": 81,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -204,7 +205,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1,
+      "regression-gate": 2,
       "code-fixer": 1
     }
   }
