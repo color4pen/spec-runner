@@ -1,0 +1,18 @@
+{
+  "requestHash": "sha256:babb161b5adb03abbd64ccf0dbd98e0fb12bac055a8e4df14ed8c498afd7ade3",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/config/type-config.ts:28 — TYPE_CONFIG export",
+    "src/config/type-config.ts:105 — isSpecRequired() implementation",
+    "src/core/pipeline/types.ts:236 — SPEC_REVIEW approved → TEST_CASE_GEN",
+    "src/core/pipeline/types.ts:239 — TEST_CASE_GEN success → TEST_MATERIALIZE",
+    "src/core/pipeline/types.ts:241 — TEST_MATERIALIZE success → IMPLEMENTER",
+    "src/core/pipeline/types.ts:244 — SPEC_FIXER approved → TEST_CASE_GEN when specFixerForwardsToTestGen",
+    "src/core/pipeline/types.ts:248 — IMPLEMENTER success → BITE_EVIDENCE",
+    "src/core/pipeline/types.ts:251-252 — BITE_EVIDENCE passed|strategy-deferred → VERIFICATION",
+    "src/core/step/implementer.ts:157-159 — test-cases.md required:false",
+    "src/core/verification/test-coverage.ts:305-317 — missing test-cases.md returns status:skipped",
+    "src/core/verification/runner.ts:360 — coverageSkipNote when verification.coverage unset"
+  ],
+  "sourceRevision": "dafcca67a631c767f14c54883634b1863caf7b8c"
+}

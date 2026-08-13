@@ -1,0 +1,267 @@
+{
+  "version": 2,
+  "jobId": "82b67f30-7f9d-42a8-bab1-427a6b780737",
+  "createdAt": "2026-08-12T15:27:33.568Z",
+  "updatedAt": "2026-08-13T02:14:08.171Z",
+  "request": {
+    "title": "chore type のテスト生成免除: TYPE_CONFIG によるテスト生成工程の宣言的 skip",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/test-generation-type-gate-82b67f30",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "2a0b4329ae46be96e02c764caa9e3c7ef8998305",
+    "213e5061a1e2b9797470df91f0c37a80ccf23463",
+    "2a316485f0eabebe98115c0d41f5cf31b830201c",
+    "9c880ee4c88c12187e57c7e1b2f31fd879efeee5",
+    "8b4da16df5256851b8fd1c624884357dbbba8094",
+    "89b325d11cf1dd432ed904bd21c873d904781617",
+    "ce0f881c18a0e4ccc706f600ea0b1c1cd183bed7",
+    "ce847964bdd00132556420520e8140b78357d558",
+    "f574027387496d5fc4d09fd3650094264f7612d0",
+    "e28b292bb2e6b654407e591e7106a5b121ddebcf",
+    "3d54dbcc48141472247304119fa79df4ca3656ed",
+    "135ddf8d07557a8c46020c40a115ee0e3a00919c",
+    "118301342734cc7e04597f3b87330a8bf0f14a56",
+    "c1989ac5d53d7c9716c2b1055a18a4a6709f7f34",
+    "e3206dfbf04cfadfe773a02302720b4c6239a621",
+    "7d81bb241a91e54858912bc2f31c1b10b7e8e273",
+    "c4400ff1c3cffc630c67849995cd79c425b8a678",
+    "451ae7bd25c85a9744038ae7183ef1644478dc27",
+    "f777a7f09d3f2a41798487e6483b58f3d72c6f77"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/config/type-config.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/step/implementer.ts",
+      "src/core/verification/test-coverage.ts",
+      "src/core/verification/runner.ts",
+      "tests/config/type-config.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/verification.ts",
+      "src/state/schema.ts"
+    ],
+    "design": [],
+    "spec-review": [
+      "src/config/type-config.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/verification/runner.ts",
+      "src/core/step/verification.ts",
+      "src/core/verification/test-coverage.ts",
+      "src/core/step/implementer.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/state/schema.ts",
+      "tests/config/type-config.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "tests/unit/verification/runner-commands.test.ts"
+    ],
+    "spec-fixer": [],
+    "test-case-gen": [
+      "tests/config/type-config.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "tests/unit/verification/runner-commands.test.ts",
+      "src/core/pipeline/spec-observation.ts"
+    ],
+    "test-materialize": [
+      "src/config/type-config.ts",
+      "tests/config/type-config.test.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "tests/unit/verification/runner-commands.test.ts",
+      "src/core/verification/runner.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/state/schema.ts",
+      "src/core/step/step-names.ts",
+      "src/state/schema/types.ts",
+      "src/kernel/step-names.ts",
+      "tests/pipeline.test.ts",
+      "src/core/verification/changed-line-coverage.ts",
+      "src/store/job-state-store.ts",
+      "src/core/pipeline/reverification.ts",
+      "src/config/schema/types.ts",
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "tests/unit/verification/runner-test-gen-exemption.test.ts"
+    ],
+    "implementer": [
+      "src/config/type-config.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "tests/unit/verification/runner-test-gen-exemption.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/verification/runner.ts",
+      "tests/config/type-config.test.ts",
+      "src/core/step/verification.ts",
+      "src/core/step/step-names.ts",
+      "src/kernel/step-names.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/core/pipeline/__tests__/bite-evidence-pipeline.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
+      "tests/test-case-gen-step.test.ts",
+      "tests/unit/pipeline/transition-when.test.ts",
+      "tests/core/pipeline/pipeline.test.ts"
+    ],
+    "code-review": [
+      "src/config/type-config.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/verification/runner.ts",
+      "src/core/step/verification.ts",
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "tests/unit/verification/runner-test-gen-exemption.test.ts",
+      "tests/config/type-config.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/pipeline/__tests__/bite-evidence-pipeline.test.ts",
+      "src/core/pipeline/compose-reviewers.ts",
+      "src/core/pipeline/pipeline.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/core/pipeline/spec-observation.ts"
+    ],
+    "regression-gate": [
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "tests/unit/verification/runner-test-gen-exemption.test.ts"
+    ],
+    "conformance": [
+      "src/config/type-config.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/verification/runner.ts",
+      "src/core/step/verification.ts",
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "tests/unit/verification/runner-test-gen-exemption.test.ts",
+      "tests/config/type-config.test.ts",
+      "src/core/pipeline/spec-observation.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-07-16-assurance-profile-type-gate.md",
+      "specrunner/adr/2026-07-08-lcov-changed-line-gate.md",
+      "specrunner/adr/2026-07-22-coverage-type-only-structural-skip.md",
+      "specrunner/adr/2026-08-13-test-generation-type-gate.md"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "3d54dbcc48141472247304119fa79df4ca3656ed",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/test-generation-type-gate/design.md:sha256:2904dd2653697d7a278a08ef592638d40ae373cf51a23d9edcaf632112818754|specrunner/changes/test-generation-type-gate/request.md:sha256:babb161b5adb03abbd64ccf0dbd98e0fb12bac055a8e4df14ed8c498afd7ade3|specrunner/changes/test-generation-type-gate/spec.md:sha256:34c6a19af55d652c52caf6426e59717898c29516cf5449a837f507319bf93bfc|specrunner/changes/test-generation-type-gate/tasks.md:sha256:51946310ec89b18d35dc9a8569202f61053e870dd702e68be1b3abc0b14a8543|specrunner/changes/test-generation-type-gate/test-cases.md:sha256:e9a6c5a42311c544e97cbff6adb809422622475a447df108134a19631bcc59d5"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "signal",
+    "iterationsExhausted": 0
+  },
+  "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/987",
+    "number": 987,
+    "createdAt": "2026-08-13T02:14:06.831Z"
+  },
+  "_journal": {
+    "historyCount": 82,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "test-case-gen": 1,
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 2,
+      "code-review": 1,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 2,
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

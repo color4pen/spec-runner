@@ -20,6 +20,7 @@ import { normalizeCommands, spawnCommand } from "./commands.js";
 import type { VerificationConfig } from "../../config/schema.js";
 import { detectPackageManager, runCommand } from "../../util/detect-pm.js";
 import { runChangedLineCoverageGate, CHANGED_LINE_COVERAGE_PHASE } from "./changed-line-coverage.js";
+import { isTestGenRequired } from "../../config/type-config.js";
 
 // Lockfile-sync phase name constant — kept local to avoid a static import of lockfile-sync.js.
 // A static import triggers the vi.mock factory at module-load time (before test code runs),
@@ -326,6 +327,7 @@ async function finalizeVerificationRun(args: {
   baseBranch: string | undefined;
   root: string;
   skipLabel: "command" | "phase";
+  requestType?: string;
 }): Promise<VerificationResult> {
   const { phases } = args;
   let { failed } = args;
@@ -333,7 +335,17 @@ async function finalizeVerificationRun(args: {
   // Run changed-line coverage gate.
   let coverageSkipNote: string | undefined;
   if (args.coverage !== undefined) {
-    if (failed) {
+    // Test-gen-exempt types skip the coverage gate (exempt check fires before failed check).
+    if (args.requestType !== undefined && !isTestGenRequired(args.requestType)) {
+      phases.push({
+        phase: CHANGED_LINE_COVERAGE_PHASE,
+        status: "skipped",
+        stdout: `_(skipped — test-generation-exempt request type: ${args.requestType})_`,
+        stderr: "",
+        exitCode: null,
+        durationMs: 0,
+      });
+    } else if (failed) {
       phases.push({
         phase: CHANGED_LINE_COVERAGE_PHASE,
         status: "skipped",
@@ -431,16 +443,17 @@ export async function runVerification(
   cwd: string = process.cwd(),
   verificationConfig?: VerificationConfig,
   baseBranch?: string,
+  requestType?: string,
 ): Promise<VerificationResult> {
   const coverage = verificationConfig?.coverage;
 
   // Dispatch to commands path if verification.commands is defined
   if (verificationConfig?.commands !== undefined) {
-    return runVerificationCommands(slug, cwd, verificationConfig.commands, coverage, baseBranch);
+    return runVerificationCommands(slug, cwd, verificationConfig.commands, coverage, baseBranch, requestType);
   }
 
   // Fallback: phase detection path (existing behavior)
-  return runVerificationPhases(slug, cwd, baseBranch, coverage);
+  return runVerificationPhases(slug, cwd, baseBranch, coverage, requestType);
 }
 
 /**
@@ -454,6 +467,7 @@ async function runVerificationCommands(
   rawCommands: import("../../config/schema.js").VerificationCommand[],
   coverage?: import("../../config/schema.js").CoverageConfig,
   baseBranch?: string,
+  requestType?: string,
 ): Promise<VerificationResult> {
   const normalized = normalizeCommands(rawCommands);
   const { root } = await detectPackageManager(cwd);
@@ -487,7 +501,7 @@ async function runVerificationCommands(
     }
   }
 
-  return finalizeVerificationRun({ slug, cwd, phases, failed, coverage, baseBranch, root, skipLabel: "command" });
+  return finalizeVerificationRun({ slug, cwd, phases, failed, coverage, baseBranch, root, skipLabel: "command", requestType });
 }
 
 /**
@@ -504,6 +518,7 @@ async function runVerificationPhases(
   cwd: string,
   baseBranch?: string,
   coverage?: import("../../config/schema.js").CoverageConfig,
+  requestType?: string,
 ): Promise<VerificationResult> {
   // Integrity check: detect package.json scripts tampering before running any phases
   if (baseBranch) {
@@ -631,5 +646,5 @@ async function runVerificationPhases(
     }
   }
 
-  return finalizeVerificationRun({ slug, cwd, phases, failed, coverage, baseBranch, root, skipLabel: "phase" });
+  return finalizeVerificationRun({ slug, cwd, phases, failed, coverage, baseBranch, root, skipLabel: "phase", requestType });
 }

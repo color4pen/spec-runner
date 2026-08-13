@@ -586,10 +586,11 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("spec-review",  "needs-fix")).toMatchObject({ to: "spec-fixer" });
     // spec-review escalation transition no longer exists (R3 cutover)
     expect(find("spec-review",  "escalation")).toBeUndefined();
-    // spec-fixer approved has two rows:
-    //   guarded (observation pass: forward to test-case-gen) — comes first
+    // spec-fixer approved has three rows:
+    //   guarded (test-gen-exempt observation pass: forward to implementer) — comes first
+    //   guarded (observation pass: forward to test-case-gen) — comes second
     //   unconditional fallback (approved → spec-review) for needs-fix and conformance paths
-    expect(find("spec-fixer",   "approved")).toMatchObject({ to: "test-case-gen" }); // guarded observation pass row (first)
+    expect(findWithTo("spec-fixer", "approved", "test-case-gen")).toBeDefined(); // guarded observation pass row exists
     expect(findWithTo("spec-fixer", "approved", "spec-review")).toBeDefined(); // unconditional fallback exists
     expect(find("spec-fixer",   "error")).toMatchObject({ to: "escalate" });
     // ADR-20260716 R3: test-case-gen → test-materialize (not implementer)
@@ -605,7 +606,9 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     const findWithTo = (step: string, on: string, to: string) =>
       STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on && t.to === to);
 
-    expect(find("implementer",  "success")).toMatchObject({ to: "bite-evidence" });
+    // Note: a guarded IMPLEMENTER→VERIFICATION row (test-gen-exempt bypass) precedes the unconditional bite-evidence row.
+    // Use findWithTo to specifically locate the bite-evidence wiring.
+    expect(findWithTo("implementer", "success", "bite-evidence")).toBeDefined();
     expect(find("implementer",  "error")).toMatchObject({ to: "escalate" });
     // verification passed has two rows: conditional (conformanceApproved → adr-gen) + fallback (→ code-review)
     expect(findWithTo("verification", "passed", "code-review")).toBeDefined(); // fallback (initial path)

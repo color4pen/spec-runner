@@ -17,9 +17,11 @@ import { STEP_NAMES } from "../../step/step-names.js";
 // ---------------------------------------------------------------------------
 
 describe("TC-026: STANDARD_TRANSITIONS includes bite-evidence step wiring", () => {
-  it("TC-026: implementer / success routes to bite-evidence", () => {
+  it("TC-026: implementer / success routes to bite-evidence (unconditional row exists)", () => {
+    // The unconditional bite-evidence row may be preceded by guarded rows (e.g. test-gen-exempt bypass).
+    // Filter specifically for the row that routes to bite-evidence to confirm the wiring exists.
     const row = STANDARD_TRANSITIONS.find(
-      (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success",
+      (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success" && t.to === "bite-evidence",
     );
     expect(row).toBeDefined();
     expect(row!.to).toBe("bite-evidence");
