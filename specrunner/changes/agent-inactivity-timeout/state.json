@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a5ccae91-efaa-4109-8ef6-453177e30a68",
   "createdAt": "2026-08-13T02:43:03.779Z",
-  "updatedAt": "2026-08-13T05:04:21.469Z",
+  "updatedAt": "2026-08-13T05:10:27.134Z",
   "request": {
     "title": "agent 呼び出しの無活動タイムアウト: イベントが途切れたら timeout halt に落とす",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/agent-inactivity-timeout-a5ccae91",
   "error": null,
   "pipelineId": "standard",
@@ -82,7 +82,9 @@
     "bbd3498fcfb6a66aeda3fcfef8ddfbb059056f9a",
     "f5db047d2b3deef008d06b28cb8aff03f6910ad9",
     "6d9d934975b616e1d5c16bdc9871b7de7649cdf5",
-    "4e256eb99ea20d446999d13c1b24b24632e68bbb"
+    "4e256eb99ea20d446999d13c1b24b24632e68bbb",
+    "aba93c73eab4e5f17bd91975a027599132013038",
+    "6793941f7f35cd01707ca2c20acc7f1ce722ab28"
   ],
   "touchedFiles": {
     "request-review": [
@@ -154,6 +156,15 @@
     ],
     "code-fixer": [
       "src/adapter/claude-code/agent-runner.ts"
+    ],
+    "conformance": [
+      "src/adapter/shared/inactivity-watchdog.ts",
+      "src/adapter/shared/__tests__/inactivity-watchdog.test.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts",
+      "tests/adapter/codex/agent-runner-inactivity-timeout.test.ts"
     ]
   },
   "resumePoint": null,
@@ -188,8 +199,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/988",
+    "number": 988,
+    "createdAt": "2026-08-13T05:10:26.001Z"
+  },
   "_journal": {
-    "historyCount": 81,
+    "historyCount": 95,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -199,14 +215,17 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "code-fixer": 1
+      "code-fixer": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
