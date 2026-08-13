@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "82b67f30-7f9d-42a8-bab1-427a6b780737",
   "createdAt": "2026-08-12T15:27:33.568Z",
-  "updatedAt": "2026-08-12T16:43:24.273Z",
+  "updatedAt": "2026-08-13T02:02:20.647Z",
   "request": {
     "title": "chore type のテスト生成免除: TYPE_CONFIG によるテスト生成工程の宣言的 skip",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/test-generation-type-gate-82b67f30",
   "error": null,
@@ -75,7 +75,8 @@
     "3d54dbcc48141472247304119fa79df4ca3656ed",
     "135ddf8d07557a8c46020c40a115ee0e3a00919c",
     "118301342734cc7e04597f3b87330a8bf0f14a56",
-    "c1989ac5d53d7c9716c2b1055a18a4a6709f7f34"
+    "c1989ac5d53d7c9716c2b1055a18a4a6709f7f34",
+    "e3206dfbf04cfadfe773a02302720b4c6239a621"
   ],
   "touchedFiles": {
     "request-review": [
@@ -175,7 +176,7 @@
     "regression-gate": [
       "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
       "src/core/pipeline/test-gen-exemption.ts",
-      "src/core/pipeline/spec-observation.ts"
+      "tests/unit/verification/runner-test-gen-exemption.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -208,8 +209,10 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -225,7 +228,8 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
