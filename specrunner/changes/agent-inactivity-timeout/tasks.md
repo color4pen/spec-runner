@@ -132,9 +132,14 @@ T-04 と同型の最小テストを追加する。
   `completionReason === "timeout"` / code `STEP_TIMEOUT` になることを固定する。
 - [ ] event を閾値未満で流し続ける限り発火しないことを固定する。
 - [ ] 発火時の error message が無活動の旨と elapsedMs を含むことを固定する。
+- [ ] **output-repair 中の発火**: output-repair turn 実行中に watchdog が発火した場合でも
+  `completionReason === "timeout"` / code `STEP_TIMEOUT` を返すことを固定する。
+  T-03 で追加した repair catch の `if (abortController.signal.aborted) throw err;` が
+  abort を outer catch へ届けることをテストで確認する。
 
 **Acceptance Criteria**:
-- codex 側でも未到着発火・巻き直し非発火・halt message 内容が fake timers で green に固定される。
+- codex 側でも未到着発火・巻き直し非発火・halt message 内容・output-repair 中の watchdog 発火が
+  fake timers で green に固定される。
 - 追加テストは既存 codex テストを改変しない。
 
 ## T-06: 全体検証
