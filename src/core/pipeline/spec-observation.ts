@@ -132,5 +132,10 @@ export function specReviewNeedsFixIsTcOnly(state: JobState): boolean {
   const tcRoutable = selectRoutableCanonFindings(findings, canonScope, testCaseGenEffectiveFixer);
   if (tcRoutable.length === 0) return false;
   const specRoutable = selectRoutableCanonFindings(findings, canonScope, specReviewEffectiveFixer);
-  return specRoutable.length === 0;
+  // Non-canon critical/high findings cannot be fixed by either spec-fixer or test-case-gen;
+  // their presence means this is not a TC-only needs-fix (operator intervention required).
+  const nonCanon = findings.filter(
+    (f) => (f.severity === "critical" || f.severity === "high") && !canonScope.canonPaths.has(f.file),
+  );
+  return specRoutable.length === 0 && nonCanon.length === 0;
 }

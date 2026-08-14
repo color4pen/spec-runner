@@ -5,6 +5,8 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT, buildTestCaseGenInitialMessage } from "../../prompts/test-case-gen-system.js";
 import { getLatestJudgeFindings, buildFindingsBlock } from "./fixer-helpers.js";
+import { selectRoutableCanonFindings, testCaseGenEffectiveFixer } from "./canon-escalation.js";
+import { buildCanonWriteScope } from "./canon-write-scope.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
@@ -36,7 +38,7 @@ const testCaseGenAgentDefinition: AgentDefinition = {
 /**
  * TestCaseGenStep: generates test-cases.md from design.md and tasks.md.
  *
- * Position in pipeline: spec-review:approved → test-case-gen → implementer
+ * Position in pipeline: design → test-case-gen → spec-review
  *
  * Has its own dedicated AgentDefinition (role: "test-case-gen").
  * No custom tool handlers — uses the standard agent toolset.
@@ -80,11 +82,18 @@ export const TestCaseGenStep: AgentStep = {
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.TEST_CASE_GEN);
-    // Inject spec-review findings when re-generating after a needs-fix round.
-    const specReviewFindings = getLatestJudgeFindings(state, STEP_NAMES.SPEC_REVIEW);
+    // Inject only TC-routable findings (test-cases.md) when re-generating after a needs-fix round.
+    // Non-TC findings (spec.md, design.md, tasks.md) were handled by spec-fixer and should not
+    // be injected here — test-case-gen cannot write those files.
+    const allFindings = getLatestJudgeFindings(state, STEP_NAMES.SPEC_REVIEW);
+    const canonScope = buildCanonWriteScope(state, deps);
+    const tcFindings =
+      allFindings && allFindings.length > 0
+        ? selectRoutableCanonFindings(allFindings, canonScope, testCaseGenEffectiveFixer)
+        : null;
     const specReviewFindingsBlock =
-      specReviewFindings && specReviewFindings.length > 0
-        ? buildFindingsBlock(specReviewFindings, "spec-review")
+      tcFindings && tcFindings.length > 0
+        ? buildFindingsBlock(tcFindings, "spec-review")
         : undefined;
     return buildTestCaseGenInitialMessage({
       slug: deps.slug,
