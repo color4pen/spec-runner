@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T16:03:23.531Z",
+  "updatedAt": "2026-08-14T16:44:54.396Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "running",
+  "step": "code-fixer",
+  "status": "awaiting-resume",
   "branch": "change/test-case-gen-design-phase-96aef526",
-  "error": null,
+  "error": {
+    "code": "STEP_TIMEOUT",
+    "message": "Step 'code-fixer' inactivity timeout: no agent event for 899985ms",
+    "hint": ""
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -73,7 +77,8 @@
     "379cc9c930cae5f7f1c8d4f4ddaf4f1ec76ce8ed",
     "45611285df4dad0b574de8576f96aecff5adefc0",
     "8fe4a8734e877b44913c7938597019fff306e1d3",
-    "a0b3f87d539d5009530d417b23a21464f1ce20b5"
+    "a0b3f87d539d5009530d417b23a21464f1ce20b5",
+    "6b98b825177822170e2aedc57b17b723720c2ec4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -167,9 +172,28 @@
       "src/kernel/step-names.ts",
       "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts"
     ],
-    "implementer": []
+    "implementer": [],
+    "code-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/judge-verdict.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/prompts/spec-review-system.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/kernel/report-result.ts",
+      "src/core/pipeline/findings-ledger.ts"
+    ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "timeout",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -179,7 +203,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 48,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -189,7 +213,9 @@
       "test-materialize": 1,
       "implementer": 3,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "code-fixer": 1
     }
   }
 }
