@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e319c5c-b2e2-41fa-8635-b7b89db081b0",
   "createdAt": "2026-08-14T11:27:26.288Z",
-  "updatedAt": "2026-08-14T12:31:17.135Z",
+  "updatedAt": "2026-08-14T12:51:29.990Z",
   "request": {
     "title": "severity と fixability の分離: LOW も fixable なら直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/severity-fixability-split-8e319c5c",
   "error": null,
@@ -69,7 +69,9 @@
     "1f3b2af9b902ef8d99f37a6d56958364b2f1e1e5",
     "073578583b29f5cd3145c0eab0d6b65b6a83ad88",
     "3531ee18484760e7ea8c81cd16203d7271e02ef6",
-    "8b0b0ab36300bf1395ccb842e2625c770b40fe73"
+    "8b0b0ab36300bf1395ccb842e2625c770b40fe73",
+    "5742c8d0c3587ee83b54bf898a4d601404992507",
+    "89ea5c300fa952b1ca4458fc0eef25a1471ed8d0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -168,10 +170,55 @@
       "src/prompts/code-fixer-system.ts",
       "src/core/step/routed-findings.ts",
       "tests/unit/step/executor-no-op.test.ts"
+    ],
+    "code-review": [
+      "src/core/step/judge-verdict.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/step/no-op-detect.ts",
+      "src/core/step/code-fixer.ts",
+      "src/prompts/code-fixer-system.ts",
+      "tests/unit/step/severity-fixability-split.test.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "src/core/step/__tests__/executor-no-op.test.ts",
+      "src/core/step/__tests__/no-op-detect-exemption.test.ts",
+      "src/core/step/routed-findings.ts",
+      "src/core/step/executor.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "5742c8d0c3587ee83b54bf898a4d601404992507",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/severity-fixability-split/design.md:sha256:116d0ca2b4866b4ab94e2779c1529bfb15fb50bad965bd1254a232acdcd84f9f|specrunner/changes/severity-fixability-split/request.md:sha256:86270ffa46de2c0b747e246a62b8af644b0e6b2c105a47f23e2f8bae9158e66d|specrunner/changes/severity-fixability-split/spec.md:sha256:daaf9f65ed2dd15748b545291b5400ac889c75469da74e77bafcc71057318d18|specrunner/changes/severity-fixability-split/tasks.md:sha256:5e9aaecead185e6f82db5e020da69ffdded50fbe8b69c5362ad3a017457641f9|specrunner/changes/severity-fixability-split/test-cases.md:sha256:c5ce2c3925ca3ff53030338b9401e0caaa5b980fcd04fd0b20d9a0cee8ed94e9"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -180,7 +227,11 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
