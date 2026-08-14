@@ -206,25 +206,25 @@ describe("TC-014: loopFixerPairs[VERIFICATION] === implementer", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-015: STANDARD_TRANSITIONS — IMPLEMENTER→VERIFICATION(when verificationFailedLast) は BITE_EVIDENCE 行より前", () => {
-  it("TC-015: implementer success → verification(when) の行が存在する", () => {
+  it("TC-015: implementer success → verification(when=verificationFailedLast) の行が存在する", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.IMPLEMENTER &&
         t.on === "success" &&
         t.to === STEP_NAMES.VERIFICATION &&
-        t.when !== undefined,
+        t.when === verificationFailedLast,
     );
     expect(row).toBeDefined();
   });
 
-  it("TC-015: implementer success → verification(when) の行が → bite-evidence の行より前に出現する(first-match-wins)", () => {
+  it("TC-015: implementer success → verification(when=verificationFailedLast) の行が → bite-evidence の行より前に出現する(first-match-wins)", () => {
     const rows = STANDARD_TRANSITIONS;
     const toVerificationIdx = rows.findIndex(
       (t) =>
         t.step === STEP_NAMES.IMPLEMENTER &&
         t.on === "success" &&
         t.to === STEP_NAMES.VERIFICATION &&
-        t.when !== undefined,
+        t.when === verificationFailedLast,
     );
     const toBiteEvidenceIdx = rows.findIndex(
       (t) => t.step === STEP_NAMES.IMPLEMENTER && t.on === "success" && t.to === STEP_NAMES.BITE_EVIDENCE,

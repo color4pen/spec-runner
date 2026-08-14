@@ -141,6 +141,29 @@ describe("TC-003: implementer 再入 — 前回 sessionId ありで resumeSessio
     // TC-003: implementation に session 継続が配線されたとき前回 ID が引き渡される
     expect(ctx.session.resumeSessionId).toBe(prevSessionId);
   });
+
+  it("TC-003: verificationFailedLast=true + verificationContent あり → message に ## Verification Failures が含まれる", () => {
+    const prevSessionId = "prev-impl-session-abc";
+    const state = makeJobState({
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [
+          makeStepRun("failed", "2026-01-01T00:02:00.000Z"),
+        ],
+        [STEP_NAMES.IMPLEMENTER]: [
+          makeStepRun("success", "2026-01-01T00:01:00.000Z", prevSessionId),
+        ],
+      },
+    });
+    // verificationContent in the format extractVerificationFailures can parse
+    const verificationContent =
+      "| 1 | typecheck | failed | 2.5s | 1 |\n\n## Phase: typecheck\n\n```\nerror: Type mismatch\n```";
+    const deps = makeDeps({
+      dynamicContext: { verificationContent } as unknown as import("../../../src/git/dynamic-context.js").DynamicContext,
+    });
+
+    const message = ImplementerStep.buildMessage(state, deps);
+    expect(message).toContain("## Verification Failures");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -197,6 +220,25 @@ describe("TC-004: implementer 再入 — 前回 sessionId 無し → resumeSessi
 
     // TC-004: sessionId=null は fresh(undefined)に倒れる
     expect(ctx.session.resumeSessionId).toBeUndefined();
+  });
+
+  it("TC-004: fresh fallback でも verificationContent → message に ## Verification Failures が含まれる", () => {
+    const state = makeJobState({
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [
+          makeStepRun("failed", "2026-01-01T00:01:00.000Z"),
+        ],
+        // No implementer runs — fresh fallback scenario
+      },
+    });
+    const verificationContent =
+      "| 1 | typecheck | failed | 2.5s | 1 |\n\n## Phase: typecheck\n\n```\nerror: Type mismatch\n```";
+    const deps = makeDeps({
+      dynamicContext: { verificationContent } as unknown as import("../../../src/git/dynamic-context.js").DynamicContext,
+    });
+
+    const message = ImplementerStep.buildMessage(state, deps);
+    expect(message).toContain("## Verification Failures");
   });
 });
 

@@ -3,8 +3,8 @@
  *
  * TC-001: code-fixer の変更が pr-create 前に再検証される（再検証あり経路）
  * TC-002: conformance needs-fix:code-fixer 経由の変更も再検証される
- * TC-003: 再検証 failed は build-fixer へ流れる
- * TC-004: build-fixer 回復後に再検証が通過して pr-create へ向かう
+ * TC-003: 再検証 failed は implementer へ流れる（recovery re-entry）
+ * TC-004: implementer 回復後に code-review 再入を経て adr-gen へ向かう（D4）
  * TC-005: fixer が走らない clean run では verification が一度だけ走る
  * TC-006: 初回 verification passed は code-review へ向かう
  * TC-019: conformance → verification 入場で episode-reset が発火し budget が fresh になる

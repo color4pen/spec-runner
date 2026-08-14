@@ -90,7 +90,7 @@ export function revisionChangedSinceLastVerification(state: JobState): boolean {
  * because either (a) or (b) holds:
  *
  *   (a) `codeChangedSinceLastVerification` — an impl-phase mutator step (implementer /
- *       build-fixer / code-fixer) ran more recently than the last verification run
+ *       code-fixer) ran more recently than the last verification run
  *       (timestamp-based; detects specrunner code changes).
  *
  *   (b) `revisionChangedSinceLastVerification` — the latest conformance run's

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T22:25:20.627Z",
+  "updatedAt": "2026-08-14T22:35:35.756Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
@@ -74,7 +74,8 @@
     "662fa556b303c71b107d6d2a7ba92800d58719f2",
     "ba7d0ba27f0206c9cc39858ce00f2b1454a9e20b",
     "f87b8be1c6b3a4c8e9c3582593bdd388dd3d72a1",
-    "5013ffe0639881d809d49a5e801467e1bf3460ac"
+    "5013ffe0639881d809d49a5e801467e1bf3460ac",
+    "914d096b960f3990c8950716bacc2a60ed0279db"
   ],
   "touchedFiles": {
     "request-review": [
@@ -235,6 +236,22 @@
     ],
     "build-fixer": [
       "tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts"
+    ],
+    "code-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/reverification.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/step/implementer.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/resume/resolve-step.ts",
+      "tests/unit/absorb-build-fixer/transitions.test.ts",
+      "tests/unit/absorb-build-fixer/implementer-recovery.test.ts",
+      "tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts",
+      "tests/unit/absorb-build-fixer/state-compat.test.ts",
+      "src/core/step/types.ts",
+      "src/core/port/step-types.ts",
+      "src/git/dynamic-context.ts",
+      "tests/unit/core/pipeline/pipeline.reverification.test.ts"
     ]
   },
   "resumePoint": null,
@@ -247,7 +264,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 45,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -257,7 +274,8 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 2,
-      "build-fixer": 1
+      "build-fixer": 1,
+      "code-review": 1
     }
   }
 }
