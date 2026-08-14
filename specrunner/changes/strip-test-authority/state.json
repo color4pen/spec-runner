@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a8e7912e-b717-4b28-ae2b-71096da1241f",
   "createdAt": "2026-08-14T09:30:51.726Z",
-  "updatedAt": "2026-08-14T10:39:13.421Z",
+  "updatedAt": "2026-08-14T10:49:01.101Z",
   "request": {
     "title": "テスト証拠と工程順序の分離(第1弾): red 強制・テスト変更禁止・偽 baseline 判定の撤回",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/strip-test-authority-a8e7912e",
   "error": null,
   "pipelineId": "standard",
@@ -71,7 +71,9 @@
     "5add38a05fe899e766ad86c82efcf16763f36b9d",
     "0b465d65bc7f8ec05e613692bc2df17143d11bf0",
     "15a010c9a46db38af934f0dfa518de66373aaeed",
-    "a4c83f492a9259010f79d2cd09056a2be14edf84"
+    "a4c83f492a9259010f79d2cd09056a2be14edf84",
+    "b1c08c227af712a409a0dcf601ba8eaae1c6a347",
+    "0358d1cd5d6b1d69894dc0b0bf91575edec76ae6"
   ],
   "touchedFiles": {
     "request-review": [
@@ -160,10 +162,47 @@
       "tests/unit/prompts/strip-test-authority-contract.test.ts",
       "tests/unit/step/implementer-lockfile.test.ts",
       "src/state/schema/types.ts"
+    ],
+    "code-fixer": [
+      "src/prompts/test-materialize-system.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -174,7 +213,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
