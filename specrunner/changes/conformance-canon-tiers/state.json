@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "64d5054d-43d6-4ce9-b0c2-3d72c7ad23d9",
   "createdAt": "2026-08-14T11:27:12.016Z",
-  "updatedAt": "2026-08-14T12:19:46.757Z",
+  "updatedAt": "2026-08-14T12:22:22.990Z",
   "request": {
     "title": "conformance の正典に格差を付ける: request/spec は規範、design/tasks は計画",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/conformance-canon-tiers-64d5054d",
   "error": null,
   "pipelineId": "standard",
@@ -76,7 +76,8 @@
     "f995271779a5cbfb6aad71a4a73ba68e04e52a22",
     "541af0c9fc97051c7c89590243a16f5f0c02d2eb",
     "c678773fc7ce46296cf1e9e789207f1d4cad0560",
-    "d085d5a31b8c60a4b9c4f9e37631ef30c2b450b0"
+    "d085d5a31b8c60a4b9c4f9e37631ef30c2b450b0",
+    "6fac3f1aa67db240d623f1f034b3c559ebff71f1"
   ],
   "touchedFiles": {
     "request-review": [
@@ -151,6 +152,10 @@
       "src/core/step/report-tool.ts",
       "tests/unit/core/step/conformance.test.ts",
       "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-03-conformance-review-acceptance-gate.md",
+      "specrunner/adr/2026-08-14-conformance-canon-tiers.md"
     ]
   },
   "reviewerStatuses": [
@@ -183,8 +188,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/992",
+    "number": 992,
+    "createdAt": "2026-08-14T12:22:22.169Z"
+  },
   "_journal": {
-    "historyCount": 65,
+    "historyCount": 70,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -200,7 +210,9 @@
       "custom-reviewers": 1,
       "regression-gate": 2,
       "code-fixer": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
