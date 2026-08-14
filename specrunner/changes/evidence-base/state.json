@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
   "createdAt": "2026-08-14T20:03:06.572Z",
-  "updatedAt": "2026-08-14T20:21:23.754Z",
+  "updatedAt": "2026-08-14T20:24:09.145Z",
   "request": {
     "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/evidence-base-a50242c6",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "4352786fbcb8d5509b0f455b0c9df68d7421f47d",
     "64d2fdd821c7992ec6629033ec22267ea133b26f",
-    "991cf7f784b1d886408ba9d29491e708cf6918d6"
+    "991cf7f784b1d886408ba9d29491e708cf6918d6",
+    "f72d7f1f8f544c0fae0bc78db679a60a6bae5426"
   ],
   "touchedFiles": {
     "request-review": [
@@ -95,13 +96,15 @@
       "src/core/step/bite-evidence/__tests__/gate.test.ts",
       "src/core/archive/__tests__/achieved-assurance.test.ts",
       "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
