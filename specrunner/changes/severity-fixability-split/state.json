@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e319c5c-b2e2-41fa-8635-b7b89db081b0",
   "createdAt": "2026-08-14T11:27:26.288Z",
-  "updatedAt": "2026-08-14T11:27:28.676Z",
+  "updatedAt": "2026-08-14T11:32:17.826Z",
   "request": {
     "title": "severity と fixability の分離: LOW も fixable なら直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/severity-fixability-split-8e319c5c",
   "error": null,
@@ -62,10 +62,24 @@
     }
   ],
   "synthesizedCommits": [
-    "4370df62037239c0c4d2c3e92a524dd651b21a08"
+    "4370df62037239c0c4d2c3e92a524dd651b21a08",
+    "ccbb69af153ea23b85dc2c00b60c184108d9cdcb"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/core/step/__tests__/judge-verdict.test.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
