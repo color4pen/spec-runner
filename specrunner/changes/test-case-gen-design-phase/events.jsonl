@@ -140,3 +140,6 @@
 {"type":"transition","ts":"2026-08-14T19:37:33.735Z","step":"executor","status":"ok","message":"running → awaiting-resume: timeout"}
 {"type":"transition","ts":"2026-08-14T19:37:33.736Z","step":"conformance-timeout","status":"error","message":"conformance timed out: Step 'conformance' inactivity timeout: no agent event for 900019ms"}
 {"type":"step-attempt","step":"conformance","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"STEP_TIMEOUT","message":"Step 'conformance' inactivity timeout: no agent event for 900019ms","hint":""},"transientRetryAttempts":0},"startedAt":"2026-08-14T18:50:24.998Z","endedAt":"2026-08-14T19:37:33.734Z"}
+{"type":"transition","ts":"2026-08-14T19:38:12.999Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'conformance'"}
+{"type":"transition","ts":"2026-08-14T19:38:13.193Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-08-14T19:38:13.194Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
