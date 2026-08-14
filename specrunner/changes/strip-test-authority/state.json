@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a8e7912e-b717-4b28-ae2b-71096da1241f",
   "createdAt": "2026-08-14T09:30:51.726Z",
-  "updatedAt": "2026-08-14T10:49:01.101Z",
+  "updatedAt": "2026-08-14T10:54:29.191Z",
   "request": {
     "title": "テスト証拠と工程順序の分離(第1弾): red 強制・テスト変更禁止・偽 baseline 判定の撤回",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
-  "status": "awaiting-resume",
+  "step": "code-review",
+  "status": "running",
   "branch": "change/strip-test-authority-a8e7912e",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,9 @@
     "15a010c9a46db38af934f0dfa518de66373aaeed",
     "a4c83f492a9259010f79d2cd09056a2be14edf84",
     "b1c08c227af712a409a0dcf601ba8eaae1c6a347",
-    "0358d1cd5d6b1d69894dc0b0bf91575edec76ae6"
+    "0358d1cd5d6b1d69894dc0b0bf91575edec76ae6",
+    "d6488104cb634e5a5c5325f92890fb99c68e31c2",
+    "a7697f60d2eeb2dad928097f20152a78809f84f8"
   ],
   "touchedFiles": {
     "request-review": [
@@ -196,13 +198,10 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
