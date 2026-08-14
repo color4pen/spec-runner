@@ -86,10 +86,13 @@ implementer も `"success"` なので `IMPLEMENTER success → VERIFICATION` の
   (pipeline.ts は `Object.values(loopFixerPairs)` の集合演算のみ)。implementer(role: creator)を
   値に置くのは機構上安全。
 
-**副作用(no-op)**: `Object.values(loopFixerPairs)` に implementer が入るため、pipeline.ts の
+**副作用(guard 必須)**: `Object.values(loopFixerPairs)` に implementer が入るため、pipeline.ts の
 "Approved verdict overturned by fixer budget" ブロック(`fixerNamesForReroute`)も implementer を
-対象に含む。ただし STANDARD / FAST の全遷移表に `approved → implementer` への遷移は存在しない
-ため、このブロックは implementer に対して発火しない(実質 no-op)。
+対象に含む。STANDARD には `SPEC_REVIEW approved → IMPLEMENTER (when: isTestGenExempt)` が実在し、
+この経路では implementer は creator として入る(verification の fixer としてではない)。誤 intercept を
+防ぐため、ブロックは「approved 遷移の遷移元がその fixer の paired reviewer と一致する場合のみ」
+発火するよう `currentStep === exhaustedReviewer` guard を課す。従来の対象(code-review approved →
+code-fixer / spec-review approved → spec-fixer)は遷移元 = paired reviewer なので挙動不変。
 
 ### D2: 再入時の bite-evidence バイパス(`IMPLEMENTER success → VERIFICATION when verificationFailedLast`)
 

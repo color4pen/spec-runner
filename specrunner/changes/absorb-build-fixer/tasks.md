@@ -80,6 +80,8 @@
 **Acceptance Criteria**:
 - `resolveResumeStep("build-fixer", ...)` が `"implementer"` を返す
 - `resolveResumeStep(undefined, {step:"build-fixer", ...})` が `"implementer"` を返す
+- `from` 経路で alias が `allowed.has()` 検証より前に適用されている(alias 後の名前が検証対象。
+  `--from build-fixer` が「無効な step 名」で拒否されないこと)
 - 既存の member→coordinator 写像・その他 step 名解決は不変(既存テスト green)
 
 ## T-06: build-fixer step / prompt / whitelist / 登録の削除
