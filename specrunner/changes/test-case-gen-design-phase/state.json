@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T18:33:31.364Z",
+  "updatedAt": "2026-08-14T18:39:07.209Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/test-case-gen-design-phase-96aef526",
   "error": null,
@@ -82,7 +82,8 @@
     "8c397378c2a7bdac92c3c54bc3441168f5b1f94e",
     "8d295e7817219df3fe4fe3872cc17dec29638272",
     "1f0a592a8b97c36e3e64fd017f90254fb2978e9a",
-    "d4c002e28c4eb6597d2b44afef774ec138afd864"
+    "d4c002e28c4eb6597d2b44afef774ec138afd864",
+    "6b18623821d81c00485c0348c3f112143e5c83c1"
   ],
   "touchedFiles": {
     "request-review": [
@@ -202,6 +203,19 @@
       "src/core/pipeline/registry.ts",
       "tests/unit/core/pipeline/registry-invariants.test.ts",
       "tests/unit/core/pipeline/pipeline-roles.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/prompts/conformance-system.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "tests/unit/core/step/conformance.test.ts",
+      "src/core/pipeline/registry.ts",
+      "tests/unit/core/pipeline/registry-invariants.test.ts",
+      "src/core/step/step-completion.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/judge-verdict.ts"
     ]
   },
   "resumePoint": null,
@@ -244,7 +258,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 79,
+    "historyCount": 83,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -259,7 +273,8 @@
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

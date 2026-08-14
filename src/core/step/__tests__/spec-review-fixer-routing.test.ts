@@ -1241,3 +1241,65 @@ describe("TC-020: typecheck && test pass green (smoke: new exports are reachable
     expect(typeof deriveJudgeVerdict).toBe("function");
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-021
+// Source: regression-gate review finding — dual-resolver diagnostic accuracy
+// GIVEN spec-review with fixable findings on both request.md (unroutable) and
+//       test-cases.md (routable via test-case-gen)
+// WHEN escalation is triggered by request.md
+// THEN escalationReason does NOT include test-cases.md (it is routable, not unroutable)
+// ---------------------------------------------------------------------------
+
+describe("TC-021: spec-review dual-resolver excludes test-cases.md from escalationReason", () => {
+  let stderrSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    void stderrSpy;
+  });
+
+  it("TC-021: escalation from request.md does not include test-cases.md in escalationReason", async () => {
+    expect(deriveSpecReviewVerdict).toBeDefined();
+    const step = makeMinimalJudgeStep(STEP_NAMES.SPEC_REVIEW, JUDGE_REPORT_TOOL);
+    (step as unknown as Record<string, unknown>).judgeVerdictFn = deriveSpecReviewVerdict;
+
+    const state = makeMinimalState(STEP_NAMES.SPEC_REVIEW);
+    const deps = makeMinimalDeps();
+
+    const agentResult = {
+      toolResult: {
+        ok: true,
+        findings: [
+          // request.md: canon path, not writable by spec-fixer or test-case-gen → unroutable → escalation
+          makeFinding("high", "fixable", REQUEST_MD),
+          // test-cases.md: canon path, writable by test-case-gen → routable → must NOT appear in escalationReason
+          makeFinding("high", "fixable", TEST_CASES_MD),
+        ],
+      },
+      followUpAttempts: 0,
+    };
+
+    const completion = await deriveStepCompletion(
+      step,
+      state,
+      deps,
+      agentResult as never,
+      undefined,
+    );
+
+    // Verdict must be escalation (request.md is unroutable)
+    expect(completion.verdict).toBe("escalation");
+    // escalationReason must be set (canon escalation path)
+    expect(completion.escalationReason).toBeDefined();
+    expect(completion.escalationReason).toContain("CANON_FINDING_ESCALATION");
+    // request.md IS unroutable → must appear in the reason
+    expect(completion.escalationReason).toContain(REQUEST_MD);
+    // test-cases.md is routable via test-case-gen → must NOT appear in the reason
+    expect(completion.escalationReason).not.toContain(TEST_CASES_MD);
+  });
+});
