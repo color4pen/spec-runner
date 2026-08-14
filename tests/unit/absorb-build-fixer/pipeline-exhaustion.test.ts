@@ -339,17 +339,12 @@ describe("TC-007: conformance 再検証は fresh な予算で実行される(epi
 
     // Use reverificationNeeded-equivalent (always true for 1st conformance) by injecting
     // a custom when guard that returns true only for the first conformance approved.
-    let reverifyTriggerCount = 0;
     const whenReverify = (s: JobState) => {
       // Simulate reverificationNeeded for the first conformance run only
       const vRuns = s.steps?.[STEP_NAMES.VERIFICATION] ?? [];
       const lastV = vRuns[vRuns.length - 1];
       // Trigger reverification if last verification passed but conformance hasn't run a 2nd time yet
-      if (lastV?.outcome.verdict === "passed" && conformanceCallCount <= 1) {
-        reverifyTriggerCount++;
-        return true;
-      }
-      return false;
+      return lastV?.outcome.verdict === "passed" && conformanceCallCount <= 1;
     };
 
     const postImplTransitions = [
