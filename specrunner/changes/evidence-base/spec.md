@@ -97,6 +97,13 @@ or `scopedTestCommand` unset)
 **When** the bite-evidence gate runs
 **Then** the verdict is `strategy-deferred`.
 
+#### Scenario: Absent Evidence Base reference defers
+
+**Given** a forward-type job whose `synthesizedCommits` ledger is empty or absent
+**And** `resolveEvidenceBaseRev` therefore returns null
+**When** the bite-evidence gate runs
+**Then** the verdict is `strategy-deferred` and no records are produced.
+
 #### Scenario: Absent HEAD OID defers
 
 **Given** a forward-type job with a valid Evidence Base reference

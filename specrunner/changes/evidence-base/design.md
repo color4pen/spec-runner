@@ -121,8 +121,13 @@ scoped tests per file, and cleans up — returning the existing `IsolatedTestRes
 
 - **Rationale.** This is the smallest extension of the existing `runTestsAtCommit`
   machinery (detached worktree + node_modules symlink + scoped per-file run + cleanup);
-  it reuses the same `scopedTestCommand` precedence, the same never-throw `unavailable`
-  contract, and the same managed-runtime stub pattern. The method is deliberately
+  it reuses the same `scopedTestCommand` precedence (project config → repo config →
+  absent), the same never-throw `unavailable` contract, and the same managed-runtime stub
+  pattern. **Exception: the default-bun path** (`scopedTestCommand` unset, no custom
+  commands configured) is not available for `runTestsOnSynthesizedTree` — the overlay
+  execution requires a resolved `scopedTestCommand` to run per-file scoped tests in the
+  detached worktree; absent `scopedTestCommand` → `unavailable` (same as today's gate
+  deferral contract). The method is deliberately
   *generic* (base rev + file overlay from a rev) and carries no chronology semantics —
   the gate/floor own the policy of what "job base" and "candidate" are.
 - **Overlay content = candidate-time content** (`git show <overlaySourceOid>:<path>`),
@@ -244,6 +249,12 @@ TC-032 (`checkTamperStatus`) — all short-circuit before the red/green run (D6 
 - `gate.test.ts`: **acceptance 3** — a state with an operator-adopted commit reachable at HEAD but
   *after* the implementer commit; assert the candidate/green run uses the HEAD OID (adopted commit
   included), not `implementer.commitOid`.
+- `gate.test.ts`: **absent Evidence Base ref (gate-level)** — a forward-type state whose
+  `synthesizedCommits` is empty/absent; assert `resolveEvidenceBaseRev` returns `null` and the
+  gate verdict is `strategy-deferred` with no records, without reaching `captureHeadSha` or any
+  test execution. This is distinct from `oids` unit TC-010 (pure function) and archive floor
+  TC-005 (floor fail-closed); it pins the gate-level deferral path (spec Req 4 Scenario: Absent
+  Evidence Base reference defers).
 - `oids` unit: **acceptance 2** — `resolveEvidenceBaseRev(state)` returns the same ref for a
   first-run state and a resume/re-run state (extra test-materialize/implementer runs + operator
   commits appended to the ledger) because `synthesizedCommits[0]` is unchanged.
