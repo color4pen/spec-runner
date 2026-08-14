@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
   "createdAt": "2026-08-14T20:03:06.572Z",
-  "updatedAt": "2026-08-14T22:45:15.538Z",
+  "updatedAt": "2026-08-14T23:02:21.626Z",
   "request": {
     "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/evidence-base-a50242c6",
   "error": null,
@@ -86,7 +86,9 @@
     "f12202d0f3fd6991751e4ddf8625a48be16d8877",
     "1382a2ae39c5db763574283f39332f4f22ff3363",
     "b0adcafc17f24f2bbdbba0ccde87ab6595c3ee19",
-    "c2b42be039962b875d9195e37a43be70f0e1f430"
+    "c2b42be039962b875d9195e37a43be70f0e1f430",
+    "bb179844295da2027cd2e6ce6266694beaa0d051",
+    "a47921a4a64a0083fe0026e8c8ba8b677b76a802"
   ],
   "touchedFiles": {
     "request-review": [
@@ -201,7 +203,10 @@
     "code-fixer": [
       "src/state/schema/types.ts",
       "src/core/archive/achieved-assurance.ts",
-      "src/core/runtime/local.ts"
+      "src/state/schema/operations.ts",
+      "tests/unit/state/bite-evidence-record-schema.test.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/archive/__tests__/achieved-assurance.test.ts"
     ]
   },
   "resumePoint": null,
@@ -216,8 +221,8 @@
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "bb179844295da2027cd2e6ce6266694beaa0d051",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -227,7 +232,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/evidence-base/design.md:sha256:2c7da79129963a2851a6222a860b584fe97ea121dd36af1e8abab473cdb9a33b|specrunner/changes/evidence-base/request.md:sha256:a097fb90f6fa4a1ee821fba0f0e0861656fb3a538f7c8481d9c3096dbc1b73d7|specrunner/changes/evidence-base/spec.md:sha256:415ec6a48b528a82266bfecea78c0ec9002bada389722816fd98dc602b54fb2e|specrunner/changes/evidence-base/tasks.md:sha256:d3a46018b350772fd1f94ff3e74e04155d106a5bc88af32e78c0b7d53ae1d2df|specrunner/changes/evidence-base/test-cases.md:sha256:7350e047937516bafd6023171db5ee3aa37bd43b19d02697a517fb3366741193"
     },
     {
       "name": "scale-tolerance",
@@ -243,7 +249,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 85,
+    "historyCount": 94,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -255,10 +261,10 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 2,
-      "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
