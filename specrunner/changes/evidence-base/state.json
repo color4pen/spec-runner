@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
   "createdAt": "2026-08-14T20:03:06.572Z",
-  "updatedAt": "2026-08-14T22:23:23.574Z",
+  "updatedAt": "2026-08-14T22:35:35.454Z",
   "request": {
     "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/evidence-base-a50242c6",
   "error": null,
   "pipelineId": "standard",
@@ -81,7 +81,9 @@
     "006fbb87d0e017eb71c13a32e1e1ea90bac538d0",
     "753d1b003e217b2f676a20f07c5a8a7760d60021",
     "3e849ed3af6646e8bbfa9fbc027e8950de3145b8",
-    "1e24e0f2aff7ff263c828f9372bc1ee0b11e47f7"
+    "1e24e0f2aff7ff263c828f9372bc1ee0b11e47f7",
+    "45854fd89058956df73a9bdcb7b202bf979dc324",
+    "f12202d0f3fd6991751e4ddf8625a48be16d8877"
   ],
   "touchedFiles": {
     "request-review": [
@@ -190,9 +192,18 @@
       "src/state/schema/types.ts",
       "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
       "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts"
+    ],
+    "code-fixer": [
+      "src/state/schema/types.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/runtime/local.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -201,8 +212,37 @@
       "recordedAt": "2026-08-14T21:08:22.061Z"
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 69,
+    "historyCount": 78,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -213,7 +253,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
