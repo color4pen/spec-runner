@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T20:07:17.750Z",
+  "updatedAt": "2026-08-14T20:28:53.214Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
@@ -63,7 +63,8 @@
   ],
   "synthesizedCommits": [
     "42e47db25320bb4a56964be2de63574cf5e5bfb3",
-    "b04c5f6b5e42c0015c9dc12f763b85adad487a0d"
+    "b04c5f6b5e42c0015c9dc12f763b85adad487a0d",
+    "0ac7713da6173ad3961dd6030f76a46138fa4384"
   ],
   "touchedFiles": {
     "request-review": [
@@ -89,12 +90,39 @@
       "src/core/doctor/checks/agents/agents-registered.ts",
       "src/cli/managed.ts",
       "src/cli/config-effective.ts"
+    ],
+    "design": [
+      "src/core/pipeline/types.ts",
+      "src/core/step/build-fixer.ts",
+      "src/core/step/implementer.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/pipeline/reverification.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/step-names.ts",
+      "src/kernel/step-names.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/pipeline/convergence-budget.ts",
+      "src/kernel/agent-definition.ts",
+      "src/cli/command-registry.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "tests/unit/core/pipeline/pipeline.build-fixer-reentry.test.ts",
+      "src/core/step/__tests__/fixer-reviewer.test.ts",
+      "src/core/doctor/checks/agents/agents-registered.ts",
+      "src/core/step/bite-evidence/step.ts",
+      "tests/grep-no-step-name-hardcode.test.ts",
+      "src/templates/step-output-templates.ts",
+      "tests/unit/core/pipeline/pipeline.conformance-routing.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
