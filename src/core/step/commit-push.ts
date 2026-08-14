@@ -464,7 +464,7 @@ async function runInlineEgressCheck(
  *   - Staged-change diff check restricted to the declared pathspec.
  *   - Commit uses the same explicit pathspec (pre-staged unauthorized files excluded).
  *
- * "guarded" mode (broad-write steps: implementer, build-fixer, code-fixer, etc.):
+ * "guarded" mode (broad-write steps: implementer, code-fixer, etc.):
  *   - Runs git status to enumerate all worktree changes after reset.
  *   - findWriteScopeViolations: halt if any protected canon path was modified.
  *   - Stages all enumerated changed paths explicitly (git add -A -- <paths>).

@@ -3,8 +3,8 @@
  *
  * Reads the project-local `.specrunner/config.json` from disk and returns the
  * current `verification.coverage` value.  Called by VerificationStep immediately
- * before each runVerification invocation so that edits made by build-fixer during
- * the same job are visible to subsequent verifications.
+ * before each runVerification invocation so that edits made by the implementer
+ * (recovery re-entry) during the same job are visible to subsequent verifications.
  *
  * Design decisions (D2 / D3 / D4):
  * - Returns only `verification.coverage` — no other config fields are exposed,

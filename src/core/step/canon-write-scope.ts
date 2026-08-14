@@ -24,7 +24,7 @@ import { getJobSlug } from "../../state/job-slug.js";
  * Shared internal builder: constructs a CanonWriteScope from a slug string.
  *
  * Single source of truth for the explicit D5 fixer → canon-paths map:
- *   - code-fixer:    ∅ (code-fixer and build-fixer write only gitState)
+ *   - code-fixer:    ∅ (code-fixer writes only gitState)
  *   - implementer:   {tasks.md} (for task checkbox updates)
  *   - spec-fixer:    {spec.md, design.md, tasks.md} (for spec/design/task corrections)
  *   - test-case-gen: {test-cases.md} (generates test scenarios)
@@ -35,7 +35,7 @@ function buildScopeForSlug(slug: string): CanonWriteScope {
 
   // Explicit map (D5): fixer → canon paths the fixer is legally allowed to write
   const writableByFixer = new Map<FixTarget, ReadonlySet<string>>([
-    // code-fixer and build-fixer: no canon file writes (gitState only)
+    // code-fixer: no canon file writes (gitState only)
     ["code-fixer", new Set<string>()],
     // implementer: tasks.md only (task checkbox updates)
     ["implementer", new Set<string>([`${folder}/tasks.md`])],
@@ -55,7 +55,7 @@ function buildScopeForSlug(slug: string): CanonWriteScope {
  * for protected canon files.
  *
  * writableByFixer uses an explicit map (D5) to avoid import cycles:
- *   - code-fixer:    ∅ (code-fixer and build-fixer write only gitState)
+ *   - code-fixer:    ∅ (code-fixer writes only gitState)
  *   - implementer:   {tasks.md} (for task checkbox updates)
  *   - spec-fixer:    {spec.md, design.md, tasks.md} (for spec/design/task corrections)
  *   - test-case-gen: {test-cases.md} (generates test scenarios)

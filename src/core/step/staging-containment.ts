@@ -1,8 +1,8 @@
 /**
  * Guarded-staging containment utilities.
  *
- * Two-layer protection for guarded write steps (implementer / build-fixer /
- * code-fixer / test-materialize / adr-gen):
+ * Two-layer protection for guarded write steps (implementer / code-fixer /
+ * test-materialize / adr-gen):
  *
  *   1. Exclusion — repo-declared glob patterns that remove known scratch
  *      artifacts from the stage set. Matched paths are not staged and remain

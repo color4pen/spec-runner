@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T23:08:24.277Z",
+  "updatedAt": "2026-08-14T23:15:42.380Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
@@ -81,7 +81,8 @@
     "11e91ceced455bd4651959e906a77abe469c08be",
     "14b0f7559596d613b4ba627571be69cb25d38cf6",
     "d8a06025e574685d9664a8f6f10d5454a228c49c",
-    "5351c811dd43aab460fdd23cb1d7895a99013960"
+    "5351c811dd43aab460fdd23cb1d7895a99013960",
+    "32d144560c5ac7acb160746b00e6ecdfe99baf80"
   ],
   "touchedFiles": {
     "request-review": [
@@ -250,14 +251,19 @@
       "src/core/step/implementer.ts",
       "src/core/step/step-context-builder.ts",
       "src/core/resume/resolve-step.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/kernel/step-names.ts",
       "tests/unit/absorb-build-fixer/transitions.test.ts",
       "tests/unit/absorb-build-fixer/implementer-recovery.test.ts",
-      "tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts",
       "tests/unit/absorb-build-fixer/state-compat.test.ts",
+      "tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts",
+      "src/core/step/fixer-helpers.ts",
       "src/core/step/types.ts",
       "src/core/port/step-types.ts",
-      "src/git/dynamic-context.ts",
-      "tests/unit/core/pipeline/pipeline.reverification.test.ts"
+      "src/core/port/step-context.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/prompts/rules.ts",
+      "src/prompts/pipeline-map.ts"
     ],
     "code-fixer": [
       "tests/unit/absorb-build-fixer/implementer-recovery.test.ts",
@@ -321,7 +327,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 66,
+    "historyCount": 70,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -332,7 +338,7 @@
       "bite-evidence": 1,
       "verification": 2,
       "build-fixer": 1,
-      "code-review": 1,
+      "code-review": 2,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,

@@ -279,7 +279,7 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   // Test-gen bypass: exempt type skips bite-evidence and routes directly to verification (must precede unconditional BITE_EVIDENCE row)
   { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.VERIFICATION,    when: isTestGenExempt },
   // Recovery re-entry: verification failed → implementer fixed → skip bite-evidence and go back to verification
-  // (first-match-wins: must precede unconditional BITE_EVIDENCE row and isTestGenExempt row above)
+  // (first-match-wins: must precede unconditional BITE_EVIDENCE row; placed after isTestGenExempt row above)
   { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.VERIFICATION,    when: verificationFailedLast },
   { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.BITE_EVIDENCE },
   { step: STEP_NAMES.IMPLEMENTER, on: "error",     to: "escalate" },
