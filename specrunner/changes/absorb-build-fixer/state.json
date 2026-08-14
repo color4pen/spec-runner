@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T20:31:59.010Z",
+  "updatedAt": "2026-08-14T20:47:06.539Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
   "pipelineId": "standard",
@@ -65,7 +65,8 @@
     "42e47db25320bb4a56964be2de63574cf5e5bfb3",
     "b04c5f6b5e42c0015c9dc12f763b85adad487a0d",
     "0ac7713da6173ad3961dd6030f76a46138fa4384",
-    "707857a787df861977ba69e483863f71541c82d5"
+    "707857a787df861977ba69e483863f71541c82d5",
+    "6c3ded25597df7d959f36ff4678530f99099a852"
   ],
   "touchedFiles": {
     "request-review": [
@@ -118,14 +119,39 @@
       "src/templates/step-output-templates.ts",
       "tests/unit/core/pipeline/pipeline.conformance-routing.test.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "spec-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/build-fixer.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/implementer.ts",
+      "src/core/pipeline/reverification.ts",
+      "src/core/pipeline/convergence-budget.ts",
+      "src/kernel/step-names.ts",
+      "src/core/step/write-scope.ts",
+      "tests/unit/core/pipeline/pipeline.build-fixer-reentry.test.ts",
+      "tests/unit/core/pipeline/pipeline.reverification.test.ts",
+      "src/core/pipeline/run.ts",
+      "src/state/schema.ts",
+      "src/state/schema/types.ts"
+    ]
+  },
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "spec-review escalated",
+    "iterationsExhausted": 1
   },
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 15,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }
