@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "64d5054d-43d6-4ce9-b0c2-3d72c7ad23d9",
   "createdAt": "2026-08-14T11:27:12.016Z",
-  "updatedAt": "2026-08-14T11:51:20.709Z",
+  "updatedAt": "2026-08-14T11:58:21.462Z",
   "request": {
     "title": "conformance の正典に格差を付ける: request/spec は規範、design/tasks は計画",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/conformance-canon-tiers-64d5054d",
   "error": null,
@@ -67,7 +67,9 @@
     "260b86621a5f131af2296f27144c0a4b355f7ff1",
     "b9a1bf58db2bdabac21cf11fd5f10ad3b15a311a",
     "b8809d8f870dbf700dacba9a3e9c253235efea11",
-    "e26bd05c1a6a266a3e1b26f6a0429d15cb878f1c"
+    "e26bd05c1a6a266a3e1b26f6a0429d15cb878f1c",
+    "7cff7226ffdb1536c3fc844f071df2dc6d2892c1",
+    "b91a2b89cea1dfcd760dc22d020c34c7c655ecfd"
   ],
   "touchedFiles": {
     "request-review": [
@@ -114,16 +116,26 @@
       "tests/unit/core/step/adr-gen.test.ts",
       "tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts",
       "src/core/step/io-iteration.ts"
+    ],
+    "implementer": [
+      "tests/unit/core/step/conformance.test.ts",
+      "src/prompts/conformance-system.ts",
+      "src/core/step/conformance.ts",
+      "src/core/step/report-tool.ts",
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
