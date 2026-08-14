@@ -1,0 +1,25 @@
+{
+  "requestHash": "sha256:e8923388921467a57a1a2b9ac5ad190fe9e3de065290fcd70e1ae906a6e58b5c",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/types.ts:232 — DESIGN success → SPEC_REVIEW",
+    "src/core/pipeline/types.ts:236 — SPEC_REVIEW approved → SPEC_FIXER when specReviewHasRoutableFixables",
+    "src/core/pipeline/types.ts:238 — SPEC_REVIEW approved → IMPLEMENTER when isTestGenExempt",
+    "src/core/pipeline/types.ts:239 — SPEC_REVIEW approved → TEST_CASE_GEN (unconditional)",
+    "src/core/pipeline/types.ts:242 — TEST_CASE_GEN success → TEST_MATERIALIZE",
+    "src/core/pipeline/types.ts:247 — SPEC_FIXER approved → IMPLEMENTER when specFixerForwardsToImplementer",
+    "src/core/pipeline/types.ts:249 — SPEC_FIXER approved → TEST_CASE_GEN when specFixerForwardsToTestGen",
+    "src/core/pipeline/types.ts:251 — SPEC_FIXER approved → SPEC_REVIEW (unconditional fallback)",
+    "src/core/step/spec-review.ts:77-85 — reads() returns requestMdPath, spec.md, design.md, tasks.md (no test-cases.md)",
+    "src/core/step/test-case-gen.ts:66-68 — reads() returns design.md, tasks.md only",
+    "src/core/step/test-case-gen.ts:73-76 — writes() returns test-cases.md only (no tasks.md write)",
+    "src/prompts/test-case-gen-system.ts — no abstraction-level (no-impl-detail) instruction present",
+    "src/prompts/spec-review-system.ts — SPEC_REVIEW_BASE Contract input does not list test-cases.md",
+    "src/core/step/write-scope.ts:64-74 — protectedCanonPaths() includes test-cases.md unconditionally",
+    "src/core/step/canon-write-scope.ts:36-43 — spec-fixer writableByFixer does not include test-cases.md",
+    "src/core/pipeline/spec-observation.ts:36-41 — specReviewHasRoutableFixables uses specReviewEffectiveFixer (always spec-fixer)",
+    "tests/unit/core/pipeline/pipeline.transitions.test.ts:273 — STANDARD_TRANSITIONS.length pin = 49",
+    "tests/unit/pipeline/transition-when.test.ts:200 — STANDARD_TRANSITIONS.length pin = 49"
+  ],
+  "sourceRevision": "704fe11029ae68349b4285509e2363346e9ffddc"
+}
