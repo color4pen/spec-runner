@@ -1,11 +1,59 @@
 # Test Cases: Evidence Base for bite-evidence
 
+<!-- FORMAT REQUIREMENTS:
+Test Case heading format: `### TC-{NNN}: {Name}` (3-digit zero-padded, e.g. TC-001)
+
+Required fields per test case:
+  **Category**: unit | integration | manual | gate
+  **Priority**: must | should | could
+  **Source**: reference to spec Scenario (spec.md > Requirement: <name> > Scenario: <name>) or design.md / tasks.md section
+
+GIVEN/WHEN/THEN structure (mixed format — depends on TC type):
+  Scenario 由来 TC (Source = spec.md > Requirement: <name> > Scenario: <name>):
+    GWT は記述しない。Source 参照のみ。behavior の正典は spec の Scenario。
+  非 Scenario 由来 TC (Source = design.md or tasks.md section):
+    GWT は必須:
+    **GIVEN** <preconditions>
+    **WHEN** <action>
+    **THEN** <expected result>
+  gate TC:
+    GWT は記述しない。充足を担う verification phase 名（または verification.commands の command 名）を本文に記録する。
+
+Summary section MUST appear immediately after the title with ALL 4 items:
+  ## Summary
+  - **Total**: {count} cases
+  - **Automated** (unit/integration): {count}
+  - **Manual**: {count}
+  - **Priority**: must: {count}, should: {count}, could: {count}
+
+Result section MUST appear at the very end as a YAML code block:
+  ## Result
+  ```yaml
+  result: completed | partial | failed
+  total: {count}
+  automated: {count}
+  manual: {count}
+  must: {count}
+  should: {count}
+  could: {count}
+  blocked_reasons: []
+  ```
+
+  所有権と書込時点: Result YAML は test-case-gen によるテストケース生成の結果記録である。
+  生成時に一度だけ書かれ、後続ステップ（test-materialize を含む）は更新しない。
+
+  `result` の値の意味:
+  - completed = 全 TC の設計が完了し blocked_reasons が空
+  - partial   = 一部 TC が設計不能で blocked_reasons に記録あり
+  - failed    = 生成自体が成立しなかった
+-->
+
 ## Summary
 
-- **Total**: 22 cases
-- **Automated** (unit/integration): 22
+- **Total**: 15 cases
+- **Automated** (unit/integration/gate): 15
 - **Manual**: 0
-- **Priority**: must: 10, should: 9, could: 3
+- **Priority**: must: 13, should: 2, could: 0
 
 ---
 
@@ -27,7 +75,7 @@
 
 ### TC-003: Adopted operator commit is included in the candidate
 
-**Category**: unit
+**Category**: integration
 **Priority**: must
 **Source**: spec.md > Requirement: The green candidate SHALL be the effective branch state reaching adopted operator commits > Scenario: Adopted operator commit is included in the candidate
 
@@ -41,7 +89,15 @@
 
 ---
 
-### TC-005: Non-forward type still defers
+### TC-005: Archive floor is fail-closed when the Evidence Base reference is absent
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: The chronology-based contamination machinery SHALL be removed > Scenario: Archive floor is fail-closed when the Evidence Base reference is absent
+
+---
+
+### TC-006: Non-forward type still defers
 
 **Category**: unit
 **Priority**: should
@@ -49,7 +105,7 @@
 
 ---
 
-### TC-006: Tamper mismatch still fails
+### TC-007: Tamper mismatch still fails
 
 **Category**: unit
 **Priority**: should
@@ -57,205 +113,104 @@
 
 ---
 
-### TC-007: Unavailable runtime still defers
+### TC-008: Unavailable runtime still defers
 
 **Category**: unit
-**Priority**: should
+**Priority**: must
 **Source**: spec.md > Requirement: The gate SHALL preserve its deferral, tamper, type, and never-throw contracts > Scenario: Unavailable runtime still defers
+
+`runTestsOnSynthesizedTree` returning `unavailable` (managed runtime or `scopedTestCommand` unset) must route to `strategy-deferred`, mirroring the existing `runTestsAtCommit` contract for the new method.
 
 ---
 
-### TC-008: runTestsOnSynthesizedTree returns red when implementation is absent from base tree
+### TC-009: Absent HEAD OID defers
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: The gate SHALL preserve its deferral, tamper, type, and never-throw contracts > Scenario: Absent HEAD OID defers
+
+---
+
+### TC-010: `resolveEvidenceBaseRev` returns a stable first-parent ref; null for an empty ledger
+
+**Category**: unit
+**Priority**: must
+**Source**: design.md > D1: Job base = first parent of the first synthesized commit / tasks.md > T-02
+
+**GIVEN** a job state whose `synthesizedCommits` ledger contains at least one entry (the bootstrap commit OID)
+**AND** a second job state that shares the same `synthesizedCommits[0]` but has additional test-materialize, implementer, and operator-adopted commits appended to the ledger (a resumed / re-run state)
+**WHEN** `resolveEvidenceBaseRev` is called with each state
+**THEN** both calls return the identical rev expression `"<synthesizedCommits[0]>^"` (first parent of the bootstrap commit)
+**AND** when called with a state whose `synthesizedCommits` is absent or empty, returns `null`
+
+---
+
+### TC-011: `runTestsOnSynthesizedTree` runs red on a base tree lacking implementation; cleans up worktree and symlink; non-existent rev returns unavailable
 
 **Category**: integration
 **Priority**: must
-**Source**: tasks.md T-01
+**Source**: tasks.md > T-01 Acceptance Criteria
 
-**GIVEN** a throwaway git repository where the base tree lacks an implementation file
-**AND** the candidate (HEAD) commit contains both the implementation and a test that imports it
-**AND** the materialized test file is overlaid from the candidate OID onto the base tree via `runTestsOnSynthesizedTree`
-**WHEN** `runTestsOnSynthesizedTree(baseRev, [testFile], candidateOid, cwd, config)` is invoked
-**THEN** the result has `kind: "red"` (test fails because the implementation is absent at the base tree)
-**AND** the isolated worktree directory is removed after completion
-**AND** the source project's `node_modules` directory is not deleted
-
----
-
-### TC-009: runTestsOnSynthesizedTree cleans up worktree and symlink regardless of test outcome
-
-**Category**: integration
-**Priority**: should
-**Source**: tasks.md T-01
-
-**GIVEN** a throwaway git repository with a valid base revision and resolvable overlay content
-**WHEN** `runTestsOnSynthesizedTree` completes (whether result is red, green, or unavailable)
-**THEN** the detached worktree directory created during the run is removed
-**AND** no stale `node_modules` symlink remains inside the worktree path
+**GIVEN** a throwaway git repo with a base commit containing only non-implementation source files (no test target)
+**AND** a HEAD commit that adds the implementation the materialized test file depends on
+**AND** materialized test files whose content at HEAD imports that implementation (causing test failure when the implementation is absent from the tree)
+**WHEN** `runTestsOnSynthesizedTree(baseRev, testFiles, overlayFromOid=headOid, cwd, config)` is called
+**THEN** the result has `kind: "red"` (tests fail on the base tree because implementation is absent)
+**AND** after the call completes (regardless of result kind), the temporary detached worktree and the `node_modules` symlink inside it are removed
+**AND** calling `runTestsOnSynthesizedTree` with a non-existent `baseRev` returns `{ kind: "unavailable", ... }` without throwing
 
 ---
 
-### TC-010: runTestsOnSynthesizedTree returns unavailable for a non-existent baseRev
+### TC-012: `runTestsOnSynthesizedTree` managed runtime returns unavailable; source node_modules is not deleted
 
 **Category**: unit
-**Priority**: should
-**Source**: tasks.md T-01
-
-**GIVEN** a `LocalRuntime` instance operating on a valid repository
-**WHEN** `runTestsOnSynthesizedTree` is called with a `baseRev` that does not exist in the repository
-**THEN** the result is `{ kind: "unavailable", reason: <non-empty string> }`
-**AND** the function does not throw
-
----
-
-### TC-011: ManagedRuntime.runTestsOnSynthesizedTree returns unavailable
-
-**Category**: unit
-**Priority**: should
-**Source**: tasks.md T-01, design.md D2
+**Priority**: must
+**Source**: tasks.md > T-01 Acceptance Criteria / design.md > D2 (Managed / capability)
 
 **GIVEN** a `ManagedRuntime` instance
 **WHEN** `runTestsOnSynthesizedTree` is called with any arguments
-**THEN** the result is `{ kind: "unavailable", reason: <non-empty string> }`
+**THEN** returns `{ kind: "unavailable", reason: "managed runtime has no local worktree for runTestsOnSynthesizedTree" }` immediately
+**AND** the caller's `node_modules` directory is not touched during any cleanup path in `LocalRuntime.runTestsOnSynthesizedTree` (the `finally` block removes only the temporary worktree's own symlink, not the source `node_modules`)
 
 ---
 
-### TC-012: resolveEvidenceBaseRev returns null for empty or absent synthesizedCommits ledger
+### TC-013: Gate hollow test (Evidence Base green) still yields `failed`
 
 **Category**: unit
 **Priority**: must
-**Source**: design.md D1, tasks.md T-02
+**Source**: design.md > D7 (Update — gate, TC-008 strip-test-authority) / tasks.md > T-05
 
-**GIVEN** a job state where `synthesizedCommits` is an empty array or the field is absent
-**WHEN** `resolveEvidenceBaseRev(state)` is called
-**THEN** the function returns `null`
+**GIVEN** a gate invoked with a forward-type job, a valid Evidence Base reference, and a resolvable HEAD OID
+**AND** the materialized test files, when run on the Evidence Base via `runTestsOnSynthesizedTree`, **pass** (hollow — the test does not require an implementation change to pass)
+**WHEN** the bite-evidence gate runs
+**THEN** the verdict is `failed`
+**AND** each `BiteEvidenceRecord` shows `baseResult: "green"`
 
 ---
 
-### TC-013: resolveEvidenceBaseRev returns the same revision for first-run and resume/re-run states sharing synthesizedCommits[0]
+### TC-014: Structural removal of `detectBaseImplementationContamination` is verified by typecheck — no grep-based runtime test is needed
 
-**Category**: unit
+**Category**: gate
 **Priority**: must
-**Source**: tasks.md T-02 (acceptance 2), design.md D1
+**Source**: design.md > D7 (TC-014 verification mechanism) / tasks.md > T-02 Acceptance Criteria
 
-**GIVEN** a first-run state with `synthesizedCommits = [bootstrapOid]`
-**AND** a resume/re-run state with `synthesizedCommits = [bootstrapOid, laterOid1, laterOid2, operatorOid]` (same first entry)
-**WHEN** `resolveEvidenceBaseRev` is called on each state independently
-**THEN** both calls return the same revision string (`"${bootstrapOid}^"`)
+Verification phase: **T-06** (`bun run typecheck`).
+
+`detectBaseImplementationContamination` and its ponytail marker are deleted from `oids.ts`. Any surviving import of the symbol — in `gate.ts`, `achieved-assurance.ts`, or elsewhere — is a TypeScript compilation error caught by `bun run typecheck`. Typecheck green is the complete and sufficient gate for this structural removal.
+
+No separate runtime grep-based assertion is added. Grep-based tests would be redundant with the compile-time check, fragile against refactored import paths, and harder to maintain than the compile-time guarantee that already exists.
 
 ---
 
-### TC-014: detectBaseImplementationContamination is removed with no remaining importers
+### TC-015: `typecheck && test` green
 
-**Category**: unit
+**Category**: gate
 **Priority**: must
-**Source**: tasks.md T-02, design.md D5
+**Source**: tasks.md > T-06
 
-**GIVEN** the codebase after all changes in this request are applied
-**WHEN** the source tree under `src/` is examined for references to `detectBaseImplementationContamination`
-**THEN** no such export, import, or call site exists anywhere in the codebase
+Verification phase: **T-06** (`bun run typecheck && bun run test`).
 
----
-
-### TC-015: resolveBaseCandidateOids still returns the latest test-materialize OID (oid-capture.test.ts unchanged and green)
-
-**Category**: unit
-**Priority**: should
-**Source**: tasks.md T-02, design.md D3
-
-**GIVEN** a job state with multiple `test-materialize` run records, the most recent having a distinct `commitOid`
-**WHEN** `resolveBaseCandidateOids(state)` is called
-**THEN** the returned `baseOid` equals the `commitOid` of the most recent `test-materialize` run (behavior unchanged from before this change)
-**AND** `oid-capture.test.ts` is unmodified and passes
-
----
-
-### TC-016: Gate never throws — unexpected runtime error resolves to strategy-deferred
-
-**Category**: unit
-**Priority**: must
-**Source**: tasks.md T-03, design.md D6
-
-**GIVEN** a gate invocation for a forward-type job with a valid job state
-**AND** `runTestsOnSynthesizedTree` throws an unexpected error (simulated via fake)
-**WHEN** the bite-evidence gate evaluates the verdict
-**THEN** the verdict is `strategy-deferred`
-**AND** no exception propagates out of the gate
-
----
-
-### TC-017: scopedTestCommand unset causes gate to return strategy-deferred
-
-**Category**: unit
-**Priority**: should
-**Source**: tasks.md T-03, design.md D6
-
-**GIVEN** a project configuration where `scopedTestCommand` is not set
-**AND** the runtime therefore returns `unavailable` for scoped test execution
-**WHEN** the bite-evidence gate runs for a forward-type job
-**THEN** the verdict is `strategy-deferred`
-
----
-
-### TC-018: Archive floor returns fail-closed when Evidence Base ref is absent (empty synthesizedCommits)
-
-**Category**: unit
-**Priority**: should
-**Source**: tasks.md T-04, design.md D1 / D5
-
-**GIVEN** an archive floor evaluation for a job state with an empty `synthesizedCommits` ledger
-**AND** the floor policy requires `biteEvidence`
-**WHEN** `deriveAchievedAssurance` is called
-**THEN** the `biteEvidence` dimension is absent (fail-closed, diagnostic recorded)
-**AND** `deriveAchievedAssurance` does not throw
-
----
-
-### TC-019: RealRuntimeStrategy fails to compile when runTestsOnSynthesizedTree is omitted
-
-**Category**: unit
-**Priority**: could
-**Source**: tasks.md T-01
-
-**GIVEN** a concrete class that claims to implement `RealRuntimeStrategy`
-**WHEN** `runTestsOnSynthesizedTree` is missing from the implementation
-**THEN** TypeScript compilation fails with a type error (compile-time enforcement mirrors `runTestsAtCommit`)
-
----
-
-### TC-020: Archive floor with hollow base (Evidence Base returns green) stays fail-closed
-
-**Category**: unit
-**Priority**: could
-**Source**: tasks.md T-04, design.md D5 (#848 anti-regression)
-
-**GIVEN** an archive floor evaluation where `runTestsOnSynthesizedTree` returns `{ kind: "green" }` (tests already pass at the Evidence Base — hollow)
-**WHEN** `deriveAchievedAssurance` is called
-**THEN** the `biteEvidence` dimension is absent (fail-closed; hollow base detected)
-
----
-
-### TC-021: Archive floor HEAD-green unavailable remains fail-closed
-
-**Category**: unit
-**Priority**: could
-**Source**: tasks.md T-04, design.md D5
-
-**GIVEN** an archive floor evaluation where base-red on the Evidence Base returns `{ kind: "red" }` (correctly)
-**AND** `runTestsAtCommit(finalHeadOid, ...)` returns `{ kind: "unavailable" }`
-**WHEN** `deriveAchievedAssurance` is called
-**THEN** the `biteEvidence` dimension is absent (fail-closed)
-
----
-
-### TC-022: typecheck and full test suite are green after all changes
-
-**Category**: integration
-**Priority**: must
-**Source**: tasks.md T-06
-
-**GIVEN** all implementation changes from T-01 through T-05 are applied to the codebase
-**WHEN** `bun run typecheck` and `bun run test` are executed
-**THEN** both commands exit with code 0
+All changes in T-01 through T-05 must leave the full build and test suite green. Only the files enumerated in design D7 are modified; every other test file is unchanged and passes without modification.
 
 ---
 
@@ -263,11 +218,11 @@
 
 ```yaml
 result: completed
-total: 22
-automated: 22
+total: 15
+automated: 15
 manual: 0
-must: 10
-should: 9
-could: 3
+must: 13
+should: 2
+could: 0
 blocked_reasons: []
 ```
