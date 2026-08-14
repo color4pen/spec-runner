@@ -1,0 +1,73 @@
+/**
+ * Last-tool tracker: records the most recent tool start and whether its
+ * matching completion was observed. Used by agent runners to enrich
+ * STEP_TIMEOUT halt records so operators can distinguish a hung command
+ * from an API/generation stall without inspecting the process tree.
+ *
+ * Design D2 (design.md): shared factory so both claude-code and codex
+ * adapters reuse identical logic from a single, independently-testable surface.
+ */
+
+export interface LastToolTracker {
+  /** Record a tool start. Replaces any previous last-tool state. */
+  onToolStart(tool: string, target: string | undefined, id?: string): void;
+  /**
+   * Record a tool completion. Sets last.done = true when ids correlate.
+   * Ids correlate when id === last.id, or when the tracked start had no id
+   * (best-effort match for id-less streams). An id-less completion does NOT
+   * clear an id-tracked start — a false "completed" would mask a hung command,
+   * the exact misdiagnosis this tracker exists to prevent.
+   */
+  onToolEnd(id?: string): void;
+  /**
+   * Clear tracked state. Called at the start of each retry attempt so hints
+   * never report elapsed time spanning a previous attempt plus backoff delay.
+   */
+  reset(): void;
+  /** Build the timeout hint string for the current state (three cases per D4). */
+  timeoutHint(): string;
+}
+
+/**
+ * Create a last-tool tracker.
+ *
+ * @param now - Clock source. Defaults to Date.now (vitest fake timers mock Date too).
+ */
+export function createLastToolTracker(now: () => number = Date.now): LastToolTracker {
+  let last: {
+    tool: string;
+    target?: string;
+    startedAt: number;
+    id?: string;
+    done: boolean;
+  } | null = null;
+
+  return {
+    onToolStart(tool, target, id) {
+      last = { tool, target, startedAt: now(), id, done: false };
+    },
+
+    onToolEnd(id) {
+      if (!last || last.done) return;
+      // ponytail: id-correlated; id-less streams fall back to best-effort (start w/o id matches any end), require ids if interleaving matters
+      const correlates = last.id === undefined || id === last.id;
+      if (correlates) last.done = true;
+    },
+
+    reset() {
+      last = null;
+    },
+
+    timeoutHint() {
+      if (last === null) {
+        return "no tool observed before timeout (no tool activity in session)";
+      }
+      const elapsed = now() - last.startedAt;
+      const targetStr = last.target !== undefined ? ` ${last.target}` : "";
+      if (!last.done) {
+        return `last tool: ${last.tool}${targetStr} started ${elapsed}ms ago; in-flight (no completion observed before timeout)`;
+      }
+      return `last tool: ${last.tool}${targetStr} started ${elapsed}ms ago; completed before timeout`;
+    },
+  };
+}
