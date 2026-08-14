@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
   "createdAt": "2026-08-14T20:03:06.572Z",
-  "updatedAt": "2026-08-14T21:06:30.921Z",
+  "updatedAt": "2026-08-14T21:08:22.270Z",
   "request": {
     "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
-  "status": "awaiting-resume",
+  "step": "spec-fixer",
+  "status": "running",
   "branch": "change/evidence-base-a50242c6",
-  "error": {
-    "code": "SPEC_REVIEW_RETRIES_EXHAUSTED",
-    "message": "spec-review did not approve after 2 iterations",
-    "hint": "Review spec-review-result-003.md and adjust the request manually."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -76,7 +72,9 @@
     "5fe00a4361c8e5afbcd6ab24feacf5d6e7548c1e",
     "02c356a80da4f63eba6917a3f942d3001e55cfa0",
     "a4ba42f2ad9b686f7d5d5354a513f1683d2f00de",
-    "5dbf676eef8f5453620560888b425ba60042405a"
+    "5dbf676eef8f5453620560888b425ba60042405a",
+    "894c3478fae758d4c6c83b9b1e348b86b86de942",
+    "e2497cf4745dfc1ab7e883498bd32a865a264e3b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -121,14 +119,17 @@
     ],
     "spec-fixer": []
   },
-  "resumePoint": {
-    "step": "spec-fixer",
-    "reason": "spec-review did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "残 findings 2 件は operator 修正済み: design.md D7 の構造削除確認の TC 参照を TC-014 → TC-016 に訂正(同文中の T-06/TC-022 も本 change に存在しない番号のため TC-017 に訂正)。test-cases.md の Result YAML automated を 17 → 15 に訂正(Summary の定義どおり unit/integration のみ、gate 2 件は除外 — step-timeout-last-progress と同じ規約)。修正済み canon で review を再走せよ。",
+      "step": "spec-fixer",
+      "recordedAt": "2026-08-14T21:08:22.061Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 37,
+    "historyCount": 39,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

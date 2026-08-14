@@ -57,3 +57,5 @@
 {"type":"finding-recency","step":"spec-review","ts":"2026-08-14T21:06:30.919Z","iteration":3,"priorOid":"5fe00a4361c8e5afbcd6ab24feacf5d6e7548c1e","findings":[{"file":"specrunner/changes/evidence-base/design.md","title":"D7: 構造削除確認の TC 番号参照が誤っている (TC-014 → TC-016)","severity":"low","recency":"indeterminate"},{"file":"specrunner/changes/evidence-base/test-cases.md","title":"Summary の automated 数 (15) と Result YAML の automated 数 (17) が不整合","severity":"low","recency":"indeterminate"}]}
 {"type":"transition","ts":"2026-08-14T21:06:30.920Z","step":"spec-review","status":"warning","message":"spec-review iteration 3 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-08-14T21:06:30.921Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: spec-review did not approve after 2 iterations"}
+{"type":"transition","ts":"2026-08-14T21:08:22.061Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'spec-fixer'"}
+{"type":"transition","ts":"2026-08-14T21:08:22.269Z","step":"spec-fixer-started","status":"started","message":"Starting spec-fixer step"}
