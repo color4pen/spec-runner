@@ -32,12 +32,16 @@
 
 - [ ] Add `isToolResult(v): v is { type: "user"; message: { content: Array<{ type: string; tool_use_id?: string }> } }` — true when `v.type === "user"` and `v.message.content` is an array containing at least one block with `type === "tool_result"`. Mirror the defensive style of `isToolUse`.
 - [ ] Provide a small helper (or inline in the runner) to read the `tool_use_id` of the first `tool_result` block for correlation.
+- [ ] Extend `isToolUse`'s narrowed `content_block` type to include `id?: string` so that T-04 can access `cb.id` directly without a cast. (The SDK's `BetaToolUseBlock` carries `id: string`; adding `id?: string` to the narrowed shape keeps the guard correct while enabling type-safe access. Alternatively, cast `(cb as { id?: string }).id` in the runner — either approach is acceptable as long as `typecheck` passes.)
 
 **Acceptance Criteria**:
 - `isToolResult` returns `true` for a `user` message with a `tool_result` block, `false` for `tool_use` / `assistant` / `result` / malformed messages.
 - `isToolUse` behavior is unchanged.
+- `cb.id` is accessible without a typecheck error in T-04 (via narrowed type update or cast).
 
 ## T-04: Wire the tracker into the claude-code runner (`src/adapter/claude-code/agent-runner.ts`)
+
+**前提: T-03 完了** (T-03 must be complete before T-04 — `isToolResult` and `cb.id` access are required by this task.)
 
 - [ ] Import `createLastToolTracker` from `../shared/last-tool-tracker.js` and `isToolResult` from `./message-types.js`.
 - [ ] Construct one tracker per `run()`, alongside the watchdog (near lines 481-483), using the default `Date.now` clock (fake-timer compatible).
