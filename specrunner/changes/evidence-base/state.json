@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
   "createdAt": "2026-08-14T20:03:06.572Z",
-  "updatedAt": "2026-08-14T21:08:57.321Z",
+  "updatedAt": "2026-08-14T21:11:47.445Z",
   "request": {
     "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/evidence-base-a50242c6",
   "error": null,
@@ -75,7 +75,8 @@
     "5dbf676eef8f5453620560888b425ba60042405a",
     "894c3478fae758d4c6c83b9b1e348b86b86de942",
     "e2497cf4745dfc1ab7e883498bd32a865a264e3b",
-    "4a2be8ed9b36d6a32a372efb9ae9d9ab7484bab2"
+    "4a2be8ed9b36d6a32a372efb9ae9d9ab7484bab2",
+    "58791bbe1d0a16d09f942f2153c9cbb9bd042445"
   ],
   "touchedFiles": {
     "request-review": [
@@ -130,11 +131,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 46,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 3,
+      "test-case-gen": 4,
       "spec-review": 3,
       "spec-fixer": 3
     }
