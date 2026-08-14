@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T12:04:22.715Z",
+  "updatedAt": "2026-08-14T12:09:15.240Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/test-case-gen-design-phase-96aef526",
   "error": null,
@@ -66,7 +66,8 @@
     "f52b629af55cb09babcc52527543936fe41246fe",
     "226a41e1942aec5900e25120cfca7e591b4b10b5",
     "2bc68090bffb3db402bd17de9c2cf7e1345a9fa5",
-    "1bcf5844c2654639aa5185ed40532047166d4790"
+    "1bcf5844c2654639aa5185ed40532047166d4790",
+    "6fd79c6cede922b79400e187186ee80fc953e27d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -135,15 +136,17 @@
     "spec-fixer": [
       "src/core/step/spec-fixer.ts",
       "src/core/step/fixer-helpers.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 19,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "test-case-gen": 1
     }
   }
 }
