@@ -323,6 +323,201 @@ describe("archive orchestrator — side-effect boundaries (archive-on-branch-fir
     expect(draftAddCall).toBeDefined();
   });
 
+  // ---------------------------------------------------------------------------
+  // TC-001 to TC-006: draft cleanup — repo root + both formats (archive-flat-draft-cleanup)
+  // ---------------------------------------------------------------------------
+
+  it("TC-001: フラット形式 untracked draft が repo 本体から削除される", async () => {
+    // source: spec.md > Requirement: archive はフラット形式 draft を repo 本体から削除する
+    //         > Scenario: フラット形式 draft が untracked で存在する場合
+    const flatPath = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG + ".md");
+    const dirPath  = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG);
+
+    const mockFs = makeFs();
+    vi.mocked(mockFs.exists).mockImplementation(async (p: string) => {
+      if (p === flatPath) return true;
+      if (p === dirPath)  return false;
+      return true;
+    });
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(), // stdout: "" → untracked
+      fs: mockFs,
+    });
+
+    expect(result.exitCode).toBe(0);
+    const rmCalls = vi.mocked(mockFs.rm).mock.calls.map(([p]) => p as string);
+    expect(rmCalls).toContain(flatPath);
+    expect(rmCalls).not.toContain(dirPath);
+  });
+
+  it("TC-002: ディレクトリ形式 untracked draft が repo 本体から削除される", async () => {
+    // source: spec.md > Requirement: archive はディレクトリ形式 draft を repo 本体から削除する
+    //         > Scenario: ディレクトリ形式 draft が untracked で存在する場合
+    const flatPath = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG + ".md");
+    const dirPath  = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG);
+
+    const mockFs = makeFs();
+    vi.mocked(mockFs.exists).mockImplementation(async (p: string) => {
+      if (p === flatPath) return false;
+      if (p === dirPath)  return true;
+      return true;
+    });
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(), // stdout: "" → untracked
+      fs: mockFs,
+    });
+
+    expect(result.exitCode).toBe(0);
+    const rmCalls = vi.mocked(mockFs.rm).mock.calls.map(([p]) => p as string);
+    expect(rmCalls).toContain(dirPath);
+    expect(rmCalls).not.toContain(flatPath);
+  });
+
+  it("TC-003: draft が一切存在しない場合 archive は無音で続行する", async () => {
+    // source: spec.md > Requirement: 両形式とも存在しない場合 archive は無音で続行する
+    //         > Scenario: draft が一切存在しない場合
+    const flatPath = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG + ".md");
+    const dirPath  = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG);
+
+    const mockFs = makeFs();
+    vi.mocked(mockFs.exists).mockImplementation(async (p: string) => {
+      if (p === flatPath || p === dirPath) return false;
+      return true;
+    });
+    vi.mocked(stderrWrite).mockClear();
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: mockFs,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    // No draft-related stderrWrite
+    const warnCalls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
+    expect(warnCalls.some((m) => m.toLowerCase().includes("draft"))).toBe(false);
+
+    // No fs.rm should be called for any draft path when neither exists at cwd
+    const rmCalls = vi.mocked(mockFs.rm).mock.calls.map(([p]) => p as string);
+    const draftRmCalls = rmCalls.filter((p) => p.includes("specrunner/drafts"));
+    expect(draftRmCalls).toHaveLength(0);
+  });
+
+  it("TC-004: tracked なフラット形式 draft は削除せず警告を出す", async () => {
+    // source: spec.md > Requirement: tracked な draft は削除せず警告を出す
+    //         > Scenario: tracked なフラット形式 draft が存在する場合
+    const flatRelPath = nodePath.join(draftsDir(), FAKE_SLUG + ".md");
+    const flatPath    = nodePath.join(FAKE_CWD, flatRelPath);
+    const dirPath     = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG);
+
+    const mockFs = makeFs();
+    vi.mocked(mockFs.exists).mockImplementation(async (p: string) => {
+      if (p === flatPath) return true;
+      if (p === dirPath)  return false;
+      return true;
+    });
+    vi.mocked(stderrWrite).mockClear();
+
+    const spawnMock = vi.fn().mockImplementation(
+      async (cmd: string, args: string[]) => {
+        // git ls-files for the flat draft path → tracked (non-empty stdout)
+        if (cmd === "git" && args[0] === "ls-files" && args.includes(flatRelPath)) {
+          return { exitCode: 0, stdout: `${flatRelPath}\n`, stderr: "" };
+        }
+        return { exitCode: 0, stdout: "", stderr: "" };
+      },
+    );
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: spawnMock as unknown as SpawnFn,
+      fs: mockFs,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    // fs.rm must NOT be called for the tracked flat path
+    const rmCalls = vi.mocked(mockFs.rm).mock.calls.map(([p]) => p as string);
+    expect(rmCalls).not.toContain(flatPath);
+
+    // stderrWrite must emit a Warning about the tracked draft
+    const warnCalls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
+    expect(warnCalls.some((m) => m.includes("Warning") && m.toLowerCase().includes("draft"))).toBe(true);
+  });
+
+  it("TC-005: tracked なディレクトリ形式 draft は削除せず警告を出す", async () => {
+    // source: spec.md > Requirement: tracked な draft は削除せず警告を出す
+    //         > Scenario: tracked なディレクトリ形式 draft が存在する場合
+    const flatPath   = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG + ".md");
+    const dirRelPath = nodePath.join(draftsDir(), FAKE_SLUG);
+    const dirPath    = nodePath.join(FAKE_CWD, dirRelPath);
+
+    const mockFs = makeFs();
+    vi.mocked(mockFs.exists).mockImplementation(async (p: string) => {
+      if (p === flatPath) return false;
+      if (p === dirPath)  return true;
+      return true;
+    });
+    vi.mocked(stderrWrite).mockClear();
+
+    const spawnMock = vi.fn().mockImplementation(
+      async (cmd: string, args: string[]) => {
+        // git ls-files for the directory draft path → tracked (non-empty stdout)
+        if (cmd === "git" && args[0] === "ls-files" && args.includes(dirRelPath)) {
+          return { exitCode: 0, stdout: `${dirRelPath}\n`, stderr: "" };
+        }
+        return { exitCode: 0, stdout: "", stderr: "" };
+      },
+    );
+
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: spawnMock as unknown as SpawnFn,
+      fs: mockFs,
+    });
+
+    expect(result.exitCode).toBe(0);
+
+    // fs.rm must NOT be called for the tracked dir path
+    const rmCalls = vi.mocked(mockFs.rm).mock.calls.map(([p]) => p as string);
+    expect(rmCalls).not.toContain(dirPath);
+
+    // stderrWrite must emit a Warning about the tracked draft
+    const warnCalls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
+    expect(warnCalls.some((m) => m.includes("Warning") && m.toLowerCase().includes("draft"))).toBe(true);
+  });
+
+  it("TC-006: フラット形式とディレクトリ形式が同時に存在する場合、両方を削除する", async () => {
+    // source: spec.md > Requirement: フラット形式とディレクトリ形式が同時に存在する場合、両方を削除する
+    //         > Scenario: フラット形式とディレクトリ形式が同時に存在する場合
+    const flatPath = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG + ".md");
+    const dirPath  = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG);
+
+    // makeFs().exists defaults to true → both draft paths exist
+    const mockFs = makeFs();
+    const result = await runArchiveOrchestrator({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(), // stdout: "" → both untracked
+      fs: mockFs,
+    });
+
+    expect(result.exitCode).toBe(0);
+    const rmCalls = vi.mocked(mockFs.rm).mock.calls.map(([p]) => p as string);
+    expect(rmCalls).toContain(flatPath);
+    expect(rmCalls).toContain(dirPath);
+  });
+
   it("T-07: archived job resolves via includeArchived and returns Already finished", async () => {
     vi.mocked(JobStateStore.list).mockResolvedValue([makeState({ status: "archived" })]);
     vi.mocked(commitArchive).mockClear();
