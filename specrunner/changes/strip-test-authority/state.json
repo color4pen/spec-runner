@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a8e7912e-b717-4b28-ae2b-71096da1241f",
   "createdAt": "2026-08-14T09:30:51.726Z",
-  "updatedAt": "2026-08-14T09:49:12.061Z",
+  "updatedAt": "2026-08-14T09:58:35.455Z",
   "request": {
     "title": "テスト証拠と工程順序の分離(第1弾): red 強制・テスト変更禁止・偽 baseline 判定の撤回",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "change/strip-test-authority-a8e7912e",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "4d99dbe34ca2b746f939c89cc6be131ddd15aa47",
     "92c7feba43241328ef597172c4d060f57f286134",
-    "7448d5a3df13cf10217f53bc5c7255da1e0f54c0"
+    "7448d5a3df13cf10217f53bc5c7255da1e0f54c0",
+    "6da7dbadc317728d98dcd83911130182204618a3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -95,13 +96,27 @@
       "tests/unit/step/implementer-lockfile.test.ts",
       "tests/unit/step/test-materialize-boundary.test.ts",
       "src/core/step/bite-evidence/__tests__/gate.test.ts"
+    ],
+    "spec-review": [
+      "src/prompts/test-materialize-system.ts",
+      "src/core/step/implementer.ts",
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/pipeline/types.ts",
+      "tests/unit/prompts/test-materialize-red-check-contract.test.ts",
+      "tests/unit/step/test-materialize-boundary.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/state/schema/types.ts",
+      "tests/unit/prompts/test-materialize-prompt-contract.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }

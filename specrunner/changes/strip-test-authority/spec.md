@@ -18,6 +18,13 @@ test-materialize の system prompt は、新規テストの実行義務と観測
 **When** `## Method` 節と `## Evidence` 節を検査する
 **Then** 新規テストを完了報告の前に実行する旨、実行方法が agent の裁量である旨、および実行したコマンド・対象テストファイル・観測結果(fail/pass 件数)・期待分類(expected-red / expected-green)の記録要求が含まれる
 
+#### Scenario: 初回 message が red 確認を課さない
+
+**Given** `buildTestMaterializeInitialMessage` が生成する初回 user message を取得する
+**When** message の内容を検査する
+**Then** 「confirm they fail (red)」「red を確認して」に相当する red 強制の記述が含まれない
+**And** 新規テストを実行し観測結果を記録してから完了する旨が含まれる
+
 ### Requirement: expected-red が green だった場合は書き直しでなく理由の記録を指示する
 
 test-materialize prompt は、expected-red と分類したテストを base で実行して green を観測した場合の指示として、テストの書き直しではなく、観測事実(green)と考えられる理由(既存実装が要求を満たしている / 分類誤り / 見張れていない疑い等)を Evidence に記録し判断を下流 review に委ねることを MUST とする。

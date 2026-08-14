@@ -126,9 +126,12 @@ reason: "baseline unbuildable: implementer commit <oid> predates the base test-m
 
 **新規テスト**(既存の更新ではないが D5 の完全性のため明記):
 
+- `tests/unit/prompts/test-materialize-red-check-contract.test.ts` に追加:
+  - **初回 message の red 非強制**: `buildTestMaterializeInitialMessage` に代表的な入力(title・requestContent・testCasesMd)を与えて生成した message が「confirm they fail (red)」等の red 強制表現を含まず、観測結果を記録してから完了する旨を含むことを assert する。(spec Requirement 1「初回 message も red を確認して完了する旨を含まない」の対応 Scenario を機械的に固定する)
+
 - `src/core/step/bite-evidence/__tests__/gate.test.ts` に 2 describe を追加:
-  - **再走形状**: `implementer:[impl1@t1, impl2@t3]`, `test-materialize:[mat1@t0, mat2@t2]`(base=mat2、impl1 が base より前) + base-green を返す runtime → `verdict === "strategy-deferred"` かつ `reason` が baseline 構築不能を示す。加えて `STANDARD_TRANSITIONS` に `{ bite-evidence, strategy-deferred → verification }` が存在することを assert(verification へ遷移する受け入れ基準)。
-  - **初回一巡(前提保持)**: `test-materialize:[mat@t0]`, `implementer:[impl@t1]`(base より前の implementer 無し) + base-green の genuine hollow → `verdict === "failed"`(判定無変更)。distinct timestamp を使い、検知が発火しないことを固定する。
+  - **再走形状**: `implementer:[impl1@t1, impl2@t3]`, `test-materialize:[mat1@t0, mat2@t2]`(base=mat2、impl1 が base より前) + base-green を返す runtime → `verdict === "strategy-deferred"` かつ `reason` が baseline 構築不能を示す。加えて `STANDARD_TRANSITIONS` に `{ bite-evidence, strategy-deferred → verification }` が存在することを assert(verification へ遷移する受け入れ基準)。state の request type は forward type(`bug-fix` または `new-feature`)を使用すること(gate step 1 で非 forward type を strategy-deferred にするため、汚染検知コードに到達する前に偶然 deferral が成立するのを避ける)。
+  - **初回一巡(前提保持)**: `test-materialize:[mat@t0]`, `implementer:[impl@t1]`(base より前の implementer 無し) + base-green の genuine hollow → `verdict === "failed"`(判定無変更)。distinct timestamp を使い、検知が発火しないことを固定する。state の request type も forward type を使用すること(上記と同じ理由)。
 
 **無変更で green を維持する主な既存テスト**(抜粋、代表確認):
 
