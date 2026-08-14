@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T16:47:04.093Z",
+  "updatedAt": "2026-08-14T17:04:48.769Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/test-case-gen-design-phase-96aef526",
   "error": null,
@@ -76,7 +76,8 @@
     "a0b3f87d539d5009530d417b23a21464f1ce20b5",
     "6b98b825177822170e2aedc57b17b723720c2ec4",
     "5bf830f3469c6f52dce3003c0dc145d13aff6469",
-    "2672e8daf5db0b66e650454e0559015f18a38433"
+    "2672e8daf5db0b66e650454e0559015f18a38433",
+    "1f06c31a58de75caedba5c64da84ecbad42cbd06"
   ],
   "touchedFiles": {
     "request-review": [
@@ -175,15 +176,21 @@
       "src/core/pipeline/types.ts",
       "src/core/pipeline/spec-observation.ts",
       "src/core/step/judge-verdict.ts",
-      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/canon-write-scope.ts",
       "src/core/step/spec-review.ts",
       "src/core/step/test-case-gen.ts",
-      "src/core/step/canon-write-scope.ts",
-      "src/core/step/fixer-helpers.ts",
       "src/prompts/spec-review-system.ts",
       "src/prompts/test-case-gen-system.ts",
-      "src/core/step/canon-escalation.ts",
       "src/kernel/report-result.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
+      "src/core/step/write-scope.ts",
+      "tests/unit/core/step/canon-write-scope.test.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
+      "tests/unit/step/spec-review-reads.test.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
       "src/core/pipeline/findings-ledger.ts"
     ]
   },
@@ -197,7 +204,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 55,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -208,7 +215,7 @@
       "implementer": 3,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1,
+      "code-review": 2,
       "code-fixer": 1
     }
   }

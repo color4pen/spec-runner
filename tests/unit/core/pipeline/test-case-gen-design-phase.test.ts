@@ -15,6 +15,7 @@
  * TC-010: 観察 pass の spec-fixer は test-materialize へ継続する
  * TC-011: 観察 pass 後に spec-review は再実行されない（integration）
  * TC-012: 通常 type の spec-review 入力に test-cases.md が含まれる
+ * TC-013: 免除 type の spec-review 入力に test-cases.md が含まれない (should)
  * TC-014: spec-review prompt に TC 照合観点が含まれる
  * TC-015: test-case-gen prompt に振る舞いレベル指示が含まれる
  * TC-016: test-case-gen の write 宣言は test-cases.md のみ
@@ -995,6 +996,39 @@ describe("TC-012: 通常 type の spec-review 入力に test-cases.md が含ま�
       request: { path: REQUEST_MD, title: "Test", type: "spec-change", slug: TEST_SLUG },
     });
     const deps = makeMinimalDeps(TEST_SLUG, "spec-change");
+    const refs = SpecReviewStep.reads!(state, deps);
+    const paths = refs.map((r) => r.path);
+
+    expect(paths.some((p) => p.endsWith("spec.md"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("design.md"))).toBe(true);
+    expect(paths.some((p) => p.endsWith("tasks.md"))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-013: 免除 type の spec-review 入力に test-cases.md が含まれない (should)
+// Source: spec.md > Requirement: 免除 type は test-case-gen を通らず design から spec-review へ直行する
+//         > Scenario: 免除 type の spec-review 入力に test-cases.md が含まれない
+// GREEN: reads() branches on isTestGenRequired(state.request.type); pin to prevent regression
+// ---------------------------------------------------------------------------
+
+describe("TC-013: 免除 type の spec-review 入力に test-cases.md が含まれない (should)", () => {
+  it("TC-013: SpecReviewStep.reads() は免除 type（chore）で test-cases.md を含まない", () => {
+    const state = makeMinimalJobState({
+      request: { path: REQUEST_MD, title: "Chore", type: "chore", slug: TEST_SLUG },
+    });
+    const deps = makeMinimalDeps(TEST_SLUG, "chore");
+    const refs = SpecReviewStep.reads!(state, deps);
+    const paths = refs.map((r) => r.path);
+
+    expect(paths).not.toContain(`${FOLDER}/test-cases.md`);
+  });
+
+  it("TC-013: SpecReviewStep.reads() は免除 type（chore）でも spec.md / design.md / tasks.md は含む", () => {
+    const state = makeMinimalJobState({
+      request: { path: REQUEST_MD, title: "Chore", type: "chore", slug: TEST_SLUG },
+    });
+    const deps = makeMinimalDeps(TEST_SLUG, "chore");
     const refs = SpecReviewStep.reads!(state, deps);
     const paths = refs.map((r) => r.path);
 

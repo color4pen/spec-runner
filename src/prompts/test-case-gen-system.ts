@@ -124,7 +124,8 @@ export function buildTestCaseGenInitialMessage(opts: TestCaseGenMessageInput): s
     ? `\n[SPEC-REVIEW FINDINGS TO ADDRESS]\n${specReviewFindingsBlock}\n`
     : "";
 
-  return `Generate test scenarios for the following change.
+  return `<user-request>
+Generate test scenarios for the following change.
 
 Change folder: ${changeFolder}
 Branch: ${branch}
@@ -138,7 +139,6 @@ Please:
 6. Write the scenarios to ${outputPath}
 7. ファイルを worktree に書き出したら作業を終えてください。CLI が commit + push を行います。
 
-<user-request>
 ${requestContent}
 </user-request>`;
 }
