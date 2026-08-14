@@ -170,9 +170,11 @@ const conformanceFindingSchema = array(object({
  * evidence: REQUIRED when ok=true — verification-volume counts. checked=0 is treated as indeterminate.
  *
  * fixTarget semantics (per finding):
- *   "spec-fixer"  — spec/design errors: the spec or design artifact is wrong/incomplete
- *   "implementer" — implementation gaps: the implementation is missing or incomplete
- *   "code-fixer"  — local code non-conformities: isolated code-level issues
+ *   Findings are raised only when request.md / spec.md normative requirements are violated.
+ *   Design/tasks divergences that do not violate request/spec are non-blocking notes, not findings.
+ *   "spec-fixer"  — root cause is an error in spec.md or design.md
+ *   "implementer" — root cause is missing or incomplete implementation
+ *   "code-fixer"  — root cause is an isolated code-level issue
  *   (omitted)     — defaults to "implementer"
  */
 export const CONFORMANCE_REPORT_TOOL: ReportToolSpec<ConformanceReportResult> = {

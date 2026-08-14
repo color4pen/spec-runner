@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "64d5054d-43d6-4ce9-b0c2-3d72c7ad23d9",
   "createdAt": "2026-08-14T11:27:12.016Z",
-  "updatedAt": "2026-08-14T12:11:53.073Z",
+  "updatedAt": "2026-08-14T12:13:10.805Z",
   "request": {
     "title": "conformance の正典に格差を付ける: request/spec は規範、design/tasks は計画",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/conformance-canon-tiers-64d5054d",
   "error": null,
@@ -71,7 +71,8 @@
     "7cff7226ffdb1536c3fc844f071df2dc6d2892c1",
     "b91a2b89cea1dfcd760dc22d020c34c7c655ecfd",
     "45adc23dc7ae367593edef0145891409a3e875e2",
-    "8f4d478f882dcbcf6db7aa27636726f7a121f959"
+    "8f4d478f882dcbcf6db7aa27636726f7a121f959",
+    "f1f7cc882f7bdd2b1c0818b53f168aeb3e93353b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -133,6 +134,9 @@
       "tests/unit/core/step/conformance.test.ts",
       "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts",
       "src/prompts/builder.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/report-tool.ts"
     ]
   },
   "reviewerStatuses": [
@@ -166,7 +170,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -179,7 +183,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
