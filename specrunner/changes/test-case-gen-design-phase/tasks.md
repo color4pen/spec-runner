@@ -172,12 +172,14 @@
 - [ ] test-case-gen prompt に振る舞いレベル指示が含まれることを固定。
 - [ ] `deriveSpecReviewVerdict`(test-cases.md fixable) === needs-fix（escalation でない）を固定。
 - [ ] TC-only needs-fix → test-case-gen（spec-fixer skip）/ 混在 → spec-fixer を固定（`specReviewNeedsFixIsTcOnly`）。
+- [ ] TC finding + medium/low severity spec finding の混在ケースで `specReviewNeedsFixIsTcOnly=false` → spec-fixer を固定（severity 問わず spec routable が 1 件でもあれば TC-only にならない）。
 - [ ] `deriveConformanceVerdict` / `deriveJudgeVerdict`(test-cases.md fixable) === escalation（承認後保護）を固定。
 - [ ] test-case-gen buildMessage が再生成時に spec-review の TC finding を注入することを固定。
 
 **Acceptance Criteria**:
-- 上記 10 項がテストで固定され green。
+- 上記 11 項がテストで固定され green。
 - 各テストが scenario（spec.md）に対応し、TC ID を frozen scenario ID として一意採番する。
+- TC + medium/low spec 混在ケースは `specReviewNeedsFixIsTcOnly=false` を直接 assert するテストで固定される。
 
 ## T-11: フローテストを再検証し必要なら fixture を更新する
 

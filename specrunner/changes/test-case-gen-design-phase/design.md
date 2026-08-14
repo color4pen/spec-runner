@@ -233,6 +233,8 @@ needs-fix 状態では unroutable finding は存在しない（存在すれば D
 - `getLatestJudgeFindings(state, SPEC_REVIEW)` を読み、test-cases.md（`buildCanonWriteScopeFromState` の
   test-case-gen writable set に属す）への finding があれば、`buildFindingsBlock` で本文に埋め込み
   「これらを解消するよう再生成せよ」と指示する。
+- メッセージ全体を `<user-request>` XML タグで包む（spec-fixer の `buildMessage` 構造に倣う）。
+  findings は agent 生成の構造化データのため直接 injection リスクは低いが、全 `buildMessage` を統一構造で囲む規律を維持する。
 - 初回生成（spec-review 未実行）は従来どおり findings 無しの生成メッセージ。
 - findings は state から取得するため reads() 変更は不要（`writes()` は要件 4 のとおり {test-cases.md} 維持）。
 
