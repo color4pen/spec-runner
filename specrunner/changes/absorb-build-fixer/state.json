@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T20:48:40.817Z",
+  "updatedAt": "2026-08-14T20:50:53.552Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
@@ -68,7 +68,8 @@
     "707857a787df861977ba69e483863f71541c82d5",
     "6c3ded25597df7d959f36ff4678530f99099a852",
     "b8f5d2f2488d99f6d7a4c191151ef5b57a9721ce",
-    "b301875c4f2900db6bd0a2d2ec76f0bb3adc1947"
+    "b301875c4f2900db6bd0a2d2ec76f0bb3adc1947",
+    "980d98103e5e8ec5cf66e233aa1acb5cd7a74ab0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -122,25 +123,7 @@
       "tests/unit/core/pipeline/pipeline.conformance-routing.test.ts"
     ],
     "test-case-gen": [],
-    "spec-review": [
-      "src/core/pipeline/types.ts",
-      "src/core/pipeline/registry.ts",
-      "src/core/pipeline/pipeline.ts",
-      "src/core/step/step-context-builder.ts",
-      "src/core/step/build-fixer.ts",
-      "src/core/resume/resolve-step.ts",
-      "src/core/step/fixer-helpers.ts",
-      "src/core/step/implementer.ts",
-      "src/core/pipeline/reverification.ts",
-      "src/core/pipeline/convergence-budget.ts",
-      "src/kernel/step-names.ts",
-      "src/core/step/write-scope.ts",
-      "tests/unit/core/pipeline/pipeline.build-fixer-reentry.test.ts",
-      "tests/unit/core/pipeline/pipeline.reverification.test.ts",
-      "src/core/pipeline/run.ts",
-      "src/state/schema.ts",
-      "src/state/schema/types.ts"
-    ]
+    "spec-review": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -152,12 +135,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 18,
+    "historyCount": 22,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 2
     }
   }
 }
