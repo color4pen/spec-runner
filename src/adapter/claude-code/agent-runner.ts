@@ -30,7 +30,8 @@
  */
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { isToolUse } from "./message-types.js";
+import { isToolUse, isToolResult } from "./message-types.js";
+import { createLastToolTracker } from "../shared/last-tool-tracker.js";
 import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader, type ClaudeSdkCreateMcpServer } from "./sdk-loader.js";
 import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage, AgentWriteScope, AgentInvocationMetrics } from "../../core/port/agent-runner.js";
 import { ADDED_TURNS_ZERO } from "../../core/port/agent-runner.js";
@@ -482,6 +483,23 @@ export class ClaudeCodeRunner implements AgentRunner {
     const watchdog = createInactivityWatchdog(() => abortController.abort());
     watchdog.bump(); // sync registration before any await — D5: fake-timer test safety
 
+    // Last-tool tracker: records the most recent tool start/completion so STEP_TIMEOUT
+    // halt records can distinguish a hung command from an API/generation stall (D2/D3).
+    const tracker = createLastToolTracker();
+
+    // Single closure covering tool_use start + tool_result completion + terminal display.
+    // Replaces the three bare emitToolProgress() call sites so start+end stay in sync.
+    const observeMessage = (msg: SDKMessage): void => {
+      emitToolProgress(msg, ctx.emit, step.name);
+      if (isToolUse(msg)) {
+        const cb = msg.event.content_block;
+        tracker.onToolStart(cb.name, extractTarget(cb.name, cb.input), cb.id);
+      } else if (isToolResult(msg)) {
+        const firstResult = msg.message.content.find((b) => b.type === "tool_result");
+        tracker.onToolEnd(firstResult?.tool_use_id);
+      }
+    };
+
     // D3 (add-spec-review-baseline-check): call enrichContext before buildMessage.
     // Errors propagate — no catch here (StepExecutor handles error lifecycle).
     if (step.enrichContext) {
@@ -655,7 +673,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       abortController.signal.throwIfAborted();
       for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
         watchdog.bump(); // reset on each event arrival
-        emitToolProgress(message, ctx.emit, step.name);
+        observeMessage(message);
         // Collect assistant messages for touched-files recording (main work turn only)
         if ((message as SDKMessage).type === "assistant") {
           touchedFileMessages.push(message);
@@ -941,7 +959,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           const followLastResult = await runFollowUpQueryWithRetry(
             followPrompt,
             followUpOptions,
-            (msg) => emitToolProgress(msg, ctx.emit, step.name),
+            observeMessage,
           );
 
           // Count the turn immediately after it is consumed — even on failure.
@@ -1018,7 +1036,7 @@ export class ClaudeCodeRunner implements AgentRunner {
             abortController.signal.throwIfAborted(); // already-aborted guard
             for await (const message of repairMessages as AsyncGenerator<SDKMessage, void>) {
               watchdog.bump(); // reset on each event arrival
-              emitToolProgress(message, ctx.emit, step.name);
+              observeMessage(message);
               if (message.type === "result" && (message as SDKResultMessage).subtype === "success") {
                 const su = (message as SDKResultSuccess);
                 const rawUsage = su.modelUsage;
@@ -1127,7 +1145,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           addedTurns: ADDED_TURNS_ZERO,
           error: Object.assign(
             new Error(timeoutMessage),
-            { code: "STEP_TIMEOUT" },
+            { code: "STEP_TIMEOUT", hint: tracker.timeoutHint() },
           ),
         };
       }

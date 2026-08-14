@@ -166,6 +166,10 @@ describe("TC-008: item.started observed then stream goes silent — error.hint c
     });
     const resultPromise = runner.run(makeCtx(makeAgentStep(), makeJobState("tc-008")));
 
+    // Two-step: let async setup (buildArtifactBundle) complete and generator start
+    // before firing the watchdog. A single advance at 900000ms fires before setup
+    // completes, so abort happens before any events are observed.
+    await vi.advanceTimersByTimeAsync(100);
     await vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS);
     const result = await resultPromise;
 
@@ -198,6 +202,8 @@ describe("TC-009: item.completed observed before the silence — error.hint indi
     });
     const resultPromise = runner.run(makeCtx(makeAgentStep(), makeJobState("tc-009")));
 
+    // Two-step: let setup complete and generator process both events, then fire watchdog.
+    await vi.advanceTimersByTimeAsync(100);
     await vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS);
     const result = await resultPromise;
 
@@ -226,6 +232,8 @@ describe("TC-010: only non-tool items observed before timeout — error.hint con
     });
     const resultPromise = runner.run(makeCtx(makeAgentStep(), makeJobState("tc-010")));
 
+    // Two-step: let setup complete and generator process the non-tool event, then fire watchdog.
+    await vi.advanceTimersByTimeAsync(100);
     await vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS);
     const result = await resultPromise;
 
@@ -245,6 +253,8 @@ describe("TC-010: only non-tool items observed before timeout — error.hint con
     });
     const resultPromise = runner.run(makeCtx(makeAgentStep(), makeJobState("tc-010b")));
 
+    // Two-step: let setup complete and generator start (immediately hangs), then fire watchdog.
+    await vi.advanceTimersByTimeAsync(100);
     await vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS);
     const result = await resultPromise;
 

@@ -32,7 +32,7 @@ export function isToolUse(
   type: "stream_event";
   event: {
     type: "content_block_start";
-    content_block: { type: "tool_use"; name: string; input?: Record<string, unknown> };
+    content_block: { type: "tool_use"; name: string; id?: string; input?: Record<string, unknown> };
   };
 } {
   if (!isStreamEvent(v)) return false;
@@ -43,3 +43,25 @@ export function isToolUse(
   return (cb as Record<string, unknown>)["type"] === "tool_use";
 }
 
+/**
+ * Type guard for a tool_result user message.
+ * True when v.type === "user" and v.message.content contains at least one
+ * block with type === "tool_result". Mirrors the defensive style of isToolUse.
+ */
+export function isToolResult(
+  v: unknown,
+): v is { type: "user"; message: { content: Array<{ type: string; tool_use_id?: string }> } } {
+  if (typeof v !== "object" || v === null) return false;
+  const rec = v as Record<string, unknown>;
+  if (rec["type"] !== "user") return false;
+  const message = rec["message"];
+  if (typeof message !== "object" || message === null) return false;
+  const content = (message as Record<string, unknown>)["content"];
+  if (!Array.isArray(content) || content.length === 0) return false;
+  return content.some(
+    (block) =>
+      typeof block === "object" &&
+      block !== null &&
+      (block as Record<string, unknown>)["type"] === "tool_result",
+  );
+}

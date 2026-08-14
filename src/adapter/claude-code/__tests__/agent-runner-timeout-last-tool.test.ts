@@ -157,6 +157,11 @@ describe("TC-005: tool_use observed then stream goes silent — error.hint conta
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const resultPromise = runner.run(makeCtx(makeAgentStep(), makeJobState("tc-005")));
 
+    // Two-step: first allow async setup (buildArtifactBundle) and the generator to start
+    // and process messages, then fire the watchdog. A single advance at 900000ms fires
+    // the timer before setup completes (throwIfAborted() at runQuery entry would catch it
+    // before the generator yields any messages).
+    await vi.advanceTimersByTimeAsync(100);
     await vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS);
     const result = await resultPromise;
 
@@ -185,6 +190,8 @@ describe("TC-006: tool_result observed before the silence — error.hint indicat
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const resultPromise = runner.run(makeCtx(makeAgentStep(), makeJobState("tc-006")));
 
+    // Two-step: let setup complete and generator process both messages, then fire watchdog.
+    await vi.advanceTimersByTimeAsync(100);
     await vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS);
     const result = await resultPromise;
 
@@ -210,6 +217,8 @@ describe("TC-007: no tool_use observed before timeout — error.hint contains 'n
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const resultPromise = runner.run(makeCtx(makeAgentStep(), makeJobState("tc-007")));
 
+    // Two-step: let setup and generator start (nothing to yield), then fire watchdog.
+    await vi.advanceTimersByTimeAsync(100);
     await vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS);
     const result = await resultPromise;
 
@@ -298,6 +307,8 @@ describe("TC-013: inactivity message text is unchanged; hint is separate from me
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
     const resultPromise = runner.run(makeCtx(makeAgentStep(stepName), makeJobState("tc-013")));
 
+    // Two-step: let setup complete first, then fire the watchdog.
+    await vi.advanceTimersByTimeAsync(100);
     await vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS);
     const result = await resultPromise;
 

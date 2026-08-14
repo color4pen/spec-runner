@@ -42,6 +42,7 @@ import { toOpenAIStrictSchema } from "./strict-schema.js";
 import { SpecRunnerError } from "../../errors.js";
 import { loadCodexSdk, type CodexSdkLoader } from "./sdk-loader.js";
 import { createInactivityWatchdog, formatInactivityTimeoutMessage } from "../shared/inactivity-watchdog.js";
+import { createLastToolTracker } from "../shared/last-tool-tracker.js";
 
 // Minimal interface for the Codex SDK types used here (avoids deep SDK type dependency in tests)
 interface Turn {
@@ -340,6 +341,10 @@ export class CodexAgentRunner implements AgentRunner {
     // without this initial bump the timer would only be set inside executeTurn (post-await).
     watchdog.bump();
 
+    // Last-tool tracker: records the most recent tool start/completion so STEP_TIMEOUT
+    // halt records can distinguish a hung command from an API/generation stall (D2/D3).
+    const tracker = createLastToolTracker();
+
     const baseMessage = step.buildMessage(state, stepCtx);
     const artifactBundle = await buildArtifactBundle(cwd, ctx.slug);
     const artifactSection = artifactBundle ? `\n\n${artifactBundle}` : "";
@@ -425,12 +430,16 @@ export class CodexAgentRunner implements AgentRunner {
               tool: p.tool,
               ...(p.target !== undefined ? { target: p.target } : {}),
             });
+            tracker.onToolStart(p.tool, p.target, startedEv.item["id"] as string | undefined);
           }
         } else if (ev.type === "item.completed") {
           const completedEv = ev as ItemCompletedEvent;
           items.push(completedEv.item);
           if (completedEv.item.type === "agent_message" && typeof completedEv.item.text === "string") {
             finalResponse = completedEv.item.text;
+          }
+          if (extractCodexProgress(completedEv.item) !== null) {
+            tracker.onToolEnd(completedEv.item["id"] as string | undefined);
           }
         } else if (ev.type === "turn.completed") {
           const completedEv = ev as TurnCompletedEvent;
@@ -773,7 +782,7 @@ export class CodexAgentRunner implements AgentRunner {
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           error: Object.assign(
             new Error(timeoutMessage),
-            { code: "STEP_TIMEOUT" },
+            { code: "STEP_TIMEOUT", hint: tracker.timeoutHint() },
           ),
         };
       }
