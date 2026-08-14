@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "05217549-d66b-44d3-8649-45e94c856f2b",
   "createdAt": "2026-08-14T15:29:53.246Z",
-  "updatedAt": "2026-08-14T17:30:09.955Z",
+  "updatedAt": "2026-08-14T17:34:53.544Z",
   "request": {
     "title": "STEP_TIMEOUT の halt 記録に最後の tool 実行情報を残す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "build-fixer",
   "status": "running",
   "branch": "change/step-timeout-last-progress-05217549",
   "error": null,
@@ -80,7 +80,9 @@
     "59b27bf60cf94a18426cc31a4c6a0f96b651cd7b",
     "099829dfa9a3904fd93bb44395c3d185f4a0e263",
     "c4860f4a4d9f876e95a2feafb096e19789933988",
-    "854cb9f5a40b24590c1fd56ae264fa9669e092ff"
+    "854cb9f5a40b24590c1fd56ae264fa9669e092ff",
+    "7ed6818a5cfc9d0bc10ec873fe3e1e518152ab40",
+    "3e2751b93a7cf620c915cab1fd048f561d112239"
   ],
   "touchedFiles": {
     "request-review": [
@@ -181,6 +183,14 @@
     "regression-gate": [
       "src/adapter/claude-code/message-types.ts",
       "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts"
+    ],
+    "conformance": [
+      "src/adapter/shared/last-tool-tracker.ts",
+      "src/adapter/claude-code/message-types.ts",
+      "src/adapter/shared/__tests__/last-tool-tracker.test.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts",
+      "src/adapter/codex/__tests__/agent-runner-timeout-last-tool.test.ts",
+      "src/core/step/step-halt.ts"
     ]
   },
   "reviewerStatuses": [
@@ -216,7 +226,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 77,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -226,13 +236,14 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 2,
       "code-fixer": 2,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
