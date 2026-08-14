@@ -129,7 +129,7 @@
 **WHEN** `isToolResult` is called with each
 **THEN** it returns `false` for every case
 
-### TC-016: Best-effort id match when either id is undefined
+### TC-016: Asymmetric best-effort id match
 
 **Category**: unit
 **Priority**: should
@@ -137,11 +137,11 @@
 
 **GIVEN** a tracker on which `onToolStart("Bash", "cmd", "id-A")` was called, and then `onToolEnd(undefined)` is called (caller has no id)
 **WHEN** `timeoutHint()` is rendered
-**THEN** the hint indicates the tool completed (best-effort match; either undefined id correlates)
+**THEN** the hint indicates the tool is still in-flight (an id-less completion must not clear an id-tracked start — a false "completed" would mask a hung command)
 
 **GIVEN** a tracker on which `onToolStart("Bash", "cmd", undefined)` was called (no id at start), and then `onToolEnd("any-id")` is called
 **WHEN** `timeoutHint()` is rendered
-**THEN** the hint indicates the tool completed (best-effort match; either undefined id correlates)
+**THEN** the hint indicates the tool completed (best-effort match; an id-less start accepts any completion)
 
 ### TC-017: step:progress is still emitted at all three claude-code observation sites
 
@@ -189,14 +189,34 @@ Verification phase: `verification` — the six files enumerated in design.md's A
 `src/core/step/__tests__/no-op-detect-exemption.test.ts`,
 `src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts`.
 
+### TC-021: reset clears tracked state (retry-attempt isolation)
+
+**Category**: unit
+**Priority**: should
+**Source**: design.md § D2 (reset API)
+
+**GIVEN** a tracker on which `onToolStart("Bash", "cmd", "id-A")` was called, and then `reset()` is called (new retry attempt begins)
+**WHEN** `timeoutHint()` is rendered
+**THEN** the hint indicates no tool observed (state from a previous attempt never leaks into the current attempt's hint)
+
+### TC-022: Replayed prior-session messages do not update tracker state
+
+**Category**: unit
+**Priority**: should
+**Source**: design.md § D3 (replay skip)
+
+**GIVEN** a claude-code stream that yields a current-session `tool_use` for `tu-1` followed by a `tool_result` for `tu-1` carrying `isReplay: true` (SDK session-resume replay), and then goes silent until the inactivity timeout fires
+**WHEN** the STEP_TIMEOUT error record is produced
+**THEN** the hint reports the tool as in-flight (the replayed completion is ignored; replayed messages update neither `step:progress` nor tracker state)
+
 ---
 
 ## Result
 
 ```yaml
 result: completed
-total: 20
-automated: 18
+total: 22
+automated: 20
 manual: 0
 must: 17
 should: 2

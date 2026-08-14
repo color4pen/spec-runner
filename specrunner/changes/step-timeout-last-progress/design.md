@@ -82,7 +82,11 @@ API:
 
 - `onToolStart(tool, target, id?)` → `last = { tool, target, startedAt: now(), id, done: false }`
 - `onToolEnd(id?)` → if `last` exists and `!last.done` and the ids correlate, set `last.done = true`
-  (ids correlate when `id === last.id`, or when either id is `undefined` → best-effort match).
+  (ids correlate when `last.id === undefined` → best-effort for id-less streams, or when
+  `id === last.id`; an id-less completion does **not** clear an id-tracked start — a false
+  "completed" would mask a hung command, the exact misdiagnosis the tracker exists to prevent).
+- `reset()` → `last = null`. Called at the start of each retry attempt (claude-code and codex
+  `runMainWorkTurn`) so hints never report elapsed time spanning a previous attempt plus backoff delay.
 - `timeoutHint(): string` → renders from `last` and `now() - last.startedAt` (see D4).
 
 - **Rationale (why shared factory, single-last-tool):** two adapters need identical logic; a shared
@@ -113,17 +117,19 @@ API:
 - **Rationale (why the existing sites + id):** hooking the tracker at exactly the sites `step:progress`
   is emitted guarantees the tracked "last tool" is identical to what the terminal showed, with no new
   event or stream added. id-based correlation is the precise way to decide whether the **last** tool's
-  own completion arrived; the undefined-id best-effort fallback keeps it working for the simple
+  own completion arrived; the id-less-start best-effort fallback keeps it working for the simple
   single-tool streams that tests and older SDKs produce. `tool_result` arrives as a full `user` message
-  (independent of `includePartialMessages`), so the completion signal is robust.
+  (independent of `includePartialMessages`), so the completion signal is robust. Replayed prior-session
+  messages (`isReplay: true`, SDK session resume) are skipped at the observation site — their tool
+  activity belongs to a past session and must not update progress or tracker state.
 - **Alternatives considered:** using `content_block_stop` as the claude completion signal — rejected:
   it marks the end of tool-**input** streaming, not tool **execution**, so it would report every started
   tool as completed.
-- **`ponytail:` marker for the implementer:** the id-correlation fallback (best-effort match when an id
-  is `undefined`) is a known ceiling — interleaved parallel tools **without** ids can mark the wrong tool
-  done. Leave a `// ponytail: id-correlated; interleaved parallel tools w/o ids fall back to best-effort,
-  require ids if that matters` note. Real SDK items/blocks carry ids, so this only degrades in
-  synthetic/legacy streams.
+- **`ponytail:` marker for the implementer:** the id-correlation fallback (best-effort match when the
+  tracked start has no id) is a known ceiling — interleaved parallel tools **without** ids can mark the
+  wrong tool done. Leave a `// ponytail: id-correlated; id-less streams fall back to best-effort (start
+  w/o id matches any end), require ids if interleaving matters` note. Real SDK items/blocks carry ids,
+  so this only degrades in synthetic/legacy streams.
 
 ### D4: Hint wording (three cases)
 
@@ -193,8 +199,9 @@ hint string (verified across `src/adapter/*/__tests__` and `src/core/step/__test
   `query()` generator yields regardless of `includePartialMessages`; the runner tests inject the exact
   shape, pinning the guard.
 - [Risk] Interleaved / parallel tools without ids can mark the wrong tool `done` under the best-effort
-  fallback. → Mitigation: real streams carry ids so correlation is exact; the fallback only affects
-  synthetic streams and is marked with a `ponytail:` ceiling comment (D3).
+  fallback. → Mitigation: real streams carry ids so correlation is exact; the fallback only applies when
+  the tracked start itself has no id (an id-less completion never clears an id-tracked start), and is
+  marked with a `ponytail:` ceiling comment (D3).
 - [Risk] `elapsed` measured at catch time rather than at fire time could drift by the abort-propagation
   gap. → Mitigation: under vitest fake timers no wall time passes between fire and catch, so the value is
   deterministic; in production the gap is sub-millisecond and irrelevant to the diagnosis.
