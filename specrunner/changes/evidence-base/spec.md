@@ -61,11 +61,20 @@ base-red MUST be re-established on the Evidence Base so that a re-run shape can 
 **And** no `baseline unbuildable` diagnostic is produced
 **And** `biteEvidence` is achieved when the tests are red on the Evidence Base and green at the archive HEAD.
 
+#### Scenario: Archive floor is fail-closed when the Evidence Base reference is absent
+
+**Given** an archive-floor evaluation for a job state with an empty or absent `synthesizedCommits` ledger
+**And** the floor policy requires `biteEvidence`
+**When** achieved assurance is derived
+**Then** the `biteEvidence` dimension is absent (fail-closed, a diagnostic is recorded)
+**And** `deriveAchievedAssurance` does not throw.
+
 ### Requirement: The gate SHALL preserve its deferral, tamper, type, and never-throw contracts
 
 The bite-evidence gate SHALL keep returning `strategy-deferred` for non-forward request
-types, unset `scopedTestCommand`, unavailable (managed) runtime, absent base / job-base
-reference, and empty materialized-test selection; SHALL keep returning `failed` on a tamper
+types, unset `scopedTestCommand`, unavailable (managed) runtime, absent job-base reference
+(`resolveEvidenceBaseRev` returning null), absent HEAD OID (`captureHeadSha` returning
+null), and empty materialized-test selection; SHALL keep returning `failed` on a tamper
 mismatch; SHALL keep `FORWARD_TYPES` equal to `{bug-fix, new-feature}`; and MUST never throw
 (an unexpected error resolves to `strategy-deferred`).
 
@@ -87,3 +96,10 @@ mismatch; SHALL keep `FORWARD_TYPES` equal to `{bug-fix, new-feature}`; and MUST
 or `scopedTestCommand` unset)
 **When** the bite-evidence gate runs
 **Then** the verdict is `strategy-deferred`.
+
+#### Scenario: Absent HEAD OID defers
+
+**Given** a forward-type job with a valid Evidence Base reference
+**And** `captureHeadSha` returns null (e.g. the working tree has no commits reachable as HEAD)
+**When** the bite-evidence gate runs
+**Then** the verdict is `strategy-deferred` and no records are produced.
