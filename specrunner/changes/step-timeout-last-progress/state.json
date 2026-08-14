@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "05217549-d66b-44d3-8649-45e94c856f2b",
   "createdAt": "2026-08-14T15:29:53.246Z",
-  "updatedAt": "2026-08-14T18:25:07.762Z",
+  "updatedAt": "2026-08-14T18:26:38.567Z",
   "request": {
     "title": "STEP_TIMEOUT の halt 記録に最後の tool 実行情報を残す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/step-timeout-last-progress-05217549",
   "error": null,
@@ -91,7 +91,8 @@
     "31c24bff7378f9733ee243b2623b333b752c0400",
     "95493a4a253f48096baab5a4636d904181a66693",
     "3eac8ba6c871f4e817cd0bf7d10a8d99390c8b15",
-    "c4f818157cb3fc1de9560bbf002635f049833190"
+    "c4f818157cb3fc1de9560bbf002635f049833190",
+    "5db03668c7d8759b9153922712ac24f2eebc5b79"
   ],
   "touchedFiles": {
     "request-review": [
@@ -190,8 +191,8 @@
       "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts"
     ],
     "regression-gate": [
-      "src/adapter/claude-code/message-types.ts",
-      "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts"
+      "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts",
+      "src/adapter/claude-code/message-types.ts"
     ],
     "conformance": [
       "src/adapter/shared/last-tool-tracker.ts",
@@ -240,7 +241,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 110,
+    "historyCount": 115,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -256,7 +257,7 @@
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
       "custom-reviewers": 3,
-      "regression-gate": 1,
+      "regression-gate": 2,
       "conformance": 1,
       "build-fixer": 2
     }
