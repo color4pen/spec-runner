@@ -89,7 +89,8 @@
     "2b31597b685acc896c6122382dcad48281909ebf",
     "d16d262102134a8b72fcc8482a835019e8e419d1",
     "018f87a0e358be8f35cc576be3d3e499bc62feab",
-    "0e4695a8e58c39714952e22ca2a54651393caffa"
+    "0e4695a8e58c39714952e22ca2a54651393caffa",
+    "c5857740bd398db0877b4f247eb7b9a164a21319"
   ],
   "touchedFiles": {
     "request-review": [
@@ -243,7 +244,11 @@
       "specrunner/adr/2026-08-15-test-case-gen-pre-spec-review.md"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "timeout",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
