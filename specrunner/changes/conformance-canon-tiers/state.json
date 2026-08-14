@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "64d5054d-43d6-4ce9-b0c2-3d72c7ad23d9",
   "createdAt": "2026-08-14T11:27:12.016Z",
-  "updatedAt": "2026-08-14T11:27:14.459Z",
+  "updatedAt": "2026-08-14T11:30:07.775Z",
   "request": {
     "title": "conformance の正典に格差を付ける: request/spec は規範、design/tasks は計画",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/conformance-canon-tiers-64d5054d",
   "error": null,
@@ -62,10 +62,23 @@
     }
   ],
   "synthesizedCommits": [
-    "35bd72ab26c57fe8c22b9a634f40b5430c374e87"
+    "35bd72ab26c57fe8c22b9a634f40b5430c374e87",
+    "02ded7f3a821e49b18690163bde38f12859713bd"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/prompts/conformance-system.ts",
+      "tests/unit/core/step/conformance.test.ts",
+      "src/core/step/conformance.ts",
+      "tests/unit/core/step/judge-verdict-conformance.test.ts",
+      "src/core/step/report-tool.ts",
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
