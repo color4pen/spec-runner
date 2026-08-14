@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T20:47:06.539Z",
+  "updatedAt": "2026-08-14T20:48:40.817Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
   "pipelineId": "standard",
@@ -66,7 +66,9 @@
     "b04c5f6b5e42c0015c9dc12f763b85adad487a0d",
     "0ac7713da6173ad3961dd6030f76a46138fa4384",
     "707857a787df861977ba69e483863f71541c82d5",
-    "6c3ded25597df7d959f36ff4678530f99099a852"
+    "6c3ded25597df7d959f36ff4678530f99099a852",
+    "b8f5d2f2488d99f6d7a4c191151ef5b57a9721ce",
+    "b301875c4f2900db6bd0a2d2ec76f0bb3adc1947"
   ],
   "touchedFiles": {
     "request-review": [
@@ -140,13 +142,17 @@
       "src/state/schema/types.ts"
     ]
   },
-  "resumePoint": {
-    "step": "spec-review",
-    "reason": "spec-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "escalation 4 件は operator 裁定済み。Finding 1(FAST/exempt off-by-one)は design R1 のとおり Accept — 歯(RETRIES_EXHAUSTED)は発火し続け、正確な回数一致のための reset 機構追加は複雑度に見合わない。Finding 4(legacy state の IMPL_CODE_MUTATOR_STEPS)も Accept — 発生困難であり alias + 後続 implementer 実行で自然解決、D4 に既知の限界として明記済み。Finding 2/3 は design.md D1(overturned ブロック no-op 注記)/ tasks.md T-05(alias 適用順序)に追記済み。修正済み canon で review を再走せよ。",
+      "step": "spec-review",
+      "recordedAt": "2026-08-14T20:48:40.605Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 15,
+    "historyCount": 18,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
