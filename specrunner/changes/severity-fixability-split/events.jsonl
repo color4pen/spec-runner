@@ -79,3 +79,6 @@
 {"type":"transition","ts":"2026-08-14T13:45:13.978Z","step":"executor","status":"ok","message":"running → awaiting-resume: timeout"}
 {"type":"transition","ts":"2026-08-14T13:45:13.979Z","step":"code-fixer-timeout","status":"error","message":"code-fixer timed out: Step 'code-fixer' inactivity timeout: no agent event for 900035ms"}
 {"type":"step-attempt","step":"code-fixer","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"STEP_TIMEOUT","message":"Step 'code-fixer' inactivity timeout: no agent event for 900035ms","hint":""},"transientRetryAttempts":0},"startedAt":"2026-08-14T13:22:16.838Z","endedAt":"2026-08-14T13:45:13.977Z"}
+{"type":"transition","ts":"2026-08-14T13:49:58.878Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-review'"}
+{"type":"transition","ts":"2026-08-14T13:49:59.099Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-08-14T13:49:59.100Z","step":"code-review-started","status":"started","message":"Starting code-review step"}

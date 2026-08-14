@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e319c5c-b2e2-41fa-8635-b7b89db081b0",
   "createdAt": "2026-08-14T11:27:26.288Z",
-  "updatedAt": "2026-08-14T13:45:13.979Z",
+  "updatedAt": "2026-08-14T13:49:59.100Z",
   "request": {
     "title": "severity と fixability の分離: LOW も fixable なら直す",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
-  "status": "awaiting-resume",
+  "step": "code-review",
+  "status": "running",
   "branch": "change/severity-fixability-split-8e319c5c",
-  "error": {
-    "code": "STEP_TIMEOUT",
-    "message": "Step 'code-fixer' inactivity timeout: no agent event for 900035ms",
-    "hint": ""
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -77,7 +73,9 @@
     "5742c8d0c3587ee83b54bf898a4d601404992507",
     "89ea5c300fa952b1ca4458fc0eef25a1471ed8d0",
     "91c3be7963432d8f9c7ca40ea21242026ed2261b",
-    "df2650d632999347f8ed2c7729344e9033941d94"
+    "df2650d632999347f8ed2c7729344e9033941d94",
+    "f6d19051d12787e00d80a215aa8348b9208b2c21",
+    "4301d818a98396299e69d8ca605a4056c5739909"
   ],
   "touchedFiles": {
     "request-review": [
@@ -227,14 +225,10 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "timeout",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 53,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
