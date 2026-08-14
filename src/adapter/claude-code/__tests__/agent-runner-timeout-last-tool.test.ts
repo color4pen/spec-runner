@@ -210,6 +210,33 @@ describe("TC-006: tool_result observed before the silence — error.hint indicat
 });
 
 // ---------------------------------------------------------------------------
+// TC-022: replayed prior-session messages do not update tracker state
+// ---------------------------------------------------------------------------
+
+describe("TC-022: replayed tool_result (session resume) does not clear in-flight state", () => {
+  it("error.hint stays in-flight when the only completion is a replay", async () => {
+    vi.useFakeTimers();
+
+    const queryFn = hangingQueryFn([
+      bashToolUseEvent("tu-1", "bun test"),
+      { ...(toolResultMessage("tu-1") as Record<string, unknown>), isReplay: true },
+    ]);
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const resultPromise = runner.run(makeCtx(makeAgentStep(), makeJobState("tc-022")));
+
+    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS);
+    const result = await resultPromise;
+
+    expect(result.completionReason).toBe("timeout");
+    const error = result.error as Error & { code?: string; hint?: string };
+    expect(error.code).toBe("STEP_TIMEOUT");
+    expect(error.hint).toContain("in-flight");
+    expect(error.hint).not.toContain("completed before timeout");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-007: no tool_use observed before timeout
 // ---------------------------------------------------------------------------
 

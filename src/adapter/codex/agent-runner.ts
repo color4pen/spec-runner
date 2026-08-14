@@ -518,6 +518,7 @@ export class CodexAgentRunner implements AgentRunner {
        * This is the unit retried on transient errors (D2).
        */
       const runMainWorkTurn = async (): Promise<Turn> => {
+        tracker.reset();
         let thread: CodexThread;
         if (ctx.session.resumeSessionId) {
           try {

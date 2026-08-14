@@ -13,10 +13,17 @@ export interface LastToolTracker {
   onToolStart(tool: string, target: string | undefined, id?: string): void;
   /**
    * Record a tool completion. Sets last.done = true when ids correlate.
-   * Ids correlate when id === last.id, or when either id is undefined
-   * (best-effort match for streams without ids).
+   * Ids correlate when id === last.id, or when the tracked start had no id
+   * (best-effort match for id-less streams). An id-less completion does NOT
+   * clear an id-tracked start — a false "completed" would mask a hung command,
+   * the exact misdiagnosis this tracker exists to prevent.
    */
   onToolEnd(id?: string): void;
+  /**
+   * Clear tracked state. Called at the start of each retry attempt so hints
+   * never report elapsed time spanning a previous attempt plus backoff delay.
+   */
+  reset(): void;
   /** Build the timeout hint string for the current state (three cases per D4). */
   timeoutHint(): string;
 }
@@ -42,9 +49,13 @@ export function createLastToolTracker(now: () => number = Date.now): LastToolTra
 
     onToolEnd(id) {
       if (!last || last.done) return;
-      // ponytail: id-correlated; interleaved parallel tools w/o ids fall back to best-effort, require ids if that matters
-      const correlates = id === last.id || id === undefined || last.id === undefined;
+      // ponytail: id-correlated; id-less streams fall back to best-effort (start w/o id matches any end), require ids if interleaving matters
+      const correlates = last.id === undefined || id === last.id;
       if (correlates) last.done = true;
+    },
+
+    reset() {
+      last = null;
     },
 
     timeoutHint() {

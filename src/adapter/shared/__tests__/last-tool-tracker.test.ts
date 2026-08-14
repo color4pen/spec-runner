@@ -105,17 +105,20 @@ describe("TC-004: non-matching onToolEnd leaves last tool in-flight", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-016: best-effort id match when either id is undefined (should priority)
+// TC-016: asymmetric best-effort id match (should priority)
+// An id-less completion must NOT clear an id-tracked start: a false
+// "completed" would mask a hung command. Only an id-less START accepts any
+// completion (best-effort for id-less streams).
 // ---------------------------------------------------------------------------
 
-describe("TC-016: best-effort id match when either id is undefined", () => {
-  it("onToolEnd(undefined) matches tool started with an id — best-effort", () => {
+describe("TC-016: asymmetric best-effort id match", () => {
+  it("onToolEnd(undefined) does NOT match tool started with an id — stays in-flight", () => {
     const tracker = createLastToolTracker();
     tracker.onToolStart("Bash", "cmd", "id-A");
-    tracker.onToolEnd(undefined); // undefined correlates with anything
+    tracker.onToolEnd(undefined); // id-less end must not clear an id-tracked start
     const hint = tracker.timeoutHint();
-    expect(hint).toContain("completed before timeout");
-    expect(hint).not.toContain("in-flight");
+    expect(hint).toContain("in-flight");
+    expect(hint).not.toContain("completed before timeout");
   });
 
   it("onToolEnd(someId) matches tool started with undefined id — best-effort", () => {
@@ -125,5 +128,18 @@ describe("TC-016: best-effort id match when either id is undefined", () => {
     const hint = tracker.timeoutHint();
     expect(hint).toContain("completed before timeout");
     expect(hint).not.toContain("in-flight");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-021: reset clears tracked state (retry-attempt isolation)
+// ---------------------------------------------------------------------------
+
+describe("TC-021: reset clears tracked state", () => {
+  it("after reset, timeoutHint reports no tool observed", () => {
+    const tracker = createLastToolTracker();
+    tracker.onToolStart("Bash", "cmd", "id-A");
+    tracker.reset();
+    expect(tracker.timeoutHint()).toContain("no tool observed");
   });
 });

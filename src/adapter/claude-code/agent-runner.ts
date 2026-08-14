@@ -490,6 +490,9 @@ export class ClaudeCodeRunner implements AgentRunner {
     // Single closure covering tool_use start + tool_result completion + terminal display.
     // Replaces the three bare emitToolProgress() call sites so start+end stay in sync.
     const observeMessage = (msg: SDKMessage): void => {
+      // Replayed prior-session messages (SDK session resume) must not update
+      // progress or tracker state — their tool activity belongs to a past session.
+      if ((msg as { isReplay?: true }).isReplay === true) return;
       emitToolProgress(msg, ctx.emit, step.name);
       if (isToolUse(msg)) {
         const cb = msg.event.content_block;
@@ -742,6 +745,7 @@ export class ClaudeCodeRunner implements AgentRunner {
      * resume→new-session fallback.  This is the unit retried on transient errors.
      */
     const runMainWorkTurn = async (): Promise<{ lastResult: SDKResultMessage | null }> => {
+      tracker.reset();
       try {
         return maybeThrowTransientResult(await runQuery());
       } catch (innerErr) {
