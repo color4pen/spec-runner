@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T12:09:15.240Z",
+  "updatedAt": "2026-08-14T15:10:53.918Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-materialize",
-  "status": "running",
+  "step": "implementer",
+  "status": "awaiting-resume",
   "branch": "change/test-case-gen-design-phase-96aef526",
-  "error": null,
+  "error": {
+    "code": "STEP_TIMEOUT",
+    "message": "Step 'implementer' inactivity timeout: no agent event for 899999ms",
+    "hint": ""
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -67,7 +71,8 @@
     "226a41e1942aec5900e25120cfca7e591b4b10b5",
     "2bc68090bffb3db402bd17de9c2cf7e1345a9fa5",
     "1bcf5844c2654639aa5185ed40532047166d4790",
-    "6fd79c6cede922b79400e187186ee80fc953e27d"
+    "6fd79c6cede922b79400e187186ee80fc953e27d",
+    "354cd125945c0f24276524fdaf640ddc21e3cb05"
   ],
   "touchedFiles": {
     "request-review": [
@@ -137,16 +142,46 @@
       "src/core/step/spec-fixer.ts",
       "src/core/step/fixer-helpers.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "test-materialize": [
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
+      "tests/test-case-gen-step.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/canon-write-scope.ts",
+      "tests/unit/step/spec-review-reads.test.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/kernel/report-result.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/prompts/spec-review-system.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/config/type-config.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/core/step/step-names.ts",
+      "src/kernel/step-names.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts"
+    ]
+  },
+  "resumePoint": {
+    "step": "implementer",
+    "reason": "timeout",
+    "iterationsExhausted": 0
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "test-materialize": 1,
+      "implementer": 1
     }
   }
 }
