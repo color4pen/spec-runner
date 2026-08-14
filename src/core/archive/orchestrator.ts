@@ -257,31 +257,31 @@ export async function runArchiveOrchestrator(
       }
     }
 
-    // Delete draft folder for this slug (best-effort; archive continues even if this fails)
-    try {
-      await fs.rm(nodePath.join(recordDir, draftsDir(), slug), { recursive: true, force: true });
-    } catch {
-      stderrWrite(`Warning: failed to delete draft folder for ${slug}. Remove manually if needed.`);
+    // Delete draft from repo root (cwd) for this slug — best-effort, archive continues on failure.
+    // Handles both flat format (drafts/<slug>.md) and directory format (drafts/<slug>/).
+    // Uses cwd (repo root) because untracked drafts only exist in the main working tree, not worktrees.
+    for (const [relPath, absPath] of [
+      [nodePath.join(draftsDir(), slug + ".md"), nodePath.join(cwd, draftsDir(), slug + ".md")],
+      [nodePath.join(draftsDir(), slug),          nodePath.join(cwd, draftsDir(), slug)],
+    ] as [string, string][]) {
+      if (!(await fs.exists(absPath))) continue;
+      const lsResult = await spawn("git", ["ls-files", "--", relPath], { cwd });
+      if (lsResult.stdout.trim()) {
+        stderrWrite(`Warning: draft '${relPath}' is tracked by git; delete manually with 'git rm ${relPath}' and commit.`);
+        continue;
+      }
+      try {
+        await fs.rm(absPath, { recursive: true, force: true });
+      } catch (err: unknown) {
+        const code = (err as { code?: string }).code;
+        stderrWrite(`Warning: failed to delete draft '${relPath}'${code ? ` (${code})` : ""}. Remove manually if needed.`);
+      }
     }
 
     // Pathspecs staged for the archive commit. commitArchive limits both its staging
     // detection and the commit itself to this list — the archive commit is merged into
     // the base branch and must never sweep in unrelated pre-staged index entries.
     const archivePathspecs: string[] = [];
-
-    // Stage the draft deletion only if the drafts directory exists in the worktree.
-    // Skipping when absent avoids `fatal: pathspec 'specrunner/drafts' did not match any files`
-    // warnings in repos that have never created a draft (T-05: symptom 4).
-    const draftsAbsPath = nodePath.join(recordDir, draftsDir());
-    const draftsPresent = await fs.exists(draftsAbsPath);
-    if (draftsPresent) {
-      const draftAddResult = await spawn("git", ["add", draftsDir()], { cwd: recordDir });
-      if (draftAddResult.exitCode !== 0) {
-        stderrWrite(`Warning: git add ${draftsDir()}/ failed: ${draftAddResult.stderr.trim()}. Continuing.`);
-      } else {
-        archivePathspecs.push(draftsDir());
-      }
-    }
 
     // Stage mv + archived status change together so they land in one commit
     const addResult = await spawn("git", ["add", "specrunner/changes/"], { cwd: recordDir });
