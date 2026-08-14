@@ -262,6 +262,109 @@ describe("TC-007: no tool_use observed before timeout — error.hint contains 'n
 });
 
 // ---------------------------------------------------------------------------
+// TC-017 (site 2): step:progress emitted during postWork follow-up turn
+// ---------------------------------------------------------------------------
+
+describe("TC-017 (site 2): step:progress emitted during postWork follow-up turn", () => {
+  it("emits step:progress when tool_use arrives in a postWork turn (observeMessage site 2)", async () => {
+    vi.useFakeTimers();
+
+    const emitSpy = vi.fn();
+    let callCount = 0;
+    const queryFn: QueryFn = async function* (params) {
+      callCount++;
+      const opts = params.options as { abortController?: AbortController } | undefined;
+      const signal = opts?.["abortController"]?.signal;
+      if (callCount === 1) {
+        // Main work turn: succeed with a session_id so the postWork path can resume.
+        yield { type: "result", subtype: "success", result: "done", session_id: "session-postwork" };
+      } else {
+        // postWork turn: emit tool_use then hang until watchdog fires.
+        yield bashToolUseEvent("tu-postwork", "npm ci");
+        await new Promise<void>((_, reject) => {
+          if (signal?.aborted) { reject(signal.reason ?? new Error("aborted")); return; }
+          signal?.addEventListener("abort", () => reject(signal?.reason ?? new Error("aborted")));
+        });
+      }
+    };
+
+    const step = makeAgentStep();
+    const ctx = {
+      ...makeCtx(step, makeJobState("tc-017-site2")),
+      emit: emitSpy,
+      policy: { postWorkPrompts: ["please wrap up"] },
+    };
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const resultPromise = runner.run(ctx);
+
+    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS);
+    const result = await resultPromise;
+
+    expect(result.completionReason).toBe("timeout");
+    // step:progress must be emitted from the postWork observeMessage path (site 2).
+    expect(emitSpy).toHaveBeenCalledWith("step:progress", expect.objectContaining({ tool: "Bash" }));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-017 (site 3): step:progress emitted during output-repair turn
+// ---------------------------------------------------------------------------
+
+describe("TC-017 (site 3): step:progress emitted during output-repair turn", () => {
+  it("emits step:progress when tool_use arrives in an output-repair turn (observeMessage site 3)", async () => {
+    vi.useFakeTimers();
+
+    const emitSpy = vi.fn();
+    let callCount = 0;
+    const queryFn: QueryFn = async function* (params) {
+      callCount++;
+      const opts = params.options as { abortController?: AbortController } | undefined;
+      const signal = opts?.["abortController"]?.signal;
+      if (callCount === 1) {
+        // Main work turn: succeed with a session_id so the repair path can resume.
+        yield { type: "result", subtype: "success", result: "done", session_id: "session-repair" };
+      } else {
+        // Repair turn: emit tool_use then hang until watchdog fires.
+        yield bashToolUseEvent("tu-repair", "fix output");
+        await new Promise<void>((_, reject) => {
+          if (signal?.aborted) { reject(signal.reason ?? new Error("aborted")); return; }
+          signal?.addEventListener("abort", () => reject(signal?.reason ?? new Error("aborted")));
+        });
+      }
+    };
+
+    const step = makeAgentStep();
+    const ctx = {
+      ...makeCtx(step, makeJobState("tc-017-site3")),
+      emit: emitSpy,
+      policy: {
+        outputVerification: {
+          maxAttempts: 1,
+          detect: () =>
+            Promise.resolve({
+              violations: [
+                { kind: "content-format" as const, path: "x.md", policy: "follow-up" as const, detail: ["missing"] },
+              ],
+            }),
+          buildPrompt: () => "please fix the output",
+        },
+      },
+    };
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const resultPromise = runner.run(ctx);
+
+    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(DEFAULT_INACTIVITY_TIMEOUT_MS);
+    const result = await resultPromise;
+
+    expect(result.completionReason).toBe("timeout");
+    // step:progress must be emitted from the output-repair observeMessage path (site 3).
+    expect(emitSpy).toHaveBeenCalledWith("step:progress", expect.objectContaining({ tool: "Bash" }));
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-011: hint survives into the step-attempt error record
 // ---------------------------------------------------------------------------
 
