@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T23:01:20.037Z",
+  "updatedAt": "2026-08-14T23:08:24.277Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
-  "status": "awaiting-resume",
+  "step": "code-review",
+  "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
-  "error": {
-    "code": "CANON_FINDING_ESCALATION",
-    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/absorb-build-fixer/tasks.md, title: \"T-05 AC に legacy alias の from 経路での適用順序が明記されていない\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
-    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -82,7 +78,10 @@
     "914d096b960f3990c8950716bacc2a60ed0279db",
     "7016289cdc9c8a89874376a6db392ba8dcac4b18",
     "3ddf9f89499a7ad16fdecc59ab1c750b1b35acad",
-    "11e91ceced455bd4651959e906a77abe469c08be"
+    "11e91ceced455bd4651959e906a77abe469c08be",
+    "14b0f7559596d613b4ba627571be69cb25d38cf6",
+    "d8a06025e574685d9664a8f6f10d5454a228c49c",
+    "5351c811dd43aab460fdd23cb1d7895a99013960"
   ],
   "touchedFiles": {
     "request-review": [
@@ -282,11 +281,7 @@
       "src/core/step/implementer.ts"
     ]
   },
-  "resumePoint": {
-    "step": "regression-gate",
-    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/absorb-build-fixer/tasks.md, title: \"T-05 AC に legacy alias の from 経路での適用順序が明記されていない\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -326,7 +321,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 63,
+    "historyCount": 66,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
