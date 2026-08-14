@@ -1207,7 +1207,11 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     }
 
     const os = await import("node:os");
-    const tmpBase = path.join(os.tmpdir(), `specrunner-bite-evidence-synth-${Date.now()}`);
+    const revDiscriminator = baseRev.slice(0, 8).replace(/[^a-zA-Z0-9]/g, "");
+    const tmpBase = path.join(
+      os.tmpdir(),
+      `specrunner-bite-evidence-synth-${revDiscriminator}-${Date.now()}`,
+    );
     let worktreeCreated = false;
     let symlinkCreated = false;
 
