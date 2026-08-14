@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T23:37:09.578Z",
+  "updatedAt": "2026-08-14T23:48:18.584Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
@@ -85,7 +85,8 @@
     "32d144560c5ac7acb160746b00e6ecdfe99baf80",
     "b18ac7a469e1c46e5d50994b99fb5d1ff98f6ad8",
     "68b97666c162c7148af26def478f1f041dac0555",
-    "73e5f078aa2d89476f335871a6fc8ec415651c57"
+    "73e5f078aa2d89476f335871a6fc8ec415651c57",
+    "b83cca6aebd2b698ec8f5154cd84d836940002fa"
   ],
   "touchedFiles": {
     "request-review": [
@@ -269,14 +270,12 @@
       "src/prompts/pipeline-map.ts"
     ],
     "code-fixer": [
-      "src/core/pipeline/types.ts",
-      "src/core/verification/propagate.ts",
-      "src/core/verification/reload-coverage-config.ts",
-      "src/core/verification/parse-result.ts",
-      "src/core/step/staging-containment.ts",
-      "src/core/step/commit-push.ts",
-      "src/core/step/canon-write-scope.ts",
-      "src/core/port/step-types.ts"
+      "src/core/pipeline/pipeline.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "src/state/helpers.ts",
+      "src/config/type-config.ts",
+      "src/state/schema.ts",
+      "src/state/schema/types.ts"
     ],
     "regression-gate": [
       "src/core/pipeline/reverification.ts",
@@ -330,7 +329,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 83,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -342,7 +341,7 @@
       "verification": 2,
       "build-fixer": 1,
       "code-review": 2,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
