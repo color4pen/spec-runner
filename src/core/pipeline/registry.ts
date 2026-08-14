@@ -71,7 +71,7 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.DESIGN]:           { role: "creator",  phase: "spec" },
     [STEP_NAMES.SPEC_REVIEW]:      { role: "reviewer", phase: "spec" },
     [STEP_NAMES.SPEC_FIXER]:       { role: "fixer",    phase: "spec" },
-    [STEP_NAMES.TEST_CASE_GEN]:    { role: "gate",     phase: "impl" },
+    [STEP_NAMES.TEST_CASE_GEN]:    { role: "gate",     phase: "spec" },
     [STEP_NAMES.TEST_MATERIALIZE]: { role: "gate",     phase: "impl" },
     [STEP_NAMES.IMPLEMENTER]:      { role: "creator",  phase: "impl" },
     [STEP_NAMES.BITE_EVIDENCE]:    { role: "gate",     phase: "impl" },

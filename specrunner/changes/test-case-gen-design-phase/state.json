@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T18:04:49.049Z",
+  "updatedAt": "2026-08-14T18:18:25.341Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/test-case-gen-design-phase-96aef526",
   "error": null,
@@ -79,7 +79,8 @@
     "2672e8daf5db0b66e650454e0559015f18a38433",
     "1f06c31a58de75caedba5c64da84ecbad42cbd06",
     "ef338f10fdad2475c61204f0aa4c7b7229750243",
-    "8c397378c2a7bdac92c3c54bc3441168f5b1f94e"
+    "8c397378c2a7bdac92c3c54bc3441168f5b1f94e",
+    "8d295e7817219df3fe4fe3872cc17dec29638272"
   ],
   "touchedFiles": {
     "request-review": [
@@ -178,22 +179,22 @@
       "src/core/pipeline/types.ts",
       "src/core/pipeline/spec-observation.ts",
       "src/core/step/judge-verdict.ts",
-      "src/core/step/canon-escalation.ts",
       "src/core/step/canon-write-scope.ts",
       "src/core/step/spec-review.ts",
       "src/core/step/test-case-gen.ts",
       "src/prompts/spec-review-system.ts",
       "src/prompts/test-case-gen-system.ts",
-      "src/kernel/report-result.ts",
       "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
-      "src/core/step/write-scope.ts",
-      "tests/unit/core/step/canon-write-scope.test.ts",
-      "src/core/pipeline/test-gen-exemption.ts",
-      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
-      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
-      "tests/unit/step/spec-review-reads.test.ts",
-      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
-      "src/core/pipeline/findings-ledger.ts"
+      "src/core/step/canon-escalation.ts",
+      "src/kernel/report-result.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "tests/core/pipeline/pipeline.test.ts",
+      "tests/pipeline-integration.test.ts",
+      "tests/helpers/pipeline-mock-client.ts"
     ],
     "code-fixer": [
       "src/prompts/conformance-system.ts",
@@ -217,7 +218,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 64,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -228,7 +229,7 @@
       "implementer": 3,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 3,
+      "code-review": 4,
       "code-fixer": 2
     }
   }
