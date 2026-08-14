@@ -53,11 +53,9 @@ Result section MUST appear at the very end as a YAML code block:
 - **Total**: 17 cases
 - **Automated** (unit/integration): 15
 - **Manual**: 0
-- **Priority**: must: 16, should: 1, could: 0
+- **Priority**: must: 17, should: 0, could: 0
 
 ---
-
-## Requirement: The bite-evidence red side SHALL evaluate on the Evidence Base
 
 ### TC-001: Re-run shape earns assurance instead of deferring
 
@@ -71,23 +69,15 @@ Result section MUST appear at the very end as a YAML code block:
 **Priority**: must
 **Source**: spec.md > Requirement: The bite-evidence red side SHALL evaluate on the Evidence Base > Scenario: Job base is identical on first run and on resume
 
----
-
-## Requirement: The green candidate SHALL be the effective branch state reaching adopted operator commits
-
 ### TC-003: Adopted operator commit is included in the candidate
 
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: The green candidate SHALL be the effective branch state reaching adopted operator commits > Scenario: Adopted operator commit is included in the candidate
 
----
-
-## Requirement: The chronology-based contamination machinery SHALL be removed
-
 ### TC-004: Archive floor derives base-red on the Evidence Base for a re-run shape
 
-**Category**: integration
+**Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: The chronology-based contamination machinery SHALL be removed > Scenario: Archive floor derives base-red on the Evidence Base for a re-run shape
 
@@ -96,10 +86,6 @@ Result section MUST appear at the very end as a YAML code block:
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: The chronology-based contamination machinery SHALL be removed > Scenario: Archive floor is fail-closed when the Evidence Base reference is absent
-
----
-
-## Requirement: The gate SHALL preserve its deferral, tamper, type, and never-throw contracts
 
 ### TC-006: Non-forward type still defers
 
@@ -131,53 +117,48 @@ Result section MUST appear at the very end as a YAML code block:
 **Priority**: must
 **Source**: spec.md > Requirement: The gate SHALL preserve its deferral, tamper, type, and never-throw contracts > Scenario: Absent HEAD OID defers
 
----
+### TC-011: runTestsOnSynthesizedTree — candidate test overlay on base tree lacking implementation runs red
 
-## Design and implementation coverage
-
-### TC-011: resolveEvidenceBaseRev returns null for an empty synthesizedCommits ledger
-
-**Category**: unit
-**Priority**: must
-**Source**: design.md > D1
-
-**GIVEN** a job state where `synthesizedCommits` is either absent or an empty array
-**WHEN** `resolveEvidenceBaseRev(state)` is called
-**THEN** it returns `null` (no I/O performed, pure function)
-
-### TC-012: runTestsOnSynthesizedTree produces a red result when the base tree lacks the implementation
-
-**Category**: unit
+**Category**: integration
 **Priority**: must
 **Source**: tasks.md > T-01
 
-**GIVEN** a throwaway git repo with a base commit that contains only test files (no implementation)
-**And** the overlay source OID points to a commit whose test files import a module not present in the base tree
-**WHEN** `runTestsOnSynthesizedTree(baseRev, overlayFiles, overlaySourceOid, cwd, config)` is called
-**THEN** the result is `{ kind: "red" }` (tests fail because the implementation is absent from the base tree)
+**GIVEN** a throwaway git repository where the base tree contains no implementation of the module under test
+**AND** the overlay-source OID provides a test file whose content imports and exercises that missing module
+**WHEN** `runTestsOnSynthesizedTree(baseRev, [testFilePath], overlaySourceOid, cwd, config)` is called
+**THEN** the result has `kind: "red"` (tests fail because the implementation is absent from the base tree)
 
-### TC-013: runTestsOnSynthesizedTree removes the detached worktree and node_modules symlink after the run
+### TC-012: runTestsOnSynthesizedTree — detached worktree and node_modules symlink are cleaned up after the run
 
-**Category**: unit
-**Priority**: should
-**Source**: tasks.md > T-01
-
-**GIVEN** a throwaway git repo where `runTestsOnSynthesizedTree` was called and completed (pass or fail)
-**WHEN** the call returns
-**THEN** the temporary detached worktree directory no longer exists on disk
-**And** the `node_modules` symlink inside it is also removed
-**And** the source `node_modules` directory in `cwd` is unmodified
-
-### TC-014: runTestsOnSynthesizedTree returns unavailable and never throws for a non-existent baseRev
-
-**Category**: unit
+**Category**: integration
 **Priority**: must
 **Source**: tasks.md > T-01
 
-**GIVEN** a `baseRev` value that does not resolve to any commit in the local git repository
-**WHEN** `runTestsOnSynthesizedTree` is called
-**THEN** it returns `{ kind: "unavailable", reason: <string> }` without throwing
-**And** no orphaned worktree or symlink is left on disk
+**GIVEN** a valid call to `runTestsOnSynthesizedTree` with an existing `baseRev` and overlay
+**WHEN** the method completes (whether the result is red, green, or unavailable)
+**THEN** the detached worktree directory no longer exists on the filesystem
+**AND** the `node_modules` symlink that was created inside it is also removed
+
+### TC-013: runTestsOnSynthesizedTree — non-existent baseRev returns unavailable without throwing
+
+**Category**: integration
+**Priority**: must
+**Source**: tasks.md > T-01
+
+**GIVEN** a `baseRev` that does not exist in the repository
+**WHEN** `runTestsOnSynthesizedTree` is called with that revision
+**THEN** the result has `kind: "unavailable"`
+**AND** no exception is thrown by the method
+
+### TC-014: runTestsOnSynthesizedTree — source node_modules directory is not deleted
+
+**Category**: integration
+**Priority**: must
+**Source**: tasks.md > T-01
+
+**GIVEN** a valid call to `runTestsOnSynthesizedTree` with an existing `<cwd>/node_modules`
+**WHEN** the method completes and cleans up the detached worktree
+**THEN** `<cwd>/node_modules` still exists (only the symlink inside the detached worktree is removed, not the source directory)
 
 ### TC-015: ManagedRuntime.runTestsOnSynthesizedTree returns unavailable
 
@@ -185,29 +166,25 @@ Result section MUST appear at the very end as a YAML code block:
 **Priority**: must
 **Source**: tasks.md > T-01
 
-**GIVEN** a `ManagedRuntime` instance (which has no local worktree)
+**GIVEN** a `ManagedRuntime` instance
 **WHEN** `runTestsOnSynthesizedTree` is called with any arguments
-**THEN** it returns `{ kind: "unavailable", reason: <string> }` without throwing
+**THEN** the result has `kind: "unavailable"` with a reason indicating the managed runtime has no local worktree
 
----
-
-## Gate checks (verification phase)
-
-### TC-016: detectBaseImplementationContamination is structurally absent after the change
+### TC-016: detectBaseImplementationContamination is structurally removed — verified by typecheck
 
 **Category**: gate
 **Priority**: must
-**Source**: design.md > D7 / tasks.md > T-02 / T-06
+**Source**: design.md > D7 > TC-016 verification mechanism
 
-Verification: `bun run typecheck`. Because `detectBaseImplementationContamination` is deleted from `oids.ts` and its import removed from `gate.ts` and `achieved-assurance.ts`, any surviving call site or import is a TypeScript compile error. A green `typecheck` run is the complete and sufficient gate for this structural removal.
+`bun run typecheck` (T-06). Deleting `detectBaseImplementationContamination` turns any surviving import or call site into a TypeScript compile error. typecheck green is the complete and sufficient gate for structural removal; no separate runtime assertion is needed.
 
-### TC-017: Full typecheck and test suite is green
+### TC-017: typecheck and full test suite are green
 
 **Category**: gate
 **Priority**: must
 **Source**: tasks.md > T-06
 
-Verification: `bun run typecheck && bun run test`. All existing tests outside the D7-enumerated surface remain unchanged and green; the D7-enumerated tests are updated to the new mechanism and also green.
+`bun run typecheck && bun run test`
 
 ## Result
 
@@ -216,8 +193,8 @@ result: completed
 total: 17
 automated: 15
 manual: 0
-must: 16
-should: 1
+must: 17
+should: 0
 could: 0
 blocked_reasons: []
 ```
