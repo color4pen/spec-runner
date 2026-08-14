@@ -150,12 +150,14 @@ function hangingQueryFn(messages: unknown[]): QueryFn {
 // ---------------------------------------------------------------------------
 
 describe("TC-005: tool_use observed then stream goes silent — error.hint contains in-flight info", () => {
-  it("error.hint contains tool name, target, elapsed, and in-flight marker", async () => {
+  it("error.hint contains tool name, target, elapsed, and in-flight marker; step:progress is emitted (TC-017)", async () => {
     vi.useFakeTimers();
 
+    const emitSpy = vi.fn();
     const queryFn = hangingQueryFn([bashToolUseEvent("tu-1", "bun test")]);
     const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
-    const resultPromise = runner.run(makeCtx(makeAgentStep(), makeJobState("tc-005")));
+    const ctx = { ...makeCtx(makeAgentStep(), makeJobState("tc-005")), emit: emitSpy };
+    const resultPromise = runner.run(ctx);
 
     // Two-step: first allow async setup (buildArtifactBundle) and the generator to start
     // and process messages, then fire the watchdog. A single advance at 900000ms fires
@@ -172,6 +174,9 @@ describe("TC-005: tool_use observed then stream goes silent — error.hint conta
     expect(error.hint).toContain("bun test");
     expect(error.hint).toContain("in-flight");
     expect(error.hint).not.toContain("completed before timeout");
+
+    // TC-017: step:progress must still be emitted at the observation site (terminal display unchanged).
+    expect(emitSpy).toHaveBeenCalledWith("step:progress", expect.objectContaining({ tool: "Bash" }));
   });
 });
 
