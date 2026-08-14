@@ -320,10 +320,13 @@ export function codeReviewLoopActive(state: JobState, coordinatorName: string): 
  *   coordinator skipped   → regression-gate
  *
  * regression-gate section:
- *   regression-gate approved (fixable) → code-fixer
  *   regression-gate approved (clean)   → conformance
  *   regression-gate needs-fix          → code-fixer
  *   regression-gate skipped            → conformance
+ *
+ * Note: "regression-gate approved (fixable) → code-fixer" is structurally unreachable after D2.
+ * deriveRegressionGateVerdict returns needs-fix whenever fixable findings exist, so approved
+ * only occurs when there are no fixable findings. That row has been removed.
  *
  * code-fixer routing (priority-ordered `when` guards):
  *   code-fixer approved → conformance          when conformanceFixInProgress
@@ -403,21 +406,6 @@ export function buildParallelReviewerTransitions(opts: {
   // still default to the "escalate" terminal and stop the pipeline immediately.
 
   // --- regression-gate rows ---
-  // approved + fixable findings → code-fixer
-  transitions.push({
-    step: REGRESSION_GATE_STEP_NAME,
-    on: "approved",
-    to: STEP_NAMES.CODE_FIXER,
-    when: (s) => {
-      const runs = s.steps?.[REGRESSION_GATE_STEP_NAME];
-      if (!runs || runs.length === 0) return false;
-      const lastRun = runs[runs.length - 1];
-      if (!lastRun) return false;
-      const toolResult = lastRun.outcome.toolResult as { findings?: import("../../kernel/report-result.js").Finding[] } | null | undefined;
-      const findings = toolResult?.findings ?? [];
-      return collectFixableFindings(findings).length > 0;
-    },
-  });
   // approved (clean) → conformance
   transitions.push({
     step: REGRESSION_GATE_STEP_NAME,

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e319c5c-b2e2-41fa-8635-b7b89db081b0",
   "createdAt": "2026-08-14T11:27:26.288Z",
-  "updatedAt": "2026-08-14T13:49:59.100Z",
+  "updatedAt": "2026-08-14T13:57:46.577Z",
   "request": {
     "title": "severity と fixability の分離: LOW も fixable なら直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/severity-fixability-split-8e319c5c",
   "error": null,
@@ -75,7 +75,8 @@
     "91c3be7963432d8f9c7ca40ea21242026ed2261b",
     "df2650d632999347f8ed2c7729344e9033941d94",
     "f6d19051d12787e00d80a215aa8348b9208b2c21",
-    "4301d818a98396299e69d8ca605a4056c5739909"
+    "4301d818a98396299e69d8ca605a4056c5739909",
+    "4b665aa24ae2bddd6305465f8be927b351c1514a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -180,15 +181,19 @@
       "src/core/pipeline/findings-ledger.ts",
       "src/core/step/step-completion.ts",
       "src/core/step/no-op-detect.ts",
+      "src/core/pipeline/reviewer-chain.ts",
       "src/core/step/code-fixer.ts",
       "src/prompts/code-fixer-system.ts",
-      "tests/unit/step/severity-fixability-split.test.ts",
-      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
-      "tests/unit/step/fixer-findings.test.ts",
-      "src/core/step/__tests__/executor-no-op.test.ts",
-      "src/core/step/__tests__/no-op-detect-exemption.test.ts",
+      "src/core/step/executor.ts",
       "src/core/step/routed-findings.ts",
-      "src/core/step/executor.ts"
+      "tests/unit/step/severity-fixability-split.test.ts",
+      "src/core/step/__tests__/executor-no-op.test.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "src/core/step/__tests__/no-op-detect-exemption.test.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "tests/unit/step/code-fixer.test.ts",
+      "src/core/step/regression-gate.ts"
     ],
     "regression-gate": [
       "src/core/step/regression-gate.ts",
@@ -228,7 +233,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -238,7 +243,7 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1,
+      "code-review": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
