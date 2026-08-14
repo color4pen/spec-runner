@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a8e7912e-b717-4b28-ae2b-71096da1241f",
   "createdAt": "2026-08-14T09:30:51.726Z",
-  "updatedAt": "2026-08-14T11:18:39.639Z",
+  "updatedAt": "2026-08-14T11:22:30.148Z",
   "request": {
     "title": "テスト証拠と工程順序の分離(第1弾): red 強制・テスト変更禁止・偽 baseline 判定の撤回",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/strip-test-authority-a8e7912e",
   "error": null,
   "pipelineId": "standard",
@@ -80,7 +80,8 @@
     "54f5d348081d112a72856124cbf8f10914ddcadb",
     "aa231a259b97d74f728ec68848776b622c9d1876",
     "13c83174bb94fbfb1a4d6f0d9dad276f76c2f007",
-    "9f0b818290d27f91fe695e5db9dc9c8001911828"
+    "9f0b818290d27f91fe695e5db9dc9c8001911828",
+    "16ebbd811a96b8790f3e4886f4cec650bb551953"
   ],
   "touchedFiles": {
     "request-review": [
@@ -189,6 +190,11 @@
       "src/core/archive/achieved-assurance.ts",
       "tests/unit/prompts/strip-test-authority-contract.test.ts",
       "tests/unit/step/implementer-lockfile.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-08-13-test-generation-type-gate.md",
+      "specrunner/adr/2026-08-09-resume-partial-canon-quarantine.md",
+      "specrunner/adr/2026-08-14-strip-test-authority.md"
     ]
   },
   "reviewerStatuses": [
@@ -223,8 +229,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/991",
+    "number": 991,
+    "createdAt": "2026-08-14T11:22:29.434Z"
+  },
   "_journal": {
-    "historyCount": 74,
+    "historyCount": 79,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -241,7 +252,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
