@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e319c5c-b2e2-41fa-8635-b7b89db081b0",
   "createdAt": "2026-08-14T11:27:26.288Z",
-  "updatedAt": "2026-08-14T12:51:29.990Z",
+  "updatedAt": "2026-08-14T13:21:35.736Z",
   "request": {
     "title": "severity と fixability の分離: LOW も fixable なら直す",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
-  "status": "running",
+  "step": "code-fixer",
+  "status": "awaiting-resume",
   "branch": "change/severity-fixability-split-8e319c5c",
-  "error": null,
+  "error": {
+    "code": "STEP_TIMEOUT",
+    "message": "Step 'code-fixer' inactivity timeout: no agent event for 900038ms",
+    "hint": ""
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -71,7 +75,8 @@
     "3531ee18484760e7ea8c81cd16203d7271e02ef6",
     "8b0b0ab36300bf1395ccb842e2625c770b40fe73",
     "5742c8d0c3587ee83b54bf898a4d601404992507",
-    "89ea5c300fa952b1ca4458fc0eef25a1471ed8d0"
+    "89ea5c300fa952b1ca4458fc0eef25a1471ed8d0",
+    "91c3be7963432d8f9c7ca40ea21242026ed2261b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -185,6 +190,10 @@
       "src/core/step/__tests__/no-op-detect-exemption.test.ts",
       "src/core/step/routed-findings.ts",
       "src/core/step/executor.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/regression-gate.ts",
+      "src/core/pipeline/reviewer-chain.ts"
     ]
   },
   "reviewerStatuses": [
@@ -217,8 +226,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "timeout",
+    "iterationsExhausted": 0
+  },
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -231,7 +245,9 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1,
+      "code-fixer": 1
     }
   }
 }
