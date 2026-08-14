@@ -7,10 +7,10 @@
 (`${EVIDENCE_DISCIPLINE}` / `${SEVERITY_DEFINITION}` / `${DECISION_NEEDED_DEFINITION}` /
 `${EVIDENCE_COUNTS_DEFINITION}` / `${SPEC_EXEMPT_MARKER}`) は保持したまま、節内文面のみ書き換える。
 
-- [ ] `## Contract` の入力宣言を二層化する: request.md / spec.md を `規範（normative）`、
+- [x] `## Contract` の入力宣言を二層化する: request.md / spec.md を `規範（normative）`、
       design.md / tasks.md を `計画・根拠（plan / rationale）` と明記する (anchor A1a / A1b)。
       4 成果物名 (request.md / spec.md / design.md / tasks.md) はすべて残す。
-- [ ] `## Method` を書き換える:
+- [x] `## Method` を書き換える:
       - request.md — 受け入れ基準の達成を `全件確認` (規範)。未達は finding。
       - spec.md — `${SPEC_EXEMPT_MARKER}` 判定は現行維持。非 exempt 時は全 Requirement (SHALL/MUST)
         と全 Scenario の充足を `全件確認` (規範)。未充足は finding。
@@ -19,11 +19,11 @@
         振る舞いを破るか」で行う。破る場合のみ finding とし、`finding の根拠には request.md / spec.md`
         の該当箇所を引く。破らない場合は相違を `non-blocking note` として evidence 報告本文に記録し、
         design/tasks の追随更新を促してよい (finding にはしない)。
-- [ ] routing 表 (現 L72-77) を二層整合の文面に書き換える。`fixTarget` トークンと 3 つの routing
+- [x] routing 表 (現 L72-77) を二層整合の文面に書き換える。`fixTarget` トークンと 3 つの routing
       target (`spec-fixer` / `implementer` / `code-fixer`) は維持する。design/tasks との相違は
       request/spec 違反を伴う場合のみ finding であり、その finding の修正先を示す表として書く
       (例: 「request/spec 違反の根源が spec.md の誤り、または design.md の誤りにある → `spec-fixer`」)。
-- [ ] `## Evidence` の step 固有要求を二層に整合させる (規範充足の判定根拠 + 計画との相違の note を記録)。
+- [x] `## Evidence` の step 固有要求を二層に整合させる (規範充足の判定根拠 + 計画との相違の note を記録)。
 
 **Acceptance Criteria**:
 - `CONFORMANCE_SYSTEM_PROMPT` が anchor `規範（normative）` / `計画・根拠（plan / rationale）` /
@@ -41,11 +41,11 @@
 `src/core/step/report-tool.ts` の `CONFORMANCE_REPORT_TOOL.description` 内の fixTarget routing 説明
 (`'spec-fixer' = spec/design artifact is wrong; ...`) を、二層と矛盾しない文面へ更新する。
 
-- [ ] routing 説明を「finding の修正先」の説明として書き直す。design/tasks との相違が request/spec
+- [x] routing 説明を「finding の修正先」の説明として書き直す。design/tasks との相違が request/spec
       違反を伴う場合のみ finding であり、その修正先を示す旨に整合させる。
-- [ ] `zodSchema` の `conformanceFindingSchema.fixTarget` enum
+- [x] `zodSchema` の `conformanceFindingSchema.fixTarget` enum
       (`implementer` / `code-fixer` / `spec-fixer`) は変更しない。
-- [ ] description 内に `fixTarget` トークンを残す。
+- [x] description 内に `fixTarget` トークンを残す。
 
 **Acceptance Criteria**:
 - `CONFORMANCE_REPORT_TOOL.description` が `fixTarget` を含む (TC-CONF-01 green)。
@@ -57,9 +57,9 @@
 
 `src/core/step/conformance.ts` の `buildMessage` (現 L84-91) の手順から、完了性 gate 表現を外す。
 
-- [ ] 「verify all checkboxes are marked complete [x]」を、checkbox 状態を計画コンテキストとして
+- [x] 「verify all checkboxes are marked complete [x]」を、checkbox 状態を計画コンテキストとして
       note する旨 (完了性を gate 扱いしない) に緩める。
-- [ ] design decisions / Requirements / acceptance criteria を「note する」手順は維持する。
+- [x] design decisions / Requirements / acceptance criteria を「note する」手順は維持する。
       規範 vs 計画の役割づけは system prompt が担うため、message には判定基準を書かない。
 
 **Acceptance Criteria**:
@@ -71,14 +71,14 @@
 `tests/unit/core/step/conformance.test.ts` に新規 describe ブロックを**追加**する
 (既存 TC の書き換えはしない)。
 
-- [ ] 二層宣言 pin: `CONFORMANCE_SYSTEM_PROMPT` が `規範（normative）` と
+- [x] 二層宣言 pin: `CONFORMANCE_SYSTEM_PROMPT` が `規範（normative）` と
       `計画・根拠（plan / rationale）` を含む。
-- [ ] 相違の非 finding 化 + 根拠 pin: `CONFORMANCE_SYSTEM_PROMPT` が
+- [x] 相違の非 finding 化 + 根拠 pin: `CONFORMANCE_SYSTEM_PROMPT` が
       `それ自体では finding にしない` と `finding の根拠には request.md / spec.md` と
       `non-blocking note` を含む。
-- [ ] 完了性維持 pin: `CONFORMANCE_SYSTEM_PROMPT` が `全件確認` を含み、`受け入れ基準` /
+- [x] 完了性維持 pin: `CONFORMANCE_SYSTEM_PROMPT` が `全件確認` を含み、`受け入れ基準` /
       `Requirement` / `Scenario` を参照する。
-- [ ] 機械意味論不変 pin: `toJSONSchema(object(CONFORMANCE_REPORT_TOOL.zodSchema))` の文字列が
+- [x] 機械意味論不変 pin: `toJSONSchema(object(CONFORMANCE_REPORT_TOOL.zodSchema))` の文字列が
       `implementer` / `code-fixer` / `spec-fixer` を含む (fixTarget enum の 3 値固定)。
 
 **Acceptance Criteria**:
@@ -87,9 +87,9 @@
 
 ## T-05: 検証
 
-- [ ] `bun run typecheck` が green。
-- [ ] `bun run test` が green (新規 T-04 の assertion 含む、既存テストは無変更で green)。
-- [ ] `judge-verdict-conformance.test.ts` (機械意味論 pin) が無変更で green であることを確認する。
+- [x] `bun run typecheck` が green。
+- [x] `bun run test` が green (新規 T-04 の assertion 含む、既存テストは無変更で green)。
+- [x] `judge-verdict-conformance.test.ts` (機械意味論 pin) が無変更で green であることを確認する。
 
 **Acceptance Criteria**:
 - `typecheck && test` が green。
