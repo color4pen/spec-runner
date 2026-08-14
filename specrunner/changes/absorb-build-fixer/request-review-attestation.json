@@ -1,0 +1,15 @@
+{
+  "requestHash": "sha256:3975d83a3b256b38edc3c13087e251be4a227912ccc60284c0145085871eb632",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/types.ts:290 VERIFICATION failed → BUILD_FIXER transition confirmed",
+    "src/core/pipeline/types.ts:292-293 BUILD_FIXER success → VERIFICATION, error → escalate confirmed",
+    "src/core/pipeline/types.ts:195-199 VERIFICATION_RETRIES_EXHAUSTED entry in LOOP_ERROR_CODES confirmed",
+    "src/core/pipeline/types.ts:347-350 FAST_TRANSITIONS BUILD_FIXER pattern (fast/chore path) confirmed",
+    "src/core/step/build-fixer.ts exists as standalone AgentStep definition",
+    "src/prompts/build-fixer-system.ts BUILD_FIXER_SYSTEM_PROMPT with mechanical-fix-only constraint confirmed",
+    "src/adapter/claude-code/agent-runner.ts:560 ctx.session.resumeSessionId used as { resume: ... } option confirmed",
+    "src/cli/command-registry.ts:209 --from candidates enumerated from [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES] including build-fixer confirmed"
+  ],
+  "sourceRevision": "5cd7183aade76a619dfdb3b158921f1452e1ae39"
+}
