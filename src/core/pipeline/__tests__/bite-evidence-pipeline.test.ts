@@ -120,16 +120,22 @@ describe("TC-009: existing pipeline behavior is preserved", () => {
     expect(stepNames).toContain(STEP_NAMES.PR_CREATE);
   });
 
-  it("TC-009: STANDARD_TRANSITIONS existing routes are preserved", () => {
-    // design → spec-review
-    const designRow = STANDARD_TRANSITIONS.find(
-      (t) => t.step === STEP_NAMES.DESIGN && t.on === "success" && t.to === STEP_NAMES.SPEC_REVIEW,
+  it("TC-009: STANDARD_TRANSITIONS existing routes are preserved (updated for design-phase move)", () => {
+    // design → spec-review (guarded: isTestGenExempt) exists
+    const designExemptRow = STANDARD_TRANSITIONS.find(
+      (t) => t.step === STEP_NAMES.DESIGN && t.on === "success" && t.to === STEP_NAMES.SPEC_REVIEW && t.when != null,
     );
-    expect(designRow).toBeDefined();
+    expect(designExemptRow).toBeDefined();
 
-    // test-case-gen → test-materialize
+    // design → test-case-gen (unconditional: non-exempt types go to test-case-gen first)
+    const designTcgRow = STANDARD_TRANSITIONS.find(
+      (t) => t.step === STEP_NAMES.TEST_CASE_GEN && t.on === "success" && t.to === STEP_NAMES.SPEC_REVIEW,
+    );
+    expect(designTcgRow).toBeDefined();
+
+    // test-case-gen → spec-review (design phase: test-case-gen runs before spec-review)
     const tcgRow = STANDARD_TRANSITIONS.find(
-      (t) => t.step === STEP_NAMES.TEST_CASE_GEN && t.on === "success" && t.to === STEP_NAMES.TEST_MATERIALIZE,
+      (t) => t.step === STEP_NAMES.TEST_CASE_GEN && t.on === "success" && t.to === STEP_NAMES.SPEC_REVIEW,
     );
     expect(tcgRow).toBeDefined();
 

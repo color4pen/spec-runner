@@ -106,6 +106,7 @@ function makeCanonScope(): CanonWriteScope {
     ["code-fixer", new Set<string>()],
     ["implementer", new Set<string>([TASKS_MD])],
     ["spec-fixer", new Set<string>([SPEC_MD, DESIGN_MD, TASKS_MD])],
+    ["test-case-gen", new Set<string>([TEST_CASES_MD])],
   ]);
   return { canonPaths, writableByFixer };
 }
@@ -920,8 +921,9 @@ describe("TC-012: selectRoutableCanonFindings returns only findings on spec-fixe
 // WHEN deriveSpecReviewVerdict is called
 // THEN verdict is approved (tasks.md is in spec-fixer's writable set; medium → observation auto-fix)
 // Updated: #spec-observation-autofix — medium fixable on tasks.md now approves
-//
-// test-cases.md remains unroutable (escalation with escalationReason).
+// Updated: #test-case-gen-design-phase — test-cases.md is now routable to
+// test-case-gen at spec-review phase (needs-fix, no escalation). Post-approval
+// protection is pinned separately (test-case-gen-design-phase.test.ts TC-019).
 // ---------------------------------------------------------------------------
 
 describe("TC-013: deriveSpecReviewVerdict — fixable finding on tasks.md routes to spec-fixer", () => {
@@ -944,14 +946,14 @@ describe("TC-013: deriveSpecReviewVerdict — fixable finding on tasks.md routes
     expect(verdict).toBe("approved");
   });
 
-  it("TC-013: fixable finding on test-cases.md (unroutable for spec-fixer) → escalation", () => {
+  it("TC-013: fixable finding on test-cases.md (routable to test-case-gen) → needs-fix", () => {
     expect(deriveSpecReviewVerdict).toBeDefined();
     const findings = [makeFinding("medium", "fixable", TEST_CASES_MD)];
     const verdict = deriveSpecReviewVerdict!(findings, true, undefined, makeCanonScope());
-    expect(verdict).toBe("escalation");
+    expect(verdict).toBe("needs-fix");
   });
 
-  it("TC-013: deriveStepCompletion sets escalationReason containing CANON_FINDING_ESCALATION and test-cases.md", async () => {
+  it("TC-013: deriveStepCompletion yields needs-fix without escalationReason for test-cases.md finding", async () => {
     expect(deriveSpecReviewVerdict).toBeDefined();
     const step = makeMinimalJudgeStep(STEP_NAMES.SPEC_REVIEW, JUDGE_REPORT_TOOL);
     (step as unknown as Record<string, unknown>).judgeVerdictFn = deriveSpecReviewVerdict;
@@ -975,10 +977,8 @@ describe("TC-013: deriveSpecReviewVerdict — fixable finding on tasks.md routes
       undefined,
     );
 
-    expect(completion.verdict).toBe("escalation");
-    expect(completion.escalationReason).toBeDefined();
-    expect(completion.escalationReason).toContain("CANON_FINDING_ESCALATION");
-    expect(completion.escalationReason).toContain(TEST_CASES_MD);
+    expect(completion.verdict).toBe("needs-fix");
+    expect(completion.escalationReason).toBeUndefined();
   });
 });
 

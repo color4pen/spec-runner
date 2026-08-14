@@ -313,28 +313,20 @@ describe("TC-004: spec-review needs-fix reaches spec-fixer in the transition tab
 // (boundary preserved whether or not tasks.md is added)
 // ---------------------------------------------------------------------------
 
-describe("TC-005: fixable finding on test-cases.md escalates with CANON_FINDING_ESCALATION reason", () => {
-  let stderrSpy: ReturnType<typeof vi.spyOn>;
-
-  beforeEach(() => {
-    stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    void stderrSpy;
-  });
-
-  it("TC-005: verdict is escalation for fixable finding on test-cases.md", () => {
+describe("TC-005: fixable finding on test-cases.md yields needs-fix (routes to test-case-gen)", () => {
+  // Design-phase change: test-cases.md is now TC-routable by test-case-gen.
+  // spec-review sees a test-cases.md fixable finding → needs-fix (4b: TC-routable ≥ 1).
+  // The old behavior was "escalation" (pre-design-phase-move); new behavior is "needs-fix".
+  it("TC-005: verdict is needs-fix for fixable finding on test-cases.md (TC-routable, not escalation)", () => {
     const state = makeState();
     const deps = makeDeps();
     const scope = buildCanonWriteScope(state, deps);
     const findings = [makeFinding("medium", "fixable", TEST_CASES_MD)];
     const verdict = deriveSpecReviewVerdict(findings, true, undefined, scope);
-    expect(verdict).toBe("escalation");
+    expect(verdict).toBe("needs-fix");
   });
 
-  it("TC-005: deriveStepCompletion sets escalationReason containing CANON_FINDING_ESCALATION and test-cases.md", async () => {
+  it("TC-005: deriveStepCompletion yields needs-fix verdict for test-cases.md fixable finding", async () => {
     const step = makeSpecReviewJudgeStep();
     (step as unknown as Record<string, unknown>).judgeVerdictFn = deriveSpecReviewVerdict;
 
@@ -355,10 +347,7 @@ describe("TC-005: fixable finding on test-cases.md escalates with CANON_FINDING_
       undefined,
     );
 
-    expect(completion.verdict).toBe("escalation");
-    expect(completion.escalationReason).toBeDefined();
-    expect(completion.escalationReason).toContain("CANON_FINDING_ESCALATION");
-    expect(completion.escalationReason).toContain(TEST_CASES_MD);
+    expect(completion.verdict).toBe("needs-fix");
   });
 });
 

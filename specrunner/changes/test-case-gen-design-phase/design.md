@@ -351,16 +351,30 @@ first-match-wins のため下記 assertion が変わる。**列挙外の既存�
    - drift-guard（TC-029）に test-case-gen ケース（`writes() ∩ canonPaths = {test-cases.md}`）を追加。
      既存 TC-017/018/019 は additive のため無変更で green。
    - 根拠: D3-2 の writableByFixer 追加を drift で守る。
+9. `tests/error-codes.test.ts`
+   - TC-026（SPEC_REVIEW_RETRIES_EXHAUSTED loop guard）: steps Map と executeSpy に test-case-gen stub
+     （completionVerdict: success）を追加。spec-review run fixture を現行 StepRun 形
+     （attempt / outcome）に更新（specReviewNeedsFixIsTcOnly guard が outcome を読むため）。
+   - 根拠: fixture が STANDARD_TRANSITIONS を使うため、design → test-case-gen の新遷移で
+     未登録 step に到達する。
+10. `tests/cli-stdout-snapshot.test.ts`
+    - TC-029（retries exhausted line）: steps Map と executeSpy に test-case-gen stub を追加。
+    - 根拠: 9 と同じ（STANDARD_TRANSITIONS を使う fixture）。
+11. `src/core/step/__tests__/spec-review-fixer-routing.test.ts`
+    - `makeCanonScope()` に `["test-case-gen", {test-cases.md}]` を追加（buildCanonWriteScope の鏡写し）。
+    - TC-013 の test-cases.md ケース: escalation → needs-fix（escalationReason なし）に更新。
+    - 根拠: D3-2/D4 により spec-review 段階の test-cases.md fixable finding は test-case-gen へ
+      routing される。承認後保護の pin は TC-019（test-case-gen-design-phase.test.ts）が担う。
 
 ### 再検証必須（フロー変化で fixture / count がずれ得る）
 
-9. `tests/pipeline-integration.test.ts` — TC-010（8 session, 順序変化・集合不変 → count 維持見込み）、
+12. `tests/pipeline-integration.test.ts` — TC-010（8 session, 順序変化・集合不変 → count 維持見込み）、
    TC-011（spec-review 2 / spec-fixer 1 は維持、test-case-gen は 2 回になるが未 assert）、
    TC-012（`sessionIds` 配列の並び — test-case-gen 追加で misalign し得る）。
-10. `tests/unit/core/pipeline/pipeline.conformance-routing.test.ts` — TC-CONFRT-07
+13. `tests/unit/core/pipeline/pipeline.conformance-routing.test.ts` — TC-CONFRT-07
     （spec-fixer#3 は spec-review に戻る：conformance-triggered guard で維持。needs-fix ループに
     test-case-gen が挿入されるため run 数を再確認）。
-11. `src/core/pipeline/__tests__/bite-evidence-pipeline.test.ts` — spec phase を通るフローテスト、再確認。
+14. `src/core/pipeline/__tests__/bite-evidence-pipeline.test.ts` — spec phase を通るフローテスト、再確認。
 
 ### 無変更で green を維持（列挙外・回帰確認）
 

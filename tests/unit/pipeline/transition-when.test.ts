@@ -189,15 +189,12 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // TC-WHEN-02: STANDARD_TRANSITIONS has expected row count
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has correct number of rows (+2 spec observation auto-fix, +3 test-gen-exempt bypass rows)", () => {
-    // 44 previous + 2 new guarded rows for spec observation auto-fix:
-    //   1. spec-review approved → spec-fixer (when: specReviewHasRoutableFixables)
-    //   2. spec-fixer approved → test-case-gen (when: specFixerForwardsToTestGen)
-    // + 3 test-gen-exempt bypass rows:
-    //   3. spec-review approved → implementer (when: isTestGenExempt)
-    //   4. spec-fixer approved → implementer (when: specFixerForwardsToImplementer)
-    //   5. implementer success → verification (when: isTestGenExempt)
-    expect(STANDARD_TRANSITIONS.length).toBe(49);
+  it("has correct number of rows (+3 test-case-gen design-phase rows)", () => {
+    // 49 previous + 3 new guarded rows for test-case-gen design-phase:
+    //   1. design success → spec-review (when: isTestGenExempt)
+    //   2. spec-review needs-fix → test-case-gen (when: specReviewNeedsFixIsTcOnly)
+    //   3. spec-fixer approved → test-case-gen (when: specFixerNeedsFixForward)
+    expect(STANDARD_TRANSITIONS.length).toBe(52);
   });
 });
 

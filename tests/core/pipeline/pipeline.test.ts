@@ -440,8 +440,12 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
     ];
     const specFixerResult: JobState = { ...designResult };
 
-    const executeSpy = vi.fn().mockImplementation(async (step: Step, _currentState: JobState) => {
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "design") return designResult;
+      // test-case-gen runs between design and spec-review (design phase)
+      if (step.name === "test-case-gen") {
+        return { ...currentState, steps: { ...currentState.steps, "test-case-gen": [{ attempt: 1, sessionId: null, outcome: { verdict: "success" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }] } };
+      }
       if (step.name === "spec-review") {
         return specReviewResults[callCount++] ?? specReviewResults[specReviewResults.length - 1];
       }
@@ -450,9 +454,10 @@ describe("TC-063: Pipeline — loop exhaustion: SPEC_REVIEW_RETRIES_EXHAUSTED", 
     });
 
     const steps = new Map<string, Step>([
-      ["design",      { kind: "agent", name: "design",      agent: { name: "test", role: "design",      model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["spec-review", { kind: "agent", name: "spec-review", agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["spec-fixer",  { kind: "agent", name: "spec-fixer",  agent: { name: "test", role: "spec-fixer",  model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["design",        { kind: "agent", name: "design",        agent: { name: "test", role: "design",        model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["test-case-gen", { kind: "agent", name: "test-case-gen", agent: { name: "test", role: "test-case-gen", model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-review",   { kind: "agent", name: "spec-review",   agent: { name: "test", role: "spec-review",   model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-fixer",    { kind: "agent", name: "spec-fixer",    agent: { name: "test", role: "spec-fixer",    model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ]);
 
     const events = new EventBus();
@@ -574,28 +579,34 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     const findWithTo = (step: string, on: string, to: string) =>
       STANDARD_TRANSITIONS.find((t) => t.step === step && t.on === on && t.to === to);
 
-    // design routes directly to spec-review
-    expect(find("design",       "success")).toMatchObject({ to: "spec-review" });
+    // design routes: guarded exempt→spec-review (first), unconditional→test-case-gen (second)
+    expect(findWithTo("design", "success", "spec-review")).toBeDefined(); // guarded (isTestGenExempt)
+    expect(findWithTo("design", "success", "test-case-gen")).toBeDefined(); // unconditional
     expect(find("design",       "error")).toMatchObject({ to: "escalate" });
-    // spec-review loop (R3 cutover: escalation transition removed — halt via loop exhaustion only)
-    // spec-review approved now has two rows:
-    //   guarded (observation pass: approved + routable fixable → spec-fixer) — comes first
-    //   unconditional fallback (approved → test-case-gen)
-    expect(find("spec-review",  "approved")).toMatchObject({ to: "spec-fixer" }); // guarded observation pass row (first)
-    expect(findWithTo("spec-review", "approved", "test-case-gen")).toBeDefined(); // unconditional fallback exists
-    expect(find("spec-review",  "needs-fix")).toMatchObject({ to: "spec-fixer" });
+    // test-case-gen (design phase): success → spec-review (not test-materialize)
+    expect(find("test-case-gen","success")).toMatchObject({ to: "spec-review" });
+    expect(find("test-case-gen","error")).toMatchObject({ to: "escalate" });
+    // spec-review loop (design phase change: test-case-gen runs before spec-review)
+    // spec-review approved has three rows (first-match-wins):
+    //   guarded (routable fixable → spec-fixer) — comes first
+    //   guarded (isTestGenExempt → implementer) — comes second
+    //   unconditional fallback (approved → test-materialize) — comes third
+    expect(find("spec-review",  "approved")).toMatchObject({ to: "spec-fixer" }); // guarded first
+    expect(findWithTo("spec-review", "approved", "test-materialize")).toBeDefined(); // unconditional fallback
+    // spec-review needs-fix: TC-only → test-case-gen (first), otherwise → spec-fixer (unconditional)
+    expect(find("spec-review",  "needs-fix")).toMatchObject({ to: "test-case-gen" }); // guarded first
+    expect(findWithTo("spec-review", "needs-fix", "spec-fixer")).toBeDefined(); // unconditional fallback
     // spec-review escalation transition no longer exists (R3 cutover)
     expect(find("spec-review",  "escalation")).toBeUndefined();
-    // spec-fixer approved has three rows:
-    //   guarded (test-gen-exempt observation pass: forward to implementer) — comes first
-    //   guarded (observation pass: forward to test-case-gen) — comes second
-    //   unconditional fallback (approved → spec-review) for needs-fix and conformance paths
-    expect(findWithTo("spec-fixer", "approved", "test-case-gen")).toBeDefined(); // guarded observation pass row exists
-    expect(findWithTo("spec-fixer", "approved", "spec-review")).toBeDefined(); // unconditional fallback exists
+    // spec-fixer approved has four rows:
+    //   guarded (test-gen-exempt observation pass: → implementer) — first
+    //   guarded (observation pass: → test-materialize) — second
+    //   guarded (needs-fix forward: → test-case-gen) — third
+    //   unconditional fallback (approved → spec-review) for conformance paths — fourth
+    expect(findWithTo("spec-fixer", "approved", "test-materialize")).toBeDefined(); // guarded observation pass
+    expect(findWithTo("spec-fixer", "approved", "test-case-gen")).toBeDefined(); // guarded needs-fix forward
+    expect(findWithTo("spec-fixer", "approved", "spec-review")).toBeDefined(); // unconditional fallback
     expect(find("spec-fixer",   "error")).toMatchObject({ to: "escalate" });
-    // ADR-20260716 R3: test-case-gen → test-materialize (not implementer)
-    expect(find("test-case-gen","success")).toMatchObject({ to: "test-materialize" });
-    expect(find("test-case-gen","error")).toMatchObject({ to: "escalate" });
     expect(find("test-materialize","success")).toMatchObject({ to: "implementer" });
     expect(find("test-materialize","error")).toMatchObject({ to: "escalate" });
   });
@@ -823,6 +834,10 @@ describe("TC-069: Pipeline — loop step without paired fixer retains convention
     // Build a pipeline with spec-review loop but NO loopFixerPairs
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "design") return designResult;
+      // test-case-gen runs before spec-review in the design phase
+      if (step.name === "test-case-gen") {
+        return { ...currentState, steps: { ...currentState.steps, "test-case-gen": [{ attempt: 1, sessionId: null, outcome: { verdict: "success" as const, findingsPath: null, error: null }, startedAt: "2026-01-01", endedAt: "2026-01-01" }] } };
+      }
       if (step.name === "spec-review") {
         // Always return needs-fix
         return {
@@ -850,9 +865,10 @@ describe("TC-069: Pipeline — loop step without paired fixer retains convention
     });
 
     const stepsMap = new Map<string, Step>([
-      ["design",      { kind: "agent", name: "design",      agent: { name: "test", role: "design",      model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["spec-review", { kind: "agent", name: "spec-review", agent: { name: "test", role: "spec-review", model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
-      ["spec-fixer",  { kind: "agent", name: "spec-fixer",  agent: { name: "test", role: "spec-fixer",  model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["design",        { kind: "agent", name: "design",        agent: { name: "test", role: "design",        model: "claude-sonnet-4-5", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["test-case-gen", { kind: "agent", name: "test-case-gen", agent: { name: "test", role: "test-case-gen", model: "claude-sonnet-4-6", system: "", tools: [] }, completionVerdict: "success", buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-review",   { kind: "agent", name: "spec-review",   agent: { name: "test", role: "spec-review",   model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
+      ["spec-fixer",    { kind: "agent", name: "spec-fixer",    agent: { name: "test", role: "spec-fixer",    model: "claude-sonnet-4-5", system: "", tools: [] }, buildMessage: () => "", resultFilePath: () => null, parseResult: () => ({ verdict: null, findingsPath: null }) }],
     ]);
 
     const events = new EventBus();

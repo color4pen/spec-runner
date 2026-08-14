@@ -161,38 +161,44 @@ describe("TC-003: TestCaseGenStep.resultFilePath と parseResult", () => {
   });
 });
 
-// TC-004: STANDARD_TRANSITIONS に spec-review:approved → test-case-gen が存在する
-describe("TC-004: STANDARD_TRANSITIONS に spec-review:approved → test-case-gen が存在する", () => {
-  it("spec-review --approved→ test-case-gen が存在する", () => {
+// TC-004: STANDARD_TRANSITIONS に design:success → test-case-gen が存在する
+// (test-case-gen は design phase の最終工程: design → test-case-gen → spec-review)
+describe("TC-004: STANDARD_TRANSITIONS に design:success → test-case-gen が存在する", () => {
+  it("design --success→ test-case-gen (unconditional) が存在する", () => {
     const found = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "spec-review" && t.on === "approved" && t.to === "test-case-gen",
+      (t) => t.step === "design" && t.on === "success" && t.to === "test-case-gen" && !t.when,
     );
     expect(found).toBeDefined();
   });
 
-  it("spec-review --approved→ implementer の unconditional (when なし) row は存在しない", () => {
-    // A guarded (when: isTestGenExempt) row exists for exempt types, but there must be no
-    // unconditional fallback routing to implementer — non-exempt types always go to test-case-gen.
-    const unconditional = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "spec-review" && t.on === "approved" && t.to === "implementer" && !t.when,
+  it("design --success→ spec-review (guarded: isTestGenExempt) が存在する", () => {
+    const found = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "design" && t.on === "success" && t.to === "spec-review" && t.when != null,
     );
-    expect(unconditional).toBeUndefined();
+    expect(found).toBeDefined();
+  });
+
+  it("spec-review --approved→ test-case-gen は存在しない（旧 transition が削除されている）", () => {
+    const old = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "spec-review" && t.on === "approved" && t.to === "test-case-gen",
+    );
+    expect(old).toBeUndefined();
   });
 });
 
-// TC-005: STANDARD_TRANSITIONS に test-case-gen:success → test-materialize が存在する
-// (ADR-20260716 R3 Option A: test-materialize step inserted between test-case-gen and implementer)
-describe("TC-005: STANDARD_TRANSITIONS に test-case-gen:success → test-materialize が存在する", () => {
-  it("test-case-gen --success→ test-materialize が存在する", () => {
+// TC-005: STANDARD_TRANSITIONS に test-case-gen:success → spec-review が存在する
+// (test-case-gen は design phase: design → test-case-gen → spec-review)
+describe("TC-005: STANDARD_TRANSITIONS に test-case-gen:success → spec-review が存在する", () => {
+  it("test-case-gen --success→ spec-review が存在する", () => {
     const found = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "test-case-gen" && t.on === "success" && t.to === "test-materialize",
+      (t) => t.step === "test-case-gen" && t.on === "success" && t.to === "spec-review",
     );
     expect(found).toBeDefined();
   });
 
-  it("test-case-gen --success→ implementer は存在しない（旧 transition が削除されている）", () => {
+  it("test-case-gen --success→ test-materialize は存在しない（旧 transition が削除されている）", () => {
     const old = STANDARD_TRANSITIONS.find(
-      (t) => t.step === "test-case-gen" && t.on === "success" && t.to === "implementer",
+      (t) => t.step === "test-case-gen" && t.on === "success" && t.to === "test-materialize",
     );
     expect(old).toBeUndefined();
   });

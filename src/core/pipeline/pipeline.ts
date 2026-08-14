@@ -92,6 +92,11 @@ export class Pipeline {
   private readonly parallelReview: ParallelReviewConfig | undefined;
   /** Component that encapsulates coordinator fan-out for parallel reviewer execution. */
   private readonly round: ParallelReviewRound | undefined;
+  /**
+   * Steps transparent to loop-episode detection.
+   * Entering a loop step from one of these does NOT reset the convergence budget.
+   */
+  private readonly loopIntermediateSteps: ReadonlySet<string>;
 
   constructor(params: {
     steps: Map<string, Step>;
@@ -105,6 +110,7 @@ export class Pipeline {
     summaryStep?: string;
     maxIterationsByStep?: Record<string, number>;
     parallelReview?: ParallelReviewConfig;
+    loopIntermediateSteps?: ReadonlySet<string>;
   }) {
     this.steps = params.steps;
     this.transitions = params.transitions;
@@ -117,6 +123,7 @@ export class Pipeline {
     this.loopFixerPairs = params.loopFixerPairs ?? {};
     this.summaryStep = params.summaryStep;
     this.parallelReview = params.parallelReview;
+    this.loopIntermediateSteps = params.loopIntermediateSteps ?? new Set();
     this.round = params.parallelReview
       ? new ParallelReviewRound({ executor: this.executor, steps: this.steps, parallelReview: params.parallelReview, events: this.events })
       : undefined;
@@ -508,7 +515,11 @@ export class Pipeline {
         ? this.loopFixerPairs[nextStep as string]
         : undefined;
       if (pairedFixerForNext !== undefined) {
-        let newEpisode = currentStep !== pairedFixerForNext;
+        // loopIntermediateSteps: steps that are transparent to episode detection.
+        // Entering a loop step from an intermediate (e.g. test-case-gen between
+        // spec-fixer and spec-review) preserves the convergence budget — it is
+        // NOT a new episode, so the loop exhaustion guard still fires correctly.
+        let newEpisode = currentStep !== pairedFixerForNext && !this.loopIntermediateSteps.has(currentStep);
         if (!newEpisode) {
           const siblings = Object.entries(this.loopFixerPairs)
             .filter(([, fixer]) => fixer === pairedFixerForNext)

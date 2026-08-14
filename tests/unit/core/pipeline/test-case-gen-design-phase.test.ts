@@ -1081,7 +1081,7 @@ describe("TC-016: test-case-gen の write 宣言は test-cases.md のみ", () =>
   it("TC-016: TestCaseGenStep.writes() は test-cases.md のみを返す（1 エントリ）", () => {
     const state = makeMinimalJobState({ branch: `change/${TEST_SLUG}-abc12345` });
     const deps = makeMinimalDeps(TEST_SLUG, "spec-change");
-    const refs = TestCaseGenStep.writes(state, deps);
+    const refs = TestCaseGenStep.writes!(state, deps);
     const paths = refs.map((r) => r.path);
 
     expect(paths).toHaveLength(1);
@@ -1091,7 +1091,7 @@ describe("TC-016: test-case-gen の write 宣言は test-cases.md のみ", () =>
   it("TC-016: TestCaseGenStep.writes() は tasks.md を含まない", () => {
     const state = makeMinimalJobState({ branch: `change/${TEST_SLUG}-abc12345` });
     const deps = makeMinimalDeps(TEST_SLUG, "spec-change");
-    const refs = TestCaseGenStep.writes(state, deps);
+    const refs = TestCaseGenStep.writes!(state, deps);
     const paths = refs.map((r) => r.path);
 
     expect(paths.some((p) => p.endsWith("tasks.md"))).toBe(false);

@@ -495,15 +495,19 @@ describe("TC-TMB-17: resolveResumeStep accepts test-materialize verbatim", () =>
 });
 
 // ---------------------------------------------------------------------------
-// TC-TMB-18: STANDARD_TRANSITIONS — to==="test-materialize" only from test-case-gen
+// TC-TMB-18: STANDARD_TRANSITIONS — to==="test-materialize" from spec-review and spec-fixer
+// (design phase change: test-case-gen → spec-review → test-materialize)
 // ---------------------------------------------------------------------------
 
-describe("TC-TMB-18: STANDARD_TRANSITIONS — to=test-materialize only from test-case-gen", () => {
-  it("exactly one transition targets 'test-materialize' and it comes from test-case-gen:success", () => {
+describe("TC-TMB-18: STANDARD_TRANSITIONS — to=test-materialize from spec-review and spec-fixer", () => {
+  it("transitions targeting 'test-materialize' come from spec-review:approved and spec-fixer:approved", () => {
     const toMaterialize = STANDARD_TRANSITIONS.filter((t) => t.to === "test-materialize");
-    expect(toMaterialize).toHaveLength(1);
-    expect(toMaterialize[0]?.step).toBe("test-case-gen");
-    expect(toMaterialize[0]?.on).toBe("success");
+    expect(toMaterialize.length).toBeGreaterThanOrEqual(2);
+    const steps = new Set(toMaterialize.map((t) => t.step));
+    expect(steps.has("spec-review")).toBe(true);
+    expect(steps.has("spec-fixer")).toBe(true);
+    // test-case-gen must NOT target test-materialize directly in the new pipeline
+    expect(steps.has("test-case-gen")).toBe(false);
   });
 
   it("conformance needs-fix:implementer does NOT target test-materialize", () => {

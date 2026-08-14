@@ -19,7 +19,7 @@ export type FindingResolution = "fixable" | "decision-needed";
  * Used exclusively by the conformance step to signal which fixer should address each finding.
  * CLI aggregates these values to derive the final routing target (R7 contract).
  */
-export type FixTarget = "implementer" | "code-fixer" | "spec-fixer";
+export type FixTarget = "implementer" | "code-fixer" | "spec-fixer" | "test-case-gen";
 
 /**
  * A single option presented alongside a `decision-needed` finding.

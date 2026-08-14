@@ -4,6 +4,7 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT, buildTestCaseGenInitialMessage } from "../../prompts/test-case-gen-system.js";
+import { getLatestJudgeFindings, buildFindingsBlock } from "./fixer-helpers.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
@@ -79,10 +80,17 @@ export const TestCaseGenStep: AgentStep = {
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.TEST_CASE_GEN);
+    // Inject spec-review findings when re-generating after a needs-fix round.
+    const specReviewFindings = getLatestJudgeFindings(state, STEP_NAMES.SPEC_REVIEW);
+    const specReviewFindingsBlock =
+      specReviewFindings && specReviewFindings.length > 0
+        ? buildFindingsBlock(specReviewFindings, "spec-review")
+        : undefined;
     return buildTestCaseGenInitialMessage({
       slug: deps.slug,
       branch: state.branch,
       requestContent: deps.request.content,
+      specReviewFindingsBlock,
     });
   },
 

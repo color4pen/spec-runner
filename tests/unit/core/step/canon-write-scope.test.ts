@@ -301,4 +301,24 @@ describe("TC-029 (could): drift-guard — writableByFixer が writes() ∩ prote
       expect(specFixer.has(p)).toBe(true);
     }
   });
+
+  it("test-case-gen: writes() ∩ canonPaths = {test-cases.md}（single source of truth）", async () => {
+    const { TestCaseGenStep } = await import("../../../../src/core/step/test-case-gen.js");
+    const state = makeState();
+    const deps = makeDeps();
+
+    const scope = buildCanonWriteScope(state, deps);
+    const testCaseGen = scope.writableByFixer.get("test-case-gen") ?? new Set();
+
+    const testCaseGenWrites = (TestCaseGenStep.writes ? TestCaseGenStep.writes(state, deps) : [])
+      .filter((ref) => ref.artifact !== "gitState")
+      .map((ref) => ref.path);
+    const actualCanonIntersection = testCaseGenWrites.filter((p) => scope.canonPaths.has(p));
+
+    // Drift-guard: explicit map must match actual writes() ∩ canon
+    expect(testCaseGen.size).toBe(actualCanonIntersection.length);
+    for (const p of actualCanonIntersection) {
+      expect(testCaseGen.has(p)).toBe(true);
+    }
+  });
 });
