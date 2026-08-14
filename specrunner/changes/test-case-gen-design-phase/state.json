@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T19:38:13.194Z",
+  "updatedAt": "2026-08-14T19:47:23.307Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/test-case-gen-design-phase-96aef526",
   "error": null,
@@ -86,7 +86,9 @@
     "6b18623821d81c00485c0348c3f112143e5c83c1",
     "e77a96d9a4243c3c9c4b6f87708a93c7255e9df0",
     "c0563434c2bd6eacfbd87e52237b2188a0a42e3f",
-    "2b31597b685acc896c6122382dcad48281909ebf"
+    "2b31597b685acc896c6122382dcad48281909ebf",
+    "d16d262102134a8b72fcc8482a835019e8e419d1",
+    "018f87a0e358be8f35cc576be3d3e499bc62feab"
   ],
   "touchedFiles": {
     "request-review": [
@@ -219,6 +221,20 @@
       "src/core/pipeline/registry.ts",
       "tests/unit/core/pipeline/registry-invariants.test.ts",
       "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts"
+    ],
+    "conformance": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/prompts/spec-review-system.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/kernel/report-result.ts",
+      "src/core/step/write-scope.ts"
     ]
   },
   "resumePoint": null,
@@ -261,7 +277,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 97,
+    "historyCount": 106,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -271,14 +287,14 @@
       "test-materialize": 1,
       "implementer": 3,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 4,
       "code-fixer": 4,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 2
     }
   }
 }
