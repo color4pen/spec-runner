@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e319c5c-b2e2-41fa-8635-b7b89db081b0",
   "createdAt": "2026-08-14T11:27:26.288Z",
-  "updatedAt": "2026-08-14T12:14:48.863Z",
+  "updatedAt": "2026-08-14T12:31:17.135Z",
   "request": {
     "title": "severity と fixability の分離: LOW も fixable なら直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/severity-fixability-split-8e319c5c",
   "error": null,
@@ -67,7 +67,9 @@
     "828a85ed00bc9b66361c46efd55cfcbb232b7429",
     "2e2099d55229c12b1797a9d00d28c8c2d9a438a1",
     "1f3b2af9b902ef8d99f37a6d56958364b2f1e1e5",
-    "073578583b29f5cd3145c0eab0d6b65b6a83ad88"
+    "073578583b29f5cd3145c0eab0d6b65b6a83ad88",
+    "3531ee18484760e7ea8c81cd16203d7271e02ef6",
+    "8b0b0ab36300bf1395ccb842e2625c770b40fe73"
   ],
   "touchedFiles": {
     "request-review": [
@@ -146,16 +148,39 @@
       "src/core/pipeline/types.ts",
       "tests/unit/step/executor-no-op.test.ts",
       "tests/unit/step/severity-fixability-split.test.ts"
+    ],
+    "implementer": [
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "tests/unit/step/code-fixer.test.ts",
+      "src/core/step/__tests__/executor-no-op.test.ts",
+      "src/core/step/__tests__/no-op-detect-exemption.test.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "tests/unit/step/severity-fixability-split.test.ts",
+      "tests/unit/step/judge-verdict.test.ts",
+      "src/core/step/no-op-detect.ts",
+      "src/core/step/executor.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/core/step/routed-findings.ts",
+      "tests/unit/step/executor-no-op.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "test-case-gen": 1,
-      "test-materialize": 1
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
