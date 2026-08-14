@@ -17,6 +17,24 @@
       "durationMs": 271041,
       "durationApiMs": 270724,
       "totalCostUsd": 1.0758234
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-14T15:46:17.211Z",
+      "modelUsage": {
+        "claude-opus-4-8[1m]": {
+          "inputTokens": 102,
+          "outputTokens": 48796,
+          "cacheReadInputTokens": 4219266,
+          "cacheCreationInputTokens": 129752
+        }
+      },
+      "jobId": "05217549-d66b-44d3-8649-45e94c856f2b",
+      "stepName": "design",
+      "numTurns": 53,
+      "durationMs": 693284,
+      "durationApiMs": 691153,
+      "totalCostUsd": 4.140992999999999
     }
   ]
 }
