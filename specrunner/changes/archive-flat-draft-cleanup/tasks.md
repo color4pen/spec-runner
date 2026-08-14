@@ -11,7 +11,9 @@
 - [ ] 削除した箇所の直前 (markJobArchived の後、archivePathspecs 宣言の前) に以下のロジックを追加する:
   - フラットパス: `nodePath.join(cwd, draftsDir(), slug + ".md")`
   - ディレクトリパス: `nodePath.join(cwd, draftsDir(), slug)`
-  - 各パスについて:
+  - 各パスについて (relPath・absPath の定義):
+    - フラット: `relPath = nodePath.join(draftsDir(), slug + ".md")`, `absPath = nodePath.join(cwd, relPath)`
+    - ディレクトリ: `relPath = nodePath.join(draftsDir(), slug)`, `absPath = nodePath.join(cwd, relPath)`
     1. `await fs.exists(absPath)` が false なら skip
     2. `await spawn("git", ["ls-files", "--", relPath], { cwd })` を実行し `stdout.trim()` が非空なら tracked と判定:
        - `stderrWrite` で警告を出す (例: `Warning: draft 'specrunner/drafts/<slug>.md' is tracked by git; delete manually with 'git rm <relPath>' and commit.`)
@@ -51,9 +53,12 @@
   - 変更後: `fs.exists` が両 draft パスで true を返す場合に `fs.rm` が repo 本体パスで呼ばれることを確認
   - テストタイトルを "draft present at repo root → fs.rm called for flat and directory paths" に変更する
 
+- [ ] **T-07 重複の解消**: `orchestrator.test.ts` に `T-07` を冠するテストが 2 件存在する（line 245: EACCES 警告テスト、line 326: archived 状態の short-circuit テスト）。line 326 のテストを `T-10: archived job resolves via includeArchived and returns Already finished` に改名し、ファイル先頭のコメントに T-07〜T-10 の説明を追記する。
+
 **Acceptance Criteria**:
 - 既存 T-01・T-08・T-09 が新しい期待値で green になる
-- T-02〜T-07・T-DTE-01〜T-DTE-03・TC-009・TC-010 は無変更で green のまま
+- T-02〜T-07 (line 245 の EACCES テスト)・T-DTE-01〜T-DTE-03・TC-009・TC-010 は無変更で green のまま
+- line 326 の archived short-circuit テストは T-10 に改名されて green のまま
 
 ---
 

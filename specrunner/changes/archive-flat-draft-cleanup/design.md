@@ -96,3 +96,5 @@ worktree (`recordDir`) ではなく `cwd` を基点に draft を削除する。
 ## Open Questions
 
 なし。
+
+<!-- spec-fixer-deferred: T-07 命名衝突（pre-existing）のテストファイル編集 spec-fixer は source code (src/) への書き込みが禁止されているため、orchestrator.test.ts line 326 の T-07 → T-10 改名は tasks.md T-02 に追記して implementer に委譲した。 -->

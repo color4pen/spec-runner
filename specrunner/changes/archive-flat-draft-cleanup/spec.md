@@ -47,3 +47,21 @@ archive 完了時に削除対象の draft が `git ls-files` で追跡されて�
 **Given** repo 本体の `specrunner/drafts/<slug>.md` が存在し、`git ls-files` の stdout が非空(tracked)である  
 **When** archive が実行される  
 **Then** `fs.rm` はそのパスに対して呼ばれず、`stderrWrite` に警告が出力され、archive は exitCode 0 で完了する
+
+#### Scenario: tracked なディレクトリ形式 draft が存在する場合
+
+**Given** repo 本体の `specrunner/drafts/<slug>/` が存在し、`git ls-files` の stdout が非空(tracked)である  
+**When** archive が実行される  
+**Then** `fs.rm` はそのパスに対して呼ばれず、`stderrWrite` に警告が出力され、archive は exitCode 0 で完了する
+
+---
+
+### Requirement: フラット形式とディレクトリ形式が同時に存在する場合、両方を削除する
+
+フラット形式とディレクトリ形式の両方が存在する場合、`runArchiveOrchestrator` はフラット形式を先に、ディレクトリ形式を後に(SHALL)処理し、両方を削除しなければならない(SHALL)。どちらも untracked であることを前提とする。
+
+#### Scenario: フラット形式とディレクトリ形式が同時に存在する場合
+
+**Given** repo 本体の `specrunner/drafts/<slug>.md` と `specrunner/drafts/<slug>/` の両方が存在し、いずれも `git ls-files` の結果が空(untracked)である  
+**When** archive が実行される  
+**Then** `fs.rm` がフラットパス(`<cwd>/specrunner/drafts/<slug>.md`)とディレクトリパス(`<cwd>/specrunner/drafts/<slug>/`)の両方に対して呼ばれ、archive は exitCode 0 で完了する
