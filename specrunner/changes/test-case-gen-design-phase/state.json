@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T18:44:33.708Z",
+  "updatedAt": "2026-08-14T19:37:33.736Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
-  "status": "running",
+  "step": "conformance",
+  "status": "awaiting-resume",
   "branch": "change/test-case-gen-design-phase-96aef526",
-  "error": null,
+  "error": {
+    "code": "STEP_TIMEOUT",
+    "message": "Step 'conformance' inactivity timeout: no agent event for 900019ms",
+    "hint": ""
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -84,7 +88,8 @@
     "1f0a592a8b97c36e3e64fd017f90254fb2978e9a",
     "d4c002e28c4eb6597d2b44afef774ec138afd864",
     "6b18623821d81c00485c0348c3f112143e5c83c1",
-    "e77a96d9a4243c3c9c4b6f87708a93c7255e9df0"
+    "e77a96d9a4243c3c9c4b6f87708a93c7255e9df0",
+    "c0563434c2bd6eacfbd87e52237b2188a0a42e3f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -211,17 +216,19 @@
       "src/core/pipeline/spec-observation.ts",
       "src/core/step/test-case-gen.ts",
       "src/prompts/conformance-system.ts",
-      "src/prompts/test-case-gen-system.ts",
       "tests/unit/core/step/conformance.test.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "src/core/step/step-completion.ts",
       "src/core/pipeline/registry.ts",
       "tests/unit/core/pipeline/registry-invariants.test.ts",
-      "src/core/step/step-completion.ts",
-      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
-      "src/core/step/canon-escalation.ts",
-      "src/core/step/judge-verdict.ts"
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "conformance",
+    "reason": "timeout",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -261,7 +268,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 87,
+    "historyCount": 94,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -277,7 +284,8 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
