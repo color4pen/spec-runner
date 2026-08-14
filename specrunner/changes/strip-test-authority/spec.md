@@ -69,3 +69,15 @@ bite-evidence gate は、base(最新 test-materialize run)の run より前に�
 **And** base で materialize されたテストが green を返す(genuine hollow)
 **When** `runBiteEvidenceGate` を実行する
 **Then** verdict は "failed" のまま(判定挙動は無変更)
+
+### Requirement: archive floor は汚染 baseline に対して biteEvidence を付与しない
+
+`deriveAchievedAssurance` は、base(最新 test-materialize run)の run より前に開始された implementer run で commitOid を持つものが state に存在する場合、biteEvidence / testDerivation の provenance 評価を行わず両次元を absent のまま SHALL 残す(fail-closed)。理由(baseline 構築不能)を diagnostics に記録する MUST。gate の deferral により汚染再走が archive まで到達可能になったため、archive floor 側でも同じ前提破れ検知を適用し、汚染 base への偽の biteEvidence="required" 付与を防ぐ。
+
+#### Scenario: 汚染 baseline では archive floor が biteEvidence を absent のまま残す
+
+**Given** state が再走形状(implementer-1 → test-materialize-2 = base → implementer-2)を持ち、implementer-1 の run が base の run より前に開始され commitOid を持つ
+**And** floor が biteEvidence を制約している
+**When** `deriveAchievedAssurance` を実行する
+**Then** achieved.biteEvidence と achieved.testDerivation は absent であり、diagnostics に baseline 構築不能の理由が記録される
+**And** provenance I/O(runTestsAtCommit 等)は実行されない

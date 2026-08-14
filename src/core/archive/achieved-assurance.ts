@@ -17,7 +17,7 @@ import type { JobState, ProfileAssurance } from "../../state/schema.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { AssuranceFloor } from "../../state/profile.js";
-import { resolveBaseCandidateOids } from "../step/bite-evidence/oids.js";
+import { resolveBaseCandidateOids, detectBaseImplementationContamination } from "../step/bite-evidence/oids.js";
 import { FORWARD_TYPES } from "../step/bite-evidence/gate.js";
 import { selectMaterializedTestFiles } from "../step/bite-evidence/test-file-selection.js";
 import { STEP_NAMES } from "../../kernel/step-names.js";
@@ -88,8 +88,9 @@ function computeContentHash(content: string): string {
  *   (Binds approval to the reviewed revision blob — prevents re-approval after spec.md changes.)
  *
  * **biteEvidence** / **testDerivation**: only evaluated when the floor constrains either.
- *   Requires: baseOid resolvable + finalHeadOid defined + runtime available with all required
- *   methods (including readFileAtCommit) + config defined.
+ *   Requires: baseOid resolvable + base free of implementation contamination (no implementer
+ *   commit predating the base test-materialize commit) + finalHeadOid defined + runtime
+ *   available with all required methods (including readFileAtCommit) + config defined.
  *   (a) Enumerate materializedTestFiles via listCommitChangedFiles(baseOid) + selectMaterializedTestFiles filter.
  *   (b) Blob freeze check: diffPathsBetweenCommits(baseOid, finalHeadOid, materializedTestFiles).
  *       → tamper (non-empty diff) → both absent.
@@ -229,6 +230,18 @@ export async function deriveAchievedAssurance(
 
   if (baseOid === null) {
     diagnostics.push("biteEvidence/testDerivation: baseOid is null — test-materialize step has no commitOid recorded");
+    return { achieved: achieved as ProfileAssurance, diagnostics };
+  }
+
+  // (P2.5) Base must be free of implementation contamination (re-run shape).
+  // Same check as the bite-evidence gate: if an implementer commit predates the base
+  // test-materialize commit, base-red cannot be established — fail-closed.
+  const contaminatingOid = detectBaseImplementationContamination(state);
+  if (contaminatingOid !== null) {
+    diagnostics.push(
+      `biteEvidence/testDerivation: baseline unbuildable — implementer commit ${contaminatingOid} ` +
+        "predates the base test-materialize commit (implementation mixed into base)",
+    );
     return { achieved: achieved as ProfileAssurance, diagnostics };
   }
 

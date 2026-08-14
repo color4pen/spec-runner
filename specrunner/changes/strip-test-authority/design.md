@@ -141,6 +141,14 @@ reason: "baseline unbuildable: implementer commit <oid> predates the base test-m
 - `test-materialize-boundary.test.ts` の TC-TMB-01..04 / 06 / 08..19 / A1 / F1。
 - `gate.test.ts` の TC-003/004/005/006/007/008/022/030/031/032(初回一巡・非 forward・tamper・OID 欠如の各挙動)。
 
+### D6: archive floor にも同じ前提破れ検知を適用する
+
+D3 の deferral 化により、汚染再走(implementer-1 → test-materialize-2 → implementer-2)は escalation で止まらず archive まで到達可能になる。archive floor(`deriveAchievedAssurance`)は gate と独立に `resolveBaseCandidateOids` で base を解決し base-red を評価するため、汚染 base に偽の biteEvidence="required" を付与しうる(cross-boundary-invariants レビュー Finding 1)。
+
+対応: `detectBaseImplementationContamination` を archive floor の precondition(P2.5)としても適用し、汚染検知時は biteEvidence / testDerivation を absent のまま残す(既存の precondition 群と同じ fail-closed 早期 return)。「materialize commit = base」の意味付け自体は維持し(D3 の方針どおり)、前提破れ時の評価拒否だけを第 2 の消費者に広げる。baseline の置換は Evidence Base request で行う。
+
+追加テスト: `src/core/archive/__tests__/achieved-assurance.test.ts`(新規)— 汚染形状で両次元 absent + diagnostics 記録 + provenance I/O 不実行を固定。clean 形状の biteEvidence 付与は既存 e2e(bite-evidence-e2e-gate.test.ts TC-010 floor)が引き続き固定する。
+
 ## Risks / Trade-offs
 
 - **[Risk] timestamp の同値衝突で再走を見逃す** — 実 pipeline の agent session は分単位で離れて走るため実害は極小。万一 `impl.startedAt == base.startedAt` の場合は「前提保持」扱い(検知せず)にフォールバックし、従来の(誤り得る)判定に戻るだけで、新たな偽 verdict は増やさない。→ **Mitigation**: 本 change は暫定検知(request 明記)。恒久解は後続の Evidence Base 再設計で置換する。`ponytail: startedAt 全順序に依存、Evidence Base 導入時に tree 合成へ置換`。
