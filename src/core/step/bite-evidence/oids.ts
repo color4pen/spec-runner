@@ -41,3 +41,32 @@ export function resolveBaseCandidateOids(state: JobState): {
 
   return { baseOid, candidateOid };
 }
+
+/**
+ * Detect whether the base (latest test-materialize commit) has implementer commits
+ * mixed into it — indicating a re-run where the assumption "base = no implementation"
+ * no longer holds.
+ *
+ * Returns the commitOid of the earliest offending implementer run (one that started
+ * before the base test-materialize run), or null if the base is clean.
+ *
+ * Pure function — no I/O.
+ *
+ * ponytail: startedAt 全順序に依存。Evidence Base 導入時に tree 合成へ置換。
+ */
+export function detectBaseImplementationContamination(state: JobState): string | null {
+  const steps = state.steps ?? {};
+  const baseRuns = steps[STEP_NAMES.TEST_MATERIALIZE] ?? [];
+  const implementerRuns = steps[STEP_NAMES.IMPLEMENTER] ?? [];
+
+  const latestBase = baseRuns[baseRuns.length - 1];
+  if (!latestBase) return null;
+
+  for (const run of implementerRuns) {
+    if (run.commitOid && run.startedAt < latestBase.startedAt) {
+      return run.commitOid;
+    }
+  }
+
+  return null;
+}

@@ -90,12 +90,12 @@ ${PIPELINE_MAP}
 5. 各 test に TC ID を必ず含める（関数名または直前のコメント）。例: \`it("TC-001: ユーザー登録 — 正常系", ...)\`
 
 6. 各テスト（または describe 単位）を次の 2 分類のいずれかに割り当てる:
-   - \`expected-red\`: 新挙動を検証するテスト。base（現在の worktree、実装なし）で fail が正常。green は欠陥（何も見張っていないテスト）。implementer が後続で green にする。
+   - \`expected-red\`: 新挙動を検証するテスト。base（現在の worktree、実装なし）で fail が正常。implementer が後続で green にする。
    - \`expected-green\`: 既存挙動の保持確認テスト、および Step 3 の既存テストへのトレーサビリティコメント追記。base で green が正常。
 
-   新規に書いた各テストは、完了報告の**前に**実行し、fail（red）することを観測してから完了する。実行は新規テストファイル単位でまとめて行ってよい（turn 消費を抑える）。実行方法はプロジェクトの既存テストコマンドへのファイル指定など agent の裁量とし、新しい設定・CLI 機構は導入しない。
+   新規に書いた各テストは、完了報告の**前に**実行し、観測結果（fail/pass 件数と期待分類）を記録してから完了する。実行は新規テストファイル単位でまとめて行ってよい（turn 消費を抑える）。実行方法はプロジェクトの既存テストコマンドへのファイル指定など agent の裁量とし、新しい設定・CLI 機構は導入しない。
 
-   fail しなかった新挙動テスト（\`expected-red\` が green）は「何も見張っていないテスト」であり、書き直してから再実行する。期待と観測の不一致（\`expected-red\` が green / \`expected-green\` が red）は完了不可とし、修正または再分類の根拠を Evidence に記す。
+   \`expected-red\` が green だった場合は書き直さない。観測事実（green）と考えられる理由（既存実装が要求を満たしている / 分類誤り / 見張れていない疑い等）を Evidence に記録し、判断は下流の review に委ねる。
 
 ## Evidence
 
@@ -110,7 +110,7 @@ ${EVIDENCE_DISCIPLINE}
   - 対象テストファイル
   - 観測結果（fail / pass の件数）
   - 各テスト（または describe 単位）の期待分類（\`expected-red\` / \`expected-green\`）
-  - 期待と観測の不一致があればその内容と対応（書き直し / 再分類の根拠）
+  - 期待と観測の不一致があればその内容と考えられる理由（既存実装が要求を満たしている / 分類誤り / 見張れていない疑い等）
 
 `;
 
@@ -158,8 +158,7 @@ Please:
 6. Do NOT write any production implementation code
 7. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
 
-New tests MUST be run before completing — confirm they fail (red) as expected (implementation does not yet exist).
-The next step (implementer) will write the implementation to make them green.
+新規テストは完了の前に実行し、観測結果（fail/pass と期待分類）を記録してから完了してください。
 
 Original request:
 ${requestContent}

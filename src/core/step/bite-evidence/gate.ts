@@ -17,7 +17,7 @@ import type { JobState, BiteEvidenceRecord } from "../../../state/schema.js";
 import type { RuntimeStrategy } from "../../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../../config/schema.js";
 import type { TamperStatus } from "./tamper.js";
-import { resolveBaseCandidateOids } from "./oids.js";
+import { resolveBaseCandidateOids, detectBaseImplementationContamination } from "./oids.js";
 import { selectMaterializedTestFiles } from "./test-file-selection.js";
 
 /**
@@ -113,6 +113,18 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
       verdict: "strategy-deferred",
       records: [],
       reason: "candidate OID absent: implementer step has no commitOid recorded",
+    };
+  }
+
+  // 3.5. Contamination check: if an implementer commit predates the base test-materialize
+  // commit, the "base = no implementation" assumption is broken (re-run shape).
+  // Return deferral instead of proceeding to base-red→candidate-green evaluation.
+  const contaminatingOid = detectBaseImplementationContamination(state);
+  if (contaminatingOid !== null) {
+    return {
+      verdict: "strategy-deferred",
+      records: [],
+      reason: `baseline unbuildable: implementer commit ${contaminatingOid} predates the base test-materialize commit (implementation mixed into base) — red→green cannot be established`,
     };
   }
 

@@ -1,0 +1,15 @@
+{
+  "requestHash": "sha256:57e36865d6510989dc8781ae4c620ac19a482904414a79479b825e147425de52",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/prompts/test-materialize-system.ts:93-98 — expected-red 分類に 'green は欠陥', '書き直してから再実行する', '完了不可' の命令が含まれることを確認",
+    "src/prompts/test-materialize-system.ts:161 — initial message に 'confirm they fail (red) as expected' が含まれることを確認",
+    "src/prompts/test-materialize-system.ts:108-113 — Evidence step 固有要求に '実行したコマンド', '対象テストファイル', '観測結果', '期待分類' が含まれることを確認",
+    "src/core/step/implementer.ts:198 — testsMaterialized = Boolean(state.steps?.[STEP_NAMES.TEST_MATERIALIZE]?.length) が存在することを確認",
+    "src/core/step/implementer.ts:82-98 — testsMaterialized=true 分岐で 'write production code only, do NOT create or modify test files' が含まれることを確認",
+    "src/core/step/bite-evidence/oids.ts:resolveBaseCandidateOids — base = 最新 test-materialize commitOid, candidate = 最新 implementer commitOid として解決することを確認",
+    "src/core/step/bite-evidence/gate.ts:234-274 — base-green の場合 allVerified=false → verdict 'failed' を返すことを確認",
+    "src/core/pipeline/types.ts:260 — { step: BITE_EVIDENCE, on: 'failed', to: 'escalate' } が存在することを確認"
+  ],
+  "sourceRevision": "34ec9896427d9a0f4fb3457511227c7ca0adeb9f"
+}

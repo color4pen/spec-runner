@@ -188,29 +188,39 @@ describe("TC-TMB-04: TestMaterializeStep outputContracts — test-coverage kind"
 // TC-TMB-05..08: implementer testsMaterialized flag
 // ---------------------------------------------------------------------------
 
-describe("TC-TMB-05: implementer testsMaterialized=true → implementation-only message", () => {
-  it("message contains 'implementation' and 'production' and NOT 'TDD'", () => {
+describe("TC-TMB-05: implementer testsMaterialized=true → canon-alignment message", () => {
+  it("message contains canon-alignment instruction and NOT 'TDD'", () => {
     const msg = buildImplementerInitialMessage({
       slug: "my-change",
       branch: "feat/my-change",
       requestContent: "Add feature X",
       testsMaterialized: true,
     });
-    // Must mention implementation-only mode
-    expect(msg.toLowerCase()).toContain("production");
+    // strip-test-authority D5 #6: canon 整合の文面を含み、TDD 指示を含まない。
+    // "整合" or (test-cases.md + (canon | 正として)) が含まれること
+    const hasCanonAlignment =
+      msg.includes("整合") ||
+      (msg.includes("test-cases.md") && (msg.includes("canon") || msg.includes("正として")));
+    expect(hasCanonAlignment).toBe(true);
     // Must NOT contain TDD unconditional instruction
     expect(msg).not.toContain("(TDD: write tests first");
   });
 
-  it("message says not to create or modify test files", () => {
+  it("message does NOT say not to create or modify test files, but asks to report changes", () => {
     const msg = buildImplementerInitialMessage({
       slug: "my-change",
       branch: "feat/my-change",
       requestContent: "Add feature X",
       testsMaterialized: true,
     });
-    // Must explicitly say not to create/modify test files
-    expect(msg.toLowerCase()).toMatch(/do not create or modify test|test files must not be created or modified/i);
+    // strip-test-authority D5 #7: テスト不可侵の撤回 — 禁止文言が消え、変更理由の報告指示が入る。
+    expect(msg.toLowerCase()).not.toMatch(/do not create or modify test|test files must not be created or modified/i);
+    // Change reporting instruction must be present
+    const hasChangeReport =
+      (msg.includes("変更") && msg.includes("理由")) ||
+      (msg.includes("変更") && msg.includes("報告")) ||
+      (msg.includes("modified") && msg.includes("reason"));
+    expect(hasChangeReport).toBe(true);
   });
 });
 
@@ -233,7 +243,7 @@ describe("TC-TMB-06: implementer testsMaterialized=false/undefined → TDD messa
 });
 
 describe("TC-TMB-07: ImplementerStep.buildMessage detects test-materialize in state", () => {
-  it("state with test-materialize record → message uses implementation-only mode", () => {
+  it("state with test-materialize record → message uses canon-alignment mode", () => {
     const stateWithMaterialize = makeMinimalState({
       step: "implementer",
       steps: {
@@ -250,7 +260,11 @@ describe("TC-TMB-07: ImplementerStep.buildMessage detects test-materialize in st
     });
     const deps = makeMinimalDeps("my-change");
     const msg = ImplementerStep.buildMessage(stateWithMaterialize, deps);
-    expect(msg.toLowerCase()).toContain("production");
+    // strip-test-authority D5 #8: state 経由の true 分岐検出は維持、文面を canon 整合に変更。
+    const hasCanonAlignment =
+      msg.includes("整合") ||
+      (msg.includes("test-cases.md") && (msg.includes("canon") || msg.includes("正として")));
+    expect(hasCanonAlignment).toBe(true);
     expect(msg).not.toContain("(TDD: write tests first");
   });
 
@@ -1013,5 +1027,110 @@ describe("TC-F1: AC-3 — test-materialize commit tree: *.test.ts ≥1, src/*.ts
       srcImplFiles,
       `Expected 0 src/*.ts implementation files in commit tree but got: ${JSON.stringify(srcImplFiles)}`,
     ).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-005: materialize 済みでテスト変更禁止が消える  [expected-red]
+//
+// Source: specrunner/changes/strip-test-authority/spec.md
+//   > Requirement: implementer は materialize 済みテスト存在時に canon 整合を指示し
+//     テスト変更を禁止しない
+//   > Scenario: materialize 済みでテスト変更禁止が消える
+//
+// Discriminator: current testsMaterialized=true branch at implementer.ts:98 says
+//   "write production code only, do NOT create or modify test files"
+// After T-03 this phrase must be absent; canon-alignment instruction must appear.
+// ---------------------------------------------------------------------------
+
+describe("TC-005: materialize 済みでテスト変更禁止が消える", () => {
+  it("TC-005: testsMaterialized=true の message に「do not create or modify test」が含まれない", () => {
+    const msg = buildImplementerInitialMessage({
+      slug: "strip-test-authority",
+      branch: "change/strip-test-authority-a8e7912e",
+      requestContent: "Sample request",
+      testsMaterialized: true,
+    });
+    // After T-03: "do NOT create or modify test files" is removed.
+    // Currently present → assertion fails (red) before T-03.
+    expect(msg.toLowerCase()).not.toMatch(/do not create or modify test/i);
+  });
+
+  it("TC-005: testsMaterialized=true の message に test-cases.md を canon とする整合指示が含まれる", () => {
+    const msg = buildImplementerInitialMessage({
+      slug: "strip-test-authority",
+      branch: "change/strip-test-authority-a8e7912e",
+      requestContent: "Sample request",
+      testsMaterialized: true,
+    });
+    // After T-03: message should instruct to align tests AND implementation with canon (test-cases.md / spec).
+    // "整合" (align) or equivalent must appear in the testsMaterialized=true branch.
+    // Currently absent → assertion fails (red) before T-03.
+    const hasCanonAlignment =
+      msg.includes("整合") ||
+      (msg.includes("test-cases.md") && (msg.includes("canon") || msg.includes("正として")));
+    expect(hasCanonAlignment).toBe(true);
+  });
+
+  it("TC-005: testsMaterialized=true の message にテスト変更時の理由報告指示が含まれる", () => {
+    const msg = buildImplementerInitialMessage({
+      slug: "strip-test-authority",
+      branch: "change/strip-test-authority-a8e7912e",
+      requestContent: "Sample request",
+      testsMaterialized: true,
+    });
+    // After T-03: the message should instruct to report the reason when tests are modified.
+    // Check for "変更" + ("理由" or "report") — currently absent in testsMaterialized=true branch → red.
+    const hasChangeReportInstruction =
+      (msg.includes("変更") && msg.includes("理由")) ||
+      (msg.includes("変更") && msg.includes("報告")) ||
+      (msg.includes("modified") && msg.includes("reason"));
+    expect(hasChangeReportInstruction).toBe(true);
+  });
+
+  it("TC-005: testsMaterialized=true の message に「(TDD: write tests first」が含まれない", () => {
+    const msg = buildImplementerInitialMessage({
+      slug: "strip-test-authority",
+      branch: "change/strip-test-authority-a8e7912e",
+      requestContent: "Sample request",
+      testsMaterialized: true,
+    });
+    // TDD unconditional instruction must not appear in testsMaterialized=true mode.
+    // Currently absent in true branch → already passes, regression guard.
+    expect(msg).not.toContain("(TDD: write tests first");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-006: fast pipeline の TDD message は無変更  [expected-green]
+//
+// Source: specrunner/changes/strip-test-authority/spec.md
+//   > Requirement: implementer は materialize 済みテスト存在時に canon 整合を指示し
+//     テスト変更を禁止しない
+//   > Scenario: fast pipeline の TDD message は無変更
+//
+// Regression guard: the default (no testsMaterialized) branch must not be altered by T-03.
+// All assertions pass on the current implementation (expected-green).
+// ---------------------------------------------------------------------------
+
+describe("TC-006: fast pipeline の TDD message は無変更", () => {
+  it("TC-006: testsMaterialized=false と undefined が同一 message を返す", () => {
+    const opts = {
+      slug: "strip-test-authority",
+      branch: "change/strip-test-authority-a8e7912e",
+      requestContent: "Sample request",
+    };
+    const msgFalse = buildImplementerInitialMessage({ ...opts, testsMaterialized: false });
+    const msgUndefined = buildImplementerInitialMessage(opts);
+    expect(msgFalse).toBe(msgUndefined);
+  });
+
+  it("TC-006: fast pipeline message は TDD 指示を含む", () => {
+    const msg = buildImplementerInitialMessage({
+      slug: "strip-test-authority",
+      branch: "change/strip-test-authority-a8e7912e",
+      requestContent: "Sample request",
+    });
+    expect(msg).toContain("TDD");
   });
 });
