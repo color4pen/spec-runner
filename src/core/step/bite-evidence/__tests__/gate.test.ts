@@ -12,6 +12,10 @@
  *   - TC-030: state.biteEvidence is populated after forward-strategy gate (via commitSuccess)
  *   - TC-031: strategy-deferred run does not populate state.biteEvidence
  *   - TC-032: tamper check returns inconclusive when frozen hash is absent
+ *
+ * strip-test-authority additions:
+ *   - TC-007 (strip-test-authority): 再走で base に実装が混入したとき deferral になる
+ *   - TC-008 (strip-test-authority): 初回一巡での base-green は従来どおり failed のまま
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -20,6 +24,7 @@ import { checkTamperStatus } from "../tamper.js";
 import type { JobState, StepRun } from "../../../../state/schema.js";
 import type { BiteEvidenceRecord } from "../../../../state/schema.js";
 import type { LineageRecord } from "../../../../store/event-journal.js";
+import { STANDARD_TRANSITIONS } from "../../../pipeline/types.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -687,5 +692,177 @@ describe("TC-031: strategy-deferred does not populate state.biteEvidence", () =>
     // strategy-deferred means no BiteEvidence was generated
     expect(result.verdict).toBe("strategy-deferred");
     expect(result.records).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-007 (strip-test-authority): 再走で base に実装が混入したとき deferral になる  [expected-red]
+//
+// Source: specrunner/changes/strip-test-authority/spec.md
+//   > Requirement: bite-evidence は base に過去の implementer commit が混入した場合
+//     fail でなく理由付き deferral を返す
+//   > Scenario: 再走で base に実装が混入したとき deferral になる
+//
+// Rerun shape: implementer-1@t1 → test-materialize-2@t2(=base) → implementer-2@t3(=candidate)
+//   t1 < t2: impl1 started before base materialize → contamination detected
+//
+// Discriminator: before T-05 (detectBaseImplementationContamination absent),
+//   gate proceeds to base-green → returns "failed".
+//   After T-05: contamination detected early → returns "strategy-deferred".
+//   TC-007 asserts "strategy-deferred" → FAILS currently (red) before T-05.
+// ---------------------------------------------------------------------------
+
+describe("TC-007 (strip-test-authority): 再走で base に実装が混入したとき deferral になる", () => {
+  /**
+   * Build a StepRun with a specific startedAt timestamp and optional commitOid.
+   */
+  function makeRunAt(
+    startedAt: string,
+    commitOid: string | undefined,
+    attempt = 1,
+  ): StepRun {
+    return {
+      attempt,
+      sessionId: null,
+      outcome: { verdict: "success", findingsPath: null, error: null },
+      startedAt,
+      endedAt: startedAt,
+      ...(commitOid !== undefined ? { commitOid } : {}),
+    } as StepRun;
+  }
+
+  it("TC-007: 再走形状で gate が strategy-deferred を返す", async () => {
+    // t0 < t1 < t2 < t3
+    // mat1@t0 (first materialize, no commitOid needed — not the base)
+    // impl1@t1 (first implementer — BEFORE base mat2@t2 → contamination)
+    // mat2@t2 (second materialize = BASE)
+    // impl2@t3 (second implementer = CANDIDATE)
+    const mat2Oid = "mat2-contaminated-base";
+    const impl1Oid = "impl1-before-base";
+    const impl2Oid = "impl2-candidate";
+    const testFile = "src/__tests__/contaminated-feature.test.ts";
+
+    const state = makeState("bug-fix", {
+      steps: {
+        "test-materialize": [
+          makeRunAt("2026-01-01T00:00:00.000Z", undefined),          // mat1@t0 (no oid needed)
+          makeRunAt("2026-01-01T00:02:00.000Z", mat2Oid),            // mat2@t2 = BASE
+        ],
+        "implementer": [
+          makeRunAt("2026-01-01T00:01:00.000Z", impl1Oid),           // impl1@t1 < t2 → CONTAMINATION
+          makeRunAt("2026-01-01T00:03:00.000Z", impl2Oid),           // impl2@t3 = CANDIDATE
+        ],
+      },
+    });
+
+    // Runtime: base-green so that without contamination check the gate would return "failed"
+    const { runtime } = makeFakeRuntime({
+      changedFiles: [testFile],
+      testResultsByOid: {
+        [mat2Oid]: [{ file: testFile, passed: true }],   // base: GREEN (would be hollow)
+        [impl2Oid]: [{ file: testFile, passed: true }],  // candidate: GREEN
+      },
+    });
+
+    const result = await runBiteEvidenceGate({
+      state,
+      cwd: "/tmp/test-cwd",
+      slug: "example",
+      config: {} as never,
+      runtimeStrategy: runtime as never,
+      tamperStatus: "inconclusive",
+    });
+
+    // After T-05: contamination detected → strategy-deferred (not failed).
+    // Before T-05: gate proceeds to base-green → returns "failed" → this assertion FAILS (red).
+    expect(result.verdict).toBe("strategy-deferred");
+    expect(result.reason).toBeDefined();
+    // Reason must mention baseline construction failure / implementation contamination.
+    const reason = result.reason ?? "";
+    const hasBaselineReason = reason.includes("baseline") || reason.includes("unbuildable") || reason.includes("contamination") || reason.includes("構築不能");
+    expect(hasBaselineReason).toBe(true);
+  });
+
+  it("TC-007: STANDARD_TRANSITIONS が bite-evidence strategy-deferred を verification へ遷移させる", () => {
+    // This assertion verifies the pipeline routing is already in place (expected-green).
+    // STANDARD_TRANSITIONS already has { BITE_EVIDENCE, on: "strategy-deferred", to: VERIFICATION }.
+    const transition = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "bite-evidence" && t.on === "strategy-deferred",
+    );
+    expect(transition).toBeDefined();
+    expect(transition?.to).toBe("verification");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-008 (strip-test-authority): 初回一巡での base-green は従来どおり failed のまま  [expected-green]
+//
+// Source: specrunner/changes/strip-test-authority/spec.md
+//   > Requirement: bite-evidence は base に過去の implementer commit が混入した場合
+//     fail でなく理由付き deferral を返す
+//   > Scenario: 初回一巡での base-green は従来どおり failed のまま
+//
+// First-pass shape: test-materialize@t0(=base) → implementer@t1(=candidate), t0 < t1
+//   No implementer run precedes base → no contamination → gate proceeds normally.
+//   base-green (genuine hollow) → "failed" verdict unchanged.
+//
+// Regression guard: T-05 must not alter first-pass behavior.
+// All assertions pass on the current implementation (expected-green).
+// ---------------------------------------------------------------------------
+
+describe("TC-008 (strip-test-authority): 初回一巡での base-green は従来どおり failed のまま", () => {
+  function makeRunAt(
+    startedAt: string,
+    commitOid: string | undefined,
+    attempt = 1,
+  ): StepRun {
+    return {
+      attempt,
+      sessionId: null,
+      outcome: { verdict: "success", findingsPath: null, error: null },
+      startedAt,
+      endedAt: startedAt,
+      ...(commitOid !== undefined ? { commitOid } : {}),
+    } as StepRun;
+  }
+
+  it("TC-008: 初回一巡形状で base-green は verdict=failed のまま", async () => {
+    // First-pass: mat@t0(=base) then impl@t1(=candidate), t1 > t0 → no contamination
+    const matOid = "mat-first-pass-base";
+    const implOid = "impl-first-pass-candidate";
+    const testFile = "src/__tests__/genuine-hollow.test.ts";
+
+    const state = makeState("bug-fix", {
+      steps: {
+        "test-materialize": [
+          makeRunAt("2026-01-01T00:00:00.000Z", matOid),    // mat@t0 = BASE (first and only)
+        ],
+        "implementer": [
+          makeRunAt("2026-01-01T00:01:00.000Z", implOid),   // impl@t1 > t0 = CANDIDATE (no prior impl)
+        ],
+      },
+    });
+
+    // Runtime: base-green (genuine hollow — test passes even without implementation)
+    const { runtime } = makeFakeRuntime({
+      changedFiles: [testFile],
+      testResultsByOid: {
+        [matOid]: [{ file: testFile, passed: true }],   // base: GREEN (genuine hollow)
+        [implOid]: [{ file: testFile, passed: true }],  // candidate: GREEN
+      },
+    });
+
+    const result = await runBiteEvidenceGate({
+      state,
+      cwd: "/tmp/test-cwd",
+      slug: "example",
+      config: {} as never,
+      runtimeStrategy: runtime as never,
+      tamperStatus: "inconclusive",
+    });
+
+    // No contamination → gate proceeds normally → base-green = hollow → "failed"
+    // This verdict must remain "failed" after T-05 (regression guard).
+    expect(result.verdict).toBe("failed");
   });
 });
