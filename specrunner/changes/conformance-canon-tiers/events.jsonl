@@ -75,3 +75,10 @@
 {"type":"transition","ts":"2026-08-14T12:13:35.606Z","step":"step-transition","status":"ok","message":"code-fixer → regression-gate"}
 {"type":"transition","ts":"2026-08-14T12:13:35.607Z","step":"regression-gate","status":"started","message":"regression-gate iteration 2 started"}
 {"type":"transition","ts":"2026-08-14T12:13:35.608Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-08-14T12:14:25.719Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"c6c9bc9d-c1d5-428f-8229-88cc44489862","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/conformance-canon-tiers/regression-gate-result-002.md","error":null,"toolResult":{"ok":true,"approved":true,"findings":[],"evidence":{"checked":1,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-08-14T12:13:35.662Z","endedAt":"2026-08-14T12:14:23.452Z","commitOid":"541af0c9fc97051c7c89590243a16f5f0c02d2eb"}
+{"type":"lineage","step":"regression-gate","ts":"2026-08-14T12:14:23.452Z","outputs":[{"path":"specrunner/changes/conformance-canon-tiers/regression-gate-result-002.md","hash":"sha256:3e77d2d9f9bf88e2802f41cd5e16a7830360b1795e4cff6532dd53f9d7608b84"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-08-14T12:14:25.724Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 2 completed with verdict: approved"}
+{"type":"transition","ts":"2026-08-14T12:14:25.724Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-08-14T12:14:25.726Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-08-14T12:14:25.729Z","step":"conformance-started","status":"started","message":"Starting conformance step"}

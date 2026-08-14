@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "64d5054d-43d6-4ce9-b0c2-3d72c7ad23d9",
   "createdAt": "2026-08-14T11:27:12.016Z",
-  "updatedAt": "2026-08-14T12:13:35.608Z",
+  "updatedAt": "2026-08-14T12:14:25.729Z",
   "request": {
     "title": "conformance の正典に格差を付ける: request/spec は規範、design/tasks は計画",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/conformance-canon-tiers-64d5054d",
   "error": null,
@@ -73,7 +73,8 @@
     "45adc23dc7ae367593edef0145891409a3e875e2",
     "8f4d478f882dcbcf6db7aa27636726f7a121f959",
     "f1f7cc882f7bdd2b1c0818b53f168aeb3e93353b",
-    "f995271779a5cbfb6aad71a4a73ba68e04e52a22"
+    "f995271779a5cbfb6aad71a4a73ba68e04e52a22",
+    "541af0c9fc97051c7c89590243a16f5f0c02d2eb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -174,7 +175,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -188,7 +189,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1,
+      "regression-gate": 2,
       "code-fixer": 1
     }
   }
