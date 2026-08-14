@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e319c5c-b2e2-41fa-8635-b7b89db081b0",
   "createdAt": "2026-08-14T11:27:26.288Z",
-  "updatedAt": "2026-08-14T11:57:04.086Z",
+  "updatedAt": "2026-08-14T12:00:36.030Z",
   "request": {
     "title": "severity と fixability の分離: LOW も fixable なら直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/severity-fixability-split-8e319c5c",
   "error": null,
@@ -65,7 +65,8 @@
     "4370df62037239c0c4d2c3e92a524dd651b21a08",
     "ccbb69af153ea23b85dc2c00b60c184108d9cdcb",
     "828a85ed00bc9b66361c46efd55cfcbb232b7429",
-    "2e2099d55229c12b1797a9d00d28c8c2d9a438a1"
+    "2e2099d55229c12b1797a9d00d28c8c2d9a438a1",
+    "1f3b2af9b902ef8d99f37a6d56958364b2f1e1e5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -115,14 +116,22 @@
       "tests/unit/step/code-fixer.test.ts",
       "tests/unit/step/executor-no-op.test.ts",
       "src/core/pipeline/__tests__/reviewer-chain.test.ts"
+    ],
+    "test-case-gen": [
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "tests/unit/step/code-fixer.test.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "src/core/step/__tests__/executor-no-op.test.ts",
+      "src/core/step/__tests__/no-op-detect-exemption.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "test-case-gen": 1
     }
   }
 }
