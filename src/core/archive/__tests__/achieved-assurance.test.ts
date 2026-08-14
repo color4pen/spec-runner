@@ -92,4 +92,64 @@ describe("deriveAchievedAssurance — Evidence Base reference absent", () => {
       output.diagnostics.some((d) => d.includes("Evidence Base reference absent")),
     ).toBe(true);
   });
+
+  it("achieves testDerivation when synthesizedCommits is absent but floor only requires testDerivation", async () => {
+    // Pins the corrected behavior: P2.5 (Evidence Base ref check) is guarded by
+    // floorConstrainsBite, so absent synthesizedCommits does NOT block testDerivation.
+    // testDerivation depends only on blob freeze + scenario freeze, not on the Evidence Base.
+    const TCG_OID = "tcg-oid-001";
+    const MAT_OID = "mat-oid-001";
+    const HEAD_OID = "final-head-oid-001";
+    const TEST_FILE = "tests/unit/example.test.ts";
+    const TC_CONTENT = "# Test Cases\n\n## TC-001: sample\nFixed content.\n";
+
+    const state = makeState({
+      steps: {
+        "test-materialize": [makeRunAt("2026-01-01T00:02:00.000Z", MAT_OID)],
+        "test-case-gen": [makeRunAt("2026-01-01T00:01:00.000Z", TCG_OID)],
+      },
+      // synthesizedCommits absent — no Evidence Base ref resolvable.
+      // testDerivation must NOT be gated on this.
+    });
+
+    const neverCalled = (name: string) => () => {
+      throw new Error(`runtime.${name} must not be called for testDerivation-only floor`);
+    };
+    const runtime = {
+      async listCommitChangedFiles(_oid: string, _cwd: string) {
+        return { kind: "success" as const, files: [TEST_FILE] };
+      },
+      async diffPathsBetweenCommits(_base: string, _head: string, _paths: string[], _cwd: string) {
+        return { kind: "success" as const, files: [] }; // blob freeze intact
+      },
+      async readFileAtCommit(oid: string, _path: string, _cwd: string) {
+        // Same content at both anchor and HEAD → scenario freeze intact
+        if (oid === TCG_OID || oid === HEAD_OID) {
+          return { kind: "found" as const, path: _path, content: TC_CONTENT };
+        }
+        return { kind: "unavailable" as const, reason: `unexpected oid: ${oid}` };
+      },
+      // These must NOT be called: biteEvidence I/O is skipped for testDerivation-only floor.
+      runTestsAtCommit: neverCalled("runTestsAtCommit"),
+      runTestsOnSynthesizedTree: neverCalled("runTestsOnSynthesizedTree"),
+    };
+
+    const output = await deriveAchievedAssurance({
+      state,
+      finalHeadOid: HEAD_OID,
+      cwd: "/tmp/assurance-test-cwd",
+      config: {} as never,
+      floor: { testDerivation: "frozen" } as never,
+      runtime: runtime as never,
+    });
+
+    // testDerivation achievable despite absent synthesizedCommits
+    expect(output.achieved.testDerivation).toBe("frozen");
+    // biteEvidence not constrained → absent (not a failure, just unconstrained)
+    expect(output.achieved.biteEvidence).toBeUndefined();
+    // P2.5 must NOT have blocked testDerivation
+    expect(
+      output.diagnostics.some((d) => d.includes("Evidence Base reference absent")),
+    ).toBe(false);
+  });
 });

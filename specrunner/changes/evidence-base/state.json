@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
   "createdAt": "2026-08-14T20:03:06.572Z",
-  "updatedAt": "2026-08-14T23:02:21.626Z",
+  "updatedAt": "2026-08-14T23:07:19.319Z",
   "request": {
     "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/evidence-base-a50242c6",
   "error": null,
@@ -88,7 +88,8 @@
     "b0adcafc17f24f2bbdbba0ccde87ab6595c3ee19",
     "c2b42be039962b875d9195e37a43be70f0e1f430",
     "bb179844295da2027cd2e6ce6266694beaa0d051",
-    "a47921a4a64a0083fe0026e8c8ba8b677b76a802"
+    "a47921a4a64a0083fe0026e8c8ba8b677b76a802",
+    "01b17d3a9e6c67ca278dc21c9f860aa3303f5e89"
   ],
   "touchedFiles": {
     "request-review": [
@@ -207,6 +208,13 @@
       "tests/unit/state/bite-evidence-record-schema.test.ts",
       "src/core/step/bite-evidence/gate.ts",
       "src/core/archive/__tests__/achieved-assurance.test.ts"
+    ],
+    "regression-gate": [
+      "src/state/schema/types.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/runtime/local.ts",
+      "src/core/archive/__tests__/achieved-assurance.test.ts",
+      "tests/unit/core/archive/achieved-assurance-revision-binding-unit.test.ts"
     ]
   },
   "resumePoint": null,
@@ -249,7 +257,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 94,
+    "historyCount": 98,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -264,7 +272,8 @@
       "code-fixer": 2,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 2
+      "custom-reviewers": 2,
+      "regression-gate": 1
     }
   }
 }
