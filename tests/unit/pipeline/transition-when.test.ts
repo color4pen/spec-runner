@@ -190,11 +190,13 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
   it("has correct number of rows (+3 test-case-gen design-phase rows)", () => {
-    // 49 previous + 3 new guarded rows for test-case-gen design-phase:
+    // 48 previous + 3 new guarded rows for test-case-gen design-phase:
     //   1. design success → spec-review (when: isTestGenExempt)
     //   2. spec-review needs-fix → test-case-gen (when: specReviewNeedsFixIsTcOnly)
     //   3. spec-fixer approved → test-case-gen (when: specFixerNeedsFixForward)
-    expect(STANDARD_TRANSITIONS.length).toBe(52);
+    // (build-fixer rows removed: verification failed→implementer replaces old build-fixer path;
+    //  implementer→verification(when verificationFailedLast) added; 2 build-fixer rows removed → net -1)
+    expect(STANDARD_TRANSITIONS.length).toBe(51);
   });
 });
 

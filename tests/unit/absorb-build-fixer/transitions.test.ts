@@ -46,12 +46,12 @@ function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
   };
 }
 
-function makeStepRun(verdict: string, ts: string = "2026-01-01T00:01:00.000Z"): import("../../../../src/state/schema.js").StepRun {
+function makeStepRun(verdict: string, ts: string = "2026-01-01T00:01:00.000Z"): import("../../../src/state/schema.js").StepRun {
   return {
     attempt: 1,
     sessionId: null,
     outcome: {
-      verdict: verdict as import("../../../../src/state/schema.js").Verdict,
+      verdict: verdict as import("../../../src/state/schema.js").Verdict,
       findingsPath: null,
       error: null,
     },
@@ -241,13 +241,14 @@ describe("TC-015: STANDARD_TRANSITIONS — IMPLEMENTER→VERIFICATION(when verif
 
 describe("TC-016: verificationFailedLast=true のとき implementer success → verification(when)", () => {
   it("TC-016: verificationFailedLast guard の when が失敗 state で true を返す", () => {
-    // Find the implementer→verification(when) row
+    // Find the implementer→verification(when: verificationFailedLast) row specifically
+    // (there may be multiple implementer→verification rows with different guards)
     const row = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.IMPLEMENTER &&
         t.on === "success" &&
         t.to === STEP_NAMES.VERIFICATION &&
-        t.when !== undefined,
+        t.when === verificationFailedLast,
     );
     expect(row).toBeDefined();
 
@@ -271,7 +272,7 @@ describe("TC-016: verificationFailedLast=true のとき implementer success → 
         t.step === STEP_NAMES.IMPLEMENTER &&
         t.on === "success" &&
         t.to === STEP_NAMES.VERIFICATION &&
-        t.when !== undefined,
+        t.when === verificationFailedLast,
     );
     expect(row).toBeDefined();
 

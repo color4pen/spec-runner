@@ -1,5 +1,5 @@
 /**
- * TC-033: all 7 agents registered → pass
+ * TC-033: all 6 agents registered → pass (build-fixer abolished)
  * TC-034: 1 agent missing → fail with name
  */
 import { describe, it, expect } from "vitest";
@@ -11,14 +11,13 @@ const fullAgentsConfig = {
   "spec-review": { agentId: "a2", definitionHash: "sha256:b" },
   "spec-fixer": { agentId: "a3", definitionHash: "sha256:c" },
   "implementer": { agentId: "a4", definitionHash: "sha256:d" },
-  "build-fixer": { agentId: "a5", definitionHash: "sha256:e" },
-  "code-review": { agentId: "a6", definitionHash: "sha256:f" },
-  "code-fixer": { agentId: "a7", definitionHash: "sha256:g" },
+  "code-review": { agentId: "a5", definitionHash: "sha256:f" },
+  "code-fixer": { agentId: "a6", definitionHash: "sha256:g" },
 };
 
 describe("agentsRegisteredCheck", () => {
   // TC-033
-  it("returns pass when all 7 agents are registered", async () => {
+  it("returns pass when all 6 agents are registered", async () => {
     const ctx = buildMockContext({
       config: buildMockConfig({ agents: fullAgentsConfig }),
     });

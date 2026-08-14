@@ -15,10 +15,10 @@ import { STEP_NAMES } from "../step/step-names.js";
  * Used to compute the maximum "last code-change" timestamp.
  * Spec-phase fixers (spec-fixer) are excluded because their downstream path
  * always passes through implementer → verification before reaching conformance.
+ * build-fixer は廃止済み — implementer が verification の paired fixer として代替する。
  */
 export const IMPL_CODE_MUTATOR_STEPS = [
   STEP_NAMES.IMPLEMENTER,
-  STEP_NAMES.BUILD_FIXER,
   STEP_NAMES.CODE_FIXER,
 ] as const;
 
@@ -158,6 +158,26 @@ export function conformanceApprovedLatest(state: JobState): boolean {
  *   `{ step: VERIFICATION, on: "passed", to: ADR_GEN|PR_CREATE, when: conformanceApprovedForVerifiedRevision }`
  *   Replaces the old `conformanceApprovedLatest` guard in types.ts.
  */
+/**
+ * Returns true when the most recent verification run has verdict "failed".
+ *
+ * Used as the `when` guard for `implementer success → verification` routing
+ * (recovery re-entry: bite-evidence is bypassed so the loop budget accumulates
+ * correctly without spurious resets).
+ *
+ * Returns false when:
+ *   - No verification run exists (initial run, never verified yet)
+ *   - Latest verification run is "passed" (conformance re-entry path)
+ *
+ * Pure function — reads only state.steps, no I/O.
+ */
+export function verificationFailedLast(state: JobState): boolean {
+  const runs = state.steps?.[STEP_NAMES.VERIFICATION] ?? [];
+  if (runs.length === 0) return false;
+  const lastRun = runs[runs.length - 1];
+  return lastRun?.outcome?.verdict === "failed";
+}
+
 export function conformanceApprovedForVerifiedRevision(state: JobState): boolean {
   // (1) Latest conformance run must exist with "approved" verdict
   const conformanceRuns = state.steps?.[STEP_NAMES.CONFORMANCE] ?? [];

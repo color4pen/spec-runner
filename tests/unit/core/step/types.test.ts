@@ -15,7 +15,6 @@ import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import { SpecFixerStep } from "../../../../src/core/step/spec-fixer.js";
 import { ImplementerStep } from "../../../../src/core/step/implementer.js";
-import { BuildFixerStep } from "../../../../src/core/step/build-fixer.js";
 import type { StepDeps } from "../../../../src/core/step/types.js";
 import type { JobState } from "../../../../src/state/schema.js";
 
@@ -209,12 +208,6 @@ describe("TC-010: NULL_PARSE_RESULT 定数の共有 — 4 step 適合性", () =>
   it("ImplementerStep.parseResult('any') は NULL_PARSE_RESULT と deep-equal", () => {
     const deps = makeMinimalDeps();
     const result = ImplementerStep.parseResult("any content", deps);
-    expect(result).toEqual(NULL_PARSE_RESULT);
-  });
-
-  it("BuildFixerStep.parseResult('any') は NULL_PARSE_RESULT と deep-equal", () => {
-    const deps = makeMinimalDeps();
-    const result = BuildFixerStep.parseResult("any content", deps);
     expect(result).toEqual(NULL_PARSE_RESULT);
   });
 });

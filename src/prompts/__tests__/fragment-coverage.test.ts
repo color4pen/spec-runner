@@ -13,7 +13,6 @@ import { DESIGN_SYSTEM_PROMPT, DESIGN_INITIAL_MESSAGE_TEMPLATE, buildInitialMess
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../implementer-system.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT, buildTestCaseGenInitialMessage } from "../test-case-gen-system.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../code-fixer-system.js";
-import { BUILD_FIXER_SYSTEM_PROMPT } from "../build-fixer-system.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../spec-fixer-system.js";
 import { ADR_GEN_SYSTEM_PROMPT } from "../adr-gen-system.js";
 import { CONFORMANCE_SYSTEM_PROMPT } from "../conformance-system.js";
@@ -292,7 +291,7 @@ function makeMinimalRequestReviewInitialMessage(): string {
   });
 }
 
-/** All 14 prompt surface strings for neutrality iteration. */
+/** All prompt surface strings for neutrality iteration (build-fixer は廃止済みのため除外). */
 const allPromptSymbols: Array<[string, string]> = [
   ["DESIGN_SYSTEM_PROMPT", DESIGN_SYSTEM_PROMPT],
   ["DESIGN_INITIAL_MESSAGE_TEMPLATE", DESIGN_INITIAL_MESSAGE_TEMPLATE],
@@ -301,7 +300,6 @@ const allPromptSymbols: Array<[string, string]> = [
   ["TEST_CASE_GEN_SYSTEM_PROMPT", TEST_CASE_GEN_SYSTEM_PROMPT],
   ["buildTestCaseGenInitialMessage()", makeMinimalTestCaseGenInitialMessage()],
   ["CODE_FIXER_SYSTEM_PROMPT", CODE_FIXER_SYSTEM_PROMPT],
-  ["BUILD_FIXER_SYSTEM_PROMPT", BUILD_FIXER_SYSTEM_PROMPT],
   ["SPEC_FIXER_SYSTEM_PROMPT", SPEC_FIXER_SYSTEM_PROMPT],
   ["ADR_GEN_SYSTEM_PROMPT", ADR_GEN_SYSTEM_PROMPT],
   ["CONFORMANCE_SYSTEM_PROMPT", CONFORMANCE_SYSTEM_PROMPT],
@@ -341,13 +339,12 @@ describe("T-07: all prompt symbols do not contain old completion intro/outro tex
   }
 });
 
-describe("T-07: producer 8 prompts contain COMPLETION_DIRECTIVE", () => {
+describe("T-07: producer prompts contain COMPLETION_DIRECTIVE (build-fixer は廃止済み)", () => {
   const producerPrompts: Array<[string, string]> = [
     ["DESIGN_SYSTEM_PROMPT", DESIGN_SYSTEM_PROMPT],
     ["IMPLEMENTER_SYSTEM_PROMPT", IMPLEMENTER_SYSTEM_PROMPT],
     ["TEST_CASE_GEN_SYSTEM_PROMPT", TEST_CASE_GEN_SYSTEM_PROMPT],
     ["CODE_FIXER_SYSTEM_PROMPT", CODE_FIXER_SYSTEM_PROMPT],
-    ["BUILD_FIXER_SYSTEM_PROMPT", BUILD_FIXER_SYSTEM_PROMPT],
     ["SPEC_FIXER_SYSTEM_PROMPT", SPEC_FIXER_SYSTEM_PROMPT],
     ["ADR_GEN_SYSTEM_PROMPT", ADR_GEN_SYSTEM_PROMPT],
     ["CONFORMANCE_SYSTEM_PROMPT", CONFORMANCE_SYSTEM_PROMPT],

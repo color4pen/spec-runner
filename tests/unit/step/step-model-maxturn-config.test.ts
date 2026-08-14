@@ -11,7 +11,6 @@ import { DesignStep } from "../../../src/core/step/design.js";
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 import { SpecFixerStep } from "../../../src/core/step/spec-fixer.js";
 import { ImplementerStep } from "../../../src/core/step/implementer.js";
-import { BuildFixerStep } from "../../../src/core/step/build-fixer.js";
 import { CodeReviewStep } from "../../../src/core/step/code-review.js";
 import { CodeFixerStep } from "../../../src/core/step/code-fixer.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
@@ -28,7 +27,7 @@ describe("TC-001: AgentStep interface has maxTurns optional field", () => {
   it("maxTurns field is accessible without TypeScript error on any AgentStep", () => {
     const steps: AgentStep[] = [
       DesignStep, SpecReviewStep, SpecFixerStep,
-      ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep,
+      ImplementerStep, CodeReviewStep, CodeFixerStep,
     ];
     // Accessing .maxTurns on all steps compiles without error (field exists in interface)
     for (const step of steps) {
@@ -62,10 +61,6 @@ describe("TC-005: Implementation/fixer steps use claude-sonnet-5 model (opusplan
     expect(ImplementerStep.agent.model).toBe("claude-sonnet-5");
   });
 
-  it("BUILD_FIXER_AGENT_MODEL is claude-sonnet-5", () => {
-    expect(BuildFixerStep.agent.model).toBe("claude-sonnet-5");
-  });
-
   it("CODE_FIXER_AGENT_MODEL is claude-sonnet-5", () => {
     expect(CodeFixerStep.agent.model).toBe("claude-sonnet-5");
   });
@@ -87,10 +82,6 @@ describe("TC-006: Per-step maxTurns values match design specification", () => {
 
   it("ImplementerStep.maxTurns === 60", () => {
     expect(ImplementerStep.maxTurns).toBe(60);
-  });
-
-  it("BuildFixerStep.maxTurns === 35", () => {
-    expect(BuildFixerStep.maxTurns).toBe(35);
   });
 
   it("CodeReviewStep.maxTurns === 20", () => {

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T20:50:53.552Z",
+  "updatedAt": "2026-08-14T21:05:33.189Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-materialize",
+  "step": "implementer",
   "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
@@ -69,7 +69,8 @@
     "6c3ded25597df7d959f36ff4678530f99099a852",
     "b8f5d2f2488d99f6d7a4c191151ef5b57a9721ce",
     "b301875c4f2900db6bd0a2d2ec76f0bb3adc1947",
-    "980d98103e5e8ec5cf66e233aa1acb5cd7a74ab0"
+    "980d98103e5e8ec5cf66e233aa1acb5cd7a74ab0",
+    "4af34ecbfe525263faec4508c6a4271487f1f428"
   ],
   "touchedFiles": {
     "request-review": [
@@ -123,7 +124,38 @@
       "tests/unit/core/pipeline/pipeline.conformance-routing.test.ts"
     ],
     "test-case-gen": [],
-    "spec-review": []
+    "spec-review": [],
+    "test-materialize": [
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "tests/unit/core/pipeline/pipeline.reverification.test.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/reverification.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/kernel/step-names.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/step/implementer.ts",
+      "src/core/step/build-fixer.ts",
+      "src/state/schema.ts",
+      "tests/unit/core/pipeline/pipeline.build-fixer-reentry.test.ts",
+      "src/state/schema/types.ts",
+      "tests/store/event-journal.test.ts",
+      "src/store/event-journal.ts",
+      "src/core/pipeline/run.ts",
+      "tests/core/step/fixer-helpers.test.ts",
+      "tests/pipeline-integration.test.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "src/core/step/__tests__/step-context-builder.test.ts",
+      "tests/unit/step/implementer.test.ts",
+      "src/core/step/types.ts",
+      "src/core/port/step-types.ts",
+      "src/core/port/step-context.ts",
+      "tests/unit/absorb-build-fixer/transitions.test.ts",
+      "tests/unit/absorb-build-fixer/implementer-recovery.test.ts",
+      "tests/unit/absorb-build-fixer/state-compat.test.ts",
+      "tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts"
+    ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -135,12 +167,13 @@
     }
   ],
   "_journal": {
-    "historyCount": 22,
+    "historyCount": 25,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 2
+      "spec-review": 2,
+      "test-materialize": 1
     }
   }
 }

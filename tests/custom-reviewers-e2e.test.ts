@@ -304,7 +304,7 @@ function buildCustomMockClient(opts: {
         }]);
       }
 
-      // Producer steps (design, spec-fixer, test-case-gen, implementer, build-fixer, code-fixer, adr-gen)
+      // Producer steps (design, spec-fixer, test-case-gen, implementer, code-fixer, adr-gen)
       return Promise.resolve([{
         type: "agent.custom_tool_use",
         name: "report_result",
@@ -337,7 +337,6 @@ function buildConfig(reviewerNames: string[] = []) {
       "test-case-gen": { agentId: "test-case-gen-agent-id", definitionHash: "sha256:tcg", lastSyncedAt: new Date().toISOString() },
       "test-materialize": { agentId: "test-materialize-agent-id", definitionHash: "sha256:tmt", lastSyncedAt: new Date().toISOString() },
       "implementer": { agentId: "implementer-agent-id", definitionHash: "sha256:imp", lastSyncedAt: new Date().toISOString() },
-      "build-fixer": { agentId: "build-fixer-agent-id", definitionHash: "sha256:bfx", lastSyncedAt: new Date().toISOString() },
       "code-review": { agentId: "code-review-agent-id", definitionHash: "sha256:crv", lastSyncedAt: new Date().toISOString() },
       "code-fixer": { agentId: "code-fixer-agent-id", definitionHash: "sha256:cfx", lastSyncedAt: new Date().toISOString() },
       "conformance": { agentId: "conformance-agent-id", definitionHash: "sha256:cnf", lastSyncedAt: new Date().toISOString() },

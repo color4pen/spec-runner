@@ -15,7 +15,6 @@ import { IMPLEMENTER_SYSTEM_PROMPT } from "../../../src/prompts/implementer-syst
 import { DESIGN_SYSTEM_PROMPT } from "../../../src/prompts/design-system.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/spec-fixer-system.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/code-fixer-system.js";
-import { BUILD_FIXER_SYSTEM_PROMPT } from "../../../src/prompts/build-fixer-system.js";
 import { ADR_GEN_SYSTEM_PROMPT } from "../../../src/prompts/adr-gen-system.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/spec-review-system.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../../../src/prompts/code-review-system.js";
@@ -28,7 +27,6 @@ const ALL_AGENT_PROMPTS: Array<[string, string]> = [
   ["DESIGN", DESIGN_SYSTEM_PROMPT],
   ["SPEC_FIXER", SPEC_FIXER_SYSTEM_PROMPT],
   ["CODE_FIXER", CODE_FIXER_SYSTEM_PROMPT],
-  ["BUILD_FIXER", BUILD_FIXER_SYSTEM_PROMPT],
   ["ADR_GEN", ADR_GEN_SYSTEM_PROMPT],
   ["SPEC_REVIEW", SPEC_REVIEW_SYSTEM_PROMPT],
   ["CODE_REVIEW", CODE_REVIEW_SYSTEM_PROMPT],
@@ -39,8 +37,8 @@ const ALL_AGENT_PROMPTS: Array<[string, string]> = [
 
 // TC-31: common-context-catch.test.ts structure verification
 describe("TC-31: common-context-catch.test.ts — structure", () => {
-  test("TC-31: tests all 10 agent prompts (REQUEST_GENERATE removed, deterministic-request-entrance)", () => {
-    expect(ALL_AGENT_PROMPTS.length).toBe(10);
+  test("TC-31: tests all 9 agent prompts (REQUEST_GENERATE and BUILD_FIXER removed)", () => {
+    expect(ALL_AGENT_PROMPTS.length).toBe(9);
   });
 
   test("TC-31: all entries are [string, string] tuples", () => {

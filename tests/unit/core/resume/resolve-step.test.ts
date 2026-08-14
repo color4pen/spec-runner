@@ -77,8 +77,8 @@ describe("resolveResumeStep - --from with registered step name", () => {
     expect(resolveResumeStep("code-fixer", makeResumePoint("implementer"))).toBe("code-fixer");
   });
 
-  it("--from build-fixer → build-fixer", () => {
-    expect(resolveResumeStep("build-fixer", makeResumePoint("verification"))).toBe("build-fixer");
+  it("--from build-fixer → implementer (legacy alias)", () => {
+    expect(resolveResumeStep("build-fixer", makeResumePoint("verification"))).toBe("implementer");
   });
 
   it("--from implementer → implementer (resumePoint irrelevant)", () => {

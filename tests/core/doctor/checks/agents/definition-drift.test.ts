@@ -11,18 +11,17 @@ import { DesignStep } from "../../../../../src/core/step/design.js";
 import { SpecReviewStep } from "../../../../../src/core/step/spec-review.js";
 import { SpecFixerStep } from "../../../../../src/core/step/spec-fixer.js";
 import { ImplementerStep } from "../../../../../src/core/step/implementer.js";
-import { BuildFixerStep } from "../../../../../src/core/step/build-fixer.js";
 import { CodeReviewStep } from "../../../../../src/core/step/code-review.js";
 import { CodeFixerStep } from "../../../../../src/core/step/code-fixer.js";
 
 // Get current hashes via AgentRegistry (same function reused in definition-drift check)
 const registry = AgentRegistry.fromSteps([
   DesignStep, SpecReviewStep, SpecFixerStep,
-  ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep,
+  ImplementerStep, CodeReviewStep, CodeFixerStep,
 ]);
 
 function currentHashes() {
-  const roles = ["design", "spec-review", "spec-fixer", "implementer", "build-fixer", "code-review", "code-fixer"] as const;
+  const roles = ["design", "spec-review", "spec-fixer", "implementer", "code-review", "code-fixer"] as const;
   const agents: Record<string, unknown> = {};
   for (const role of roles) {
     agents[role] = { agentId: `agent_${role}`, definitionHash: registry.hashOf(role) };

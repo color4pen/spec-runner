@@ -84,7 +84,6 @@ function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig
       "spec-review": { agentId: "agent_spec_review", definitionHash: "sha256:def", lastSyncedAt: "2026-01-01" },
       "spec-fixer": { agentId: "agent_spec_fixer", definitionHash: "sha256:xyz", lastSyncedAt: "2026-01-01" },
       "implementer": { agentId: "agent_implementer", definitionHash: "sha256:imh", lastSyncedAt: "2026-01-01" },
-      "build-fixer": { agentId: "agent_build_fixer", definitionHash: "sha256:bfh", lastSyncedAt: "2026-01-01" },
       "code-review": { agentId: "agent_code_review", definitionHash: "sha256:crh", lastSyncedAt: "2026-01-01" },
       "code-fixer": { agentId: "agent_code_fixer", definitionHash: "sha256:cfh", lastSyncedAt: "2026-01-01" },
     },

@@ -19,7 +19,6 @@ import { TestCaseGenStep } from "../../../../src/core/step/test-case-gen.js";
 import { TestMaterializeStep } from "../../../../src/core/step/test-materialize.js";
 import { ImplementerStep } from "../../../../src/core/step/implementer.js";
 import { VerificationStep } from "../../../../src/core/step/verification.js";
-import { BuildFixerStep } from "../../../../src/core/step/build-fixer.js";
 import { CodeReviewStep } from "../../../../src/core/step/code-review.js";
 import { CodeFixerStep } from "../../../../src/core/step/code-fixer.js";
 import { AdrGenStep } from "../../../../src/core/step/adr-gen.js";
@@ -39,7 +38,6 @@ const ALL_STEPS = [
   TestMaterializeStep,
   ImplementerStep,
   VerificationStep,
-  BuildFixerStep,
   CodeReviewStep,
   CodeFixerStep,
   AdrGenStep,

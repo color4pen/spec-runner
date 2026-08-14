@@ -27,10 +27,9 @@ import {
 
 describe("TC-008: stagingModeFor — guarded step classification", () => {
   it("stagingModeFor returns 'guarded' for every step in GUARDED_WRITE_STEPS", () => {
-    // GUARDED_WRITE_STEPS = { implementer, build-fixer, code-fixer, test-materialize, adr-gen }
+    // GUARDED_WRITE_STEPS = { implementer, code-fixer, test-materialize, adr-gen }
     const expectedGuardedSteps = [
       "implementer",
-      "build-fixer",
       "code-fixer",
       "test-materialize",
       "adr-gen",
@@ -44,10 +43,9 @@ describe("TC-008: stagingModeFor — guarded step classification", () => {
     }
   });
 
-  it("GUARDED_WRITE_STEPS contains exactly the five broad-write steps", () => {
+  it("GUARDED_WRITE_STEPS contains exactly the four broad-write steps", () => {
     const guardedArray = [...GUARDED_WRITE_STEPS];
     expect(guardedArray).toContain("implementer");
-    expect(guardedArray).toContain("build-fixer");
     expect(guardedArray).toContain("code-fixer");
     expect(guardedArray).toContain("test-materialize");
     expect(guardedArray).toContain("adr-gen");

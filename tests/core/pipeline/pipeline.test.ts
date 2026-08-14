@@ -624,10 +624,10 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     // verification passed has two rows: conditional (conformanceApproved → adr-gen) + fallback (→ code-review)
     expect(findWithTo("verification", "passed", "code-review")).toBeDefined(); // fallback (initial path)
     expect(findWithTo("verification", "passed", "adr-gen")).toBeDefined(); // conditional (re-verification path)
-    expect(find("verification", "failed")).toMatchObject({ to: "build-fixer" });
+    expect(find("verification", "failed")).toMatchObject({ to: "implementer" }); // build-fixer abolished
     expect(find("verification", "escalation")).toMatchObject({ to: "escalate" });
-    expect(find("build-fixer",  "success")).toMatchObject({ to: "verification" });
-    expect(find("build-fixer",  "error")).toMatchObject({ to: "escalate" });
+    // implementer has a second success row: when verificationFailedLast → recovery verification
+    expect(findWithTo("implementer", "success", "verification")).toBeDefined();
     // code-review loop rows: first approved row is conditional (fixCount > 0 → code-fixer), second is fallback → conformance
     expect(find("code-review",  "approved")).toMatchObject({ to: "code-fixer" }); // conditional (when: fixCount > 0)
     expect(findWithTo("code-review", "approved", "conformance")).toBeDefined(); // fallback (no-fixable → conformance)

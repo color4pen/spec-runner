@@ -9,18 +9,17 @@ import { DesignStep } from "../../../step/design.js";
 import { SpecReviewStep } from "../../../step/spec-review.js";
 import { SpecFixerStep } from "../../../step/spec-fixer.js";
 import { ImplementerStep } from "../../../step/implementer.js";
-import { BuildFixerStep } from "../../../step/build-fixer.js";
 import { CodeReviewStep } from "../../../step/code-review.js";
 import { CodeFixerStep } from "../../../step/code-fixer.js";
 import { STEP_NAMES } from "../../../step/step-names.js";
 
+// build-fixer は廃止済みのため登録から除去。
 function buildRegistry(): AgentRegistry {
   return AgentRegistry.fromSteps([
     DesignStep,
     SpecReviewStep,
     SpecFixerStep,
     ImplementerStep,
-    BuildFixerStep,
     CodeReviewStep,
     CodeFixerStep,
   ]);
@@ -31,7 +30,6 @@ const AGENT_ROLES = [
   STEP_NAMES.SPEC_REVIEW,
   STEP_NAMES.SPEC_FIXER,
   STEP_NAMES.IMPLEMENTER,
-  STEP_NAMES.BUILD_FIXER,
   STEP_NAMES.CODE_REVIEW,
   STEP_NAMES.CODE_FIXER,
 ] as const;

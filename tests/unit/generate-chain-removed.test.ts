@@ -215,17 +215,18 @@ describe("TC-013: drift-guard が request-generate エントリ除去後に coun
     },
   );
 
-  it("TC-013: drift-guard TC-028 の count assertion が 14（15 から更新済み）", () => {
+  it("TC-013: drift-guard TC-028 の count assertion が 13（request-generate + build-fixer 両廃止後）", () => {
     const source = readFileSync(DRIFT_GUARD_PATH, "utf-8");
-    // The count must be updated from 15 to 14
-    // Check that toBe(14) is present (for the ALL_*_AGENT_PROMPTS length assertion)
-    expect(source).toContain("toBe(14)");
+    // After request-generate AND build-fixer removal, count is 13
+    expect(source).toContain("toBe(13)");
   });
 
-  it("TC-013: drift-guard に toBe(15) の count assertion が残っていない", () => {
+  it("TC-013: drift-guard の ALL_AGENT_PROMPTS count assertion が旧値 (14 or 15) を使用していない", () => {
     const source = readFileSync(DRIFT_GUARD_PATH, "utf-8");
-    // toBe(15) must be replaced with toBe(14)
-    expect(source).not.toContain("toBe(15)");
+    // The ALL_14_AGENT_PROMPTS array length must be 13, not 14 or 15
+    // Note: toBe(15) may appear in PIPELINE_MAP rows assertion (separate concern)
+    expect(source).not.toContain("ALL_14_AGENT_PROMPTS.length).toBe(14)");
+    expect(source).not.toContain("ALL_14_AGENT_PROMPTS.length).toBe(15)");
   });
 });
 

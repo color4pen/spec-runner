@@ -98,11 +98,11 @@ function makeMinimalDeps(): PipelineDeps {
 // ---------------------------------------------------------------------------
 
 describe("TC-001: STANDARD_DESCRIPTOR.roles matches design.md D1 table", () => {
-  it("has roles for all 14 steps", () => {
+  it("has roles for all 13 steps", () => {
     const steps = [
       "request-review",
       "design", "spec-review", "spec-fixer", "test-case-gen", "test-materialize",
-      "implementer", "verification", "build-fixer", "code-review",
+      "implementer", "verification", "code-review",
       "code-fixer", "conformance", "adr-gen", "pr-create",
     ];
     for (const step of steps) {
@@ -120,7 +120,6 @@ describe("TC-001: STANDARD_DESCRIPTOR.roles matches design.md D1 table", () => {
       "test-materialize": { role: "gate",     phase: "impl" },
       "implementer":      { role: "creator",  phase: "impl" },
       "verification":     { role: "gate",     phase: "impl" },
-      "build-fixer":      { role: "fixer",    phase: "impl" },
       "code-review":      { role: "reviewer", phase: "impl" },
       "code-fixer":       { role: "fixer",    phase: "impl" },
       "conformance":      { role: "gate",     phase: "impl" },

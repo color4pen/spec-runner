@@ -153,7 +153,7 @@ describe("TC-009: resolveResumeStep — build-fixer は implementer へ写され
     const allowed = buildAllowedSet();
     const result = resolveResumeStep(
       undefined,           // from
-      { step: "build-fixer", iterationsExhausted: 2 },  // resumePoint
+      { step: "build-fixer", iterationsExhausted: 2, reason: "exhaustion" },  // resumePoint
       undefined,           // stateStep
       allowed,             // allowedSteps
       undefined,           // reviewers

@@ -10,11 +10,13 @@ import type { TestPlacement } from "../../config/schema.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../../prompts/implementer-system.js";
 import { renderTestPlacementInstruction } from "../../prompts/test-placement.js";
 import { branchNotSetError } from "../../errors.js";
-import { changeFolderPath, conformanceResultPath } from "../../util/paths.js";
+import { changeFolderPath, conformanceResultPath, verificationResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { getConformanceFixContext, buildFindingsBlock } from "./fixer-helpers.js";
 import { latestIteration } from "./io-iteration.js";
+import { verificationFailedLast } from "../pipeline/reverification.js";
+import { extractVerificationFailures } from "../verification/parse-result.js";
 
 const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-5";
 
@@ -127,6 +129,87 @@ ${requestContent}
 }
 
 /**
+ * Build the recovery user message for implementer re-entry after verification failure.
+ *
+ * Instructs the implementer to fix the verification failure with its normal authority.
+ * No mechanical-fix-only / no-design-decision constraints are imposed — the implementer
+ * acts with its full responsibility (canon alignment, implementation + test fixes).
+ *
+ * When verificationContent is available (pre-read by enrichContext), the failure details
+ * are inlined so the agent can start fixing immediately without an extra file read turn.
+ * When it is absent (file not found, best-effort fallback), the message asks the agent
+ * to read the verification result file directly.
+ *
+ * Design D3 (absorb-build-fixer): 制約撤去 — re-entry message は失敗解消の指示のみ。
+ */
+function buildImplementerRecoveryMessage(opts: {
+  slug: string;
+  branch: string;
+  verificationContent: string | null | undefined;
+  testsMaterialized?: boolean;
+  requestContent: string;
+  dynamicContext?: DynamicContext;
+}): string {
+  const { slug, branch, verificationContent, requestContent, dynamicContext } = opts;
+  const findingsPath = verificationResultPath(slug);
+
+  const contextLines: string[] = [];
+  if (dynamicContext?.gitLog) {
+    contextLines.push(`## Branch Context\n\n### Recent commits (main..HEAD)\n\n\`\`\`\n${dynamicContext.gitLog}\n\`\`\``);
+  }
+  if (dynamicContext?.diffStat) {
+    contextLines.push(`### Diff stat (main..HEAD)\n\n\`\`\`\n${dynamicContext.diffStat}\n\`\`\``);
+  }
+  const contextSection = contextLines.length > 0
+    ? `\n\n${contextLines.join("\n\n")}`
+    : "";
+
+  const failureSection = buildFailureSection(verificationContent);
+
+  return `<user-request>
+verification(build / typecheck / lint / test)が失敗しました。canon(test-cases.md / spec)と整合するよう実装・テストを直して失敗を解消してください。
+
+Change folder: ${changeFolderPath(slug)}
+Branch: ${branch}
+Verification result: ${findingsPath}
+${failureSection}
+Please:
+1. 失敗した verification の出力を確認して原因を特定する（${findingsPath} を参照）
+2. canon(test-cases.md / spec.md)と整合するよう実装・テストを修正して失敗を解消する
+3. tasks.md のチェックボックスを更新する
+4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+
+Original request:
+${requestContent}
+</user-request>${contextSection}`;
+}
+
+/**
+ * Build the "## Verification Failures" section for the recovery message.
+ *
+ * Ported from build-fixer.ts buildFailureSection — same logic, same best-effort semantics.
+ * Returns empty string when fileContent is null/undefined or contains no failures.
+ */
+function buildFailureSection(fileContent: string | null | undefined): string {
+  if (!fileContent) return "";
+  const failures = extractVerificationFailures(fileContent);
+  if (failures.length === 0) return "";
+
+  const lines: string[] = ["", "## Verification Failures", ""];
+  for (const failure of failures) {
+    lines.push(`- **Failed phase**: ${failure.phase}`);
+    lines.push(`- **Exit code**: ${failure.exitCode}`);
+    lines.push("");
+    lines.push("### Error output");
+    lines.push("```");
+    lines.push(failure.output);
+    lines.push("```");
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
+/**
  * ImplementerStep: implements the implementer pipeline step.
  *
  * Has its own dedicated AgentDefinition (role: "implementer").
@@ -149,6 +232,28 @@ export const ImplementerStep: AgentStep = {
   // maxTurns: implementer handles complex multi-file tasks; 60 is the upper bound.
   // Design D3 (propose-openspec-cli-and-step-model-config).
   maxTurns: 60,
+
+  /**
+   * enrichContext: pre-read verification-result.md (best-effort) for recovery re-entry.
+   *
+   * When verification failed (verificationFailedLast=true), the implementer re-enters
+   * as the paired fixer. This hook pre-reads the result file so buildMessage can inline
+   * the failure content without an extra agent read turn.
+   *
+   * Ported from build-fixer.enrichContext — same best-effort pattern (try/catch, never throws).
+   * On file-not-found (initial run, conformance re-entry), returns dynamicContext unchanged.
+   */
+  async enrichContext(dynamicContext: DynamicContext, cwd: string, slug: string): Promise<DynamicContext> {
+    const findingsPath = verificationResultPath(slug);
+    try {
+      const { readFile } = await import("node:fs/promises");
+      const { resolve } = await import("node:path");
+      const content = await readFile(resolve(cwd, findingsPath), "utf-8");
+      return { ...dynamicContext, verificationContent: content };
+    } catch {
+      return dynamicContext;
+    }
+  },
 
   reads(state: JobState, deps: StepDeps): IoRef[] {
     const folder = changeFolderPath(deps.slug);
@@ -197,6 +302,19 @@ export const ImplementerStep: AgentStep = {
     // When true: standard pipeline — tests already materialized; implement-only mode.
     // When false: fast pipeline or conformance re-entry without prior test-materialize.
     const testsMaterialized = Boolean(state.steps?.[STEP_NAMES.TEST_MATERIALIZE]?.length);
+
+    // Recovery re-entry: verification failed → implementer fixes (no mechanical-fix constraint).
+    // build-fixer 廃止後、verification 失敗は implementer 自身が paired fixer として直す。
+    if (verificationFailedLast(state)) {
+      return buildImplementerRecoveryMessage({
+        slug: deps.slug,
+        branch: state.branch,
+        verificationContent: deps.dynamicContext?.verificationContent,
+        testsMaterialized,
+        requestContent: deps.request.content,
+        dynamicContext: deps.dynamicContext,
+      });
+    }
 
     // Conformance-triggered entry: append conformance non-conformities section
     const conformanceFindings = getConformanceFixContext(state, STEP_NAMES.IMPLEMENTER);

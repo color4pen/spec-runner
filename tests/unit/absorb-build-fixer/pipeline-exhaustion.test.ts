@@ -133,7 +133,7 @@ function makeCliStep(name: string, verdict: string): Step {
     kind: "cli",
     name,
     run: async () => {},
-    resultFilePath: () => null,
+    resultFilePath: () => `/tmp/${name}-result.md`,
     parseResult: () => ({ verdict: verdict as import("../../../src/state/schema.js").Verdict, findingsPath: null }),
   };
 }

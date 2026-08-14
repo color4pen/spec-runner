@@ -1,6 +1,7 @@
 /**
  * TC-033, TC-034
- * Check that all 7 required agents are registered in config.
+ * Check that all 6 required agents are registered in config.
+ * build-fixer は廃止済みのため必須 agent から除去。
  */
 import type { DoctorCheck, DoctorContext } from "../../types.js";
 import { STEP_NAMES } from "../../../step/step-names.js";
@@ -10,7 +11,6 @@ export const REQUIRED_AGENTS = [
   STEP_NAMES.SPEC_REVIEW,
   STEP_NAMES.SPEC_FIXER,
   STEP_NAMES.IMPLEMENTER,
-  STEP_NAMES.BUILD_FIXER,
   STEP_NAMES.CODE_REVIEW,
   STEP_NAMES.CODE_FIXER,
 ] as const;

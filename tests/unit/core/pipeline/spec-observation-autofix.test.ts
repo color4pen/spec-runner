@@ -1465,13 +1465,15 @@ describe("TC-028: request.md spec-review fixable finding is excluded from ledger
 // GREEN: 49 + 3 new guarded rows from test-case-gen design-phase change
 // ---------------------------------------------------------------------------
 
-describe("TC-029: STANDARD_TRANSITIONS length is 52 after adding guarded rows", () => {
-  it("TC-029: STANDARD_TRANSITIONS.length === 52 (+3 test-case-gen design-phase rows)", () => {
-    // Previously 49 rows + 3 test-case-gen design-phase guarded rows:
+describe("TC-029: STANDARD_TRANSITIONS length is 51 after adding guarded rows (build-fixer abolished)", () => {
+  it("TC-029: STANDARD_TRANSITIONS.length === 51 (+3 test-case-gen design-phase rows, -2 build-fixer rows)", () => {
+    // Previously 48 rows + 3 test-case-gen design-phase guarded rows:
     // 1. design success → spec-review when isTestGenExempt (exempt bypass test-case-gen)
     // 2. spec-review needs-fix → test-case-gen when specReviewNeedsFixIsTcOnly (TC-only routing)
     // 3. spec-fixer approved → test-case-gen when specFixerNeedsFixForward (needs-fix TC regeneration)
-    expect(STANDARD_TRANSITIONS.length).toBe(52);
+    // build-fixer abolished: verification-failed→implementer (replaced), implementer→verification added,
+    //   build-fixer success→verification and build-fixer error→escalate removed → net -1 row
+    expect(STANDARD_TRANSITIONS.length).toBe(51);
   });
 
   it("TC-029: the guarded rows are distinct from the existing unconditional rows", () => {

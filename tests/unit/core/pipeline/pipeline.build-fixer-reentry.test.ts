@@ -205,7 +205,6 @@ function makeStandardSteps(): Map<string, Step> {
         parseResult: () => ({ verdict: "passed" as const, findingsPath: null }),
       },
     ],
-    ["build-fixer", makeAgentStep("build-fixer", "success")],
     ["code-review", makeAgentStep("code-review")],
     ["code-fixer", makeAgentStep("code-fixer", "approved")],
     ["conformance", makeAgentStep("conformance")],
@@ -457,7 +456,7 @@ describe("TC-017: build-fixer re-entry converges to awaiting-archive without esc
             endedAt: "2026-01-01T01:02:00.000Z",
           },
         ],
-        [STEP_NAMES.BUILD_FIXER]: [
+        ["build-fixer"]: [
           {
             attempt: 1,
             sessionId: null,
@@ -558,7 +557,7 @@ describe("TC-017: build-fixer re-entry converges to awaiting-archive without esc
             endedAt: "2026-01-01T01:02:00.000Z",
           },
         ],
-        [STEP_NAMES.BUILD_FIXER]: [
+        ["build-fixer"]: [
           {
             attempt: 1,
             sessionId: null,

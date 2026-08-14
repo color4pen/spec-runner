@@ -3,7 +3,7 @@ import { STEP_NAMES } from "../step/step-names.js";
 import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import type { Step } from "../step/types.js";
 import { buildReviewerChainTransitions } from "./reviewer-chain.js";
-import { reverificationNeeded, conformanceApprovedForVerifiedRevision } from "./reverification.js";
+import { reverificationNeeded, conformanceApprovedForVerifiedRevision, verificationFailedLast } from "./reverification.js";
 import {
   specReviewHasRoutableFixables,
   specFixerObservationForward,
@@ -236,7 +236,7 @@ export const CUSTOM_REVIEWERS_STEP_NAME = "custom-reviewers" as const;
  *
  * design uses "success" / "error" rather than Verdict because it has no file-based verdict.
  * spec-review and spec-fixer use standard Verdict values.
- * implementer / build-fixer use "success" / "error" (no result file).
+ * implementer uses "success" / "error" (no result file).
  * verification uses "passed" / "failed" / "escalation".
  *
  * Drives Pipeline.runInternal: after each step completes, the table is consulted to
@@ -278,6 +278,9 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.SPEC_FIXER,  on: "error",     to: "escalate" },
   // Test-gen bypass: exempt type skips bite-evidence and routes directly to verification (must precede unconditional BITE_EVIDENCE row)
   { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.VERIFICATION,    when: isTestGenExempt },
+  // Recovery re-entry: verification failed → implementer fixed → skip bite-evidence and go back to verification
+  // (first-match-wins: must precede unconditional BITE_EVIDENCE row and isTestGenExempt row above)
+  { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.VERIFICATION,    when: verificationFailedLast },
   { step: STEP_NAMES.IMPLEMENTER, on: "success",   to: STEP_NAMES.BITE_EVIDENCE },
   { step: STEP_NAMES.IMPLEMENTER, on: "error",     to: "escalate" },
   // --- bite-evidence gate (R4, forward strategy) ---
@@ -287,10 +290,9 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.BITE_EVIDENCE, on: "error",             to: "escalate" },
   { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.ADR_GEN,    when: conformanceApprovedForVerifiedRevision },
   { step: STEP_NAMES.VERIFICATION, on: "passed",   to: STEP_NAMES.CODE_REVIEW },
-  { step: STEP_NAMES.VERIFICATION, on: "failed",   to: STEP_NAMES.BUILD_FIXER },
+  // verification 失敗は implementer への再入（build-fixer を廃止し implementer が paired fixer として代替）
+  { step: STEP_NAMES.VERIFICATION, on: "failed",   to: STEP_NAMES.IMPLEMENTER },
   { step: STEP_NAMES.VERIFICATION, on: "escalation", to: "escalate" },
-  { step: STEP_NAMES.BUILD_FIXER, on: "success",   to: STEP_NAMES.VERIFICATION },
-  { step: STEP_NAMES.BUILD_FIXER, on: "error",     to: "escalate" },
   // --- code review loop (generalized via buildReviewerChainTransitions) ---
   // For the standard pipeline (no custom reviewers), chain = ["code-review"].
   // The generated transitions are functionally identical to the previous hardcoded rows.
@@ -338,16 +340,15 @@ export const FAST_TRANSITIONS: Transition[] = [
   // --- design → implementer (spec-review / test-case-gen bypassed) ---
   { step: STEP_NAMES.DESIGN,       on: "success", to: STEP_NAMES.IMPLEMENTER },
   { step: STEP_NAMES.DESIGN,       on: "error",   to: "escalate" },
-  // --- implementer → verification ---
+  // --- implementer → verification (always goes to verification; no bite-evidence in fast pipeline)
   { step: STEP_NAMES.IMPLEMENTER,  on: "success", to: STEP_NAMES.VERIFICATION },
   { step: STEP_NAMES.IMPLEMENTER,  on: "error",   to: "escalate" },
   // --- verification loop (reverification chokepoint: when-guarded rows first) ---
   { step: STEP_NAMES.VERIFICATION, on: "passed",    to: STEP_NAMES.PR_CREATE,    when: conformanceApprovedForVerifiedRevision },
   { step: STEP_NAMES.VERIFICATION, on: "passed",    to: STEP_NAMES.CODE_REVIEW },
-  { step: STEP_NAMES.VERIFICATION, on: "failed",    to: STEP_NAMES.BUILD_FIXER },
+  // verification 失敗は implementer への再入（build-fixer を廃止し implementer が paired fixer として代替）
+  { step: STEP_NAMES.VERIFICATION, on: "failed",    to: STEP_NAMES.IMPLEMENTER },
   { step: STEP_NAMES.VERIFICATION, on: "escalation", to: "escalate" },
-  { step: STEP_NAMES.BUILD_FIXER,  on: "success",   to: STEP_NAMES.VERIFICATION },
-  { step: STEP_NAMES.BUILD_FIXER,  on: "error",     to: "escalate" },
   // --- code-review loop (same generator as standard, chain=["code-review"]) ---
   ...buildReviewerChainTransitions([STEP_NAMES.CODE_REVIEW]),
   // --- conformance (acceptance gate + scope checkpoint; adr-gen absent) ---

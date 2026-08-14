@@ -49,7 +49,6 @@ ${PIPELINE_MAP}
 | test-materialize | test code files のみ | production code, test-cases.md, tasks.md |
 | implementer | source code, tests, tasks.md (checkbox 更新) | specs (read-only), design.md |
 | verification | (CLI step — agent なし) | — |
-| build-fixer | source code (機械的修正), test 追加 | specs, design, tasks |
 | code-review | review-feedback file のみ | source code (read-only review) |
 | code-fixer | source code (最小限修正) | specs, design, tasks |
 | custom-reviewer | custom-reviewer-result file のみ | source code, spec, design, tasks (read-only review) |

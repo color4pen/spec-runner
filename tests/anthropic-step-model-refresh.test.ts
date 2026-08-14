@@ -30,7 +30,6 @@ import type { SpecRunnerConfig } from "../src/config/schema.js";
 
 // Step imports
 import { TestCaseGenStep } from "../src/core/step/test-case-gen.js";
-import { BuildFixerStep } from "../src/core/step/build-fixer.js";
 import { CodeFixerStep } from "../src/core/step/code-fixer.js";
 import { AdrGenStep } from "../src/core/step/adr-gen.js";
 import { SpecFixerStep } from "../src/core/step/spec-fixer.js";
@@ -86,13 +85,9 @@ describe("TC-001: TestCaseGenStep の built-in 既定モデルは claude-sonnet-
 // TC-002: 全 13 step の built-in 既定が同一世代である
 // ---------------------------------------------------------------------------
 
-describe("TC-002: 全 13 非 design step の built-in 既定モデルはすべて claude-sonnet-5 である", () => {
+describe("TC-002: 全 12 非 design step の built-in 既定モデルはすべて claude-sonnet-5 である", () => {
   it("TC-002: TestCaseGenStep.agent.model === 'claude-sonnet-5'", () => {
     expect(TestCaseGenStep.agent.model).toBe(SONNET_5);
-  });
-
-  it("TC-002: BuildFixerStep.agent.model === 'claude-sonnet-5'", () => {
-    expect(BuildFixerStep.agent.model).toBe(SONNET_5);
   });
 
   it("TC-002: CodeFixerStep.agent.model === 'claude-sonnet-5'", () => {
@@ -144,7 +139,6 @@ describe("TC-002: 全 13 非 design step の built-in 既定モデルはすべ�
   it("TC-002: 旧世代 'claude-sonnet-4-6' を持つ step は存在しない", () => {
     const allModels = [
       TestCaseGenStep.agent.model,
-      BuildFixerStep.agent.model,
       CodeFixerStep.agent.model,
       AdrGenStep.agent.model,
       SpecFixerStep.agent.model,

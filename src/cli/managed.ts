@@ -12,7 +12,6 @@ import { DesignStep } from "../core/step/design.js";
 import { SpecReviewStep } from "../core/step/spec-review.js";
 import { SpecFixerStep } from "../core/step/spec-fixer.js";
 import { ImplementerStep } from "../core/step/implementer.js";
-import { BuildFixerStep } from "../core/step/build-fixer.js";
 import { CodeReviewStep } from "../core/step/code-review.js";
 import { CodeFixerStep } from "../core/step/code-fixer.js";
 import { logInfo, logStep, logSuccess, logError, stderrWrite, logResult } from "../logger/stdout.js";
@@ -56,7 +55,8 @@ export async function runManagedSetup(): Promise<number> {
 
   logInfo("specrunner managed setup");
 
-  const registry = AgentRegistry.fromSteps([RequestReviewStep, DesignStep, SpecReviewStep, SpecFixerStep, ImplementerStep, BuildFixerStep, CodeReviewStep, CodeFixerStep]);
+  // build-fixer は廃止済みのため除外。
+  const registry = AgentRegistry.fromSteps([RequestReviewStep, DesignStep, SpecReviewStep, SpecFixerStep, ImplementerStep, CodeReviewStep, CodeFixerStep]);
 
   const storedConfig: AgentSyncerConfig = {
     getStoredAgent(role: AgentStepName) {
