@@ -6,9 +6,9 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 0.4s | 0 |
-| 2 | typecheck | passed | 5.6s | 0 |
-| 3 | test | failed | 37.5s | 1 |
+| 1 | build | passed | 0.3s | 0 |
+| 2 | typecheck | passed | 5.4s | 0 |
+| 3 | test | failed | 37.7s | 1 |
 | 4 | lint | skipped | — | — |
 | 5 | changed-line-coverage | skipped | — | — |
 | 6 | lockfile-sync | skipped | — | — |
@@ -24,7 +24,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.45 MB
-ESM ⚡️ Build success in 74ms
+ESM ⚡️ Build success in 69ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -46,6 +46,8 @@ Step 'test' failed
 
  RUN  v4.1.5 .
 
+ ❯ src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts (18 tests | 1 failed) 24ms
+     × error.hint stays in-flight when the only completion is a replay 4ms
 No jobs found.
 [実行中]
 JOB_ID	SLUG	STEP	STATUS	NEXT	AGE
@@ -53,67 +55,6 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	225d
 {
   "categories": []
 }
-Usage for: metrics-show-test-slug
-────────────────────────────────────────────────────────────
-[2026-01-01T10:00:00.000Z] job / design
-  claude-opus-4-5: in=500 out=200 cacheRead=100 cacheCreate=50
-
-────────────────────────────────────────────────────────────
-Totals by model:
-  claude-opus-4-5: in=500 out=200 cacheRead=100 cacheCreate=50
- ❯ src/adapter/codex/__tests__/agent-runner-timeout-last-tool.test.ts (4 tests | 1 failed) 12ms
-     × error.hint contains completed marker, not in-flight 4ms
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: my-slug
-  Monitor: specrunner job wait my-slug
-  Details: specrunner job show my-slug
-Detached pipeline started for: my-slug
-  Monitor: specrunner job wait my-slug
-  Details: specrunner job show my-slug
-Detached pipeline started for: my-slug
-  Monitor: specrunner job wait my-slug
-  Details: specrunner job show my-slug
-Detached pipeline started for: my-slug
-  Monitor: specrunner job wait my-slug
-  Details: specrunner job show my-slug
-Detached pipeline started for: my-slug
-  Monitor: specrunner job wait my-slug
-  Details: specrunner job show my-slug
 Detached pipeline started for: integration-slug
   Monitor: specrunner job wait integration-slug
   Details: specrunner job show integration-slug
@@ -123,11 +64,62 @@ Detached pipeline started for: ordering-test-slug
 Detached pipeline started for: wait-compat-slug
   Monitor: specrunner job wait wait-compat-slug
   Details: specrunner job show wait-compat-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: my-slug
+  Monitor: specrunner job wait my-slug
+  Details: specrunner job show my-slug
+Detached pipeline started for: my-slug
+  Monitor: specrunner job wait my-slug
+  Details: specrunner job show my-slug
+Detached pipeline started for: my-slug
+  Monitor: specrunner job wait my-slug
+  Details: specrunner job show my-slug
+Detached pipeline started for: my-slug
+  Monitor: specrunner job wait my-slug
+  Details: specrunner job show my-slug
+Detached pipeline started for: my-slug
+  Monitor: specrunner job wait my-slug
+  Details: specrunner job show my-slug
 
  Test Files  1 failed | 767 passed (768)
       Tests  1 failed | 11472 passed | 1 skipped (11474)
-   Start at  02:34:14
-   Duration  37.17s (transform 6.62s, setup 4.01s, import 29.38s, tests 55.99s, environment 37ms)
+   Start at  02:45:19
+   Duration  37.36s (transform 6.68s, setup 4.01s, import 29.24s, tests 56.48s, environment 38ms)
 
 
 $ vitest run
@@ -140,34 +132,21 @@ Warning: pr-create: could not read events.jsonl for attestation, skipping commen
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-YiFkgR/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-PL8hbE/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-SuDJVm/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-hvaYcC/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 Warning: failed to push checkpoint commit for test-slug to origin/fix/test-branch-abc12345. Push manually to ensure state is on the branch.
 Warning: checkpoint persistBeforePush failed for test-slug: disk-full: cannot persist. Continuing with push.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
-Retrying worktree add: lock contention (attempt 1/3)
-Retrying worktree add: lock contention (attempt 2/3)
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
@@ -192,6 +171,19 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
+Retrying worktree add: lock contention (attempt 1/3)
+Retrying worktree add: lock contention (attempt 2/3)
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
@@ -216,6 +208,13 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
 [codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
+Error: No job found for slug: not-found-slug
+Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
+Error: No job found for slug: not-found-slug
+Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
+Error: No job found for slug: not-found-slug
+Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -236,18 +235,16 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
-Error: No job found for slug: not-found-slug
-Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
-Error: No job found for slug: not-found-slug
-Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
-Error: No job found for slug: not-found-slug
-Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
 Warning: issue-notifier: failed to write comment to issue #42: network error
+Error: Detached pipeline for 'failure-slug' failed to start.
+Detach log: /repo/.specrunner/logs/failure-slug.detach.log
+--- log tail ---
+Error: request.md preflight failed
+Error: Detached pipeline for 'failure-discoverability-slug' failed to start.
+Detach log: /repo/.specrunner/logs/failure-discoverability-slug.detach.log
+--- log tail ---
+preflight: provider not ready
 [inbox] skip: occupancy comment for priorJobId=abc-1234-5678-90ab-cdef already posted on issue#1
 Error: Detached pipeline for 'test-slug' failed to start.
 Detach log: /repo/.specrunner/logs/test-slug.detach.log
@@ -280,42 +277,37 @@ Detach log: /repo/.specrunner/logs/test-slug.detach.log
 log content
 ERROR: file not found
 spawn ENOENT
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
 Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
-Error: Detached pipeline for 'failure-slug' failed to start.
-Detach log: /repo/.specrunner/logs/failure-slug.detach.log
---- log tail ---
-Error: request.md preflight failed
-Error: Detached pipeline for 'failure-discoverability-slug' failed to start.
-Detach log: /repo/.specrunner/logs/failure-discoverability-slug.detach.log
---- log tail ---
-preflight: provider not ready
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [inbox] started job slug=fix-login-bug from issue#99
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 
 ⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
 
- FAIL  src/adapter/codex/__tests__/agent-runner-timeout-last-tool.test.ts > TC-009: item.completed observed before the silence — error.hint indicates completed > error.hint contains completed marker, not in-flight
-AssertionError: expected 'no tool observed before timeout (no t…' to contain 'Bash'
+ FAIL  src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts > TC-022: replayed tool_result (session resume) does not clear in-flight state > error.hint stays in-flight when the only completion is a replay
+AssertionError: expected 'no tool observed before timeout (no t…' to contain 'in-flight'
 
-Expected: "Bash"
+Expected: "in-flight"
 Received: "no tool observed before timeout (no tool activity in session)"
 
- ❯ src/adapter/codex/__tests__/agent-runner-timeout-last-tool.test.ts:213:24
-    211|     const error = result.error as Error & { code?: string; hint?: stri…
-    212|     expect(error.code).toBe("STEP_TIMEOUT");
-    213|     expect(error.hint).toContain("Bash");
+ ❯ src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts:234:24
+    232|     const error = result.error as Error & { code?: string; hint?: stri…
+    233|     expect(error.code).toBe("STEP_TIMEOUT");
+    234|     expect(error.hint).toContain("in-flight");
        |                        ^
-    214|     expect(error.hint).toContain("completed before timeout");
-    215|     expect(error.hint).not.toContain("in-flight");
+    235|     expect(error.hint).not.toContain("completed before timeout");
+    236|   });
 
 ⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
