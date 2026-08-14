@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T22:23:10.281Z",
+  "updatedAt": "2026-08-14T22:25:20.627Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "build-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
@@ -72,7 +72,9 @@
     "980d98103e5e8ec5cf66e233aa1acb5cd7a74ab0",
     "4af34ecbfe525263faec4508c6a4271487f1f428",
     "662fa556b303c71b107d6d2a7ba92800d58719f2",
-    "ba7d0ba27f0206c9cc39858ce00f2b1454a9e20b"
+    "ba7d0ba27f0206c9cc39858ce00f2b1454a9e20b",
+    "f87b8be1c6b3a4c8e9c3582593bdd388dd3d72a1",
+    "5013ffe0639881d809d49a5e801467e1bf3460ac"
   ],
   "touchedFiles": {
     "request-review": [
@@ -230,6 +232,9 @@
       "tests/unit/step/commit-and-push.test.ts",
       "src/core/port/step-types.ts",
       "src/core/step/commit-push.ts"
+    ],
+    "build-fixer": [
+      "tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts"
     ]
   },
   "resumePoint": null,
@@ -242,7 +247,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 36,
+    "historyCount": 45,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -251,7 +256,8 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2,
+      "build-fixer": 1
     }
   }
 }
