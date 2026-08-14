@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T18:02:44.979Z",
+  "updatedAt": "2026-08-14T18:04:49.049Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/test-case-gen-design-phase-96aef526",
-  "error": {
-    "code": "STEP_TIMEOUT",
-    "message": "Step 'code-review' inactivity timeout: no agent event for 899990ms",
-    "hint": ""
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -82,7 +78,8 @@
     "5bf830f3469c6f52dce3003c0dc145d13aff6469",
     "2672e8daf5db0b66e650454e0559015f18a38433",
     "1f06c31a58de75caedba5c64da84ecbad42cbd06",
-    "ef338f10fdad2475c61204f0aa4c7b7229750243"
+    "ef338f10fdad2475c61204f0aa4c7b7229750243",
+    "8c397378c2a7bdac92c3c54bc3441168f5b1f94e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -210,11 +207,7 @@
       "src/core/step/conformance.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "timeout",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -224,7 +217,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 61,
+    "historyCount": 64,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

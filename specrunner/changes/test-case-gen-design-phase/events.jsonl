@@ -91,3 +91,6 @@
 {"type":"transition","ts":"2026-08-14T18:02:44.978Z","step":"executor","status":"ok","message":"running → awaiting-resume: timeout"}
 {"type":"transition","ts":"2026-08-14T18:02:44.979Z","step":"code-review-timeout","status":"error","message":"code-review timed out: Step 'code-review' inactivity timeout: no agent event for 899990ms"}
 {"type":"step-attempt","step":"code-review","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"STEP_TIMEOUT","message":"Step 'code-review' inactivity timeout: no agent event for 899990ms","hint":""},"transientRetryAttempts":0},"startedAt":"2026-08-14T17:11:23.438Z","endedAt":"2026-08-14T18:02:44.977Z"}
+{"type":"transition","ts":"2026-08-14T18:04:48.805Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-review'"}
+{"type":"transition","ts":"2026-08-14T18:04:49.047Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-08-14T18:04:49.048Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
