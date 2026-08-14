@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a8e7912e-b717-4b28-ae2b-71096da1241f",
   "createdAt": "2026-08-14T09:30:51.726Z",
-  "updatedAt": "2026-08-14T10:54:29.191Z",
+  "updatedAt": "2026-08-14T11:09:49.014Z",
   "request": {
     "title": "テスト証拠と工程順序の分離(第1弾): red 強制・テスト変更禁止・偽 baseline 判定の撤回",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/strip-test-authority-a8e7912e",
   "error": null,
@@ -75,7 +75,9 @@
     "b1c08c227af712a409a0dcf601ba8eaae1c6a347",
     "0358d1cd5d6b1d69894dc0b0bf91575edec76ae6",
     "d6488104cb634e5a5c5325f92890fb99c68e31c2",
-    "a7697f60d2eeb2dad928097f20152a78809f84f8"
+    "a7697f60d2eeb2dad928097f20152a78809f84f8",
+    "73d47788ee55f0fb8071e35a445b53285b65b3bc",
+    "54f5d348081d112a72856124cbf8f10914ddcadb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -158,12 +160,13 @@
       "src/core/step/implementer.ts",
       "src/core/step/bite-evidence/oids.ts",
       "src/core/step/bite-evidence/gate.ts",
-      "tests/unit/prompts/test-materialize-red-check-contract.test.ts",
-      "src/core/step/bite-evidence/__tests__/gate.test.ts",
-      "tests/unit/step/test-materialize-boundary.test.ts",
+      "src/core/archive/achieved-assurance.ts",
       "tests/unit/prompts/strip-test-authority-contract.test.ts",
-      "tests/unit/step/implementer-lockfile.test.ts",
-      "src/state/schema/types.ts"
+      "tests/unit/prompts/test-materialize-red-check-contract.test.ts",
+      "tests/unit/step/test-materialize-boundary.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/archive/__tests__/achieved-assurance.test.ts",
+      "tests/unit/step/implementer-lockfile.test.ts"
     ],
     "code-fixer": [
       "src/prompts/test-materialize-system.ts"
@@ -172,8 +175,8 @@
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "73d47788ee55f0fb8071e35a445b53285b65b3bc",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -183,7 +186,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/strip-test-authority/design.md:sha256:4a1b3c7d229a607194e3ee6c119c24a780435b60b1dd64d299d728458dfe9e1d|specrunner/changes/strip-test-authority/request.md:sha256:57e36865d6510989dc8781ae4c620ac19a482904414a79479b825e147425de52|specrunner/changes/strip-test-authority/spec.md:sha256:6e825513354ab3b820d326b3c87db81f382960e9ef40ed05bb6768bf19b903f1|specrunner/changes/strip-test-authority/tasks.md:sha256:0f91237361f6090d2f418a12523c9cc6de063d48602eb1d4500e7865dda89881|specrunner/changes/strip-test-authority/test-cases.md:sha256:f8149b9d84546853104c6cea1db262edfdcd513d3c0d58c46b30c6842ff03658"
     },
     {
       "name": "scale-tolerance",
@@ -201,7 +205,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -212,11 +216,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1,
+      "code-review": 2,
       "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
