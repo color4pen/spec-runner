@@ -1,0 +1,11 @@
+{
+  "requestHash": "sha256:e74717da289ddfbd61f492f77f87a4d233c06c6ed7ea7b6c54def6c03c8faad0",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/archive/orchestrator.ts:260-265 — fs.rm(recordDir/drafts/<slug>, {recursive,force}) directory-only, worktree-based",
+    "src/core/request/store.ts:13-55 — resolveWithFallback handles both drafts/<slug>/request.md and drafts/<slug>.md",
+    "src/core/cancel/runner.ts:154 — const destPath = path.join(deps.repoRoot, draftPath(slug))",
+    "src/core/archive/orchestrator.ts:272-280 — git add specrunner/drafts/ in worktree (recordDir) context"
+  ],
+  "sourceRevision": "34ec9896427d9a0f4fb3457511227c7ca0adeb9f"
+}
