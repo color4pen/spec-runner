@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:a097fb90f6fa4a1ee821fba0f0e0861656fb3a538f7c8481d9c3096dbc1b73d7",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/bite-evidence/oids.ts:resolveBaseCandidateOids — base=latest test-materialize commitOid, candidate=latest implementer commitOid",
+    "src/core/step/bite-evidence/oids.ts:55 — detectBaseImplementationContamination ponytail marker",
+    "src/core/step/bite-evidence/gate.ts:119-129 — step 3.5 contamination check returns strategy-deferred",
+    "src/core/step/bite-evidence/gate.ts:36 — FORWARD_TYPES = {bug-fix, new-feature}",
+    "src/core/archive/achieved-assurance.ts:236-246 — P2.5 baseline unbuildable fail-closed",
+    "src/core/port/runtime-strategy.ts:700-705 — runTestsAtCommit(oid, testFiles, cwd, config)",
+    "src/config/schema/types.ts:162 — scopedTestCommand?: string",
+    "src/state/schema/types.ts — no jobBaseOid or baseBranchOid field in job state",
+    "src/core/command/resume.ts:460-464 — --adopt-commits appends to synthesizedCommits ledger only, implementer commitOid unchanged"
+  ],
+  "sourceRevision": "5cd7183aade76a619dfdb3b158921f1452e1ae39"
+}
