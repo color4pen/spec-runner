@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T11:26:59.567Z",
+  "updatedAt": "2026-08-14T11:33:05.084Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/test-case-gen-design-phase-96aef526",
   "error": null,
@@ -62,10 +62,34 @@
     }
   ],
   "synthesizedCommits": [
-    "4fb4febf010e8397361ab4f7dc881d576f467545"
+    "4fb4febf010e8397361ab4f7dc881d576f467545",
+    "f52b629af55cb09babcc52527543936fe41246fe"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/prompts/spec-review-system.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "tests/pipeline.test.ts",
+      "tests/pipeline-integration.test.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "tests/unit/pipeline/transition-when.test.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/write-scope.ts",
+      "tests/spec-review-step.test.ts",
+      "tests/test-case-gen-step.test.ts",
+      "tests/unit/step/spec-review-reads.test.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
