@@ -192,25 +192,23 @@ export function collectFixableFindings(findings: Finding[]): Finding[] {
 /**
  * Select findings that are valid targets for the code-fixer in the standard reviewer path.
  *
- * Policy: fixable findings with severity != "low".
- * LOW severity findings are excluded at the routing layer (here) — this is the single
- * authoritative place for the LOW exclusion. code-fixer prompts must NOT re-filter by severity.
+ * Policy: all fixable findings regardless of severity.
+ * The routing layer (this function) is the single authoritative point where fixer targets
+ * are selected. code-fixer prompts must NOT re-filter by severity.
  *
  * Pure function — no side effects, no I/O.
  */
 export function selectFixerTargetFindings(findings: Finding[]): Finding[] {
-  return collectFixableFindings(findings).filter((f) => f.severity !== "low");
+  return collectFixableFindings(findings);
 }
 
 /**
  * Derive the verdict for regression-gate steps.
  *
  * Unlike deriveJudgeVerdict, ANY fixable finding (regardless of severity) triggers needs-fix.
- * Rationale: the caller (step-completion.ts) applies excludeKnownUnfixedRegressions before
- * invoking this function, so the findings received here have already had known-unfixed entries
- * (low-severity ledger items that were never routed to code-fixer) removed. Any remaining
- * fixable finding therefore represents a genuinely new regression or a regression of a
- * previously-fixed finding — both warrant needs-fix.
+ * Rationale: the caller passes the ledger findings without severity-based exclusion. Any
+ * remaining fixable finding represents a genuinely new regression or a regression of a
+ * previously-fixed finding — both warrant needs-fix. No severity exclusion is applied.
  *
  * The vacuous check applies here as in deriveJudgeVerdict: the gate only runs when the
  * findings ledger is non-empty, so a checked=0 report means the agent verified none of the

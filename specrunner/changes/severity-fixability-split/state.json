@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e319c5c-b2e2-41fa-8635-b7b89db081b0",
   "createdAt": "2026-08-14T11:27:26.288Z",
-  "updatedAt": "2026-08-14T12:00:36.030Z",
+  "updatedAt": "2026-08-14T12:14:48.863Z",
   "request": {
     "title": "severity と fixability の分離: LOW も fixable なら直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-materialize",
+  "step": "implementer",
   "status": "running",
   "branch": "change/severity-fixability-split-8e319c5c",
   "error": null,
@@ -66,7 +66,8 @@
     "ccbb69af153ea23b85dc2c00b60c184108d9cdcb",
     "828a85ed00bc9b66361c46efd55cfcbb232b7429",
     "2e2099d55229c12b1797a9d00d28c8c2d9a438a1",
-    "1f3b2af9b902ef8d99f37a6d56958364b2f1e1e5"
+    "1f3b2af9b902ef8d99f37a6d56958364b2f1e1e5",
+    "073578583b29f5cd3145c0eab0d6b65b6a83ad88"
   ],
   "touchedFiles": {
     "request-review": [
@@ -123,15 +124,38 @@
       "tests/unit/step/fixer-findings.test.ts",
       "src/core/step/__tests__/executor-no-op.test.ts",
       "src/core/step/__tests__/no-op-detect-exemption.test.ts"
+    ],
+    "test-materialize": [
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/__tests__/judge-verdict.test.ts",
+      "tests/unit/step/judge-verdict.test.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "src/core/step/__tests__/executor-no-op.test.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "tests/unit/step/code-fixer.test.ts",
+      "src/core/step/__tests__/no-op-detect-exemption.test.ts",
+      "src/core/step/no-op-detect.ts",
+      "src/core/step/code-fixer.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/step/routed-findings.ts",
+      "src/prompts/spec-fixer-system.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
+      "src/core/pipeline/types.ts",
+      "tests/unit/step/executor-no-op.test.ts",
+      "tests/unit/step/severity-fixability-split.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 19,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "test-materialize": 1
     }
   }
 }
