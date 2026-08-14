@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a8e7912e-b717-4b28-ae2b-71096da1241f",
   "createdAt": "2026-08-14T09:30:51.726Z",
-  "updatedAt": "2026-08-14T11:11:27.240Z",
+  "updatedAt": "2026-08-14T11:18:39.639Z",
   "request": {
     "title": "テスト証拠と工程順序の分離(第1弾): red 強制・テスト変更禁止・偽 baseline 判定の撤回",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/strip-test-authority-a8e7912e",
   "error": null,
@@ -78,7 +78,9 @@
     "a7697f60d2eeb2dad928097f20152a78809f84f8",
     "73d47788ee55f0fb8071e35a445b53285b65b3bc",
     "54f5d348081d112a72856124cbf8f10914ddcadb",
-    "aa231a259b97d74f728ec68848776b622c9d1876"
+    "aa231a259b97d74f728ec68848776b622c9d1876",
+    "13c83174bb94fbfb1a4d6f0d9dad276f76c2f007",
+    "9f0b818290d27f91fe695e5db9dc9c8001911828"
   ],
   "touchedFiles": {
     "request-review": [
@@ -174,6 +176,19 @@
     ],
     "regression-gate": [
       "src/prompts/test-materialize-system.ts"
+    ],
+    "conformance": [
+      "src/prompts/test-materialize-system.ts",
+      "src/core/step/implementer.ts",
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "tests/unit/prompts/test-materialize-red-check-contract.test.ts",
+      "tests/unit/step/test-materialize-boundary.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/archive/__tests__/achieved-assurance.test.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "tests/unit/prompts/strip-test-authority-contract.test.ts",
+      "tests/unit/step/implementer-lockfile.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -209,7 +224,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 65,
+    "historyCount": 74,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -219,13 +234,14 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 2,
       "code-fixer": 1,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
