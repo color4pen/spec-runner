@@ -96,6 +96,7 @@ type CommitFileResult =
 
 interface FakeAssuranceRuntime {
   listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
+  runTestsOnSynthesizedTree(baseRev: string, overlayFiles: string[], overlayFromOid: string, cwd: string, config: unknown): Promise<IsolatedTestResult>;
   runTestsAtCommit(oid: string, testFiles: string[], cwd: string, config: unknown): Promise<IsolatedTestResult>;
   diffPathsBetweenCommits(baseOid: string, headOid: string, paths: string[], cwd: string): Promise<ChangedFilesResult>;
   readFileAtCommit(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
@@ -165,6 +166,19 @@ function makeFakeRuntime(options: {
       }
       return { kind: "success", files: diffFiles };
     },
+    // Evidence Base base-red check (replaces runTestsAtCommit(baseOid)).
+    async runTestsOnSynthesizedTree(
+      _baseRev: string,
+      _overlayFiles: string[],
+      _overlayFromOid: string,
+      _cwd: string,
+      _config: unknown,
+    ): Promise<IsolatedTestResult> {
+      if (baseTestResults === "unavailable") {
+        return { kind: "unavailable", reason: "Cannot scope custom verification.commands to individual test files" };
+      }
+      return { kind: "ran", results: baseTestResults };
+    },
     async runTestsAtCommit(
       oid: string,
       _testFiles: string[],
@@ -174,10 +188,7 @@ function makeFakeRuntime(options: {
       if (oid === ARCHIVE_HEAD_SHA) {
         return headTestResults;
       }
-      if (baseTestResults === "unavailable") {
-        return { kind: "unavailable", reason: "Cannot scope custom verification.commands to individual test files" };
-      }
-      return { kind: "ran", results: baseTestResults };
+      return { kind: "unavailable", reason: `fake: no results for oid ${oid} (not ARCHIVE_HEAD_SHA)` };
     },
     async readFileAtCommit(
       oid: string,
@@ -264,6 +275,7 @@ function makeJobStateWithSteps(prNumber = 42, overrides: Record<string, unknown>
     step: "pr-create",
     history: [],
     error: null,
+    synthesizedCommits: ["bootstrap-commit-sha-prov-001"],
     steps: {
       "test-case-gen": [makeStepRunWithOid(TEST_CASE_GEN_OID)],
       "test-materialize": [makeStepRunWithOid(BASE_OID)],

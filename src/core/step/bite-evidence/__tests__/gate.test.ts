@@ -69,28 +69,51 @@ function makeStepRunWithOid(commitOid: string, attempt = 1): StepRun {
 }
 
 /**
- * Fake runtime that records calls to runTestsAtCommit and listCommitChangedFiles.
- * Configurable per-oid results for testing different scenarios.
+ * Fake runtime for the Evidence Base gate.
+ *
+ * - captureHeadSha: returns headOid (or null)
+ * - listCommitChangedFiles: returns changedFiles
+ * - runTestsOnSynthesizedTree: returns synthesizedTreeResult (base-red side)
+ * - runTestsAtCommit: per-oid results (green side, keyed by headOid)
+ *
+ * `calls` records runTestsAtCommit invocations for scoped-execution assertions.
  */
 type IsolatedTestResult =
   | { kind: "ran"; results: { file: string; passed: boolean }[] }
   | { kind: "unavailable"; reason: string };
 
 function makeFakeRuntime(options: {
+  headOid?: string | null;
   changedFiles?: string[];
+  synthesizedTreeResult?: IsolatedTestResult;
   testResultsByOid?: Record<string, { file: string; passed: boolean }[]>;
 }) {
   const calls: { oid: string; testFiles: string[] }[] = [];
+  const synthCalls: { baseRev: string; overlayFiles: string[]; overlayFromOid: string }[] = [];
 
   return {
     calls,
+    synthCalls,
     runtime: {
+      captureHeadSha: async (_cwd: string): Promise<string | null> => {
+        return options.headOid ?? null;
+      },
       listCommitChangedFiles: async (
         _oid: string,
         _cwd: string,
       ): Promise<{ kind: "success"; files: string[] } | { kind: "unavailable"; reason: string }> => {
         const files = options.changedFiles ?? ["src/__tests__/foo.test.ts"];
         return { kind: "success", files };
+      },
+      runTestsOnSynthesizedTree: async (
+        baseRev: string,
+        overlayFiles: string[],
+        overlayFromOid: string,
+        _cwd: string,
+        _config: unknown,
+      ): Promise<IsolatedTestResult> => {
+        synthCalls.push({ baseRev, overlayFiles, overlayFromOid });
+        return options.synthesizedTreeResult ?? { kind: "unavailable", reason: "synthesizedTreeResult not configured" };
       },
       runTestsAtCommit: async (
         oid: string,
@@ -116,7 +139,7 @@ function makeFakeRuntime(options: {
 describe("TC-022: gate emits strategy-deferred when base OID is absent", () => {
   it("TC-022: bug-fix job with no test-materialize run returns strategy-deferred with empty records", async () => {
     const state = makeState("bug-fix", { steps: {} });
-    const { runtime } = makeFakeRuntime({});
+    const { runtime } = makeFakeRuntime({ headOid: "head-sha" });
 
     const result = await runBiteEvidenceGate({
       state,
@@ -131,14 +154,16 @@ describe("TC-022: gate emits strategy-deferred when base OID is absent", () => {
     expect(result.records).toHaveLength(0);
   });
 
-  it("TC-022: returns strategy-deferred (not failed) when candidate OID is also absent", async () => {
+  it("TC-022: returns strategy-deferred (not failed) when synthesizedCommits is also absent", async () => {
+    // No synthesizedCommits → resolveEvidenceBaseRev returns null → strategy-deferred.
+    // (Previously tested absent candidateOid; now defers at absent EB ref — same verdict.)
     const state = makeState("bug-fix", {
       steps: {
         "test-materialize": [makeStepRunWithOid("base-sha-001")],
-        // no implementer runs
+        // no synthesizedCommits, no implementer
       },
     });
-    const { runtime } = makeFakeRuntime({});
+    const { runtime } = makeFakeRuntime({ headOid: "head-sha" });
 
     const result = await runBiteEvidenceGate({
       state,
@@ -186,24 +211,26 @@ describe("TC-007: non-forward job type emits strategy-deferred", () => {
 // TC-003: real tooth passes and records evidence
 // ---------------------------------------------------------------------------
 
-describe("TC-003: real tooth — base-red, candidate-green produces passed verdict", () => {
-  it("TC-003: gate passes with verified BiteEvidence when base fails and candidate passes", async () => {
-    const baseOid = "base-sha-real-tooth";
-    const candidateOid = "candidate-sha-real-tooth";
+describe("TC-003: real tooth — base-red (via Evidence Base), candidate-green (via HEAD) produces passed verdict", () => {
+  it("TC-003: gate passes with verified BiteEvidence when Evidence Base is red and HEAD is green", async () => {
+    const baseOid = "base-sha-real-tooth";      // materialize OID (for file-set identification)
+    const headOid = "head-sha-real-tooth";       // HEAD = candidate
     const testFile = "src/__tests__/feature.test.ts";
 
     const state = makeState("bug-fix", {
+      synthesizedCommits: ["bootstrap-sha-real-tooth"],  // EB ref anchor
       steps: {
         "test-materialize": [makeStepRunWithOid(baseOid)],
-        "implementer": [makeStepRunWithOid(candidateOid)],
+        "implementer": [makeStepRunWithOid("impl-sha-real-tooth")],
       },
     });
 
     const { runtime } = makeFakeRuntime({
+      headOid,
       changedFiles: [testFile],
+      synthesizedTreeResult: { kind: "ran", results: [{ file: testFile, passed: false }] }, // base: RED via EB
       testResultsByOid: {
-        [baseOid]: [{ file: testFile, passed: false }],       // base: RED
-        [candidateOid]: [{ file: testFile, passed: true }],   // candidate: GREEN
+        [headOid]: [{ file: testFile, passed: true }],   // candidate: GREEN at HEAD
       },
     });
 
@@ -225,6 +252,8 @@ describe("TC-003: real tooth — base-red, candidate-green produces passed verdi
     expect(record.baseResult).toBe("red");
     expect(record.candidateResult).toBe("green");
     expect(record.verified).toBe(true);
+    // candidateOid must be the HEAD OID
+    expect(record.candidateOid).toBe(headOid);
   });
 });
 
@@ -232,24 +261,26 @@ describe("TC-003: real tooth — base-red, candidate-green produces passed verdi
 // TC-004: base-green test is rejected (hollow test)
 // ---------------------------------------------------------------------------
 
-describe("TC-004: base-green test (hollow tooth) is rejected fail-closed", () => {
-  it("TC-004: gate returns failed when base passes the test (hollow, no tooth)", async () => {
+describe("TC-004: base-green test (hollow tooth) is rejected fail-closed via Evidence Base", () => {
+  it("TC-004: gate returns failed when Evidence Base is green (hollow test — no tooth)", async () => {
     const baseOid = "base-sha-hollow";
-    const candidateOid = "candidate-sha-hollow";
+    const headOid = "head-sha-hollow";
     const testFile = "src/__tests__/hollow.test.ts";
 
     const state = makeState("bug-fix", {
+      synthesizedCommits: ["bootstrap-sha-hollow"],
       steps: {
         "test-materialize": [makeStepRunWithOid(baseOid)],
-        "implementer": [makeStepRunWithOid(candidateOid)],
+        "implementer": [makeStepRunWithOid("impl-sha-hollow")],
       },
     });
 
     const { runtime } = makeFakeRuntime({
+      headOid,
       changedFiles: [testFile],
+      synthesizedTreeResult: { kind: "ran", results: [{ file: testFile, passed: true }] }, // EB: GREEN (hollow!)
       testResultsByOid: {
-        [baseOid]: [{ file: testFile, passed: true }],        // base: GREEN (hollow!)
-        [candidateOid]: [{ file: testFile, passed: true }],   // candidate: GREEN
+        [headOid]: [{ file: testFile, passed: true }],   // HEAD: GREEN
       },
     });
 
@@ -275,24 +306,26 @@ describe("TC-004: base-green test (hollow tooth) is rejected fail-closed", () =>
 // TC-005: candidate that stays red is rejected
 // ---------------------------------------------------------------------------
 
-describe("TC-005: candidate that stays red is rejected", () => {
-  it("TC-005: gate returns failed when candidate test still fails", async () => {
+describe("TC-005: candidate (HEAD) that stays red is rejected", () => {
+  it("TC-005: gate returns failed when HEAD test still fails (implementation does not fix the test)", async () => {
     const baseOid = "base-sha-candidate-red";
-    const candidateOid = "candidate-sha-candidate-red";
+    const headOid = "head-sha-candidate-red";
     const testFile = "src/__tests__/not-implemented.test.ts";
 
     const state = makeState("new-feature", {
+      synthesizedCommits: ["bootstrap-sha-candidate-red"],
       steps: {
         "test-materialize": [makeStepRunWithOid(baseOid)],
-        "implementer": [makeStepRunWithOid(candidateOid)],
+        "implementer": [makeStepRunWithOid("impl-sha-candidate-red")],
       },
     });
 
     const { runtime } = makeFakeRuntime({
+      headOid,
       changedFiles: [testFile],
+      synthesizedTreeResult: { kind: "ran", results: [{ file: testFile, passed: false }] }, // EB: RED
       testResultsByOid: {
-        [baseOid]: [{ file: testFile, passed: false }],       // base: RED
-        [candidateOid]: [{ file: testFile, passed: false }],  // candidate: RED (not fixed!)
+        [headOid]: [{ file: testFile, passed: false }],  // HEAD: RED (not fixed!)
       },
     });
 
@@ -319,20 +352,15 @@ describe("TC-005: candidate that stays red is rejected", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-006: tampered test-cases.md is rejected fail-closed", () => {
-  it("TC-006: gate returns failed when tamperStatus is mismatch", async () => {
+  it("TC-006: gate returns failed when tamperStatus is mismatch (short-circuits before EB resolution)", async () => {
     const state = makeState("bug-fix", {
+      synthesizedCommits: ["bootstrap-sha-tamper"],
       steps: {
         "test-materialize": [makeStepRunWithOid("base-sha-tamper")],
         "implementer": [makeStepRunWithOid("candidate-sha-tamper")],
       },
     });
-    const { runtime } = makeFakeRuntime({
-      changedFiles: ["src/__tests__/example.test.ts"],
-      testResultsByOid: {
-        "base-sha-tamper": [{ file: "src/__tests__/example.test.ts", passed: false }],
-        "candidate-sha-tamper": [{ file: "src/__tests__/example.test.ts", passed: true }],
-      },
-    });
+    const { runtime } = makeFakeRuntime({ headOid: "head-sha-tamper" });
 
     const result = await runBiteEvidenceGate({
       state,
@@ -340,7 +368,7 @@ describe("TC-006: tampered test-cases.md is rejected fail-closed", () => {
       slug: "example",
       config: {} as never,
       runtimeStrategy: runtime as never,
-      tamperStatus: "mismatch",  // <-- tamper detected
+      tamperStatus: "mismatch",  // <-- tamper detected (short-circuit at step 2)
     });
 
     expect(result.verdict).toBe("failed");
@@ -354,9 +382,9 @@ describe("TC-006: tampered test-cases.md is rejected fail-closed", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-008: only materialized test files are executed (not full suite)", () => {
-  it("TC-008: runTestsAtCommit is called only with files from the base commit excluding pipeline artifacts", async () => {
+  it("TC-008: runTestsOnSynthesizedTree and runTestsAtCommit are called only with files from the base commit excluding pipeline artifacts", async () => {
     const baseOid = "base-sha-scoped";
-    const candidateOid = "candidate-sha-scoped";
+    const headOid = "head-sha-scoped";
 
     // The changed files include a test file and some pipeline artifacts to be excluded
     const materializedTestFile = "src/__tests__/my-feature.test.ts";
@@ -364,17 +392,19 @@ describe("TC-008: only materialized test files are executed (not full suite)", (
     const specrunnerConfig = ".specrunner/config.json";
 
     const state = makeState("bug-fix", {
+      synthesizedCommits: ["bootstrap-sha-scoped"],
       steps: {
         "test-materialize": [makeStepRunWithOid(baseOid)],
-        "implementer": [makeStepRunWithOid(candidateOid)],
+        "implementer": [makeStepRunWithOid("impl-sha-scoped")],
       },
     });
 
-    const { runtime, calls } = makeFakeRuntime({
+    const { runtime, calls, synthCalls } = makeFakeRuntime({
+      headOid,
       changedFiles: [materializedTestFile, pipelineArtifact, specrunnerConfig],
+      synthesizedTreeResult: { kind: "ran", results: [{ file: materializedTestFile, passed: false }] },
       testResultsByOid: {
-        [baseOid]: [{ file: materializedTestFile, passed: false }],
-        [candidateOid]: [{ file: materializedTestFile, passed: true }],
+        [headOid]: [{ file: materializedTestFile, passed: true }],
       },
     });
 
@@ -387,9 +417,16 @@ describe("TC-008: only materialized test files are executed (not full suite)", (
       tamperStatus: "inconclusive",
     });
 
-    // Verify runTestsAtCommit was called for both base and candidate
-    expect(calls).toHaveLength(2);
+    // Verify runTestsOnSynthesizedTree was called (base-red) and runTestsAtCommit once (HEAD-green)
+    expect(synthCalls).toHaveLength(1);
+    expect(calls).toHaveLength(1);
 
+    // runTestsOnSynthesizedTree must filter pipeline artifacts
+    expect(synthCalls[0]!.overlayFiles).not.toContain(pipelineArtifact);
+    expect(synthCalls[0]!.overlayFiles).not.toContain(specrunnerConfig);
+    expect(synthCalls[0]!.overlayFiles).toContain(materializedTestFile);
+
+    // runTestsAtCommit must also filter pipeline artifacts
     for (const call of calls) {
       // Must NOT include pipeline artifacts or .specrunner/ files
       expect(call.testFiles).not.toContain(pipelineArtifact);
@@ -400,23 +437,25 @@ describe("TC-008: only materialized test files are executed (not full suite)", (
     }
   });
 
-  it("TC-008: calls are made separately for base and candidate OIDs", async () => {
+  it("TC-008: runTestsOnSynthesizedTree (EB) and runTestsAtCommit (HEAD) are separate calls", async () => {
     const baseOid = "base-sha-separate";
-    const candidateOid = "candidate-sha-separate";
+    const headOid = "head-sha-separate";
     const testFile = "src/__tests__/separate.test.ts";
 
     const state = makeState("bug-fix", {
+      synthesizedCommits: ["bootstrap-sha-separate"],
       steps: {
         "test-materialize": [makeStepRunWithOid(baseOid)],
-        "implementer": [makeStepRunWithOid(candidateOid)],
+        "implementer": [makeStepRunWithOid("impl-sha-separate")],
       },
     });
 
-    const { runtime, calls } = makeFakeRuntime({
+    const { runtime, calls, synthCalls } = makeFakeRuntime({
+      headOid,
       changedFiles: [testFile],
+      synthesizedTreeResult: { kind: "ran", results: [{ file: testFile, passed: false }] }, // EB: RED
       testResultsByOid: {
-        [baseOid]: [{ file: testFile, passed: false }],
-        [candidateOid]: [{ file: testFile, passed: true }],
+        [headOid]: [{ file: testFile, passed: true }],  // HEAD: GREEN
       },
     });
 
@@ -429,10 +468,14 @@ describe("TC-008: only materialized test files are executed (not full suite)", (
       tamperStatus: "inconclusive",
     });
 
-    // Verify two separate calls: one for base, one for candidate
-    const oids = calls.map((c) => c.oid);
-    expect(oids).toContain(baseOid);
-    expect(oids).toContain(candidateOid);
+    // Synthesized tree (EB rev) for base-red; runTestsAtCommit (HEAD) for green — separate calls
+    expect(synthCalls).toHaveLength(1);
+    expect(calls).toHaveLength(1);
+    // synthCalls uses the Evidence Base rev (synthesizedCommits[0]^)
+    expect(synthCalls[0]!.baseRev).toBe("bootstrap-sha-separate^");
+    expect(synthCalls[0]!.overlayFromOid).toBe(headOid);
+    // calls uses HEAD OID (not materialize or implementer OID)
+    expect(calls[0]!.oid).toBe(headOid);
   });
 });
 
@@ -486,21 +529,23 @@ describe("TC-032: tamper check inconclusive when frozen hash absent", () => {
 
   it("TC-032: inconclusive tamper allows gate to proceed evaluating base/candidate", async () => {
     const baseOid = "base-sha-inconclusive";
-    const candidateOid = "candidate-sha-inconclusive";
+    const headOid = "head-sha-inconclusive";
     const testFile = "src/__tests__/inconclusive.test.ts";
 
     const state = makeState("bug-fix", {
+      synthesizedCommits: ["bootstrap-sha-inconclusive"],
       steps: {
         "test-materialize": [makeStepRunWithOid(baseOid)],
-        "implementer": [makeStepRunWithOid(candidateOid)],
+        "implementer": [makeStepRunWithOid("impl-sha-inconclusive")],
       },
     });
 
     const { runtime } = makeFakeRuntime({
+      headOid,
       changedFiles: [testFile],
+      synthesizedTreeResult: { kind: "ran", results: [{ file: testFile, passed: false }] }, // EB: RED
       testResultsByOid: {
-        [baseOid]: [{ file: testFile, passed: false }],
-        [candidateOid]: [{ file: testFile, passed: true }],
+        [headOid]: [{ file: testFile, passed: true }],  // HEAD: GREEN
       },
     });
 
@@ -696,23 +741,18 @@ describe("TC-031: strategy-deferred does not populate state.biteEvidence", () =>
 });
 
 // ---------------------------------------------------------------------------
-// TC-007 (strip-test-authority): 再走で base に実装が混入したとき deferral になる  [expected-red]
+// TC-007 (strip-test-authority): 再走で Evidence Base が base-red を保証し passed を返す
 //
 // Source: specrunner/changes/strip-test-authority/spec.md
-//   > Requirement: bite-evidence は base に過去の implementer commit が混入した場合
-//     fail でなく理由付き deferral を返す
-//   > Scenario: 再走で base に実装が混入したとき deferral になる
+//   > Scenario: 再走で base に実装が混入したとき
 //
-// Rerun shape: implementer-1@t1 → test-materialize-2@t2(=base) → implementer-2@t3(=candidate)
-//   t1 < t2: impl1 started before base materialize → contamination detected
-//
-// Discriminator: before T-05 (detectBaseImplementationContamination absent),
-//   gate proceeds to base-green → returns "failed".
-//   After T-05: contamination detected early → returns "strategy-deferred".
-//   TC-007 asserts "strategy-deferred" → FAILS currently (red) before T-05.
+// Evidence Base update: synthesizedCommits[0]^ = fork point before any pipeline step.
+//   Contamination is impossible by construction — the EB never contains implementation.
+//   Re-run shape now earns assurance: EB-red, HEAD-green → "passed".
+//   (strip-test-authority T-05 detectBaseImplementationContamination replaced by EB.)
 // ---------------------------------------------------------------------------
 
-describe("TC-007 (strip-test-authority): 再走で base に実装が混入したとき deferral になる", () => {
+describe("TC-007 (strip-test-authority): 再走で Evidence Base が base-red を保証し passed を返す", () => {
   /**
    * Build a StepRun with a specific startedAt timestamp and optional commitOid.
    */
@@ -731,36 +771,35 @@ describe("TC-007 (strip-test-authority): 再走で base に実装が混入した
     } as StepRun;
   }
 
-  it("TC-007: 再走形状で gate が strategy-deferred を返す", async () => {
-    // t0 < t1 < t2 < t3
-    // mat1@t0 (first materialize, no commitOid needed — not the base)
-    // impl1@t1 (first implementer — BEFORE base mat2@t2 → contamination)
-    // mat2@t2 (second materialize = BASE)
-    // impl2@t3 (second implementer = CANDIDATE)
-    const mat2Oid = "mat2-contaminated-base";
-    const impl1Oid = "impl1-before-base";
-    const impl2Oid = "impl2-candidate";
+  it("TC-007: 再走形状で Evidence Base により base-red が保証され passed を返す", async () => {
+    // Re-run shape: mat1 → impl1 → mat2 → impl2 → HEAD
+    // EB = synthesizedCommits[0]^ = fork point before any pipeline step (never contaminated).
+    // base: RED via EB (implementation not in EB tree — contamination impossible by construction)
+    // candidate: GREEN at HEAD (implementation present)
+    // → verdict: "passed"
+    const headOid = "head-sha-rerun";
     const testFile = "src/__tests__/contaminated-feature.test.ts";
 
     const state = makeState("bug-fix", {
+      synthesizedCommits: ["bootstrap-sha-rerun"],
       steps: {
         "test-materialize": [
-          makeRunAt("2026-01-01T00:00:00.000Z", undefined),          // mat1@t0 (no oid needed)
-          makeRunAt("2026-01-01T00:02:00.000Z", mat2Oid),            // mat2@t2 = BASE
+          makeRunAt("2026-01-01T00:00:00.000Z", undefined),
+          makeRunAt("2026-01-01T00:02:00.000Z", "mat2-oid"),
         ],
         "implementer": [
-          makeRunAt("2026-01-01T00:01:00.000Z", impl1Oid),           // impl1@t1 < t2 → CONTAMINATION
-          makeRunAt("2026-01-01T00:03:00.000Z", impl2Oid),           // impl2@t3 = CANDIDATE
+          makeRunAt("2026-01-01T00:01:00.000Z", "impl1-oid"),
+          makeRunAt("2026-01-01T00:03:00.000Z", "impl2-oid"),
         ],
       },
     });
 
-    // Runtime: base-green so that without contamination check the gate would return "failed"
     const { runtime } = makeFakeRuntime({
+      headOid,
       changedFiles: [testFile],
+      synthesizedTreeResult: { kind: "ran", results: [{ file: testFile, passed: false }] }, // EB: RED
       testResultsByOid: {
-        [mat2Oid]: [{ file: testFile, passed: true }],   // base: GREEN (would be hollow)
-        [impl2Oid]: [{ file: testFile, passed: true }],  // candidate: GREEN
+        [headOid]: [{ file: testFile, passed: true }],  // HEAD: GREEN
       },
     });
 
@@ -773,14 +812,9 @@ describe("TC-007 (strip-test-authority): 再走で base に実装が混入した
       tamperStatus: "inconclusive",
     });
 
-    // After T-05: contamination detected → strategy-deferred (not failed).
-    // Before T-05: gate proceeds to base-green → returns "failed" → this assertion FAILS (red).
-    expect(result.verdict).toBe("strategy-deferred");
-    expect(result.reason).toBeDefined();
-    // Reason must mention baseline construction failure / implementation contamination.
-    const reason = result.reason ?? "";
-    const hasBaselineReason = reason.includes("baseline") || reason.includes("unbuildable") || reason.includes("contamination") || reason.includes("構築不能");
-    expect(hasBaselineReason).toBe(true);
+    // Evidence Base makes contamination impossible by construction → re-run earns assurance.
+    expect(result.verdict).toBe("passed");
+    expect(result.records[0]!.verified).toBe(true);
   });
 
   it("TC-007: STANDARD_TRANSITIONS が bite-evidence strategy-deferred を verification へ遷移させる", () => {
@@ -826,29 +860,32 @@ describe("TC-008 (strip-test-authority): 初回一巡での base-green は従来
     } as StepRun;
   }
 
-  it("TC-008: 初回一巡形状で base-green は verdict=failed のまま", async () => {
-    // First-pass: mat@t0(=base) then impl@t1(=candidate), t1 > t0 → no contamination
+  it("TC-008: 初回一巡形状で Evidence Base が base-green なら verdict=failed のまま", async () => {
+    // First-pass: mat@t0 → impl@t1, no prior implementer run.
+    // EB (synthesizedCommits[0]^) = fork point. If test passes on EB, it's genuinely hollow.
     const matOid = "mat-first-pass-base";
-    const implOid = "impl-first-pass-candidate";
+    const headOid = "head-sha-first-pass";
     const testFile = "src/__tests__/genuine-hollow.test.ts";
 
     const state = makeState("bug-fix", {
+      synthesizedCommits: ["bootstrap-sha-first-pass"],
       steps: {
         "test-materialize": [
-          makeRunAt("2026-01-01T00:00:00.000Z", matOid),    // mat@t0 = BASE (first and only)
+          makeRunAt("2026-01-01T00:00:00.000Z", matOid),
         ],
         "implementer": [
-          makeRunAt("2026-01-01T00:01:00.000Z", implOid),   // impl@t1 > t0 = CANDIDATE (no prior impl)
+          makeRunAt("2026-01-01T00:01:00.000Z", "impl-sha-first-pass"),
         ],
       },
     });
 
-    // Runtime: base-green (genuine hollow — test passes even without implementation)
+    // EB: GREEN (genuine hollow — test passes on the base-branch tree without implementation)
     const { runtime } = makeFakeRuntime({
+      headOid,
       changedFiles: [testFile],
+      synthesizedTreeResult: { kind: "ran", results: [{ file: testFile, passed: true }] }, // EB: GREEN (hollow!)
       testResultsByOid: {
-        [matOid]: [{ file: testFile, passed: true }],   // base: GREEN (genuine hollow)
-        [implOid]: [{ file: testFile, passed: true }],  // candidate: GREEN
+        [headOid]: [{ file: testFile, passed: true }],  // HEAD: GREEN
       },
     });
 
@@ -861,8 +898,7 @@ describe("TC-008 (strip-test-authority): 初回一巡での base-green は従来
       tamperStatus: "inconclusive",
     });
 
-    // No contamination → gate proceeds normally → base-green = hollow → "failed"
-    // This verdict must remain "failed" after T-05 (regression guard).
+    // EB-green = hollow test → "failed" verdict unchanged (regression guard).
     expect(result.verdict).toBe("failed");
   });
 });

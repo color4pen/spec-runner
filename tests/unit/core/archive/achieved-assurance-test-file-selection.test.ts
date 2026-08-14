@@ -77,6 +77,7 @@ function makeJobState(type = "bug-fix") {
     step: "pr-create",
     history: [],
     error: null,
+    synthesizedCommits: ["bootstrap-commit-sha-selection-001"],
     steps: {
       "test-case-gen": [
         {
@@ -173,6 +174,17 @@ function makeFakeRuntime(options: {
       return { kind: "success", files: intersection };
     },
 
+    // Evidence Base base-red check (replaces runTestsAtCommit(baseOid)).
+    async runTestsOnSynthesizedTree(
+      _baseRev: string,
+      _overlayFiles: string[],
+      _overlayFromOid: string,
+      _cwd: string,
+      _config: unknown,
+    ): Promise<IsolatedTestResult> {
+      return baseTestResults;
+    },
+
     async runTestsAtCommit(
       oid: string,
       _testFiles: string[],
@@ -182,7 +194,7 @@ function makeFakeRuntime(options: {
       if (oid === FINAL_HEAD_OID) {
         return headTestResults;
       }
-      return baseTestResults;
+      return { kind: "unavailable", reason: `fake: no results for oid ${oid} (not FINAL_HEAD_OID)` };
     },
 
     async readFileAtCommit(

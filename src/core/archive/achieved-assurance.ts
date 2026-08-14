@@ -17,7 +17,7 @@ import type { JobState, ProfileAssurance } from "../../state/schema.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { AssuranceFloor } from "../../state/profile.js";
-import { resolveBaseCandidateOids, detectBaseImplementationContamination } from "../step/bite-evidence/oids.js";
+import { resolveBaseCandidateOids, resolveEvidenceBaseRev } from "../step/bite-evidence/oids.js";
 import { FORWARD_TYPES } from "../step/bite-evidence/gate.js";
 import { selectMaterializedTestFiles } from "../step/bite-evidence/test-file-selection.js";
 import { STEP_NAMES } from "../../kernel/step-names.js";
@@ -33,6 +33,7 @@ export type AssuranceProvenanceRuntime = Pick<
   RuntimeStrategy,
   | "listCommitChangedFiles"
   | "runTestsAtCommit"
+  | "runTestsOnSynthesizedTree"
   | "diffPathsBetweenCommits"
   | "readFileAtCommit"
 >;
@@ -88,9 +89,8 @@ function computeContentHash(content: string): string {
  *   (Binds approval to the reviewed revision blob — prevents re-approval after spec.md changes.)
  *
  * **biteEvidence** / **testDerivation**: only evaluated when the floor constrains either.
- *   Requires: baseOid resolvable + base free of implementation contamination (no implementer
- *   commit predating the base test-materialize commit) + finalHeadOid defined + runtime
- *   available with all required methods (including readFileAtCommit) + config defined.
+ *   Requires: baseOid resolvable + Evidence Base ref resolvable (synthesizedCommits[0]^) +
+ *   finalHeadOid defined + runtime available with all required methods + config defined.
  *   (a) Enumerate materializedTestFiles via listCommitChangedFiles(baseOid) + selectMaterializedTestFiles filter.
  *   (b) Blob freeze check: diffPathsBetweenCommits(baseOid, finalHeadOid, materializedTestFiles).
  *       → tamper (non-empty diff) → both absent.
@@ -105,7 +105,8 @@ function computeContentHash(content: string): string {
  *   biteEvidence is additionally constrained to forward types only (P0-3, ADR-20260716 D2):
  *   (d) Type gate: state.request.type must be in FORWARD_TYPES (bug-fix / new-feature).
  *       → non-forward type → biteEvidence absent (fail-closed until forward strategy is implemented).
- *   (e) Base-red check: runTestsAtCommit(baseOid) → all must be failed (base-red).
+ *   (e) Evidence Base base-red check: runTestsOnSynthesizedTree(evidenceBaseRev, materializedTestFiles, finalHeadOid)
+ *       → all must be failed (base-red). evidenceBaseRev = synthesizedCommits[0]^ (immutable job base).
  *       → unavailable or any passed → biteEvidence absent.
  *   (f) HEAD-green check (P0-1): runTestsAtCommit(finalHeadOid) → ALL must be passed (HEAD-green).
  *       → unavailable, any red, or coverage gap → biteEvidence absent.
@@ -217,7 +218,7 @@ export async function deriveAchievedAssurance(
     return { achieved: achieved as ProfileAssurance, diagnostics };
   }
 
-  // (P2) baseOid must be resolvable from test-materialize step.
+  // (P2) baseOid must be resolvable from test-materialize step (for file-set identification).
   let baseOid: string | null;
   try {
     const oids = resolveBaseCandidateOids(state);
@@ -233,29 +234,29 @@ export async function deriveAchievedAssurance(
     return { achieved: achieved as ProfileAssurance, diagnostics };
   }
 
-  // (P2.5) Base must be free of implementation contamination (re-run shape).
-  // Same check as the bite-evidence gate: if an implementer commit predates the base
-  // test-materialize commit, base-red cannot be established — fail-closed.
-  const contaminatingOid = detectBaseImplementationContamination(state);
-  if (contaminatingOid !== null) {
+  // (P2.5) Resolve the Evidence Base reference (immutable job base = synthesizedCommits[0]^).
+  // Replaces the contamination detection: Evidence Base is constructed from the fork point
+  // so implementation can never be mixed in by construction (no re-run shape contamination).
+  const evidenceBaseRev = resolveEvidenceBaseRev(state);
+  if (evidenceBaseRev === null) {
     diagnostics.push(
-      `biteEvidence/testDerivation: baseline unbuildable — implementer commit ${contaminatingOid} ` +
-        "predates the base test-materialize commit (implementation mixed into base)",
+      "biteEvidence/testDerivation: Evidence Base reference absent — synthesizedCommits ledger is empty or absent (fail-closed)",
     );
     return { achieved: achieved as ProfileAssurance, diagnostics };
   }
 
-  // (P3) Runtime must be available with all required methods (including readFileAtCommit).
+  // (P3) Runtime must be available with all required methods.
   if (
     !runtime ||
     typeof runtime.listCommitChangedFiles !== "function" ||
     typeof runtime.diffPathsBetweenCommits !== "function" ||
     typeof runtime.runTestsAtCommit !== "function" ||
+    typeof runtime.runTestsOnSynthesizedTree !== "function" ||
     typeof runtime.readFileAtCommit !== "function"
   ) {
     diagnostics.push(
       "biteEvidence/testDerivation: runtime is unavailable or missing required methods " +
-      "(listCommitChangedFiles / diffPathsBetweenCommits / runTestsAtCommit / readFileAtCommit)",
+      "(listCommitChangedFiles / diffPathsBetweenCommits / runTestsAtCommit / runTestsOnSynthesizedTree / readFileAtCommit)",
     );
     return { achieved: achieved as ProfileAssurance, diagnostics };
   }
@@ -439,10 +440,19 @@ export async function deriveAchievedAssurance(
   //   - any red at HEAD / any non-red at base → absent
   // ---------------------------------------------------------------------------
   try {
-    // (e) Base-red check
-    const baseTestResult = await runtime.runTestsAtCommit!(baseOid, materializedTestFiles, cwd, config);
+    // (e) Evidence Base base-red check: run tests on the synthesized tree
+    // (job base tree = synthesizedCommits[0]^ + candidate test overlay from finalHeadOid).
+    // This replaces runTestsAtCommit(baseOid) — the Evidence Base cannot contain
+    // implementation by construction, so re-run shapes can now earn assurance.
+    const baseTestResult = await runtime.runTestsOnSynthesizedTree!(
+      evidenceBaseRev,
+      materializedTestFiles,
+      finalHeadOid,
+      cwd,
+      config,
+    );
     if (baseTestResult.kind === "unavailable") {
-      diagnostics.push(`biteEvidence: runTestsAtCommit(baseOid) unavailable: ${baseTestResult.reason}`);
+      diagnostics.push(`biteEvidence: runTestsOnSynthesizedTree(evidenceBaseRev) unavailable: ${baseTestResult.reason}`);
       // biteEvidence absent (testDerivation already set above if conditions met)
       return { achieved: achieved as ProfileAssurance, diagnostics };
     }
@@ -455,7 +465,7 @@ export async function deriveAchievedAssurance(
     const notRed = materializedTestFiles.filter((f) => passedByFile.get(f) !== false);
     if (materializedTestFiles.length === 0 || notRed.length > 0) {
       diagnostics.push(
-        `biteEvidence: base-red not established for all materialized tests at baseOid ` +
+        `biteEvidence: base-red not established for all materialized tests on Evidence Base ` +
         `(missing result or hollow passed=true): ${notRed.join(", ") || "(no materialized tests)"}`,
       );
       // biteEvidence absent (testDerivation already set if freeze intact)

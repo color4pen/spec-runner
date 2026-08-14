@@ -1177,6 +1177,132 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
+   * Run scoped tests on an Evidence Base synthesized tree.
+   *
+   * Checks out <baseRev> into a detached worktree, overlays each file from
+   * <overlayFromOid>, symlinks node_modules, runs <scopedTestCommand> per file,
+   * and cleans up in a finally block.
+   *
+   * Contract: never throws; scopedTestCommand absent → unavailable; unresolvable
+   * overlay path → unavailable (fail-closed); non-existent baseRev → unavailable.
+   */
+  async runTestsOnSynthesizedTree(
+    baseRev: string,
+    overlayFiles: string[],
+    overlayFromOid: string,
+    cwd: string,
+    config: import("../../config/schema.js").SpecRunnerConfig,
+  ): Promise<import("../port/runtime-strategy.js").IsolatedTestResult> {
+    if (overlayFiles.length === 0) {
+      return { kind: "ran", results: [] };
+    }
+
+    // scopedTestCommand is required — no default-bun fallback for synthesized-tree execution.
+    const scopedTestCommand = config.verification?.scopedTestCommand?.trim();
+    if (!scopedTestCommand) {
+      return {
+        kind: "unavailable",
+        reason: "scopedTestCommand not configured; runTestsOnSynthesizedTree requires a scopedTestCommand to run per-file tests in the detached worktree",
+      };
+    }
+
+    const os = await import("node:os");
+    const tmpBase = path.join(os.tmpdir(), `specrunner-bite-evidence-synth-${Date.now()}`);
+    let worktreeCreated = false;
+    let symlinkCreated = false;
+
+    try {
+      // 1. Create isolated detached worktree at baseRev (e.g. "bootstrapSha^").
+      const addResult = await this.spawnFn(
+        "git",
+        ["worktree", "add", "--detach", tmpBase, baseRev],
+        { cwd },
+      );
+      if (addResult.exitCode !== 0) {
+        return {
+          kind: "unavailable",
+          reason: `git worktree add failed (exit ${addResult.exitCode}): ${addResult.stderr ?? ""}`,
+        };
+      }
+      worktreeCreated = true;
+
+      // 2. Overlay each file from overlayFromOid into the base worktree.
+      for (const filePath of overlayFiles) {
+        const showResult = await this.spawnFn(
+          "git",
+          ["show", `${overlayFromOid}:${filePath}`],
+          { cwd },
+        );
+        if (showResult.exitCode !== 0) {
+          return {
+            kind: "unavailable",
+            reason: `overlay file ${filePath} not found at ${overlayFromOid}: ${showResult.stderr ?? ""}`,
+          };
+        }
+        const destPath = path.join(tmpBase, filePath);
+        await fs.mkdir(path.dirname(destPath), { recursive: true });
+        await fs.writeFile(destPath, showResult.stdout);
+      }
+
+      // 3. Symlink node_modules (fail-closed if absent).
+      const nodeModulesSrc = path.join(cwd, "node_modules");
+      try {
+        await fs.access(nodeModulesSrc);
+      } catch {
+        return {
+          kind: "unavailable",
+          reason: `node_modules not found in cwd (${nodeModulesSrc}); cannot resolve dependencies for synthesized-tree execution`,
+        };
+      }
+      const nodeModulesLink = path.join(tmpBase, "node_modules");
+      await fs.symlink(nodeModulesSrc, nodeModulesLink, "dir");
+      symlinkCreated = true;
+
+      // 4. Run each overlay file via the scoped command.
+      const results: { file: string; passed: boolean }[] = [];
+      for (const testFile of overlayFiles) {
+        try {
+          const escapedFile = testFile.replace(/'/g, "'\\''");
+          const shellCmd = `${scopedTestCommand} '${escapedFile}'`;
+          const result = await spawnScopedCommand(shellCmd, tmpBase, stripSecrets(process.env as Record<string, string | undefined>));
+          results.push({ file: testFile, passed: result.exitCode === 0 });
+        } catch {
+          results.push({ file: testFile, passed: false });
+        }
+      }
+      return { kind: "ran", results };
+
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      return { kind: "unavailable", reason };
+    } finally {
+      // 5. Clean up: remove symlink first (never follows it), then the worktree.
+      if (symlinkCreated) {
+        try {
+          await fs.rm(path.join(tmpBase, "node_modules"), { force: true });
+        } catch {
+          // Best-effort
+        }
+      }
+      if (worktreeCreated) {
+        try {
+          await this.spawnFn(
+            "git",
+            ["worktree", "remove", "--force", tmpBase],
+            { cwd },
+          );
+        } catch {
+          try {
+            await fs.rm(tmpBase, { recursive: true, force: true });
+          } catch {
+            // Silently ignore double-failure
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * Read a file from a specific commit OID using trailing-suffix path resolution.
    *
    * Algorithm (P0-2, achieved-assurance-completeness T-01):

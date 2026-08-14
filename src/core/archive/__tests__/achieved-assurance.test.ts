@@ -50,28 +50,29 @@ function makeState(overrides: Partial<JobState> = {}): JobState {
   } as JobState;
 }
 
-describe("deriveAchievedAssurance — contaminated baseline (re-run shape)", () => {
-  it("leaves biteEvidence/testDerivation absent and performs no provenance I/O", async () => {
-    // Rerun shape: impl1@t1 → mat2@t2 (= base, contaminated) → impl2@t3 (= candidate)
+describe("deriveAchievedAssurance — Evidence Base reference absent", () => {
+  it("leaves biteEvidence/testDerivation absent and performs no provenance I/O when synthesizedCommits is absent", async () => {
+    // synthesizedCommits absent → resolveEvidenceBaseRev returns null → early return at P2.5.
+    // No runtime I/O should be performed (short-circuit before listCommitChangedFiles).
     const state = makeState({
       steps: {
         "test-materialize": [
-          makeRunAt("2026-01-01T00:00:30.000Z", undefined),
-          makeRunAt("2026-01-01T00:02:00.000Z", "mat2-contaminated-base"),
+          makeRunAt("2026-01-01T00:02:00.000Z", "mat-oid"),
         ],
         "implementer": [
-          makeRunAt("2026-01-01T00:01:00.000Z", "impl1-before-base"),
-          makeRunAt("2026-01-01T00:03:00.000Z", "impl2-candidate"),
+          makeRunAt("2026-01-01T00:03:00.000Z", "impl-oid"),
         ],
       },
+      // synthesizedCommits absent → resolveEvidenceBaseRev → null → fail-closed
     });
 
     const neverCalled = (name: string) => () => {
-      throw new Error(`runtime.${name} must not be called on a contaminated baseline`);
+      throw new Error(`runtime.${name} must not be called when EB ref is absent`);
     };
     const runtime = {
       listCommitChangedFiles: neverCalled("listCommitChangedFiles"),
       runTestsAtCommit: neverCalled("runTestsAtCommit"),
+      runTestsOnSynthesizedTree: neverCalled("runTestsOnSynthesizedTree"),
       diffPathsBetweenCommits: neverCalled("diffPathsBetweenCommits"),
       readFileAtCommit: neverCalled("readFileAtCommit"),
     };
@@ -88,7 +89,7 @@ describe("deriveAchievedAssurance — contaminated baseline (re-run shape)", () 
     expect(output.achieved.biteEvidence).toBeUndefined();
     expect(output.achieved.testDerivation).toBeUndefined();
     expect(
-      output.diagnostics.some((d) => d.includes("baseline unbuildable") && d.includes("impl1-before-base")),
+      output.diagnostics.some((d) => d.includes("Evidence Base reference absent")),
     ).toBe(true);
   });
 });

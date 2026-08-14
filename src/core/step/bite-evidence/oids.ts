@@ -2,8 +2,8 @@
  * OID resolution helpers for the bite-evidence gate (R4, bite-evidence-forward).
  *
  * Resolves base and candidate commit OIDs from job state:
- *   - base     = latest test-materialize step run's commitOid
- *   - candidate = latest implementer step run's commitOid
+ *   - base     = latest test-materialize step run's commitOid (for file-set identification)
+ *   - Evidence Base ref = first parent of the bootstrap commit (synthesizedCommits[0]^)
  *
  * Both OIDs are written by the executor (T-02) immediately after the per-node commit.
  * They survive resume via the event-journal fold (T-01).
@@ -16,7 +16,9 @@ import { STEP_NAMES } from "../../../kernel/step-names.js";
  * Resolve the base and candidate commit OIDs from job state.
  *
  * - base:      latest `test-materialize` run's `commitOid`
+ *   (still used for materialized-test-file *set* identification — design D3)
  * - candidate: latest `implementer` run's `commitOid`
+ *   (retained for compatibility; green candidate is now HEAD, not this OID)
  *
  * Returns `null` for each OID when:
  *   - The step has no runs recorded, OR
@@ -43,30 +45,25 @@ export function resolveBaseCandidateOids(state: JobState): {
 }
 
 /**
- * Detect whether the base (latest test-materialize commit) has implementer commits
- * mixed into it — indicating a re-run where the assumption "base = no implementation"
- * no longer holds.
+ * Resolve the Evidence Base revision for a job.
  *
- * Returns the commitOid of the earliest offending implementer run (one that started
- * before the base test-materialize run), or null if the base is clean.
+ * The Evidence Base = immutable job base tree + candidate test overlay.
+ * The job base is the base-branch tree at job start, derived as the first
+ * parent of the bootstrap commit (`synthesizedCommits[0]^`).
+ *
+ * `synthesizedCommits[0]` is the bootstrap commit ("add request.md for <slug>"),
+ * created on the feature branch on top of the fork point before any pipeline step
+ * runs. Its first parent is the immutable fork point = base-branch tree at job start.
+ * This survives resume via the journal fold and never changes regardless of how many
+ * times `test-materialize` or `implementer` runs.
+ *
+ * Returns `null` when `synthesizedCommits` is absent or empty (legacy / pre-ledger
+ * state) — callers should treat null as fail-closed (strategy-deferred / absent).
  *
  * Pure function — no I/O.
- *
- * ponytail: startedAt 全順序に依存。Evidence Base 導入時に tree 合成へ置換。
  */
-export function detectBaseImplementationContamination(state: JobState): string | null {
-  const steps = state.steps ?? {};
-  const baseRuns = steps[STEP_NAMES.TEST_MATERIALIZE] ?? [];
-  const implementerRuns = steps[STEP_NAMES.IMPLEMENTER] ?? [];
-
-  const latestBase = baseRuns[baseRuns.length - 1];
-  if (!latestBase) return null;
-
-  for (const run of implementerRuns) {
-    if (run.commitOid && run.startedAt < latestBase.startedAt) {
-      return run.commitOid;
-    }
-  }
-
-  return null;
+export function resolveEvidenceBaseRev(state: JobState): string | null {
+  const commits = state.synthesizedCommits;
+  if (!commits || commits.length === 0) return null;
+  return `${commits[0]}^`;
 }
