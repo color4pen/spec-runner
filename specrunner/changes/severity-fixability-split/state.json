@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e319c5c-b2e2-41fa-8635-b7b89db081b0",
   "createdAt": "2026-08-14T11:27:26.288Z",
-  "updatedAt": "2026-08-14T14:02:26.560Z",
+  "updatedAt": "2026-08-14T14:09:33.328Z",
   "request": {
     "title": "severity と fixability の分離: LOW も fixable なら直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/severity-fixability-split-8e319c5c",
   "error": null,
@@ -78,7 +78,9 @@
     "4301d818a98396299e69d8ca605a4056c5739909",
     "4b665aa24ae2bddd6305465f8be927b351c1514a",
     "674e826a981210f4fc00109a6df2f862e5cbdce1",
-    "83e1ae3e39ee07e8320043035204a001406193b2"
+    "83e1ae3e39ee07e8320043035204a001406193b2",
+    "33b830c8cd6ac77597fe3ab51eee4d6f5a9dc6c2",
+    "b017b25186d96dab36d335d0b351117002013bff"
   ],
   "touchedFiles": {
     "request-review": [
@@ -203,6 +205,24 @@
     ],
     "code-fixer": [
       "src/core/pipeline/reviewer-chain.ts"
+    ],
+    "conformance": [
+      "src/core/step/judge-verdict.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/step/no-op-detect.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/routed-findings.ts",
+      "tests/unit/step/severity-fixability-split.test.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "tests/unit/step/code-fixer.test.ts",
+      "src/core/step/__tests__/executor-no-op.test.ts",
+      "src/core/step/__tests__/no-op-detect-exemption.test.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -238,7 +258,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 69,
+    "historyCount": 78,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -247,13 +267,14 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "code-fixer": 3
+      "code-fixer": 3,
+      "conformance": 1
     }
   }
 }
