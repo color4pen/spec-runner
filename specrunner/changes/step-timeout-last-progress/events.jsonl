@@ -137,3 +137,13 @@
 {"type":"lineage","step":"verification","ts":"2026-08-14T17:59:18.949Z","outputs":[{"path":"specrunner/changes/step-timeout-last-progress/verification-result.md","hash":"sha256:2d18006f735dd9ad4e5fa567df9bfc4b23a1dc92fe05b36c235a41d6f14be53e"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-08-14T17:59:18.968Z","step":"verification","status":"warning","message":"verification iteration 3 completed with verdict: failed"}
 {"type":"transition","ts":"2026-08-14T17:59:18.969Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: verification did not pass after 2 iterations"}
+{"type":"transition","ts":"2026-08-14T18:03:40.135Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'verification'"}
+{"type":"transition","ts":"2026-08-14T18:03:40.267Z","step":"verification","status":"started","message":"verification iteration 1 started"}
+{"type":"transition","ts":"2026-08-14T18:03:40.269Z","step":"step-transition","status":"ok","message":"Transitioning to verification step"}
+{"type":"transition","ts":"2026-08-14T18:05:20.422Z","step":"verification-verdict","status":"ok","message":"verification verdict: passed"}
+{"type":"step-attempt","step":"verification","sessionId":null,"outcome":{"verdict":"passed","findingsPath":"specrunner/changes/step-timeout-last-progress/verification-result.md","error":null,"toolResult":null,"followUpAttempts":0,"verificationPhases":[{"phase":"build","status":"passed","exitCode":0},{"phase":"typecheck","status":"passed","exitCode":0},{"phase":"test","status":"passed","exitCode":0},{"phase":"lint","status":"passed","exitCode":0},{"phase":"changed-line-coverage","status":"passed","exitCode":0},{"phase":"lockfile-sync","status":"skipped","exitCode":null}]},"startedAt":"2026-08-14T18:03:40.270Z","endedAt":"2026-08-14T18:05:20.413Z","commitOid":"31c24bff7378f9733ee243b2623b333b752c0400"}
+{"type":"lineage","step":"verification","ts":"2026-08-14T18:05:20.413Z","outputs":[{"path":"specrunner/changes/step-timeout-last-progress/verification-result.md","hash":"sha256:2b659cd6580e8ce6344347da3249402fc911db12076c95b9e98ea6c59525d801"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-08-14T18:05:20.426Z","step":"verification","status":"ok","message":"verification iteration 1 completed with verdict: passed"}
+{"type":"transition","ts":"2026-08-14T18:05:20.426Z","step":"step-transition","status":"ok","message":"verification → code-review"}
+{"type":"transition","ts":"2026-08-14T18:05:20.427Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-08-14T18:05:20.427Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
