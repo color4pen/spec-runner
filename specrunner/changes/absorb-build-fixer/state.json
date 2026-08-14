@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T20:28:53.214Z",
+  "updatedAt": "2026-08-14T20:31:59.010Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "42e47db25320bb4a56964be2de63574cf5e5bfb3",
     "b04c5f6b5e42c0015c9dc12f763b85adad487a0d",
-    "0ac7713da6173ad3961dd6030f76a46138fa4384"
+    "0ac7713da6173ad3961dd6030f76a46138fa4384",
+    "707857a787df861977ba69e483863f71541c82d5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -116,13 +117,15 @@
       "tests/grep-no-step-name-hardcode.test.ts",
       "src/templates/step-output-templates.ts",
       "tests/unit/core/pipeline/pipeline.conformance-routing.test.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
