@@ -94,3 +94,10 @@
 {"type":"transition","ts":"2026-08-14T17:28:59.628Z","step":"step-transition","status":"ok","message":"custom-reviewers → regression-gate"}
 {"type":"transition","ts":"2026-08-14T17:28:59.629Z","step":"regression-gate","status":"started","message":"regression-gate iteration 1 started"}
 {"type":"transition","ts":"2026-08-14T17:28:59.630Z","step":"regression-gate-started","status":"started","message":"Starting regression-gate step"}
+{"type":"transition","ts":"2026-08-14T17:30:09.951Z","step":"regression-gate-verdict","status":"ok","message":"regression-gate verdict: approved"}
+{"type":"step-attempt","step":"regression-gate","sessionId":"a303bbf0-fb1b-493f-9c2b-5c3cb5f24d4b","outcome":{"verdict":"approved","findingsPath":"specrunner/changes/step-timeout-last-progress/regression-gate-result-001.md","error":null,"toolResult":{"ok":true,"findings":[],"evidence":{"checked":4,"skipped":0,"unverified":0}},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-08-14T17:28:59.678Z","endedAt":"2026-08-14T17:30:08.125Z","commitOid":"854cb9f5a40b24590c1fd56ae264fa9669e092ff"}
+{"type":"lineage","step":"regression-gate","ts":"2026-08-14T17:30:08.125Z","outputs":[{"path":"specrunner/changes/step-timeout-last-progress/regression-gate-result-001.md","hash":"sha256:6b2754ff766e03479a7867ebfc147c8e568af42e76247b946065d9c03ad9381a"}],"inputs":[{"path":".","hash":null}]}
+{"type":"transition","ts":"2026-08-14T17:30:09.954Z","step":"regression-gate","status":"ok","message":"regression-gate iteration 1 completed with verdict: approved"}
+{"type":"transition","ts":"2026-08-14T17:30:09.954Z","step":"step-transition","status":"ok","message":"regression-gate → conformance"}
+{"type":"transition","ts":"2026-08-14T17:30:09.954Z","step":"conformance","status":"started","message":"conformance iteration 1 started"}
+{"type":"transition","ts":"2026-08-14T17:30:09.955Z","step":"conformance-started","status":"started","message":"Starting conformance step"}
