@@ -4,11 +4,11 @@
 
 対象ファイル: `src/core/archive/orchestrator.ts`
 
-- [ ] lines 260–265 (worktree-side `fs.rm` for draft directory) を削除する
-- [ ] lines 272–284 (worktree-side `git add specrunner/drafts/` + `archivePathspecs.push`) を削除する
+- [x] lines 260–265 (worktree-side `fs.rm` for draft directory) を削除する
+- [x] lines 272–284 (worktree-side `git add specrunner/drafts/` + `archivePathspecs.push`) を削除する
   - `archivePathspecs` への `draftsDir()` push も削除する
   - `draftsAbsPath`・`draftsPresent` 変数も削除する
-- [ ] 削除した箇所の直前 (markJobArchived の後、archivePathspecs 宣言の前) に以下のロジックを追加する:
+- [x] 削除した箇所の直前 (markJobArchived の後、archivePathspecs 宣言の前) に以下のロジックを追加する:
   - フラットパス: `nodePath.join(cwd, draftsDir(), slug + ".md")`
   - ディレクトリパス: `nodePath.join(cwd, draftsDir(), slug)`
   - 各パスについて (relPath・absPath の定義):
@@ -35,25 +35,25 @@
 
 対象ファイル: `src/core/archive/__tests__/orchestrator.test.ts`
 
-- [ ] **T-01 テストを更新する**
+- [x] **T-01 テストを更新する**
   - 現在: `fs.rm` が `nodePath.join(FAKE_WORKTREE, draftsDir(), FAKE_SLUG)` で呼ばれることを確認
   - 変更後: `fs.rm` が以下の 2 つのパスで呼ばれることを確認する
     - `nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG + ".md")` (フラット)
     - `nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG)` (ディレクトリ)
   - デフォルト `makeFs().exists = true` / `makeSpawn().stdout = ""` で ls-files=untracked が成立するので追加モックは不要
   - テストタイトルを "flat and directory draft deleted from repo root on archive" に変更する
-- [ ] **T-08 テストを更新する**
+- [x] **T-08 テストを更新する**
   - 現在: drafts dir 不在時 git add NOT called / no warning の確認
   - 変更後: `fs.exists` が drafts パスで false を返す場合に `fs.rm` が呼ばれず `stderrWrite` も draft 警告を出さないことを確認
   - `fs.exists` のモックを "フラット・ディレクトリ両方のパスで false" になるように設定する
     - 例: `vi.mocked(mockFs.exists).mockImplementation(async (p) => !p.includes("specrunner/drafts"))`
   - テストタイトルを "no draft at repo root → no rm and no warning" に変更する
-- [ ] **T-09 テストを更新する**
+- [x] **T-09 テストを更新する**
   - 現在: drafts dir 存在時 git add IS called の確認
   - 変更後: `fs.exists` が両 draft パスで true を返す場合に `fs.rm` が repo 本体パスで呼ばれることを確認
   - テストタイトルを "draft present at repo root → fs.rm called for flat and directory paths" に変更する
 
-- [ ] **T-07 重複の解消**: `orchestrator.test.ts` に `T-07` を冠するテストが 2 件存在する（line 245: EACCES 警告テスト、line 326: archived 状態の short-circuit テスト）。line 326 のテストを `T-10: archived job resolves via includeArchived and returns Already finished` に改名し、ファイル先頭のコメントに T-07〜T-10 の説明を追記する。
+- [x] **T-07 重複の解消**: `orchestrator.test.ts` に `T-07` を冠するテストが 2 件存在する（line 245: EACCES 警告テスト、line 326: archived 状態の short-circuit テスト）。line 326 のテストを `T-10: archived job resolves via includeArchived and returns Already finished` に改名し、ファイル先頭のコメントに T-07〜T-10 の説明を追記する。
 
 **Acceptance Criteria**:
 - 既存 T-01・T-08・T-09 が新しい期待値で green になる
@@ -66,18 +66,18 @@
 
 対象ファイル: `src/core/archive/__tests__/orchestrator.test.ts`
 
-- [ ] **NEW-flat: フラット形式のみ存在する場合のテストを追加する**
+- [x] **NEW-flat: フラット形式のみ存在する場合のテストを追加する**
   - `fs.exists`: フラットパスのみ true、ディレクトリパスは false
   - `spawn` (git ls-files): stdout `""` (untracked)
   - 確認: `fs.rm` がフラットパスで呼ばれる; ディレクトリパスでは呼ばれない
-- [ ] **NEW-dir: ディレクトリ形式のみ存在する場合のテストを追加する**
+- [x] **NEW-dir: ディレクトリ形式のみ存在する場合のテストを追加する**
   - `fs.exists`: ディレクトリパスのみ true、フラットパスは false
   - `spawn` (git ls-files): stdout `""` (untracked)
   - 確認: `fs.rm` がディレクトリパスで呼ばれる; フラットパスでは呼ばれない
-- [ ] **NEW-none: 両形式とも存在しない場合のテストを追加する**
+- [x] **NEW-none: 両形式とも存在しない場合のテストを追加する**
   - `fs.exists`: 両 draft パスで false (他パスは true でよい)
   - 確認: `fs.rm` が draft パスで呼ばれない; `stderrWrite` に draft 警告なし; exitCode 0
-- [ ] **NEW-tracked: tracked な draft は削除せず警告を出すテストを追加する**
+- [x] **NEW-tracked: tracked な draft は削除せず警告を出すテストを追加する**
   - `fs.exists`: フラットパスで true
   - `spawn`: git ls-files に対して `{ exitCode: 0, stdout: "specrunner/drafts/<slug>.md\n", stderr: "" }` を返す; それ以外は `{ exitCode: 0, stdout: "", stderr: "" }`
   - 確認: `fs.rm` がフラットパスで呼ばれない; `stderrWrite` に "Warning" を含む draft 関連メッセージが出力される; exitCode 0
@@ -96,9 +96,9 @@
 
 ## T-04: 最終検証
 
-- [ ] `bun run typecheck` を実行して型エラーがないことを確認する
-- [ ] `bun run test` を実行してすべてのテストが green であることを確認する
-- [ ] T-01〜T-03 で追加・変更したテスト名を確認し、削除したテスト ID の欠番が意図的なものであることをコメントで示す（任意）
+- [x] `bun run typecheck` を実行して型エラーがないことを確認する
+- [x] `bun run test` を実行してすべてのテストが green であることを確認する
+- [x] T-01〜T-03 で追加・変更したテスト名を確認し、削除したテスト ID の欠番が意図的なものであることをコメントで示す（任意）
 
 **Acceptance Criteria**:
 - typecheck: 0 errors

@@ -3,12 +3,16 @@
  *
  * Orchestrator records on the feature branch only; cleanup is post-merge.
  *
- * T-01: drafts/<slug> directory is still removed by orchestrator (pre-commit cleanup)
+ * T-01: flat and directory draft deleted from repo root (cwd) on archive
  * T-02: liveness.json is NOT unlinked by orchestrator (moved to runPostMergeCleanup)
  * T-03: managed marker.json is NOT unlinked by orchestrator (moved to runPostMergeCleanup)
  * T-04: localSidecarDir is NOT removed by orchestrator (moved to runPostMergeCleanup)
  * T-05: branch deletion (branch -D / push --delete) NOT called by orchestrator
  * T-06: draft rm failure does not fail archive (best-effort)
+ * T-07: draft rm EACCES emits a Warning via stderrWrite (best-effort)
+ * T-08: no draft at repo root → no rm and no warning
+ * T-09: draft present at repo root → fs.rm called for flat and directory paths
+ * T-10: archived job resolves via includeArchived and returns Already finished
  * T-DTE-01: designLayer enabled + decision-needed finding → topic file written + git add called
  * T-DTE-02: topic emission runs before mark-hook (spawn call order)
  * T-DTE-03: designLayer disabled → no topic file written
@@ -128,24 +132,24 @@ describe("archive orchestrator — side-effect boundaries (archive-on-branch-fir
     vi.mocked(JobStateStore.list).mockResolvedValue([makeState()]);
   });
 
-  it("T-01: drafts/<slug> directory is still removed by orchestrator (pre-commit cleanup)", async () => {
+  it("T-01: flat and directory draft deleted from repo root (cwd) on archive", async () => {
     const mockFs = makeFs();
 
     const result = await runArchiveOrchestrator({
       slug: FAKE_SLUG,
       cwd: FAKE_CWD,
-      spawn: makeSpawn(),
+      spawn: makeSpawn(), // stdout: "" → all untracked
       fs: mockFs,
     });
 
     expect(result.exitCode).toBe(0);
 
-    // Draft removal stays in orchestrator so the deletion is committed with the archive
-    const expectedDraftPath = nodePath.join(FAKE_WORKTREE, draftsDir(), FAKE_SLUG);
-    expect(vi.mocked(mockFs.rm)).toHaveBeenCalledWith(
-      expectedDraftPath,
-      { recursive: true, force: true },
-    );
+    // Both flat and directory draft paths deleted from cwd (repo root), not worktree
+    const flatPath = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG + ".md");
+    const dirPath  = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG);
+    const rmCalls = vi.mocked(mockFs.rm).mock.calls.map(([p]) => p as string);
+    expect(rmCalls).toContain(flatPath);
+    expect(rmCalls).toContain(dirPath);
   });
 
   it("T-02: liveness.json is NOT unlinked by orchestrator (moved to runPostMergeCleanup)", async () => {
@@ -261,12 +265,12 @@ describe("archive orchestrator — side-effect boundaries (archive-on-branch-fir
     expect(calls.some((m) => m.includes("Warning") && m.includes("draft"))).toBe(true);
   });
 
-  it("T-08: drafts directory absent → git add specrunner/drafts NOT called (no warning)", async () => {
+  it("T-08: no draft at repo root → no rm and no warning", async () => {
     const spawnMock = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
     vi.mocked(stderrWrite).mockClear();
 
     const mockFs = makeFs();
-    // fs.exists returns false specifically for the drafts directory path
+    // fs.exists returns false for both draft paths at repo root
     vi.mocked(mockFs.exists).mockImplementation(async (p: string) => {
       if (p.includes("specrunner/drafts")) return false;
       return true;
@@ -281,26 +285,21 @@ describe("archive orchestrator — side-effect boundaries (archive-on-branch-fir
 
     expect(result.exitCode).toBe(0);
 
-    // git add specrunner/drafts must NOT be called
-    const draftAddCall = spawnMock.mock.calls.find(
-      (c: unknown[]) =>
-        c[0] === "git" &&
-        Array.isArray(c[1]) &&
-        (c[1] as string[])[0] === "add" &&
-        (c[1] as string[]).some((arg: string) => arg.includes("specrunner/drafts") || arg === "specrunner/drafts"),
-    );
-    expect(draftAddCall).toBeUndefined();
+    // fs.rm must NOT be called for any draft path
+    const rmCalls = vi.mocked(mockFs.rm).mock.calls.map(([p]) => p as string);
+    const draftRmCalls = rmCalls.filter((p) => p.includes("specrunner/drafts"));
+    expect(draftRmCalls).toHaveLength(0);
 
     // No warning about drafts should have been emitted
     const warnCalls = vi.mocked(stderrWrite).mock.calls.map(([msg]) => msg as string);
-    expect(warnCalls.some((m) => m.includes("specrunner/drafts"))).toBe(false);
+    expect(warnCalls.some((m) => m.toLowerCase().includes("draft"))).toBe(false);
   });
 
-  it("T-09: drafts directory present → git add specrunner/drafts IS called", async () => {
+  it("T-09: draft present at repo root → fs.rm called for flat and directory paths", async () => {
     const spawnMock = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
 
     const mockFs = makeFs();
-    // fs.exists returns true for all paths (including drafts)
+    // fs.exists returns true for all paths (including both draft paths)
     vi.mocked(mockFs.exists).mockResolvedValue(true);
 
     const result = await runArchiveOrchestrator({
@@ -312,15 +311,12 @@ describe("archive orchestrator — side-effect boundaries (archive-on-branch-fir
 
     expect(result.exitCode).toBe(0);
 
-    // git add specrunner/drafts MUST be called
-    const draftAddCall = spawnMock.mock.calls.find(
-      (c: unknown[]) =>
-        c[0] === "git" &&
-        Array.isArray(c[1]) &&
-        (c[1] as string[])[0] === "add" &&
-        (c[1] as string[]).some((arg: string) => arg.includes("specrunner/drafts") || arg === "specrunner/drafts"),
-    );
-    expect(draftAddCall).toBeDefined();
+    // fs.rm must be called for both flat and directory draft paths at repo root
+    const flatPath = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG + ".md");
+    const dirPath  = nodePath.join(FAKE_CWD, draftsDir(), FAKE_SLUG);
+    const rmCalls = vi.mocked(mockFs.rm).mock.calls.map(([p]) => p as string);
+    expect(rmCalls).toContain(flatPath);
+    expect(rmCalls).toContain(dirPath);
   });
 
   // ---------------------------------------------------------------------------
@@ -518,7 +514,7 @@ describe("archive orchestrator — side-effect boundaries (archive-on-branch-fir
     expect(rmCalls).toContain(dirPath);
   });
 
-  it("T-07: archived job resolves via includeArchived and returns Already finished", async () => {
+  it("T-10: archived job resolves via includeArchived and returns Already finished", async () => {
     vi.mocked(JobStateStore.list).mockResolvedValue([makeState({ status: "archived" })]);
     vi.mocked(commitArchive).mockClear();
     vi.mocked(archiveChangeFolder).mockClear();

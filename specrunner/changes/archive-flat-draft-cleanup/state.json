@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2e14a04b-8b5c-4972-a028-2ba8d7034ff8",
   "createdAt": "2026-08-14T09:20:18.393Z",
-  "updatedAt": "2026-08-14T09:38:23.904Z",
+  "updatedAt": "2026-08-14T09:44:21.340Z",
   "request": {
     "title": "archive の draft 削除が実ファイルに届いていない: repo 本体側・両形式の削除に直す",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-materialize",
+  "step": "implementer",
   "status": "running",
   "branch": "fix/archive-flat-draft-cleanup-2e14a04b",
   "error": null,
@@ -67,7 +67,8 @@
     "03d25884eeb25624b9c50c37369abb788a13822f",
     "c824fe70b80d5fbf64aa329eab4c067606ddf20f",
     "cf39759c1c13da2113bbc5fc8adb582a89fefeb5",
-    "53df384c5aa0383c0bddaaee06cc791de0540e0d"
+    "53df384c5aa0383c0bddaaee06cc791de0540e0d",
+    "3196e915bbfce8f9d641202bd56947eb77fa7265"
   ],
   "touchedFiles": {
     "request-review": [
@@ -99,16 +100,22 @@
     ],
     "test-case-gen": [
       "src/core/archive/__tests__/orchestrator.test.ts"
+    ],
+    "test-materialize": [
+      "src/core/archive/__tests__/orchestrator.test.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/util/paths.ts"
     ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 22,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "test-materialize": 1
     }
   }
 }
