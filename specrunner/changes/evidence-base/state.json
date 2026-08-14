@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
   "createdAt": "2026-08-14T20:03:06.572Z",
-  "updatedAt": "2026-08-14T23:12:06.927Z",
+  "updatedAt": "2026-08-14T23:21:15.476Z",
   "request": {
     "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/evidence-base-a50242c6",
   "error": null,
@@ -91,7 +91,9 @@
     "a47921a4a64a0083fe0026e8c8ba8b677b76a802",
     "01b17d3a9e6c67ca278dc21c9f860aa3303f5e89",
     "93d91df0a2cce0abb07613487452ba4341cf1070",
-    "0b63432fd94090c2e917f619a663e0a70e2a4403"
+    "0b63432fd94090c2e917f619a663e0a70e2a4403",
+    "bf838c30fb4c1df02120e7661a0463fcb788151c",
+    "2595bed035c3f1f99f2558b1423e25f30b17c03a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -212,6 +214,22 @@
       "src/core/archive/achieved-assurance.ts",
       "src/core/runtime/local.ts",
       "src/core/archive/__tests__/achieved-assurance.test.ts"
+    ],
+    "conformance": [
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/step/bite-evidence/__tests__/evidence-base-oids.test.ts",
+      "src/core/step/bite-evidence/__tests__/evidence-base-gate.test.ts",
+      "src/core/archive/__tests__/evidence-base-archive-floor.test.ts",
+      "src/core/runtime/__tests__/evidence-base-e2e.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/runtime/__tests__/synthesized-tree-exec.test.ts",
+      "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts"
     ]
   },
   "resumePoint": null,
@@ -254,7 +272,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 107,
+    "historyCount": 116,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -264,13 +282,14 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 2,
       "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
