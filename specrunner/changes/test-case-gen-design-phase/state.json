@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T15:47:57.433Z",
+  "updatedAt": "2026-08-14T15:59:58.880Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "implementer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/test-case-gen-design-phase-96aef526",
-  "error": {
-    "code": "STEP_TIMEOUT",
-    "message": "Step 'implementer' inactivity timeout: no agent event for 900001ms",
-    "hint": ""
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -74,7 +70,8 @@
     "6fd79c6cede922b79400e187186ee80fc953e27d",
     "354cd125945c0f24276524fdaf640ddc21e3cb05",
     "9312124fbc8f14da5597ccfa1b14ab3b17cef47e",
-    "379cc9c930cae5f7f1c8d4f4ddaf4f1ec76ce8ed"
+    "379cc9c930cae5f7f1c8d4f4ddaf4f1ec76ce8ed",
+    "45611285df4dad0b574de8576f96aecff5adefc0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -169,14 +166,17 @@
       "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "implementer",
-    "reason": "timeout",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "残っていた 3 件の pin テスト更新(tests/error-codes.test.ts TC-026 / tests/cli-stdout-snapshot.test.ts TC-029 / src/core/step/__tests__/spec-review-fixer-routing.test.ts TC-013)と design.md の列挙追補は operator commit 45611285d で適用済み。typecheck と全テスト green は確認済み。tasks.md の残チェックボックスを確認して完了させること。テスト実行は必ず 'bun run test'(= vitest run)を使う。'bun test'(bun 内蔵 runner)は本リポジトリのテスト資産と互換がなく sandbox 下で終了せず hang するため使用禁止。ファイル指定は 'bun run test -- <path>'。",
+      "step": "implementer",
+      "recordedAt": "2026-08-14T15:59:58.709Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 28,
+    "historyCount": 30,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
