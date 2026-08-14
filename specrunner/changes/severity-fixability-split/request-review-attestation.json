@@ -1,0 +1,22 @@
+{
+  "requestHash": "sha256:86270ffa46de2c0b747e246a62b8af644b0e6b2c105a47f23e2f8bae9158e66d",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/judge-verdict.ts:201-203 selectFixerTargetFindings excludes severity === 'low'",
+    "src/core/step/judge-verdict.ts:197 comment 'code-fixer prompts must NOT re-filter by severity'",
+    "src/core/step/judge-verdict.ts:58 deriveJudgeVerdict needs-fix fires for critical|high only",
+    "src/core/step/judge-verdict.ts:106-112 deriveSpecReviewVerdict routableCanon critical|high → needs-fix, low/medium fall through to approved",
+    "src/core/step/judge-verdict.ts:69-82 comment: low/medium fixable → approved (observation auto-fix, no re-review)",
+    "src/core/step/judge-verdict.ts:209-213 deriveRegressionGateVerdict comment: caller applies excludeKnownUnfixedRegressions before invoking",
+    "src/core/step/judge-verdict.ts:188-190 collectFixableFindings filters by resolution === 'fixable' only, no severity filter",
+    "src/core/step/code-fixer.ts:149-150 'Fix all HIGH and CRITICAL severity findings (mandatory)' / 'Fix MEDIUM severity findings only if they do not require design changes'",
+    "src/core/step/code-fixer.ts:192-193 same pattern as 149-150",
+    "src/core/step/code-fixer.ts:218-219 same pattern as 149-150",
+    "src/core/step/code-fixer.ts:271 'Fix all HIGH and CRITICAL severity findings (mandatory)'",
+    "src/core/pipeline/findings-ledger.ts:230-242 excludeKnownUnfixedRegressions filters gate findings by low-severity ledger fingerprints",
+    "src/core/step/step-completion.ts:216 excludeKnownUnfixedRegressions called for regression-gate verdict computation",
+    "src/core/step/step-completion.ts:258 excludeKnownUnfixedRegressions called for persistToolResult alignment",
+    "src/core/step/routed-findings.ts:108-113 collectRoutedFixerFindings Branch 3 calls selectFixerTargetFindings (LOW excluded comment)"
+  ],
+  "sourceRevision": "704fe11029ae68349b4285509e2363346e9ffddc"
+}
