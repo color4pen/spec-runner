@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "05217549-d66b-44d3-8649-45e94c856f2b",
   "createdAt": "2026-08-14T15:29:53.246Z",
-  "updatedAt": "2026-08-14T17:14:46.555Z",
+  "updatedAt": "2026-08-14T17:28:59.630Z",
   "request": {
     "title": "STEP_TIMEOUT の halt 記録に最後の tool 実行情報を残す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/step-timeout-last-progress-05217549",
   "error": null,
@@ -77,7 +77,9 @@
     "b476aad9c95c395a651335e1b283d7c7b74ab8de",
     "8e7d2c38c7144d9f1d9ed0cb2ec316b2175cfdc3",
     "f242c0f49509625d5b7cf002970e6bb37114e5a2",
-    "59b27bf60cf94a18426cc31a4c6a0f96b651cd7b"
+    "59b27bf60cf94a18426cc31a4c6a0f96b651cd7b",
+    "099829dfa9a3904fd93bb44395c3d185f4a0e263",
+    "c4860f4a4d9f876e95a2feafb096e19789933988"
   ],
   "touchedFiles": {
     "request-review": [
@@ -171,14 +173,16 @@
       "src/core/step/step-halt.ts"
     ],
     "code-fixer": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/port/output-contract.ts",
       "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts"
     ]
   },
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "099829dfa9a3904fd93bb44395c3d185f4a0e263",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -188,7 +192,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/step-timeout-last-progress/design.md:sha256:ec75d83f545bd685705582d198e2043e5110dc58b1f61e657a13262ab0f0d039|specrunner/changes/step-timeout-last-progress/request.md:sha256:85b3a52fb6f92d006aa3ea74513456a769a1e91a7c3320709361445409ce5d9c|specrunner/changes/step-timeout-last-progress/spec.md:sha256:1aa0a2563ff305adbb2342d3b904e1fc0897288ecff15274e9201ea69d314002|specrunner/changes/step-timeout-last-progress/tasks.md:sha256:4f9b15d1896346577ba80c659c26207027eba850f1b40b159bb06c09df32d531|specrunner/changes/step-timeout-last-progress/test-cases.md:sha256:380b3132236806372630ba51ef1c412c6aeffe76f4ac99293b2c5836b495480f"
     },
     {
       "name": "scale-tolerance",
@@ -206,7 +211,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 63,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -218,10 +223,10 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 2,
-      "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
