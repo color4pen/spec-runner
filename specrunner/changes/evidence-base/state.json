@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
   "createdAt": "2026-08-14T20:03:06.572Z",
-  "updatedAt": "2026-08-14T23:21:15.476Z",
+  "updatedAt": "2026-08-14T23:24:24.510Z",
   "request": {
     "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/evidence-base-a50242c6",
   "error": null,
   "pipelineId": "standard",
@@ -93,7 +93,8 @@
     "93d91df0a2cce0abb07613487452ba4341cf1070",
     "0b63432fd94090c2e917f619a663e0a70e2a4403",
     "bf838c30fb4c1df02120e7661a0463fcb788151c",
-    "2595bed035c3f1f99f2558b1423e25f30b17c03a"
+    "2595bed035c3f1f99f2558b1423e25f30b17c03a",
+    "32a820cb0d6ffca5310c68c6dac446d37a765065"
   ],
   "touchedFiles": {
     "request-review": [
@@ -230,6 +231,10 @@
       "src/core/runtime/__tests__/synthesized-tree-exec.test.ts",
       "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
       "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-01-runtime-strategy-artifact-lifecycle.md",
+      "specrunner/adr/2026-08-15-evidence-base.md"
     ]
   },
   "resumePoint": null,
@@ -271,8 +276,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/997",
+    "number": 997,
+    "createdAt": "2026-08-14T23:24:23.501Z"
+  },
   "_journal": {
-    "historyCount": 116,
+    "historyCount": 121,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -289,7 +299,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
