@@ -259,23 +259,18 @@ export function conformanceFixInProgress(state: JobState): boolean {
  *
  * Design D7 (reviewer-parallel-execution): priority 2 after conformance.
  * regression-gate triggered this fixer entry when:
- * - the regression-gate's latest verdict is "needs-fix", OR
- * - the regression-gate approved BUT had fixable findings (findings-routing path).
+ * - the regression-gate's latest verdict is "needs-fix".
+ *
+ * Note: after D2 (excludeKnownUnfixedRegressions removal), deriveRegressionGateVerdict
+ * converts any fixable finding to needs-fix regardless of severity. The approved+fixable
+ * branch is structurally unreachable and has been removed.
  */
 export function regressionGateActive(state: JobState): boolean {
   const runs = state.steps?.[REGRESSION_GATE_STEP_NAME] ?? [];
   if (runs.length === 0) return false;
   const last = runs[runs.length - 1];
   if (!last) return false;
-  const verdict = last.outcome.verdict;
-  if (verdict === "needs-fix") return true;
-  if (verdict === "approved") {
-    // findings-routing: approved but had fixable findings
-    const toolResult = last.outcome.toolResult as { findings?: import("../../kernel/report-result.js").Finding[] } | null | undefined;
-    const findings = toolResult?.findings ?? [];
-    return collectFixableFindings(findings).length > 0;
-  }
-  return false;
+  return last.outcome.verdict === "needs-fix";
 }
 
 /**

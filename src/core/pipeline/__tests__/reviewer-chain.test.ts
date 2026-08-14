@@ -368,33 +368,9 @@ describe("regressionGateActive", () => {
     expect(regressionGateActive(state)).toBe(true);
   });
 
-  it("returns true when regression-gate approved with fixable findings", () => {
-    const state: JobState = {
-      ...makeState(),
-      steps: {
-        [REGRESSION_GATE_STEP_NAME]: [
-          {
-            attempt: 1,
-            sessionId: null,
-            startedAt: "2026-01-01T00:04:00Z",
-            endedAt: "2026-01-01T00:04:30Z",
-            outcome: {
-              verdict: "approved",
-              findingsPath: null,
-              error: null,
-              toolResult: {
-                ok: true,
-                findings: [
-                  { severity: "high", resolution: "fixable", file: "src/foo.ts", title: "T", rationale: "R" },
-                ],
-              },
-            },
-          },
-        ],
-      } as unknown as JobState["steps"],
-    };
-    expect(regressionGateActive(state)).toBe(true);
-  });
+  // Note: after D2 (excludeKnownUnfixedRegressions removal), deriveRegressionGateVerdict
+  // converts any fixable finding to needs-fix, so approved+fixable is structurally unreachable.
+  // The test for that branch has been removed.
 
   it("returns false when regression-gate approved with no fixable findings", () => {
     const state: JobState = {

@@ -200,6 +200,7 @@ green」に対応。**この表に挙げたテストのみ更新し、他は無�
 | `src/core/step/__tests__/no-op-detect-exemption.test.ts` | 「TC-011: approved findings-routing, params omitted → undefined (suppression preserved)」 | `findingsRoutingApproved: true → undefined` | param 削除に伴い削除。D5 |
 | 同上 | その他全 `detectNoOp` 呼び出し（`findingsRoutingApproved: false` を渡す箇所） | — | param 削除に伴い当該引数行を除去（挙動は不変）。D5 |
 | `src/core/pipeline/__tests__/reviewer-chain.test.ts` | describe「codeReviewFindingsRoutingActive」+ import | 削除関数の挙動 | 関数削除に伴い describe ごと削除、import から除去。D5 |
+| 同上 | 「returns true when regression-gate approved with fixable findings」 | `regressionGateActive` の approved+fixable 分岐 | D2 により derive が fixable≥1 を needs-fix に変換し当該分岐は到達不能。分岐削除（regression-gate finding 起因）に伴いテストも削除。 |
 | `src/core/step/__tests__/judge-verdict.test.ts` | `deriveJudgeVerdict` / `deriveRegressionGateVerdict` 各テスト | verdict 意味論 | **不変**（verdict 導出は変更しない）。参考: 列挙外・green のまま。D6 |
 | `tests/unit/step/judge-verdict.test.ts` | `collectVerdictAffectingFindings`（low/medium fixable を除外） | verdict-affecting 判定 | **不変**（verdict 層であり fixer routing ではない）。参考: 列挙外。 |
 | `tests/unit/prompts/fragments.test.ts` | `PIPELINE_RULES` が "LOW" を含まない | 共有 fragment | **不変**（変更対象は `code-fixer-system.ts` の `CODE_FIXER_BASE`、`PIPELINE_RULES` fragment ではない）。参考: 列挙外。 |

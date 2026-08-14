@@ -157,7 +157,7 @@ ${ledgerBlock}
 Verification steps:
 1. Run \`git diff main...HEAD\` to see all changes made in this branch.
 2. For each finding in the ledger above, read the relevant file and verify the fix is still present.
-3. Report any regressions (findings that are back) with severity=high / resolution=fixable.
+3. Report any regressions (findings that are back) with the severity from the ledger entry / resolution=fixable. The ledger includes all severities (LOW, MEDIUM, HIGH, CRITICAL) — report each regression with its actual severity.
 4. Report contradictions (fixing A re-introduces B) with resolution=decision-needed.
 5. If ledger is empty → call \`report_result\` with findings=[] immediately.
 6. Write your evidence report to: ${resultPath}
