@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T15:59:58.880Z",
+  "updatedAt": "2026-08-14T16:03:23.531Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/test-case-gen-design-phase-96aef526",
   "error": null,
@@ -71,7 +71,9 @@
     "354cd125945c0f24276524fdaf640ddc21e3cb05",
     "9312124fbc8f14da5597ccfa1b14ab3b17cef47e",
     "379cc9c930cae5f7f1c8d4f4ddaf4f1ec76ce8ed",
-    "45611285df4dad0b574de8576f96aecff5adefc0"
+    "45611285df4dad0b574de8576f96aecff5adefc0",
+    "8fe4a8734e877b44913c7938597019fff306e1d3",
+    "a0b3f87d539d5009530d417b23a21464f1ce20b5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -164,7 +166,8 @@
       "src/core/step/step-names.ts",
       "src/kernel/step-names.ts",
       "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts"
-    ]
+    ],
+    "implementer": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -176,7 +179,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 30,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -184,7 +187,9 @@
       "spec-fixer": 1,
       "test-case-gen": 1,
       "test-materialize": 1,
-      "implementer": 2
+      "implementer": 3,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
