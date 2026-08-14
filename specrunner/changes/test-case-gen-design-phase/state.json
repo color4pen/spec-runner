@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T18:39:07.209Z",
+  "updatedAt": "2026-08-14T18:44:33.708Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/test-case-gen-design-phase-96aef526",
   "error": null,
@@ -83,7 +83,8 @@
     "8d295e7817219df3fe4fe3872cc17dec29638272",
     "1f0a592a8b97c36e3e64fd017f90254fb2978e9a",
     "d4c002e28c4eb6597d2b44afef774ec138afd864",
-    "6b18623821d81c00485c0348c3f112143e5c83c1"
+    "6b18623821d81c00485c0348c3f112143e5c83c1",
+    "e77a96d9a4243c3c9c4b6f87708a93c7255e9df0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -200,9 +201,11 @@
       "tests/helpers/pipeline-mock-client.ts"
     ],
     "code-fixer": [
-      "src/core/pipeline/registry.ts",
-      "tests/unit/core/pipeline/registry-invariants.test.ts",
-      "tests/unit/core/pipeline/pipeline-roles.test.ts"
+      "src/core/step/step-completion.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/__tests__/spec-review-fixer-routing.test.ts"
     ],
     "regression-gate": [
       "src/core/pipeline/spec-observation.ts",
@@ -258,7 +261,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 83,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -270,7 +273,7 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 4,
-      "code-fixer": 3,
+      "code-fixer": 4,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
