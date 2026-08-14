@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e319c5c-b2e2-41fa-8635-b7b89db081b0",
   "createdAt": "2026-08-14T11:27:26.288Z",
-  "updatedAt": "2026-08-14T11:48:46.214Z",
+  "updatedAt": "2026-08-14T11:57:04.086Z",
   "request": {
     "title": "severity と fixability の分離: LOW も fixable なら直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/severity-fixability-split-8e319c5c",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "4370df62037239c0c4d2c3e92a524dd651b21a08",
     "ccbb69af153ea23b85dc2c00b60c184108d9cdcb",
-    "828a85ed00bc9b66361c46efd55cfcbb232b7429"
+    "828a85ed00bc9b66361c46efd55cfcbb232b7429",
+    "2e2099d55229c12b1797a9d00d28c8c2d9a438a1"
   ],
   "touchedFiles": {
     "request-review": [
@@ -96,13 +97,32 @@
       "src/prompts/spec-fixer-system.ts",
       "tests/unit/step/judge-verdict.test.ts",
       "tests/unit/step/code-fixer.test.ts"
+    ],
+    "spec-review": [
+      "src/core/step/judge-verdict.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/step/code-fixer.ts",
+      "src/core/step/no-op-detect.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/prompts/code-fixer-system.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/routed-findings.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "src/core/step/__tests__/executor-no-op.test.ts",
+      "src/core/step/__tests__/no-op-detect-exemption.test.ts",
+      "tests/unit/step/fixer-findings.test.ts",
+      "tests/unit/step/code-fixer.test.ts",
+      "tests/unit/step/executor-no-op.test.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "spec-review": 1
     }
   }
 }
