@@ -81,7 +81,8 @@
     "83e1ae3e39ee07e8320043035204a001406193b2",
     "33b830c8cd6ac77597fe3ab51eee4d6f5a9dc6c2",
     "b017b25186d96dab36d335d0b351117002013bff",
-    "057f0b37b34c7da1bd408328f3404a2877c31f18"
+    "057f0b37b34c7da1bd408328f3404a2877c31f18",
+    "07e947229438774741f25bf11f5126e48bd1561d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -262,7 +263,11 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "timeout",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/993",
