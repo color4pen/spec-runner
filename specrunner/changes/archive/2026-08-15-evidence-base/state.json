@@ -1,0 +1,308 @@
+{
+  "version": 2,
+  "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
+  "createdAt": "2026-08-14T20:03:06.572Z",
+  "updatedAt": "2026-08-14T23:24:24.510Z",
+  "request": {
+    "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
+    "type": "spec-change",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/evidence-base-a50242c6",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "4352786fbcb8d5509b0f455b0c9df68d7421f47d",
+    "64d2fdd821c7992ec6629033ec22267ea133b26f",
+    "991cf7f784b1d886408ba9d29491e708cf6918d6",
+    "f72d7f1f8f544c0fae0bc78db679a60a6bae5426",
+    "a8937e64e24ddb414bb097b308eee1cc12518826",
+    "5fbdfe85548fb1486cc88707a0a2b9f24d4723d2",
+    "abd1c9df77b80d689f681b702857e6b4124faad1",
+    "5fe00a4361c8e5afbcd6ab24feacf5d6e7548c1e",
+    "02c356a80da4f63eba6917a3f942d3001e55cfa0",
+    "a4ba42f2ad9b686f7d5d5354a513f1683d2f00de",
+    "5dbf676eef8f5453620560888b425ba60042405a",
+    "894c3478fae758d4c6c83b9b1e348b86b86de942",
+    "e2497cf4745dfc1ab7e883498bd32a865a264e3b",
+    "4a2be8ed9b36d6a32a372efb9ae9d9ab7484bab2",
+    "58791bbe1d0a16d09f942f2153c9cbb9bd042445",
+    "3bd5945b074c4d0a3f3de9753b21c9ef83b04791",
+    "006fbb87d0e017eb71c13a32e1e1ea90bac538d0",
+    "753d1b003e217b2f676a20f07c5a8a7760d60021",
+    "3e849ed3af6646e8bbfa9fbc027e8950de3145b8",
+    "1e24e0f2aff7ff263c828f9372bc1ee0b11e47f7",
+    "45854fd89058956df73a9bdcb7b202bf979dc324",
+    "f12202d0f3fd6991751e4ddf8625a48be16d8877",
+    "1382a2ae39c5db763574283f39332f4f22ff3363",
+    "b0adcafc17f24f2bbdbba0ccde87ab6595c3ee19",
+    "c2b42be039962b875d9195e37a43be70f0e1f430",
+    "bb179844295da2027cd2e6ce6266694beaa0d051",
+    "a47921a4a64a0083fe0026e8c8ba8b677b76a802",
+    "01b17d3a9e6c67ca278dc21c9f860aa3303f5e89",
+    "93d91df0a2cce0abb07613487452ba4341cf1070",
+    "0b63432fd94090c2e917f619a663e0a70e2a4403",
+    "bf838c30fb4c1df02120e7661a0463fcb788151c",
+    "2595bed035c3f1f99f2558b1423e25f30b17c03a",
+    "32a820cb0d6ffca5310c68c6dac446d37a765065",
+    "c54d3020bad5c7ea6b108029dbcfa6b101979930"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/config/schema/types.ts",
+      "src/core/resume/adopt-commits.ts",
+      "src/core/command/resume.ts",
+      "src/state/schema/types.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/step/bite-evidence/__tests__/oid-capture.test.ts",
+      "src/core/step/bite-evidence/step.ts"
+    ],
+    "design": [
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/step/bite-evidence/step.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/runtime/local.ts",
+      "src/state/schema/types.ts",
+      "src/core/resume/adopt-commits.ts",
+      "src/core/command/resume.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/step/bite-evidence/__tests__/oid-capture.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/archive/__tests__/achieved-assurance.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/command/resume.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts",
+      "src/core/port/runtime-strategy.ts"
+    ],
+    "spec-fixer": [],
+    "test-materialize": [
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/step/bite-evidence/__tests__/oid-capture.test.ts",
+      "src/core/runtime/__tests__/bite-evidence-isolated-exec.test.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/runtime/local.ts",
+      "src/core/archive/__tests__/achieved-assurance.test.ts",
+      "src/state/schema/types.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts",
+      "tests/unit/core/archive/achieved-assurance-revision-binding-unit.test.ts",
+      "src/core/step/bite-evidence/__tests__/evidence-base-oids.test.ts",
+      "src/core/step/bite-evidence/__tests__/evidence-base-gate.test.ts",
+      "src/core/archive/__tests__/evidence-base-archive-floor.test.ts",
+      "src/core/runtime/__tests__/synthesized-tree-exec.test.ts",
+      "src/core/runtime/__tests__/evidence-base-e2e.test.ts"
+    ],
+    "implementer": [
+      "src/core/step/bite-evidence/__tests__/evidence-base-oids.test.ts",
+      "src/core/step/bite-evidence/__tests__/evidence-base-gate.test.ts",
+      "src/core/archive/__tests__/evidence-base-archive-floor.test.ts",
+      "src/core/runtime/__tests__/synthesized-tree-exec.test.ts",
+      "src/core/runtime/__tests__/evidence-base-e2e.test.ts",
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/runtime/local.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts",
+      "src/core/archive/__tests__/achieved-assurance.test.ts",
+      "tests/unit/core/archive/achieved-assurance-revision-binding-unit.test.ts",
+      "src/util/spawn.ts",
+      "src/core/verification/commands.ts",
+      "src/state/schema/types.ts",
+      "tests/unit/core/archive/achieved-assurance-completeness-unit.test.ts",
+      "tests/unit/core/archive/achieved-assurance-completeness-integration.test.ts",
+      "tests/unit/core/archive/achieved-assurance-revision-binding-integration.test.ts",
+      "tests/unit/core/archive/achieved-assurance-test-file-selection.test.ts",
+      "tests/unit/core/archive/merge-then-archive-floor-provenance.test.ts",
+      "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
+      "tasks.md"
+    ],
+    "code-review": [
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/runtime/local.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/step/bite-evidence/__tests__/evidence-base-gate.test.ts",
+      "src/core/step/bite-evidence/__tests__/evidence-base-oids.test.ts",
+      "src/core/archive/__tests__/evidence-base-archive-floor.test.ts",
+      "src/core/runtime/__tests__/synthesized-tree-exec.test.ts",
+      "src/core/runtime/__tests__/evidence-base-e2e.test.ts",
+      "src/state/schema/types.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts",
+      "src/core/archive/__tests__/achieved-assurance.test.ts",
+      "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
+      "src/state/schema/operations.ts"
+    ],
+    "code-fixer": [
+      "src/core/archive/__tests__/achieved-assurance.test.ts",
+      "tests/unit/core/archive/achieved-assurance-revision-binding-unit.test.ts"
+    ],
+    "regression-gate": [
+      "src/state/schema/types.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/runtime/local.ts",
+      "src/core/archive/__tests__/achieved-assurance.test.ts"
+    ],
+    "conformance": [
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/step/bite-evidence/__tests__/evidence-base-oids.test.ts",
+      "src/core/step/bite-evidence/__tests__/evidence-base-gate.test.ts",
+      "src/core/archive/__tests__/evidence-base-archive-floor.test.ts",
+      "src/core/runtime/__tests__/evidence-base-e2e.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/runtime/__tests__/synthesized-tree-exec.test.ts",
+      "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-01-runtime-strategy-artifact-lifecycle.md",
+      "specrunner/adr/2026-08-15-evidence-base.md"
+    ]
+  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "残 findings 2 件は operator 修正済み: design.md D7 の構造削除確認の TC 参照を TC-014 → TC-016 に訂正(同文中の T-06/TC-022 も本 change に存在しない番号のため TC-017 に訂正)。test-cases.md の Result YAML automated を 17 → 15 に訂正(Summary の定義どおり unit/integration のみ、gate 2 件は除外 — step-timeout-last-progress と同じ規約)。修正済み canon で review を再走せよ。",
+      "step": "spec-fixer",
+      "recordedAt": "2026-08-14T21:08:22.061Z"
+    }
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "bb179844295da2027cd2e6ce6266694beaa0d051",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/evidence-base/design.md:sha256:2c7da79129963a2851a6222a860b584fe97ea121dd36af1e8abab473cdb9a33b|specrunner/changes/evidence-base/request.md:sha256:a097fb90f6fa4a1ee821fba0f0e0861656fb3a538f7c8481d9c3096dbc1b73d7|specrunner/changes/evidence-base/spec.md:sha256:415ec6a48b528a82266bfecea78c0ec9002bada389722816fd98dc602b54fb2e|specrunner/changes/evidence-base/tasks.md:sha256:d3a46018b350772fd1f94ff3e74e04155d106a5bc88af32e78c0b7d53ae1d2df|specrunner/changes/evidence-base/test-cases.md:sha256:7350e047937516bafd6023171db5ee3aa37bd43b19d02697a517fb3366741193"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/997",
+    "number": 997,
+    "createdAt": "2026-08-14T23:24:23.501Z"
+  },
+  "_journal": {
+    "historyCount": 121,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 4,
+      "spec-review": 4,
+      "spec-fixer": 3,
+      "test-materialize": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 2,
+      "code-review": 2,
+      "code-fixer": 3,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 1,
+      "custom-reviewers": 2,
+      "regression-gate": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

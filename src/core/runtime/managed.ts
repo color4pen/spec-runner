@@ -679,6 +679,20 @@ export class ManagedRuntime implements RealRuntimeStrategy {
 
   /**
    * ManagedRuntime has no local worktree — always returns unavailable.
+   * Structural limitation: synthesized-tree execution requires a local git worktree.
+   */
+  async runTestsOnSynthesizedTree(
+    _baseRev: string,
+    _overlayFiles: string[],
+    _overlayFromOid: string,
+    _cwd: string,
+    _config: import("../../config/schema.js").SpecRunnerConfig,
+  ): Promise<import("../port/runtime-strategy.js").IsolatedTestResult> {
+    return { kind: "unavailable", reason: "managed runtime has no local worktree for runTestsOnSynthesizedTree" };
+  }
+
+  /**
+   * ManagedRuntime has no local worktree — always returns unavailable.
    * Structural limitation: commit-scoped file reads require a local git worktree.
    */
   async readFileAtCommit(

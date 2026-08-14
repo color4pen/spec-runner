@@ -157,6 +157,7 @@ function makeJobState(overrides: {
     history: [],
     error: null,
     steps,
+    synthesizedCommits: ["bootstrap-commit-sha-unit-001"],
     pullRequest: {
       url: "https://github.com/user/repo/pull/1",
       number: 1,
@@ -247,6 +248,17 @@ function makeFakeRuntime(options: {
       return { kind: "success", files: diffFiles };
     },
 
+    // Evidence Base base-red check (replaces runTestsAtCommit(baseOid)).
+    async runTestsOnSynthesizedTree(
+      _baseRev: string,
+      _overlayFiles: string[],
+      _overlayFromOid: string,
+      _cwd: string,
+      _config: unknown,
+    ): Promise<IsolatedTestResult> {
+      return baseTestResults;
+    },
+
     async runTestsAtCommit(
       oid: string,
       _testFiles: string[],
@@ -256,7 +268,7 @@ function makeFakeRuntime(options: {
       if (oid === FINAL_HEAD_OID) {
         return headTestResults;
       }
-      return baseTestResults;
+      return { kind: "unavailable", reason: `fake: no results for oid ${oid} (not FINAL_HEAD_OID)` };
     },
 
     // OID-discriminated dispatch for revision-binding verification.

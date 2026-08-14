@@ -705,6 +705,43 @@ export interface RuntimeStrategy {
   ): Promise<IsolatedTestResult>;
 
   /**
+   * Run the provided test files on a synthesized tree: base revision with overlay files
+   * written from the overlay-source OID.
+   *
+   * Used by the bite-evidence gate and archive floor to establish Evidence Base red:
+   *   base tree = immutable job base (synthesizedCommits[0]^) + overlay of candidate test files.
+   *
+   * Contract:
+   * - Never throws — returns an IsolatedTestResult discriminated union instead.
+   * - ran: tests executed; results contains per-file pass/fail.
+   * - unavailable: on spawn error, non-existent baseRev, unresolvable overlay content,
+   *   missing node_modules, or unset/unsupported scopedTestCommand. Never throws.
+   * - Cleans up the detached worktree and node_modules symlink in a finally block.
+   * - MUST NOT run without a resolved scopedTestCommand — absent scopedTestCommand → unavailable.
+   *
+   * Algorithm:
+   *   1. `git worktree add --detach <tmp> <baseRev>` (non-existent rev → unavailable).
+   *   2. For each path in overlayFiles: `git show <overlayFromOid>:<path>` → write into worktree
+   *      (create parent dirs). Unresolvable path → unavailable (fail-closed).
+   *   3. Symlink `<cwd>/node_modules` → `<tmp>/node_modules` (absent → unavailable).
+   *   4. Run `<scopedTestCommand> '<file>'` per overlay file in the detached worktree.
+   *   5. finally: remove symlink, then `git worktree remove --force <tmp>`.
+   *
+   * - local:   implements the algorithm above.
+   * - managed: always returns unavailable (no local worktree; structural limitation).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
+   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
+   */
+  runTestsOnSynthesizedTree?(
+    baseRev: string,
+    overlayFiles: string[],
+    overlayFromOid: string,
+    cwd: string,
+    config: SpecRunnerConfig,
+  ): Promise<IsolatedTestResult>;
+
+  /**
    * Read a file from a specific commit OID by trailing-suffix path resolution.
    *
    * Used by the archive floor gate (achieved-assurance-completeness P0-2) to read
@@ -812,6 +849,13 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
   runTestsAtCommit(
     oid: string,
     testFiles: string[],
+    cwd: string,
+    config: SpecRunnerConfig,
+  ): Promise<IsolatedTestResult>;
+  runTestsOnSynthesizedTree(
+    baseRev: string,
+    overlayFiles: string[],
+    overlayFromOid: string,
     cwd: string,
     config: SpecRunnerConfig,
   ): Promise<IsolatedTestResult>;

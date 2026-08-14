@@ -63,9 +63,12 @@ type IsolatedTestResult =
 
 /**
  * Build a minimal fake runtime with configurable changedFiles and per-OID results.
+ * Includes captureHeadSha and runTestsOnSynthesizedTree for Evidence Base gate.
  */
 function makeFakeRuntime(options: {
+  headOid?: string | null;
   changedFiles?: string[];
+  synthesizedTreeResult?: IsolatedTestResult;
   testResultsByOid?: Record<string, { file: string; passed: boolean }[]>;
 }) {
   const calls: { oid: string; testFiles: string[] }[] = [];
@@ -73,12 +76,24 @@ function makeFakeRuntime(options: {
   return {
     calls,
     runtime: {
+      captureHeadSha: async (_cwd: string): Promise<string | null> => {
+        return options.headOid ?? null;
+      },
       listCommitChangedFiles: async (
         _oid: string,
         _cwd: string,
       ): Promise<{ kind: "success"; files: string[] } | { kind: "unavailable"; reason: string }> => {
         const files = options.changedFiles ?? [];
         return { kind: "success", files };
+      },
+      runTestsOnSynthesizedTree: async (
+        _baseRev: string,
+        _overlayFiles: string[],
+        _overlayFromOid: string,
+        _cwd: string,
+        _config: unknown,
+      ): Promise<IsolatedTestResult> => {
+        return options.synthesizedTreeResult ?? { kind: "unavailable", reason: "synthesizedTreeResult not configured" };
       },
       runTestsAtCommit: async (
         oid: string,
@@ -107,19 +122,19 @@ describe("TC-009: only non-test files in base commit yields strategy-deferred", 
     async () => {
       // GIVEN a forward-type job whose base commit changed only package.json and src/lib.rs
       const baseOid = "base-sha-nontestonly";
-      const candidateOid = "candidate-sha-nontestonly";
 
       const state = makeState("bug-fix", {
+        synthesizedCommits: ["bootstrap-sha-nontestonly"],
         steps: {
           "test-materialize": [makeStepRunWithOid(baseOid)],
-          "implementer": [makeStepRunWithOid(candidateOid)],
+          "implementer": [makeStepRunWithOid("impl-sha-nontestonly")],
         },
       });
 
       const { runtime, calls } = makeFakeRuntime({
+        headOid: "head-sha-nontestonly",
         // Base commit only changed non-test files — none match *.test.* / *.spec.* / *_test.*
         changedFiles: ["package.json", "src/lib.rs"],
-        testResultsByOid: {},
       });
 
       // WHEN the bite-evidence gate runs
@@ -133,13 +148,9 @@ describe("TC-009: only non-test files in base commit yields strategy-deferred", 
       });
 
       // THEN the verdict is strategy-deferred and records are empty.
-      // After implementation: the selection is empty before runTestsAtCommit is called,
-      // so runTestsAtCommit must NOT have been invoked (calls.length === 0).
-      // (Intentionally RED: current implementation calls runTestsAtCommit with the
-      // non-test files, not returning strategy-deferred from empty selection.)
+      // Empty selection detected before invoking runTestsOnSynthesizedTree or runTestsAtCommit.
       expect(result.verdict).toBe("strategy-deferred");
       expect(result.records).toHaveLength(0);
-      // The gate must detect empty selection before invoking runTestsAtCommit.
       expect(calls).toHaveLength(0);
     },
   );
@@ -148,18 +159,18 @@ describe("TC-009: only non-test files in base commit yields strategy-deferred", 
     "TC-009: non-test files including fixture JSON and implementation .ts → strategy-deferred",
     async () => {
       const baseOid = "base-sha-fixtures";
-      const candidateOid = "candidate-sha-fixtures";
 
       const state = makeState("new-feature", {
+        synthesizedCommits: ["bootstrap-sha-fixtures"],
         steps: {
           "test-materialize": [makeStepRunWithOid(baseOid)],
-          "implementer": [makeStepRunWithOid(candidateOid)],
+          "implementer": [makeStepRunWithOid("impl-sha-fixtures")],
         },
       });
 
       const { runtime, calls } = makeFakeRuntime({
+        headOid: "head-sha-fixtures",
         changedFiles: ["fixtures/data.json", "src/feature/index.ts"],
-        testResultsByOid: {},
       });
 
       const result = await runBiteEvidenceGate({
@@ -185,25 +196,27 @@ describe("TC-009: only non-test files in base commit yields strategy-deferred", 
 
 describe("TC-010: real biting test passes the gate", () => {
   it(
-    "TC-010: forward-type job with base-red/candidate-green *.test.ts → passed",
+    "TC-010: forward-type job with EB-red/HEAD-green *.test.ts → passed",
     async () => {
-      // GIVEN a forward-type job with a materialized *.test.ts file that is base-red and candidate-green
+      // GIVEN a forward-type job with a materialized *.test.ts file that is EB-red and HEAD-green
       const baseOid = "base-sha-biting";
-      const candidateOid = "candidate-sha-biting";
+      const headOid = "head-sha-biting";
       const testFile = "src/__tests__/feature.test.ts";
 
       const state = makeState("bug-fix", {
+        synthesizedCommits: ["bootstrap-sha-biting"],
         steps: {
           "test-materialize": [makeStepRunWithOid(baseOid)],
-          "implementer": [makeStepRunWithOid(candidateOid)],
+          "implementer": [makeStepRunWithOid("impl-sha-biting")],
         },
       });
 
       const { runtime } = makeFakeRuntime({
+        headOid,
         changedFiles: [testFile],
+        synthesizedTreeResult: { kind: "ran", results: [{ file: testFile, passed: false }] }, // EB: RED
         testResultsByOid: {
-          [baseOid]: [{ file: testFile, passed: false }],      // base: RED
-          [candidateOid]: [{ file: testFile, passed: true }],  // candidate: GREEN
+          [headOid]: [{ file: testFile, passed: true }],  // HEAD: GREEN
         },
       });
 
@@ -233,25 +246,27 @@ describe("TC-010: real biting test passes the gate", () => {
 
 describe("TC-011: unfixed tooth fails the gate", () => {
   it(
-    "TC-011: forward-type job with base-red/candidate-red *.test.ts → failed",
+    "TC-011: forward-type job with EB-red/HEAD-red *.test.ts → failed",
     async () => {
-      // GIVEN a forward-type job with a materialized *.test.ts file that is base-red and candidate-red
+      // GIVEN a forward-type job with a materialized *.test.ts file that is EB-red and HEAD-red (not fixed)
       const baseOid = "base-sha-unfixed";
-      const candidateOid = "candidate-sha-unfixed";
+      const headOid = "head-sha-unfixed";
       const testFile = "src/__tests__/unfixed.test.ts";
 
       const state = makeState("new-feature", {
+        synthesizedCommits: ["bootstrap-sha-unfixed"],
         steps: {
           "test-materialize": [makeStepRunWithOid(baseOid)],
-          "implementer": [makeStepRunWithOid(candidateOid)],
+          "implementer": [makeStepRunWithOid("impl-sha-unfixed")],
         },
       });
 
       const { runtime } = makeFakeRuntime({
+        headOid,
         changedFiles: [testFile],
+        synthesizedTreeResult: { kind: "ran", results: [{ file: testFile, passed: false }] }, // EB: RED
         testResultsByOid: {
-          [baseOid]: [{ file: testFile, passed: false }],       // base: RED
-          [candidateOid]: [{ file: testFile, passed: false }],  // candidate: RED (not fixed)
+          [headOid]: [{ file: testFile, passed: false }],  // HEAD: RED (not fixed)
         },
       });
 

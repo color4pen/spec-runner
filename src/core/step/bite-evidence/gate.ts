@@ -7,6 +7,13 @@
  * Forward strategy: `request.type ∈ {bug-fix, new-feature}`.
  * Other types → strategy-deferred (no records, gate passes through).
  *
+ * Evidence Base red side:
+ *   base = immutable job base tree (synthesizedCommits[0]^) + overlay of candidate
+ *   test files at HEAD. Evaluated via runTestsOnSynthesizedTree.
+ *
+ * Green candidate:
+ *   branch HEAD (captureHeadSha) — includes pipeline-synthesized + operator-adopted commits.
+ *
  * Gate verdicts:
  *   - "passed":           all materialized test files are base-red AND candidate-green.
  *   - "failed":           a test is hollow (base-green) or candidate-red; or tamper detected.
@@ -17,7 +24,7 @@ import type { JobState, BiteEvidenceRecord } from "../../../state/schema.js";
 import type { RuntimeStrategy } from "../../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../../config/schema.js";
 import type { TamperStatus } from "./tamper.js";
-import { resolveBaseCandidateOids, detectBaseImplementationContamination } from "./oids.js";
+import { resolveBaseCandidateOids, resolveEvidenceBaseRev } from "./oids.js";
 import { selectMaterializedTestFiles } from "./test-file-selection.js";
 
 /**
@@ -45,7 +52,7 @@ export interface GateResult {
 
 /**
  * Parameters for `runBiteEvidenceGate`.
- * runtimeStrategy is typed as a partial subset to allow test fakes that omit the new ports.
+ * runtimeStrategy is typed as a partial subset to allow test fakes that omit methods.
  *
  * digestArtifacts is optional: when provided (on runtimes that support it), per-file
  * content digests are embedded in BiteEvidenceRecord.testHash (gate execution time worktree
@@ -57,7 +64,10 @@ export interface GateDeps {
   cwd: string;
   slug: string;
   config: SpecRunnerConfig;
-  runtimeStrategy: Pick<RuntimeStrategy, "listCommitChangedFiles" | "runTestsAtCommit"> & {
+  runtimeStrategy: Pick<
+    RuntimeStrategy,
+    "listCommitChangedFiles" | "runTestsAtCommit" | "runTestsOnSynthesizedTree" | "captureHeadSha"
+  > & {
     digestArtifacts?: RuntimeStrategy["digestArtifacts"];
   } | null | undefined;
   tamperStatus: TamperStatus;
@@ -66,13 +76,17 @@ export interface GateDeps {
 /**
  * Run the bite-evidence gate.
  *
- * Pure decision logic:
+ * Deferral order (design D6 — all short-circuit before HEAD capture and test execution):
  *   1. Non-forward type → strategy-deferred.
  *   2. Tamper mismatch → failed.
- *   3. Missing base/candidate OIDs → strategy-deferred.
- *   4. Runtime unavailable (missing ports) → strategy-deferred.
- *   5. No materialized test files → strategy-deferred.
- *   6. Run tests at base and candidate; build records; verify all base-red & candidate-green.
+ *   3. Missing materialize OID (for file-set identification) → strategy-deferred.
+ *   4. Absent Evidence Base ref (resolveEvidenceBaseRev null) → strategy-deferred.
+ *   5. Runtime capability missing → strategy-deferred.
+ *   6. Get changed files; empty selection → strategy-deferred.
+ *   7. Capture HEAD (captureHeadSha null → strategy-deferred).
+ *   8. Red: runTestsOnSynthesizedTree(evidenceBaseRev, testFiles, headOid).
+ *   9. Green: runTestsAtCommit(headOid, testFiles).
+ *  10. Build BiteEvidenceRecords; candidateOid = headOid.
  *
  * Never throws — unexpected errors produce strategy-deferred with a reason.
  */
@@ -97,9 +111,8 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
     };
   }
 
-  // 3. Resolve base/candidate OIDs.
-  const { baseOid, candidateOid } = resolveBaseCandidateOids(state);
-
+  // 3. Resolve base OID (latest test-materialize commit) for file-set identification.
+  const { baseOid } = resolveBaseCandidateOids(state);
   if (baseOid === null) {
     return {
       verdict: "strategy-deferred",
@@ -108,40 +121,32 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
     };
   }
 
-  if (candidateOid === null) {
+  // 4. Resolve Evidence Base reference (immutable job base = synthesizedCommits[0]^).
+  const evidenceBaseRev = resolveEvidenceBaseRev(state);
+  if (evidenceBaseRev === null) {
     return {
       verdict: "strategy-deferred",
       records: [],
-      reason: "candidate OID absent: implementer step has no commitOid recorded",
+      reason: "Evidence Base reference absent: synthesizedCommits ledger is empty or absent — cannot establish job base tree",
     };
   }
 
-  // 3.5. Contamination check: if an implementer commit predates the base test-materialize
-  // commit, the "base = no implementation" assumption is broken (re-run shape).
-  // Return deferral instead of proceeding to base-red→candidate-green evaluation.
-  const contaminatingOid = detectBaseImplementationContamination(state);
-  if (contaminatingOid !== null) {
-    return {
-      verdict: "strategy-deferred",
-      records: [],
-      reason: `baseline unbuildable: implementer commit ${contaminatingOid} predates the base test-materialize commit (implementation mixed into base) — red→green cannot be established`,
-    };
-  }
-
-  // 4. Runtime capability check — both methods must be available.
+  // 5. Runtime capability check — all four methods must be available.
   if (
     !runtimeStrategy ||
     typeof runtimeStrategy.listCommitChangedFiles !== "function" ||
-    typeof runtimeStrategy.runTestsAtCommit !== "function"
+    typeof runtimeStrategy.runTestsAtCommit !== "function" ||
+    typeof runtimeStrategy.runTestsOnSynthesizedTree !== "function" ||
+    typeof runtimeStrategy.captureHeadSha !== "function"
   ) {
     return {
       verdict: "strategy-deferred",
       records: [],
-      reason: "runtime does not support listCommitChangedFiles / runTestsAtCommit (e.g. managed runtime or test fake)",
+      reason: "runtime does not support all required methods (listCommitChangedFiles / runTestsAtCommit / runTestsOnSynthesizedTree / captureHeadSha — e.g. managed runtime or test fake)",
     };
   }
 
-  // 5. Get the files changed by the base commit (materialized tests).
+  // 6. Get the files changed by the base commit (materialized tests for set identification).
   let changedFilesResult: Awaited<ReturnType<NonNullable<RuntimeStrategy["listCommitChangedFiles"]>>>;
   try {
     changedFilesResult = await runtimeStrategy.listCommitChangedFiles!(baseOid, cwd);
@@ -165,9 +170,6 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
   const materializedTestFiles = selectMaterializedTestFiles(changedFilesResult.files, config);
 
   // No matching test files → strategy-deferred (unmeasurable, not a failed bite).
-  // "Unmeasurable" and "measured and failed" are distinct outcomes (ADR D2).
-  // The archive floor's minimumAssurance.biteEvidence setting determines whether
-  // strategy-deferred is acceptable for archiving.
   if (materializedTestFiles.length === 0) {
     return {
       verdict: "strategy-deferred",
@@ -176,15 +178,41 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
     };
   }
 
-  // 6. Run tests at base OID.
-  let baseTestResult: Awaited<ReturnType<NonNullable<RuntimeStrategy["runTestsAtCommit"]>>>;
+  // 7. Capture HEAD OID (green candidate = effective branch state reaching adopted commits).
+  let headOid: string | null;
   try {
-    baseTestResult = await runtimeStrategy.runTestsAtCommit!(baseOid, materializedTestFiles, cwd, config);
+    headOid = await runtimeStrategy.captureHeadSha!(cwd);
   } catch {
     return {
       verdict: "strategy-deferred",
       records: [],
-      reason: "runTestsAtCommit (base) threw unexpectedly",
+      reason: "captureHeadSha threw unexpectedly",
+    };
+  }
+
+  if (headOid === null) {
+    return {
+      verdict: "strategy-deferred",
+      records: [],
+      reason: "HEAD OID absent: captureHeadSha returned null (no commits reachable as HEAD)",
+    };
+  }
+
+  // 8. Red: run tests on Evidence Base (job base tree + test overlay from HEAD).
+  let baseTestResult: Awaited<ReturnType<NonNullable<RuntimeStrategy["runTestsOnSynthesizedTree"]>>>;
+  try {
+    baseTestResult = await runtimeStrategy.runTestsOnSynthesizedTree!(
+      evidenceBaseRev,
+      materializedTestFiles,
+      headOid,
+      cwd,
+      config,
+    );
+  } catch {
+    return {
+      verdict: "strategy-deferred",
+      records: [],
+      reason: "runTestsOnSynthesizedTree (base) threw unexpectedly",
     };
   }
 
@@ -192,14 +220,14 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
     return {
       verdict: "strategy-deferred",
       records: [],
-      reason: `runTestsAtCommit (base) unavailable: ${baseTestResult.reason}`,
+      reason: `runTestsOnSynthesizedTree (base) unavailable: ${baseTestResult.reason}`,
     };
   }
 
-  // 7. Run tests at candidate OID.
+  // 9. Green: run tests at HEAD OID (candidate).
   let candidateTestResult: Awaited<ReturnType<NonNullable<RuntimeStrategy["runTestsAtCommit"]>>>;
   try {
-    candidateTestResult = await runtimeStrategy.runTestsAtCommit!(candidateOid, materializedTestFiles, cwd, config);
+    candidateTestResult = await runtimeStrategy.runTestsAtCommit!(headOid, materializedTestFiles, cwd, config);
   } catch {
     return {
       verdict: "strategy-deferred",
@@ -216,14 +244,11 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
     };
   }
 
-  // 8. Build per-file BiteEvidenceRecords and determine overall verdict.
+  // 10. Build per-file BiteEvidenceRecords and determine overall verdict.
   const baseResults = new Map(baseTestResult.results.map((r) => [r.file, r.passed]));
   const candidateResults = new Map(candidateTestResult.results.map((r) => [r.file, r.passed]));
 
   // Compute per-file content digests when digestArtifacts is available.
-  // digestArtifacts reads the current worktree (gate execution time), so testHash reflects
-  // the candidate tree content — NOT the baseOid content.
-  // The archive authority re-measures independently via readFileAtCommit at finalHeadOid.
   let testHashByFile: Map<string, string> | null = null;
   if (runtimeStrategy && typeof runtimeStrategy.digestArtifacts === "function") {
     try {
@@ -244,7 +269,6 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
   let allVerified = true;
 
   for (const file of materializedTestFiles) {
-    // Default: treat absent result as failed (conservative)
     const basePassed = baseResults.get(file) ?? false;
     const candidatePassed = candidateResults.get(file) ?? false;
 
@@ -262,11 +286,10 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
       baseResult,
       candidateResult,
       verified,
-      baseOid,
-      candidateOid,
+      baseRef: evidenceBaseRev, // Evidence Base rev expression (not a resolved OID)
+      candidateOid: headOid,    // HEAD OID (includes adopted operator commits)
     };
 
-    // Attach testHash when digestArtifacts was available and produced a hash for this file.
     const hash = testHashByFile?.get(file);
     if (hash !== undefined) {
       record.testHash = hash;

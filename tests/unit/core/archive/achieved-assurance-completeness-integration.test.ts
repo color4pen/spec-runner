@@ -162,13 +162,19 @@ function makeFakeRuntime(options: {
       }
       return { kind: "success", files: diffFiles };
     },
+    // Evidence Base base-red check (replaces runTestsAtCommit(baseOid)).
+    async runTestsOnSynthesizedTree(
+      _baseRev: string, _overlayFiles: string[], _overlayFromOid: string, _cwd: string, _config: unknown,
+    ): Promise<IsolatedTestResult> {
+      return baseTestResults;
+    },
     async runTestsAtCommit(
       oid: string, _files: string[], _cwd: string, _config: unknown,
     ): Promise<IsolatedTestResult> {
       if (oid === ARCHIVE_HEAD_SHA) {
         return headTestResults;
       }
-      return baseTestResults;
+      return { kind: "unavailable", reason: `fake: no results for oid ${oid} (not ARCHIVE_HEAD_SHA)` };
     },
     async readFileAtCommit(
       oid: string, pathSuffix: string, _cwd: string,
@@ -271,6 +277,7 @@ function makeJobStateWithSteps(options: {
     worktreePath: null as string | null,
     branch: `change/${SLUG}-abc12345`,
     noWorktree: false,
+    synthesizedCommits: ["bootstrap-commit-sha-aac-001"],
     request: {
       path: `/repo/specrunner/changes/${SLUG}/request.md`,
       title: "Test",

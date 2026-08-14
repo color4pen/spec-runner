@@ -168,6 +168,8 @@ function makeState(baseOid: string, candidateOid: string): JobState {
     branch: "change/example-abc12345",
     history: [],
     error: null,
+    // synthesizedCommits[0] = baseOid (test-materialize commit); [0]^ = pre-test commit (no impl) = Evidence Base.
+    synthesizedCommits: [baseOid],
     steps: {
       "test-case-gen": [makeStepRun(testCaseGenOid)],
       "test-materialize": [makeStepRun(baseOid)],
@@ -395,6 +397,8 @@ describe("Revision-binding E2E repo setup", () => {
       branch: `change/${E2E_SLUG}-abc12345`,
       history: [],
       error: null,
+      // synthesizedCommits[0] = testMaterializeOid; [0]^ = pre-test commit (no impl) = Evidence Base.
+      synthesizedCommits: [testMaterializeOid],
       steps: {
         "spec-review": [{
           attempt: 1,
