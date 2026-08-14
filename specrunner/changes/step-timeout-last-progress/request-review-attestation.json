@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:85b3a52fb6f92d006aa3ea74513456a769a1e91a7c3320709361445409ce5d9c",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/adapter/shared/inactivity-watchdog.ts:80 — formatInactivityTimeoutMessage(stepName, elapsedMs): string",
+    "src/adapter/claude-code/agent-runner.ts:341-358 — emitToolProgress function (comment at 341, function body at 346)",
+    "src/adapter/claude-code/agent-runner.ts:59 — import of createInactivityWatchdog and formatInactivityTimeoutMessage",
+    "src/adapter/codex/agent-runner.ts:227-255 — extractCodexProgress(item: ThreadItem): {tool, target?} | null",
+    "src/adapter/codex/agent-runner.ts:44 — import of createInactivityWatchdog and formatInactivityTimeoutMessage",
+    "src/adapter/codex/agent-runner.ts:419-427 — item.started handler calling extractCodexProgress and emitting step:progress",
+    "src/cli/progress.ts:102 — this.events.on('step:progress', ...) — sole consumer",
+    "src/adapter/claude-code/agent-runner.ts:1118-1132 — catch block building STEP_TIMEOUT error from formatInactivityTimeoutMessage",
+    "src/adapter/codex/agent-runner.ts:765-778 — catch block building STEP_TIMEOUT error from formatInactivityTimeoutMessage",
+    "src/state/schema/types.ts:101-105 — ErrorInfo { code: string; message: string; hint: string }",
+    "src/core/step/step-halt.ts:128-132 — makeTimeoutHalt uses (err.hint ?? '') for ErrorInfo.hint",
+    "src/adapter/shared/__tests__/inactivity-watchdog.test.ts — TC-010 through TC-013 cover watchdog unit + formatInactivityTimeoutMessage"
+  ],
+  "sourceRevision": "77923d069f5137f7886c0b8652f9dd2f12737822"
+}
