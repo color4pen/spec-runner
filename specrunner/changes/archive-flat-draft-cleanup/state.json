@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2e14a04b-8b5c-4972-a028-2ba8d7034ff8",
   "createdAt": "2026-08-14T09:20:18.393Z",
-  "updatedAt": "2026-08-14T10:07:19.669Z",
+  "updatedAt": "2026-08-14T10:12:17.666Z",
   "request": {
     "title": "archive の draft 削除が実ファイルに届いていない: repo 本体側・両形式の削除に直す",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/archive-flat-draft-cleanup-2e14a04b",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,9 @@
     "9fe7845332c5a0f9313609982222bb9bfd781930",
     "5b787a754ec47ef39fced6d56324036d519676e1",
     "33e410dc6da427cec3a1f8c5b1fa120daa57c52a",
-    "75d024b9fe68c8c5dc63f0866048aba0051573d3"
+    "75d024b9fe68c8c5dc63f0866048aba0051573d3",
+    "cfa745bf034f4fcdb255070773a07b237ced4938",
+    "9c2f0a50ee7ca9daec824fc519b1e3f03dcd6879"
   ],
   "touchedFiles": {
     "request-review": [
@@ -124,6 +126,10 @@
     "regression-gate": [
       "src/core/archive/__tests__/orchestrator.test.ts",
       "src/core/archive/orchestrator.ts"
+    ],
+    "conformance": [
+      "src/core/archive/orchestrator.ts",
+      "src/core/archive/__tests__/orchestrator.test.ts"
     ]
   },
   "resumePoint": null,
@@ -157,8 +163,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/990",
+    "number": 990,
+    "createdAt": "2026-08-14T10:12:16.779Z"
+  },
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -168,12 +179,15 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
