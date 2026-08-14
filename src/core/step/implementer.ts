@@ -80,9 +80,9 @@ export function buildImplementerInitialMessage(opts: {
     : "";
 
   if (testsMaterialized) {
-    // Standard pipeline post-test-materialize: implementation-only mode.
+    // Standard pipeline post-test-materialize: canon-alignment mode.
     // Tests already exist in the worktree (materialized by the previous step).
-    // The implementer writes production code only — test files must NOT be created or modified.
+    // The implementer aligns both tests and implementation with canon (test-cases.md / spec).
     return `<user-request>
 You are the implementer for the following change:
 
@@ -90,12 +90,13 @@ Change folder: ${changeFolderPath(slug)}
 Branch: ${branch}
 
 The test-materialize step has already written test code to the worktree.
-Your role is to write ONLY the implementation (production) code to make those tests pass.
+test-cases.md と spec を canon(正)として、テストと実装の両方を整合させてください。
+テストを変更した場合は、変更したテストとその理由を完了報告に明示してください。
 
 Please:
 1. Read ${changeFolderPath(slug)}/tasks.md to understand what needs to be implemented
 2. Read ${changeFolderPath(slug)}/test-cases.md and the existing test files to understand the expected behavior
-3. Implement all tasks in tasks.md — write production code only, do NOT create or modify test files
+3. Implement all tasks in tasks.md — align both tests and implementation with canon (test-cases.md / spec). If you modify any test files, report the changed tests and the reason in your completion report.
 4. Update tasks.md: mark completed tasks with [x]
 5. 依存を追加・変更した場合は lockfile（\`bun.lock\` / \`package-lock.json\` 等）を同期してから完了する
 6. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。

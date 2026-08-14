@@ -188,29 +188,39 @@ describe("TC-TMB-04: TestMaterializeStep outputContracts — test-coverage kind"
 // TC-TMB-05..08: implementer testsMaterialized flag
 // ---------------------------------------------------------------------------
 
-describe("TC-TMB-05: implementer testsMaterialized=true → implementation-only message", () => {
-  it("message contains 'implementation' and 'production' and NOT 'TDD'", () => {
+describe("TC-TMB-05: implementer testsMaterialized=true → canon-alignment message", () => {
+  it("message contains canon-alignment instruction and NOT 'TDD'", () => {
     const msg = buildImplementerInitialMessage({
       slug: "my-change",
       branch: "feat/my-change",
       requestContent: "Add feature X",
       testsMaterialized: true,
     });
-    // Must mention implementation-only mode
-    expect(msg.toLowerCase()).toContain("production");
+    // strip-test-authority D5 #6: canon 整合の文面を含み、TDD 指示を含まない。
+    // "整合" or (test-cases.md + (canon | 正として)) が含まれること
+    const hasCanonAlignment =
+      msg.includes("整合") ||
+      (msg.includes("test-cases.md") && (msg.includes("canon") || msg.includes("正として")));
+    expect(hasCanonAlignment).toBe(true);
     // Must NOT contain TDD unconditional instruction
     expect(msg).not.toContain("(TDD: write tests first");
   });
 
-  it("message says not to create or modify test files", () => {
+  it("message does NOT say not to create or modify test files, but asks to report changes", () => {
     const msg = buildImplementerInitialMessage({
       slug: "my-change",
       branch: "feat/my-change",
       requestContent: "Add feature X",
       testsMaterialized: true,
     });
-    // Must explicitly say not to create/modify test files
-    expect(msg.toLowerCase()).toMatch(/do not create or modify test|test files must not be created or modified/i);
+    // strip-test-authority D5 #7: テスト不可侵の撤回 — 禁止文言が消え、変更理由の報告指示が入る。
+    expect(msg.toLowerCase()).not.toMatch(/do not create or modify test|test files must not be created or modified/i);
+    // Change reporting instruction must be present
+    const hasChangeReport =
+      (msg.includes("変更") && msg.includes("理由")) ||
+      (msg.includes("変更") && msg.includes("報告")) ||
+      (msg.includes("modified") && msg.includes("reason"));
+    expect(hasChangeReport).toBe(true);
   });
 });
 
@@ -233,7 +243,7 @@ describe("TC-TMB-06: implementer testsMaterialized=false/undefined → TDD messa
 });
 
 describe("TC-TMB-07: ImplementerStep.buildMessage detects test-materialize in state", () => {
-  it("state with test-materialize record → message uses implementation-only mode", () => {
+  it("state with test-materialize record → message uses canon-alignment mode", () => {
     const stateWithMaterialize = makeMinimalState({
       step: "implementer",
       steps: {
@@ -250,7 +260,11 @@ describe("TC-TMB-07: ImplementerStep.buildMessage detects test-materialize in st
     });
     const deps = makeMinimalDeps("my-change");
     const msg = ImplementerStep.buildMessage(stateWithMaterialize, deps);
-    expect(msg.toLowerCase()).toContain("production");
+    // strip-test-authority D5 #8: state 経由の true 分岐検出は維持、文面を canon 整合に変更。
+    const hasCanonAlignment =
+      msg.includes("整合") ||
+      (msg.includes("test-cases.md") && (msg.includes("canon") || msg.includes("正として")));
+    expect(hasCanonAlignment).toBe(true);
     expect(msg).not.toContain("(TDD: write tests first");
   });
 

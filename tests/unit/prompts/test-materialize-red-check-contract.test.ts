@@ -1,30 +1,28 @@
 /**
- * Prompt contract tests: test-materialize の自己 red 確認
+ * Prompt contract tests: test-materialize の観測記録義務（工程順序由来の権威を撤回済み）
  *
- * TC-001: prompt に実行と red 観測の指示が含まれる           [expected-red]
- * TC-002: prompt に期待分類と一致確認の指示が含まれる        [expected-red]
- * TC-003: Evidence 節に観測記録の指示が含まれる              [expected-red]
+ * TC-001: red 強制の命令が prompt に含まれない              [expected-green after strip-test-authority]
+ * TC-002: prompt に期待分類と観測記録の指示が含まれる        [expected-green]
+ * TC-003: Evidence 節に観測記録の指示が含まれる              [expected-green]
  * TC-004: 既存の manual/gate/traceability/skeleton 契約が無改変で green [expected-green]
  * TC-005: Evidence 節が "result file" を記録先として名指ししない [expected-green / guard]
  *
  * Source: specrunner/changes/test-materialize-red-check/test-cases.md
+ *        + specrunner/changes/strip-test-authority/design.md D5
  *
- * Discriminator rationale (design.md D4):
- *   TC-001/002/003 assertions use literals ABSENT from the current prompt,
- *   ensuring these tests are RED before T-01/T-02 implementation:
- *     TC-001: "観測" in ## Method  (current Step 6 says "構わない", not "観測")
- *             "完了報告" in ## Method  (appears only in ## Completion today)
- *             "裁量" in ## Method  (not present today)
- *             "書き直して" / "何も見張っていないテスト"  (not present today)
- *     TC-002: "expected-red" / "expected-green" literals in ## Method  (not present today)
- *     TC-003: "expected-red" / "expected-green" in ## Evidence  (not present today)
- *             "実行したコマンド" in ## Evidence  (EVIDENCE_DISCIPLINE has "コマンド" but
- *             not "実行したコマンド" as a recording requirement for test execution)
- *             "対象テストファイル", "観測結果" in ## Evidence  (not present today)
- *   TC-004: verifies 5-section structure and existing contract invariants — expected-green.
- *   TC-005: "result file" must NOT appear in Evidence — expected-green as a guard.
+ * strip-test-authority による更新(D5 #1-#5):
+ *   - TC-001「書き直して再実行する旨が含まれる」→「含まれない」に反転
+ *   - TC-002「green は欠陥である旨が含まれる」→「含まれない」に反転
+ *   - TC-002「完了不可とする旨が含まれる」→「含まれない」に反転
+ *   - TC-002「修正または再分類の根拠を Evidence に記す旨」→ green 観測時の理由記録指示に変更
+ *   - docstring を反転後の意味(権威撤回・観測記録維持)に更新
  *
- * New file — does NOT modify:
+ * 維持対象(無改変で green):
+ *   TC-001: 完了報告 / 観測 / 裁量 / 5 節骨格の各テスト
+ *   TC-002: expected-red / expected-green ラベル・expected-green は green が正常
+ *   TC-003 全体 / TC-004 全体 / TC-005
+ *
+ * Not modified:
  *   tests/unit/prompts/test-materialize-prompt-contract.test.ts
  *   tests/unit/prompts/test-materialize-manual-scope-contract.test.ts
  *   tests/unit/prompts/test-materialize-gate-scope-contract.test.ts
@@ -81,12 +79,13 @@ describe("TC-001: prompt に実行と red 観測の指示が含まれる", () =>
     expect(methodSection).toContain("観測");
   });
 
-  it("TC-001: ## Method 節に fail しなかった新挙動テストは書き直して再実行する旨が含まれる", () => {
+  it("TC-001: ## Method 節に fail しなかった新挙動テストは書き直して再実行する旨が含まれない", () => {
     const methodSection = extractSection(TEST_MATERIALIZE_SYSTEM_PROMPT, "Method");
-    // "書き直して" or "何も見張っていないテスト" — neither appears today.
+    // strip-test-authority D5 #1: "書き直して" / "何も見張っていないテスト" を ## Method から削除。
+    // Before strip-test-authority: 含まれていた。After: 含まれない。
     const hasRewrite =
       methodSection.includes("書き直して") || methodSection.includes("何も見張っていないテスト");
-    expect(hasRewrite).toBe(true);
+    expect(hasRewrite).toBe(false);
   });
 
   it("TC-001: ## Method 節に実行方法が agent の裁量である旨が含まれる", () => {
@@ -138,14 +137,15 @@ describe("TC-002: prompt に期待分類と一致確認の指示が含まれる"
     expect(methodSection).toContain("expected-green");
   });
 
-  it("TC-002: ## Method 節に expected-red は base で green が欠陥である旨が含まれる", () => {
+  it("TC-002: ## Method 節に expected-red は base で green が欠陥である旨が含まれない", () => {
     const methodSection = extractSection(TEST_MATERIALIZE_SYSTEM_PROMPT, "Method");
-    // "expected-red" definition must state green = defect.
+    // strip-test-authority D5 #2: "green は欠陥" の権威句を削除。
+    // Before strip-test-authority: 含まれていた。After: 含まれない。
     const hasGreenIsDefect =
       methodSection.includes("green は欠陥") ||
       methodSection.includes("green が欠陥") ||
       (methodSection.includes("expected-red") && methodSection.includes("欠陥"));
-    expect(hasGreenIsDefect).toBe(true);
+    expect(hasGreenIsDefect).toBe(false);
   });
 
   it("TC-002: ## Method 節に expected-green は base で green が正常である旨が含まれる", () => {
@@ -156,20 +156,23 @@ describe("TC-002: prompt に期待分類と一致確認の指示が含まれる"
     expect(hasGreenNormal).toBe(true);
   });
 
-  it("TC-002: ## Method 節に期待と観測の不一致は完了不可とする旨が含まれる", () => {
+  it("TC-002: ## Method 節に期待と観測の不一致は完了不可とする旨が含まれない", () => {
     const methodSection = extractSection(TEST_MATERIALIZE_SYSTEM_PROMPT, "Method");
+    // strip-test-authority D5 #3: "完了不可" の権威句を削除。
+    // Before strip-test-authority: 含まれていた。After: 含まれない。
     const hasCompletionBlock =
       methodSection.includes("完了不可") ||
       (methodSection.includes("不一致") && methodSection.includes("完了"));
-    expect(hasCompletionBlock).toBe(true);
+    expect(hasCompletionBlock).toBe(false);
   });
 
-  it("TC-002: ## Method 節に修正または再分類の根拠を Evidence に記す旨が含まれる", () => {
+  it("TC-002: ## Method 節に green 観測時の理由を Evidence に記録する指示が含まれる", () => {
     const methodSection = extractSection(TEST_MATERIALIZE_SYSTEM_PROMPT, "Method");
-    // Must require recording mismatch reasoning in Evidence.
+    // strip-test-authority D5 #4: 「書き直し/再分類」から「観測事実と理由の Evidence への記録」に変更。
+    // 「理由」と「Evidence」または「記録」が共存すること。
     const hasEvidenceRef =
-      (methodSection.includes("再分類") || methodSection.includes("修正")) &&
-      methodSection.includes("Evidence");
+      methodSection.includes("理由") &&
+      (methodSection.includes("Evidence") || methodSection.includes("記録"));
     expect(hasEvidenceRef).toBe(true);
   });
 
