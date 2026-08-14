@@ -16,7 +16,6 @@ import { logPipelineDiag } from "../lifecycle/diagnostic.js";
 import { evaluateActivation } from "../reviewers/activation.js";
 import { defaultSpawnFn, gitExec, type SpawnFn } from "../../util/git-exec.js";
 import { detectNoOp } from "./no-op-detect.js";
-import { codeReviewFindingsRoutingActive } from "../pipeline/reviewer-chain.js";
 import { collectRoutedFixerFindings } from "./routed-findings.js";
 import { pipelineManagedPaths } from "../pipeline/round-git-scope.js";
 import type { CommitPushInfra } from "./commit-push.js";
@@ -479,7 +478,6 @@ export class StepExecutor {
             cwd,
             branch: state.branch ?? null,
             completionReason: runResult.completionReason,
-            findingsRoutingApproved: step.noOpDetect === true ? codeReviewFindingsRoutingActive(state) : false,
             findingTargetPaths: step.noOpDetect === true ? collectRoutedFixerFindings(state).map((f) => f.file) : [],
             pipelineManagedPaths: pipelineManagedPaths(deps.slug),
           })

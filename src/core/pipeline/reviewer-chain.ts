@@ -259,64 +259,18 @@ export function conformanceFixInProgress(state: JobState): boolean {
  *
  * Design D7 (reviewer-parallel-execution): priority 2 after conformance.
  * regression-gate triggered this fixer entry when:
- * - the regression-gate's latest verdict is "needs-fix", OR
- * - the regression-gate approved BUT had fixable findings (findings-routing path).
+ * - the regression-gate's latest verdict is "needs-fix".
+ *
+ * Note: after D2 (excludeKnownUnfixedRegressions removal), deriveRegressionGateVerdict
+ * converts any fixable finding to needs-fix regardless of severity. The approved+fixable
+ * branch is structurally unreachable and has been removed.
  */
 export function regressionGateActive(state: JobState): boolean {
   const runs = state.steps?.[REGRESSION_GATE_STEP_NAME] ?? [];
   if (runs.length === 0) return false;
   const last = runs[runs.length - 1];
   if (!last) return false;
-  const verdict = last.outcome.verdict;
-  if (verdict === "needs-fix") return true;
-  if (verdict === "approved") {
-    // findings-routing: approved but had fixable findings
-    const toolResult = last.outcome.toolResult as { findings?: import("../../kernel/report-result.js").Finding[] } | null | undefined;
-    const findings = toolResult?.findings ?? [];
-    return collectFixableFindings(findings).length > 0;
-  }
-  return false;
-}
-
-/**
- * True when the currently running code-fixer was triggered by the findings-routing
- * (approved + fixable findings) path of code-review, and there are no mandatory
- * findings that require escalation on no-op.
- *
- * Consumer: executor's no-op override suppression — when this returns true, a
- * source-unchanged code-fixer run is a legitimate no-op (e.g. all fixable findings
- * are LOW severity which the prompt intentionally ignores) and must NOT be escalated.
- *
- * Three conditions must ALL hold (AND):
- *
- * 1. `getConformanceFixContext(state, CODE_FIXER) === null` — code-fixer was NOT
- *    triggered by conformance. Conformance no-ops are genuine failures; exclude them.
- * 2. code-review's latest run has `verdict === "approved"` AND has ≥1 fixable finding.
- *    This identifies the findings-routing path (approved + fixable → code-fixer).
- * 3. `resolveActiveReviewer(state, deriveImplFixerChain(state)) === CODE_REVIEW` —
- *    no later reviewer (custom reviewer, regression-gate) has become the active fixer
- *    source. This prevents false-positives when a coordinator or regression-gate is
- *    the true trigger.
- */
-export function codeReviewFindingsRoutingActive(state: JobState): boolean {
-  // Condition 1: conformance is not the trigger
-  if (getConformanceFixContext(state, STEP_NAMES.CODE_FIXER) !== null) return false;
-
-  // Condition 2: code-review latest verdict is "approved" with fixable findings
-  const codeReviewRuns = state.steps?.[STEP_NAMES.CODE_REVIEW] ?? [];
-  if (codeReviewRuns.length === 0) return false;
-  const lastCodeReview = codeReviewRuns[codeReviewRuns.length - 1];
-  if (!lastCodeReview) return false;
-  if (lastCodeReview.outcome.verdict !== "approved") return false;
-  const toolResult = lastCodeReview.outcome.toolResult as { findings?: import("../../kernel/report-result.js").Finding[] } | null | undefined;
-  const findings = toolResult?.findings ?? [];
-  if (collectFixableFindings(findings).length === 0) return false;
-
-  // Condition 3: code-review is the active reviewer (no later reviewer has taken over)
-  const chain = deriveImplFixerChain(state);
-  if (resolveActiveReviewer(state, chain) !== STEP_NAMES.CODE_REVIEW) return false;
-
-  return true;
+  return last.outcome.verdict === "needs-fix";
 }
 
 /**
@@ -366,10 +320,13 @@ export function codeReviewLoopActive(state: JobState, coordinatorName: string): 
  *   coordinator skipped   → regression-gate
  *
  * regression-gate section:
- *   regression-gate approved (fixable) → code-fixer
  *   regression-gate approved (clean)   → conformance
  *   regression-gate needs-fix          → code-fixer
  *   regression-gate skipped            → conformance
+ *
+ * Note: "regression-gate approved (fixable) → code-fixer" is structurally unreachable after D2.
+ * deriveRegressionGateVerdict returns needs-fix whenever fixable findings exist, so approved
+ * only occurs when there are no fixable findings. That row has been removed.
  *
  * code-fixer routing (priority-ordered `when` guards):
  *   code-fixer approved → conformance          when conformanceFixInProgress
@@ -449,21 +406,6 @@ export function buildParallelReviewerTransitions(opts: {
   // still default to the "escalate" terminal and stop the pipeline immediately.
 
   // --- regression-gate rows ---
-  // approved + fixable findings → code-fixer
-  transitions.push({
-    step: REGRESSION_GATE_STEP_NAME,
-    on: "approved",
-    to: STEP_NAMES.CODE_FIXER,
-    when: (s) => {
-      const runs = s.steps?.[REGRESSION_GATE_STEP_NAME];
-      if (!runs || runs.length === 0) return false;
-      const lastRun = runs[runs.length - 1];
-      if (!lastRun) return false;
-      const toolResult = lastRun.outcome.toolResult as { findings?: import("../../kernel/report-result.js").Finding[] } | null | undefined;
-      const findings = toolResult?.findings ?? [];
-      return collectFixableFindings(findings).length > 0;
-    },
-  });
   // approved (clean) → conformance
   transitions.push({
     step: REGRESSION_GATE_STEP_NAME,

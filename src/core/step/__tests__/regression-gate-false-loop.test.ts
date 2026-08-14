@@ -2,23 +2,23 @@
  * Tests for the regression-gate false-loop fix.
  * Change: regression-gate-false-loop
  *
- * TC-001: approved 経路の未修正 low finding は needs-fix にならない
- * TC-002: 既知未修正が全件一致する場合は approved（should）
- * TC-003: 新規検出の退行は needs-fix
- * TC-004: 修正済み finding の退行は needs-fix
- * TC-005: standard reviewer path の routing は low を除外する
- * TC-008: selectFixerTargetFindings は low fixable を除外し high/medium fixable を保持する
- * TC-009: excludeKnownUnfixedRegressions は fingerprint 一致の low ledger エントリで gate finding を除外する
- * TC-010: excludeKnownUnfixedRegressions は fingerprint 不一致の場合は除外しない
+ * TC-005: standard reviewer path の routing は low を含む
+ * TC-008: selectFixerTargetFindings は全 severity の fixable を保持する（low 除外なし）
  * TC-011: computeRegressionLedger は regression-gate の skipWhen/buildMessage と同一の dedupe 結果を返す（should）
+ *
+ * 削除済み (severity-fixability-split / D1 / D2 による):
+ * TC-001: excludeKnownUnfixedRegressions 廃止に伴い削除
+ * TC-002: 同上
+ * TC-003: judge-verdict.test.ts の deriveRegressionGateVerdict でカバー済みのため削除
+ * TC-004: 同上
+ * TC-009: excludeKnownUnfixedRegressions 削除に伴い削除
+ * TC-010: 同上
  */
 import { describe, it, expect } from "vitest";
 import {
   selectFixerTargetFindings,
-  deriveRegressionGateVerdict,
 } from "../judge-verdict.js";
 import {
-  excludeKnownUnfixedRegressions,
   computeRegressionLedger,
   collectSpecReviewLedger,
   collectFindingsLedger,
@@ -87,12 +87,12 @@ function makeState(
 }
 
 // ---------------------------------------------------------------------------
-// TC-008: selectFixerTargetFindings
+// TC-008: selectFixerTargetFindings — 全 severity の fixable を保持（low 除外なし）
 // ---------------------------------------------------------------------------
 
-describe("TC-008: selectFixerTargetFindings — low fixable を除外し high/medium fixable を保持する", () => {
-  it("TC-008: high fixable は保持される", () => {
-    // TC-008: selectFixerTargetFindings は low fixable を除外し high/medium fixable を保持する
+describe("TC-008: selectFixerTargetFindings — all fixable severities are included (no LOW exclusion)", () => {
+  it("TC-008: high / medium / low fixable はすべて保持される", () => {
+    // D1: LOW も含む全 fixable が返る
     const findings: Finding[] = [
       f("low", "fixable", { file: "src/a.ts", title: "LOW" }),
       f("high", "fixable", { file: "src/b.ts", title: "HIGH" }),
@@ -102,18 +102,19 @@ describe("TC-008: selectFixerTargetFindings — low fixable を除外し high/me
     const result = selectFixerTargetFindings(findings);
     expect(result.map((x: Finding) => x.title)).toContain("HIGH");
     expect(result.map((x: Finding) => x.title)).toContain("MED");
-    expect(result.map((x: Finding) => x.title)).not.toContain("LOW");
+    expect(result.map((x: Finding) => x.title)).toContain("LOW");
     // decision-needed は fixable でないため除外
     expect(result.map((x: Finding) => x.title)).not.toContain("LOW-DN");
   });
 
-  it("TC-008: low fixable のみの場合は空配列", () => {
+  it("TC-008: low fixable のみの場合は LOW 全件を返す（空でない）", () => {
+    // D1: only-LOW は空でなく LOW 全件を返す
     const findings: Finding[] = [
       f("low", "fixable"),
       f("low", "fixable", { file: "src/b.ts", title: "LOW2" }),
     ];
     const result = selectFixerTargetFindings(findings);
-    expect(result).toHaveLength(0);
+    expect(result).toHaveLength(2);
   });
 
   it("TC-008: critical fixable は保持される", () => {
@@ -128,233 +129,12 @@ describe("TC-008: selectFixerTargetFindings — low fixable を除外し high/me
 });
 
 // ---------------------------------------------------------------------------
-// TC-009: excludeKnownUnfixedRegressions — fingerprint 一致で除外
+// TC-005: standard reviewer path の routing は全 fixable を含む（low も含む）
 // ---------------------------------------------------------------------------
 
-describe("TC-009: excludeKnownUnfixedRegressions — fingerprint 一致の low ledger エントリで gate finding を除外する", () => {
-  it("TC-009: gate finding と ledger low エントリの fingerprint が一致 → 除外して [] を返す", () => {
-    // TC-009 spec exact fixture
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "A.ts", line: 10, title: "T" }),
-    ];
-    const ledger: Finding[] = [
-      f("low", "fixable", { file: "A.ts", line: 10, title: "T" }),
-    ];
-    const result = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    expect(result).toEqual([]);
-  });
-
-  it("TC-009: ledger に複数の low エントリが一致 → すべて除外", () => {
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "A.ts", line: 1, title: "X" }),
-      f("high", "fixable", { file: "B.ts", line: 2, title: "Y" }),
-    ];
-    const ledger: Finding[] = [
-      f("low", "fixable", { file: "A.ts", line: 1, title: "X" }),
-      f("low", "fixable", { file: "B.ts", line: 2, title: "Y" }),
-    ];
-    const result = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    expect(result).toHaveLength(0);
-  });
-
-  it("TC-009: line が undefined の場合でも fingerprint が一致すれば除外", () => {
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "A.ts", line: undefined, title: "NoLine" }),
-    ];
-    const ledger: Finding[] = [
-      f("low", "fixable", { file: "A.ts", line: undefined, title: "NoLine" }),
-    ];
-    const result = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    expect(result).toHaveLength(0);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-010: excludeKnownUnfixedRegressions — fingerprint 不一致で除外しない
-// ---------------------------------------------------------------------------
-
-describe("TC-010: excludeKnownUnfixedRegressions — fingerprint 不一致の場合は除外しない", () => {
-  it("TC-010: file が異なる → 除外しない（gate finding はそのまま返る）", () => {
-    // TC-010 spec exact fixture
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "B.ts", line: 1, title: "T" }),
-    ];
-    const ledger: Finding[] = [
-      f("low", "fixable", { file: "A.ts", line: 1, title: "T" }),
-    ];
-    const result = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    expect(result).toHaveLength(1);
-    expect(result[0]!.file).toBe("B.ts");
-  });
-
-  it("TC-010: ledger が空 → gate finding をそのまま返す", () => {
-    const gateFindings: Finding[] = [f("high", "fixable")];
-    const result = excludeKnownUnfixedRegressions(gateFindings, []);
-    expect(result).toEqual(gateFindings);
-  });
-
-  it("TC-010: gate findings が空 → 空配列を返す", () => {
-    const ledger: Finding[] = [f("low", "fixable")];
-    const result = excludeKnownUnfixedRegressions([], ledger);
-    expect(result).toHaveLength(0);
-  });
-
-  it("TC-010: ledger に medium エントリのみ（既知未修正集合は low のみ） → 除外しない", () => {
-    // medium ledger エントリは既知未修正集合（low のみ）に含まれないため除外対象外
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "A.ts", line: 1, title: "M" }),
-    ];
-    const ledger: Finding[] = [
-      f("medium", "fixable", { file: "A.ts", line: 1, title: "M" }),
-    ];
-    const result = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    expect(result).toHaveLength(1);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-001: approved 経路の未修正 low finding は needs-fix にならない（再現テスト）
-// ---------------------------------------------------------------------------
-
-describe("TC-001: approved 経路の未修正 low finding は needs-fix にならない", () => {
-  it("TC-001: ledger に low fixable L、gate が L と同一 fingerprint を報告 → approved（ループしない）", () => {
-    // TC-001: 再現テスト
-    // ledger: low fixable エントリ L（reviewer が approved 時に one-shot routing、code-fixer が修正せず残存）
-    const ledger: Finding[] = [
-      f("low", "fixable", { file: "src/auth.ts", line: 42, title: "Leaked cred" }),
-    ];
-    // gate agent: L と同一 fingerprint の退行を high/fixable で報告（gate は severity=high で報告する）
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "src/auth.ts", line: 42, title: "Leaked cred" }),
-    ];
-    // excludeKnownUnfixedRegressions が low ledger エントリと一致 → 除外
-    const verdictFindings = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    const verdict = deriveRegressionGateVerdict(verdictFindings, true);
-    expect(verdict).toBe("approved");
-  });
-
-  it("TC-001: 複数の low finding が全て除外 → approved", () => {
-    const ledger: Finding[] = [
-      f("low", "fixable", { file: "src/a.ts", line: 1, title: "A" }),
-      f("low", "fixable", { file: "src/b.ts", line: 2, title: "B" }),
-    ];
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "src/a.ts", line: 1, title: "A" }),
-      f("high", "fixable", { file: "src/b.ts", line: 2, title: "B" }),
-    ];
-    const verdictFindings = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    const verdict = deriveRegressionGateVerdict(verdictFindings, true);
-    expect(verdict).toBe("approved");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-002: 既知未修正が全件一致する場合は approved（should）
-// ---------------------------------------------------------------------------
-
-describe("TC-002: 既知未修正が全件一致する場合は approved", () => {
-  it("TC-002: gate findings が全て既知未修正集合に一致 → verdictFindings が空 → approved", () => {
-    // TC-002: Scenario: 既知未修正が無ければ空 ledger と同じく approved
-    const ledger: Finding[] = [
-      f("low", "fixable", { file: "src/x.ts", line: 5, title: "X" }),
-      f("low", "fixable", { file: "src/y.ts", line: 6, title: "Y" }),
-    ];
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "src/x.ts", line: 5, title: "X" }),
-      f("high", "fixable", { file: "src/y.ts", line: 6, title: "Y" }),
-    ];
-    const verdictFindings = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    expect(verdictFindings).toHaveLength(0);
-    const verdict = deriveRegressionGateVerdict(verdictFindings, true);
-    expect(verdict).toBe("approved");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-003: 新規検出の退行は needs-fix
-// ---------------------------------------------------------------------------
-
-describe("TC-003: 新規検出の退行は needs-fix", () => {
-  it("TC-003: gate finding F の fingerprint が ledger low エントリとも一致しない → needs-fix", () => {
-    // TC-003: Scenario: 新規検出の退行は needs-fix
-    const ledger: Finding[] = [
-      f("low", "fixable", { file: "src/a.ts", line: 1, title: "KNOWN" }),
-    ];
-    // 新規退行: fingerprint が ledger と一致しない
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "src/NEW.ts", line: 99, title: "NEW" }),
-    ];
-    const verdictFindings = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    expect(verdictFindings).toHaveLength(1);
-    const verdict = deriveRegressionGateVerdict(verdictFindings, true);
-    expect(verdict).toBe("needs-fix");
-  });
-
-  it("TC-003: ledger が空（custom reviewer なし）でも gate finding があれば needs-fix", () => {
-    const gateFindings: Finding[] = [f("high", "fixable")];
-    const verdictFindings = excludeKnownUnfixedRegressions(gateFindings, []);
-    const verdict = deriveRegressionGateVerdict(verdictFindings, true);
-    expect(verdict).toBe("needs-fix");
-  });
-
-  it("TC-003: 一部が既知未修正集合に一致し、残りが新規 → needs-fix", () => {
-    const ledger: Finding[] = [
-      f("low", "fixable", { file: "src/a.ts", line: 1, title: "KNOWN" }),
-    ];
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "src/a.ts", line: 1, title: "KNOWN" }), // 除外される
-      f("high", "fixable", { file: "src/b.ts", line: 2, title: "NEW" }),   // 残る → needs-fix
-    ];
-    const verdictFindings = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    expect(verdictFindings).toHaveLength(1);
-    const verdict = deriveRegressionGateVerdict(verdictFindings, true);
-    expect(verdict).toBe("needs-fix");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-004: 修正済み finding の退行は needs-fix
-// ---------------------------------------------------------------------------
-
-describe("TC-004: 修正済み finding の退行は needs-fix", () => {
-  it("TC-004: ledger に medium fixable M、gate が M と同一 fingerprint → medium は既知未修正集合外（low のみ）→ needs-fix", () => {
-    // TC-004: Scenario: 修正済み finding の退行は needs-fix
-    // ledger の medium エントリは既知未修正集合（low のみ）に含まれない → 除外されない → needs-fix
-    const ledger: Finding[] = [
-      f("medium", "fixable", { file: "src/m.ts", line: 20, title: "M" }),
-    ];
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "src/m.ts", line: 20, title: "M" }),
-    ];
-    const verdictFindings = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    // medium ledger エントリは既知未修正集合に含まれないため除外されない
-    expect(verdictFindings).toHaveLength(1);
-    const verdict = deriveRegressionGateVerdict(verdictFindings, true);
-    expect(verdict).toBe("needs-fix");
-  });
-
-  it("TC-004: high ledger エントリの fingerprint 一致 → 除外されない → needs-fix", () => {
-    const ledger: Finding[] = [
-      f("high", "fixable", { file: "src/h.ts", line: 5, title: "H" }),
-    ];
-    const gateFindings: Finding[] = [
-      f("high", "fixable", { file: "src/h.ts", line: 5, title: "H" }),
-    ];
-    // high ledger エントリは既知未修正集合（low のみ）に含まれない
-    const verdictFindings = excludeKnownUnfixedRegressions(gateFindings, ledger);
-    expect(verdictFindings).toHaveLength(1);
-    const verdict = deriveRegressionGateVerdict(verdictFindings, true);
-    expect(verdict).toBe("needs-fix");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-005: standard reviewer path の routing は low を除外する
-// ---------------------------------------------------------------------------
-
-describe("TC-005: standard reviewer path の routing は low を除外する", () => {
-  it("TC-005: active reviewer に low+fixable と high+fixable → routing は high のみ返す", () => {
-    // TC-005: Scenario: standard reviewer path の routing は low を除外する
+describe("TC-005: standard reviewer path の routing は low を含む全 fixable を返す", () => {
+  it("TC-005: active reviewer に low+fixable と high+fixable → routing は HIGH も LOW も返す", () => {
+    // D1: LOW も含む前提へ更新
     // Branch 3 of collectRoutedFixerFindings
     const state = makeState({
       [STEP_NAMES.CODE_REVIEW]: [
@@ -367,10 +147,11 @@ describe("TC-005: standard reviewer path の routing は low を除外する", (
     const findings = collectRoutedFixerFindings(state);
     const titles = findings.map((x) => x.title);
     expect(titles).toContain("HIGH");
-    expect(titles).not.toContain("LOW");
+    expect(titles).toContain("LOW");
   });
 
-  it("TC-005: low のみの場合、routing は空を返す", () => {
+  it("TC-005: low のみの場合、routing は LOW 全件を返す（空でない）", () => {
+    // D1: only-LOW は空でなく LOW 全件を返す
     const state = makeState({
       [STEP_NAMES.CODE_REVIEW]: [
         makeStepRun([
@@ -380,10 +161,10 @@ describe("TC-005: standard reviewer path の routing は low を除外する", (
       ],
     });
     const findings = collectRoutedFixerFindings(state);
-    expect(findings).toHaveLength(0);
+    expect(findings).toHaveLength(2);
   });
 
-  it("TC-005: medium fixable は routing に含まれる（low のみ除外）", () => {
+  it("TC-005: medium fixable は routing に含まれる", () => {
     const state = makeState({
       [STEP_NAMES.CODE_REVIEW]: [
         makeStepRun([
@@ -395,7 +176,7 @@ describe("TC-005: standard reviewer path の routing は low を除外する", (
     const findings = collectRoutedFixerFindings(state);
     const titles = findings.map((x) => x.title);
     expect(titles).toContain("MED");
-    expect(titles).not.toContain("LOW");
+    expect(titles).toContain("LOW");
   });
 });
 

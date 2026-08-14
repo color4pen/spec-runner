@@ -105,8 +105,8 @@ export function collectRoutedFixerFindings(state: JobState): Finding[] {
   }
 
   // Branch 3: active reviewer in the standard / non-coordinator path.
-  // Apply severity policy (LOW excluded) — selectFixerTargetFindings is the single
-  // authoritative place for the LOW exclusion in the routing layer.
+  // Apply routing policy (all fixable findings regardless of severity) —
+  // selectFixerTargetFindings is the single authoritative place for fixer target selection.
   const chain = deriveImplFixerChain(state);
   const active = resolveActiveReviewer(state, chain);
   const allFindings = getLatestJudgeFindings(state, active) ?? [];

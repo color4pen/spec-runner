@@ -274,10 +274,9 @@ describe("CodeFixerStep.buildMessage — findings injection", () => {
     expect(msg).not.toContain("Missing null check");
   });
 
-  it("TC-FF-C-005: initial run with low/medium fixable findings → only medium embedded, low excluded", () => {
-    // Verifies D2/D4: selectFixerTargetFindings is applied in buildMessage (standard path),
-    // so LOW findings are excluded from the prompt (routing layer is the single authority).
-    // MEDIUM findings are still embedded.
+  it("TC-FF-C-005: initial run with low/medium fixable findings → both embedded (low also included)", () => {
+    // Verifies D1: selectFixerTargetFindings includes ALL fixable findings regardless of severity.
+    // LOW findings are now embedded in the prompt alongside MEDIUM findings.
     const lowMediumFixableFindings: Finding[] = [
       {
         severity: "medium",
@@ -312,11 +311,11 @@ describe("CodeFixerStep.buildMessage — findings injection", () => {
     expect(msg).toContain("src/core/pipeline/types.ts");
     expect(msg).toContain("Import is declared but never referenced");
     expect(msg).toContain("[MEDIUM]");
-    // LOW finding must NOT be embedded (selectFixerTargetFindings excludes low)
-    expect(msg).not.toContain("Missing trailing newline");
-    expect(msg).not.toContain("src/core/step/executor.ts");
-    expect(msg).not.toContain("File should end with a newline");
-    expect(msg).not.toContain("[LOW]");
+    // LOW finding must also be embedded (D1: selectFixerTargetFindings includes low)
+    expect(msg).toContain("Missing trailing newline");
+    expect(msg).toContain("src/core/step/executor.ts");
+    expect(msg).toContain("File should end with a newline");
+    expect(msg).toContain("[LOW]");
     // review-feedback file path should NOT appear — findings are directly embedded
     expect(msg).not.toContain("review-feedback-001.md");
   });

@@ -390,7 +390,7 @@ describe("TC-BM-04: CodeFixerStep.buildMessage does NOT throw even in continuati
 });
 
 // ---------------------------------------------------------------------------
-// prompt severity contract: CRITICAL must appear in all prompt branches
+// prompt severity contract: all branches must include "regardless of severity"
 // TC-001: coordinator-loop fallback
 // TC-002: standard-path fallback
 // TC-003: conformance path
@@ -399,9 +399,10 @@ describe("TC-BM-04: CodeFixerStep.buildMessage does NOT throw even in continuati
 // Continuation branches (isFixerContinuation === true → buildContinuationMessage in
 // fixer-helpers.ts) are intentionally excluded: they carry no severity language by
 // design — the mandate comes from the initial-entry turn's session context.
+// D1: severity-fixability-split — severity no longer gates mandatory fixes.
 // ---------------------------------------------------------------------------
 
-describe("prompt severity contract: all branches must include HIGH and CRITICAL (mandatory)", () => {
+describe("prompt severity contract: all branches must include 'regardless of severity' (D1)", () => {
   const SLUG = "my-change";
 
   // State helpers for each branch
@@ -544,43 +545,43 @@ describe("prompt severity contract: all branches must include HIGH and CRITICAL 
   }
 
   // TC-003: conformance path
-  it("TC-003: conformance path includes CRITICAL", () => {
+  it("TC-003: conformance path includes 'regardless of severity'", () => {
     const state = makeConformanceState();
     const deps = makeMinimalDeps(SLUG);
     const message = CodeFixerStep.buildMessage(state, deps);
-    expect(message).toContain("Fix all HIGH and CRITICAL severity findings");
+    expect(message).toContain("regardless of severity");
   });
 
   // TC-004: coordinator-loop findings-embedded path
-  it("TC-004: coordinator-loop findings-embedded path includes CRITICAL", () => {
+  it("TC-004: coordinator-loop findings-embedded path includes 'regardless of severity'", () => {
     const state = makeCoordinatorLoopState(/* withEmbeddedFindings */ true);
     const deps = makeMinimalDeps(SLUG);
     const message = CodeFixerStep.buildMessage(state, deps);
-    expect(message).toContain("Fix all HIGH and CRITICAL severity findings");
+    expect(message).toContain("regardless of severity");
   });
 
-  // TC-001: coordinator-loop fallback (no structured findings) — RED until T-01 is applied
-  it("TC-001: coordinator-loop fallback prompt includes CRITICAL", () => {
+  // TC-001: coordinator-loop fallback (no structured findings)
+  it("TC-001: coordinator-loop fallback prompt includes 'regardless of severity'", () => {
     const state = makeCoordinatorLoopState(/* withEmbeddedFindings */ false);
     const deps = makeMinimalDeps(SLUG);
     const message = CodeFixerStep.buildMessage(state, deps);
-    expect(message).toContain("Fix all HIGH and CRITICAL severity findings");
+    expect(message).toContain("regardless of severity");
   });
 
   // TC-005: standard-path findings-embedded path
-  it("TC-005: standard-path findings-embedded path includes CRITICAL", () => {
+  it("TC-005: standard-path findings-embedded path includes 'regardless of severity'", () => {
     const state = makeStandardPathEmbeddedState();
     const deps = makeMinimalDeps(SLUG);
     const message = CodeFixerStep.buildMessage(state, deps);
-    expect(message).toContain("Fix all HIGH and CRITICAL severity findings");
+    expect(message).toContain("regardless of severity");
   });
 
-  // TC-002: standard-path fallback (findingsPath only, no inline findings) — RED until T-01 is applied
-  it("TC-002: standard-path fallback prompt includes CRITICAL", () => {
+  // TC-002: standard-path fallback (findingsPath only, no inline findings)
+  it("TC-002: standard-path fallback prompt includes 'regardless of severity'", () => {
     // makeStateWithCodeReviewResult sets findingsPath but no toolResult.findings → fallback branch
     const state = makeStateWithCodeReviewResult(SLUG, 2);
     const deps = makeMinimalDeps(SLUG);
     const message = CodeFixerStep.buildMessage(state, deps);
-    expect(message).toContain("Fix all HIGH and CRITICAL severity findings");
+    expect(message).toContain("regardless of severity");
   });
 });

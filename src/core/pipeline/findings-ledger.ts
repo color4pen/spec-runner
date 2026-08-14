@@ -212,31 +212,3 @@ export function computeRegressionLedger(
   return dedupeFindings([...specLedger, ...implLedger]);
 }
 
-/**
- * Filter gate findings to remove entries that correspond to known-unfixed findings
- * from the ledger (i.e. findings that were routed via the one-shot approved path
- * but never fixed by the code-fixer).
- *
- * The "known-unfixed" set = ledger entries with severity `"low"` (the severity
- * level excluded from code-fixer routing by selectFixerTargetFindings). A gate
- * finding is removed when its fingerprint matches a low-severity ledger entry.
- *
- * Pure function — no side effects, no I/O.
- *
- * @param gateFindings - Findings reported by the regression-gate agent.
- * @param ledger       - The full findings ledger (all fixable findings, all severities).
- * @returns Gate findings with known-unfixed entries removed.
- */
-export function excludeKnownUnfixedRegressions(
-  gateFindings: Finding[],
-  ledger: Finding[],
-): Finding[] {
-  // Build fingerprint set of known-unfixed (low severity) ledger entries
-  const knownUnfixed = new Set<string>(
-    ledger
-      .filter((f) => f.severity === "low")
-      .map(findingFingerprint),
-  );
-  if (knownUnfixed.size === 0) return gateFindings;
-  return gateFindings.filter((f) => !knownUnfixed.has(findingFingerprint(f)));
-}

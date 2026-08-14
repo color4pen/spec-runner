@@ -11,7 +11,7 @@
  * And does NOT override when source files were changed.
  *
  * Also verifies requirements 1-4 from approved-fixer-noop-proceeds:
- * - Req 1: approved findings-routing path no-op is NOT escalated
+ * - Req 1: approved findings-routing no-op IS escalated (D5: suppression removed)
  * - Req 2: needs-fix path no-op IS escalated (#734 regression guard)
  * - Req 3: approved path with source changes loops back (approved)
  * - Req 4: conformance-triggered no-op IS escalated (conformance is not findings-routing)
@@ -24,7 +24,7 @@
  * - TC-005: informational finding が doc を名指しし変更もその doc のみ → needs-fix (non-fixable は免除対象外)
  * - TC-006: 非 code-fixer step では免除集合が空 (noOpDetect not true → no exemption)
  * - TC-007: artifact のみの変更で finding が名指ししない (#734 escalate 維持)
- * - TC-008: approved findings-routing no-op は従来どおり抑止される
+ * - TC-008: approved findings-routing no-op → needs-fix (D5: suppression removed)
  * - TC-009: conformance 分岐（branch 1）で implementation-notes.md が免除される
  * - TC-010: coordinator-loop 分岐（branch 2）で implementation-notes.md が免除される
  * - TC-012: noOpDetect !== true の step では collectRoutedFixerFindings を呼ばない
@@ -353,9 +353,9 @@ function makeStateWithCodeReview(
 
 describe("StepExecutor — approved-fixer-noop-proceeds requirements", () => {
   // ---------------------------------------------------------------------------
-  // Requirement 1: approved findings-routing no-op does NOT escalate
+  // Requirement 1: approved findings-routing no-op IS escalated (D5: suppression removed)
   // ---------------------------------------------------------------------------
-  it("Req 1: code-review approved + low fixable findings, no source changes → verdict stays 'approved' (not escalated)", async () => {
+  it("Req 1: code-review approved + low fixable findings, no source changes → verdict overridden to 'needs-fix' (escalated, D5)", async () => {
     const runner = makeRunner();
     const runtimeStrategy = makeRuntimeStrategy([
       "specrunner/changes/example/state.json",  // only artifact files
@@ -376,8 +376,8 @@ describe("StepExecutor — approved-fixer-noop-proceeds requirements", () => {
 
     const stepRuns = resultState.steps?.["code-fixer"] ?? [];
     const lastRun = stepRuns[stepRuns.length - 1];
-    // No mandatory findings → no-op is legitimate → verdict must stay "approved", not escalated
-    expect(lastRun?.outcome.verdict).toBe("approved");
+    // D5: findingsRoutingApproved suppression removed → artifact-only no-op IS escalated
+    expect(lastRun?.outcome.verdict).toBe("needs-fix");
   });
 
   // ---------------------------------------------------------------------------
@@ -901,13 +901,12 @@ describe("StepExecutor — finding-target exemption (noop-detect-finding-target-
   });
 
   // -------------------------------------------------------------------------
-  // TC-008: approved findings-routing no-op は従来どおり抑止される
-  // Source: spec.md > Requirement: 既存の no-op 挙動を保存する
-  //         > Scenario: approved findings-routing no-op は従来どおり抑止される
+  // TC-008: approved findings-routing no-op は now escalated (D5: suppression removed)
+  // Source: design.md > D5
   // -------------------------------------------------------------------------
-  it("TC-008: code-review approved + fixable finding, only artifact files changed → approved (findingsRoutingApproved suppression)", async () => {
+  it("TC-008: code-review approved + fixable finding, only artifact files changed → needs-fix (D5: no suppression)", async () => {
     const runner = makeRunner();
-    // Artifacts only changed → would be needs-fix, but findingsRoutingApproved suppresses it
+    // Artifacts only changed → needs-fix (D5: findingsRoutingApproved suppression removed)
     const runtimeStrategy = makeRuntimeStrategy([
       "specrunner/changes/example/state.json",
     ]);
@@ -916,9 +915,9 @@ describe("StepExecutor — finding-target exemption (noop-detect-finding-target-
     const executor = new StepExecutor(new EventBus(), runner as never, storeFactory, makeGitRevParseSpawnFn("abc123head"));
 
     const step = makeStep(true);
-    // code-review approved + fixable → findingsRoutingApproved = true
+    // code-review approved + fixable; D5: no longer suppressed even on approved findings-routing path
     const state = makeStateWithFinding(
-      "approved", // approved verdict → codeReviewFindingsRoutingActive = true
+      "approved",
       "specrunner/changes/example/implementation-notes.md",
     );
     const deps = makeDeps(runtimeStrategy);
@@ -928,8 +927,8 @@ describe("StepExecutor — finding-target exemption (noop-detect-finding-target-
 
     const stepRuns = resultState.steps?.["code-fixer"] ?? [];
     const lastRun = stepRuns[stepRuns.length - 1];
-    // findingsRoutingApproved suppresses no-op → verdict stays "approved"
-    expect(lastRun?.outcome.verdict).toBe("approved");
+    // D5: suppression removed → artifact-only no-op IS escalated → needs-fix
+    expect(lastRun?.outcome.verdict).toBe("needs-fix");
   });
 
   // -------------------------------------------------------------------------

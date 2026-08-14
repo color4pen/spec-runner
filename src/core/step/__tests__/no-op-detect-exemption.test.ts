@@ -1,13 +1,15 @@
 /**
- * TC-011: detectNoOp — findingTargetPaths / pipelineManagedPaths 省略時は従来と同一 verdict
+ * detectNoOp — findingTargetPaths / pipelineManagedPaths 省略時は従来と同一 verdict
  *
- * Tests that the two new optional parameters of `detectNoOp` are backward-compatible:
+ * Tests that the optional parameters of `detectNoOp` are backward-compatible:
  * - Omitting both preserves the exact pre-existing behavior (exempt = ∅)
  * - Providing findingTargetPaths exempts named paths from the artifact filter
  * - pipelineManagedPaths caps the exemption (named path is not counted as work)
  *
+ * Note: findingsRoutingApproved was removed (D5 / severity-fixability-split).
+ * The suppression test (TC-011 approved findings-routing) is also removed.
+ *
  * Source: tasks.md > T-02 (Acceptance Criteria) / design.md > D2
- * TC-011: spec.md > Requirement: 既存の no-op 挙動を保存する (param 導入前と完全一致)
  */
 
 import { describe, it, expect, vi } from "vitest";
@@ -52,54 +54,41 @@ const BASE_PARAMS = {
 // TC-011: params omitted → same verdict as before param introduction
 // ---------------------------------------------------------------------------
 
-describe("TC-011: detectNoOp — findingTargetPaths / pipelineManagedPaths 省略時は従来と同一", () => {
-  // TC-011: Source: tasks.md > T-02 (Acceptance Criteria) / design.md > D2
+describe("detectNoOp — findingTargetPaths / pipelineManagedPaths 省略時は従来と同一", () => {
+  // Source: tasks.md > T-02 (Acceptance Criteria) / design.md > D2
   // When both params are omitted, detectNoOp MUST behave exactly as it did before
   // the param was introduced (exempt = ∅).
+  //
+  // Note: findingsRoutingApproved was removed (D5). Artifact-only no-ops are now
+  // always escalated regardless of whether code-review was approved+fixable.
 
-  it("TC-011: artifact-only changes, params omitted → 'needs-fix' (same as pre-param behavior)", async () => {
+  it("artifact-only changes, params omitted → 'needs-fix' (same as pre-param behavior)", async () => {
     const step = makeStep(true);
     const runtimeStrategy = makeRuntimeStrategy([
       "specrunner/changes/example/state.json",
     ]);
     const result = await detectNoOp(step, runtimeStrategy as never, {
       ...BASE_PARAMS,
-      findingsRoutingApproved: false,
       // findingTargetPaths: omitted → exempt = ∅ → same as before
       // pipelineManagedPaths: omitted → managed = ∅
     });
     expect(result).toBe("needs-fix");
   });
 
-  it("TC-011: no changed files, params omitted → 'needs-fix' (same as pre-param behavior)", async () => {
+  it("no changed files, params omitted → 'needs-fix' (same as pre-param behavior)", async () => {
     const step = makeStep(true);
     const runtimeStrategy = makeRuntimeStrategy([]);
     const result = await detectNoOp(step, runtimeStrategy as never, {
       ...BASE_PARAMS,
-      findingsRoutingApproved: false,
     });
     expect(result).toBe("needs-fix");
   });
 
-  it("TC-011: source files changed, params omitted → undefined (not a no-op, same as before)", async () => {
+  it("source files changed, params omitted → undefined (not a no-op, same as before)", async () => {
     const step = makeStep(true);
     const runtimeStrategy = makeRuntimeStrategy(["src/foo.ts"]);
     const result = await detectNoOp(step, runtimeStrategy as never, {
       ...BASE_PARAMS,
-      findingsRoutingApproved: false,
-    });
-    expect(result).toBeUndefined();
-  });
-
-  it("TC-011: approved findings-routing, params omitted → undefined (suppression preserved)", async () => {
-    const step = makeStep(true);
-    const runtimeStrategy = makeRuntimeStrategy([
-      "specrunner/changes/example/state.json",
-    ]);
-    const result = await detectNoOp(step, runtimeStrategy as never, {
-      ...BASE_PARAMS,
-      findingsRoutingApproved: true,
-      // params omitted → exempt = ∅, but suppression still applies
     });
     expect(result).toBeUndefined();
   });
@@ -117,7 +106,6 @@ describe("detectNoOp — findingTargetPaths exemption", () => {
     ]);
     const result = await detectNoOp(step, runtimeStrategy as never, {
       ...BASE_PARAMS,
-      findingsRoutingApproved: false,
       findingTargetPaths: ["specrunner/changes/example/implementation-notes.md"],
       pipelineManagedPaths: [], // state.json etc. are managed; implementation-notes.md is not
     });
@@ -132,7 +120,6 @@ describe("detectNoOp — findingTargetPaths exemption", () => {
     ]);
     const result = await detectNoOp(step, runtimeStrategy as never, {
       ...BASE_PARAMS,
-      findingsRoutingApproved: false,
       findingTargetPaths: ["specrunner/changes/example/implementation-notes.md"],
       pipelineManagedPaths: [],
     });
@@ -147,7 +134,6 @@ describe("detectNoOp — findingTargetPaths exemption", () => {
     ]);
     const result = await detectNoOp(step, runtimeStrategy as never, {
       ...BASE_PARAMS,
-      findingsRoutingApproved: false,
       // state.json is in both findingTargetPaths AND pipelineManagedPaths → cap wins → not exempt
       findingTargetPaths: ["specrunner/changes/example/state.json"],
       pipelineManagedPaths: [
@@ -170,7 +156,6 @@ describe("detectNoOp — findingTargetPaths exemption", () => {
     ]);
     const result = await detectNoOp(step, runtimeStrategy as never, {
       ...BASE_PARAMS,
-      findingsRoutingApproved: false,
       findingTargetPaths: [],
       pipelineManagedPaths: [
         "specrunner/changes/example/state.json",
@@ -185,7 +170,6 @@ describe("detectNoOp — findingTargetPaths exemption", () => {
     const runtimeStrategy = makeRuntimeStrategy(["src/foo.ts"]);
     const result = await detectNoOp(step, runtimeStrategy as never, {
       ...BASE_PARAMS,
-      findingsRoutingApproved: false,
       findingTargetPaths: ["src/foo.ts"],
       pipelineManagedPaths: [],
     });
@@ -206,7 +190,6 @@ describe("detectNoOp — unchanged early-return paths", () => {
     ]);
     const result = await detectNoOp(step, runtimeStrategy as never, {
       ...BASE_PARAMS,
-      findingsRoutingApproved: false,
       findingTargetPaths: ["specrunner/changes/example/state.json"],
       pipelineManagedPaths: [],
     });
@@ -222,7 +205,6 @@ describe("detectNoOp — unchanged early-return paths", () => {
     const result = await detectNoOp(step, runtimeStrategy as never, {
       ...BASE_PARAMS,
       completionReason: "timeout",
-      findingsRoutingApproved: false,
       findingTargetPaths: ["specrunner/changes/example/state.json"],
       pipelineManagedPaths: [],
     });

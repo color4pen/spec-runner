@@ -146,10 +146,9 @@ Branch: ${branch}
 ${findingsBlock}
 
 Please:
-1. Fix all HIGH and CRITICAL severity findings from the conformance review (mandatory)
-2. Fix MEDIUM severity findings only if they do not require design changes
-3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-4. Do NOT add new features or make specification changes
+1. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding above is a mandatory fix target
+2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+3. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -189,10 +188,9 @@ Branch: ${branch}
 ${findingsBlock}
 
 Please:
-1. Fix all HIGH and CRITICAL severity findings (mandatory)
-2. Fix MEDIUM severity findings only if they do not require design changes
-3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-4. Do NOT add new features or make specification changes
+1. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding above is a mandatory fix target
+2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+3. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -215,11 +213,10 @@ Review feedback: ${findingsPath}
 
 Please:
 1. Read the review feedback at ${findingsPath}
-2. Fix all HIGH and CRITICAL severity findings (mandatory)
-3. Fix MEDIUM severity findings only if they do not require design changes
-4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-5. Do NOT modify the review-feedback file itself
-6. Do NOT add new features or make specification changes
+2. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding is a mandatory fix target
+3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+4. Do NOT modify the review-feedback file itself
+5. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -236,8 +233,9 @@ ${deps.request.content}
     const findingsPath = resolveReviewerResultPath(deps.slug, activeReviewer, latestIteration(state, activeReviewer));
 
     // Get structured findings from the latest active reviewer run (if available).
-    // Apply selectFixerTargetFindings to match routing layer: LOW findings are excluded
-    // (single authoritative place is selectFixerTargetFindings, not the prompt).
+    // Apply selectFixerTargetFindings to match routing layer: all fixable findings
+    // (regardless of severity) are included. selectFixerTargetFindings is the single
+    // authoritative place for fixer target selection.
     const rawFindings = getLatestJudgeFindings(state, activeReviewer);
     const findings = rawFindings ? selectFixerTargetFindings(rawFindings) : rawFindings;
 
@@ -268,10 +266,9 @@ Branch: ${branch}
 ${findingsBlock}
 
 Please:
-1. Fix all HIGH and CRITICAL severity findings (mandatory)
-2. Fix MEDIUM severity findings only if they do not require design changes
-3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-4. Do NOT add new features or make specification changes
+1. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding above is a mandatory fix target
+2. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+3. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}
@@ -288,11 +285,10 @@ Review feedback: ${findingsPath}
 
 Please:
 1. Read the review feedback at ${findingsPath}
-2. Fix all HIGH and CRITICAL severity findings (mandatory)
-3. Fix MEDIUM severity findings only if they do not require design changes
-4. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-5. Do NOT modify the review-feedback file itself
-6. Do NOT add new features or make specification changes
+2. Fix all listed findings — regardless of severity (LOW/MEDIUM/HIGH/CRITICAL), every finding is a mandatory fix target
+3. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
+4. Do NOT modify the review-feedback file itself
+5. Do NOT add new features or make specification changes
 
 Original request:
 ${deps.request.content}

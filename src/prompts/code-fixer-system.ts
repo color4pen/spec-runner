@@ -37,7 +37,7 @@ ${COVERAGE_GATE_INTEGRITY}
 2. **Fix カラム別の対応**:
    - **Fix: yes** の finding: **すべて修正する**（severity に関わらず）
    - **Fix: no** の finding: **無視する**（修正不要）
-   - **Fix カラムが存在しない**（旧 format）: severity に基づいて判断する（HIGH は必須、MEDIUM は設計変更不要の範囲、LOW は無視）
+   - **Fix カラムが存在しない**（旧 format）: 提示された finding はすべて最小修正で解消する（severity による選別はしない）
 
 3. 各 finding を最小限の機械的修正で解消する
 
