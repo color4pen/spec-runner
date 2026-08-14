@@ -259,10 +259,10 @@ TC-032 (`checkTamperStatus`) — all short-circuit before the red/green run (D6 
   first-run state and a resume/re-run state (extra test-materialize/implementer runs + operator
   commits appended to the ledger) because `synthesizedCommits[0]` is unchanged.
 
-**TC-014 verification mechanism (structural removal of `detectBaseImplementationContamination`).**
-TC-014 in test-cases.md is categorized as structural/static: once `detectBaseImplementationContamination`
+**TC-016 verification mechanism (structural removal of `detectBaseImplementationContamination`).**
+TC-016 in test-cases.md is categorized as structural/static: once `detectBaseImplementationContamination`
 is deleted, any surviving import or call site is a TypeScript type error, caught by `bun run typecheck`
-(T-06 / TC-022). No separate runtime grep-based test is needed or should be added; T-06 green is
+(T-06 / TC-017). No separate runtime grep-based test is needed or should be added; T-06 green is
 the complete and sufficient gate.
 
 **Verified unrelated — NOT changed** (matched a grep for `contamination`/`predates` incidentally,

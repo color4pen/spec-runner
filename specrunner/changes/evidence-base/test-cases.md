@@ -214,7 +214,7 @@ Verification: `bun run typecheck && bun run test`. All existing tests outside th
 ```yaml
 result: completed
 total: 17
-automated: 17
+automated: 15
 manual: 0
 must: 16
 should: 1
