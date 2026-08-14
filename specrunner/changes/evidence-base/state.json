@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
   "createdAt": "2026-08-14T20:03:06.572Z",
-  "updatedAt": "2026-08-14T21:11:47.445Z",
+  "updatedAt": "2026-08-14T21:18:23.307Z",
   "request": {
     "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/evidence-base-a50242c6",
   "error": null,
@@ -76,7 +76,8 @@
     "894c3478fae758d4c6c83b9b1e348b86b86de942",
     "e2497cf4745dfc1ab7e883498bd32a865a264e3b",
     "4a2be8ed9b36d6a32a372efb9ae9d9ab7484bab2",
-    "58791bbe1d0a16d09f942f2153c9cbb9bd042445"
+    "58791bbe1d0a16d09f942f2153c9cbb9bd042445",
+    "3bd5945b074c4d0a3f3de9753b21c9ef83b04791"
   ],
   "touchedFiles": {
     "request-review": [
@@ -113,11 +114,12 @@
       "src/core/step/bite-evidence/oids.ts",
       "src/core/step/bite-evidence/gate.ts",
       "src/core/archive/achieved-assurance.ts",
-      "src/core/port/runtime-strategy.ts",
       "src/core/runtime/workspace-materializer.ts",
+      "src/core/command/resume.ts",
       "src/core/runtime/local.ts",
       "src/core/step/bite-evidence/__tests__/gate.test.ts",
-      "src/core/command/resume.ts"
+      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts",
+      "src/core/port/runtime-strategy.ts"
     ],
     "spec-fixer": []
   },
@@ -131,12 +133,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 4,
-      "spec-review": 3,
+      "spec-review": 4,
       "spec-fixer": 3
     }
   }
