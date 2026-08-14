@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "2e14a04b-8b5c-4972-a028-2ba8d7034ff8",
   "createdAt": "2026-08-14T09:20:18.393Z",
-  "updatedAt": "2026-08-14T10:04:35.155Z",
+  "updatedAt": "2026-08-14T10:07:19.669Z",
   "request": {
     "title": "archive の draft 削除が実ファイルに届いていない: repo 本体側・両形式の削除に直す",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "fix/archive-flat-draft-cleanup-2e14a04b",
   "error": null,
@@ -74,7 +74,8 @@
     "0fcd2b853a401dc2c61bc800638be9d35a5542d9",
     "9fe7845332c5a0f9313609982222bb9bfd781930",
     "5b787a754ec47ef39fced6d56324036d519676e1",
-    "33e410dc6da427cec3a1f8c5b1fa120daa57c52a"
+    "33e410dc6da427cec3a1f8c5b1fa120daa57c52a",
+    "75d024b9fe68c8c5dc63f0866048aba0051573d3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -119,6 +120,10 @@
     "code-review": [
       "src/core/archive/orchestrator.ts",
       "src/core/archive/__tests__/orchestrator.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/archive/__tests__/orchestrator.test.ts",
+      "src/core/archive/orchestrator.ts"
     ]
   },
   "resumePoint": null,
@@ -153,7 +158,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 52,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -167,7 +172,8 @@
       "code-review": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
