@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "05217549-d66b-44d3-8649-45e94c856f2b",
   "createdAt": "2026-08-14T15:29:53.246Z",
-  "updatedAt": "2026-08-14T17:34:53.544Z",
+  "updatedAt": "2026-08-14T17:45:58.718Z",
   "request": {
     "title": "STEP_TIMEOUT の halt 記録に最後の tool 実行情報を残す",
     "type": "spec-change",
@@ -82,7 +82,9 @@
     "c4860f4a4d9f876e95a2feafb096e19789933988",
     "854cb9f5a40b24590c1fd56ae264fa9669e092ff",
     "7ed6818a5cfc9d0bc10ec873fe3e1e518152ab40",
-    "3e2751b93a7cf620c915cab1fd048f561d112239"
+    "3e2751b93a7cf620c915cab1fd048f561d112239",
+    "5952dc7f88fd28fa9a0f740dd4fd3ca9dd0a5b72",
+    "244340331961dd35537159efcddc6ce23989d569"
   ],
   "touchedFiles": {
     "request-review": [
@@ -191,6 +193,17 @@
       "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts",
       "src/adapter/codex/__tests__/agent-runner-timeout-last-tool.test.ts",
       "src/core/step/step-halt.ts"
+    ],
+    "build-fixer": [
+      "src/adapter/codex/__tests__/agent-runner-timeout-last-tool.test.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/shared/last-tool-tracker.ts",
+      "src/config/schema/resolution.ts",
+      "src/adapter/shared/artifact-bundle.ts",
+      "src/util/retry.ts",
+      "src/adapter/shared/inactivity-watchdog.ts",
+      "src/adapter/shared/transient-error.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -226,7 +239,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 77,
+    "historyCount": 85,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -236,14 +249,15 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 2,
       "code-fixer": 2,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "build-fixer": 1
     }
   }
 }
