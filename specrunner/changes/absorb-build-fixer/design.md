@@ -86,6 +86,11 @@ implementer も `"success"` なので `IMPLEMENTER success → VERIFICATION` の
   (pipeline.ts は `Object.values(loopFixerPairs)` の集合演算のみ)。implementer(role: creator)を
   値に置くのは機構上安全。
 
+**副作用(no-op)**: `Object.values(loopFixerPairs)` に implementer が入るため、pipeline.ts の
+"Approved verdict overturned by fixer budget" ブロック(`fixerNamesForReroute`)も implementer を
+対象に含む。ただし STANDARD / FAST の全遷移表に `approved → implementer` への遷移は存在しない
+ため、このブロックは implementer に対して発火しない(実質 no-op)。
+
 ### D2: 再入時の bite-evidence バイパス(`IMPLEMENTER success → VERIFICATION when verificationFailedLast`)
 
 STANDARD の実装完了経路に、既存 `when: isTestGenExempt` 行の直後・`→ BITE_EVIDENCE` 行の前に
@@ -164,6 +169,12 @@ bit 一致する。exempt(chore 相当)/ FAST は bite-evidence が無いため 
 
 **Rationale**: resumePoint 経路は allowed 検証をしないため、alias 無しでは build-fixer 復帰点が
 "Step not found" になる。alias は最小の写像で「過去 step 名を無視し生きた後継へ流す」互換を成立させる。
+
+**互換の既知の限界(許容)**: `IMPL_CODE_MUTATOR_STEPS` から build-fixer を消すため、
+「build-fixer が最後のコード変更者」の legacy state では `codeChangedSinceLastVerification` が
+当該変更を検出しない。このシナリオは実運用上発生困難であり(build-fixer は verification 成功後に
+のみ次へ進み、halt した job は alias により implementer が代わりに実行されて mutator 履歴を
+上書きする)、許容する。
 
 ## Risks / Trade-offs
 

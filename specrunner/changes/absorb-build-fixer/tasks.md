@@ -74,7 +74,8 @@
 ## T-05: resume の後方互換 alias(build-fixer → implementer)
 
 - [ ] `src/core/resume/resolve-step.ts` に `LEGACY_STEP_ALIASES = { "build-fixer": STEP_NAMES.IMPLEMENTER }` を追加
-- [ ] `resolveResumeStep` で `from` と `resumePoint.step` に alias を適用(`mapMemberToCoordinator` と同様の前段写像)
+- [ ] `resolveResumeStep` で `from` と `resumePoint.step` に alias を適用(`mapMemberToCoordinator` と同様の前段写像。
+      `from` 経路では `allowed.has()` 検証より**前**に適用する — alias 後の名前が検証対象)
 
 **Acceptance Criteria**:
 - `resolveResumeStep("build-fixer", ...)` が `"implementer"` を返す
