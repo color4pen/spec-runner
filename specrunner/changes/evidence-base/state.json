@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
   "createdAt": "2026-08-14T20:03:06.572Z",
-  "updatedAt": "2026-08-14T22:35:35.454Z",
+  "updatedAt": "2026-08-14T22:37:58.398Z",
   "request": {
     "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
-  "status": "awaiting-resume",
+  "step": "code-review",
+  "status": "running",
   "branch": "change/evidence-base-a50242c6",
   "error": null,
   "pipelineId": "standard",
@@ -83,7 +83,9 @@
     "3e849ed3af6646e8bbfa9fbc027e8950de3145b8",
     "1e24e0f2aff7ff263c828f9372bc1ee0b11e47f7",
     "45854fd89058956df73a9bdcb7b202bf979dc324",
-    "f12202d0f3fd6991751e4ddf8625a48be16d8877"
+    "f12202d0f3fd6991751e4ddf8625a48be16d8877",
+    "1382a2ae39c5db763574283f39332f4f22ff3363",
+    "b0adcafc17f24f2bbdbba0ccde87ab6595c3ee19"
   ],
   "touchedFiles": {
     "request-review": [
@@ -199,11 +201,7 @@
       "src/core/runtime/local.ts"
     ]
   },
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -242,7 +240,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 81,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
