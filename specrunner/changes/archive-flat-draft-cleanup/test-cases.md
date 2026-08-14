@@ -129,7 +129,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-009: fs.rm の失敗が archive を失敗させない (best-effort)
+### TC-011: fs.rm の失敗が archive を失敗させない (best-effort)
 
 **Category**: unit
 **Priority**: should
@@ -141,7 +141,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-010: fs.rm の EACCES エラーが stderrWrite 警告を出す
+### TC-012: fs.rm の EACCES エラーが stderrWrite 警告を出す
 
 **Category**: unit
 **Priority**: should
