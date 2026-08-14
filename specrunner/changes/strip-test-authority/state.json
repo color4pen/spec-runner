@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a8e7912e-b717-4b28-ae2b-71096da1241f",
   "createdAt": "2026-08-14T09:30:51.726Z",
-  "updatedAt": "2026-08-14T09:30:55.122Z",
+  "updatedAt": "2026-08-14T09:37:28.053Z",
   "request": {
     "title": "テスト証拠と工程順序の分離(第1弾): red 強制・テスト変更禁止・偽 baseline 判定の撤回",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/strip-test-authority-a8e7912e",
   "error": null,
@@ -62,10 +62,28 @@
     }
   ],
   "synthesizedCommits": [
-    "4d99dbe34ca2b746f939c89cc6be131ddd15aa47"
+    "4d99dbe34ca2b746f939c89cc6be131ddd15aa47",
+    "92c7feba43241328ef597172c4d060f57f286134"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/prompts/test-materialize-system.ts",
+      "src/core/step/implementer.ts",
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/pipeline/types.ts",
+      "tests/unit/prompts/test-materialize-red-check-contract.test.ts",
+      "tests/unit/prompts/test-materialize-prompt-contract.test.ts",
+      "tests/unit/step/implementer-lockfile.test.ts",
+      "tests/prompts/implementer-system.test.ts",
+      "tests/unit/step/test-materialize-boundary.test.ts",
+      "src/core/port/runtime-strategy.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
