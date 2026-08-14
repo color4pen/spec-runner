@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "64d5054d-43d6-4ce9-b0c2-3d72c7ad23d9",
   "createdAt": "2026-08-14T11:27:12.016Z",
-  "updatedAt": "2026-08-14T11:58:21.462Z",
+  "updatedAt": "2026-08-14T12:11:53.073Z",
   "request": {
     "title": "conformance の正典に格差を付ける: request/spec は規範、design/tasks は計画",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/conformance-canon-tiers-64d5054d",
   "error": null,
@@ -69,7 +69,9 @@
     "b8809d8f870dbf700dacba9a3e9c253235efea11",
     "e26bd05c1a6a266a3e1b26f6a0429d15cb878f1c",
     "7cff7226ffdb1536c3fc844f071df2dc6d2892c1",
-    "b91a2b89cea1dfcd760dc22d020c34c7c655ecfd"
+    "b91a2b89cea1dfcd760dc22d020c34c7c655ecfd",
+    "45adc23dc7ae367593edef0145891409a3e875e2",
+    "8f4d478f882dcbcf6db7aa27636726f7a121f959"
   ],
   "touchedFiles": {
     "request-review": [
@@ -123,10 +125,48 @@
       "src/core/step/conformance.ts",
       "src/core/step/report-tool.ts",
       "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts"
+    ],
+    "code-review": [
+      "src/prompts/conformance-system.ts",
+      "src/core/step/conformance.ts",
+      "src/core/step/report-tool.ts",
+      "tests/unit/core/step/conformance.test.ts",
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts",
+      "src/prompts/builder.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "45adc23dc7ae367593edef0145891409a3e875e2",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/conformance-canon-tiers/design.md:sha256:d2e16d432f8f9bfb010cf81468e13b217cd8d0ad56e2d821f788b8bae78b7035|specrunner/changes/conformance-canon-tiers/request.md:sha256:496d016aea30e6c3b0a4fbb2d57262f315548806183970aaff0a2fdacfed7716|specrunner/changes/conformance-canon-tiers/spec.md:sha256:0b43517aeda5749d8846b14e75fcde69f47d9a322e14d79b69459e48980fdb5f|specrunner/changes/conformance-canon-tiers/tasks.md:sha256:75dbcb7494c547a9aa1d492e7d6acf7c14b00349926b0aef6cacfddc5e9236db|specrunner/changes/conformance-canon-tiers/test-cases.md:sha256:bc75a32d688d19db99acd59d22f455a9fedf064d458203c80a571ec12846b321"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -135,7 +175,11 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
