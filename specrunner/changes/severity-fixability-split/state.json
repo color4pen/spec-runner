@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "8e319c5c-b2e2-41fa-8635-b7b89db081b0",
   "createdAt": "2026-08-14T11:27:26.288Z",
-  "updatedAt": "2026-08-14T14:09:33.328Z",
+  "updatedAt": "2026-08-14T14:14:02.057Z",
   "request": {
     "title": "severity と fixability の分離: LOW も fixable なら直す",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/severity-fixability-split-8e319c5c",
   "error": null,
   "pipelineId": "standard",
@@ -80,7 +80,8 @@
     "674e826a981210f4fc00109a6df2f862e5cbdce1",
     "83e1ae3e39ee07e8320043035204a001406193b2",
     "33b830c8cd6ac77597fe3ab51eee4d6f5a9dc6c2",
-    "b017b25186d96dab36d335d0b351117002013bff"
+    "b017b25186d96dab36d335d0b351117002013bff",
+    "057f0b37b34c7da1bd408328f3404a2877c31f18"
   ],
   "touchedFiles": {
     "request-review": [
@@ -223,6 +224,12 @@
       "src/core/step/__tests__/executor-no-op.test.ts",
       "src/core/step/__tests__/no-op-detect-exemption.test.ts",
       "src/core/pipeline/__tests__/reviewer-chain.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-07-04-approved-fixer-noop-proceeds.md",
+      "specrunner/adr/2026-05-26-observation-auto-fix-pipeline.md",
+      "specrunner/adr/2026-08-09-regression-gate-false-loop.md",
+      "specrunner/adr/2026-08-14-severity-fixability-split.md"
     ]
   },
   "reviewerStatuses": [
@@ -257,8 +264,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/993",
+    "number": 993,
+    "createdAt": "2026-08-14T14:14:01.185Z"
+  },
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 83,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -274,7 +286,9 @@
       "custom-reviewers": 1,
       "regression-gate": 2,
       "code-fixer": 3,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
