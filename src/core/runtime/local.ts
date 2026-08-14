@@ -1193,10 +1193,6 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     cwd: string,
     config: import("../../config/schema.js").SpecRunnerConfig,
   ): Promise<import("../port/runtime-strategy.js").IsolatedTestResult> {
-    if (overlayFiles.length === 0) {
-      return { kind: "ran", results: [] };
-    }
-
     // scopedTestCommand is required — no default-bun fallback for synthesized-tree execution.
     const scopedTestCommand = config.verification?.scopedTestCommand?.trim();
     if (!scopedTestCommand) {
@@ -1204,6 +1200,10 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         kind: "unavailable",
         reason: "scopedTestCommand not configured; runTestsOnSynthesizedTree requires a scopedTestCommand to run per-file tests in the detached worktree",
       };
+    }
+
+    if (overlayFiles.length === 0) {
+      return { kind: "ran", results: [] };
     }
 
     const os = await import("node:os");

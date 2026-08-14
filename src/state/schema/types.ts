@@ -379,7 +379,7 @@ export interface BiteEvidenceRecord {
   /**
    * Final HEAD binding fields for the archive floor gate (assurance-provenance-floor).
    * All optional for backward compatibility — records without these fields remain valid.
-   * - baseOid:      commit OID of the test-materialize step (base boundary).
+   * - baseOid:      Evidence Base revision expression used as the red-side base (e.g. "bootstrapSha^").
    * - candidateOid: commit OID of the implementer step (candidate boundary).
    * - testHash:     content digest of the test file at gate execution time (worktree / candidate
    *                 tree content, NOT the baseOid content). "sha256:..." format.

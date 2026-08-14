@@ -494,7 +494,7 @@ export async function deriveAchievedAssurance(
     achieved["biteEvidence"] = "required";
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
-    diagnostics.push(`biteEvidence: runTestsAtCommit threw: ${reason}`);
+    diagnostics.push(`biteEvidence: bite evidence evaluation threw: ${reason}`);
     // biteEvidence absent
   }
 
