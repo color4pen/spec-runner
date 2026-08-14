@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a50242c6-0c9c-469c-b415-2236f8175ab7",
   "createdAt": "2026-08-14T20:03:06.572Z",
-  "updatedAt": "2026-08-14T22:37:58.398Z",
+  "updatedAt": "2026-08-14T22:45:15.538Z",
   "request": {
     "title": "Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/evidence-base-a50242c6",
   "error": null,
@@ -85,7 +85,8 @@
     "45854fd89058956df73a9bdcb7b202bf979dc324",
     "f12202d0f3fd6991751e4ddf8625a48be16d8877",
     "1382a2ae39c5db763574283f39332f4f22ff3363",
-    "b0adcafc17f24f2bbdbba0ccde87ab6595c3ee19"
+    "b0adcafc17f24f2bbdbba0ccde87ab6595c3ee19",
+    "c2b42be039962b875d9195e37a43be70f0e1f430"
   ],
   "touchedFiles": {
     "request-review": [
@@ -181,19 +182,21 @@
     "code-review": [
       "src/core/step/bite-evidence/oids.ts",
       "src/core/step/bite-evidence/gate.ts",
-      "src/core/archive/achieved-assurance.ts",
       "src/core/port/runtime-strategy.ts",
       "src/core/runtime/local.ts",
+      "src/core/archive/achieved-assurance.ts",
       "src/core/runtime/managed.ts",
       "src/core/step/bite-evidence/__tests__/evidence-base-gate.test.ts",
       "src/core/step/bite-evidence/__tests__/evidence-base-oids.test.ts",
       "src/core/archive/__tests__/evidence-base-archive-floor.test.ts",
-      "src/core/step/bite-evidence/__tests__/gate.test.ts",
-      "src/core/runtime/__tests__/evidence-base-e2e.test.ts",
       "src/core/runtime/__tests__/synthesized-tree-exec.test.ts",
+      "src/core/runtime/__tests__/evidence-base-e2e.test.ts",
       "src/state/schema/types.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts",
+      "src/core/archive/__tests__/achieved-assurance.test.ts",
       "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
-      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts"
+      "src/state/schema/operations.ts"
     ],
     "code-fixer": [
       "src/state/schema/types.ts",
@@ -240,7 +243,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 81,
+    "historyCount": 85,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -251,7 +254,7 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1,
+      "code-review": 2,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,

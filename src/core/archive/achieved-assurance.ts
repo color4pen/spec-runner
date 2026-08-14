@@ -235,14 +235,17 @@ export async function deriveAchievedAssurance(
   }
 
   // (P2.5) Resolve the Evidence Base reference (immutable job base = synthesizedCommits[0]^).
-  // Replaces the contamination detection: Evidence Base is constructed from the fork point
-  // so implementation can never be mixed in by construction (no re-run shape contamination).
-  const evidenceBaseRev = resolveEvidenceBaseRev(state);
-  if (evidenceBaseRev === null) {
-    diagnostics.push(
-      "biteEvidence/testDerivation: Evidence Base reference absent — synthesizedCommits ledger is empty or absent (fail-closed)",
-    );
-    return { achieved: achieved as ProfileAssurance, diagnostics };
+  // Only required for biteEvidence — testDerivation (blob freeze + scenario revision binding)
+  // is logically independent of the Evidence Base and must not be gated here.
+  let evidenceBaseRev: string | null = null;
+  if (floorConstrainsBite) {
+    evidenceBaseRev = resolveEvidenceBaseRev(state);
+    if (evidenceBaseRev === null) {
+      diagnostics.push(
+        "biteEvidence: Evidence Base reference absent — synthesizedCommits ledger is empty or absent (fail-closed)",
+      );
+      return { achieved: achieved as ProfileAssurance, diagnostics };
+    }
   }
 
   // (P3) Runtime must be available with all required methods.
@@ -430,7 +433,7 @@ export async function deriveAchievedAssurance(
   // ---------------------------------------------------------------------------
   // (e) Base-red check + (f) HEAD-green check (P0-1, ADR-20260717 D4)
   //
-  // base-red: run tests at baseOid — all materialized test files must fail (red).
+  // base-red: run tests on Evidence Base (evidenceBaseRev + candidate overlay) — all must fail (red).
   // HEAD-green: run tests at finalHeadOid — all materialized test files must pass (green).
   // Both checks use the same materializedTestFiles to ensure complete coverage.
   //
@@ -445,7 +448,7 @@ export async function deriveAchievedAssurance(
     // This replaces runTestsAtCommit(baseOid) — the Evidence Base cannot contain
     // implementation by construction, so re-run shapes can now earn assurance.
     const baseTestResult = await runtime.runTestsOnSynthesizedTree!(
-      evidenceBaseRev,
+      evidenceBaseRev!, // non-null: P2.5 returned early if null when floorConstrainsBite
       materializedTestFiles,
       finalHeadOid,
       cwd,

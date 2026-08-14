@@ -51,9 +51,9 @@ function makeState(overrides: Partial<JobState> = {}): JobState {
 }
 
 describe("deriveAchievedAssurance — Evidence Base reference absent", () => {
-  it("leaves biteEvidence/testDerivation absent and performs no provenance I/O when synthesizedCommits is absent", async () => {
-    // synthesizedCommits absent → resolveEvidenceBaseRev returns null → early return at P2.5.
-    // No runtime I/O should be performed (short-circuit before listCommitChangedFiles).
+  it("leaves biteEvidence absent and performs no provenance I/O when synthesizedCommits is absent and floor requires biteEvidence", async () => {
+    // synthesizedCommits absent → resolveEvidenceBaseRev returns null → early return at P2.5
+    // (P2.5 is guarded by floorConstrainsBite, so it short-circuits before any I/O).
     const state = makeState({
       steps: {
         "test-materialize": [
@@ -63,7 +63,7 @@ describe("deriveAchievedAssurance — Evidence Base reference absent", () => {
           makeRunAt("2026-01-01T00:03:00.000Z", "impl-oid"),
         ],
       },
-      // synthesizedCommits absent → resolveEvidenceBaseRev → null → fail-closed
+      // synthesizedCommits absent → resolveEvidenceBaseRev → null → fail-closed (biteEvidence only)
     });
 
     const neverCalled = (name: string) => () => {
@@ -87,48 +87,6 @@ describe("deriveAchievedAssurance — Evidence Base reference absent", () => {
     });
 
     expect(output.achieved.biteEvidence).toBeUndefined();
-    expect(output.achieved.testDerivation).toBeUndefined();
-    expect(
-      output.diagnostics.some((d) => d.includes("Evidence Base reference absent")),
-    ).toBe(true);
-  });
-
-  it("leaves testDerivation absent when the floor requires testDerivation and synthesizedCommits is absent", async () => {
-    // Pins the new coupling: the P2.5 Evidence-Base-reference check blocks BOTH dimensions,
-    // including testDerivation, which in the pre-Evidence-Base implementation did not depend
-    // on the synthesizedCommits ledger.
-    const state = makeState({
-      steps: {
-        "test-materialize": [
-          makeRunAt("2026-01-01T00:02:00.000Z", "mat-oid"),
-        ],
-        "implementer": [
-          makeRunAt("2026-01-01T00:03:00.000Z", "impl-oid"),
-        ],
-      },
-      // synthesizedCommits absent → resolveEvidenceBaseRev → null → fail-closed
-    });
-
-    const neverCalled = (name: string) => () => {
-      throw new Error(`runtime.${name} must not be called when EB ref is absent`);
-    };
-    const runtime = {
-      listCommitChangedFiles: neverCalled("listCommitChangedFiles"),
-      runTestsAtCommit: neverCalled("runTestsAtCommit"),
-      runTestsOnSynthesizedTree: neverCalled("runTestsOnSynthesizedTree"),
-      diffPathsBetweenCommits: neverCalled("diffPathsBetweenCommits"),
-      readFileAtCommit: neverCalled("readFileAtCommit"),
-    };
-
-    const output = await deriveAchievedAssurance({
-      state,
-      finalHeadOid: "final-head-oid",
-      cwd: "/tmp/assurance-test-cwd",
-      config: {} as never,
-      floor: { testDerivation: "frozen" } as never,
-      runtime: runtime as never,
-    });
-
     expect(output.achieved.testDerivation).toBeUndefined();
     expect(
       output.diagnostics.some((d) => d.includes("Evidence Base reference absent")),

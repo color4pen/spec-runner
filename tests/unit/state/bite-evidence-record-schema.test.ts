@@ -1,12 +1,12 @@
 /**
  * Unit tests for the extended BiteEvidenceRecord schema (assurance-provenance-floor T-02).
  *
- * Tests that BiteEvidenceRecord accepts the new optional fields (baseOid, candidateOid,
+ * Tests that BiteEvidenceRecord accepts the new optional fields (baseRef, candidateOid,
  * testHash) and that schema validation enforces type constraints while remaining
  * backward compatible with records lacking these fields.
  *
- * TC-017: baseOid / candidateOid / testHash を持つ BiteEvidenceRecord が validation を通り round-trip する
- * TC-018: 旧形式（OID / testHash フィールド欠落）BiteEvidenceRecord が valid のまま読める（後方互換）
+ * TC-017: baseRef / candidateOid / testHash を持つ BiteEvidenceRecord が validation を通り round-trip する
+ * TC-018: 旧形式（フィールド欠落）BiteEvidenceRecord が valid のまま読める（後方互換）
  * TC-022: BiteEvidenceRecord の新フィールドに非 string 値が入ると validation がエラーを返す
  */
 import { describe, it, expect } from "vitest";
@@ -56,7 +56,7 @@ const FULL_RECORD = {
   baseResult: "red",
   candidateResult: "green",
   verified: true,
-  baseOid: "base-commit-sha-0000000000001",
+  baseRef: "bootstrapsha0000000000001^",
   candidateOid: "candidate-commit-sha-0000001",
   testHash: "sha256:abc123def456abc123def456abc123def456abc123def456abc123def456abc1",
 };
@@ -65,7 +65,7 @@ const FULL_RECORD = {
 // TC-018: 旧形式（フィールド欠落）BiteEvidenceRecord が valid のまま読める（後方互換）
 // ---------------------------------------------------------------------------
 
-describe("TC-018: 旧形式（OID / testHash フィールド欠落）BiteEvidenceRecord が valid のまま読める（後方互換）", () => {
+describe("TC-018: 旧形式（フィールド欠落）BiteEvidenceRecord が valid のまま読める（後方互換）", () => {
   it("TC-018: legacy record with 5 original fields passes validateJobState", () => {
     const raw = makeRawJobState([LEGACY_RECORD]);
     // Must not throw — backward compat requires that records without new fields remain valid
@@ -96,10 +96,10 @@ describe("TC-018: 旧形式（OID / testHash フィールド欠落）BiteEvidenc
 });
 
 // ---------------------------------------------------------------------------
-// TC-017: baseOid / candidateOid / testHash を持つ BiteEvidenceRecord が validation を通り round-trip する
+// TC-017: baseRef / candidateOid / testHash を持つ BiteEvidenceRecord が validation を通り round-trip する
 // ---------------------------------------------------------------------------
 
-describe("TC-017: baseOid / candidateOid / testHash を持つ BiteEvidenceRecord が validation を通り round-trip する", () => {
+describe("TC-017: baseRef / candidateOid / testHash を持つ BiteEvidenceRecord が validation を通り round-trip する", () => {
   it("TC-017: full record with all new fields passes validateJobState", () => {
     const raw = makeRawJobState([FULL_RECORD]);
     // Must not throw — new fields must be accepted
@@ -122,15 +122,15 @@ describe("TC-017: baseOid / candidateOid / testHash を持つ BiteEvidenceRecord
     expect(record.verified).toBe(FULL_RECORD.verified);
 
     // New fields (TC-017: these must survive round-trip)
-    expect((record as Record<string, unknown>)["baseOid"]).toBe(FULL_RECORD.baseOid);
+    expect((record as Record<string, unknown>)["baseRef"]).toBe(FULL_RECORD.baseRef);
     expect((record as Record<string, unknown>)["candidateOid"]).toBe(FULL_RECORD.candidateOid);
     expect((record as Record<string, unknown>)["testHash"]).toBe(FULL_RECORD.testHash);
   });
 
-  it("TC-017: record with only baseOid (no candidateOid or testHash) is valid", () => {
+  it("TC-017: record with only baseRef (no candidateOid or testHash) is valid", () => {
     const partialRecord = {
       ...LEGACY_RECORD,
-      baseOid: "base-commit-sha-0000000000001",
+      baseRef: "bootstrapsha0000000000001^",
     };
     const raw = makeRawJobState([partialRecord]);
     expect(() => validateJobState(raw)).not.toThrow();
@@ -151,10 +151,10 @@ describe("TC-017: baseOid / candidateOid / testHash を持つ BiteEvidenceRecord
 // ---------------------------------------------------------------------------
 
 describe("TC-022: BiteEvidenceRecord の新フィールドに非 string 値が入ると validation がエラーを返す", () => {
-  it("TC-022: baseOid set to number → validation error (baseOid must be string)", () => {
+  it("TC-022: baseRef set to number → validation error (baseRef must be string)", () => {
     const invalidRecord = {
       ...LEGACY_RECORD,
-      baseOid: 123, // must be string
+      baseRef: 123, // must be string
     };
     const raw = makeRawJobState([invalidRecord]);
     expect(() => validateJobState(raw)).toThrow();

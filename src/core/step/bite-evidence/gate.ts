@@ -286,7 +286,7 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
       baseResult,
       candidateResult,
       verified,
-      baseOid: evidenceBaseRev, // Evidence Base rev (not the materialize commit)
+      baseRef: evidenceBaseRev, // Evidence Base rev expression (not a resolved OID)
       candidateOid: headOid,    // HEAD OID (includes adopted operator commits)
     };
 

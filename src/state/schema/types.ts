@@ -379,15 +379,16 @@ export interface BiteEvidenceRecord {
   /**
    * Final HEAD binding fields for the archive floor gate (assurance-provenance-floor).
    * All optional for backward compatibility — records without these fields remain valid.
-   * - baseOid:      Evidence Base revision expression used as the red-side base (e.g. "bootstrapSha^").
+   * - baseRef:      Evidence Base revision expression used as the red-side base (e.g. "bootstrapSha^").
+   *                 This is a git revision expression, NOT a resolved 40-char OID.
    * - candidateOid: commit OID of the branch HEAD at gate execution time (green candidate =
    *                 provenance-approved reachable tree, includes adopted operator commits).
    * - testHash:     content digest of the test file at gate execution time (worktree / candidate
-   *                 tree content, NOT the baseOid content). "sha256:..." format.
+   *                 tree content). "sha256:..." format.
    *                 Used for freeze / tamper detection at the archive gate.
    *                 Note: the archive authority re-measures independently via readFileAtCommit.
    */
-  baseOid?: string;
+  baseRef?: string;
   candidateOid?: string;
   testHash?: string;
 }

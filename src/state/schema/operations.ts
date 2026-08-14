@@ -328,7 +328,7 @@ export function validateJobState(raw: unknown): JobState {
       }
       // Optional HEAD-binding fields (assurance-provenance-floor): when present, must be strings.
       // Absent is valid (backward compat with records written before this field existed).
-      for (const optField of ["baseOid", "candidateOid", "testHash"] as const) {
+      for (const optField of ["baseRef", "candidateOid", "testHash"] as const) {
         if (optField in beObj && beObj[optField] !== undefined) {
           if (typeof beObj[optField] !== "string") {
             throw new Error(`biteEvidence entry "${beObj["testId"]}" field '${optField}' must be a string when present.`);
