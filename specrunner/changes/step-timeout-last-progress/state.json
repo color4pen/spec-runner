@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "05217549-d66b-44d3-8649-45e94c856f2b",
   "createdAt": "2026-08-14T15:29:53.246Z",
-  "updatedAt": "2026-08-14T17:02:15.138Z",
+  "updatedAt": "2026-08-14T17:08:17.329Z",
   "request": {
     "title": "STEP_TIMEOUT の halt 記録に最後の tool 実行情報を残す",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
-  "status": "awaiting-resume",
+  "step": "code-review",
+  "status": "running",
   "branch": "change/step-timeout-last-progress-05217549",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,10 @@
     "903fbd07c6a0cb307e0768f3601296fde607c840",
     "904a556e8d2188efdde983e8efd97842b77d061d",
     "9680a88192fecb4b0452d3007ff5871676d762a0",
-    "ecca3b074212622623cf1f83003fa6610f97732e"
+    "ecca3b074212622623cf1f83003fa6610f97732e",
+    "b476aad9c95c395a651335e1b283d7c7b74ab8de",
+    "8e7d2c38c7144d9f1d9ed0cb2ec316b2175cfdc3",
+    "f242c0f49509625d5b7cf002970e6bb37114e5a2"
   ],
   "touchedFiles": {
     "request-review": [
@@ -200,13 +203,10 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
