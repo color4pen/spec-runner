@@ -240,6 +240,30 @@ describe("TC-004: implementer 再入 — 前回 sessionId 無し → resumeSessi
     const message = ImplementerStep.buildMessage(state, deps);
     expect(message).toContain("## Verification Failures");
   });
+
+  it("TC-004: fresh fallback は initial message ベース(D3)— recovery 前置きを含まず tasks/spec 案内を含む", () => {
+    // D3: fresh fallback (no previous implementer session) uses
+    // buildImplementerInitialMessage with the failure section appended — the resumed-session
+    // recovery preamble must not be used because there is no prior session context.
+    const state = makeJobState({
+      steps: {
+        [STEP_NAMES.VERIFICATION]: [
+          makeStepRun("failed", "2026-01-01T00:01:00.000Z"),
+        ],
+        // No implementer runs — fresh fallback scenario
+      },
+    });
+    const verificationContent =
+      "| 1 | typecheck | failed | 2.5s | 1 |\n\n## Phase: typecheck\n\n```\nerror: Type mismatch\n```";
+    const deps = makeDeps({
+      dynamicContext: { verificationContent } as unknown as import("../../../src/git/dynamic-context.js").DynamicContext,
+    });
+
+    const message = ImplementerStep.buildMessage(state, deps);
+    expect(message).not.toContain("verification(build / typecheck / lint / test)が失敗しました");
+    expect(message).toContain("tasks.md to understand what needs to be implemented");
+    expect(message).toContain("## Verification Failures");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -255,6 +279,11 @@ describe("TC-005: 回復 message に機械的修正制約文言が含まれな�
         ],
         [STEP_NAMES.TEST_MATERIALIZE]: [
           makeStepRun("success", "2026-01-01T00:00:30.000Z"),
+        ],
+        // Previous implementer session — TC-005 pins the CONTINUATION recovery
+        // message content (the fresh-fallback shape uses the initial message, TC-004).
+        [STEP_NAMES.IMPLEMENTER]: [
+          makeStepRun("success", "2026-01-01T00:00:45.000Z", "prev-impl-session-tc005"),
         ],
       },
     });

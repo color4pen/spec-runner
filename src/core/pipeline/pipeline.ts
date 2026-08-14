@@ -459,7 +459,12 @@ export class Pipeline {
           const budgetSkippedFixer = nextStep;
           const exhaustedReviewer = resolvePairedReviewForFixer(state, budgetSkippedFixer, this.loopFixerPairs);
           const effectiveMaxReroute = this.resolveMaxIterations(exhaustedReviewer);
-          if (budget.getFixerIter(budgetSkippedFixer) >= effectiveMaxReroute) {
+          // Only intercept when the approved transition comes FROM the fixer's paired
+          // reviewer. A transition into the same step from an unrelated reviewer
+          // (e.g. spec-review approved → implementer via isTestGenExempt, where
+          // implementer is entered as creator, not as verification's fixer) must
+          // not be overturned by the verification-pair budget.
+          if (currentStep === exhaustedReviewer && budget.getFixerIter(budgetSkippedFixer) >= effectiveMaxReroute) {
             // Find the clean approved transition: target is not a fixer, and no when guard
             // (or when guard passes). The clean row is the unconditional approved→next row
             // produced by buildReviewerChainTransitions / buildParallelReviewerTransitions.

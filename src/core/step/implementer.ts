@@ -13,7 +13,7 @@ import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath, conformanceResultPath, verificationResultPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
 import { PRODUCER_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
-import { getConformanceFixContext, buildFindingsBlock } from "./fixer-helpers.js";
+import { getConformanceFixContext, buildFindingsBlock, getPreviousSessionId } from "./fixer-helpers.js";
 import { latestIteration } from "./io-iteration.js";
 import { verificationFailedLast } from "../pipeline/reverification.js";
 import { extractVerificationFailures } from "../verification/parse-result.js";
@@ -306,14 +306,35 @@ export const ImplementerStep: AgentStep = {
     // Recovery re-entry: verification failed → implementer fixes (no mechanical-fix constraint).
     // build-fixer 廃止後、verification 失敗は implementer 自身が paired fixer として直す。
     if (verificationFailedLast(state)) {
-      return buildImplementerRecoveryMessage({
+      // Continuation (previous session resumable): short recovery message — the prior
+      // implementation context lives in the resumed session.
+      if (getPreviousSessionId(state, STEP_NAMES.IMPLEMENTER) !== null) {
+        return buildImplementerRecoveryMessage({
+          slug: deps.slug,
+          branch: state.branch,
+          verificationContent: deps.dynamicContext?.verificationContent,
+          testsMaterialized,
+          requestContent: deps.request.content,
+          dynamicContext: deps.dynamicContext,
+        });
+      }
+      // Fresh fallback (no previous session): full initial message (branch context +
+      // tasks/spec guidance) with the verification-failure section appended (D3).
+      const baseMessage = buildImplementerInitialMessage({
         slug: deps.slug,
         branch: state.branch,
-        verificationContent: deps.dynamicContext?.verificationContent,
-        testsMaterialized,
         requestContent: deps.request.content,
         dynamicContext: deps.dynamicContext,
+        testsMaterialized,
       });
+      const failureSection = buildFailureSection(deps.dynamicContext?.verificationContent);
+      if (failureSection === "") return baseMessage;
+      const insertBefore = "</user-request>";
+      const idx = baseMessage.lastIndexOf(insertBefore);
+      if (idx !== -1) {
+        return `${baseMessage.slice(0, idx)}${failureSection}\n${baseMessage.slice(idx)}`;
+      }
+      return `${baseMessage}\n${failureSection}`;
     }
 
     // Conformance-triggered entry: append conformance non-conformities section
