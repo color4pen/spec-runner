@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
   "createdAt": "2026-08-14T11:26:56.093Z",
-  "updatedAt": "2026-08-14T15:10:53.918Z",
+  "updatedAt": "2026-08-14T15:47:57.433Z",
   "request": {
     "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
     "type": "spec-change",
@@ -17,7 +17,7 @@
   "branch": "change/test-case-gen-design-phase-96aef526",
   "error": {
     "code": "STEP_TIMEOUT",
-    "message": "Step 'implementer' inactivity timeout: no agent event for 899999ms",
+    "message": "Step 'implementer' inactivity timeout: no agent event for 900001ms",
     "hint": ""
   },
   "pipelineId": "standard",
@@ -72,7 +72,8 @@
     "2bc68090bffb3db402bd17de9c2cf7e1345a9fa5",
     "1bcf5844c2654639aa5185ed40532047166d4790",
     "6fd79c6cede922b79400e187186ee80fc953e27d",
-    "354cd125945c0f24276524fdaf640ddc21e3cb05"
+    "354cd125945c0f24276524fdaf640ddc21e3cb05",
+    "9312124fbc8f14da5597ccfa1b14ab3b17cef47e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -172,8 +173,9 @@
     "reason": "timeout",
     "iterationsExhausted": 0
   },
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 28,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -181,7 +183,7 @@
       "spec-fixer": 1,
       "test-case-gen": 1,
       "test-materialize": 1,
-      "implementer": 1
+      "implementer": 2
     }
   }
 }
