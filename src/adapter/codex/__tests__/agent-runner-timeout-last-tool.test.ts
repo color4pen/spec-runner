@@ -25,10 +25,16 @@ let tempDir: string;
 
 beforeEach(async () => {
   tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "codex-timeout-last-tool-test-"));
+  // Mock readFile so buildArtifactBundle resolves via microtask (not libuv I/O),
+  // making vi.advanceTimersByTimeAsync deterministic in slow CI environments.
+  vi.spyOn(fs, "readFile").mockRejectedValue(
+    Object.assign(new Error("ENOENT: no such file or directory"), { code: "ENOENT" }),
+  );
 });
 
 afterEach(async () => {
   vi.useRealTimers();
+  vi.restoreAllMocks();
   await fs.rm(tempDir, { recursive: true, force: true });
 });
 
