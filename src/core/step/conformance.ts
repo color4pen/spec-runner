@@ -82,12 +82,12 @@ Iteration: ${iteration}
 
 Steps:
 1. Read ${changeFolder}/rules.md (identity priming)
-2. Read ${changeFolder}/tasks.md — verify all checkboxes are marked complete [x]
-3. Read ${changeFolder}/design.md — note all design decisions (D1, D2, ...)
-4. Read ${changeFolder}/spec.md — note all Requirements (SHALL/MUST) and Scenarios
-5. Read ${changeFolder}/request.md — note all acceptance criteria
+2. Read ${changeFolder}/request.md — note all acceptance criteria (normative)
+3. Read ${changeFolder}/spec.md — note all Requirements (SHALL/MUST) and Scenarios (normative)
+4. Read ${changeFolder}/design.md — note design decisions (D1, D2, ...) as plan context
+5. Read ${changeFolder}/tasks.md — note checkbox state as plan context (not a conformance gate)
 6. Run \`git diff main...HEAD --stat\` to understand the scope of implementation changes
-7. Review the implementation against all 4 judgment items
+7. Review the implementation: verify normative items (request/spec) in full; note plan divergences (design/tasks) without making them findings unless they violate request/spec
 8. Write your evidence report to: ${findingsPath}
 
 Do NOT write a verdict line. Verdict is derived by CLI from typed findings (report_result).

@@ -170,14 +170,16 @@ const conformanceFindingSchema = array(object({
  * evidence: REQUIRED when ok=true — verification-volume counts. checked=0 is treated as indeterminate.
  *
  * fixTarget semantics (per finding):
- *   "spec-fixer"  — spec/design errors: the spec or design artifact is wrong/incomplete
- *   "implementer" — implementation gaps: the implementation is missing or incomplete
- *   "code-fixer"  — local code non-conformities: isolated code-level issues
+ *   Findings are raised only when request.md / spec.md normative requirements are violated.
+ *   Design/tasks divergences that do not violate request/spec are non-blocking notes, not findings.
+ *   "spec-fixer"  — root cause is an error in spec.md or design.md
+ *   "implementer" — root cause is missing or incomplete implementation
+ *   "code-fixer"  — root cause is an isolated code-level issue
  *   (omitted)     — defaults to "implementer"
  */
 export const CONFORMANCE_REPORT_TOOL: ReportToolSpec<ConformanceReportResult> = {
   name: "report_result",
-  description: "Report the completion of the conformance step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, fixTarget?: 'implementer'|'code-fixer'|'spec-fixer', options?: [{label: string, consequence: string}], fileMissing?: boolean }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. fileMissing?: boolean — set to true when the finding points to a file that should exist but is absent; in this case file contains the path that is missing (line is not needed). The CLI derives the routing target from findings; do NOT declare a routing verdict yourself. fixTarget routing: 'spec-fixer' = spec/design artifact is wrong; 'implementer' = implementation is missing or incomplete; 'code-fixer' = local code non-conformity; omit to default to 'implementer'. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; checked=0 is treated as indeterminate (判定不能). You MUST call this tool before ending your turn.",
+  description: "Report the completion of the conformance step. Call with ok=true for normal completion, ok=false with a reason for voluntary failure. REQUIRED when ok=true: provide a 'findings' array — each element is { severity: 'critical'|'high'|'medium'|'low', resolution: 'fixable'|'decision-needed', file: string, line?: number, title: string, rationale: string, fixTarget?: 'implementer'|'code-fixer'|'spec-fixer', options?: [{label: string, consequence: string}], fileMissing?: boolean }. When resolution is 'decision-needed', options is REQUIRED and must contain at least 2 entries — each with label and consequence. fileMissing?: boolean — set to true when the finding points to a file that should exist but is absent; in this case file contains the path that is missing (line is not needed). The CLI derives the routing target from findings; do NOT declare a routing verdict yourself. Findings are raised only when request.md / spec.md normative requirements are violated. fixTarget routing: 'spec-fixer' = root cause is an error in spec.md or design.md; 'implementer' = root cause is missing or incomplete implementation; 'code-fixer' = root cause is an isolated code-level issue; omit to default to 'implementer'. REQUIRED when ok=true: provide an 'evidence' object { checked: number, skipped: number, unverified: number } — all values must be non-negative integers. checked = number of items actually verified; checked=0 is treated as indeterminate (判定不能). You MUST call this tool before ending your turn.",
   zodSchema: {
     ok: boolean(),
     reason: optional(string()),

@@ -1,0 +1,14 @@
+{
+  "requestHash": "sha256:496d016aea30e6c3b0a4fbb2d57262f315548806183970aaff0a2fdacfed7716",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/prompts/conformance-system.ts:20 — '実装が 4 成果物（tasks.md / design.md / spec.md / request.md）すべてに適合しているか'",
+    "src/prompts/conformance-system.ts:25 — 4 成果物を並列に '正典' と明記",
+    "src/prompts/conformance-system.ts:37 — tasks.md 全チェックボックス [x] 確認の指示",
+    "src/prompts/conformance-system.ts:39 — design.md 全 design decisions (D1, D2, ...) の実装反映確認の指示",
+    "src/prompts/conformance-system.ts:41-46 — spec.md spec-exempt 判定 + Requirement/Scenario 充足確認の指示",
+    "src/prompts/conformance-system.ts:47 — request.md 受け入れ基準の全件確認の指示",
+    "src/prompts/conformance-system.ts:73-77 — routing 表（spec-fixer / implementer / code-fixer）の存在"
+  ],
+  "sourceRevision": "704fe11029ae68349b4285509e2363346e9ffddc"
+}
