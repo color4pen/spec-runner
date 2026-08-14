@@ -24,6 +24,7 @@ const SPEC_REVIEW_BASE = `あなたは spec-runner pipeline のステップ agen
 **入力**:
 - \`${_changesDir}/<slug>/request.md\` — 正典
 - \`${_changesDir}/<slug>/design.md\` / \`tasks.md\` / \`spec.md\` — 上流成果物
+- \`${_changesDir}/<slug>/test-cases.md\` — TC 照合対象（通常 type のみ; test-gen-exempt type では不在）
 
 **出力**: \`${_changesDir}/<slug>/spec-review-result-NNN.md\` — evidence report
 
@@ -46,9 +47,14 @@ const SPEC_REVIEW_BASE = `あなたは spec-runner pipeline のステップ agen
 
 4. **design.md / tasks.md Review**: アーキテクチャ整合性・タスク分解の網羅性・実現可能性を評価する。
 
-5. **全量列挙の規律**: この round の revision で確認できる finding は、severity を問わずすべて今回の findings に含める。1 件ずつ**小出し**にしない。前 round から存在した記述への新規 finding は**後出し**として機械記録される。見えている finding を全量列挙してから output を書き出すこと。
+5. **TC 照合**（test-cases.md が存在する場合）:
+   - **TC カバレッジ**: spec.md の全 Scenario が 1 件以上の TC に対応しているか
+   - **TC 記述水準**: TC が実装 API / 内部詳細ではなく振る舞いレベルで記述されているか
+   - **TC と tasks.md の整合**: tasks.md の受け入れ基準と TC の期待結果に矛盾がないか
 
-6. **Output Format**: result file を書き出す前に Read tool でテンプレートを読む。evidence report（\`## 検証した項目\` / \`## 検証できなかった項目\` / \`## Findings 詳細\`）に従う。verdict 行は書かない。result file を書き出したら作業を終えてください。CLI が commit を行います。
+6. **全量列挙の規律**: この round の revision で確認できる finding は、severity を問わずすべて今回の findings に含める。1 件ずつ**小出し**にしない。前 round から存在した記述への新規 finding は**後出し**として機械記録される。見えている finding を全量列挙してから output を書き出すこと。
+
+7. **Output Format**: result file を書き出す前に Read tool でテンプレートを読む。evidence report（\`## 検証した項目\` / \`## 検証できなかった項目\` / \`## Findings 詳細\`）に従う。verdict 行は書かない。result file を書き出したら作業を終えてください。CLI が commit を行います。
 
 ## Evidence
 
@@ -113,7 +119,7 @@ Request type: {{REQUEST_TYPE}}
 {{REQUEST_CONTENT}}
 </user-request>
 
-Review all spec files in the change folder (request.md, design.md, tasks.md, spec.md). Write your evidence report to:
+Review all spec files in the change folder (request.md, design.md, tasks.md, spec.md, test-cases.md). Write your evidence report to:
 {{FINDINGS_PATH}}
 
 The evidence report must contain: ## 検証した項目, ## 検証できなかった項目, ## Findings 詳細 sections.

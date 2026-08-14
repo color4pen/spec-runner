@@ -24,9 +24,10 @@ import { getJobSlug } from "../../state/job-slug.js";
  * Shared internal builder: constructs a CanonWriteScope from a slug string.
  *
  * Single source of truth for the explicit D5 fixer → canon-paths map:
- *   - code-fixer:  ∅ (code-fixer and build-fixer write only gitState)
- *   - implementer: {tasks.md} (for task checkbox updates)
- *   - spec-fixer:  {spec.md, design.md, tasks.md} (for spec/design/task corrections)
+ *   - code-fixer:    ∅ (code-fixer and build-fixer write only gitState)
+ *   - implementer:   {tasks.md} (for task checkbox updates)
+ *   - spec-fixer:    {spec.md, design.md, tasks.md} (for spec/design/task corrections)
+ *   - test-case-gen: {test-cases.md} (generates test scenarios)
  */
 function buildScopeForSlug(slug: string): CanonWriteScope {
   const folder = changeFolderPath(slug);
@@ -40,6 +41,8 @@ function buildScopeForSlug(slug: string): CanonWriteScope {
     ["implementer", new Set<string>([`${folder}/tasks.md`])],
     // spec-fixer: spec.md + design.md + tasks.md (spec/design/task corrections)
     ["spec-fixer", new Set<string>([`${folder}/spec.md`, `${folder}/design.md`, `${folder}/tasks.md`])],
+    // test-case-gen: test-cases.md only (generates test scenarios)
+    ["test-case-gen", new Set<string>([`${folder}/test-cases.md`])],
   ]);
 
   return { canonPaths, writableByFixer };
@@ -52,9 +55,10 @@ function buildScopeForSlug(slug: string): CanonWriteScope {
  * for protected canon files.
  *
  * writableByFixer uses an explicit map (D5) to avoid import cycles:
- *   - code-fixer:  ∅ (code-fixer and build-fixer write only gitState)
- *   - implementer: {tasks.md} (for task checkbox updates)
- *   - spec-fixer:  {spec.md, design.md, tasks.md} (for spec/design/task corrections)
+ *   - code-fixer:    ∅ (code-fixer and build-fixer write only gitState)
+ *   - implementer:   {tasks.md} (for task checkbox updates)
+ *   - spec-fixer:    {spec.md, design.md, tasks.md} (for spec/design/task corrections)
+ *   - test-case-gen: {test-cases.md} (generates test scenarios)
  *
  * Drift-guard (TC-029): canon-write-scope.test.ts asserts that each entry matches
  * the corresponding fixer's writes() ∩ protectedCanonPaths at test time.

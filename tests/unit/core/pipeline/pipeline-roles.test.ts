@@ -116,7 +116,7 @@ describe("TC-001: STANDARD_DESCRIPTOR.roles matches design.md D1 table", () => {
       "design":           { role: "creator",  phase: "spec" },
       "spec-review":      { role: "reviewer", phase: "spec" },
       "spec-fixer":       { role: "fixer",    phase: "spec" },
-      "test-case-gen":    { role: "gate",     phase: "impl" },
+      "test-case-gen":    { role: "gate",     phase: "spec" },
       "test-materialize": { role: "gate",     phase: "impl" },
       "implementer":      { role: "creator",  phase: "impl" },
       "verification":     { role: "gate",     phase: "impl" },

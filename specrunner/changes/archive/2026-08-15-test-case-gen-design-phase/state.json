@@ -1,0 +1,318 @@
+{
+  "version": 2,
+  "jobId": "96aef526-a360-48cc-b977-ddcbeb298184",
+  "createdAt": "2026-08-14T11:26:56.093Z",
+  "updatedAt": "2026-08-14T19:51:48.185Z",
+  "request": {
+    "title": "test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする",
+    "type": "spec-change",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/test-case-gen-design-phase-96aef526",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "4fb4febf010e8397361ab4f7dc881d576f467545",
+    "f52b629af55cb09babcc52527543936fe41246fe",
+    "226a41e1942aec5900e25120cfca7e591b4b10b5",
+    "2bc68090bffb3db402bd17de9c2cf7e1345a9fa5",
+    "1bcf5844c2654639aa5185ed40532047166d4790",
+    "6fd79c6cede922b79400e187186ee80fc953e27d",
+    "354cd125945c0f24276524fdaf640ddc21e3cb05",
+    "9312124fbc8f14da5597ccfa1b14ab3b17cef47e",
+    "379cc9c930cae5f7f1c8d4f4ddaf4f1ec76ce8ed",
+    "45611285df4dad0b574de8576f96aecff5adefc0",
+    "8fe4a8734e877b44913c7938597019fff306e1d3",
+    "a0b3f87d539d5009530d417b23a21464f1ce20b5",
+    "6b98b825177822170e2aedc57b17b723720c2ec4",
+    "5bf830f3469c6f52dce3003c0dc145d13aff6469",
+    "2672e8daf5db0b66e650454e0559015f18a38433",
+    "1f06c31a58de75caedba5c64da84ecbad42cbd06",
+    "ef338f10fdad2475c61204f0aa4c7b7229750243",
+    "8c397378c2a7bdac92c3c54bc3441168f5b1f94e",
+    "8d295e7817219df3fe4fe3872cc17dec29638272",
+    "1f0a592a8b97c36e3e64fd017f90254fb2978e9a",
+    "d4c002e28c4eb6597d2b44afef774ec138afd864",
+    "6b18623821d81c00485c0348c3f112143e5c83c1",
+    "e77a96d9a4243c3c9c4b6f87708a93c7255e9df0",
+    "c0563434c2bd6eacfbd87e52237b2188a0a42e3f",
+    "2b31597b685acc896c6122382dcad48281909ebf",
+    "d16d262102134a8b72fcc8482a835019e8e419d1",
+    "018f87a0e358be8f35cc576be3d3e499bc62feab",
+    "0e4695a8e58c39714952e22ca2a54651393caffa",
+    "c5857740bd398db0877b4f247eb7b9a164a21319"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/prompts/spec-review-system.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "tests/pipeline.test.ts",
+      "tests/pipeline-integration.test.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "tests/unit/pipeline/transition-when.test.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/write-scope.ts",
+      "tests/spec-review-step.test.ts",
+      "tests/test-case-gen-step.test.ts",
+      "tests/unit/step/spec-review-reads.test.ts"
+    ],
+    "design": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/prompts/spec-review-system.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/kernel/report-result.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "tests/unit/pipeline/transition-when.test.ts",
+      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
+      "tests/unit/core/step/canon-write-scope.test.ts",
+      "tests/unit/step/spec-review-reads.test.ts",
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "tests/core/pipeline/pipeline.test.ts",
+      "tests/unit/core/pipeline/pipeline.conformance-routing.test.ts",
+      "tests/unit/step/test-materialize-boundary.test.ts",
+      "tests/test-case-gen-step.test.ts",
+      "tests/pipeline-integration.test.ts"
+    ],
+    "spec-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/prompts/spec-review-system.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/kernel/report-result.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/spec-fixer.ts"
+    ],
+    "spec-fixer": [
+      "src/core/step/spec-fixer.ts",
+      "src/core/step/fixer-helpers.ts"
+    ],
+    "test-case-gen": [],
+    "test-materialize": [
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
+      "tests/test-case-gen-step.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/canon-write-scope.ts",
+      "tests/unit/step/spec-review-reads.test.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/kernel/report-result.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/prompts/spec-review-system.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/config/type-config.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/core/step/step-names.ts",
+      "src/kernel/step-names.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts"
+    ],
+    "implementer": [],
+    "code-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/prompts/spec-review-system.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/kernel/report-result.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/pipeline/__tests__/reviewer-chain.test.ts",
+      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "tests/core/pipeline/pipeline.test.ts",
+      "tests/pipeline-integration.test.ts",
+      "tests/helpers/pipeline-mock-client.ts"
+    ],
+    "code-fixer": [
+      "src/core/step/step-completion.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/__tests__/spec-review-fixer-routing.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/prompts/conformance-system.ts",
+      "tests/unit/core/step/conformance.test.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/pipeline/registry.ts",
+      "tests/unit/core/pipeline/registry-invariants.test.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts"
+    ],
+    "conformance": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/spec-review.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/prompts/spec-review-system.ts",
+      "src/prompts/test-case-gen-system.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/kernel/report-result.ts",
+      "src/core/step/write-scope.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-05-26-observation-auto-fix-pipeline.md",
+      "specrunner/adr/2026-06-02-test-case-gen-scenario-primary-source.md",
+      "specrunner/adr/2026-08-15-test-case-gen-pre-spec-review.md"
+    ]
+  },
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "timeout",
+    "iterationsExhausted": 0
+  },
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "残っていた 3 件の pin テスト更新(tests/error-codes.test.ts TC-026 / tests/cli-stdout-snapshot.test.ts TC-029 / src/core/step/__tests__/spec-review-fixer-routing.test.ts TC-013)と design.md の列挙追補は operator commit 45611285d で適用済み。typecheck と全テスト green は確認済み。tasks.md の残チェックボックスを確認して完了させること。テスト実行は必ず 'bun run test'(= vitest run)を使う。'bun test'(bun 内蔵 runner)は本リポジトリのテスト資産と互換がなく sandbox 下で終了せず hang するため使用禁止。ファイル指定は 'bun run test -- <path>'。",
+      "step": "implementer",
+      "recordedAt": "2026-08-14T15:59:58.709Z"
+    }
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "1f0a592a8b97c36e3e64fd017f90254fb2978e9a",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/test-case-gen-design-phase/design.md:sha256:3e5e37774873c8999fcea6bf8252673f9fbefa38f80fe88315046f93a6addeb4|specrunner/changes/test-case-gen-design-phase/request.md:sha256:e8923388921467a57a1a2b9ac5ad190fe9e3de065290fcd70e1ae906a6e58b5c|specrunner/changes/test-case-gen-design-phase/spec.md:sha256:623684ab7e51df0d24694cd106a84bd99e911fe22e95dbff40c5043e27df6e79|specrunner/changes/test-case-gen-design-phase/tasks.md:sha256:0d00c7a4de44d25feca5d6d14eb0f2cc05679acf440474f5d94e8c600606a18e|specrunner/changes/test-case-gen-design-phase/test-cases.md:sha256:9710642b6c9d28c43f2c0d4e48376bf947297ecf1c3895f381a4d00feae7ceeb"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/996",
+    "number": 996,
+    "createdAt": "2026-08-14T19:51:47.116Z"
+  },
+  "_journal": {
+    "historyCount": 111,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "test-case-gen": 1,
+      "test-materialize": 1,
+      "implementer": 3,
+      "bite-evidence": 1,
+      "verification": 2,
+      "code-review": 4,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 2,
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

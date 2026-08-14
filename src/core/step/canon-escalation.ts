@@ -55,6 +55,13 @@ export const conformanceEffectiveFixer: (f: Finding) => FixTarget = (f) =>
  */
 export const specReviewEffectiveFixer: (f: Finding) => FixTarget = () => "spec-fixer";
 
+/**
+ * Effective fixer resolver for the test-case-gen path.
+ * Always returns "test-case-gen" regardless of finding.fixTarget.
+ * Used to check whether a finding on test-cases.md is routable to test-case-gen.
+ */
+export const testCaseGenEffectiveFixer: (f: Finding) => FixTarget = () => "test-case-gen";
+
 // ---------------------------------------------------------------------------
 // Core filters
 // ---------------------------------------------------------------------------

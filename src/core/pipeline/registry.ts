@@ -29,7 +29,7 @@ import { BiteEvidenceStep } from "../step/bite-evidence/step.js";
  * Standard 15-step pipeline descriptor.
  * All fields match the current createStandardPipeline / STANDARD_* constants exactly.
  *
- * Step order: request-review → design → spec-review → spec-fixer → test-case-gen →
+ * Step order: request-review → design → test-case-gen → spec-review → spec-fixer →
  *   test-materialize → implementer → bite-evidence → verification → build-fixer →
  *   code-review → code-fixer → conformance → adr-gen → pr-create
  */
@@ -38,9 +38,9 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
   steps: [
     [STEP_NAMES.REQUEST_REVIEW,   RequestReviewStep],
     [STEP_NAMES.DESIGN,           DesignStep],
+    [STEP_NAMES.TEST_CASE_GEN,    TestCaseGenStep],
     [STEP_NAMES.SPEC_REVIEW,      SpecReviewStep],
     [STEP_NAMES.SPEC_FIXER,       SpecFixerStep],
-    [STEP_NAMES.TEST_CASE_GEN,    TestCaseGenStep],
     [STEP_NAMES.TEST_MATERIALIZE, TestMaterializeStep],
     [STEP_NAMES.IMPLEMENTER,      ImplementerStep],
     [STEP_NAMES.BITE_EVIDENCE,    BiteEvidenceStep],
@@ -71,7 +71,7 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.DESIGN]:           { role: "creator",  phase: "spec" },
     [STEP_NAMES.SPEC_REVIEW]:      { role: "reviewer", phase: "spec" },
     [STEP_NAMES.SPEC_FIXER]:       { role: "fixer",    phase: "spec" },
-    [STEP_NAMES.TEST_CASE_GEN]:    { role: "gate",     phase: "impl" },
+    [STEP_NAMES.TEST_CASE_GEN]:    { role: "gate",     phase: "spec" },
     [STEP_NAMES.TEST_MATERIALIZE]: { role: "gate",     phase: "impl" },
     [STEP_NAMES.IMPLEMENTER]:      { role: "creator",  phase: "impl" },
     [STEP_NAMES.BITE_EVIDENCE]:    { role: "gate",     phase: "impl" },
@@ -84,6 +84,9 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.PR_CREATE]:        { role: "gate",     phase: "impl" },
   },
   summaryStep: STEP_NAMES.SPEC_REVIEW,
+  // test-case-gen is transparent to spec-review episode detection:
+  // spec-fixer → test-case-gen → spec-review must NOT reset the convergence budget.
+  loopIntermediateSteps: new Set([STEP_NAMES.TEST_CASE_GEN]),
 };
 
 /**

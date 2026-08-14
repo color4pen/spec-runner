@@ -17,6 +17,7 @@ import {
 } from "../../../../src/core/pipeline/registry.js";
 import { assertRuntimeSupportsScope } from "../../../../src/core/pipeline/runtime-capability-gate.js";
 import { PIPELINE_IDS } from "../../../../src/kernel/pipeline-ids.js";
+import { STEP_NAMES } from "../../../../src/core/step/step-names.js";
 
 // ---------------------------------------------------------------------------
 // T-06-1: Meta pipeline: design-only が DESIGN_ONLY_DESCRIPTOR に到達する
@@ -145,5 +146,20 @@ describe("T-06-5: 未知 id は getPipelineDescriptor の既存エラーで弾�
     expect(msg).toContain("standard");
     expect(msg).toContain("design-only");
     expect(msg).toContain("fast");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06-6: STANDARD_DESCRIPTOR.loopIntermediateSteps には TEST_CASE_GEN が含まれる
+// Pin: removal causes spec-fixer → test-case-gen → spec-review to reset convergence budget
+// ---------------------------------------------------------------------------
+
+describe("T-06-6: STANDARD_DESCRIPTOR.loopIntermediateSteps に TEST_CASE_GEN が含まれる", () => {
+  it("loopIntermediateSteps is defined", () => {
+    expect(STANDARD_DESCRIPTOR.loopIntermediateSteps).toBeDefined();
+  });
+
+  it("loopIntermediateSteps contains TEST_CASE_GEN", () => {
+    expect(STANDARD_DESCRIPTOR.loopIntermediateSteps!.has(STEP_NAMES.TEST_CASE_GEN)).toBe(true);
   });
 });

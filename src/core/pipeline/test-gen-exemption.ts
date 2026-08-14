@@ -13,7 +13,7 @@
  */
 import type { JobState } from "../../state/schema.js";
 import { isTestGenRequired } from "../../config/type-config.js";
-import { specFixerForwardsToTestGen } from "./spec-observation.js";
+import { specFixerObservationForward } from "./spec-observation.js";
 
 /**
  * Returns true when the job's request type is test-generation-exempt.
@@ -53,5 +53,5 @@ export function isTestGenExempt(state: JobState): boolean {
  * @returns true when spec-fixer should forward to implementer (exempt observation pass).
  */
 export function specFixerForwardsToImplementer(state: JobState): boolean {
-  return specFixerForwardsToTestGen(state) && isTestGenExempt(state);
+  return specFixerObservationForward(state) && isTestGenExempt(state);
 }

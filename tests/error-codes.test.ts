@@ -148,20 +148,24 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
       if (step.name === "spec-fixer") return { ...designResult };
       if (step.name === "spec-review") {
         const iter = ++specReviewCall;
-        const existingRuns = iter === 1
-          ? []
-          : [{ iteration: 1, session: null, verdict: "needs-fix", findingsPath: null, completedAt: "2026-01-01", error: null }];
+        const makeRun = (attempt: number) => ({
+          attempt,
+          sessionId: null,
+          outcome: { verdict: "needs-fix" as const, findingsPath: null, error: null },
+          startedAt: "2026-01-01",
+          endedAt: "2026-01-01",
+        });
+        const existingRuns = iter === 1 ? [] : [makeRun(1)];
         return {
           ...designResult,
           status: "running" as const,
           steps: {
-            "spec-review": [
-              ...existingRuns,
-              { iteration: iter, session: null, verdict: "needs-fix" as const, findingsPath: null, completedAt: "2026-01-01", error: null },
-            ],
+            "spec-review": [...existingRuns, makeRun(iter)],
           },
         };
       }
+      // test-case-gen runs between design and spec-review (not in loopNames)
+      if (step.name === "test-case-gen") return currentState;
       // delta-spec-validation and delta-spec-fixer run freely (not in loopNames)
       if (step.name === "delta-spec-validation") return currentState;
       if (step.name === "delta-spec-fixer") return currentState;
@@ -189,6 +193,7 @@ describe("TC-026 (error-codes): All 5 named codes + STATE_FILE_INVALID collectiv
     const pipeline = new Pipeline({
       steps: new Map([
         ["design",                mockStep("design", { completionVerdict: "success" })],
+        ["test-case-gen",         mockStep("test-case-gen", { completionVerdict: "success" })],
         ["spec-review",           mockStep("spec-review")],
         ["spec-fixer",            mockStep("spec-fixer")],
         ["delta-spec-validation", mockCliStep("delta-spec-validation")],

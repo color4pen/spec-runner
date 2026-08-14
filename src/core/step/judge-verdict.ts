@@ -13,6 +13,7 @@ import {
   judgeEffectiveFixer,
   conformanceEffectiveFixer,
   specReviewEffectiveFixer,
+  testCaseGenEffectiveFixer,
   type CanonWriteScope,
 } from "./canon-escalation.js";
 export type { FindingRef } from "../port/runtime-strategy.js";
@@ -62,29 +63,25 @@ export function deriveJudgeVerdict(
 /**
  * Derive the spec-review verdict from findings, ok flag, and optional evidence.
  *
- * Extends deriveJudgeVerdict with spec-review-specific canon routing:
- * spec-review routes fixable findings on spec-fixer-writable canon files (spec.md,
- * design.md, tasks.md) to spec-fixer. The routing depends on severity:
- *   - critical/high fixable on routable canon → needs-fix (spec-fixer + re-review)
- *   - low/medium fixable on routable canon → approved (observation auto-fix: spec-fixer
- *     consumes findings without re-review; regression-gate provides post-hoc verification)
- * Fixable findings on canon files spec-fixer cannot write (request.md, test-cases.md,
- * etc.) remain escalation regardless of severity.
+ * Extends deriveJudgeVerdict with spec-review-specific canon routing.
+ * spec-review can route fixable findings to spec-fixer (spec.md, design.md, tasks.md)
+ * or to test-case-gen (test-cases.md). Severity determines whether spec-fixer routing
+ * triggers a re-review (critical/high) or an observation auto-fix pass (low/medium).
+ * TC-routable findings always trigger needs-fix regardless of severity.
  *
  * Priority order:
  * 1. ok=false → escalation
  * 2. evidence present && checked === 0 → escalation (vacuous check)
  * 3. decision-needed ≥ 1 → escalation
  * 4. canonScope present:
- *    4a. unroutable canon fixable findings ≥ 1 → escalation (spec-fixer can't fix)
- *    4b. routable canon fixable findings with critical|high severity ≥ 1 → needs-fix
- *        (low/medium routable canon fixable fall through to approved: observation auto-fix)
+ *    4a. fixable canon findings unroutable by BOTH spec-fixer AND test-case-gen → escalation
+ *        (operator must resolve; takes priority over 4b/4c)
+ *    4b. TC-routable (test-cases.md) fixable ≥ 1 (any severity) → needs-fix
+ *        (test-case-gen re-generates test-cases.md)
+ *    4c. spec-fixer-routable critical|high ≥ 1 → needs-fix (spec-fixer + re-review)
+ *        (low/medium spec-fixer-routable fall through to approved: observation auto-fix)
  * 5. critical|high ≥ 1 → needs-fix (non-canon findings retain existing behavior)
  * 6. else → approved
- *
- * 4a is evaluated before 4b: when both unroutable and routable findings coexist,
- * escalation takes priority. Operator resolves the unroutable ones; then on resume
- * spec-review re-runs and 4b routes the routable ones.
  */
 export function deriveSpecReviewVerdict(
   findings: Finding[],
@@ -96,22 +93,36 @@ export function deriveSpecReviewVerdict(
   if (evidence !== undefined && evidence.checked === 0) return "escalation"; // vacuous check
   if (findings.some((f) => f.resolution === "decision-needed")) return "escalation";
   if (canonScope) {
-    // 4a: unroutable canon fixable findings → escalation (takes priority over 4b)
-    if (selectUnroutableCanonFindings(findings, canonScope, specReviewEffectiveFixer).length > 0) {
+    const specRoutable = selectRoutableCanonFindings(findings, canonScope, specReviewEffectiveFixer);
+    const tcRoutable = selectRoutableCanonFindings(findings, canonScope, testCaseGenEffectiveFixer);
+    // 4a: fixable canon findings unroutable by both spec-fixer and test-case-gen → escalation
+    const specRoutableFiles = new Set(specRoutable.map((f) => f.file));
+    const tcRoutableFiles = new Set(tcRoutable.map((f) => f.file));
+    const fixableCanon = findings.filter(
+      (f) => f.resolution === "fixable" && canonScope.canonPaths.has(f.file),
+    );
+    if (fixableCanon.some((f) => !specRoutableFiles.has(f.file) && !tcRoutableFiles.has(f.file))) {
       return "escalation";
     }
-    // 4b: routable canon fixable findings with critical|high severity → needs-fix (requires re-review)
-    // low/medium routable canon fixable fall through to approved (observation auto-fix pass)
-    const routableCanon = selectRoutableCanonFindings(findings, canonScope, specReviewEffectiveFixer);
-    if (routableCanon.some((f) => f.severity === "critical" || f.severity === "high")) {
+    // 4b: TC-routable ≥ 1 (any severity) → needs-fix (test-cases.md regeneration)
+    if (tcRoutable.length > 0) return "needs-fix";
+    // 4c: spec-fixer-routable critical|high → needs-fix; low|medium → fall through to approved
+    if (specRoutable.some((f) => f.severity === "critical" || f.severity === "high")) {
       return "needs-fix";
     }
-    // low/medium routable canon fixable: fall through to approved (observation auto-fix)
+    // low/medium spec-fixer-routable: fall through to approved (observation auto-fix)
   }
   // 5: non-canon critical|high findings → needs-fix
   if (findings.some((f) => f.severity === "critical" || f.severity === "high")) return "needs-fix";
   return "approved";
 }
+
+/**
+ * Fixer targets valid for conformance routing.
+ * test-case-gen is excluded: conformance canon-finding escalation (via selectUnroutableCanonFindings)
+ * fires before aggregateFixTarget, so "needs-fix:test-case-gen" is never produced.
+ */
+type ConformanceFixTarget = Exclude<FixTarget, "test-case-gen">;
 
 /**
  * Aggregate fixTarget from a set of verdict-affecting findings.
@@ -122,8 +133,9 @@ export function deriveSpecReviewVerdict(
  * local code non-conformities.
  *
  * Findings without fixTarget default to "implementer".
+ * test-case-gen findings are excluded from priority (conformance escalation fires first).
  */
-export function aggregateFixTarget(findings: Finding[]): FixTarget {
+export function aggregateFixTarget(findings: Finding[]): ConformanceFixTarget {
   const relevant = findings.filter(
     (f) => f.severity === "critical" || f.severity === "high",
   );

@@ -128,16 +128,25 @@ describe("TC-006: chore SPEC_FIXER approved (specFixerForwardsToTestGen conditio
 });
 
 // ---------------------------------------------------------------------------
-// TC-007: 非免除 type は SPEC_REVIEW approved から TEST_CASE_GEN へ遷移する (unchanged)
-// Source: spec.md > Scenario: 非免除 type は従来通りテスト生成を通る
+// TC-007: 非免除 type は SPEC_REVIEW approved から TEST_MATERIALIZE へ遷移する
+//         (test-case-gen は design → test-case-gen → spec-review の順に先に実行済み)
+// Source: spec.md > Scenario: 非免除 type は spec-review 承認後 test-materialize へ進む
 // ---------------------------------------------------------------------------
-describe("TC-007: non-exempt type SPEC_REVIEW approved → TEST_CASE_GEN (unchanged)", () => {
+describe("TC-007: non-exempt type SPEC_REVIEW approved → TEST_MATERIALIZE", () => {
   const nonExemptTypes = ["new-feature", "spec-change", "refactoring", "bug-fix"] as const;
 
   for (const t of nonExemptTypes) {
-    it(`TC-007: ${t} resolves SPEC_REVIEW/approved to test-case-gen`, () => {
+    it(`TC-007: ${t} resolves SPEC_REVIEW/approved to test-materialize`, () => {
       const state = makeState(t);
       const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.SPEC_REVIEW, "approved", state);
+      expect(next).toBe(STEP_NAMES.TEST_MATERIALIZE);
+    });
+  }
+
+  for (const t of nonExemptTypes) {
+    it(`TC-007: ${t} resolves DESIGN/success to test-case-gen (new step order)`, () => {
+      const state = makeState(t);
+      const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.DESIGN, "success", state);
       expect(next).toBe(STEP_NAMES.TEST_CASE_GEN);
     });
   }
@@ -155,10 +164,11 @@ describe("TC-007: non-exempt type SPEC_REVIEW approved → TEST_CASE_GEN (unchan
 });
 
 // ---------------------------------------------------------------------------
-// TC-012: STANDARD_TRANSITIONS で免除 row は unconditional TEST_CASE_GEN row より前に位置する
-// Source: design.md > D2, tasks.md > T-03
+// TC-012: STANDARD_TRANSITIONS で免除 row は unconditional TEST_MATERIALIZE row より前に位置する
+//         + DESIGN block に免除 row (exempt→spec-review) と非免除 row (→test-case-gen) が存在する
+// Source: design.md > D1, D2, tasks.md > T-03, T-04
 // ---------------------------------------------------------------------------
-describe("TC-012: SPEC_REVIEW→IMPLEMENTER (exempt) row precedes SPEC_REVIEW→TEST_CASE_GEN (unconditional)", () => {
+describe("TC-012: SPEC_REVIEW→IMPLEMENTER (exempt) row precedes SPEC_REVIEW→TEST_MATERIALIZE (unconditional)", () => {
   it("TC-012: guarded SPEC_REVIEW→IMPLEMENTER row exists", () => {
     const exemptRow = STANDARD_TRANSITIONS.find(
       (t) =>
@@ -170,7 +180,29 @@ describe("TC-012: SPEC_REVIEW→IMPLEMENTER (exempt) row precedes SPEC_REVIEW→
     expect(exemptRow).toBeDefined();
   });
 
-  it("TC-012: guarded SPEC_REVIEW→IMPLEMENTER index is less than unconditional SPEC_REVIEW→TEST_CASE_GEN index", () => {
+  it("TC-012: guarded DESIGN→SPEC_REVIEW (exempt) row exists", () => {
+    const designExemptRow = STANDARD_TRANSITIONS.find(
+      (t) =>
+        t.step === STEP_NAMES.DESIGN &&
+        t.on === "success" &&
+        t.to === STEP_NAMES.SPEC_REVIEW &&
+        t.when !== undefined,
+    );
+    expect(designExemptRow).toBeDefined();
+  });
+
+  it("TC-012: unconditional DESIGN→TEST_CASE_GEN row exists (non-exempt path)", () => {
+    const designUnconditionalRow = STANDARD_TRANSITIONS.find(
+      (t) =>
+        t.step === STEP_NAMES.DESIGN &&
+        t.on === "success" &&
+        t.to === STEP_NAMES.TEST_CASE_GEN &&
+        t.when === undefined,
+    );
+    expect(designUnconditionalRow).toBeDefined();
+  });
+
+  it("TC-012: guarded SPEC_REVIEW→IMPLEMENTER index is less than unconditional SPEC_REVIEW→TEST_MATERIALIZE index", () => {
     const exemptIdx = STANDARD_TRANSITIONS.findIndex(
       (t) =>
         t.step === STEP_NAMES.SPEC_REVIEW &&
@@ -182,7 +214,7 @@ describe("TC-012: SPEC_REVIEW→IMPLEMENTER (exempt) row precedes SPEC_REVIEW→
       (t) =>
         t.step === STEP_NAMES.SPEC_REVIEW &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_CASE_GEN &&
+        t.to === STEP_NAMES.TEST_MATERIALIZE &&
         t.when === undefined,
     );
     expect(exemptIdx).toBeGreaterThan(-1);

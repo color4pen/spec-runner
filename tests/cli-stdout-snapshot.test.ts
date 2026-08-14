@@ -310,6 +310,8 @@ describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit ex
       if (step.name === "spec-review") {
         return specReviewCall++ === 0 ? specReview1 : specReview2;
       }
+      // test-case-gen runs between design and spec-review (not in loopNames)
+      if (step.name === "test-case-gen") return currentState;
       // delta-spec-validation and delta-spec-fixer run freely (not in loopNames)
       if (step.name === "delta-spec-validation") return currentState;
       if (step.name === "delta-spec-fixer") return currentState;
@@ -320,6 +322,7 @@ describe("TC-029: stdout [iter N/M] — retries exhausted line is bit-for-bit ex
     const pipeline = new Pipeline({
       steps: new Map([
         ["design",                makeDesignStepObject()],
+        ["test-case-gen",         makeStepObject("test-case-gen", { completionVerdict: "success" })],
         ["spec-review",           makeStepObject("spec-review")],
         ["spec-fixer",            makeStepObject("spec-fixer")],
         ["delta-spec-validation", { kind: "cli" as const, name: "delta-spec-validation", run: async () => {}, resultFilePath: () => "dsv-result.md", parseResult: () => ({ verdict: "approved" as const, findingsPath: null }) }],

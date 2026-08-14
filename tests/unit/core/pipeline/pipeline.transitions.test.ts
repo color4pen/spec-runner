@@ -130,8 +130,9 @@ describe("TC-012: STANDARD_TRANSITIONS に必要なエッジが存在する", ()
     { step: "request-review", on: "needs-discussion",  to: "escalate" },
     { step: "request-review", on: "reject",            to: "escalate" },
     { step: "request-review", on: "error",             to: "escalate" },
-    { step: "spec-review",      on: "approved",   to: "test-case-gen" },
-    { step: "test-case-gen",    on: "success",    to: "test-materialize" },
+    { step: "design",         on: "success",    to: "test-case-gen" },
+    { step: "spec-review",      on: "approved",   to: "test-materialize" },
+    { step: "test-case-gen",    on: "success",    to: "spec-review" },
     { step: "test-case-gen",    on: "error",      to: "escalate" },
     { step: "test-materialize", on: "success",    to: "implementer" },
     { step: "test-materialize", on: "error",      to: "escalate" },
@@ -270,10 +271,12 @@ describe("TC-001/002/005/006/007/015: conformance transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 49 rows total (+2 spec observation auto-fix, +3 test-gen-exempt bypass rows)", () => {
-    // 44 previous + 2 (spec observation auto-fix guarded rows)
-    // + 3 (test-gen-exempt bypass: SPEC_REVIEW→IMPLEMENTER, SPEC_FIXER→IMPLEMENTER, IMPLEMENTER→VERIFICATION)
-    expect(STANDARD_TRANSITIONS.length).toBe(49);
+  it("has 52 rows total (+3 test-case-gen design-phase rows)", () => {
+    // 49 previous + 3 (test-case-gen design-phase:
+    //   DESIGN→SPEC_REVIEW guarded (isTestGenExempt),
+    //   SPEC_REVIEW→TEST_CASE_GEN guarded (specReviewNeedsFixIsTcOnly),
+    //   SPEC_FIXER→TEST_CASE_GEN guarded (specFixerNeedsFixForward))
+    expect(STANDARD_TRANSITIONS.length).toBe(52);
   });
 
   it("verification --passed→ end does NOT exist", () => {

@@ -42,6 +42,7 @@ import {
   judgeEffectiveFixer,
   conformanceEffectiveFixer,
   specReviewEffectiveFixer,
+  testCaseGenEffectiveFixer,
   buildCanonEscalationReason,
 } from "./canon-escalation.js";
 import { STEP_NAMES } from "./step-names.js";
@@ -207,8 +208,17 @@ export async function deriveStepCompletion(
         // regression-gate verifies the full ledger (all severities, no exclusions).
         verdict = verdictFn(undecidedFindings, tr.ok, tr.evidence, canonScope);
         lastUndecidedFindings = undecidedFindings;
-        lastCanonResolver =
-          step.name === STEP_NAMES.SPEC_REVIEW ? specReviewEffectiveFixer : judgeEffectiveFixer;
+        if (step.name === STEP_NAMES.SPEC_REVIEW) {
+          // Dual-resolver: test-case-gen for test-cases.md findings, spec-fixer for all others.
+          // Prevents test-cases.md findings from being falsely classified as unroutable in
+          // escalationReason when escalation is caused by a different canon finding (e.g. request.md).
+          lastCanonResolver = (f) => {
+            const tcTarget = testCaseGenEffectiveFixer(f); // always "test-case-gen"
+            return canonScope.writableByFixer.get(tcTarget)?.has(f.file) ? tcTarget : specReviewEffectiveFixer(f);
+          };
+        } else {
+          lastCanonResolver = judgeEffectiveFixer;
+        }
         lastVerdictOk = tr.ok;
         lastVerdictEvidence = tr.evidence;
       } else {
