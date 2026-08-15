@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T16:08:08.357Z",
+  "updatedAt": "2026-08-15T16:09:15.114Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
   "pipelineId": "standard",
@@ -98,7 +98,8 @@
     "1d0b87a4252b0416cfba849ff3987d77511dc5f5",
     "d6c0a6fd78f14f53c06993041074596576e1bc7d",
     "025a3d9b9907d1ae0f7bdecf721e862457604ed5",
-    "f584b5a9969a0b5446aa5d87d417d4ffd19843e2"
+    "f584b5a9969a0b5446aa5d87d417d4ffd19843e2",
+    "179b5820c3bdc76f1aae2a31606369fc2875c53c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -250,10 +251,6 @@
       "src/core/pipeline/__tests__/test-gen-exemption.test.ts"
     ],
     "adr-gen": [
-      "specrunner/adr/2026-08-15-absorb-build-fixer.md",
-      "specrunner/adr/2026-08-15-evidence-base.md",
-      "specrunner/adr/2026-08-14-strip-test-authority.md",
-      "specrunner/adr/2026-08-15-test-case-gen-pre-spec-review.md",
       "specrunner/adr/2026-08-16-absorb-test-materialize.md"
     ]
   },
@@ -292,10 +289,10 @@
   "pullRequest": {
     "url": "https://github.com/color4pen/spec-runner/pull/999",
     "number": 999,
-    "createdAt": "2026-08-15T15:18:20.579Z"
+    "createdAt": "2026-08-15T16:09:14.128Z"
   },
   "_journal": {
-    "historyCount": 145,
+    "historyCount": 150,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -313,8 +310,8 @@
       "custom-reviewers": 2,
       "regression-gate": 5,
       "conformance": 2,
-      "adr-gen": 1,
-      "pr-create": 1
+      "adr-gen": 2,
+      "pr-create": 2
     }
   }
 }
