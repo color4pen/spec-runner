@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71924134-2f43-4167-be77-75abf52ad49a",
   "createdAt": "2026-08-15T23:18:40.860Z",
-  "updatedAt": "2026-08-15T23:18:44.183Z",
+  "updatedAt": "2026-08-15T23:23:41.345Z",
   "request": {
     "title": "prompt/rules の新 pipeline 構造への追随: authority 表現統一・実行不能指示の撤去・session 例外・PIPELINE_MAP 更新",
     "type": "chore",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "chore/prompt-rules-consistency-71924134",
   "error": null,
@@ -62,10 +62,32 @@
     }
   ],
   "synthesizedCommits": [
-    "ff529eab4c00de58ddc43eb7262877718d30b687"
+    "ff529eab4c00de58ddc43eb7262877718d30b687",
+    "0a429011bc64f465f940d6d4221999dc5f643b71"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/prompts/implementer-system.ts",
+      "src/prompts/rules.ts",
+      "src/core/step/implementer.ts",
+      "src/prompts/fragments.ts",
+      "src/prompts/pipeline-map.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts",
+      "src/core/resume/__tests__/resolve-step.test.ts",
+      "src/core/resume/__tests__/resolve-step-test-materialize-alias.test.ts",
+      "tests/unit/core/resume/resolve-step.test.ts",
+      "src/prompts/conformance-system.ts",
+      "src/core/pipeline/__tests__/bite-evidence-pipeline.test.ts",
+      "src/core/step/step-names.ts",
+      "src/kernel/step-names.ts",
+      "src/prompts/__tests__/tc-source-contract.test.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
