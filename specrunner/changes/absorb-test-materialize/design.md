@@ -171,4 +171,3 @@ runtime primitive: 現行 `diffPathsBetweenCommits(baseOid, headOid, paths, cwd)
 - implementer prompt に test-cases.md 全 must TC の実体化責務が含まれることを固定(implementer-system の新規/既存 prompt テスト)。
 - legacy state(test-materialize 実行歴あり)の読み込み・fold・resume が壊れないことを固定。
 
-<\!-- spec-fixer-deferred: [LOW] TC-015 materializedTestFiles 独立性 test-cases.md への TC-015a 追記 — spec-fixer の write scope が test-cases.md を含まない。代替: spec.md に sub-scenario を追加し T-10 で TC-015a 追記を明示した。implementer が T-10 実施時に test-cases.md へ TC-015a を追記すること。 -->

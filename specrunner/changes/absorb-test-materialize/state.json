@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T12:20:33.939Z",
+  "updatedAt": "2026-08-15T12:25:52.145Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -68,7 +68,8 @@
     "5970ae8c5bc2cfc729756dcd2407ce825760e58c",
     "ea30ef66ad9263114dadf012ed5cf48d56d6872a",
     "a33648a3269d4cabd97d4c89fd88b4d0cef84a76",
-    "0f96c247cf73cd91196805790dd4b626bb428eec"
+    "0f96c247cf73cd91196805790dd4b626bb428eec",
+    "e88cd3287ad8a3443473b804fbb851d8b9e81227"
   ],
   "touchedFiles": {
     "request-review": [
@@ -127,30 +128,18 @@
       "src/core/pipeline/__tests__/bite-evidence-pipeline.test.ts"
     ],
     "test-case-gen": [],
-    "spec-review": [
-      "src/core/pipeline/types.ts",
-      "src/kernel/step-names.ts",
-      "src/core/pipeline/test-gen-exemption.ts",
-      "src/core/step/bite-evidence/oids.ts",
-      "src/core/step/bite-evidence/gate.ts",
-      "src/core/archive/achieved-assurance.ts",
-      "src/core/step/implementer.ts",
-      "src/core/resume/resolve-step.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/pipeline/spec-observation.ts",
-      "src/prompts/implementer-system.ts"
-    ],
+    "spec-review": [],
     "spec-fixer": [
       "src/core/archive/achieved-assurance.ts"
     ]
   },
   "_journal": {
-    "historyCount": 23,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
-      "spec-review": 1,
+      "spec-review": 2,
       "spec-fixer": 1
     }
   }
