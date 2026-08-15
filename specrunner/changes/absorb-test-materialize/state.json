@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T11:29:34.410Z",
+  "updatedAt": "2026-08-15T11:36:28.637Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -62,10 +62,38 @@
     }
   ],
   "synthesizedCommits": [
-    "e2fa03d09bc269045932cbc631bb036a2c610836"
+    "e2fa03d09bc269045932cbc631bb036a2c610836",
+    "c2e85f748d76d35a60b37f837dc3dcfa6d81a0aa"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/step/step-names.ts",
+      "src/core/step/test-materialize.ts",
+      "src/kernel/step-names.ts",
+      "src/core/step/bite-evidence",
+      "src/core/step/implementer.ts",
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/pipeline/registry.ts",
+      "src/prompts/test-materialize-system.ts",
+      "src/config/type-config.ts",
+      "src/core/step/bite-evidence/test-file-selection.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/staging-containment.ts",
+      "src/prompts/implementer-system.ts",
+      "src/core/verification/test-coverage.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
