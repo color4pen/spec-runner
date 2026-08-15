@@ -571,7 +571,7 @@ describe("TC-CAP-006: commit message format", () => {
     const events = new EventBus();
     const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir), spawnFn);
 
-    const step = makeAgentStep({ name: "build-fixer" });
+    const step = makeAgentStep({ name: "implementer" });
     const _deps = makeLocalDeps({ slug: "my-test-slug" }, spawnFn);
     state.steps = {};
 
@@ -579,11 +579,11 @@ describe("TC-CAP-006: commit message format", () => {
 
     const commitCall = calls.find((c) => c.args[0] === "commit");
     expect(commitCall).toBeDefined();
-    // Format: git commit -m "build-fixer: my-test-slug"
+    // Format: git commit -m "implementer: my-test-slug"
     const commitMsgIndex = commitCall!.args.indexOf("-m");
     expect(commitMsgIndex).toBeGreaterThanOrEqual(0);
     const commitMsg = commitCall!.args[commitMsgIndex + 1];
-    expect(commitMsg).toBe("build-fixer: my-test-slug");
+    expect(commitMsg).toBe("implementer: my-test-slug");
   });
 });
 

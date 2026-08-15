@@ -18,7 +18,6 @@
 import { describe, it, expect } from "vitest";
 import { COMMIT_DISCIPLINE } from "../fragments.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../implementer-system.js";
-import { BUILD_FIXER_SYSTEM_PROMPT } from "../build-fixer-system.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../code-fixer-system.js";
 
 // ---------------------------------------------------------------------------
@@ -121,26 +120,7 @@ describe("TC-040: IMPLEMENTER_SYSTEM_PROMPT contains artifact-hygiene wording", 
   );
 });
 
-describe("TC-040: BUILD_FIXER_SYSTEM_PROMPT contains artifact-hygiene wording", () => {
-  it(
-    // TC-040
-    "TC-040: BUILD_FIXER_SYSTEM_PROMPT includes 生成物 (artifact-hygiene clause)",
-    () => {
-      // GIVEN BUILD_FIXER_SYSTEM_PROMPT composed via buildSystemPrompt with COMMIT_DISCIPLINE
-      // WHEN its text is inspected
-      // THEN it contains the artifact-hygiene wording
-      expect(BUILD_FIXER_SYSTEM_PROMPT).toContain("生成物");
-    },
-  );
-
-  it(
-    // TC-040
-    "TC-040: BUILD_FIXER_SYSTEM_PROMPT includes .gitignore reference (artifact-hygiene clause)",
-    () => {
-      expect(BUILD_FIXER_SYSTEM_PROMPT).toContain(".gitignore");
-    },
-  );
-});
+// TC-040: BUILD_FIXER_SYSTEM_PROMPT は廃止済みのためテストを除去。
 
 describe("TC-040: CODE_FIXER_SYSTEM_PROMPT contains artifact-hygiene wording", () => {
   it(

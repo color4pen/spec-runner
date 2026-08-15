@@ -269,13 +269,13 @@ describe("TC-RULES-011: README.md does not affect numbering", () => {
   });
 
   it("computes correct next number ignoring README.md", async () => {
-    const rulesDir = path.join(tempDir, "specrunner", "rules", "build-fixer");
+    const rulesDir = path.join(tempDir, "specrunner", "rules", "code-fixer");
     await fs.mkdir(rulesDir, { recursive: true });
     await fs.writeFile(path.join(rulesDir, "README.md"), "# readme\n");
     await fs.writeFile(path.join(rulesDir, "03-existing.md"), "# existing\n");
 
     // numbers=[3] (README.md → NaN filtered), max=3, next=4
-    const result = await invokeExecuteRulesNew("build-fixer", "new-rule", tempDir);
+    const result = await invokeExecuteRulesNew("code-fixer", "new-rule", tempDir);
     expect(result).toBe(0);
 
     await expect(fs.access(path.join(rulesDir, "04-new-rule.md")).then(() => undefined)).resolves.toBeUndefined();

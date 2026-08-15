@@ -16,6 +16,7 @@
  * TC-013: 非発火時に省略 history エントリと budget-skipped event を出力しない
  * TC-014: 再 routing 無効化で TC-001 が escalation で落ちる（破壊確認）
  * TC-015: 既存テスト群が無変更で green かつ typecheck && test が通る
+ * TC-016: spec-review approved (isTestGenExempt) → implementer は fixer 予算切れでも実行される
  *
  * ⚠ RED TESTS: All integration tests (TC-001〜006, TC-011〜013) and unit tests
  * (TC-007, TC-008, TC-009, TC-010) are written in RED state — they are expected to
@@ -38,6 +39,8 @@ import {
   // The named import resolves to undefined at runtime; calling it throws TypeError.
   // The tests below will FAIL with TypeError until T-01 is implemented.
 } from "../../../src/core/pipeline/reviewer-chain.js";
+import { isTestGenExempt } from "../../../src/core/pipeline/test-gen-exemption.js";
+import { verificationFailedLast } from "../../../src/core/pipeline/reverification.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { PipelineLogger } from "../../../src/logger/pipeline-logger.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
@@ -1381,5 +1384,177 @@ describe("TC-015: backward compatibility — transition table and verdict deriva
       (t) => t.step === "code-review" && t.on === "needs-fix" && t.to === "code-fixer",
     );
     expect(needsFixRow).toBeDefined();
+  });
+});
+
+// ===========================================================================
+// TC-016: guard currentStep === exhaustedReviewer prevents budget-skip misfire
+//         on spec-review approved → implementer (isTestGenExempt)
+// ===========================================================================
+
+describe("TC-016: guard currentStep === exhaustedReviewer prevents budget-skip when spec-review approved → implementer (isTestGenExempt)", () => {
+  /**
+   * Source: pipeline.ts:467 guard `currentStep === exhaustedReviewer`
+   * Priority: must
+   *
+   * Scenario (loopFixerPairs = { "verification": "implementer" }):
+   *   1. verification fails (attempt 1) → implementer as fixer (attempt 1)
+   *   2. verification fails (attempt 2) → implementer as fixer (attempt 2)  [fixer budget = 2]
+   *   3. verification passes (attempt 3) → spec-review
+   *   4. spec-review approves (isTestGenExempt=true for "chore") → implementer as CREATOR (attempt 3)
+   *
+   * Without the guard, budget.getFixerIter("implementer")=2 >= maxIterations=2 would trigger
+   * budget-skip and reroute spec-review's approval to "conformance" instead of implementer.
+   * The guard ensures the skip only fires when the approved transition originates FROM
+   * the fixer's paired reviewer (verification), not from an unrelated step (spec-review).
+   *
+   * Sabotage: removing `currentStep === exhaustedReviewer &&` from pipeline.ts:467 causes
+   * conformanceCallCount=1 and implementerCallCount=2 (not 3) — assertions fail.
+   */
+
+  it("TC-016: implementer runs as creator after spec-review approved (isTestGenExempt) even when fixer budget is exhausted from verification recovery", async () => {
+    const baseState = makeMinimalState({
+      step: "verification",
+      request: { path: "/req.md", title: "Guard Test", type: "chore" },
+    });
+    const deps = makeMinimalDeps();
+    const events = new EventBus();
+
+    let verificationCallCount = 0;
+    let implementerCallCount = 0;
+    let conformanceCallCount = 0;
+    const budgetSkippedEvents: unknown[] = [];
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (events as any).on("pipeline:fixer:budget-skipped", (p: unknown) => {
+      budgetSkippedEvents.push(p);
+    });
+
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
+      if (step.name === "verification") {
+        verificationCallCount++;
+        const verdict = verificationCallCount <= 2 ? "failed" : "passed";
+        return {
+          ...currentState,
+          steps: {
+            ...currentState.steps,
+            "verification": [
+              ...(currentState.steps?.["verification"] ?? []),
+              {
+                attempt: verificationCallCount,
+                sessionId: null,
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+                outcome: { verdict, findingsPath: null, error: null },
+              },
+            ],
+          },
+        };
+      }
+
+      if (step.name === "implementer") {
+        implementerCallCount++;
+        return {
+          ...currentState,
+          steps: {
+            ...currentState.steps,
+            "implementer": [
+              ...(currentState.steps?.["implementer"] ?? []),
+              {
+                attempt: implementerCallCount,
+                sessionId: null,
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+                outcome: { verdict: "success" as const, findingsPath: null, error: null },
+              },
+            ],
+          },
+        };
+      }
+
+      if (step.name === "spec-review") {
+        return {
+          ...currentState,
+          steps: {
+            ...currentState.steps,
+            "spec-review": [
+              ...(currentState.steps?.["spec-review"] ?? []),
+              {
+                attempt: 1,
+                sessionId: null,
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+                outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+              },
+            ],
+          },
+        };
+      }
+
+      if (step.name === "conformance") {
+        // Should NOT run — signals that budget-skip fired incorrectly (guard deleted)
+        conformanceCallCount++;
+        return {
+          ...currentState,
+          steps: {
+            ...currentState.steps,
+            "conformance": [{
+              attempt: 1, sessionId: null,
+              startedAt: new Date().toISOString(), endedAt: new Date().toISOString(),
+              outcome: { verdict: "approved" as const, findingsPath: null, error: null },
+            }],
+          },
+        };
+      }
+
+      throw new Error(`Unexpected step in TC-016: ${step.name}`);
+    });
+
+    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
+
+    const transitions = [
+      { step: "verification", on: "failed",  to: "implementer" },
+      { step: "verification", on: "passed",  to: "spec-review" },
+      { step: "verification", on: "error",   to: "escalate" as const },
+      // verificationFailedLast guard: recovery re-entry loops back
+      { step: "implementer",  on: "success", to: "verification", when: verificationFailedLast },
+      { step: "implementer",  on: "success", to: "end" as const },
+      { step: "implementer",  on: "error",   to: "escalate" as const },
+      // isTestGenExempt guard: spec-review approved → implementer as creator (chore type)
+      { step: "spec-review",  on: "approved", to: "implementer", when: isTestGenExempt },
+      // Clean row: used by budget-skip's cleanTransition finder when guard fires (sabotage target)
+      { step: "spec-review",  on: "approved", to: "conformance" },
+      { step: "spec-review",  on: "error",    to: "escalate" as const },
+      { step: "conformance",  on: "approved", to: "end" as const },
+    ];
+
+    const steps = new Map<string, Step>([
+      ["verification", makeStep("verification")],
+      ["implementer",  makeStep("implementer")],
+      ["spec-review",  makeStep("spec-review")],
+      ["conformance",  makeStep("conformance")],
+    ]);
+
+    const pipeline = new Pipeline({
+      steps,
+      transitions,
+      maxIterations: 2,
+      executor: mockExecutor,
+      events,
+      loopName: "verification",
+      loopNames: ["verification"],
+      loopFixerPairs: { "verification": "implementer" },
+    });
+
+    const result = await pipeline.run("verification", baseState, deps);
+
+    // Guard blocked budget-skip: implementer ran 3 times (2 recovery + 1 creator)
+    expect(implementerCallCount).toBe(3);
+    // Conformance was NOT called (budget-skip did not misfire)
+    expect(conformanceCallCount).toBe(0);
+    // No budget-skip event emitted
+    expect(budgetSkippedEvents).toHaveLength(0);
+    // Pipeline completed normally
+    expect(result.status).toBe("awaiting-archive");
   });
 });

@@ -112,7 +112,7 @@ describe("TC-009: existing pipeline behavior is preserved", () => {
     expect(stepNames).toContain(STEP_NAMES.TEST_MATERIALIZE);
     expect(stepNames).toContain(STEP_NAMES.IMPLEMENTER);
     expect(stepNames).toContain(STEP_NAMES.VERIFICATION);
-    expect(stepNames).toContain(STEP_NAMES.BUILD_FIXER);
+    expect(stepNames).not.toContain("build-fixer");
     expect(stepNames).toContain(STEP_NAMES.CODE_REVIEW);
     expect(stepNames).toContain(STEP_NAMES.CODE_FIXER);
     expect(stepNames).toContain(STEP_NAMES.CONFORMANCE);

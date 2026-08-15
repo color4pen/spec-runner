@@ -58,11 +58,11 @@ function makeRun(endedAt: string, verdict = "passed", commitOid?: string): StepR
 // IMPL_CODE_MUTATOR_STEPS constant
 // ─────────────────────────────────────────────────────────────────────────────
 describe("IMPL_CODE_MUTATOR_STEPS", () => {
-  it("contains exactly implementer, build-fixer, code-fixer", () => {
+  it("contains exactly implementer and code-fixer (build-fixer abolished)", () => {
     expect(IMPL_CODE_MUTATOR_STEPS).toContain(STEP_NAMES.IMPLEMENTER);
-    expect(IMPL_CODE_MUTATOR_STEPS).toContain(STEP_NAMES.BUILD_FIXER);
     expect(IMPL_CODE_MUTATOR_STEPS).toContain(STEP_NAMES.CODE_FIXER);
-    expect(IMPL_CODE_MUTATOR_STEPS).toHaveLength(3);
+    expect(IMPL_CODE_MUTATOR_STEPS).not.toContain("build-fixer");
+    expect(IMPL_CODE_MUTATOR_STEPS).toHaveLength(2);
   });
 
   it("does not contain spec-phase fixers", () => {
@@ -102,11 +102,11 @@ describe("TC-008: codeChangedSinceLastVerification — code-fixer after verifica
     expect(codeChangedSinceLastVerification(state)).toBe(true);
   });
 
-  it("returns true when build-fixer endedAt > verification endedAt", () => {
+  it("returns true when any IMPL_CODE_MUTATOR step endedAt > verification endedAt", () => {
     const state = makeBaseState({
       steps: {
         [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:01.000Z")],
-        [STEP_NAMES.BUILD_FIXER]:  [makeRun("2026-01-01T00:00:02.000Z", "success")],
+        [STEP_NAMES.IMPLEMENTER]:  [makeRun("2026-01-01T00:00:02.000Z", "success")],
       },
     });
     expect(codeChangedSinceLastVerification(state)).toBe(true);
@@ -138,9 +138,8 @@ describe("TC-009: codeChangedSinceLastVerification — verification after all mu
     const state = makeBaseState({
       steps: {
         [STEP_NAMES.IMPLEMENTER]:  [makeRun("2026-01-01T00:00:01.000Z", "success")],
-        [STEP_NAMES.BUILD_FIXER]:  [makeRun("2026-01-01T00:00:02.000Z", "success")],
-        [STEP_NAMES.CODE_FIXER]:   [makeRun("2026-01-01T00:00:03.000Z", "approved")],
-        [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:04.000Z")],
+        [STEP_NAMES.CODE_FIXER]:   [makeRun("2026-01-01T00:00:02.000Z", "approved")],
+        [STEP_NAMES.VERIFICATION]: [makeRun("2026-01-01T00:00:03.000Z")],
       },
     });
     expect(codeChangedSinceLastVerification(state)).toBe(false);

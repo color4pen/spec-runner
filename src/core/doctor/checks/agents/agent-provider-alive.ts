@@ -9,12 +9,12 @@ import { STEP_NAMES } from "../../../step/step-names.js";
 const ANTHROPIC_AGENTS_BASE = "https://api.anthropic.com/v1/agents";
 const ANTHROPIC_API_TIMEOUT_MS = 5000;
 
+// build-fixer は廃止済みのため除去。
 const AGENT_ROLES = [
   STEP_NAMES.DESIGN,
   STEP_NAMES.SPEC_REVIEW,
   STEP_NAMES.SPEC_FIXER,
   STEP_NAMES.IMPLEMENTER,
-  STEP_NAMES.BUILD_FIXER,
   STEP_NAMES.CODE_REVIEW,
   STEP_NAMES.CODE_FIXER,
 ] as const;

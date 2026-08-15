@@ -1,6 +1,6 @@
 /**
  * Parser for verification-result.md content.
- * Extracts failed phases and their error output for use in build-fixer context.
+ * Extracts failed phases and their error output for use in implementer recovery context.
  */
 
 /** Failure information for a single verification phase. */

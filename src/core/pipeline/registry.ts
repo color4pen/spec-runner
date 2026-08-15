@@ -17,7 +17,6 @@ import { TestCaseGenStep } from "../step/test-case-gen.js";
 import { TestMaterializeStep } from "../step/test-materialize.js";
 import { ImplementerStep } from "../step/implementer.js";
 import { VerificationStep } from "../step/verification.js";
-import { BuildFixerStep } from "../step/build-fixer.js";
 import { CodeReviewStep } from "../step/code-review.js";
 import { CodeFixerStep } from "../step/code-fixer.js";
 import { ConformanceStep } from "../step/conformance.js";
@@ -26,12 +25,14 @@ import { PrCreateStep } from "../step/pr-create.js";
 import { BiteEvidenceStep } from "../step/bite-evidence/step.js";
 
 /**
- * Standard 15-step pipeline descriptor.
+ * Standard 14-step pipeline descriptor.
  * All fields match the current createStandardPipeline / STANDARD_* constants exactly.
  *
  * Step order: request-review → design → test-case-gen → spec-review → spec-fixer →
- *   test-materialize → implementer → bite-evidence → verification → build-fixer →
+ *   test-materialize → implementer → bite-evidence → verification →
  *   code-review → code-fixer → conformance → adr-gen → pr-create
+ *
+ * build-fixer は廃止済み。verification 失敗は implementer への再入で直す（loopFixerPairs 参照）。
  */
 export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
   id: PIPELINE_IDS.STANDARD,
@@ -45,7 +46,6 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.IMPLEMENTER,      ImplementerStep],
     [STEP_NAMES.BITE_EVIDENCE,    BiteEvidenceStep],
     [STEP_NAMES.VERIFICATION,     VerificationStep],
-    [STEP_NAMES.BUILD_FIXER,      BuildFixerStep],
     [STEP_NAMES.CODE_REVIEW,      CodeReviewStep],
     [STEP_NAMES.CODE_FIXER,       CodeFixerStep],
     [STEP_NAMES.CONFORMANCE,      ConformanceStep],
@@ -63,7 +63,8 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
   loopFixerPairs: {
     [STEP_NAMES.CODE_REVIEW]:  STEP_NAMES.CODE_FIXER,
     [STEP_NAMES.SPEC_REVIEW]:  STEP_NAMES.SPEC_FIXER,
-    [STEP_NAMES.VERIFICATION]: STEP_NAMES.BUILD_FIXER,
+    // verification の paired fixer は implementer（build-fixer 廃止後の代替）
+    [STEP_NAMES.VERIFICATION]: STEP_NAMES.IMPLEMENTER,
   },
   startStep: STEP_NAMES.REQUEST_REVIEW,
   roles: {
@@ -76,7 +77,6 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.IMPLEMENTER]:      { role: "creator",  phase: "impl" },
     [STEP_NAMES.BITE_EVIDENCE]:    { role: "gate",     phase: "impl" },
     [STEP_NAMES.VERIFICATION]:     { role: "gate",     phase: "impl" },
-    [STEP_NAMES.BUILD_FIXER]:      { role: "fixer",    phase: "impl" },
     [STEP_NAMES.CODE_REVIEW]:      { role: "reviewer", phase: "impl" },
     [STEP_NAMES.CODE_FIXER]:       { role: "fixer",    phase: "impl" },
     [STEP_NAMES.CONFORMANCE]:      { role: "gate",     phase: "impl" },
@@ -114,10 +114,12 @@ export const DESIGN_ONLY_DESCRIPTOR: PipelineDescriptor = {
 };
 
 /**
- * Fast pipeline descriptor: 9-step slim profile with permissionScope.
+ * Fast pipeline descriptor: 8-step slim profile with permissionScope.
  *
- * Removes spec-review / spec-fixer / test-case-gen / adr-gen from the standard pipeline.
+ * Removes spec-review / spec-fixer / test-case-gen / adr-gen / build-fixer from the standard pipeline.
  * design goes directly to implementer; conformance goes directly to pr-create (no adr-gen).
+ * verification 失敗は implementer への再入（build-fixer 廃止後の代替）。
+ *
  * permissionScope (checkpoint=conformance) is declared so that:
  *   - #689 scope breach detection fires at the conformance checkpoint when forbidden
  *     surfaces are declared in repo config (pipeline.fast.forbiddenSurfaces).
@@ -135,7 +137,6 @@ export const FAST_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.DESIGN,         DesignStep],
     [STEP_NAMES.IMPLEMENTER,    ImplementerStep],
     [STEP_NAMES.VERIFICATION,   VerificationStep],
-    [STEP_NAMES.BUILD_FIXER,    BuildFixerStep],
     [STEP_NAMES.CODE_REVIEW,    CodeReviewStep],
     [STEP_NAMES.CODE_FIXER,     CodeFixerStep],
     [STEP_NAMES.CONFORMANCE,    ConformanceStep],
@@ -150,7 +151,8 @@ export const FAST_DESCRIPTOR: PipelineDescriptor = {
   ],
   loopFixerPairs: {
     [STEP_NAMES.CODE_REVIEW]:  STEP_NAMES.CODE_FIXER,
-    [STEP_NAMES.VERIFICATION]: STEP_NAMES.BUILD_FIXER,
+    // verification の paired fixer は implementer（build-fixer 廃止後の代替）
+    [STEP_NAMES.VERIFICATION]: STEP_NAMES.IMPLEMENTER,
   },
   startStep: STEP_NAMES.REQUEST_REVIEW,
   roles: {
@@ -158,7 +160,6 @@ export const FAST_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.DESIGN]:         { role: "creator",  phase: "spec" },
     [STEP_NAMES.IMPLEMENTER]:    { role: "creator",  phase: "impl" },
     [STEP_NAMES.VERIFICATION]:   { role: "gate",     phase: "impl" },
-    [STEP_NAMES.BUILD_FIXER]:    { role: "fixer",    phase: "impl" },
     [STEP_NAMES.CODE_REVIEW]:    { role: "reviewer", phase: "impl" },
     [STEP_NAMES.CODE_FIXER]:     { role: "fixer",    phase: "impl" },
     [STEP_NAMES.CONFORMANCE]:    { role: "gate",     phase: "impl" },
@@ -176,7 +177,7 @@ export const FAST_DESCRIPTOR: PipelineDescriptor = {
 
 /**
  * Registry mapping pipeline ids to their descriptors.
- * Three entries: standard (15-step), design-only (1-step), fast (9-step slim with scope).
+ * Three entries: standard (14-step), design-only (1-step), fast (8-step slim with scope).
  */
 export const PIPELINE_REGISTRY: Record<string, PipelineDescriptor> = {
   [PIPELINE_IDS.STANDARD]:    STANDARD_DESCRIPTOR,

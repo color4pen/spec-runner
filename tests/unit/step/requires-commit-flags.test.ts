@@ -18,7 +18,6 @@
 import { describe, it, expect } from "vitest";
 import { SpecFixerStep } from "../../../src/core/step/spec-fixer.js";
 import { ImplementerStep } from "../../../src/core/step/implementer.js";
-import { BuildFixerStep } from "../../../src/core/step/build-fixer.js";
 import { CodeFixerStep } from "../../../src/core/step/code-fixer.js";
 import { SpecReviewStep } from "../../../src/core/step/spec-review.js";
 import { CodeReviewStep } from "../../../src/core/step/code-review.js";
@@ -33,12 +32,6 @@ describe("TC-RCF-01: SpecFixerStep.reportTool is defined", () => {
 describe("TC-RCF-02: ImplementerStep.reportTool is defined", () => {
   it("ImplementerStep has reportTool", () => {
     expect(ImplementerStep.reportTool).toBeDefined();
-  });
-});
-
-describe("TC-RCF-03: BuildFixerStep.reportTool is defined", () => {
-  it("BuildFixerStep has reportTool", () => {
-    expect(BuildFixerStep.reportTool).toBeDefined();
   });
 });
 
@@ -70,7 +63,6 @@ describe("TC-RCF-08: reportTool.name is 'report_result' for all steps", () => {
   const steps = [
     { name: "SpecFixerStep", step: SpecFixerStep },
     { name: "ImplementerStep", step: ImplementerStep },
-    { name: "BuildFixerStep", step: BuildFixerStep },
     { name: "CodeFixerStep", step: CodeFixerStep },
     { name: "DesignStep", step: DesignStep },
     { name: "SpecReviewStep", step: SpecReviewStep },

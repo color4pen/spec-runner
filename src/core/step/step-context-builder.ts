@@ -21,6 +21,8 @@ import type { OutputContract, OutputVerificationPolicy } from "../port/output-co
 import { resolveStepRules } from "./rules-resolve.js";
 import { buildRulesFollowUpPrompts } from "./rules-followup-prompts.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
+import { STEP_NAMES } from "./step-names.js";
+import { verificationFailedLast } from "../pipeline/reverification.js";
 import { isLevelEnabled } from "../../logger/stdout.js";
 import { getAgentLogDir } from "../../util/xdg.js";
 import { buildResumePrompt } from "../resume/resume-context.js";
@@ -92,10 +94,16 @@ export async function buildStepContext(
     ...rulesPrompts,
   ];
 
-  // 3. Fixer session continuity: pass previous session ID if available.
-  const resumeSessionId = FIXER_STEP_NAMES.has(step.name)
-    ? getPreviousSessionId(state, step.name) ?? undefined
-    : undefined;
+  // 3. Session continuity: pass previous session ID for fixer steps and for implementer
+  //    recovery re-entry (verification failed → implementer resumes its own session).
+  //    build-fixer 廃止後、verification 失敗による implementer 再入も session を継続する。
+  //    継続元 session が無い（sessionId=null/不在）場合は undefined に倒れ fresh session で起動。
+  const resumeSessionId =
+    FIXER_STEP_NAMES.has(step.name)
+      ? getPreviousSessionId(state, step.name) ?? undefined
+      : step.name === STEP_NAMES.IMPLEMENTER && verificationFailedLast(state)
+        ? getPreviousSessionId(state, STEP_NAMES.IMPLEMENTER) ?? undefined
+        : undefined;
 
   // 4. Debug session log path.
   let sessionLogPath: string | undefined;

@@ -47,11 +47,11 @@ describe("T-04-1: getPipelineDescriptor('fast') → FAST_DESCRIPTOR", () => {
 // T-04-2: steps — 9 entries, no excluded steps, required steps present
 // ---------------------------------------------------------------------------
 
-describe("T-04-2: FAST_DESCRIPTOR.steps — 9 entries, no excluded steps", () => {
+describe("T-04-2: FAST_DESCRIPTOR.steps — 8 entries, no excluded steps", () => {
   const names = stepNames(FAST_DESCRIPTOR);
 
-  it("has exactly 9 steps", () => {
-    expect(FAST_DESCRIPTOR.steps).toHaveLength(9);
+  it("has exactly 8 steps", () => {
+    expect(FAST_DESCRIPTOR.steps).toHaveLength(8);
   });
 
   it("does NOT contain spec-review", () => {
@@ -84,10 +84,6 @@ describe("T-04-2: FAST_DESCRIPTOR.steps — 9 entries, no excluded steps", () =>
 
   it("contains verification", () => {
     expect(names).toContain("verification");
-  });
-
-  it("contains build-fixer", () => {
-    expect(names).toContain("build-fixer");
   });
 
   it("contains code-review", () => {
@@ -242,8 +238,8 @@ describe("T-04-8: loopFixerPairs", () => {
     expect(FAST_DESCRIPTOR.loopFixerPairs["code-review"]).toBe("code-fixer");
   });
 
-  it("verification maps to build-fixer", () => {
-    expect(FAST_DESCRIPTOR.loopFixerPairs["verification"]).toBe("build-fixer");
+  it("verification maps to implementer (build-fixer 廃止後)", () => {
+    expect(FAST_DESCRIPTOR.loopFixerPairs["verification"]).toBe("implementer");
   });
 
   it("spec-review is NOT in loopFixerPairs (spec-fixer loop removed)", () => {

@@ -1408,9 +1408,9 @@ describe("TC-022: specFixerNeedsFixForward が needs-fix/conformance-triggered �
 // RED: currently 49 rows
 // ---------------------------------------------------------------------------
 
-describe("TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 52 (should)", () => {
-  it("TC-026: STANDARD_TRANSITIONS.length === 52（旧 49 + 3 行増）", () => {
-    expect(STANDARD_TRANSITIONS.length).toBe(52);
+describe("TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 51 (build-fixer 廃止後)", () => {
+  it("TC-026: STANDARD_TRANSITIONS.length === 51（旧 48 + 3 行増）", () => {
+    expect(STANDARD_TRANSITIONS.length).toBe(51);
   });
 });
 

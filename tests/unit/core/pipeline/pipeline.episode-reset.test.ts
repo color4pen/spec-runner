@@ -173,24 +173,27 @@ function makeAgentStep(
 // verification reentry had zero budget left and immediately exhausted.
 // ---------------------------------------------------------------------------
 describe("TC-070: conformance re-entry gives verification fresh budget (regression)", () => {
-  it("build-fixer is invoked 3 times: 2 in episode 1, 1 in re-entry episode 2", async () => {
+  it("implementer is invoked 5 times: initial + 2 fixer in ep1 + 1 outer ep2 + 1 fixer in ep2", async () => {
     const maxIterations = 2;
     const state = makeMinimalState();
     const deps = makeMinimalDeps();
 
     let verificationCallCount = 0;
-    let buildFixerCallCount = 0;
+    let implementerCallCount = 0;
     let conformanceCallCount = 0;
 
     // driver sequence (call-count indexed)
-    // episode 1: verification(fail) → build-fixer(ok) → verification(fail) → build-fixer(ok) → verification(pass/bypass)
-    // → code-review(approved) → conformance(needs-fix)
-    // → implementer(2nd) → verification(fail, reentry) → build-fixer(ok, 3rd) → verification(pass)
-    // → code-review(approved) → conformance(approved) → adr-gen → pr-create → end
+    // episode 1: implementer(initial) → bite-evidence → verification(fail) → implementer(fixer1)
+    //   → verification(fail) → implementer(fixer2) → verification(pass)
+    //   → code-review(approved) → conformance(needs-fix)
+    // episode 2: implementer(ep2-outer, verificationFailedLast=false) → bite-evidence
+    //   → verification(fail) → implementer(fixer1-ep2) → verification(pass)
+    //   → code-review(approved) → conformance(approved) → adr-gen → pr-create → end
     const verificationVerdicts = ["failed", "failed", "passed", "failed", "passed"] as const;
 
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "implementer") {
+        implementerCallCount++;
         return appendStepResult(currentState, "implementer", "success");
       }
       if (step.name === "bite-evidence") {
@@ -200,10 +203,6 @@ describe("TC-070: conformance re-entry gives verification fresh budget (regressi
         const verdict = verificationVerdicts[verificationCallCount] ?? "passed";
         verificationCallCount++;
         return appendStepResult(currentState, "verification", verdict);
-      }
-      if (step.name === "build-fixer") {
-        buildFixerCallCount++;
-        return appendStepResult(currentState, "build-fixer", "success");
       }
       if (step.name === "code-review") {
         // approved with no fixable findings → routes to conformance (not code-fixer)
@@ -242,7 +241,6 @@ describe("TC-070: conformance re-entry gives verification fresh budget (regressi
         resultFilePath: () => "/tmp/verification-result.md",
         parseResult: () => ({ verdict: "passed" as const, findingsPath: null }),
       }],
-      ["build-fixer",  makeAgentStep("build-fixer", "success")],
       ["code-review",  makeAgentStep("code-review")],
       ["code-fixer",   makeAgentStep("code-fixer", "approved")],
       ["conformance",  makeAgentStep("conformance")],
@@ -270,8 +268,9 @@ describe("TC-070: conformance re-entry gives verification fresh budget (regressi
 
     const result = await pipeline.run("implementer", state, deps);
 
-    // build-fixer must be invoked in re-entry episode (3rd call), not skipped
-    expect(buildFixerCallCount).toBe(3);
+    // implementer is used as both initial creator and verification fixer (build-fixer abolished)
+    // total: 1 initial (ep1) + 2 fixer (ep1) + 1 outer (ep2) + 1 fixer (ep2) = 5
+    expect(implementerCallCount).toBe(5);
     // pipeline completes normally — not escalated
     expect(result.status).toBe("awaiting-archive");
     // no verification exhaustion error
@@ -378,13 +377,15 @@ describe("TC-072: single-episode exhaustion within verification loop is unchange
     const deps = makeMinimalDeps();
 
     let verificationCallCount = 0;
-    let buildFixerCallCount = 0;
+    let implementerCallCount = 0;
 
-    // implementer succeeds once; verification always fails; build-fixer always succeeds
-    // Expected: verification(iter1,fail) → build-fixer(iter1) → verification(iter2,fail)
-    //           → build-fixer(iter2) → verification(bypass,fail) → fixer-exhausted → escalate
+    // implementer succeeds; verification always fails; implementer is now the fixer (build-fixer abolished)
+    // Expected: implementer(initial) → bite-evidence → verification(fail)
+    //           → implementer(fixer1) → verification(fail)
+    //           → implementer(fixer2) → verification(fail) → fixer-exhausted → escalate
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
       if (step.name === "implementer") {
+        implementerCallCount++;
         return appendStepResult(currentState, "implementer", "success");
       }
       if (step.name === "bite-evidence") {
@@ -393,11 +394,6 @@ describe("TC-072: single-episode exhaustion within verification loop is unchange
       if (step.name === "verification") {
         verificationCallCount++;
         return appendStepResult(currentState, "verification", "failed");
-      }
-      if (step.name === "build-fixer") {
-        buildFixerCallCount++;
-        // build-fixer returns success but verification will fail again next iteration
-        return appendStepResult(currentState, "build-fixer", "success");
       }
       throw new Error(`Unexpected step in TC-072: ${step.name}`);
     });
@@ -418,7 +414,6 @@ describe("TC-072: single-episode exhaustion within verification loop is unchange
         resultFilePath: () => "/tmp/verification-result.md",
         parseResult: () => ({ verdict: "failed" as const, findingsPath: null }),
       }],
-      ["build-fixer",  makeAgentStep("build-fixer", "success")],
     ]);
 
     const events = new EventBus();
@@ -436,11 +431,11 @@ describe("TC-072: single-episode exhaustion within verification loop is unchange
     const result = await pipeline.run("implementer", state, deps);
 
     // single-episode exhaustion: verification called 3 times (iter1, iter2, bypass),
-    // build-fixer called 2 times (at max), then fixer-entry-guard fires
+    // implementer called 3 times (initial + 2 fixer), then fixer-entry-guard fires
     expect(result.error?.code).toBe("VERIFICATION_RETRIES_EXHAUSTED");
     expect(result.status).toBe("awaiting-resume");
     expect(verificationCallCount).toBe(3);   // iter1 + iter2 + bypass
-    expect(buildFixerCallCount).toBe(2);     // fixer exhausted at maxIterations
+    expect(implementerCallCount).toBe(3);    // initial + 2 fixer (exhausted at maxIterations)
   });
 });
 

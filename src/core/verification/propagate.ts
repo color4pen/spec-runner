@@ -2,10 +2,10 @@
  * Propagate verification-result.md to the feature branch on origin.
  *
  * The verification step (kind: "cli") writes verification-result.md to the
- * job worktree. The build-fixer step runs in a managed agent session whose
- * workspace is a fresh clone of the feature branch. Without this propagation,
- * build-fixer cannot read verification-result.md and falls back to running
- * tests itself.
+ * job worktree. The implementer re-entry (recovery mode) runs in a managed
+ * agent session whose workspace is a fresh clone of the feature branch. Without
+ * this propagation, the implementer cannot read verification-result.md and falls
+ * back to running tests itself.
  *
  * Design D5: With the job worktree design, the cwd IS already the feature branch
  * worktree. No temp worktree is needed — we commit and push directly from cwd.

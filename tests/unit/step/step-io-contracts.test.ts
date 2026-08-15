@@ -14,7 +14,6 @@ import { TestCaseGenStep } from "../../../src/core/step/test-case-gen.js";
 import { TestMaterializeStep } from "../../../src/core/step/test-materialize.js";
 import { ImplementerStep } from "../../../src/core/step/implementer.js";
 import { VerificationStep } from "../../../src/core/step/verification.js";
-import { BuildFixerStep } from "../../../src/core/step/build-fixer.js";
 import { CodeReviewStep } from "../../../src/core/step/code-review.js";
 import { CodeFixerStep } from "../../../src/core/step/code-fixer.js";
 import { ConformanceStep } from "../../../src/core/step/conformance.js";
@@ -41,7 +40,6 @@ const ALL_STEPS: Step[] = [
   TestMaterializeStep,
   ImplementerStep,
   VerificationStep,
-  BuildFixerStep,
   CodeReviewStep,
   CodeFixerStep,
   ConformanceStep,
@@ -303,27 +301,6 @@ describe("CodeFixerStep reads/writes", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// build-fixer step (D4 reads = producer's result)
-// ---------------------------------------------------------------------------
-
-describe("BuildFixerStep reads/writes", () => {
-  it("reads verification-result.md (no iteration)", () => {
-    const refs = BuildFixerStep.reads!(makeState(), makeDeps());
-    expect(refs.map(r => r.path)).toContain(verificationResultPath(SLUG));
-  });
-
-  it("reads path matches verificationResultPath", () => {
-    const refs = BuildFixerStep.reads!(makeState(), makeDeps());
-    expect(refs[0]?.path).toBe(verificationResultPath(SLUG));
-  });
-
-  it("writes gitState", () => {
-    const refs = BuildFixerStep.writes!(makeState(), makeDeps());
-    const gitRefs = refs.filter(r => r.artifact === "gitState");
-    expect(gitRefs.length).toBeGreaterThan(0);
-  });
-});
 
 // ---------------------------------------------------------------------------
 // verification step
@@ -449,14 +426,6 @@ describe("T-07: fixer reads paths match producer resultFilePath", () => {
     const codeReviewResultPath = reviewFeedbackPath(SLUG, 1); // iteration=1, already run
     const fixerReads = CodeFixerStep.reads!(state, deps).map(r => r.path);
     expect(fixerReads).toContain(codeReviewResultPath);
-  });
-
-  it("build-fixer.reads path matches verificationResultPath (no iteration)", () => {
-    const state = makeState({ "verification": 1 });
-    const deps = makeDeps();
-    const verPath = verificationResultPath(SLUG);
-    const fixerReads = BuildFixerStep.reads!(state, deps).map(r => r.path);
-    expect(fixerReads).toContain(verPath);
   });
 
   it("spec-fixer.reads path matches spec-review.resultFilePath for same iteration", () => {

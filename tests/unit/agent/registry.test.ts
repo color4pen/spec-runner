@@ -189,9 +189,9 @@ describe("TC-011: AgentRegistry.fromSteps — CLI step を除外してカウン�
     const specFixer = makeStep("spec-fixer");
     const implementer = makeStep("implementer");
     const verification = makeCliStep("verification");
-    const buildFixer = makeStep("build-fixer");
+    const codeFixer = makeStep("code-fixer");
 
-    const registry = AgentRegistry.fromSteps([design, specReview, specFixer, implementer, verification, buildFixer]);
+    const registry = AgentRegistry.fromSteps([design, specReview, specFixer, implementer, verification, codeFixer]);
 
     expect(registry.list().length).toBe(5);
   });
@@ -212,9 +212,9 @@ describe("TC-011: AgentRegistry.fromSteps — CLI step を除外してカウン�
     const specFixer = makeStep("spec-fixer");
     const implementer = makeStep("implementer");
     const verification = makeCliStep("verification");
-    const buildFixer = makeStep("build-fixer");
+    const codeFixer = makeStep("code-fixer");
 
-    const registry = AgentRegistry.fromSteps([design, specReview, specFixer, implementer, verification, buildFixer]);
+    const registry = AgentRegistry.fromSteps([design, specReview, specFixer, implementer, verification, codeFixer]);
 
     expect(registry.get("implementer")).toEqual(implementer.agent);
   });

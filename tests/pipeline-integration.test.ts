@@ -251,7 +251,6 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
       "test-case-gen": { agentId: "test-case-gen-agent-id", definitionHash: "sha256:tcg", lastSyncedAt: new Date().toISOString() },
       "test-materialize": { agentId: "test-materialize-agent-id", definitionHash: "sha256:tmt", lastSyncedAt: new Date().toISOString() },
       "implementer": { agentId: "implementer-agent-id", definitionHash: "sha256:imp", lastSyncedAt: new Date().toISOString() },
-      "build-fixer": { agentId: "build-fixer-agent-id", definitionHash: "sha256:bfx", lastSyncedAt: new Date().toISOString() },
       "code-review": { agentId: "code-review-agent-id", definitionHash: "sha256:crv", lastSyncedAt: new Date().toISOString() },
       "code-fixer": { agentId: "code-fixer-agent-id", definitionHash: "sha256:cfx", lastSyncedAt: new Date().toISOString() },
       "conformance": { agentId: "conformance-agent-id", definitionHash: "sha256:cnf", lastSyncedAt: new Date().toISOString() },
@@ -985,17 +984,17 @@ describe("TC-063: spec-review / spec-fixer pair — fixer final iter reviewed an
   });
 });
 
-// TC-064: verification / build-fixer pair — fixer final iter reviewed and passed
-describe("TC-064: verification / build-fixer pair — fixer final iter verification passes", () => {
-  it("allows +1 verification iteration after build-fixer final iter, completes on pass", async () => {
+// TC-064: verification / implementer recovery pair — recovery final iter verification passes
+describe("TC-064: verification / implementer recovery pair — fixer final iter verification passes", () => {
+  it("allows verification to pass after 2 implementer recovery runs, completes successfully", async () => {
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const { runVerification } = await import("../src/core/verification/runner.js");
     const jobState = await makeJobState();
 
     // maxRetries = 2
-    // verification iter 1: failed → build-fixer iter 1
-    // verification iter 2: failed → build-fixer iter 2 (final)
-    // verification iter 3 (+1 bypass): passed → code-review → end
+    // verification iter 1: failed → implementer recovery 1
+    // verification iter 2: failed → implementer recovery 2 (final)
+    // verification iter 3: passed → code-review → end
     let verificationCallCount = 0;
     vi.mocked(runVerification).mockImplementation(async (slug: string, cwd: string = process.cwd()) => {
       const outputPath = `${cwd}/${verificationResultPath(slug)}`;
@@ -1019,9 +1018,9 @@ describe("TC-064: verification / build-fixer pair — fixer final iter verificat
         "sess_test_case_gen_001",
         "sess_implementer_001",
         // no session for verification (CLI step)
-        "sess_build_fixer_001",
+        "sess_implementer_002",
         // no session for verification iter 2
-        "sess_build_fixer_002",
+        "sess_implementer_003",
         // no session for verification iter 3
         "sess_code_review_001",
       ],
@@ -1047,16 +1046,16 @@ describe("TC-064: verification / build-fixer pair — fixer final iter verificat
 
     expect(result.status).toBe("awaiting-archive");
 
-    // verification: 3 entries (iter1 failed, iter2 failed, iter3 +1 bypass passed)
+    // verification: 3 entries (iter1 failed, iter2 failed, iter3 passed)
     const verificationArr = result.steps?.["verification"];
     expect(verificationArr).toBeDefined();
     expect(verificationArr?.length).toBe(3);
     expect(verificationArr?.[2] ? toLegacyStepResult(verificationArr[2]).verdict : undefined).toBe("passed");
 
-    // build-fixer: 2 entries
-    const buildFixerArr = result.steps?.["build-fixer"];
-    expect(buildFixerArr).toBeDefined();
-    expect(buildFixerArr?.length).toBe(2);
+    // implementer: 3 entries (1 initial + 2 recovery)
+    const implementerArr = result.steps?.["implementer"];
+    expect(implementerArr).toBeDefined();
+    expect(implementerArr?.length).toBe(3);
   });
 });
 
@@ -1601,11 +1600,11 @@ describe("TC-ADR-INT-01: STANDARD_TRANSITIONS adr-gen wiring", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-065: verification/build-fixer loop exhaustion → VERIFICATION_RETRIES_EXHAUSTED
-// All 3 verification iterations return "failed" (maxRetries=2, +1 bypass = 3 total).
+// TC-065: verification/implementer recovery loop exhaustion → VERIFICATION_RETRIES_EXHAUSTED
+// All 3 verification iterations return "failed" (maxRetries=2, 3 total).
 // ---------------------------------------------------------------------------
-describe("TC-065: verification/build-fixer exhaustion — VERIFICATION_RETRIES_EXHAUSTED", () => {
-  it("sets error.code=VERIFICATION_RETRIES_EXHAUSTED, escalation verdict on last verification, resumePoint.step=build-fixer", async () => {
+describe("TC-065: verification/implementer recovery exhaustion — VERIFICATION_RETRIES_EXHAUSTED", () => {
+  it("sets error.code=VERIFICATION_RETRIES_EXHAUSTED, escalation verdict on last verification, resumePoint.step=implementer", async () => {
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const { runVerification } = await import("../src/core/verification/runner.js");
     const jobState = await makeJobState();
@@ -1634,8 +1633,8 @@ describe("TC-065: verification/build-fixer exhaustion — VERIFICATION_RETRIES_E
         "sess_spec_review_001",
         "sess_test_case_gen_001",
         "sess_implementer_001",
-        "sess_build_fixer_001",
-        "sess_build_fixer_002",
+        "sess_implementer_002",
+        "sess_implementer_003",
       ],
     });
     const githubClient = buildMockGithubClient({
@@ -1667,8 +1666,8 @@ describe("TC-065: verification/build-fixer exhaustion — VERIFICATION_RETRIES_E
     const lastVerification = verificationArr?.[verificationArr.length - 1];
     expect(lastVerification ? toLegacyStepResult(lastVerification).verdict : undefined).toBe("escalation");
 
-    // resumePoint: step=build-fixer (productive entry point), exhaustionPhase=review-after-final-fix
-    expect(result.resumePoint?.step).toBe("build-fixer");
+    // resumePoint: step=implementer (productive entry point), exhaustionPhase=review-after-final-fix
+    expect(result.resumePoint?.step).toBe("implementer");
     expect(result.resumePoint?.exhaustionPhase).toBe("review-after-final-fix");
   });
 });

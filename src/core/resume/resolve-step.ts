@@ -1,11 +1,22 @@
 import type { StepName, ResumePoint } from "../../state/schema.js";
-import { AGENT_STEP_NAMES, CLI_STEP_NAMES, toStepName } from "../step/step-names.js";
+import { AGENT_STEP_NAMES, CLI_STEP_NAMES, toStepName, STEP_NAMES } from "../step/step-names.js";
 import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import { CUSTOM_REVIEWERS_STEP_NAME } from "../pipeline/types.js";
 import { logInfo } from "../../logger/stdout.js";
 
 /** Set of all valid step names for O(1) membership check. */
 const ALL_STEP_NAMES_SET = new Set<string>([...AGENT_STEP_NAMES, ...CLI_STEP_NAMES]);
+
+/**
+ * Legacy step name aliases for backward compatibility.
+ *
+ * build-fixer は廃止済み。resume 復帰点（`--from build-fixer` / resumePoint.step="build-fixer"）を
+ * implementer へ写すことで、旧 job の resume が壊れないようにする。
+ * mapMemberToCoordinator と同じ「前段写像」パターン。
+ */
+const LEGACY_STEP_ALIASES: Record<string, string> = {
+  "build-fixer": STEP_NAMES.IMPLEMENTER,
+};
 
 /**
  * Build the set of allowed step names for a specific job.
@@ -83,9 +94,14 @@ export function resolveResumeStep(
   const allowed = allowedSteps ?? ALL_STEP_NAMES_SET;
 
   if (from !== undefined) {
-    const resolvedFrom = mapMemberToCoordinator(from, reviewers);
-    if (resolvedFrom !== from) {
-      logInfo(`Mapping --from "${from}" → "${resolvedFrom}" (member → coordinator)`);
+    // Apply legacy alias first (e.g. "build-fixer" → STEP_NAMES.IMPLEMENTER)
+    const legacyResolved = LEGACY_STEP_ALIASES[from] ?? from;
+    if (legacyResolved !== from) {
+      logInfo(`Mapping --from "${from}" → "${legacyResolved}" (legacy alias)`);
+    }
+    const resolvedFrom = mapMemberToCoordinator(legacyResolved, reviewers);
+    if (resolvedFrom !== legacyResolved) {
+      logInfo(`Mapping --from "${legacyResolved}" → "${resolvedFrom}" (member → coordinator)`);
     }
     if (allowed.has(resolvedFrom)) {
       return toStepName(resolvedFrom);
@@ -98,9 +114,14 @@ export function resolveResumeStep(
   }
 
   if (resumePoint !== null) {
-    const resolvedStep = mapMemberToCoordinator(resumePoint.step, reviewers);
-    if (resolvedStep !== resumePoint.step) {
-      logInfo(`Mapping resumePoint.step "${resumePoint.step}" → "${resolvedStep}" (member → coordinator)`);
+    // Apply legacy alias first (e.g. resumePoint.step="build-fixer" → STEP_NAMES.IMPLEMENTER)
+    const legacyResolved = LEGACY_STEP_ALIASES[resumePoint.step] ?? resumePoint.step;
+    if (legacyResolved !== resumePoint.step) {
+      logInfo(`Mapping resumePoint.step "${resumePoint.step}" → "${legacyResolved}" (legacy alias)`);
+    }
+    const resolvedStep = mapMemberToCoordinator(legacyResolved, reviewers);
+    if (resolvedStep !== legacyResolved) {
+      logInfo(`Mapping resumePoint.step "${legacyResolved}" → "${resolvedStep}" (member → coordinator)`);
     }
     return toStepName(resolvedStep);
   }

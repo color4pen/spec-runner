@@ -11,7 +11,6 @@ import { SpecFixerStep } from "../core/step/spec-fixer.js";
 import { TestCaseGenStep } from "../core/step/test-case-gen.js";
 import { TestMaterializeStep } from "../core/step/test-materialize.js";
 import { ImplementerStep } from "../core/step/implementer.js";
-import { BuildFixerStep } from "../core/step/build-fixer.js";
 import { CodeReviewStep } from "../core/step/code-review.js";
 import { CodeFixerStep } from "../core/step/code-fixer.js";
 import { ConformanceStep } from "../core/step/conformance.js";
@@ -38,6 +37,7 @@ export interface ConfigEffectiveOutput {
 
 const MANAGED_MODEL_NOTE = "Managed runtime ignores configured model for execution; this command still shows the configured effective value.";
 
+// build-fixer は廃止済みのため除外。
 const STANDARD_AGENT_STEPS: Record<string, AgentStep> = {
   [STEP_NAMES.REQUEST_REVIEW]: RequestReviewStep,
   [STEP_NAMES.DESIGN]: DesignStep,
@@ -46,7 +46,6 @@ const STANDARD_AGENT_STEPS: Record<string, AgentStep> = {
   [STEP_NAMES.TEST_CASE_GEN]: TestCaseGenStep,
   [STEP_NAMES.TEST_MATERIALIZE]: TestMaterializeStep,
   [STEP_NAMES.IMPLEMENTER]: ImplementerStep,
-  [STEP_NAMES.BUILD_FIXER]: BuildFixerStep,
   [STEP_NAMES.CODE_REVIEW]: CodeReviewStep,
   [STEP_NAMES.CODE_FIXER]: CodeFixerStep,
   [STEP_NAMES.CONFORMANCE]: ConformanceStep,

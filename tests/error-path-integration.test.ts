@@ -6,7 +6,7 @@
  * TC-T05-dn:       findings decision-needed → escalation → awaiting-resume
  * TC-T05-ref:      blocking finding referencing non-existent file → escalation
  * TC-T06:          session termination → SESSION_TERMINATED in state → awaiting-resume
- * TC-T07:          verification partial failure (build ok, test fail) → build-fixer runs
+ * TC-T07:          verification partial failure (build ok, test fail) → implementer recovery runs
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -97,7 +97,6 @@ function buildConfig(overrides: Record<string, unknown> = {}) {
       "test-case-gen": { agentId: "test-case-gen-agent-id", definitionHash: "sha256:tcg", lastSyncedAt: new Date().toISOString() },
       "test-materialize": { agentId: "test-materialize-agent-id", definitionHash: "sha256:tmt", lastSyncedAt: new Date().toISOString() },
       implementer: { agentId: "implementer-agent-id", definitionHash: "sha256:imp", lastSyncedAt: new Date().toISOString() },
-      "build-fixer": { agentId: "build-fixer-agent-id", definitionHash: "sha256:bfx", lastSyncedAt: new Date().toISOString() },
       "code-review": { agentId: "code-review-agent-id", definitionHash: "sha256:crv", lastSyncedAt: new Date().toISOString() },
       "code-fixer": { agentId: "code-fixer-agent-id", definitionHash: "sha256:cfx", lastSyncedAt: new Date().toISOString() },
       conformance: { agentId: "conformance-agent-id", definitionHash: "sha256:cnf", lastSyncedAt: new Date().toISOString() },
@@ -457,11 +456,11 @@ describe("TC-T06: session termination → SESSION_TERMINATED error code → awai
 });
 
 // ===========================================================================
-// TC-T07: verification partial failure (build ok, test fail) → build-fixer runs
+// TC-T07: verification partial failure (build ok, test fail) → implementer recovery runs
 // ===========================================================================
 
-describe("TC-T07: verification partial failure (build passed, test failed) → build-fixer runs", () => {
-  it("verification with mixed phase results (build ok, test fail) routes to build-fixer", async () => {
+describe("TC-T07: verification partial failure (build passed, test failed) → implementer recovery runs", () => {
+  it("verification with mixed phase results (build ok, test fail) routes to implementer recovery", async () => {
     const { runPipeline } = await import("../src/core/pipeline/index.js");
     const { runVerification } = await import("../src/core/verification/runner.js");
     const jobState = await makeJobState();
@@ -518,7 +517,7 @@ describe("TC-T07: verification partial failure (build passed, test failed) → b
         "sess_test_case_gen_001",
         "sess_implementer_001",
         // no session for verification (CLI step)
-        "sess_build_fixer_001",
+        "sess_implementer_002",
         // no session for verification iter 2
         "sess_code_review_001",
         "sess_conformance_001",
@@ -544,7 +543,7 @@ describe("TC-T07: verification partial failure (build passed, test failed) → b
       storeFactory: makeStoreFactory(tempDir),
     });
 
-    // Pipeline should complete after build-fixer fixes the test failure
+    // Pipeline should complete after implementer recovery fixes the test failure
     expect(result.status).toBe("awaiting-archive");
 
     // verification: 2 entries (iter1 failed, iter2 passed)
@@ -558,9 +557,9 @@ describe("TC-T07: verification partial failure (build passed, test failed) → b
     const secondVer = verificationArr?.[1];
     expect(secondVer ? toLegacyStepResult(secondVer).verdict : undefined).toBe("passed");
 
-    // build-fixer: at least 1 entry (triggered by partial verification failure)
-    const buildFixerArr = result.steps?.["build-fixer"];
-    expect(buildFixerArr).toBeDefined();
-    expect((buildFixerArr?.length ?? 0)).toBeGreaterThanOrEqual(1);
+    // implementer: at least 2 entries (initial + 1 recovery triggered by partial verification failure)
+    const implementerArr = result.steps?.["implementer"];
+    expect(implementerArr).toBeDefined();
+    expect((implementerArr?.length ?? 0)).toBeGreaterThanOrEqual(2);
   });
 });

@@ -37,10 +37,6 @@ describe("FIXER_STEP_NAMES", () => {
     expect(FIXER_STEP_NAMES.has("spec-fixer")).toBe(true);
   });
 
-  it("contains build-fixer", () => {
-    expect(FIXER_STEP_NAMES.has("build-fixer")).toBe(true);
-  });
-
   it("contains code-fixer", () => {
     expect(FIXER_STEP_NAMES.has("code-fixer")).toBe(true);
   });
@@ -49,6 +45,7 @@ describe("FIXER_STEP_NAMES", () => {
     expect(FIXER_STEP_NAMES.has("spec-review")).toBe(false);
     expect(FIXER_STEP_NAMES.has("implementer")).toBe(false);
     expect(FIXER_STEP_NAMES.has("code-review")).toBe(false);
+    expect(FIXER_STEP_NAMES.has("build-fixer")).toBe(false);
   });
 });
 
@@ -225,13 +222,4 @@ describe("buildContinuationMessage", () => {
     expect(msg).toContain("reviewer");
   });
 
-  it("uses 'verification' as source label for build-fixer", () => {
-    const msg = buildContinuationMessage({
-      stepName: "build-fixer",
-      findingsPath: "some/path.md",
-      slug: "test-slug",
-    });
-    expect(msg).toContain("verification");
-    expect(msg).not.toContain("reviewer から");
-  });
 });

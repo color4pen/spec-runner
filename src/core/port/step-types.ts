@@ -90,7 +90,7 @@ export interface ParsedStepResult {
 
 /**
  * NULL_PARSE_RESULT: shared constant for steps that have no file-based verdict.
- * Used by propose, spec-fixer, implementer, and build-fixer.
+ * Used by propose, spec-fixer, and implementer.
  */
 export const NULL_PARSE_RESULT: ParsedStepResult = {
   verdict: null,
@@ -133,7 +133,7 @@ export interface AgentStep {
    * Verdict to record when resultFilePath is null and the session completes successfully.
    * Defaults to "approved" if omitted (preserves spec-fixer → spec-review loop behavior).
    * Set to "success" for agent steps where completion = unconditional forward progress
-   * (e.g. implementer, build-fixer).
+   * (e.g. implementer).
    */
   completionVerdict?: import("../../state/schema.js").Verdict;
 

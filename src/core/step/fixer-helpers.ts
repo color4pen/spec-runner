@@ -1,20 +1,21 @@
 /**
  * Shared helpers for fixer step session continuity and findings injection.
  *
- * Design: fixer ステップ（spec-fixer / build-fixer / code-fixer）の
+ * Design: fixer ステップ（spec-fixer / code-fixer）の
  * session 継続に関する共通ロジックを集約する。
  * Step interface の署名（buildMessage(state, deps)）は変更しない。
  * 各 fixer step の buildMessage 内でこれらの helper を呼び出して自己判定する。
+ *
+ * build-fixer は廃止済み。verification 失敗は implementer への再入で直す。
  */
 import { STEP_NAMES } from "./step-names.js";
 import type { JobState } from "../../state/schema.js";
 import type { Finding } from "../../kernel/report-result.js";
 import { deriveImplFixerChain, resolveActiveReviewer } from "../pipeline/reviewer-chain.js";
 
-/** fixer ステップ名の集合 */
+/** fixer ステップ名の集合（build-fixer は廃止済み — verification 失敗は implementer 再入で直す） */
 export const FIXER_STEP_NAMES: ReadonlySet<string> = new Set([
   STEP_NAMES.SPEC_FIXER,
-  STEP_NAMES.BUILD_FIXER,
   STEP_NAMES.CODE_FIXER,
 ]);
 
@@ -186,14 +187,10 @@ export function buildContinuationMessage(opts: {
   /** Reviewer name for findings source identification (requirement 7). */
   reviewerName?: string;
 }): string {
-  // build-fixer は verification（CLI ステップ）からの findings
   // code-fixer は reviewer からの findings (reviewerName で識別)
-  const source =
-    opts.stepName === STEP_NAMES.BUILD_FIXER
-      ? "verification"
-      : opts.reviewerName
-        ? `${opts.reviewerName} reviewer`
-        : "reviewer";
+  const source = opts.reviewerName
+    ? `${opts.reviewerName} reviewer`
+    : "reviewer";
 
   if (opts.findings && opts.findings.length > 0) {
     const findingsBlock = buildFindingsBlock(opts.findings, opts.reviewerName);

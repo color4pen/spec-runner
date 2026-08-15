@@ -93,15 +93,6 @@ describe("buildFindingsBlock — reviewerName", () => {
 // ---------------------------------------------------------------------------
 
 describe("buildContinuationMessage — reviewerName", () => {
-  it("identifies code-fixer source as 'verification' for build-fixer step", () => {
-    const msg = buildContinuationMessage({
-      stepName: "build-fixer",
-      findingsPath: "specrunner/changes/s/verification-result.md",
-      slug: "s",
-    });
-    expect(msg).toContain("verification");
-  });
-
   it("identifies source with reviewer name for code-fixer step", () => {
     const msg = buildContinuationMessage({
       stepName: "code-fixer",
