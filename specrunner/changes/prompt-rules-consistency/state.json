@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71924134-2f43-4167-be77-75abf52ad49a",
   "createdAt": "2026-08-15T23:18:40.860Z",
-  "updatedAt": "2026-08-15T23:44:45.380Z",
+  "updatedAt": "2026-08-15T23:45:20.726Z",
   "request": {
     "title": "prompt/rules の新 pipeline 構造への追随: authority 表現統一・実行不能指示の撤去・session 例外・PIPELINE_MAP 更新",
     "type": "chore",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "chore/prompt-rules-consistency-71924134",
   "error": null,
@@ -69,7 +69,8 @@
     "ed5517116a87579cc571dde3037c07e29fed316e",
     "cb20b0ccd9d6b1428b7040f4d8844fd8c010ac61",
     "6896db4495cf01ed835f1664c08401a7df948b6d",
-    "ac653290b219466b665c5168fb325166c01dd2ba"
+    "ac653290b219466b665c5168fb325166c01dd2ba",
+    "0372bd99fe37d4f4139f176fde267dec53d42df6"
   ],
   "touchedFiles": {
     "request-review": [
@@ -133,6 +134,9 @@
     ],
     "code-fixer": [
       "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts"
+    ],
+    "regression-gate": [
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -165,7 +169,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 37,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -176,7 +180,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
