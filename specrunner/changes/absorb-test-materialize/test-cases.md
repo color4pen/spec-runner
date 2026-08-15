@@ -161,7 +161,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 **GIVEN** `LocalRuntime` の `listChangedFilesBetweenCommits(baseOid, headOid, cwd)` 実装
 **WHEN** 2 つの commit OID と作業ディレクトリを渡して呼び出す
-**THEN** `git diff --name-only <baseOid> <headOid>` を pathspec フィルタなしで実行し変更ファイル一覧を `ChangedFilesResult` として返す。exit 0 → success、非 0 / spawn エラー → unavailable
+**THEN** `git diff --name-only --diff-filter=d <baseOid> <headOid>` を pathspec フィルタなしで実行し変更ファイル一覧を `ChangedFilesResult` として返す（`--diff-filter=d` により headOid で削除済みのファイルは列挙しない — 削除 path は overlay も HEAD 実行も不能で、列挙すると red/green 実行全体が unavailable に落ちるため）。exit 0 → success、非 0 / spawn エラー → unavailable
 
 ---
 
