@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T15:05:27.070Z",
+  "updatedAt": "2026-08-15T15:12:59.294Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -84,7 +84,9 @@
     "ee57b62d1a62a1cd88096eabecc80fde2d0c1815",
     "982417f879620ce6f46af5896da685239de7be2d",
     "4d81822293af3e621d33a6816829ab1d51fa428a",
-    "4ad084924499cd0057dfb9f483c97f9341d7bf1c"
+    "4ad084924499cd0057dfb9f483c97f9341d7bf1c",
+    "db2fd36140de39946814fa11fe3ff91d3da07e37",
+    "e837546e94bdcd074b3d398fdbba9efcb6fd509c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -222,6 +224,23 @@
       "src/core/verification/test-coverage.ts",
       "src/state/schema/types.ts",
       "src/config/schema/types.ts"
+    ],
+    "conformance": [
+      "src/core/pipeline/types.ts",
+      "src/core/step/implementer.ts",
+      "src/prompts/implementer-system.ts",
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/core/pipeline/__tests__/absorb-test-materialize-transitions.test.ts",
+      "src/core/step/__tests__/implementer-materialize.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate-no-test-materialize.test.ts",
+      "src/core/archive/__tests__/achieved-assurance-no-base-oid.test.ts",
+      "src/core/resume/__tests__/resolve-step-test-materialize-alias.test.ts",
+      "src/core/runtime/local.ts",
+      "src/kernel/step-names.ts"
     ]
   },
   "reviewerStatuses": [
@@ -257,7 +276,7 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 87,
+    "historyCount": 96,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -267,13 +286,14 @@
       "test-materialize": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 3
+      "regression-gate": 3,
+      "conformance": 1
     }
   }
 }
