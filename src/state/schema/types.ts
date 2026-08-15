@@ -223,8 +223,7 @@ export interface StepRun {
    * Round (parallel reviewer) members do NOT set this field — their git effects
    * are committed by the coordinator via `commitRoundArtifacts`.
    *
-   * Used by the bite-evidence gate (R4) to identify the base (test-materialize)
-   * and candidate (implementer) OIDs for isolated test execution, and by
+   * Used by the bite-evidence gate (R4) for OID-based operations, and by
    * `conformanceApprovedForVerifiedRevision` to bind conformance approval to the
    * specific revision that verification evaluated.
    */

@@ -634,8 +634,7 @@ export interface RuntimeStrategy {
   /**
    * List files changed by a specific commit vs its first parent.
    *
-   * Used by the bite-evidence gate to identify the materialized test files from
-   * the test-materialize commit.
+   * Used by the bite-evidence gate for single-commit file identification.
    *
    * Contract:
    * - Never throws — returns a ChangedFilesResult discriminated union instead.
@@ -651,29 +650,25 @@ export interface RuntimeStrategy {
   listCommitChangedFiles?(oid: string, cwd: string): Promise<ChangedFilesResult>;
 
   /**
-   * List files changed between two arbitrary commit OIDs, filtered to the given paths.
+   * List files changed between two arbitrary commit OIDs (no path filter).
    *
-   * Used by the archive floor gate (assurance-provenance-floor) to verify that
-   * materialized test files are byte-identical between the test-materialize base commit
-   * and the final archive HEAD commit (freeze check / tamper detection).
+   * Used by the bite-evidence gate and archive floor to identify materialized test files
+   * via Evidence Base ↔ candidate diff (EB-native file-set identification).
    *
    * Contract:
    * - Never throws — returns a ChangedFilesResult discriminated union instead.
-   * - success{files}: git diff ran; files contains the subset of `paths` that differ
-   *   between `baseOid` and `headOid` (empty = all paths are frozen/intact).
-   * - unavailable{reason}: git command failed, either OID is non-existent, or
-   *   the runtime cannot perform a local git diff (e.g. managed runtime).
-   * - paths empty array → short-circuit: returns {kind:"success", files:[]} immediately
-   *   without invoking git.
+   * - success: git diff ran; files contains all repo-relative paths changed between the two OIDs.
+   * - unavailable: git command failed, either OID is non-existent, or runtime cannot perform
+   *   a local git diff (e.g. managed runtime).
    *
-   * - local:   `git diff --name-only <baseOid> <headOid> -- <paths...>` executed in cwd.
-   *            exit 0 → success (files may be empty); non-zero exit / spawn error → unavailable.
+   * - local:   `git diff --name-only <baseOid> <headOid>` (no pathspec) in cwd.
+   *            exit 0 → success; non-zero exit / spawn error → unavailable.
    * - managed: always returns unavailable (no local worktree; structural limitation).
    *
    * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
    * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
    */
-  diffPathsBetweenCommits?(baseOid: string, headOid: string, paths: string[], cwd: string): Promise<ChangedFilesResult>;
+  listChangedFilesBetweenCommits?(baseOid: string, headOid: string, cwd: string): Promise<ChangedFilesResult>;
 
   /**
    * Run only the provided test files against the worktree at a specific commit OID
@@ -845,7 +840,7 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
     egressParams?: unknown,
   ): Promise<void>;
   listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
-  diffPathsBetweenCommits(baseOid: string, headOid: string, paths: string[], cwd: string): Promise<ChangedFilesResult>;
+  listChangedFilesBetweenCommits(baseOid: string, headOid: string, cwd: string): Promise<ChangedFilesResult>;
   runTestsAtCommit(
     oid: string,
     testFiles: string[],

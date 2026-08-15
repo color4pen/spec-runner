@@ -4,7 +4,7 @@
  * These predicates are used as `when` guards in STANDARD_TRANSITIONS to enable
  * the observation auto-fix pattern for spec-review: when spec-review approves with
  * only low/medium routable canon fixable findings, the pipeline routes to spec-fixer
- * to consume those findings and then proceeds directly to test-materialize without
+ * to consume those findings and then proceeds directly to implementer without
  * re-running spec-review (matching the impl-side observation auto-fix pattern).
  *
  * Design: pure functions (state: JobState) → boolean only.
@@ -20,6 +20,7 @@ import {
 } from "../step/canon-escalation.js";
 import { buildCanonWriteScopeFromState } from "../step/canon-write-scope.js";
 import { STEP_NAMES } from "../step/step-names.js";
+import { isTestGenExempt } from "./test-gen-exemption.js";
 
 /**
  * Returns true if the latest spec-review run has at least one routable canon fixable finding.
@@ -53,11 +54,11 @@ export function specReviewHasRoutableFixables(state: JobState): boolean {
  *      — ensures this is the observation pass, not a needs-fix return
  *
  * Used as the `when` guard on the guarded
- * `spec-fixer approved → test-materialize` transition row.
- * (test-case-gen already ran before spec-review; observation pass goes directly to test-materialize)
+ * `spec-fixer approved → implementer` transition row.
+ * (test-case-gen already ran before spec-review; observation pass goes directly to implementer)
  *
  * @param state - Current job state.
- * @returns true when spec-fixer should forward directly to test-materialize (observation pass).
+ * @returns true when spec-fixer should forward directly to implementer (observation pass).
  */
 export function specFixerObservationForward(state: JobState): boolean {
   // Condition 1: not a conformance-triggered entry.
@@ -72,7 +73,7 @@ export function specFixerObservationForward(state: JobState): boolean {
   // pipeline executes steps sequentially. Test fixtures that simulate a
   // conformance-triggered entry must use ordered timestamps AND provide
   // toolResult.findings on the conformance StepRun; otherwise getConformanceFixContext
-  // returns null here and the guard silently passes, routing incorrectly to test-materialize.
+  // returns null here and the guard silently passes, routing incorrectly to implementer.
   if (getConformanceFixContext(state, STEP_NAMES.SPEC_FIXER) !== null) return false;
 
   // Condition 2: latest spec-review verdict must be "approved" (observation pass entry)
@@ -105,7 +106,7 @@ export function specFixerNeedsFixForward(state: JobState): boolean {
   if (!runs || runs.length === 0) return false;
   const lastRun = runs[runs.length - 1];
   if (!lastRun) return false;
-  return lastRun.outcome.verdict === "needs-fix";
+  return lastRun.outcome.verdict === "needs-fix" && !isTestGenExempt(state);
 }
 
 /**

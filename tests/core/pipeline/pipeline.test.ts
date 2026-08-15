@@ -587,28 +587,24 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     expect(find("test-case-gen","success")).toMatchObject({ to: "spec-review" });
     expect(find("test-case-gen","error")).toMatchObject({ to: "escalate" });
     // spec-review loop (design phase change: test-case-gen runs before spec-review)
-    // spec-review approved has three rows (first-match-wins):
+    // spec-review approved has two rows (first-match-wins):
     //   guarded (routable fixable → spec-fixer) — comes first
-    //   guarded (isTestGenExempt → implementer) — comes second
-    //   unconditional fallback (approved → test-materialize) — comes third
+    //   unconditional fallback (→ implementer) — comes second (absorb-test-materialize: was test-materialize)
     expect(find("spec-review",  "approved")).toMatchObject({ to: "spec-fixer" }); // guarded first
-    expect(findWithTo("spec-review", "approved", "test-materialize")).toBeDefined(); // unconditional fallback
+    expect(findWithTo("spec-review", "approved", "implementer")).toBeDefined(); // unconditional fallback
     // spec-review needs-fix: TC-only → test-case-gen (first), otherwise → spec-fixer (unconditional)
     expect(find("spec-review",  "needs-fix")).toMatchObject({ to: "test-case-gen" }); // guarded first
     expect(findWithTo("spec-review", "needs-fix", "spec-fixer")).toBeDefined(); // unconditional fallback
     // spec-review escalation transition no longer exists (R3 cutover)
     expect(find("spec-review",  "escalation")).toBeUndefined();
-    // spec-fixer approved has four rows:
-    //   guarded (test-gen-exempt observation pass: → implementer) — first
-    //   guarded (observation pass: → test-materialize) — second
-    //   guarded (needs-fix forward: → test-case-gen) — third
-    //   unconditional fallback (approved → spec-review) for conformance paths — fourth
-    expect(findWithTo("spec-fixer", "approved", "test-materialize")).toBeDefined(); // guarded observation pass
+    // spec-fixer approved has three rows (absorb-test-materialize: test-materialize row replaced by implementer):
+    //   guarded (observation pass: → implementer) — first
+    //   guarded (needs-fix forward: → test-case-gen) — second
+    //   unconditional fallback (→ spec-review) — third
+    expect(findWithTo("spec-fixer", "approved", "implementer")).toBeDefined(); // guarded observation pass
     expect(findWithTo("spec-fixer", "approved", "test-case-gen")).toBeDefined(); // guarded needs-fix forward
     expect(findWithTo("spec-fixer", "approved", "spec-review")).toBeDefined(); // unconditional fallback
     expect(find("spec-fixer",   "error")).toMatchObject({ to: "escalate" });
-    expect(find("test-materialize","success")).toMatchObject({ to: "implementer" });
-    expect(find("test-materialize","error")).toMatchObject({ to: "escalate" });
   });
 
   it("contains all required implementation-layer transitions (TC-012)", () => {

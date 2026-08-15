@@ -34,14 +34,9 @@ import * as os from "node:os";
 
 import { makeOutputGateHalt } from "../../../src/core/step/step-halt.js";
 import { buildOutputFollowUpPrompt } from "../../../src/core/step/output-verify.js";
-import { TestMaterializeStep } from "../../../src/core/step/test-materialize.js";
 import { LocalRuntime } from "../../../src/core/runtime/local.js";
 import { ManagedRuntime } from "../../../src/core/runtime/managed.js";
-import { buildStepContext } from "../../../src/core/step/step-context-builder.js";
 import type { OutputContract, OutputViolation } from "../../../src/core/port/output-contract.js";
-import type { JobState } from "../../../src/state/schema.js";
-import type { StepDeps } from "../../../src/core/step/types.js";
-import type { PipelineDeps } from "../../../src/core/types.js";
 
 // ---------------------------------------------------------------------------
 // Helper types — define the coverage structure expected after T-01
@@ -78,43 +73,6 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
-  return {
-    version: 1,
-    jobId: "test-job",
-    createdAt: "2026-01-01T00:00:00.000Z",
-    updatedAt: "2026-01-01T00:00:00.000Z",
-    request: { path: "/req.md", title: "Test", type: "spec-change" },
-    repository: { owner: "testowner", name: "testrepo" },
-    session: null,
-    step: "test-materialize",
-    status: "running",
-    branch: "feat/test-slug",
-    history: [],
-    error: null,
-    steps: {},
-    ...overrides,
-  };
-}
-
-function makeMinimalStepDeps(slug = "test-slug"): StepDeps {
-  return {
-    config: {
-      version: 1,
-      agents: {},
-      environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-    },
-    request: {
-      type: "spec-change",
-      title: "Test",
-      slug,
-      baseBranch: "main",
-      content: "Add feature X",
-      adr: false,
-    },
-    slug,
-  };
-}
 
 function makeLocalRuntime(): LocalRuntime {
   return new LocalRuntime({
@@ -373,21 +331,14 @@ describe("TC-003: buildOutputFollowUpPrompt generates distinct repair instructio
 // ---------------------------------------------------------------------------
 
 describe("TC-004: test-coverage follow-up violation → repair (write test) → re-detect pass", () => {
-  it("TC-004: follow-up contract from TestMaterializeStep detects violation then passes after repair", async () => {
-    // GIVEN: TestMaterializeStep declares test-coverage as follow-up (after T-05)
-    const state = makeMinimalState();
-    const deps = makeMinimalStepDeps("test-slug");
-    const contracts = TestMaterializeStep.outputContracts!(state, deps);
-
-    // After T-05: test-coverage contract should have policy "follow-up"
-    const followUpContracts = contracts.filter((c) => c.policy === "follow-up");
-    // This assertion fails until T-05 is done (currently policy is "halt")
-    expect(followUpContracts, "test-coverage contract should be follow-up after T-05").toHaveLength(1);
-
-    const tcContract = followUpContracts[0]!;
+  it("TC-004: follow-up test-coverage contract detects violation then passes after repair", async () => {
+    // GIVEN: test-coverage follow-up contract (test-materialize abolished; contract declared directly)
+    const followUpContracts: OutputContract[] = [
+      { kind: "test-coverage", path: TC_REL_PATH, policy: "follow-up" },
+    ];
 
     // Write test-cases.md
-    const absTestCasesPath = path.join(tempDir, tcContract.path);
+    const absTestCasesPath = path.join(tempDir, TC_REL_PATH);
     await fs.mkdir(path.dirname(absTestCasesPath), { recursive: true });
     await fs.writeFile(absTestCasesPath, TEST_CASES_SINGLE_MUST, "utf-8");
 
@@ -587,90 +538,21 @@ describe("TC-009: makeOutputGateHalt with undefined coverage falls back to 'see 
 });
 
 // ---------------------------------------------------------------------------
-// TC-010: test-materialize の test-coverage 契約が follow-up policy を宣言する
+// TC-010: test-materialize abolished in absorb-test-materialize
 // ---------------------------------------------------------------------------
-// Also covered by updated TC-TMB-04 in test-materialize-boundary.test.ts
 
+// TC-010: TestMaterializeStep abolished in absorb-test-materialize.
 describe("TC-010: TestMaterializeStep.outputContracts declares follow-up policy for test-coverage", () => {
-  it("TC-010: the test-coverage contract returned by outputContracts has policy='follow-up'", () => {
-    // GIVEN: TestMaterializeStep instance with appropriate state and deps
-    const state = makeMinimalState();
-    const deps = makeMinimalStepDeps("test-slug");
-
-    // WHEN: outputContracts is called
-    const contracts = TestMaterializeStep.outputContracts!(state, deps);
-
-    // THEN: the test-coverage contract has policy "follow-up" (after T-05)
-    const testCoverageContract = contracts.find((c) => c.kind === "test-coverage");
-    expect(testCoverageContract).toBeDefined();
-    expect(testCoverageContract?.policy).toBe("follow-up");
-  });
+  it.todo("TC-010: test-materialize step abolished; TestMaterializeStep no longer exists");
 });
 
 // ---------------------------------------------------------------------------
-// TC-011: step-context-builder が test-materialize の follow-up 契約から outputVerification を構築する
+// TC-011: test-materialize abolished in absorb-test-materialize
 // ---------------------------------------------------------------------------
 
+// TC-011: TestMaterializeStep abolished in absorb-test-materialize.
 describe("TC-011: buildStepContext builds outputVerification from test-materialize follow-up contract", () => {
-  it("TC-011: ctx.policy.outputVerification is defined and buildPrompt returns TC-ID repair instructions", async () => {
-    // GIVEN: TestMaterializeStep with follow-up policy (after T-05)
-    //        runtimeStrategy that returns a test-coverage violation with missing TC-001
-    const state = makeMinimalState({ step: "test-materialize", branch: "feat/test-slug" });
-
-    const testCoverageViolation = {
-      kind: "test-coverage" as const,
-      path: "specrunner/changes/test-slug/test-cases.md",
-      policy: "follow-up" as const,
-      detail: ["TC-001"],
-      coverage: { missingTcIds: ["TC-001"], assertionlessTcIds: [] },
-    } as unknown as OutputViolation;
-
-    // Mock runtimeStrategy.validateStepOutputs returns the test-coverage violation
-    const mockStrategy = {
-      validateStepOutputs: vi.fn().mockResolvedValue({ violations: [testCoverageViolation] }),
-    };
-
-    const depsWithStrategy = {
-      config: { version: 1, agents: {} },
-      request: {
-        type: "spec-change",
-        title: "Test",
-        slug: "test-slug",
-        baseBranch: "main",
-        content: "Add feature X",
-        adr: false,
-      },
-      slug: "test-slug",
-      runtimeStrategy: mockStrategy,
-    } as unknown as PipelineDeps;
-
-    // In-memory fs adapter (no rules, no project.md)
-    const mockFs = {
-      readFile: async (_p: string, _enc: string): Promise<string> => {
-        throw new Error("not found");
-      },
-      readdir: async (_dir: string): Promise<string[]> => [],
-    };
-
-    // WHEN: buildStepContext is called
-    const ctx = await buildStepContext(
-      TestMaterializeStep,
-      state,
-      depsWithStrategy,
-      tempDir,
-      () => {},
-      mockFs,
-    );
-
-    // THEN: outputVerification is defined (requires follow-up policy in outputContracts — T-05)
-    expect(ctx.policy.outputVerification).toBeDefined();
-
-    if (ctx.policy.outputVerification) {
-      // buildPrompt with test-coverage violation should contain TC-001 repair instruction (T-04)
-      const prompt = ctx.policy.outputVerification.buildPrompt([testCoverageViolation], 1);
-      expect(prompt).toContain("TC-001");
-    }
-  });
+  it.todo("TC-011: test-materialize step abolished; TestMaterializeStep no longer exists");
 });
 
 // ---------------------------------------------------------------------------

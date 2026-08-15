@@ -1,11 +1,11 @@
 /**
  * Tests for lockfile sync instruction in implementer user message.
  *
- * TC-010: 両分岐の user message に lockfile 同期指示が含まれる
+ * TC-010: user message に lockfile 同期指示が含まれる
  *
  * Requirement: implementer の user message（buildImplementerInitialMessage）の手順には、
  * 依存を追加・変更した場合は lockfile を同期してから完了する旨が含まれる MUST。
- * この指示は testsMaterialized: true と false の両分岐に含まれる SHALL。
+ * absorb-test-materialize: 単一 mode（testsMaterialized 分岐廃止）。
  */
 import { describe, it, expect } from "vitest";
 import { buildImplementerInitialMessage } from "../../../src/core/step/implementer.js";
@@ -14,17 +14,16 @@ import { buildImplementerInitialMessage } from "../../../src/core/step/implement
 // TC-010: 両分岐の user message に lockfile 同期指示が含まれる
 // ---------------------------------------------------------------------------
 
-describe("TC-010: 両分岐の user message に lockfile 同期指示が含まれる", () => {
+describe("TC-010: user message に lockfile 同期指示が含まれる", () => {
   const BASE_OPTS = {
     slug: "my-change",
     branch: "change/my-change",
     requestContent: "Do something important",
   };
 
-  it("testsMaterialized: true (implementation-only mode) のメッセージに lockfile 同期指示が含まれる", () => {
+  it("単一 mode（absorb-test-materialize）のメッセージに lockfile 同期指示が含まれる", () => {
     const message = buildImplementerInitialMessage({
       ...BASE_OPTS,
-      testsMaterialized: true,
     });
 
     // lockfile 同期を指示する文言が含まれること
@@ -47,10 +46,10 @@ describe("TC-010: 両分岐の user message に lockfile 同期指示が含ま�
     expect(hasDependencyContext).toBe(true);
   });
 
-  it("testsMaterialized: false (TDD mode) のメッセージに lockfile 同期指示が含まれる", () => {
+  it("dynamicContext 付きメッセージに lockfile 同期指示が含まれる", () => {
     const message = buildImplementerInitialMessage({
       ...BASE_OPTS,
-      testsMaterialized: false,
+      dynamicContext: { gitLog: "abc def", diffStat: "+1 -0", changesList: [] },
     });
 
     const messageLower = message.toLowerCase();
@@ -70,9 +69,11 @@ describe("TC-010: 両分岐の user message に lockfile 同期指示が含ま�
     expect(hasDependencyContext).toBe(true);
   });
 
-  it("testsMaterialized 未指定（デフォルト）のメッセージにも lockfile 同期指示が含まれる", () => {
-    // testsMaterialized: undefined は false と同等（fast pipeline / TDD mode）
-    const message = buildImplementerInitialMessage(BASE_OPTS);
+  it("placement 付きメッセージにも lockfile 同期指示が含まれる", () => {
+    const message = buildImplementerInitialMessage({
+      ...BASE_OPTS,
+      placement: { colocated: true } as never,
+    });
 
     const messageLower = message.toLowerCase();
     const hasLockfileInstruction =
@@ -88,7 +89,6 @@ describe("TC-010: 両分岐の user message に lockfile 同期指示が含ま�
     // spec 要件: user message に置く（IMPLEMENTER_SYSTEM_PROMPT ではなく）
     const message = buildImplementerInitialMessage({
       ...BASE_OPTS,
-      testsMaterialized: true,
     });
 
     // メッセージ全体が <user-request> タグで囲まれていること
@@ -107,17 +107,9 @@ describe("TC-010: 両分岐の user message に lockfile 同期指示が含ま�
     expect(hasLockfileInstruction).toBe(true);
   });
 
-  it("両分岐で lockfile 同期指示の内容が対称的（完了前に同期する旨）", () => {
-    const messageTrue = buildImplementerInitialMessage({
-      ...BASE_OPTS,
-      testsMaterialized: true,
-    });
-    const messageFalse = buildImplementerInitialMessage({
-      ...BASE_OPTS,
-      testsMaterialized: false,
-    });
+  it("単一 mode のメッセージに lockfile 同期指示が含まれる（対称性確認）", () => {
+    const message = buildImplementerInitialMessage(BASE_OPTS);
 
-    // 両方に lockfile 指示が含まれること（非対称にならない）
     const checkInstruction = (msg: string) => {
       const lower = msg.toLowerCase();
       return (
@@ -128,7 +120,6 @@ describe("TC-010: 両分岐の user message に lockfile 同期指示が含ま�
       );
     };
 
-    expect(checkInstruction(messageTrue)).toBe(true);
-    expect(checkInstruction(messageFalse)).toBe(true);
+    expect(checkInstruction(message)).toBe(true);
   });
 });

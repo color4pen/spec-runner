@@ -19,35 +19,9 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import { TEST_CASES_TEMPLATE } from "../../../src/templates/step-output-templates.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT } from "../../../src/prompts/test-case-gen-system.js";
-import { TEST_MATERIALIZE_SYSTEM_PROMPT } from "../../../src/prompts/test-materialize-system.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// ---------------------------------------------------------------------------
-// Helper: extract the text of a named ## section from a prompt string.
-// Returns content from "## SectionName" until the next "## " heading.
-// ---------------------------------------------------------------------------
-function extractSection(prompt: string, sectionName: string): string {
-  const lines = prompt.split("\n");
-  const startRe = new RegExp(`^## ${sectionName}\\b`);
-  let inSection = false;
-  const sectionLines: string[] = [];
-  for (const line of lines) {
-    if (startRe.test(line)) {
-      inSection = true;
-      sectionLines.push(line);
-      continue;
-    }
-    if (inSection && /^## /.test(line)) {
-      break;
-    }
-    if (inSection) {
-      sectionLines.push(line);
-    }
-  }
-  return sectionLines.join("\n");
-}
 
 // ---------------------------------------------------------------------------
 // Helper: extract the JSDoc docstring immediately before TEST_CASES_TEMPLATE
@@ -206,69 +180,6 @@ describe("TC-002: test-case-gen prompt に enum 意味と確定規則が含ま�
 });
 
 // ============================================================================
-// TC-003: test-materialize prompt に Result YAML 非更新の記述が含まれる
-// Source: spec.md > Requirement: test-materialize system prompt は Result YAML の実装完了後非更新を宣言する
-//         > Scenario: test-materialize prompt に Result YAML 非更新の記述が含まれる
-// ============================================================================
-
-describe("TC-003: test-materialize prompt に Result YAML 非更新の記述が含まれる", () => {
-  it("TC-003: TEST_MATERIALIZE_SYSTEM_PROMPT に Result YAML が生成時の記録である旨が含まれる", () => {
-    const hasGenerationRecordRef =
-      TEST_MATERIALIZE_SYSTEM_PROMPT.includes("生成時の記録") ||
-      (TEST_MATERIALIZE_SYSTEM_PROMPT.includes("Result YAML") &&
-        TEST_MATERIALIZE_SYSTEM_PROMPT.includes("記録"));
-    expect(hasGenerationRecordRef).toBe(true);
-  });
-
-  it("TC-003: TEST_MATERIALIZE_SYSTEM_PROMPT に実装完了後も更新しない旨が含まれる", () => {
-    const hasNoUpdateRef =
-      TEST_MATERIALIZE_SYSTEM_PROMPT.includes("実装完了後も更新しない") ||
-      (TEST_MATERIALIZE_SYSTEM_PROMPT.includes("実装完了後") &&
-        TEST_MATERIALIZE_SYSTEM_PROMPT.includes("更新しない"));
-    expect(hasNoUpdateRef).toBe(true);
-  });
-
-  it("TC-003: TEST_MATERIALIZE_SYSTEM_PROMPT に Result YAML がテスト実装の完了状態を反映するフィールドではない旨が含まれる", () => {
-    const hasNotStatusFieldRef =
-      TEST_MATERIALIZE_SYSTEM_PROMPT.includes("テスト実装の完了状態を反映するフィールドではない") ||
-      (TEST_MATERIALIZE_SYSTEM_PROMPT.includes("完了状態を反映") &&
-        TEST_MATERIALIZE_SYSTEM_PROMPT.includes("ではない"));
-    expect(hasNotStatusFieldRef).toBe(true);
-  });
-
-  // --- Structural invariants: 5-section skeleton and no new h2 in Method ---
-  it("TC-003: 5 節骨格（Question/Contract/Method/Evidence/Completion）が維持されている", () => {
-    const EXPECTED_SECTIONS = ["## Question", "## Contract", "## Method", "## Evidence", "## Completion"];
-    for (const section of EXPECTED_SECTIONS) {
-      expect(
-        TEST_MATERIALIZE_SYSTEM_PROMPT,
-        `Expected section '${section}' to be present`,
-      ).toContain(section);
-    }
-  });
-
-  it("TC-003: 5 節が Question → Contract → Method → Evidence → Completion の順序で出現する", () => {
-    const EXPECTED_SECTIONS = ["## Question", "## Contract", "## Method", "## Evidence", "## Completion"];
-    const indices = EXPECTED_SECTIONS.map((h) => TEST_MATERIALIZE_SYSTEM_PROMPT.indexOf(h));
-    for (let i = 1; i < indices.length; i++) {
-      expect(
-        indices[i]!,
-        `'${EXPECTED_SECTIONS[i]}' must come after '${EXPECTED_SECTIONS[i - 1]}'`,
-      ).toBeGreaterThan(indices[i - 1]!);
-    }
-  });
-
-  it("TC-003: ## Method 節に新規 h2 見出しが追加されていない", () => {
-    const methodSection = extractSection(TEST_MATERIALIZE_SYSTEM_PROMPT, "Method");
-    const innerH2Lines = methodSection.split("\n").slice(1).filter((l) => /^## /.test(l));
-    expect(
-      innerH2Lines,
-      `Method section must not contain inner h2 headings, but found: ${JSON.stringify(innerH2Lines)}`,
-    ).toHaveLength(0);
-  });
-});
-
-// ============================================================================
 // TC-004: docstring に Result YAML の machine-parsed 記述が残っていない
 // Source: spec.md > Requirement: TEST_CASES_TEMPLATE の docstring は machine-parse の実態に整合する
 //         > Scenario: docstring に Result YAML の machine-parsed 記述が残っていない
@@ -381,11 +292,6 @@ describe("TC-006: 変更対象モジュールが正常にインポートでき�
     expect(TEST_CASE_GEN_SYSTEM_PROMPT.length).toBeGreaterThan(0);
   });
 
-  it("TC-006: TEST_MATERIALIZE_SYSTEM_PROMPT が非空の文字列である", () => {
-    expect(typeof TEST_MATERIALIZE_SYSTEM_PROMPT).toBe("string");
-    expect(TEST_MATERIALIZE_SYSTEM_PROMPT.length).toBeGreaterThan(0);
-  });
-
   it("TC-006: src/templates/step-output-templates.ts が読み取れる", () => {
     expect(templateSource.length).toBeGreaterThan(0);
     expect(templateSource).toContain("TEST_CASES_TEMPLATE");
@@ -416,8 +322,5 @@ describe("TC-007: 禁止文字列が変更後の各ファイルに含まれな�
       expect(TEST_CASE_GEN_SYSTEM_PROMPT).not.toContain(forbidden);
     });
 
-    it(`TC-007: TEST_MATERIALIZE_SYSTEM_PROMPT に禁止文字列 '${forbidden}' が含まれない`, () => {
-      expect(TEST_MATERIALIZE_SYSTEM_PROMPT).not.toContain(forbidden);
-    });
   }
 });

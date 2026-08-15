@@ -38,7 +38,6 @@ import { createCustomReviewerStep } from "../src/core/step/custom-reviewer.js";
 import { ConformanceStep } from "../src/core/step/conformance.js";
 import { SpecReviewStep } from "../src/core/step/spec-review.js";
 import { RequestReviewStep } from "../src/core/step/request-review.js";
-import { TestMaterializeStep } from "../src/core/step/test-materialize.js";
 import { createRegressionGateStep } from "../src/core/step/regression-gate.js";
 import { CodeReviewStep } from "../src/core/step/code-review.js";
 import { DesignStep } from "../src/core/step/design.js";
@@ -85,7 +84,7 @@ describe("TC-001: TestCaseGenStep の built-in 既定モデルは claude-sonnet-
 // TC-002: 全 13 step の built-in 既定が同一世代である
 // ---------------------------------------------------------------------------
 
-describe("TC-002: 全 12 非 design step の built-in 既定モデルはすべて claude-sonnet-5 である", () => {
+describe("TC-002: 全 11 非 design step の built-in 既定モデルはすべて claude-sonnet-5 である", () => {
   it("TC-002: TestCaseGenStep.agent.model === 'claude-sonnet-5'", () => {
     expect(TestCaseGenStep.agent.model).toBe(SONNET_5);
   });
@@ -123,9 +122,7 @@ describe("TC-002: 全 12 非 design step の built-in 既定モデルはすべ�
     expect(RequestReviewStep.agent.model).toBe(SONNET_5);
   });
 
-  it("TC-002: TestMaterializeStep.agent.model === 'claude-sonnet-5'", () => {
-    expect(TestMaterializeStep.agent.model).toBe(SONNET_5);
-  });
+  // TestMaterializeStep removed (test-materialize step abolished in absorb-test-materialize)
 
   it("TC-002: createRegressionGateStep の既定モデルは claude-sonnet-5", () => {
     const step = createRegressionGateStep();
@@ -147,7 +144,6 @@ describe("TC-002: 全 12 非 design step の built-in 既定モデルはすべ�
       ConformanceStep.agent.model,
       SpecReviewStep.agent.model,
       RequestReviewStep.agent.model,
-      TestMaterializeStep.agent.model,
       createRegressionGateStep().agent.model,
       CodeReviewStep.agent.model,
     ];

@@ -8,13 +8,13 @@
  *
  * TC-001: custom verification.commands 環境で biteEvidence required floor が fail-closed になる（anti-regression）
  * TC-003: 全 base-red かつ凍結 intact の job が floor を満たし merge が進む
- * TC-004: materialize 済み test が baseOid→HEAD 間で改変されている場合に fail-closed になる（凍結の歯）
+ * TC-004: HEAD が全 green でない場合に fail-closed になる（HEAD-green チェック）
  * TC-005: baseOid で green の test（空洞）が base-red 要件を満たさず fail-closed になる
  * TC-006: 最終 HEAD OID undefined で constrained floor に対し fail-closed になる
- * TC-007: baseOid 欠落で constrained floor に対し fail-closed になる
- * TC-008: listCommitChangedFiles unavailable で constrained floor に対し fail-closed になる
- * TC-009: 二 OID diff unavailable で constrained floor に対し fail-closed になる
- * TC-010: runTestsAtCommit unavailable で constrained floor に対し fail-closed になる
+ * TC-007: synthesizedCommits 空で constrained floor に対し fail-closed になる
+ * TC-008: listChangedFilesBetweenCommits unavailable で constrained floor に対し fail-closed になる
+ * TC-009: HEAD runTestsAtCommit unavailable で constrained floor に対し fail-closed になる
+ * TC-010: runTestsOnSynthesizedTree unavailable で constrained floor に対し fail-closed になる
  * TC-011: materialized test 0 件で constrained floor に対し fail-closed になる
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -52,7 +52,6 @@ const SUCCESS_ROLLUP: CheckRollup = { state: "success", total: 1, failing: [], p
 
 const CWD = "/tmp/repo";
 const SLUG = "my-slug";
-const BASE_OID = "base-commit-sha-prov-001";
 const CANDIDATE_OID = "candidate-commit-sha-prov-001";
 const ARCHIVE_HEAD_SHA = "archive-head-sha-prov-001";
 
@@ -95,10 +94,9 @@ type CommitFileResult =
   | { kind: "unavailable"; reason: string };
 
 interface FakeAssuranceRuntime {
-  listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
+  listChangedFilesBetweenCommits(baseOid: string, headOid: string, cwd: string): Promise<ChangedFilesResult>;
   runTestsOnSynthesizedTree(baseRev: string, overlayFiles: string[], overlayFromOid: string, cwd: string, config: unknown): Promise<IsolatedTestResult>;
   runTestsAtCommit(oid: string, testFiles: string[], cwd: string, config: unknown): Promise<IsolatedTestResult>;
-  diffPathsBetweenCommits(baseOid: string, headOid: string, paths: string[], cwd: string): Promise<ChangedFilesResult>;
   readFileAtCommit(oid: string, pathSuffix: string, cwd: string): Promise<CommitFileResult>;
 }
 
@@ -106,21 +104,22 @@ interface FakeAssuranceRuntime {
  * Build a fake assuranceRuntime with configurable responses.
  *
  * Defaults model a "fully achieved" job (revision-binding implementation):
- *   - listCommitChangedFiles: returns one test file
- *   - diffPathsBetweenCommits: returns empty (blob freeze intact)
- *   - runTestsAtCommit(BASE_OID): returns all red (base-red satisfied)
+ *   - listChangedFilesBetweenCommits: returns one test file (evidenceBaseRev → finalHeadOid)
+ *   - runTestsOnSynthesizedTree(evidenceBaseRev): returns all red (base-red satisfied)
  *   - runTestsAtCommit(ARCHIVE_HEAD_SHA): returns all green (HEAD-green satisfied)
  *   - readFileAtCommit: OID-discriminated; same test-cases.md content at anchor and HEAD
  *     (scenario revision-binding intact by default)
  *
- * Fail-closed tests (TC-004~TC-011) exercise the blob-freeze / base-red / HEAD-green /
- * listCommitChangedFiles checks, which run AFTER scenario revision-binding. Since the
- * default runtime returns matching test-cases.md content at both OIDs, the scenario check
- * passes and these tests reach their intended checks (assertion unchanged).
+ * Fail-closed tests (TC-004~TC-011) exercise base-red / HEAD-green /
+ * listChangedFilesBetweenCommits checks. Since the default runtime returns matching
+ * test-cases.md content at both OIDs, the scenario check passes and these tests reach
+ * their intended checks (assertion unchanged).
+ *
+ * absorb-test-materialize: diffPathsBetweenCommits / blob-freeze check removed.
+ * listChangedFilesBetweenCommits replaces both listCommitChangedFiles + diffPathsBetweenCommits.
  */
 function makeFakeRuntime(options: {
   changedFiles?: string[] | "unavailable";
-  diffFiles?: string[] | "unavailable";
   baseTestResults?: { file: string; passed: boolean }[] | "unavailable";
   headTestResults?: IsolatedTestResult;
   testCasesMdAtAnchor?: CommitFileResult | "unavailable";
@@ -128,7 +127,6 @@ function makeFakeRuntime(options: {
 } = {}): FakeAssuranceRuntime {
   const {
     changedFiles = ["tests/unit/foo.test.ts"],
-    diffFiles = [],
     baseTestResults = [{ file: "tests/unit/foo.test.ts", passed: false }],
     headTestResults = { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
     testCasesMdAtAnchor,
@@ -149,24 +147,14 @@ function makeFakeRuntime(options: {
     : (testCasesMdAtHead ?? defaultTcResult);
 
   const runtime: FakeAssuranceRuntime = {
-    async listCommitChangedFiles(_oid: string, _cwd: string): Promise<ChangedFilesResult> {
+    // absorb-test-materialize: replaces listCommitChangedFiles + diffPathsBetweenCommits.
+    async listChangedFilesBetweenCommits(_baseOid: string, _headOid: string, _cwd: string): Promise<ChangedFilesResult> {
       if (changedFiles === "unavailable") {
-        return { kind: "unavailable", reason: "fake listCommitChangedFiles unavailable" };
+        return { kind: "unavailable", reason: "fake listChangedFilesBetweenCommits unavailable" };
       }
       return { kind: "success", files: changedFiles };
     },
-    async diffPathsBetweenCommits(
-      _baseOid: string,
-      _headOid: string,
-      _paths: string[],
-      _cwd: string,
-    ): Promise<ChangedFilesResult> {
-      if (diffFiles === "unavailable") {
-        return { kind: "unavailable", reason: "fake diffPathsBetweenCommits unavailable" };
-      }
-      return { kind: "success", files: diffFiles };
-    },
-    // Evidence Base base-red check (replaces runTestsAtCommit(baseOid)).
+    // Evidence Base base-red check.
     async runTestsOnSynthesizedTree(
       _baseRev: string,
       _overlayFiles: string[],
@@ -254,8 +242,9 @@ function makeStepRunWithOid(commitOid: string, attempt = 1): StepRun {
 }
 
 /**
- * Build a job state that has test-case-gen, test-materialize and implementer steps with OIDs.
+ * Build a job state that has test-case-gen and implementer steps with OIDs.
  * test-case-gen step (commitOid = TEST_CASE_GEN_OID) is required for scenario revision-binding (D1).
+ * absorb-test-materialize: test-materialize step removed.
  */
 function makeJobStateWithSteps(prNumber = 42, overrides: Record<string, unknown> = {}) {
   return {
@@ -278,7 +267,6 @@ function makeJobStateWithSteps(prNumber = 42, overrides: Record<string, unknown>
     synthesizedCommits: ["bootstrap-commit-sha-prov-001"],
     steps: {
       "test-case-gen": [makeStepRunWithOid(TEST_CASE_GEN_OID)],
-      "test-materialize": [makeStepRunWithOid(BASE_OID)],
       "implementer": [makeStepRunWithOid(CANDIDATE_OID)],
     },
     pullRequest: {
@@ -353,13 +341,11 @@ describe("TC-001: custom verification.commands 環境で biteEvidence required f
 
       const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
 
-      // assuranceRuntime simulates: custom verification.commands → runTestsAtCommit unavailable
-      // listCommitChangedFiles returns test files (materialize found)
-      // diffPathsBetweenCommits returns empty (frozen intact)
-      // runTestsAtCommit returns unavailable (custom commands in this repo)
+      // assuranceRuntime simulates: custom verification.commands → runTestsOnSynthesizedTree unavailable
+      // listChangedFilesBetweenCommits returns test files (implementer wrote them)
+      // runTestsOnSynthesizedTree returns unavailable (custom commands in this repo)
       const assuranceRuntime = makeFakeRuntime({
         changedFiles: ["tests/unit/foo.test.ts"],
-        diffFiles: [],
         baseTestResults: "unavailable", // custom verification.commands → unavailable
       });
 
@@ -419,12 +405,10 @@ describe("TC-003: 全 base-red かつ凍結 intact の job が floor を満た�
       const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
 
       // Full achieved scenario:
-      // - changedFiles: one test file materialized
-      // - diffFiles: empty (frozen intact — no changes baseOid→HEAD)
+      // - changedFiles: one test file (implementer wrote it; evidenceBaseRev→finalHeadOid)
       // - baseTestResults: all red (base-red satisfied → hollow test detector passes)
       const assuranceRuntime = makeFakeRuntime({
         changedFiles: ["tests/unit/foo.test.ts"],
-        diffFiles: [],
         baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
       });
 
@@ -450,13 +434,14 @@ describe("TC-003: 全 base-red かつ凍結 intact の job が floor を満た�
 });
 
 // ---------------------------------------------------------------------------
-// TC-004: materialize 済み test が baseOid→HEAD 間で改変されている場合に fail-closed になる（凍結の歯）
-// Destructive invariant: removing the freeze check would cause this test to pass (exitCode 0).
+// TC-004: HEAD が全 green でない場合に fail-closed になる（HEAD-green チェック）
+// absorb-test-materialize: blob-freeze check removed; repurposed to cover HEAD-green gate.
+// Destructive invariant: removing HEAD-green check would cause this test to pass (exitCode 0).
 // ---------------------------------------------------------------------------
 
-describe("TC-004: materialize 済み test が baseOid→HEAD 間で改変されている場合に fail-closed になる（凍結の歯）", () => {
+describe("TC-004: HEAD が全 green でない場合に fail-closed になる（HEAD-green チェック）", () => {
   it(
-    "TC-004: diffPathsBetweenCommits returns non-empty → tamper detected → fail-closed even when base-red",
+    "TC-004: runTestsAtCommit(HEAD) returns failed test → HEAD-green not established → fail-closed",
     async () => {
       const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
       (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
@@ -481,11 +466,11 @@ describe("TC-004: materialize 済み test が baseOid→HEAD 間で改変され�
 
       const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
 
-      // Freeze broken: diffPathsBetweenCommits returns modified test file
+      // HEAD still red: test passes base-red but fails at HEAD → gate must block merge
       const assuranceRuntime = makeFakeRuntime({
         changedFiles: ["tests/unit/foo.test.ts"],
-        diffFiles: ["tests/unit/foo.test.ts"], // tamper: test file changed baseOid→HEAD
         baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }], // base-red satisfied
+        headTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] }, // HEAD still red
       });
 
       const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
@@ -502,7 +487,7 @@ describe("TC-004: materialize 済み test が baseOid→HEAD 間で改変され�
         config: { version: 1, agents: {} },
       });
 
-      // TC-004: freeze tooth — tamper must block merge even when base-red
+      // TC-004: HEAD-green tooth — red at HEAD must block merge even when base-red satisfied
       expect(result.exitCode).toBe(1);
       expect(client.mergePullRequest).not.toHaveBeenCalled();
     },
@@ -543,7 +528,6 @@ describe("TC-005: baseOid で green の test（空洞）が base-red 要件を�
       // Hollow test: base test passes at baseOid → not a real tooth
       const assuranceRuntime = makeFakeRuntime({
         changedFiles: ["tests/unit/foo.test.ts"],
-        diffFiles: [], // frozen intact
         baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: true }], // hollow (base-green)
       });
 
@@ -591,7 +575,6 @@ describe("TC-005b: base test results が空 / 部分的なら base-red を満た
     // ran but zero results — must NOT vacuously satisfy base-red
     const assuranceRuntime = makeFakeRuntime({
       changedFiles: ["tests/unit/foo.test.ts"],
-      diffFiles: [],
       baseTestResults: [],
     });
     const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
@@ -620,7 +603,6 @@ describe("TC-005b: base test results が空 / 部分的なら base-red を満た
     // Two materialized files but only one has a red result; the other is unaccounted → fail-closed
     const assuranceRuntime = makeFakeRuntime({
       changedFiles: ["tests/unit/foo.test.ts", "tests/unit/bar.test.ts"],
-      diffFiles: [],
       baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
     });
     const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
@@ -636,10 +618,10 @@ describe("TC-005b: base test results が空 / 部分的なら base-red を満た
 
 // ---------------------------------------------------------------------------
 // TC-006: 最終 HEAD OID undefined で constrained floor に対し fail-closed になる
-// TC-007: baseOid 欠落で constrained floor に対し fail-closed になる
-// TC-008: listCommitChangedFiles unavailable で constrained floor に対し fail-closed になる
-// TC-009: 二 OID diff unavailable で constrained floor に対し fail-closed になる
-// TC-010: runTestsAtCommit unavailable で constrained floor に対し fail-closed になる
+// TC-007: synthesizedCommits 空で constrained floor に対し fail-closed になる
+// TC-008: listChangedFilesBetweenCommits unavailable で constrained floor に対し fail-closed になる
+// TC-009: HEAD runTestsAtCommit unavailable で constrained floor に対し fail-closed になる
+// TC-010: runTestsOnSynthesizedTree unavailable で constrained floor に対し fail-closed になる
 // TC-011: materialized test 0 件で constrained floor に対し fail-closed になる
 // ---------------------------------------------------------------------------
 
@@ -671,7 +653,6 @@ describe("TC-006: 最終 HEAD OID undefined で constrained floor に対し fail
 
     const assuranceRuntime = makeFakeRuntime({
       changedFiles: ["tests/unit/foo.test.ts"],
-      diffFiles: [],
       baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
     });
 
@@ -694,17 +675,14 @@ describe("TC-006: 最終 HEAD OID undefined で constrained floor に対し fail
   });
 });
 
-describe("TC-007: baseOid 欠落で constrained floor に対し fail-closed になる", () => {
-  it("TC-007: no test-materialize step → baseOid null → biteEvidence achieved absent → fail-closed", async () => {
+describe("TC-007: synthesizedCommits 空で constrained floor に対し fail-closed になる", () => {
+  it("TC-007: synthesizedCommits empty → evidenceBaseRev null → biteEvidence achieved absent → fail-closed", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    // State without test-materialize step → baseOid null
+    // State with synthesizedCommits empty → evidenceBaseRev null → fail-closed
     (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
       makeActiveEntry(
         makeJobStateWithSteps(42, {
-          steps: {
-            // No test-materialize step → baseOid = null
-            "implementer": [makeStepRunWithOid(CANDIDATE_OID)],
-          },
+          synthesizedCommits: [], // empty → resolveEvidenceBaseRev returns null
         }),
       ),
     ]);
@@ -729,7 +707,6 @@ describe("TC-007: baseOid 欠落で constrained floor に対し fail-closed に�
 
     const assuranceRuntime = makeFakeRuntime({
       changedFiles: ["tests/unit/foo.test.ts"],
-      diffFiles: [],
       baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
     });
 
@@ -752,8 +729,8 @@ describe("TC-007: baseOid 欠落で constrained floor に対し fail-closed に�
   });
 });
 
-describe("TC-008: listCommitChangedFiles unavailable で constrained floor に対し fail-closed になる", () => {
-  it("TC-008: listCommitChangedFiles unavailable → materializedTests unknown → fail-closed", async () => {
+describe("TC-008: listChangedFilesBetweenCommits unavailable で constrained floor に対し fail-closed になる", () => {
+  it("TC-008: listChangedFilesBetweenCommits unavailable → materializedTests unknown → fail-closed", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
       makeActiveEntry(makeJobStateWithSteps(42)),
@@ -778,8 +755,7 @@ describe("TC-008: listCommitChangedFiles unavailable で constrained floor に�
     const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
 
     const assuranceRuntime = makeFakeRuntime({
-      changedFiles: "unavailable", // listCommitChangedFiles unavailable
-      diffFiles: [],
+      changedFiles: "unavailable", // listChangedFilesBetweenCommits unavailable
       baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
     });
 
@@ -802,8 +778,61 @@ describe("TC-008: listCommitChangedFiles unavailable で constrained floor に�
   });
 });
 
-describe("TC-009: 二 OID diff unavailable で constrained floor に対し fail-closed になる", () => {
-  it("TC-009: diffPathsBetweenCommits unavailable → freeze unknown → fail-closed", async () => {
+// absorb-test-materialize: TC-009 repurposed — diffPathsBetweenCommits removed.
+// Now tests: HEAD runTestsAtCommit unavailable → fail-closed.
+describe("TC-009: HEAD runTestsAtCommit unavailable で constrained floor に対し fail-closed になる", () => {
+  it("TC-009: runTestsAtCommit(HEAD) unavailable → HEAD-green unknown → fail-closed", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeActiveEntry(makeJobStateWithSteps(42)),
+    ]);
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({
+      exitCode: 0,
+      headSha: ARCHIVE_HEAD_SHA,
+    });
+
+    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
+    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const client = makeGitHubClient({
+      listPullRequestFiles: vi.fn().mockResolvedValue({
+        files: ["architecture/core/design.md"],
+        truncated: false,
+      }),
+    });
+
+    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
+
+    // base-red satisfied but HEAD test run unavailable → HEAD-green unknown → fail-closed
+    const assuranceRuntime = makeFakeRuntime({
+      changedFiles: ["tests/unit/foo.test.ts"],
+      baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
+      headTestResults: { kind: "unavailable", reason: "fake HEAD runTestsAtCommit unavailable" },
+    });
+
+    const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
+      slug: SLUG,
+      cwd: CWD,
+      spawn: spawnFn,
+      fs: fsMock,
+      githubClient: client,
+      owner: "user",
+      repo: "repo",
+      waitTimeoutMs: 60_000,
+      minimumAssurance: FLOOR_BITE_EVIDENCE_REQUIRED,
+      assuranceRuntime,
+      config: { version: 1, agents: {} },
+    });
+
+    expect(result.exitCode).toBe(1);
+    expect(client.mergePullRequest).not.toHaveBeenCalled();
+  });
+});
+
+describe("TC-010: runTestsOnSynthesizedTree unavailable で constrained floor に対し fail-closed になる", () => {
+  it("TC-010: runTestsOnSynthesizedTree unavailable → base-red unknown → fail-closed", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
       makeActiveEntry(makeJobStateWithSteps(42)),
@@ -829,58 +858,7 @@ describe("TC-009: 二 OID diff unavailable で constrained floor に対し fail-
 
     const assuranceRuntime = makeFakeRuntime({
       changedFiles: ["tests/unit/foo.test.ts"],
-      diffFiles: "unavailable", // diffPathsBetweenCommits unavailable
-      baseTestResults: [{ file: "tests/unit/foo.test.ts", passed: false }],
-    });
-
-    const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
-      slug: SLUG,
-      cwd: CWD,
-      spawn: spawnFn,
-      fs: fsMock,
-      githubClient: client,
-      owner: "user",
-      repo: "repo",
-      waitTimeoutMs: 60_000,
-      minimumAssurance: FLOOR_BITE_EVIDENCE_REQUIRED,
-      assuranceRuntime,
-      config: { version: 1, agents: {} },
-    });
-
-    expect(result.exitCode).toBe(1);
-    expect(client.mergePullRequest).not.toHaveBeenCalled();
-  });
-});
-
-describe("TC-010: runTestsAtCommit unavailable で constrained floor に対し fail-closed になる", () => {
-  it("TC-010: runTestsAtCommit unavailable → base-red unknown → fail-closed", async () => {
-    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
-    (JobStateStore.listWithSourceDirs as ReturnType<typeof vi.fn>).mockResolvedValue([
-      makeActiveEntry(makeJobStateWithSteps(42)),
-    ]);
-
-    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
-    (runArchiveOrchestrator as ReturnType<typeof vi.fn>).mockResolvedValue({
-      exitCode: 0,
-      headSha: ARCHIVE_HEAD_SHA,
-    });
-
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
-
-    const client = makeGitHubClient({
-      listPullRequestFiles: vi.fn().mockResolvedValue({
-        files: ["architecture/core/design.md"],
-        truncated: false,
-      }),
-    });
-
-    const { runMergeThenArchive } = await import("../../../../src/core/archive/merge-then-archive.js");
-
-    const assuranceRuntime = makeFakeRuntime({
-      changedFiles: ["tests/unit/foo.test.ts"],
-      diffFiles: [], // frozen intact
-      baseTestResults: "unavailable", // runTestsAtCommit unavailable
+      baseTestResults: "unavailable", // runTestsOnSynthesizedTree unavailable
     });
 
     const result = await (runMergeThenArchive as (...args: unknown[]) => Promise<{ exitCode: number }>)({
@@ -929,7 +907,6 @@ describe("TC-011: materialized test 0 件で constrained floor に対し fail-cl
 
     const assuranceRuntime = makeFakeRuntime({
       changedFiles: [], // 0 materialized test files (empty commit or all excluded paths)
-      diffFiles: [],
       baseTestResults: [],
     });
 
@@ -988,7 +965,6 @@ describe("TC-019 (provenance subset): floor gate is no-op for non-matching paths
     // Even with a "bad" assuranceRuntime (unavailable everywhere), non-protected path means no floor check
     const assuranceRuntime = makeFakeRuntime({
       changedFiles: "unavailable",
-      diffFiles: "unavailable",
       baseTestResults: "unavailable",
     });
 

@@ -97,18 +97,8 @@ describe("TC-004: Archive floor derives base-red on the Evidence Base for a re-r
     let synthesizedTreeCalled = false;
 
     const runtime = {
-      listCommitChangedFiles: async (oid: string, _cwd: string) => {
-        if (oid === BASE_OID) return { kind: "success" as const, files: [TEST_FILE] };
-        return { kind: "unavailable" as const, reason: `unexpected oid ${oid}` };
-      },
-      diffPathsBetweenCommits: async (
-        _baseOid: string,
-        _headOid: string,
-        _files: string[],
-        _cwd: string,
-      ) => {
-        // Blob freeze: no changes to test files between base and HEAD
-        return { kind: "success" as const, files: [] };
+      listChangedFilesBetweenCommits: async (_baseOid: string, _headOid: string, _cwd: string) => {
+        return { kind: "success" as const, files: [TEST_FILE] };
       },
       readFileAtCommit: async (oid: string, _filePath: string, _cwd: string) => {
         // Scenario freeze: test-cases.md unchanged between testCaseGenOid and HEAD
@@ -190,13 +180,9 @@ describe("TC-005: Archive floor is fail-closed when the Evidence Base reference 
     // Runtime that tracks any calls — the new code should not call ANY method
     // when the EB ref is null (fails-closed before I/O).
     const runtime = {
-      listCommitChangedFiles: async (_oid: string) => {
-        ioCalls.push("listCommitChangedFiles");
+      listChangedFilesBetweenCommits: async () => {
+        ioCalls.push("listChangedFilesBetweenCommits");
         return { kind: "success" as const, files: [TEST_FILE] };
-      },
-      diffPathsBetweenCommits: async () => {
-        ioCalls.push("diffPathsBetweenCommits");
-        return { kind: "success" as const, files: [] };
       },
       readFileAtCommit: async () => {
         ioCalls.push("readFileAtCommit");
@@ -242,8 +228,7 @@ describe("TC-005: Archive floor is fail-closed when the Evidence Base reference 
 
     const ioCalls: string[] = [];
     const runtime = {
-      listCommitChangedFiles: async () => { ioCalls.push("listCommitChangedFiles"); return { kind: "success" as const, files: [] }; },
-      diffPathsBetweenCommits: async () => { ioCalls.push("diffPathsBetweenCommits"); return { kind: "success" as const, files: [] }; },
+      listChangedFilesBetweenCommits: async () => { ioCalls.push("listChangedFilesBetweenCommits"); return { kind: "success" as const, files: [] }; },
       readFileAtCommit: async () => { ioCalls.push("readFileAtCommit"); return { kind: "unavailable" as const, reason: "nope" }; },
       runTestsOnSynthesizedTree: async () => { ioCalls.push("runTestsOnSynthesizedTree"); return { kind: "unavailable" as const, reason: "nope" }; },
       runTestsAtCommit: async () => { ioCalls.push("runTestsAtCommit"); return { kind: "unavailable" as const, reason: "nope" }; },

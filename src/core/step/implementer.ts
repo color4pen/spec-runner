@@ -50,11 +50,8 @@ const implementerAgentDefinition: AgentDefinition = {
  * appended, overriding the default "follow existing placement pattern" guidance.
  * When placement is absent, the message is identical to the pre-change behavior.
  *
- * When testsMaterialized is true (standard pipeline: test-materialize ran before this step),
- * the instructions are changed to implementation-only mode: the agent does NOT write tests
- * (they are already in the worktree from the test-materialize commit) and instead focuses
- * on writing implementation code to make the existing tests green.
- * When testsMaterialized is false/undefined, behavior is identical to the pre-change version.
+ * Single mode (absorb-test-materialize): the implementer always materializes test-cases.md
+ * must TCs into test code and aligns both tests and implementation with canon.
  */
 export function buildImplementerInitialMessage(opts: {
   slug: string;
@@ -62,9 +59,8 @@ export function buildImplementerInitialMessage(opts: {
   requestContent: string;
   dynamicContext?: DynamicContext;
   placement?: TestPlacement;
-  testsMaterialized?: boolean;
 }): string {
-  const { slug, branch, requestContent, dynamicContext, placement, testsMaterialized } = opts;
+  const { slug, branch, requestContent, dynamicContext, placement } = opts;
 
   const contextLines: string[] = [];
   if (dynamicContext?.gitLog) {
@@ -81,17 +77,12 @@ export function buildImplementerInitialMessage(opts: {
     ? `\n\n${renderTestPlacementInstruction(placement)}`
     : "";
 
-  if (testsMaterialized) {
-    // Standard pipeline post-test-materialize: canon-alignment mode.
-    // Tests already exist in the worktree (materialized by the previous step).
-    // The implementer aligns both tests and implementation with canon (test-cases.md / spec).
-    return `<user-request>
+  return `<user-request>
 You are the implementer for the following change:
 
 Change folder: ${changeFolderPath(slug)}
 Branch: ${branch}
 
-The test-materialize step has already written test code to the worktree.
 test-cases.md と spec を canon(正)として、テストと実装の両方を整合させてください。
 テストを変更した場合は、変更したテストとその理由を完了報告に明示してください。
 
@@ -99,26 +90,6 @@ Please:
 1. Read ${changeFolderPath(slug)}/tasks.md to understand what needs to be implemented
 2. Read ${changeFolderPath(slug)}/test-cases.md and the existing test files to understand the expected behavior
 3. Implement all tasks in tasks.md — align both tests and implementation with canon (test-cases.md / spec). If you modify any test files, report the changed tests and the reason in your completion report.
-4. Update tasks.md: mark completed tasks with [x]
-5. 依存を追加・変更した場合は lockfile（\`bun.lock\` / \`package-lock.json\` 等）を同期してから完了する
-6. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
-
-Original request:
-${requestContent}
-</user-request>${contextSection}`;
-  }
-
-  // Default (fast pipeline or no test-materialize): TDD mode, unchanged behavior.
-  return `<user-request>
-You are the implementer for the following change:
-
-Change folder: ${changeFolderPath(slug)}
-Branch: ${branch}
-
-Please:
-1. Read ${changeFolderPath(slug)}/tasks.md to understand what needs to be implemented
-2. Read the relevant specs/ files for detailed specifications
-3. Implement all tasks in tasks.md (TDD: write tests first where applicable)
 4. Update tasks.md: mark completed tasks with [x]
 5. 依存を追加・変更した場合は lockfile（\`bun.lock\` / \`package-lock.json\` 等）を同期してから完了する
 6. ファイルを worktree に書き出したら end_turn してください。CLI が commit + push を行います。
@@ -146,7 +117,6 @@ function buildImplementerRecoveryMessage(opts: {
   slug: string;
   branch: string;
   verificationContent: string | null | undefined;
-  testsMaterialized?: boolean;
   requestContent: string;
   dynamicContext?: DynamicContext;
 }): string {
@@ -298,11 +268,6 @@ export const ImplementerStep: AgentStep = {
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.IMPLEMENTER);
 
-    // Detect whether test-materialize ran before this implementer entry.
-    // When true: standard pipeline — tests already materialized; implement-only mode.
-    // When false: fast pipeline or conformance re-entry without prior test-materialize.
-    const testsMaterialized = Boolean(state.steps?.[STEP_NAMES.TEST_MATERIALIZE]?.length);
-
     // Recovery re-entry: verification failed → implementer fixes (no mechanical-fix constraint).
     // build-fixer 廃止後、verification 失敗は implementer 自身が paired fixer として直す。
     if (verificationFailedLast(state)) {
@@ -313,7 +278,6 @@ export const ImplementerStep: AgentStep = {
           slug: deps.slug,
           branch: state.branch,
           verificationContent: deps.dynamicContext?.verificationContent,
-          testsMaterialized,
           requestContent: deps.request.content,
           dynamicContext: deps.dynamicContext,
         });
@@ -325,7 +289,6 @@ export const ImplementerStep: AgentStep = {
         branch: state.branch,
         requestContent: deps.request.content,
         dynamicContext: deps.dynamicContext,
-        testsMaterialized,
       });
       const failureSection = buildFailureSection(deps.dynamicContext?.verificationContent);
       if (failureSection === "") return baseMessage;
@@ -345,7 +308,6 @@ export const ImplementerStep: AgentStep = {
         branch: state.branch,
         requestContent: deps.request.content,
         dynamicContext: deps.dynamicContext,
-        testsMaterialized,
       });
       const findingsBlock = buildFindingsBlock(conformanceFindings, "conformance");
       // Append the conformance section before the closing tag
@@ -364,7 +326,6 @@ export const ImplementerStep: AgentStep = {
       requestContent: deps.request.content,
       dynamicContext: deps.dynamicContext,
       placement: deps.config.tests?.placement,
-      testsMaterialized,
     });
   },
 

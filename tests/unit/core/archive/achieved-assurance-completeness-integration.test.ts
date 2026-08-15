@@ -104,7 +104,6 @@ type CommitFileResult =
  */
 function makeFakeRuntime(options: {
   changedFiles?: string[] | "unavailable";
-  diffFiles?: string[] | "unavailable";
   baseTestResults?: IsolatedTestResult;
   headTestResults?: IsolatedTestResult;
   testCasesMdAtAnchor?: CommitFileResult | "unavailable";
@@ -114,7 +113,6 @@ function makeFakeRuntime(options: {
 } = {}) {
   const {
     changedFiles = ["tests/unit/foo.test.ts"],
-    diffFiles = [],
     baseTestResults = { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
     headTestResults = { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
     testCasesMdAtAnchor,
@@ -148,19 +146,11 @@ function makeFakeRuntime(options: {
     : (specMdAtHead ?? defaultSpecResult);
 
   return {
-    async listCommitChangedFiles(_oid: string, _cwd: string): Promise<ChangedFilesResult> {
+    async listChangedFilesBetweenCommits(_baseOid: string, _headOid: string, _cwd: string): Promise<ChangedFilesResult> {
       if (changedFiles === "unavailable") {
-        return { kind: "unavailable", reason: "fake listCommitChangedFiles unavailable" };
+        return { kind: "unavailable", reason: "fake listChangedFilesBetweenCommits unavailable" };
       }
       return { kind: "success", files: changedFiles };
-    },
-    async diffPathsBetweenCommits(
-      _base: string, _head: string, _paths: string[], _cwd: string,
-    ): Promise<ChangedFilesResult> {
-      if (diffFiles === "unavailable") {
-        return { kind: "unavailable", reason: "fake diffPathsBetweenCommits unavailable" };
-      }
-      return { kind: "success", files: diffFiles };
     },
     // Evidence Base base-red check (replaces runTestsAtCommit(baseOid)).
     async runTestsOnSynthesizedTree(
@@ -363,7 +353,6 @@ describe("TC-001: base:red but HEAD:red → biteEvidence:required fail-closed", 
       // base: all red, HEAD: still all red (implementation did not fix the tests)
       const assuranceRuntime = makeFakeRuntime({
         changedFiles: ["tests/unit/foo.test.ts"],
-        diffFiles: [], // blob freeze intact
         baseTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
         headTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
       });
@@ -423,7 +412,6 @@ describe("TC-002: base:red + HEAD:green + scenario frozen + forward → floor sa
       // base: all red, HEAD: all green, scenario frozen (events.jsonl + test-cases.md match)
       const assuranceRuntime = makeFakeRuntime({
         changedFiles: ["tests/unit/foo.test.ts"],
-        diffFiles: [], // blob freeze intact
         baseTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
         headTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
       });
@@ -481,7 +469,6 @@ describe("TC-005: non-forward type → biteEvidence:required fail-closed", () =>
       // but type=refactoring is NOT a forward-strategy type → biteEvidence must be absent
       const assuranceRuntime = makeFakeRuntime({
         changedFiles: ["tests/unit/foo.test.ts"],
-        diffFiles: [],
         baseTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
         headTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
       });
@@ -531,7 +518,6 @@ describe("TC-005: non-forward type → biteEvidence:required fail-closed", () =>
 
       const assuranceRuntime = makeFakeRuntime({
         changedFiles: ["tests/unit/foo.test.ts"],
-        diffFiles: [],
         baseTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: false }] },
         headTestResults: { kind: "ran", results: [{ file: "tests/unit/foo.test.ts", passed: true }] },
       });
@@ -764,7 +750,6 @@ describe("TC-026: real config (scopedTestCommand absent) → biteEvidence:requir
       // Simulate real config: scopedTestCommand absent → runTestsAtCommit always unavailable
       const assuranceRuntime = makeFakeRuntime({
         changedFiles: ["tests/unit/foo.test.ts"],
-        diffFiles: [],
         // Both base and HEAD return unavailable (no scopedTestCommand configured)
         baseTestResults: {
           kind: "unavailable",

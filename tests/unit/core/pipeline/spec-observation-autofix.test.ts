@@ -317,21 +317,21 @@ describe("TC-006: approved with routable fixable routes to spec-fixer", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-007: approved with no routable fixable routes to test-materialize
+// TC-007: approved with no routable fixable routes to implementer
 // Source: spec.md > Requirement: spec-review approval with routable fixable findings shall
-//         route to spec-fixer > Scenario: approved with no routable fixable routes to test-materialize
-// GREEN: unconditional spec-review approved → test-materialize row exists
-//        (test-case-gen already ran before spec-review; observation pass goes to test-materialize)
+//         route to spec-fixer > Scenario: approved with no routable fixable routes to implementer
+// GREEN: unconditional spec-review approved → implementer row exists
+//        (absorb-test-materialize: test-materialize abolished; observation pass goes to implementer)
 // RED partial: when predicate for the guarded row must return false for state with no routable fixables
 // ---------------------------------------------------------------------------
 
-describe("TC-007: approved with no routable fixable routes to test-materialize", () => {
-  it("TC-007: STANDARD_TRANSITIONS has unconditional spec-review approved → test-materialize row", () => {
+describe("TC-007: approved with no routable fixable routes to implementer", () => {
+  it("TC-007: STANDARD_TRANSITIONS has unconditional spec-review approved → implementer row (absorb-test-materialize)", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_REVIEW &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_MATERIALIZE &&
+        t.to === STEP_NAMES.IMPLEMENTER &&
         !t.when,
     );
     expect(row).toBeDefined();
@@ -378,20 +378,20 @@ describe("TC-007: approved with no routable fixable routes to test-materialize",
 });
 
 // ---------------------------------------------------------------------------
-// TC-008: observation-pass spec-fixer forwards to test-materialize
+// TC-008: observation-pass spec-fixer forwards to implementer
 // Source: spec.md > Requirement: spec-fixer following a spec-review approval shall forward to
-//         test-materialize without re-review > Scenario: observation-pass spec-fixer forwards to test-materialize
-// GREEN: STANDARD_TRANSITIONS has guarded spec-fixer approved → test-materialize row
-//        (test-case-gen already ran before spec-review; observation pass goes to test-materialize)
+//         implementer without re-review > Scenario: observation-pass spec-fixer forwards to implementer
+// GREEN: STANDARD_TRANSITIONS has guarded spec-fixer approved → implementer row
+//        (absorb-test-materialize: test-materialize abolished; observation pass goes to implementer)
 // ---------------------------------------------------------------------------
 
-describe("TC-008: observation-pass spec-fixer forwards to test-materialize", () => {
-  it("TC-008: STANDARD_TRANSITIONS has spec-fixer approved → test-materialize with when predicate", () => {
+describe("TC-008: observation-pass spec-fixer forwards to implementer", () => {
+  it("TC-008: STANDARD_TRANSITIONS has spec-fixer approved → implementer with when predicate (absorb-test-materialize)", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_FIXER &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_MATERIALIZE,
+        t.to === STEP_NAMES.IMPLEMENTER,
     );
     expect(row).toBeDefined();
     expect(row!.when).toBeDefined();
@@ -402,7 +402,7 @@ describe("TC-008: observation-pass spec-fixer forwards to test-materialize", () 
       (t) =>
         t.step === STEP_NAMES.SPEC_FIXER &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_MATERIALIZE,
+        t.to === STEP_NAMES.IMPLEMENTER,
     );
     expect(row).toBeDefined();
     expect(row!.when).toBeDefined();
@@ -494,6 +494,40 @@ describe("TC-009: needs-fix spec-fixer returns to spec-review", () => {
 
     // when(state) returns true → specFixerNeedsFixForward fires → routes to test-case-gen for TC regeneration
     expect(guardedRow!.when!(state)).toBe(true);
+  });
+
+  it("TC-009: guarded spec-fixer → test-case-gen when predicate returns false for exempt type (chore + needs-fix → SPEC_REVIEW, not TEST_CASE_GEN)", () => {
+    // Exempt types (chore) must NOT route to test-case-gen even when spec-review verdict is needs-fix.
+    // specFixerNeedsFixForward must return false so the fallback unconditional row routes to spec-review.
+    const guardedRow = STANDARD_TRANSITIONS.find(
+      (t) =>
+        t.step === STEP_NAMES.SPEC_FIXER &&
+        t.on === "approved" &&
+        t.to === STEP_NAMES.TEST_CASE_GEN,
+    );
+    expect(guardedRow).toBeDefined();
+    expect(guardedRow!.when).toBeDefined();
+
+    const ts = "2026-01-01T00:01:00.000Z";
+    const state = makeMinimalJobState({
+      request: {
+        path: REQUEST_MD,
+        title: "Chore Exempt Test",
+        type: "chore",
+        slug: TEST_SLUG,
+      },
+      steps: {
+        [STEP_NAMES.SPEC_REVIEW]: [
+          makeStepRun({ verdict: "needs-fix", startedAt: ts, endedAt: ts }),
+        ],
+        [STEP_NAMES.SPEC_FIXER]: [
+          makeStepRun({ verdict: "approved", startedAt: ts, endedAt: ts }),
+        ],
+      },
+    });
+
+    // Exempt type → specFixerNeedsFixForward returns false → unconditional row wins → SPEC_REVIEW
+    expect(guardedRow!.when!(state)).toBe(false);
   });
 });
 
@@ -694,12 +728,12 @@ describe("TC-013: observation pass runs spec-review exactly once (integration)",
     void stdoutSpy;
   });
 
-  it("TC-013: spec-review runs exactly once and spec-fixer runs exactly once, then routes to test-materialize (observation pass)", async () => {
-    // After the test-case-gen design-phase change, the observation pass routes:
-    //   spec-review(approved) → spec-fixer → test-materialize (test-case-gen already ran before spec-review)
+  it("TC-013: spec-review runs exactly once and spec-fixer runs exactly once, then routes to implementer (observation pass)", async () => {
+    // After absorb-test-materialize, the observation pass routes:
+    //   spec-review(approved) → spec-fixer → implementer (test-materialize abolished)
     let specReviewCallCount = 0;
     let specFixerCallCount = 0;
-    let testMaterializeCallCount = 0;
+    let implementerCallCount = 0;
 
     const events = new EventBus();
     const specReviewFindings = [makeFinding("medium", "fixable", SPEC_MD)];
@@ -749,8 +783,8 @@ describe("TC-013: observation pass runs spec-review exactly once (integration)",
           };
         }
 
-        if (step.name === STEP_NAMES.TEST_MATERIALIZE) {
-          testMaterializeCallCount++;
+        if (step.name === STEP_NAMES.IMPLEMENTER) {
+          implementerCallCount++;
           const newRun = makeStepRun({
             verdict: "success",
             startedAt: now,
@@ -760,8 +794,8 @@ describe("TC-013: observation pass runs spec-review exactly once (integration)",
             ...state,
             steps: {
               ...(state.steps ?? {}),
-              [STEP_NAMES.TEST_MATERIALIZE]: [
-                ...(state.steps?.[STEP_NAMES.TEST_MATERIALIZE] ?? []),
+              [STEP_NAMES.IMPLEMENTER]: [
+                ...(state.steps?.[STEP_NAMES.IMPLEMENTER] ?? []),
                 newRun,
               ],
             },
@@ -772,21 +806,22 @@ describe("TC-013: observation pass runs spec-review exactly once (integration)",
       },
     );
 
-    // Use the spec-phase rows from STANDARD_TRANSITIONS + terminal for test-materialize
+    // Use the spec-phase rows from STANDARD_TRANSITIONS + terminal for implementer
+    // (absorb-test-materialize: SPEC_REVIEW approved → IMPLEMENTER unconditionally)
     const specPhaseTransitions = [
       ...STANDARD_TRANSITIONS.filter(
         (t) =>
           t.step === STEP_NAMES.SPEC_REVIEW || t.step === STEP_NAMES.SPEC_FIXER,
       ),
-      { step: STEP_NAMES.TEST_MATERIALIZE, on: "success", to: "end" as const },
-      { step: STEP_NAMES.TEST_MATERIALIZE, on: "error",   to: "escalate" as const },
+      { step: STEP_NAMES.IMPLEMENTER, on: "success", to: "end" as const },
+      { step: STEP_NAMES.IMPLEMENTER, on: "error",   to: "escalate" as const },
     ];
 
     const pipeline = new Pipeline({
       steps: new Map([
-        [STEP_NAMES.SPEC_REVIEW,      makeStep(STEP_NAMES.SPEC_REVIEW)],
-        [STEP_NAMES.SPEC_FIXER,       makeStep(STEP_NAMES.SPEC_FIXER)],
-        [STEP_NAMES.TEST_MATERIALIZE, makeStep(STEP_NAMES.TEST_MATERIALIZE)],
+        [STEP_NAMES.SPEC_REVIEW,  makeStep(STEP_NAMES.SPEC_REVIEW)],
+        [STEP_NAMES.SPEC_FIXER,   makeStep(STEP_NAMES.SPEC_FIXER)],
+        [STEP_NAMES.IMPLEMENTER,  makeStep(STEP_NAMES.IMPLEMENTER)],
       ]),
       transitions: specPhaseTransitions,
       maxIterations: 3,
@@ -828,13 +863,13 @@ describe("TC-013: observation pass runs spec-review exactly once (integration)",
 
     const finalState = await pipeline.run(STEP_NAMES.SPEC_REVIEW, initialState, deps);
 
-    // TC-013 assertions (observation pass → test-materialize, not test-case-gen):
+    // TC-013 assertions (observation pass → implementer, not test-case-gen):
     // 1. spec-review ran exactly once (observation pass uses no extra budget)
     expect(specReviewCallCount).toBe(1);
     // 2. spec-fixer ran exactly once (observation pass consumed fixable findings)
     expect(specFixerCallCount).toBe(1);
-    // 3. test-materialize was reached (pipeline completed observation pass)
-    expect(testMaterializeCallCount).toBe(1);
+    // 3. implementer was reached (pipeline completed observation pass)
+    expect(implementerCallCount).toBe(1);
     // 4. pipeline completed successfully (not loop-exhausted)
     expect(finalState.status).toBe("awaiting-archive");
   });
@@ -1460,20 +1495,19 @@ describe("TC-028: request.md spec-review fixable finding is excluded from ledger
 });
 
 // ---------------------------------------------------------------------------
-// TC-029: STANDARD_TRANSITIONS length is 52 after adding guarded rows
+// TC-029: STANDARD_TRANSITIONS length is 47 after absorb-test-materialize
 // Source: tasks.md > T-07 (TC-030 in pipeline.transitions.test.ts); design.md > D1
-// GREEN: 49 + 3 new guarded rows from test-case-gen design-phase change
+// GREEN: 51 - 2 test-materialize rows - 2 (spec-review→test-mat + spec-fixer→test-mat replaced by implementer)
 // ---------------------------------------------------------------------------
 
-describe("TC-029: STANDARD_TRANSITIONS length is 51 after adding guarded rows (build-fixer abolished)", () => {
-  it("TC-029: STANDARD_TRANSITIONS.length === 51 (+3 test-case-gen design-phase rows, -2 build-fixer rows)", () => {
-    // Previously 48 rows + 3 test-case-gen design-phase guarded rows:
-    // 1. design success → spec-review when isTestGenExempt (exempt bypass test-case-gen)
-    // 2. spec-review needs-fix → test-case-gen when specReviewNeedsFixIsTcOnly (TC-only routing)
-    // 3. spec-fixer approved → test-case-gen when specFixerNeedsFixForward (needs-fix TC regeneration)
-    // build-fixer abolished: verification-failed→implementer (replaced), implementer→verification added,
-    //   build-fixer success→verification and build-fixer error→escalate removed → net -1 row
-    expect(STANDARD_TRANSITIONS.length).toBe(51);
+describe("TC-029: STANDARD_TRANSITIONS length is 47 after absorb-test-materialize", () => {
+  it("TC-029: STANDARD_TRANSITIONS.length === 47 (test-materialize step abolished, -4 rows net)", () => {
+    // Previously 51 rows (build-fixer abolished);
+    // absorb-test-materialize: test-materialize step removed entirely (-2 own rows),
+    // spec-review approved → implementer (was test-materialize, same count),
+    // spec-fixer approved → implementer (was test-materialize, same count),
+    // implementer success → bite-evidence already existed → net -4 rows (2 own + 2 extra implementer guards)
+    expect(STANDARD_TRANSITIONS.length).toBe(47);
   });
 
   it("TC-029: the guarded rows are distinct from the existing unconditional rows", () => {
@@ -1502,7 +1536,7 @@ describe("TC-029: STANDARD_TRANSITIONS length is 51 after adding guarded rows (b
       (t) =>
         t.step === STEP_NAMES.SPEC_REVIEW &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_MATERIALIZE &&
+        t.to === STEP_NAMES.IMPLEMENTER &&
         !t.when,
     );
     expect(unconditionalSpecReviewRow).toBeDefined();

@@ -215,10 +215,10 @@ describe("TC-013: drift-guard が request-generate エントリ除去後に coun
     },
   );
 
-  it("TC-013: drift-guard TC-028 の count assertion が 13（request-generate + build-fixer 両廃止後）", () => {
+  it("TC-013: drift-guard TC-028 の count assertion が 12（request-generate + build-fixer + test-materialize 廃止後）", () => {
     const source = readFileSync(DRIFT_GUARD_PATH, "utf-8");
-    // After request-generate AND build-fixer removal, count is 13
-    expect(source).toContain("toBe(13)");
+    // After request-generate, build-fixer AND test-materialize removal, count is 12
+    expect(source).toContain("toBe(12)");
   });
 
   it("TC-013: drift-guard の ALL_AGENT_PROMPTS count assertion が旧値 (14 or 15) を使用していない", () => {

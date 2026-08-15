@@ -991,25 +991,25 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
-   * List files changed between two arbitrary commit OIDs, filtered to the given paths.
-   * Runs `git diff --name-only <baseOid> <headOid> -- <paths...>` in cwd.
+   * List files changed between two arbitrary commit OIDs (no path filter).
+   * Runs `git diff --name-only --diff-filter=d <baseOid> <headOid>` in cwd.
    *
-   * Used by the archive floor gate (assurance-provenance-floor) to verify freeze integrity.
+   * Used by the bite-evidence gate and archive floor to identify materialized test files
+   * via Evidence Base ↔ candidate diff (EB-native file-set identification).
+   *
+   * `--diff-filter=d` excludes files deleted at <headOid>: a deleted path cannot be
+   * overlaid (`git show <headOid>:<path>` fails) nor executed as a test at HEAD, so
+   * listing it would poison the red/green runs into `unavailable` for the whole set.
    *
    * Never throws — returns ChangedFilesResult DU instead.
-   * - paths empty: short-circuit → {kind:"success", files:[]} (no git call).
-   * - exit 0: {kind:"success", files} (empty files = all paths frozen/intact).
+   * - exit 0: {kind:"success", files} (empty files = no changes).
    * - non-zero exit / spawn error: {kind:"unavailable", reason}.
    */
-  async diffPathsBetweenCommits(baseOid: string, headOid: string, paths: string[], cwd: string): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
-    // Short-circuit: empty paths → no diff possible, vacuously frozen.
-    if (paths.length === 0) {
-      return { kind: "success", files: [] };
-    }
+  async listChangedFilesBetweenCommits(baseOid: string, headOid: string, cwd: string): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
     try {
       const result = await this.spawnFn(
         "git",
-        ["diff", "--name-only", baseOid, headOid, "--", ...paths],
+        ["diff", "--name-only", "--diff-filter=d", baseOid, headOid],
         { cwd },
       );
       if (result.exitCode !== 0) {
@@ -1498,7 +1498,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         }
       } else if (contract.kind === "test-coverage") {
         // Read test-cases.md from disk (contract.path is worktree-relative).
-        // File absent → violation (test-materialize must produce test files after reading test-cases.md).
+        // File absent → violation (implementer must produce test files after reading test-cases.md).
         const absPath = path.join(cwd, contract.path);
         let content: string;
         try {

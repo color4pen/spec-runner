@@ -70,10 +70,9 @@ describe("deriveAchievedAssurance — Evidence Base reference absent", () => {
       throw new Error(`runtime.${name} must not be called when EB ref is absent`);
     };
     const runtime = {
-      listCommitChangedFiles: neverCalled("listCommitChangedFiles"),
+      listChangedFilesBetweenCommits: neverCalled("listChangedFilesBetweenCommits"),
       runTestsAtCommit: neverCalled("runTestsAtCommit"),
       runTestsOnSynthesizedTree: neverCalled("runTestsOnSynthesizedTree"),
-      diffPathsBetweenCommits: neverCalled("diffPathsBetweenCommits"),
       readFileAtCommit: neverCalled("readFileAtCommit"),
     };
 
@@ -100,8 +99,7 @@ describe("deriveAchievedAssurance — Evidence Base reference absent", () => {
     const TCG_OID = "tcg-oid-001";
     const MAT_OID = "mat-oid-001";
     const HEAD_OID = "final-head-oid-001";
-    const TEST_FILE = "tests/unit/example.test.ts";
-    const TC_CONTENT = "# Test Cases\n\n## TC-001: sample\nFixed content.\n";
+const TC_CONTENT = "# Test Cases\n\n## TC-001: sample\nFixed content.\n";
 
     const state = makeState({
       steps: {
@@ -116,12 +114,9 @@ describe("deriveAchievedAssurance — Evidence Base reference absent", () => {
       throw new Error(`runtime.${name} must not be called for testDerivation-only floor`);
     };
     const runtime = {
-      async listCommitChangedFiles(_oid: string, _cwd: string) {
-        return { kind: "success" as const, files: [TEST_FILE] };
-      },
-      async diffPathsBetweenCommits(_base: string, _head: string, _paths: string[], _cwd: string) {
-        return { kind: "success" as const, files: [] }; // blob freeze intact
-      },
+      // listChangedFilesBetweenCommits is required by P3 capability check but not called
+      // for testDerivation-only floor (biteEvidence I/O is skipped entirely).
+      listChangedFilesBetweenCommits: neverCalled("listChangedFilesBetweenCommits"),
       async readFileAtCommit(oid: string, _path: string, _cwd: string) {
         // Same content at both anchor and HEAD → scenario freeze intact
         if (oid === TCG_OID || oid === HEAD_OID) {

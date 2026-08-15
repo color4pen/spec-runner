@@ -43,7 +43,6 @@ type CommitFileResult =
 
 const CWD = "/tmp/test-repo-rev-unit";
 const SLUG = "my-slug";
-const BASE_OID = "base-commit-sha-rev-unit-001";
 const FINAL_HEAD_OID = "archive-head-sha-rev-unit-001";
 const TEST_FILE = "tests/unit/foo.test.ts";
 
@@ -106,41 +105,28 @@ function makeJobState(overrides: {
   slug?: string | null;
   testCaseGenOid?: string | null;   // undefined → no test-case-gen step; null → step with no commitOid
   specReviewRuns?: Array<{ verdict: string | null; commitOid?: string }>;
-  includeTestMaterialize?: boolean;
 } = {}) {
   const {
     type = "new-feature",
     slug = SLUG,
     specReviewRuns,
-    includeTestMaterialize = true,
   } = overrides;
   // Use "in" check so explicit undefined means "no step" (destructuring default would override it).
   const testCaseGenOid = "testCaseGenOid" in overrides ? overrides.testCaseGenOid : TEST_CASE_GEN_OID;
 
   const steps: Record<string, unknown[]> = {};
 
-  if (includeTestMaterialize) {
-    steps["test-materialize"] = [
-      {
-        attempt: 1,
-        sessionId: null,
-        outcome: { verdict: "success", findingsPath: null, error: null },
-        startedAt: "2026-01-01T00:00:30.000Z",
-        endedAt: "2026-01-01T00:01:00.000Z",
-        commitOid: BASE_OID,
-      },
-    ];
-    steps["implementer"] = [
-      {
-        attempt: 1,
-        sessionId: null,
-        outcome: { verdict: "success", findingsPath: null, error: null },
-        startedAt: "2026-01-01T00:01:00.000Z",
-        endedAt: "2026-01-01T00:02:00.000Z",
-        commitOid: "candidate-sha-rev-unit-001",
-      },
-    ];
-  }
+  // implementer step (test-materialize abolished in absorb-test-materialize)
+  steps["implementer"] = [
+    {
+      attempt: 1,
+      sessionId: null,
+      outcome: { verdict: "success", findingsPath: null, error: null },
+      startedAt: "2026-01-01T00:01:00.000Z",
+      endedAt: "2026-01-01T00:02:00.000Z",
+      commitOid: "candidate-sha-rev-unit-001",
+    },
+  ];
 
   // test-case-gen step: undefined → omit; null → include with no commitOid; string → include with that OID
   if (testCaseGenOid !== undefined) {
@@ -220,7 +206,6 @@ function makeJobState(overrides: {
  */
 function makeFakeRuntime(options: {
   changedFiles?: string[] | "unavailable";
-  diffFiles?: string[] | "unavailable";
   baseTestResults?: IsolatedTestResult;
   headTestResults?: IsolatedTestResult;
   // OID-discriminated: test-cases.md at anchor OID vs final HEAD OID
@@ -235,7 +220,6 @@ function makeFakeRuntime(options: {
 } = {}): AssuranceProvenanceRuntime {
   const {
     changedFiles = [TEST_FILE],
-    diffFiles = [],
     baseTestResults = { kind: "ran", results: [{ file: TEST_FILE, passed: false }] },
     headTestResults = { kind: "ran", results: [{ file: TEST_FILE, passed: true }] },
     testCasesMdAtAnchor,
@@ -296,23 +280,15 @@ function makeFakeRuntime(options: {
     : (eventsJsonlAtHead ?? defaultEventsJsonlAtHead);
 
   const runtime: AssuranceProvenanceRuntime = {
-    async listCommitChangedFiles(_oid: string, _cwd: string): Promise<ChangedFilesResult> {
-      if (changedFiles === "unavailable") {
-        return { kind: "unavailable", reason: "fake listCommitChangedFiles unavailable" };
-      }
-      return { kind: "success", files: changedFiles };
-    },
-
-    async diffPathsBetweenCommits(
+    async listChangedFilesBetweenCommits(
       _baseOid: string,
       _headOid: string,
-      _paths: string[],
       _cwd: string,
     ): Promise<ChangedFilesResult> {
-      if (diffFiles === "unavailable") {
-        return { kind: "unavailable", reason: "fake diffPathsBetweenCommits unavailable" };
+      if (changedFiles === "unavailable") {
+        return { kind: "unavailable", reason: "fake listChangedFilesBetweenCommits unavailable" };
       }
-      return { kind: "success", files: diffFiles as string[] };
+      return { kind: "success", files: changedFiles };
     },
 
     // Evidence Base base-red check (replaces runTestsAtCommit(baseOid)).
@@ -847,16 +823,17 @@ describe("TC-007: specReviewOid 欠落 / spec.md 取得不能（fail-closed）",
 // scenario が anchor↔HEAD 一致であっても、materialized test file が改竄された場合は fail-closed。
 // ---------------------------------------------------------------------------
 
-describe("TC-017: blob freeze は scenario 凍結と独立した歯として存置", () => {
+describe("TC-017: blob freeze 廃止 — test file の EB↔HEAD 変更は testDerivation に影響しない", () => {
   it(
-    "TC-017: scenario 凍結成立（test-cases.md 不変）だが materialized test file が改竄 → testDerivation + biteEvidence absent",
+    "TC-017: scenario 凍結成立 + test file が EB↔HEAD で変更 → testDerivation=frozen, biteEvidence=required（absorb-test-materialize: blob freeze 廃止）",
     async () => {
       // GIVEN: scenario intact (same test-cases.md at anchor and HEAD)
-      // BUT: blob freeze broken (materialized test file changed between baseOid and finalHeadOid)
+      // AND: test file appears in listChangedFilesBetweenCommits (implementer wrote tests — expected)
+      // Blob freeze check (diffPathsBetweenCommits) has been removed in absorb-test-materialize.
+      // testDerivation depends ONLY on scenario binding.
       const runtime = makeFakeRuntime({
-        // scenario intact: same content at both OIDs (defaults)
-        // blob freeze broken: test file appears in diff
-        diffFiles: [TEST_FILE], // test file was modified between base and HEAD → tamper detected
+        // changedFiles: test file is a materialized file (implementer wrote it after EB base)
+        changedFiles: [TEST_FILE],
         baseTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: false }] },
         headTestResults: { kind: "ran", results: [{ file: TEST_FILE, passed: true }] },
       });
@@ -870,9 +847,11 @@ describe("TC-017: blob freeze は scenario 凍結と独立した歯として存�
         runtime,
       });
 
-      // THEN: blob freeze broken → both absent (independent of scenario freeze)
-      expect(achieved.testDerivation).toBeUndefined();
-      expect(achieved.biteEvidence).toBeUndefined();
+      // THEN (new design): blob freeze removed → test file in EB↔HEAD diff is expected
+      // testDerivation = "frozen" (scenario binding holds; blob freeze no longer a criterion)
+      // biteEvidence = "required" (base:red, HEAD:green, forward type, scenario intact)
+      expect(achieved.testDerivation).toBe("frozen");
+      expect(achieved.biteEvidence).toBe("required");
     },
   );
 });

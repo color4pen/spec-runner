@@ -2,8 +2,7 @@
  * Pipeline map — single source of truth for the step enumeration.
  * Leaf module: no project-internal imports.
  *
- * Imported by: rules.ts, design-system.ts, implementer-system.ts,
- *              test-materialize-system.ts
+ * Imported by: rules.ts, design-system.ts, implementer-system.ts
  *
  * Each row lists the step identifier and its one-line responsibility.
  */
@@ -15,8 +14,7 @@ export const PIPELINE_MAP = `| Step | 責務 |
 | spec-review | change folder の成果物を評価し、仕様の品質を判定する |
 | spec-fixer | spec-review の findings を修正する |
 | test-case-gen | spec Scenario と設計から TC を生成し test-cases.md を出力する |
-| test-materialize | test-cases.md の must TC をテストコードに変換して書き出す |
-| implementer | tasks.md のタスクを実装し、ソースコードを worktree に書き出す。verification 失敗時は再入して修正する |
+| implementer | test-cases.md の must TC をテストコードに実体化し、実装と整合させる。verification 失敗時は再入して修正する |
 | verification | ビルド・テスト・lint を実行し結果を記録する（CLI step） |
 | code-review | 実装を評価し、コード品質の findings を出力する |
 | code-fixer | code-review / custom reviewer の findings を修正する |

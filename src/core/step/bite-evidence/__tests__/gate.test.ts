@@ -71,8 +71,10 @@ function makeStepRunWithOid(commitOid: string, attempt = 1): StepRun {
 /**
  * Fake runtime for the Evidence Base gate.
  *
+ * absorb-test-materialize: listCommitChangedFiles → listChangedFilesBetweenCommits(baseOid, headOid, cwd).
+ *
  * - captureHeadSha: returns headOid (or null)
- * - listCommitChangedFiles: returns changedFiles
+ * - listChangedFilesBetweenCommits: returns changedFiles (EB↔HEAD diff)
  * - runTestsOnSynthesizedTree: returns synthesizedTreeResult (base-red side)
  * - runTestsAtCommit: per-oid results (green side, keyed by headOid)
  *
@@ -98,8 +100,9 @@ function makeFakeRuntime(options: {
       captureHeadSha: async (_cwd: string): Promise<string | null> => {
         return options.headOid ?? null;
       },
-      listCommitChangedFiles: async (
-        _oid: string,
+      listChangedFilesBetweenCommits: async (
+        _baseOid: string,
+        _headOid: string,
         _cwd: string,
       ): Promise<{ kind: "success"; files: string[] } | { kind: "unavailable"; reason: string }> => {
         const files = options.changedFiles ?? ["src/__tests__/foo.test.ts"];
@@ -133,11 +136,13 @@ function makeFakeRuntime(options: {
 }
 
 // ---------------------------------------------------------------------------
-// TC-022: gate emits strategy-deferred when base OID is absent
+// TC-022: gate emits strategy-deferred when Evidence Base ref is absent
+// (absorb-test-materialize: deferral is now at EB ref resolution, not baseOid)
 // ---------------------------------------------------------------------------
 
-describe("TC-022: gate emits strategy-deferred when base OID is absent", () => {
-  it("TC-022: bug-fix job with no test-materialize run returns strategy-deferred with empty records", async () => {
+describe("TC-022: gate emits strategy-deferred when Evidence Base ref is absent", () => {
+  it("TC-022: bug-fix job with no synthesizedCommits returns strategy-deferred with empty records", async () => {
+    // No synthesizedCommits → resolveEvidenceBaseRev returns null → strategy-deferred (step 3).
     const state = makeState("bug-fix", { steps: {} });
     const { runtime } = makeFakeRuntime({ headOid: "head-sha" });
 
@@ -154,13 +159,13 @@ describe("TC-022: gate emits strategy-deferred when base OID is absent", () => {
     expect(result.records).toHaveLength(0);
   });
 
-  it("TC-022: returns strategy-deferred (not failed) when synthesizedCommits is also absent", async () => {
+  it("TC-022: returns strategy-deferred (not failed) when synthesizedCommits is absent even with step runs", async () => {
     // No synthesizedCommits → resolveEvidenceBaseRev returns null → strategy-deferred.
-    // (Previously tested absent candidateOid; now defers at absent EB ref — same verdict.)
+    // presence of step runs does not affect the EB ref check.
     const state = makeState("bug-fix", {
       steps: {
-        "test-materialize": [makeStepRunWithOid("base-sha-001")],
-        // no synthesizedCommits, no implementer
+        // test-materialize step runs ignored after absorb-test-materialize; no synthesizedCommits
+        "implementer": [makeStepRunWithOid("impl-sha-001")],
       },
     });
     const { runtime } = makeFakeRuntime({ headOid: "head-sha" });

@@ -277,7 +277,8 @@ describe("TC-005: 回復 message に機械的修正制約文言が含まれな�
         [STEP_NAMES.VERIFICATION]: [
           makeStepRun("failed", "2026-01-01T00:01:00.000Z"),
         ],
-        [STEP_NAMES.TEST_MATERIALIZE]: [
+        // "test-materialize" step may appear in legacy states (abolished in absorb-test-materialize)
+        ["test-materialize"]: [
           makeStepRun("success", "2026-01-01T00:00:30.000Z"),
         ],
         // Previous implementer session — TC-005 pins the CONTINUATION recovery

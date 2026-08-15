@@ -131,17 +131,15 @@ describe("TC-012: STANDARD_TRANSITIONS に必要なエッジが存在する", ()
     { step: "request-review", on: "reject",            to: "escalate" },
     { step: "request-review", on: "error",             to: "escalate" },
     { step: "design",         on: "success",    to: "test-case-gen" },
-    { step: "spec-review",      on: "approved",   to: "test-materialize" },
-    { step: "test-case-gen",    on: "success",    to: "spec-review" },
-    { step: "test-case-gen",    on: "error",      to: "escalate" },
-    { step: "test-materialize", on: "success",    to: "implementer" },
-    { step: "test-materialize", on: "error",      to: "escalate" },
-    { step: "implementer",  on: "success",     to: "bite-evidence" },
-    { step: "implementer",  on: "success",     to: "verification" }, // recovery when verificationFailedLast
-    { step: "implementer",  on: "error",       to: "escalate" },
-    { step: "verification", on: "passed",      to: "code-review" },
-    { step: "verification", on: "failed",      to: "implementer" }, // build-fixer abolished
-    { step: "verification", on: "escalation",  to: "escalate" },
+    { step: "spec-review",    on: "approved",   to: "implementer" }, // absorb-test-materialize: was test-materialize
+    { step: "test-case-gen",  on: "success",    to: "spec-review" },
+    { step: "test-case-gen",  on: "error",      to: "escalate" },
+    { step: "implementer",    on: "success",    to: "bite-evidence" },
+    { step: "implementer",    on: "success",    to: "verification" }, // recovery when verificationFailedLast
+    { step: "implementer",    on: "error",      to: "escalate" },
+    { step: "verification",   on: "passed",     to: "code-review" },
+    { step: "verification",   on: "failed",     to: "implementer" }, // build-fixer abolished
+    { step: "verification",   on: "escalation", to: "escalate" },
   ];
 
   for (const edge of requiredEdges) {
@@ -270,14 +268,13 @@ describe("TC-001/002/005/006/007/015: conformance transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 51 rows total (build-fixer abolished, +3 test-case-gen design-phase rows)", () => {
-    // 48 previous + 3 (test-case-gen design-phase:
-    //   DESIGN→SPEC_REVIEW guarded (isTestGenExempt),
-    //   SPEC_REVIEW→TEST_CASE_GEN guarded (specReviewNeedsFixIsTcOnly),
-    //   SPEC_FIXER→TEST_CASE_GEN guarded (specFixerNeedsFixForward))
-    // build-fixer rows removed: verification-failed→implementer replaces old route;
-    //   implementer→verification(verificationFailedLast) added; 2 build-fixer rows removed → net -1
-    expect(STANDARD_TRANSITIONS.length).toBe(51);
+  it("has 47 rows total (absorb-test-materialize: -4 rows net from test-materialize abolition)", () => {
+    // Previous: 51 rows. absorb-test-materialize removes 4 rows net:
+    //   - spec-review approved → test-materialize (1 row) removed; spec-review approved → implementer already existed
+    //   - spec-fixer approved → test-materialize (1 row) removed; now spec-fixer approved → implementer
+    //   - test-materialize success → implementer (1 row) removed
+    //   - test-materialize error → escalate (1 row) removed
+    expect(STANDARD_TRANSITIONS.length).toBe(47);
   });
 
   it("verification --passed→ end does NOT exist", () => {

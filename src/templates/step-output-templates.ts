@@ -159,7 +159,7 @@ Result section MUST appear at the very end as a YAML code block:
   \`\`\`
 
   所有権と書込時点: Result YAML は test-case-gen によるテストケース生成の結果記録である。
-  生成時に一度だけ書かれ、後続ステップ（test-materialize を含む）は更新しない。
+  生成時に一度だけ書かれ、後続ステップは更新しない。
 
   \`result\` の値の意味:
   - completed = 全 TC の設計が完了し blocked_reasons が空

@@ -17,7 +17,7 @@ import type { JobState, ProfileAssurance } from "../../state/schema.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { AssuranceFloor } from "../../state/profile.js";
-import { resolveBaseCandidateOids, resolveEvidenceBaseRev } from "../step/bite-evidence/oids.js";
+import { resolveEvidenceBaseRev } from "../step/bite-evidence/oids.js";
 import { FORWARD_TYPES } from "../step/bite-evidence/gate.js";
 import { selectMaterializedTestFiles } from "../step/bite-evidence/test-file-selection.js";
 import { STEP_NAMES } from "../../kernel/step-names.js";
@@ -28,13 +28,15 @@ import { STEP_NAMES } from "../../kernel/step-names.js";
  *
  * readFileAtCommit is required for scenario revision-binding verification and
  * specReview blob binding.
+ *
+ * listChangedFilesBetweenCommits is used for EB-native file-set identification
+ * (absorb-test-materialize: replaces listCommitChangedFiles(baseOid)).
  */
 export type AssuranceProvenanceRuntime = Pick<
   RuntimeStrategy,
-  | "listCommitChangedFiles"
+  | "listChangedFilesBetweenCommits"
   | "runTestsAtCommit"
   | "runTestsOnSynthesizedTree"
-  | "diffPathsBetweenCommits"
   | "readFileAtCommit"
 >;
 
@@ -89,29 +91,29 @@ function computeContentHash(content: string): string {
  *   (Binds approval to the reviewed revision blob — prevents re-approval after spec.md changes.)
  *
  * **biteEvidence** / **testDerivation**: only evaluated when the floor constrains either.
- *   Requires: baseOid resolvable + Evidence Base ref resolvable (synthesizedCommits[0]^) +
- *   finalHeadOid defined + runtime available with all required methods + config defined.
- *   (a) Enumerate materializedTestFiles via listCommitChangedFiles(baseOid) + selectMaterializedTestFiles filter.
- *   (b) Blob freeze check: diffPathsBetweenCommits(baseOid, finalHeadOid, materializedTestFiles).
- *       → tamper (non-empty diff) → both absent.
- *   (c) Scenario revision binding (P0):
+ *   Requires: Evidence Base ref resolvable (synthesizedCommits[0]^) + finalHeadOid defined
+ *   + runtime available with all required methods + config defined.
+ *   (a) Enumerate materializedTestFiles via listChangedFilesBetweenCommits(evidenceBaseRev, finalHeadOid)
+ *       + selectMaterializedTestFiles filter. Empty → testDerivation is still evaluated; biteEvidence absent.
+ *   (b) Scenario revision binding (absorb-test-materialize D4 — sole testDerivation criterion):
  *       - testCaseGenOid = state.steps["test-case-gen"].at(-1)?.commitOid
  *       - readFileAtCommit(testCaseGenOid, "<slug>/test-cases.md") → content at anchor commit
  *       - readFileAtCommit(finalHeadOid, "<slug>/test-cases.md") → content at HEAD
  *       - Content hashes must match → scenario intact (proves test-cases.md unchanged since test-case-gen)
  *       → fail on any step → both absent (fail-closed). events.jsonl is NOT used.
- *   testDerivation = "frozen" when (a) + (b) blob freeze intact + (c) scenario intact.
+ *   testDerivation = "frozen" when (b) scenario intact. Independent of materializedTestFiles (D4).
+ *   Blob freeze check (diffPathsBetweenCommits) is removed; testDerivation no longer requires it.
  *
  *   biteEvidence is additionally constrained to forward types only (P0-3, ADR-20260716 D2):
- *   (d) Type gate: state.request.type must be in FORWARD_TYPES (bug-fix / new-feature).
+ *   (c) Type gate: state.request.type must be in FORWARD_TYPES (bug-fix / new-feature).
  *       → non-forward type → biteEvidence absent (fail-closed until forward strategy is implemented).
- *   (e) Evidence Base base-red check: runTestsOnSynthesizedTree(evidenceBaseRev, materializedTestFiles, finalHeadOid)
+ *   (d) Evidence Base base-red check: runTestsOnSynthesizedTree(evidenceBaseRev, materializedTestFiles, finalHeadOid)
  *       → all must be failed (base-red). evidenceBaseRev = synthesizedCommits[0]^ (immutable job base).
  *       → unavailable or any passed → biteEvidence absent.
- *   (f) HEAD-green check (P0-1): runTestsAtCommit(finalHeadOid) → ALL must be passed (HEAD-green).
+ *   (e) HEAD-green check (P0-1): runTestsAtCommit(finalHeadOid) → ALL must be passed (HEAD-green).
  *       → unavailable, any red, or coverage gap → biteEvidence absent.
- *   biteEvidence = "required" when (a) + (b) + (c) + (d) + (e) + (f) all satisfied.
- *   biteEvidence I/O (d/e/f) is skipped entirely when floor does not constrain biteEvidence.
+ *   biteEvidence = "required" when (a) + (b) + (c) + (d) + (e) all satisfied.
+ *   biteEvidence I/O (c/d/e) is skipped entirely when floor does not constrain biteEvidence.
  *
  * **Fail-closed**: any I/O unavailability or missing precondition leaves the dimension absent.
  * An absent dimension in `achieved` fails any constrained floor field (satisfiesFloor is fail-closed).
@@ -218,48 +220,18 @@ export async function deriveAchievedAssurance(
     return { achieved: achieved as ProfileAssurance, diagnostics };
   }
 
-  // (P2) baseOid must be resolvable from test-materialize step (for file-set identification).
-  let baseOid: string | null;
-  try {
-    const oids = resolveBaseCandidateOids(state);
-    baseOid = oids.baseOid;
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    diagnostics.push(`biteEvidence/testDerivation: resolveBaseCandidateOids error: ${reason}`);
-    return { achieved: achieved as ProfileAssurance, diagnostics };
-  }
-
-  if (baseOid === null) {
-    diagnostics.push("biteEvidence/testDerivation: baseOid is null — test-materialize step has no commitOid recorded");
-    return { achieved: achieved as ProfileAssurance, diagnostics };
-  }
-
-  // (P2.5) Resolve the Evidence Base reference (immutable job base = synthesizedCommits[0]^).
-  // Only required for biteEvidence — testDerivation (blob freeze + scenario revision binding)
-  // is logically independent of the Evidence Base and must not be gated here.
-  let evidenceBaseRev: string | null = null;
-  if (floorConstrainsBite) {
-    evidenceBaseRev = resolveEvidenceBaseRev(state);
-    if (evidenceBaseRev === null) {
-      diagnostics.push(
-        "biteEvidence: Evidence Base reference absent — synthesizedCommits ledger is empty or absent (fail-closed)",
-      );
-      return { achieved: achieved as ProfileAssurance, diagnostics };
-    }
-  }
-
   // (P3) Runtime must be available with all required methods.
+  // listChangedFilesBetweenCommits replaces listCommitChangedFiles + diffPathsBetweenCommits.
   if (
     !runtime ||
-    typeof runtime.listCommitChangedFiles !== "function" ||
-    typeof runtime.diffPathsBetweenCommits !== "function" ||
+    typeof runtime.listChangedFilesBetweenCommits !== "function" ||
     typeof runtime.runTestsAtCommit !== "function" ||
     typeof runtime.runTestsOnSynthesizedTree !== "function" ||
     typeof runtime.readFileAtCommit !== "function"
   ) {
     diagnostics.push(
       "biteEvidence/testDerivation: runtime is unavailable or missing required methods " +
-      "(listCommitChangedFiles / diffPathsBetweenCommits / runTestsAtCommit / runTestsOnSynthesizedTree / readFileAtCommit)",
+      "(listChangedFilesBetweenCommits / runTestsAtCommit / runTestsOnSynthesizedTree / readFileAtCommit)",
     );
     return { achieved: achieved as ProfileAssurance, diagnostics };
   }
@@ -271,77 +243,18 @@ export async function deriveAchievedAssurance(
   }
 
   // ---------------------------------------------------------------------------
-  // (a) Enumerate materialized test files from base commit
-  // ---------------------------------------------------------------------------
-  let materializedTestFiles: string[];
-  try {
-    const changedFilesResult = await runtime.listCommitChangedFiles!(baseOid, cwd);
-    if (changedFilesResult.kind === "unavailable") {
-      diagnostics.push(`biteEvidence/testDerivation: listCommitChangedFiles unavailable: ${changedFilesResult.reason}`);
-      return { achieved: achieved as ProfileAssurance, diagnostics };
-    }
-    materializedTestFiles = selectMaterializedTestFiles(changedFilesResult.files, config);
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    diagnostics.push(`biteEvidence/testDerivation: listCommitChangedFiles threw: ${reason}`);
-    return { achieved: achieved as ProfileAssurance, diagnostics };
-  }
-
-  if (materializedTestFiles.length === 0) {
-    diagnostics.push("biteEvidence/testDerivation: 0 materialized test files found in base commit (all paths excluded or commit empty)");
-    return { achieved: achieved as ProfileAssurance, diagnostics };
-  }
-
-  // ---------------------------------------------------------------------------
-  // (b) Blob freeze check: verify materializedTestFiles are byte-identical baseOid→finalHeadOid
-  // ---------------------------------------------------------------------------
-  let freezeIntact = false;
-  try {
-    const diffResult = await runtime.diffPathsBetweenCommits!(baseOid, finalHeadOid, materializedTestFiles, cwd);
-    if (diffResult.kind === "unavailable") {
-      diagnostics.push(`biteEvidence/testDerivation: diffPathsBetweenCommits unavailable: ${diffResult.reason}`);
-      return { achieved: achieved as ProfileAssurance, diagnostics };
-    }
-    if (diffResult.files.length > 0) {
-      diagnostics.push(
-        `biteEvidence/testDerivation: tamper detected — test files changed between baseOid and HEAD: ${diffResult.files.join(", ")}`,
-      );
-      // Freeze broken: both dimensions remain absent.
-      return { achieved: achieved as ProfileAssurance, diagnostics };
-    }
-    freezeIntact = true;
-  } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
-    diagnostics.push(`biteEvidence/testDerivation: diffPathsBetweenCommits threw: ${reason}`);
-    return { achieved: achieved as ProfileAssurance, diagnostics };
-  }
-
-  // ---------------------------------------------------------------------------
-  // (c) Scenario revision binding (P0, ADR-20260717 D4 / D1)
+  // (b) Scenario revision binding — sole testDerivation criterion (absorb-test-materialize D4).
   //
-  // Binds the scenario freeze to the test-case-gen confirmation commit OID.
-  // Compares test-cases.md content at the anchor commit (testCaseGenOid) with
-  // the final HEAD (finalHeadOid). A mismatch means test-cases.md was changed
-  // after test-case-gen — the scenario is no longer frozen.
+  // testDerivation is independent of materializedTestFiles (D4):
+  //   scenarioFreezeIntact = true when test-cases.md content is identical at
+  //   testCaseGenOid and finalHeadOid. Never early-returns — failures are recorded
+  //   as diagnostics and scenarioFreezeIntact stays false.
   //
-  // This replaces the previous events.jsonl-based "two-layer freeze" check which
-  // compared the frozen hash from events.jsonl with test-cases.md@finalHeadOid
-  // (both read from the same commit — vulnerable to same-commit self-consistency
-  // attacks and cooperative tampering of both files).
-  //
-  // Steps:
-  //   1. Resolve testCaseGenOid from state.steps["test-case-gen"].at(-1)?.commitOid.
-  //   2. Resolve slug from state.request.slug (required for suffix path resolution).
-  //   3. readFileAtCommit(testCaseGenOid, "<slug>/test-cases.md") → anchor content.
-  //   4. readFileAtCommit(finalHeadOid, "<slug>/test-cases.md") → HEAD content.
-  //   5. Compare content hashes: match → scenario intact; mismatch → fail-closed.
-  //
-  // Fail-closed: any step failure (absent OID, absent slug, unavailable, mismatch) → both absent.
-  // events.jsonl is NOT read in this implementation.
+  // Blob freeze (diffPathsBetweenCommits) is removed; testDerivation no longer requires it.
+  // events.jsonl is NOT read.
   // ---------------------------------------------------------------------------
   let scenarioFreezeIntact = false;
   try {
-    // Step 1: Resolve testCaseGenOid
     const testCaseGenRuns = state.steps?.[STEP_NAMES.TEST_CASE_GEN];
     const latestTcgRun = Array.isArray(testCaseGenRuns) ? testCaseGenRuns.at(-1) : undefined;
     const testCaseGenOid = latestTcgRun?.commitOid;
@@ -351,58 +264,48 @@ export async function deriveAchievedAssurance(
         "biteEvidence/testDerivation: test-case-gen commitOid absent — " +
         "cannot verify scenario freeze without anchor commit OID (fail-closed)",
       );
-      return { achieved: achieved as ProfileAssurance, diagnostics };
+    } else {
+      const slug = state.request?.slug;
+      if (!slug) {
+        diagnostics.push(
+          "biteEvidence/testDerivation: request.slug absent — " +
+          "cannot suffix-resolve test-cases.md path (fail-closed)",
+        );
+      } else {
+        const tcAtAnchor = await runtime.readFileAtCommit!(testCaseGenOid, `${slug}/test-cases.md`, cwd);
+        if (tcAtAnchor.kind === "unavailable") {
+          diagnostics.push(
+            `biteEvidence/testDerivation: test-cases.md@testCaseGenOid unavailable: ${tcAtAnchor.reason}`,
+          );
+        } else {
+          const tcAtHead = await runtime.readFileAtCommit!(finalHeadOid, `${slug}/test-cases.md`, cwd);
+          if (tcAtHead.kind === "unavailable") {
+            diagnostics.push(
+              `biteEvidence/testDerivation: test-cases.md@finalHeadOid unavailable: ${tcAtHead.reason}`,
+            );
+          } else {
+            const anchorHash = computeContentHash(tcAtAnchor.content);
+            const headHash = computeContentHash(tcAtHead.content);
+            if (anchorHash !== headHash) {
+              diagnostics.push(
+                `biteEvidence/testDerivation: test-cases.md hash mismatch between testCaseGenOid and finalHeadOid — ` +
+                `scenario was tampered after test-case-gen. anchor=${anchorHash} head=${headHash}`,
+              );
+            } else {
+              scenarioFreezeIntact = true;
+            }
+          }
+        }
+      }
     }
-
-    // Step 2: Resolve slug
-    const slug = state.request?.slug;
-    if (!slug) {
-      diagnostics.push(
-        "biteEvidence/testDerivation: request.slug absent — " +
-        "cannot suffix-resolve test-cases.md path (fail-closed)",
-      );
-      return { achieved: achieved as ProfileAssurance, diagnostics };
-    }
-
-    // Step 3: Read test-cases.md at anchor (testCaseGenOid)
-    const tcAtAnchor = await runtime.readFileAtCommit!(testCaseGenOid, `${slug}/test-cases.md`, cwd);
-    if (tcAtAnchor.kind === "unavailable") {
-      diagnostics.push(
-        `biteEvidence/testDerivation: test-cases.md@testCaseGenOid unavailable: ${tcAtAnchor.reason}`,
-      );
-      return { achieved: achieved as ProfileAssurance, diagnostics };
-    }
-
-    // Step 4: Read test-cases.md at HEAD (finalHeadOid)
-    const tcAtHead = await runtime.readFileAtCommit!(finalHeadOid, `${slug}/test-cases.md`, cwd);
-    if (tcAtHead.kind === "unavailable") {
-      diagnostics.push(
-        `biteEvidence/testDerivation: test-cases.md@finalHeadOid unavailable: ${tcAtHead.reason}`,
-      );
-      return { achieved: achieved as ProfileAssurance, diagnostics };
-    }
-
-    // Step 5: Compare hashes
-    const anchorHash = computeContentHash(tcAtAnchor.content);
-    const headHash = computeContentHash(tcAtHead.content);
-    if (anchorHash !== headHash) {
-      diagnostics.push(
-        `biteEvidence/testDerivation: test-cases.md hash mismatch between testCaseGenOid and finalHeadOid — ` +
-        `scenario was tampered after test-case-gen. anchor=${anchorHash} head=${headHash}`,
-      );
-      return { achieved: achieved as ProfileAssurance, diagnostics };
-    }
-
-    scenarioFreezeIntact = true;
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
     diagnostics.push(`biteEvidence/testDerivation: scenario freeze check threw: ${reason}`);
-    return { achieved: achieved as ProfileAssurance, diagnostics };
   }
 
-  // testDerivation: both blob freeze AND scenario freeze intact → "frozen"
-  // (type gate is NOT applied to testDerivation — it is strategy-independent)
-  if (freezeIntact && scenarioFreezeIntact) {
+  // testDerivation: solely scenario binding (D4 — independent of materializedTestFiles).
+  // Type gate is NOT applied to testDerivation — it is strategy-independent.
+  if (floorConstrainsDerivation && scenarioFreezeIntact) {
     achieved["testDerivation"] = "frozen";
   }
 
@@ -416,7 +319,47 @@ export async function deriveAchievedAssurance(
   }
 
   // ---------------------------------------------------------------------------
-  // (d) Type gate (P0-3, ADR-20260716 D2):
+  // (P2) Resolve Evidence Base reference (only needed for biteEvidence file-set).
+  // Placed after testDerivation so scenario binding runs independently of EB resolution.
+  // ---------------------------------------------------------------------------
+  const evidenceBaseRev = resolveEvidenceBaseRev(state);
+  if (evidenceBaseRev === null) {
+    diagnostics.push(
+      "biteEvidence: Evidence Base reference absent — synthesizedCommits ledger is empty or absent (fail-closed)",
+    );
+    return { achieved: achieved as ProfileAssurance, diagnostics };
+  }
+
+  // ---------------------------------------------------------------------------
+  // (a) Enumerate materialized test files via EB↔HEAD diff.
+  // (absorb-test-materialize: replaces listCommitChangedFiles(baseOid))
+  // ---------------------------------------------------------------------------
+  let materializedTestFiles: string[];
+  try {
+    const changedFilesResult = await runtime.listChangedFilesBetweenCommits!(evidenceBaseRev, finalHeadOid, cwd);
+    if (changedFilesResult.kind === "unavailable") {
+      diagnostics.push(`biteEvidence: listChangedFilesBetweenCommits unavailable: ${changedFilesResult.reason}`);
+      return { achieved: achieved as ProfileAssurance, diagnostics };
+    }
+    materializedTestFiles = selectMaterializedTestFiles(changedFilesResult.files, config);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    diagnostics.push(`biteEvidence: listChangedFilesBetweenCommits threw: ${reason}`);
+    return { achieved: achieved as ProfileAssurance, diagnostics };
+  }
+
+  if (materializedTestFiles.length === 0) {
+    diagnostics.push("biteEvidence: 0 test files in EB↔HEAD diff (all paths excluded or diff empty)");
+    return { achieved: achieved as ProfileAssurance, diagnostics };
+  }
+
+  // Scenario must be frozen for biteEvidence (already diagnosed in scenario binding section).
+  if (!scenarioFreezeIntact) {
+    return { achieved: achieved as ProfileAssurance, diagnostics };
+  }
+
+  // ---------------------------------------------------------------------------
+  // (c) Type gate (P0-3, ADR-20260716 D2):
   // biteEvidence only applies to forward strategy types (bug-fix / new-feature).
   // Non-forward types (refactoring / spec-change / chore) → biteEvidence absent.
   // Fail-closed until dedicated bite strategies are implemented for other types.
@@ -431,7 +374,7 @@ export async function deriveAchievedAssurance(
   }
 
   // ---------------------------------------------------------------------------
-  // (e) Base-red check + (f) HEAD-green check (P0-1, ADR-20260717 D4)
+  // (d) Base-red check + (e) HEAD-green check (P0-1, ADR-20260717 D4)
   //
   // base-red: run tests on Evidence Base (evidenceBaseRev + candidate overlay) — all must fail (red).
   // HEAD-green: run tests at finalHeadOid — all materialized test files must pass (green).
@@ -443,12 +386,10 @@ export async function deriveAchievedAssurance(
   //   - any red at HEAD / any non-red at base → absent
   // ---------------------------------------------------------------------------
   try {
-    // (e) Evidence Base base-red check: run tests on the synthesized tree
+    // (d) Evidence Base base-red check: run tests on the synthesized tree
     // (job base tree = synthesizedCommits[0]^ + candidate test overlay from finalHeadOid).
-    // This replaces runTestsAtCommit(baseOid) — the Evidence Base cannot contain
-    // implementation by construction, so re-run shapes can now earn assurance.
     const baseTestResult = await runtime.runTestsOnSynthesizedTree!(
-      evidenceBaseRev!, // non-null: P2.5 returned early if null when floorConstrainsBite
+      evidenceBaseRev,
       materializedTestFiles,
       finalHeadOid,
       cwd,
@@ -456,14 +397,13 @@ export async function deriveAchievedAssurance(
     );
     if (baseTestResult.kind === "unavailable") {
       diagnostics.push(`biteEvidence: runTestsOnSynthesizedTree(evidenceBaseRev) unavailable: ${baseTestResult.reason}`);
-      // biteEvidence absent (testDerivation already set above if conditions met)
       return { achieved: achieved as ProfileAssurance, diagnostics };
     }
 
     // Require base-red for EVERY materialized test file: complete coverage, non-empty, all failed.
     // A missing/extra/empty result set must NOT vacuously satisfy base-red (fail-closed): any file
     // without a recorded `passed === false` result (missing result, or hollow passed=true) leaves
-    // biteEvidence absent. `some(passed)` alone would fail-open on empty/partial results.
+    // biteEvidence absent.
     const passedByFile = new Map(baseTestResult.results.map((r) => [r.file, r.passed]));
     const notRed = materializedTestFiles.filter((f) => passedByFile.get(f) !== false);
     if (materializedTestFiles.length === 0 || notRed.length > 0) {
@@ -471,11 +411,10 @@ export async function deriveAchievedAssurance(
         `biteEvidence: base-red not established for all materialized tests on Evidence Base ` +
         `(missing result or hollow passed=true): ${notRed.join(", ") || "(no materialized tests)"}`,
       );
-      // biteEvidence absent (testDerivation already set if freeze intact)
       return { achieved: achieved as ProfileAssurance, diagnostics };
     }
 
-    // (f) HEAD-green check — all materialized test files must pass at finalHeadOid
+    // (e) HEAD-green check — all materialized test files must pass at finalHeadOid
     const headTestResult = await runtime.runTestsAtCommit!(finalHeadOid, materializedTestFiles, cwd, config);
     if (headTestResult.kind === "unavailable") {
       diagnostics.push(`biteEvidence: runTestsAtCommit(finalHeadOid) unavailable: ${headTestResult.reason}`);
@@ -493,7 +432,7 @@ export async function deriveAchievedAssurance(
       return { achieved: achieved as ProfileAssurance, diagnostics };
     }
 
-    // All checks passed: base:red + HEAD:green + scenario frozen + blob frozen + forward type.
+    // All checks passed: base:red + HEAD:green + scenario frozen + forward type.
     achieved["biteEvidence"] = "required";
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);

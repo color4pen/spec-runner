@@ -14,7 +14,6 @@ import { readFileSync } from "fs";
 import { fileURLToPath } from "url";
 import { TC_SOURCE_SCENARIO_FORMAT } from "../tc-source-contract.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT } from "../test-case-gen-system.js";
-import { TEST_MATERIALIZE_SYSTEM_PROMPT } from "../test-materialize-system.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../implementer-system.js";
 
 // ---------------------------------------------------------------------------
@@ -41,15 +40,7 @@ describe("TC-002: TEST_CASE_GEN_SYSTEM_PROMPT contains canonical TC source forma
   });
 });
 
-// ---------------------------------------------------------------------------
-// TC-003: test-materialize の Scenario 由来 TC 判別条件が正準形式を含む
-// ---------------------------------------------------------------------------
-
-describe("TC-003: TEST_MATERIALIZE_SYSTEM_PROMPT contains canonical TC source format", () => {
-  it("TC-003: TEST_MATERIALIZE_SYSTEM_PROMPT contains TC_SOURCE_SCENARIO_FORMAT value", () => {
-    expect(TEST_MATERIALIZE_SYSTEM_PROMPT).toContain(TC_SOURCE_SCENARIO_FORMAT);
-  });
-});
+// TC-003 removed: test-materialize step abolished in absorb-test-materialize
 
 // ---------------------------------------------------------------------------
 // TC-004: implementer の Scenario 由来 TC 判別条件が正準形式を含む
@@ -61,15 +52,7 @@ describe("TC-004: IMPLEMENTER_SYSTEM_PROMPT contains canonical TC source format"
   });
 });
 
-// ---------------------------------------------------------------------------
-// TC-005: test-materialize の Scenario 判別条件に旧形式が存在しない
-// ---------------------------------------------------------------------------
-
-describe("TC-005: TEST_MATERIALIZE_SYSTEM_PROMPT does not contain old Scenario path format", () => {
-  it("TC-005: TEST_MATERIALIZE_SYSTEM_PROMPT does not contain 'specs/<capability>/spec.md'", () => {
-    expect(TEST_MATERIALIZE_SYSTEM_PROMPT).not.toContain("specs/<capability>/spec.md");
-  });
-});
+// TC-005 removed: test-materialize step abolished in absorb-test-materialize
 
 // ---------------------------------------------------------------------------
 // TC-006: implementer の Scenario 判別条件に旧形式が存在しない

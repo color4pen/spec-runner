@@ -10,12 +10,15 @@ const ALL_STEP_NAMES_SET = new Set<string>([...AGENT_STEP_NAMES, ...CLI_STEP_NAM
 /**
  * Legacy step name aliases for backward compatibility.
  *
- * build-fixer は廃止済み。resume 復帰点（`--from build-fixer` / resumePoint.step="build-fixer"）を
- * implementer へ写すことで、旧 job の resume が壊れないようにする。
+ * build-fixer は廃止済み (absorb-build-fixer)。
+ * test-materialize は廃止済み (absorb-test-materialize)。
+ * resume 復帰点（`--from <alias>` / resumePoint.step="<alias>"）を implementer へ写すことで、
+ * 旧 job の resume が壊れないようにする。
  * mapMemberToCoordinator と同じ「前段写像」パターン。
  */
 const LEGACY_STEP_ALIASES: Record<string, string> = {
   "build-fixer": STEP_NAMES.IMPLEMENTER,
+  "test-materialize": STEP_NAMES.IMPLEMENTER,
 };
 
 /**

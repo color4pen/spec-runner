@@ -56,7 +56,6 @@ import { DESIGN_SYSTEM_PROMPT } from "../design-system.js";
 import { SPEC_REVIEW_SYSTEM_PROMPT } from "../spec-review-system.js";
 import { SPEC_FIXER_SYSTEM_PROMPT } from "../spec-fixer-system.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT } from "../test-case-gen-system.js";
-import { TEST_MATERIALIZE_SYSTEM_PROMPT } from "../test-materialize-system.js";
 import { IMPLEMENTER_SYSTEM_PROMPT } from "../implementer-system.js";
 import { CODE_REVIEW_SYSTEM_PROMPT } from "../code-review-system.js";
 import { CODE_FIXER_SYSTEM_PROMPT } from "../code-fixer-system.js";
@@ -95,10 +94,10 @@ function makeMinimalReviewerSnapshot(): ReviewerSnapshot {
 }
 
 /**
- * All 13 agent step system prompt outputs.
- * build-fixer は廃止済みのため除外。
+ * All 12 agent step system prompt outputs.
+ * build-fixer は廃止済み (absorb-build-fixer)。test-materialize は廃止済み (absorb-test-materialize)。
  * The list covers:
- *   request-review / design / spec-review / spec-fixer / test-case-gen / test-materialize /
+ *   request-review / design / spec-review / spec-fixer / test-case-gen /
  *   implementer / code-review / code-fixer / conformance / regression-gate /
  *   custom-reviewer / adr-gen
  * (TC-013: request-generate was removed — deterministic-request-entrance)
@@ -109,7 +108,6 @@ const ALL_14_AGENT_PROMPTS: Array<[string, string]> = [
   ["SPEC_REVIEW_SYSTEM_PROMPT", SPEC_REVIEW_SYSTEM_PROMPT],
   ["SPEC_FIXER_SYSTEM_PROMPT", SPEC_FIXER_SYSTEM_PROMPT],
   ["TEST_CASE_GEN_SYSTEM_PROMPT", TEST_CASE_GEN_SYSTEM_PROMPT],
-  ["TEST_MATERIALIZE_SYSTEM_PROMPT", TEST_MATERIALIZE_SYSTEM_PROMPT],
   ["IMPLEMENTER_SYSTEM_PROMPT", IMPLEMENTER_SYSTEM_PROMPT],
   ["CODE_REVIEW_SYSTEM_PROMPT", CODE_REVIEW_SYSTEM_PROMPT],
   ["CODE_FIXER_SYSTEM_PROMPT", CODE_FIXER_SYSTEM_PROMPT],
@@ -119,11 +117,11 @@ const ALL_14_AGENT_PROMPTS: Array<[string, string]> = [
   ["ADR_GEN_SYSTEM_PROMPT", ADR_GEN_SYSTEM_PROMPT],
 ];
 
-/** Producer steps: generate output artifacts (design / test-case-gen / test-materialize / implementer / adr-gen) */
+/** Producer steps: generate output artifacts (design / test-case-gen / implementer / adr-gen) */
+/** absorb-test-materialize: test-materialize 廃止 → 4 entries */
 const PRODUCER_PROMPTS: Array<[string, string]> = [
   ["DESIGN_SYSTEM_PROMPT", DESIGN_SYSTEM_PROMPT],
   ["TEST_CASE_GEN_SYSTEM_PROMPT", TEST_CASE_GEN_SYSTEM_PROMPT],
-  ["TEST_MATERIALIZE_SYSTEM_PROMPT", TEST_MATERIALIZE_SYSTEM_PROMPT],
   ["IMPLEMENTER_SYSTEM_PROMPT", IMPLEMENTER_SYSTEM_PROMPT],
   ["ADR_GEN_SYSTEM_PROMPT", ADR_GEN_SYSTEM_PROMPT],
 ];
@@ -265,10 +263,6 @@ describe("TC-003: stage 一覧は PIPELINE_MAP を埋め込む", () => {
 
   it("TC-003: IMPLEMENTER_SYSTEM_PROMPT contains PIPELINE_MAP", () => {
     expect(IMPLEMENTER_SYSTEM_PROMPT).toContain(PIPELINE_MAP);
-  });
-
-  it("TC-003: TEST_MATERIALIZE_SYSTEM_PROMPT contains PIPELINE_MAP", () => {
-    expect(TEST_MATERIALIZE_SYSTEM_PROMPT).toContain(PIPELINE_MAP);
   });
 
   it("TC-003: RULES_MD_CONTENT contains PIPELINE_MAP (step enumeration single source)", () => {
@@ -617,15 +611,15 @@ describe("TC-017: producer prompt が COMPLETION_DIRECTIVE を保持する", () 
 // Source: tasks.md > T-01 Acceptance Criteria
 // ============================================================================
 
-describe("TC-018: PIPELINE_MAP が全 15 step を列挙し各 step に一行責務が付く", () => {
-  // build-fixer は廃止済み — PIPELINE_MAP から除外された
+describe("TC-018: PIPELINE_MAP が全 14 step を列挙し各 step に一行責務が付く", () => {
+  // build-fixer は廃止済み (absorb-build-fixer)
+  // test-materialize は廃止済み (absorb-test-materialize)
   const EXPECTED_STEPS = [
     "request-review",
     "design",
     "spec-review",
     "spec-fixer",
     "test-case-gen",
-    "test-materialize",
     "implementer",
     "verification",
     "code-review",
@@ -647,12 +641,16 @@ describe("TC-018: PIPELINE_MAP が全 15 step を列挙し各 step に一行責�
     expect(PIPELINE_MAP).not.toContain("build-fixer");
   });
 
-  it("TC-018: PIPELINE_MAP has exactly 15 data rows (one per step)", () => {
+  it("TC-018: PIPELINE_MAP does not contain test-materialize (廃止済み)", () => {
+    expect(PIPELINE_MAP).not.toContain("test-materialize");
+  });
+
+  it("TC-018: PIPELINE_MAP has exactly 14 data rows (one per step)", () => {
     // Count table rows: lines starting with "|" that are not the header or separator
     const rows = PIPELINE_MAP.split("\n").filter(
       (line) => line.startsWith("|") && !line.includes("Step") && !line.includes("---"),
     );
-    expect(rows.length).toBe(15);
+    expect(rows.length).toBe(14);
   });
 });
 
@@ -695,10 +693,10 @@ describe("TC-020: rules.ts に手書き件数誤記が存在しない", () => {
 // Source: tasks.md > T-02 Acceptance Criteria
 // ============================================================================
 
-describe("TC-021: rules.ts の責任範囲表に欠落していた 5 step が追加されている", () => {
+describe("TC-021: rules.ts の責任範囲表に欠落していた step が追加されている", () => {
+  // absorb-test-materialize: "test-materialize" は廃止済み — RULES_MD_CONTENT から除外
   const PREVIOUSLY_MISSING_STEPS = [
     "request-review",
-    "test-materialize",
     "conformance",
     "regression-gate",
     "custom-reviewer",
@@ -796,17 +794,17 @@ describe("TC-027: pipeline-map.ts がプロジェクト内 import を持たな�
 // Source: tasks.md > T-09 Acceptance Criteria
 // ============================================================================
 
-describe("TC-028 (TC-013): drift-guard テストが配列反復で全 prompt を網羅する構造を持つ（13 エントリ）", () => {
-  it("TC-028 (TC-013): ALL_14_AGENT_PROMPTS array contains exactly 13 entries (request-generate + build-fixer removed)", () => {
-    // TC-013: drift-guard が request-generate + build-fixer エントリ除去後に count = 13 で green になる
-    expect(ALL_14_AGENT_PROMPTS.length).toBe(13);
+describe("TC-028 (TC-013): drift-guard テストが配列反復で全 prompt を網羅する構造を持つ（12 エントリ）", () => {
+  it("TC-028 (TC-013): ALL_14_AGENT_PROMPTS array contains exactly 12 entries (request-generate + build-fixer + test-materialize removed)", () => {
+    // TC-013: drift-guard が request-generate + build-fixer + test-materialize 除去後に count = 12 で green
+    expect(ALL_14_AGENT_PROMPTS.length).toBe(12);
   });
 
   it("TC-028: JUDGE_PROMPTS contains all 6 judge steps", () => {
     expect(JUDGE_PROMPTS.length).toBe(6);
   });
 
-  it("TC-028: PRODUCER_AND_FIXER_PROMPTS covers all 7 producer/fixer steps (build-fixer 廃止後)", () => {
-    expect(PRODUCER_AND_FIXER_PROMPTS.length).toBe(7);
+  it("TC-028: PRODUCER_AND_FIXER_PROMPTS covers all 6 producer/fixer steps (build-fixer + test-materialize 廃止後)", () => {
+    expect(PRODUCER_AND_FIXER_PROMPTS.length).toBe(6);
   });
 });

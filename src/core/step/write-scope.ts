@@ -33,7 +33,6 @@ import {
 export const GUARDED_WRITE_STEPS: ReadonlySet<string> = new Set([
   "implementer",
   "code-fixer",
-  "test-materialize",
   "adr-gen",
 ]);
 
