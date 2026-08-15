@@ -3,11 +3,12 @@
  *
  * TC-004: chore は SPEC_REVIEW approved から IMPLEMENTER へ直行する
  * TC-005: chore は IMPLEMENTER success から VERIFICATION へ直行する
- * TC-006: chore の spec-fixer 観測修正は IMPLEMENTER へ forward される
- * TC-007: 非免除 type は SPEC_REVIEW approved から TEST_CASE_GEN へ遷移する (unchanged)
- * TC-012: STANDARD_TRANSITIONS で免除 row は unconditional TEST_CASE_GEN row より前に位置する
- * TC-015 (should): specFixerForwardsToImplementer は specFixerForwardsToTestGen が false のとき false を返す
+ * TC-007: 非免除 type は SPEC_REVIEW approved から IMPLEMENTER へ直行する (absorb-test-materialize)
+ * TC-012: STANDARD_TRANSITIONS で免除 row は unconditional IMPLEMENTER row より前に位置する
  * TC-016 (should): FAST_TRANSITIONS は本変更による追加 row を含まない
+ *
+ * absorb-test-materialize: TC-006 (specFixerForwardsToImplementer) と TC-015 を除去。
+ * specFixerForwardsToImplementer は廃止。TC-006/TC-004 は absorb-test-materialize-transitions.test.ts へ移動。
  *
  * Source: spec.md > Requirement: 免除 type の pipeline はテスト生成工程を通らない
  *         design.md > D2, D3, tasks.md > T-02, T-03
@@ -16,11 +17,7 @@ import { describe, it, expect } from "vitest";
 import { STANDARD_TRANSITIONS, FAST_TRANSITIONS } from "../types.js";
 import { STEP_NAMES } from "../../step/step-names.js";
 import type { JobState } from "../../../state/schema.js";
-// These imports will fail until the implementation exists (red tests intentional)
-import {
-  isTestGenExempt,
-  specFixerForwardsToImplementer,
-} from "../test-gen-exemption.js";
+import { isTestGenExempt } from "../test-gen-exemption.js";
 
 // ---------------------------------------------------------------------------
 // Minimal state fixture helpers
@@ -43,23 +40,6 @@ function makeState(type: string, extra?: Partial<Pick<JobState, "steps">>): JobS
     error: null,
     ...extra,
   } as unknown as JobState;
-}
-
-/** Minimal state with spec-review approved (for specFixerForwardsToTestGen=true). */
-function makeChoreStateWithSpecReviewApproved(): JobState {
-  return makeState("chore", {
-    steps: {
-      [STEP_NAMES.SPEC_REVIEW]: [
-        {
-          attempt: 1,
-          sessionId: null,
-          outcome: { verdict: "approved", findingsPath: null, error: null },
-          startedAt: "2024-01-01T00:00:00.000Z",
-          endedAt: "2024-01-01T00:01:00.000Z",
-        } as unknown as import("../../../state/schema.js").StepRun,
-      ],
-    },
-  });
 }
 
 // ---------------------------------------------------------------------------
@@ -111,40 +91,24 @@ describe("TC-005: chore IMPLEMENTER success → VERIFICATION (bypasses bite-evid
 });
 
 // ---------------------------------------------------------------------------
-// TC-006: chore の spec-fixer 観測修正は IMPLEMENTER へ forward される
-// Source: spec.md > Scenario: chore の spec-fixer 観測修正は implementer へ forward
+// TC-007: 非免除 type は SPEC_REVIEW approved から IMPLEMENTER へ直行する
+//         (absorb-test-materialize: TEST_MATERIALIZE 廃止 → 全 type が IMPLEMENTER へ)
+// Source: spec.md > Scenario: 非免除 type は spec-review 承認から implementer へ直行する
 // ---------------------------------------------------------------------------
-describe("TC-006: chore SPEC_FIXER approved (specFixerForwardsToTestGen condition) → IMPLEMENTER", () => {
-  it("TC-006: specFixerForwardsToImplementer is true when chore + specFixerForwardsToTestGen conditions met", () => {
-    const state = makeChoreStateWithSpecReviewApproved();
-    expect(specFixerForwardsToImplementer(state)).toBe(true);
-  });
-
-  it("TC-006: SPEC_FIXER/approved resolves to implementer for chore (when specFixerForwardsToTestGen condition met)", () => {
-    const state = makeChoreStateWithSpecReviewApproved();
-    const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.SPEC_FIXER, "approved", state);
-    expect(next).toBe(STEP_NAMES.IMPLEMENTER);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-007: 非免除 type は SPEC_REVIEW approved から TEST_MATERIALIZE へ遷移する
-//         (test-case-gen は design → test-case-gen → spec-review の順に先に実行済み)
-// Source: spec.md > Scenario: 非免除 type は spec-review 承認後 test-materialize へ進む
-// ---------------------------------------------------------------------------
-describe("TC-007: non-exempt type SPEC_REVIEW approved → TEST_MATERIALIZE", () => {
+describe("TC-007: non-exempt type SPEC_REVIEW approved → IMPLEMENTER (absorb-test-materialize)", () => {
   const nonExemptTypes = ["new-feature", "spec-change", "refactoring", "bug-fix"] as const;
 
   for (const t of nonExemptTypes) {
-    it(`TC-007: ${t} resolves SPEC_REVIEW/approved to test-materialize`, () => {
+    it(`TC-007: ${t} resolves SPEC_REVIEW/approved to implementer (not test-materialize)`, () => {
       const state = makeState(t);
       const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.SPEC_REVIEW, "approved", state);
-      expect(next).toBe(STEP_NAMES.TEST_MATERIALIZE);
+      expect(next).toBe(STEP_NAMES.IMPLEMENTER);
+      expect(next).not.toBe("test-materialize");
     });
   }
 
   for (const t of nonExemptTypes) {
-    it(`TC-007: ${t} resolves DESIGN/success to test-case-gen (new step order)`, () => {
+    it(`TC-007: ${t} resolves DESIGN/success to test-case-gen (unchanged)`, () => {
       const state = makeState(t);
       const next = resolveNext(STANDARD_TRANSITIONS, STEP_NAMES.DESIGN, "success", state);
       expect(next).toBe(STEP_NAMES.TEST_CASE_GEN);
@@ -164,20 +128,22 @@ describe("TC-007: non-exempt type SPEC_REVIEW approved → TEST_MATERIALIZE", ()
 });
 
 // ---------------------------------------------------------------------------
-// TC-012: STANDARD_TRANSITIONS で免除 row は unconditional TEST_MATERIALIZE row より前に位置する
+// TC-012: STANDARD_TRANSITIONS の構造検証
+//         absorb-test-materialize: SPEC_REVIEW→IMPLEMENTER は unconditional に変更
 //         + DESIGN block に免除 row (exempt→spec-review) と非免除 row (→test-case-gen) が存在する
 // Source: design.md > D1, D2, tasks.md > T-03, T-04
 // ---------------------------------------------------------------------------
-describe("TC-012: SPEC_REVIEW→IMPLEMENTER (exempt) row precedes SPEC_REVIEW→TEST_MATERIALIZE (unconditional)", () => {
-  it("TC-012: guarded SPEC_REVIEW→IMPLEMENTER row exists", () => {
-    const exemptRow = STANDARD_TRANSITIONS.find(
+describe("TC-012: STANDARD_TRANSITIONS structural invariants (absorb-test-materialize)", () => {
+  it("TC-012: unconditional SPEC_REVIEW→IMPLEMENTER row exists (absorb-test-materialize: no when guard)", () => {
+    // After abolition of test-materialize, SPEC_REVIEW→IMPLEMENTER is unconditional for all types.
+    const unconditionalRow = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_REVIEW &&
         t.on === "approved" &&
         t.to === STEP_NAMES.IMPLEMENTER &&
-        t.when !== undefined,
+        t.when === undefined,
     );
-    expect(exemptRow).toBeDefined();
+    expect(unconditionalRow).toBeDefined();
   });
 
   it("TC-012: guarded DESIGN→SPEC_REVIEW (exempt) row exists", () => {
@@ -202,27 +168,7 @@ describe("TC-012: SPEC_REVIEW→IMPLEMENTER (exempt) row precedes SPEC_REVIEW→
     expect(designUnconditionalRow).toBeDefined();
   });
 
-  it("TC-012: guarded SPEC_REVIEW→IMPLEMENTER index is less than unconditional SPEC_REVIEW→TEST_MATERIALIZE index", () => {
-    const exemptIdx = STANDARD_TRANSITIONS.findIndex(
-      (t) =>
-        t.step === STEP_NAMES.SPEC_REVIEW &&
-        t.on === "approved" &&
-        t.to === STEP_NAMES.IMPLEMENTER &&
-        t.when !== undefined,
-    );
-    const unconditionalIdx = STANDARD_TRANSITIONS.findIndex(
-      (t) =>
-        t.step === STEP_NAMES.SPEC_REVIEW &&
-        t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_MATERIALIZE &&
-        t.when === undefined,
-    );
-    expect(exemptIdx).toBeGreaterThan(-1);
-    expect(unconditionalIdx).toBeGreaterThan(-1);
-    expect(exemptIdx).toBeLessThan(unconditionalIdx);
-  });
-
-  it("TC-012: SPEC_REVIEW→SPEC_FIXER (specReviewHasRoutableFixables) row precedes SPEC_REVIEW→IMPLEMENTER (isTestGenExempt) row", () => {
+  it("TC-012: SPEC_REVIEW→SPEC_FIXER (guarded) precedes SPEC_REVIEW→IMPLEMENTER (unconditional) in transition order", () => {
     const specFixerIdx = STANDARD_TRANSITIONS.findIndex(
       (t) =>
         t.step === STEP_NAMES.SPEC_REVIEW &&
@@ -230,16 +176,16 @@ describe("TC-012: SPEC_REVIEW→IMPLEMENTER (exempt) row precedes SPEC_REVIEW→
         t.to === STEP_NAMES.SPEC_FIXER &&
         t.when !== undefined,
     );
-    const exemptIdx = STANDARD_TRANSITIONS.findIndex(
+    const implementerIdx = STANDARD_TRANSITIONS.findIndex(
       (t) =>
         t.step === STEP_NAMES.SPEC_REVIEW &&
         t.on === "approved" &&
         t.to === STEP_NAMES.IMPLEMENTER &&
-        t.when !== undefined,
+        t.when === undefined,
     );
     expect(specFixerIdx).toBeGreaterThan(-1);
-    expect(exemptIdx).toBeGreaterThan(-1);
-    expect(specFixerIdx).toBeLessThan(exemptIdx);
+    expect(implementerIdx).toBeGreaterThan(-1);
+    expect(specFixerIdx).toBeLessThan(implementerIdx);
   });
 
   it("TC-012: guarded IMPLEMENTER→VERIFICATION (exempt) row precedes unconditional IMPLEMENTER→BITE_EVIDENCE row", () => {
@@ -260,35 +206,6 @@ describe("TC-012: SPEC_REVIEW→IMPLEMENTER (exempt) row precedes SPEC_REVIEW→
     expect(exemptIdx).toBeGreaterThan(-1);
     expect(biteEvidenceIdx).toBeGreaterThan(-1);
     expect(exemptIdx).toBeLessThan(biteEvidenceIdx);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-015 (should): specFixerForwardsToImplementer は AND 合成 — 片方 false → false
-// Source: design.md > D3, tasks.md > T-02
-// ---------------------------------------------------------------------------
-describe("TC-015 (should): specFixerForwardsToImplementer is false when specFixerForwardsToTestGen is false", () => {
-  it("TC-015: returns false for chore with no spec-review runs (specFixerForwardsToTestGen=false side)", () => {
-    // No spec-review runs → specFixerForwardsToTestGen returns false → AND is false
-    const choreStateNoSpecReview = makeState("chore", { steps: {} });
-    expect(specFixerForwardsToImplementer(choreStateNoSpecReview)).toBe(false);
-  });
-
-  it("TC-015: returns false for chore when spec-review verdict is not approved", () => {
-    const state = makeState("chore", {
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          {
-            attempt: 1,
-            sessionId: null,
-            outcome: { verdict: "needs-fix", findingsPath: null, error: null },
-            startedAt: "2024-01-01T00:00:00.000Z",
-            endedAt: "2024-01-01T00:01:00.000Z",
-          } as unknown as import("../../../state/schema.js").StepRun,
-        ],
-      },
-    });
-    expect(specFixerForwardsToImplementer(state)).toBe(false);
   });
 });
 

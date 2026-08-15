@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T12:27:24.524Z",
+  "updatedAt": "2026-08-15T12:43:48.443Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-materialize",
+  "step": "implementer",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -70,7 +70,8 @@
     "a33648a3269d4cabd97d4c89fd88b4d0cef84a76",
     "0f96c247cf73cd91196805790dd4b626bb428eec",
     "e88cd3287ad8a3443473b804fbb851d8b9e81227",
-    "41f87f05dc2a8384f7b3cc684eec1914f819f433"
+    "41f87f05dc2a8384f7b3cc684eec1914f819f433",
+    "a4c0af7441c7747308f5d44dadb62d00bd5531fc"
   ],
   "touchedFiles": {
     "request-review": [
@@ -130,16 +131,47 @@
     ],
     "test-case-gen": [],
     "spec-review": [],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "test-materialize": [
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "src/core/resume/__tests__/resolve-step.test.ts",
+      "src/core/step/bite-evidence",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/step/implementer.ts",
+      "src/prompts/implementer-system.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/archive/__tests__/achieved-assurance.test.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/__tests__/diff-paths-between-commits.test.ts",
+      "src/store/event-journal.ts",
+      "src/state/schema/operations.ts",
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts",
+      "src/core/step/bite-evidence/__tests__/evidence-base-oids.test.ts",
+      "src/core/step/step-names.ts",
+      "src/kernel/step-names.ts",
+      "src/core/pipeline/__tests__/absorb-test-materialize-transitions.test.ts",
+      "src/core/step/__tests__/implementer-materialize.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate-no-test-materialize.test.ts",
+      "src/core/archive/__tests__/achieved-assurance-no-base-oid.test.ts",
+      "src/core/resume/__tests__/resolve-step-test-materialize-alias.test.ts",
+      "src/core/runtime/__tests__/list-changed-files-between-commits.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 30,
+    "historyCount": 33,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 2,
-      "spec-fixer": 2
+      "spec-fixer": 2,
+      "test-materialize": 1
     }
   }
 }

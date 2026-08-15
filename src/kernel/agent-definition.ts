@@ -18,7 +18,6 @@ export type AgentStepName =
   | "spec-review"
   | "spec-fixer"
   | "test-case-gen"
-  | "test-materialize"
   | "implementer"
   | "code-review"
   | "code-fixer"

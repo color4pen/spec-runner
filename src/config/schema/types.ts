@@ -245,8 +245,8 @@ export interface PipelineConfig {
    */
   fast?: FastPipelineConfig;
   /**
-   * Glob patterns removed from the GUARDED staging set (implementer / build-fixer /
-   * code-fixer / test-materialize / adr-gen). Matched paths are not staged and remain
+   * Glob patterns removed from the GUARDED staging set (implementer / code-fixer / adr-gen).
+   * Matched paths are not staged and remain
    * in the worktree. Absent = no exclusions (the target repo's .gitignore is the first
    * line of defense). Uses the shared bounded glob matcher (**\/, *, literal others).
    * No effect on scoped steps.

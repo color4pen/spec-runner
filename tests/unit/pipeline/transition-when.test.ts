@@ -196,7 +196,7 @@ describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
     //   3. spec-fixer approved → test-case-gen (when: specFixerNeedsFixForward)
     // (build-fixer rows removed: verification failed→implementer replaces old build-fixer path;
     //  implementer→verification(when verificationFailedLast) added; 2 build-fixer rows removed → net -1)
-    expect(STANDARD_TRANSITIONS.length).toBe(51);
+    expect(STANDARD_TRANSITIONS.length).toBe(47);
   });
 });
 

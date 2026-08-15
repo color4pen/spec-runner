@@ -183,7 +183,6 @@ function makeJobState(overrides: {
  */
 function makeFakeRuntime(options: {
   changedFiles?: string[] | "unavailable";
-  diffFiles?: string[] | "unavailable";
   baseTestResults?: IsolatedTestResult;
   headTestResults?: IsolatedTestResult;
   testCasesMdAtAnchor?: CommitFileResult | "unavailable";
@@ -193,7 +192,6 @@ function makeFakeRuntime(options: {
 } = {}): AssuranceProvenanceRuntime {
   const {
     changedFiles = [TEST_FILE],
-    diffFiles = [],
     baseTestResults = { kind: "ran", results: [{ file: TEST_FILE, passed: false }] },
     headTestResults = { kind: "ran", results: [{ file: TEST_FILE, passed: true }] },
     testCasesMdAtAnchor,
@@ -229,23 +227,15 @@ function makeFakeRuntime(options: {
     : (specMdAtHead ?? defaultSpecMdResult);
 
   const runtime: AssuranceProvenanceRuntime = {
-    async listCommitChangedFiles(_oid: string, _cwd: string): Promise<ChangedFilesResult> {
-      if (changedFiles === "unavailable") {
-        return { kind: "unavailable", reason: "fake listCommitChangedFiles unavailable" };
-      }
-      return { kind: "success", files: changedFiles };
-    },
-
-    async diffPathsBetweenCommits(
+    async listChangedFilesBetweenCommits(
       _baseOid: string,
       _headOid: string,
-      _paths: string[],
       _cwd: string,
     ): Promise<ChangedFilesResult> {
-      if (diffFiles === "unavailable") {
-        return { kind: "unavailable", reason: "fake diffPathsBetweenCommits unavailable" };
+      if (changedFiles === "unavailable") {
+        return { kind: "unavailable", reason: "fake listChangedFilesBetweenCommits unavailable" };
       }
-      return { kind: "success", files: diffFiles };
+      return { kind: "success", files: changedFiles };
     },
 
     // Evidence Base base-red check (replaces runTestsAtCommit(baseOid)).

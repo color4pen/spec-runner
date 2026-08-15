@@ -10,7 +10,7 @@ import {
   specFixerNeedsFixForward,
   specReviewNeedsFixIsTcOnly,
 } from "./spec-observation.js";
-import { isTestGenExempt, specFixerForwardsToImplementer } from "./test-gen-exemption.js";
+import { isTestGenExempt } from "./test-gen-exemption.js";
 
 /**
  * Pipeline-level role of a step (convergence / resume semantics).
@@ -256,21 +256,16 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   // --- spec-review loop ---
   // Observation auto-fix: spec-review approved + routable fixable findings → spec-fixer (guarded, must precede unconditional row)
   { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.SPEC_FIXER,       when: specReviewHasRoutableFixables },
-  // Test-gen bypass: exempt type routes directly to implementer (first-match-wins; must precede unconditional TEST_MATERIALIZE row)
-  { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.IMPLEMENTER,      when: isTestGenExempt },
-  { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.TEST_MATERIALIZE },
+  // All types (exempt and non-exempt) route directly from spec-review approved → implementer
+  { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.IMPLEMENTER },
   // TC-only needs-fix: no spec-fixer work → route directly to test-case-gen (guarded, must precede unconditional SPEC_FIXER row)
   { step: STEP_NAMES.SPEC_REVIEW, on: "needs-fix", to: STEP_NAMES.TEST_CASE_GEN,   when: specReviewNeedsFixIsTcOnly },
   { step: STEP_NAMES.SPEC_REVIEW, on: "needs-fix", to: STEP_NAMES.SPEC_FIXER },
   // spec-review halts via loop exhaustion (SPEC_REVIEW_RETRIES_EXHAUSTED) or unroutable canon finding (CANON_FINDING_ESCALATION), whichever occurs first
   { step: STEP_NAMES.TEST_CASE_GEN,    on: "success", to: STEP_NAMES.SPEC_REVIEW },
   { step: STEP_NAMES.TEST_CASE_GEN,    on: "error",   to: "escalate" },
-  { step: STEP_NAMES.TEST_MATERIALIZE, on: "success", to: STEP_NAMES.IMPLEMENTER },
-  { step: STEP_NAMES.TEST_MATERIALIZE, on: "error",   to: "escalate" },
-  // Test-gen bypass: exempt type's observation pass forwards to implementer (must precede specFixerObservationForward row)
-  { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.IMPLEMENTER,      when: specFixerForwardsToImplementer },
-  // Observation auto-fix: spec-fixer approved after spec-review approved → test-materialize (test-case-gen already ran; guarded, must precede needs-fix-forward row)
-  { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.TEST_MATERIALIZE,  when: specFixerObservationForward },
+  // Observation auto-fix: spec-fixer approved after spec-review approved → implementer (test-case-gen already ran; guarded, must precede needs-fix-forward row)
+  { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.IMPLEMENTER,      when: specFixerObservationForward },
   // Needs-fix path: spec-fixer approved after spec-review needs-fix → test-case-gen (TC regeneration; guarded, must precede unconditional row)
   { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.TEST_CASE_GEN,     when: specFixerNeedsFixForward },
   // spec-fixer → spec-review (direct, for conformance reverification paths)

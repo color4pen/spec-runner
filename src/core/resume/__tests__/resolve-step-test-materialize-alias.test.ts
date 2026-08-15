@@ -206,6 +206,6 @@ describe("TC-011: legacy state with test-materialize history loads and folds wit
     // commitOid is preserved on the StepRun record (passthrough)
     const matRun = state.steps?.["test-materialize"]?.[0];
     expect(matRun).toBeDefined();
-    expect((matRun as Record<string, unknown>)["commitOid"]).toBe(matCommitOid);
+    expect((matRun as unknown as Record<string, unknown>)["commitOid"]).toBe(matCommitOid);
   });
 });

@@ -73,7 +73,7 @@ type IsolatedTestResult =
 /**
  * Build a fake runtime that supports the Evidence Base gate interface:
  *   - captureHeadSha: returns a HEAD OID or null
- *   - listCommitChangedFiles: returns configured files
+ *   - listChangedFilesBetweenCommits: returns configured files
  *   - runTestsOnSynthesizedTree: per-call results for the new red-side method
  *   - runTestsAtCommit: per-oid results (for candidate/HEAD green check)
  */
@@ -91,8 +91,9 @@ function makeFakeRuntime(options: {
     captureHeadSha: async (_cwd: string): Promise<string | null> => {
       return options.headOid ?? null;
     },
-    listCommitChangedFiles: async (
-      _oid: string,
+    listChangedFilesBetweenCommits: async (
+      _baseOid: string,
+      _headOid: string,
       _cwd: string,
     ): Promise<{ kind: "success"; files: string[] } | { kind: "unavailable"; reason: string }> => {
       const files = options.changedFiles ?? ["src/__tests__/feature.test.ts"];

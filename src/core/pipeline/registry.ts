@@ -14,7 +14,6 @@ import { DesignStep } from "../step/design.js";
 import { SpecReviewStep } from "../step/spec-review.js";
 import { SpecFixerStep } from "../step/spec-fixer.js";
 import { TestCaseGenStep } from "../step/test-case-gen.js";
-import { TestMaterializeStep } from "../step/test-materialize.js";
 import { ImplementerStep } from "../step/implementer.js";
 import { VerificationStep } from "../step/verification.js";
 import { CodeReviewStep } from "../step/code-review.js";
@@ -25,13 +24,14 @@ import { PrCreateStep } from "../step/pr-create.js";
 import { BiteEvidenceStep } from "../step/bite-evidence/step.js";
 
 /**
- * Standard 14-step pipeline descriptor.
+ * Standard 13-step pipeline descriptor.
  * All fields match the current createStandardPipeline / STANDARD_* constants exactly.
  *
  * Step order: request-review → design → test-case-gen → spec-review → spec-fixer →
- *   test-materialize → implementer → bite-evidence → verification →
+ *   implementer → bite-evidence → verification →
  *   code-review → code-fixer → conformance → adr-gen → pr-create
  *
+ * test-materialize は廃止済み。テスト実体化は implementer に統合。
  * build-fixer は廃止済み。verification 失敗は implementer への再入で直す（loopFixerPairs 参照）。
  */
 export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
@@ -42,7 +42,6 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.TEST_CASE_GEN,    TestCaseGenStep],
     [STEP_NAMES.SPEC_REVIEW,      SpecReviewStep],
     [STEP_NAMES.SPEC_FIXER,       SpecFixerStep],
-    [STEP_NAMES.TEST_MATERIALIZE, TestMaterializeStep],
     [STEP_NAMES.IMPLEMENTER,      ImplementerStep],
     [STEP_NAMES.BITE_EVIDENCE,    BiteEvidenceStep],
     [STEP_NAMES.VERIFICATION,     VerificationStep],
@@ -73,7 +72,6 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.SPEC_REVIEW]:      { role: "reviewer", phase: "spec" },
     [STEP_NAMES.SPEC_FIXER]:       { role: "fixer",    phase: "spec" },
     [STEP_NAMES.TEST_CASE_GEN]:    { role: "gate",     phase: "spec" },
-    [STEP_NAMES.TEST_MATERIALIZE]: { role: "gate",     phase: "impl" },
     [STEP_NAMES.IMPLEMENTER]:      { role: "creator",  phase: "impl" },
     [STEP_NAMES.BITE_EVIDENCE]:    { role: "gate",     phase: "impl" },
     [STEP_NAMES.VERIFICATION]:     { role: "gate",     phase: "impl" },
@@ -177,7 +175,7 @@ export const FAST_DESCRIPTOR: PipelineDescriptor = {
 
 /**
  * Registry mapping pipeline ids to their descriptors.
- * Three entries: standard (14-step), design-only (1-step), fast (8-step slim with scope).
+ * Three entries: standard (13-step), design-only (1-step), fast (8-step slim with scope).
  */
 export const PIPELINE_REGISTRY: Record<string, PipelineDescriptor> = {
   [PIPELINE_IDS.STANDARD]:    STANDARD_DESCRIPTOR,

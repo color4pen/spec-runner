@@ -79,8 +79,9 @@ function makeFakeRuntime(options: {
       captureHeadSha: async (_cwd: string): Promise<string | null> => {
         return options.headOid ?? null;
       },
-      listCommitChangedFiles: async (
-        _oid: string,
+      listChangedFilesBetweenCommits: async (
+        _baseOid: string,
+        _headOid: string,
         _cwd: string,
       ): Promise<{ kind: "success"; files: string[] } | { kind: "unavailable"; reason: string }> => {
         const files = options.changedFiles ?? [];

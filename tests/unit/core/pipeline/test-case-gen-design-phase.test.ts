@@ -6,14 +6,14 @@
  *
  * TC-001: 通常 type は design から test-case-gen へ進む
  * TC-002: 通常 type は test-case-gen から spec-review へ進む
- * TC-003: 通常 type は spec-review 承認後に test-materialize へ進む
+ * TC-003: 通常 type は spec-review 承認後に implementer へ進む（absorb-test-materialize）
  * TC-004: 免除 type は design から spec-review へ直行する
  * TC-005: 免除 type は test-case-gen を通らない（integration）
  * TC-006: spec-fixer 修正後は test-case-gen を再生成する
  * TC-007: 再生成後に spec-review へ戻る
  * TC-008: TC のみの needs-fix は test-case-gen へ直行する
- * TC-010: 観察 pass の spec-fixer は test-materialize へ継続する
- * TC-011: 観察 pass 後に spec-review は再実行されない（integration）
+ * TC-010: 観察 pass の spec-fixer は implementer へ継続する（absorb-test-materialize）
+ * TC-011: 観察 pass 後に spec-review は再実行されない（integration）（absorb-test-materialize: implementer に到達）
  * TC-012: 通常 type の spec-review 入力に test-cases.md が含まれる
  * TC-013: 免除 type の spec-review 入力に test-cases.md が含まれない (should)
  * TC-014: spec-review prompt に TC 照合観点が含まれる
@@ -24,7 +24,7 @@
  * TC-019: 承認後の test-cases.md finding は operator 保護される
  * TC-021: specFixerObservationForward が観察 pass 検出を正しく担う (should)
  * TC-022: specFixerNeedsFixForward が needs-fix/conformance-triggered で正しく真偽を返す (should)
- * TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 52 (should)
+ * TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 47 (absorb-test-materialize 後)
  * TC-028: TC と severity 問わず spec routable finding の混在では specReviewNeedsFixIsTcOnly が false (must)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
@@ -272,7 +272,7 @@ describe("TC-001: 通常 type は design から test-case-gen へ進む", () => 
 // TC-002: 通常 type は test-case-gen から spec-review へ進む
 // Source: spec.md > Requirement: 通常 type は test-case-gen を spec-review の前に実行する
 //         > Scenario: 通常 type は test-case-gen から spec-review へ進む
-// RED: currently TEST_CASE_GEN success → TEST_MATERIALIZE
+// GREEN: TEST_CASE_GEN success → SPEC_REVIEW (test-materialize abolished)
 // ---------------------------------------------------------------------------
 
 describe("TC-002: 通常 type は test-case-gen から spec-review へ進む", () => {
@@ -291,26 +291,26 @@ describe("TC-002: 通常 type は test-case-gen から spec-review へ進む", (
       (t) =>
         t.step === STEP_NAMES.TEST_CASE_GEN &&
         t.on === "success" &&
-        t.to === STEP_NAMES.TEST_MATERIALIZE,
+        t.to === "test-materialize",
     );
     expect(old).toBeUndefined();
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-003: 通常 type は spec-review 承認後に test-materialize へ進む
-// Source: spec.md > Requirement: 通常 type は test-case-gen を spec-review の前に実行する
-//         > Scenario: 通常 type は spec-review 承認後に test-materialize へ進む
-// RED: currently unconditional spec-review approved → test-case-gen
+// TC-003: 通常 type は spec-review 承認後に implementer へ進む（absorb-test-materialize）
+// Source: spec.md > Requirement: spec-phase 承認は全 type で implementer へ収束する
+//         > Scenario: 通常 type は spec-review 承認後に implementer へ進む
+// GREEN: unconditional spec-review approved → implementer
 // ---------------------------------------------------------------------------
 
-describe("TC-003: 通常 type は spec-review 承認後に test-materialize へ進む", () => {
-  it("TC-003: STANDARD_TRANSITIONS に spec-review --approved→ test-materialize (unconditional) が存在する", () => {
+describe("TC-003: 通常 type は spec-review 承認後に implementer へ進む", () => {
+  it("TC-003: STANDARD_TRANSITIONS に spec-review --approved→ implementer (unconditional) が存在する", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_REVIEW &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_MATERIALIZE &&
+        t.to === STEP_NAMES.IMPLEMENTER &&
         !t.when,
     );
     expect(row).toBeDefined();
@@ -491,8 +491,6 @@ describe("TC-005: 免除 type は test-case-gen を通らない（integration）
       ),
       { step: STEP_NAMES.IMPLEMENTER, on: "success", to: "end" as const },
       { step: STEP_NAMES.IMPLEMENTER, on: "error", to: "escalate" as const },
-      { step: STEP_NAMES.TEST_MATERIALIZE, on: "success", to: "end" as const },
-      { step: STEP_NAMES.TEST_MATERIALIZE, on: "error", to: "escalate" as const },
     ];
 
     const allStepNames = [
@@ -719,30 +717,30 @@ describe("TC-008: TC のみの needs-fix は test-case-gen へ直行する", () 
 });
 
 // ---------------------------------------------------------------------------
-// TC-010: 観察 pass の spec-fixer は test-materialize へ継続する
+// TC-010: 観察 pass の spec-fixer は implementer へ継続する（absorb-test-materialize）
 // Source: spec.md > Requirement: 観察 pass の意味論を維持する
-//         > Scenario: 観察 pass の spec-fixer は test-materialize へ継続する
-// RED: currently spec-fixer approved → test-case-gen (old), not test-materialize
+//         > Scenario: 観察 pass の spec-fixer は implementer へ継続する
+// GREEN: spec-fixer approved → implementer (when specFixerObservationForward)
 // ---------------------------------------------------------------------------
 
-describe("TC-010: 観察 pass の spec-fixer は test-materialize へ継続する", () => {
-  it("TC-010: STANDARD_TRANSITIONS に spec-fixer --approved→ test-materialize の guarded row が存在する", () => {
+describe("TC-010: 観察 pass の spec-fixer は implementer へ継続する", () => {
+  it("TC-010: STANDARD_TRANSITIONS に spec-fixer --approved→ implementer の guarded row が存在する", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_FIXER &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_MATERIALIZE &&
+        t.to === STEP_NAMES.IMPLEMENTER &&
         !!t.when,
     );
     expect(row).toBeDefined();
   });
 
-  it("TC-010: spec-fixer → test-materialize の when predicate は observation pass 状態で true を返す", () => {
+  it("TC-010: spec-fixer → implementer の when predicate は observation pass 状態で true を返す", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_FIXER &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_MATERIALIZE &&
+        t.to === STEP_NAMES.IMPLEMENTER &&
         !!t.when,
     );
     expect(row).toBeDefined();
@@ -828,11 +826,11 @@ describe("TC-011: 観察 pass 後に spec-review は再実行されない（inte
     void stdoutSpy;
   });
 
-  it("TC-011: 観察 pass では spec-review は 1 回だけ実行され test-materialize に到達する", async () => {
+  it("TC-011: 観察 pass では spec-review は 1 回だけ実行され implementer に到達する", async () => {
     let specReviewCount = 0;
     let specFixerCount = 0;
     let testCaseGenCount = 0;
-    let testMaterializeCount = 0;
+    let implementerCount = 0;
 
     const events = new EventBus();
     const specReviewFindings = [makeFinding("medium", "fixable", SPEC_MD)];
@@ -894,14 +892,14 @@ describe("TC-011: 観察 pass 後に spec-review は再実行されない（inte
           };
         }
 
-        if (step.name === STEP_NAMES.TEST_MATERIALIZE) {
-          testMaterializeCount++;
+        if (step.name === STEP_NAMES.IMPLEMENTER) {
+          implementerCount++;
           return {
             ...state,
             steps: {
               ...(state.steps ?? {}),
-              [STEP_NAMES.TEST_MATERIALIZE]: [
-                ...(state.steps?.[STEP_NAMES.TEST_MATERIALIZE] ?? []),
+              [STEP_NAMES.IMPLEMENTER]: [
+                ...(state.steps?.[STEP_NAMES.IMPLEMENTER] ?? []),
                 makeStepRun({ verdict: "success", startedAt: now, endedAt: now }),
               ],
             },
@@ -912,7 +910,7 @@ describe("TC-011: 観察 pass 後に spec-review は再実行されない（inte
       },
     );
 
-    // Include spec-phase transitions + test-case-gen + terminals for test-materialize
+    // Include spec-phase transitions + test-case-gen + terminals for implementer
     const specPhaseTransitions = [
       ...STANDARD_TRANSITIONS.filter(
         (t) =>
@@ -920,8 +918,8 @@ describe("TC-011: 観察 pass 後に spec-review は再実行されない（inte
           t.step === STEP_NAMES.SPEC_FIXER ||
           t.step === STEP_NAMES.TEST_CASE_GEN,
       ),
-      { step: STEP_NAMES.TEST_MATERIALIZE, on: "success", to: "end" as const },
-      { step: STEP_NAMES.TEST_MATERIALIZE, on: "error", to: "escalate" as const },
+      { step: STEP_NAMES.IMPLEMENTER, on: "success", to: "end" as const },
+      { step: STEP_NAMES.IMPLEMENTER, on: "error", to: "escalate" as const },
     ];
 
     const pipeline = new Pipeline({
@@ -929,7 +927,7 @@ describe("TC-011: 観察 pass 後に spec-review は再実行されない（inte
         [STEP_NAMES.SPEC_REVIEW, makeStep(STEP_NAMES.SPEC_REVIEW)],
         [STEP_NAMES.SPEC_FIXER, makeStep(STEP_NAMES.SPEC_FIXER)],
         [STEP_NAMES.TEST_CASE_GEN, makeStep(STEP_NAMES.TEST_CASE_GEN)],
-        [STEP_NAMES.TEST_MATERIALIZE, makeStep(STEP_NAMES.TEST_MATERIALIZE)],
+        [STEP_NAMES.IMPLEMENTER, makeStep(STEP_NAMES.IMPLEMENTER)],
       ]),
       transitions: specPhaseTransitions,
       maxIterations: 3,
@@ -952,8 +950,8 @@ describe("TC-011: 観察 pass 後に spec-review は再実行されない（inte
     expect(specReviewCount).toBe(1);
     // 2. spec-fixer ran exactly once (observation pass consumed fixable findings)
     expect(specFixerCount).toBe(1);
-    // 3. test-materialize was reached (pipeline did NOT re-run spec-review)
-    expect(testMaterializeCount).toBe(1);
+    // 3. implementer was reached (pipeline did NOT re-run spec-review)
+    expect(implementerCount).toBe(1);
     // 4. test-case-gen was NOT called during observation pass
     expect(testCaseGenCount).toBe(0);
   });
@@ -1408,9 +1406,9 @@ describe("TC-022: specFixerNeedsFixForward が needs-fix/conformance-triggered �
 // RED: currently 49 rows
 // ---------------------------------------------------------------------------
 
-describe("TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 51 (build-fixer 廃止後)", () => {
-  it("TC-026: STANDARD_TRANSITIONS.length === 51（旧 48 + 3 行増）", () => {
-    expect(STANDARD_TRANSITIONS.length).toBe(51);
+describe("TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 47 (absorb-test-materialize 後)", () => {
+  it("TC-026: STANDARD_TRANSITIONS.length === 47（test-materialize 廃止で -4 行）", () => {
+    expect(STANDARD_TRANSITIONS.length).toBe(47);
   });
 });
 

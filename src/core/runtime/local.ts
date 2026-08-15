@@ -991,6 +991,38 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
+   * List files changed between two arbitrary commit OIDs (no path filter).
+   * Runs `git diff --name-only <baseOid> <headOid>` in cwd.
+   *
+   * Used by the bite-evidence gate and archive floor to identify materialized test files
+   * via Evidence Base ↔ candidate diff (EB-native file-set identification).
+   *
+   * Never throws — returns ChangedFilesResult DU instead.
+   * - exit 0: {kind:"success", files} (empty files = no changes).
+   * - non-zero exit / spawn error: {kind:"unavailable", reason}.
+   */
+  async listChangedFilesBetweenCommits(baseOid: string, headOid: string, cwd: string): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
+    try {
+      const result = await this.spawnFn(
+        "git",
+        ["diff", "--name-only", baseOid, headOid],
+        { cwd },
+      );
+      if (result.exitCode !== 0) {
+        return { kind: "unavailable", reason: `git diff exited with code ${result.exitCode}` };
+      }
+      const files = result.stdout
+        .split("\n")
+        .map((line) => line.trim())
+        .filter((line) => line.length > 0);
+      return { kind: "success", files };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      return { kind: "unavailable", reason };
+    }
+  }
+
+  /**
    * List files changed between two arbitrary commit OIDs, filtered to the given paths.
    * Runs `git diff --name-only <baseOid> <headOid> -- <paths...>` in cwd.
    *

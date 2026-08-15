@@ -7,7 +7,7 @@
  *         > Scenario: implementer message は test-materialize 実行歴に依存しない
  */
 import { describe, it, expect } from "vitest";
-import { IMPLEMENTER_SYSTEM_PROMPT } from "../../prompts/implementer-system.js";
+import { IMPLEMENTER_SYSTEM_PROMPT } from "../../../prompts/implementer-system.js";
 import { ImplementerStep, buildImplementerInitialMessage } from "../implementer.js";
 import type { JobState, StepRun } from "../../../state/schema.js";
 import type { StepDeps } from "../types.js";

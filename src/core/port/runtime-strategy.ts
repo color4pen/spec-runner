@@ -634,8 +634,7 @@ export interface RuntimeStrategy {
   /**
    * List files changed by a specific commit vs its first parent.
    *
-   * Used by the bite-evidence gate to identify the materialized test files from
-   * the test-materialize commit.
+   * Used by the bite-evidence gate for single-commit file identification.
    *
    * Contract:
    * - Never throws — returns a ChangedFilesResult discriminated union instead.
@@ -651,11 +650,31 @@ export interface RuntimeStrategy {
   listCommitChangedFiles?(oid: string, cwd: string): Promise<ChangedFilesResult>;
 
   /**
+   * List files changed between two arbitrary commit OIDs (no path filter).
+   *
+   * Used by the bite-evidence gate and archive floor to identify materialized test files
+   * via Evidence Base ↔ candidate diff (EB-native file-set identification).
+   *
+   * Contract:
+   * - Never throws — returns a ChangedFilesResult discriminated union instead.
+   * - success: git diff ran; files contains all repo-relative paths changed between the two OIDs.
+   * - unavailable: git command failed, either OID is non-existent, or runtime cannot perform
+   *   a local git diff (e.g. managed runtime).
+   *
+   * - local:   `git diff --name-only <baseOid> <headOid>` (no pathspec) in cwd.
+   *            exit 0 → success; non-zero exit / spawn error → unavailable.
+   * - managed: always returns unavailable (no local worktree; structural limitation).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
+   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
+   */
+  listChangedFilesBetweenCommits?(baseOid: string, headOid: string, cwd: string): Promise<ChangedFilesResult>;
+
+  /**
    * List files changed between two arbitrary commit OIDs, filtered to the given paths.
    *
    * Used by the archive floor gate (assurance-provenance-floor) to verify that
-   * materialized test files are byte-identical between the test-materialize base commit
-   * and the final archive HEAD commit (freeze check / tamper detection).
+   * declared paths are byte-identical between two commits (freeze check / tamper detection).
    *
    * Contract:
    * - Never throws — returns a ChangedFilesResult discriminated union instead.
@@ -845,6 +864,7 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
     egressParams?: unknown,
   ): Promise<void>;
   listCommitChangedFiles(oid: string, cwd: string): Promise<ChangedFilesResult>;
+  listChangedFilesBetweenCommits(baseOid: string, headOid: string, cwd: string): Promise<ChangedFilesResult>;
   diffPathsBetweenCommits(baseOid: string, headOid: string, paths: string[], cwd: string): Promise<ChangedFilesResult>;
   runTestsAtCommit(
     oid: string,

@@ -653,6 +653,18 @@ export class ManagedRuntime implements RealRuntimeStrategy {
 
   /**
    * ManagedRuntime has no local worktree — always returns unavailable.
+   * Structural limitation: EB-native file-set identification requires a local git worktree.
+   */
+  async listChangedFilesBetweenCommits(
+    _baseOid: string,
+    _headOid: string,
+    _cwd: string,
+  ): Promise<import("../port/runtime-strategy.js").ChangedFilesResult> {
+    return { kind: "unavailable", reason: "managed runtime has no local worktree for listChangedFilesBetweenCommits" };
+  }
+
+  /**
+   * ManagedRuntime has no local worktree — always returns unavailable.
    * Structural limitation: two-OID freeze check requires a local git worktree.
    */
   async diffPathsBetweenCommits(

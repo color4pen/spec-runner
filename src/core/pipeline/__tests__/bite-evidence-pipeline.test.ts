@@ -109,7 +109,7 @@ describe("TC-009: existing pipeline behavior is preserved", () => {
     expect(stepNames).toContain(STEP_NAMES.SPEC_REVIEW);
     expect(stepNames).toContain(STEP_NAMES.SPEC_FIXER);
     expect(stepNames).toContain(STEP_NAMES.TEST_CASE_GEN);
-    expect(stepNames).toContain(STEP_NAMES.TEST_MATERIALIZE);
+    expect(stepNames).not.toContain("test-materialize"); // abolished in absorb-test-materialize
     expect(stepNames).toContain(STEP_NAMES.IMPLEMENTER);
     expect(stepNames).toContain(STEP_NAMES.VERIFICATION);
     expect(stepNames).not.toContain("build-fixer");
@@ -139,11 +139,11 @@ describe("TC-009: existing pipeline behavior is preserved", () => {
     );
     expect(tcgRow).toBeDefined();
 
-    // test-materialize → implementer (now test-materialize → implementer → bite-evidence)
-    const tmRow = STANDARD_TRANSITIONS.find(
-      (t) => t.step === STEP_NAMES.TEST_MATERIALIZE && t.on === "success" && t.to === STEP_NAMES.IMPLEMENTER,
+    // spec-review approved → implementer (absorb-test-materialize: test-materialize abolished, unconditional row)
+    const specReviewRow = STANDARD_TRANSITIONS.find(
+      (t) => t.step === STEP_NAMES.SPEC_REVIEW && t.on === "approved" && t.to === STEP_NAMES.IMPLEMENTER && !t.when,
     );
-    expect(tmRow).toBeDefined();
+    expect(specReviewRow).toBeDefined();
 
     // adr-gen → pr-create
     const adrRow = STANDARD_TRANSITIONS.find(
@@ -162,7 +162,7 @@ describe("TC-009: existing pipeline behavior is preserved", () => {
     // Fast pipeline does not have test-case-gen or test-materialize
     const fastStepNames = FAST_DESCRIPTOR.steps.map(([name]) => name);
     expect(fastStepNames).not.toContain(STEP_NAMES.TEST_CASE_GEN);
-    expect(fastStepNames).not.toContain(STEP_NAMES.TEST_MATERIALIZE);
+    expect(fastStepNames).not.toContain("test-materialize"); // abolished in absorb-test-materialize
     expect(fastStepNames).not.toContain("bite-evidence");
   });
 

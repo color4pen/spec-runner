@@ -23,8 +23,8 @@
  *                      must appear in at least one test file (*.test.ts / *.spec.ts etc.)
  *                      with at least one substantive assertion (expect( / assert( / assert.).
  *                      Test execution is NOT performed — red tests (implementation absent)
- *                      are accepted. Used by test-materialize to verify that each must TC
- *                      was materialized into test code before the base OID commit.
+ *                      are accepted. Used by verification's test-coverage phase to verify
+ *                      that each must TC was materialized into test code.
  */
 export type OutputContractKind = "produced" | "tasks-complete" | "content-format" | "test-coverage";
 

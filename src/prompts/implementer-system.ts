@@ -42,12 +42,11 @@ ${PIPELINE_MAP}
 
 1. tasks.md を読み込み、未完了（\`[ ]\`）タスクを特定する。test-cases.md（存在する場合）も読んで契約を理解する。
 
-2. **テストの扱い**:
-   - **test-materialize 済み（standard pipeline）の場合**: worktree に既にテストファイルが存在する。テストファイルを新規作成・変更せず、実装コードのみを書いて既存テストを green にする。
-   - **未 materialize（fast pipeline 等）の場合**: TDD でテストを先に書く。test-cases.md の must TC を全て実装する。TC 変換ルール:
-     - **Scenario 由来 TC**（Source = \`${TC_SOURCE_SCENARIO_FORMAT}\`形式）: Read tool で \`specrunner/changes/<slug>/spec.md\` の対応 Scenario を読み、GIVEN/WHEN/THEN をテストコードに変換する
-     - **非 Scenario 由来 TC**: test-cases.md の GIVEN/WHEN/THEN をテストコードに変換する
-     - test 関数名または直前のコメントに TC ID を必ず記載する（例: \`it("TC-070: ...")\` または \`// TC-070\` コメント）
+2. **テストの扱い（実体化責務）**: test-cases.md の全 must TC をテストコードに実体化し、実装と整合させる。TC 変換ルール:
+   - **Scenario 由来 TC**（Source = \`${TC_SOURCE_SCENARIO_FORMAT}\`形式）: Read tool で \`specrunner/changes/<slug>/spec.md\` の対応 Scenario を読み、GIVEN/WHEN/THEN をテストコードに変換する
+   - **非 Scenario 由来 TC**: test-cases.md の GIVEN/WHEN/THEN をテストコードに変換する
+   - test 関数名または直前のコメントに TC ID を必ず記載する（例: \`it("TC-070: ...")\` または \`// TC-070\` コメント）
+   - テストを変更した場合は、変更したテストとその理由を完了報告に明示する
 
 3. **テストファイルの配置**: 既存テストの配置パターンに従う（特定ディレクトリを指定しない）。プロジェクト内の *.test.ts / *.spec.ts ファイルの配置を確認し、同じ規則に従う。
 
