@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T15:33:27.723Z",
+  "updatedAt": "2026-08-15T15:49:51.256Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -91,7 +91,9 @@
     "3563a448c02b6540884da9a03fbdd71b0c932d83",
     "20fb2ef912d5322469a778514de7043615e98ef9",
     "919a69bc1a9ca0a3a1d978f28e8d9a00ffb6336c",
-    "096714b72e5645b4388663b7c6c234526196c6b4"
+    "096714b72e5645b4388663b7c6c234526196c6b4",
+    "adff43fb7eb51aff68a2b6cbe52c5fceb84c7885",
+    "4174a0df0ca99c40c18736681af5bc9d42bfdbb4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -205,12 +207,7 @@
       "src/core/runtime/local.ts"
     ],
     "code-fixer": [
-      "src/core/port/runtime-strategy.ts",
-      "src/core/runtime/__tests__/diff-paths-between-commits.test.ts",
-      "src/core/verification/test-coverage.ts",
-      "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
-      "src/core/runtime/local.ts",
-      "src/core/runtime/managed.ts"
+      "src/core/runtime/local.ts"
     ],
     "regression-gate": [
       "src/core/pipeline/spec-observation.ts",
@@ -251,7 +248,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "b931285cfb3c0faeeb7dc056e79ca8031a9529ff",
+      "approvedAtCommit": "adff43fb7eb51aff68a2b6cbe52c5fceb84c7885",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -262,7 +259,7 @@
         "src/core/verification/**"
       ],
       "invalidatedByCommit": null,
-      "canonHash": "specrunner/changes/absorb-test-materialize/design.md:sha256:1228622ec3f483eee77802c73d283e0f0e4534c553b85866d76ac4a85b8b08be|specrunner/changes/absorb-test-materialize/request.md:sha256:a18c95e480a7b1b2ffd47a770c0b9acf91331f99a9a9245ee1f2064b8c96b92d|specrunner/changes/absorb-test-materialize/spec.md:sha256:eb52105103bced02cdad746be6bbab3cd60d568fcb3465831b71754681f92bfb|specrunner/changes/absorb-test-materialize/tasks.md:sha256:6ed89bb3f4c2b22bd993336568d7cac993efda5ae4f075530b89e00350c1f237|specrunner/changes/absorb-test-materialize/test-cases.md:sha256:ee190eda8852f7d72b78dfb2bdd79dfb3d4a5246d2e88cf98c8895f484f52395"
+      "canonHash": "specrunner/changes/absorb-test-materialize/design.md:sha256:2ddf80d3f6a6ca130b486793af09c39b3a9f8ff0e558d722c0446610f1cf3185|specrunner/changes/absorb-test-materialize/request.md:sha256:a18c95e480a7b1b2ffd47a770c0b9acf91331f99a9a9245ee1f2064b8c96b92d|specrunner/changes/absorb-test-materialize/spec.md:sha256:eb52105103bced02cdad746be6bbab3cd60d568fcb3465831b71754681f92bfb|specrunner/changes/absorb-test-materialize/tasks.md:sha256:a95a395f0dca98395d192895ef562635c7f293aa49ecff23466aa95274e1d6a6|specrunner/changes/absorb-test-materialize/test-cases.md:sha256:13aef2c895be3d085a61a3200f7f9460bb5e7f72227b730364dd0975d63471a5"
     },
     {
       "name": "scale-tolerance",
@@ -285,7 +282,7 @@
     "createdAt": "2026-08-15T15:18:20.579Z"
   },
   "_journal": {
-    "historyCount": 114,
+    "historyCount": 123,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -297,10 +294,10 @@
       "bite-evidence": 1,
       "verification": 3,
       "code-review": 3,
-      "code-fixer": 2,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 3,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "custom-reviewers": 2,
       "regression-gate": 3,
       "conformance": 1,
       "adr-gen": 1,

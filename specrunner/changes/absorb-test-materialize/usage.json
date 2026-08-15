@@ -377,6 +377,42 @@
       "durationMs": 236305,
       "durationApiMs": 235280,
       "totalCostUsd": 1.1271438
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-15T15:33:59.443Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 9,
+          "outputTokens": 551,
+          "cacheReadInputTokens": 314669,
+          "cacheCreationInputTokens": 184858
+        }
+      },
+      "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
+      "stepName": "code-fixer",
+      "numTurns": 4,
+      "durationMs": 13680,
+      "durationApiMs": 13575,
+      "totalCostUsd": 0.44252354999999993
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-15T15:49:49.145Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 24275,
+          "outputTokens": 48748,
+          "cacheReadInputTokens": 4401478,
+          "cacheCreationInputTokens": 192297
+        }
+      },
+      "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
+      "stepName": "cross-boundary-invariants",
+      "numTurns": 69,
+      "durationMs": 941216,
+      "durationApiMs": 937352,
+      "totalCostUsd": 2.8456021499999995
     }
   ]
 }
