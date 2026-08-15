@@ -1498,7 +1498,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         }
       } else if (contract.kind === "test-coverage") {
         // Read test-cases.md from disk (contract.path is worktree-relative).
-        // File absent → violation (test-materialize must produce test files after reading test-cases.md).
+        // File absent → violation (implementer must produce test files after reading test-cases.md).
         const absPath = path.join(cwd, contract.path);
         let content: string;
         try {
