@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T12:25:52.145Z",
+  "updatedAt": "2026-08-15T12:27:24.524Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "test-materialize",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -69,7 +69,8 @@
     "ea30ef66ad9263114dadf012ed5cf48d56d6872a",
     "a33648a3269d4cabd97d4c89fd88b4d0cef84a76",
     "0f96c247cf73cd91196805790dd4b626bb428eec",
-    "e88cd3287ad8a3443473b804fbb851d8b9e81227"
+    "e88cd3287ad8a3443473b804fbb851d8b9e81227",
+    "41f87f05dc2a8384f7b3cc684eec1914f819f433"
   ],
   "touchedFiles": {
     "request-review": [
@@ -129,18 +130,16 @@
     ],
     "test-case-gen": [],
     "spec-review": [],
-    "spec-fixer": [
-      "src/core/archive/achieved-assurance.ts"
-    ]
+    "spec-fixer": []
   },
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 30,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 2,
-      "spec-fixer": 1
+      "spec-fixer": 2
     }
   }
 }
