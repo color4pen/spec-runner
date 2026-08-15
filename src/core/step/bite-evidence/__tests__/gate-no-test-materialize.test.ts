@@ -106,7 +106,6 @@ describe("TC-007: gate without test-materialize run reaches red→green judgment
     // State: bug-fix (forward type), NO test-materialize run, synthesizedCommits present.
     // After refactoring: gate uses listChangedFilesBetweenCommits(evidenceBaseRev, headOid)
     // instead of listCommitChangedFiles(baseOid).
-    // Currently FAILS because: gate checks resolveBaseCandidateOids → baseOid null → strategy-deferred.
     const state = makeState("bug-fix", {
       synthesizedCommits: ["bootstrap-sha-007"],
       steps: {

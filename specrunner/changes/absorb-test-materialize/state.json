@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T14:21:10.864Z",
+  "updatedAt": "2026-08-15T14:28:33.962Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -75,7 +75,8 @@
     "0d18dbfb130befb3dfb1f50ec36ef10f2f60a4b6",
     "75e6299ff6a8572e8c876d4a4c1cd78ce38d6dfc",
     "97869750281cc072f119879c54ef7011b2f46d6c",
-    "f698ff9e8932eafa84a786d43324d115bd36669a"
+    "f698ff9e8932eafa84a786d43324d115bd36669a",
+    "80dd98b773b925ddf73add89436a091ec5fb570e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -173,10 +174,32 @@
       "tests/unit/core/archive/merge-then-archive-floor-provenance.test.ts",
       "tests/unit/prompts/result-yaml-ownership.test.ts",
       "tests/unit/step/test-coverage-violation-detail.test.ts"
+    ],
+    "code-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/step/implementer.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/runtime/local.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/core/pipeline/__tests__/absorb-test-materialize-transitions.test.ts",
+      "src/core/step/__tests__/implementer-materialize.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate-no-test-materialize.test.ts",
+      "src/core/archive/__tests__/achieved-assurance-no-base-oid.test.ts",
+      "src/core/resume/__tests__/resolve-step-test-materialize-alias.test.ts",
+      "src/core/runtime/__tests__/list-changed-files-between-commits.test.ts",
+      "src/prompts/implementer-system.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/config/type-config.ts",
+      "src/core/verification/test-coverage.ts"
     ]
   },
   "_journal": {
-    "historyCount": 53,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -186,7 +209,8 @@
       "test-materialize": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2
+      "verification": 2,
+      "code-review": 1
     }
   }
 }

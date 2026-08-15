@@ -30,7 +30,6 @@ describe("TC-009: --from test-materialize resolves to implementer (legacy alias)
   it("TC-009: resolveResumeStep('test-materialize', null, undefined) → 'implementer'", () => {
     // After absorb-test-materialize: test-materialize is removed from AGENT_STEP_NAMES
     // and added to LEGACY_STEP_ALIASES → maps to STEP_NAMES.IMPLEMENTER.
-    // Currently FAILS because: test-materialize IS in AGENT_STEP_NAMES → resolves to itself.
     const result = resolveResumeStep("test-materialize", null, undefined);
     expect(result).toBe("implementer");
   });
@@ -55,7 +54,6 @@ describe("TC-009: --from test-materialize resolves to implementer (legacy alias)
 describe("TC-010: resumePoint.step='test-materialize' resolves to implementer", () => {
   it("TC-010: resolveResumeStep(undefined, { step: 'test-materialize' }, undefined) → 'implementer'", () => {
     // After absorb-test-materialize: LEGACY_STEP_ALIASES maps test-materialize → implementer.
-    // Currently FAILS because: test-materialize IS in AGENT_STEP_NAMES → returns itself.
     const rp = makeResumePoint("test-materialize");
     const result = resolveResumeStep(undefined, rp, undefined);
     expect(result).toBe("implementer");

@@ -134,8 +134,6 @@ describe("TC-008: archive floor without test-materialize run reaches judgment", 
   it("TC-008: forward-type job with NO test-materialize run and intact scenario achieves biteEvidence + testDerivation", async () => {
     // State: bug-fix, NO test-materialize run, synthesizedCommits present,
     // test-case-gen run with commitOid (for scenario binding).
-    // Currently FAILS because: P2 (resolveBaseCandidateOids → baseOid null → early return).
-    // After refactoring: reaches judgment via EB diff + scenario binding.
     const state = makeState({
       synthesizedCommits: ["bootstrap-sha-008"],
       steps: {
@@ -184,8 +182,6 @@ describe("TC-008: archive floor without test-materialize run reaches judgment", 
 
 describe("TC-015: scenario intact → testDerivation frozen (no test-materialize run)", () => {
   it("TC-015: testDerivation=frozen when test-cases.md content matches at anchor and HEAD", async () => {
-    // Currently FAILS because: P2 (baseOid null → early return → testDerivation absent)
-    // After refactoring: testDerivation depends only on scenario binding.
     const state = makeState({
       synthesizedCommits: ["bootstrap-sha-015"],
       steps: {
@@ -253,8 +249,6 @@ describe("TC-015: scenario intact → testDerivation frozen (no test-materialize
 describe("TC-015a: testDerivation frozen even when materializedTestFiles is empty (D4 independence)", () => {
   it("TC-015a: testDerivation=frozen when EB↔HEAD diff returns no test files", async () => {
     // After refactoring: testDerivation depends only on scenario binding, NOT on materializedTestFiles.
-    // Currently FAILS because: P2 (baseOid null → early return)
-    // OR because materializedTestFiles = [] causes early return for both dimensions.
     const state = makeState({
       synthesizedCommits: ["bootstrap-sha-015a"],
       steps: {
