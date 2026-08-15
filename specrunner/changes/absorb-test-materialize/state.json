@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T14:44:03.482Z",
+  "updatedAt": "2026-08-15T14:49:59.723Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -78,7 +78,8 @@
     "f698ff9e8932eafa84a786d43324d115bd36669a",
     "80dd98b773b925ddf73add89436a091ec5fb570e",
     "b931285cfb3c0faeeb7dc056e79ca8031a9529ff",
-    "65bd726a25273bb2bba65057fd0d3680ecad2cf3"
+    "65bd726a25273bb2bba65057fd0d3680ecad2cf3",
+    "2532868f6f777fac96f91dfb7265061a17f2a879"
   ],
   "touchedFiles": {
     "request-review": [
@@ -205,6 +206,13 @@
       "src/core/archive/__tests__/achieved-assurance-no-base-oid.test.ts",
       "src/core/resume/__tests__/resolve-step-test-materialize-alias.test.ts",
       "src/core/step/bite-evidence/__tests__/gate-no-test-materialize.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/pipeline/spec-observation.ts",
+      "src/config/type-config.ts",
+      "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/runtime/local.ts"
     ]
   },
   "reviewerStatuses": [
@@ -238,7 +246,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 72,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -253,7 +261,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

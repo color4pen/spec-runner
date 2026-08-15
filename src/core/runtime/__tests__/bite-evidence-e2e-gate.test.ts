@@ -17,10 +17,9 @@
  *   base commit (OID)      → feature.test.ts (imports ./feature-impl; fails at base — impl absent)
  *   candidate commit (OID) → feature-impl.ts added (test passes; test-cases.md unchanged from anchor)
  *
- * The freeze check (diffPathsBetweenCommits) sees no diff on feature.test.ts between
- * base and candidate → testDerivation:frozen. The base-red check passes → biteEvidence:required.
  * The scenario freeze check (readFileAtCommit) compares test-cases.md@testCaseGenOid vs
- * @candidateOid — identical (unchanged) → scenario freeze intact.
+ * @candidateOid — identical (unchanged) → testDerivation:frozen. The base-red check passes
+ * → biteEvidence:required.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import * as os from "node:os";
@@ -61,7 +60,7 @@ function makeLocal(cwd: string): LocalRuntime {
 
 let repo: string;
 let testCaseGenOid: string; // test-case-gen commit: test-cases.md added (scenario anchor)
-let baseOid: string;        // test-materialize commit: feature.test.ts added, impl absent
+let baseOid: string;        // base commit: feature.test.ts added, impl absent → red at EB
 let candidateOid: string;   // implementer commit: feature-impl.ts added
 
 const SCOPED_CONFIG = {
@@ -114,7 +113,7 @@ beforeAll(async () => {
     ].join("\n") + "\n",
   );
   await git(repo, "add", TEST_FILE);
-  await git(repo, "commit", "-m", "test-materialize: add feature test (impl absent → red)");
+  await git(repo, "commit", "-m", "implementer: add feature test (impl absent → red at base)");
   baseOid = await git(repo, "rev-parse", "HEAD");
 
   // Candidate commit: add feature-impl.ts so the test passes.
@@ -168,11 +167,10 @@ function makeState(baseOid: string, candidateOid: string): JobState {
     branch: "change/example-abc12345",
     history: [],
     error: null,
-    // synthesizedCommits[0] = baseOid (test-materialize commit); [0]^ = pre-test commit (no impl) = Evidence Base.
+    // synthesizedCommits[0] = baseOid (base commit with tests, pre-impl); [0]^ = Evidence Base.
     synthesizedCommits: [baseOid],
     steps: {
       "test-case-gen": [makeStepRun(testCaseGenOid)],
-      "test-materialize": [makeStepRun(baseOid)],
       "implementer": [makeStepRun(candidateOid)],
     },
   } as unknown as JobState;
@@ -212,8 +210,7 @@ describe("TC-010: base-red, candidate-green yields achieved bite evidence (real 
     const state = makeState(baseOid, candidateOid);
     const runtime = makeLocal(repo);
     // Use candidateOid as the archive finalHeadOid.
-    // diffPathsBetweenCommits(baseOid, candidateOid, [TEST_FILE]) shows no diff
-    // (feature.test.ts was NOT modified in the candidate commit) → freeze intact.
+    // test-cases.md is unchanged between testCaseGenOid and candidateOid → scenario freeze intact.
     const finalHeadOid = candidateOid;
 
     const floor: AssuranceFloor = { biteEvidence: "required" };
@@ -243,7 +240,7 @@ describe("TC-010: base-red, candidate-green yields achieved bite evidence (real 
 //   init          → README.md
 //   spec-review   → specrunner/changes/example/spec.md = SPEC_CONTENT (specReviewOid)
 //   test-case-gen → specrunner/changes/example/test-cases.md = S (testCaseGenOid)
-//   test-materialize → feature.test.ts (baseOid; impl absent → red)
+//   implementer (base commit) → feature.test.ts (baseOid; impl absent → red at EB)
 //   implementer   → feature-impl.ts (impl added; test goes green; spec/test-cases unchanged) (positiveOid)
 //   tamper-scenario → test-cases.md changed to S' (tamperScenarioOid)
 //   tamper-spec   → spec.md changed (tamperSpecOid)
@@ -309,7 +306,7 @@ describe("Revision-binding E2E repo setup", () => {
     await git(e2eRepo, "commit", "-m", "test-case-gen: test-cases.md frozen");
     e2eTestCaseGenOid = await git(e2eRepo, "rev-parse", "HEAD");
 
-    // 4. test-materialize commit: add feature.test.ts (impl absent → red at baseOid)
+    // 4. base commit: add feature.test.ts (impl absent → red at baseOid)
     const bunTest = "bun" + ":test";
     await fs.writeFile(
       path.join(e2eRepo, E2E_TEST_FILE),
@@ -320,7 +317,7 @@ describe("Revision-binding E2E repo setup", () => {
       ].join("\n") + "\n",
     );
     await git(e2eRepo, "add", E2E_TEST_FILE);
-    await git(e2eRepo, "commit", "-m", "test-materialize: add feature test (impl absent → red)");
+    await git(e2eRepo, "commit", "-m", "implementer: add feature test (impl absent → red at base)");
     e2eBaseOid = await git(e2eRepo, "rev-parse", "HEAD");
 
     // 5. implementer commit: add feature-impl.ts (test goes green; spec.md + test-cases.md UNCHANGED)
@@ -362,7 +359,7 @@ describe("Revision-binding E2E repo setup", () => {
   function makeStateForRevisionBinding({
     specReviewOid,
     testCaseGenOid,
-    baseOid: testMaterializeOid,
+    baseOid,
     implementerOid,
   }: {
     specReviewOid: string;
@@ -397,8 +394,8 @@ describe("Revision-binding E2E repo setup", () => {
       branch: `change/${E2E_SLUG}-abc12345`,
       history: [],
       error: null,
-      // synthesizedCommits[0] = testMaterializeOid; [0]^ = pre-test commit (no impl) = Evidence Base.
-      synthesizedCommits: [testMaterializeOid],
+      // synthesizedCommits[0] = baseOid (base commit with tests, pre-impl); [0]^ = Evidence Base.
+      synthesizedCommits: [baseOid],
       steps: {
         "spec-review": [{
           attempt: 1,
@@ -409,7 +406,6 @@ describe("Revision-binding E2E repo setup", () => {
           commitOid: specReviewOid,
         }],
         "test-case-gen": [makeStepRun(testCaseGenOid)],
-        "test-materialize": [makeStepRun(testMaterializeOid)],
         "implementer": [makeStepRun(implementerOid)],
       },
     } as unknown as JobState;
