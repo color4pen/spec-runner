@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-15T11:12:38.831Z",
+  "updatedAt": "2026-08-15T11:21:22.838Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
@@ -88,7 +88,9 @@
     "73e5f078aa2d89476f335871a6fc8ec415651c57",
     "b83cca6aebd2b698ec8f5154cd84d836940002fa",
     "0e4fef82757a126a3f1d0cbc40b413ff6fd71f2e",
-    "728d19dc1d1bb2609e00b73adc2e0f19229f7cbb"
+    "728d19dc1d1bb2609e00b73adc2e0f19229f7cbb",
+    "48da767b235dd33bd26ecdb80798b9ebba81d21e",
+    "0e6e98e8d3b35716106ceb0846125e34077dc38d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -290,6 +292,23 @@
       "src/core/pipeline/types.ts",
       "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
       "src/core/resume/resolve-step.ts"
+    ],
+    "conformance": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/reverification.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/step/implementer.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/types.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/core/port/step-types.ts",
+      "src/git/dynamic-context.ts",
+      "tests/unit/absorb-build-fixer/transitions.test.ts",
+      "tests/unit/absorb-build-fixer/implementer-recovery.test.ts",
+      "tests/unit/absorb-build-fixer/state-compat.test.ts",
+      "tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts",
+      "src/core/pipeline/pipeline.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts"
     ]
   },
   "resumePoint": null,
@@ -332,7 +351,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 97,
+    "historyCount": 106,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -341,7 +360,7 @@
       "test-materialize": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "build-fixer": 1,
       "code-review": 2,
       "code-fixer": 3,
@@ -349,7 +368,7 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 3,
-      "conformance": 1
+      "conformance": 2
     }
   }
 }
