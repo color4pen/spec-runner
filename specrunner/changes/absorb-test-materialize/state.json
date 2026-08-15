@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T15:56:56.113Z",
+  "updatedAt": "2026-08-15T16:00:55.407Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -95,7 +95,8 @@
     "adff43fb7eb51aff68a2b6cbe52c5fceb84c7885",
     "4174a0df0ca99c40c18736681af5bc9d42bfdbb4",
     "0465af554a3f901344ace25c74214fe8ef0ac37e",
-    "1d0b87a4252b0416cfba849ff3987d77511dc5f5"
+    "1d0b87a4252b0416cfba849ff3987d77511dc5f5",
+    "d6c0a6fd78f14f53c06993041074596576e1bc7d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -215,17 +216,15 @@
       "src/core/pipeline/test-gen-exemption.ts"
     ],
     "regression-gate": [
+      "src/state/schema/types.ts",
+      "src/config/schema/types.ts",
       "src/core/pipeline/spec-observation.ts",
       "src/config/type-config.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/verification/test-coverage.ts",
       "src/core/runtime/local.ts",
+      "src/core/port/runtime-strategy.ts",
       "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
       "src/core/runtime/__tests__/diff-paths-between-commits.test.ts",
-      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
-      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
-      "src/core/step/implementer.ts",
-      "src/core/pipeline/test-gen-exemption.ts"
+      "src/core/verification/test-coverage.ts"
     ],
     "conformance": [
       "src/core/pipeline/types.ts",
@@ -290,7 +289,7 @@
     "createdAt": "2026-08-15T15:18:20.579Z"
   },
   "_journal": {
-    "historyCount": 131,
+    "historyCount": 136,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -306,7 +305,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 4,
+      "regression-gate": 5,
       "conformance": 1,
       "adr-gen": 1,
       "pr-create": 1
