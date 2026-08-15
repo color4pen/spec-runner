@@ -72,6 +72,12 @@ archive floor は `testDerivation = "frozen"` を、test-cases.md が test-case-
 **When** archive floor が testDerivation を導出する
 **Then** achieved の testDerivation は `"frozen"` になる（baseOid や test blob の不変性は要求されない）
 
+#### Scenario: materializedTestFiles が空でも testDerivation は frozen（D4 独立性）
+
+**Given** scenario binding intact（test-cases.md@testCaseGenOid content hash == test-cases.md@finalHeadOid）かつ EB↔HEAD diff にテストパターン合致ファイルが存在しない（materializedTestFiles = []）job
+**When** archive floor が testDerivation を導出する
+**Then** achieved の testDerivation は `"frozen"` になる（materializedTestFiles の空は testDerivation 判定に影響しない）
+
 #### Scenario: scenario がすり替えられたら testDerivation は absent
 
 **Given** test-cases.md@testCaseGenOid の content hash が test-cases.md@finalHeadOid と一致しない job

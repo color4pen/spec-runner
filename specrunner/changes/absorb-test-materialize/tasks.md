@@ -20,6 +20,8 @@
 - [ ] `src/cli/config-effective.ts` の `TestMaterializeStep` import と step map エントリを削除する
 - [ ] `src/core/step/write-scope.ts` の `GUARDED_WRITE_STEPS` から `"test-materialize"` を削除する
 - [ ] `src/core/step/staging-containment.ts` の doc comment（guarded 対象列挙）から test-materialize を除去する
+- [ ] `src/state/schema/types.ts` の `commitOid` doc comment（line 226 付近）から「test-materialize」への名指しを除去する
+- [ ] `src/config/schema/types.ts` の staging-containment doc comment（line 249 付近）の guarded 対象列挙から test-materialize を除去する
 - [ ] `src/core/port/output-contract.ts` の `test-coverage` kind doc から test-materialize 名指しを除去する（`test-coverage` kind と local.ts の分岐そのものは残す — D5 rationale）
 - [ ] `src/core/port/runtime-strategy.ts` の `listCommitChangedFiles` / diff 系メソッド doc から「test-materialize commit」への言及を更新する
 - [ ] `src/prompts/pipeline-map.ts` の `PIPELINE_MAP` 表から test-materialize 行を削除する
@@ -133,7 +135,7 @@ design「テスト更新対象の全列挙」に従って既存テストを更�
 
 - [ ] 遷移表: `test-gen-exemption.test.ts`（TC-007 → implementer、TC-012 の TEST_MATERIALIZE row / exempt guard 前後関係、TC-006/TC-015 の `specFixerForwardsToImplementer` 除去）、`bite-evidence-pipeline.test.ts`（TC-009 の TEST_MATERIALIZE 存在 → 非存在）、`standard-transitions.test.ts`（TEST_MATERIALIZE 行不在 / 全 type spec-review approved → implementer を新規 pin）
 - [ ] gate/oids: `gate.test.ts`（file-set 源を EB diff に + 「test-materialize run 無しで red→green 到達」を新規追加）、`gate-empty-selection.test.ts`、`evidence-base-gate.test.ts`、`evidence-base-oids.test.ts`（`resolveBaseCandidateOids` 削除対応、`resolveEvidenceBaseRev` 維持）、`oid-capture.test.ts`（fixture base commit を EB-native へ）
-- [ ] archive: `achieved-assurance.test.ts`（baseOid 前提削除、testDerivation を scenario 凍結のみで pin、biteEvidence の file-set 源、blob freeze ケース削除）、`evidence-base-archive-floor.test.ts`（baseOid 無しで判定到達を pin）
+- [ ] archive: `achieved-assurance.test.ts`（baseOid 前提削除、testDerivation を scenario 凍結のみで pin、biteEvidence の file-set 源、blob freeze ケース削除）; TC-015a として materializedTestFiles = [] でも scenario binding intact なら testDerivation = "frozen" を pin するケースを追加する（test-cases.md にも TC-015a として追記する）、`evidence-base-archive-floor.test.ts`（baseOid 無しで判定到達を pin）
 - [ ] runtime primitive: `diff-paths-between-commits.test.ts`（`listChangedFilesBetweenCommits` へ書換・paths 引数廃止）、`evidence-base-e2e.test.ts` / `bite-evidence-e2e-gate.test.ts`（base commit を implementer-materialized テストへ、primitive 名更新）
 - [ ] prompt/template: `prompt-skeleton-drift-guard.test.ts`（`TEST_MATERIALIZE_SYSTEM_PROMPT` の import/配列/カウント除去: `ALL_14_AGENT_PROMPTS` 13→12、`PRODUCER_AND_FIXER_PROMPTS` 7→6、`PIPELINE_MAP` 15→14 行、`EXPECTED_STEPS`/`PREVIOUSLY_MISSING_STEPS` から除去、TC-003 の TEST_MATERIALIZE assert 削除）、`tc-source-contract.test.ts`（consumer 列挙から test-materialize 除去）
 - [ ] resume: `resolve-step.test.ts`（`--from` / `resumePoint.step` の test-materialize → implementer alias を新規追加）
