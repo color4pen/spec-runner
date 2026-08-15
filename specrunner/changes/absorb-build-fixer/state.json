@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-15T00:40:14.619Z",
+  "updatedAt": "2026-08-15T11:12:38.831Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "conformance",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/absorb-build-fixer-46b2f278",
-  "error": {
-    "code": "STEP_TIMEOUT",
-    "message": "Step 'conformance' inactivity timeout: no agent event for 1795929ms",
-    "hint": "no tool observed before timeout (no tool activity in session)"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -91,7 +87,8 @@
     "68b97666c162c7148af26def478f1f041dac0555",
     "73e5f078aa2d89476f335871a6fc8ec415651c57",
     "b83cca6aebd2b698ec8f5154cd84d836940002fa",
-    "0e4fef82757a126a3f1d0cbc40b413ff6fd71f2e"
+    "0e4fef82757a126a3f1d0cbc40b413ff6fd71f2e",
+    "728d19dc1d1bb2609e00b73adc2e0f19229f7cbb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -295,11 +292,7 @@
       "src/core/resume/resolve-step.ts"
     ]
   },
-  "resumePoint": {
-    "step": "conformance",
-    "reason": "timeout",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -339,7 +332,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 94,
+    "historyCount": 97,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
