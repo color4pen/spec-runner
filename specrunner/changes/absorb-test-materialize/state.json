@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T15:54:57.315Z",
+  "updatedAt": "2026-08-15T15:56:56.113Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -94,7 +94,8 @@
     "096714b72e5645b4388663b7c6c234526196c6b4",
     "adff43fb7eb51aff68a2b6cbe52c5fceb84c7885",
     "4174a0df0ca99c40c18736681af5bc9d42bfdbb4",
-    "0465af554a3f901344ace25c74214fe8ef0ac37e"
+    "0465af554a3f901344ace25c74214fe8ef0ac37e",
+    "1d0b87a4252b0416cfba849ff3987d77511dc5f5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -208,7 +209,10 @@
       "src/core/runtime/local.ts"
     ],
     "code-fixer": [
-      "src/core/runtime/local.ts"
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/verification/test-coverage.ts",
+      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
+      "src/core/pipeline/test-gen-exemption.ts"
     ],
     "regression-gate": [
       "src/core/pipeline/spec-observation.ts",
@@ -286,7 +290,7 @@
     "createdAt": "2026-08-15T15:18:20.579Z"
   },
   "_journal": {
-    "historyCount": 127,
+    "historyCount": 131,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -298,7 +302,7 @@
       "bite-evidence": 1,
       "verification": 3,
       "code-review": 3,
-      "code-fixer": 3,
+      "code-fixer": 4,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
