@@ -1,0 +1,26 @@
+{
+  "requestHash": "sha256:a18c95e480a7b1b2ffd47a770c0b9acf91331f99a9a9245ee1f2064b8c96b92d",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/types.ts:261 — SPEC_REVIEW approved → TEST_MATERIALIZE (unconditional)",
+    "src/core/pipeline/types.ts:268 — TEST_MATERIALIZE success → IMPLEMENTER",
+    "src/core/pipeline/types.ts:269 — TEST_MATERIALIZE error → escalate",
+    "src/core/pipeline/types.ts:260 — SPEC_REVIEW approved → IMPLEMENTER when isTestGenExempt",
+    "src/core/pipeline/types.ts:273 — SPEC_FIXER approved → TEST_MATERIALIZE when specFixerObservationForward",
+    "src/core/step/bite-evidence/oids.ts:35-41 — resolveBaseCandidateOids baseOid from TEST_MATERIALIZE step",
+    "src/core/step/bite-evidence/gate.ts:114-122 — gate step 3: baseOid === null → strategy-deferred",
+    "src/core/step/bite-evidence/gate.ts:150-152 — gate step 6: listCommitChangedFiles(baseOid)",
+    "src/core/archive/achieved-assurance.ts:222-235 — archive floor P2: baseOid null → early return",
+    "src/core/archive/achieved-assurance.ts:300 — blob freeze: diffPathsBetweenCommits(baseOid, finalHeadOid)",
+    "src/core/step/implementer.ts:304 — testsMaterialized = Boolean(state.steps?.[TEST_MATERIALIZE]?.length)",
+    "src/core/step/implementer.ts:84-128 — buildImplementerInitialMessage testsMaterialized branch",
+    "src/core/pipeline/test-gen-exemption.ts:29-31 — isTestGenExempt delegates to isTestGenRequired",
+    "src/core/resume/resolve-step.ts:17-19 — LEGACY_STEP_ALIASES has build-fixer only (no test-materialize)",
+    "src/core/step/write-scope.ts:34-38 — GUARDED_WRITE_STEPS includes test-materialize",
+    "src/kernel/step-names.ts:19 — AGENT_STEP_NAMES includes test-materialize",
+    "src/kernel/step-names.ts:47 — STEP_NAMES.TEST_MATERIALIZE defined",
+    "src/core/pipeline/registry.ts:45 — STANDARD_DESCRIPTOR.steps includes TestMaterializeStep",
+    "src/core/step/test-materialize.ts:87-99 — TestMaterializeStep.outputContracts returns test-coverage contract"
+  ],
+  "sourceRevision": "0fa75c5d0675258baabd76add7f5b468c87e7fae"
+}
