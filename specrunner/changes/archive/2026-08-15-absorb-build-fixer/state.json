@@ -91,7 +91,8 @@
     "728d19dc1d1bb2609e00b73adc2e0f19229f7cbb",
     "48da767b235dd33bd26ecdb80798b9ebba81d21e",
     "0e6e98e8d3b35716106ceb0846125e34077dc38d",
-    "16d6ac7d2229e3a4f71b34549bcaa5247a82adf5"
+    "16d6ac7d2229e3a4f71b34549bcaa5247a82adf5",
+    "190799884ace10f74a36a6915accee3bc85a4996"
   ],
   "touchedFiles": {
     "request-review": [
@@ -317,7 +318,11 @@
       "specrunner/adr/2026-08-15-absorb-build-fixer.md"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "timeout",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
