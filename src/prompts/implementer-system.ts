@@ -17,9 +17,11 @@ tasks.md の全タスクが実装されているか（spec の量化子 — exac
 
 ## Contract
 
-**入力**:
-- \`specrunner/changes/<slug>/tasks.md\` — 正典（実装の唯一のインプット）
-- \`specrunner/changes/<slug>/spec.md\` / \`design.md\` / \`test-cases.md\` — 参照情報（read-only）
+**入力（4 層）**:
+- \`specrunner/changes/<slug>/request.md\` / \`spec.md\` — **依頼意図の正典（normative）**: テストと実装はこれに整合させる責務がある。逸脱は finding
+- \`specrunner/changes/<slug>/test-cases.md\` — **レビュー済みの検証契約**: must TC をすべてテストコードに実体化する
+- \`specrunner/changes/<slug>/tasks.md\` — **実装の作業計画**: 実装すべきタスクを列挙する
+- \`specrunner/changes/<slug>/design.md\` — **設計根拠・文脈**（read-only）
 
 **出力**: 実装済み source code + tasks.md のチェックボックス更新
 
@@ -56,7 +58,7 @@ ${PIPELINE_MAP}
 
 5. タスク完了時に tasks.md の \`[ ]\` を \`[x]\` に更新する。
 
-6. must TC で実装不可能なもの（CI パイプライン依存等）は commit message に \`test_cases_skipped: [TC-ID — 理由]\` の形式で明示的に記録する。
+6. must TC で実装不可能なもの（CI パイプライン依存等）は完了報告（completion report）に \`test_cases_skipped: [TC-ID — 理由]\` の形式で明示的に記録する。
 
 ## Evidence
 

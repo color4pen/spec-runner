@@ -1,0 +1,23 @@
+{
+  "requestHash": "sha256:e27d7a1b3503d87d0b5f669de08db18988741ecb0e8df457b9d1b22b1bc03c7f",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/prompts/implementer-system.ts:21 — tasks.md 正典（実装の唯一のインプット）",
+    "src/prompts/implementer-system.ts:59 — test_cases_skipped commit message 指示",
+    "src/core/step/implementer.ts:86 — test-cases.md と spec を canon(正)として",
+    "src/prompts/fragments.ts:16-19 — COMMIT_DISCIPLINE (git add/commit/push 禁止、<step>: <slug> format)",
+    "src/prompts/rules.ts:23 — 前の session の文脈を持たない（各 step は新規セッションで実行される）",
+    "src/prompts/pipeline-map.ts — bite-evidence 行が存在しない（14 行の表）",
+    "src/prompts/pipeline-map.ts — conformance 行が旧記述「4 成果物（request / design / tasks / spec）への適合性を検証する」",
+    "src/prompts/pipeline-map.ts — implementer 行は「verification 失敗時は再入して修正する」を含み #999 更新済み",
+    "src/kernel/step-names.ts — bite-evidence が CLI_STEP_NAMES に存在する",
+    "src/core/resume/resolve-step.ts — path 4（stateStep）で LEGACY_STEP_ALIASES を通さず allowed.has(stateStep) を直接判定",
+    "src/core/resume/resolve-step.ts — LEGACY_STEP_ALIASES: { build-fixer: implementer, test-materialize: implementer }",
+    "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts — TC-003/TC-009 は toContain(PIPELINE_MAP) 参照埋め込み（文言個別 pin なし）",
+    "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts TC-018 — expect(rows.length).toBe(14)",
+    "src/core/resume/__tests__/resolve-step-test-materialize-alias.test.ts — stateStep path の test-materialize/build-fixer テストが存在しない",
+    "src/prompts/conformance-system.ts — 二層化（request/spec=normative, design/tasks=plan）が #992 で実装済み",
+    "src/core/step/implementer.ts — verificationFailedLast + getPreviousSessionId による continuation 経路の存在"
+  ],
+  "sourceRevision": "27c123cce89592ec35817389bc0c9a3faccb3b2a"
+}
