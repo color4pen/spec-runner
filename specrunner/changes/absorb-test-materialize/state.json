@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T15:12:59.294Z",
+  "updatedAt": "2026-08-15T15:18:21.941Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
   "pipelineId": "standard",
@@ -86,7 +86,8 @@
     "4d81822293af3e621d33a6816829ab1d51fa428a",
     "4ad084924499cd0057dfb9f483c97f9341d7bf1c",
     "db2fd36140de39946814fa11fe3ff91d3da07e37",
-    "e837546e94bdcd074b3d398fdbba9efcb6fd509c"
+    "e837546e94bdcd074b3d398fdbba9efcb6fd509c",
+    "b38cab93bb0ecd0c052612d450244c40fd0e9268"
   ],
   "touchedFiles": {
     "request-review": [
@@ -241,6 +242,13 @@
       "src/core/resume/__tests__/resolve-step-test-materialize-alias.test.ts",
       "src/core/runtime/local.ts",
       "src/kernel/step-names.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-08-15-absorb-build-fixer.md",
+      "specrunner/adr/2026-08-15-evidence-base.md",
+      "specrunner/adr/2026-08-14-strip-test-authority.md",
+      "specrunner/adr/2026-08-15-test-case-gen-pre-spec-review.md",
+      "specrunner/adr/2026-08-16-absorb-test-materialize.md"
     ]
   },
   "reviewerStatuses": [
@@ -275,8 +283,13 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/999",
+    "number": 999,
+    "createdAt": "2026-08-15T15:18:20.579Z"
+  },
   "_journal": {
-    "historyCount": 96,
+    "historyCount": 101,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -293,7 +306,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 3,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
