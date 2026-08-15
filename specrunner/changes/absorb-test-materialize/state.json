@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T14:28:33.962Z",
+  "updatedAt": "2026-08-15T14:44:03.482Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -76,7 +76,9 @@
     "75e6299ff6a8572e8c876d4a4c1cd78ce38d6dfc",
     "97869750281cc072f119879c54ef7011b2f46d6c",
     "f698ff9e8932eafa84a786d43324d115bd36669a",
-    "80dd98b773b925ddf73add89436a091ec5fb570e"
+    "80dd98b773b925ddf73add89436a091ec5fb570e",
+    "b931285cfb3c0faeeb7dc056e79ca8031a9529ff",
+    "65bd726a25273bb2bba65057fd0d3680ecad2cf3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -196,10 +198,47 @@
       "src/core/pipeline/spec-observation.ts",
       "src/config/type-config.ts",
       "src/core/verification/test-coverage.ts"
+    ],
+    "code-fixer": [
+      "src/core/pipeline/spec-observation.ts",
+      "src/config/type-config.ts",
+      "src/core/archive/__tests__/achieved-assurance-no-base-oid.test.ts",
+      "src/core/resume/__tests__/resolve-step-test-materialize-alias.test.ts",
+      "src/core/step/bite-evidence/__tests__/gate-no-test-materialize.test.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "b931285cfb3c0faeeb7dc056e79ca8031a9529ff",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/absorb-test-materialize/design.md:sha256:1228622ec3f483eee77802c73d283e0f0e4534c553b85866d76ac4a85b8b08be|specrunner/changes/absorb-test-materialize/request.md:sha256:a18c95e480a7b1b2ffd47a770c0b9acf91331f99a9a9245ee1f2064b8c96b92d|specrunner/changes/absorb-test-materialize/spec.md:sha256:eb52105103bced02cdad746be6bbab3cd60d568fcb3465831b71754681f92bfb|specrunner/changes/absorb-test-materialize/tasks.md:sha256:6ed89bb3f4c2b22bd993336568d7cac993efda5ae4f075530b89e00350c1f237|specrunner/changes/absorb-test-materialize/test-cases.md:sha256:ee190eda8852f7d72b78dfb2bdd79dfb3d4a5246d2e88cf98c8895f484f52395"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -210,7 +249,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
