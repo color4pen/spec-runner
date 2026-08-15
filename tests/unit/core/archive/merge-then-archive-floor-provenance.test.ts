@@ -52,7 +52,6 @@ const SUCCESS_ROLLUP: CheckRollup = { state: "success", total: 1, failing: [], p
 
 const CWD = "/tmp/repo";
 const SLUG = "my-slug";
-const BASE_OID = "base-commit-sha-prov-001";
 const CANDIDATE_OID = "candidate-commit-sha-prov-001";
 const ARCHIVE_HEAD_SHA = "archive-head-sha-prov-001";
 

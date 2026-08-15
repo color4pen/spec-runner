@@ -37,8 +37,6 @@ import { buildOutputFollowUpPrompt } from "../../../src/core/step/output-verify.
 import { LocalRuntime } from "../../../src/core/runtime/local.js";
 import { ManagedRuntime } from "../../../src/core/runtime/managed.js";
 import type { OutputContract, OutputViolation } from "../../../src/core/port/output-contract.js";
-import type { JobState } from "../../../src/state/schema.js";
-import type { StepDeps } from "../../../src/core/step/types.js";
 
 // ---------------------------------------------------------------------------
 // Helper types — define the coverage structure expected after T-01
@@ -75,43 +73,6 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-function makeMinimalState(overrides: Partial<JobState> = {}): JobState {
-  return {
-    version: 1,
-    jobId: "test-job",
-    createdAt: "2026-01-01T00:00:00.000Z",
-    updatedAt: "2026-01-01T00:00:00.000Z",
-    request: { path: "/req.md", title: "Test", type: "spec-change" },
-    repository: { owner: "testowner", name: "testrepo" },
-    session: null,
-    step: "test-materialize",
-    status: "running",
-    branch: "feat/test-slug",
-    history: [],
-    error: null,
-    steps: {},
-    ...overrides,
-  };
-}
-
-function makeMinimalStepDeps(slug = "test-slug"): StepDeps {
-  return {
-    config: {
-      version: 1,
-      agents: {},
-      environment: { id: "env_001", lastSyncedAt: "2026-01-01" },
-    },
-    request: {
-      type: "spec-change",
-      title: "Test",
-      slug,
-      baseBranch: "main",
-      content: "Add feature X",
-      adr: false,
-    },
-    slug,
-  };
-}
 
 function makeLocalRuntime(): LocalRuntime {
   return new LocalRuntime({

@@ -24,31 +24,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // ---------------------------------------------------------------------------
-// Helper: extract the text of a named ## section from a prompt string.
-// Returns content from "## SectionName" until the next "## " heading.
-// ---------------------------------------------------------------------------
-function extractSection(prompt: string, sectionName: string): string {
-  const lines = prompt.split("\n");
-  const startRe = new RegExp(`^## ${sectionName}\\b`);
-  let inSection = false;
-  const sectionLines: string[] = [];
-  for (const line of lines) {
-    if (startRe.test(line)) {
-      inSection = true;
-      sectionLines.push(line);
-      continue;
-    }
-    if (inSection && /^## /.test(line)) {
-      break;
-    }
-    if (inSection) {
-      sectionLines.push(line);
-    }
-  }
-  return sectionLines.join("\n");
-}
-
-// ---------------------------------------------------------------------------
 // Helper: extract the JSDoc docstring immediately before TEST_CASES_TEMPLATE
 // in src/templates/step-output-templates.ts.
 // ---------------------------------------------------------------------------

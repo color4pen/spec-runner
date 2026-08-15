@@ -36,7 +36,6 @@ type CommitFileResult =
 
 const CWD = "/tmp/test-repo";
 const SLUG = "my-slug";
-const BASE_OID = "base-commit-sha-selection-001";
 const FINAL_HEAD_OID = "archive-head-sha-selection-001";
 
 const TEST_CASE_GEN_OID = "test-case-gen-commit-sha-selection-001";

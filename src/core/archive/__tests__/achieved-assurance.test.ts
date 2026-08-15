@@ -99,8 +99,7 @@ describe("deriveAchievedAssurance — Evidence Base reference absent", () => {
     const TCG_OID = "tcg-oid-001";
     const MAT_OID = "mat-oid-001";
     const HEAD_OID = "final-head-oid-001";
-    const TEST_FILE = "tests/unit/example.test.ts";
-    const TC_CONTENT = "# Test Cases\n\n## TC-001: sample\nFixed content.\n";
+const TC_CONTENT = "# Test Cases\n\n## TC-001: sample\nFixed content.\n";
 
     const state = makeState({
       steps: {
