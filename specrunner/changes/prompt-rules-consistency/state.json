@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "71924134-2f43-4167-be77-75abf52ad49a",
   "createdAt": "2026-08-15T23:18:40.860Z",
-  "updatedAt": "2026-08-15T23:44:03.264Z",
+  "updatedAt": "2026-08-15T23:44:45.380Z",
   "request": {
     "title": "prompt/rules の新 pipeline 構造への追随: authority 表現統一・実行不能指示の撤去・session 例外・PIPELINE_MAP 更新",
     "type": "chore",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "chore/prompt-rules-consistency-71924134",
   "error": null,
@@ -68,7 +68,8 @@
     "eee034c5a8f7de4ac5140035820921617055fa9e",
     "ed5517116a87579cc571dde3037c07e29fed316e",
     "cb20b0ccd9d6b1428b7040f4d8844fd8c010ac61",
-    "6896db4495cf01ed835f1664c08401a7df948b6d"
+    "6896db4495cf01ed835f1664c08401a7df948b6d",
+    "ac653290b219466b665c5168fb325166c01dd2ba"
   ],
   "touchedFiles": {
     "request-review": [
@@ -129,17 +130,53 @@
       "src/core/resume/resolve-step.ts",
       "src/core/resume/__tests__/resolve-step-test-materialize-alias.test.ts",
       "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts"
+    ],
+    "code-fixer": [
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 26,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "implementer": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
