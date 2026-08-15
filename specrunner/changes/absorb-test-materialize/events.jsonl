@@ -152,3 +152,15 @@
 {"type":"step-attempt","step":"pr-create","sessionId":null,"outcome":{"verdict":"success","findingsPath":"specrunner/changes/absorb-test-materialize/pr-create-result.md","error":null,"toolResult":null,"followUpAttempts":0},"startedAt":"2026-08-15T15:18:18.265Z","endedAt":"2026-08-15T15:18:21.906Z","commitOid":"b38cab93bb0ecd0c052612d450244c40fd0e9268"}
 {"type":"lineage","step":"pr-create","ts":"2026-08-15T15:18:21.906Z","outputs":[{"path":"specrunner/changes/absorb-test-materialize/pr-create-result.md","hash":"sha256:f24a98fd05f4f7dae8a5a4fc1d7bd8c950082daa643441f3cff6fb69e702a563"}],"inputs":[{"path":"change/absorb-test-materialize-098d073d","hash":null}]}
 {"type":"transition","ts":"2026-08-15T15:18:21.941Z","step":"pipeline","status":"ok","message":"running → awaiting-archive: pipeline complete"}
+{"type":"operator-event","action":"reopen","reason":"operator fix adoption: EB diff deletion exclusion (--diff-filter=d) + implementer prompt manual/gate TC rules carried over per design D2","fromStep":"code-review","ts":"2026-08-15T15:29:01.709Z"}
+{"type":"transition","ts":"2026-08-15T15:29:01.711Z","step":"reopen","status":"ok","message":"awaiting-archive → running: operator fix adoption: EB diff deletion exclusion (--diff-filter=d) + implementer prompt manual/gate TC rules carried over per design D2"}
+{"type":"transition","ts":"2026-08-15T15:29:01.836Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-08-15T15:29:01.838Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
+{"type":"transition","ts":"2026-08-15T15:29:02.401Z","step":"store-fail","status":"ok","message":"running → failed: Claude Code SDK query failed: Claude Code process aborted by user"}
+{"type":"step-attempt","step":"code-review","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CLAUDE_CODE_QUERY_FAILED","message":"Claude Code SDK query failed: Claude Code process aborted by user","hint":""},"transientRetryAttempts":0},"startedAt":"2026-08-15T15:29:01.891Z","endedAt":"2026-08-15T15:29:02.401Z"}
+{"type":"transition","ts":"2026-08-15T15:29:02.404Z","step":"code-review","status":"error","message":"code-review iteration 1 completed with verdict: error"}
+{"type":"transition","ts":"2026-08-15T15:29:02.404Z","step":"pipeline","status":"ok","message":"failed → awaiting-resume: Claude Code SDK query failed: Claude Code process aborted by user"}
+{"type":"interruption","reason":"signal","ts":"2026-08-15T15:29:02.451Z"}
+{"type":"transition","ts":"2026-08-15T15:29:22.601Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'code-review'"}
+{"type":"transition","ts":"2026-08-15T15:29:22.839Z","step":"code-review","status":"started","message":"code-review iteration 1 started"}
+{"type":"transition","ts":"2026-08-15T15:29:22.840Z","step":"code-review-started","status":"started","message":"Starting code-review step"}

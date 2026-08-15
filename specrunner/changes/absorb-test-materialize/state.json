@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T15:18:21.941Z",
+  "updatedAt": "2026-08-15T15:29:22.840Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
+  "step": "code-review",
+  "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
   "pipelineId": "standard",
@@ -87,7 +87,10 @@
     "4ad084924499cd0057dfb9f483c97f9341d7bf1c",
     "db2fd36140de39946814fa11fe3ff91d3da07e37",
     "e837546e94bdcd074b3d398fdbba9efcb6fd509c",
-    "b38cab93bb0ecd0c052612d450244c40fd0e9268"
+    "b38cab93bb0ecd0c052612d450244c40fd0e9268",
+    "3563a448c02b6540884da9a03fbdd71b0c932d83",
+    "20fb2ef912d5322469a778514de7043615e98ef9",
+    "919a69bc1a9ca0a3a1d978f28e8d9a00ffb6336c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -289,7 +292,7 @@
     "createdAt": "2026-08-15T15:18:20.579Z"
   },
   "_journal": {
-    "historyCount": 101,
+    "historyCount": 110,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -300,7 +303,7 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 3,
-      "code-review": 1,
+      "code-review": 2,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
