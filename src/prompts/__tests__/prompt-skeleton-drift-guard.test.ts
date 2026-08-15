@@ -607,7 +607,7 @@ describe("TC-017: producer prompt が COMPLETION_DIRECTIVE を保持する", () 
 });
 
 // ============================================================================
-// TC-018: PIPELINE_MAP が全 16 step を列挙し各 step に一行責務が付く
+// TC-018: PIPELINE_MAP が全 15 step を列挙し各 step に一行責務が付く
 // Source: tasks.md > T-01 Acceptance Criteria
 // ============================================================================
 
