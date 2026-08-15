@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-15T11:21:22.838Z",
+  "updatedAt": "2026-08-15T11:24:49.070Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/absorb-build-fixer-46b2f278",
   "error": null,
   "pipelineId": "standard",
@@ -90,7 +90,8 @@
     "0e4fef82757a126a3f1d0cbc40b413ff6fd71f2e",
     "728d19dc1d1bb2609e00b73adc2e0f19229f7cbb",
     "48da767b235dd33bd26ecdb80798b9ebba81d21e",
-    "0e6e98e8d3b35716106ceb0846125e34077dc38d"
+    "0e6e98e8d3b35716106ceb0846125e34077dc38d",
+    "16d6ac7d2229e3a4f71b34549bcaa5247a82adf5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -309,6 +310,11 @@
       "tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts",
       "src/core/pipeline/pipeline.ts",
       "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-04-30-implementer-build-fixer-separation.md",
+      "specrunner/adr/2026-06-12-post-fixer-reverification.md",
+      "specrunner/adr/2026-08-15-absorb-build-fixer.md"
     ]
   },
   "resumePoint": null,
@@ -350,8 +356,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/998",
+    "number": 998,
+    "createdAt": "2026-08-15T11:24:48.031Z"
+  },
   "_journal": {
-    "historyCount": 106,
+    "historyCount": 111,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -368,7 +379,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 3,
-      "conformance": 2
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
