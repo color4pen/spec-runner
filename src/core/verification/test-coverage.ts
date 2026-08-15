@@ -179,7 +179,6 @@ export function tcIdBoundaryRe(tcId: string): RegExp {
  *
  * Core evaluation logic extracted from runTestCoveragePhase for reuse by:
  * - verification step (runTestCoveragePhase wrapper)
- * - implementer output contract (LocalRuntime.validateStepOutputs "test-coverage" branch)
  *
  * Contract: does NOT run tests. Red tests (assertions present, implementation absent)
  * are accepted — the "test-coverage" contract only verifies that TC IDs exist in test

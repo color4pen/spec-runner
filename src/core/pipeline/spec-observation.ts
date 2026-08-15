@@ -20,6 +20,7 @@ import {
 } from "../step/canon-escalation.js";
 import { buildCanonWriteScopeFromState } from "../step/canon-write-scope.js";
 import { STEP_NAMES } from "../step/step-names.js";
+import { isTestGenExempt } from "./test-gen-exemption.js";
 
 /**
  * Returns true if the latest spec-review run has at least one routable canon fixable finding.
@@ -105,7 +106,7 @@ export function specFixerNeedsFixForward(state: JobState): boolean {
   if (!runs || runs.length === 0) return false;
   const lastRun = runs[runs.length - 1];
   if (!lastRun) return false;
-  return lastRun.outcome.verdict === "needs-fix";
+  return lastRun.outcome.verdict === "needs-fix" && !isTestGenExempt(state);
 }
 
 /**

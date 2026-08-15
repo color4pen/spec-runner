@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T15:49:51.256Z",
+  "updatedAt": "2026-08-15T15:54:57.315Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -93,7 +93,8 @@
     "919a69bc1a9ca0a3a1d978f28e8d9a00ffb6336c",
     "096714b72e5645b4388663b7c6c234526196c6b4",
     "adff43fb7eb51aff68a2b6cbe52c5fceb84c7885",
-    "4174a0df0ca99c40c18736681af5bc9d42bfdbb4"
+    "4174a0df0ca99c40c18736681af5bc9d42bfdbb4",
+    "0465af554a3f901344ace25c74214fe8ef0ac37e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -213,11 +214,14 @@
       "src/core/pipeline/spec-observation.ts",
       "src/config/type-config.ts",
       "src/core/port/runtime-strategy.ts",
+      "src/core/verification/test-coverage.ts",
+      "src/core/runtime/local.ts",
       "src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts",
       "src/core/runtime/__tests__/diff-paths-between-commits.test.ts",
-      "src/core/verification/test-coverage.ts",
-      "src/state/schema/types.ts",
-      "src/config/schema/types.ts"
+      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "src/core/step/implementer.ts",
+      "src/core/pipeline/test-gen-exemption.ts"
     ],
     "conformance": [
       "src/core/pipeline/types.ts",
@@ -282,7 +286,7 @@
     "createdAt": "2026-08-15T15:18:20.579Z"
   },
   "_journal": {
-    "historyCount": 123,
+    "historyCount": 127,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -298,7 +302,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 3,
+      "regression-gate": 4,
       "conformance": 1,
       "adr-gen": 1,
       "pr-create": 1

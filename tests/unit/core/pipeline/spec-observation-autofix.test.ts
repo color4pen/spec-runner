@@ -495,6 +495,40 @@ describe("TC-009: needs-fix spec-fixer returns to spec-review", () => {
     // when(state) returns true → specFixerNeedsFixForward fires → routes to test-case-gen for TC regeneration
     expect(guardedRow!.when!(state)).toBe(true);
   });
+
+  it("TC-009: guarded spec-fixer → test-case-gen when predicate returns false for exempt type (chore + needs-fix → SPEC_REVIEW, not TEST_CASE_GEN)", () => {
+    // Exempt types (chore) must NOT route to test-case-gen even when spec-review verdict is needs-fix.
+    // specFixerNeedsFixForward must return false so the fallback unconditional row routes to spec-review.
+    const guardedRow = STANDARD_TRANSITIONS.find(
+      (t) =>
+        t.step === STEP_NAMES.SPEC_FIXER &&
+        t.on === "approved" &&
+        t.to === STEP_NAMES.TEST_CASE_GEN,
+    );
+    expect(guardedRow).toBeDefined();
+    expect(guardedRow!.when).toBeDefined();
+
+    const ts = "2026-01-01T00:01:00.000Z";
+    const state = makeMinimalJobState({
+      request: {
+        path: REQUEST_MD,
+        title: "Chore Exempt Test",
+        type: "chore",
+        slug: TEST_SLUG,
+      },
+      steps: {
+        [STEP_NAMES.SPEC_REVIEW]: [
+          makeStepRun({ verdict: "needs-fix", startedAt: ts, endedAt: ts }),
+        ],
+        [STEP_NAMES.SPEC_FIXER]: [
+          makeStepRun({ verdict: "approved", startedAt: ts, endedAt: ts }),
+        ],
+      },
+    });
+
+    // Exempt type → specFixerNeedsFixForward returns false → unconditional row wins → SPEC_REVIEW
+    expect(guardedRow!.when!(state)).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
