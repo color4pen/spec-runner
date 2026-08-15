@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "46b2f278-e1bb-462d-807a-f0fd7648cb74",
   "createdAt": "2026-08-14T19:59:45.093Z",
-  "updatedAt": "2026-08-14T23:48:18.584Z",
+  "updatedAt": "2026-08-15T00:40:14.619Z",
   "request": {
     "title": "build-fixer の廃止: verification 失敗は implementer の継続 session で直す",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
-  "status": "running",
+  "step": "conformance",
+  "status": "awaiting-resume",
   "branch": "change/absorb-build-fixer-46b2f278",
-  "error": null,
+  "error": {
+    "code": "STEP_TIMEOUT",
+    "message": "Step 'conformance' inactivity timeout: no agent event for 1795929ms",
+    "hint": "no tool observed before timeout (no tool activity in session)"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -86,7 +90,8 @@
     "b18ac7a469e1c46e5d50994b99fb5d1ff98f6ad8",
     "68b97666c162c7148af26def478f1f041dac0555",
     "73e5f078aa2d89476f335871a6fc8ec415651c57",
-    "b83cca6aebd2b698ec8f5154cd84d836940002fa"
+    "b83cca6aebd2b698ec8f5154cd84d836940002fa",
+    "0e4fef82757a126a3f1d0cbc40b413ff6fd71f2e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -278,18 +283,23 @@
       "src/state/schema/types.ts"
     ],
     "regression-gate": [
+      "src/core/pipeline/pipeline.ts",
       "src/core/pipeline/reverification.ts",
       "tests/unit/core/pipeline/pipeline.reverification.test.ts",
-      "src/core/pipeline/pipeline.ts",
-      "src/core/pipeline/types.ts",
-      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
       "tests/unit/absorb-build-fixer/implementer-recovery.test.ts",
       "tests/unit/absorb-build-fixer/transitions.test.ts",
       "src/core/step/implementer.ts",
-      "tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts"
+      "src/core/verification/propagate.ts",
+      "src/core/pipeline/types.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "src/core/resume/resolve-step.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "conformance",
+    "reason": "timeout",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -329,7 +339,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 87,
+    "historyCount": 94,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -345,7 +355,8 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 2
+      "regression-gate": 3,
+      "conformance": 1
     }
   }
 }
