@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T11:36:28.637Z",
+  "updatedAt": "2026-08-15T11:55:41.671Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -63,7 +63,8 @@
   ],
   "synthesizedCommits": [
     "e2fa03d09bc269045932cbc631bb036a2c610836",
-    "c2e85f748d76d35a60b37f837dc3dcfa6d81a0aa"
+    "c2e85f748d76d35a60b37f837dc3dcfa6d81a0aa",
+    "1872247116b6b03b8d794cfbb79a7c5657891221"
   ],
   "touchedFiles": {
     "request-review": [
@@ -88,12 +89,45 @@
       "src/core/step/staging-containment.ts",
       "src/prompts/implementer-system.ts",
       "src/core/verification/test-coverage.ts"
+    ],
+    "design": [
+      "src/core/pipeline/types.ts",
+      "src/core/step/bite-evidence/oids.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/step/bite-evidence/test-file-selection.ts",
+      "src/core/archive/achieved-assurance.ts",
+      "src/core/step/implementer.ts",
+      "src/core/step/test-materialize.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/core/resume/resolve-step.ts",
+      "src/kernel/step-names.ts",
+      "src/core/step/step-names.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/staging-containment.ts",
+      "src/core/pipeline/registry.ts",
+      "src/prompts/implementer-system.ts",
+      "src/prompts/test-materialize-system.ts",
+      "src/config/type-config.ts",
+      "src/core/verification/test-coverage.ts",
+      "src/prompts/pipeline-map.ts",
+      "src/kernel/agent-definition.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/state/profile.ts",
+      "src/state/schema/types.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/pipeline/__tests__/test-gen-exemption.test.ts",
+      "src/core/runtime/local.ts",
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts",
+      "src/core/resume/__tests__/resolve-step.test.ts",
+      "src/core/pipeline/__tests__/bite-evidence-pipeline.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
