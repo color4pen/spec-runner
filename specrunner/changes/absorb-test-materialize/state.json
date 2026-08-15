@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "098d073d-6ce8-443f-8432-2405f17f6569",
   "createdAt": "2026-08-15T11:29:31.264Z",
-  "updatedAt": "2026-08-15T11:55:41.671Z",
+  "updatedAt": "2026-08-15T11:58:15.377Z",
   "request": {
     "title": "test-materialize step の廃止: テスト実体化を implementer に統合する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/absorb-test-materialize-098d073d",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "e2fa03d09bc269045932cbc631bb036a2c610836",
     "c2e85f748d76d35a60b37f837dc3dcfa6d81a0aa",
-    "1872247116b6b03b8d794cfbb79a7c5657891221"
+    "1872247116b6b03b8d794cfbb79a7c5657891221",
+    "5970ae8c5bc2cfc729756dcd2407ce825760e58c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -121,13 +122,15 @@
       "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts",
       "src/core/resume/__tests__/resolve-step.test.ts",
       "src/core/pipeline/__tests__/bite-evidence-pipeline.test.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
