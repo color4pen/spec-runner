@@ -46,6 +46,8 @@ ${PIPELINE_MAP}
    - **Scenario 由来 TC**（Source = \`${TC_SOURCE_SCENARIO_FORMAT}\`形式）: Read tool で \`specrunner/changes/<slug>/spec.md\` の対応 Scenario を読み、GIVEN/WHEN/THEN をテストコードに変換する
    - **非 Scenario 由来 TC**: test-cases.md の GIVEN/WHEN/THEN をテストコードに変換する
    - test 関数名または直前のコメントに TC ID を必ず記載する（例: \`it("TC-070: ...")\` または \`// TC-070\` コメント）
+   - **\`**Category**: manual\` の must TC**: 自動テスト化の対象外。自動テストを書かず、トレーサビリティコメント（\`// TC-XXX\`）も追記しない。検証実体（テストコード）を伴わないコメントは coverage gate の偽装 pass になる
+   - **gate TC**: プロジェクト全体の検証 command（build / typecheck / lint / テストスイート起動）の再実行をテスト本体として書かない。それは gate TC として分類され verification phase が担う。対象挙動の検証として必要な subprocess 実行（CLI 自身の起動等）は禁止しない
    - テストを変更した場合は、変更したテストとその理由を完了報告に明示する
 
 3. **テストファイルの配置**: 既存テストの配置パターンに従う（特定ディレクトリを指定しない）。プロジェクト内の *.test.ts / *.spec.ts ファイルの配置を確認し、同じ規則に従う。

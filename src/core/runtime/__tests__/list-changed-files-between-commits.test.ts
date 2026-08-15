@@ -7,7 +7,10 @@
  * After absorb-test-materialize, the runtime must expose:
  *   listChangedFilesBetweenCommits(baseOid: string, headOid: string, cwd: string): Promise<ChangedFilesResult>
  *
- * - LocalRuntime: runs `git diff --name-only <baseOid> <headOid>` (no pathspec filter)
+ * - LocalRuntime: runs `git diff --name-only --diff-filter=d <baseOid> <headOid>`
+ *   (no pathspec filter; --diff-filter=d excludes files deleted at headOid — a deleted
+ *   path cannot be overlaid or executed as a test, so listing it would poison the
+ *   red/green runs into unavailable for the whole set)
  *   exit 0 → success, non-0 / spawn error → unavailable
  * - ManagedRuntime: always returns unavailable (no local worktree)
  *
@@ -61,7 +64,7 @@ function makeManagedRuntime(): ManagedRuntime {
 // ---------------------------------------------------------------------------
 
 describe("TC-013: LocalRuntime.listChangedFilesBetweenCommits runs without path filter", () => {
-  it("TC-013: calls git diff --name-only <baseOid> <headOid> without -- pathspec", async () => {
+  it("TC-013: calls git diff --name-only --diff-filter=d <baseOid> <headOid> without -- pathspec", async () => {
     const changedFile = "src/__tests__/feature.test.ts";
     const spawnFn = makeSpawnFn(0, `${changedFile}\n`);
     const runtime = makeLocalRuntime(spawnFn);
@@ -73,7 +76,7 @@ describe("TC-013: LocalRuntime.listChangedFilesBetweenCommits runs without path 
     // Must call git diff --name-only without path filter (no -- paths)
     expect(spawnFn).toHaveBeenCalledWith(
       "git",
-      ["diff", "--name-only", BASE_OID, HEAD_OID],
+      ["diff", "--name-only", "--diff-filter=d", BASE_OID, HEAD_OID],
       expect.objectContaining({ cwd: CWD }),
     );
     // Must NOT include "--" or pathspec in the arguments
