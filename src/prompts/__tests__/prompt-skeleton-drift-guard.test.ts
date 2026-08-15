@@ -611,7 +611,7 @@ describe("TC-017: producer prompt が COMPLETION_DIRECTIVE を保持する", () 
 // Source: tasks.md > T-01 Acceptance Criteria
 // ============================================================================
 
-describe("TC-018: PIPELINE_MAP が全 14 step を列挙し各 step に一行責務が付く", () => {
+describe("TC-018: PIPELINE_MAP が全 15 step を列挙し各 step に一行責務が付く", () => {
   // build-fixer は廃止済み (absorb-build-fixer)
   // test-materialize は廃止済み (absorb-test-materialize)
   const EXPECTED_STEPS = [
@@ -621,6 +621,7 @@ describe("TC-018: PIPELINE_MAP が全 14 step を列挙し各 step に一行責�
     "spec-fixer",
     "test-case-gen",
     "implementer",
+    "bite-evidence",
     "verification",
     "code-review",
     "code-fixer",
@@ -645,12 +646,12 @@ describe("TC-018: PIPELINE_MAP が全 14 step を列挙し各 step に一行責�
     expect(PIPELINE_MAP).not.toContain("test-materialize");
   });
 
-  it("TC-018: PIPELINE_MAP has exactly 14 data rows (one per step)", () => {
+  it("TC-018: PIPELINE_MAP has exactly 15 data rows (one per step)", () => {
     // Count table rows: lines starting with "|" that are not the header or separator
     const rows = PIPELINE_MAP.split("\n").filter(
       (line) => line.startsWith("|") && !line.includes("Step") && !line.includes("---"),
     );
-    expect(rows.length).toBe(14);
+    expect(rows.length).toBe(15);
   });
 });
 
@@ -806,5 +807,115 @@ describe("TC-028 (TC-013): drift-guard テストが配列反復で全 prompt を
 
   it("TC-028: PRODUCER_AND_FIXER_PROMPTS covers all 6 producer/fixer steps (build-fixer + test-materialize 廃止後)", () => {
     expect(PRODUCER_AND_FIXER_PROMPTS.length).toBe(6);
+  });
+});
+
+// ============================================================================
+// TC-029: implementer system prompt が 4 層 authority 表現を含む
+// Source: prompt-rules-consistency request > 受け入れ基準 AC-1
+// ============================================================================
+
+describe("TC-029: implementer system prompt が 4 層 authority 表現を含む", () => {
+  it("TC-029: IMPLEMENTER_SYSTEM_PROMPT contains '依頼意図の正典（normative）'", () => {
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("依頼意図の正典（normative）");
+  });
+  it("TC-029: IMPLEMENTER_SYSTEM_PROMPT contains 'レビュー済みの検証契約'", () => {
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("レビュー済みの検証契約");
+  });
+  it("TC-029: IMPLEMENTER_SYSTEM_PROMPT contains '実装の作業計画'", () => {
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("実装の作業計画");
+  });
+});
+
+// ============================================================================
+// TC-030: implementer system prompt に「唯一のインプット」が含まれない
+// Source: prompt-rules-consistency request > 受け入れ基準 AC-1
+// ============================================================================
+
+describe("TC-030: implementer system prompt に「唯一のインプット」が含まれない", () => {
+  it("TC-030: IMPLEMENTER_SYSTEM_PROMPT does not contain '唯一のインプット'", () => {
+    expect(IMPLEMENTER_SYSTEM_PROMPT).not.toContain("唯一のインプット");
+  });
+});
+
+// ============================================================================
+// TC-031: implementer system prompt に commit message への test_cases_skipped 指示が含まれない
+// Source: prompt-rules-consistency request > 受け入れ基準 AC-2
+// ============================================================================
+
+describe("TC-031: implementer system prompt に commit message への test_cases_skipped 指示が含まれない", () => {
+  it("TC-031: IMPLEMENTER_SYSTEM_PROMPT does not contain 'commit message に `test_cases_skipped'", () => {
+    expect(IMPLEMENTER_SYSTEM_PROMPT).not.toContain("commit message に `test_cases_skipped");
+  });
+});
+
+// ============================================================================
+// TC-032: implementer system prompt に completion report への test_cases_skipped 指示が含まれる
+// Source: prompt-rules-consistency request > 受け入れ基準 AC-2
+// ============================================================================
+
+describe("TC-032: implementer system prompt に completion report への test_cases_skipped 指示が含まれる", () => {
+  it("TC-032: IMPLEMENTER_SYSTEM_PROMPT contains '完了報告（completion report）に `test_cases_skipped'", () => {
+    expect(IMPLEMENTER_SYSTEM_PROMPT).toContain("完了報告（completion report）に `test_cases_skipped");
+  });
+});
+
+// ============================================================================
+// TC-033: rules 出力に verification continuation 例外記述が含まれる
+// Source: prompt-rules-consistency request > 受け入れ基準 AC-3
+// ============================================================================
+
+describe("TC-033: rules 出力に verification continuation 例外記述が含まれる", () => {
+  it("TC-033: RULES_MD_CONTENT contains 'verification 失敗後の implementer 再入'", () => {
+    expect(RULES_MD_CONTENT).toContain("verification 失敗後の implementer 再入");
+  });
+  it("TC-033: RULES_MD_CONTENT contains 'continuation'", () => {
+    expect(RULES_MD_CONTENT).toContain("continuation");
+  });
+  it("TC-033: RULES_MD_CONTENT contains 'fresh session に fallback'", () => {
+    expect(RULES_MD_CONTENT).toContain("fresh session に fallback");
+  });
+});
+
+// ============================================================================
+// TC-034: PIPELINE_MAP に bite-evidence 行が存在する
+// Source: prompt-rules-consistency request > 受け入れ基準 AC-4
+// ============================================================================
+
+describe("TC-034: PIPELINE_MAP に bite-evidence 行が存在する", () => {
+  it("TC-034: PIPELINE_MAP contains 'bite-evidence'", () => {
+    expect(PIPELINE_MAP).toContain("bite-evidence");
+  });
+  it("TC-034: PIPELINE_MAP has bite-evidence between implementer and verification", () => {
+    const lines = PIPELINE_MAP.split("\n");
+    const implementerIdx = lines.findIndex((l) => l.includes("| implementer "));
+    const biteIdx = lines.findIndex((l) => l.includes("| bite-evidence "));
+    const verificationIdx = lines.findIndex((l) => l.includes("| verification "));
+    expect(biteIdx).toBeGreaterThan(implementerIdx);
+    expect(verificationIdx).toBeGreaterThan(biteIdx);
+  });
+  it("TC-034: PIPELINE_MAP contains 'Evidence Base'", () => {
+    expect(PIPELINE_MAP).toContain("Evidence Base");
+  });
+});
+
+// ============================================================================
+// TC-035: conformance 行に request/spec = normative の二層記述が含まれる
+// Source: prompt-rules-consistency request > 受け入れ基準 AC-4
+// ============================================================================
+
+describe("TC-035: conformance 行に request/spec = normative の二層記述が含まれる", () => {
+  it("TC-035: PIPELINE_MAP conformance row contains 'normative'", () => {
+    const conformanceRow = PIPELINE_MAP.split("\n").find((l) => l.includes("| conformance "));
+    expect(conformanceRow).toBeDefined();
+    expect(conformanceRow!).toContain("normative");
+  });
+  it("TC-035: PIPELINE_MAP conformance row contains 'plan'", () => {
+    const conformanceRow = PIPELINE_MAP.split("\n").find((l) => l.includes("| conformance "));
+    expect(conformanceRow!).toContain("plan");
+  });
+  it("TC-035: PIPELINE_MAP conformance row does not contain '4 成果物'", () => {
+    const conformanceRow = PIPELINE_MAP.split("\n").find((l) => l.includes("| conformance "));
+    expect(conformanceRow!).not.toContain("4 成果物");
   });
 });

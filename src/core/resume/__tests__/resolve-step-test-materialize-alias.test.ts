@@ -207,3 +207,33 @@ describe("TC-011: legacy state with test-materialize history loads and folds wit
     expect((matRun as unknown as Record<string, unknown>)["commitOid"]).toBe(matCommitOid);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-012: stateStep="test-materialize", resumePoint=null, from=undefined → implementer（path 4）
+// ---------------------------------------------------------------------------
+
+describe("TC-012: stateStep='test-materialize' resolves to implementer (path 4 — legacy alias)", () => {
+  it("TC-012: resolveResumeStep(undefined, null, 'test-materialize') → 'implementer'", () => {
+    const result = resolveResumeStep(undefined, null, "test-materialize");
+    expect(result).toBe("implementer");
+  });
+
+  it("TC-012: does NOT throw (is resolved via alias, not treated as unknown step)", () => {
+    expect(() => resolveResumeStep(undefined, null, "test-materialize")).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-013: stateStep="build-fixer", resumePoint=null, from=undefined → implementer（path 4）
+// ---------------------------------------------------------------------------
+
+describe("TC-013: stateStep='build-fixer' resolves to implementer (path 4 — legacy alias)", () => {
+  it("TC-013: resolveResumeStep(undefined, null, 'build-fixer') → 'implementer'", () => {
+    const result = resolveResumeStep(undefined, null, "build-fixer");
+    expect(result).toBe("implementer");
+  });
+
+  it("TC-013: does NOT throw (is resolved via alias, not treated as unknown step)", () => {
+    expect(() => resolveResumeStep(undefined, null, "build-fixer")).not.toThrow();
+  });
+});

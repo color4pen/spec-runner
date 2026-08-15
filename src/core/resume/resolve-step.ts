@@ -129,8 +129,18 @@ export function resolveResumeStep(
     return toStepName(resolvedStep);
   }
 
-  if (stateStep !== undefined && allowed.has(stateStep)) {
-    return toStepName(stateStep);
+  if (stateStep !== undefined) {
+    const legacyResolved = LEGACY_STEP_ALIASES[stateStep] ?? stateStep;
+    if (legacyResolved !== stateStep) {
+      logInfo(`Mapping state.step "${stateStep}" → "${legacyResolved}" (legacy alias)`);
+    }
+    const resolvedStateStep = mapMemberToCoordinator(legacyResolved, reviewers);
+    if (resolvedStateStep !== legacyResolved) {
+      logInfo(`Mapping state.step "${legacyResolved}" → "${resolvedStateStep}" (member → coordinator)`);
+    }
+    if (allowed.has(resolvedStateStep)) {
+      return toStepName(resolvedStateStep);
+    }
   }
 
   throw new Error(

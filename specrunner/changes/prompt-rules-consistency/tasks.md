@@ -4,7 +4,7 @@
 
 対象ファイル: `src/prompts/implementer-system.ts`
 
-- [ ] `IMPLEMENTER_BASE` の `## Contract` 節の `**入力**:` ブロック（現行 line 20-23）を以下の 4 層構造に置換する:
+- [x] `IMPLEMENTER_BASE` の `## Contract` 節の `**入力**:` ブロック（現行 line 20-23）を以下の 4 層構造に置換する:
   ```
   **入力（4 層）**:
   - `specrunner/changes/<slug>/request.md` / `spec.md` — **依頼意図の正典（normative）**: テストと実装はこれに整合させる責務がある。逸脱は finding
@@ -13,7 +13,7 @@
   - `specrunner/changes/<slug>/design.md` — **設計根拠・文脈**（read-only）
   ```
   「唯一のインプット」という文言が残らないこと。`spec.md` / `design.md` / `test-cases.md` — 参照情報（read-only）という旧記述を削除する。
-- [ ] 現行 line 59 の `commit message に \`test_cases_skipped: [TC-ID — 理由]\` の形式で明示的に記録する` を `完了報告（completion report）に \`test_cases_skipped: [TC-ID — 理由]\` の形式で明示的に記録する` に変更する（「commit message」→「完了報告（completion report）」）。
+- [x] 現行 line 59 の `commit message に \`test_cases_skipped: [TC-ID — 理由]\` の形式で明示的に記録する` を `完了報告（completion report）に \`test_cases_skipped: [TC-ID — 理由]\` の形式で明示的に記録する` に変更する（「commit message」→「完了報告（completion report）」）。
 
 **Acceptance Criteria**:
 - `IMPLEMENTER_SYSTEM_PROMPT` に `request.md` / `spec.md` = normative の記述が含まれる
@@ -29,7 +29,7 @@
 
 対象ファイル: `src/prompts/rules.ts`
 
-- [ ] `RULES_MD_CONTENT` 内の `### Pipeline Structure` 節の現行記述:
+- [x] `RULES_MD_CONTENT` 内の `### Pipeline Structure` 節の現行記述:
   ```
   各 step は独立した agent session として実行される。前の session の文脈を持たない（各 step は新規セッションで実行される）。
   CLI (StepExecutor) がオーケストレーションを担当し、step 間の連携は artifact ファイル経由で行われる。
@@ -53,11 +53,11 @@
 
 対象ファイル: `src/prompts/pipeline-map.ts`
 
-- [ ] `implementer` 行と `verification` 行の間に以下の行を追加する:
+- [x] `implementer` 行と `verification` 行の間に以下の行を追加する:
   ```
   | bite-evidence | Evidence Base（job 開始時点の実装 + candidate のテスト）上で red→green を機械実行し、テストが変更に噛むことを証明する（CLI step） |
   ```
-- [ ] `conformance` 行を以下に置換する（「4 成果物」の旧記述を削除）:
+- [x] `conformance` 行を以下に置換する（「4 成果物」の旧記述を削除）:
   ```
   | conformance | request / spec を規範（normative）、design / tasks を計画（plan）として適合性を検証する |
   ```
@@ -76,7 +76,7 @@
 
 対象ファイル: `src/core/resume/resolve-step.ts`
 
-- [ ] `resolveResumeStep` 関数内の path 4 ブロック（現行の `if (stateStep !== undefined && allowed.has(stateStep)) {` から `return toStepName(stateStep);` まで）を以下に置換する:
+- [x] `resolveResumeStep` 関数内の path 4 ブロック（現行の `if (stateStep !== undefined && allowed.has(stateStep)) {` から `return toStepName(stateStep);` まで）を以下に置換する:
   ```typescript
   if (stateStep !== undefined) {
     const legacyResolved = LEGACY_STEP_ALIASES[stateStep] ?? stateStep;
@@ -111,7 +111,7 @@
 
 ### T-05-a: TC-018 を更新する（drift-guard）
 
-- [ ] `describe("TC-018: PIPELINE_MAP が全 14 step を列挙し…")` ブロックを以下のように更新する:
+- [x] `describe("TC-018: PIPELINE_MAP が全 14 step を列挙し…")` ブロックを以下のように更新する:
   - `EXPECTED_STEPS` 配列に `"bite-evidence"` を追加する
   - `expect(rows.length).toBe(14)` を `expect(rows.length).toBe(15)` に変更する
   - describe の description を `"TC-018: PIPELINE_MAP が全 15 step を列挙し各 step に一行責務が付く"` に更新する
@@ -119,7 +119,7 @@
 
 ### T-05-b: TC-029〜TC-035 を drift-guard に追加する
 
-- [ ] ファイル末尾（TC-028 ブロックの後）に以下の describe ブロックを追加する:
+- [x] ファイル末尾（TC-028 ブロックの後）に以下の describe ブロックを追加する:
 
 **TC-029**: implementer system prompt が 4 層 authority を持つ
 ```
@@ -219,7 +219,7 @@ describe("TC-035: conformance 行に request/spec = normative の二層記述が
 
 ### T-05-c: TC-012 / TC-013 を resolve-step-test-materialize-alias.test.ts に追加する
 
-- [ ] ファイル末尾（TC-011 describe ブロックの後）に以下を追加する:
+- [x] ファイル末尾（TC-011 describe ブロックの後）に以下を追加する:
 
 **TC-012**: stateStep="test-materialize", resumePoint=null, from=undefined → implementer（path 4）
 ```
@@ -263,8 +263,8 @@ describe("TC-013: stateStep='build-fixer' resolves to implementer (path 4 — le
 
 すべてのタスク完了後、以下を確認する:
 
-- [ ] `bun run typecheck` が green
-- [ ] `bun run test` が green（新規 TC 含む）
-- [ ] `IMPLEMENTER_SYSTEM_PROMPT` に「唯一のインプット」が含まれないことを grep で確認
-- [ ] `PIPELINE_MAP` のデータ行数が 15 であることを確認
-- [ ] `resolveResumeStep(undefined, null, "test-materialize")` が `"implementer"` を返すことを確認
+- [x] `bun run typecheck` が green
+- [x] `bun run test` が green（新規 TC 含む）
+- [x] `IMPLEMENTER_SYSTEM_PROMPT` に「唯一のインプット」が含まれないことを grep で確認
+- [x] `PIPELINE_MAP` のデータ行数が 15 であることを確認
+- [x] `resolveResumeStep(undefined, null, "test-materialize")` が `"implementer"` を返すことを確認

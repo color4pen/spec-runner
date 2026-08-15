@@ -20,7 +20,8 @@ spec-runner は request.md を入力として GitHub PR を出力する pipeline
 
 ### Pipeline Structure
 
-各 step は独立した agent session として実行される。前の session の文脈を持たない（各 step は新規セッションで実行される）。
+原則: 各 step は独立した新規 session（前の session の文脈を持たない）として実行される。
+例外: verification 失敗後の implementer 再入は、直前の implementer session の continuation として実行される（session が無い場合は fresh session に fallback）。
 CLI (StepExecutor) がオーケストレーションを担当し、step 間の連携は artifact ファイル経由で行われる。
 
 ${PIPELINE_MAP}

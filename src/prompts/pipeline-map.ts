@@ -15,11 +15,12 @@ export const PIPELINE_MAP = `| Step | 責務 |
 | spec-fixer | spec-review の findings を修正する |
 | test-case-gen | spec Scenario と設計から TC を生成し test-cases.md を出力する |
 | implementer | test-cases.md の must TC をテストコードに実体化し、実装と整合させる。verification 失敗時は再入して修正する |
+| bite-evidence | Evidence Base（job 開始時点の実装 + candidate のテスト）上で red→green を機械実行し、テストが変更に噛むことを証明する（CLI step） |
 | verification | ビルド・テスト・lint を実行し結果を記録する（CLI step） |
 | code-review | 実装を評価し、コード品質の findings を出力する |
 | code-fixer | code-review / custom reviewer の findings を修正する |
 | custom-reviewer | カスタム定義の観点で実装を評価する |
 | regression-gate | findings ledger の全修正が最終コードに残っているかを確認する |
-| conformance | 4 成果物（request / design / tasks / spec）への適合性を検証する |
+| conformance | request / spec を規範（normative）、design / tasks を計画（plan）として適合性を検証する |
 | adr-gen | ADR-worthy な設計判断を判定し、該当する場合 ADR を生成する |
 | pr-create | GitHub PR を作成する（CLI step） |`;
