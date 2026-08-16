@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "41cec64c-d6d8-4b2a-af76-b4f1f8237d1f",
   "createdAt": "2026-08-16T13:32:08.572Z",
-  "updatedAt": "2026-08-16T13:36:53.085Z",
+  "updatedAt": "2026-08-16T13:48:29.036Z",
   "request": {
     "title": "agent step の完了契機を report 受領主・プロセス終了 fallback の二重系にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/report-settles-step-41cec64c",
   "error": null,
@@ -63,7 +63,8 @@
   ],
   "synthesizedCommits": [
     "a4ae95526895c44d28fb3ca64bd640ce54439bd2",
-    "3be4de6110e46a7790134ab19bbe2844edf687ae"
+    "3be4de6110e46a7790134ab19bbe2844edf687ae",
+    "b8371cd4405cf166b43dd8533e60d9551f5215dd"
   ],
   "touchedFiles": {
     "request-review": [
@@ -73,12 +74,26 @@
       "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts",
       "src/adapter/claude-code/__tests__/workspace-tool-guard.test.ts",
       "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts"
+    ],
+    "design": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/shared/inactivity-watchdog.ts",
+      "src/adapter/claude-code/message-types.ts",
+      "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts",
+      "src/adapter/claude-code/__tests__/artifact-bundle-injection.test.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/shared/follow-up.ts",
+      "src/core/port/report-result.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
