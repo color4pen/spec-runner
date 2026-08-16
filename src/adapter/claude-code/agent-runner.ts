@@ -695,14 +695,14 @@ export class ClaudeCodeRunner implements AgentRunner {
       }
 
       // T-04: grace timer state — local to this runQuery call.
-      let graceFired = false;
+      let graceArmed = false;
       let graceTimerId: ReturnType<typeof setTimeout> | undefined;
       let settledByReport = false;
 
       // Assign the grace arm function so the report handler can trigger it.
       armReportGrace = () => {
-        if (graceFired) return; // already armed — idempotent
-        graceFired = true;
+        if (graceArmed) return; // already armed — idempotent
+        graceArmed = true;
         graceTimerId = setTimeout(() => {
           settledByReport = true;
           mainQueryAbort.abort();
