@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a96538bc-88b8-46f9-be87-ce99ae6721cc",
   "createdAt": "2026-08-16T17:11:25.976Z",
-  "updatedAt": "2026-08-16T19:01:28.420Z",
+  "updatedAt": "2026-08-16T19:07:31.425Z",
   "request": {
     "title": "specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/operator-guide-a96538bc",
   "error": null,
@@ -86,7 +86,9 @@
     "e52f02c1eb77dad5b95af239e721f60efb90aba5",
     "d8a0c816bfcd08bfcb2aade412a8d446a2893daa",
     "1cf06552d4995e83a7dcd8304a37a503e3b3a9c6",
-    "ea1ae69bc4ff5ef5bc59c56fb1e1727ab4cb119d"
+    "ea1ae69bc4ff5ef5bc59c56fb1e1727ab4cb119d",
+    "6c261ec5fb71e58a376a090a6ab2aaa87619f552",
+    "b6fe51dc2fa99406720e648c4b0ec745239997d9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -151,6 +153,19 @@
       "src/core/finish/escalation.ts",
       "src/core/command/__tests__/guide.test.ts",
       "src/cli/__tests__/init-snippet.test.ts"
+    ],
+    "conformance": [
+      "src/core/command/guide.ts",
+      "src/core/command/__tests__/guide.test.ts",
+      "src/cli/command-registry.ts",
+      "src/core/finish/escalation.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/cli/init.ts",
+      ".claude/skills/job-run-monitor/SKILL.md",
+      ".claude/skills/rebase-finish/SKILL.md",
+      ".claude/skills/acceptance-and-issue-audit/SKILL.md",
+      ".claude/skills/parallel-request-workflow/SKILL.md",
+      "src/cli/__tests__/init-snippet.test.ts"
     ]
   },
   "resumePoint": null,
@@ -198,7 +213,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 93,
+    "historyCount": 102,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -207,13 +222,14 @@
       "spec-fixer": 1,
       "implementer": 3,
       "bite-evidence": 1,
-      "verification": 3,
+      "verification": 4,
       "code-review": 1,
       "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
