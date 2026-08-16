@@ -1,0 +1,26 @@
+{
+  "requestHash": "sha256:9de9f185bab11c1a52dc285528d203864e5ecdf4041b5ace4745d6f682c20fbb",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "guide.ts:377-378: review topic contains 'request.md でなく起点 issue の正典を canon とする'",
+    "guide.ts:184: audit topic contains 'レビューは request.md ではなく起点 issue の正典と照合する'",
+    "guide.ts:313: escalation topic contains 'specrunner job cancel <slug> --restore-draft' (bug: should use jobId)",
+    "command-registry.ts:52: VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/",
+    "command-registry.ts:920,934: job cancel args: [{ name: 'jobId', required: false }]",
+    "command-registry.ts:938: jobId format validation via VALID_JOB_ID_CHARS.test(jobId)",
+    "manager.ts:65: buildWorktreePath uses jobId.slice(0, 8)",
+    "guide.ts:112: merge topic shows '<slug>-<jobId>' (bug: should be '<slug>-<jobId first 8 chars>')",
+    "guide.ts:199: setup topic heading is 'init — 2 層 config scaffold'",
+    "guide.ts:42: jobs topic contains stale 'state 登録に数秒ラグあり。job ls で running を確認してから'",
+    "runner.ts:450-451: halt output has no 'specrunner guide escalation' link (missing)",
+    "escalation.ts:29: formatEscalation includes '詳細: `specrunner guide escalation`'",
+    "canon-escalation.ts:151: buildCanonEscalationReason includes '詳細: `specrunner guide escalation`'",
+    "guide.test.ts:509-534: TC-013 extractSpecrunnerCommands only extracts inline backtick patterns, not triple-backtick blocks",
+    ".claude/skills/acceptance-and-issue-audit/SKILL.md:6: contains 'parallel-request-workflow' mention",
+    ".claude/skills/parallel-request-workflow/: directory does not exist (completely deleted, not tombstoned)",
+    "specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md:49: says 'tombstone を置いて実質削除する' but actual state is directory deletion",
+    "init.ts:143-165: runInit creates user-global config + per-repo scaffold only; no .specrunner/config.json scaffold",
+    "command-registry.ts:883-897: job show accepts <jobId|slug> argument"
+  ],
+  "sourceRevision": "8b78bd74ff8ea7f534ed246e9ae35f4fb6ff00a5"
+}
