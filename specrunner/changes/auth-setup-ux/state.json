@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T06:51:04.659Z",
+  "updatedAt": "2026-08-16T06:52:28.098Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/auth-setup-ux-701673a2",
   "error": null,
   "pipelineId": "standard",
@@ -77,13 +77,10 @@
     "ec81ecce5f6a1e9cb366db95dcb8320f05fc4a5c",
     "bc653e4f3180d5eba2ff56fb279f1d2991eefe0d",
     "9b12068a07b1c7caaf57b8eeb85a6dcd203dd39a",
-    "dc64275ac5fae5b15109b5765c122683aced4574"
+    "dc64275ac5fae5b15109b5765c122683aced4574",
+    "27f9a63b3a9698539357f54f355855e856038261"
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "touchedFiles": {
     "request-review": [
@@ -237,8 +234,15 @@
       "invalidatedByCommit": null
     }
   ],
+  "operatorAdjudications": [
+    {
+      "text": "cross-boundary-invariants の 2 finding を次の仕様で修正する。\n\n【1. src/util/secret-input.ts — raw mode 復元の invariant】\nTTY raw mode を有効にしている間だけ有効な cleanup(setRawMode(false) + listener 解除)を process の 'exit' と SIGTERM に登録し、入力完了・エラー・シグナルのどの経路でも raw mode が復元されるようにする。SIGTERM 受信時は raw mode 復元後に既定挙動どおり終了する(handler を once で登録し、通常完了時には exit/SIGTERM handler を解除して leak させない)。この復元不変条件をテストで pin する(SIGTERM handler 登録中に cleanup が呼ばれること、通常完了後に handler が残らないこと)。\n\n【2. 廃止 --provider の移行案内を値で出し分ける】\nlogin の --provider migration 捕捉を値ごとの案内にする(いずれも非 0 終了は維持):\n- --provider claude → 現行どおり「specrunner credentials set claude-code を使う」案内\n- --provider github → 「login は GitHub 専用になった。--provider は不要。specrunner login をそのまま実行する」案内(credentials set claude-code を案内しない)\n- その他の値 → 「login は GitHub 専用。--provider は廃止」の一般案内\nそれぞれの案内をテストで pin する(特に --provider github が claude-code 案内を含まないこと)。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-16T06:52:27.935Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 64,
+    "historyCount": 66,
     "stepCounts": {
       "request-review": 2,
       "design": 1,

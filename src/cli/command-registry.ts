@@ -486,8 +486,15 @@ export const COMMANDS: Record<string, CommandEntry> = {
       provider: {
         type: "string",
         deprecated: {
-          message:
-            "specrunner login is GitHub-only now. To store a Claude Code token for headless runs, use: specrunner credentials set claude-code",
+          message: (value?: string): string => {
+            if (value === "github") {
+              return "specrunner login is now GitHub-only. The --provider flag is no longer needed. Run: specrunner login";
+            }
+            if (value === "claude") {
+              return "specrunner login is GitHub-only now. To store a Claude Code token for headless runs, use: specrunner credentials set claude-code";
+            }
+            return "specrunner login is GitHub-only. The --provider flag has been removed.";
+          },
         },
       },
     },

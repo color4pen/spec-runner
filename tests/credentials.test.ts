@@ -14,6 +14,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { EventEmitter } from "node:events";
 import { Readable, Writable } from "node:stream";
+import { readSecret } from "../src/util/secret-input.js";
 
 let tempDir: string;
 let originalXdgConfigHome: string | undefined;
@@ -289,5 +290,72 @@ describe("TC-021: empty secret input exits non-zero and does not write to creden
     // File should not have been created
     const exists = await fs.access(credPath).then(() => true).catch(() => false);
     expect(exists).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-SIGTERM-001: SIGTERM listener registered during raw mode, removed on completion
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-SIGTERM-001: SIGTERM listener registered during raw mode, removed on normal completion", () => {
+  it("registers a SIGTERM listener while active, deregisters after Enter", async () => {
+    const fakeInput = new EventEmitter() as NodeJS.ReadableStream & {
+      setRawMode: (mode: boolean) => void;
+    };
+    let rawMode = false;
+    fakeInput.setRawMode = (mode: boolean) => { rawMode = mode; };
+    (fakeInput as unknown as { resume: () => void }).resume = () => {};
+
+    const fakeOutput = new Writable({ write(_c, _e, cb) { cb(); } });
+
+    const beforeCount = process.listenerCount("SIGTERM");
+
+    // Start reading — process.once('SIGTERM') is registered synchronously
+    const readPromise = readSecret({ isTTY: true, input: fakeInput, output: fakeOutput });
+
+    // Handler should be registered while raw mode is active
+    expect(process.listenerCount("SIGTERM")).toBe(beforeCount + 1);
+    expect(rawMode).toBe(true);
+
+    // Complete normally via Enter
+    (fakeInput as EventEmitter).emit("data", Buffer.from("\r"));
+    await readPromise;
+
+    // After normal completion, handler must be deregistered and raw mode restored
+    expect(process.listenerCount("SIGTERM")).toBe(beforeCount);
+    expect(rawMode).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-SIGTERM-002: SIGTERM during raw mode calls setRawMode(false) and re-raises
+// ─────────────────────────────────────────────────────────────────────────────
+describe("TC-SIGTERM-002: SIGTERM during raw mode restores terminal", () => {
+  it("calls setRawMode(false) and re-raises SIGTERM when signal fires mid-input", () => {
+    const killSpy = vi.spyOn(process, "kill").mockReturnValue(true as never);
+
+    const fakeInput = new EventEmitter() as NodeJS.ReadableStream & {
+      setRawMode: (mode: boolean) => void;
+    };
+    let rawMode = false;
+    fakeInput.setRawMode = (mode: boolean) => { rawMode = mode; };
+    (fakeInput as unknown as { resume: () => void }).resume = () => {};
+
+    const fakeOutput = new Writable({ write(_c, _e, cb) { cb(); } });
+
+    // Start reading (don't await — we test the signal path, not normal completion)
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    readSecret({ isTTY: true, input: fakeInput, output: fakeOutput }).catch(() => {});
+
+    expect(rawMode).toBe(true);
+
+    // Simulate SIGTERM without sending a real OS signal
+    process.emit("SIGTERM");
+
+    // Terminal must be restored
+    expect(rawMode).toBe(false);
+    // Process must be re-raised so the OS terminates it normally
+    expect(killSpy).toHaveBeenCalledWith(process.pid, "SIGTERM");
+
+    killSpy.mockRestore();
   });
 });

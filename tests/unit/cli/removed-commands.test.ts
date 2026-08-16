@@ -219,3 +219,32 @@ describe("login handler が CLI dispatch 経由で到達する", () => {
     expect(result).toBe("process.exit(1)");
   });
 });
+
+// login --provider migration messages (value-based)
+// Pin that each --provider value gets the correct migration guidance and exits non-0.
+describe("login --provider migration messages per value", () => {
+  it("--provider github → 'no longer needed' guidance, no 'credentials set claude-code' message", async () => {
+    const result = await runMain(["login", "--provider", "github"]);
+    expect(result).toBe("process.exit(2)");
+    const stderr = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+    expect(stderr).toContain("no longer needed");
+    // Should NOT show the claude-code credentials instruction
+    expect(stderr).not.toContain("To store a Claude Code token");
+  });
+
+  it("--provider claude → 'credentials set claude-code' guidance", async () => {
+    const result = await runMain(["login", "--provider", "claude"]);
+    expect(result).toBe("process.exit(2)");
+    const stderr = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+    expect(stderr).toContain("credentials set claude-code");
+    expect(stderr).toContain("To store a Claude Code token");
+  });
+
+  it("--provider unknown-value → generic GitHub-only message, no 'credentials set claude-code' message", async () => {
+    const result = await runMain(["login", "--provider", "unknown-value"]);
+    expect(result).toBe("process.exit(2)");
+    const stderr = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+    expect(stderr).toContain("GitHub-only");
+    expect(stderr).not.toContain("To store a Claude Code token");
+  });
+});

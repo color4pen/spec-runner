@@ -67,22 +67,44 @@ function readTTY(
 ): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     const chars: string[] = [];
+    let rawModeEnabled = false;
 
-    function cleanup(restoreRaw: boolean): void {
+    function cleanup(): void {
+      // Remove process-level handlers first to avoid any re-entry
+      process.off("exit", onExit);
+      process.off("SIGTERM", onSigterm);
       input.removeAllListeners("data");
       input.removeAllListeners("error");
-      if (restoreRaw && typeof input.setRawMode === "function") {
+      if (rawModeEnabled && typeof input.setRawMode === "function") {
+        rawModeEnabled = false;
         try {
           input.setRawMode(false);
         } catch {
-          // ignore
+          // ignore — best-effort restore
         }
       }
     }
 
+    function onExit(): void {
+      // Called on process exit while raw mode is active — restore terminal
+      cleanup();
+    }
+
+    function onSigterm(): void {
+      // Restore terminal then re-raise with default handler
+      cleanup();
+      process.kill(process.pid, "SIGTERM");
+    }
+
     if (typeof input.setRawMode === "function") {
       input.setRawMode(true);
+      rawModeEnabled = true;
     }
+    // Register process-level cleanup AFTER enabling raw mode, so they are
+    // only active during the raw-mode window and not leaked afterward.
+    process.once("exit", onExit);
+    process.once("SIGTERM", onSigterm);
+
     if (typeof (input as { resume?: () => void }).resume === "function") {
       (input as { resume: () => void }).resume();
     }
@@ -94,7 +116,7 @@ function readTTY(
 
         if (code === 0x03) {
           // Ctrl-C: abort
-          cleanup(true);
+          cleanup();
           output.write("\n");
           reject(new Error("Aborted by user (Ctrl-C)"));
           return;
@@ -102,7 +124,7 @@ function readTTY(
 
         if (code === 0x04 || ch === "\r" || ch === "\n") {
           // EOT or Enter: confirm
-          cleanup(true);
+          cleanup();
           output.write("\n");
           resolve(chars.join(""));
           return;
@@ -122,7 +144,7 @@ function readTTY(
     });
 
     input.on("error", (err) => {
-      cleanup(true);
+      cleanup();
       reject(err);
     });
   });
