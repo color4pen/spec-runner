@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a96538bc-88b8-46f9-be87-ce99ae6721cc",
   "createdAt": "2026-08-16T17:11:25.976Z",
-  "updatedAt": "2026-08-16T17:41:14.292Z",
+  "updatedAt": "2026-08-16T17:43:42.156Z",
   "request": {
     "title": "specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/operator-guide-a96538bc",
   "error": null,
@@ -66,7 +66,8 @@
     "d7be9e41b7d5bedbb1245334e07f217fbdb9324d",
     "f427bf2868d581f2fb0fa41ebd147bbdd66d6cee",
     "14fc578ddb62ca61db9ddf7c1828dcfd3e401e6e",
-    "79458a3c16085b433c37830c86f67a9d59897d34"
+    "79458a3c16085b433c37830c86f67a9d59897d34",
+    "54d224c7d55b3d9c5006802ccc8bf9c06097e1ad"
   ],
   "touchedFiles": {
     "request-review": [
@@ -112,15 +113,17 @@
       "src/prompts/pipeline-map.ts",
       "src/core/command/request-prompt.ts",
       "bin/specrunner.ts"
-    ]
+    ],
+    "spec-fixer": []
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 19,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }
