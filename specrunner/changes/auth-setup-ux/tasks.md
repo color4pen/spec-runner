@@ -39,7 +39,7 @@
 ## T-03: `credentials set <name>` サブコマンドと secret 入力ユーティリティを新設する（D3）
 
 - [ ] `src/util/secret-input.ts` を新設し、`readSecret({ isTTY, input, output }): Promise<string>` を実装する:
-  - TTY: `input.setRawMode(true)` で 1 文字ずつ読み、`output` へ echo せず、改行/EOT(``)で確定、``(Ctrl-C)で中断、backspace 対応。確定時に raw mode を解除し末尾に改行のみ出力する。
+  - TTY: `input.setRawMode(true)` で 1 文字ずつ読み、`output` へ echo せず、改行/EOT(``)で確定、``(Ctrl-C)で中断、backspace 対応。確定時および ``(Ctrl-C) 中断時のいずれでも `setRawMode(false)` を呼んでから確定/中断すること（端末破壊防止）。確定時は末尾に改行のみ出力する。
   - 非 TTY: `input` を末尾まで読み、trim して返す。
   - stream を注入 seam にする（`process.stdin` / `process.stdout` を直接掴まない）。
 - [ ] `src/cli/credentials.ts` を新設し、`runCredentialsSet(name: string, opts?): Promise<number>` を実装する:
@@ -127,6 +127,7 @@
 
 - [ ] `src/` 全体を走査し `login --provider anthropic` / `login --provider claude` の文字列が存在しないことを固定する grep 系テストを `tests/` に追加する（既存 grep テスト群のスタイルに倣う）。
 - [ ] doctor hint の実在性テストを追加/拡張する: `src/core/doctor/**` の hint 中の `specrunner <verb> [<sub>]` が `COMMANDS`（parent の subcommand 含む）に実在することを検証する（`tests/hint-command-existence.test.ts` の拡張可）。
+- [ ] `tests/hint-command-existence.test.ts` の TC-005 ブロックを subcommand まで検証するよう拡張する: `PROVIDER_READINESS_HINTS` 中の `specrunner <verb> <sub>` パターンについて、`<verb>` が top-level command として実在するだけでなく、`<sub>` が `COMMANDS[verb].subcommands` にも実在することを assert する（`extractCommandVerbs` の top-level 抽出に加え、`specrunner \w+ \w+` マッチで sub を抽出しサブコマンド存在を検証する）。
 - [ ] `credentials set` の 0600 保存と no-echo（TTY silent / 非 TTY stdin）を固定するテストを追加する（T-03 の受け入れを満たす）。
 - [ ] `login --provider claude` の migration 捕捉（非 0 + `credentials set claude-code` 案内）を固定するテストを追加する（parse もしくは dispatch レベル）。
 - [ ] doctor readiness（fail==0 → Ready + 次の一歩、fail>0 → Ready 無し）を `formatHuman` で固定するテストを追加する。
