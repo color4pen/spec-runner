@@ -55,7 +55,7 @@ import {
 
 import { formatEscalation } from "../../finish/escalation.js";
 import { buildCanonEscalationReason } from "../../step/canon-escalation.js";
-import { USAGE, resolveCommand } from "../../../cli/command-registry.js";
+import { COMMANDS, USAGE, resolveCommand } from "../../../cli/command-registry.js";
 
 // importedSnippet is the same as buildClaudeMdSnippet — alias for TC-009 clarity
 const importedSnippet = buildClaudeMdSnippet;
@@ -280,6 +280,14 @@ describe("TC-018: runGuide の戻り値が仕様どおり", () => {
 
   it("TC-018: runGuide('unknown-topic') returns 2", () => {
     expect(runGuide("unknown-topic")).toBe(2);
+  });
+
+  it("TC-018: guide handler calls process.exit with runGuide return value", async () => {
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((() => {}) as never);
+    const handler = COMMANDS["guide"]!.handler!;
+    await handler({ flags: {}, positional: undefined, positionals: [] });
+    expect(exitSpy).toHaveBeenCalledWith(0);
+    exitSpy.mockRestore();
   });
 });
 
