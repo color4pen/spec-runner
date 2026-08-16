@@ -20,7 +20,6 @@ vi.mock("../../logger/stdout.js", () => ({
 }));
 
 import { COMMANDS } from "../command-registry.js";
-import type { ParentCommandDef } from "../command-registry.js";
 import type { ParsedArgs } from "../flag-parser.js";
 import { runResume } from "../resume.js";
 
@@ -29,8 +28,7 @@ import { runResume } from "../resume.js";
 // ---------------------------------------------------------------------------
 
 function getResumeHandler(): (parsed: ParsedArgs) => Promise<void> {
-  const jobCmd = COMMANDS["job"] as ParentCommandDef;
-  return jobCmd.subcommands["resume"]!.handler;
+  return COMMANDS["job"]!.children!["resume"]!.handler!;
 }
 
 function makeParsedArgs(overrides: Partial<ParsedArgs> = {}): ParsedArgs {

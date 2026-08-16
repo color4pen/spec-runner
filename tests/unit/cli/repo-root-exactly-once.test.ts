@@ -513,44 +513,44 @@ describe("TC-024: requiresRepo declared for exactly the five repo-required comma
 
   it("TC-024: COMMANDS.inbox.subcommands.run has requiresRepo: true", async () => {
     const { COMMANDS } = await import("../../../src/cli/command-registry.js");
-    const inboxCmd = COMMANDS["inbox"] as { subcommands: Record<string, { requiresRepo?: boolean }> };
-    expect(inboxCmd.subcommands["run"]?.requiresRepo).toBe(true);
+    const inboxCmd = COMMANDS["inbox"] as { children: Record<string, { requiresRepo?: boolean }> };
+    expect(inboxCmd.children!["run"]?.requiresRepo).toBe(true);
   });
 
   it("TC-024: COMMANDS.job.subcommands.prune has requiresRepo: true", async () => {
     const { COMMANDS } = await import("../../../src/cli/command-registry.js");
-    const jobCmd = COMMANDS["job"] as { subcommands: Record<string, { requiresRepo?: boolean }> };
-    expect(jobCmd.subcommands["prune"]?.requiresRepo).toBe(true);
+    const jobCmd = COMMANDS["job"] as { children: Record<string, { requiresRepo?: boolean }> };
+    expect(jobCmd.children!["prune"]?.requiresRepo).toBe(true);
   });
 
   it("TC-024: COMMANDS.job.subcommands.cancel has requiresRepo: true", async () => {
     const { COMMANDS } = await import("../../../src/cli/command-registry.js");
-    const jobCmd = COMMANDS["job"] as { subcommands: Record<string, { requiresRepo?: boolean }> };
-    expect(jobCmd.subcommands["cancel"]?.requiresRepo).toBe(true);
+    const jobCmd = COMMANDS["job"] as { children: Record<string, { requiresRepo?: boolean }> };
+    expect(jobCmd.children!["cancel"]?.requiresRepo).toBe(true);
   });
 
   it("TC-024: COMMANDS.job.subcommands.attach has requiresRepo: true", async () => {
     const { COMMANDS } = await import("../../../src/cli/command-registry.js");
-    const jobCmd = COMMANDS["job"] as { subcommands: Record<string, { requiresRepo?: boolean }> };
-    expect(jobCmd.subcommands["attach"]?.requiresRepo).toBe(true);
+    const jobCmd = COMMANDS["job"] as { children: Record<string, { requiresRepo?: boolean }> };
+    expect(jobCmd.children!["attach"]?.requiresRepo).toBe(true);
   });
 
   it("TC-024: COMMANDS.job.subcommands.ls does NOT have requiresRepo: true", async () => {
     const { COMMANDS } = await import("../../../src/cli/command-registry.js");
-    const jobCmd = COMMANDS["job"] as { subcommands: Record<string, { requiresRepo?: boolean }> };
-    expect(jobCmd.subcommands["ls"]?.requiresRepo).not.toBe(true);
+    const jobCmd = COMMANDS["job"] as { children: Record<string, { requiresRepo?: boolean }> };
+    expect(jobCmd.children!["ls"]?.requiresRepo).not.toBe(true);
   });
 
   it("TC-024: COMMANDS.job.subcommands.show does NOT have requiresRepo: true", async () => {
     const { COMMANDS } = await import("../../../src/cli/command-registry.js");
-    const jobCmd = COMMANDS["job"] as { subcommands: Record<string, { requiresRepo?: boolean }> };
-    expect(jobCmd.subcommands["show"]?.requiresRepo).not.toBe(true);
+    const jobCmd = COMMANDS["job"] as { children: Record<string, { requiresRepo?: boolean }> };
+    expect(jobCmd.children!["show"]?.requiresRepo).not.toBe(true);
   });
 
   it("TC-024: COMMANDS.config.subcommands.effective does NOT have requiresRepo: true", async () => {
     const { COMMANDS } = await import("../../../src/cli/command-registry.js");
-    const configCmd = COMMANDS["config"] as { subcommands: Record<string, { requiresRepo?: boolean }> };
-    expect(configCmd.subcommands["effective"]?.requiresRepo).not.toBe(true);
+    const configCmd = COMMANDS["config"] as { children: Record<string, { requiresRepo?: boolean }> };
+    expect(configCmd.children!["effective"]?.requiresRepo).not.toBe(true);
   });
 });
 

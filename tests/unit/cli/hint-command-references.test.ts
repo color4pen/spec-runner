@@ -9,7 +9,7 @@
 import { describe, it, expect, vi } from "vitest";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { COMMANDS } from "../../../src/cli/command-registry.js";
+import { listCommandPaths } from "../../../src/cli/command-registry.js";
 import { localStateWritableCheck } from "../../../src/core/doctor/checks/storage/local-state-writable.js";
 import { buildMockContext, buildMockFs } from "../../core/doctor/mock-context.js";
 
@@ -89,15 +89,17 @@ function extractHints(content: string): string[] {
 }
 
 // ---------------------------------------------------------------------------
-// Helper: build subcommand map from COMMANDS
+// Helper: build subcommand map from listCommandPaths (spec-derived, not COMMANDS-internal)
 // ---------------------------------------------------------------------------
 type SubcommandMap = Map<string, Set<string>>;
 
 function buildSubcommandMap(): SubcommandMap {
   const map: SubcommandMap = new Map();
-  for (const [name, entry] of Object.entries(COMMANDS)) {
-    if ("subcommands" in entry) {
-      map.set(name, new Set(Object.keys(entry.subcommands)));
+  for (const path of listCommandPaths({ includeAliases: false })) {
+    if (path.length >= 2) {
+      const [parent, child] = path;
+      if (!map.has(parent!)) map.set(parent!, new Set());
+      map.get(parent!)!.add(child!);
     }
   }
   return map;
@@ -158,7 +160,7 @@ describe("TC-003: 全 hint の specrunner 参照がレジストリと一致す�
     const files = collectSourceFiles(srcDir);
     expect(files.length).toBeGreaterThan(0);
 
-    const validTopLevel = new Set(Object.keys(COMMANDS));
+    const validTopLevel = new Set(listCommandPaths({ includeAliases: true }).map((p) => p[0]!));
     const subcommandMap = buildSubcommandMap();
 
     const allViolations: { file: string; violation: string }[] = [];
@@ -188,7 +190,7 @@ describe("TC-003: 全 hint の specrunner 参照がレジストリと一致す�
 // ---------------------------------------------------------------------------
 describe("TC-004: 架空コマンドの混入を検出する（破壊確認）", () => {
   it("hint に COMMANDS に存在しない specrunner <架空コマンド> があると violations が出る", () => {
-    const validTopLevel = new Set(Object.keys(COMMANDS));
+    const validTopLevel = new Set(listCommandPaths({ includeAliases: true }).map((p) => p[0]!));
     const subcommandMap = buildSubcommandMap();
 
     const fakeHint = "Run 'specrunner frobnicate --all' to fix everything.";
@@ -198,7 +200,7 @@ describe("TC-004: 架空コマンドの混入を検出する（破壊確認）",
   });
 
   it("hint に COMMANDS に存在しない specrunner managed setup があると violations が出る", () => {
-    const validTopLevel = new Set(Object.keys(COMMANDS));
+    const validTopLevel = new Set(listCommandPaths({ includeAliases: true }).map((p) => p[0]!));
     const subcommandMap = buildSubcommandMap();
 
     // "managed" was removed from COMMANDS — replaced by "runtime"
@@ -208,7 +210,7 @@ describe("TC-004: 架空コマンドの混入を検出する（破壊確認）",
   });
 
   it("hint に COMMANDS に存在しない specrunner ps があると violations が出る", () => {
-    const validTopLevel = new Set(Object.keys(COMMANDS));
+    const validTopLevel = new Set(listCommandPaths({ includeAliases: true }).map((p) => p[0]!));
     const subcommandMap = buildSubcommandMap();
 
     // "ps" was removed from COMMANDS
@@ -218,7 +220,7 @@ describe("TC-004: 架空コマンドの混入を検出する（破壊確認）",
   });
 
   it("hint に正規コマンドのみが含まれる場合は violations が出ない", () => {
-    const validTopLevel = new Set(Object.keys(COMMANDS));
+    const validTopLevel = new Set(listCommandPaths({ includeAliases: true }).map((p) => p[0]!));
     const subcommandMap = buildSubcommandMap();
 
     const validHint = "Run 'specrunner login' to authenticate.";

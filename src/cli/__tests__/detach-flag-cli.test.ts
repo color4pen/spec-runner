@@ -50,30 +50,26 @@ vi.mock("../job-wait.js", () => ({
 // ---------------------------------------------------------------------------
 
 import { COMMANDS } from "../command-registry.js";
-import type { ParentCommandDef, CommandDef } from "../command-registry.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function getRunFlagDefs(): Record<string, FlagDef> {
-  const runCmd = COMMANDS["run"] as CommandDef;
-  return runCmd.flags;
+  // run is an alias for job start — use the canonical target's flags
+  return COMMANDS["job"]!.children!["start"]!.flags ?? {};
 }
 
 function getJobStartFlagDefs(): Record<string, FlagDef> {
-  const jobCmd = COMMANDS["job"] as ParentCommandDef;
-  return jobCmd.subcommands["start"]!.flags;
+  return COMMANDS["job"]!.children!["start"]!.flags ?? {};
 }
 
 function getJobResumeFlagDefs(): Record<string, FlagDef> {
-  const jobCmd = COMMANDS["job"] as ParentCommandDef;
-  return jobCmd.subcommands["resume"]!.flags;
+  return COMMANDS["job"]!.children!["resume"]!.flags ?? {};
 }
 
 function getJobWaitHandler() {
-  const jobCmd = COMMANDS["job"] as ParentCommandDef;
-  return jobCmd.subcommands["wait"]?.handler;
+  return COMMANDS["job"]!.children!["wait"]?.handler;
 }
 
 // ---------------------------------------------------------------------------
@@ -127,14 +123,14 @@ describe("TC-023: --detach flag が Known flag として登録されている", 
 
 describe("TC-004: --detach と --json の同時指定は ARG_ERROR（exit 2）", () => {
   it("TC-004: run handler exits with code 2 when both --detach and --json are given", async () => {
-    const runCmd = COMMANDS["run"] as CommandDef;
+    const handler = COMMANDS["job"]!.children!["start"]!.handler!;
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: number) => {
       throw new Error(`process.exit(${_code})`);
     });
 
     try {
       await expect(
-        runCmd.handler({
+        handler({
           flags: { detach: true, json: true },
           positional: "my-slug",
           positionals: ["my-slug"],
@@ -146,8 +142,7 @@ describe("TC-004: --detach と --json の同時指定は ARG_ERROR（exit 2）",
   });
 
   it("TC-004: job start handler exits with code 2 when both --detach and --json are given", async () => {
-    const jobCmd = COMMANDS["job"] as ParentCommandDef;
-    const startHandler = jobCmd.subcommands["start"]!.handler;
+    const startHandler = COMMANDS["job"]!.children!["start"]!.handler!;
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((_code?: number) => {
       throw new Error(`process.exit(${_code})`);
     });
@@ -166,7 +161,7 @@ describe("TC-004: --detach と --json の同時指定は ARG_ERROR（exit 2）",
   });
 
   it("TC-004: --detach alone does NOT exit with code 2 (no ARG_ERROR)", async () => {
-    const runCmd = COMMANDS["run"] as CommandDef;
+    const handler = COMMANDS["job"]!.children!["start"]!.handler!;
     const exitCodes: number[] = [];
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: number) => {
       exitCodes.push(code ?? 0);
@@ -174,7 +169,7 @@ describe("TC-004: --detach と --json の同時指定は ARG_ERROR（exit 2）",
     });
 
     try {
-      await runCmd.handler({
+      await handler({
         flags: { detach: true },
         positional: "my-slug",
         positionals: ["my-slug"],
@@ -196,15 +191,13 @@ describe("TC-004: --detach と --json の同時指定は ARG_ERROR（exit 2）",
 
 describe("TC-024: SLUG_REGEX 検証失敗時は spawn せず非ゼロ終了する", () => {
   it("TC-024: job wait subcommand is registered in command registry", () => {
-    const jobCmd = COMMANDS["job"] as ParentCommandDef;
-    expect(jobCmd.subcommands["wait"]).toBeDefined();
+    expect(COMMANDS["job"]!.children!["wait"]).toBeDefined();
   });
 
   it("TC-024: job wait requires a positional slug argument", () => {
-    const jobCmd = COMMANDS["job"] as ParentCommandDef;
-    const waitCmd = jobCmd.subcommands["wait"]!;
-    expect(waitCmd.positional).toBeDefined();
-    expect(waitCmd.positional?.required).toBe(true);
+    const waitCmd = COMMANDS["job"]!.children!["wait"]!;
+    expect(waitCmd.args?.[0]).toBeDefined();
+    expect(waitCmd.args?.[0]?.required).toBe(true);
   });
 
   it("TC-024: run handler with invalid slug (uppercase) in detach mode does not spawn", async () => {
@@ -216,7 +209,7 @@ describe("TC-024: SLUG_REGEX 検証失敗時は spawn せず非ゼロ終了す�
     const { detachSelf } = await import("../../core/command/detach.js");
     vi.mocked(detachSelf).mockResolvedValue(0); // TC-015: mockResolvedValue (detachSelf is now async)
 
-    const runCmd = COMMANDS["run"] as CommandDef;
+    const handler = COMMANDS["job"]!.children!["start"]!.handler!;
     const exitCodes: number[] = [];
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: number) => {
       exitCodes.push(code ?? 0);
@@ -226,7 +219,7 @@ describe("TC-024: SLUG_REGEX 検証失敗時は spawn せず非ゼロ終了す�
     try {
       // Use a path that would resolve to a slug with uppercase characters
       // The test is about the SLUG_REGEX gate — if slug is invalid, spawn must not occur
-      await runCmd.handler({
+      await handler({
         flags: { detach: true },
         positional: "INVALID-SLUG-WITH-UPPERCASE",
         positionals: ["INVALID-SLUG-WITH-UPPERCASE"],
@@ -257,8 +250,7 @@ describe("job wait subcommand registration", () => {
   });
 
   it("job wait exits with code 2 when slug positional is missing", async () => {
-    const jobCmd = COMMANDS["job"] as ParentCommandDef;
-    const waitCmd = jobCmd.subcommands["wait"]!;
+    const waitHandler = COMMANDS["job"]!.children!["wait"]!.handler!;
     const exitCodes: number[] = [];
     const exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: number) => {
       exitCodes.push(code ?? 0);
@@ -266,7 +258,7 @@ describe("job wait subcommand registration", () => {
     });
 
     try {
-      await waitCmd.handler({
+      await waitHandler({
         flags: {},
         positional: undefined,
         positionals: [],

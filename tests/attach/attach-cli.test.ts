@@ -109,12 +109,11 @@ describe("TC-CLI-001: --branch flag missing → arg error (exit 2)", () => {
     }) as never);
 
     const { COMMANDS } = await import("../../src/cli/command-registry.js");
-    const jobCmd = COMMANDS["job"] as import("../../src/cli/command-registry.js").ParentCommandDef;
-    const attachCmd = jobCmd.subcommands["attach"] as import("../../src/cli/command-registry.js").CommandDef;
+    const attachHandler = COMMANDS["job"]!.children!["attach"]!.handler!;
 
     // Call handler with no --branch flag (branch = undefined)
     await expect(
-      attachCmd.handler({
+      attachHandler({
         flags: {},
         positionals: [],
       }),

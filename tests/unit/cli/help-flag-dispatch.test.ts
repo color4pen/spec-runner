@@ -12,6 +12,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 vi.mock("../../../src/core/worktree/detection.js", () => ({
   detectWorktree: vi.fn().mockResolvedValue({ isWorktree: false }),
+  detectSpecrunnerWorktree: vi.fn().mockResolvedValue({ isSpecrunnerWorktree: false }),
 }));
 
 vi.mock("../../../src/cli/run.js", () => ({
@@ -193,5 +194,24 @@ describe("TC-HELP-DISPATCH-07: job archive -h (short form)", () => {
   it("writes ARCHIVE_USAGE to stdout", async () => {
     await runMain(["job", "archive", "-h"]);
     expect(stdoutContains("Archive the completed change folder")).toBe(true);
+  });
+});
+
+// TC-HELP-DISPATCH-08: pure parent --help → exit 0 + subcommand listing (not NO_DETAILED_HELP_USAGE)
+describe("TC-HELP-DISPATCH-08: job --help (pure parent with no help.detail)", () => {
+  it("exits with code 0", async () => {
+    const result = await runMain(["job", "--help"]);
+    expect(result).toBe("process.exit(0)");
+  });
+
+  it("does not show the generic fallback message", async () => {
+    await runMain(["job", "--help"]);
+    expect(stdoutContains("No detailed help available")).toBe(false);
+  });
+
+  it("lists available subcommands in stdout", async () => {
+    await runMain(["job", "--help"]);
+    // Generated fallback: "Usage: specrunner job <start|ls|...>"
+    expect(stdoutContains("specrunner job")).toBe(true);
   });
 });

@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
  * specrunner CLI entrypoint.
- * Registry-based dispatch — no switch/case.
+ * Single dispatch flow via resolveCommand — no switch/case.
  */
 
-import { COMMANDS, USAGE, NO_DETAILED_HELP_USAGE } from "../src/cli/command-registry.js";
+import { COMMANDS, USAGE, NO_DETAILED_HELP_USAGE, resolveCommand, resolveEffectiveRequiresRepo } from "../src/cli/command-registry.js";
 import { parseFlags, FlagParseError } from "../src/cli/flag-parser.js";
 import { detectWorktree } from "../src/core/worktree/detection.js";
 import { SpecRunnerError, EXIT_CODE, worktreeGuardError, repoRequiredError } from "../src/errors.js";
@@ -19,163 +19,107 @@ function emitHelp(usage: string | undefined): never {
 
 export async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const command = args[0];
+  const first = args[0];
 
-  if (command === "--help" || command === "-h") {
+  if (first === "--help" || first === "-h") {
     process.stdout.write(USAGE);
     process.exit(0);
   }
-
-  if (command === "--version") {
+  if (first === "--version") {
     process.stdout.write(`${getVersion()}\n`);
     process.exit(0);
   }
-
-  if (!command) {
+  if (!first) {
     process.stderr.write(USAGE);
     process.exit(2);
   }
 
-  const entry = COMMANDS[command];
-  if (!entry) {
-    process.stderr.write(`Unknown command: ${command}\n\n`);
-    process.stderr.write(USAGE);
-    process.exit(2);
-  }
+  const resolved = resolveCommand(args);
 
-  // Subcommand dispatch (e.g. request template / job start)
-  if ("subcommands" in entry) {
-    const sub = args[1];
-    const subDef = sub ? entry.subcommands[sub] : undefined;
-    if (!subDef) {
-      if ((sub === "--help" || sub === "-h" || !sub) && entry.usage) {
-        process.stdout.write(entry.usage);
-        process.exit(0);
+  if (resolved.status !== "ok") {
+    // Honour --help for parent nodes (e.g. `rules --help`, `job --help`)
+    const hasHelp = args.some((a) => a === "--help" || a === "-h" || a.startsWith("--help="));
+    if (hasHelp && resolved.parent) {
+      const detail = COMMANDS[resolved.parent]?.help?.detail;
+      if (detail) {
+        emitHelp(detail);
+      } else {
+        const subNames = resolved.availableChildren?.join("|") ?? "";
+        emitHelp(`Usage: specrunner ${resolved.parent} <${subNames}>\n`);
       }
-      process.stderr.write(
-        sub
-          ? `Unknown ${command} subcommand: ${sub}\n\n`
-          : `Error: specrunner ${command} requires a subcommand.\n\n`,
-      );
-      const subNames = Object.keys(entry.subcommands).join("|");
-      process.stderr.write(`Usage: specrunner ${command} ${subNames}\n`);
+    }
+
+    if (resolved.status === "unknown-command") {
+      process.stderr.write(`Unknown command: ${resolved.token}\n\n`);
+      process.stderr.write(USAGE);
       process.exit(2);
     }
-
-    const subArgs = args.slice(2);
-
-    // Pre-scan raw args for --help / -h before any other processing.
-    // This ensures help takes priority even when a required positional is absent,
-    // while preserving the original worktree guard priority for non-help invocations.
-    const rawHasHelp = subArgs.some(
-      (a) => a === "--help" || a === "-h" || a.startsWith("--help="),
-    );
-    if (rawHasHelp) {
-      emitHelp(subDef.usage);
+    if (resolved.status === "unknown-subcommand") {
+      process.stderr.write(`Unknown ${resolved.parent} subcommand: ${resolved.token}\n\n`);
+      const subNames = resolved.availableChildren?.join("|") ?? "";
+      process.stderr.write(`Usage: specrunner ${resolved.parent} ${subNames}\n`);
+      process.exit(2);
     }
-
-    // Worktree guard for guarded subcommands (before parseFlags, original priority)
-    if (entry.guardedSubcommands?.has(sub!)) {
-      const detection = await detectWorktree(process.cwd());
-      if (detection.isWorktree) {
-        const err = worktreeGuardError(`${command} ${sub}`, detection.mainWorktreePath ?? process.cwd());
-        process.stderr.write(`Error: ${err.message}\n`);
-        process.stderr.write(`Hint: ${err.hint}\n`);
-        process.exit(EXIT_CODE.ARG_ERROR);
-      }
-    }
-
-    let parsed: ReturnType<typeof parseFlags>;
-    try {
-      parsed = parseFlags(subArgs, subDef.flags, subDef.positional);
-    } catch (e) {
-      if (e instanceof FlagParseError) {
-        process.stderr.write(e.message + "\n");
-        process.exit(2);
-      }
-      process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
-      process.exit(1);
-    }
-
-    // Build dispatch-time context (single repo root resolution per invocation)
-    const ctx = await buildCommandContext(process.cwd());
-    if (subDef.requiresRepo && ctx.repoRoot === null) {
-      const err = repoRequiredError(`${command} ${sub}`);
-      process.stderr.write(`Error: ${err.message}\n`);
-      process.stderr.write(`Hint: ${err.hint}\n`);
-      process.exit(err.exitCode);
-    }
-
-    try {
-      await subDef.handler(parsed, ctx);
-    } catch (e) {
-      if (e instanceof FlagParseError) {
-        process.stderr.write(e.message + "\n");
-        process.exit(2);
-      }
-      process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
-      process.exit(1);
-    }
-    return;
+    // needs-subcommand
+    process.stderr.write(`Error: specrunner ${resolved.parent} requires a subcommand.\n\n`);
+    const subNames = resolved.availableChildren?.join("|") ?? "";
+    process.stderr.write(`Usage: specrunner ${resolved.parent} ${subNames}\n`);
+    process.exit(2);
   }
 
-  // Normal command dispatch
-  // Only `run` is worktree-guarded at the top level (job start/resume/finish are guarded via guardedSubcommands)
-  const WORKTREE_GUARDED_COMMANDS = new Set(["run"]);
+  const { spec, restArgs, canonicalPath } = resolved;
+  const commandLabel = canonicalPath.join(" ");
 
-  const normalArgs = args.slice(1);
-
-  // Pre-scan raw args for --help / -h before any other processing.
-  const rawHasHelp = normalArgs.some(
+  // Pre-scan restArgs for --help / -h before any other processing.
+  const rawHasHelp = restArgs.some(
     (a) => a === "--help" || a === "-h" || a.startsWith("--help="),
   );
   if (rawHasHelp) {
-    emitHelp(entry.usage);
+    emitHelp(spec.help?.detail);
   }
 
-  // Parse flags (FlagParseError caught separately from handler errors)
-  let parsedNormal: ReturnType<typeof parseFlags>;
+  // Worktree guard (before parseFlags — original priority preserved)
+  if (spec.worktreeGuard) {
+    const detection = await detectWorktree(process.cwd());
+    if (detection.isWorktree) {
+      const err = worktreeGuardError(commandLabel, detection.mainWorktreePath ?? process.cwd());
+      process.stderr.write(`Error: ${err.message}\n`);
+      process.stderr.write(`Hint: ${err.hint}\n`);
+      process.exit(EXIT_CODE.ARG_ERROR);
+    }
+  }
+
+  // Parse flags
+  const positionalDef = spec.args?.[0];
+  let parsed: ReturnType<typeof parseFlags>;
   try {
-    parsedNormal = parseFlags(normalArgs, entry.flags, entry.positional);
+    parsed = parseFlags(restArgs, spec.flags ?? {}, positionalDef);
   } catch (e) {
     if (e instanceof FlagParseError) {
       process.stderr.write(e.message + "\n");
-      if (entry.usage) process.stderr.write(entry.usage);
-      else process.stderr.write(USAGE);
+      process.stderr.write(spec.help?.detail ?? USAGE);
       process.exit(2);
     }
     process.stderr.write(`Fatal: ${e instanceof Error ? e.message : String(e)}\n`);
     process.exit(1);
   }
 
-  if (WORKTREE_GUARDED_COMMANDS.has(command)) {
-    const detection = await detectWorktree(process.cwd());
-    if (detection.isWorktree) {
-      const err = worktreeGuardError(command, detection.mainWorktreePath ?? process.cwd());
-      process.stderr.write(`Error: ${err.message}\n`);
-      process.stderr.write(`Hint: ${err.hint}\n`);
-      process.exit(err.exitCode);
-    }
-  }
-
-  // Build dispatch-time context (single repo root resolution per invocation)
-  // This is outside the handler try/catch so the requiresRepo exit(2) is never
-  // swallowed by the handler error handler (important for test-mode exit mocking).
-  const ctxNormal = await buildCommandContext(process.cwd());
-  if (entry.requiresRepo && ctxNormal.repoRoot === null) {
-    const err = repoRequiredError(command);
+  // Build context
+  const ctx = await buildCommandContext(process.cwd());
+  if (resolveEffectiveRequiresRepo(COMMANDS, canonicalPath) && ctx.repoRoot === null) {
+    const err = repoRequiredError(commandLabel);
     process.stderr.write(`Error: ${err.message}\n`);
     process.stderr.write(`Hint: ${err.hint}\n`);
     process.exit(err.exitCode);
   }
 
+  // Dispatch
   try {
-    await entry.handler(parsedNormal!, ctxNormal);
+    await spec.handler!(parsed, ctx);
   } catch (e) {
     if (e instanceof FlagParseError) {
       process.stderr.write(e.message + "\n");
-      if (entry.usage) process.stderr.write(entry.usage);
-      else process.stderr.write(USAGE);
+      process.stderr.write(spec.help?.detail ?? USAGE);
       process.exit(2);
     }
     if (e instanceof SpecRunnerError) {

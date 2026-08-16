@@ -1,6 +1,6 @@
 /**
  * Command registry for the specrunner CLI.
- * Defines all commands with their flag definitions and handler functions.
+ * Single CommandSpec tree is the canonical source for parser / help / dispatch / guards.
  * No external dependencies.
  */
 
@@ -46,80 +46,204 @@ import { SLUG_REGEX } from "../util/validation-patterns.js";
 import { isDetachedChild, detachSelf } from "../core/command/detach.js";
 import { parseRequestMdRaw } from "../parser/request-md.js";
 import { runJobWait } from "./job-wait.js";
+
 /** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
 const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
 
-export interface CommandDef {
-  flags: Record<string, FlagDef>;
-  positional?: { name: string; required: boolean; count?: number };
-  usage?: string; // shown in error output for this command
-  /**
-   * When true, dispatch will check that repoRoot is non-null before invoking
-   * the handler. If the invoker is outside a git repository, dispatch emits
-   * the unified repo-required error (NOT_GIT_REPO, exit 2) and halts.
-   */
+// ---------------------------------------------------------------------------
+// CommandSpec types (canonical)
+// ---------------------------------------------------------------------------
+
+export interface ArgSpec {
+  name: string;
+  required: boolean;
+  count?: number;
+}
+
+export interface CommandHelp {
+  /** Group header for top-level USAGE listing (e.g. "Job commands"). */
+  group?: string;
+  /** Text line(s) to include in top-level USAGE listing. */
+  summary?: string;
+  /** Full text for --help output. */
+  detail?: string;
+}
+
+export type CommandHandler = (parsed: ParsedArgs, ctx?: CommandContext) => Promise<void>;
+
+export interface CommandSpec {
+  /** Full command path, e.g. ["job", "start"]. */
+  path: string[];
+  /** Short description. */
+  summary: string;
+  /** Flag definitions. */
+  flags?: Record<string, FlagDef>;
+  /** Positional argument definitions. */
+  args?: ArgSpec[];
+  /** Whether this command requires a git repo root. */
   requiresRepo?: boolean;
-  handler: (parsed: ParsedArgs, ctx?: CommandContext) => Promise<void>;
+  /** Whether this command is rejected when CWD is inside a specrunner worktree. */
+  worktreeGuard?: boolean;
+  /** Visibility classification (audience metadata; not yet used for help grouping). */
+  visibility?: "normal" | "operator" | "maintenance" | "repair" | "compatibility";
+  /** If set, this is an alias for the given canonical path. */
+  aliasOf?: string[];
+  /** Help text for --help and top-level USAGE listing. */
+  help?: CommandHelp;
+  /** Handler function (undefined for pure-parent specs). */
+  handler?: CommandHandler;
+  /** Child subcommands. */
+  children?: Record<string, CommandSpec>;
 }
 
-export interface ParentCommandDef {
-  subcommands: Record<string, CommandDef>;
-  usage?: string;
-  /** Subcommand names that require worktree guard check before execution. */
-  guardedSubcommands?: Set<string>;
+// ---------------------------------------------------------------------------
+// Resolve / enumerate API
+// ---------------------------------------------------------------------------
+
+interface ResolveOk {
+  status: "ok";
+  spec: CommandSpec;
+  /** Canonical path of the resolved spec (follows aliases). */
+  canonicalPath: string[];
+  /** Tokens the user actually typed (including alias name). */
+  invokedAs: string[];
+  /** Remaining args after the command path tokens. */
+  restArgs: string[];
+}
+interface ResolveError {
+  status: "unknown-command" | "unknown-subcommand" | "needs-subcommand";
+  token?: string;
+  parent?: string;
+  availableChildren?: string[];
+}
+export type ResolveResult = ResolveOk | ResolveError;
+
+/** Walk COMMANDS to find a spec at the given path. */
+function specByPath(p: string[]): CommandSpec | undefined {
+  let cur: CommandSpec | undefined = COMMANDS[p[0] ?? ""];
+  for (let i = 1; i < p.length; i++) {
+    cur = cur?.children?.[p[i]!];
+  }
+  return cur;
 }
 
-export type CommandEntry = CommandDef | ParentCommandDef;
+function resolveSpec(
+  spec: CommandSpec,
+  canonicalPath: string[],
+  invokedAs: string[],
+  restArgs: string[],
+): ResolveResult {
+  // Alias: redirect to target spec
+  if (spec.aliasOf) {
+    const target = specByPath(spec.aliasOf);
+    if (!target) return { status: "unknown-command", token: invokedAs[0] };
+    return { status: "ok", spec: target, canonicalPath: spec.aliasOf, invokedAs, restArgs };
+  }
 
-export const USAGE = `Usage: specrunner <command> [options]
+  // No children: leaf spec — consume all restArgs as positionals/flags
+  if (!spec.children) {
+    return { status: "ok", spec, canonicalPath, invokedAs, restArgs };
+  }
 
-Request commands:
-  request new <slug>              template から request.md を作る
-  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）
-  request ls                      active 配下の request 一覧
-  request validate <file|slug>    構文 / 規律 check
-  request template                雛形 markdown を stdout
+  // Has children — check restArgs[0] for a child name
+  const next = restArgs[0];
+  if (next && !next.startsWith("-")) {
+    const child = spec.children[next];
+    if (child) {
+      return resolveSpec(child, [...canonicalPath, next], [...invokedAs, next], restArgs.slice(1));
+    }
+    // next is not a child name
+    if (spec.handler) {
+      // default-action node (e.g. doctor): treat next as positional
+      return { status: "ok", spec, canonicalPath, invokedAs, restArgs };
+    }
+    return {
+      status: "unknown-subcommand",
+      token: next,
+      parent: canonicalPath[0],
+      availableChildren: Object.keys(spec.children),
+    };
+  }
 
-Job commands:
-  job start <request-slug|file>   pipeline 開始、jobId 発行
-  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)
-  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)
-  job ls [--json]                 全 job 一覧（区分付き運用ビュー）
-  job show <jobId|slug>           job state 詳細
-  job wait <slug>                 job が settle するまで block (process-death gate)
-  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)
-  job resume <slug>               halted job を再開
-  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)
-  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger
-  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する
-  job archive <slug>              change folder 移動・worktree 撤去・status 更新
-  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）
-  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計
+  // restArgs[0] is missing or a flag (starts with -)
+  if (spec.handler) {
+    return { status: "ok", spec, canonicalPath, invokedAs, restArgs };
+  }
+  return {
+    status: "needs-subcommand",
+    parent: canonicalPath[0],
+    availableChildren: Object.keys(spec.children),
+  };
+}
 
-Rules commands:
-  rules new <step> <slug>         step 用の rules ファイルを scaffold
+/**
+ * Resolve a token array (process.argv.slice(2)) to a CommandSpec and metadata.
+ * Handles aliases and children. Returns an error result for unknown/missing commands.
+ */
+export function resolveCommand(tokens: string[]): ResolveResult {
+  const name = tokens[0];
+  if (!name) return { status: "unknown-command", token: "" };
+  const spec = COMMANDS[name];
+  if (!spec) return { status: "unknown-command", token: name };
+  return resolveSpec(spec, [name], [name], tokens.slice(1));
+}
 
-Reviewer commands:
-  reviewers new <name>            カスタムレビューワーの雛形を scaffold
+/**
+ * Resolve the effective requiresRepo for a command path, supporting parent→child inheritance.
+ * Walks the path from root to leaf; the most-specific (deepest) explicit value wins.
+ * If no node in the path has an explicit value, returns false.
+ * Exported for testing (TC-010/TC-011) and used by dispatch.
+ */
+export function resolveEffectiveRequiresRepo(
+  registry: Record<string, CommandSpec>,
+  path: string[],
+): boolean {
+  let cur: CommandSpec | undefined;
+  let effective = false;
+  for (let i = 0; i < path.length; i++) {
+    const name = path[i]!;
+    cur = i === 0 ? registry[name] : cur?.children?.[name];
+    if (!cur) break;
+    if (cur.requiresRepo !== undefined) effective = cur.requiresRepo;
+  }
+  return effective;
+}
 
-Environment commands:
-  init                            config scaffold
-  login                           GitHub Device Flow OAuth
-  credentials set <name>          headless 用 credential を credentials.json(0600) に保存
-  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source
-  doctor                          Diagnose environment / config / auth prerequisites
-  runtime setup|status|reset      Manage Anthropic runtime resources
+/**
+ * Enumerate all executable command paths from the registry.
+ * By default returns only canonical paths. Pass `{ includeAliases: true }` to include aliases.
+ */
+export function listCommandPaths(opts?: { includeAliases?: boolean }): string[][] {
+  const result: string[][] = [];
+  for (const [name, spec] of Object.entries(COMMANDS)) {
+    collectPaths(spec, [name], opts ?? {}, result);
+  }
+  return result;
+}
 
-Inbox commands:
-  inbox run                       issue から job を自動発火 (承認ラベル + /resume)
+function collectPaths(
+  spec: CommandSpec,
+  currentPath: string[],
+  opts: { includeAliases?: boolean },
+  result: string[][],
+): void {
+  if (spec.aliasOf) {
+    if (opts.includeAliases) result.push(currentPath);
+    return;
+  }
+  // Executable (leaf or default-action)
+  if (spec.handler) result.push(currentPath);
+  // Recurse into children
+  if (spec.children) {
+    for (const [childName, child] of Object.entries(spec.children)) {
+      collectPaths(child, [...currentPath, childName], opts, result);
+    }
+  }
+}
 
-Aliases:
-  run <slug|file>                 job start の互換 alias
-  run <slug|file> --detach        agent session 向け: 登録完了まで待機後に return (job wait で監視)
-
-Options:
-  --help, -h    Show this help message
-`;
+// ---------------------------------------------------------------------------
+// Usage constants (kept as exports for tests that import them directly)
+// ---------------------------------------------------------------------------
 
 export const RULES_USAGE = `Usage: specrunner rules new <step-name> <rule-slug>
 
@@ -194,7 +318,6 @@ Options:
   --force   Skip confirmation prompt (including when runtime is not managed)
   --help    Show this help message
 `;
-
 
 export const NO_DETAILED_HELP_USAGE = "No detailed help available.\nRun 'specrunner --help' for the command list.\n";
 
@@ -358,77 +481,62 @@ Options:
 `;
 
 // ---------------------------------------------------------------------------
-// resolveSlugForDetach
+// resolveSlugForDetach (kept in this file per handler-in-registry constraint)
 // ---------------------------------------------------------------------------
 
-/**
- * Resolve a slug string suitable for use in --detach mode from the given input.
- *
- * Resolution order:
- *   1. Direct slug — input already matches SLUG_REGEX → returned as-is
- *   2. File path — input resolves to an existing file → parse request.md for slug field
- *   3. Store lookup — storeResolve(cwd, input) → parse resolved file for slug field
- *
- * Returns null if no valid slug can be extracted.
- * This function is synchronous (uses fs.readFileSync) so it can be used in handlers
- * without requiring await at the call site.
- */
 function resolveSlugForDetach(input: string, cwd: string): string | null {
-  // 1. Direct slug match
-  if (SLUG_REGEX.test(input)) {
-    return input;
-  }
+  if (SLUG_REGEX.test(input)) return input;
 
-  // 2. Try as a file path
   const absPath = path.resolve(cwd, input);
   if (fs.existsSync(absPath)) {
     try {
       const content = fs.readFileSync(absPath, "utf-8");
       const raw = parseRequestMdRaw(content, absPath);
-      if (raw.slug && SLUG_REGEX.test(raw.slug)) {
-        return raw.slug;
-      }
+      if (raw.slug && SLUG_REGEX.test(raw.slug)) return raw.slug;
     } catch {
-      // ignore read/parse errors — fall through to store lookup
+      // ignore — fall through
     }
   }
 
-  // 3. Try via active store (resolve slug → file path)
   try {
     const resolved = storeResolve(cwd, input);
     if (fs.existsSync(resolved)) {
       const content = fs.readFileSync(resolved, "utf-8");
       const raw = parseRequestMdRaw(content, resolved);
-      if (raw.slug && SLUG_REGEX.test(raw.slug)) {
-        return raw.slug;
-      }
+      if (raw.slug && SLUG_REGEX.test(raw.slug)) return raw.slug;
     }
   } catch {
-    // ignore resolution/parse errors
+    // ignore
   }
 
   return null;
 }
+
+// ---------------------------------------------------------------------------
+// Shared flag sets
+// ---------------------------------------------------------------------------
 
 const RUN_JOB_FLAGS = {
   verbose: { type: "boolean" },
   quiet: { type: "boolean" },
   json: { type: "boolean" },
   "no-worktree": { type: "boolean" },
-  issue: { type: "string" },
+  issue: { type: "integer", min: 1 },
   detach: { type: "boolean" },
 } as const satisfies Record<string, FlagDef>;
+
+// ---------------------------------------------------------------------------
+// Shared handler (job start / run alias)
+// ---------------------------------------------------------------------------
 
 async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
   const requestMdPath = parsed.positional!;
 
-  // --detach + --json are mutually exclusive (detach waits for registration, no JSON contract)
   if (parsed.flags["detach"] && parsed.flags["json"]) {
     logError("--detach and --json are mutually exclusive");
     process.exit(EXIT_CODE.ARG_ERROR);
   }
 
-  // Detach path: self-respawn and exit 0
   if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
     const repoRoot = ctx?.repoRoot ?? process.cwd();
     const slug = resolveSlugForDetach(requestMdPath, ctx?.repoRoot ?? process.cwd());
@@ -450,37 +558,82 @@ async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<
     verbose: !!parsed.flags["verbose"],
     debug: !!parsed.flags["debug"],
   });
-  let issue: number | undefined;
-  const issueRaw = parsed.flags["issue"] as string | undefined;
-  if (issueRaw !== undefined) {
-    const n = Number(issueRaw);
-    if (!Number.isInteger(n) || n <= 0) {
-      logError(`--issue requires a positive integer (got: ${issueRaw})`);
-      process.exit(EXIT_CODE.ARG_ERROR);
-    }
-    issue = n;
-  }
+  // --issue is now validated as integer by the parser (min: 1)
+  const issue = typeof parsed.flags["issue"] === "number" ? parsed.flags["issue"] : undefined;
   await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"], issue });
 }
 
-export const COMMANDS: Record<string, CommandEntry> = {
+// ---------------------------------------------------------------------------
+// USAGE generation
+// ---------------------------------------------------------------------------
+
+function generateTopLevelUsage(): string {
+  const groups: Record<string, string[]> = {};
+  const groupOrder = [
+    "Request commands",
+    "Job commands",
+    "Rules commands",
+    "Reviewer commands",
+    "Environment commands",
+    "Inbox commands",
+    "Aliases",
+  ];
+
+  function collect(spec: CommandSpec): void {
+    if (spec.help?.group && spec.help?.summary) {
+      const g = spec.help.group;
+      (groups[g] ??= []).push(spec.help.summary);
+    }
+    if (spec.children) {
+      for (const child of Object.values(spec.children)) collect(child);
+    }
+  }
+  for (const spec of Object.values(COMMANDS)) collect(spec);
+
+  const lines: string[] = ["Usage: specrunner <command> [options]", ""];
+  for (const g of groupOrder) {
+    const entries = groups[g];
+    if (!entries?.length) continue;
+    lines.push(`${g}:`);
+    for (const entry of entries) lines.push(entry);
+    lines.push("");
+  }
+  lines.push("Options:");
+  lines.push("  --help, -h    Show this help message");
+  lines.push("");
+  return lines.join("\n");
+}
+
+// ---------------------------------------------------------------------------
+// COMMANDS registry (CommandSpec tree)
+// ---------------------------------------------------------------------------
+
+export const COMMANDS: Record<string, CommandSpec> = {
   init: {
+    path: ["init"],
+    summary: "config scaffold",
     flags: {
       runtime: { type: "string", values: ["managed", "local"] as const },
       provider: { type: "string", values: ["anthropic", "openai"] as const },
     },
     requiresRepo: true,
+    visibility: "normal",
+    help: {
+      group: "Environment commands",
+      summary: "  init                            config scaffold",
+    },
     handler: async (parsed, ctx) => {
       const runtimeRaw = parsed.flags["runtime"] as string | undefined;
       const runtime = runtimeRaw as "managed" | "local" | undefined;
       const providerRaw = parsed.flags["provider"] as string | undefined;
       const provider = providerRaw as "anthropic" | "openai" | undefined;
-      // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
       process.exit(await runInit({ runtime, provider, repoRoot: ctx!.repoRoot! }));
     },
   },
 
   login: {
+    path: ["login"],
+    summary: "GitHub Device Flow OAuth",
     flags: {
       force: { type: "boolean" },
       provider: {
@@ -498,19 +651,33 @@ export const COMMANDS: Record<string, CommandEntry> = {
         },
       },
     },
-    usage: LOGIN_USAGE,
+    visibility: "normal",
+    help: {
+      group: "Environment commands",
+      summary: "  login                           GitHub Device Flow OAuth",
+      detail: LOGIN_USAGE,
+    },
     handler: async (parsed) => {
       process.exit(await runLogin({ force: !!parsed.flags["force"] }));
     },
   },
 
   credentials: {
-    usage: CREDENTIALS_SET_USAGE,
-    subcommands: {
+    path: ["credentials"],
+    summary: "Credential management",
+    visibility: "normal",
+    children: {
       set: {
+        path: ["credentials", "set"],
+        summary: "Store a credential",
         flags: {},
-        positional: { name: "name", required: true },
-        usage: CREDENTIALS_SET_USAGE,
+        args: [{ name: "name", required: true }],
+        visibility: "normal",
+        help: {
+          group: "Environment commands",
+          summary: "  credentials set <name>          headless 用 credential を credentials.json(0600) に保存",
+          detail: CREDENTIALS_SET_USAGE,
+        },
         handler: async (parsed) => {
           const name = parsed.positional!;
           process.exit(await runCredentialsSet(name));
@@ -519,45 +686,78 @@ export const COMMANDS: Record<string, CommandEntry> = {
     },
   },
 
-  /** Alias: job start <slug|file> */
+  /** Alias: job start */
   run: {
-    flags: RUN_JOB_FLAGS,
-    positional: { name: "request.md|slug", required: true },
-    handler: runJobHandler,
+    path: ["run"],
+    summary: "job start の互換 alias",
+    aliasOf: ["job", "start"],
+    visibility: "compatibility",
+    help: {
+      group: "Aliases",
+      summary: "  run <slug|file>                 job start の互換 alias\n  run <slug|file> --detach        agent session 向け: 登録完了まで待機後に return (job wait で監視)",
+    },
   },
 
   request: {
-    subcommands: {
+    path: ["request"],
+    summary: "Request management commands",
+    visibility: "normal",
+    children: {
       new: {
+        path: ["request", "new"],
+        summary: "Create a request",
         flags: {
           type: { type: "string" },
         },
-        positional: { name: "slug", required: true },
+        args: [{ name: "slug", required: true }],
         requiresRepo: true,
+        visibility: "normal",
+        help: {
+          group: "Request commands",
+          summary: "  request new <slug>              template から request.md を作る",
+        },
         handler: async (parsed, ctx) => {
           const slug = parsed.positional!;
           const requestType = (parsed.flags["type"] as string | undefined) ?? "new-feature";
-          // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
-          // base is repo root (not invoker cwd) so subdir invocations write to the correct location
           process.exit(await executeNew(slug, requestType, ctx!.repoRoot!));
         },
       },
       prompt: {
+        path: ["request", "prompt"],
+        summary: "Output request creation prompt",
         flags: {},
+        visibility: "normal",
+        help: {
+          group: "Request commands",
+          summary: "  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）",
+        },
         handler: async () => {
           process.exit(executePrompt());
         },
       },
-      /** Renamed from `list` */
       ls: {
+        path: ["request", "ls"],
+        summary: "List active requests",
         flags: {},
+        visibility: "normal",
+        help: {
+          group: "Request commands",
+          summary: "  request ls                      active 配下の request 一覧",
+        },
         handler: async () => {
           process.exit(await executeList(process.cwd()));
         },
       },
       template: {
+        path: ["request", "template"],
+        summary: "Print request template",
         flags: {
           type: { type: "string" },
+        },
+        visibility: "normal",
+        help: {
+          group: "Request commands",
+          summary: "  request template                雛形 markdown を stdout",
         },
         handler: async (parsed) => {
           const requestType = (parsed.flags["type"] as string | undefined) ?? "new-feature";
@@ -565,14 +765,19 @@ export const COMMANDS: Record<string, CommandEntry> = {
         },
       },
       validate: {
+        path: ["request", "validate"],
+        summary: "Validate a request file",
         flags: {},
-        positional: { name: "file-or-slug", required: true },
+        args: [{ name: "file-or-slug", required: true }],
+        visibility: "normal",
+        help: {
+          group: "Request commands",
+          summary: "  request validate <file|slug>    構文 / 規律 check",
+        },
         handler: async (parsed) => {
           const input = parsed.positional!;
-          // Slug validation guard (if it looks like a slug, validate the slug format too)
           let filePath = path.resolve(process.cwd(), input);
           if (!fs.existsSync(filePath)) {
-            // Try as slug
             if (!SLUG_REGEX.test(input)) {
               logError(`Invalid slug '${input}'. Must match /^[a-z0-9][a-z0-9-]{0,63}$/`);
               process.exit(2);
@@ -592,21 +797,37 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   job: {
-    guardedSubcommands: new Set(["start", "resume", "attach", "archive", "prune", "reopen"]),
-    subcommands: {
+    path: ["job"],
+    summary: "Job management commands",
+    visibility: "normal",
+    children: {
       start: {
+        path: ["job", "start"],
+        summary: "Start a job",
         flags: RUN_JOB_FLAGS,
-        positional: { name: "slug|file", required: true },
+        args: [{ name: "slug|file", required: true }],
+        worktreeGuard: true,
+        visibility: "normal",
+        help: {
+          group: "Job commands",
+          summary: "  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)",
+        },
         handler: runJobHandler,
       },
       ls: {
+        path: ["job", "ls"],
+        summary: "List jobs",
         flags: {
           active: { type: "boolean" },
           all: { type: "boolean" },
           status: { type: "string", values: ["running", "awaiting-resume", "awaiting-archive", "failed", "terminated", "archived", "canceled"] as const },
           json: { type: "boolean" },
         },
-        usage: "job ls [--active] [--all] [--status <status>] [--json]  全 job 一覧（区分付き運用ビュー）",
+        visibility: "normal",
+        help: {
+          group: "Job commands",
+          summary: "  job ls [--json]                 全 job 一覧（区分付き運用ビュー）",
+        },
         handler: async (parsed, ctx) => {
           let githubClient = null;
           try {
@@ -624,7 +845,6 @@ export const COMMANDS: Record<string, CommandEntry> = {
           } catch {
             // No token available — PR merge check will be skipped
           }
-          // Pass repoRoot so runPs DI-fallback never fires on the production path (TC-002/TC-023)
           process.exit(await runPs(
             {
               active: !!parsed.flags["active"],
@@ -638,8 +858,15 @@ export const COMMANDS: Record<string, CommandEntry> = {
         },
       },
       show: {
+        path: ["job", "show"],
+        summary: "Show job state",
         flags: {},
-        positional: { name: "jobId|slug", required: true },
+        args: [{ name: "jobId|slug", required: true }],
+        visibility: "normal",
+        help: {
+          group: "Job commands",
+          summary: "  job show <jobId|slug>           job state 詳細",
+        },
         handler: async (parsed, ctx) => {
           process.exit(await runJobShow(
             parsed.positional!,
@@ -648,8 +875,15 @@ export const COMMANDS: Record<string, CommandEntry> = {
         },
       },
       wait: {
+        path: ["job", "wait"],
+        summary: "Wait for a job to settle",
         flags: {},
-        positional: { name: "slug", required: true },
+        args: [{ name: "slug", required: true }],
+        visibility: "normal",
+        help: {
+          group: "Job commands",
+          summary: "  job wait <slug>                 job が settle するまで block (process-death gate)",
+        },
         handler: async (parsed, ctx) => {
           const slug = parsed.positional;
           if (!slug) {
@@ -661,6 +895,8 @@ export const COMMANDS: Record<string, CommandEntry> = {
         },
       },
       cancel: {
+        path: ["job", "cancel"],
+        summary: "Cancel a job",
         flags: {
           force: { type: "boolean" },
           purge: { type: "boolean" },
@@ -668,40 +904,36 @@ export const COMMANDS: Record<string, CommandEntry> = {
           yes: { type: "boolean" },
           "restore-draft": { type: "boolean" },
         },
-        positional: { name: "jobId", required: false },
+        args: [{ name: "jobId", required: false }],
         requiresRepo: true,
+        visibility: "normal",
+        help: {
+          group: "Job commands",
+          summary: "  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)",
+        },
         handler: async (parsed, ctx) => {
           const jobId = parsed.positional;
-          // Security: path-traversal guard; short prefixes are allowed (resolveId handles lookup)
           if (jobId !== undefined && !VALID_JOB_ID_CHARS.test(jobId)) {
             logError("invalid jobId format");
             process.exit(EXIT_CODE.ARG_ERROR);
           }
-          try {
-            process.exit(
-              await runCancel({
-                jobId,
-                force: !!parsed.flags["force"],
-                purge: !!parsed.flags["purge"],
-                allTerminated: !!parsed.flags["all-terminated"],
-                yes: !!parsed.flags["yes"],
-                restoreDraft: !!parsed.flags["restore-draft"],
-                // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
-                repoRoot: ctx!.repoRoot!,
-              }),
-            );
-          } catch (err: unknown) {
-            if (err instanceof SpecRunnerError) {
-              stderrWrite(`Error: ${err.message}`);
-              stderrWrite(`Hint: ${err.hint}`);
-              process.exit(err.exitCode);
-            }
-            stderrWrite(`Fatal: ${err instanceof Error ? err.message : String(err)}`);
-            process.exit(1);
-          }
+          // SpecRunnerError propagates to bin/specrunner.ts unified catch
+          process.exit(
+            await runCancel({
+              jobId,
+              force: !!parsed.flags["force"],
+              purge: !!parsed.flags["purge"],
+              allTerminated: !!parsed.flags["all-terminated"],
+              yes: !!parsed.flags["yes"],
+              restoreDraft: !!parsed.flags["restore-draft"],
+              repoRoot: ctx!.repoRoot!,
+            }),
+          );
         },
       },
       resume: {
+        path: ["job", "resume"],
+        summary: "Resume a halted job",
         flags: {
           from: { type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES] as const },
           force: { type: "boolean" },
@@ -715,16 +947,20 @@ export const COMMANDS: Record<string, CommandEntry> = {
           "adopt-commits": { type: "boolean" },
           detach: { type: "boolean" },
         },
-        positional: { name: "slug", required: true },
-        usage: JOB_RESUME_USAGE,
+        args: [{ name: "slug", required: true }],
+        worktreeGuard: true,
+        visibility: "normal",
+        help: {
+          group: "Job commands",
+          summary: "  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger",
+          detail: JOB_RESUME_USAGE,
+        },
         handler: async (parsed, ctx) => {
-          // --detach + --json are mutually exclusive
           if (parsed.flags["detach"] && parsed.flags["json"]) {
             logError("--detach and --json are mutually exclusive");
             process.exit(EXIT_CODE.ARG_ERROR);
           }
 
-          // Detach path: self-respawn and exit 0
           if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
             const slug = parsed.positional!;
             if (!SLUG_REGEX.test(slug)) {
@@ -795,6 +1031,8 @@ export const COMMANDS: Record<string, CommandEntry> = {
         },
       },
       reopen: {
+        path: ["job", "reopen"],
+        summary: "Reopen an awaiting-archive job",
         flags: {
           from: { type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES] as const },
           reason: { type: "string" },
@@ -803,8 +1041,14 @@ export const COMMANDS: Record<string, CommandEntry> = {
           json: { type: "boolean" },
           "no-worktree": { type: "boolean" },
         },
-        positional: { name: "slug", required: true },
-        usage: REOPEN_USAGE,
+        args: [{ name: "slug", required: true }],
+        worktreeGuard: true,
+        visibility: "operator",
+        help: {
+          group: "Job commands",
+          summary: "  job reopen <slug>               awaiting-archive job を指定 step から再開",
+          detail: REOPEN_USAGE,
+        },
         handler: async (parsed, ctx) => {
           const fromStep = parsed.flags["from"] as string | undefined;
           const reason = parsed.flags["reason"] as string | undefined;
@@ -845,14 +1089,21 @@ export const COMMANDS: Record<string, CommandEntry> = {
           }
         },
       },
-
       attach: {
+        path: ["job", "attach"],
+        summary: "Attach a remote branch checkpoint",
         flags: {
           branch: { type: "string" },
           verbose: { type: "boolean" },
           quiet: { type: "boolean" },
         },
         requiresRepo: true,
+        worktreeGuard: true,
+        visibility: "operator",
+        help: {
+          group: "Job commands",
+          summary: "  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する",
+        },
         handler: async (parsed, ctx) => {
           const branch = parsed.flags["branch"] as string | undefined;
           if (!branch) {
@@ -869,7 +1120,6 @@ export const COMMANDS: Record<string, CommandEntry> = {
               await runAttach({
                 branch,
                 cwd: process.cwd(),
-                // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
                 repoRoot: ctx!.repoRoot!,
                 logLevel,
               }),
@@ -886,23 +1136,32 @@ export const COMMANDS: Record<string, CommandEntry> = {
         },
       },
       archive: {
+        path: ["job", "archive"],
+        summary: "Archive a completed change folder",
         flags: {
           "with-merge": { type: "boolean" },
+          // ponytail: lenient parse — behavior preservation; strict integer typing forbidden (TC-027)
+          // mergeWaitMs is lenient: invalid values (non-numeric) are silently ignored
           "merge-wait-ms": { type: "string" },
         },
-        positional: { name: "slug", required: true },
-        usage: ARCHIVE_USAGE,
+        args: [{ name: "slug", required: true }],
+        worktreeGuard: true,
+        visibility: "normal",
+        help: {
+          group: "Job commands",
+          summary: "  job archive <slug>              change folder 移動・worktree 撤去・status 更新",
+          detail: ARCHIVE_USAGE,
+        },
         handler: async (parsed) => {
           const slug = parsed.positional!;
-          // Parse --merge-wait-ms: must be a positive integer if provided
           let mergeWaitMs: number | undefined;
-          const mergeWaitMsRaw = parsed.flags["merge-wait-ms"];
-          if (mergeWaitMsRaw !== undefined && mergeWaitMsRaw !== true && mergeWaitMsRaw !== false) {
+          const mergeWaitMsRaw = parsed.flags["merge-wait-ms"] as string | undefined;
+          if (mergeWaitMsRaw !== undefined) {
             const parsed_ms = parseInt(String(mergeWaitMsRaw), 10);
             if (!Number.isNaN(parsed_ms) && parsed_ms >= 0) {
               mergeWaitMs = parsed_ms;
             }
-            // Ignore invalid values (non-numeric)
+            // Ignore invalid values (non-numeric) — lenient behavior
           }
           try {
             process.exit(
@@ -925,17 +1184,24 @@ export const COMMANDS: Record<string, CommandEntry> = {
         },
       },
       prune: {
+        path: ["job", "prune"],
+        summary: "Remove orphan worktrees and sidecars",
         flags: {
           force: { type: "boolean" },
         },
-        usage: PRUNE_USAGE,
         requiresRepo: true,
+        worktreeGuard: true,
+        visibility: "maintenance",
+        help: {
+          group: "Job commands",
+          summary: "  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）",
+          detail: PRUNE_USAGE,
+        },
         handler: async (parsed, ctx) => {
           try {
             process.exit(
               await runPrune({
                 force: !!parsed.flags["force"],
-                // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
                 repoRoot: ctx!.repoRoot!,
               }),
             );
@@ -951,13 +1217,18 @@ export const COMMANDS: Record<string, CommandEntry> = {
         },
       },
       stats: {
+        path: ["job", "stats"],
+        summary: "Show job statistics",
         flags: {
           json: { type: "boolean" },
         },
         requiresRepo: true,
+        visibility: "normal",
+        help: {
+          group: "Job commands",
+          summary: "  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計",
+        },
         handler: async (parsed, ctx) => {
-          // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
-          // cwd is the repo root so subdir invocations find the same archive runs as root invocations
           process.exit(await runJobStats({ cwd: ctx!.repoRoot!, json: !!parsed.flags["json"] }));
         },
       },
@@ -965,12 +1236,22 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   config: {
-    subcommands: {
+    path: ["config"],
+    summary: "Configuration commands",
+    visibility: "normal",
+    children: {
       effective: {
-        usage: CONFIG_EFFECTIVE_USAGE,
+        path: ["config", "effective"],
+        summary: "Show effective configuration",
         flags: {
           type: { type: "string" },
           json: { type: "boolean" },
+        },
+        visibility: "normal",
+        help: {
+          group: "Environment commands",
+          summary: "  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source",
+          detail: CONFIG_EFFECTIVE_USAGE,
         },
         handler: async (parsed, ctx) => {
           process.exit(await runConfigEffective({
@@ -984,30 +1265,32 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   inbox: {
-    guardedSubcommands: new Set(["run"]),
-    subcommands: {
+    path: ["inbox"],
+    summary: "Inbox commands",
+    visibility: "normal",
+    children: {
       run: {
-        usage: INBOX_RUN_USAGE,
+        path: ["inbox", "run"],
+        summary: "Auto-fire jobs from inbox",
         flags: {
           "dry-run": { type: "boolean" },
-          limit: { type: "string" },
+          // --limit is integer (min 0) — validated by parser
+          limit: { type: "integer", min: 0 },
           json: { type: "boolean" },
           verbose: { type: "boolean" },
           quiet: { type: "boolean" },
         },
         requiresRepo: true,
+        worktreeGuard: true,
+        visibility: "normal",
+        help: {
+          group: "Inbox commands",
+          summary: "  inbox run                       issue から job を自動発火 (承認ラベル + /resume)",
+          detail: INBOX_RUN_USAGE,
+        },
         handler: async (parsed, ctx) => {
-          const limitRaw = parsed.flags["limit"] as string | undefined;
-          let limit: number | undefined;
-          if (limitRaw !== undefined) {
-            const n = Number(limitRaw);
-            if (!Number.isInteger(n) || n < 0) {
-              logError(`--limit requires a non-negative integer (got: ${limitRaw})`);
-              process.exit(EXIT_CODE.ARG_ERROR);
-            }
-            limit = n;
-          }
-          // ctx is guaranteed defined and repoRoot non-null by requiresRepo: true + dispatch guard
+          // --limit is now validated as integer by the parser (min: 0)
+          const limit = typeof parsed.flags["limit"] === "number" ? parsed.flags["limit"] : undefined;
           process.exit(
             await runInboxRun({
               dryRun: !!parsed.flags["dry-run"],
@@ -1024,11 +1307,23 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   rules: {
-    usage: RULES_USAGE,
-    subcommands: {
+    path: ["rules"],
+    summary: "Rules management commands",
+    visibility: "normal",
+    help: {
+      detail: RULES_USAGE,
+    },
+    children: {
       new: {
+        path: ["rules", "new"],
+        summary: "Scaffold a rules file",
         flags: {},
-        positional: { name: "step-name rule-slug", required: true, count: 2 },
+        args: [{ name: "step-name rule-slug", required: true, count: 2 }],
+        visibility: "normal",
+        help: {
+          group: "Rules commands",
+          summary: "  rules new <step> <slug>         step 用の rules ファイルを scaffold",
+        },
         handler: async (parsed) => {
           const stepName = parsed.positionals[0]!;
           const ruleSlug = parsed.positionals[1]!;
@@ -1039,11 +1334,23 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   reviewers: {
-    usage: REVIEWERS_USAGE,
-    subcommands: {
+    path: ["reviewers"],
+    summary: "Reviewer management commands",
+    visibility: "normal",
+    help: {
+      detail: REVIEWERS_USAGE,
+    },
+    children: {
       new: {
+        path: ["reviewers", "new"],
+        summary: "Scaffold a reviewer definition",
         flags: {},
-        positional: { name: "name", required: true },
+        args: [{ name: "name", required: true }],
+        visibility: "normal",
+        help: {
+          group: "Reviewer commands",
+          summary: "  reviewers new <name>            カスタムレビューワーの雛形を scaffold",
+        },
         handler: async (parsed) => {
           const name = parsed.positional!;
           process.exit(await executeReviewersNew(name, process.cwd()));
@@ -1053,24 +1360,42 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   runtime: {
-    subcommands: {
+    path: ["runtime"],
+    summary: "Runtime resource management",
+    visibility: "normal",
+    children: {
       setup: {
+        path: ["runtime", "setup"],
+        summary: "Set up Anthropic runtime",
         flags: {},
+        visibility: "normal",
+        help: {
+          group: "Environment commands",
+          summary: "  runtime setup|status|reset      Manage Anthropic runtime resources",
+        },
         handler: async () => {
           process.exit(await runManagedSetup());
         },
       },
       status: {
+        path: ["runtime", "status"],
+        summary: "Show runtime status",
         flags: {},
+        visibility: "normal",
         handler: async () => {
           process.exit(await runManagedStatus());
         },
       },
       reset: {
+        path: ["runtime", "reset"],
+        summary: "Delete the Anthropic Environment",
         flags: {
           force: { type: "boolean" },
         },
-        usage: RUNTIME_RESET_USAGE,
+        visibility: "normal",
+        help: {
+          detail: RUNTIME_RESET_USAGE,
+        },
         handler: async (parsed) => {
           process.exit(await runManagedReset({ force: !!parsed.flags["force"] }));
         },
@@ -1079,32 +1404,20 @@ export const COMMANDS: Record<string, CommandEntry> = {
   },
 
   doctor: {
+    path: ["doctor"],
+    summary: "Diagnose environment prerequisites",
     flags: {
       json: { type: "boolean" },
     },
-    positional: { name: "subcommand", required: false },
-    usage: DOCTOR_USAGE,
-    // requiresRepo: false (default) — doctor is always runnable, even outside a repo
+    // requiresRepo: false (default) — doctor is runnable outside a repo
+    visibility: "normal",
+    help: {
+      group: "Environment commands",
+      summary: "  doctor                          Diagnose environment / config / auth prerequisites",
+      detail: DOCTOR_USAGE,
+    },
     handler: async (parsed, ctx) => {
-      // Support `specrunner doctor repair <slug>` as an inline subcommand
-      if (parsed.positionals[0] === "repair") {
-        const slug = parsed.positionals[1];
-        if (!slug) {
-          stderrWrite("Error: specrunner doctor repair requires a <slug> argument\n");
-          stderrWrite("Usage: specrunner doctor repair <slug>\n");
-          process.exit(2);
-        }
-        const repoRoot = ctx?.repoRoot ?? process.cwd();
-        try {
-          const { repairSlugOccupancySidecar } = await import("../core/occupancy/repair.js");
-          const result = await repairSlugOccupancySidecar(repoRoot, slug);
-          stderrWrite(result.message + "\n");
-          process.exit(0);
-        } catch (err: unknown) {
-          stderrWrite(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
-          process.exit(EXIT_CODE.GENERAL_ERROR);
-        }
-      }
+      // default action: run diagnostics
       try {
         process.exit(await runDoctor({
           json: !!parsed.flags["json"],
@@ -1116,11 +1429,43 @@ export const COMMANDS: Record<string, CommandEntry> = {
         process.exit(EXIT_CODE.GENERAL_ERROR);
       }
     },
+    children: {
+      repair: {
+        path: ["doctor", "repair"],
+        summary: "Repair slug occupancy sidecar",
+        args: [{ name: "slug", required: true }],
+        requiresRepo: true, // override: repair requires repo even though doctor doesn't
+        visibility: "repair",
+        help: { detail: "Usage: specrunner doctor repair <slug>\n\nRepair the occupancy sidecar for the given slug.\n" },
+        handler: async (parsed, ctx) => {
+          const slug = parsed.positional;
+          if (!slug) {
+            stderrWrite("Error: specrunner doctor repair requires a <slug> argument\n");
+            stderrWrite("Usage: specrunner doctor repair <slug>\n");
+            process.exit(2);
+            return;
+          }
+          const repoRoot = ctx?.repoRoot ?? process.cwd();
+          try {
+            const { repairSlugOccupancySidecar } = await import("../core/occupancy/repair.js");
+            const result = await repairSlugOccupancySidecar(repoRoot, slug);
+            stderrWrite(result.message + "\n");
+            process.exit(0);
+          } catch (err: unknown) {
+            stderrWrite(`Error: ${err instanceof Error ? err.message : String(err)}\n`);
+            process.exit(EXIT_CODE.GENERAL_ERROR);
+          }
+        },
+      },
+    },
   },
 
   usage: {
+    path: ["usage"],
+    summary: "Show request usage",
     flags: {},
-    positional: { name: "slug", required: false },
+    args: [{ name: "slug", required: false }],
+    visibility: "operator",
     handler: async (parsed) => {
       const slug = parsed.positional;
       if (slug) {
@@ -1131,3 +1476,9 @@ export const COMMANDS: Record<string, CommandEntry> = {
     },
   },
 };
+
+// ---------------------------------------------------------------------------
+// Top-level USAGE (generated from CommandSpec tree)
+// ---------------------------------------------------------------------------
+
+export const USAGE: string = generateTopLevelUsage();

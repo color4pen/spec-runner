@@ -1,0 +1,279 @@
+{
+  "version": 2,
+  "jobId": "f635fe90-7726-47f0-96f7-1a727cd0610a",
+  "createdAt": "2026-08-16T08:44:36.107Z",
+  "updatedAt": "2026-08-16T14:26:46.725Z",
+  "request": {
+    "title": "CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/cli-command-spec-f635fe90",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "14b2f6f61edec98a48194f0ae352847f15e9f6b9",
+    "167e743762c84fdd5c8c30148f50a694d361977a",
+    "50cd8901a72b9ad3bf096d3e72715ca65ddf1af3",
+    "e8c9cc5102fc7f81ec49ef8cb05577732ffb1472",
+    "c76b19649fb9a8c2660df26286ed8540891545c9",
+    "94ea4b90e28147e08ff0eee6c99097a0f79a583e",
+    "c4281a28732bec426b44be1e38838fe685f17e6c",
+    "266a80ab244eb61e86e03435ab0711a3b1cf5e7e",
+    "9b87992f2c3dddc682a1cf018087f6852ef15902",
+    "6490530cd6be34b0dccff17a5c88624e5a378f63",
+    "ca7ff86447a9f096d4b9cf7c2ace9b0c69b729b3",
+    "dfd9d494fc77d6ec3131fe857cd2edfaa7087047",
+    "f94340d25ec0345febb18d1a8fcebe21f536dc07",
+    "d866c4bfdf67b14262255deb3066fd0b6c5bb750",
+    "56eb67f80dfca5fcb9eb5e86768cd0048ad772cb",
+    "d28d50d37043c8ffe6a851edb3c071831e861f1f",
+    "d382cbfe04063701361aa91de8081c03df644900",
+    "9c3bf38bd0184182488e8ca5cd4259f0cb4a9961",
+    "c814f9505586440a317ac44153bde60f2e9e1588",
+    "79bc3abaabc97b2bbd7a7cbd3d9591210d7a1bff",
+    "9c5106b60cecad0e3dc01f397af2f38450b9c0e4",
+    "9293ec733d425a0aca2ed272aaa535b6823e4615",
+    "1b91f55a25710acac3a4d6d29cd5fca2182f494b",
+    "d7a10d8e56c0c9c21b832561ca5a49f1b0833b29",
+    "53c710229f718472c6c16916c634f5f8cd8a9375",
+    "eb5d53031add944e244a176a57a78eb569b0ff14",
+    "a04ae4f26bac037982db4fd41731aa67c492aa45",
+    "8ceb21d8659643879183cc7262cc8bb272906a94",
+    "4e790a5d91dba73bc677f09223176d785bf7ef13",
+    "e915a3b36683be5adc4007946532835cd08ae072",
+    "09b114ba15795ecb60483cc571cf95af472f6c0c",
+    "1b188ebb82c7466631694e2af9405c913a2a6bde"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/cli/command-registry.ts",
+      "bin/specrunner.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts",
+      "src/cli/__tests__/login.test.ts",
+      "src/cli/__tests__/view-commands-worktree-guard.test.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts"
+    ],
+    "design": [
+      "src/cli/command-registry.ts",
+      "bin/specrunner.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts",
+      "src/cli/__tests__/login.test.ts",
+      "src/cli/__tests__/view-commands-worktree-guard.test.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts",
+      "tests/hint-command-existence.test.ts",
+      "tests/unit/cli/hint-command-references.test.ts",
+      "tests/unit/cli/help-output-tc.test.ts",
+      "tests/unit/cli/removed-commands.test.ts",
+      "tests/unit/cli/doctor-repair.test.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "tests/unit/cli/specrunner-worktree-guard.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "tests/unit/cli/issue-flag.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "tests/unit/cli/prune-usage.test.ts",
+      "tests/unit/architecture/request-entrance-llm-boundary.test.ts",
+      "src/cli/command-context.ts",
+      "src/cli/__tests__/command-registry-resume.test.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/cli/command-registry.ts",
+      "bin/specrunner.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts",
+      "src/cli/__tests__/login.test.ts",
+      "tests/unit/cli/doctor-repair.test.ts",
+      "tests/unit/cli/hint-command-references.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/cli/help-output-tc.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "tests/unit/cli/prune-usage.test.ts",
+      "tests/unit/cli/specrunner-worktree-guard.test.ts",
+      "tests/unit/cli/removed-commands.test.ts"
+    ],
+    "spec-fixer": [
+      "tests/unit/cli/hint-command-references.test.ts"
+    ],
+    "implementer": [
+      "tests/unit/cli/command-spec-api.test.ts"
+    ],
+    "code-review": [
+      "src/cli/command-registry.ts",
+      "bin/specrunner.ts",
+      "src/cli/flag-parser.ts",
+      "tests/unit/cli/command-spec-api.test.ts",
+      "tests/unit/cli/specrunner-worktree-guard.test.ts",
+      "tests/unit/cli/doctor-repair.test.ts",
+      "tests/unit/cli/hint-command-references.test.ts",
+      "src/errors.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts"
+    ],
+    "code-fixer": [
+      "tests/unit/cli/doctor-repair.test.ts",
+      "bin/specrunner.ts",
+      "tests/unit/cli/hint-command-references.test.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/flag-parser.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts"
+    ],
+    "regression-gate": [
+      "tests/hint-command-existence.test.ts",
+      "tests/unit/cli/hint-command-references.test.ts",
+      "tests/unit/cli/specrunner-worktree-guard.test.ts",
+      "tests/unit/cli/doctor-repair.test.ts",
+      "src/cli/command-registry.ts",
+      "bin/specrunner.ts"
+    ],
+    "conformance": [
+      "src/cli/command-registry.ts",
+      "bin/specrunner.ts",
+      "src/cli/flag-parser.ts",
+      "tests/unit/cli/command-spec-api.test.ts",
+      "tests/unit/cli/doctor-repair.test.ts",
+      "tests/hint-command-existence.test.ts",
+      "tests/unit/cli/hint-command-references.test.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts",
+      "src/cli/__tests__/login.test.ts",
+      "tests/unit/cli/help-output-tc.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "tests/unit/cli/specrunner-worktree-guard.test.ts",
+      "tests/unit/cli/removed-commands.test.ts",
+      "tests/unit/cli/prune-usage.test.ts",
+      "src/cli/__tests__/view-commands-worktree-guard.test.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-08-16-cli-command-spec.md"
+    ]
+  },
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "signal",
+    "iterationsExhausted": 0
+  },
+  "mainCheckoutDrift": null,
+  "staleRecovery": {
+    "attempts": 1,
+    "stepCount": 7
+  },
+  "operatorAdjudications": [
+    {
+      "text": "実装と tasks.md の全項目は前 attempt で完了済み。検証だけして報告してください。制約: (1) テスト実行は必ず 'bun run test'(vitest、約60秒で終わる)。'bun test'(bun 内蔵 runner)は絶対に使わない — このプロジェクトでは互換が無く hang する。(2) Bash の run_in_background は使わない。すべて foreground で実行する(bun run test は tool timeout 内に終わる)。(3) typecheck と test が green を確認したら、直ちに report_result を呼んで終了する。追加の作業や再実装はしない",
+      "step": "implementer",
+      "recordedAt": "2026-08-16T13:03:28.266Z"
+    }
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1005",
+    "number": 1005,
+    "createdAt": "2026-08-16T14:26:45.740Z"
+  },
+  "_journal": {
+    "historyCount": 144,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 6,
+      "bite-evidence": 1,
+      "verification": 4,
+      "code-review": 3,
+      "code-fixer": 3,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 2,
+      "custom-reviewers": 2,
+      "regression-gate": 3,
+      "conformance": 2,
+      "adr-gen": 2,
+      "pr-create": 2
+    }
+  }
+}

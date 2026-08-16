@@ -24,7 +24,6 @@ vi.mock("../../logger/stdout.js", () => ({
 }));
 
 import { COMMANDS } from "../command-registry.js";
-import type { ParentCommandDef } from "../command-registry.js";
 import type { ParsedArgs } from "../flag-parser.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { runResume } from "../resume.js";
@@ -32,8 +31,7 @@ import { runResume } from "../resume.js";
 const WARNING_SUBSTRING = "--prompt の内容は agent prompt に直接注入";
 
 function getResumeHandler(): (parsed: ParsedArgs) => Promise<void> {
-  const jobCmd = COMMANDS["job"] as ParentCommandDef;
-  return jobCmd.subcommands["resume"]!.handler;
+  return COMMANDS["job"]!.children!["resume"]!.handler!;
 }
 
 function makeParsedArgs(overrides: Partial<ParsedArgs> = {}): ParsedArgs {
