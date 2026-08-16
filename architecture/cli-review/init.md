@@ -1,7 +1,7 @@
 # `init` review
 
 Status: **reviewed**  
-Verdict: **KEEP**, with responsibility cleanup pending `config` review.
+Verdict: **KEEP**. Repo scaffold stays primary responsibility; first user-global model preset may remain a convenience but its flag semantics must be explicit.
 
 Baseline implementation:
 
@@ -58,16 +58,13 @@ repository bootstrap
 
 The first is per repository. The second is per user/machine and normally executes only once.
 
-This is why `--provider` behaves strangely: it looks like a project-init option but actually seeds `steps.defaults.model` in the user-global config. On later repositories the same flag has no effect because the global config already exists.
+This is why `--provider` behaves strangely: it looks like a project-init option but actually seeds concrete model defaults in the user-global config. On later repositories the same flag has no effect because the global config already exists.
 
-The existing behavior was intentional (`provider-aware-init` explicitly kept provider resolution inside the config-missing branch), but it is still a weak CLI contract: the command name and flag scope do not match.
+The existing behavior was intentional (`provider-aware-init` explicitly kept provider resolution inside the config-missing branch), but the CLI contract is weak because the flag scope is not visible from its name.
 
-**Direction:** do not decide this in isolation. Review `config` next and choose between:
+The `config` review resolves the ownership question: **do not add a fake `config set provider` API**. Config has no persistent provider field; provider dispatch is derived from model names and `config effective` is intentionally a read-only resolution view.
 
-- keeping bootstrap convenience but renaming/defining the flag as a user default (for example `--default-provider`) and explicitly reporting when the global default already exists, or
-- moving user-global default mutation to the `config` surface and narrowing `init` toward repo bootstrap.
-
-The auth/setup UX request's "never silently ignore provider flag" is required either way.
+**Direction:** keep first-run preset selection as an `init` convenience if desired, but make its scaffold-only/user-global scope explicit. The final spelling (`--default-provider`, `--preset`, etc.) can be decided in the auth/setup UX design. When global config already exists, an explicit preset flag must never be silently ignored; report the owning config path and how to change it.
 
 ### 2. Deprecated `--runtime` is represented as an active registry flag
 
@@ -108,13 +105,18 @@ At minimum:
 
 ```text
 specrunner init
-# scaffold/repair only
+# scaffold/repair
 # then: specrunner doctor
 ```
 
 A second run should remain safe and useful for repairing missing project scaffold.
 
-Provider/default-model selection is **HOLD pending `config` review** rather than being cemented into `init` during the auth cleanup.
+If a model preset flag remains, its output should make scope explicit, for example conceptually:
+
+```text
+user-global defaults: already configured at ~/.config/specrunner/config.json
+requested preset was not applied; edit that config or add a project-local overlay
+```
 
 ## Final verdict
 
@@ -122,7 +124,7 @@ Provider/default-model selection is **HOLD pending `config` review** rather than
 - Name: **KEEP**
 - Repo scaffold responsibility: **KEEP**
 - Global config existence bootstrap: **KEEP for now**
-- Provider/default-model ownership: **HOLD until `config` review**
+- Provider/default-model preset: **may stay on init, but clarify/rename its first-scaffold semantics; do not move to config**
 - Deprecated runtime compatibility: **keep only as explicit deprecated/hidden surface if compatibility is still needed**
 - Detailed help: **must improve**
 - Next-step guidance: **doctor-first**
