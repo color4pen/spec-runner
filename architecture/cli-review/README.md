@@ -30,7 +30,7 @@ Each file records:
 | `init` | reviewed | KEEP; provider choice stays scaffold concern, but current flag semantics need cleanup |
 | `login` | reviewed | KEEP as GitHub-only login; move headless credential storage out and remove config side effect |
 | `run` | pending | decide whether this is the product's primary verb or only a compatibility alias |
-| `request` | pending | authoring surface |
+| `request` | reviewed | KEEP authoring namespace; fix repo-root/type constraints; likely merge `prompt` into future guide |
 | `job` | pending | execution/lifecycle surface; largest group |
 | `config` | reviewed | KEEP as read/diagnostic namespace; do not add generic setter just to absorb init provider |
 | `inbox` | pending | unattended operation |
@@ -43,7 +43,7 @@ Each file records:
 ## Cross-cutting observations already visible
 
 - `COMMANDS` is structured data, but top-level `USAGE` is separately handwritten. They already drift: implemented paths such as `job reopen`, `usage`, and the inline `doctor repair` path are not represented consistently in top help.
-- Command-specific and parent-command help is optional. Commands such as `init` and parents such as `config` can therefore expose behavior that `--help` does not describe structurally.
+- Command-specific and parent-command help is optional. Commands such as `init`, the `request` family, and parents such as `config` can therefore expose behavior that `--help` does not describe structurally.
 - Deprecated compatibility flags currently remain indistinguishable from active flags in the registry. A future command contract should be able to mark hidden/deprecated migration surfaces explicitly.
 - Guidance strings in runtime/doctor code can name commands independently of the registry. This is how dead command guidance such as `login --provider anthropic` survived.
 - Config JSON is the source of truth; `config effective` is a read-only resolution/source-attribution view. Avoid inventing CLI-only configuration concepts that do not exist in the schema.
@@ -51,6 +51,9 @@ Each file records:
 - Credential setup must respect the same source precedence as runtime resolution. Writing a lower-priority credential must not be reported as a successful repair while a higher-priority invalid source still shadows it.
 - A successful exit code must mean the requested state transition actually completed (or was already satisfied). Interactive/automation guards should not silently no-op with exit 0 when an operation such as reset was refused for lack of confirmation.
 - `status` and `doctor` are different surfaces: object-specific state inspection can remain direct, while `doctor` owns readiness/health and next-action guidance.
+- Repository-owned objects should resolve from dispatch-time repo root, not invocation depth. Explicit user file paths may remain relative to invoker cwd, but slugs/listings should not disappear when the command is run from a subdirectory.
+- Tolerant readers and strict writers are different contracts. Backward-compatible parsing may accept/warn on unknown values, while CLI generators should emit only canonical values derived from the same registry.
+- Static operational knowledge should have one owner. If `guide request` supersedes `request prompt`, keep at most a compatibility alias; do not maintain two independent prose bodies.
 - The likely architectural target is a machine-readable command spec from which parsing, detailed help, parent/top-level help, aliases/deprecations, and guide command validation can be derived. Avoid per-command class hierarchy; the goal is one interface contract, not more ceremony.
 
 ## Review order
