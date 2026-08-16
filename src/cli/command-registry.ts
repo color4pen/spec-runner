@@ -84,8 +84,8 @@ export interface CommandSpec {
   requiresRepo?: boolean;
   /** Whether this command is rejected when CWD is inside a specrunner worktree. */
   worktreeGuard?: boolean;
-  /** Public visibility classification. */
-  visibility?: "public" | "compatibility" | "repair" | "internal";
+  /** Visibility classification (audience metadata; not yet used for help grouping). */
+  visibility?: "normal" | "operator" | "maintenance" | "repair" | "compatibility";
   /** If set, this is an alias for the given canonical path. */
   aliasOf?: string[];
   /** Help text for --help and top-level USAGE listing. */
@@ -617,7 +617,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
       provider: { type: "string", values: ["anthropic", "openai"] as const },
     },
     requiresRepo: true,
-    visibility: "public",
+    visibility: "normal",
     help: {
       group: "Environment commands",
       summary: "  init                            config scaffold",
@@ -651,7 +651,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         },
       },
     },
-    visibility: "public",
+    visibility: "normal",
     help: {
       group: "Environment commands",
       summary: "  login                           GitHub Device Flow OAuth",
@@ -665,14 +665,14 @@ export const COMMANDS: Record<string, CommandSpec> = {
   credentials: {
     path: ["credentials"],
     summary: "Credential management",
-    visibility: "public",
+    visibility: "normal",
     children: {
       set: {
         path: ["credentials", "set"],
         summary: "Store a credential",
         flags: {},
         args: [{ name: "name", required: true }],
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Environment commands",
           summary: "  credentials set <name>          headless 用 credential を credentials.json(0600) に保存",
@@ -701,7 +701,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
   request: {
     path: ["request"],
     summary: "Request management commands",
-    visibility: "public",
+    visibility: "normal",
     children: {
       new: {
         path: ["request", "new"],
@@ -711,7 +711,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         },
         args: [{ name: "slug", required: true }],
         requiresRepo: true,
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Request commands",
           summary: "  request new <slug>              template から request.md を作る",
@@ -726,7 +726,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         path: ["request", "prompt"],
         summary: "Output request creation prompt",
         flags: {},
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Request commands",
           summary: "  request prompt                  起票プロンプトを stdout に出力（セッションへの知識注入）",
@@ -739,7 +739,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         path: ["request", "ls"],
         summary: "List active requests",
         flags: {},
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Request commands",
           summary: "  request ls                      active 配下の request 一覧",
@@ -754,7 +754,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         flags: {
           type: { type: "string" },
         },
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Request commands",
           summary: "  request template                雛形 markdown を stdout",
@@ -769,7 +769,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         summary: "Validate a request file",
         flags: {},
         args: [{ name: "file-or-slug", required: true }],
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Request commands",
           summary: "  request validate <file|slug>    構文 / 規律 check",
@@ -799,7 +799,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
   job: {
     path: ["job"],
     summary: "Job management commands",
-    visibility: "public",
+    visibility: "normal",
     children: {
       start: {
         path: ["job", "start"],
@@ -807,7 +807,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         flags: RUN_JOB_FLAGS,
         args: [{ name: "slug|file", required: true }],
         worktreeGuard: true,
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Job commands",
           summary: "  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)",
@@ -823,7 +823,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           status: { type: "string", values: ["running", "awaiting-resume", "awaiting-archive", "failed", "terminated", "archived", "canceled"] as const },
           json: { type: "boolean" },
         },
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Job commands",
           summary: "  job ls [--json]                 全 job 一覧（区分付き運用ビュー）",
@@ -862,7 +862,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         summary: "Show job state",
         flags: {},
         args: [{ name: "jobId|slug", required: true }],
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Job commands",
           summary: "  job show <jobId|slug>           job state 詳細",
@@ -879,7 +879,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         summary: "Wait for a job to settle",
         flags: {},
         args: [{ name: "slug", required: true }],
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Job commands",
           summary: "  job wait <slug>                 job が settle するまで block (process-death gate)",
@@ -906,7 +906,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         },
         args: [{ name: "jobId", required: false }],
         requiresRepo: true,
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Job commands",
           summary: "  job cancel <jobId>              job を cancel して cleanup (--restore-draft で request.md を drafts/ へ復元)",
@@ -949,7 +949,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         },
         args: [{ name: "slug", required: true }],
         worktreeGuard: true,
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Job commands",
           summary: "  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger",
@@ -1043,7 +1043,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         },
         args: [{ name: "slug", required: true }],
         worktreeGuard: true,
-        visibility: "public",
+        visibility: "operator",
         help: {
           group: "Job commands",
           summary: "  job reopen <slug>               awaiting-archive job を指定 step から再開",
@@ -1099,7 +1099,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         },
         requiresRepo: true,
         worktreeGuard: true,
-        visibility: "public",
+        visibility: "operator",
         help: {
           group: "Job commands",
           summary: "  job attach --branch <branch>    remote branch の quiescent checkpoint を attach する",
@@ -1146,7 +1146,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         },
         args: [{ name: "slug", required: true }],
         worktreeGuard: true,
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Job commands",
           summary: "  job archive <slug>              change folder 移動・worktree 撤去・status 更新",
@@ -1191,7 +1191,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         },
         requiresRepo: true,
         worktreeGuard: true,
-        visibility: "public",
+        visibility: "maintenance",
         help: {
           group: "Job commands",
           summary: "  job prune [--force]             orphan worktree・sidecar を列挙（--force で削除）",
@@ -1223,7 +1223,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           json: { type: "boolean" },
         },
         requiresRepo: true,
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Job commands",
           summary: "  job stats [--json]              run 単位の統計（コスト・収束回数・所要時間）を集計",
@@ -1238,7 +1238,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
   config: {
     path: ["config"],
     summary: "Configuration commands",
-    visibility: "public",
+    visibility: "normal",
     children: {
       effective: {
         path: ["config", "effective"],
@@ -1247,7 +1247,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
           type: { type: "string" },
           json: { type: "boolean" },
         },
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Environment commands",
           summary: "  config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source",
@@ -1267,7 +1267,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
   inbox: {
     path: ["inbox"],
     summary: "Inbox commands",
-    visibility: "public",
+    visibility: "normal",
     children: {
       run: {
         path: ["inbox", "run"],
@@ -1282,7 +1282,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         },
         requiresRepo: true,
         worktreeGuard: true,
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Inbox commands",
           summary: "  inbox run                       issue から job を自動発火 (承認ラベル + /resume)",
@@ -1309,7 +1309,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
   rules: {
     path: ["rules"],
     summary: "Rules management commands",
-    visibility: "public",
+    visibility: "normal",
     help: {
       detail: RULES_USAGE,
     },
@@ -1319,7 +1319,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         summary: "Scaffold a rules file",
         flags: {},
         args: [{ name: "step-name rule-slug", required: true, count: 2 }],
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Rules commands",
           summary: "  rules new <step> <slug>         step 用の rules ファイルを scaffold",
@@ -1336,7 +1336,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
   reviewers: {
     path: ["reviewers"],
     summary: "Reviewer management commands",
-    visibility: "public",
+    visibility: "normal",
     help: {
       detail: REVIEWERS_USAGE,
     },
@@ -1346,7 +1346,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         summary: "Scaffold a reviewer definition",
         flags: {},
         args: [{ name: "name", required: true }],
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Reviewer commands",
           summary: "  reviewers new <name>            カスタムレビューワーの雛形を scaffold",
@@ -1362,13 +1362,13 @@ export const COMMANDS: Record<string, CommandSpec> = {
   runtime: {
     path: ["runtime"],
     summary: "Runtime resource management",
-    visibility: "public",
+    visibility: "normal",
     children: {
       setup: {
         path: ["runtime", "setup"],
         summary: "Set up Anthropic runtime",
         flags: {},
-        visibility: "public",
+        visibility: "normal",
         help: {
           group: "Environment commands",
           summary: "  runtime setup|status|reset      Manage Anthropic runtime resources",
@@ -1381,7 +1381,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         path: ["runtime", "status"],
         summary: "Show runtime status",
         flags: {},
-        visibility: "public",
+        visibility: "normal",
         handler: async () => {
           process.exit(await runManagedStatus());
         },
@@ -1392,7 +1392,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         flags: {
           force: { type: "boolean" },
         },
-        visibility: "public",
+        visibility: "normal",
         help: {
           detail: RUNTIME_RESET_USAGE,
         },
@@ -1410,7 +1410,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
       json: { type: "boolean" },
     },
     // requiresRepo: false (default) — doctor is runnable outside a repo
-    visibility: "public",
+    visibility: "normal",
     help: {
       group: "Environment commands",
       summary: "  doctor                          Diagnose environment / config / auth prerequisites",
@@ -1464,7 +1464,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
     summary: "Show request usage",
     flags: {},
     args: [{ name: "slug", required: false }],
-    visibility: "internal",
+    visibility: "operator",
     handler: async (parsed) => {
       const slug = parsed.positional;
       if (slug) {
