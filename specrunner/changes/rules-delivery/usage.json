@@ -1,0 +1,22 @@
+{
+  "commandInvocations": [
+    {
+      "command": "job",
+      "timestamp": "2026-08-16T15:28:22.671Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 406,
+          "outputTokens": 12940,
+          "cacheReadInputTokens": 1055270,
+          "cacheCreationInputTokens": 72824
+        }
+      },
+      "jobId": "86f243f2-9344-4d57-b3ad-6c86b6d3547c",
+      "stepName": "request-review",
+      "numTurns": 31,
+      "durationMs": 275331,
+      "durationApiMs": 274897,
+      "totalCostUsd": 0.7849889999999997
+    }
+  ]
+}
