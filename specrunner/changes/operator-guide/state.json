@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a96538bc-88b8-46f9-be87-ce99ae6721cc",
   "createdAt": "2026-08-16T17:11:25.976Z",
-  "updatedAt": "2026-08-16T18:59:45.835Z",
+  "updatedAt": "2026-08-16T19:01:28.420Z",
   "request": {
     "title": "specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/operator-guide-a96538bc",
   "error": null,
@@ -85,7 +85,8 @@
     "df7828ebf2ff29a8064b881ab5cbbfdab7add5b7",
     "e52f02c1eb77dad5b95af239e721f60efb90aba5",
     "d8a0c816bfcd08bfcb2aade412a8d446a2893daa",
-    "1cf06552d4995e83a7dcd8304a37a503e3b3a9c6"
+    "1cf06552d4995e83a7dcd8304a37a503e3b3a9c6",
+    "ea1ae69bc4ff5ef5bc59c56fb1e1727ab4cb119d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -197,7 +198,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 88,
+    "historyCount": 93,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -212,7 +213,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
