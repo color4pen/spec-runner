@@ -33,8 +33,9 @@ session を塞ぐ問題の確実な解決手段が無く、adapter 側で report
 - session の実体は transcript (`~/.claude/projects/.../<session-id>.jsonl`) であり、
   プロセス kill で失われない。abort teardown は子プロセス (残存 background task を含む) を
   道連れにする (hang した `bun test` のゾンビ残存ゼロ)。
-- SDK の全 message は `session_id` を持つ (`SDKSystemMessage` init 等)。最初の SDK message
-  で sessionId は判明しており、最終 result を待つ必要はない。
+- session 初期化時に送られる `SDKSystemMessage` (init) は `session_id` を持つ。これが最初に
+  到着する SDK message であり、最終 result を待つことなく sessionId を判明させられる
+  (`SDKUserMessage.session_id` は optional であり全 message が持つとは限らない)。
 - executor の verdict 導出 (`src/core/step/step-completion.ts:166-234`) は、reportTool を
   持つ step では `toolResult` から排他的に verdict を導出する。`resultContent` は reportTool
   を持たない step (prose-parse path) でしか使われない。report ok の解釈は executor の責務で、
@@ -123,9 +124,10 @@ main work turn の loop で、`session_id` を持つ最初の SDK message から
 早期確保値を undefined で上書きしないようにする。
 
 - **Rationale**: grace 後 abort 経路には最終 success result が無いため、そこから sessionId を
-  取れない。全 SDK message が `session_id` を持つので init message で確保でき、postWork prompts の
-  `resume: sessionId` が grace 経路でも成立する。resume 時に replay される message の session_id は
-  継続中の同一 session の id であり、早期確保して問題ない。
+  取れない。session 初期化時の `SDKSystemMessage` (init) が `session_id` を持ち、最初に到着する
+  message であるため init で確保でき、postWork prompts の `resume: sessionId` が grace 経路でも
+  成立する。resume 時に replay される message の session_id は継続中の同一 session の id であり、
+  早期確保して問題ない。
 - **Alternatives considered**: abort した subprocess から後追いで sessionId を得る案 — 取得手段が
   ない。却下。
 
@@ -185,3 +187,5 @@ report 受領は watchdog を bump しない。grace は watchdog と独立し�
 なし。abort teardown による background task (孫プロセス) 回収は `bun test` ケースで実測済み。
 他コマンドでの回収確実性は SDK / OS の abort 挙動に依存する既知の天井であり、本変更の
 スコープ (report 保全) を超えない。
+
+<!-- spec-fixer-deferred: [LOW] TC-005: D5 catch path に到達するテスト構成が未記述 test-cases.md は spec-fixer の書き込み許可対象外 (許可: design.md / spec.md / tasks.md のみ)。テスト実装者向けの補足: REPORT_SETTLE_GRACE_MS (60s) < DEFAULT_INACTIVITY_TIMEOUT_MS (900s) のため単純な timer 前進では grace (D3) が先に発火する。D5 catch 経路に到達するには shared abortController.abort() をテスト側から直接呼ぶか、step wall-clock timeout を grace 未満に設定して先に発火させること。 -->
