@@ -549,9 +549,17 @@ export class ClaudeCodeRunner implements AgentRunner {
             `mcp__${REPORT_MCP_SERVER_NAME}__${ctx.policy.reportTool.name}`,
           )
         : "";
+
+    // rules-delivery D4: inject promptRules between baseFullPrompt and completion directive.
+    // Position: after base task / artifacts / resume context, before report_result directive.
+    // Undefined when no delivery:prompt rules exist (no-op, backward compat).
+    const promptRulesSection = ctx.policy?.promptRules
+      ? `\n\n${ctx.policy.promptRules}`
+      : "";
+
     const fullPrompt = firstTurnCompletionDirective
-      ? `${baseFullPrompt}${firstTurnCompletionDirective}`
-      : baseFullPrompt;
+      ? `${baseFullPrompt}${promptRulesSection}${firstTurnCompletionDirective}`
+      : `${baseFullPrompt}${promptRulesSection}`;
 
     // TC-006/TC-007: maxTurns: null → omit maxTurns from options (unlimited)
     // TC-012: step.maxTurns ?? 30 fallback is replaced by getStepExecutionConfig resolution chain

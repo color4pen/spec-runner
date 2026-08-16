@@ -254,6 +254,20 @@ describe("TC-RULES-010: template contains required content", () => {
   });
 });
 
+// ─── TC-023: scaffold に delivery: followup frontmatter が含まれる ───────────
+
+describe("TC-023: rules new scaffold が delivery: followup frontmatter を含む", () => {
+  it("generated file contains delivery: followup in YAML frontmatter", async () => {
+    await invokeExecuteRulesNew("implementer", "delivery-test");
+
+    const filePath = path.join(tempDir, "specrunner", "rules", "implementer", "01-delivery-test.md");
+    const content = await fs.readFile(filePath, "utf-8");
+
+    // TC-023: frontmatter block with delivery: followup
+    expect(content).toMatch(/^---\ndelivery: followup\n---/);
+  });
+});
+
 // ─── TC-RULES-011: README.md (数値プレフィックスなし) を無視 ─────────────────
 
 describe("TC-RULES-011: README.md does not affect numbering", () => {

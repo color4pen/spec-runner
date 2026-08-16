@@ -309,7 +309,8 @@ export class StepExecutor {
     }
 
     // ---------------------------------------------------------------------------
-    // Build agent run context — pure assembly, no control flow, no exceptions.
+    // Build agent run context — pure assembly, no control flow.
+    // NOTE: may throw when a rule file has an unknown delivery value (D6, rules-delivery).
     // ---------------------------------------------------------------------------
     const ctx = await buildStepContext(step, state, deps, cwd, (event: DomainEvent, payload: Record<string, unknown>) => {
       this.events.emit(event, payload as never);

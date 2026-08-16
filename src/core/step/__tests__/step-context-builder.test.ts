@@ -1,13 +1,13 @@
 /**
- * Unit tests for buildStepContext — permission-layer-git-write-denial additions.
+ * Unit tests for buildStepContext.
  *
+ * TC-006: 未指定ルールが従来どおり follow-up に載る (rules-delivery integration, must)
+ * TC-007: delivery: followup も同じく follow-up のみに配送される (rules-delivery integration, must)
+ * TC-008: 未知 delivery 値で buildStepContext が throw する (rules-delivery integration, must)
  * TC-039: scoped step の AgentRunContext に正しい writeScope が設定される (must)
  * TC-040: guarded step の AgentRunContext に正しい writeScope が設定される (must)
  * TC-041: declaredWritePaths に gitState artifact が含まれない (should)
  * TC-042: writes() が undefined の step では declaredWritePaths が空配列になる (should)
- *
- * These tests will FAIL until T-04 implements writeScope computation in buildStepContext.
- * After T-03 adds AgentWriteScope to AgentRunContext and T-04 populates it, they will go green.
  */
 import { describe, it, expect, vi } from "vitest";
 import { buildStepContext, type BuildStepContextFs } from "../step-context-builder.js";
@@ -85,6 +85,117 @@ const stubFsAdapter: BuildStepContextFs = {
 };
 
 const stubEmitFn = vi.fn();
+
+/**
+ * Build a minimal fsAdapter that serves a single rule file for the given step.
+ */
+function ruleFs(stepName: string, ruleContent: string, cwd = "/tmp/test-worktree"): BuildStepContextFs {
+  const rulesDir = `${cwd}/specrunner/rules/${stepName}`;
+  return {
+    readFile: async (filePath: string) => {
+      if (filePath === `${rulesDir}/01-rule.md`) return ruleContent;
+      throw Object.assign(new Error("ENOENT"), { code: "ENOENT" });
+    },
+    readdir: async (dir: string) => {
+      if (dir === rulesDir) return ["01-rule.md"];
+      return [];
+    },
+  };
+}
+
+/** Minimal step fixture that does not declare writes() or needsProjectContext. */
+function makeMinimalStep(name = "spec-review"): import("../../port/step-types.js").AgentStep {
+  return {
+    kind: "agent",
+    name,
+    agent: {
+      name: `specrunner-${name}`,
+      role: name,
+      model: "claude-sonnet-4-6",
+      system: "test",
+      tools: [],
+    },
+    buildMessage: () => "test message",
+    resultFilePath: () => null,
+    parseResult: () => ({ verdict: null, findingsPath: null }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// TC-006: 未指定ルールが従来どおり follow-up に載る
+// ---------------------------------------------------------------------------
+
+describe("TC-006: 未指定ルールが従来どおり follow-up に載る", () => {
+  it("frontmatter なしの rule が policy.postWorkPrompts に載り、promptRules は undefined", async () => {
+    const ruleBody = "rule body without frontmatter";
+    const step = makeMinimalStep("spec-review");
+    const state = makeJobState();
+    const deps = makeDeps();
+    const fs = ruleFs("spec-review", ruleBody);
+
+    const ctx = await buildStepContext(step, state, deps, "/tmp/test-worktree", stubEmitFn, fs);
+
+    expect(ctx.policy.promptRules).toBeUndefined();
+    expect(ctx.policy.postWorkPrompts).toBeDefined();
+    expect(ctx.policy.postWorkPrompts!.length).toBeGreaterThan(0);
+    // rule body appears in the follow-up wrap
+    expect(ctx.policy.postWorkPrompts![0]).toContain(ruleBody);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-007: delivery: followup も同じく follow-up のみに配送される
+// ---------------------------------------------------------------------------
+
+describe("TC-007: delivery: followup も同じく follow-up のみに配送される", () => {
+  it("delivery: followup の rule が postWorkPrompts に載り、promptRules には載らない", async () => {
+    const ruleBody = "explicit followup rule body";
+    const ruleContent = `---\ndelivery: followup\n---\n${ruleBody}`;
+    const step = makeMinimalStep("spec-review");
+    const state = makeJobState();
+    const deps = makeDeps();
+    const fs = ruleFs("spec-review", ruleContent);
+
+    const ctx = await buildStepContext(step, state, deps, "/tmp/test-worktree", stubEmitFn, fs);
+
+    expect(ctx.policy.promptRules).toBeUndefined();
+    expect(ctx.policy.postWorkPrompts).toBeDefined();
+    expect(ctx.policy.postWorkPrompts!.length).toBeGreaterThan(0);
+    // frontmatter-stripped body appears in the follow-up, not the frontmatter line
+    expect(ctx.policy.postWorkPrompts![0]).toContain(ruleBody);
+    expect(ctx.policy.postWorkPrompts![0]).not.toContain("delivery: followup");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-008: 未知 delivery 値で buildStepContext が throw する
+// ---------------------------------------------------------------------------
+
+describe("TC-008: 未知 delivery 値で buildStepContext が throw する", () => {
+  it("delivery: bogus の rule で buildStepContext が例外を投げ AgentRunContext を返さない", async () => {
+    const ruleContent = "---\ndelivery: bogus\n---\nbody of bogus rule";
+    const step = makeMinimalStep("spec-review");
+    const state = makeJobState();
+    const deps = makeDeps();
+    const fs = ruleFs("spec-review", ruleContent);
+
+    await expect(
+      buildStepContext(step, state, deps, "/tmp/test-worktree", stubEmitFn, fs),
+    ).rejects.toThrow();
+  });
+
+  it("例外メッセージに不正値 bogus と許容値が含まれる", async () => {
+    const ruleContent = "---\ndelivery: bogus\n---\nbody of bogus rule";
+    const step = makeMinimalStep("spec-review");
+    const state = makeJobState();
+    const deps = makeDeps();
+    const fs = ruleFs("spec-review", ruleContent);
+
+    await expect(
+      buildStepContext(step, state, deps, "/tmp/test-worktree", stubEmitFn, fs),
+    ).rejects.toThrow(/bogus/);
+  });
+});
 
 // ---------------------------------------------------------------------------
 // TC-039: scoped step のスコープを設定する

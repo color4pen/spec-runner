@@ -360,11 +360,16 @@ export class CodexAgentRunner implements AgentRunner {
     const reportTool: ReportToolSpec | undefined = ctx.policy?.reportTool;
     const outputSchema: object | undefined = reportTool ? buildOutputSchema(reportTool) : undefined;
 
+    // rules-delivery D4: inject promptRules between baseFullPrompt and completion directive.
+    const promptRulesSection = ctx.policy?.promptRules
+      ? `\n\n${ctx.policy.promptRules}`
+      : "";
+
     // Inject completion-report instruction into the main work turn when reportTool is set.
     // The means clause is a single source (buildMainTurnCompletionInstruction) shared with retry prompts.
     const fullPrompt = reportTool
-      ? `${baseFullPrompt}\n\n${buildMainTurnCompletionInstruction()}`
-      : baseFullPrompt;
+      ? `${baseFullPrompt}${promptRulesSection}\n\n${buildMainTurnCompletionInstruction()}`
+      : `${baseFullPrompt}${promptRulesSection}`;
 
     // Resolve transient retry config
     const { maxRetries, baseDelayMs } = resolveTransientRetryConfig(ctx.config);

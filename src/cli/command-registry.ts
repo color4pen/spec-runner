@@ -276,6 +276,26 @@ Ordering:
   The numeric prefix determines follow-up execution order (ascending).
   Tip: place your most important rules last to leverage recency bias.
 
+Delivery:
+  Each rule file may declare a delivery mode in its YAML frontmatter:
+
+    ---
+    delivery: followup
+    ---
+
+  delivery: followup (default)
+    The rule is delivered as a post-work follow-up prompt after the main
+    work turn completes. Use for post-hoc verification and style checks.
+
+  delivery: prompt
+    The rule is injected into the main work prompt before the agent starts,
+    after artifacts and resume context but before the completion directive.
+    Use for behavioral constraints that must be active during the work turn
+    (e.g. forbidden commands, off-limits files, mandatory tool usage).
+
+  Files without a delivery frontmatter default to followup (backward compat).
+  An unknown delivery value causes the step to fail before the agent starts.
+
 Examples:
   specrunner rules new implementer no-inline-comment
   specrunner rules new code-review prefer-explicit-types

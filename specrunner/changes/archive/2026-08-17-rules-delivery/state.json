@@ -1,0 +1,281 @@
+{
+  "version": 2,
+  "jobId": "86f243f2-9344-4d57-b3ad-6c86b6d3547c",
+  "createdAt": "2026-08-16T15:23:37.377Z",
+  "updatedAt": "2026-08-16T17:05:36.414Z",
+  "request": {
+    "title": "rules の配送方式に delivery: prompt を追加する — 行動制約型ルールを main prompt に前置注入する",
+    "type": "spec-change",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/rules-delivery-86f243f2",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "b7c5ae22d4d7634b4f2d03dd5bbb8a16afddbf83",
+    "874db54d5e9d064090a34299dcf6db3e9e3a25d5",
+    "ba2f45acaef0faff0a1e987a1da5b2e9a5682e45",
+    "7fd165338504105462d960ca5530dccd25086ce2",
+    "da7b645911f6c8cfb311decce8f6d336101efe26",
+    "a2bd2436d39a4e3b7feb664131740fddaf07d688",
+    "08f4af98192ab894aeae979516eb35a4ce7f9958",
+    "953e6025833cf38d6bdbd74184807967c2a9ebd1",
+    "7c4fcaa1e48530baf7292f1d9cb76e7e2e5db1c2",
+    "6f0d7f77bd18c30fea33836850d5891e44e60f3e",
+    "843167a512c6ff609d2d077f9831caa90e398ffd",
+    "958aca05a3c9162fb470a4c33d201794b04aef62",
+    "c53f0178204613acbfe679908ac42c246480e598",
+    "3af78b77180ae604b9b3a4c30b8df49ad0ddf446",
+    "976312e222858e9df276a12afad698cff4bfa105",
+    "c7772cc8565d3b45c9ec989655094d8afabaa6bd",
+    "d7c77df66fab4eadf4ec96067353849444e65f01",
+    "7c105de87da4ded8df593aef413f5d9fcb4e4533",
+    "d8b593b846bad7df73b5811c3aa95261f04ebdb0",
+    "fdd3b883909e7e1d2adba93ee4490711b92830d0",
+    "650f6b6a077b17432e4c8e5e3256eba8dca1c112",
+    "0bcf0b96507c4b4e277a25c28b17e62a4d8fe6a5"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/step/rules-resolve.ts",
+      "src/core/step/rules-followup-prompts.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "specrunner/rules/implementer/02-test-command.md",
+      "src/core/port/agent-runner.ts",
+      "specrunner/adr/2026-05-24-per-step-rule-followup.md",
+      "src/core/command/rules-new.ts",
+      "src/cli/command-registry.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "src/core/step/__tests__/step-context-builder.test.ts",
+      "tests/unit/core/command/rules-new.test.ts"
+    ],
+    "design": [
+      "src/core/step/rules-resolve.ts",
+      "src/core/step/rules-followup-prompts.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/command/rules-new.ts",
+      "specrunner/adr/2026-05-24-per-step-rule-followup.md",
+      "specrunner/rules/implementer/02-test-command.md",
+      "src/adapter/shared/prompt-builder.ts",
+      "src/adapter/claude-code/completion-directive.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "tests/core/step/rules-resolve.test.ts",
+      "src/core/reviewers/definition.ts",
+      "tests/unit/core/step/post-work-prompt-invariant.test.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/cli/command-registry.ts"
+    ],
+    "test-case-gen": [
+      "src/core/step/__tests__/step-context-builder.test.ts",
+      "src/adapter/claude-code/__tests__/artifact-bundle-injection.test.ts"
+    ],
+    "spec-review": [
+      "src/core/step/rules-resolve.ts",
+      "src/core/step/rules-followup-prompts.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "specrunner/rules/implementer/02-test-command.md",
+      "src/core/reviewers/definition.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/core/step/__tests__/step-context-builder.test.ts",
+      "specrunner/adr/2026-05-24-per-step-rule-followup.md",
+      "src/core/command/rules-new.ts",
+      "tests/unit/core/command/rules-new.test.ts",
+      "src/cli/command-registry.ts",
+      "src/adapter/claude-code/completion-directive.ts",
+      "src/adapter/shared/prompt-builder.ts",
+      "tests/core/step/rules-resolve.test.ts",
+      "tests/unit/core/step/post-work-prompt-invariant.test.ts",
+      "src/adapter/claude-code/__tests__/artifact-bundle-injection.test.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      "src/core/step/rules-resolve.ts",
+      "src/core/step/rules-followup-prompts.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/__tests__/step-context-builder.test.ts",
+      "src/core/reviewers/definition.ts",
+      "specrunner/rules/implementer/02-test-command.md",
+      "src/adapter/claude-code/__tests__/artifact-bundle-injection.test.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/core/command/rules-new.ts",
+      "tests/unit/core/command/rules-new.test.ts",
+      "src/cli/command-registry.ts",
+      "tests/unit/core/step/rules-followup-prompts.test.ts",
+      "src/adapter/claude-code/completion-directive.ts",
+      "tests/unit/core/step/post-work-prompt-invariant.test.ts",
+      "src/core/step/rules-delivery.ts",
+      "tests/core/step/rules-delivery.test.ts",
+      "src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts"
+    ],
+    "code-review": [
+      "src/core/step/rules-delivery.ts",
+      "tests/core/step/rules-delivery.test.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts",
+      "specrunner/rules/implementer/02-test-command.md",
+      "src/core/step/__tests__/step-context-builder.test.ts",
+      "src/core/command/rules-new.ts"
+    ],
+    "code-fixer": [
+      "src/adapter/managed-agent/agent-runner.ts",
+      "src/adapter/managed-agent/__tests__/prompt-rules-injection.test.ts",
+      "src/core/port/session-client.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/__tests__/step-context-builder.test.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/rules-delivery.ts",
+      "src/core/step/executor.ts",
+      "src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts",
+      "src/adapter/managed-agent/__tests__/prompt-rules-injection.test.ts"
+    ],
+    "conformance": [
+      "src/core/step/rules-delivery.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/port/agent-runner.ts",
+      "specrunner/rules/implementer/02-test-command.md",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts",
+      "tests/core/step/rules-delivery.test.ts",
+      "src/core/step/__tests__/step-context-builder.test.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/core/command/rules-new.ts",
+      "src/cli/command-registry.ts",
+      "tests/unit/core/command/rules-new.test.ts",
+      "src/adapter/managed-agent/__tests__/prompt-rules-injection.test.ts",
+      "src/adapter/codex/__tests__/prompt-rules-injection.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-05-24-per-step-rule-followup.md",
+      "src/core/step/rules-delivery.ts",
+      "specrunner/adr/2026-08-17-rules-delivery.md"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "3af78b77180ae604b9b3a4c30b8df49ad0ddf446",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/rules-delivery/design.md:sha256:739472a213b2509f86c863773067d982a65e47e40eb1326723a46b4eb1ffade8|specrunner/changes/rules-delivery/request.md:sha256:c8b0722ea02f1b7877a4a649c7643c4ed7453891d1b5cbeaed3b806feaa9c3bf|specrunner/changes/rules-delivery/spec.md:sha256:2d78e6752c3568de84d4cfe14ef8c2a499abad72026fb4ef7e4ec5f102dcaf36|specrunner/changes/rules-delivery/tasks.md:sha256:0171c2e8f4399b78b20c269db94aa3c21de9bf8388c65f3590f0fd4ab9052b2f|specrunner/changes/rules-delivery/test-cases.md:sha256:e85e9086e49c258d68983df32eb6b3fa676a5b33859b4df0db0b164a6000dcac"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "cross-boundary-invariants の 3 findings への対応。\n\nF1 (HIGH): src/core/step/step-context-builder.ts のモジュール冒頭コメント「Contains NO control-flow early returns, no exceptions, no state mutations」を実態に合わせて修正する — splitRulesByDelivery が unknown delivery 値で throw する旨を明記(例:「throws on invalid rule frontmatter (unknown delivery value); callers rely on executor try/catch」)。executor.ts の呼び出しサイトコメント「pure assembly, no control flow, no exceptions」も同様に更新。spec-review-prior-round-context.test.ts の TC-024 の記述文(describe/it 文言やコメント)が『buildStepContext は throw しない』と無条件に主張しているなら『valid rules では throw しない』に文言だけ直す。assertion 自体は変更しない。\n\nF2 (MEDIUM): TC-017(managed adapter)と TC-018(codex adapter)の promptRules 注入位置テストを実装する。claude-code の src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts と同じ観点(promptRules が base/artifacts/resume の後・completion directive の前に入ること、promptRules 無しなら prompt 不変)を、それぞれ src/adapter/managed-agent/__tests__/ と src/adapter/codex/__tests__/ に追加する。\n\nF3 (LOW): design D2 で採択済みの重複は維持する(統合しない)。その代わり src/core/step/rules-delivery.ts の splitFrontmatter と src/core/reviewers/definition.ts(相当箇所)の双方に、相互参照コメント 1 行(『同じ frontmatter 規約の実装が <相手 file> にもある。規約を変える時は両方更新』)を追加する。\n\nスコープ: 上記 file 群のみ。既存 assertion の弱体化禁止。test-cases.md 等の保護正典は触らない。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-16T16:23:26.642Z"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1007",
+    "number": 1007,
+    "createdAt": "2026-08-16T17:05:35.494Z"
+  },
+  "_journal": {
+    "historyCount": 87,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 2,
+      "code-review": 2,
+      "code-fixer": 3,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 1,
+      "custom-reviewers": 2,
+      "regression-gate": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

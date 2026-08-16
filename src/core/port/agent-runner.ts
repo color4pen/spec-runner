@@ -97,6 +97,18 @@ export interface AgentRunPolicy {
    * D3 (step-completion-verification): follow-up repair seam in AgentRunPolicy.
    */
   outputVerification?: OutputVerificationPolicy;
+  /**
+   * Provider-neutral main-work-prompt injection for `delivery: prompt` rules.
+   *
+   * Framing済みの 1 ブロック文字列。buildStepContext が buildRulesPromptSection で組み立て、
+   * adapter が自身の completion directive の直前に挿入する。
+   *
+   * Distinct from postWorkPrompts: delivery: prompt rules are NEVER added to
+   * postWorkPrompts (no duplicate delivery). When undefined, no injection occurs.
+   *
+   * D3 (rules-delivery): added as optional field for full backward compatibility.
+   */
+  promptRules?: string;
 }
 
 /**

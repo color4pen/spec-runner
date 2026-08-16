@@ -1,3 +1,7 @@
+---
+delivery: prompt
+---
+
 ## テスト実行コマンド
 
 - テストの実行は必ず `bun run test`(= vitest run)を使う。ファイル指定は `bun run test -- <path>`
