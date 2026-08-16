@@ -395,6 +395,24 @@
       "durationMs": 404292,
       "durationApiMs": 316148,
       "totalCostUsd": 1.49847885
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-16T07:51:28.165Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 19,
+          "outputTokens": 11074,
+          "cacheReadInputTokens": 722711,
+          "cacheCreationInputTokens": 109017
+        }
+      },
+      "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
+      "stepName": "adr-gen",
+      "numTurns": 11,
+      "durationMs": 129550,
+      "durationApiMs": 128811,
+      "totalCostUsd": 0.34932149999999995
     }
   ]
 }

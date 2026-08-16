@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T07:47:22.165Z",
+  "updatedAt": "2026-08-16T07:51:32.732Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/auth-setup-ux-701673a2",
   "error": null,
   "pipelineId": "standard",
@@ -91,7 +91,8 @@
     "08dae60922b363a2e2975d0dbdb2ed69eee9e145",
     "0f3f42ee38abcf52c145ab8102e78ee3bec3cc3d",
     "1a3ef93267895b6f404df42eba12d68afd690d90",
-    "178bf5d09480a83e438fbec7f8fb9f3a02dcf014"
+    "178bf5d09480a83e438fbec7f8fb9f3a02dcf014",
+    "b47002a4f8d9d785f378fc405d5b232aef0fda78"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -242,6 +243,11 @@
       "src/core/doctor/checks/config/managed-key-present.ts",
       "src/core/doctor/checks/agents/agent-provider-alive.ts",
       "src/cli/__tests__/login.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-05-20-cli-noun-verb-restructure.md",
+      "specrunner/adr/2026-05-19-adr-numbering-removal.md",
+      "specrunner/adr/2026-08-16-auth-setup-ux.md"
     ]
   },
   "reviewerStatuses": [
@@ -281,8 +287,13 @@
       "recordedAt": "2026-08-16T06:52:27.935Z"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1001",
+    "number": 1001,
+    "createdAt": "2026-08-16T07:51:31.743Z"
+  },
   "_journal": {
-    "historyCount": 128,
+    "historyCount": 133,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -298,7 +309,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 3,
       "regression-gate": 3,
-      "conformance": 2
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
