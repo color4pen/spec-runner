@@ -1,0 +1,6 @@
+{"type":"transition","ts":"2026-08-16T04:59:46.514Z","step":"init","status":"started","message":"job created"}
+{"type":"transition","ts":"2026-08-16T04:59:49.905Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
+{"type":"interruption","reason":"timeout","ts":"2026-08-16T05:16:12.326Z"}
+{"type":"transition","ts":"2026-08-16T05:16:12.326Z","step":"executor","status":"ok","message":"running → awaiting-resume: timeout"}
+{"type":"transition","ts":"2026-08-16T05:16:12.328Z","step":"request-review-timeout","status":"error","message":"request-review timed out: Step 'request-review' inactivity timeout: no agent event for 909464ms"}
+{"type":"step-attempt","step":"request-review","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"STEP_TIMEOUT","message":"Step 'request-review' inactivity timeout: no agent event for 909464ms","hint":"no tool observed before timeout (no tool activity in session)"},"transientRetryAttempts":0},"startedAt":"2026-08-16T04:59:49.967Z","endedAt":"2026-08-16T05:16:12.322Z"}
