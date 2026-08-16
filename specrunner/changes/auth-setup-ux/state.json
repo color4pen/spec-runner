@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T06:52:28.098Z",
+  "updatedAt": "2026-08-16T07:09:26.647Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/auth-setup-ux-701673a2",
   "error": null,
@@ -78,7 +78,9 @@
     "bc653e4f3180d5eba2ff56fb279f1d2991eefe0d",
     "9b12068a07b1c7caaf57b8eeb85a6dcd203dd39a",
     "dc64275ac5fae5b15109b5765c122683aced4574",
-    "27f9a63b3a9698539357f54f355855e856038261"
+    "27f9a63b3a9698539357f54f355855e856038261",
+    "99624338e7d3bb4a977b4c1303471f3e46999a2c",
+    "4ccda1c1c2614a336a71069ead82c013541bd961"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -202,14 +204,24 @@
       "src/core/doctor/next-steps.ts"
     ],
     "code-fixer": [
-      "tests/credentials.test.ts"
+      "src/util/secret-input.ts",
+      "src/cli/login.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/command-registry.ts",
+      "tests/credentials.test.ts",
+      "tests/unit/cli/login.test.ts",
+      "tests/unit/cli/removed-commands.test.ts",
+      "tests/dead-guidance.test.ts",
+      "tests/unit/cli/flag-parser.test.ts",
+      "src/cli/bootstrap.ts",
+      "bin/specrunner.ts"
     ]
   },
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "99624338e7d3bb4a977b4c1303471f3e46999a2c",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -219,7 +231,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/auth-setup-ux/design.md:sha256:29c337004ca3fd656cba53c74e1bb66b8d4c89ddac0ac6812eeebb58b754e69c|specrunner/changes/auth-setup-ux/request.md:sha256:7e91ccbb74cfdb8308f9d449003fb328ff66cfc02ae665bf19ca4ee6644aaa9d|specrunner/changes/auth-setup-ux/spec.md:sha256:992984ee3d8d15671773a37bdb0c7e866df65838b0377e3132cd874588b16edc|specrunner/changes/auth-setup-ux/tasks.md:sha256:34ad12d71662e7dfd9127d6cc257f168cc3767fba464151b739a005cee684641|specrunner/changes/auth-setup-ux/test-cases.md:sha256:ef98ef0191271eca45b77ecb91eada35d5079a33b87d9dbecad9aed99e0b4fd6"
     },
     {
       "name": "scale-tolerance",
@@ -242,7 +255,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 66,
+    "historyCount": 75,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -253,10 +266,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
