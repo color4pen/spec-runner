@@ -28,7 +28,7 @@ Each file records:
 | top command | status | current direction |
 | --- | --- | --- |
 | `init` | reviewed | KEEP; provider choice stays scaffold concern, but current flag semantics need cleanup |
-| `login` | pending | auth/setup UX request is changing this surface |
+| `login` | reviewed | KEEP as GitHub-only login; move headless credential storage out and remove config side effect |
 | `run` | pending | decide whether this is the product's primary verb or only a compatibility alias |
 | `request` | pending | authoring surface |
 | `job` | pending | execution/lifecycle surface; largest group |
@@ -47,6 +47,8 @@ Each file records:
 - Deprecated compatibility flags currently remain indistinguishable from active flags in the registry. A future command contract should be able to mark hidden/deprecated migration surfaces explicitly.
 - Guidance strings in runtime/doctor code can name commands independently of the registry. This is how dead command guidance such as `login --provider anthropic` survived.
 - Config JSON is the source of truth; `config effective` is a read-only resolution/source-attribution view. Avoid inventing CLI-only configuration concepts that do not exist in the schema.
+- Commands should mutate only state implied by their verb. `login` creating global config is an example of setup convenience outliving its ownership boundary.
+- Credential setup must respect the same source precedence as runtime resolution. Writing a lower-priority credential must not be reported as a successful repair while a higher-priority invalid source still shadows it.
 - The likely architectural target is a machine-readable command spec from which parsing, detailed help, parent/top-level help, aliases/deprecations, and guide command validation can be derived. Avoid per-command class hierarchy; the goal is one interface contract, not more ceremony.
 
 ## Review order
