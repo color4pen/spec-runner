@@ -12,7 +12,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { EventEmitter, Readable, Writable } from "node:stream";
+import { EventEmitter } from "node:events";
+import { Readable, Writable } from "node:stream";
 
 let tempDir: string;
 let originalXdgConfigHome: string | undefined;

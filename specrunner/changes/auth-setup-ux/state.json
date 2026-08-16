@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T06:32:44.555Z",
+  "updatedAt": "2026-08-16T06:39:37.441Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/auth-setup-ux-701673a2",
   "error": null,
@@ -74,7 +74,8 @@
     "07ab5a7c63600694846ff9b625c288f8fe85dcc2",
     "bc187a210cc41318c7a6543aca0ca3fb639fb0a9",
     "e44c329a38cf1d364bd1241a5fe461cc056c8086",
-    "ec81ecce5f6a1e9cb366db95dcb8320f05fc4a5c"
+    "ec81ecce5f6a1e9cb366db95dcb8320f05fc4a5c",
+    "bc653e4f3180d5eba2ff56fb279f1d2991eefe0d"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -168,10 +169,38 @@
       "src/core/verification/changed-line-coverage.ts",
       "src/cli/bootstrap.ts",
       "bin/specrunner.ts"
+    ],
+    "code-review": [
+      "src/cli/login.ts",
+      "src/cli/credentials.ts",
+      "src/util/secret-input.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/init.ts",
+      "src/core/doctor/formatter.ts",
+      "src/core/doctor/checks/config/claude-code-token-present.ts",
+      "src/core/doctor/checks/config/managed-key-present.ts",
+      "src/core/doctor/checks/auth/managed-key-valid.ts",
+      "src/core/doctor/checks/agents/agent-provider-alive.ts",
+      "src/core/runtime/prereqs.ts",
+      "tests/unit/cli/login.test.ts",
+      "tests/credentials.test.ts",
+      "tests/dead-guidance.test.ts",
+      "tests/hint-command-existence.test.ts",
+      "tests/doctor-readiness.test.ts",
+      "tests/init-provider-notice.test.ts",
+      "tests/readme-quickstart.test.ts",
+      "src/cli/__tests__/login.test.ts",
+      "README.md",
+      "src/core/credentials/github.ts",
+      "src/core/doctor/checks/agents/environment-provider-alive.ts",
+      "src/core/credentials/anthropic.ts",
+      "src/core/credentials/credentials-io.ts",
+      "src/core/doctor/next-steps.ts"
     ]
   },
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 55,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -180,7 +209,8 @@
       "spec-fixer": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2
+      "verification": 2,
+      "code-review": 1
     }
   }
 }
