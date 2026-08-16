@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "41cec64c-d6d8-4b2a-af76-b4f1f8237d1f",
   "createdAt": "2026-08-16T13:32:08.572Z",
-  "updatedAt": "2026-08-16T15:00:40.058Z",
+  "updatedAt": "2026-08-16T15:04:32.330Z",
   "request": {
     "title": "agent step の完了契機を report 受領主・プロセス終了 fallback の二重系にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/report-settles-step-41cec64c",
   "error": null,
@@ -80,7 +80,8 @@
     "5b21d58235fcf7365c4e51e2f344201b990fc9a2",
     "1c39ec74e1a9207c554c87ceede36492e49b5816",
     "100237a7aa865502cb853eeda48e12e3f727bd42",
-    "7c0da1825a70e7f11f2c8cdd8501af9d203dad57"
+    "7c0da1825a70e7f11f2c8cdd8501af9d203dad57",
+    "5b0aa7a073902ae17502b36b46913e8f11577055"
   ],
   "touchedFiles": {
     "request-review": [
@@ -123,7 +124,8 @@
       "src/core/port/report-result.ts"
     ],
     "code-fixer": [
-      "src/adapter/claude-code/agent-runner.ts"
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-report-settles.test.ts"
     ],
     "regression-gate": [
       "src/adapter/claude-code/agent-runner.ts",
@@ -170,7 +172,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 75,
+    "historyCount": 79,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -181,7 +183,7 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
