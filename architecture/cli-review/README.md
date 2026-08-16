@@ -27,12 +27,12 @@ Each file records:
 
 | top command | status | current direction |
 | --- | --- | --- |
-| `init` | reviewed | KEEP; provider/default ownership needs `config` review |
+| `init` | reviewed | KEEP; provider choice stays scaffold concern, but current flag semantics need cleanup |
 | `login` | pending | auth/setup UX request is changing this surface |
 | `run` | pending | decide whether this is the product's primary verb or only a compatibility alias |
 | `request` | pending | authoring surface |
 | `job` | pending | execution/lifecycle surface; largest group |
-| `config` | pending | configuration/inspection surface |
+| `config` | reviewed | KEEP as read/diagnostic namespace; do not add generic setter just to absorb init provider |
 | `inbox` | pending | unattended operation |
 | `rules` | pending | extension surface |
 | `reviewers` | pending | extension surface |
@@ -43,14 +43,15 @@ Each file records:
 ## Cross-cutting observations already visible
 
 - `COMMANDS` is structured data, but top-level `USAGE` is separately handwritten. They already drift: implemented paths such as `job reopen`, `usage`, and the inline `doctor repair` path are not represented consistently in top help.
-- Command-specific help is optional. Commands without `usage` fall back to `NO_DETAILED_HELP_USAGE`, so a registered command can accept flags that `specrunner <command> --help` does not explain.
+- Command-specific and parent-command help is optional. Commands such as `init` and parents such as `config` can therefore expose behavior that `--help` does not describe structurally.
 - Deprecated compatibility flags currently remain indistinguishable from active flags in the registry. A future command contract should be able to mark hidden/deprecated migration surfaces explicitly.
 - Guidance strings in runtime/doctor code can name commands independently of the registry. This is how dead command guidance such as `login --provider anthropic` survived.
-- The likely architectural target is a machine-readable command spec from which parsing, detailed help, top-level help, aliases/deprecations, and guide command validation can be derived. Avoid per-command class hierarchy; the goal is one interface contract, not more ceremony.
+- Config JSON is the source of truth; `config effective` is a read-only resolution/source-attribution view. Avoid inventing CLI-only configuration concepts that do not exist in the schema.
+- The likely architectural target is a machine-readable command spec from which parsing, detailed help, parent/top-level help, aliases/deprecations, and guide command validation can be derived. Avoid per-command class hierarchy; the goal is one interface contract, not more ceremony.
 
 ## Review order
 
-1. setup/auth: `init`, `login`, `doctor`, `config`, `runtime`
+1. setup/auth: `init`, `config`, `login`, `doctor`, `runtime`
 2. authoring: `request`
 3. execution/lifecycle: `run`, `job`
 4. unattended/extensions: `inbox`, `rules`, `reviewers`
