@@ -11,11 +11,17 @@
 本文からは frontmatter を除去する。CLI は rule 本文の内容 SHALL NOT を解釈・検証しない
 （配送 metadata のみ解釈する）。
 
-#### Scenario: frontmatter が本文から除去される
+#### Scenario: frontmatter が本文から除去される（prompt 配送）
 
 **Given** frontmatter `---\ndelivery: prompt\n---` を持つ rule ファイル
 **When** buildStepContext がそのファイルを配送分類する
 **Then** agent へ渡す rule 本文には `---` 区切りの frontmatter ブロックが含まれず、frontmatter より後の本文のみが残る
+
+#### Scenario: frontmatter が本文から除去される（followup 配送）
+
+**Given** frontmatter `---\ndelivery: followup\n---` を持つ rule ファイル
+**When** buildStepContext がそのファイルを配送分類する
+**Then** agent へ渡す rule 本文には `---` 区切りの frontmatter ブロックが含まれず、frontmatter より後の本文のみが policy.postWorkPrompts に渡される
 
 #### Scenario: frontmatter の無いファイルは全体が本文
 

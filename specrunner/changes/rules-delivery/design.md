@@ -127,7 +127,7 @@ prompt 配送用に以下の最小 framing を新設する（文言を本 design
 `delivery` が `followup` / `prompt` 以外の値のとき、`buildStepContext` が構築段階で例外を投げる。`buildStepContext` は adapter の `run()` より前に呼ばれるため、agent は起動せず step 実行前に fail する（StepExecutor が error lifecycle として halt する）。
 
 - 例外は分類 pure 関数が投げ、`buildStepContext` はそのまま伝播させる。
-- メッセージは step 名・不正値・許容値・本文冒頭行（locator）を含める。
+- メッセージは不正値・許容値・本文冒頭行（locator）を含める。
 
 **Rationale**: silent fallback（未知値を followup 扱い等）は、typo した行動制約ルールが「配送されているつもりで届かない」事故を再発させる。まさに本 change が潰す failure mode なので、明示 fail が唯一整合する。
 
