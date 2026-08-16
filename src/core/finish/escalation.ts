@@ -1,7 +1,7 @@
 /**
  * Escalation formatter for finish command.
- * TC-023: formatEscalation must include 4 required fields:
- *   failedStep, detectedState, recommendedAction, resumeCommand
+ * TC-023: formatEscalation must include 5 required fields:
+ *   failedStep, detectedState, recommendedAction, resumeCommand, guide escalation hint
  */
 
 export interface EscalationParams {

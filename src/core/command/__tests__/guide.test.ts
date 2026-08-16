@@ -455,14 +455,6 @@ describe("TC-011: 薄いトリガー化", () => {
 
 // ============================================================================
 // TC-012: 廃止 skill とコマンド文字列の不在
-// NOTE: The sandbox environment prevents directory deletion.
-// parallel-request-workflow/SKILL.md has been tombstoned (marked DEPRECATED).
-// This test verifies:
-//   (a) if the directory exists, the SKILL.md is a tombstone (DEPRECATED marker)
-//   (b) no deprecated commands appear in any skill file
-// The spec requires the directory to not exist (SHALL); if deletion becomes
-// possible, the directory should be removed. This test is modified from the
-// ideal "directory must not exist" check due to sandbox write restrictions.
 // ============================================================================
 
 describe("TC-012: 廃止 skill とコマンド文字列の不在", () => {
@@ -470,16 +462,8 @@ describe("TC-012: 廃止 skill とコマンド文字列の不在", () => {
   const skillsDir = path.join(__dirname, "../../../../.claude/skills");
   const prwDir = path.join(skillsDir, "parallel-request-workflow");
 
-  it("TC-012: parallel-request-workflow directory does not exist OR is tombstoned (DEPRECATED marker)", () => {
-    if (fs.existsSync(prwDir)) {
-      // Directory exists — must be tombstoned
-      const skillFile = path.join(prwDir, "SKILL.md");
-      const content = fs.readFileSync(skillFile, "utf-8");
-      expect(content).toContain("DEPRECATED");
-    } else {
-      // Directory doesn't exist — ideal state
-      expect(fs.existsSync(prwDir)).toBe(false);
-    }
+  it("TC-012: parallel-request-workflow directory does not exist", () => {
+    expect(fs.existsSync(prwDir)).toBe(false);
   });
 
   it("TC-012: no skill file contains deprecated 'request review' command", () => {

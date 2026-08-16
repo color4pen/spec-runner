@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a96538bc-88b8-46f9-be87-ce99ae6721cc",
   "createdAt": "2026-08-16T17:11:25.976Z",
-  "updatedAt": "2026-08-16T18:50:04.757Z",
+  "updatedAt": "2026-08-16T18:51:24.454Z",
   "request": {
     "title": "specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/operator-guide-a96538bc",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,9 @@
     "102984ad138c324abf583d7edc4f0cf85b19d487",
     "e53924531870810ddc01bfaf64f84c733c530fcf",
     "2ce5af8ffca7b6840e11d57bead319e4fcb9dbc8",
-    "100e9261f7be794bff1ad4f8a1b01bcf5fa740e4"
+    "100e9261f7be794bff1ad4f8a1b01bcf5fa740e4",
+    "73d4bba86bdc101dc7500e4a5fb675bcb1b95e1f",
+    "4b6b72698fd796906faf14a61e92ab74ead75996"
   ],
   "touchedFiles": {
     "request-review": [
@@ -146,17 +148,18 @@
       "src/cli/__tests__/init-snippet.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
       "text": "code-review の 3 findings への対応(review-feedback-001.md 参照)。\n\nF1: TC-013 の inline 抽出に掛からない 5 topic(merge / audit / setup / request / inject)について、findings の表に列挙された主要コマンド(job ls / job archive --with-merge / job ls --all / init / doctor / credentials set / request template / request validate / rules new / reviewers new / config effective)を resolveCommand([...]) で直接実在 assert する test case を guide.test.ts に追加する。guide 本文は変更しない。TC-013 自体も変更しない。\n\nF2: src/cli/command-registry.ts の guide help summary 行の topic 列挙 '(topics: jobs merge ...)' を手書きでなく GUIDE_TOPICS から導出する(例: template literal で GUIDE_TOPICS.map(t => t.name).join(' '))。加えて、全 topic.name が USAGE に含まれることを assert する test を追加し、topic 追加・改名時の drift を噛む。\n\nF3: runInit の標準出力が buildClaudeMdSnippet() の内容を含むことを固定する統合テストを追加する(builder 単体 TC-009 は残す)。既存 init テストの mock 構成に倣うこと。\n\nスコープ: guide.test.ts / command-registry.ts / init 系テストのみ。guide 本文・GUIDE_TOPICS 定義・既存 assertion は変更しない。",
       "step": "code-fixer",
       "recordedAt": "2026-08-16T18:32:02.348Z"
+    },
+    {
+      "text": "cross-boundary の残 2 findings への対応。\n\n1. operator が .claude/skills/parallel-request-workflow/ を削除する commit を採択済み。guide.test.ts の TC-012 を『ディレクトリが存在しない OR DEPRECATED marker』の緩い条件から『ディレクトリが存在しないこと』の厳密 assert に締める。テスト内の tombstone 妥協を説明するコメントも削除する。\n\n2. src/core/finish/escalation.ts のファイル先頭コメント『TC-023: formatEscalation must include 4 required fields』を実装(guide 導線を含む 5 要素)に合わせて更新する。\n\nスコープ: guide.test.ts と escalation.ts のコメントのみ。他の assertion・guide 本文は変更しない。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-16T18:51:24.319Z"
     }
   ],
   "reviewerStatuses": [
@@ -189,7 +192,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 69,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
