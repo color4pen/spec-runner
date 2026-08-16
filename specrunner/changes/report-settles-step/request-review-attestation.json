@@ -1,0 +1,14 @@
+{
+  "requestHash": "sha256:6260a79f6ae58fa1714dc2cede8a69fa43f3ac3a99c7df0d7b734627a80d37f8",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/adapter/claude-code/agent-runner.ts:563-588 — capturedToolResult closure capture in MCP handler",
+    "src/adapter/claude-code/agent-runner.ts:677-680 — for-await loop has no capturedToolResult break condition",
+    "src/adapter/claude-code/agent-runner.ts:1136-1154 — watchdog abort catch returns toolResult: null, discarding capturedToolResult",
+    "src/adapter/claude-code/agent-runner.ts:904-921 — extractedSessionId/modelUsage/metrics extracted only from subtype:success result",
+    "src/adapter/claude-code/agent-runner.ts:931-951 — report retry follow-up uses resume: extractedSessionId",
+    "src/adapter/shared/inactivity-watchdog.ts:12 — DEFAULT_INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000 = 900000ms",
+    "src/adapter/codex/agent-runner.ts:15-16,164-184 — codex uses outputSchema/tryExtractToolResult, no session residue structure"
+  ],
+  "sourceRevision": "bb435a1c1c8dced532c6a699726cf08388098128"
+}
