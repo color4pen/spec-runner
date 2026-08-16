@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f635fe90-7726-47f0-96f7-1a727cd0610a",
   "createdAt": "2026-08-16T08:44:36.107Z",
-  "updatedAt": "2026-08-16T13:24:21.885Z",
+  "updatedAt": "2026-08-16T13:28:21.341Z",
   "request": {
     "title": "CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/cli-command-spec-f635fe90",
   "error": null,
@@ -80,7 +80,8 @@
     "d28d50d37043c8ffe6a851edb3c071831e861f1f",
     "d382cbfe04063701361aa91de8081c03df644900",
     "9c3bf38bd0184182488e8ca5cd4259f0cb4a9961",
-    "c814f9505586440a317ac44153bde60f2e9e1588"
+    "c814f9505586440a317ac44153bde60f2e9e1588",
+    "79bc3abaabc97b2bbd7a7cbd3d9591210d7a1bff"
   ],
   "touchedFiles": {
     "request-review": [
@@ -207,7 +208,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 82,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -222,7 +223,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
