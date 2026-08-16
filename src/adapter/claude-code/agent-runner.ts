@@ -841,6 +841,8 @@ export class ClaudeCodeRunner implements AgentRunner {
             `[specrunner] warn: session resume failed for '${step.name}' (session: ${ctx.session.resumeSessionId}): ${(innerErr as Error).message}. Falling back to new session.`,
           );
           delete queryOptions["resume"];
+          // T-02: reset so the fallback session's init message is captured as the new sessionId.
+          extractedSessionId = undefined;
           return maybeThrowTransientResult(await runQuery());
         }
         throw innerErr;
@@ -1213,6 +1215,7 @@ export class ClaudeCodeRunner implements AgentRunner {
       if (abortController.signal.aborted && capturedToolResult !== null) {
         clearTimeout(timeoutId);
         logVerbose("session", "query aborted with captured report — settling success", { stepName: step.name, runtime: "local" });
+        sessionLogWriter?.writeSummary({ sessionId: extractedSessionId, model: resolvedConfig.model, modelUsage: extractedModelUsage });
         sessionLogWriter?.close();
         return {
           completionReason: "success",
@@ -1224,6 +1227,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           modelUsage: extractedModelUsage,
           sessionId: extractedSessionId,
           invocationMetrics: extractedMetrics,
+          touchedFiles: extractTouchedFilesFromMessages(touchedFileMessages, cwd),
         };
       }
       if (abortController.signal.aborted && (timeoutId !== undefined || watchdog.fired)) {

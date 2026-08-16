@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "41cec64c-d6d8-4b2a-af76-b4f1f8237d1f",
   "createdAt": "2026-08-16T13:32:08.572Z",
-  "updatedAt": "2026-08-16T14:50:06.817Z",
+  "updatedAt": "2026-08-16T14:51:17.180Z",
   "request": {
     "title": "agent step の完了契機を report 受領主・プロセス終了 fallback の二重系にする",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/report-settles-step-41cec64c",
   "error": null,
   "pipelineId": "standard",
@@ -76,7 +76,8 @@
     "da810a8b600adfe91c62b7ef916beb9f9d639ff8",
     "eef3433482f4112970168c69575de031c41ec395",
     "fde8762af9885adfaffd354e7e90ebf524bb62cc",
-    "a920c4a20de401fec7d59ea19c4988af2e76fd40"
+    "a920c4a20de401fec7d59ea19c4988af2e76fd40",
+    "5b21d58235fcf7365c4e51e2f344201b990fc9a2"
   ],
   "touchedFiles": {
     "request-review": [
@@ -151,13 +152,17 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "cross-boundary-invariants の 4 findings を全て修正する(cross-boundary-invariants-result-001.md 参照)。\n\nF1 (HIGH): runQuery の resume-fallback 第 2 呼び出し(delete queryOptions[\"resume\"] の直後)で extractedSessionId = undefined にリセットし、T-02 の early-capture guard が新 session の init message から新しい session_id を捕捉できるようにする。テスト追加: resume-fallback 後に grace-exit した場合、postWork が第 2 session の id で resume されることを固定する。\n\nF2 (MEDIUM): followUpAttempts / reportRetry / postWork / outputRepair のカウンタ宣言を outer catch から参照できるスコープ(run() スコープ)へ移し、D5 経路の return で ADDED_TURNS_ZERO / followUpAttempts: 0 の固定値でなく実際のカウンタ値を返す。invariant reportRetry + outputRepair === followUpAttempts は維持。\n\nF3 (LOW): D5 経路の return object に touchedFiles: extractTouchedFilesFromMessages(touchedFileMessages, cwd) を含める(happy path と同じ導出)。\n\nF4 (LOW): D5 経路で sessionLogWriter?.close() の前に happy path と同様の writeSummary を呼ぶ(取得済みの sessionId / modelUsage を渡し、未取得の field は undefined 許容)。\n\nスコープ: src/adapter/claude-code/agent-runner.ts と対応テストのみ。既存テストは無改変で green を維持する。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-16T14:51:17.026Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 60,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
