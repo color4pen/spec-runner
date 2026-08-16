@@ -59,6 +59,14 @@ import { SpecRunnerError } from "../../errors.js";
 import type { QueryAbortRegistration } from "../../core/port/query-abort.js";
 import { createInactivityWatchdog, formatInactivityTimeoutMessage } from "../shared/inactivity-watchdog.js";
 
+/**
+ * Fixed grace period after report_result reception before aborting the main work turn.
+ *
+ * report 受領を契機に開始する grace。generator の自然終了を待つ固定値 (D6: 設定化しない)。
+ * Grace 内に generator が自然終了すれば従来どおり最終 result から usage を回収する。
+ * Grace 経過後は main work turn だけを abort し、受領済み toolResult で success settle する。
+ */
+export const REPORT_SETTLE_GRACE_MS = 60_000;
 
 /**
  * Local type alias for the SDK's CanUseTool / PermissionResult, keeping this
@@ -562,6 +570,8 @@ export class ClaudeCodeRunner implements AgentRunner {
     // Set up report_result MCP tool if reportTool is configured.
     // The tool result is captured via closure and accessed after the query loop.
     let capturedToolResult: BaseReportResult | null = null;
+    // T-04: grace timer arm function, assigned inside runQuery so handler can trigger it.
+    let armReportGrace: (() => void) | null = null;
     let reportMcpServer: ReturnType<CreateMcpServerFn> | null = null;
 
     const reportTool: ReportToolSpec | undefined = ctx.policy?.reportTool;
@@ -580,6 +590,8 @@ export class ClaudeCodeRunner implements AgentRunner {
               const parseResult = toolSpec.parseInput(args);
               if (parseResult.ok) {
                 capturedToolResult = parseResult.value;
+                // T-04: arm grace timer the moment a valid report is received.
+                armReportGrace?.();
               }
               return { content: [{ type: "text" as const, text: "ok" }] };
             },
@@ -669,42 +681,103 @@ export class ClaudeCodeRunner implements AgentRunner {
       let lastResult: SDKResultMessage | null = null;
       logPipelineDiag("query:start", `step=${step.name}`);
       const effectiveQueryFn = queryFn ?? (await this.loadSdkFn()).query;
-      const messages = effectiveQueryFn({ prompt: fullPrompt, options: queryOptions });
-      watchdog.bump(); // arm before first message (covers query→first-event interval, req.2)
-      // Guard: if signal fired during pre-query I/O, addEventListener in the generator
-      // body is never called retroactively (W3C spec) — for-await would hang. Throw now.
-      abortController.signal.throwIfAborted();
-      for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
-        watchdog.bump(); // reset on each event arrival
-        observeMessage(message);
-        // Collect assistant messages for touched-files recording (main work turn only)
-        if ((message as SDKMessage).type === "assistant") {
-          touchedFileMessages.push(message);
-        }
-        // Write message to session log if enabled
-        if (sessionLogWriter) {
-          const msgAny = message as Record<string, unknown>;
-          sessionLogWriter.write({
-            type: msgAny["type"],
-            subtype: msgAny["subtype"],
-            event: msgAny["event"],
-            content: msgAny["content"],
-          });
-        }
-        if (isToolUse(message)) {
-          const toolName = message.event.content_block.name;
-          if (toolName === "Agent" || toolName === "Task") {
-            agentRedirectCounter.count++;
-            if (agentRedirectCounter.count > 3) {
-              abortController.abort();
-              break;
+
+      // T-03: dedicated AbortController for the main work turn only.
+      // shared → mainQueryAbort is one-way: grace aborts main only, not shared.
+      // This lets postWork prompts run after grace even when main is aborted.
+      const mainQueryAbort = new AbortController();
+      let propagationListener: (() => void) | null = null;
+      if (abortController.signal.aborted) {
+        mainQueryAbort.abort();
+      } else {
+        propagationListener = () => mainQueryAbort.abort();
+        abortController.signal.addEventListener("abort", propagationListener, { once: true });
+      }
+
+      // T-04: grace timer state — local to this runQuery call.
+      let graceArmed = false;
+      let graceTimerId: ReturnType<typeof setTimeout> | undefined;
+      let settledByReport = false;
+
+      // Assign the grace arm function so the report handler can trigger it.
+      armReportGrace = () => {
+        if (graceArmed) return; // already armed — idempotent
+        graceArmed = true;
+        graceTimerId = setTimeout(() => {
+          settledByReport = true;
+          mainQueryAbort.abort();
+        }, REPORT_SETTLE_GRACE_MS);
+      };
+
+      try {
+        // Pass mainQueryAbort to the main work turn so grace can abort it independently
+        // of shared. postWork / output-repair turns spread queryOptions directly (shared).
+        const mainQueryOptions = { ...queryOptions, abortController: mainQueryAbort };
+        const messages = effectiveQueryFn({ prompt: fullPrompt, options: mainQueryOptions });
+        watchdog.bump(); // arm before first message (covers query→first-event interval, req.2)
+        // Guard: if signal fired during pre-query I/O, addEventListener in the generator
+        // body is never called retroactively (W3C spec) — for-await would hang. Throw now.
+        mainQueryAbort.signal.throwIfAborted();
+        try {
+          for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
+            watchdog.bump(); // reset on each event arrival
+            observeMessage(message);
+            // T-02: capture session_id from any message as soon as it arrives.
+            // Final success result assignment below uses ?? to preserve the early value.
+            if (!extractedSessionId) {
+              const msgAny = message as Record<string, unknown>;
+              const sid = msgAny["session_id"];
+              if (typeof sid === "string" && sid) {
+                extractedSessionId = sid;
+              }
+            }
+            // Collect assistant messages for touched-files recording (main work turn only)
+            if ((message as SDKMessage).type === "assistant") {
+              touchedFileMessages.push(message);
+            }
+            // Write message to session log if enabled
+            if (sessionLogWriter) {
+              const msgAny = message as Record<string, unknown>;
+              sessionLogWriter.write({
+                type: msgAny["type"],
+                subtype: msgAny["subtype"],
+                event: msgAny["event"],
+                content: msgAny["content"],
+              });
+            }
+            if (isToolUse(message)) {
+              const toolName = message.event.content_block.name;
+              if (toolName === "Agent" || toolName === "Task") {
+                agentRedirectCounter.count++;
+                if (agentRedirectCounter.count > 3) {
+                  abortController.abort();
+                  break;
+                }
+              }
+            }
+            if (message.type === "result") {
+              lastResult = message as SDKResultMessage;
             }
           }
+        } catch (loopErr) {
+          // T-04 D3: grace-exit — mainQueryAbort fired by grace timer, shared still alive.
+          // Return normally so downstream happy path handles settle (report retry skip,
+          // postWork prompts, success settle). re-throw everything else.
+          if (settledByReport && !abortController.signal.aborted) {
+            logPipelineDiag("query:grace-exit", `step=${step.name}`);
+            return { lastResult };
+          }
+          throw loopErr;
         }
-        if (message.type === "result") {
-          lastResult = message as SDKResultMessage;
+      } finally {
+        // Always clean up grace timer and propagation listener to prevent leaks.
+        clearTimeout(graceTimerId);
+        if (propagationListener) {
+          abortController.signal.removeEventListener("abort", propagationListener);
         }
+        armReportGrace = null;
       }
+
       logPipelineDiag("query:complete", `step=${step.name}`);
       return { lastResult };
     };
@@ -768,6 +841,8 @@ export class ClaudeCodeRunner implements AgentRunner {
             `[specrunner] warn: session resume failed for '${step.name}' (session: ${ctx.session.resumeSessionId}): ${(innerErr as Error).message}. Falling back to new session.`,
           );
           delete queryOptions["resume"];
+          // T-02: reset so the fallback session's init message is captured as the new sessionId.
+          extractedSessionId = undefined;
           return maybeThrowTransientResult(await runQuery());
         }
         throw innerErr;
@@ -835,6 +910,14 @@ export class ClaudeCodeRunner implements AgentRunner {
         },
       });
     };
+
+    // T-06 (reduce-added-agent-turns): track per-type added-turn counters at run() scope
+    // so D5 catch path can report actual values rather than hardcoded zeros.
+    // Invariant: reportRetry + outputRepair === followUpAttempts.
+    let followUpAttempts = 0;
+    let reportRetry = 0;
+    let postWork = 0;
+    let outputRepair = 0;
 
     try {
       let queryResult: { lastResult: SDKResultMessage | null };
@@ -916,18 +999,13 @@ export class ClaudeCodeRunner implements AgentRunner {
           }
           extractedModelUsage = mappedUsage;
         }
-        extractedSessionId = successResult.session_id;
+        // T-02: ?? preserves an early-captured session_id from init messages.
+        extractedSessionId = successResult.session_id ?? extractedSessionId;
         extractedMetrics = extractInvocationMetrics(successResult as unknown as Record<string, unknown>);
       }
 
       // --- report_result follow-up retry (main work turn only) ---
       // If reportTool is configured and the agent didn't call it, retry up to maxAttempts.
-      // T-06 (reduce-added-agent-turns): track per-type added-turn counters.
-      // reportRetry + outputRepair === followUpAttempts (invariant); postWork is separate.
-      let followUpAttempts = 0;
-      let reportRetry = 0;
-      let postWork = 0;
-      let outputRepair = 0;
       if (reportTool && capturedToolResult === null && extractedSessionId) {
         const retryPolicy = ctx.policy?.toolReportRetry ?? DEFAULT_TOOL_RETRY;
         for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++) {
@@ -1133,6 +1211,27 @@ export class ClaudeCodeRunner implements AgentRunner {
       return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {
       if (err instanceof SpecRunnerError) throw err;
+      // T-05 D5: hard abort (watchdog / step-timeout / SIGTERM) fired while a report is
+      // already captured. Return success with the received toolResult — do NOT discard it.
+      // capturedToolResult === null falls through to the existing timeout branch below.
+      if (abortController.signal.aborted && capturedToolResult !== null) {
+        clearTimeout(timeoutId);
+        logVerbose("session", "query aborted with captured report — settling success", { stepName: step.name, runtime: "local" });
+        sessionLogWriter?.writeSummary({ sessionId: extractedSessionId, model: resolvedConfig.model, modelUsage: extractedModelUsage });
+        sessionLogWriter?.close();
+        return {
+          completionReason: "success",
+          resultContent: null,
+          toolResult: capturedToolResult,
+          followUpAttempts,
+          ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
+          addedTurns: { reportRetry, postWork, outputRepair },
+          modelUsage: extractedModelUsage,
+          sessionId: extractedSessionId,
+          invocationMetrics: extractedMetrics,
+          touchedFiles: extractTouchedFilesFromMessages(touchedFileMessages, cwd),
+        };
+      }
       if (abortController.signal.aborted && (timeoutId !== undefined || watchdog.fired)) {
         clearTimeout(timeoutId);
         logVerbose("session", "query timeout", { stepName: step.name, runtime: "local", timeoutMs: resolvedConfig.timeoutMs });
