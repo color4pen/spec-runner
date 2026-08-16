@@ -19,7 +19,7 @@ export const managedKeyPresentCheck: DoctorCheck = {
     return {
       status: "fail",
       message: "Anthropic API key not found",
-      hint: "Save an API key via 'specrunner login --provider anthropic', set SPECRUNNER_API_KEY env var, or add it to credentials.json.",
+      hint: "Set SPECRUNNER_API_KEY env var, or run 'specrunner credentials set anthropic-api-key' to save it to credentials.json.",
     };
   },
 };

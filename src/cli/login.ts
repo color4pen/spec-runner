@@ -1,80 +1,132 @@
-import * as readline from "node:readline";
 import * as fs from "node:fs/promises";
 import { runDeviceFlow } from "../auth/github-device.js";
 import { loadConfig, saveConfig } from "../config/store.js";
-import { loadCredentials, saveCredentials } from "../core/credentials/github.js";
-import { saveClaudeCodeOAuthToken } from "../core/credentials/claude-code.js";
+import { loadCredentials, saveCredentials, resolveGitHubToken } from "../core/credentials/github.js";
 import { logError, logInfo, logSuccess, logWarn } from "../logger/stdout.js";
-import { resolveGitHubHost } from "../config/github-host.js";
+import { resolveGitHubHost, resolveGitHubApiBaseUrl } from "../config/github-host.js";
+import { createGitHubClient } from "../adapter/github/github-client.js";
 import { getConfigPath } from "../util/xdg.js";
 
 export interface LoginOpts {
   force?: boolean;
   env?: Record<string, string | undefined>;
-  provider?: "github" | "claude";
-  promptToken?: (message: string) => Promise<string>;
+  /** Seam: replaces runDeviceFlow in tests */
+  runDeviceFlow?: typeof runDeviceFlow;
+  /** Seam: replaces verifyTokenScopes in tests */
+  verifyTokenScopes?: () => Promise<{ status: number; scopes: string[] }>;
 }
 
 /**
- * Run the specrunner login command.
- * Runs GitHub Device Flow and saves the access token to credentials.json (0600).
- * Config is still loaded/created as a scaffold (version, agents) but no token is stored there.
+ * Run the specrunner login command — GitHub Device Flow only.
  *
- * - If credentials.github.token is already set and force is false, exits 0 without overwriting.
- * - If GH_TOKEN or GITHUB_TOKEN is set in env, warns that the env var takes precedence.
- * - With force: true, always proceeds with device flow and overwrites.
+ * --force未指定時の判定:
+ *   resolveGitHubToken で最優先 token と source を解決する。
+ *   - token なし（throw）→ Device Flow へ進む
+ *   - token あり → verifyTokenScopes() で有効性を確認:
+ *     - valid (200) → 出所を表示して exit 0（Device Flow 省略）
+ *     - invalid (401) かつ source == credentials → Device Flow による更新へ進む
+ *     - invalid (401) かつ source ∈ {env, gh} → 認証源の修正を案内して exit 非 0
+ *     - unknown (その他/timeout) → connectivity 確認を案内して exit 非 0
  *
- * Returns the exit code: 0 = success, 1 = auth error (expired/denied).
+ * --force 時は上記を飛ばし無条件 Device Flow を実行する。
+ *
+ * Returns the exit code: 0 = success, 1 = error.
  */
 export async function runLogin(opts?: LoginOpts): Promise<number> {
   const force = opts?.force ?? false;
   const env = opts?.env ?? (process.env as Record<string, string | undefined>);
-  const provider = opts?.provider ?? "github";
-
-  if (provider === "claude") {
-    return runClaudeLogin({ force, env, promptToken: opts?.promptToken });
-  }
 
   logInfo("Authenticating with GitHub...");
 
-  // Check for env var tokens and warn that they take precedence over credentials
-  const ghToken = env["GH_TOKEN"];
-  const githubToken = env["GITHUB_TOKEN"];
-  if (ghToken && ghToken.length > 0) {
-    logWarn("$GH_TOKEN is set and will take precedence over credentials. The stored token will not be used for resolution.");
-  } else if (githubToken && githubToken.length > 0) {
-    logWarn("$GITHUB_TOKEN is set and will take precedence over credentials. The stored token will not be used for resolution.");
-  }
-
-  // Check for existing credentials token — skip device flow if present and not forced
-  if (!force) {
-    const existingCreds = await loadCredentials();
-    if (existingCreds.github?.token && existingCreds.github.token.length > 0) {
-      logWarn("Existing token retained. To overwrite, run: specrunner login --force");
-      return 0;
-    }
-  }
-
-  // Load config to get GitHub host (best-effort)
+  // Load config to get GitHub host/apiBaseUrl (best-effort)
   let githubHost = "github.com";
+  let githubApiBaseUrl = "https://api.github.com";
   try {
     const cfg = await loadConfig();
     githubHost = resolveGitHubHost(cfg.github);
+    githubApiBaseUrl = resolveGitHubApiBaseUrl(cfg.github);
   } catch {
-    // Config not available — use default host
+    // Config not available — use defaults
   }
 
+  if (!force) {
+    // Resolve the highest-priority token (same order as runtime)
+    let resolvedToken: string | undefined;
+    let resolvedSource: "env" | "gh" | "credentials" | undefined;
+
+    try {
+      const resolved = await resolveGitHubToken(env, { host: githubHost });
+      resolvedToken = resolved.token;
+      resolvedSource = resolved.source;
+    } catch {
+      // No token at all — proceed with Device Flow (first-time login)
+      resolvedToken = undefined;
+    }
+
+    if (resolvedToken !== undefined && resolvedSource !== undefined) {
+      // Verify validity via GitHub API
+      let verifyResult: { status: number; scopes: string[] };
+      try {
+        if (opts?.verifyTokenScopes) {
+          verifyResult = await opts.verifyTokenScopes();
+        } else {
+          const client = createGitHubClient(fetch, resolvedToken, githubApiBaseUrl);
+          verifyResult = await client.verifyTokenScopes();
+        }
+      } catch {
+        // Network timeout or other connectivity issue — unknown
+        logError("Could not reach GitHub to verify the existing token. Check connectivity and retry, or use --force to run the Device Flow anyway.");
+        return 1;
+      }
+
+      if (verifyResult.status === 200) {
+        // Token is valid — display source and skip Device Flow
+        const sourceName = describeSource(resolvedSource, env);
+        logInfo(`Already authenticated (source: ${sourceName}). To re-authenticate, run: specrunner login --force`);
+        return 0;
+      }
+
+      if (verifyResult.status === 401) {
+        // Token is invalid
+        if (resolvedSource === "credentials") {
+          // credentials.json source — proceed with Device Flow to update
+          logWarn("Stored GitHub token is invalid or expired. Proceeding with Device Flow to update credentials...");
+          // Fall through to Device Flow below
+        } else {
+          // env or gh source — Device Flow would not help (upper source takes precedence)
+          const sourceName = describeSource(resolvedSource, env);
+          logError(`GitHub token from ${sourceName} is invalid or expired.`);
+          if (resolvedSource === "gh") {
+            logError("Run 'gh auth login' to re-authenticate, or unset the conflicting env var.");
+          } else {
+            // env source
+            const envVarName = env["GH_TOKEN"] ? "GH_TOKEN" : "GITHUB_TOKEN";
+            logError(`Unset or update the $${envVarName} environment variable to fix authentication.`);
+          }
+          logError("Running the Device Flow would not help because this source takes precedence over credentials.json at runtime.");
+          return 1;
+        }
+      } else {
+        // Unknown status (not 200, not 401) — connectivity issue or API error
+        logError(`GitHub API returned HTTP ${verifyResult.status} — cannot confirm token validity. Check connectivity and retry, or use --force to run the Device Flow anyway.`);
+        return 1;
+      }
+    }
+    // Either: no token found (resolvedToken === undefined) → fresh Device Flow
+    // Or: invalid credentials.json token → Device Flow to update
+  }
+
+  // Device Flow
+  const deviceFlowFn = opts?.runDeviceFlow ?? runDeviceFlow;
   let result: Awaited<ReturnType<typeof runDeviceFlow>>;
   try {
-    result = await runDeviceFlow(fetch, undefined, githubHost);
+    result = await deviceFlowFn(fetch, undefined, githubHost);
   } catch {
     // expired_token / access_denied — message already printed in github-device.ts
     return 1;
   }
 
   // Create config scaffold only when the config file does not exist yet.
-  // Using fs.access (file presence) rather than loadConfig() so a malformed
-  // config is treated as "exists" and is never silently overwritten.
   const configPath = getConfigPath();
   try {
     await fs.access(configPath);
@@ -96,48 +148,15 @@ export async function runLogin(opts?: LoginOpts): Promise<number> {
   return 0;
 }
 
-async function runClaudeLogin(opts: {
-  force: boolean;
-  env: Record<string, string | undefined>;
-  promptToken?: (message: string) => Promise<string>;
-}): Promise<number> {
-  logInfo("Authenticating Claude Code...");
-  logInfo("Generate a long-lived OAuth token with: claude setup-token");
-
-  const envToken = opts.env["CLAUDE_CODE_OAUTH_TOKEN"];
-  if (envToken && envToken.length > 0) {
-    logWarn("$CLAUDE_CODE_OAUTH_TOKEN is set and will take precedence over credentials. The stored token will not be used for resolution.");
+/**
+ * Human-readable description of the resolved token source.
+ */
+function describeSource(source: "env" | "gh" | "credentials", env: Record<string, string | undefined>): string {
+  if (source === "env") {
+    return env["GH_TOKEN"] ? "$GH_TOKEN" : "$GITHUB_TOKEN";
   }
-
-  if (!opts.force) {
-    const existingCreds = await loadCredentials();
-    if (
-      existingCreds.anthropic?.claudeCodeOAuthToken &&
-      existingCreds.anthropic.claudeCodeOAuthToken.length > 0
-    ) {
-      logWarn("Existing Claude Code token retained. To overwrite, run: specrunner login --provider claude --force");
-      return 0;
-    }
+  if (source === "gh") {
+    return "gh auth token";
   }
-
-  const prompt = opts.promptToken ?? promptLine;
-  const token = (await prompt("Paste Claude Code OAuth token from 'claude setup-token': ")).trim();
-  if (token.length === 0) {
-    logError("Claude Code OAuth token cannot be empty.");
-    return 1;
-  }
-
-  await saveClaudeCodeOAuthToken(token);
-  logSuccess("Claude Code OAuth token saved to credentials file.");
-  return 0;
-}
-
-function promptLine(message: string): Promise<string> {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    rl.question(message, (answer) => {
-      rl.close();
-      resolve(answer);
-    });
-  });
+  return "credentials.json";
 }

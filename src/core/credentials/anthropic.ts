@@ -10,7 +10,7 @@ import { loadCredentials, saveCredentials } from "./credentials-io.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 
 const ANTHROPIC_KEY_MISSING_HINT =
-  "Save an API key to credentials with a future 'specrunner login --provider anthropic', or set SPECRUNNER_API_KEY env var.";
+  "Run 'specrunner credentials set anthropic-api-key' to save the key to credentials.json, or set SPECRUNNER_API_KEY env var.";
 
 /**
  * Resolve the Anthropic API key (optional overload — never throws, may return undefined).

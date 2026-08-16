@@ -9,6 +9,7 @@ import * as fs from "node:fs";
 import { runInit } from "./init.js";
 import { runManagedSetup, runManagedStatus, runManagedReset } from "./managed.js";
 import { runLogin } from "./login.js";
+import { runCredentialsSet, CREDENTIALS_SET_USAGE } from "./credentials.js";
 import { runRun } from "./run.js";
 import { runPs } from "./ps.js";
 import { runDoctor } from "./doctor.js";
@@ -103,7 +104,8 @@ Reviewer commands:
 
 Environment commands:
   init                            config scaffold
-  login                           GitHub Device Flow OAuth (default) or Claude Code token login
+  login                           GitHub Device Flow OAuth
+  credentials set <name>          headless 用 credential を credentials.json(0600) に保存
   config effective [--type <t>]   Show effective step model/maxTurns/timeoutMs and source
   doctor                          Diagnose environment / config / auth prerequisites
   runtime setup|status|reset      Manage Anthropic runtime resources
@@ -272,18 +274,19 @@ shows the configured effective value.
 
 export const LOGIN_USAGE = `Usage: specrunner login [options]
 
-Authenticate and store credentials in ~/.config/specrunner/credentials.json.
-Bare 'specrunner login' keeps the existing GitHub Device Flow behavior.
+Authenticate with GitHub via Device Flow and store the token in
+~/.config/specrunner/credentials.json (0600).
+
+If a valid GitHub token is already present (from GH_TOKEN / GITHUB_TOKEN env
+or 'gh auth login'), the Device Flow is skipped automatically.
+
+For headless Claude Code or Anthropic API key storage, use:
+  specrunner credentials set claude-code
+  specrunner credentials set anthropic-api-key
 
 Options:
-  --provider <github|claude>  Credential provider to login. Default: github
-  --force                     Overwrite an existing stored credential
-  --help, -h                  Show this help message
-
-Claude Code:
-  Run 'claude setup-token', then run 'specrunner login --provider claude'
-  and paste the generated OAuth token. After 'specrunner doctor' reports
-  source: credentials.json, remove CLAUDE_CODE_OAUTH_TOKEN from crontab.
+  --force       Always run the Device Flow even when a valid token exists
+  --help, -h    Show this help message
 `;
 
 export const PRUNE_USAGE = `Usage: specrunner job prune [options]
@@ -480,12 +483,32 @@ export const COMMANDS: Record<string, CommandEntry> = {
   login: {
     flags: {
       force: { type: "boolean" },
-      provider: { type: "string", values: ["github", "claude"] as const },
+      provider: {
+        type: "string",
+        deprecated: {
+          message:
+            "specrunner login is GitHub-only now. To store a Claude Code token for headless runs, use: specrunner credentials set claude-code",
+        },
+      },
     },
     usage: LOGIN_USAGE,
     handler: async (parsed) => {
-      const provider = (parsed.flags["provider"] as "github" | "claude" | undefined) ?? "github";
-      process.exit(await runLogin({ force: !!parsed.flags["force"], provider }));
+      process.exit(await runLogin({ force: !!parsed.flags["force"] }));
+    },
+  },
+
+  credentials: {
+    usage: CREDENTIALS_SET_USAGE,
+    subcommands: {
+      set: {
+        flags: {},
+        positional: { name: "name", required: true },
+        usage: CREDENTIALS_SET_USAGE,
+        handler: async (parsed) => {
+          const name = parsed.positional!;
+          process.exit(await runCredentialsSet(name));
+        },
+      },
     },
   },
 

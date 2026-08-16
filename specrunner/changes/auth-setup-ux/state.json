@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T05:58:21.668Z",
+  "updatedAt": "2026-08-16T06:01:50.824Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "implementer",
   "status": "running",
   "branch": "change/auth-setup-ux-701673a2",
   "error": null,
@@ -69,7 +69,8 @@
     "0f302eeef681143474038f7d167622740ac27546",
     "cc3af96412fc1bab7ebe2d17752441e69b59ce5c",
     "28f4064d258ace5f0203e05c6ca9f0e1d0147a96",
-    "d96f9d551da314d9441d1b26ee0954b1fd686675"
+    "d96f9d551da314d9441d1b26ee0954b1fd686675",
+    "e70086dbea3e3939afe25ed20ea520b37ecbedb7"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -148,15 +149,21 @@
       "src/core/doctor/next-steps.ts",
       "src/core/credentials/credentials-io.ts",
       "tests/init.test.ts"
+    ],
+    "spec-fixer": [
+      "tests/hint-command-existence.test.ts",
+      "src/core/runtime/provider-readiness.ts",
+      "src/cli/command-registry.ts"
     ]
   },
   "_journal": {
-    "historyCount": 28,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
       "test-case-gen": 2,
-      "spec-review": 2
+      "spec-review": 2,
+      "spec-fixer": 1
     }
   }
 }

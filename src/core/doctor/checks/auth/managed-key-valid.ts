@@ -19,7 +19,7 @@ export const managedKeyValidCheck: DoctorCheck = {
       return {
         status: "fail",
         message: "Anthropic API key is not available — cannot validate",
-        hint: "Save an API key via 'specrunner login --provider anthropic' or set SPECRUNNER_API_KEY env var.",
+        hint: "Set SPECRUNNER_API_KEY env var, or run 'specrunner credentials set anthropic-api-key'.",
       };
     }
 

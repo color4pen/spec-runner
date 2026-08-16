@@ -24,9 +24,9 @@ import { SpecRunnerError } from "../../errors.js";
  */
 export const PROVIDER_READINESS_HINTS: Record<Exclude<ProviderReadinessKind, "ready">, string> = {
   "auth-missing":
-    "Run 'claude setup-token' to obtain a Claude authentication token, then store it with 'specrunner login --provider claude'.",
+    "Run 'claude setup-token' to obtain a Claude authentication token, then store it with 'specrunner credentials set claude-code'.",
   "auth-invalid":
-    "Your Claude authentication token has been rejected. Regenerate it via 'claude setup-token', then replace the stored credential with 'specrunner login --provider claude'.",
+    "Your Claude authentication token has been rejected. Regenerate it via 'claude setup-token', then replace the stored credential with 'specrunner credentials set claude-code'.",
   "unreachable":
     "Check network connectivity and retry. If the problem persists, verify that the Claude provider API is reachable from this machine.",
   "provider-failure":

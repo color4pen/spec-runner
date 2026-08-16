@@ -6,6 +6,7 @@
 export interface FlagDef {
   type: "boolean" | "string";
   values?: readonly string[]; // enum constraint for string flags
+  deprecated?: { message: string }; // when set, encountering this flag throws FlagParseError(message)
 }
 
 export interface ParsedArgs {
@@ -92,6 +93,11 @@ export function parseFlags(
       const def = flagDefs[flagName];
       if (!def) {
         throw new FlagParseError(`Unknown flag(s): --${flagName}`);
+      }
+
+      // Deprecated flag: throw with migration message before consuming any value
+      if (def.deprecated) {
+        throw new FlagParseError(def.deprecated.message);
       }
 
       if (def.type === "boolean") {

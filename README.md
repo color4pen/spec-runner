@@ -16,10 +16,25 @@ from an empty directory.
 mkdir my-project && cd my-project
 git init
 npm install -D @color4pen/specrunner
-npx specrunner init
-npx specrunner login
 
-# Create a request, edit it, run the pipeline
+# 1. Initialize config scaffold
+npx specrunner init
+
+# 2. Check what's needed (doctor is the source of truth)
+npx specrunner doctor
+
+# 3. Set up only what's missing
+#    If doctor reports GitHub token missing:
+#      - Already authenticated via 'gh auth login'? Nothing to do.
+#      - Have GH_TOKEN / GITHUB_TOKEN env set? Nothing to do.
+#      - Otherwise: npx specrunner login
+#    If doctor reports Claude Code token missing (headless cron/inbox only):
+#      npx specrunner credentials set claude-code
+
+# 4. Re-run doctor to confirm everything is ready
+npx specrunner doctor
+
+# 5. Create a request, edit it, run the pipeline
 npx specrunner request new my-feature
 #  → specrunner/drafts/my-feature/request.md
 npx specrunner run my-feature
@@ -27,6 +42,10 @@ npx specrunner run my-feature
 # Review the PR, then archive
 npx specrunner job archive --with-merge my-feature
 ```
+
+> **Note:** `specrunner login` is only needed when no valid GitHub token exists.
+> If you have already run `gh auth login` or supply `GH_TOKEN` / `GITHUB_TOKEN`,
+> the Device Flow is skipped automatically — `specrunner doctor` will tell you.
 
 ### Joining an existing project
 
@@ -36,7 +55,7 @@ If you are cloning a repository that already uses SpecRunner (the `specrunner/` 
 git clone <repo-url> && cd <repo>
 npm install
 npx specrunner init    # creates local .gitignore entries and machine-local directories
-npx specrunner login   # stores your GitHub token
+npx specrunner doctor  # shows what credentials are still needed on this machine
 ```
 
 `specrunner init` is safe to re-run; it does not overwrite existing config. The `specrunner/` scaffold and project config are already in the repository — you do not need to recreate them.
