@@ -14,11 +14,16 @@ import { SLUG_REGEX } from "../../util/validation-patterns.js";
  * Embedded template for generated rules files.
  * D2: held as a source code string const — no runtime file read.
  */
-const RULE_TEMPLATE = `<!-- このファイルは specrunner rules new で生成されました。
+const RULE_TEMPLATE = `---
+delivery: followup
+---
+<!-- このファイルは specrunner rules new で生成されました。
 CLI はこのファイルの中身を解釈しません。書き手の自然文で自由に書いてください。
 推奨見出しは強制ではありません — 削除・追加・並べ替えは自由です。
 番号 prefix (NN-) が follow-up の実行順序を決めます。
-順序の方針: 重要度が高いルールを末尾に配置すると recency bias により効果的です。 -->
+順序の方針: 重要度が高いルールを末尾に配置すると recency bias により効果的です。
+delivery: followup — 作業後の事後検証として配送される（既定）。
+delivery: prompt  — main 作業プロンプトへの前置注入（行動制約型ルール向け）。 -->
 
 ## やめてほしいこと
 

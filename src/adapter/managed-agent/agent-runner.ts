@@ -626,6 +626,11 @@ export class ManagedAgentRunner implements AgentRunner {
       initialMessage = `${initialMessage}\n\n<resume-context>\n${ctx.session.resumePrompt}\n</resume-context>`;
     }
 
+    // rules-delivery D4: inject promptRules after resume context, before git push instruction.
+    if (ctx.policy?.promptRules) {
+      initialMessage = `${initialMessage}\n\n${ctx.policy.promptRules}`;
+    }
+
     // Managed agents commit+push themselves (StepExecutor.commitAndPush only runs for local runtime).
     if (state.branch) {
       initialMessage = `${initialMessage}\n\n${buildManagedGitPushInstruction(state.branch)}`;

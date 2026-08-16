@@ -20,6 +20,7 @@ import type { DomainEvent } from "../../kernel/event-types.js";
 import type { OutputContract, OutputVerificationPolicy } from "../port/output-contract.js";
 import { resolveStepRules } from "./rules-resolve.js";
 import { buildRulesFollowUpPrompts } from "./rules-followup-prompts.js";
+import { splitRulesByDelivery, buildRulesPromptSection } from "./rules-delivery.js";
 import { FIXER_STEP_NAMES, getPreviousSessionId } from "./fixer-helpers.js";
 import { STEP_NAMES } from "./step-names.js";
 import { verificationFailedLast } from "../pipeline/reverification.js";
@@ -81,18 +82,23 @@ export async function buildStepContext(
     }
   }
 
-  // 2. Resolve project rules + build follow-up prompts.
+  // 2. Resolve project rules + classify by delivery + build follow-up and prompt sections.
+  //    - delivery: followup (or unspecified) → wrapped in 3-element follow-up prompt (existing path)
+  //    - delivery: prompt → injected into main work prompt via policy.promptRules (new path)
+  //    - Unknown delivery value → throws here (before agent start, D6 rules-delivery)
   const ruleContents = await resolveStepRules(step.name, cwd, {
     readdir: (dir: string) => fsAdapter.readdir(dir),
     readFile: async (filePath: string, _enc: string): Promise<string> =>
       fsAdapter.readFile(filePath, "utf-8"),
   });
-  const rulesPrompts = buildRulesFollowUpPrompts(ruleContents);
+  const { followup: followupBodies, prompt: promptBodies } = splitRulesByDelivery(ruleContents);
+  const rulesPrompts = buildRulesFollowUpPrompts(followupBodies);
   const existingFollowUp = step.getFollowUpPrompt?.(state, deps) ?? step.followUpPrompt;
   const allFollowUpPrompts = [
     ...(existingFollowUp ? [existingFollowUp] : []),
     ...rulesPrompts,
   ];
+  const promptRules = buildRulesPromptSection(promptBodies);
 
   // 3. Session continuity: pass previous session ID for fixer steps and for implementer
   //    recovery re-entry (verification failed → implementer resumes its own session).
@@ -193,6 +199,7 @@ export async function buildStepContext(
       reportTool: step.reportTool,
       toolReportRetry: step.reportTool ? DEFAULT_TOOL_RETRY : undefined,
       outputVerification,
+      promptRules,
     },
     emit: emitFn,
     writeScope,
