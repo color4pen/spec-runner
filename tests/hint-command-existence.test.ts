@@ -9,7 +9,7 @@
  */
 import { describe, it, expect } from "vitest";
 import { COMMANDS } from "../src/cli/command-registry.js";
-import type { CommandEntry, ParentCommandDef } from "../src/cli/command-registry.js";
+import type { CommandSpec } from "../src/cli/command-registry.js";
 import { STATUS_HINTS } from "../src/core/finish/job-state-update.js";
 import { pollTimeoutError } from "../src/errors.js";
 import { PROVIDER_READINESS_HINTS } from "../src/core/runtime/provider-readiness.js";
@@ -31,8 +31,8 @@ function extractCommandVerbSubs(hint: string): Array<{ verb: string; sub: string
   return matches.map((m) => ({ verb: m[1]!, sub: m[2]! }));
 }
 
-function isParent(entry: CommandEntry): entry is ParentCommandDef {
-  return "subcommands" in entry;
+function isParent(entry: CommandSpec): boolean {
+  return entry.children !== undefined;
 }
 
 const registeredCommands = new Set(Object.keys(COMMANDS));
@@ -89,7 +89,7 @@ describe("TC-005: PROVIDER_READINESS_HINTS reference only registered commands", 
         }
         if (isParent(entry)) {
           expect(
-            Object.prototype.hasOwnProperty.call(entry.subcommands, sub),
+            Object.prototype.hasOwnProperty.call(entry.children, sub),
             `PROVIDER_READINESS_HINTS["${kind}"] references unregistered subcommand 'specrunner ${verb} ${sub}'`,
           ).toBe(true);
         }
@@ -168,7 +168,7 @@ describe("TC-014: doctor hints reference registered commands (including subcomma
         for (const { verb, sub } of verbSubs) {
           const entry = COMMANDS[verb];
           if (!entry || !isParent(entry)) continue;
-          if (!Object.prototype.hasOwnProperty.call(entry.subcommands, sub)) {
+          if (!Object.prototype.hasOwnProperty.call(entry.children, sub)) {
             violations.push(
               `${path.relative(DOCTOR_CHECKS_DIR, filePath)}: hint references unregistered subcommand 'specrunner ${verb} ${sub}': ${hint.slice(0, 80)}`,
             );

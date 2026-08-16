@@ -4,7 +4,8 @@
  */
 
 export interface FlagDef {
-  type: "boolean" | "string";
+  type: "boolean" | "string" | "integer";
+  min?: number; // for integer: minimum allowed value (inclusive)
   values?: readonly string[]; // enum constraint for string flags
   /** when set, encountering this flag throws FlagParseError(message).
    *  message may be a function receiving the flag value (string flags only) for per-value routing. */
@@ -12,7 +13,7 @@ export interface FlagDef {
 }
 
 export interface ParsedArgs {
-  flags: Record<string, string | boolean>;
+  flags: Record<string, string | number | boolean>;
   positional?: string;    // 後方互換: positionals[0]
   positionals: string[];  // 全 non-flag トークン
 }
@@ -28,22 +29,24 @@ export class FlagParseError extends Error {
  * Parse raw CLI arguments into flags and an optional positional argument.
  *
  * Rules:
- * 1. `--flag=value` → string flag stores value; boolean flag ignores value part
- * 2. `--flag` (no `=`) → boolean flag sets true; string flag consumes next arg
+ * 1. `--flag=value` → string/integer flag stores value; boolean flag ignores value part
+ * 2. `--flag` (no `=`) → boolean flag sets true; string/integer flag consumes next arg
  * 3. `-h` / `--help` (and `--help=...`) → reserved; always sets `help: true` regardless of flagDefs
  * 4. Non-flag tokens → all collected into positionals array; positional = positionals[0]
  * 5. Unknown flag → FlagParseError
  * 6. Enum constraint violation → FlagParseError
  * 7. Required positional missing → FlagParseError (skipped when `flags["help"]` is true)
- * 8. String flag with no following value → FlagParseError
+ * 8. String/integer flag with no following value → FlagParseError
  * 9. count: N → FlagParseError if positionals.length < N
+ * 10. Integer flag with non-integer value → FlagParseError
+ * 11. Integer flag below min → FlagParseError
  */
 export function parseFlags(
   rawArgs: string[],
   flagDefs: Record<string, FlagDef>,
   positionalDef?: { name: string; required: boolean; count?: number },
 ): ParsedArgs {
-  const flags: Record<string, string | boolean> = {};
+  const flags: Record<string, string | number | boolean> = {};
   const positionals: string[] = [];
   let i = 0;
 
@@ -117,6 +120,29 @@ export function parseFlags(
       if (def.type === "boolean") {
         flags[flagName] = true;
         // ignore valueAfterEq for boolean flags
+      } else if (def.type === "integer") {
+        let raw: string;
+        if (valueAfterEq !== undefined) {
+          raw = valueAfterEq;
+        } else {
+          i++;
+          if (i >= rawArgs.length || rawArgs[i]!.startsWith("--")) {
+            throw new FlagParseError(
+              `Flag --${flagName} requires a value but none was provided`,
+            );
+          }
+          raw = rawArgs[i]!;
+        }
+        const n = Number(raw);
+        if (!Number.isInteger(n)) {
+          throw new FlagParseError(`--${flagName} requires an integer (got: ${raw})`);
+        }
+        if (def.min !== undefined && n < def.min) {
+          throw new FlagParseError(
+            `--${flagName} requires an integer >= ${def.min} (got: ${raw})`,
+          );
+        }
+        flags[flagName] = n;
       } else {
         // string flag
         let value: string;

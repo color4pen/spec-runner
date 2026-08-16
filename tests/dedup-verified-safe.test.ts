@@ -68,14 +68,16 @@ describe("TC-001: run and job-start commands produce identical runtime behavior"
     expect(content).toMatch(/runJobHandler/);
   });
 
-  it("TC-001: both run and job.start entries reference runJobHandler", async () => {
+  it("TC-001: run is an alias of job start; job.start entry references runJobHandler", async () => {
     const registryPath = path.join(SRC_DIR, "cli", "command-registry.ts");
     const content = await fs.readFile(registryPath, "utf-8");
 
-    // After implementation: runJobHandler appears as handler for both commands.
-    // Count occurrences — must appear at least twice (once per command).
+    // After CommandSpec migration: `run` is an alias (aliasOf: ["job","start"]) and has no handler.
+    // `job.start` references runJobHandler as the single shared handler.
+    // Behavioral equivalence is guaranteed by alias resolution at dispatch time.
+    expect(content).toMatch(/aliasOf:\s*\["job",\s*"start"\]/);
     const matches = content.match(/handler:\s*runJobHandler/g) ?? [];
-    expect(matches.length).toBeGreaterThanOrEqual(2);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 });
 
@@ -97,10 +99,12 @@ describe("TC-011: run and job start handlers are the same function reference (sh
 // ---------------------------------------------------------------------------
 
 describe("TC-002: help output preserves positional labels", () => {
-  it("TC-002: run command positional label is 'request.md|slug'", async () => {
+  it("TC-002: run command is an alias (no separate positional label)", async () => {
     const registryPath = path.join(SRC_DIR, "cli", "command-registry.ts");
     const content = await fs.readFile(registryPath, "utf-8");
-    expect(content).toContain('"request.md|slug"');
+    // After CommandSpec migration: `run` is a pure alias with aliasOf: ["job","start"].
+    // It has no separate args/positional label; the label lives only in `job.start`.
+    expect(content).toMatch(/aliasOf:\s*\["job",\s*"start"\]/);
   });
 
   it("TC-002: job start command positional label is 'slug|file'", async () => {
@@ -109,12 +113,14 @@ describe("TC-002: help output preserves positional labels", () => {
     expect(content).toContain('"slug|file"');
   });
 
-  it("TC-002: positional labels are distinct (run uses request.md|slug, start uses slug|file)", async () => {
+  it("TC-002: positional label 'slug|file' exists for job start (run inherits via alias)", async () => {
     const registryPath = path.join(SRC_DIR, "cli", "command-registry.ts");
     const content = await fs.readFile(registryPath, "utf-8");
-    // Both labels must coexist in the file
-    expect(content).toContain('"request.md|slug"');
+    // After CommandSpec migration: `run` is an alias of job.start.
+    // There is only one positional label ('slug|file') in job.start.
+    // run inherits the label via alias resolution.
     expect(content).toContain('"slug|file"');
+    expect(content).toMatch(/aliasOf:\s*\["job",\s*"start"\]/);
   });
 });
 

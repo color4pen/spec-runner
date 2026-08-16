@@ -188,16 +188,14 @@ describe("TC-17: ps --status が --all より優先される", () => {
 
 describe("TC-18: flag-parser rejects invalid --status value", () => {
   it("throws FlagParseError for --status foo", () => {
-    const jobCmd = COMMANDS["job"] as import("../../../src/cli/command-registry.js").ParentCommandDef;
-    const psDef = jobCmd.subcommands["ls"]!.flags;
+    const psDef = COMMANDS["job"]!.children!["ls"]!.flags!;
     expect(() =>
       parseFlags(["--status", "foo"], psDef as Parameters<typeof parseFlags>[1]),
     ).toThrow(FlagParseError);
   });
 
   it("error message mentions the invalid value", () => {
-    const jobCmd = COMMANDS["job"] as import("../../../src/cli/command-registry.js").ParentCommandDef;
-    const psDef = jobCmd.subcommands["ls"]!.flags;
+    const psDef = COMMANDS["job"]!.children!["ls"]!.flags!;
     expect(() =>
       parseFlags(["--status", "foo"], psDef as Parameters<typeof parseFlags>[1]),
     ).toThrow(/foo/);

@@ -17,6 +17,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 // Mock heavy dependencies that doctor --help doesn't need
 vi.mock("../../../src/core/worktree/detection.js", () => ({
   detectWorktree: vi.fn().mockResolvedValue({ isWorktree: false }),
+  detectSpecrunnerWorktree: vi.fn().mockResolvedValue({ isSpecrunnerWorktree: false }),
 }));
 vi.mock("../../../src/cli/run.js", () => ({
   runRun: vi.fn().mockResolvedValue(undefined),

@@ -17,7 +17,6 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { ParsedArgs } from "../../../src/cli/flag-parser.js";
-import type { CommandDef } from "../../../src/cli/command-registry.js";
 
 // ---------------------------------------------------------------------------
 // Hoist the repair mock so we can control it per-test
@@ -101,20 +100,20 @@ afterEach(() => {
 });
 
 /**
- * Call the doctor handler directly with given positionals.
+ * Call the doctor repair child handler directly with given slug positionals (excluding "repair" token).
  * Returns the process.exit code that was thrown (as a string like "process.exit(2)"),
  * or undefined if the handler returned normally.
  */
-async function callDoctorHandler(positionals: string[]): Promise<string | undefined> {
+async function callRepairHandler(slugArgs: string[]): Promise<string | undefined> {
   const { COMMANDS } = await import("../../../src/cli/command-registry.js");
-  const doctorEntry = COMMANDS["doctor"]! as CommandDef;
+  const repairSpec = COMMANDS["doctor"]!.children!["repair"]!;
   const parsed: ParsedArgs = {
     flags: {},
-    positionals,
-    positional: positionals[0],
+    positionals: slugArgs,
+    positional: slugArgs[0],
   };
   try {
-    await doctorEntry.handler(parsed, undefined);
+    await repairSpec.handler!(parsed, undefined);
     return undefined;
   } catch (err) {
     return (err as Error).message;
@@ -135,12 +134,12 @@ function getExitCodes(): (string | number | undefined)[] {
 
 describe("TC-DR-001: doctor repair without slug argument", () => {
   it("calls process.exit(2) when no slug is provided", async () => {
-    await callDoctorHandler(["repair"]);
+    await callRepairHandler([]);
     expect(getExitCodes()).toContain(2);
   });
 
   it("writes an error message mentioning the required slug to stderr", async () => {
-    await callDoctorHandler(["repair"]);
+    await callRepairHandler([]);
     const output = getStderrOutput();
     expect(output).toContain("specrunner doctor repair");
   });
@@ -152,12 +151,12 @@ describe("TC-DR-001: doctor repair without slug argument", () => {
 
 describe("TC-DR-002: doctor repair <slug> exits with 0 on success", () => {
   it("calls process.exit(0) when repair succeeds", async () => {
-    await callDoctorHandler(["repair", "my-slug"]);
+    await callRepairHandler(["my-slug"]);
     expect(getExitCodes()).toContain(0);
   });
 
   it("writes the repair result message to stderr", async () => {
-    await callDoctorHandler(["repair", "my-slug"]);
+    await callRepairHandler(["my-slug"]);
     const output = getStderrOutput();
     expect(output).toContain("sidecar repaired successfully");
   });
@@ -171,14 +170,14 @@ describe("TC-DR-003: doctor repair <slug> exits with 1 when repair throws", () =
   it("calls process.exit(1) when repairSlugOccupancySidecar throws", async () => {
     mockRepairFn.mockRejectedValueOnce(new Error("ambiguous: multiple non-terminal jobs"));
 
-    await callDoctorHandler(["repair", "my-slug"]);
+    await callRepairHandler(["my-slug"]);
     expect(getExitCodes()).toContain(1);
   });
 
   it("writes the thrown error message to stderr", async () => {
     mockRepairFn.mockRejectedValueOnce(new Error("ambiguous: multiple non-terminal jobs"));
 
-    await callDoctorHandler(["repair", "my-slug"]);
+    await callRepairHandler(["my-slug"]);
     const output = getStderrOutput();
     expect(output).toContain("ambiguous: multiple non-terminal jobs");
   });

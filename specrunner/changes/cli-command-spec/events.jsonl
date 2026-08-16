@@ -53,3 +53,5 @@
 {"type":"transition","ts":"2026-08-16T13:02:40.535Z","step":"executor","status":"ok","message":"running → awaiting-resume: timeout"}
 {"type":"transition","ts":"2026-08-16T13:02:40.537Z","step":"implementer-timeout","status":"error","message":"implementer timed out: Step 'implementer' inactivity timeout: no agent event for 900004ms"}
 {"type":"step-attempt","step":"implementer","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"STEP_TIMEOUT","message":"Step 'implementer' inactivity timeout: no agent event for 900004ms","hint":"no tool observed before timeout (no tool activity in session)"},"transientRetryAttempts":0},"startedAt":"2026-08-16T12:27:58.107Z","endedAt":"2026-08-16T13:02:40.534Z"}
+{"type":"transition","ts":"2026-08-16T13:03:28.266Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'implementer'"}
+{"type":"transition","ts":"2026-08-16T13:03:28.391Z","step":"implementer-started","status":"started","message":"Starting implementer step"}

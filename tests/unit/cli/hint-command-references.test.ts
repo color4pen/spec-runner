@@ -96,8 +96,8 @@ type SubcommandMap = Map<string, Set<string>>;
 function buildSubcommandMap(): SubcommandMap {
   const map: SubcommandMap = new Map();
   for (const [name, entry] of Object.entries(COMMANDS)) {
-    if ("subcommands" in entry) {
-      map.set(name, new Set(Object.keys(entry.subcommands)));
+    if (entry.children) {
+      map.set(name, new Set(Object.keys(entry.children)));
     }
   }
   return map;

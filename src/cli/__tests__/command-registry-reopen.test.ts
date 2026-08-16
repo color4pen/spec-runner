@@ -37,7 +37,6 @@ vi.mock("../../logger/stdout.js", () => ({
 // ---------------------------------------------------------------------------
 
 import { COMMANDS } from "../command-registry.js";
-import type { ParentCommandDef } from "../command-registry.js";
 import type { ParsedArgs } from "../flag-parser.js";
 
 // ---------------------------------------------------------------------------
@@ -51,8 +50,7 @@ import type { ParsedArgs } from "../flag-parser.js";
 function getReopenHandler():
   | ((parsed: ParsedArgs, ctx?: Record<string, unknown>) => Promise<void>)
   | undefined {
-  const jobCmd = COMMANDS["job"] as ParentCommandDef | undefined;
-  return jobCmd?.subcommands["reopen"]?.handler as
+  return COMMANDS["job"]?.children?.["reopen"]?.handler as
     | ((parsed: ParsedArgs, ctx?: Record<string, unknown>) => Promise<void>)
     | undefined;
 }
@@ -80,19 +78,14 @@ beforeEach(() => {
 
 describe("TC-004: job reopen without --reason exits with ARG_ERROR", () => {
   it("TC-004-a: reopen subcommand is registered in the job command registry", () => {
-    // The reopen subcommand must exist in the registry.
-    // RED until T-05 registers it in command-registry.ts.
-    const jobCmd = COMMANDS["job"] as ParentCommandDef;
-    expect(jobCmd.subcommands["reopen"]).toBeDefined();
+    expect(COMMANDS["job"]?.children?.["reopen"]).toBeDefined();
   });
 
   it("TC-004-b: reopen subcommand declares --from and --reason flags", () => {
-    // After T-05, the subcommand must declare both flags.
-    const jobCmd = COMMANDS["job"] as ParentCommandDef;
-    const reopenCmd = jobCmd.subcommands["reopen"];
+    const reopenCmd = COMMANDS["job"]?.children?.["reopen"];
     expect(reopenCmd).toBeDefined();
-    expect(reopenCmd?.flags["from"]).toBeDefined();
-    expect(reopenCmd?.flags["reason"]).toBeDefined();
+    expect(reopenCmd?.flags?.["from"]).toBeDefined();
+    expect(reopenCmd?.flags?.["reason"]).toBeDefined();
   });
 
   it("TC-004-c: handler exits with ARG_ERROR (2) when --reason is missing", async () => {
@@ -195,20 +188,17 @@ describe("TC-019: job reopen without --from exits with ARG_ERROR", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-010: reopen does not invoke cancel cleanup (branch/PR preserved)", () => {
-  it("TC-010-a: reopen subcommand is registered in guardedSubcommands", () => {
+  it("TC-010-a: reopen subcommand has worktreeGuard: true", () => {
     // Reopen is an operator-scoped action that should be guarded.
-    // RED until T-05 registers reopen in guardedSubcommands.
-    const jobCmd = COMMANDS["job"] as ParentCommandDef;
-    expect(jobCmd.guardedSubcommands?.has("reopen")).toBe(true);
+    expect(COMMANDS["job"]?.children?.["reopen"]?.worktreeGuard).toBe(true);
   });
 
   it("TC-010-b: reopen handler has a positional slug argument (required)", () => {
     // Verify the subcommand requires a slug positional (mirrors resume subcommand)
-    const jobCmd = COMMANDS["job"] as ParentCommandDef;
-    const reopenCmd = jobCmd.subcommands["reopen"];
+    const reopenCmd = COMMANDS["job"]?.children?.["reopen"];
     expect(reopenCmd).toBeDefined();
-    expect(reopenCmd?.positional?.name).toBeDefined();
-    expect(reopenCmd?.positional?.required).toBe(true);
+    expect(reopenCmd?.args?.[0]?.name).toBeDefined();
+    expect(reopenCmd?.args?.[0]?.required).toBe(true);
   });
 });
 
