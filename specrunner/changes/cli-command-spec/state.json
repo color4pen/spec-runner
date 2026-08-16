@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f635fe90-7726-47f0-96f7-1a727cd0610a",
   "createdAt": "2026-08-16T08:44:36.107Z",
-  "updatedAt": "2026-08-16T13:43:02.919Z",
+  "updatedAt": "2026-08-16T13:54:36.734Z",
   "request": {
     "title": "CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
+  "step": "code-review",
+  "status": "running",
   "branch": "feat/cli-command-spec-f635fe90",
   "error": null,
   "pipelineId": "standard",
@@ -84,7 +84,9 @@
     "79bc3abaabc97b2bbd7a7cbd3d9591210d7a1bff",
     "9c5106b60cecad0e3dc01f397af2f38450b9c0e4",
     "9293ec733d425a0aca2ed272aaa535b6823e4615",
-    "1b91f55a25710acac3a4d6d29cd5fca2182f494b"
+    "1b91f55a25710acac3a4d6d29cd5fca2182f494b",
+    "d7a10d8e56c0c9c21b832561ca5a49f1b0833b29",
+    "53c710229f718472c6c16916c634f5f8cd8a9375"
   ],
   "touchedFiles": {
     "request-review": [
@@ -239,7 +241,7 @@
     "createdAt": "2026-08-16T13:43:01.952Z"
   },
   "_journal": {
-    "historyCount": 101,
+    "historyCount": 110,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -249,7 +251,7 @@
       "implementer": 6,
       "bite-evidence": 1,
       "verification": 3,
-      "code-review": 1,
+      "code-review": 2,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
