@@ -1,7 +1,7 @@
 # `rules` review
 
 Status: **reviewed**  
-Verdict: **KEEP namespace**, with one boundary decision held until `reviewers` is reviewed.
+Verdict: **KEEP namespace**; formally support rules on valid custom reviewers.
 
 Current subcommand: `new`.
 
@@ -59,47 +59,44 @@ executeRulesNew(stepName, ruleSlug, process.cwd())
 
 Rules are repository-owned artifacts. Running the command from a repository subdirectory can therefore create a second, wrong `specrunner/rules/...` tree below that subdirectory.
 
-**Direction:** mark `rules` (or at minimum `rules new`) as repo-required and pass dispatch-resolved `repoRoot` into `executeRulesNew`.
+**Direction:** mark `rules` as repo-required and pass dispatch-resolved `repoRoot` into `executeRulesNew`.
 
-This is the same cross-cutting invariant found in `request` and `job`: repository-owned objects derive from repo root; invoker cwd is only for explicit relative path arguments.
+This is the same cross-cutting invariant found in `request`, `job`, and `reviewers`: repository-owned objects derive from repo root; invoker cwd is only for explicit relative path arguments.
 
 ### 2. Built-in step validation is correctly sourced
 
-`rules new` validates against `AGENT_STEP_NAMES`, not a local copied list. That is good and should remain machine-derived.
+`rules new` validates built-in targets against `AGENT_STEP_NAMES`, not a local copied list. That is good and should remain machine-derived.
 
 CLI steps such as `verification` / `bite-evidence` are intentionally not valid rule targets because rules are agent prompt guidance, not CLI-step configuration.
 
-### 3. Custom reviewer rule support is structurally inconsistent
+### 3. Formally support custom reviewer names as rule targets
 
-There is a real boundary mismatch:
+The `reviewers` review resolves the previous boundary question.
 
-- `rules new` only accepts names from built-in `AGENT_STEP_NAMES`.
-- custom reviewers are inserted into the runtime pipeline using their arbitrary reviewer `name` as the actual agent step name.
-- agent context construction calls `resolveStepRules(step.name, ...)` for every agent step.
-- `resolveStepRules` itself accepts any string and reads `specrunner/rules/<step.name>/`.
-
-Therefore a manually-created directory such as:
+Custom reviewers are inserted into the runtime pipeline using their arbitrary reviewer `name` as the actual agent step name. Agent context construction calls `resolveStepRules(step.name, ...)` for every agent step, so a manually-created directory such as:
 
 ```text
 specrunner/rules/security-reviewer/01-extra-policy.md
 ```
 
-can be consumed by a custom reviewer named `security-reviewer`, while:
+is already consumed by a custom reviewer named `security-reviewer`.
+
+The current CLI rejects the equivalent command only because `rules new` checks built-in `AGENT_STEP_NAMES` alone:
 
 ```text
 specrunner rules new security-reviewer extra-policy
 ```
 
-is rejected by the CLI.
+**Decision:** make this a supported composition rather than closing the runtime path.
 
-That is not a good permanent contract.
+Legal rule targets should be:
 
-**HOLD until `reviewers` review:** choose one explicit product rule:
+1. canonical built-in agent step names, plus
+2. valid repository-declared custom reviewer names.
 
-1. **Support rules on custom reviewers**: resolve valid rule targets from built-in agent steps + declared reviewer definitions, and let `rules new` create them; or
-2. **Built-in-only rules**: make runtime rule resolution explicitly skip custom reviewer steps so manual filesystem layout cannot bypass the CLI contract.
+Use reviewer loading/validation as the dynamic source. Do not accept arbitrary filesystem directory names merely because they exist.
 
-Do not leave “works if you know the hidden directory trick” as the interface.
+This keeps the public contract aligned with what the pipeline actually executes.
 
 ### 4. The current scaffold contains operational advice that may belong in guide/docs
 
@@ -113,21 +110,20 @@ No immediate change is required, but when `guide` is introduced, keep stable mec
 
 ## Recommended final shape
 
-Subject to the custom-reviewer decision:
-
 ```text
 rules
-  new <step-name> <rule-slug>
+  new <built-in-agent-step | valid-reviewer-name> <rule-slug>
 ```
 
 No `ls`, `show`, `edit`, or `rm` commands are justified now. These are ordinary repository files and normal file/editor/git tools are the right interface after creation.
 
 ## Machine-contract implications
 
-A future command definition should express:
+A future command/application definition should express:
 
-- `requiresRepo: true` inherited by `rules`,
+- inherited `requiresRepo: true` for `rules`,
 - two positional args (`step-name`, `rule-slug`),
-- a dynamic/canonical value source for `step-name`,
+- built-in step names from the canonical step registry,
+- repository-derived custom reviewer names through a typed validation seam,
 - help derived from the same definition,
-- and, if custom reviewer names become legal targets, a validation seam that can combine static step names with repository-declared reviewer names without hard-coding them in the parser.
+- and no arbitrary-directory fallback.
