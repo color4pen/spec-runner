@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T06:01:50.824Z",
+  "updatedAt": "2026-08-16T06:23:12.032Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -70,7 +70,9 @@
     "cc3af96412fc1bab7ebe2d17752441e69b59ce5c",
     "28f4064d258ace5f0203e05c6ca9f0e1d0147a96",
     "d96f9d551da314d9441d1b26ee0954b1fd686675",
-    "e70086dbea3e3939afe25ed20ea520b37ecbedb7"
+    "e70086dbea3e3939afe25ed20ea520b37ecbedb7",
+    "07ab5a7c63600694846ff9b625c288f8fe85dcc2",
+    "bc187a210cc41318c7a6543aca0ca3fb639fb0a9"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -154,16 +156,57 @@
       "tests/hint-command-existence.test.ts",
       "src/core/runtime/provider-readiness.ts",
       "src/cli/command-registry.ts"
+    ],
+    "implementer": [
+      "src/cli/login.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/init.ts",
+      "src/cli/__tests__/login.test.ts",
+      "src/core/doctor/formatter.ts",
+      "src/core/doctor/checks/config/claude-code-token-present.ts",
+      "src/core/doctor/checks/config/managed-key-present.ts",
+      "src/core/doctor/checks/auth/managed-key-valid.ts",
+      "src/core/doctor/checks/agents/environment-provider-alive.ts",
+      "src/core/doctor/checks/agents/agent-provider-alive.ts",
+      "src/core/runtime/prereqs.ts",
+      "src/core/credentials/anthropic.ts",
+      "src/core/credentials/claude-code.ts",
+      "src/core/runtime/provider-readiness.ts",
+      "tests/hint-command-existence.test.ts",
+      "tests/init.test.ts",
+      "src/core/credentials/github.ts",
+      "src/core/credentials/credentials-io.ts",
+      "src/adapter/github/github-client.ts",
+      "README.md",
+      "src/core/doctor/checks/config/__tests__/claude-code-token-present.test.ts",
+      "src/cli/bootstrap.ts",
+      "bin/specrunner.ts",
+      "src/core/doctor/checks/auth/github-token-valid.ts",
+      "src/util/secret-input.ts",
+      "src/cli/credentials.ts",
+      "tests/grep-no-bun-imports.test.ts",
+      "tests/dead-guidance.test.ts",
+      "tests/credentials.test.ts",
+      "tests/doctor-readiness.test.ts",
+      "tests/init-provider-notice.test.ts",
+      "tests/readme-quickstart.test.ts",
+      "tests/unit/cli/login.test.ts",
+      "src/logger/stdout.ts",
+      "tasks.md"
     ]
   },
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 2,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
