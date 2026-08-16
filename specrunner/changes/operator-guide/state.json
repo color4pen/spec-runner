@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a96538bc-88b8-46f9-be87-ce99ae6721cc",
   "createdAt": "2026-08-16T17:11:25.976Z",
-  "updatedAt": "2026-08-16T17:11:28.625Z",
+  "updatedAt": "2026-08-16T17:16:41.588Z",
   "request": {
     "title": "specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/operator-guide-a96538bc",
   "error": null,
@@ -62,10 +62,30 @@
     }
   ],
   "synthesizedCommits": [
-    "e948df6a5b785313aca8a8a4f9137bbbe70d007e"
+    "e948df6a5b785313aca8a8a4f9137bbbe70d007e",
+    "d7be9e41b7d5bedbb1245334e07f217fbdb9324d"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/cli/command-registry.ts",
+      "src/cli/resume.ts",
+      "src/core/finish/escalation.ts",
+      "src/prompts/pipeline-map.ts",
+      ".claude/skills/job-run-monitor/SKILL.md",
+      ".claude/skills/rebase-finish/SKILL.md",
+      ".claude/skills/acceptance-and-issue-audit/SKILL.md",
+      ".claude/skills/parallel-request-workflow/SKILL.md",
+      "src/cli/init.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts",
+      "src/core/command/request.ts",
+      "src/core/command/operational-guidance.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
