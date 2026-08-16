@@ -8,6 +8,7 @@
  * TC-005: report 受領後に hard abort が発火しても report を保全する (D5 catch path)
  * TC-006: report 不在で watchdog 発火 → STEP_TIMEOUT halt
  * TC-007: report 不在で generator 終了 → report retry 経路不変
+ * TC-008: resume-fallback 後に grace-exit した場合、postWork が第 2 session の id で resume される
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
@@ -455,6 +456,73 @@ describe("TC-006: report 不在で watchdog 発火 → 従来どおり STEP_TIME
     expect(result.toolResult).toBeNull();
     const error = result.error as Error & { code?: string };
     expect(error.code).toBe("STEP_TIMEOUT");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-008: resume-fallback 後に grace-exit した場合、postWork が第 2 session の id で resume される
+// ---------------------------------------------------------------------------
+
+describe("TC-008: resume-fallback → grace-exit → postWork uses second session id", () => {
+  it("postWork resumes with fallback session id, not the stale resumeSessionId", async () => {
+    vi.useFakeTimers();
+
+    const { createMcpServerFn, getHandler } = makeMcpCapture();
+    let callCount = 0;
+    let capturedResume: string | undefined;
+
+    const queryFn: QueryFn = async function* (params) {
+      callCount++;
+      const opts = params.options as { abortController?: AbortController; resume?: string } | undefined;
+      const signal = opts?.["abortController"]?.signal;
+
+      if (callCount === 1) {
+        // First call: throw to trigger resume-fallback (non-transient, non-abort error)
+        throw new Error("session not found: old-session-id");
+      } else if (callCount === 2) {
+        // Second call (fresh session after fallback): provide new session_id, call handler, then hang
+        yield { type: "system", session_id: "new-session-id" };
+        await getHandler()!({ ok: true });
+        await new Promise<void>((_, reject) => {
+          if (signal?.aborted) { reject(signal.reason ?? new Error("aborted")); return; }
+          signal?.addEventListener("abort", () => reject(signal?.reason ?? new Error("aborted")));
+        });
+      } else {
+        // postWork turn: capture resume option and return success
+        capturedResume = opts?.["resume"];
+        yield {
+          type: "result",
+          subtype: "success",
+          result: "postwork done",
+          session_id: "new-session-id",
+        };
+      }
+    };
+
+    const runner = new ClaudeCodeRunner({
+      cwd: tempDir,
+      _queryFn: queryFn,
+      _createMcpServerFn: createMcpServerFn,
+    });
+    const ctx = makeCtx(makeAgentStep(), makeJobState("tc-008"), {
+      session: { resumeSessionId: "old-session-id" },
+      policy: {
+        reportTool: mockReportTool,
+        postWorkPrompts: ["please wrap up"],
+      },
+    });
+    const resultPromise = runner.run(ctx);
+
+    await vi.advanceTimersByTimeAsync(100);
+    await vi.advanceTimersByTimeAsync(REPORT_SETTLE_GRACE_MS);
+    const result = await resultPromise;
+
+    expect(result.completionReason).toBe("success");
+    // postWork must have been called (callCount >= 3: throw + fallback + postWork)
+    expect(callCount).toBeGreaterThanOrEqual(3);
+    // postWork must resume with the second session's id, not the stale one
+    expect(capturedResume).toBe("new-session-id");
+    expect(capturedResume).not.toBe("old-session-id");
   });
 });
 

@@ -911,6 +911,14 @@ export class ClaudeCodeRunner implements AgentRunner {
       });
     };
 
+    // T-06 (reduce-added-agent-turns): track per-type added-turn counters at run() scope
+    // so D5 catch path can report actual values rather than hardcoded zeros.
+    // Invariant: reportRetry + outputRepair === followUpAttempts.
+    let followUpAttempts = 0;
+    let reportRetry = 0;
+    let postWork = 0;
+    let outputRepair = 0;
+
     try {
       let queryResult: { lastResult: SDKResultMessage | null };
 
@@ -998,12 +1006,6 @@ export class ClaudeCodeRunner implements AgentRunner {
 
       // --- report_result follow-up retry (main work turn only) ---
       // If reportTool is configured and the agent didn't call it, retry up to maxAttempts.
-      // T-06 (reduce-added-agent-turns): track per-type added-turn counters.
-      // reportRetry + outputRepair === followUpAttempts (invariant); postWork is separate.
-      let followUpAttempts = 0;
-      let reportRetry = 0;
-      let postWork = 0;
-      let outputRepair = 0;
       if (reportTool && capturedToolResult === null && extractedSessionId) {
         const retryPolicy = ctx.policy?.toolReportRetry ?? DEFAULT_TOOL_RETRY;
         for (let attempt = 1; attempt <= retryPolicy.maxAttempts; attempt++) {
@@ -1221,9 +1223,9 @@ export class ClaudeCodeRunner implements AgentRunner {
           completionReason: "success",
           resultContent: null,
           toolResult: capturedToolResult,
-          followUpAttempts: 0,
+          followUpAttempts,
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
-          addedTurns: ADDED_TURNS_ZERO,
+          addedTurns: { reportRetry, postWork, outputRepair },
           modelUsage: extractedModelUsage,
           sessionId: extractedSessionId,
           invocationMetrics: extractedMetrics,
