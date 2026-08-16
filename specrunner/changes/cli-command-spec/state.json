@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f635fe90-7726-47f0-96f7-1a727cd0610a",
   "createdAt": "2026-08-16T08:44:36.107Z",
-  "updatedAt": "2026-08-16T13:38:04.436Z",
+  "updatedAt": "2026-08-16T13:43:02.919Z",
   "request": {
     "title": "CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/cli-command-spec-f635fe90",
   "error": null,
   "pipelineId": "standard",
@@ -83,7 +83,8 @@
     "c814f9505586440a317ac44153bde60f2e9e1588",
     "79bc3abaabc97b2bbd7a7cbd3d9591210d7a1bff",
     "9c5106b60cecad0e3dc01f397af2f38450b9c0e4",
-    "9293ec733d425a0aca2ed272aaa535b6823e4615"
+    "9293ec733d425a0aca2ed272aaa535b6823e4615",
+    "1b91f55a25710acac3a4d6d29cd5fca2182f494b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -183,6 +184,11 @@
       "tests/unit/cli/prune-usage.test.ts",
       "tests/unit/architecture/core-invariants.test.ts",
       "src/errors.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-05-20-cli-noun-verb-restructure.md",
+      "specrunner/adr/2026-08-15-absorb-build-fixer.md",
+      "specrunner/adr/2026-08-16-cli-command-spec.md"
     ]
   },
   "resumePoint": null,
@@ -227,8 +233,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1005",
+    "number": 1005,
+    "createdAt": "2026-08-16T13:43:01.952Z"
+  },
   "_journal": {
-    "historyCount": 96,
+    "historyCount": 101,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -244,7 +255,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
