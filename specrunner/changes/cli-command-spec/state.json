@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f635fe90-7726-47f0-96f7-1a727cd0610a",
   "createdAt": "2026-08-16T08:44:36.107Z",
-  "updatedAt": "2026-08-16T13:10:56.779Z",
+  "updatedAt": "2026-08-16T13:19:04.575Z",
   "request": {
     "title": "CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/cli-command-spec-f635fe90",
   "error": null,
@@ -76,7 +76,8 @@
     "dfd9d494fc77d6ec3131fe857cd2edfaa7087047",
     "f94340d25ec0345febb18d1a8fcebe21f536dc07",
     "d866c4bfdf67b14262255deb3066fd0b6c5bb750",
-    "56eb67f80dfca5fcb9eb5e86768cd0048ad772cb"
+    "56eb67f80dfca5fcb9eb5e86768cd0048ad772cb",
+    "d28d50d37043c8ffe6a851edb3c071831e861f1f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -135,6 +136,21 @@
     ],
     "implementer": [
       "tests/unit/cli/command-spec-api.test.ts"
+    ],
+    "code-review": [
+      "src/cli/command-registry.ts",
+      "tests/unit/cli/command-spec-api.test.ts",
+      "bin/specrunner.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts",
+      "src/cli/__tests__/login.test.ts",
+      "tests/hint-command-existence.test.ts",
+      "tests/unit/cli/hint-command-references.test.ts",
+      "tests/unit/cli/specrunner-worktree-guard.test.ts",
+      "tests/unit/cli/doctor-repair.test.ts",
+      "tests/unit/cli/removed-commands.test.ts",
+      "tests/unit/cli/help-output-tc.test.ts",
+      "tests/unit/cli/resume-help.test.ts"
     ]
   },
   "resumePoint": null,
@@ -151,7 +167,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 59,
+    "historyCount": 63,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -160,7 +176,8 @@
       "spec-fixer": 1,
       "implementer": 6,
       "bite-evidence": 1,
-      "verification": 2
+      "verification": 2,
+      "code-review": 1
     }
   }
 }

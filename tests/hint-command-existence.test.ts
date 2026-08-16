@@ -8,7 +8,7 @@
  * TC-014: doctor hints reference registered commands (including subcommands)
  */
 import { describe, it, expect } from "vitest";
-import { COMMANDS } from "../src/cli/command-registry.js";
+import { COMMANDS, listCommandPaths } from "../src/cli/command-registry.js";
 import type { CommandSpec } from "../src/cli/command-registry.js";
 import { STATUS_HINTS } from "../src/core/finish/job-state-update.js";
 import { pollTimeoutError } from "../src/errors.js";
@@ -35,7 +35,9 @@ function isParent(entry: CommandSpec): boolean {
   return entry.children !== undefined;
 }
 
-const registeredCommands = new Set(Object.keys(COMMANDS));
+const registeredCommands = new Set(
+  listCommandPaths({ includeAliases: true }).map((p) => p[0]!),
+);
 
 describe("hint command existence", () => {
   it("STATUS_HINTS reference only registered commands", () => {

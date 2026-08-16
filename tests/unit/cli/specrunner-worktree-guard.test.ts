@@ -144,7 +144,7 @@ describe("TC-WG-005: worktree guard error hint includes main path", () => {
 
 // TC-WG-006: run alias from worktree → rejected with exit 2 (WORKTREE_GUARD → ARG_ERROR)
 describe("TC-WG-006: run alias from inside a worktree", () => {
-  it("exits with code 2 via top-level WORKTREE_GUARDED_COMMANDS (WORKTREE_GUARD → ARG_ERROR)", async () => {
+  it("exits with code 2 (run resolves as alias → job start spec with worktreeGuard: true → ARG_ERROR)", async () => {
     await setWorktreeDetection(true, "/home/user/my-project");
 
     const result = await runMain(["run", "request.md"]);
