@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T07:35:12.806Z",
+  "updatedAt": "2026-08-16T07:37:09.973Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/auth-setup-ux-701673a2",
   "error": null,
@@ -88,7 +88,8 @@
     "ad09ce39e652246c22ca93fdbf7ff8d7dfef5eb5",
     "be4955499faba9df798290e6448e93bb38a00856",
     "62fc4127270b12de14d4fe9f147fca7861a6f81c",
-    "08dae60922b363a2e2975d0dbdb2ed69eee9e145"
+    "08dae60922b363a2e2975d0dbdb2ed69eee9e145",
+    "0f3f42ee38abcf52c145ab8102e78ee3bec3cc3d"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -212,11 +213,6 @@
       "tests/hint-command-existence.test.ts",
       "tests/credentials.test.ts",
       "src/util/secret-input.ts",
-      "src/core/doctor/checks/config/managed-key-present.ts",
-      "src/core/doctor/checks/auth/managed-key-valid.ts",
-      "src/core/doctor/checks/agents/agent-provider-alive.ts",
-      "src/core/doctor/checks/agents/environment-provider-alive.ts",
-      "src/core/doctor/checks/config/claude-code-token-present.ts",
       "src/core/runtime/provider-readiness.ts"
     ],
     "conformance": [
@@ -285,7 +281,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 114,
+    "historyCount": 119,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -300,7 +296,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 3,
-      "regression-gate": 2,
+      "regression-gate": 3,
       "conformance": 1
     }
   }
