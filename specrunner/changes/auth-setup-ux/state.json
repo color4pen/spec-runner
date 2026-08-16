@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T05:16:12.328Z",
+  "updatedAt": "2026-08-16T05:17:47.942Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "request-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/auth-setup-ux-701673a2",
-  "error": {
-    "code": "STEP_TIMEOUT",
-    "message": "Step 'request-review' inactivity timeout: no agent event for 909464ms",
-    "hint": "no tool observed before timeout (no tool activity in session)"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -66,15 +62,13 @@
     }
   ],
   "synthesizedCommits": [
-    "49bbc705b983a5b563b7193e819f3f13b24935f7"
+    "49bbc705b983a5b563b7193e819f3f13b24935f7",
+    "9704a45463166e2b757ceb22022f23dff5be248c"
   ],
-  "resumePoint": {
-    "step": "request-review",
-    "reason": "timeout",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 4,
+    "historyCount": 6,
     "stepCounts": {
       "request-review": 1
     }

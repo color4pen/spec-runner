@@ -1,0 +1,25 @@
+{
+  "requestHash": "sha256:7e91ccbb74cfdb8308f9d449003fb328ff66cfc02ae665bf19ca4ee6644aaa9d",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/login.ts:14 — provider?: \"github\" | \"claude\"",
+    "src/cli/login.ts:137-138 — readline.createInterface with output:process.stdout causes echo",
+    "src/cli/login.ts checks only GH_TOKEN/GITHUB_TOKEN env and credentials.json (not gh auth token)",
+    "src/core/credentials/github.ts — resolution order GH_TOKEN → GITHUB_TOKEN → gh auth token → credentials.json",
+    "src/core/doctor/checks/config/managed-key-present.ts:22 — dead guidance 'specrunner login --provider anthropic'",
+    "src/core/doctor/checks/auth/managed-key-valid.ts:22 — dead guidance 'specrunner login --provider anthropic'",
+    "src/core/doctor/checks/agents/environment-provider-alive.ts:22 — dead guidance 'specrunner login --provider anthropic'",
+    "src/core/doctor/checks/agents/agent-provider-alive.ts:33 — dead guidance 'specrunner login --provider anthropic'",
+    "src/core/runtime/prereqs.ts:35 — dead guidance 'specrunner login --provider anthropic'",
+    "src/core/credentials/anthropic.ts:13 — future login --provider anthropic comment",
+    "src/cli/init.ts — --provider silently ignored when global config exists (resolveInitProvider only called inside !configExists block)",
+    "README.md:19-20 — unconditional npx specrunner login in Quick Start",
+    "src/cli/flag-parser.ts:94 — unknown flag throws FlagParseError before handler",
+    "src/cli/command-registry.ts — login flag def includes provider with values [github, claude]",
+    "src/cli/command-registry.ts — no credentials command exists",
+    "src/core/doctor/doctor.ts:225-226 — exit code 0 on warn-only (fail==0)",
+    "src/core/doctor/checks/config/claude-code-token-present.ts — required:false, returns warn when token absent",
+    "src/core/doctor/formatter.ts — no Ready to run message when fail==0"
+  ],
+  "sourceRevision": "57d9e7411b9f6dd80cbaf63531febca56a4f4ab5"
+}
