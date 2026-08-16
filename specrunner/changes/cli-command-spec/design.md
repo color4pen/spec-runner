@@ -140,6 +140,7 @@ CommandSpec = {
 - catch は FlagParseError（exit 2 + usage）/ `SpecRunnerError`（`Error: {message}` / `Hint: {hint}` / `exit {exitCode}`）/ その他（`Fatal:` + exit 1）を **両経路共通**で扱う。要件 9 の許容: subcommand 経路の `SpecRunnerError` が `Fatal` 縮退から `Error/Hint/exitCode` へ正規化される。
 - unknown command / unknown subcommand / missing subcommand のエラー文言（`Unknown command: <x>` / `Unknown <parent> subcommand: <sub>` / `Error: specrunner <cmd> requires a subcommand.` / `Usage: specrunner <cmd> <sub1|sub2>`）は逐語保存する（挙動テスト正本）。
 - `--help` / `-h` / `--version` / 引数なし の top-level 分岐は現行文言・exit code を保存。
+- **handler+children ノードの dispatch fallback**: ノードが `handler`（default action）と `children` を両方持つ場合（`doctor` 等）、`resolveCommand` は次の規則で解決する: `args[1]` が既知 child のキーに一致する → child spec を解決する。`args[1]` が既知 child にマッチしない（または `args[1]` が存在しない）→ そのノード自体を解決済み spec として返し、`restArgs` に残りの tokens を渡す（`unknown-subcommand` を返さない）。これにより `specrunner doctor foo` は default action（diagnose）に渡り、現行挙動を保存する。`unknown-subcommand` は「children を持ち handler を持たない純粋な parent」のみに適用する。
 
 **Rationale**: 二重実装がエラー処理の経路差（accidental drift）を生んでいた。単一 flow が根本解。順序を normal 経路に合わせるのは、pinned な help 最優先・guard-before-parse の挙動を保つため。
 

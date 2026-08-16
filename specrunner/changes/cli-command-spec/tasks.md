@@ -166,6 +166,12 @@
       へ移行する。alias 参照が実在扱いされるよう alias 包含列挙を使う。
 - [ ] 検査対象（hint 文字列の `specrunner <verb> [<sub>]` 抽出）と破壊確認（架空コマンドで violations が出る）の
       感度は維持する。alias `run` を参照する hint が実在扱いされることを固定する。
+- [ ] **2 段階バリデーション移行戦略**（現行 `buildSubcommandMap` の等価置換）: `listCommandPaths({includeAliases:true})` で全 path を取得し、以下の 3 つの集合をビルドして現行の 2 段バリデーションと等価な感度を実現する:
+  1. `topLevel = new Set(paths.map(p => p[0]))` — top-level コマンド集合（token1 の存在確認）
+  2. `fullPaths = new Set(paths.map(p => p.join(" ")))` — 全 canonical / alias パスの結合文字列集合（`"job start"` / `"doctor repair"` 等）
+  3. `hasChildren = new Set(paths.filter(p => p.length > 1).map(p => p[0]))` — 子を持つ top-level 集合（token2 の検査を行うか否かの判定に使う）
+  - 検証ロジック: `token1 ∉ topLevel` → unregistered top-level 違反。`token2` が存在し `token1 ∈ hasChildren` かつ `"token1 token2" ∉ fullPaths` → unregistered subcommand 違反（例: `specrunner job rm` は `fullPaths` に存在しないため検出される）。`token2` が存在するが `token1 ∉ hasChildren` → token2 は positional / argument と見なし検査しない（現行動作を維持）。
+  - 注意: `token1 ∈ hasChildren` の判定を省略して `fullPaths` だけで判断すると、handler+children ノード（`doctor`）に対して token2 を常に subcommand として扱い誤検出が生じるため省略不可。
 
 **Acceptance Criteria**:
 - hint 実在検査が spec 由来列挙 API を正本として使う。
