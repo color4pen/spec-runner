@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f635fe90-7726-47f0-96f7-1a727cd0610a",
   "createdAt": "2026-08-16T08:44:36.107Z",
-  "updatedAt": "2026-08-16T13:03:28.392Z",
+  "updatedAt": "2026-08-16T13:07:00.710Z",
   "request": {
     "title": "CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する",
     "type": "new-feature",
@@ -72,7 +72,9 @@
     "266a80ab244eb61e86e03435ab0711a3b1cf5e7e",
     "9b87992f2c3dddc682a1cf018087f6852ef15902",
     "6490530cd6be34b0dccff17a5c88624e5a378f63",
-    "ca7ff86447a9f096d4b9cf7c2ace9b0c69b729b3"
+    "ca7ff86447a9f096d4b9cf7c2ace9b0c69b729b3",
+    "dfd9d494fc77d6ec3131fe857cd2edfaa7087047",
+    "f94340d25ec0345febb18d1a8fcebe21f536dc07"
   ],
   "touchedFiles": {
     "request-review": [
@@ -128,7 +130,8 @@
     ],
     "spec-fixer": [
       "tests/unit/cli/hint-command-references.test.ts"
-    ]
+    ],
+    "implementer": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -144,14 +147,16 @@
     }
   ],
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "implementer": 4
+      "implementer": 5,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }

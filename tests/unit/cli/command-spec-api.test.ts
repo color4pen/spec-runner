@@ -407,13 +407,13 @@ vi.mock("../../../src/core/command/request-prompt.js", () => ({ executePrompt: v
 
 let originalArgv: string[];
 let stderrSpy: ReturnType<typeof vi.spyOn>;
-let exitSpy: ReturnType<typeof vi.spyOn>;
+let _exitSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
   originalArgv = process.argv;
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
-  exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
+  _exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
     throw new Error(`process.exit(${code})`);
   });
 });
@@ -439,7 +439,7 @@ describe("TC-023: SpecRunnerError from handler → Error/Hint/exitCode (unified 
     mockRunCancel.mockRejectedValueOnce(
       new SpecRunnerError("JOB_NOT_FOUND", "job not found", "Use 'specrunner job ls' to list jobs", EXIT_CODE.GENERAL_ERROR),
     );
-    const result = await runMain(["job", "cancel", "--all-terminated", "--yes"]);
+    await runMain(["job", "cancel", "--all-terminated", "--yes"]);
 
     const stderr = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
     expect(stderr).toContain("Error: ");
