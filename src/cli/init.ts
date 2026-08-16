@@ -3,12 +3,13 @@ import * as path from "node:path";
 import * as readline from "node:readline";
 import { loadConfig, saveConfig } from "../config/store.js";
 import { getConfigPath } from "../util/xdg.js";
-import { logInfo, logError, logResult } from "../logger/stdout.js";
+import { logInfo, logError, logResult, stdoutWrite } from "../logger/stdout.js";
 import { ensureDotSpecrunnerGitignore } from "../util/gitignore.js";
 import { changesDirRel, draftsDir } from "../util/paths.js";
 import type { SpecRunnerConfig, StepConfigMap, StepExecutionConfig } from "../config/schema.js";
 import { PROVIDER_DEFAULTS } from "../config/model-registry.js";
 import type { Provider } from "../config/model-registry.js";
+import { buildClaudeMdSnippet } from "../core/command/guide.js";
 
 /**
  * Resolve which provider to use for init scaffold generation.
@@ -157,6 +158,11 @@ export async function runInit(options: {
   // specrunner/changes: create directory (idempotent — recursive:true is no-op if exists)
   const changesCreated = await fs.mkdir(path.join(repoRoot, changesDirRel()), { recursive: true });
   logResult(`specrunner/changes: ${changesCreated !== undefined ? "created" : "already exists"}`);
+
+  // Output CLAUDE.md snippet for the user to paste into their project's CLAUDE.md
+  stdoutWrite("\n--- CLAUDE.md snippet (paste into your project's CLAUDE.md) ---\n");
+  stdoutWrite(buildClaudeMdSnippet());
+  stdoutWrite("---\n");
 
   return 0;
 }

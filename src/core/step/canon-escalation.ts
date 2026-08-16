@@ -147,5 +147,7 @@ export function buildCanonEscalationReason(findings: Finding[]): string {
     findingLines,
     "",
     "fixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。",
+    "",
+    "詳細: `specrunner guide escalation`",
   ].join("\n");
 }

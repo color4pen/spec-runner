@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a96538bc-88b8-46f9-be87-ce99ae6721cc",
   "createdAt": "2026-08-16T17:11:25.976Z",
-  "updatedAt": "2026-08-16T17:47:36.552Z",
+  "updatedAt": "2026-08-16T17:53:56.837Z",
   "request": {
     "title": "specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/operator-guide-a96538bc",
   "error": null,
@@ -68,7 +68,8 @@
     "14fc578ddb62ca61db9ddf7c1828dcfd3e401e6e",
     "79458a3c16085b433c37830c86f67a9d59897d34",
     "54d224c7d55b3d9c5006802ccc8bf9c06097e1ad",
-    "213d4bfd316095219aa96a0acb8e3a83003eae52"
+    "213d4bfd316095219aa96a0acb8e3a83003eae52",
+    "a3e7cebb94d8c93273aa814bbf3bd77555cd4e80"
   ],
   "touchedFiles": {
     "request-review": [
@@ -105,25 +106,17 @@
       "src/cli/command-registry.ts",
       "src/core/finish/escalation.ts",
       "src/core/step/canon-escalation.ts",
-      "src/cli/init.ts",
-      "src/core/command/operational-guidance.ts",
-      "tests/finish-escalation.test.ts",
-      "tests/unit/core/step/canon-escalation.test.ts",
-      "vitest.config.ts",
-      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts",
-      "src/prompts/pipeline-map.ts",
-      "src/core/command/request-prompt.ts",
-      "bin/specrunner.ts"
+      "src/cli/init.ts"
     ],
     "spec-fixer": []
   },
   "_journal": {
-    "historyCount": 23,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
-      "spec-review": 1,
+      "spec-review": 2,
       "spec-fixer": 1
     }
   }

@@ -26,6 +26,8 @@ export function formatEscalation(params: EscalationParams): string {
     "",
     `Resume Command:    ${params.resumeCommand}`,
     "",
+    "詳細: `specrunner guide escalation`",
+    "",
     "=====================================",
   ].join("\n");
 }
