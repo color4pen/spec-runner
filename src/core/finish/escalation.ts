@@ -13,7 +13,7 @@ export interface EscalationParams {
 
 /**
  * Format an escalation block for stdout output.
- * All 4 fields are required and will always appear in the output.
+ * All 5 elements are required and will always appear in the output.
  */
 export function formatEscalation(params: EscalationParams): string {
   return [
