@@ -391,6 +391,13 @@ describe("TC-008: usage に guide が現れる", () => {
     const result = resolveCommand(["guide", "escalation"]);
     expect(result.status).toBe("ok");
   });
+
+  // F2: all GUIDE_TOPICS names must appear in USAGE (drift guard for --help summary)
+  it("TC-008: USAGE help summary contains all GUIDE_TOPICS names (registry-derived, not hand-written)", () => {
+    for (const topic of GUIDE_TOPICS) {
+      expect(USAGE, `USAGE must contain topic name: ${topic.name}`).toContain(topic.name);
+    }
+  });
 });
 
 // ============================================================================
@@ -605,5 +612,74 @@ describe("TC-021: escalation topic body が後片付けコマンドを含む", (
   it("TC-021: escalation body contains 'specrunner job attach --branch'", () => {
     expect(escalationTopic!.body).toContain("specrunner job attach");
     expect(escalationTopic!.body).toContain("--branch");
+  });
+});
+
+// ============================================================================
+// F1: 直接 resolveCommand assertions for 5 topics with triple-backtick-only commands
+// TC-013 の inline-backtick 抽出では掛からない merge/audit/setup/request/inject topic の
+// 主要コマンドを resolveCommand で直接検証する (finding: code-review F1)
+// ============================================================================
+
+describe("TC-013 direct: merge/audit/setup/request/inject topic コマンドが registry で解決される", () => {
+  // merge topic commands
+  it("specrunner job ls resolves (merge topic)", () => {
+    expect(resolveCommand(["job", "ls"]).status).toBe("ok");
+  });
+
+  it("specrunner job archive resolves (merge topic)", () => {
+    expect(resolveCommand(["job", "archive"]).status).toBe("ok");
+  });
+
+  // audit topic commands
+  it("specrunner job ls --all resolves (audit topic)", () => {
+    // flags are stripped by extractSpecrunnerCommands; base path is ["job", "ls"]
+    expect(resolveCommand(["job", "ls"]).status).toBe("ok");
+  });
+
+  // setup topic commands
+  it("specrunner init resolves (setup topic)", () => {
+    expect(resolveCommand(["init"]).status).toBe("ok");
+  });
+
+  it("specrunner doctor resolves (setup topic)", () => {
+    expect(resolveCommand(["doctor"]).status).toBe("ok");
+  });
+
+  it("specrunner login resolves (setup topic)", () => {
+    expect(resolveCommand(["login"]).status).toBe("ok");
+  });
+
+  it("specrunner credentials set resolves (setup topic)", () => {
+    expect(resolveCommand(["credentials", "set"]).status).toBe("ok");
+  });
+
+  it("specrunner request template resolves (setup/request topic)", () => {
+    expect(resolveCommand(["request", "template"]).status).toBe("ok");
+  });
+
+  it("specrunner request validate resolves (setup/request topic)", () => {
+    expect(resolveCommand(["request", "validate"]).status).toBe("ok");
+  });
+
+  it("specrunner job start resolves (setup/request topic)", () => {
+    expect(resolveCommand(["job", "start"]).status).toBe("ok");
+  });
+
+  it("specrunner job wait resolves (setup topic)", () => {
+    expect(resolveCommand(["job", "wait"]).status).toBe("ok");
+  });
+
+  // inject topic commands
+  it("specrunner rules new resolves (inject topic)", () => {
+    expect(resolveCommand(["rules", "new"]).status).toBe("ok");
+  });
+
+  it("specrunner reviewers new resolves (inject topic)", () => {
+    expect(resolveCommand(["reviewers", "new"]).status).toBe("ok");
+  });
+
+  it("specrunner config effective resolves (inject topic)", () => {
+    expect(resolveCommand(["config", "effective"]).status).toBe("ok");
   });
 });

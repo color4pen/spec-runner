@@ -46,7 +46,7 @@ import { SLUG_REGEX } from "../util/validation-patterns.js";
 import { isDetachedChild, detachSelf } from "../core/command/detach.js";
 import { parseRequestMdRaw } from "../parser/request-md.js";
 import { runJobWait } from "./job-wait.js";
-import { runGuide } from "../core/command/guide.js";
+import { runGuide, GUIDE_TOPICS } from "../core/command/guide.js";
 
 /** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
 const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
@@ -1490,7 +1490,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
     visibility: "normal",
     help: {
       group: "Guide",
-      summary: "  guide [topic]                   運用ガイドを表示 (topics: jobs merge audit setup escalation request review inject inbox)",
+      summary: `  guide [topic]                   運用ガイドを表示 (topics: ${GUIDE_TOPICS.map((t) => t.name).join(" ")})`,
     },
     handler: async (parsed) => {
       process.exit(runGuide(parsed.positional));

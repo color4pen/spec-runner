@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a96538bc-88b8-46f9-be87-ce99ae6721cc",
   "createdAt": "2026-08-16T17:11:25.976Z",
-  "updatedAt": "2026-08-16T18:30:59.563Z",
+  "updatedAt": "2026-08-16T18:32:02.471Z",
   "request": {
     "title": "specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "awaiting-resume",
+  "step": "code-fixer",
+  "status": "running",
   "branch": "feat/operator-guide-a96538bc",
   "error": null,
   "pipelineId": "standard",
@@ -76,7 +76,8 @@
     "2454d471018b301c7e0d4243b8a526f49f749fff",
     "ae5ea7719780b646d9c08627d64339379bb96165",
     "ac33ed2b17f403d65c1c2405bf2b2cb67312e080",
-    "102984ad138c324abf583d7edc4f0cf85b19d487"
+    "102984ad138c324abf583d7edc4f0cf85b19d487",
+    "e53924531870810ddc01bfaf64f84c733c530fcf"
   ],
   "touchedFiles": {
     "request-review": [
@@ -135,13 +136,17 @@
       ".claude/skills/parallel-request-workflow/SKILL.md"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "code-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "code-review の 3 findings への対応(review-feedback-001.md 参照)。\n\nF1: TC-013 の inline 抽出に掛からない 5 topic(merge / audit / setup / request / inject)について、findings の表に列挙された主要コマンド(job ls / job archive --with-merge / job ls --all / init / doctor / credentials set / request template / request validate / rules new / reviewers new / config effective)を resolveCommand([...]) で直接実在 assert する test case を guide.test.ts に追加する。guide 本文は変更しない。TC-013 自体も変更しない。\n\nF2: src/cli/command-registry.ts の guide help summary 行の topic 列挙 '(topics: jobs merge ...)' を手書きでなく GUIDE_TOPICS から導出する(例: template literal で GUIDE_TOPICS.map(t => t.name).join(' '))。加えて、全 topic.name が USAGE に含まれることを assert する test を追加し、topic 追加・改名時の drift を噛む。\n\nF3: runInit の標準出力が buildClaudeMdSnippet() の内容を含むことを固定する統合テストを追加する(builder 単体 TC-009 は残す)。既存 init テストの mock 構成に倣うこと。\n\nスコープ: guide.test.ts / command-registry.ts / init 系テストのみ。guide 本文・GUIDE_TOPICS 定義・既存 assertion は変更しない。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-16T18:32:02.348Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 58,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
