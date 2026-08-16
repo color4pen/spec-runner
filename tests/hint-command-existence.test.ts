@@ -125,7 +125,12 @@ describe("TC-014: doctor hints reference registered commands (including subcomma
     for (const filePath of tsFiles) {
       const content = await fs.readFile(filePath, "utf-8");
       // Extract hint strings: look for hint: "..." or hint: `...` patterns
-      const hintMatches = [...content.matchAll(/hint\s*:\s*["'`]([^"'`]+)["'`]/g)];
+      // Three separate patterns to avoid inner-quote truncation (e.g. "run 'specrunner ...'")
+      const hintMatches = [
+        ...content.matchAll(/hint\s*:\s*"([^"]*)"/g),
+        ...content.matchAll(/hint\s*:\s*`([^`]*)`/g),
+        ...content.matchAll(/hint\s*:\s*'([^']*)'/g),
+      ];
       for (const m of hintMatches) {
         const hint = m[1] ?? "";
         const verbs = extractCommandVerbs(hint);
@@ -151,7 +156,12 @@ describe("TC-014: doctor hints reference registered commands (including subcomma
 
     for (const filePath of tsFiles) {
       const content = await fs.readFile(filePath, "utf-8");
-      const hintMatches = [...content.matchAll(/hint\s*:\s*["'`]([^"'`]+)["'`]/g)];
+      // Three separate patterns to avoid inner-quote truncation (e.g. "run 'specrunner ...'")
+      const hintMatches = [
+        ...content.matchAll(/hint\s*:\s*"([^"]*)"/g),
+        ...content.matchAll(/hint\s*:\s*`([^`]*)`/g),
+        ...content.matchAll(/hint\s*:\s*'([^']*)'/g),
+      ];
       for (const m of hintMatches) {
         const hint = m[1] ?? "";
         const verbSubs = extractCommandVerbSubs(hint);

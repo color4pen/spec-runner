@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T07:09:26.647Z",
+  "updatedAt": "2026-08-16T07:12:58.795Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/auth-setup-ux-701673a2",
   "error": null,
@@ -80,7 +80,8 @@
     "dc64275ac5fae5b15109b5765c122683aced4574",
     "27f9a63b3a9698539357f54f355855e856038261",
     "99624338e7d3bb4a977b4c1303471f3e46999a2c",
-    "4ccda1c1c2614a336a71069ead82c013541bd961"
+    "4ccda1c1c2614a336a71069ead82c013541bd961",
+    "2e73aac4dfba03ef2f5548d9e373e3d77890b70b"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -215,6 +216,13 @@
       "tests/unit/cli/flag-parser.test.ts",
       "src/cli/bootstrap.ts",
       "bin/specrunner.ts"
+    ],
+    "regression-gate": [
+      "tests/credentials.test.ts",
+      "src/util/secret-input.ts",
+      "tests/hint-command-existence.test.ts",
+      "src/core/runtime/provider-readiness.ts",
+      "src/cli/command-registry.ts"
     ]
   },
   "reviewerStatuses": [
@@ -255,7 +263,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 75,
+    "historyCount": 79,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -269,7 +277,8 @@
       "code-fixer": 2,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 2
+      "custom-reviewers": 2,
+      "regression-gate": 1
     }
   }
 }
