@@ -65,6 +65,8 @@ interface ParsedFrontmatter {
  * Split markdown content into frontmatter block and body.
  * Frontmatter is delimited by `---` at the start of the file.
  * If no frontmatter is present, frontmatter is "" and body is the full content.
+ * NOTE: the same frontmatter convention is also implemented in src/core/step/rules-delivery.ts.
+ * If the `---` delimiter convention changes, update both files.
  */
 function splitFrontmatter(content: string): { frontmatter: string; body: string } {
   const lines = content.split("\n");

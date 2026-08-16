@@ -2,8 +2,11 @@
  * buildStepContext — pure context assembler for agent step execution.
  *
  * Extracts the context-building block from StepExecutor.runAgentStep (:256-347).
- * Contains NO control-flow early returns, no exceptions, no state mutations.
- * All paths lead to a fully constructed AgentRunContext.
+ * Contains NO control-flow early returns, no state mutations.
+ * All paths lead to a fully constructed AgentRunContext, EXCEPT when a rule
+ * file declares an unknown `delivery` value — in that case splitRulesByDelivery
+ * throws and the caller (executor.ts) catches it as a step-level error.
+ * Callers rely on executor's outer try/catch to handle this exception.
  *
  * Design:
  *   - I/O is allowed (fs reads for project.md and rules files).

@@ -14,6 +14,8 @@ type Delivery = "followup" | "prompt";
 /**
  * Split markdown content into frontmatter block and body.
  * Follows the same convention as src/core/reviewers/definition.ts splitFrontmatter.
+ * NOTE: the same frontmatter convention is also implemented in src/core/reviewers/definition.ts.
+ * If the `---` delimiter convention changes, update both files.
  *
  * - First line must be exactly `---` (trimmed) to trigger frontmatter parsing.
  * - Closing `---` ends the frontmatter block; body is everything after it.
