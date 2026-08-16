@@ -31,7 +31,7 @@ Each file records:
 | `login` | reviewed | KEEP as GitHub-only login; move headless credential storage out and remove config side effect |
 | `run` | reviewed | KEEP as promoted/common shortcut to canonical lifecycle spelling `job start`; alias relation should be machine-declared |
 | `request` | reviewed | KEEP authoring namespace; fix repo-root/type constraints; likely merge `prompt` into future guide |
-| `job` | pending | execution/lifecycle surface; largest group |
+| `job` | reviewed | KEEP namespace; normal lifecycle vs operator/maintenance visibility split; move bulk terminated cleanup out of `cancel`; stats placement waits for `usage` review |
 | `config` | reviewed | KEEP as read/diagnostic namespace; do not add generic setter just to absorb init provider |
 | `inbox` | pending | unattended operation |
 | `rules` | pending | extension surface |
@@ -43,19 +43,22 @@ Each file records:
 ## Cross-cutting observations already visible
 
 - `COMMANDS` is structured data, but top-level `USAGE` is separately handwritten. They already drift: implemented paths such as `job reopen`, `usage`, and the inline `doctor repair` path are not represented consistently in top help.
-- Command-specific and parent-command help is optional. Commands such as `init`, the `request` family, and parents such as `config` can therefore expose behavior that `--help` does not describe structurally.
+- Command-specific and parent-command help is optional. Commands such as `init`, the `request` family, and several `job` commands can therefore expose behavior that `--help` does not describe structurally.
 - Deprecated compatibility flags currently remain indistinguishable from active flags in the registry. A future command contract should be able to mark hidden/deprecated migration surfaces explicitly.
 - Guidance strings in runtime/doctor code can name commands independently of the registry. This is how dead command guidance such as `login --provider anthropic` survived.
 - Config JSON is the source of truth; `config effective` is a read-only resolution/source-attribution view. Avoid inventing CLI-only configuration concepts that do not exist in the schema.
-- Commands should mutate only state implied by their verb. `login` creating global config is an example of setup convenience outliving its ownership boundary.
+- Commands should mutate only state implied by their verb. `login` creating global config and `job cancel --all-terminated` performing maintenance cleanup are examples of convenience behavior outliving its ownership boundary.
 - Credential setup must respect the same source precedence as runtime resolution. Writing a lower-priority credential must not be reported as a successful repair while a higher-priority invalid source still shadows it.
 - A successful exit code must mean the requested state transition actually completed (or was already satisfied). Interactive/automation guards should not silently no-op with exit 0 when an operation such as reset was refused for lack of confirmation.
 - `status` and `doctor` are different surfaces: object-specific state inspection can remain direct, while `doctor` owns readiness/health and next-action guidance.
-- Repository-owned objects should resolve from dispatch-time repo root, not invocation depth. Explicit user file paths may remain relative to invoker cwd, but slugs/listings should not disappear when the command is run from a subdirectory.
+- Repository-owned objects should resolve from dispatch-time repo root, not invocation depth. Explicit user file paths may remain relative to invoker cwd, but slugs/listings/state must not disappear when the command is run from a subdirectory. The `job` review found remaining debt in start/resume/reopen/archive.
+- Repository requirement should be owned at the highest truthful command node. All `job` operations are repo-owned, so a future parent command spec should support inherited `requiresRepo` instead of repeating/omitting it per leaf.
 - Tolerant readers and strict writers are different contracts. Backward-compatible parsing may accept/warn on unknown values, while CLI generators should emit only canonical values derived from the same registry.
+- Typed flag parsing belongs in the command contract. Numeric flags such as `archive --merge-wait-ms` should not be reparsed with permissive `parseInt` logic in handlers.
 - Static operational knowledge should have one owner. If `guide request` supersedes `request prompt`, keep at most a compatibility alias; do not maintain two independent prose bodies.
+- Discoverability needs more than public/hidden. The `job` surface already has normal lifecycle, operator recovery, maintenance, reporting, and compatibility concerns; a future CommandSpec should express audience/visibility so contextual commands remain available without crowding Quick Start.
 - A shortcut/alias is itself part of the CLI contract. Promoted shortcuts such as `run -> job start` should inherit flags, positional args, guards and help from their target through machine-readable alias metadata rather than separate dispatch conventions.
-- The likely architectural target is a machine-readable command spec from which parsing, detailed help, parent/top-level help, aliases/deprecations, and guide command validation can be derived. Avoid per-command class hierarchy; the goal is one interface contract, not more ceremony.
+- The likely architectural target is a machine-readable command spec from which parsing, detailed help, parent/top-level help, aliases/deprecations, inherited constraints, visibility, typed flags, and guide command validation can be derived. Avoid per-command class hierarchy; the goal is one interface contract, not more ceremony.
 
 ## Review order
 
