@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "86f243f2-9344-4d57-b3ad-6c86b6d3547c",
   "createdAt": "2026-08-16T15:23:37.377Z",
-  "updatedAt": "2026-08-16T16:09:25.728Z",
+  "updatedAt": "2026-08-16T16:22:25.113Z",
   "request": {
     "title": "rules の配送方式に delivery: prompt を追加する — 行動制約型ルールを main prompt に前置注入する",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/rules-delivery-86f243f2",
   "error": null,
   "pipelineId": "standard",
@@ -71,7 +71,9 @@
     "08f4af98192ab894aeae979516eb35a4ce7f9958",
     "953e6025833cf38d6bdbd74184807967c2a9ebd1",
     "7c4fcaa1e48530baf7292f1d9cb76e7e2e5db1c2",
-    "6f0d7f77bd18c30fea33836850d5891e44e60f3e"
+    "6f0d7f77bd18c30fea33836850d5891e44e60f3e",
+    "843167a512c6ff609d2d077f9831caa90e398ffd",
+    "958aca05a3c9162fb470a4c33d201794b04aef62"
   ],
   "touchedFiles": {
     "request-review": [
@@ -157,18 +159,12 @@
     "code-review": [
       "src/core/step/rules-delivery.ts",
       "tests/core/step/rules-delivery.test.ts",
-      "src/core/step/step-context-builder.ts",
       "src/core/port/agent-runner.ts",
+      "src/core/step/step-context-builder.ts",
       "src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts",
-      "src/adapter/claude-code/agent-runner.ts",
-      "src/adapter/managed-agent/agent-runner.ts",
-      "src/adapter/codex/agent-runner.ts",
       "specrunner/rules/implementer/02-test-command.md",
-      "src/core/command/rules-new.ts",
-      "src/cli/command-registry.ts",
-      "tests/unit/core/command/rules-new.test.ts",
       "src/core/step/__tests__/step-context-builder.test.ts",
-      "tests/unit/core/step/post-work-prompt-invariant.test.ts"
+      "src/core/command/rules-new.ts"
     ],
     "code-fixer": [
       "src/core/step/__tests__/step-context-builder.test.ts",
@@ -179,8 +175,42 @@
       "src/core/step/rules-followup-prompts.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -190,8 +220,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1,
-      "code-fixer": 1
+      "code-review": 2,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
