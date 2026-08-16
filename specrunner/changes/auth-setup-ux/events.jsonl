@@ -28,3 +28,9 @@
 {"type":"transition","ts":"2026-08-16T05:47:42.649Z","step":"spec-review","status":"warning","message":"spec-review iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-08-16T05:47:42.650Z","step":"step-transition","status":"ok","message":"spec-review → test-case-gen"}
 {"type":"transition","ts":"2026-08-16T05:47:42.651Z","step":"test-case-gen-started","status":"started","message":"Starting test-case-gen step"}
+{"type":"transition","ts":"2026-08-16T05:51:44.470Z","step":"test-case-gen-verdict","status":"ok","message":"test-case-gen verdict: success"}
+{"type":"step-attempt","step":"test-case-gen","sessionId":"25c64d74-e736-49ec-a5b1-b387220bb2d9","outcome":{"verdict":"success","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":0,"outputRepair":0}},"startedAt":"2026-08-16T05:47:42.701Z","endedAt":"2026-08-16T05:51:42.393Z","commitOid":"28f4064d258ace5f0203e05c6ca9f0e1d0147a96"}
+{"type":"lineage","step":"test-case-gen","ts":"2026-08-16T05:51:42.393Z","outputs":[{"path":"specrunner/changes/auth-setup-ux/test-cases.md","hash":"sha256:ef98ef0191271eca45b77ecb91eada35d5079a33b87d9dbecad9aed99e0b4fd6"}],"inputs":[{"path":"specrunner/changes/auth-setup-ux/design.md","hash":"sha256:29c337004ca3fd656cba53c74e1bb66b8d4c89ddac0ac6812eeebb58b754e69c"},{"path":"specrunner/changes/auth-setup-ux/tasks.md","hash":"sha256:c248d6dff012b392ac5f1e27d28a540ee1e05137b86dd5dfbc732ff1f15b9d3c"}]}
+{"type":"transition","ts":"2026-08-16T05:51:44.474Z","step":"step-transition","status":"ok","message":"spec-review complete → spec-review (iter 2)"}
+{"type":"transition","ts":"2026-08-16T05:51:44.475Z","step":"spec-review","status":"started","message":"spec-review iteration 2 started"}
+{"type":"transition","ts":"2026-08-16T05:51:44.475Z","step":"spec-review-started","status":"started","message":"Starting spec-review step"}
