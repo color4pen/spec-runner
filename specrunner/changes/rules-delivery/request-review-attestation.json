@@ -1,0 +1,14 @@
+{
+  "requestHash": "sha256:c8b0722ea02f1b7877a4a649c7643c4ed7453891d1b5cbeaed3b806feaa9c3bf",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/rules-resolve.ts:29 — resolveStepRules function signature, string[] return type, no frontmatter handling",
+    "src/core/step/rules-followup-prompts.ts:9-15 — WRAP_PREFIX at line 9, WRAP_SUFFIX at lines 11-15, pure function",
+    "src/core/step/step-context-builder.ts:85-96 — resolveStepRules → buildRulesFollowUpPrompts → allFollowUpPrompts flow",
+    "src/adapter/claude-code/agent-runner.ts:525-546 — main prompt order: baseMessage → artifactSection → touchedFilesSection → resumeSection → additionalInstructions → firstTurnCompletionDirective",
+    "src/adapter/claude-code/agent-runner.ts:955- (lines 1030-1046) — postWorkPrompts loop uses resume: extractedSessionId after main turn",
+    "specrunner/rules/implementer/02-test-command.md — file exists, bun test prohibition content, no frontmatter",
+    "specrunner/adr/2026-05-24-per-step-rule-followup.md — D1 (frontmatter なし・CLI 非解釈), D2 (N段 follow-up), D3 (wrap 3要素制約) all present"
+  ],
+  "sourceRevision": "a41ad581d8c7a828537c130836e3b6afd99cb3f1"
+}
