@@ -366,9 +366,13 @@ export class ManagedAgentRunner implements AgentRunner {
     const effectiveRequestContentWithResume = ctx.session.resumePrompt
       ? `${effectiveRequestContent}\n\n<resume-context>\n${ctx.session.resumePrompt}\n</resume-context>`
       : effectiveRequestContent;
+    // rules-delivery D4: inject promptRules after resume context (SSE path).
+    const effectiveRequestContentFinal = ctx.policy?.promptRules
+      ? `${effectiveRequestContentWithResume}\n\n${ctx.policy.promptRules}`
+      : effectiveRequestContentWithResume;
 
     const sseResult = await this.sessionClient.streamEvents(sessionId, {
-      requestContent: effectiveRequestContentWithResume,
+      requestContent: effectiveRequestContentFinal,
       slug: ctx.slug,
       branch: ctx.branch || undefined,
       toolHandlers,

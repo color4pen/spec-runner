@@ -1,8 +1,10 @@
 /**
  * TC-017: managed adapter — promptRules を git push instruction の直前に注入する
+ * TC-019: managed adapter SSE path — promptRules を streamEvents requestContent に注入する
  *
- * Verifies that ctx.policy.promptRules is injected after resume-context and
- * before buildManagedGitPushInstruction() in the managed-agent initialMessage.
+ * Verifies that ctx.policy.promptRules is injected:
+ *   - TC-017: after resume-context and before buildManagedGitPushInstruction() (polling/implementer path)
+ *   - TC-019: after resume-context in streamEvents requestContent (SSE/design path)
  */
 import { describe, it, expect, vi } from "vitest";
 import { ManagedAgentRunner } from "../agent-runner.js";
@@ -27,6 +29,15 @@ function makeConfig(): SpecRunnerConfig {
     version: 1,
     runtime: "managed",
     agents: { implementer: { agentId: AGENT_ID, definitionHash: "h", lastSyncedAt: "2026-01-01" } },
+    environment: { id: ENV_ID, lastSyncedAt: "2026-01-01" },
+  } as SpecRunnerConfig;
+}
+
+function makeDesignConfig(): SpecRunnerConfig {
+  return {
+    version: 1,
+    runtime: "managed",
+    agents: { design: { agentId: AGENT_ID, definitionHash: "h", lastSyncedAt: "2026-01-01" } },
     environment: { id: ENV_ID, lastSyncedAt: "2026-01-01" },
   } as SpecRunnerConfig;
 }
@@ -61,6 +72,18 @@ function makeAgentStep(): AgentStep {
   };
 }
 
+function makeDesignAgentStep(): AgentStep {
+  return {
+    kind: "agent",
+    name: "design",
+    agent: { name: "specrunner-design", role: "design", model: "claude-sonnet-4-6", system: "design", tools: [] },
+    toolHandlers: undefined,
+    buildMessage: () => "design this",
+    resultFilePath: () => null,
+    parseResult: () => ({ verdict: null, findingsPath: null }),
+  };
+}
+
 /** Build a mock SessionClient that captures sendUserMessage calls. */
 function makeMockSessionClient(): { client: SessionClient; capturedMessages: { sessionId: string; text: string }[] } {
   const capturedMessages: { sessionId: string; text: string }[] = [];
@@ -76,6 +99,24 @@ function makeMockSessionClient(): { client: SessionClient; capturedMessages: { s
     streamEvents: vi.fn().mockResolvedValue({ sseDisconnected: false, idleEndTurnDetected: true, terminated: false, terminationReason: "end_turn" }),
   };
   return { client, capturedMessages };
+}
+
+/** Build a mock SessionClient that captures streamEvents requestContent (SSE/design path). */
+function makeMockSessionClientCapturingSse(): { client: SessionClient; capturedRequestContents: string[] } {
+  const capturedRequestContents: string[] = [];
+  const client: SessionClient = {
+    createSession: vi.fn().mockResolvedValue({ sessionId: SESSION_ID }),
+    sendUserMessage: vi.fn().mockResolvedValue(undefined),
+    pollUntilComplete: vi.fn().mockResolvedValue({ status: "idle" }),
+    listEvents: vi.fn().mockResolvedValue([]),
+    sendEvents: vi.fn().mockResolvedValue(undefined),
+    getSessionUsage: vi.fn().mockResolvedValue(undefined),
+    streamEvents: vi.fn().mockImplementation(async (_sessionId: string, opts: { requestContent: string }) => {
+      capturedRequestContents.push(opts.requestContent);
+      return { sseDisconnected: false, idleEndTurnDetected: true, terminated: false, terminationReason: "end_turn" as const };
+    }),
+  };
+  return { client, capturedRequestContents };
 }
 
 function makeMockGitHubClient(): GitHubClient {
@@ -106,6 +147,22 @@ function makeCtx(extraPolicy: Partial<AgentRunContext["policy"]> = {}, session: 
     policy: { ...extraPolicy },
     requestType: "bug-fix",
     config: makeConfig(),
+    emit: () => {},
+  } as AgentRunContext;
+}
+
+function makeDesignCtx(extraPolicy: Partial<AgentRunContext["policy"]> = {}, session: AgentRunContext["session"] = {}): AgentRunContext {
+  return {
+    step: makeDesignAgentStep(),
+    state: { ...makeJobState(), step: "design" },
+    branch: BRANCH,
+    slug: "test-slug",
+    cwd: "/tmp/test",
+    input: { requestContent: "test request", requestAdr: false },
+    session,
+    policy: { ...extraPolicy },
+    requestType: "spec-change",
+    config: makeDesignConfig(),
     emit: () => {},
   } as AgentRunContext;
 }
@@ -164,5 +221,53 @@ describe("TC-017: managed adapter — promptRules を git push instruction の�
     expect(capturedMessages.length).toBeGreaterThanOrEqual(1);
     expect(capturedMessages[0]!.text).not.toContain("<project-rules>");
     expect(capturedMessages[0]!.text).toContain(GIT_PUSH_MARKER);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-019: promptRules が SSE path (design role) の streamEvents requestContent に注入される
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-019: managed adapter SSE path — promptRules を streamEvents requestContent に注入する", () => {
+  it("promptRules は resume context より後に streamEvents requestContent へ現れる", async () => {
+    const { client, capturedRequestContents } = makeMockSessionClientCapturingSse();
+    const runner = new ManagedAgentRunner({
+      sessionClient: client,
+      githubClient: makeMockGitHubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "test-token",
+    });
+
+    const ctx = makeDesignCtx(
+      { promptRules: SAMPLE_PROMPT_RULES },
+      { resumePrompt: RESUME_PROMPT },
+    );
+
+    await runner.run(ctx);
+
+    expect(capturedRequestContents.length).toBeGreaterThanOrEqual(1);
+    const requestContent = capturedRequestContents[0]!;
+
+    const resumeIdx = requestContent.indexOf(RESUME_PROMPT);
+    const rulesIdx = requestContent.indexOf(SAMPLE_PROMPT_RULES);
+
+    expect(resumeIdx).toBeGreaterThanOrEqual(0);
+    expect(rulesIdx).toBeGreaterThan(resumeIdx);
+  });
+
+  it("promptRules 未設定のとき streamEvents requestContent に <project-rules> が含まれない", async () => {
+    const { client, capturedRequestContents } = makeMockSessionClientCapturingSse();
+    const runner = new ManagedAgentRunner({
+      sessionClient: client,
+      githubClient: makeMockGitHubClient(),
+      repo: { owner: "testowner", name: "testrepo" },
+      githubToken: "test-token",
+    });
+
+    const ctx = makeDesignCtx();
+    await runner.run(ctx);
+
+    expect(capturedRequestContents.length).toBeGreaterThanOrEqual(1);
+    expect(capturedRequestContents[0]!).not.toContain("<project-rules>");
   });
 });
