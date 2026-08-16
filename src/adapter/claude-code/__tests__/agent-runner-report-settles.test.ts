@@ -475,7 +475,7 @@ describe("TC-007: report 不在で generator 終了 → report retry 経路不�
       buildPrompt: () => "please call report_result",
     };
 
-    const queryFn: QueryFn = async function* (params) {
+    const queryFn: QueryFn = async function* (_params) {
       callCount++;
       // Every call: just yield a success result without calling the handler
       yield {

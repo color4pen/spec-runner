@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "41cec64c-d6d8-4b2a-af76-b4f1f8237d1f",
   "createdAt": "2026-08-16T13:32:08.572Z",
-  "updatedAt": "2026-08-16T14:08:43.185Z",
+  "updatedAt": "2026-08-16T14:26:12.671Z",
   "request": {
     "title": "agent step の完了契機を report 受領主・プロセス終了 fallback の二重系にする",
     "type": "spec-change",
@@ -69,7 +69,9 @@
     "b11dece83dc608061b5b8ab4dd0e6c924382bdbd",
     "d625a3395aa7d5d8d2a52d46e233d68e8635eef2",
     "0a42cf16185b7a1d13158e1e7f8a46efd0376b90",
-    "548da03ca099278c830c56808090cb00d46fbee6"
+    "548da03ca099278c830c56808090cb00d46fbee6",
+    "0ee3b97272a4beea553bd0f69c19539ef422bfcf",
+    "3483c0a94c8e17936f37fd0f5a257c497084d2de"
   ],
   "touchedFiles": {
     "request-review": [
@@ -100,16 +102,32 @@
       "src/adapter/claude-code/message-types.ts",
       "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts",
+      "src/adapter/claude-code/__tests__/artifact-bundle-injection.test.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/message-types.ts",
+      "src/config/schema.ts",
+      "src/config/schema/types.ts",
+      "src/core/port/report-result.ts",
+      "src/adapter/claude-code/sdk-loader.ts",
+      "src/adapter/shared/inactivity-watchdog.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-report-settles.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 38,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 2,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
