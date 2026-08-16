@@ -1,0 +1,31 @@
+{
+  "requestHash": "sha256:495cd233dd4d4b66ae3d3e224d55cde24e5324d7ae5f0a574c35b9640265a2ba",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/command-registry.ts:52-72 — CommandDef / ParentCommandDef / CommandEntry type definitions",
+    "src/cli/command-registry.ts:74-122 — USAGE hand-written listing",
+    "src/cli/command-registry.ts:522-527 — run as independent top-level entry with comment-only alias",
+    "src/cli/command-registry.ts:472 — init requiresRepo: true",
+    "src/cli/command-registry.ts:536 — request new requiresRepo: true",
+    "src/cli/command-registry.ts:672 — job cancel requiresRepo: true",
+    "src/cli/command-registry.ts:855 — job attach requiresRepo: true",
+    "src/cli/command-registry.ts:932 — job prune requiresRepo: true",
+    "src/cli/command-registry.ts:957 — job stats requiresRepo: true",
+    "src/cli/command-registry.ts:998 — inbox run requiresRepo: true",
+    "src/cli/command-registry.ts:595 — job.guardedSubcommands: new Set([start, resume, attach, archive, prune, reopen])",
+    "src/cli/command-registry.ts:987 — inbox.guardedSubcommands: new Set([run])",
+    "src/cli/command-registry.ts:1087-1100 — doctor repair as inline positionals[0] === 'repair' branch",
+    "src/cli/flag-parser.ts:6-12 — FlagDef interface with type/values/deprecated",
+    "src/cli/command-registry.ts:456 — --issue numeric validation via Number() + isInteger",
+    "src/cli/command-registry.ts:901 — --merge-wait-ms numeric validation via parseInt",
+    "src/cli/command-registry.ts:1003 — --limit numeric validation via Number() + isInteger",
+    "src/cli/command-registry.ts:576 — SLUG_REGEX.test in request validate handler",
+    "bin/specrunner.ts:124 — WORKTREE_GUARDED_COMMANDS = new Set([run])",
+    "bin/specrunner.ts:47-119 — subcommand dispatch path",
+    "bin/specrunner.ts:122-188 — normal command dispatch path",
+    "bin/specrunner.ts:109-118 — subcommand catch missing SpecRunnerError handling (Fatal only)",
+    "bin/specrunner.ts:181-185 — normal path SpecRunnerError -> Error/Hint/exitCode display",
+    "bin/specrunner.ts:123 — stale comment mentioning 'finish' not present in job.guardedSubcommands"
+  ],
+  "sourceRevision": "bb435a1c1c8dced532c6a699726cf08388098128"
+}
