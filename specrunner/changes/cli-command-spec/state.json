@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f635fe90-7726-47f0-96f7-1a727cd0610a",
   "createdAt": "2026-08-16T08:44:36.107Z",
-  "updatedAt": "2026-08-16T14:15:28.202Z",
+  "updatedAt": "2026-08-16T14:25:18.624Z",
   "request": {
     "title": "CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/cli-command-spec-f635fe90",
   "error": null,
@@ -89,7 +89,9 @@
     "53c710229f718472c6c16916c634f5f8cd8a9375",
     "eb5d53031add944e244a176a57a78eb569b0ff14",
     "a04ae4f26bac037982db4fd41731aa67c492aa45",
-    "8ceb21d8659643879183cc7262cc8bb272906a94"
+    "8ceb21d8659643879183cc7262cc8bb272906a94",
+    "4e790a5d91dba73bc677f09223176d785bf7ef13",
+    "e915a3b36683be5adc4007946532835cd08ae072"
   ],
   "touchedFiles": {
     "request-review": [
@@ -182,18 +184,18 @@
       "bin/specrunner.ts",
       "src/cli/flag-parser.ts",
       "tests/unit/cli/command-spec-api.test.ts",
-      "src/cli/__tests__/detach-output-contract.test.ts",
-      "src/cli/__tests__/login.test.ts",
-      "tests/unit/cli/specrunner-worktree-guard.test.ts",
+      "tests/unit/cli/doctor-repair.test.ts",
       "tests/hint-command-existence.test.ts",
       "tests/unit/cli/hint-command-references.test.ts",
-      "tests/unit/cli/resume-help.test.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts",
+      "src/cli/__tests__/login.test.ts",
       "tests/unit/cli/help-output-tc.test.ts",
-      "tests/unit/cli/doctor-repair.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "tests/unit/cli/specrunner-worktree-guard.test.ts",
       "tests/unit/cli/removed-commands.test.ts",
       "tests/unit/cli/prune-usage.test.ts",
-      "tests/unit/architecture/core-invariants.test.ts",
-      "src/errors.ts"
+      "src/cli/__tests__/view-commands-worktree-guard.test.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts"
     ],
     "adr-gen": [
       "specrunner/adr/2026-05-20-cli-noun-verb-restructure.md",
@@ -249,7 +251,7 @@
     "createdAt": "2026-08-16T13:43:01.952Z"
   },
   "_journal": {
-    "historyCount": 130,
+    "historyCount": 139,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -258,14 +260,14 @@
       "spec-fixer": 1,
       "implementer": 6,
       "bite-evidence": 1,
-      "verification": 3,
+      "verification": 4,
       "code-review": 3,
       "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
       "regression-gate": 3,
-      "conformance": 1,
+      "conformance": 2,
       "adr-gen": 1,
       "pr-create": 1
     }
