@@ -92,7 +92,8 @@
     "8ceb21d8659643879183cc7262cc8bb272906a94",
     "4e790a5d91dba73bc677f09223176d785bf7ef13",
     "e915a3b36683be5adc4007946532835cd08ae072",
-    "09b114ba15795ecb60483cc571cf95af472f6c0c"
+    "09b114ba15795ecb60483cc571cf95af472f6c0c",
+    "1b188ebb82c7466631694e2af9405c913a2a6bde"
   ],
   "touchedFiles": {
     "request-review": [
@@ -202,7 +203,11 @@
       "specrunner/adr/2026-08-16-cli-command-spec.md"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "signal",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "staleRecovery": {
     "attempts": 1,
