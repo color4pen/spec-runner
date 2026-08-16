@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "86f243f2-9344-4d57-b3ad-6c86b6d3547c",
   "createdAt": "2026-08-16T15:23:37.377Z",
-  "updatedAt": "2026-08-16T16:43:25.211Z",
+  "updatedAt": "2026-08-16T16:49:10.260Z",
   "request": {
     "title": "rules の配送方式に delivery: prompt を追加する — 行動制約型ルールを main prompt に前置注入する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/rules-delivery-86f243f2",
   "error": null,
@@ -77,7 +77,8 @@
     "c53f0178204613acbfe679908ac42c246480e598",
     "3af78b77180ae604b9b3a4c30b8df49ad0ddf446",
     "976312e222858e9df276a12afad698cff4bfa105",
-    "c7772cc8565d3b45c9ec989655094d8afabaa6bd"
+    "c7772cc8565d3b45c9ec989655094d8afabaa6bd",
+    "d7c77df66fab4eadf4ec96067353849444e65f01"
   ],
   "touchedFiles": {
     "request-review": [
@@ -171,19 +172,9 @@
       "src/core/command/rules-new.ts"
     ],
     "code-fixer": [
-      "src/core/step/step-context-builder.ts",
-      "src/core/step/rules-delivery.ts",
-      "src/core/reviewers/definition.ts",
-      "src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts",
-      "src/adapter/codex/__tests__/resume-prompt-injection.test.ts",
       "src/adapter/managed-agent/agent-runner.ts",
-      "src/config/getAgentId.ts",
-      "src/core/port/session-client.ts",
-      "src/kernel/github-client.ts",
-      "src/config/schema.ts",
-      "src/core/step/executor.ts",
-      "src/adapter/codex/__tests__/prompt-rules-injection.test.ts",
-      "src/adapter/managed-agent/__tests__/prompt-rules-injection.test.ts"
+      "src/adapter/managed-agent/__tests__/prompt-rules-injection.test.ts",
+      "src/core/port/session-client.ts"
     ],
     "regression-gate": [
       "src/core/step/rules-delivery.ts",
@@ -234,7 +225,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 64,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -245,7 +236,7 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 2,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
