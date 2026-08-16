@@ -455,8 +455,6 @@ describe("TC-012: 廃止 skill とコマンド文字列の不在", () => {
   const skillsDir = path.join(__dirname, "../../../../.claude/skills");
   const prwDir = path.join(skillsDir, "parallel-request-workflow");
 
-  const DEPRECATED_COMMANDS = ["request review", "job finish", "specrunner ps"];
-
   it("TC-012: parallel-request-workflow directory does not exist OR is tombstoned (DEPRECATED marker)", () => {
     if (fs.existsSync(prwDir)) {
       // Directory exists — must be tombstoned
