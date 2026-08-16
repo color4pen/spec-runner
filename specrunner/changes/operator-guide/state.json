@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a96538bc-88b8-46f9-be87-ce99ae6721cc",
   "createdAt": "2026-08-16T17:11:25.976Z",
-  "updatedAt": "2026-08-16T18:17:23.774Z",
+  "updatedAt": "2026-08-16T18:22:00.766Z",
   "request": {
     "title": "specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/operator-guide-a96538bc",
   "error": null,
@@ -73,7 +73,9 @@
     "023256f93c8b8ee96db5b7f354fd5709ff6ebb7a",
     "e86e56845c595078013ddfdd10cd43b01fede265",
     "c29905b68f91557ee1153775718e05452dca0079",
-    "2454d471018b301c7e0d4243b8a526f49f749fff"
+    "2454d471018b301c7e0d4243b8a526f49f749fff",
+    "ae5ea7719780b646d9c08627d64339379bb96165",
+    "ac33ed2b17f403d65c1c2405bf2b2cb67312e080"
   ],
   "touchedFiles": {
     "request-review": [
@@ -114,20 +116,23 @@
     ],
     "spec-fixer": [],
     "implementer": [
+      "src/core/verification/changed-line-coverage.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/__tests__/command-registry-apply-canon.test.ts",
       "src/core/command/__tests__/guide.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 55,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 2,
       "spec-fixer": 1,
-      "implementer": 2,
+      "implementer": 3,
       "bite-evidence": 1,
-      "verification": 2
+      "verification": 3
     }
   }
 }
