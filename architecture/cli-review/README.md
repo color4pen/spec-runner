@@ -37,7 +37,7 @@ Each file records:
 | `rules` | reviewed | KEEP project-artifact namespace; fix repo-root write; formally support valid custom reviewer names as rule targets |
 | `reviewers` | reviewed | KEEP project-artifact namespace; fix repo-root write, share validation contract, reject built-in name collisions, make incomplete scaffold explicit |
 | `runtime` | reviewed | KEEP setup/status/reset; fix reset non-TTY success-no-op semantics |
-| `doctor` | pending | re-review after auth/setup UX lands; diagnosis/setup navigator |
+| `doctor` | reviewed | KEEP as read-only readiness/setup navigator; keep repair under doctor but make it a structured repo-required repair/operator subcommand; auth hints need post-auth follow-up |
 | `usage` | reviewed | KEEP top-level as model/token/cost accounting; distinct from `job stats`; fix repo-root and slug validation |
 
 ## Cross-cutting observations already visible
@@ -48,27 +48,29 @@ Each file records:
 - Guidance strings in runtime/doctor code can name commands independently of the registry. This is how dead command guidance such as `login --provider anthropic` survived.
 - Config JSON is the source of truth; `config effective` is a read-only resolution/source-attribution view. Avoid inventing CLI-only configuration concepts that do not exist in the schema.
 - Commands should mutate only state implied by their verb. `login` creating global config and `job cancel --all-terminated` performing maintenance cleanup are examples of convenience behavior outliving its ownership boundary.
-- Credential setup must respect the same source precedence as runtime resolution. Writing a lower-priority credential must not be reported as a successful repair while a higher-priority invalid source still shadows it.
-- A successful exit code must mean the requested state transition actually completed (or was already satisfied). Interactive/automation guards should not silently no-op with exit 0 when an operation such as reset was refused for lack of confirmation.
+- Credential setup must respect the same source precedence as runtime resolution. Writing a lower-priority credential must not be reported as a successful repair while a higher-priority invalid source still shadows it. Doctor prescriptions must repair the active source, not blindly recommend writing another lower-priority credential.
+- A successful exit code must mean the requested state transition actually completed (or was already satisfied). Interactive/automation guards should not silently no-op with exit 0 when an operation such as reset was refused for lack of confirmation. Repository surgery such as `doctor repair` must likewise not fall back to arbitrary cwd and report success outside a repository.
 - Delegation success is not Promise resolution. When one command invokes another application operation (`inbox` -> start/resume), the delegated operation's typed result/exit status must propagate; discarding a non-zero result creates false success in automation.
 - Public flags need semantic consumers. `inbox --verbose/--quiet` currently survive parsing and option plumbing without changing behavior, showing why structured flag definitions alone are not enough unless usage is connected to the application operation.
 - `status` and `doctor` are different surfaces: object-specific state inspection can remain direct, while `doctor` owns readiness/health and next-action guidance.
+- Plain diagnostics and repair can share a namespace without sharing mutation semantics. `doctor` should remain read-only and runnable outside a repo; `doctor repair <slug>` is a contextual mutation and must independently declare repo-required/operator-repair constraints.
 - Repository-owned objects should resolve from dispatch-time repo root, not invocation depth. Explicit user file paths may remain relative to invoker cwd, but slugs/listings/state/artifacts/reporting must not disappear or be recreated under a subdirectory. The `job` review found remaining debt in start/resume/reopen/archive; `rules new`, `reviewers new`, and `usage` have the same root-vs-cwd defect.
-- Repository requirement should be owned at the highest truthful command node. All `job` operations are repo-owned, and project artifact/reporting namespaces such as `rules`, `reviewers`, and `usage` are repo-owned; a future parent command spec should support inherited `requiresRepo` instead of repeating/omitting it per leaf.
+- Repository requirement should be owned at the highest truthful command node, but child commands must be able to strengthen it. All `job` operations are repo-owned, while `doctor` is intentionally repo-optional and `doctor repair` is repo-required. A future command spec needs inheritance plus override, not only a flat boolean.
 - Tolerant readers and strict writers are different contracts. Backward-compatible parsing may accept/warn on unknown values, while CLI generators should not knowingly create identities that the authoritative runtime validator rejects. Scaffold commands may intentionally create incomplete content, but must say that another edit is required before use.
 - Reader/writer validation domains need one source. `reviewers new` currently duplicates the reviewer-name regex and omits the runtime's built-in-step collision rule; these should share domain validation rather than evolve independently. Positional identities such as `usage <slug>` should likewise validate through shared domain rules before path resolution.
 - Typed flag parsing belongs in the command contract. Numeric flags such as `archive --merge-wait-ms` should not be reparsed with permissive `parseInt` logic in handlers.
 - Dynamic value domains need an explicit resolver. `rules new` should accept canonical built-in agent steps plus valid repository-declared custom reviewer names, matching the runtime's actual dynamic step composition instead of leaving a filesystem-only hidden path.
 - Reports should be separated by user question, not merged because they share a metric. `usage` owns model/token/cost accounting; `job stats` owns run-level duration/convergence/cost/turns/outcome analytics. Both remain useful surfaces.
 - Static operational knowledge should have one owner. If `guide request` supersedes `request prompt`, keep at most a compatibility alias; do not maintain two independent prose bodies. Generated artifact templates should keep format/mechanics and avoid becoming a second runbook.
-- Discoverability needs more than public/hidden. The `job` surface already has normal lifecycle, operator recovery, maintenance, reporting, and compatibility concerns; a future CommandSpec should express audience/visibility so contextual commands remain available without crowding Quick Start.
+- Discoverability needs more than public/hidden. The CLI already has normal lifecycle, operator recovery, maintenance, repair, reporting, and compatibility concerns; a future CommandSpec should express audience/visibility so contextual commands remain available without crowding Quick Start.
 - A shortcut/alias is itself part of the CLI contract. Promoted shortcuts such as `run -> job start` should inherit flags, positional args, guards and help from their target through machine-readable alias metadata rather than separate dispatch conventions.
-- The likely architectural target is a machine-readable command spec from which parsing, detailed help, parent/top-level help, aliases/deprecations, inherited constraints, visibility, typed flags, dynamic value validation, and guide command validation can be derived. Avoid per-command class hierarchy; the goal is one interface contract, not more ceremony.
+- A command may have a default action plus named children with different contracts. `doctor` is the concrete example: default diagnosis is repo-optional/read-only, while `repair` is repo-required/operator-scoped. The current `CommandDef | ParentCommandDef` split cannot model this cleanly without inline parser branches.
+- The likely architectural target is a machine-readable command spec from which parsing, detailed help, parent/top-level help, aliases/deprecations, inherited/overridden constraints, visibility, typed flags, dynamic value validation, structured command references, and guide command validation can be derived. Avoid per-command class hierarchy; the goal is one interface contract, not more ceremony.
 
 ## Review order
 
-1. setup/auth: `init`, `config`, `login`, `runtime`; `doctor` after auth/setup UX lands
+1. setup/auth: `init`, `config`, `login`, `runtime`, `doctor` (credential hints re-check after auth/setup lands)
 2. authoring: `request`
 3. execution/lifecycle: `run`, `job`
 4. unattended/extensions: `inbox`, `rules`, `reviewers`
-5. reporting/repair leftovers: `usage` and any special hidden paths
+5. reporting/repair leftovers: `usage`, `doctor repair`
