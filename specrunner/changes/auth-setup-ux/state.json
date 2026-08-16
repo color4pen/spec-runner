@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T07:23:10.130Z",
+  "updatedAt": "2026-08-16T07:27:40.745Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/auth-setup-ux-701673a2",
   "error": null,
@@ -85,7 +85,9 @@
     "3beb5f83591d276d80092a475ac8fb39cf5d19f6",
     "bd37dd63937b5e182a806fed581dbf96e3f967e8",
     "53afc5879155775f34faedb88dd99db0cfa76e7d",
-    "ad09ce39e652246c22ca93fdbf7ff8d7dfef5eb5"
+    "ad09ce39e652246c22ca93fdbf7ff8d7dfef5eb5",
+    "be4955499faba9df798290e6448e93bb38a00856",
+    "62fc4127270b12de14d4fe9f147fca7861a6f81c"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -171,14 +173,7 @@
       "src/cli/command-registry.ts"
     ],
     "implementer": [
-      "src/cli/command-registry.ts",
-      "tests/credentials.test.ts",
-      "tests/unit/cli/help-output-tc.test.ts",
-      "tests/unit/cli/removed-commands.test.ts",
-      "tests/cli.test.ts",
-      "src/core/verification/changed-line-coverage.ts",
-      "src/cli/bootstrap.ts",
-      "bin/specrunner.ts"
+      "tests/credentials.test.ts"
     ],
     "code-review": [
       "src/cli/login.ts",
@@ -288,16 +283,16 @@
     }
   ],
   "_journal": {
-    "historyCount": 97,
+    "historyCount": 106,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 2,
       "spec-fixer": 1,
-      "implementer": 2,
+      "implementer": 3,
       "bite-evidence": 1,
-      "verification": 3,
+      "verification": 4,
       "code-review": 1,
       "code-fixer": 3,
       "cross-boundary-invariants": 2,
