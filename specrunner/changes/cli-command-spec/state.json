@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f635fe90-7726-47f0-96f7-1a727cd0610a",
   "createdAt": "2026-08-16T08:44:36.107Z",
-  "updatedAt": "2026-08-16T13:23:41.112Z",
+  "updatedAt": "2026-08-16T13:24:21.885Z",
   "request": {
     "title": "CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/cli-command-spec-f635fe90",
   "error": null,
@@ -79,7 +79,8 @@
     "56eb67f80dfca5fcb9eb5e86768cd0048ad772cb",
     "d28d50d37043c8ffe6a851edb3c071831e861f1f",
     "d382cbfe04063701361aa91de8081c03df644900",
-    "9c3bf38bd0184182488e8ca5cd4259f0cb4a9961"
+    "9c3bf38bd0184182488e8ca5cd4259f0cb4a9961",
+    "c814f9505586440a317ac44153bde60f2e9e1588"
   ],
   "touchedFiles": {
     "request-review": [
@@ -155,10 +156,7 @@
       "tests/unit/cli/resume-help.test.ts"
     ],
     "code-fixer": [
-      "tests/hint-command-existence.test.ts",
-      "tests/unit/cli/specrunner-worktree-guard.test.ts",
-      "tests/unit/cli/hint-command-references.test.ts",
-      "src/cli/command-registry.ts"
+      "tests/unit/cli/hint-command-references.test.ts"
     ],
     "regression-gate": [
       "tests/hint-command-existence.test.ts",
@@ -209,7 +207,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 82,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -220,7 +218,7 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 1,
+      "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
