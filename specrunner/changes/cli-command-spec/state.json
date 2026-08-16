@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f635fe90-7726-47f0-96f7-1a727cd0610a",
   "createdAt": "2026-08-16T08:44:36.107Z",
-  "updatedAt": "2026-08-16T13:19:04.575Z",
+  "updatedAt": "2026-08-16T13:20:52.923Z",
   "request": {
     "title": "CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/cli-command-spec-f635fe90",
   "error": null,
@@ -77,7 +77,8 @@
     "f94340d25ec0345febb18d1a8fcebe21f536dc07",
     "d866c4bfdf67b14262255deb3066fd0b6c5bb750",
     "56eb67f80dfca5fcb9eb5e86768cd0048ad772cb",
-    "d28d50d37043c8ffe6a851edb3c071831e861f1f"
+    "d28d50d37043c8ffe6a851edb3c071831e861f1f",
+    "d382cbfe04063701361aa91de8081c03df644900"
   ],
   "touchedFiles": {
     "request-review": [
@@ -151,6 +152,12 @@
       "tests/unit/cli/removed-commands.test.ts",
       "tests/unit/cli/help-output-tc.test.ts",
       "tests/unit/cli/resume-help.test.ts"
+    ],
+    "code-fixer": [
+      "tests/hint-command-existence.test.ts",
+      "tests/unit/cli/specrunner-worktree-guard.test.ts",
+      "tests/unit/cli/hint-command-references.test.ts",
+      "src/cli/command-registry.ts"
     ]
   },
   "resumePoint": null,
@@ -166,8 +173,37 @@
       "recordedAt": "2026-08-16T13:03:28.266Z"
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 63,
+    "historyCount": 74,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -177,7 +213,11 @@
       "implementer": 6,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
