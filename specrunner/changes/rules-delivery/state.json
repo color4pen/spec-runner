@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "86f243f2-9344-4d57-b3ad-6c86b6d3547c",
   "createdAt": "2026-08-16T15:23:37.377Z",
-  "updatedAt": "2026-08-16T16:06:45.577Z",
+  "updatedAt": "2026-08-16T16:09:25.728Z",
   "request": {
     "title": "rules の配送方式に delivery: prompt を追加する — 行動制約型ルールを main prompt に前置注入する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/rules-delivery-86f243f2",
   "error": null,
@@ -70,7 +70,8 @@
     "a2bd2436d39a4e3b7feb664131740fddaf07d688",
     "08f4af98192ab894aeae979516eb35a4ce7f9958",
     "953e6025833cf38d6bdbd74184807967c2a9ebd1",
-    "7c4fcaa1e48530baf7292f1d9cb76e7e2e5db1c2"
+    "7c4fcaa1e48530baf7292f1d9cb76e7e2e5db1c2",
+    "6f0d7f77bd18c30fea33836850d5891e44e60f3e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -168,10 +169,18 @@
       "tests/unit/core/command/rules-new.test.ts",
       "src/core/step/__tests__/step-context-builder.test.ts",
       "tests/unit/core/step/post-work-prompt-invariant.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/step/__tests__/step-context-builder.test.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/rules-delivery.ts",
+      "tests/core/step/rules-delivery.test.ts",
+      "src/core/step/rules-resolve.ts",
+      "src/core/step/rules-followup-prompts.ts"
     ]
   },
   "_journal": {
-    "historyCount": 35,
+    "historyCount": 39,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -181,7 +190,8 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1
     }
   }
 }
