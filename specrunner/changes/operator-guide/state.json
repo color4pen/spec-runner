@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a96538bc-88b8-46f9-be87-ce99ae6721cc",
   "createdAt": "2026-08-16T17:11:25.976Z",
-  "updatedAt": "2026-08-16T17:29:39.799Z",
+  "updatedAt": "2026-08-16T17:41:14.292Z",
   "request": {
     "title": "specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "feat/operator-guide-a96538bc",
   "error": null,
@@ -65,7 +65,8 @@
     "e948df6a5b785313aca8a8a4f9137bbbe70d007e",
     "d7be9e41b7d5bedbb1245334e07f217fbdb9324d",
     "f427bf2868d581f2fb0fa41ebd147bbdd66d6cee",
-    "14fc578ddb62ca61db9ddf7c1828dcfd3e401e6e"
+    "14fc578ddb62ca61db9ddf7c1828dcfd3e401e6e",
+    "79458a3c16085b433c37830c86f67a9d59897d34"
   ],
   "touchedFiles": {
     "request-review": [
@@ -97,14 +98,29 @@
       "bin/specrunner.ts",
       "src/core/pipeline/types.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "spec-review": [
+      "src/cli/command-registry.ts",
+      "src/core/finish/escalation.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/cli/init.ts",
+      "src/core/command/operational-guidance.ts",
+      "tests/finish-escalation.test.ts",
+      "tests/unit/core/step/canon-escalation.test.ts",
+      "vitest.config.ts",
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts",
+      "src/prompts/pipeline-map.ts",
+      "src/core/command/request-prompt.ts",
+      "bin/specrunner.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }

@@ -168,3 +168,7 @@ test が全 `GUIDE_TOPICS[*].body` を走査し、backtick 内の `specrunner <t
   `LOOP_ERROR_CODES`(SPEC_REVIEW_RETRIES_EXHAUSTED 等)の `hint` にも同じ導線を足すべきか。
   本設計は要件が名指しする 2 面のみを対象とし、それ以外は明示合意が無い限り広げない(スコープ規律)。
   → 実装は 2 面のみに導線を入れる。broadening が必要なら別 request。
+
+<!-- spec-fixer-deferred: TC-019 Priority "should" → "must" への変更 [test-cases.md は spec-fixer のスコープ外(設計は tasks.md T-06 に must レベルとして明示済み)] -->
+<!-- spec-fixer-deferred: TC-002 全 9 topic body 非空の iterable 検証追加 [test-cases.md は spec-fixer のスコープ外(tasks.md T-06 に全 9 topic body 非空チェックを must として追記済み)] -->
+<!-- spec-fixer-deferred: TC-003 Category "integration" → "unit" への変更 [test-cases.md は spec-fixer のスコープ外(tasks.md T-06 に unit 配置を明記済み)] -->

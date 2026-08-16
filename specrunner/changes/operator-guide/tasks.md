@@ -111,6 +111,8 @@
 - [ ] 新規 test(例 `src/core/command/__tests__/guide.test.ts`)で以下を固定する:
   - 全 9 topic(`specrunner guide <topic>` = `runGuide`/`findTopic`)が本文を返し、未指定は一覧、
     未知 topic はエラー + 一覧を返す。
+  - **全 9 topic すべての body が非空であること**を `GUIDE_TOPICS` を iterate して確認する(TC-002 の
+    補完。`findTopic("jobs")` 単体でなく全 topic を網羅する)。これは **must** レベルの歯として実装する。
   - `guide`(引数なし)一覧・未知 topic エラー候補一覧・init snippet の topic 一覧が同一 registry から
     導出されること(いずれも `renderTopicList()` / `GUIDE_TOPICS` の name を `toContain` で照合し、
     手書き列挙が無いことを担保 — PIPELINE_MAP と同型)。
@@ -119,10 +121,18 @@
   - `runInit` 完了出力(または `buildClaudeMdSnippet()`)が CLAUDE.md snippet を含む。
   - escalation topic body が `--apply-canon` / `--adopt-commits` / `--from` / reopen 制約を含む。
   - `GUIDE_TOPICS` に name === "escalation" が存在する(escalation 導線の dangling 防止)。
+  - **`canon-escalation.ts` が `src/core/command/guide` を import しないこと**(leaf 制約)。これは
+    **must** レベルの設計不変条件であり、省略不可。`guide.ts` は stdout 等 I/O に依存するため import
+    混入は unit test の分離性を損なう。ファイルの import 文または AST を確認するか、import を試みた
+    場合に typecheck が fail する構造を維持する。
   - `.claude/skills/` 配下の全ファイルに `request review` / `job finish` / `specrunner ps` が無く、
     `.claude/skills/parallel-request-workflow/` が存在しない。
   - 全 `GUIDE_TOPICS[*].body` から backtick 内 `specrunner <tokens>` を抽出し、コマンドパストークン
-    (先頭小文字語列。`<` `[` `-` `/` `.` で停止)が `resolveCommand(tokens).status === "ok"` になる。
+    (先頭小文字語列。`<` `[` `-` `/` `.` で停止)が `resolveCommand(tokens).status === "ok"` になる
+    (抽出対象は完全形 backtick 内のみ。shorthand・backtick 外は対象外)。
+- [ ] TC-003「repo 外でも動作する」は `runGuide()` を直接呼び出す **unit test** として
+  `src/core/command/__tests__/guide.test.ts` に配置する(`requiresRepo` 不在のため binary 実行は不要。
+  binary 実行を伴う真の integration test が必要な場合は `tests/` 配下に分離する)。
 - [ ] `typecheck && test` を green にする。
 
 **Acceptance Criteria**:

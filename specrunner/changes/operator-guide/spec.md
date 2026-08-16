@@ -130,6 +130,6 @@ guide 本文(`GUIDE_TOPICS[*].body`)に記載する specrunner コマンドは�
 
 #### Scenario: 本文コマンドが registry で解決される
 
-**Given** guide 本文に `specrunner <command>` 形式のコマンド参照が含まれる
-**When** 本文から抽出したコマンドパストークンを `resolveCommand` に渡す
-**Then** すべての参照が `status === "ok"` で解決される
+**Given** guide 本文に backtick で囲まれた `specrunner <tokens>` 形式のコマンド参照が含まれる(抽出対象は backtick 内の完全形 `specrunner <tokens>` のみ。shorthand 表記や backtick 外の言及は検証対象外)
+**When** 本文から抽出したコマンドパストークン(先頭の小文字語列。`<` `[` `-` `/` `.` で停止)を `resolveCommand` に渡す
+**Then** 抽出されたすべての参照が `status === "ok"` で解決される
