@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a96538bc-88b8-46f9-be87-ce99ae6721cc",
   "createdAt": "2026-08-16T17:11:25.976Z",
-  "updatedAt": "2026-08-16T19:07:31.425Z",
+  "updatedAt": "2026-08-16T19:10:09.663Z",
   "request": {
     "title": "specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/operator-guide-a96538bc",
   "error": null,
   "pipelineId": "standard",
@@ -88,7 +88,8 @@
     "1cf06552d4995e83a7dcd8304a37a503e3b3a9c6",
     "ea1ae69bc4ff5ef5bc59c56fb1e1727ab4cb119d",
     "6c261ec5fb71e58a376a090a6ab2aaa87619f552",
-    "b6fe51dc2fa99406720e648c4b0ec745239997d9"
+    "b6fe51dc2fa99406720e648c4b0ec745239997d9",
+    "d9126543ae58e7f161f25734995f1b91bed3362f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -166,6 +167,10 @@
       ".claude/skills/acceptance-and-issue-audit/SKILL.md",
       ".claude/skills/parallel-request-workflow/SKILL.md",
       "src/cli/__tests__/init-snippet.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-05-18-prompt-fragment-registry.md",
+      "specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md"
     ]
   },
   "resumePoint": null,
@@ -212,8 +217,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1008",
+    "number": 1008,
+    "createdAt": "2026-08-16T19:10:08.848Z"
+  },
   "_journal": {
-    "historyCount": 102,
+    "historyCount": 107,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -229,7 +239,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
