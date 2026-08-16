@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "86f243f2-9344-4d57-b3ad-6c86b6d3547c",
   "createdAt": "2026-08-16T15:23:37.377Z",
-  "updatedAt": "2026-08-16T15:49:46.884Z",
+  "updatedAt": "2026-08-16T16:00:01.814Z",
   "request": {
     "title": "rules の配送方式に delivery: prompt を追加する — 行動制約型ルールを main prompt に前置注入する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/rules-delivery-86f243f2",
   "error": null,
@@ -67,7 +67,9 @@
     "ba2f45acaef0faff0a1e987a1da5b2e9a5682e45",
     "7fd165338504105462d960ca5530dccd25086ce2",
     "da7b645911f6c8cfb311decce8f6d336101efe26",
-    "a2bd2436d39a4e3b7feb664131740fddaf07d688"
+    "a2bd2436d39a4e3b7feb664131740fddaf07d688",
+    "08f4af98192ab894aeae979516eb35a4ce7f9958",
+    "953e6025833cf38d6bdbd74184807967c2a9ebd1"
   ],
   "touchedFiles": {
     "request-review": [
@@ -127,16 +129,41 @@
       "tests/unit/core/step/post-work-prompt-invariant.test.ts",
       "src/adapter/claude-code/__tests__/artifact-bundle-injection.test.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/core/step/rules-resolve.ts",
+      "src/core/step/rules-followup-prompts.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/__tests__/step-context-builder.test.ts",
+      "src/core/reviewers/definition.ts",
+      "specrunner/rules/implementer/02-test-command.md",
+      "src/adapter/claude-code/__tests__/artifact-bundle-injection.test.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/core/command/rules-new.ts",
+      "tests/unit/core/command/rules-new.test.ts",
+      "src/cli/command-registry.ts",
+      "tests/unit/core/step/rules-followup-prompts.test.ts",
+      "src/adapter/claude-code/completion-directive.ts",
+      "tests/unit/core/step/post-work-prompt-invariant.test.ts",
+      "src/core/step/rules-delivery.ts",
+      "tests/core/step/rules-delivery.test.ts",
+      "src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
