@@ -1,39 +1,25 @@
 # `login` review
 
-Status: **reviewed**  
-Verdict: **KEEP**, narrowed to GitHub authentication only.
+Status: **reviewed after auth/setup merge #1001**  
+Verdict: **KEEP**, GitHub authentication only. The auth surface is now substantially correct; one setup-boundary side effect remains.
 
-Baseline implementation:
-
-- `src/cli/login.ts`
-- `src/cli/command-registry.ts` (`COMMANDS.login`)
-- `src/core/credentials/github.ts`
-- `tests/unit/cli/login.test.ts`
-- `src/cli/__tests__/login.test.ts`
+Post-change baseline: `main@bb435a1c1c8dced532c6a699726cf08388098128` (`auth-setup-ux`, #1001).
 
 ## User goal
 
 Make SpecRunner able to authenticate to GitHub when no higher-priority GitHub credential source is already usable.
 
-`login` is a reasonable top-level convenience because GitHub is the product's collaboration/PR backend rather than an interchangeable agent provider. It should not become a generic provider credential router.
+`login` is a reasonable top-level convenience because GitHub is the product's collaboration/PR backend rather than an interchangeable agent provider. It must not become a generic provider credential router.
 
-## Current contract
+## Current contract after #1001
 
 ```text
-specrunner login [--provider github|claude] [--force]
+specrunner login [--force]
 ```
 
-The default GitHub path:
+Public meaning is now GitHub Device Flow only.
 
-1. warns when `GH_TOKEN` / `GITHUB_TOKEN` exists;
-2. skips only when `credentials.json` already contains a GitHub token;
-3. otherwise runs SpecRunner's GitHub Device Flow;
-4. creates a minimal user-global config if it does not exist;
-5. saves the GitHub token to `credentials.json`.
-
-The Claude path is not an interactive Claude login. It tells the user to run `claude setup-token`, reads the resulting token, and stores it in `credentials.json`.
-
-Runtime GitHub token resolution is a different chain:
+Before starting Device Flow, non-force login resolves the same effective source used by runtime:
 
 ```text
 GH_TOKEN
@@ -42,104 +28,111 @@ GH_TOKEN
 → credentials.json
 ```
 
-For GHES the analogous enterprise env vars and `gh auth token --hostname` are used before `credentials.json`.
+It then validates the effective token:
 
-## What is good
+- valid -> report source and exit 0 without Device Flow;
+- invalid `credentials.json` -> run Device Flow and replace the stored credential;
+- invalid higher-priority env / `gh` source -> fail and tell the user to repair that source instead of writing an ineffective lower-priority token;
+- unknown/network failure -> fail-safe without overwriting an unverified existing token;
+- no token -> first-time Device Flow.
 
-- Bare `specrunner login` already has a clear historical meaning: GitHub Device Flow.
-- Device Flow provides a useful fallback for users who do not already authenticate through `gh` or environment variables.
-- Credentials are stored separately from config and written through the 0600 credential store.
-- GitHub host is read from config best-effort, allowing GHES-aware Device Flow.
-- `--force` provides an explicit overwrite escape hatch for SpecRunner-owned stored credentials.
+`--force` is explicitly defined by the auth ADR as an unconditional Device Flow escape hatch. The command reports that it stored a SpecRunner credential; it does not claim that this credential became the runtime-effective source while a higher-priority source exists.
 
-## Findings
+## What #1001 resolved
 
-### 1. `--provider` combines two different verbs
+### 1. `login` is GitHub-only
+
+The mixed provider mux is gone from the public surface.
 
 ```text
-GitHub Device Flow = authenticate
-Claude setup-token copy = store a headless credential
+specrunner login
 ```
 
-These are not two providers of the same operation.
+is GitHub authentication only.
 
-The Claude branch exists specifically to bridge headless/cron environments where the upstream Claude Code credential store is unavailable. It belongs under explicit credential storage, for example:
+Headless credentials moved to:
 
 ```text
 specrunner credentials set claude-code
+specrunner credentials set anthropic-api-key
 ```
 
-**Direction:** remove active `--provider` from `login`; bare `login` means GitHub only. Preserve old `login --provider claude` only as a hidden/deprecated migration surface that points to the replacement command.
+This matches the responsibility boundary from the original review.
 
-### 2. `login` does not use the real GitHub resolution chain
+### 2. Runtime credential precedence and login validation are aligned
 
-The command currently checks env vars only for warnings and checks `credentials.json` only for skip behavior. It does not consult `gh auth token` before starting Device Flow.
+The previous false-success shape is fixed. `login` resolves the same highest-priority source as runtime and validates that source before deciding whether Device Flow is useful.
 
-This means a user already authenticated through `gh auth login` can be asked to authenticate again even though normal SpecRunner execution would already work.
-
-**Direction:** before Device Flow, resolve the same effective source used at runtime and verify it. If it is valid, print the source and exit 0.
-
-### 3. A higher-priority invalid credential cannot be repaired by writing a lower-priority credential
-
-Example:
+In particular:
 
 ```text
 GH_TOKEN = expired
-credentials.json = fresh token created by Device Flow
+credentials.json = valid
 ```
 
-Normal execution still resolves `GH_TOKEN` first. Therefore "Device Flow succeeded" can still leave the product unusable.
+no longer causes `login` to skip because a lower-priority valid token happens to exist. The effective expired source wins the diagnosis, which is the correct invariant.
 
-The same issue applies to `GITHUB_TOKEN` and `gh auth token` when they are the effective source.
+### 3. Deprecated `--provider` has a real compatibility mechanism
 
-**Direction:** if the effective higher-priority source is invalid, do not claim success by writing `credentials.json`. Tell the user to repair/remove that source. Device Flow is a meaningful repair only when SpecRunner-owned credentials are absent/invalid or no higher-priority source shadows them.
+The registry keeps `provider` only as deprecated parser metadata, not as a normal active flag. `FlagDef.deprecated` throws a migration-specific `FlagParseError` before dispatch.
 
-### 4. `--force` needs source-aware semantics
-
-Today `--force` means "run Device Flow even if SpecRunner already has a stored token". With the runtime resolution chain considered, blindly forcing Device Flow while `GH_TOKEN` or `gh auth token` is active just creates an ignored lower-priority token.
-
-**Direction:** define `--force` as bypassing/replacing the SpecRunner-owned GitHub credential, not as bypassing reality. A higher-priority active source must still be reported; if it shadows the stored credential, the command should make that explicit rather than imply the new credential became effective.
-
-Whether `--force` should refuse while a higher-priority source is active or allow storage with a clear "not effective until X is removed" warning can be finalized in the auth/setup UX design. It must not silently report a misleading effective login.
-
-### 5. `login` also creates user-global config
-
-After successful Device Flow, `login` creates a minimal global config when none exists. Tests explicitly pin both branches (`config exists` and `config missing`).
-
-This is unrelated to authentication and duplicates setup ownership with `init`.
-
-With the desired setup flow:
+The public help omits the old flag, while old syntax can still explain the successor:
 
 ```text
-init → doctor → only missing setup → doctor
+login --provider claude
+-> credentials set claude-code
 ```
 
-there is no good reason for `login` to bootstrap config as a side effect.
+This is the right shape and is reusable for future CLI removals.
 
-**Direction:** remove config creation from `login`. Authentication should touch authentication state only. If configuration is missing, `doctor` should prescribe `specrunner init`.
+### 4. Secret storage has left login
 
-### 6. Claude token input is not secret-safe
+Claude Code token and Anthropic API key storage now use the dedicated `credentials set` command with hidden TTY input / stdin support. The old echoing `readline.question` path is gone from login.
 
-The current default prompt uses `readline.question()` with stdout, so the pasted token is echoed. This is acceptable only as evidence that the operation should leave `login`; the replacement credential-storage command must use secret input semantics (TTY hidden input, non-TTY stdin path as specified by the auth/setup UX request).
+### 5. Setup guidance is doctor-first
 
-### 7. Migration compatibility is not representable cleanly in the current command registry
+`init` now points to `doctor`, and README Quick Start no longer requires unconditional login. Existing `gh auth login` or env credentials can satisfy GitHub auth without running SpecRunner login.
 
-If `provider` is removed from `COMMANDS.login.flags`, the generic parser rejects `login --provider claude` before the handler can emit a migration-specific error.
+This resolves the discoverability problem from the initial review.
 
-A future command spec needs a distinction such as:
+## Remaining finding
+
+### `login` still bootstraps user-global config after Device Flow
+
+After successful Device Flow, the command still checks `~/.config/specrunner/config.json` and creates:
+
+```json
+{
+  "version": 1,
+  "agents": {}
+}
+```
+
+when it is absent.
+
+That behavior was not required to change by `auth-setup-ux`, so #1001 can be conformant while this CLI-review concern remains.
+
+The responsibility boundary is still awkward:
 
 ```text
-active flag
-hidden/deprecated migration flag
+init
+  owns config scaffold
+
+login
+  should own GitHub authentication state
 ```
 
-or an equivalent legacy argv interception mechanism. Deprecated syntax must not appear as recommended help surface.
+With the now-established flow:
 
-### 8. Login behavior is pinned in two test suites
+```text
+init -> doctor -> missing setup only -> doctor
+```
 
-Both `tests/unit/cli/login.test.ts` and `src/cli/__tests__/login.test.ts` contain Claude-provider login contracts. When the command is split, both suites must be migrated or consolidated; otherwise old behavior can survive as test-shaped sediment.
+there is even less reason for `login` to create unrelated config state. A user intentionally invoking login before init should not accidentally receive a partial config scaffold from an authentication verb.
 
-This is implementation cleanup rather than a CLI design decision, but it matters for safely removing the mixed surface.
+**Direction:** remove `saveConfig` / config-file creation from `login`. It may read config best-effort to resolve GitHub host, but should not write config. Missing config belongs to `doctor -> specrunner init`.
+
+This is a CLI ownership cleanup, not a blocker for the merged auth/setup request.
 
 ## Desired user-facing shape
 
@@ -148,41 +141,33 @@ Normal setup:
 ```text
 specrunner init
 specrunner doctor
-# doctor says GitHub auth is already available → no login needed
+# if GitHub auth is already valid, no login
 ```
 
 When GitHub auth is genuinely missing:
 
 ```text
 specrunner login
-# GitHub Device Flow
 ```
 
-Headless agent credentials:
+Headless credential storage:
 
 ```text
 claude setup-token
 specrunner credentials set claude-code
-```
 
-Managed runtime credential:
-
-```text
 specrunner credentials set anthropic-api-key
 # or SPECRUNNER_API_KEY
 ```
-
-These credential-storage commands are advanced/headless setup surface and should be discoverable through `doctor` / `guide`; normal attended users should not need to memorize them.
 
 ## Final verdict
 
 - Top-level placement: **KEEP**
 - Name: **KEEP**
 - Meaning: **GitHub authentication only**
-- `--provider`: **REMOVE from active surface; retain migration guidance for old Claude syntax**
-- Claude token storage: **MOVE to `credentials set claude-code`**
-- Managed API key storage: **do not add to login; use credential storage/env**
-- Existing runtime auth sources: **resolve + validate before Device Flow**
-- Config scaffold side effect: **REMOVE**
-- `--force`: **retain, but make source-aware and non-misleading**
-- Setup discoverability: **doctor-first; login is conditional, not mandatory**
+- Effective-source resolution + validation: **RESOLVED by #1001**
+- `--provider`: **REMOVED from public surface; migration-only deprecated metadata is correct**
+- Claude/API-key storage: **MOVED to `credentials set`**
+- `--force`: **accepted as explicitly documented unconditional Device Flow escape hatch**
+- Setup discoverability: **doctor-first, resolved**
+- Config scaffold side effect: **REMOVE in a later CLI cleanup**
