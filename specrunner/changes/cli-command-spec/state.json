@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f635fe90-7726-47f0-96f7-1a727cd0610a",
   "createdAt": "2026-08-16T08:44:36.107Z",
-  "updatedAt": "2026-08-16T09:04:49.397Z",
+  "updatedAt": "2026-08-16T09:08:41.788Z",
   "request": {
     "title": "CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/cli-command-spec-f635fe90",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "14b2f6f61edec98a48194f0ae352847f15e9f6b9",
     "167e743762c84fdd5c8c30148f50a694d361977a",
-    "50cd8901a72b9ad3bf096d3e72715ca65ddf1af3"
+    "50cd8901a72b9ad3bf096d3e72715ca65ddf1af3",
+    "e8c9cc5102fc7f81ec49ef8cb05577732ffb1472"
   ],
   "touchedFiles": {
     "request-review": [
@@ -101,13 +102,15 @@
       "tests/unit/architecture/request-entrance-llm-boundary.test.ts",
       "src/cli/command-context.ts",
       "src/cli/__tests__/command-registry-resume.test.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
