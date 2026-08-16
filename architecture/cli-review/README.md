@@ -33,7 +33,7 @@ Each file records:
 | `request` | reviewed | KEEP authoring namespace; fix repo-root/type constraints; likely merge `prompt` into future guide |
 | `job` | reviewed | KEEP namespace; normal lifecycle vs operator/maintenance visibility split; move bulk terminated cleanup out of `cancel`; stats placement waits for `usage` review |
 | `config` | reviewed | KEEP as read/diagnostic namespace; do not add generic setter just to absorb init provider |
-| `inbox` | pending | unattended operation |
+| `inbox` | reviewed | KEEP one-shot automation namespace; child exit codes must propagate and verbose/quiet are currently dead flags |
 | `rules` | pending | extension surface |
 | `reviewers` | pending | extension surface |
 | `runtime` | reviewed | KEEP setup/status/reset; fix reset non-TTY success-no-op semantics |
@@ -50,6 +50,8 @@ Each file records:
 - Commands should mutate only state implied by their verb. `login` creating global config and `job cancel --all-terminated` performing maintenance cleanup are examples of convenience behavior outliving its ownership boundary.
 - Credential setup must respect the same source precedence as runtime resolution. Writing a lower-priority credential must not be reported as a successful repair while a higher-priority invalid source still shadows it.
 - A successful exit code must mean the requested state transition actually completed (or was already satisfied). Interactive/automation guards should not silently no-op with exit 0 when an operation such as reset was refused for lack of confirmation.
+- Delegation success is not Promise resolution. When one command invokes another application operation (`inbox` -> start/resume), the delegated operation's typed result/exit status must propagate; discarding a non-zero result creates false success in automation.
+- Public flags need semantic consumers. `inbox --verbose/--quiet` currently survive parsing and option plumbing without changing behavior, showing why structured flag definitions alone are not enough unless usage is connected to the application operation.
 - `status` and `doctor` are different surfaces: object-specific state inspection can remain direct, while `doctor` owns readiness/health and next-action guidance.
 - Repository-owned objects should resolve from dispatch-time repo root, not invocation depth. Explicit user file paths may remain relative to invoker cwd, but slugs/listings/state must not disappear when the command is run from a subdirectory. The `job` review found remaining debt in start/resume/reopen/archive.
 - Repository requirement should be owned at the highest truthful command node. All `job` operations are repo-owned, so a future parent command spec should support inherited `requiresRepo` instead of repeating/omitting it per leaf.
