@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T07:12:58.795Z",
+  "updatedAt": "2026-08-16T07:14:07.736Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/auth-setup-ux-701673a2",
   "error": null,
@@ -81,7 +81,8 @@
     "27f9a63b3a9698539357f54f355855e856038261",
     "99624338e7d3bb4a977b4c1303471f3e46999a2c",
     "4ccda1c1c2614a336a71069ead82c013541bd961",
-    "2e73aac4dfba03ef2f5548d9e373e3d77890b70b"
+    "2e73aac4dfba03ef2f5548d9e373e3d77890b70b",
+    "3beb5f83591d276d80092a475ac8fb39cf5d19f6"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -205,17 +206,7 @@
       "src/core/doctor/next-steps.ts"
     ],
     "code-fixer": [
-      "src/util/secret-input.ts",
-      "src/cli/login.ts",
-      "src/cli/flag-parser.ts",
-      "src/cli/command-registry.ts",
-      "tests/credentials.test.ts",
-      "tests/unit/cli/login.test.ts",
-      "tests/unit/cli/removed-commands.test.ts",
-      "tests/dead-guidance.test.ts",
-      "tests/unit/cli/flag-parser.test.ts",
-      "src/cli/bootstrap.ts",
-      "bin/specrunner.ts"
+      "tests/hint-command-existence.test.ts"
     ],
     "regression-gate": [
       "tests/credentials.test.ts",
@@ -263,7 +254,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 79,
+    "historyCount": 83,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -274,7 +265,7 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
