@@ -1,16 +1,16 @@
 # `doctor` review
 
-Status: **reviewed against current main; auth/setup follow-up pending**  
+Status: **reviewed after auth/setup merge #1001**  
 Verdict: **KEEP as the setup/readiness navigator. KEEP `doctor repair <slug>` under doctor, but make it a real repair-scoped subcommand rather than an inline positional escape hatch.**
+
+Post-change baseline: `main@bb435a1c1c8dced532c6a699726cf08388098128` (`auth-setup-ux`, #1001).
 
 Current forms:
 
 ```text
 specrunner doctor [--json]
-specrunner doctor repair <slug>   # implemented as inline special handling, not registry structure
+specrunner doctor repair <slug>   # still implemented as inline special handling
 ```
-
-Baseline note: current `main` is still `57d9e7411b9f6dd80cbaf63531febca56a4f4ab5` (0.4.10). The auth/setup UX change reviewed separately has not landed on main yet, so credential-related findings below describe the current implementation and the intended post-auth direction.
 
 ## User goal
 
@@ -33,7 +33,15 @@ This is broader than any object-specific `status` command. `runtime status` insp
 7. renders categorized human output or a JSON contract,
 8. returns exit 1 when any check is `fail`, otherwise 0.
 
-Warnings therefore do not make the environment non-ready. This is the correct exit-code model for the auth/setup direction: optional headless credentials may warn without blocking attended use.
+After #1001 the human formatter also makes readiness explicit:
+
+```text
+fail == 0
+-> Ready to run.
+-> Next: specrunner request new <slug>
+```
+
+Warnings do not block readiness. This is the correct model for optional/headless capabilities.
 
 ## Verdict
 
@@ -41,12 +49,14 @@ Warnings therefore do not make the environment non-ready. This is the correct ex
 
 `doctor` deserves a short top-level verb because it is the cross-cutting readiness surface. Do not move it under `runtime`, `config`, or a new `setup` namespace.
 
-The intended onboarding loop should be:
+The onboarding loop is now correctly reflected in the product:
 
 ```text
 specrunner init
 specrunner doctor
-# doctor points to the next concrete action
+# doctor points to missing setup only
+specrunner doctor
+# Ready to run
 ```
 
 Object-specific state commands remain separate:
@@ -58,15 +68,45 @@ doctor          = can SpecRunner operate here, and what should I do next?
 
 ### Keep plain `doctor` read-only
 
-The existing architecture gets this right: checks only inspect and report. Do not add a broad `doctor --fix` that mutates every fixable condition. A diagnostic command is trustworthy because users can run it repeatedly without wondering what it changed.
+The existing architecture gets this right: checks inspect and report. Do not add a broad `doctor --fix` that mutates every fixable condition.
+
+## What #1001 resolved
+
+### 1. Readiness now means `fail == 0`
+
+Human output prints `Ready to run.` even when warnings remain. This lets attended users be ready without configuring headless-only credentials.
+
+Exit semantics already matched this rule and remain:
+
+```text
+any fail -> exit 1
+pass/warn only -> exit 0
+```
+
+### 2. Headless Claude credential is correctly optional and points to a real command
+
+Missing Claude Code OAuth token remains a warning and now says it is needed only for cron / inbox headless runs. The remediation points to:
+
+```text
+claude setup-token
+specrunner credentials set claude-code
+```
+
+The dead `login --provider claude` guidance is gone.
+
+### 3. Dead SpecRunner command guidance now has a mechanical guard
+
+The auth/setup request introduced tests that reject stale doctor hints which name nonexistent CLI commands. This is a useful property of doctor as the setup navigator: prescriptions are no longer trusted prose only.
+
+### 4. README/init now route through doctor
+
+The normal setup path no longer teaches unconditional `specrunner login`. `doctor` is now the source of truth for what is actually missing on the machine.
 
 ## `doctor repair <slug>` verdict
 
 ### Keep the repair under `doctor`
 
 The slug-occupancy design explicitly made broken-invariant adjudication a doctor action and restricted this surgery family to `cancel` / `doctor`. The doctor check detects a sidecar mismatch; the repair is allowed only when exactly one non-terminal job makes the correct answer mechanically unique.
-
-That is a good responsibility boundary:
 
 ```text
 doctor
@@ -81,23 +121,20 @@ multiple candidate jobs
   -> human chooses which job to cancel
 ```
 
-Do not move this to a generic `job repair`; that would broaden the job API around an internal invariant and weaken the original boundary.
+Do not move this to a generic `job repair`.
 
 ### But make it a real subcommand
 
-Today `doctor repair` is not represented as command structure. `doctor` declares an optional positional named `subcommand`, then its handler manually inspects `parsed.positionals[0] === "repair"`.
+This remains unchanged after #1001. `doctor repair` is still parser folklore: `doctor` declares an optional positional and the handler checks whether the first token is `repair`.
 
 Consequences:
 
-- the registry cannot enumerate the repair path,
-- `doctor --help` does not describe it,
-- it cannot own its own positional contract / usage / visibility,
-- it cannot declare `requiresRepo: true` independently from plain doctor,
-- future guide/help validation cannot reason about it.
+- registry/help cannot enumerate it structurally,
+- it cannot own `requiresRepo: true` independently from plain doctor,
+- it cannot own its own visibility/usage/error adapter,
+- guide/hint validation cannot reason about the path through the same command metadata.
 
-**Direction:** model doctor as a parent command with a default diagnostic action plus a structured repair child, or otherwise let CommandSpec express a default action and named subcommands. The public model should be machine-readable even if repair is de-emphasized in terse help.
-
-Suggested metadata shape:
+**Direction:** future CommandSpec should express a default diagnostic action plus the repair child:
 
 ```text
 doctor
@@ -110,111 +147,59 @@ doctor
     requiresRepo: true
 ```
 
-The important property is not the exact TypeScript shape; it is that the repair path stops being parser folklore.
+## Remaining findings
 
-## Findings
+### 1. `doctor repair` can still silently operate outside a repository
 
-### 1. `doctor repair` can silently operate outside a repository
+Plain `doctor` intentionally works outside a repo. The inline repair path inherits that outer behavior and falls back to `process.cwd()` when no repo root exists.
 
-Plain `doctor` intentionally works outside a repo. The inline repair path inherits that outer behavior and currently falls back to:
+A repository surgery command should never scan arbitrary cwd and then succeed with "nothing to repair".
 
-```ts
-const repoRoot = ctx?.repoRoot ?? process.cwd();
-```
+**Direction:** `doctor repair` must require a resolved repo root and use only dispatch-resolved repo identity.
 
-If invoked outside a repository, the repair core can scan an arbitrary cwd and report `nothing to repair` with exit 0. That is false success for a repository surgery command.
+### 2. Repair still collapses structured errors
 
-**Direction:** `doctor repair` must require a resolved repository and use only dispatch-resolved `repoRoot`. Outside a repo, return the standard repo-required argument/setup error rather than falling back to cwd.
+`repairSlugOccupancySidecar` can throw structured `SpecRunnerError` values, but the inline CLI branch catches all errors and exits `GENERAL_ERROR`.
 
-### 2. Current repair exit handling collapses structured errors
+**Direction:** once repair is a real command, use the common structured error adapter so invalid slug, ambiguity and other deliberate error semantics survive to the CLI.
 
-`repairSlugOccupancySidecar` validates the slug and can throw structured `SpecRunnerError` values, including ambiguity. The inline command catches every error and exits `GENERAL_ERROR`, discarding the error's intended exit code/hint structure.
+### 3. Invalid GitHub-token guidance is still one hop too indirect
 
-**Direction:** use the same structured error adapter as other CLI commands. Invalid slug should be an argument error; ambiguity should retain its deliberate failure semantics and actionable enumeration.
-
-### 3. GitHub auth diagnosis knows the active source but its invalid-token prescription is not source-aware
-
-Doctor already records GitHub token source (`env`, `gh`, `credentials`) and the presence check even tells the user whether `$GH_TOKEN` / `$GITHUB_TOKEN` won.
-
-But `github-token-valid` currently says `Run specrunner login to re-authenticate` on HTTP 401 regardless of source.
-
-That is incorrect when the invalid active source is higher priority than credentials:
+Doctor knows the effective GitHub token source (`env`, `gh`, `credentials`). But `github-token-valid` still gives the same HTTP 401 hint for every source:
 
 ```text
-GH_TOKEN=expired
-credentials.json=fresh
+Run specrunner login to re-authenticate.
 ```
 
-Running `specrunner login` and saving another credential does not repair runtime behavior because the expired environment variable still shadows it.
+After #1001 this is no longer dangerous because `specrunner login` itself resolves the effective source and refuses ineffective Device Flow for an invalid higher-priority env/gh credential. It then explains the real repair.
 
-**Direction after auth/setup cleanup:** validation failure must prescribe repair of the active source:
-
-- env source -> unset/fix the named env variable,
-- `gh` source -> `gh auth login` / re-authenticate the host,
-- credentials source -> `specrunner login`,
-- network uncertainty -> warn and retry; never classify as invalid.
-
-This is the doctor-side expression of the credential precedence invariant from the login review.
-
-### 4. Headless Claude credential is already correctly non-blocking, but its hint is stale
-
-For local runtime, missing Claude Code OAuth token is `warn`, not `fail`, because it is only required for headless cron operation. That status is correct and should remain.
-
-The current hint still points to the old `specrunner login --provider claude` surface. The auth/setup change should replace this with the dedicated credentials command.
-
-This also confirms the readiness rule: **ready means no failures, not all checks pass.** Warnings may remain for optional/unattended capabilities.
-
-### 5. Next-step derivation is useful but currently too small to be the sole guidance source
-
-The formatter derives an ordered `Next steps` list for a few failed checks (git repository, origin, config, GitHub auth). This is a good pattern because dependency ordering avoids random remediation order.
-
-However many checks rely only on their local hint, and warning remediation is intentionally excluded from the final list.
-
-**Direction:** keep the distinction:
-
-- each fail/warn owns a concrete local next action,
-- the final `Next steps` section contains only blocking actions that benefit from ordering/deduplication,
-- do not require every warning to name a SpecRunner command when the real remedy is external (for example connectivity).
-
-When `guide` exists, operationally complex hints may point to a guide topic, but the first actionable command must remain visible at the failure site.
-
-### 6. `doctor` outside a repo should remain supported
-
-`git-repository` failing outside a repo is not a reason to make doctor itself repo-required. Being able to run doctor from an unprepared directory is part of its setup-navigator role.
-
-The asymmetry is intentional:
+So the previous false-repair bug is resolved at the auth boundary, but doctor is not yet the shortest possible traffic controller:
 
 ```text
-doctor               repo optional, diagnosis only
-doctor repair <slug> repo required, mutation
+expired GH_TOKEN
+-> doctor: run specrunner login
+-> login: fix/unset GH_TOKEN
 ```
 
-This is another reason the current single `CommandDef` plus inline positional branch is insufficient: parent/default action and repair child have different guards.
-
-### 7. Human and JSON output are appropriately separate contracts
-
-Human output groups checks by stable categories and adds remediation guidance. JSON emits `{ summary, results[] }` with status, required, message and optional hint/details.
-
-KEEP `--json`. It makes doctor useful for CI/setup scripts without forcing callers to parse decorated text.
-
-Do not let repair inherit `--json` implicitly. If structured repair output is ever needed, define its own result contract deliberately.
-
-### 8. `doctor --help` is decent but currently describes only diagnosis
-
-The diagnostic help accurately describes `--json`, but the hidden inline repair path is absent. Once repair is a structured child, help can distinguish normal and repair surfaces rather than pretending the latter does not exist.
-
-Suggested terse shape:
+instead of:
 
 ```text
-specrunner doctor [--json]
-
-Diagnose readiness and show next actions.
-
-Repair / operator:
-  doctor repair <slug>   Repair a uniquely-resolvable slug occupancy sidecar mismatch
+expired GH_TOKEN
+-> doctor: fix/unset GH_TOKEN
 ```
 
-If repair is intentionally omitted from top-level terse help, it must still appear in `doctor --help`, `guide`, and the originating doctor finding through the same command metadata. No dead hidden incantations.
+**Direction:** low/medium UX cleanup, not an auth correctness blocker. Let the `github-token-valid` check use `ctx.githubTokenSource` to prescribe the active source directly:
+
+- env -> unset/update the named variable,
+- gh -> `gh auth login` for the host,
+- credentials -> `specrunner login`,
+- network uncertainty -> retry/connectivity warning.
+
+This would better fulfill doctor's role as the single setup navigator.
+
+### 4. `doctor --help` still describes diagnosis only
+
+This follows from the inline-repair shape. Once `repair` is structurally represented, detailed doctor help can show it in an operator/repair section without crowding normal onboarding.
 
 ## Desired shape
 
@@ -239,17 +224,16 @@ doctor repair
   never guesses when multiple candidates exist
 ```
 
-## Auth/setup integration still pending on main
+## Final verdict
 
-Once the auth/setup change lands, re-check only the credential-related details, not the command placement decision:
-
-- GitHub invalid-source guidance is precedence-aware,
-- missing headless Claude credential remains warn,
-- headless hints use `credentials set ...`,
-- `Ready`/exit semantics use `fail === 0`,
-- every fail/warn has a concrete next action without requiring a CLI command where none exists.
-
-The structural verdict for `doctor` does not depend on that merge.
+- Top-level `doctor`: **KEEP**
+- Setup/readiness role: **RESOLVED and strengthened by #1001**
+- Ready semantics: **RESOLVED (`fail == 0`)**
+- Headless credential hint: **RESOLVED**
+- Dead CLI guidance guard: **RESOLVED**
+- Source-aware GitHub invalid hint: **still desirable as direct-navigation UX, but no longer correctness-critical**
+- `doctor repair` placement: **KEEP under doctor**
+- `doctor repair` registry shape / repo guard / structured errors: **still needs cleanup in CommandSpec work**
 
 ## Machine-contract implications
 
@@ -257,12 +241,10 @@ Doctor exposes a requirement the current `CommandDef | ParentCommandDef` model c
 
 A future CommandSpec should support:
 
-- a default handler/action for `doctor`,
+- default handler/action for `doctor`,
 - child `repair <slug>`,
 - inherited vs overridden `requiresRepo`,
 - visibility/audience (`normal` vs `repair/operator`),
 - per-action args/flags/help,
 - structured error adaptation,
 - and command references used by doctor hints / guide validation.
-
-This is stronger evidence for CommandSpec than adding another special-case branch to the registry.
