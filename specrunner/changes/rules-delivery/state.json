@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "86f243f2-9344-4d57-b3ad-6c86b6d3547c",
   "createdAt": "2026-08-16T15:23:37.377Z",
-  "updatedAt": "2026-08-16T15:28:24.376Z",
+  "updatedAt": "2026-08-16T15:38:20.336Z",
   "request": {
     "title": "rules の配送方式に delivery: prompt を追加する — 行動制約型ルールを main prompt に前置注入する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/rules-delivery-86f243f2",
   "error": null,
@@ -63,7 +63,8 @@
   ],
   "synthesizedCommits": [
     "b7c5ae22d4d7634b4f2d03dd5bbb8a16afddbf83",
-    "874db54d5e9d064090a34299dcf6db3e9e3a25d5"
+    "874db54d5e9d064090a34299dcf6db3e9e3a25d5",
+    "ba2f45acaef0faff0a1e987a1da5b2e9a5682e45"
   ],
   "touchedFiles": {
     "request-review": [
@@ -79,12 +80,31 @@
       "src/adapter/managed-agent/agent-runner.ts",
       "src/core/step/__tests__/step-context-builder.test.ts",
       "tests/unit/core/command/rules-new.test.ts"
+    ],
+    "design": [
+      "src/core/step/rules-resolve.ts",
+      "src/core/step/rules-followup-prompts.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/command/rules-new.ts",
+      "specrunner/adr/2026-05-24-per-step-rule-followup.md",
+      "specrunner/rules/implementer/02-test-command.md",
+      "src/adapter/shared/prompt-builder.ts",
+      "src/adapter/claude-code/completion-directive.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "tests/core/step/rules-resolve.test.ts",
+      "src/core/reviewers/definition.ts",
+      "tests/unit/core/step/post-work-prompt-invariant.test.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/cli/command-registry.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
