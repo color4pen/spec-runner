@@ -343,7 +343,6 @@ describe("TC-SIGTERM-002: SIGTERM during raw mode restores terminal", () => {
     const fakeOutput = new Writable({ write(_c, _e, cb) { cb(); } });
 
     // Start reading (don't await — we test the signal path, not normal completion)
-    // eslint-disable-next-line @typescript-eslint/no-floating-promises
     readSecret({ isTTY: true, input: fakeInput, output: fakeOutput }).catch(() => {});
 
     expect(rawMode).toBe(true);
