@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "41cec64c-d6d8-4b2a-af76-b4f1f8237d1f",
   "createdAt": "2026-08-16T13:32:08.572Z",
-  "updatedAt": "2026-08-16T14:38:04.993Z",
+  "updatedAt": "2026-08-16T14:50:06.817Z",
   "request": {
     "title": "agent step の完了契機を report 受領主・プロセス終了 fallback の二重系にする",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/report-settles-step-41cec64c",
   "error": null,
   "pipelineId": "standard",
@@ -74,7 +74,9 @@
     "3483c0a94c8e17936f37fd0f5a257c497084d2de",
     "c85034e0b064f1c70a3325abc11637a138441b82",
     "da810a8b600adfe91c62b7ef916beb9f9d639ff8",
-    "eef3433482f4112970168c69575de031c41ec395"
+    "eef3433482f4112970168c69575de031c41ec395",
+    "fde8762af9885adfaffd354e7e90ebf524bb62cc",
+    "a920c4a20de401fec7d59ea19c4988af2e76fd40"
   ],
   "touchedFiles": {
     "request-review": [
@@ -115,10 +117,47 @@
       "src/config/step-config.ts",
       "src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts",
       "src/core/port/report-result.ts"
+    ],
+    "code-fixer": [
+      "src/adapter/claude-code/agent-runner.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 60,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -128,7 +167,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
