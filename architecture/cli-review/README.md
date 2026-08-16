@@ -31,14 +31,14 @@ Each file records:
 | `login` | reviewed | KEEP as GitHub-only login; move headless credential storage out and remove config side effect |
 | `run` | reviewed | KEEP as promoted/common shortcut to canonical lifecycle spelling `job start`; alias relation should be machine-declared |
 | `request` | reviewed | KEEP authoring namespace; fix repo-root/type constraints; likely merge `prompt` into future guide |
-| `job` | reviewed | KEEP namespace; normal lifecycle vs operator/maintenance visibility split; move bulk terminated cleanup out of `cancel`; stats placement waits for `usage` review |
+| `job` | reviewed | KEEP namespace; normal lifecycle vs operator/maintenance visibility split; move bulk terminated cleanup out of `cancel`; KEEP `stats` under job as run analytics |
 | `config` | reviewed | KEEP as read/diagnostic namespace; do not add generic setter just to absorb init provider |
 | `inbox` | reviewed | KEEP one-shot automation namespace; child exit codes must propagate and verbose/quiet are currently dead flags |
 | `rules` | reviewed | KEEP project-artifact namespace; fix repo-root write; formally support valid custom reviewer names as rule targets |
 | `reviewers` | reviewed | KEEP project-artifact namespace; fix repo-root write, share validation contract, reject built-in name collisions, make incomplete scaffold explicit |
 | `runtime` | reviewed | KEEP setup/status/reset; fix reset non-TTY success-no-op semantics |
 | `doctor` | pending | re-review after auth/setup UX lands; diagnosis/setup navigator |
-| `usage` | pending | reporting surface; top-level placement needs justification |
+| `usage` | reviewed | KEEP top-level as model/token/cost accounting; distinct from `job stats`; fix repo-root and slug validation |
 
 ## Cross-cutting observations already visible
 
@@ -53,12 +53,13 @@ Each file records:
 - Delegation success is not Promise resolution. When one command invokes another application operation (`inbox` -> start/resume), the delegated operation's typed result/exit status must propagate; discarding a non-zero result creates false success in automation.
 - Public flags need semantic consumers. `inbox --verbose/--quiet` currently survive parsing and option plumbing without changing behavior, showing why structured flag definitions alone are not enough unless usage is connected to the application operation.
 - `status` and `doctor` are different surfaces: object-specific state inspection can remain direct, while `doctor` owns readiness/health and next-action guidance.
-- Repository-owned objects should resolve from dispatch-time repo root, not invocation depth. Explicit user file paths may remain relative to invoker cwd, but slugs/listings/state/artifacts must not disappear or be recreated under a subdirectory. The `job` review found remaining debt in start/resume/reopen/archive; `rules new` and `reviewers new` have the same write-path defect.
-- Repository requirement should be owned at the highest truthful command node. All `job` operations are repo-owned, and project artifact namespaces such as `rules` / `reviewers` are also repo-owned; a future parent command spec should support inherited `requiresRepo` instead of repeating/omitting it per leaf.
+- Repository-owned objects should resolve from dispatch-time repo root, not invocation depth. Explicit user file paths may remain relative to invoker cwd, but slugs/listings/state/artifacts/reporting must not disappear or be recreated under a subdirectory. The `job` review found remaining debt in start/resume/reopen/archive; `rules new`, `reviewers new`, and `usage` have the same root-vs-cwd defect.
+- Repository requirement should be owned at the highest truthful command node. All `job` operations are repo-owned, and project artifact/reporting namespaces such as `rules`, `reviewers`, and `usage` are repo-owned; a future parent command spec should support inherited `requiresRepo` instead of repeating/omitting it per leaf.
 - Tolerant readers and strict writers are different contracts. Backward-compatible parsing may accept/warn on unknown values, while CLI generators should not knowingly create identities that the authoritative runtime validator rejects. Scaffold commands may intentionally create incomplete content, but must say that another edit is required before use.
-- Reader/writer validation domains need one source. `reviewers new` currently duplicates the reviewer-name regex and omits the runtime's built-in-step collision rule; these should share domain validation rather than evolve independently.
+- Reader/writer validation domains need one source. `reviewers new` currently duplicates the reviewer-name regex and omits the runtime's built-in-step collision rule; these should share domain validation rather than evolve independently. Positional identities such as `usage <slug>` should likewise validate through shared domain rules before path resolution.
 - Typed flag parsing belongs in the command contract. Numeric flags such as `archive --merge-wait-ms` should not be reparsed with permissive `parseInt` logic in handlers.
 - Dynamic value domains need an explicit resolver. `rules new` should accept canonical built-in agent steps plus valid repository-declared custom reviewer names, matching the runtime's actual dynamic step composition instead of leaving a filesystem-only hidden path.
+- Reports should be separated by user question, not merged because they share a metric. `usage` owns model/token/cost accounting; `job stats` owns run-level duration/convergence/cost/turns/outcome analytics. Both remain useful surfaces.
 - Static operational knowledge should have one owner. If `guide request` supersedes `request prompt`, keep at most a compatibility alias; do not maintain two independent prose bodies. Generated artifact templates should keep format/mechanics and avoid becoming a second runbook.
 - Discoverability needs more than public/hidden. The `job` surface already has normal lifecycle, operator recovery, maintenance, reporting, and compatibility concerns; a future CommandSpec should express audience/visibility so contextual commands remain available without crowding Quick Start.
 - A shortcut/alias is itself part of the CLI contract. Promoted shortcuts such as `run -> job start` should inherit flags, positional args, guards and help from their target through machine-readable alias metadata rather than separate dispatch conventions.
