@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T06:39:37.441Z",
+  "updatedAt": "2026-08-16T06:51:04.659Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/auth-setup-ux-701673a2",
   "error": null,
   "pipelineId": "standard",
@@ -75,9 +75,15 @@
     "bc187a210cc41318c7a6543aca0ca3fb639fb0a9",
     "e44c329a38cf1d364bd1241a5fe461cc056c8086",
     "ec81ecce5f6a1e9cb366db95dcb8320f05fc4a5c",
-    "bc653e4f3180d5eba2ff56fb279f1d2991eefe0d"
+    "bc653e4f3180d5eba2ff56fb279f1d2991eefe0d",
+    "9b12068a07b1c7caaf57b8eeb85a6dcd203dd39a",
+    "dc64275ac5fae5b15109b5765c122683aced4574"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "touchedFiles": {
     "request-review": [
@@ -197,10 +203,42 @@
       "src/core/credentials/anthropic.ts",
       "src/core/credentials/credentials-io.ts",
       "src/core/doctor/next-steps.ts"
+    ],
+    "code-fixer": [
+      "tests/credentials.test.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 64,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -210,7 +248,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
