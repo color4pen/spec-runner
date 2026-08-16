@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "86f243f2-9344-4d57-b3ad-6c86b6d3547c",
   "createdAt": "2026-08-16T15:23:37.377Z",
-  "updatedAt": "2026-08-16T17:02:10.846Z",
+  "updatedAt": "2026-08-16T17:05:36.414Z",
   "request": {
     "title": "rules の配送方式に delivery: prompt を追加する — 行動制約型ルールを main prompt に前置注入する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/rules-delivery-86f243f2",
   "error": null,
   "pipelineId": "standard",
@@ -81,7 +81,8 @@
     "d7c77df66fab4eadf4ec96067353849444e65f01",
     "7c105de87da4ded8df593aef413f5d9fcb4e4533",
     "d8b593b846bad7df73b5811c3aa95261f04ebdb0",
-    "fdd3b883909e7e1d2adba93ee4490711b92830d0"
+    "fdd3b883909e7e1d2adba93ee4490711b92830d0",
+    "650f6b6a077b17432e4c8e5e3256eba8dca1c112"
   ],
   "touchedFiles": {
     "request-review": [
@@ -203,6 +204,11 @@
       "tests/unit/core/command/rules-new.test.ts",
       "src/adapter/managed-agent/__tests__/prompt-rules-injection.test.ts",
       "src/adapter/codex/__tests__/prompt-rules-injection.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-05-24-per-step-rule-followup.md",
+      "src/core/step/rules-delivery.ts",
+      "specrunner/adr/2026-08-17-rules-delivery.md"
     ]
   },
   "reviewerStatuses": [
@@ -244,8 +250,13 @@
       "recordedAt": "2026-08-16T16:23:26.642Z"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1007",
+    "number": 1007,
+    "createdAt": "2026-08-16T17:05:35.494Z"
+  },
   "_journal": {
-    "historyCount": 82,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -261,7 +272,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
