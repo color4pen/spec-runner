@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "41cec64c-d6d8-4b2a-af76-b4f1f8237d1f",
   "createdAt": "2026-08-16T13:32:08.572Z",
-  "updatedAt": "2026-08-16T15:12:56.883Z",
+  "updatedAt": "2026-08-16T15:16:51.724Z",
   "request": {
     "title": "agent step の完了契機を report 受領主・プロセス終了 fallback の二重系にする",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/report-settles-step-41cec64c",
   "error": null,
   "pipelineId": "standard",
@@ -84,7 +84,8 @@
     "5b0aa7a073902ae17502b36b46913e8f11577055",
     "52077979d5cb0687f97f1c775420d204a03694af",
     "c6c0e19a5d2c4b4a46fcf4ba6b82e04234a2225d",
-    "c4836a3a4851fed24c140f1a1dc4a786f9d45dc8"
+    "c4836a3a4851fed24c140f1a1dc4a786f9d45dc8",
+    "4af558377a1fcad169153d8aacadd585c1028241"
   ],
   "touchedFiles": {
     "request-review": [
@@ -137,6 +138,10 @@
     "conformance": [
       "src/adapter/claude-code/agent-runner.ts",
       "src/adapter/claude-code/__tests__/agent-runner-report-settles.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-05-28-tool-driven-step-completion.md",
+      "specrunner/adr/2026-08-17-report-settles-step.md"
     ]
   },
   "reviewerStatuses": [
@@ -178,8 +183,13 @@
       "recordedAt": "2026-08-16T14:51:17.026Z"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1006",
+    "number": 1006,
+    "createdAt": "2026-08-16T15:16:50.698Z"
+  },
   "_journal": {
-    "historyCount": 93,
+    "historyCount": 98,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -195,7 +205,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
