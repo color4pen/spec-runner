@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "41cec64c-d6d8-4b2a-af76-b4f1f8237d1f",
   "createdAt": "2026-08-16T13:32:08.572Z",
-  "updatedAt": "2026-08-16T14:51:17.180Z",
+  "updatedAt": "2026-08-16T14:58:02.572Z",
   "request": {
     "title": "agent step の完了契機を report 受領主・プロセス終了 fallback の二重系にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/report-settles-step-41cec64c",
   "error": null,
@@ -77,7 +77,9 @@
     "eef3433482f4112970168c69575de031c41ec395",
     "fde8762af9885adfaffd354e7e90ebf524bb62cc",
     "a920c4a20de401fec7d59ea19c4988af2e76fd40",
-    "5b21d58235fcf7365c4e51e2f344201b990fc9a2"
+    "5b21d58235fcf7365c4e51e2f344201b990fc9a2",
+    "1c39ec74e1a9207c554c87ceede36492e49b5816",
+    "100237a7aa865502cb853eeda48e12e3f727bd42"
   ],
   "touchedFiles": {
     "request-review": [
@@ -126,8 +128,8 @@
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "1c39ec74e1a9207c554c87ceede36492e49b5816",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -137,7 +139,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/report-settles-step/design.md:sha256:6fbbf69f27f11c9e88772e4bf25a55259e628e76ac281e1f4bc0138a6a1af5fa|specrunner/changes/report-settles-step/request.md:sha256:6260a79f6ae58fa1714dc2cede8a69fa43f3ac3a99c7df0d7b734627a80d37f8|specrunner/changes/report-settles-step/spec.md:sha256:defe0af8b8fb275046f56db1adc2f0c2ff348c248d448d1d55b60686574f432f|specrunner/changes/report-settles-step/tasks.md:sha256:cfd9eb8269c6587a1a683c84130254c716e82e576737aa878a5c939a1dbee4e0|specrunner/changes/report-settles-step/test-cases.md:sha256:a3897d94198598010a2bada483b5ca21e4efd938d1d7c19c2f018efa697cc6df"
     },
     {
       "name": "scale-tolerance",
@@ -162,7 +165,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 62,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -173,10 +176,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
