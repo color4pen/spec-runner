@@ -1,7 +1,7 @@
 # `job` review
 
 Status: **reviewed**  
-Verdict: **KEEP namespace**, but split everyday lifecycle commands from operator/maintenance surfaces.
+Verdict: **KEEP namespace**, with everyday lifecycle commands separated from operator/maintenance surfaces.
 
 Current subcommands:
 
@@ -23,157 +23,105 @@ stats
 
 Operate one stateful SpecRunner execution from creation through observation, recovery, completion, and cleanup.
 
-`job` is the strongest noun in the CLI: unlike `request`, every command here acts on repository-owned execution state, worktrees, branches, journals, or archived run data.
+`job` is the strongest lifecycle noun in the CLI. Every command here acts on repository-owned execution state, worktrees, branches, journals, or run history.
 
-## Recommended surface classification
+## Surface classification
 
-| command | verdict | audience | rationale |
-| --- | --- | --- | --- |
-| `job start` | KEEP | normal | canonical lifecycle form for starting a job; `run` remains promoted shortcut |
-| `job ls` | KEEP | normal | operations view, not a trivial file list; includes lifecycle categorization, stale detection, and optional PR state |
-| `job show` | KEEP | normal/operator | detailed state, logs, lineage, journal integrity, and per-step cost |
-| `job wait` | KEEP | normal/automation | synchronization primitive for detached execution; blocks until process/job settles and prints the next action |
-| `job cancel` | KEEP | normal | lifecycle transition for abandoning one job and cleaning its resources |
-| `job resume` | KEEP | normal + advanced operator flags | primary recovery verb after halt/escalation |
-| `job reopen` | KEEP but operator-scoped | operator | re-enters an already successful `awaiting-archive` job from an explicitly chosen step; requires rationale |
-| `job attach` | KEEP but operator-scoped | repair/operator | imports/materializes a verified remote checkpoint; local-runtime recovery primitive, not everyday execution |
-| `job archive` | KEEP | normal | terminal lifecycle/finalization operation, with optional merge orchestration |
-| `job prune` | KEEP but maintenance-scoped | operator/maintenance | orphan cleanup; safe dry-run by default |
-| `job stats` | KEEP functionality, HOLD placement | reporting | run-level aggregate reporting; decide `job` vs `usage` when the `usage` top-level command is reviewed |
+| command | verdict | audience |
+| --- | --- | --- |
+| `job start` | KEEP | normal |
+| `job ls` | KEEP | normal |
+| `job show` | KEEP | normal/operator |
+| `job wait` | KEEP | normal/automation |
+| `job cancel` | KEEP | normal |
+| `job resume` | KEEP | normal + advanced operator flags |
+| `job reopen` | KEEP, de-emphasize | operator |
+| `job attach` | KEEP, de-emphasize | repair/operator |
+| `job archive` | KEEP | normal |
+| `job prune` | KEEP, de-emphasize | maintenance |
+| `job stats` | KEEP under `job` | reporting/run analytics |
 
-No command should be removed merely because there are eleven. The useful reduction is in **discoverability tiers**, not deleting lifecycle capabilities.
+The useful reduction is in discoverability tiers, not deleting lifecycle capability.
 
 ## Findings
 
-### 1. The whole `job` namespace is repository-owned, but repo requirements are declared inconsistently
+### 1. `job` should own the repo requirement as a parent invariant
 
-Today only some subcommands set `requiresRepo: true` (`cancel`, `attach`, `prune`, `stats`). Others rely on preflight, fallback paths, or `process.cwd()`.
+Only some leaves currently declare `requiresRepo: true`; others rely on preflight, fallback logic, or `process.cwd()`.
 
-That is the wrong level for the invariant. A job has no meaningful existence outside a repository.
+A job has no meaningful existence outside a repository.
 
-**Direction:** the future command spec should allow the parent `job` command to declare a repository requirement inherited by all children. Running `job ls/show/wait/start/resume/...` outside a repo should produce the same unified repo-required error instead of an empty/not-found/path-dependent result.
+**Direction:** future CommandSpec should support inherited `requiresRepo: true` on the `job` parent so all children fail consistently outside a repo.
 
-This also reduces per-subcommand ceremony and makes future job commands correct by default.
+### 2. Repo-root migration is incomplete
 
-### 2. Repo-root resolution debt remains in core lifecycle commands
+Internal job state must derive from dispatch-resolved repo root. Remaining debt exists in core paths including `start`, `resume`, `reopen`, and `archive`, which still pass or fall back to `process.cwd()` in places.
 
-The July repo-root work explicitly established that internal state must derive from dispatch-time repo root and left a set of `process.cwd()` call sites as follow-up debt.
+Preserve invoker cwd only for explicit user-relative file arguments such as `--prompt-file`.
 
-That debt is visible here:
+### 3. `job cancel --all-terminated` is maintenance hidden behind the wrong verb
 
-- `job start` / promoted `run` call `runRun(...)` without supplying the dispatch-resolved repo root, so `runRunCore` falls back to `process.cwd()` for slug lookup and internal paths.
-- `job resume` passes `cwd: process.cwd()` and `runResumeCore` uses that value to resolve the job before bootstrap receives `repoRoot`.
-- `job reopen` has the same initial job-resolution shape.
-- `job archive` is dispatched with `cwd: process.cwd()` and internally treats that value as its repository root.
+`job cancel <jobId>` is coherent: cancel one live job and clean its resources.
 
-`job ls`, `job show`, `job wait`, `job cancel`, `job attach`, `job prune`, and `job stats` are already substantially better about receiving the resolved root.
+`job cancel --all-terminated` instead bulk-cleans already stopped `failed` / `terminated` / `canceled` jobs. That is maintenance, not cancellation.
 
-**Direction:** finish the repo-root migration for all repository-owned job state. Preserve invoker cwd only for explicit user-relative file arguments such as `--prompt-file`.
+**Direction:** keep single-job cancel. Move bulk terminated cleanup toward the maintenance surface alongside `prune`; keep compatibility only if needed.
 
-### 3. `job cancel` contains a maintenance operation that is not actually "cancel"
+### 4. `resume` should stay one command
 
-The normal form is coherent:
-
-```text
-job cancel <jobId>
-```
-
-It transitions one job to canceled and cleans its resources while preserving audit state unless `--purge` is explicitly requested.
-
-But:
-
-```text
-job cancel --all-terminated [--yes]
-```
-
-targets `failed`, `terminated`, and `canceled` jobs for bulk cleanup. It is not a cancellation transition; those jobs have already stopped. This is historical maintenance functionality living behind the wrong verb.
-
-**Direction:** keep single-job cancel as the public lifecycle command. Move the bulk cleanup behavior to the maintenance surface when that surface is redesigned (likely alongside `prune`), with compatibility handling if needed. Do not keep teaching `cancel --all-terminated` as the preferred interface.
-
-`--purge` may remain an advanced destructive option on a specific cancellation because it modifies the persistence policy of that same lifecycle action.
-
-### 4. `resume` is one command with two levels of UX and should remain that way
-
-Simple recovery is intentionally small:
+Simple recovery:
 
 ```text
 job resume <slug>
 ```
 
-Advanced flags (`--from`, `--prompt`, `--apply-canon`, `--adopt-commits`, `--force`) are operator recovery controls. They do not justify a second command because they all modify the same transition: resuming a halted/awaiting-resume job.
+Advanced recovery flags such as `--from`, `--prompt`, `--apply-canon`, `--adopt-commits`, and `--force` all modify the same transition and do not justify separate commands.
 
-**Direction:** keep one `resume`, but use layered help:
+Use layered help instead: simple form in normal help, advanced controls in detailed help / `guide escalation`.
 
-- terse/top help: show the simple form;
-- detailed help / `guide escalation`: explain advanced recovery flags.
+### 5. `reopen` and `attach` are legitimate operator commands
 
-This is a good example of why command count alone is the wrong optimization target.
+`reopen` intentionally crosses a strong lifecycle boundary by taking an `awaiting-archive` job back into execution and requires explicit `--from` and `--reason`.
 
-### 5. `reopen` and `attach` are legitimate commands but should not compete with everyday lifecycle verbs
+`attach` imports/materializes a verified remote checkpoint before recovery.
 
-`reopen` deliberately crosses a strong boundary: it takes `awaiting-archive` back into pipeline execution, requires `--from` and `--reason`, and fail-closes on PR state.
+Both are valuable because recoverability is first-class, but they should be reached contextually through errors/guide rather than competing with everyday verbs in Quick Start.
 
-`attach` verifies a published remote checkpoint OID, materializes the exact verified commit, and then tells the operator to resume. It is a recovery/import operation and currently local-runtime only.
+### 6. `prune` is correctly maintenance-oriented
 
-Both are valuable precisely because recoverability is first-class. They should remain commands, but their discoverability should be contextual:
+`job prune` is dry-run by default and `--force` performs cleanup. Keep it, but present it as maintenance rather than normal lifecycle.
 
-```text
-error/halt/guide -> reopen or attach when required
-```
+### 7. `archive --merge-wait-ms` validates too loosely
 
-rather than making a new user learn them during Quick Start.
+Handler-local `parseInt` means malformed values can be silently ignored or partially accepted (`100abc` -> `100`).
 
-A machine-readable command spec therefore needs a visibility/audience dimension such as `normal | operator | maintenance | compatibility`, not just `hidden: boolean`.
+**Direction:** numeric flag types belong in CommandSpec and malformed values should fail with `ARG_ERROR` before the handler.
 
-### 6. `prune` is well-shaped maintenance behavior
+### 8. `ls`, `show`, and `wait` are distinct
 
-`job prune` is dry-run by default and `--force` performs deletion. It separately reports orphan worktrees and orphan sidecars and protects live/unsafe resources in the underlying runners.
+- `ls`: what jobs need attention?
+- `show`: what happened/is happening in this job?
+- `wait`: block until this job settles and return status-sensitive next action.
 
-KEEP the behavior and noun for now. Whether maintenance eventually deserves its own top-level namespace should be decided only after the remaining CLI is reviewed; do not invent one solely for this command.
+Do not merge them just because they all inspect state.
 
-### 7. `archive --merge-wait-ms` silently accepts malformed input
+### 9. `job stats` stays under `job`
 
-The registry parses with `parseInt` and ignores non-numeric values instead of returning an argument error.
-
-Consequences include:
-
-```text
---merge-wait-ms abc     -> silently ignored
---merge-wait-ms 100abc  -> accepted as 100
-```
-
-This is poor CLI behavior because the user asked for an explicit timeout override and receives no indication that the value was rejected/coerced.
-
-**Direction:** numeric flags must validate strictly and fail with `ARG_ERROR` on malformed values. Prefer a typed integer flag in the future command spec so handlers do not reimplement parsing.
-
-### 8. Observation commands are distinct and should not be merged
-
-- `ls` answers "what jobs need attention?" and builds an operations view.
-- `show` answers "what happened/is happening in this job?" and includes logs, lineage, integrity, and cost detail.
-- `wait` answers "block this shell/agent until this job settles" and returns a status-sensitive exit code plus next action.
-
-They share state but not user intent. Combining them would make the interface worse.
-
-### 9. `stats` is reporting, not lifecycle
-
-`job stats` aggregates all runs for cost, duration, convergence, SDK-measured cost, turns, and outcome. The implementation is coherent and should remain.
-
-Placement is **HOLD** until `usage` is reviewed because the repository currently has two reporting concepts:
+The `usage` review resolves the prior placement HOLD.
 
 ```text
 job stats
-usage ...
+  -> run analytics: duration / convergence / cost / turns / outcome
+
+usage
+  -> resource accounting: model / token / step cost
 ```
 
-Do not move it preemptively. First determine whether `usage` is command-invocation accounting while `job stats` is run analytics, or whether the two surfaces should consolidate.
+The cost column overlaps, but the user questions and source data differ. Keep `job stats` under `job`; keep `usage` top-level. Do not merge them into one oversized report.
 
-### 10. Help quality does not match the importance of the namespace
+### 10. Help needs intent-based layering
 
-Some complex commands have detailed usage (`resume`, `reopen`, `archive`, `prune`), while other important commands (`start`, `cancel`, `wait`, `attach`, `stats`) rely on terse registry/top-help behavior.
-
-The parent `job` namespace also lacks a generated categorized help view.
-
-**Direction:** after command-spec consolidation, `specrunner job --help` should group commands by intent, for example:
+The parent namespace should eventually render categorized help from CommandSpec, for example:
 
 ```text
 Run
@@ -195,14 +143,12 @@ Operator / maintenance
   reopen
   attach
   prune
-  stats   # placement pending usage review
+
+Analytics
+  stats
 ```
 
-Operator entries may be shown in a secondary section rather than hidden completely.
-
-## Desired shape
-
-The conceptual public surface is smaller than the raw subcommand count suggests:
+## Desired everyday shape
 
 ```text
 specrunner run <request>        # promoted shortcut
@@ -214,6 +160,7 @@ specrunner job wait <slug>
 specrunner job resume <slug>
 specrunner job cancel <job>
 specrunner job archive <slug>
+specrunner job stats
 ```
 
 Contextual/operator surface:
@@ -224,21 +171,15 @@ specrunner job attach ...
 specrunner job prune ...
 ```
 
-Reporting placement remains pending:
-
-```text
-specrunner job stats
-```
-
 ## Final verdict
 
 - Namespace: **KEEP**
 - Everyday lifecycle: **KEEP `start/ls/show/wait/cancel/resume/archive`**
 - Operator recovery: **KEEP but de-emphasize `reopen/attach`**
 - Maintenance: **KEEP but de-emphasize `prune`**
-- Reporting: **KEEP `stats` functionality; HOLD namespace placement until `usage` review**
-- `cancel --all-terminated`: **MOVE away from cancel as the preferred interface**
-- Repo ownership: **make inherited `job` invariant instead of per-command opt-in**
+- Reporting: **KEEP `stats` under `job`**
+- `cancel --all-terminated`: **MOVE away from cancel as preferred interface**
+- Repo ownership: **make inherited `job` invariant**
 - Repo-root debt: **finish migration for start/resume/reopen/archive**
-- Argument parsing: **strictly reject malformed numeric flags**
+- Argument parsing: **strict typed numeric flags**
 - Help: **generate categorized parent + leaf help from CommandSpec**
