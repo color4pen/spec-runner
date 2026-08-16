@@ -40,7 +40,13 @@ export async function main(): Promise<void> {
     // Honour --help for parent nodes (e.g. `rules --help`, `job --help`)
     const hasHelp = args.some((a) => a === "--help" || a === "-h" || a.startsWith("--help="));
     if (hasHelp && resolved.parent) {
-      emitHelp(COMMANDS[resolved.parent]?.help?.detail);
+      const detail = COMMANDS[resolved.parent]?.help?.detail;
+      if (detail) {
+        emitHelp(detail);
+      } else {
+        const subNames = resolved.availableChildren?.join("|") ?? "";
+        emitHelp(`Usage: specrunner ${resolved.parent} <${subNames}>\n`);
+      }
     }
 
     if (resolved.status === "unknown-command") {

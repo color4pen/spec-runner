@@ -81,10 +81,12 @@ vi.mock("../../../src/core/occupancy/repair.js", () => ({
 // Test infrastructure
 // ---------------------------------------------------------------------------
 
+let originalArgv: string[];
 let stderrSpy: ReturnType<typeof vi.spyOn>;
 let exitSpy: ReturnType<typeof vi.spyOn>;
 
 beforeEach(() => {
+  originalArgv = process.argv;
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
@@ -95,14 +97,31 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  process.argv = originalArgv;
   vi.restoreAllMocks();
   vi.resetModules();
 });
 
 /**
+ * Call main() from bin/specrunner.ts via dispatch (TC-DR-001 only).
+ * Returns the process.exit message thrown by the mock, or undefined.
+ */
+async function runMain(args: string[]): Promise<string | undefined> {
+  process.argv = ["node", "specrunner", ...args];
+  const mod = await import("../../../bin/specrunner.js");
+  try {
+    await mod.main();
+    return undefined;
+  } catch (err) {
+    return (err as Error).message;
+  }
+}
+
+/**
  * Call the doctor repair child handler directly with given slug positionals (excluding "repair" token).
  * Returns the process.exit code that was thrown (as a string like "process.exit(2)"),
  * or undefined if the handler returned normally.
+ * Used for TC-DR-002/003 where direct handler call avoids dispatch exit-code remapping.
  */
 async function callRepairHandler(slugArgs: string[]): Promise<string | undefined> {
   const { COMMANDS } = await import("../../../src/cli/command-registry.js");
@@ -129,17 +148,19 @@ function getExitCodes(): (string | number | undefined)[] {
 }
 
 // ---------------------------------------------------------------------------
-// TC-DR-001: `doctor repair` without slug → error + exit(2)
+// TC-DR-001: `doctor repair` without slug → FlagParseError via dispatch → exit(2)
+// Tests the real dispatch path: parseFlags catches missing required arg before handler.
 // ---------------------------------------------------------------------------
 
 describe("TC-DR-001: doctor repair without slug argument", () => {
   it("calls process.exit(2) when no slug is provided", async () => {
-    await callRepairHandler([]);
-    expect(getExitCodes()).toContain(2);
+    const result = await runMain(["doctor", "repair"]);
+    expect(result).toBe("process.exit(2)");
+    expect(exitSpy).toHaveBeenCalledWith(2);
   });
 
   it("writes an error message mentioning the required slug to stderr", async () => {
-    await callRepairHandler([]);
+    await runMain(["doctor", "repair"]);
     const output = getStderrOutput();
     expect(output).toContain("specrunner doctor repair");
   });

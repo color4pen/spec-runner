@@ -1436,6 +1436,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         args: [{ name: "slug", required: true }],
         requiresRepo: true, // override: repair requires repo even though doctor doesn't
         visibility: "repair",
+        help: { detail: "Usage: specrunner doctor repair <slug>\n\nRepair the occupancy sidecar for the given slug.\n" },
         handler: async (parsed, ctx) => {
           const slug = parsed.positional;
           if (!slug) {
