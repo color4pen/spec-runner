@@ -76,6 +76,12 @@ export async function runInit(options: {
     // Config does not exist
   }
 
+  if (configExists && flagProvider !== undefined) {
+    // Warn: --provider is silently ignored when config already exists
+    logInfo(`Note: --provider flag ignored because global config already exists (${configPath}).`);
+    logInfo(`To change the provider defaults, edit the config file directly: ${configPath}`);
+  }
+
   if (!configExists) {
     // Resolve provider — only when we need to write the scaffold
     const isTTY = !!process.stdin.isTTY;
@@ -134,7 +140,7 @@ export async function runInit(options: {
     delete (newConfig as unknown as Record<string, unknown>)["anthropic"];
 
     await saveConfig(newConfig);
-    logInfo("Run 'specrunner login' to authenticate with GitHub (required for PR creation).");
+    logInfo("Run 'specrunner doctor' to see what's still needed.");
   }
 
   // Report each artifact: created or already exists

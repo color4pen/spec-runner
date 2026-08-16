@@ -9,7 +9,7 @@ import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { loadCredentials, saveCredentials } from "./credentials-io.js";
 
 const CLAUDE_CODE_TOKEN_MISSING_HINT =
-  "Run 'claude setup-token', then store it with 'specrunner login --provider claude', or set CLAUDE_CODE_OAUTH_TOKEN env var.";
+  "Run 'claude setup-token', then store it with 'specrunner credentials set claude-code', or set CLAUDE_CODE_OAUTH_TOKEN env var.";
 
 export async function resolveClaudeCodeOAuthToken(
   env: Record<string, string | undefined>,

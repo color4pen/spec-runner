@@ -117,7 +117,7 @@ describe("TC-010: doctor reports unset when neither env nor credentials have tok
     expect(result.status).toBe("warn");
   });
 
-  it("hint mentions claude setup-token and specrunner login --provider claude", async () => {
+  it("hint mentions claude setup-token and specrunner credentials set claude-code", async () => {
     const ctx = makeCtx({
       resolvedClaudeCodeOAuthToken: null,
       claudeCodeOAuthTokenSource: null,
@@ -126,7 +126,18 @@ describe("TC-010: doctor reports unset when neither env nor credentials have tok
     const result = await claudeCodeTokenPresentCheck.check(ctx);
 
     expect(result.hint).toMatch(/claude setup-token/i);
-    expect(result.hint).toMatch(/specrunner login --provider claude/i);
+    expect(result.hint).toMatch(/credentials set claude-code/i);
+  });
+
+  it("hint contains cron/inbox note (only needed for headless runs)", async () => {
+    const ctx = makeCtx({
+      resolvedClaudeCodeOAuthToken: null,
+      claudeCodeOAuthTokenSource: null,
+    });
+
+    const result = await claudeCodeTokenPresentCheck.check(ctx);
+
+    expect(result.hint).toMatch(/cron|inbox|headless/i);
   });
 });
 

@@ -32,7 +32,7 @@ export async function checkRuntimePrereqs(
       } catch {
         return {
           field: req.envVar,
-          hint: "Save an API key via 'specrunner login --provider anthropic', set SPECRUNNER_API_KEY env var, then run specrunner runtime setup to complete configuration.",
+          hint: "Set SPECRUNNER_API_KEY env var or run 'specrunner credentials set anthropic-api-key', then run specrunner runtime setup to complete configuration.",
         };
       }
     } else if (req.key === "anthropic.claudeCodeOAuthToken") {

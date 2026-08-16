@@ -25,7 +25,7 @@ export const claudeCodeTokenPresentCheck: DoctorCheck = {
     return {
       status: "warn",
       message: "Claude Code OAuth token is unset",
-      hint: "For headless cron, run 'claude setup-token', then 'specrunner login --provider claude'.",
+      hint: "Only needed for cron / inbox (headless) runs. Run 'claude setup-token', then 'specrunner credentials set claude-code'.",
     };
   },
 };

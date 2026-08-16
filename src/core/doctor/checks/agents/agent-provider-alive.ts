@@ -30,7 +30,7 @@ export const agentProviderAliveCheck: DoctorCheck = {
       return {
         status: "warn",
         message: "Anthropic API key not available — skipping provider-side agent check",
-        hint: "Save an API key via 'specrunner login --provider anthropic' or set SPECRUNNER_API_KEY env var.",
+        hint: "Set SPECRUNNER_API_KEY env var, or run 'specrunner credentials set anthropic-api-key'.",
       };
     }
 

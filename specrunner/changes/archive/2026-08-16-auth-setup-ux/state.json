@@ -1,0 +1,322 @@
+{
+  "version": 2,
+  "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
+  "createdAt": "2026-08-16T04:59:46.514Z",
+  "updatedAt": "2026-08-16T07:51:32.732Z",
+  "request": {
+    "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
+    "type": "spec-change",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/auth-setup-ux-701673a2",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "49bbc705b983a5b563b7193e819f3f13b24935f7",
+    "9704a45463166e2b757ceb22022f23dff5be248c",
+    "0f39395c13217f3247b6dcc4b00b78836f5bbadd",
+    "495a9f3f89682853e07136c31439ec8f9f2b6cd3",
+    "0f302eeef681143474038f7d167622740ac27546",
+    "cc3af96412fc1bab7ebe2d17752441e69b59ce5c",
+    "28f4064d258ace5f0203e05c6ca9f0e1d0147a96",
+    "d96f9d551da314d9441d1b26ee0954b1fd686675",
+    "e70086dbea3e3939afe25ed20ea520b37ecbedb7",
+    "07ab5a7c63600694846ff9b625c288f8fe85dcc2",
+    "bc187a210cc41318c7a6543aca0ca3fb639fb0a9",
+    "e44c329a38cf1d364bd1241a5fe461cc056c8086",
+    "ec81ecce5f6a1e9cb366db95dcb8320f05fc4a5c",
+    "bc653e4f3180d5eba2ff56fb279f1d2991eefe0d",
+    "9b12068a07b1c7caaf57b8eeb85a6dcd203dd39a",
+    "dc64275ac5fae5b15109b5765c122683aced4574",
+    "27f9a63b3a9698539357f54f355855e856038261",
+    "99624338e7d3bb4a977b4c1303471f3e46999a2c",
+    "4ccda1c1c2614a336a71069ead82c013541bd961",
+    "2e73aac4dfba03ef2f5548d9e373e3d77890b70b",
+    "3beb5f83591d276d80092a475ac8fb39cf5d19f6",
+    "bd37dd63937b5e182a806fed581dbf96e3f967e8",
+    "53afc5879155775f34faedb88dd99db0cfa76e7d",
+    "ad09ce39e652246c22ca93fdbf7ff8d7dfef5eb5",
+    "be4955499faba9df798290e6448e93bb38a00856",
+    "62fc4127270b12de14d4fe9f147fca7861a6f81c",
+    "08dae60922b363a2e2975d0dbdb2ed69eee9e145",
+    "0f3f42ee38abcf52c145ab8102e78ee3bec3cc3d",
+    "1a3ef93267895b6f404df42eba12d68afd690d90",
+    "178bf5d09480a83e438fbec7f8fb9f3a02dcf014",
+    "b47002a4f8d9d785f378fc405d5b232aef0fda78",
+    "cd241c38291eaaacf708fa0fb2e0584d6a02527a"
+  ],
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "timeout",
+    "iterationsExhausted": 0
+  },
+  "mainCheckoutDrift": null,
+  "touchedFiles": {
+    "request-review": [
+      "src/cli/login.ts",
+      "src/cli/init.ts",
+      "README.md",
+      "src/core/doctor",
+      "src/core/credentials/github.ts",
+      "src/core/doctor/runner.ts",
+      "src/core/doctor/checks/config/claude-code-token-present.ts",
+      "src/cli/doctor.ts",
+      "src/core/doctor/checks/config/managed-key-present.ts",
+      "src/core/doctor/next-steps.ts",
+      "src/core/runtime/prereqs.ts",
+      "src/core/credentials/anthropic.ts",
+      "src/core/doctor/checks/auth/managed-key-valid.ts",
+      "src/core/doctor/formatter.ts",
+      "src/core/doctor/checks/agents/agent-provider-alive.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/flag-parser.ts"
+    ],
+    "design": [
+      "src/cli/login.ts",
+      "src/cli/init.ts",
+      "src/cli/command-registry.ts",
+      "src/core/credentials/github.ts",
+      "src/core/credentials/anthropic.ts",
+      "src/core/credentials/claude-code.ts",
+      "src/cli/flag-parser.ts",
+      "src/core/doctor/doctor.ts",
+      "src/core/doctor/formatter.ts",
+      "src/core/doctor/next-steps.ts",
+      "src/cli/doctor.ts",
+      "src/core/doctor/checks/config/claude-code-token-present.ts",
+      "src/core/doctor/checks/config/managed-key-present.ts",
+      "src/core/doctor/checks/auth/managed-key-valid.ts",
+      "src/core/doctor/checks/agents/environment-provider-alive.ts",
+      "src/core/doctor/checks/agents/agent-provider-alive.ts",
+      "src/core/runtime/prereqs.ts",
+      "src/core/doctor/checks/auth/github-token-valid.ts",
+      "src/core/doctor/checks/config/github-token-present.ts",
+      "src/cli/bootstrap.ts",
+      "bin/specrunner.ts",
+      "src/core/credentials/credentials-io.ts",
+      "src/core/doctor/checks/index.ts",
+      "src/core/credentials/types.ts",
+      "src/core/credentials/requirements.ts",
+      "src/core/runtime/provider-readiness.ts",
+      "src/cli/__tests__/login.test.ts",
+      "tests/hint-command-existence.test.ts",
+      "tests/init.test.ts",
+      "README.md"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/cli/login.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/command-registry.ts",
+      "src/core/doctor/formatter.ts",
+      "src/core/doctor/checks/config/claude-code-token-present.ts",
+      "src/core/doctor/checks/config/managed-key-present.ts",
+      "src/core/doctor/checks/auth/managed-key-valid.ts",
+      "src/core/doctor/checks/agents/agent-provider-alive.ts",
+      "src/core/doctor/checks/agents/environment-provider-alive.ts",
+      "src/core/runtime/prereqs.ts",
+      "src/core/credentials/anthropic.ts",
+      "src/core/credentials/claude-code.ts",
+      "src/core/runtime/provider-readiness.ts",
+      "src/cli/init.ts",
+      "src/core/credentials/github.ts",
+      "src/core/doctor/checks/auth/github-token-valid.ts",
+      "src/cli/__tests__/login.test.ts",
+      "tests/hint-command-existence.test.ts",
+      "src/core/doctor/next-steps.ts",
+      "src/core/credentials/credentials-io.ts",
+      "tests/init.test.ts"
+    ],
+    "spec-fixer": [
+      "tests/hint-command-existence.test.ts",
+      "src/core/runtime/provider-readiness.ts",
+      "src/cli/command-registry.ts"
+    ],
+    "implementer": [
+      "tests/credentials.test.ts"
+    ],
+    "code-review": [
+      "src/cli/login.ts",
+      "src/cli/credentials.ts",
+      "src/util/secret-input.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/flag-parser.ts",
+      "tests/unit/cli/login.test.ts",
+      "tests/credentials.test.ts",
+      "tests/dead-guidance.test.ts",
+      "tests/hint-command-existence.test.ts",
+      "tests/doctor-readiness.test.ts",
+      "tests/init-provider-notice.test.ts",
+      "tests/readme-quickstart.test.ts",
+      "src/core/doctor/formatter.ts",
+      "src/core/doctor/checks/config/claude-code-token-present.ts",
+      "src/cli/init.ts",
+      "src/cli/__tests__/login.test.ts",
+      "tests/unit/cli/removed-commands.test.ts",
+      "src/core/doctor/checks/config/managed-key-present.ts",
+      "README.md",
+      "src/core/doctor/checks/auth/managed-key-valid.ts",
+      "src/core/doctor/checks/agents/agent-provider-alive.ts",
+      "src/core/doctor/checks/agents/environment-provider-alive.ts",
+      "src/core/runtime/prereqs.ts",
+      "src/core/runtime/provider-readiness.ts",
+      "src/core/credentials/anthropic.ts",
+      "src/core/credentials/claude-code.ts",
+      "src/core/doctor/checks/index.ts"
+    ],
+    "code-fixer": [
+      "tests/hint-command-existence.test.ts"
+    ],
+    "regression-gate": [
+      "tests/hint-command-existence.test.ts",
+      "tests/credentials.test.ts",
+      "src/util/secret-input.ts",
+      "src/core/runtime/provider-readiness.ts"
+    ],
+    "conformance": [
+      "src/cli/login.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/credentials.ts",
+      "src/util/secret-input.ts",
+      "src/core/doctor/formatter.ts",
+      "src/core/doctor/checks/config/claude-code-token-present.ts",
+      "src/cli/init.ts",
+      "src/core/runtime/prereqs.ts",
+      "README.md",
+      "src/core/credentials/claude-code.ts",
+      "src/core/credentials/anthropic.ts",
+      "src/core/runtime/provider-readiness.ts",
+      "tests/dead-guidance.test.ts",
+      "tests/hint-command-existence.test.ts",
+      "tests/credentials.test.ts",
+      "tests/doctor-readiness.test.ts",
+      "tests/init-provider-notice.test.ts",
+      "tests/readme-quickstart.test.ts",
+      "tests/unit/cli/login.test.ts",
+      "tests/unit/cli/removed-commands.test.ts",
+      "src/core/doctor/checks/config/managed-key-present.ts",
+      "src/core/doctor/checks/agents/agent-provider-alive.ts",
+      "src/cli/__tests__/login.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-05-20-cli-noun-verb-restructure.md",
+      "specrunner/adr/2026-05-19-adr-numbering-removal.md",
+      "specrunner/adr/2026-08-16-auth-setup-ux.md"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "08dae60922b363a2e2975d0dbdb2ed69eee9e145",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/auth-setup-ux/design.md:sha256:29c337004ca3fd656cba53c74e1bb66b8d4c89ddac0ac6812eeebb58b754e69c|specrunner/changes/auth-setup-ux/request.md:sha256:7e91ccbb74cfdb8308f9d449003fb328ff66cfc02ae665bf19ca4ee6644aaa9d|specrunner/changes/auth-setup-ux/spec.md:sha256:992984ee3d8d15671773a37bdb0c7e866df65838b0377e3132cd874588b16edc|specrunner/changes/auth-setup-ux/tasks.md:sha256:34ad12d71662e7dfd9127d6cc257f168cc3767fba464151b739a005cee684641|specrunner/changes/auth-setup-ux/test-cases.md:sha256:ef98ef0191271eca45b77ecb91eada35d5079a33b87d9dbecad9aed99e0b4fd6"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "operatorAdjudications": [
+    {
+      "text": "cross-boundary-invariants の 2 finding を次の仕様で修正する。\n\n【1. src/util/secret-input.ts — raw mode 復元の invariant】\nTTY raw mode を有効にしている間だけ有効な cleanup(setRawMode(false) + listener 解除)を process の 'exit' と SIGTERM に登録し、入力完了・エラー・シグナルのどの経路でも raw mode が復元されるようにする。SIGTERM 受信時は raw mode 復元後に既定挙動どおり終了する(handler を once で登録し、通常完了時には exit/SIGTERM handler を解除して leak させない)。この復元不変条件をテストで pin する(SIGTERM handler 登録中に cleanup が呼ばれること、通常完了後に handler が残らないこと)。\n\n【2. 廃止 --provider の移行案内を値で出し分ける】\nlogin の --provider migration 捕捉を値ごとの案内にする(いずれも非 0 終了は維持):\n- --provider claude → 現行どおり「specrunner credentials set claude-code を使う」案内\n- --provider github → 「login は GitHub 専用になった。--provider は不要。specrunner login をそのまま実行する」案内(credentials set claude-code を案内しない)\n- その他の値 → 「login は GitHub 専用。--provider は廃止」の一般案内\nそれぞれの案内をテストで pin する(特に --provider github が claude-code 案内を含まないこと)。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-16T06:52:27.935Z"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1001",
+    "number": 1001,
+    "createdAt": "2026-08-16T07:51:31.743Z"
+  },
+  "_journal": {
+    "historyCount": 133,
+    "stepCounts": {
+      "request-review": 2,
+      "design": 1,
+      "test-case-gen": 2,
+      "spec-review": 2,
+      "spec-fixer": 1,
+      "implementer": 3,
+      "bite-evidence": 1,
+      "verification": 5,
+      "code-review": 2,
+      "code-fixer": 3,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 1,
+      "custom-reviewers": 3,
+      "regression-gate": 3,
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

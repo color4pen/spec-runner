@@ -79,13 +79,19 @@ export function formatHuman(results: DoctorResult[]): string {
 
   lines.push(`\nSummary: ${pass} pass, ${warn} warn, ${fail} fail`);
 
-  // Next steps: derived from fail set, only shown when non-empty
-  const nextSteps = deriveNextSteps(results);
-  if (nextSteps.length > 0) {
-    lines.push("\nNext steps:");
-    nextSteps.forEach((step, i) => {
-      lines.push(`  ${i + 1}. ${step}`);
-    });
+  if (fail === 0) {
+    // Ready: warn が残っていても fail がなければ実行可能
+    lines.push("\nReady to run.");
+    lines.push("  Next: specrunner request new <slug>");
+  } else {
+    // Next steps: derived from fail set, only shown when non-empty
+    const nextSteps = deriveNextSteps(results);
+    if (nextSteps.length > 0) {
+      lines.push("\nNext steps:");
+      nextSteps.forEach((step, i) => {
+        lines.push(`  ${i + 1}. ${step}`);
+      });
+    }
   }
 
   return lines.join("\n");

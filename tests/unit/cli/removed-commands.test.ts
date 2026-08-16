@@ -21,7 +21,11 @@ vi.mock("../../../src/cli/finish.js", () => ({ runFinish: vi.fn() }));
 vi.mock("../../../src/cli/resume.js", () => ({ runResume: vi.fn() }));
 vi.mock("../../../src/cli/ps.js", () => ({ runPs: vi.fn().mockResolvedValue(undefined) }));
 vi.mock("../../../src/cli/init.js", () => ({ runInit: vi.fn() }));
-vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn() }));
+vi.mock("../../../src/cli/login.js", () => ({ runLogin: vi.fn().mockResolvedValue(0) }));
+vi.mock("../../../src/cli/credentials.js", () => ({
+  runCredentialsSet: vi.fn().mockResolvedValue(0),
+  CREDENTIALS_SET_USAGE: "Usage: specrunner credentials set <name>\n",
+}));
 vi.mock("../../../src/cli/doctor.js", () => ({ runDoctor: vi.fn() }));
 vi.mock("../../../src/cli/cancel.js", () => ({ runCancel: vi.fn().mockResolvedValue(0) }));
 vi.mock("../../../src/cli/job-show.js", () => ({ runJobShow: vi.fn().mockResolvedValue(undefined) }));
@@ -193,5 +197,54 @@ describe("TC-006: request prompt handler が CLI dispatch 経由で到達する"
     const result = await runMain(["request", "prompt"]);
     // The handler was reached and process.exit was called (exit(0) caught → exit(1) in mock)
     expect(result).toBe("process.exit(1)");
+  });
+});
+
+// credentials set handler が CLI dispatch 経由で到達する
+// Covers the changed DA lines in command-registry.ts: credentials.set.handler body
+describe("credentials set handler が CLI dispatch 経由で到達する", () => {
+  it("specrunner credentials set claude-code → handler が呼ばれ runCredentialsSet() を実行する", async () => {
+    // process.exit(0) inside the handler is caught by dispatch try/catch → bubbles as exit(1)
+    const result = await runMain(["credentials", "set", "claude-code"]);
+    expect(result).toBe("process.exit(1)");
+  });
+});
+
+// login handler が CLI dispatch 経由で到達する
+// Covers the changed DA line in command-registry.ts: login.handler body (removed provider param)
+describe("login handler が CLI dispatch 経由で到達する", () => {
+  it("specrunner login → handler が呼ばれ runLogin() を実行する", async () => {
+    // process.exit(0) inside the handler is caught by dispatch try/catch → bubbles as exit(1)
+    const result = await runMain(["login"]);
+    expect(result).toBe("process.exit(1)");
+  });
+});
+
+// login --provider migration messages (value-based)
+// Pin that each --provider value gets the correct migration guidance and exits non-0.
+describe("login --provider migration messages per value", () => {
+  it("--provider github → 'no longer needed' guidance, no 'credentials set claude-code' message", async () => {
+    const result = await runMain(["login", "--provider", "github"]);
+    expect(result).toBe("process.exit(2)");
+    const stderr = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+    expect(stderr).toContain("no longer needed");
+    // Should NOT show the claude-code credentials instruction
+    expect(stderr).not.toContain("To store a Claude Code token");
+  });
+
+  it("--provider claude → 'credentials set claude-code' guidance", async () => {
+    const result = await runMain(["login", "--provider", "claude"]);
+    expect(result).toBe("process.exit(2)");
+    const stderr = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+    expect(stderr).toContain("credentials set claude-code");
+    expect(stderr).toContain("To store a Claude Code token");
+  });
+
+  it("--provider unknown-value → generic GitHub-only message, no 'credentials set claude-code' message", async () => {
+    const result = await runMain(["login", "--provider", "unknown-value"]);
+    expect(result).toBe("process.exit(2)");
+    const stderr = (stderrSpy.mock.calls as unknown[][]).map((c) => String(c[0])).join("");
+    expect(stderr).toContain("GitHub-only");
+    expect(stderr).not.toContain("To store a Claude Code token");
   });
 });
