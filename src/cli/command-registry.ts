@@ -46,6 +46,7 @@ import { SLUG_REGEX } from "../util/validation-patterns.js";
 import { isDetachedChild, detachSelf } from "../core/command/detach.js";
 import { parseRequestMdRaw } from "../parser/request-md.js";
 import { runJobWait } from "./job-wait.js";
+import { runGuide, GUIDE_TOPICS } from "../core/command/guide.js";
 
 /** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
 const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
@@ -597,6 +598,7 @@ function generateTopLevelUsage(): string {
     "Environment commands",
     "Inbox commands",
     "Aliases",
+    "Guide",
   ];
 
   function collect(spec: CommandSpec): void {
@@ -1477,6 +1479,21 @@ export const COMMANDS: Record<string, CommandSpec> = {
           }
         },
       },
+    },
+  },
+
+  guide: {
+    path: ["guide"],
+    summary: "Show operator guide for a topic",
+    args: [{ name: "topic", required: false }],
+    // requiresRepo intentionally absent: guide works outside a git repo
+    visibility: "normal",
+    help: {
+      group: "Guide",
+      summary: `  guide [topic]                   運用ガイドを表示 (topics: ${GUIDE_TOPICS.map((t) => t.name).join(" ")})`,
+    },
+    handler: async (parsed) => {
+      process.exit(runGuide(parsed.positional));
     },
   },
 
