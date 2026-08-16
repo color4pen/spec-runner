@@ -8,7 +8,7 @@ Baseline: `main@57d9e7411b9f6dd80cbaf63531febca56a4f4ab5` (0.4.10)
 
 Review the CLI as one public interface, not as a bag of individually useful handlers. For each top-level command, decide whether it should be kept, renamed, moved, hidden/operator-scoped, merged, or removed.
 
-The current registry exposes 12 top-level entries (`init`, `login`, `run`, `request`, `job`, `config`, `inbox`, `rules`, `reviewers`, `runtime`, `doctor`, `usage`). Counting canonical subcommands gives 27 command paths; `run` is a `job start` alias and `doctor repair` is an inline special path outside the subcommand registry.
+The current registry exposes 12 top-level entries (`init`, `login`, `run`, `request`, `job`, `config`, `inbox`, `rules`, `reviewers`, `runtime`, `doctor`, `usage`). Counting canonical subcommands gives 27 command paths; `run` is a `job start` shortcut and `doctor repair` is an inline special path outside the subcommand registry.
 
 ## Review rubric
 
@@ -29,7 +29,7 @@ Each file records:
 | --- | --- | --- |
 | `init` | reviewed | KEEP; provider choice stays scaffold concern, but current flag semantics need cleanup |
 | `login` | reviewed | KEEP as GitHub-only login; move headless credential storage out and remove config side effect |
-| `run` | pending | decide whether this is the product's primary verb or only a compatibility alias |
+| `run` | reviewed | KEEP as promoted/common shortcut to canonical lifecycle spelling `job start`; alias relation should be machine-declared |
 | `request` | reviewed | KEEP authoring namespace; fix repo-root/type constraints; likely merge `prompt` into future guide |
 | `job` | pending | execution/lifecycle surface; largest group |
 | `config` | reviewed | KEEP as read/diagnostic namespace; do not add generic setter just to absorb init provider |
@@ -54,6 +54,7 @@ Each file records:
 - Repository-owned objects should resolve from dispatch-time repo root, not invocation depth. Explicit user file paths may remain relative to invoker cwd, but slugs/listings should not disappear when the command is run from a subdirectory.
 - Tolerant readers and strict writers are different contracts. Backward-compatible parsing may accept/warn on unknown values, while CLI generators should emit only canonical values derived from the same registry.
 - Static operational knowledge should have one owner. If `guide request` supersedes `request prompt`, keep at most a compatibility alias; do not maintain two independent prose bodies.
+- A shortcut/alias is itself part of the CLI contract. Promoted shortcuts such as `run -> job start` should inherit flags, positional args, guards and help from their target through machine-readable alias metadata rather than separate dispatch conventions.
 - The likely architectural target is a machine-readable command spec from which parsing, detailed help, parent/top-level help, aliases/deprecations, and guide command validation can be derived. Avoid per-command class hierarchy; the goal is one interface contract, not more ceremony.
 
 ## Review order
