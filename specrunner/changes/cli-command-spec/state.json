@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f635fe90-7726-47f0-96f7-1a727cd0610a",
   "createdAt": "2026-08-16T08:44:36.107Z",
-  "updatedAt": "2026-08-16T08:44:39.246Z",
+  "updatedAt": "2026-08-16T08:49:47.583Z",
   "request": {
     "title": "CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/cli-command-spec-f635fe90",
   "error": null,
@@ -62,10 +62,25 @@
     }
   ],
   "synthesizedCommits": [
-    "14b2f6f61edec98a48194f0ae352847f15e9f6b9"
+    "14b2f6f61edec98a48194f0ae352847f15e9f6b9",
+    "167e743762c84fdd5c8c30148f50a694d361977a"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/cli/command-registry.ts",
+      "bin/specrunner.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/__tests__/detach-output-contract.test.ts",
+      "src/cli/__tests__/login.test.ts",
+      "src/cli/__tests__/view-commands-worktree-guard.test.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
