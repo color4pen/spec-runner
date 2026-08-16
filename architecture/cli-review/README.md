@@ -36,8 +36,8 @@ Each file records:
 | `inbox` | pending | unattended operation |
 | `rules` | pending | extension surface |
 | `reviewers` | pending | extension surface |
-| `runtime` | pending | managed runtime surface |
-| `doctor` | pending | diagnosis/setup navigator; likely primary guidance hub |
+| `runtime` | reviewed | KEEP setup/status/reset; fix reset non-TTY success-no-op semantics |
+| `doctor` | pending | re-review after auth/setup UX lands; diagnosis/setup navigator |
 | `usage` | pending | reporting surface; top-level placement needs justification |
 
 ## Cross-cutting observations already visible
@@ -49,11 +49,13 @@ Each file records:
 - Config JSON is the source of truth; `config effective` is a read-only resolution/source-attribution view. Avoid inventing CLI-only configuration concepts that do not exist in the schema.
 - Commands should mutate only state implied by their verb. `login` creating global config is an example of setup convenience outliving its ownership boundary.
 - Credential setup must respect the same source precedence as runtime resolution. Writing a lower-priority credential must not be reported as a successful repair while a higher-priority invalid source still shadows it.
+- A successful exit code must mean the requested state transition actually completed (or was already satisfied). Interactive/automation guards should not silently no-op with exit 0 when an operation such as reset was refused for lack of confirmation.
+- `status` and `doctor` are different surfaces: object-specific state inspection can remain direct, while `doctor` owns readiness/health and next-action guidance.
 - The likely architectural target is a machine-readable command spec from which parsing, detailed help, parent/top-level help, aliases/deprecations, and guide command validation can be derived. Avoid per-command class hierarchy; the goal is one interface contract, not more ceremony.
 
 ## Review order
 
-1. setup/auth: `init`, `config`, `login`, `doctor`, `runtime`
+1. setup/auth: `init`, `config`, `login`, `runtime`; `doctor` after auth/setup UX lands
 2. authoring: `request`
 3. execution/lifecycle: `run`, `job`
 4. unattended/extensions: `inbox`, `rules`, `reviewers`
