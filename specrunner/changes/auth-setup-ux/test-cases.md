@@ -1,4 +1,4 @@
-# Test Cases: auth/setup UX
+# Test Cases: auth-setup-ux
 
 <!-- FORMAT REQUIREMENTS:
 Test Case heading format: `### TC-{NNN}: {Name}` (3-digit zero-padded, e.g. TC-001)
@@ -50,22 +50,22 @@ Result section MUST appear at the very end as a YAML code block:
 
 ## Summary
 
-- **Total**: 24 cases
-- **Automated** (unit/integration/gate): 24
+- **Total**: 21 cases
+- **Automated** (unit/integration): 21
 - **Manual**: 0
-- **Priority**: must: 21, should: 3, could: 0
+- **Priority**: must: 19, should: 2, could: 0
 
 ---
 
-## login の GitHub 専用化と --provider 廃止
-
-### TC-001: --provider は login の flag surface に存在しない
+### TC-001: --provider は login の help surface に存在しない
 
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: login SHALL be GitHub-only and reject the removed `--provider` flag > Scenario: --provider is absent from login help surface
 
-### TC-002: legacy `login --provider claude` が migration 捕捉されて非 0 終了する
+---
+
+### TC-002: 旧 `login --provider claude` が migration 捕捉されて非 0 終了する
 
 **Category**: unit
 **Priority**: must
@@ -73,39 +73,47 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-## login の有効性ベース Device Flow 判定
-
-### TC-003: 最優先 token が valid なら Device Flow をスキップし exit 0
+### TC-003: 有効な最優先 token が存在する場合 Device Flow をスキップする
 
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: login SHALL decide the Device Flow by the validity of the runtime-resolved token > Scenario: valid top-priority token skips the Device Flow
 
-### TC-004: invalid token かつ出所が env/gh なら Device Flow へ進まず非 0 終了
+---
+
+### TC-004: env/gh 由来の無効 token が Device Flow なしで非 0 終了する
 
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: login SHALL decide the Device Flow by the validity of the runtime-resolved token > Scenario: invalid token from an env/gh source fails without a Device Flow
 
-### TC-005: invalid token かつ出所が credentials.json なら Device Flow へ進む
+---
+
+### TC-005: credentials.json 由来の無効 token は Device Flow へ進む
 
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: login SHALL decide the Device Flow by the validity of the runtime-resolved token > Scenario: invalid token from credentials.json proceeds to the Device Flow
 
-### TC-006: token が 1 つも解決できない場合 Device Flow へ進む
+---
+
+### TC-006: 解決可能な token が存在しない場合 Device Flow へ進む
 
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: login SHALL decide the Device Flow by the validity of the runtime-resolved token > Scenario: no resolvable token proceeds to the Device Flow
 
-### TC-007: 有効性確認が到達不能の場合 Device Flow へ進まず非 0 終了
+---
+
+### TC-007: token 有効性が確認不可の場合は既存 token を上書きしない
 
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: login SHALL decide the Device Flow by the validity of the runtime-resolved token > Scenario: validity cannot be confirmed does not overwrite silently
 
-### TC-008: --force 指定時は常に Device Flow が実行される
+---
+
+### TC-008: --force は常に Device Flow を実行する
 
 **Category**: unit
 **Priority**: must
@@ -113,35 +121,37 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-## credentials set サブコマンド
+### TC-009: `credentials set claude-code` が Claude Code token を credentials.json に保存する
 
-### TC-009: `credentials set claude-code` が credentials.json (0600) へ token を保存する
-
-**Category**: integration
+**Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: `credentials set <name>` SHALL store secrets to credentials.json without echoing input > Scenario: credentials set claude-code stores the Claude Code token
 
-### TC-010: `credentials set anthropic-api-key` が credentials.json (0600) へ API key を保存する
+---
 
-**Category**: integration
+### TC-010: `credentials set anthropic-api-key` が API key を credentials.json に保存する
+
+**Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: `credentials set <name>` SHALL store secrets to credentials.json without echoing input > Scenario: credentials set anthropic-api-key stores the API key
 
-### TC-011: secret が output stream に書かれない（TTY silent / 非 TTY stdin）
+---
+
+### TC-011: secret の入力値が output stream に書かれない
 
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: `credentials set <name>` SHALL store secrets to credentials.json without echoing input > Scenario: secret input is not echoed
 
-### TC-012: 既存 credential を持つ credentials.json に保存しても他 key が保持される
+---
 
-**Category**: integration
+### TC-012: 既存の別 credential が credentials set 後も保持される
+
+**Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: `credentials set <name>` SHALL store secrets to credentials.json without echoing input > Scenario: storing one secret preserves other stored credentials
 
 ---
-
-## dead guidance の全廃
 
 ### TC-013: `src/` に `login --provider anthropic` の文字列が存在しない
 
@@ -149,31 +159,37 @@ Result section MUST appear at the very end as a YAML code block:
 **Priority**: must
 **Source**: spec.md > Requirement: guidance MUST reference only real, current commands > Scenario: no dead `login --provider anthropic` guidance remains
 
-`tests/` に `collectTsFiles` 型の grep テストを追加し、`src/` 配下の全 .ts ファイルに文字列 `login --provider anthropic` が含まれないことを機械検証する。
-
-### TC-014: doctor hint 中の `specrunner <verb>` がすべて registry 登録済みコマンド
-
-**Category**: unit
-**Priority**: must
-**Source**: spec.md > Requirement: guidance MUST reference only real, current commands > Scenario: doctor hints reference registered commands only
+T-10 の grep 系テスト（`src/` 全体走査）で固定する。`login --provider anthropic` および `login --provider claude` の双方を対象とする。
 
 ---
 
-## doctor の warn / readiness
+### TC-014: doctor hint 内のコマンド参照がサブコマンドを含め registry に実在する
 
-### TC-015: headless Claude credential 未設定が warn かつ cron/inbox 限定の注記を含む
+**Category**: gate
+**Priority**: must
+**Source**: spec.md > Requirement: guidance MUST reference only real, current commands > Scenario: doctor hints reference registered commands only
+
+T-10 の hint-command-existence テスト（`src/core/doctor/**` 走査）で固定する。hint 中の `specrunner <verb> [<sub>]` が `COMMANDS`（**parent の subcommand を含む**）に実在することを検証する。たとえば `credentials set claude-code` という hint は、parent コマンド `credentials` と subcommand `set` の両方が registry に登録済みであることを確認する必要があり、parent の存在確認のみでは不十分である。`credentials` コマンドおよび `set` サブコマンドが registry に実在することが、この検証の通過条件となる。
+
+---
+
+### TC-015: headless Claude credential 未設定の doctor 結果が warn かつ cron/inbox 注記を含む
 
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: doctor SHALL treat headless Claude credential absence as a warning, not a failure > Scenario: unset headless Claude credential is a warn with a scoped note
 
-### TC-016: fail == 0 の doctor 出力が `Ready to run.` と `specrunner request new` を含む
+---
+
+### TC-016: warn あり・fail なしの doctor が Ready と次の一歩を案内する
 
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: doctor readiness SHALL be determined by fail == 0 > Scenario: warnings remain but no failures shows Ready plus next step
 
-### TC-017: fail > 0 の doctor 出力が `Ready to run.` を含まない
+---
+
+### TC-017: fail ありの doctor が Ready を出力しない
 
 **Category**: unit
 **Priority**: must
@@ -181,9 +197,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-## init の provider flag 無言無視の解消
-
-### TC-018: 既存 global config + provider flag 指定の init が案内を出力し config は不変
+### TC-018: 既存 global config + provider flag の init が案内を出力し config を変更しない
 
 **Category**: unit
 **Priority**: must
@@ -191,67 +205,37 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-## README Quick Start の doctor 中心化
-
-### TC-019: README Quick Start が doctor を参照し login を無条件ステップとして提示しない
+### TC-019: README Quick Start が doctor 中心の導線になっている
 
 **Category**: gate
 **Priority**: must
 **Source**: spec.md > Requirement: README Quick Start SHALL present a doctor-centered setup flow > Scenario: Quick Start centers on doctor
 
-README.md を読み取り、`## Quick Start` 節に `specrunner doctor` が含まれること、および `specrunner login` が無条件の必須手順として提示されていないことをファイル読み取りテストで検証する。
+T-10 の README 内容検証テストで固定する。`specrunner doctor` が Quick Start 節に含まれること、および無条件必須の `specrunner login` 手順が存在しないことを確認する。
 
 ---
 
-## 非 Scenario 由来 TC
-
-### TC-020: parseFlags が deprecated flag に遭遇した時点で FlagParseError を throw する
-
-**Category**: unit
-**Priority**: must
-**Source**: design.md D2 / tasks.md T-01
-
-**GIVEN** `FlagDef` に `deprecated: { message: "... credentials set claude-code ..." }` を持つ `provider` flag が定義されている
-**WHEN** `parseFlags(["--provider", "claude"], flagDefs)` を呼び出す
-**THEN** `FlagParseError` が throw され、message に `credentials set claude-code` が含まれる
-
-### TC-021: `src/` に `login --provider claude` の文字列が存在しない
-
-**Category**: gate
-**Priority**: must
-**Source**: design.md D6 / tasks.md T-10
-
-TC-013 の grep テストと同一ファイル内（または別 it ブロック）で、`src/` 配下の全 .ts ファイルに文字列 `login --provider claude` が含まれないことを機械検証する（dead guidance の claude 側再発防止）。
-
-### TC-022: `credentials set <unknown>` が非 0 で終了する
+### TC-020: `credentials set <unknown>` が非 0 終了する
 
 **Category**: unit
 **Priority**: should
-**Source**: tasks.md T-03
+**Source**: tasks.md > T-03 Acceptance Criteria
 
-**GIVEN** `credentials set` に登録外の `<name>`（例: `foobar`）を渡す
-**WHEN** `runCredentialsSet("foobar")` を呼び出す
-**THEN** 戻り値が非 0 であり、credentials.json への書き込みは行われない
+**GIVEN** a user runs `specrunner credentials set unknown-name`
+**WHEN** the handler validates the positional `<name>` argument
+**THEN** the command exits non-zero and prints usage indicating accepted names
 
-### TC-023: init の config 生成メッセージが login でなく doctor へ誘導する
+---
 
-**Category**: unit
-**Priority**: should
-**Source**: design.md D9 / tasks.md T-07
-
-**GIVEN** global config が存在しない（初回 init）
-**WHEN** `runInit({ repoRoot })` を実行し stdout を捕捉する
-**THEN** stdout に `specrunner doctor` が含まれ、`specrunner login` が無条件案内として出力されない
-
-### TC-024: top-level USAGE に `credentials set` のエントリが含まれる
+### TC-021: `credentials set` に空入力が渡された場合に非 0 終了する
 
 **Category**: unit
 **Priority**: should
-**Source**: tasks.md T-04
+**Source**: tasks.md > T-03 Acceptance Criteria
 
-**GIVEN** `src/cli/command-registry.ts` の top-level `USAGE` 定数
-**WHEN** その文字列を検査する
-**THEN** `credentials set` の記載が含まれる
+**GIVEN** a user runs `specrunner credentials set claude-code` and provides an empty string as the secret value
+**WHEN** the handler reads the secret via `readSecret`
+**THEN** the command exits non-zero with an error message and does not write to credentials.json
 
 ---
 
@@ -259,11 +243,11 @@ TC-013 の grep テストと同一ファイル内（または別 it ブロック
 
 ```yaml
 result: completed
-total: 24
-automated: 24
+total: 21
+automated: 21
 manual: 0
-must: 21
-should: 3
+must: 19
+should: 2
 could: 0
 blocked_reasons: []
 ```

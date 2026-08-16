@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "701673a2-7de5-472b-bf2c-e350106aa18e",
   "createdAt": "2026-08-16T04:59:46.514Z",
-  "updatedAt": "2026-08-16T05:40:04.927Z",
+  "updatedAt": "2026-08-16T05:47:42.651Z",
   "request": {
     "title": "auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/auth-setup-ux-701673a2",
   "error": null,
@@ -66,7 +66,8 @@
     "9704a45463166e2b757ceb22022f23dff5be248c",
     "0f39395c13217f3247b6dcc4b00b78836f5bbadd",
     "495a9f3f89682853e07136c31439ec8f9f2b6cd3",
-    "0f302eeef681143474038f7d167622740ac27546"
+    "0f302eeef681143474038f7d167622740ac27546",
+    "cc3af96412fc1bab7ebe2d17752441e69b59ce5c"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -129,14 +130,42 @@
       "src/core/doctor/checks/config/__tests__/claude-code-token-present.test.ts",
       "tests/grep-no-bun-imports.test.ts",
       "src/cli/flag-parser.ts"
+    ],
+    "spec-review": [
+      "src/cli/login.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/init.ts",
+      "src/core/doctor/checks/config/managed-key-present.ts",
+      "src/core/doctor/checks/auth/managed-key-valid.ts",
+      "src/core/doctor/checks/agents/environment-provider-alive.ts",
+      "src/core/doctor/checks/agents/agent-provider-alive.ts",
+      "src/core/runtime/prereqs.ts",
+      "src/core/credentials/claude-code.ts",
+      "src/core/credentials/anthropic.ts",
+      "src/core/runtime/provider-readiness.ts",
+      "src/core/doctor/formatter.ts",
+      "src/core/doctor/checks/config/claude-code-token-present.ts",
+      "src/cli/__tests__/login.test.ts",
+      "tests/hint-command-existence.test.ts",
+      "tests/init.test.ts",
+      "src/core/doctor/checks/auth/github-token-valid.ts",
+      "src/core/credentials/github.ts",
+      "README.md",
+      "tests/grep-no-bun-imports.test.ts",
+      "src/core/doctor/next-steps.ts",
+      "src/core/doctor/checks/config/github-token-present.ts",
+      "src/core/credentials/credentials-io.ts",
+      "src/core/doctor/checks/index.ts"
     ]
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 20,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }
