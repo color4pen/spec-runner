@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.4.10](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.9...specrunner-v0.4.10) (2026-08-15)
+
+
+### Features
+
+* --detach の起動 ack — 親の exit を登録完了または子の失敗まで遅延し、起動失敗を伝播する ([#981](https://github.com/color4pen/spec-runner/issues/981)) ([2fe0ef6](https://github.com/color4pen/spec-runner/commit/2fe0ef6199d4103b690e26c663a67af1222870ba))
+* agent 呼び出しの無活動タイムアウト: イベントが途切れたら timeout halt に落とす ([#988](https://github.com/color4pen/spec-runner/issues/988)) ([34ec989](https://github.com/color4pen/spec-runner/commit/34ec9896427d9a0f4fb3457511227c7ca0adeb9f))
+* build-fixer の廃止: verification 失敗は implementer の継続 session で直す ([#998](https://github.com/color4pen/spec-runner/issues/998)) ([0fa75c5](https://github.com/color4pen/spec-runner/commit/0fa75c5d0675258baabd76add7f5b468c87e7fae))
+* chore type のテスト生成免除: TYPE_CONFIG によるテスト生成工程の宣言的 skip ([#987](https://github.com/color4pen/spec-runner/issues/987)) ([0b7eca2](https://github.com/color4pen/spec-runner/commit/0b7eca24809f6e48a49eb421d69e99ba8eb1de84))
+* conformance の正典に格差を付ける: request/spec は規範、design/tasks は計画 ([#992](https://github.com/color4pen/spec-runner/issues/992)) ([8172940](https://github.com/color4pen/spec-runner/commit/8172940ab7a8c813c7e05d30bfd206d8867a16fe))
+* Evidence Base の導入: bite-evidence の baseline を工程時系列から切り離す ([#997](https://github.com/color4pen/spec-runner/issues/997)) ([a7bd7a9](https://github.com/color4pen/spec-runner/commit/a7bd7a92f63658b752f2ea56369e984ab4b8efc1))
+* job cancel の process-tree kill — status gate を pid 生存 gate に置き換え、detach 子孫プロセスを回収する ([#982](https://github.com/color4pen/spec-runner/issues/982)) ([e474e19](https://github.com/color4pen/spec-runner/commit/e474e19aa1354692a02902377b98735779c84e61))
+* resume の operator 案内整備: 採用系 halt の preflight 統合と詳細ヘルプ ([#978](https://github.com/color4pen/spec-runner/issues/978)) ([3bc5907](https://github.com/color4pen/spec-runner/commit/3bc5907dda7841c4b7d9b4db305270fac22adfcb))
+* severity と fixability の分離: LOW も fixable なら直す ([#993](https://github.com/color4pen/spec-runner/issues/993)) ([77923d0](https://github.com/color4pen/spec-runner/commit/77923d069f5137f7886c0b8652f9dd2f12737822))
+* STEP_TIMEOUT の halt 記録に最後の tool 実行情報を残す ([#995](https://github.com/color4pen/spec-runner/issues/995)) ([315abeb](https://github.com/color4pen/spec-runner/commit/315abeb6ef51af3f796f5984184434c70ab553e3))
+* test-case-gen を design phase の最終工程へ移動: TC を spec-review の照合対象にする ([#996](https://github.com/color4pen/spec-runner/issues/996)) ([5cd7183](https://github.com/color4pen/spec-runner/commit/5cd7183aade76a619dfdb3b158921f1452e1ae39))
+* test-materialize step の廃止: テスト実体化を implementer に統合する ([#999](https://github.com/color4pen/spec-runner/issues/999)) ([27c123c](https://github.com/color4pen/spec-runner/commit/27c123cce89592ec35817389bc0c9a3faccb3b2a))
+* test-materialize の自己 red 確認: 新規テストは fail を観測してから完了する ([#985](https://github.com/color4pen/spec-runner/issues/985)) ([76a3486](https://github.com/color4pen/spec-runner/commit/76a348691a423c9dd7a36dc6f488af34c4c44f3e))
+* テスト証拠と工程順序の分離(第1弾): red 強制・テスト変更禁止・偽 baseline 判定の撤回 ([#991](https://github.com/color4pen/spec-runner/issues/991)) ([704fe11](https://github.com/color4pen/spec-runner/commit/704fe11029ae68349b4285509e2363346e9ffddc))
+* 過大 request の粒度ゲート: validate 規模警告と request-review 縫い目判定 ([#983](https://github.com/color4pen/spec-runner/issues/983)) ([dafcca6](https://github.com/color4pen/spec-runner/commit/dafcca67a631c767f14c54883634b1863caf7b8c))
+
+
+### Bug Fixes
+
+* archive の draft 削除が実ファイルに届いていない: repo 本体側・両形式の削除に直す ([#990](https://github.com/color4pen/spec-runner/issues/990)) ([d0f7e70](https://github.com/color4pen/spec-runner/commit/d0f7e704089a3a91382948b6f3556874b4bf5df8))
+* liveness 生存判定の sidecar pid 採用に jobId 照合を追加する ([#986](https://github.com/color4pen/spec-runner/issues/986)) ([0c90914](https://github.com/color4pen/spec-runner/commit/0c90914d76d4bbd2f9c8ac25dcf2fc40325b60fa))
+
 ## [0.4.9](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.8...specrunner-v0.4.9) (2026-08-09)
 
 
