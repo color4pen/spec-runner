@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a96538bc-88b8-46f9-be87-ce99ae6721cc",
   "createdAt": "2026-08-16T17:11:25.976Z",
-  "updatedAt": "2026-08-16T18:32:02.471Z",
+  "updatedAt": "2026-08-16T18:50:04.757Z",
   "request": {
     "title": "specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/operator-guide-a96538bc",
   "error": null,
   "pipelineId": "standard",
@@ -77,7 +77,9 @@
     "ae5ea7719780b646d9c08627d64339379bb96165",
     "ac33ed2b17f403d65c1c2405bf2b2cb67312e080",
     "102984ad138c324abf583d7edc4f0cf85b19d487",
-    "e53924531870810ddc01bfaf64f84c733c530fcf"
+    "e53924531870810ddc01bfaf64f84c733c530fcf",
+    "2ce5af8ffca7b6840e11d57bead319e4fcb9dbc8",
+    "100e9261f7be794bff1ad4f8a1b01bcf5fa740e4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -134,9 +136,21 @@
       ".claude/skills/rebase-finish/SKILL.md",
       ".claude/skills/acceptance-and-issue-audit/SKILL.md",
       ".claude/skills/parallel-request-workflow/SKILL.md"
+    ],
+    "code-fixer": [
+      "src/core/command/__tests__/guide.test.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/init.ts",
+      "src/cli/__tests__/command-registry-apply-canon.test.ts",
+      "src/core/command/guide.ts",
+      "src/cli/__tests__/init-snippet.test.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -145,8 +159,37 @@
       "recordedAt": "2026-08-16T18:32:02.348Z"
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 60,
+    "historyCount": 69,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -156,7 +199,11 @@
       "implementer": 3,
       "bite-evidence": 1,
       "verification": 3,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
