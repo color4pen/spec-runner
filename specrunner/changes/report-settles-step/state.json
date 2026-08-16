@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "41cec64c-d6d8-4b2a-af76-b4f1f8237d1f",
   "createdAt": "2026-08-16T13:32:08.572Z",
-  "updatedAt": "2026-08-16T14:00:25.315Z",
+  "updatedAt": "2026-08-16T14:02:21.355Z",
   "request": {
     "title": "agent step の完了契機を report 受領主・プロセス終了 fallback の二重系にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/report-settles-step-41cec64c",
   "error": null,
@@ -67,7 +67,8 @@
     "b8371cd4405cf166b43dd8533e60d9551f5215dd",
     "162f1193d9c22ad89ad068495cec19aabb44b543",
     "b11dece83dc608061b5b8ab4dd0e6c924382bdbd",
-    "d625a3395aa7d5d8d2a52d46e233d68e8635eef2"
+    "d625a3395aa7d5d8d2a52d46e233d68e8635eef2",
+    "0a42cf16185b7a1d13158e1e7f8a46efd0376b90"
   ],
   "touchedFiles": {
     "request-review": [
@@ -105,11 +106,11 @@
     "spec-fixer": []
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 23,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 1,
+      "test-case-gen": 2,
       "spec-review": 1,
       "spec-fixer": 1
     }
