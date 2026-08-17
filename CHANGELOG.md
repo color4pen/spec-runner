@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.11](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.10...specrunner-v0.4.11) (2026-08-17)
+
+
+### Features
+
+* agent step の完了契機を report 受領主・プロセス終了 fallback の二重系にする ([#1006](https://github.com/color4pen/spec-runner/issues/1006)) ([a41ad58](https://github.com/color4pen/spec-runner/commit/a41ad581d8c7a828537c130836e3b6afd99cb3f1))
+* auth/setup UX の整理: login を GitHub 専用に戻し、credential 保存を分離し、doctor を導線の中心にする ([#1001](https://github.com/color4pen/spec-runner/issues/1001)) ([bb435a1](https://github.com/color4pen/spec-runner/commit/bb435a1c1c8dced532c6a699726cf08388098128))
+* CLI command interface の正本化: CommandSpec から parser / help / dispatch を導出する ([#1005](https://github.com/color4pen/spec-runner/issues/1005)) ([613c55c](https://github.com/color4pen/spec-runner/commit/613c55c2494caa2af5ee780ebe4ba805e12d9d19))
+* rules の配送方式に delivery: prompt を追加する — 行動制約型ルールを main prompt に前置注入する ([#1007](https://github.com/color4pen/spec-runner/issues/1007)) ([aeef58e](https://github.com/color4pen/spec-runner/commit/aeef58ef86312b636f05189bcba7f0f98105e7bc))
+* specrunner guide サブコマンド: 運用知識の CLI 正本化と skill のダイエット ([#1008](https://github.com/color4pen/spec-runner/issues/1008)) ([8b78bd7](https://github.com/color4pen/spec-runner/commit/8b78bd74ff8ea7f534ed246e9ae35f4fb6ff00a5))
+
+
+### Bug Fixes
+
+* guide 正本の正確性硬化: 誤案内 3 件の修正・正典モデル記述の是正・コマンド例検証の invocation contract 化 ([#1009](https://github.com/color4pen/spec-runner/issues/1009)) ([9e9e3d9](https://github.com/color4pen/spec-runner/commit/9e9e3d95998a808e293503a53e0638337db4a491))
+
 ## [0.4.10](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.9...specrunner-v0.4.10) (2026-08-15)
 
 
