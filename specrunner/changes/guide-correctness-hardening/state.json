@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "16f48392-21a1-4c30-8365-c74e08287d3d",
   "createdAt": "2026-08-16T23:35:49.117Z",
-  "updatedAt": "2026-08-17T00:53:05.741Z",
+  "updatedAt": "2026-08-17T00:58:38.064Z",
   "request": {
     "title": "guide 正本の正確性硬化: 誤案内 3 件の修正・正典モデル記述の是正・コマンド例検証の invocation contract 化",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/guide-correctness-hardening-16f48392",
   "error": null,
   "pipelineId": "standard",
@@ -74,7 +74,9 @@
     "b61fd054d5fc1998e84bcdf163e7291239f0c345",
     "e536516c25a3c96c58ff17e018a72db9a6c7cb31",
     "a516d1f325a3b52e832a64684f9352ecae2d1794",
-    "2093a1e36f40ae14ac9cf8574d20b2ddfe7e76b6"
+    "2093a1e36f40ae14ac9cf8574d20b2ddfe7e76b6",
+    "eff8338be801b1d4a67ee79b22234019f9dea4b9",
+    "828940a8f42b30c469fc414b2f76f7684d552a4f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -127,6 +129,13 @@
     ],
     "regression-gate": [
       "src/core/command/__tests__/guide.test.ts"
+    ],
+    "conformance": [
+      "src/core/command/guide.ts",
+      "src/core/command/runner.ts",
+      ".claude/skills/acceptance-and-issue-audit/SKILL.md",
+      "specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md",
+      "src/core/command/__tests__/guide.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -158,8 +167,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1009",
+    "number": 1009,
+    "createdAt": "2026-08-17T00:58:36.698Z"
+  },
   "_journal": {
-    "historyCount": 59,
+    "historyCount": 73,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -168,12 +182,15 @@
       "spec-fixer": 2,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
