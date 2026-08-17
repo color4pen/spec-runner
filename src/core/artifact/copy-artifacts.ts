@@ -5,7 +5,7 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import type { SpawnFn } from "../../util/spawn.js";
-import { rulesDestPath, usageJsonPath, draftPath, requestMdPath } from "../../util/paths.js";
+import { rulesDestPath, usageJsonPath, draftsDir } from "../../util/paths.js";
 import { RULES_MD_CONTENT } from "../../prompts/rules.js";
 import { stderrWrite } from "../../logger/stdout.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
@@ -132,43 +132,44 @@ export async function cleanupOutputTemplates(
 }
 
 /**
- * Copy the draft's request.md (if it exists) to the change folder and stage it.
- * Called on every resume so the agent reads the most recent draft content.
- * Silent no-op when the draft request.md is absent.
- * Symlinks are rejected.
+ * Consume (delete) the canonical draft for the given slug from the repo root after the
+ * job start materialization commit succeeds. Both the flat form
+ * (`specrunner/drafts/<slug>.md`) and the directory form (`specrunner/drafts/<slug>/`)
+ * are handled. git-tracked drafts are warned about instead of deleted.
  *
- * @param repoRoot  - Absolute path to the repository root (main worktree cwd).
- * @param targetCwd - Working directory where the change folder lives
- *                    (worktreePath for local with worktrees, cwd for no-worktree / managed).
- * @param slug      - The change slug.
- * @param spawnFn   - Spawn helper for git commands.
+ * Policy mirrors `src/core/archive/orchestrator.ts` draft cleanup (backstop).
+ * ponytail: policy duplicated in archive/orchestrator.ts — consolidate when a 3rd consumer appears.
+ *
+ * @param repoRoot - Absolute path to the repository root (main working tree).
+ * @param slug     - The change slug.
+ * @param spawn    - Spawn helper for git commands (cwd = repoRoot for ls-files).
  */
-export async function recopyDraftToChangeFolder(
+export async function consumeDraft(
   repoRoot: string,
-  targetCwd: string,
   slug: string,
-  spawnFn: SpawnFn,
+  spawn: SpawnFn,
 ): Promise<void> {
-  const draftSrc = path.join(repoRoot, draftPath(slug));
-  const changeDest = path.join(targetCwd, requestMdPath(slug));
-
-  await rejectSymlink(draftSrc);
-
-  try {
-    await fs.access(draftSrc);
-  } catch {
-    // Draft does not exist — no-op
-    return;
-  }
-
-  await fs.mkdir(path.dirname(changeDest), { recursive: true });
-  await fs.cp(draftSrc, changeDest);
-
-  const gitAddResult = await spawnFn("git", ["add", requestMdPath(slug)], { cwd: targetCwd });
-  if (gitAddResult.exitCode !== 0) {
-    stderrWrite(
-      `Warning: failed to stage recopy'd request.md: ${gitAddResult.stderr.trim()}`,
-    );
+  const dir = draftsDir();
+  for (const [relPath, absPath] of [
+    [path.join(dir, `${slug}.md`), path.join(repoRoot, dir, `${slug}.md`)],
+    [path.join(dir, slug),         path.join(repoRoot, dir, slug)],
+  ] as [string, string][]) {
+    try {
+      await fs.access(absPath);
+    } catch {
+      continue; // Does not exist — no-op
+    }
+    const lsResult = await spawn("git", ["ls-files", "--", relPath], { cwd: repoRoot });
+    if (lsResult.stdout.trim()) {
+      stderrWrite(`Warning: draft '${relPath}' is tracked by git; delete manually with 'git rm ${relPath}' and commit.`);
+      continue;
+    }
+    try {
+      await fs.rm(absPath, { recursive: true, force: true });
+    } catch (err: unknown) {
+      const code = (err as { code?: string }).code;
+      stderrWrite(`Warning: failed to delete draft '${relPath}'${code ? ` (${code})` : ""}. Remove manually if needed.`);
+    }
   }
 }
 

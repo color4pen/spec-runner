@@ -1,12 +1,9 @@
 /**
- * Tests for bootstrap-commit-egress-ledger: managed.ts path
+ * Tests for bootstrap-commit-egress-ledger + draft-consume-on-start: managed.ts path
  *
  * TC-003: managed.ts run path records bootstrap OID in synthesizedCommits
  * TC-006: managed.ts rev-parse failure aborts bootstrap (setupWorkspace throws)
- *
- * RED before fix (T-03): ManagedRuntime.setupWorkspace does not capture the bootstrap
- * commit OID. TC-003 fails because synthesizedCommits is absent in managed local state.
- * TC-006 fails because setupWorkspace does not throw on rev-parse failure.
+ * TC-010: managed.ts push failure after commit preserves the canonical draft
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -184,6 +181,62 @@ describe("TC-006: managed.ts rev-parse failure aborts bootstrap (setupWorkspace 
           bootstrapState: jobState,
         }),
       ).rejects.toThrow();
+    },
+    20000,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-010: managed.ts push failure after commit preserves the canonical draft
+// ---------------------------------------------------------------------------
+describe("TC-010: managed.ts push failure after commit preserves the canonical draft", () => {
+  it(
+    "draft still exists on disk when git push fails after commit (consumeDraft not reached)",
+    async () => {
+      const requestFilePath = path.join(tempDir, "source-request.md");
+      await fs.writeFile(requestFilePath, "# Managed Push Fail Test\n", "utf-8");
+
+      // Create directory-format draft in the managed cwd (= repo root)
+      const draftDir = path.join(tempDir, "specrunner", "drafts", SLUG);
+      await fs.mkdir(draftDir, { recursive: true });
+      await fs.writeFile(path.join(draftDir, "request.md"), "# Draft\n");
+
+      const sessionClient = buildMockSessionClient();
+      const githubClient = buildMockGitHubClient();
+
+      // spawnFn: commit succeeds, rev-parse succeeds, but the second push (after commit) fails
+      let pushCallCount = 0;
+      const spawnFn: SpawnFn = vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
+        if (cmd === "git" && args[0] === "rev-parse" && args[1] === "HEAD") {
+          return { exitCode: 0, stdout: `${MANAGED_BOOTSTRAP_OID}\n`, stderr: "" };
+        }
+        if (cmd === "git" && args[0] === "push") {
+          pushCallCount++;
+          // First push (branch creation) succeeds, second push (after commit) fails
+          if (pushCallCount >= 2) {
+            return { exitCode: 1, stdout: "", stderr: "remote: push rejected" };
+          }
+        }
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }) as unknown as SpawnFn;
+
+      const runtime = new ManagedRuntime(tempDir, sessionClient, githubClient, buildRepo(), spawnFn, "");
+
+      const jobState = buildInitialJobState({
+        request: { path: requestFilePath, title: "Managed Push Fail Test", type: "bug-fix", slug: SLUG },
+        repository: { owner: "test", name: "repo" },
+      });
+
+      await expect(
+        runtime.setupWorkspace(SLUG, jobState.jobId, {
+          branchName: BRANCH_NAME,
+          requestFilePath,
+          bootstrapState: jobState,
+        }),
+      ).rejects.toThrow();
+
+      // Draft must still exist — consumeDraft is only called after push succeeds
+      await expect(fs.access(draftDir)).resolves.toBeUndefined();
     },
     20000,
   );

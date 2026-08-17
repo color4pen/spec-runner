@@ -34,7 +34,7 @@ import { resolveCanonicalStateDir } from "../finish/resolve-canonical-state-dir.
 import {
   copyRulesToChangeFolder,
   copyDraftUsageToChangeFolder,
-  recopyDraftToChangeFolder,
+  consumeDraft,
   rejectSymlink,
   writeOutputTemplates,
   cleanupOutputTemplates,
@@ -441,11 +441,9 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         (s) => appendSynthesizedCommit(s, bootstrapOid),
         slugOpts,
       );
-    }
 
-    // Resume path: recopy draft request.md into change folder (copy semantics)
-    if (!isRunPath) {
-      await recopyDraftToChangeFolder(this.cwd, workspace.cwd, slug, this.spawnFn);
+      // Consume canonical draft now that materialization commit has succeeded
+      await consumeDraft(this.cwd, slug, this.spawnFn);
     }
 
     // Record branchName in state

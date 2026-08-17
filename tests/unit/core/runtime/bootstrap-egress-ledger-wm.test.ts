@@ -1,12 +1,11 @@
 /**
- * Tests for bootstrap-commit-egress-ledger: workspace-materializer paths
+ * Tests for bootstrap-commit-egress-ledger + draft-consume-on-start: workspace-materializer paths
  *
- * TC-001: workspace-materializer new-run path records bootstrap OID in synthesizedCommits
- * TC-004: workspace-materializer rev-parse failure aborts bootstrap and cleans up worktree
- *
- * RED before fix (T-01): the materializer does not capture the bootstrap commit OID
- * and does not call appendSynthesizedCommit. TC-001 fails because synthesizedCommits
- * is absent. TC-004 fails because materialize() does not reject on rev-parse failure.
+ * TC-001 (bootstrap): workspace-materializer new-run path records bootstrap OID in synthesizedCommits
+ * TC-004 (bootstrap): workspace-materializer rev-parse failure aborts bootstrap and cleans up worktree
+ * TC-001/TC-002 (consume): both flat and directory drafts are consumed after successful start
+ * TC-003 (consume): commit failure before materialization preserves the draft
+ * TC-006 (resume): operator-edited request.md survives a subsequent resume (no draft recopy)
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -238,6 +237,190 @@ describe("TC-004: workspace-materializer rev-parse failure aborts bootstrap and 
         pruneStub,
         "manager.prune must be called on rev-parse failure (worktree cleanup, invariant 3)",
       ).toHaveBeenCalled();
+    },
+    20000,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-001/TC-002 (consume): both flat and directory drafts are consumed on successful start
+// ---------------------------------------------------------------------------
+describe("TC-001/TC-002 (consume): flat and directory drafts are deleted after successful new-run materialize", () => {
+  it(
+    "deletes both specrunner/drafts/<slug>.md and specrunner/drafts/<slug>/ after commit succeeds",
+    async () => {
+      const requestFilePath = path.join(tempDir, "request.md");
+      await fs.writeFile(requestFilePath, "# Consume Test\n", "utf-8");
+
+      // Create both canonical draft forms in the repo root (host.cwd = tempDir)
+      const flatDraft = path.join(tempDir, "specrunner", "drafts", `${SLUG}.md`);
+      const dirDraft = path.join(tempDir, "specrunner", "drafts", SLUG);
+      await fs.mkdir(path.dirname(flatDraft), { recursive: true });
+      await fs.writeFile(flatDraft, "# Flat Draft\n");
+      await fs.mkdir(path.join(dirDraft), { recursive: true });
+      await fs.writeFile(path.join(dirDraft, "request.md"), "# Dir Draft\n");
+
+      const initialState = makeInitialState();
+      let trackedState: JobState = { ...initialState };
+
+      const host: MaterializerHost = {
+        cwd: tempDir, // repo root — consumeDraft looks here for drafts
+        manager: {
+          create: vi.fn().mockResolvedValue(worktreeDir),
+          remove: vi.fn().mockResolvedValue(undefined),
+          prune: vi.fn().mockResolvedValue(undefined),
+        },
+        // spawnFn: rev-parse returns OID; ls-files returns empty (untracked); all else succeeds
+        spawnFn: vi.fn().mockImplementation(
+          async (_cmd: string, args: string[]) => {
+            if (args[0] === "rev-parse" && args[1] === "HEAD") {
+              return { exitCode: 0, stdout: `${BOOTSTRAP_OID}\n`, stderr: "" };
+            }
+            if (args[0] === "ls-files") {
+              return { exitCode: 0, stdout: "", stderr: "" }; // untracked
+            }
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+        ) as unknown as SpawnFn,
+        resolveSetupPlan: vi.fn().mockReturnValue({ kind: "skip" } satisfies WorkspaceSetupPlan),
+        registerWorkspace: vi.fn(),
+        updateJobState: vi.fn().mockImplementation(
+          async (_jobId: string, mutator: (s: JobState) => JobState) => {
+            trackedState = mutator(trackedState);
+          },
+        ),
+        writeLivenessSidecar: vi.fn().mockResolvedValue(undefined),
+      };
+
+      const materializer = new WorkspaceMaterializer(host);
+      await materializer.materialize(
+        SLUG,
+        JOB_ID,
+        { kind: "new-run", remoteBaseRef: "origin/main", branchName: "feat/consume-test" },
+        { requestFilePath, bootstrapState: initialState },
+      );
+
+      // Both draft forms must be gone
+      await expect(fs.access(flatDraft)).rejects.toThrow();
+      await expect(fs.access(dirDraft)).rejects.toThrow();
+    },
+    20000,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-003 (consume): commit failure before materialization preserves the draft
+// ---------------------------------------------------------------------------
+describe("TC-003 (consume): commit failure before materialization preserves the draft", () => {
+  it(
+    "draft still exists on disk when the git commit command fails",
+    async () => {
+      const requestFilePath = path.join(tempDir, "request.md");
+      await fs.writeFile(requestFilePath, "# Commit Fail Test\n", "utf-8");
+
+      // Create directory-format draft
+      const dirDraft = path.join(tempDir, "specrunner", "drafts", SLUG);
+      await fs.mkdir(dirDraft, { recursive: true });
+      await fs.writeFile(path.join(dirDraft, "request.md"), "# Draft\n");
+
+      const initialState = makeInitialState();
+
+      const host: MaterializerHost = {
+        cwd: tempDir,
+        manager: {
+          create: vi.fn().mockResolvedValue(worktreeDir),
+          remove: vi.fn().mockResolvedValue(undefined),
+          prune: vi.fn().mockResolvedValue(undefined),
+        },
+        // spawnFn: commit returns exitCode != 0; consumeDraft should never be reached
+        spawnFn: vi.fn().mockImplementation(
+          async (_cmd: string, args: string[]) => {
+            if (args[0] === "commit") {
+              return { exitCode: 1, stdout: "", stderr: "error: nothing to commit" };
+            }
+            return { exitCode: 0, stdout: "", stderr: "" };
+          },
+        ) as unknown as SpawnFn,
+        resolveSetupPlan: vi.fn().mockReturnValue({ kind: "skip" } satisfies WorkspaceSetupPlan),
+        registerWorkspace: vi.fn(),
+        updateJobState: vi.fn().mockResolvedValue(undefined),
+        writeLivenessSidecar: vi.fn().mockResolvedValue(undefined),
+      };
+
+      const materializer = new WorkspaceMaterializer(host);
+      await expect(
+        materializer.materialize(
+          SLUG,
+          JOB_ID,
+          { kind: "new-run", remoteBaseRef: "origin/main", branchName: "feat/commit-fail" },
+          { requestFilePath, bootstrapState: initialState },
+        ),
+      ).rejects.toThrow();
+
+      // Draft must still exist (consumeDraft was never reached)
+      await expect(fs.access(dirDraft)).resolves.toBeUndefined();
+    },
+    20000,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// TC-006 (resume): operator-edited request.md survives a subsequent resume
+// ---------------------------------------------------------------------------
+describe("TC-006 (resume): operator-edited request.md is not overwritten by draft on resume", () => {
+  it(
+    "resume-existing materialize leaves change-folder request.md unchanged even when draft differs",
+    async () => {
+      const operatorContent = "# Operator-Edited Content\n";
+      const draftContent = "# Old Draft Content\n";
+
+      // Set up worktree with operator-edited request.md
+      const worktreePath = path.join(tempDir, "worktree");
+      await fs.mkdir(worktreePath, { recursive: true });
+      const changeFolder = path.join(worktreePath, "specrunner", "changes", SLUG);
+      await fs.mkdir(changeFolder, { recursive: true });
+      await fs.writeFile(path.join(changeFolder, "request.md"), operatorContent);
+
+      // Set up a different-content draft in the repo root (should NOT overwrite)
+      const draftDir = path.join(tempDir, "specrunner", "drafts", SLUG);
+      await fs.mkdir(draftDir, { recursive: true });
+      await fs.writeFile(path.join(draftDir, "request.md"), draftContent);
+
+      const initialState = makeInitialState();
+
+      const host: MaterializerHost = {
+        cwd: tempDir,
+        manager: {
+          create: vi.fn().mockResolvedValue(worktreePath),
+          remove: vi.fn().mockResolvedValue(undefined),
+          prune: vi.fn().mockResolvedValue(undefined),
+        },
+        spawnFn: vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" }) as unknown as SpawnFn,
+        resolveSetupPlan: vi.fn().mockReturnValue({ kind: "skip" } satisfies WorkspaceSetupPlan),
+        registerWorkspace: vi.fn(),
+        updateJobState: vi.fn().mockImplementation(
+          async (_jobId: string, mutator: (s: JobState) => JobState) => {
+            initialState; // just apply, but don't track
+            mutator(initialState);
+          },
+        ),
+        writeLivenessSidecar: vi.fn().mockResolvedValue(undefined),
+      };
+
+      const materializer = new WorkspaceMaterializer(host);
+      await materializer.materialize(
+        SLUG,
+        JOB_ID,
+        { kind: "resume-existing", worktreePath },
+        { bootstrapState: initialState },
+      );
+
+      // Operator content must be preserved — draft must NOT have overwritten it
+      const actualContent = await fs.readFile(
+        path.join(changeFolder, "request.md"),
+        "utf-8",
+      );
+      expect(actualContent).toBe(operatorContent);
     },
     20000,
   );
