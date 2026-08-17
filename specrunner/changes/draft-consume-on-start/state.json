@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4865ee5c-4f71-4807-9bb5-ce7a6a6065eb",
   "createdAt": "2026-08-17T11:05:23.605Z",
-  "updatedAt": "2026-08-17T12:14:08.282Z",
+  "updatedAt": "2026-08-17T12:23:45.990Z",
   "request": {
     "title": "request lifecycle の一本化: job start で draft を消費し、resume の draft recopy を廃止する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/draft-consume-on-start-4865ee5c",
   "error": null,
@@ -77,7 +77,9 @@
     "f28efcab8aca572ac5ecf253513862af77b92cf7",
     "9661516f610b4fd25f9ca33be379eed1731e2d37",
     "54ac377bd793519f32f04140eb2d2a44e94fa8e3",
-    "5d14b3eeecc12b4bb4f3a40f83ace6e4f9b05653"
+    "5d14b3eeecc12b4bb4f3a40f83ace6e4f9b05653",
+    "8734e63d634e066bd3a9c5f8f1d6548d1d932f2c",
+    "d3d3a854c26f3ca15bb15305d294415a989a5223"
   ],
   "touchedFiles": {
     "request-review": [
@@ -149,6 +151,16 @@
       "tests/unit/core/archive/orchestrator.test.ts",
       "src/core/runtime/managed.ts",
       "src/core/artifact/copy-artifacts.ts"
+    ],
+    "conformance": [
+      "src/core/artifact/copy-artifacts.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "tests/unit/util/copy-artifacts.test.ts",
+      "tests/unit/core/runtime/bootstrap-egress-ledger-wm.test.ts",
+      "tests/unit/core/runtime/bootstrap-egress-ledger-managed.test.ts",
+      "tests/unit/core/archive/orchestrator.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -182,7 +194,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 64,
+    "historyCount": 73,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -190,13 +202,14 @@
       "spec-review": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
