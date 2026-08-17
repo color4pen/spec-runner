@@ -792,13 +792,26 @@ describe("TC-031: runner.ts halt 出力への guide 導線", () => {
 /**
  * Lines matching these patterns are excluded from invocation contract validation.
  * Each entry MUST carry a reason explaining why mechanical verification is not possible.
+ * Patterns are tested against the line AFTER <placeholder> tokens are stripped
+ * (stripPlaceholders) — placeholder angle brackets and in-placeholder pipes
+ * (`<slug|file>`) must never be mistaken for shell metacharacters, otherwise
+ * every placeholder example is silently excluded and the contract never runs.
  */
 const INVOCATION_CONTRACT_SKIP_PATTERNS: readonly { pattern: RegExp; reason: string }[] = [
   {
     pattern: /[|$>]/,
-    reason: "contains shell metacharacters (redirect / pipe / variable) — not a standalone specrunner invocation",
+    reason: "contains shell metacharacters (redirect / pipe / variable) outside placeholders — not a standalone specrunner invocation",
   },
 ];
+
+/** Remove <placeholder> tokens so skip patterns only see real shell syntax. */
+function stripPlaceholders(line: string): string {
+  return line.replace(/<[^>]*>/g, "");
+}
+
+function isSkippedByContract(line: string): boolean {
+  return INVOCATION_CONTRACT_SKIP_PATTERNS.some((p) => p.pattern.test(stripPlaceholders(line)));
+}
 
 /**
  * Extract `specrunner ...` lines from triple-backtick code blocks.
@@ -894,7 +907,9 @@ function validateInvocation(parsed: ParsedInvocation): InvocationViolation[] {
     const arg = argsSpec[i];
     if (!arg) continue; // extra positionals: skip (variadic)
     const allowed = arg.name.split(/[| ]/);
-    if (!allowed.includes(placeholder)) {
+    // Composite placeholders (`<slug|file>`) match when every alternative is allowed
+    const parts = placeholder.split("|");
+    if (!parts.every((p) => allowed.includes(p))) {
       violations.push({
         kind: "positional-name-mismatch",
         detail: `placeholder '<${placeholder}>' does not match args[${i}].name '${arg.name}' for '${parsed.pathTokens.join(" ")}'`,
@@ -909,8 +924,7 @@ describe("TC-032: コードブロック内 specrunner コマンドの invocation
     const lines = extractSpecrunnerLinesFromCodeBlocks(topic.body);
 
     for (const line of lines) {
-      const skipped = INVOCATION_CONTRACT_SKIP_PATTERNS.some((p) => p.pattern.test(line));
-      if (skipped) continue;
+      if (isSkippedByContract(line)) continue;
 
       it(`TC-032: '${line}' in topic '${topic.name}' passes invocation contract`, () => {
         const parsed = parseInvocation(line);
@@ -942,6 +956,53 @@ describe("TC-034/TC-039: invocation contract が placeholder 名不一致を検�
     const parsed = parseInvocation("specrunner job cancel <jobId> --restore-draft");
     const violations = validateInvocation(parsed);
     expect(violations).toEqual([]);
+  });
+});
+
+// ============================================================================
+// TC-041: inline backtick specrunner コマンドの invocation contract
+// TC-042: placeholder 行が skip されないこと (fail-open 再発防止)
+// ============================================================================
+
+/** Extract full `specrunner ...` strings from inline backtick references. */
+function extractSpecrunnerLinesInline(body: string): string[] {
+  const lines: string[] = [];
+  const backtickRegex = /`(specrunner [^`]+)`/g;
+  let match;
+  while ((match = backtickRegex.exec(body)) !== null) {
+    const withoutComment = match[1]!.replace(/\s+#.*$/, "");
+    const optIdx = withoutComment.indexOf("[");
+    lines.push(optIdx >= 0 ? withoutComment.slice(0, optIdx).trim() : withoutComment);
+  }
+  return lines;
+}
+
+describe("TC-041: inline backtick specrunner コマンドの invocation contract", () => {
+  for (const topic of GUIDE_TOPICS) {
+    for (const line of extractSpecrunnerLinesInline(topic.body)) {
+      if (isSkippedByContract(line)) continue;
+      it(`TC-041: '${line}' in topic '${topic.name}' passes invocation contract`, () => {
+        const violations = validateInvocation(parseInvocation(line));
+        expect(violations, `violations for: ${line}\n${JSON.stringify(violations, null, 2)}`).toEqual([]);
+      });
+    }
+  }
+});
+
+describe("TC-042: placeholder 行が skip されないこと (fail-open 再発防止)", () => {
+  it("TC-042: escalation topic の job cancel 行が invocation contract の検証対象に含まれる", () => {
+    const lines = extractSpecrunnerLinesFromCodeBlocks(findTopic("escalation")!.body);
+    const cancelLine = lines.find((l) => l.includes("job cancel"));
+    expect(cancelLine).toBeDefined();
+    expect(isSkippedByContract(cancelLine!)).toBe(false);
+  });
+
+  it("TC-042: placeholder のみを含む行は shell metacharacter skip に掛からない", () => {
+    expect(isSkippedByContract("specrunner job start <slug|file> --detach")).toBe(false);
+  });
+
+  it("TC-042: 実 redirect を含む行は skip される", () => {
+    expect(isSkippedByContract("specrunner request template > specrunner/drafts/<slug>.md")).toBe(true);
   });
 });
 

@@ -124,7 +124,8 @@ directing the operator to `specrunner guide escalation` immediately after the re
 ### Requirement: invocation contract SHALL cover triple-backtick code blocks
 
 The guide test suite SHALL extract `specrunner ...` lines from triple-backtick code blocks
-(in addition to inline backtick patterns already covered by TC-013).
+AND from inline backtick references, and SHALL apply the same invocation contract to both
+(TC-013 additionally keeps path-only resolution for inline command paths).
 For each extracted line not matching an explicit skip pattern, the test SHALL verify:
 (a) the command path resolves in the CLI registry
 (b) every `--flag` used exists in the CommandSpec flags
@@ -133,6 +134,10 @@ For each extracted line not matching an explicit skip pattern, the test SHALL ve
 
 Lines skipped for mechanical reasons MUST be listed in an explicit named constant
 with a `reason` field explaining why each pattern is excluded.
+Skip patterns MUST be tested against the line with `<placeholder>` tokens stripped,
+so placeholder angle brackets / in-placeholder pipes are never mistaken for shell
+metacharacters — otherwise every placeholder example is excluded and the
+placeholder-name check (c) never runs against guide content.
 
 #### Scenario: code block specrunner lines are extracted and validated
 

@@ -173,14 +173,38 @@
 
 verification: `bun run typecheck && bun run test` — TC-001〜TC-039 全て green、exit code 0
 
+---
+
+### TC-041: inline backtick specrunner コマンドの invocation contract
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: invocation contract SHALL cover triple-backtick code blocks
+
+**GIVEN** guide topic 本文の inline backtick 内の `specrunner ...` 参照
+**WHEN** invocation contract テストが走る
+**THEN** skip 対象でない各参照が path 解決・flag 実在・positional placeholder 整合の 3 点で検証される
+
+---
+
+### TC-042: placeholder 行が skip されないこと (fail-open 再発防止)
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: invocation contract SHALL cover triple-backtick code blocks > skip patterns are tested against the placeholder-stripped line
+
+**GIVEN** `<placeholder>` を含むが実 shell metacharacter を含まないコマンド行(escalation topic の `job cancel <jobId> --restore-draft` を含む)
+**WHEN** skip 判定が走る
+**THEN** placeholder 由来の `>` / `|` は skip 理由にならず、当該行は invocation contract の検証対象に含まれる。実 redirect を含む行(`request template > <file>`)は skip される
+
 ## Result
 
 ```yaml
 result: completed
-total: 19
-automated: 18
+total: 21
+automated: 20
 manual: 0
-must: 19
+must: 21
 should: 0
 could: 0
 blocked_reasons: []
