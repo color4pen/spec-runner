@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4865ee5c-4f71-4807-9bb5-ce7a6a6065eb",
   "createdAt": "2026-08-17T11:05:23.605Z",
-  "updatedAt": "2026-08-17T12:23:45.990Z",
+  "updatedAt": "2026-08-17T12:27:47.622Z",
   "request": {
     "title": "request lifecycle の一本化: job start で draft を消費し、resume の draft recopy を廃止する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/draft-consume-on-start-4865ee5c",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,8 @@
     "54ac377bd793519f32f04140eb2d2a44e94fa8e3",
     "5d14b3eeecc12b4bb4f3a40f83ace6e4f9b05653",
     "8734e63d634e066bd3a9c5f8f1d6548d1d932f2c",
-    "d3d3a854c26f3ca15bb15305d294415a989a5223"
+    "d3d3a854c26f3ca15bb15305d294415a989a5223",
+    "deb546c5fc48851fa1c9ad2f73762bfa5e0477c7"
   ],
   "touchedFiles": {
     "request-review": [
@@ -161,6 +162,10 @@
       "tests/unit/core/runtime/bootstrap-egress-ledger-wm.test.ts",
       "tests/unit/core/runtime/bootstrap-egress-ledger-managed.test.ts",
       "tests/unit/core/archive/orchestrator.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-07-23-operator-canon-apply-on-resume.md",
+      "specrunner/adr/2026-08-17-draft-consume-on-start.md"
     ]
   },
   "reviewerStatuses": [
@@ -193,8 +198,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1012",
+    "number": 1012,
+    "createdAt": "2026-08-17T12:27:46.520Z"
+  },
   "_journal": {
-    "historyCount": 73,
+    "historyCount": 78,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -209,7 +219,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
