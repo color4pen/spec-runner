@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4865ee5c-4f71-4807-9bb5-ce7a6a6065eb",
   "createdAt": "2026-08-17T11:05:23.605Z",
-  "updatedAt": "2026-08-17T11:19:01.391Z",
+  "updatedAt": "2026-08-17T11:20:32.664Z",
   "request": {
     "title": "request lifecycle の一本化: job start で draft を消費し、resume の draft recopy を廃止する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/draft-consume-on-start-4865ee5c",
   "error": null,
@@ -65,7 +65,8 @@
   "synthesizedCommits": [
     "104e01d97f7f49fe58a5acaf25faf0216a08849e",
     "22d93d44ed47b976c573bc37127bfebb96bea324",
-    "1421e45963bd660a7a46327b73b83983914d3f4e"
+    "1421e45963bd660a7a46327b73b83983914d3f4e",
+    "8a7dcd9758c8d8c745243238f41408df149a1ae9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -95,13 +96,15 @@
       "src/core/resume/resolve-request-path.ts",
       "tests/unit/util/copy-artifacts.test.ts",
       "tests/unit/core/runtime/bootstrap-egress-ledger-wm.test.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
