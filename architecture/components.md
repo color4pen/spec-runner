@@ -129,7 +129,7 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 interface AgentRunContext { step; state; branch; slug; cwd; config; requestType?; writeScope?: AgentWriteScope;
   input: { requestContent; requestAdr?; requestBaseBranch?; dynamicContext?; projectContext? };
   session: { resumeSessionId?; resumePrompt?; logPath? };
-  policy: { postWorkPrompts?; reportTool?; toolReportRetry?;
+  policy: { postWorkPrompts?; promptRules?; reportTool?; toolReportRetry?;
     outputVerification?: OutputVerificationPolicy };  // follow-up class の repair loop
   emit(event, payload) }
 interface AgentRunResult { completionReason: "success"|"error"|"timeout"; resultContent: string|null;
@@ -138,6 +138,8 @@ interface AgentRunResult { completionReason: "success"|"error"|"timeout"; result
   completionReportDiagnostics?; addedTurns?; touchedFiles?: string[] }  // touched files は CommitOrchestrator が state に記録
 ```
 - → `src/core/port/*.ts`（**正典**）
+
+**rule 配送の境界**: core（`buildStepContext`）が step rule を配送種別に分類し、provider 中立な文字列（`policy.promptRules` = main prompt 前置分 / `policy.postWorkPrompts` = 事後 follow-up 分）まで整形する。adapter は受け取った文字列を provider 固有の prompt 構造の所定位置に配置するのみ。core は provider 固有 prompt 構造を知らず、adapter は rule 内容の意味判断（分類・整形）をしない。
 
 ### report_result tool（完了シグナルの契約）
 ```ts

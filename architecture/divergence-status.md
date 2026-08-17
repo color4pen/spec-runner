@@ -4,11 +4,11 @@
 > 構造の定規は `model.md`（層 / closure / B-x 不変条件）で、本書は「actual がそこへどれだけ収束しているか」の現状記録にすぎない。設計書（`model.md` / `components.md` / `domain-model.md` / `conformance.md`）は時間に依存しない構造のみを持ち、状況断面は持たない。
 > **live な真実**は歯: `tests/unit/architecture/core-invariants.test.ts`（検査）＋ `tests/unit/architecture/arch-allowlist.ts`（既知 divergence の grandfather 台帳、削除のみで縮む ratchet）。本書はその人間向け要約。
 
-## 現状（2026-08-13 時点）
+## 現状（2026-08-17 時点）
 
 - **B-1〜B-18 ＋ §3 DSM closure に対する実 divergence = ゼロ**（`tests/unit/architecture/` 全 green）。
-- `arch-allowlist.ts` の残エントリ実数: **B-1×3**（`R2-*-adapter` — composition-root が adapter を import する §3 許可 edge の記録であり**違反ではない**）／ **B-6×7** ／ **B-12×6** ／ **CWD×39** ＝ 計 55 entry。CWD ratchet・repo-root confinement は B-x 番号を持たない delete-only ratchet（`model.md` §6）。
-- **既知の未解消 divergence（コード側）**: liveness の**生存判定**が jobId 非照合 — sidecar の establish・削除・kill 対象解決は自 jobId 一致を要求するが、stale-running 判定（`src/core/resume/safety.ts`）と `job wait` の sidecar 読み（`src/cli/job-wait.ts`)は sidecar の pid を jobId 照合なしに採用する。slug を後続 attempt が奪った直後に別 job の pid で live 誤判定しうる。`dynamic-model.md` liveness の所有規則（参照・解除は自 jobId 一致に限る）に対する実装未追随。
+- `arch-allowlist.ts` の残エントリ実数: **B-1×3**（`R2-*-adapter` — composition-root が adapter を import する §3 許可 edge の記録であり**違反ではない**）／ **B-6×7** ／ **B-12×6** ／ **CWD×39** ＝ 計 55 entry（2026-08-17 実数確認）。CWD ratchet・repo-root confinement は B-x 番号を持たない delete-only ratchet（`model.md` §6）。
+- **既知の未解消 divergence（コード側）: なし**。前回断面の唯一の未解消（liveness 生存判定の jobId 非照合）は `liveness-probe-jobid-scope` で解消済み — stale-running 判定（`src/core/resume/safety.ts`）と `job wait` の sidecar 読み（`src/cli/job-wait.ts`）は `resolveJobPid` の `expectedJobId` 照合を経由し、`dynamic-model.md` liveness の所有規則（sidecar は自 jobId 一致時のみ fallback）に実装が追随した。
 - **定義 doc の追随（2026-08-13）**: detach/job wait の実行所有権・cancel の pid 生存 gate 化・process group 回収・operator reopen 遷移・issue fidelity gate・resume preflight（apply-canon / auto-quarantine / adopt-commits）・CommitOrchestrator/ParallelReviewRound・projection-only 台帳群（touchedFiles / operatorAdjudications 等）・B-18 の 4 本目 LLM port（`IssueFidelityComparator`）を各定義 doc と歯に反映。
 - **収束済み（2026-07-31）**: 構造 ADR `2026-07-31-deterministic-request-entrance` の実装が完了（change `deterministic-request-entrance`）。`OneShotQueryClient` port・adapter・request 生成一本鎖を削除、B-18 の歯（`request-entrance-llm-boundary.test.ts`）を実装し、`model.md` §4 に B-18 を ratify 済み。なお B-18 が禁じていた port barrel（`port/index`）は死コード削除で**モジュールごと消滅**済み — 歯は barrel 再導入の検知として維持。
 - **scope/permission サブシステム ＋ pipeline 選択 ＋ fast profile を反映済み**（弧 #689→#692→#693→#694）: B-11 を `model.md` §4 ＋歯に追加、`permissionScope` / `Finding.origin` / scope derivation を `domain-model.md`・`components.md` に、pipeline 選択 / 着手前 capability gate / scope checkpoint 束縛を `dynamic-model.md` に反映。`PIPELINE_REGISTRY` は `standard` / `design-only` / `fast` の 3 本で、`permissionScope` 宣言は `fast` の1件。
@@ -47,6 +47,7 @@
 | ADR `2026-08-01-slug-occupancy-and-attempt-identity`: start guard 状態基準（`assertSlugUnoccupied`）・slug 解決非 terminal 優先（`resolveJobStateBySlug`）・cancel jobId 束縛 teardown・managed guard 有効化 | `slug-occupancy-enforcement` |
 | B-13 の禁止 API に `appendOperatorEvent` を追加（reopen の operator-event 記録に伴う歯の拡張）| `job-reopen-from-awaiting-archive` |
 | B-18 の LLM port 列挙に `IssueFidelityComparator` を追加（歯＋§4。`issue-request-fidelity-gate` で増えた 4 本目の LLM port の封じ込め）| 本 doc 追随 commit |
+| liveness 生存判定の sidecar pid 採用に jobId 照合（`dynamic-model.md` liveness 所有規則への実装追随。stale-running 判定・`job wait` を `resolveJobPid` に収束）| `liveness-probe-jobid-scope` |
 
 ### ratchet 変動（#945 以降）
 
