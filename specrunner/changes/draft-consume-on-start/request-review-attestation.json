@@ -1,0 +1,23 @@
+{
+  "requestHash": "sha256:4033636870c243ba227fb0e695a8e7ad8e6950beafd3c8ce22dce4e9c61bd1e8",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/artifact/copy-artifacts.ts:146-173 — recopyDraftToChangeFolder function (directory-format draftPath only)",
+    "src/core/runtime/workspace-materializer.ts:93 — resume-existing recopyDraftToChangeFolder call",
+    "src/core/runtime/workspace-materializer.ts:119 — resume-recreated/without-worktree recopyDraftToChangeFolder call",
+    "src/core/runtime/workspace-materializer.ts:123-126 — attach-from-checkpoint has no recopy (branch-borne truth comment)",
+    "src/core/runtime/workspace-materializer.ts:179-197 — new-run materializes request.md: fs.cp + git add",
+    "src/core/runtime/local.ts:448 — no-worktree resume path recopyDraftToChangeFolder call in if(!isRunPath)",
+    "src/core/runtime/managed.ts:167 — managed resume path recopyDraftToChangeFolder call in if(!branchName)",
+    "src/core/archive/orchestrator.ts:261-270 — archive deletes both flat (.md) and directory (/) draft formats; git-tracked draft → warning not delete",
+    "src/core/step/write-scope.ts:62-70 — protectedCanonPaths includes requestMdPath(slug)",
+    "src/core/command/resume.ts:273-282 — prepare resolves and parses request.md before gate",
+    "src/core/resume/resolve-request-path.ts:38 — resolveRequestPath: worktree candidate first, then cwd, then statePath as-is",
+    "src/core/step/design.ts:111 — design re-reads request.md from disk via readFile(resolve(cwd, requestMdPath(slug)))",
+    "src/core/cancel/runner.ts:145 — restore-draft source = path.join(worktreePath, requestMdPath(slug))",
+    "src/core/cancel/runner.ts:158 — draft already exists → push warning and return (skipping-restore)",
+    "src/core/inbox/run-inbox.ts:397-400 — inbox: writeDraft(repoRoot, slug, issueBody) then runRunCore(draftPath, ...)",
+    "tests/unit/util/copy-artifacts.test.ts — TC-RECOPY-001 through TC-RECOPY-005 exist at lines 219-357"
+  ],
+  "sourceRevision": "db7a09b47dbbc82bf3e00f7c2b03b90ce4b6ff51"
+}
