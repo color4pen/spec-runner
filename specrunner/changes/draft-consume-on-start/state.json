@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4865ee5c-4f71-4807-9bb5-ce7a6a6065eb",
   "createdAt": "2026-08-17T11:05:23.605Z",
-  "updatedAt": "2026-08-17T11:49:19.010Z",
+  "updatedAt": "2026-08-17T12:05:15.547Z",
   "request": {
     "title": "request lifecycle の一本化: job start で draft を消費し、resume の draft recopy を廃止する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/draft-consume-on-start-4865ee5c",
   "error": null,
@@ -72,7 +72,9 @@
     "9efdea86f0cc212281126546adc20861e0805fbb",
     "7072de29aa5bce9be6686c7cac0dcf7f2d0f1a28",
     "8c4b0c23dd1e5c962680610f7eaadebd0d392f1d",
-    "0d2f3df6943389418961b361f63939867b75bdf7"
+    "0d2f3df6943389418961b361f63939867b75bdf7",
+    "99d2bba1ad60ec1eec6867efbe8ff24a310deb4c",
+    "f28efcab8aca572ac5ecf253513862af77b92cf7"
   ],
   "touchedFiles": {
     "request-review": [
@@ -130,10 +132,44 @@
       "src/core/cancel/runner.ts",
       "tests/unit/core/archive/orchestrator.test.ts",
       "src/util/paths.ts"
+    ],
+    "code-fixer": [
+      "tests/unit/core/archive/orchestrator.test.ts",
+      "src/core/archive/orchestrator.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "99d2bba1ad60ec1eec6867efbe8ff24a310deb4c",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/draft-consume-on-start/design.md:sha256:2c855724d1a457aeef60522dad7d9dcdad61d7a3912beaa9525724539d027d9d|specrunner/changes/draft-consume-on-start/request.md:sha256:4033636870c243ba227fb0e695a8e7ad8e6950beafd3c8ce22dce4e9c61bd1e8|specrunner/changes/draft-consume-on-start/spec.md:sha256:0461b27778760c01d3720abb512017c18174ea6ebf3c4dcea628cc6d30af67db|specrunner/changes/draft-consume-on-start/tasks.md:sha256:d97b209c2fa79102847535beb9e9ddd699950e06358422d8c90dc51ebb7107fc|specrunner/changes/draft-consume-on-start/test-cases.md:sha256:ddd788c9bde7c4c295456c1cf2851154d52df11dc3845e1e065eb04ce7b23d4d"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 40,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -142,7 +178,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
