@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "16f48392-21a1-4c30-8365-c74e08287d3d",
   "createdAt": "2026-08-16T23:35:49.117Z",
-  "updatedAt": "2026-08-17T00:42:52.983Z",
+  "updatedAt": "2026-08-17T00:50:55.127Z",
   "request": {
     "title": "guide 正本の正確性硬化: 誤案内 3 件の修正・正典モデル記述の是正・コマンド例検証の invocation contract 化",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "fix/guide-correctness-hardening-16f48392",
   "error": null,
@@ -72,7 +72,8 @@
     "2c28d9029ca504f5230ef2ddda20d7a631699d82",
     "2252f26639736eeffab2b864f8d70aa2675759e5",
     "b61fd054d5fc1998e84bcdf163e7291239f0c345",
-    "e536516c25a3c96c58ff17e018a72db9a6c7cb31"
+    "e536516c25a3c96c58ff17e018a72db9a6c7cb31",
+    "a516d1f325a3b52e832a64684f9352ecae2d1794"
   ],
   "touchedFiles": {
     "request-review": [
@@ -114,10 +115,47 @@
       ".claude/skills/acceptance-and-issue-audit/SKILL.md",
       "specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md",
       "src/cli/command-registry.ts"
+    ],
+    "code-review": [
+      "src/core/command/guide.ts",
+      "src/core/command/__tests__/guide.test.ts",
+      "src/core/command/runner.ts",
+      ".claude/skills/acceptance-and-issue-audit/SKILL.md",
+      "specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md",
+      "src/cli/command-registry.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 42,
+    "historyCount": 54,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -126,7 +164,11 @@
       "spec-fixer": 2,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
