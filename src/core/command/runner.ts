@@ -449,6 +449,7 @@ async function handleResult(finalState: JobState, slug: string, json: boolean): 
     } else {
       logError(`Pipeline halted at step '${rp?.step ?? "unknown"}': ${rp?.reason ?? "escalation"}`);
       logInfo("Run 'specrunner resume' to continue from the halted step.");
+      logInfo("詳細: specrunner guide escalation");
     }
     return 1;
   }

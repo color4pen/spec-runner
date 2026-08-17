@@ -667,3 +667,307 @@ describe("TC-013 direct: merge/audit/setup/request/inject topic コマンドが 
     expect(resolveCommand(["config", "effective"]).status).toBe("ok");
   });
 });
+
+// ============================================================================
+// TC-022: review topic does not contain issue-as-canon language
+// TC-023: review topic contains request.md as the post-pipeline canonical reference
+// ============================================================================
+
+describe("TC-022/TC-023: review topic — 正典モデル記述", () => {
+  const topic = findTopic("review");
+
+  it("TC-022: review topic does not contain issue-as-canon language", () => {
+    expect(topic!.body).not.toContain("起点 issue の正典を canon とする");
+  });
+
+  it("TC-023: review topic contains request.md as post-pipeline normative reference", () => {
+    expect(topic!.body).toContain("request.md");
+  });
+});
+
+// ============================================================================
+// TC-024: audit topic does not contain issue-as-canon language
+// TC-025: audit topic describes issue comparison as transcription-audit concern
+// ============================================================================
+
+describe("TC-024/TC-025: audit topic — 正典モデル記述", () => {
+  const topic = findTopic("audit");
+
+  it("TC-024: audit topic does not contain issue-as-canon language", () => {
+    expect(topic!.body).not.toContain("起点 issue の正典と照合する");
+  });
+
+  it("TC-025: audit topic contains transcription-audit framing", () => {
+    expect(topic!.body).toMatch(/転記監査|issue.*request\.md|request\.md.*issue/);
+  });
+});
+
+// ============================================================================
+// TC-026: escalation topic provides job show step before cancel
+// TC-027: escalation topic cancel uses jobId argument
+// TC-037: escalation topic cancel does not use slug as argument
+// ============================================================================
+
+describe("TC-026/TC-027/TC-037: escalation topic — cancel 案内", () => {
+  const topic = findTopic("escalation");
+
+  it("TC-026: escalation topic contains job show step before cancel", () => {
+    const body = topic!.body;
+    const showIdx = body.indexOf("specrunner job show");
+    const cancelIdx = body.indexOf("specrunner job cancel");
+    expect(showIdx).toBeGreaterThan(-1);
+    expect(cancelIdx).toBeGreaterThan(showIdx);
+  });
+
+  it("TC-027: escalation topic cancel uses <jobId> argument", () => {
+    expect(topic!.body).toContain("job cancel <jobId>");
+  });
+
+  it("TC-037: escalation topic cancel does not use <slug> argument", () => {
+    expect(topic!.body).not.toContain("job cancel <slug>");
+  });
+});
+
+// ============================================================================
+// TC-028: merge topic uses 8-char jobId prefix notation
+// TC-038: merge topic does not use bare slug-jobId path notation
+// ============================================================================
+
+describe("TC-028/TC-038: merge topic — worktree path 表記", () => {
+  const topic = findTopic("merge");
+
+  it("TC-028: merge topic worktree path uses 8-char jobId prefix notation", () => {
+    expect(topic!.body).toMatch(/先頭8|8文字/);
+  });
+
+  it("TC-038: merge topic does not use full <slug>-<jobId> notation in worktree path", () => {
+    expect(topic!.body).not.toMatch(/<slug>-<jobId>/);
+  });
+});
+
+// ============================================================================
+// TC-029: jobs topic has no stale pre-check instruction
+// ============================================================================
+
+describe("TC-029: jobs topic — stale pre-check 不在", () => {
+  it("TC-029: jobs topic does not contain stale job ls pre-check", () => {
+    const topic = findTopic("jobs");
+    expect(topic!.body).not.toContain("job ls で running を確認");
+  });
+});
+
+// ============================================================================
+// TC-030: setup topic init heading reflects actual behavior
+// ============================================================================
+
+describe("TC-030: setup topic — init 見出し", () => {
+  it("TC-030: setup topic init heading does not say '2 層 config scaffold'", () => {
+    const topic = findTopic("setup");
+    expect(topic!.body).not.toContain("2 層 config scaffold");
+  });
+});
+
+// ============================================================================
+// TC-031: runner.ts halt output contains guide escalation link
+// ============================================================================
+
+describe("TC-031: runner.ts halt 出力への guide 導線", () => {
+  it("TC-031: runner.ts halt output contains specrunner guide escalation link", () => {
+    const runnerPath = path.join(__dirname, "../runner.ts");
+    const source = fs.readFileSync(runnerPath, "utf-8");
+    const haltIdx = source.indexOf("Pipeline halted at step");
+    expect(haltIdx).toBeGreaterThan(-1);
+    const searchWindow = source.slice(haltIdx, haltIdx + 500);
+    expect(searchWindow).toContain("specrunner guide escalation");
+  });
+});
+
+// ============================================================================
+// TC-032: コードブロック内 specrunner コマンドの invocation contract
+// TC-033: skip パターンが silent でないこと
+// TC-034: job cancel <slug> が violation を返す
+// TC-039: job cancel <jobId> が violation なし
+// ============================================================================
+
+/**
+ * Lines matching these patterns are excluded from invocation contract validation.
+ * Each entry MUST carry a reason explaining why mechanical verification is not possible.
+ */
+const INVOCATION_CONTRACT_SKIP_PATTERNS: readonly { pattern: RegExp; reason: string }[] = [
+  {
+    pattern: /[|$>]/,
+    reason: "contains shell metacharacters (redirect / pipe / variable) — not a standalone specrunner invocation",
+  },
+];
+
+/**
+ * Extract `specrunner ...` lines from triple-backtick code blocks.
+ * Strips trailing # comments and truncates at optional-block marker `[`.
+ */
+function extractSpecrunnerLinesFromCodeBlocks(body: string): string[] {
+  const lines: string[] = [];
+  const codeBlockRegex = /```[^\n]*\n([\s\S]*?)```/g;
+  let match;
+  while ((match = codeBlockRegex.exec(body)) !== null) {
+    for (const line of match[1]!.split("\n")) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("specrunner ")) continue;
+      // Strip trailing comment
+      const withoutComment = trimmed.replace(/\s+#.*$/, "");
+      // Truncate at optional block
+      const optIdx = withoutComment.indexOf("[");
+      const cleaned = optIdx >= 0 ? withoutComment.slice(0, optIdx).trim() : withoutComment;
+      lines.push(cleaned);
+    }
+  }
+  return lines;
+}
+
+interface ParsedInvocation {
+  pathTokens: string[];
+  positionals: string[]; // placeholder names (from <name>)
+  flagNames: string[]; // flag names (from --flag)
+  rawLine: string;
+}
+
+function parseInvocation(line: string): ParsedInvocation {
+  const content = line.startsWith("specrunner ") ? line.slice("specrunner ".length) : line;
+  const tokens = content.split(/\s+/).filter(Boolean);
+  const pathTokens: string[] = [];
+  const positionals: string[] = [];
+  const flagNames: string[] = [];
+  let pathDone = false;
+  let lastWasFlag = false;
+
+  for (const token of tokens) {
+    if (token.startsWith("--")) {
+      flagNames.push(token.slice(2));
+      pathDone = true;
+      lastWasFlag = true;
+      continue;
+    }
+    if (token.startsWith("<")) {
+      pathDone = true;
+      if (lastWasFlag) {
+        // flag value placeholder — skip
+        lastWasFlag = false;
+        continue;
+      }
+      positionals.push(token.replace(/[<>]/g, ""));
+      lastWasFlag = false;
+      continue;
+    }
+    if (!pathDone && /^[a-z][a-z0-9-]*$/.test(token)) {
+      pathTokens.push(token);
+    }
+    lastWasFlag = false;
+  }
+  return { pathTokens, positionals, flagNames, rawLine: line };
+}
+
+interface InvocationViolation {
+  kind: "unknown-command" | "unknown-flag" | "positional-name-mismatch";
+  detail: string;
+}
+
+function validateInvocation(parsed: ParsedInvocation): InvocationViolation[] {
+  const violations: InvocationViolation[] = [];
+  const result = resolveCommand(parsed.pathTokens);
+  if (result.status !== "ok") {
+    violations.push({ kind: "unknown-command", detail: parsed.pathTokens.join(" ") });
+    return violations; // cannot check flags/positionals without spec
+  }
+  const spec = result.spec;
+  // (b) flag existence
+  for (const flag of parsed.flagNames) {
+    if (!spec.flags || !(flag in spec.flags)) {
+      violations.push({
+        kind: "unknown-flag",
+        detail: `--${flag} not in spec.flags for '${parsed.pathTokens.join(" ")}'`,
+      });
+    }
+  }
+  // (c) positional name match
+  const argsSpec = spec.args ?? [];
+  for (let i = 0; i < parsed.positionals.length; i++) {
+    const placeholder = parsed.positionals[i]!;
+    const arg = argsSpec[i];
+    if (!arg) continue; // extra positionals: skip (variadic)
+    const allowed = arg.name.split(/[| ]/);
+    if (!allowed.includes(placeholder)) {
+      violations.push({
+        kind: "positional-name-mismatch",
+        detail: `placeholder '<${placeholder}>' does not match args[${i}].name '${arg.name}' for '${parsed.pathTokens.join(" ")}'`,
+      });
+    }
+  }
+  return violations;
+}
+
+describe("TC-032: コードブロック内 specrunner コマンドの invocation contract", () => {
+  for (const topic of GUIDE_TOPICS) {
+    const lines = extractSpecrunnerLinesFromCodeBlocks(topic.body);
+
+    for (const line of lines) {
+      const skipped = INVOCATION_CONTRACT_SKIP_PATTERNS.some((p) => p.pattern.test(line));
+      if (skipped) continue;
+
+      it(`TC-032: '${line}' in topic '${topic.name}' passes invocation contract`, () => {
+        const parsed = parseInvocation(line);
+        const violations = validateInvocation(parsed);
+        expect(violations, `violations for: ${line}\n${JSON.stringify(violations, null, 2)}`).toEqual([]);
+      });
+    }
+  }
+});
+
+describe("TC-033: skip パターンが silent でないこと", () => {
+  it("TC-033: INVOCATION_CONTRACT_SKIP_PATTERNS has no empty reason", () => {
+    for (const entry of INVOCATION_CONTRACT_SKIP_PATTERNS) {
+      expect(entry.reason.trim().length).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("TC-034/TC-039: invocation contract が placeholder 名不一致を検出する", () => {
+  it("TC-034: 'specrunner job cancel <slug> --restore-draft' produces positional-name-mismatch", () => {
+    const parsed = parseInvocation("specrunner job cancel <slug> --restore-draft");
+    const violations = validateInvocation(parsed);
+    const mismatch = violations.filter((v) => v.kind === "positional-name-mismatch");
+    expect(mismatch.length).toBeGreaterThan(0);
+    expect(mismatch[0]!.detail).toContain("slug");
+  });
+
+  it("TC-039: 'specrunner job cancel <jobId> --restore-draft' produces no violations", () => {
+    const parsed = parseInvocation("specrunner job cancel <jobId> --restore-draft");
+    const violations = validateInvocation(parsed);
+    expect(violations).toEqual([]);
+  });
+});
+
+// ============================================================================
+// TC-035: SKILL.md に parallel-request-workflow が存在しないこと
+// ============================================================================
+
+describe("TC-035: acceptance-and-issue-audit SKILL.md", () => {
+  it("TC-035: acceptance-and-issue-audit SKILL.md has no parallel-request-workflow reference", () => {
+    const skillPath = path.join(__dirname, "../../../../.claude/skills/acceptance-and-issue-audit/SKILL.md");
+    const content = fs.readFileSync(skillPath, "utf-8");
+    expect(content).not.toContain("parallel-request-workflow");
+  });
+});
+
+// ============================================================================
+// TC-036: ADR が tombstone アプローチを記述しないこと
+// ============================================================================
+
+describe("TC-036: ADR 実状態整合", () => {
+  it("TC-036: ADR does not describe tombstone approach for parallel-request-workflow", () => {
+    const adrPath = path.join(
+      __dirname,
+      "../../../../specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md",
+    );
+    const content = fs.readFileSync(adrPath, "utf-8");
+    expect(content).not.toContain("tombstone を置いて実質削除する");
+  });
+});

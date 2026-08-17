@@ -46,7 +46,7 @@ PIPELINE_MAP と同型の仕組みで topic の手書き重複を構造的に防
 
 job-run-monitor / rebase-finish / acceptance-and-issue-audit の各 SKILL.md を、発火条件(description frontmatter)と「`specrunner guide <topic>` を実行して従う」誘導のみ(本文 10 行以内)に書き換える。
 
-skill を全削除せず薄いトリガーとして残す理由: agent が guide を参照するきっかけとなる発火条件(description の自然文マッチング)を失うと、guide を引く入口が消える。`parallel-request-workflow` は廃止済みコマンド前提のため tombstone を置いて実質削除する。
+skill を全削除せず薄いトリガーとして残す理由: agent が guide を参照するきっかけとなる発火条件(description の自然文マッチング)を失うと、guide を引く入口が消える。`parallel-request-workflow` は廃止済みコマンド前提のため directory ごと削除する (tombstone なし)。
 
 ## Alternatives Considered
 

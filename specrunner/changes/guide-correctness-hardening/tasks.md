@@ -6,17 +6,17 @@
 
 File: `src/core/command/guide.ts`
 
-- [ ] **review topic (lines 377-378)**: "起点 issue の正典を canon とする" の行を削除し、次の内容に置き換える: 「pipeline 開始後の規範は request.md / spec。issue との比較は audit topic の転記監査観点であり、review では行わない」旨の文
-- [ ] **audit topic (line 184)**: "レビューは request.md ではなく起点 issue の正典と照合する" の行を削除し、「issue vs. request.md の比較は request.md 作成時の無言の要件弱体化を検出する転記監査の 1 観点」として位置づける記述に置き換える
-- [ ] **escalation topic (line 313)**: `specrunner job cancel <slug> --restore-draft` を以下の 2 段コードブロックに置き換える:
+- [x] **review topic (lines 377-378)**: "起点 issue の正典を canon とする" の行を削除し、次の内容に置き換える: 「pipeline 開始後の規範は request.md / spec。issue との比較は audit topic の転記監査観点であり、review では行わない」旨の文
+- [x] **audit topic (line 184)**: "レビューは request.md ではなく起点 issue の正典と照合する" の行を削除し、「issue vs. request.md の比較は request.md 作成時の無言の要件弱体化を検出する転記監査の 1 観点」として位置づける記述に置き換える
+- [x] **escalation topic (line 313)**: `specrunner job cancel <slug> --restore-draft` を以下の 2 段コードブロックに置き換える:
   ```
   specrunner job show <slug>          # Job ID を確認
   specrunner job cancel <jobId> --restore-draft
   ```
   セクション "4. 後片付け" のコードブロック内で `job cancel` の行を置き換える。前後の `job prune` / `job attach` 行は変更しない
-- [ ] **merge topic (line 112)**: `<slug>-<jobId>` を `<slug>-<jobIdの先頭8文字>` に修正する (コードブロック内の `cd .git/specrunner-worktrees/<slug>-<jobId>` の行)
-- [ ] **jobs topic (line 42)**: "起動直後は state 登録に数秒ラグあり。`specrunner job ls` で running を確認してから:" の記述を削除し、"## 2. 監視 — job wait" セクションから stale な前置き手順を除去する。`specrunner job wait <slug>` コマンドブロックはそのまま残す
-- [ ] **setup topic (line 199)**: 見出し "## 1. init — 2 層 config scaffold" を "## 1. init — global config + repository scaffold" に変更する
+- [x] **merge topic (line 112)**: `<slug>-<jobId>` を `<slug>-<jobIdの先頭8文字>` に修正する (コードブロック内の `cd .git/specrunner-worktrees/<slug>-<jobId>` の行)
+- [x] **jobs topic (line 42)**: "起動直後は state 登録に数秒ラグあり。`specrunner job ls` で running を確認してから:" の記述を削除し、"## 2. 監視 — job wait" セクションから stale な前置き手順を除去する。`specrunner job wait <slug>` コマンドブロックはそのまま残す
+- [x] **setup topic (line 199)**: 見出し "## 1. init — 2 層 config scaffold" を "## 1. init — global config + repository scaffold" に変更する
 
 **Acceptance Criteria**:
 - review topic body に "起点 issue の正典を canon とする" が存在しない
@@ -35,7 +35,7 @@ File: `src/core/command/guide.ts`
 
 File: `src/core/command/runner.ts`
 
-- [ ] `runner.ts:451` の `logInfo("Run 'specrunner resume' to continue from the halted step.")` の直後に以下の 1 行を追加する:
+- [x] `runner.ts:451` の `logInfo("Run 'specrunner resume' to continue from the halted step.")` の直後に以下の 1 行を追加する:
   ```typescript
   logInfo("詳細: specrunner guide escalation");
   ```
@@ -53,7 +53,7 @@ File: `src/core/command/__tests__/guide.test.ts`
 
 以下の describe block を既存テストの末尾に追加する。TC 番号は TC-022 から始める。
 
-- [ ] **TC-022: review topic — issue-as-canon 記述の不在**
+- [x] **TC-022: review topic — issue-as-canon 記述の不在**
   ```typescript
   it("TC-022: review topic does not contain issue-as-canon language", () => {
     const topic = findTopic("review");
@@ -65,7 +65,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   });
   ```
 
-- [ ] **TC-022: audit topic — issue-as-canon 記述の不在 + 転記監査観点の存在**
+- [x] **TC-022: audit topic — issue-as-canon 記述の不在 + 転記監査観点の存在**
   ```typescript
   it("TC-022: audit topic does not contain issue-as-canon language", () => {
     const topic = findTopic("audit");
@@ -78,7 +78,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   });
   ```
 
-- [ ] **TC-023: escalation topic — cancel 案内が jobId を使うこと**
+- [x] **TC-023: escalation topic — cancel 案内が jobId を使うこと**
   ```typescript
   it("TC-023: escalation topic contains job show step before cancel", () => {
     const topic = findTopic("escalation");
@@ -98,7 +98,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   });
   ```
 
-- [ ] **TC-024: merge topic — worktree path が 8 文字 prefix 表記**
+- [x] **TC-024: merge topic — worktree path が 8 文字 prefix 表記**
   ```typescript
   it("TC-024: merge topic worktree path uses 8-char jobId prefix notation", () => {
     const topic = findTopic("merge");
@@ -112,7 +112,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   });
   ```
 
-- [ ] **TC-025: jobs topic — stale pre-check 手順の不在**
+- [x] **TC-025: jobs topic — stale pre-check 手順の不在**
   ```typescript
   it("TC-025: jobs topic does not contain stale job ls pre-check", () => {
     const topic = findTopic("jobs");
@@ -120,7 +120,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   });
   ```
 
-- [ ] **TC-026: setup topic — init 見出しが実態と一致**
+- [x] **TC-026: setup topic — init 見出しが実態と一致**
   ```typescript
   it("TC-026: setup topic init heading does not say '2 層 config scaffold'", () => {
     const topic = findTopic("setup");
@@ -128,7 +128,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   });
   ```
 
-- [ ] **TC-027: runner.ts halt 出力への guide 導線**
+- [x] **TC-027: runner.ts halt 出力への guide 導線**
   ```typescript
   it("TC-027: runner.ts halt output contains specrunner guide escalation link", () => {
     const runnerPath = path.join(__dirname, "../runner.ts");
@@ -153,7 +153,7 @@ File: `src/core/command/__tests__/guide.test.ts`
 
 既存の `extractSpecrunnerCommands` 関数はそのまま残し、以下を追加する:
 
-- [ ] **除外パターン定数の追加** (テストファイル先頭付近、import 後に追加):
+- [x] **除外パターン定数の追加** (テストファイル先頭付近、import 後に追加):
   ```typescript
   /**
    * Lines matching these patterns are excluded from invocation contract validation.
@@ -167,7 +167,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   ];
   ```
 
-- [ ] **コードブロック抽出関数の追加**:
+- [x] **コードブロック抽出関数の追加**:
   ```typescript
   /**
    * Extract `specrunner ...` lines from triple-backtick code blocks.
@@ -193,7 +193,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   }
   ```
 
-- [ ] **パーサー関数の追加**:
+- [x] **パーサー関数の追加**:
   ```typescript
   interface ParsedInvocation {
     pathTokens: string[];
@@ -238,7 +238,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   }
   ```
 
-- [ ] **バリデーション関数の追加**:
+- [x] **バリデーション関数の追加**:
   ```typescript
   interface InvocationViolation {
     kind: "unknown-command" | "unknown-flag" | "positional-name-mismatch";
@@ -277,7 +277,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   }
   ```
 
-- [ ] **TC-028: コードブロック invocation contract テスト** (describe block 追加):
+- [x] **TC-028: コードブロック invocation contract テスト** (describe block 追加):
   ```typescript
   describe("TC-028: コードブロック内 specrunner コマンドの invocation contract", () => {
     for (const topic of GUIDE_TOPICS) {
@@ -297,7 +297,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   });
   ```
 
-- [ ] **TC-029: skip パターンが silent でないことの確認**:
+- [x] **TC-029: skip パターンが silent でないことの確認**:
   ```typescript
   it("TC-029: INVOCATION_CONTRACT_SKIP_PATTERNS has no empty reason", () => {
     for (const entry of INVOCATION_CONTRACT_SKIP_PATTERNS) {
@@ -306,7 +306,7 @@ File: `src/core/command/__tests__/guide.test.ts`
   });
   ```
 
-- [ ] **TC-030: ネガティブテスト — job cancel \<slug\> が violation を返す**:
+- [x] **TC-030: ネガティブテスト — job cancel \<slug\> が violation を返す**:
   ```typescript
   describe("TC-030: invocation contract が placeholder 名不一致を検出する", () => {
     it("TC-030: 'specrunner job cancel <slug> --restore-draft' produces positional-name-mismatch", () => {
@@ -339,12 +339,12 @@ File: `src/core/command/__tests__/guide.test.ts`
 
 File: `.claude/skills/acceptance-and-issue-audit/SKILL.md`
 
-- [ ] description frontmatter の以下の行を修正する:
+- [x] description frontmatter の以下の行を修正する:
   - 変更前: `parallel-request-workflow / rebase-finish の前後どちらでも単独起動可能。`
   - 変更後: `rebase-finish の前後どちらでも単独起動可能。`
   - 本文 (frontmatter 以外) は変更しない
 
-- [ ] **TC-035: SKILL.md に parallel-request-workflow が存在しないことの自動テスト** を `guide.test.ts` の末尾に追加する:
+- [x] **TC-035: SKILL.md に parallel-request-workflow が存在しないことの自動テスト** を `guide.test.ts` の末尾に追加する:
   ```typescript
   it("TC-035: acceptance-and-issue-audit SKILL.md has no parallel-request-workflow reference", () => {
     const skillPath = path.join(__dirname, "../../../../.claude/skills/acceptance-and-issue-audit/SKILL.md");
@@ -364,12 +364,12 @@ File: `.claude/skills/acceptance-and-issue-audit/SKILL.md`
 
 File: `specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md`
 
-- [ ] line 49 付近の `parallel-request-workflow` 削除方針の記述を修正する:
+- [x] line 49 付近の `parallel-request-workflow` 削除方針の記述を修正する:
   - 変更前: `parallel-request-workflow` は廃止済みコマンド前提のため tombstone を置いて実質削除する
   - 変更後: `parallel-request-workflow` は廃止済みコマンド前提のため directory ごと削除する (tombstone なし)
   - 同じ変更内容は "Known Limitations" 等の別箇所にも波及する可能性があるため、ファイル全体を確認して "tombstone" + "parallel-request-workflow" の組み合わせで残存する記述をすべて修正する
 
-- [ ] **TC-036: ADR が tombstone アプローチを記述しないことの自動テスト** を `guide.test.ts` の末尾に追加する:
+- [x] **TC-036: ADR が tombstone アプローチを記述しないことの自動テスト** を `guide.test.ts` の末尾に追加する:
   ```typescript
   it("TC-036: ADR does not describe tombstone approach for parallel-request-workflow", () => {
     const adrPath = path.join(__dirname, "../../../../specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md");
@@ -387,9 +387,9 @@ File: `specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md`
 
 ## T-07: typecheck && test の green 確認
 
-- [ ] `bun run typecheck` が 0 で完了する
-- [ ] `bun run test` が 0 で完了する (TC-001〜TC-039 全 green、TC-040 gate が pass)
-- [ ] TC-021 が変更なしで green であること (escalation body は `specrunner job cancel` と `--restore-draft` を依然含むため影響なし) を確認する
+- [x] `bun run typecheck` が 0 で完了する
+- [x] `bun run test` が 0 で完了する (TC-001〜TC-039 全 green、TC-040 gate が pass)
+- [x] TC-021 が変更なしで green であること (escalation body は `specrunner job cancel` と `--restore-draft` を依然含むため影響なし) を確認する
 
 **Acceptance Criteria**:
 - `typecheck && test` が green
