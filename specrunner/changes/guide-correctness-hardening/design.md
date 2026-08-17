@@ -93,9 +93,9 @@ CLI 契約 `job cancel args: [{name: "jobId"}]` (command-registry.ts:929) に整
 **バリデーション 3 軸**
 - (a) `resolveCommand(pathTokens).status === "ok"` — command path 実在
 - (b) 各 flag 名が `spec.flags` に存在すること
-- (c) i 番目 positional placeholder 名が `spec.args[i].name` または `spec.args[i].name.split("|")` のいずれかに一致すること
+- (c) i 番目 positional placeholder 名が `spec.args[i].name.split(/[| ]/)` のいずれかに一致すること
 
-*Rationale for (c)*: `job show` の `args.name = "jobId|slug"` は複合宣言。guide の `<slug>` を通すために split した片方への一致を許可。`job cancel` の `args.name = "jobId"` に対して `<slug>` は不一致 → fail が目的の挙動。CommandSpec が CLI interface の正本 (architect 確定)。
+*Rationale for (c)*: `job show` の `args.name = "jobId|slug"` は `|` 区切り複合宣言。`rules new` の `args.name = "step-name rule-slug"` は space 区切り複合宣言 (count: 2)。いずれも `/[| ]/` で split すれば個別 placeholder 名と一致する。`job cancel` の `args.name = "jobId"` に対して `<slug>` は不一致 → fail が目的の挙動。CommandSpec が CLI interface の正本 (architect 確定)。
 
 **除外リスト (INVOCATION_CONTRACT_SKIP_PATTERNS)**
 テストコード内の named constant として管理。各エントリは `{ pattern: RegExp; reason: string }` を持つ。silent skip 禁止。
@@ -131,7 +131,7 @@ Mitigation: 修正後も body はこれらを含む (引数 `<jobId>` に変わ�
 Mitigation: D3 の仕様で `[` 位置で行を打ち切るため `<n>` は解析対象外。
 
 **[Risk] `job start <slug|file>` の placeholder が args.name `"slug|file"` と一致しない**
-Mitigation: exact match `"slug|file" === "slug|file"` で一致。split("|") 分割は不要。
+Mitigation: `<slug|file>` を含む行は INVOCATION_CONTRACT_SKIP_PATTERNS の `/[|$>]/` にマッチして除外される。バリデーション対象にならないため問題なし。
 
 **[Risk] setup topic の init 見出し旧文言を pin するテストがある場合に壊れる**
 Mitigation: 既存 guide.test.ts に setup init 見出しの文字列 pin はない。影響なし。

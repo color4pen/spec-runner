@@ -1,5 +1,7 @@
 # Tasks: guide 正本の正確性硬化
 
+> **TC 番号の正本は `test-cases.md`**。本ファイルの TC 番号(TC-022〜TC-030 等)は設計上の参照用グループ番号であり、`test-cases.md` が定義する個別 TC 番号(TC-022〜TC-041)が実装・コメントの正典となる。テストコードのコメントに TC 番号を記載する場合は `test-cases.md` を参照すること。
+
 ## T-01: guide.ts content fixes (6 箇所)
 
 File: `src/core/command/guide.ts`
@@ -263,7 +265,7 @@ File: `src/core/command/__tests__/guide.test.ts`
       const placeholder = parsed.positionals[i]!;
       const arg = argsSpec[i];
       if (!arg) continue; // extra positionals: skip (some commands accept variadic)
-      const allowed = arg.name.split("|");
+      const allowed = arg.name.split(/[| ]/);
       if (!allowed.includes(placeholder)) {
         violations.push({
           kind: "positional-name-mismatch",
