@@ -1,6 +1,6 @@
 # Tasks: guide 正本の正確性硬化
 
-> **TC 番号の正本は `test-cases.md`**。本ファイルの TC 番号(TC-022〜TC-030 等)は設計上の参照用グループ番号であり、`test-cases.md` が定義する個別 TC 番号(TC-022〜TC-041)が実装・コメントの正典となる。テストコードのコメントに TC 番号を記載する場合は `test-cases.md` を参照すること。
+> **TC 番号の正本は `test-cases.md`**。本ファイルの TC 番号(TC-022〜TC-030 等)は設計上の参照用グループ番号であり、`test-cases.md` が定義する個別 TC 番号(TC-022〜TC-040)が実装・コメントの正典となる。テストコードのコメントに TC 番号を記載する場合は `test-cases.md` を参照すること。
 
 ## T-01: guide.ts content fixes (6 箇所)
 
@@ -344,8 +344,18 @@ File: `.claude/skills/acceptance-and-issue-audit/SKILL.md`
   - 変更後: `rebase-finish の前後どちらでも単独起動可能。`
   - 本文 (frontmatter 以外) は変更しない
 
+- [ ] **TC-035: SKILL.md に parallel-request-workflow が存在しないことの自動テスト** を `guide.test.ts` の末尾に追加する:
+  ```typescript
+  it("TC-035: acceptance-and-issue-audit SKILL.md has no parallel-request-workflow reference", () => {
+    const skillPath = path.join(__dirname, "../../../../.claude/skills/acceptance-and-issue-audit/SKILL.md");
+    const content = fs.readFileSync(skillPath, "utf-8");
+    expect(content).not.toContain("parallel-request-workflow");
+  });
+  ```
+
 **Acceptance Criteria**:
 - `.claude/skills/acceptance-and-issue-audit/SKILL.md` に `parallel-request-workflow` 文字列が存在しない
+- TC-035 テストが green
 - TC-011 の "acceptance-and-issue-audit/SKILL.md body is at most 10 non-empty lines" と "body contains guide reference" が green のまま
 
 ---
@@ -359,8 +369,18 @@ File: `specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md`
   - 変更後: `parallel-request-workflow` は廃止済みコマンド前提のため directory ごと削除する (tombstone なし)
   - 同じ変更内容は "Known Limitations" 等の別箇所にも波及する可能性があるため、ファイル全体を確認して "tombstone" + "parallel-request-workflow" の組み合わせで残存する記述をすべて修正する
 
+- [ ] **TC-036: ADR が tombstone アプローチを記述しないことの自動テスト** を `guide.test.ts` の末尾に追加する:
+  ```typescript
+  it("TC-036: ADR does not describe tombstone approach for parallel-request-workflow", () => {
+    const adrPath = path.join(__dirname, "../../../../specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md");
+    const content = fs.readFileSync(adrPath, "utf-8");
+    expect(content).not.toContain("tombstone を置いて実質削除する");
+  });
+  ```
+
 **Acceptance Criteria**:
 - `specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md` に「tombstone を置いて実質削除する」の記述が存在しない
+- TC-036 テストが green
 - ADR に `parallel-request-workflow` を directory 削除した旨の記述が存在する
 
 ---
@@ -368,10 +388,10 @@ File: `specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md`
 ## T-07: typecheck && test の green 確認
 
 - [ ] `bun run typecheck` が 0 で完了する
-- [ ] `bun run test` が 0 で完了する (TC-001〜TC-030 全 green)
+- [ ] `bun run test` が 0 で完了する (TC-001〜TC-039 全 green、TC-040 gate が pass)
 - [ ] TC-021 が変更なしで green であること (escalation body は `specrunner job cancel` と `--restore-draft` を依然含むため影響なし) を確認する
 
 **Acceptance Criteria**:
 - `typecheck && test` が green
 - 既存 TC-001〜TC-021 が全て green (T-01 で修正した本文への文言 pin を除く)
-- 新規 TC-022〜TC-030 が全て green
+- 新規 TC-022〜TC-039 が全て green (test-cases.md 正本の番号体系に従う)
