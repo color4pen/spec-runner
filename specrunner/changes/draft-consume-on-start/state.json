@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4865ee5c-4f71-4807-9bb5-ce7a6a6065eb",
   "createdAt": "2026-08-17T11:05:23.605Z",
-  "updatedAt": "2026-08-17T11:06:12.780Z",
+  "updatedAt": "2026-08-17T11:11:04.225Z",
   "request": {
     "title": "request lifecycle の一本化: job start で draft を消費し、resume の draft recopy を廃止する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/draft-consume-on-start-4865ee5c",
   "error": null,
@@ -63,10 +63,30 @@
   ],
   "issueNumber": 1011,
   "synthesizedCommits": [
-    "104e01d97f7f49fe58a5acaf25faf0216a08849e"
+    "104e01d97f7f49fe58a5acaf25faf0216a08849e",
+    "22d93d44ed47b976c573bc37127bfebb96bea324"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/artifact/copy-artifacts.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/cancel/runner.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/core/command/resume.ts",
+      "src/core/resume/resolve-request-path.ts",
+      "tests/unit/util/copy-artifacts.test.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/util/paths.ts",
+      "src/core/step/design.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
