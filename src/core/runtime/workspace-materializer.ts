@@ -21,7 +21,7 @@ import { changeFolderPath } from "../../util/paths.js";
 import {
   copyRulesToChangeFolder,
   copyDraftUsageToChangeFolder,
-  recopyDraftToChangeFolder,
+  consumeDraft,
   rejectSymlink,
 } from "../artifact/copy-artifacts.js";
 import { appendSynthesizedCommit } from "../../state/schema/operations.js";
@@ -89,8 +89,6 @@ export class WorkspaceMaterializer {
         this.host.registerWorkspace(workspace);
         // Refresh sidecar pid for the resuming process (T-03)
         await this.host.writeLivenessSidecar(slug, jobId, plan.worktreePath);
-        // Resume: recopy draft request.md into change folder (copy semantics)
-        await recopyDraftToChangeFolder(this.host.cwd, workspace.cwd, slug, this.host.spawnFn);
         return workspace;
       }
 
@@ -115,8 +113,6 @@ export class WorkspaceMaterializer {
         }
         await this.host.updateJobState(jobId, (s) => ({ ...s, worktreePath: newWorktreePath }), slugOpts);
         await this.host.writeLivenessSidecar(slug, jobId, newWorktreePath);
-        // Resume: recopy draft request.md into change folder (copy semantics)
-        await recopyDraftToChangeFolder(this.host.cwd, workspace.cwd, slug, this.host.spawnFn);
         return workspace;
       }
 
@@ -240,6 +236,9 @@ export class WorkspaceMaterializer {
             (s) => appendSynthesizedCommit(s, bootstrapOid),
             slugOpts,
           );
+
+          // Consume canonical draft now that materialization commit has succeeded
+          await consumeDraft(this.host.cwd, slug, this.host.spawnFn, opts.requestFilePath);
         }
 
         // Record branchName in state so downstream steps can use it (D3)

@@ -1,5 +1,5 @@
 /**
- * Unit tests for src/util/copy-artifacts.ts — symlink dereference guard
+ * Unit tests for src/util/copy-artifacts.ts — symlink dereference guard + consumeDraft
  *
  * TC-SYM-001: rejectSymlink — 通常ファイルはエラーなし
  * TC-SYM-002: rejectSymlink — symlink なら SpecRunnerError を throw
@@ -10,12 +10,17 @@
  * TC-SYM-013: copyDraftUsageToChangeFolder — usage.json が存在しない場合は正常終了
  * TC-SYM-014: copyDraftUsageToChangeFolder — 通常ファイルの usage.json は正常コピー
  * TC-SYM-015: rejectSymlink — 共通ユーティリティとして export されている
+ * TC-001: consumeDraft — directory-format draft is consumed (untracked)
+ * TC-002: consumeDraft — flat-format draft is consumed (untracked)
+ * TC-004: consumeDraft — tracked draft is warned about, not deleted
+ * TC-005: consumeDraft — non-canonical path → no canonical draft → no-op
+ * TC-009: consumeDraft — no-op when no draft is present
  */
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
 import * as os from "node:os";
-import { rejectSymlink, copyDraftUsageToChangeFolder, recopyDraftToChangeFolder } from "../../../src/core/artifact/copy-artifacts.js";
+import { rejectSymlink, copyDraftUsageToChangeFolder, consumeDraft } from "../../../src/core/artifact/copy-artifacts.js";
 import { SpecRunnerError, ERROR_CODES, EXIT_CODE } from "../../../src/errors.js";
 
 let tempDir: string;
@@ -216,142 +221,132 @@ describe("TC-SYM-015: rejectSymlink — 共通ユーティリティとして exp
 });
 
 // ---------------------------------------------------------------------------
-// TC-RECOPY-001: recopyDraftToChangeFolder — draft exists → file written + git add called
+// TC-001: consumeDraft — directory-format draft is consumed (untracked)
 // ---------------------------------------------------------------------------
-describe("TC-RECOPY-001: recopyDraftToChangeFolder — draft exists → file written and git add called", () => {
-  it("copies draft request.md to change folder and calls git add with cwd=targetCwd", async () => {
+describe("TC-001: consumeDraft — directory-format draft is consumed (untracked)", () => {
+  it("deletes specrunner/drafts/<slug>/ when it exists and is untracked", async () => {
     const repoRoot = path.join(tempDir, "repo");
-    const targetCwd = path.join(tempDir, "worktree");
     const slug = "my-slug";
 
-    // Create draft at specrunner/drafts/<slug>/request.md
-    const draftDir = path.join(repoRoot, "specrunner", "drafts", slug);
-    await fs.mkdir(draftDir, { recursive: true });
-    await fs.writeFile(path.join(draftDir, "request.md"), "# Draft Content\n");
-
-    // Pre-create target change folder dir
-    await fs.mkdir(path.join(targetCwd, "specrunner", "changes", slug), { recursive: true });
-
-    const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
-
-    await recopyDraftToChangeFolder(repoRoot, targetCwd, slug, spawnFn);
-
-    // Assert: change folder request.md has the draft content
-    const destPath = path.join(targetCwd, "specrunner", "changes", slug, "request.md");
-    const content = await fs.readFile(destPath, "utf8");
-    expect(content).toBe("# Draft Content\n");
-
-    // Assert: git add was called with the right relative path and cwd
-    expect(spawnFn).toHaveBeenCalledWith(
-      "git",
-      ["add", `specrunner/changes/${slug}/request.md`],
-      { cwd: targetCwd },
-    );
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-RECOPY-002: recopyDraftToChangeFolder — overwrites existing changeDest content
-// ---------------------------------------------------------------------------
-describe("TC-RECOPY-002: recopyDraftToChangeFolder — overwrites existing change folder request.md", () => {
-  it("overwrites stale change folder content with updated draft", async () => {
-    const repoRoot = path.join(tempDir, "repo");
-    const targetCwd = path.join(tempDir, "worktree");
-    const slug = "my-slug";
-
-    // Create draft
-    const draftDir = path.join(repoRoot, "specrunner", "drafts", slug);
-    await fs.mkdir(draftDir, { recursive: true });
-    await fs.writeFile(path.join(draftDir, "request.md"), "# Updated Draft\n");
-
-    // Pre-create change folder with stale content
-    const changeFolderDir = path.join(targetCwd, "specrunner", "changes", slug);
-    await fs.mkdir(changeFolderDir, { recursive: true });
-    await fs.writeFile(path.join(changeFolderDir, "request.md"), "# Stale Content\n");
-
-    const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
-
-    await recopyDraftToChangeFolder(repoRoot, targetCwd, slug, spawnFn);
-
-    const destPath = path.join(targetCwd, "specrunner", "changes", slug, "request.md");
-    const content = await fs.readFile(destPath, "utf8");
-    expect(content).toBe("# Updated Draft\n");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-RECOPY-003: recopyDraftToChangeFolder — draft absent → no-op, no error
-// ---------------------------------------------------------------------------
-describe("TC-RECOPY-003: recopyDraftToChangeFolder — draft absent → no-op, no error", () => {
-  it("resolves without error and does not call git add when draft is absent", async () => {
-    const repoRoot = path.join(tempDir, "repo");
-    const targetCwd = path.join(tempDir, "worktree");
-    const slug = "my-slug";
-
-    // No draft file created
-    await fs.mkdir(repoRoot, { recursive: true });
-    await fs.mkdir(targetCwd, { recursive: true });
-
-    const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
-
-    await expect(recopyDraftToChangeFolder(repoRoot, targetCwd, slug, spawnFn)).resolves.toBeUndefined();
-
-    // Assert: git add was NOT called (no draft to copy)
-    expect(spawnFn).not.toHaveBeenCalled();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-RECOPY-004: recopyDraftToChangeFolder — symlink at draft path → SpecRunnerError(SYMLINK_REJECTED)
-// ---------------------------------------------------------------------------
-describe("TC-RECOPY-004: recopyDraftToChangeFolder — symlink at draft path → SpecRunnerError", () => {
-  it("throws SpecRunnerError(SYMLINK_REJECTED) when draft path is a symlink", async () => {
-    const repoRoot = path.join(tempDir, "repo");
-    const targetCwd = path.join(tempDir, "worktree");
-    const slug = "my-slug";
-
-    // Create a symlink at the draft path
-    const draftDir = path.join(repoRoot, "specrunner", "drafts", slug);
-    await fs.mkdir(draftDir, { recursive: true });
-    const realFile = path.join(tempDir, "real-request.md");
-    await fs.writeFile(realFile, "# Real\n");
-    await fs.symlink(realFile, path.join(draftDir, "request.md"));
-
-    await fs.mkdir(targetCwd, { recursive: true });
-    const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
-
-    await expect(recopyDraftToChangeFolder(repoRoot, targetCwd, slug, spawnFn)).rejects.toSatisfy(
-      (err: unknown) => err instanceof SpecRunnerError && err.code === "SYMLINK_REJECTED",
-    );
-
-    // Assert: git add was NOT called
-    expect(spawnFn).not.toHaveBeenCalled();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TC-RECOPY-005: recopyDraftToChangeFolder — target dir created when absent
-// ---------------------------------------------------------------------------
-describe("TC-RECOPY-005: recopyDraftToChangeFolder — target directory created when absent", () => {
-  it("creates the change folder directory if it does not exist before copying", async () => {
-    const repoRoot = path.join(tempDir, "repo");
-    const targetCwd = path.join(tempDir, "worktree");
-    const slug = "my-slug";
-
-    // Create draft
+    // Create directory-format draft
     const draftDir = path.join(repoRoot, "specrunner", "drafts", slug);
     await fs.mkdir(draftDir, { recursive: true });
     await fs.writeFile(path.join(draftDir, "request.md"), "# Draft\n");
 
-    // Target cwd exists but change folder directory does NOT
-    await fs.mkdir(targetCwd, { recursive: true });
+    // spawnFn: ls-files returns empty (untracked); everything else succeeds
+    const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
+
+    await consumeDraft(repoRoot, slug, spawnFn);
+
+    // Directory draft should be gone
+    await expect(fs.access(draftDir)).rejects.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-002: consumeDraft — flat-format draft is consumed (untracked)
+// ---------------------------------------------------------------------------
+describe("TC-002: consumeDraft — flat-format draft is consumed (untracked)", () => {
+  it("deletes specrunner/drafts/<slug>.md when it exists and is untracked", async () => {
+    const repoRoot = path.join(tempDir, "repo");
+    const slug = "my-slug";
+
+    // Create flat-format draft
+    const draftsBase = path.join(repoRoot, "specrunner", "drafts");
+    await fs.mkdir(draftsBase, { recursive: true });
+    await fs.writeFile(path.join(draftsBase, `${slug}.md`), "# Flat Draft\n");
 
     const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
 
-    await recopyDraftToChangeFolder(repoRoot, targetCwd, slug, spawnFn);
+    await consumeDraft(repoRoot, slug, spawnFn);
 
-    // Assert: change folder and file were created
-    const destPath = path.join(targetCwd, "specrunner", "changes", slug, "request.md");
-    await expect(fs.access(destPath).then(() => undefined)).resolves.toBeUndefined();
+    await expect(fs.access(path.join(draftsBase, `${slug}.md`))).rejects.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-004: consumeDraft — tracked draft is warned about, not deleted
+// ---------------------------------------------------------------------------
+describe("TC-004: consumeDraft — tracked draft is warned about, not deleted", () => {
+  it("does not delete and writes warning to stderr when ls-files returns non-empty output", async () => {
+    const repoRoot = path.join(tempDir, "repo");
+    const slug = "my-slug";
+
+    // Create directory-format draft
+    const draftDir = path.join(repoRoot, "specrunner", "drafts", slug);
+    await fs.mkdir(draftDir, { recursive: true });
+    await fs.writeFile(path.join(draftDir, "request.md"), "# Tracked Draft\n");
+
+    // spawnFn: ls-files returns the relPath (tracked)
+    const spawnFn = vi.fn().mockImplementation(async (_cmd: string, args: string[]) => {
+      if (args[0] === "ls-files") {
+        return { exitCode: 0, stdout: args[args.length - 1] + "\n", stderr: "" };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    });
+
+    await consumeDraft(repoRoot, slug, spawnFn);
+
+    // Draft must still exist (not deleted)
+    await expect(fs.access(draftDir)).resolves.toBeUndefined();
+    // Warning must have been written
+    expect(process.stderr.write).toHaveBeenCalledWith(
+      expect.stringContaining("is tracked by git"),
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-005: consumeDraft — no canonical draft exists → no-op (non-canonical path scenario)
+// ---------------------------------------------------------------------------
+describe("TC-005: consumeDraft — no canonical draft exists → no-op", () => {
+  it("resolves without error and calls no git ls-files when no canonical draft exists", async () => {
+    const repoRoot = path.join(tempDir, "repo");
+    await fs.mkdir(repoRoot, { recursive: true });
+    const slug = "non-canonical-slug";
+
+    // No draft at canonical locations
+    const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
+
+    await expect(consumeDraft(repoRoot, slug, spawnFn)).resolves.toBeUndefined();
+
+    // ls-files should not have been called (nothing to check)
+    expect(spawnFn).not.toHaveBeenCalled();
+  });
+
+  it("non-canonical requestFilePath + canonical draft present → canonical draft is NOT deleted", async () => {
+    const repoRoot = path.join(tempDir, "repo-tc005b");
+    const slug = "my-slug";
+    // Create a canonical directory-form draft
+    const canonicalDraftDir = path.join(repoRoot, "specrunner", "drafts", slug);
+    const canonicalDraftFile = path.join(canonicalDraftDir, "request.md");
+    await fs.mkdir(canonicalDraftDir, { recursive: true });
+    await fs.writeFile(canonicalDraftFile, "# draft content");
+
+    const nonCanonicalPath = path.join(repoRoot, "some", "other", "request.md");
+    const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
+
+    await expect(consumeDraft(repoRoot, slug, spawnFn, nonCanonicalPath)).resolves.toBeUndefined();
+
+    // Canonical draft must still exist — non-canonical start must not touch it
+    await expect(fs.access(canonicalDraftFile)).resolves.toBeUndefined();
+    // No git ls-files called
+    expect(spawnFn).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-009: consumeDraft — no-op when no draft is present
+// ---------------------------------------------------------------------------
+describe("TC-009: consumeDraft — no-op when no draft is present", () => {
+  it("resolves without error, calls no git or fs.rm when both draft forms are absent", async () => {
+    const repoRoot = path.join(tempDir, "repo");
+    await fs.mkdir(repoRoot, { recursive: true });
+    const slug = "absent-slug";
+
+    const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
+
+    await expect(consumeDraft(repoRoot, slug, spawnFn)).resolves.toBeUndefined();
+    expect(spawnFn).not.toHaveBeenCalled();
   });
 });

@@ -23,7 +23,7 @@ import { spawnCommand } from "../../util/spawn.js";
 import { createTransportAuth } from "../../git/transport-auth.js";
 import { JobStateStore, buildInitialJobState } from "../../store/job-state-store.js";
 import { changeFolderPath, managedMarkerPath, localSidecarDir } from "../../util/paths.js";
-import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, recopyDraftToChangeFolder, rejectSymlink } from "../artifact/copy-artifacts.js";
+import { copyRulesToChangeFolder, copyDraftUsageToChangeFolder, consumeDraft, rejectSymlink } from "../artifact/copy-artifacts.js";
 import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
 import type { ArtifactRef } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
@@ -33,7 +33,7 @@ import { assertSlugUnoccupied } from "../occupancy/guard.js";
 import { isProcessAlive } from "../resume/safety.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
-import { stderrWrite } from "../../logger/stdout.js";
+
 import { isTerminal } from "../../state/lifecycle.js";
 import type { JobStatus } from "../../state/schema.js";
 
@@ -163,8 +163,6 @@ export class ManagedRuntime implements RealRuntimeStrategy {
     if (!branchName) {
       // Write/refresh marker on resume too (D7: resume 後に新 marker で上書き)
       await this.writeManagedMarker(slug, jobId);
-      // Resume: recopy draft request.md into change folder (copy semantics)
-      await recopyDraftToChangeFolder(this.cwd, this.cwd, slug, this.spawnFn);
       return { cwd: this.cwd };
     }
 
@@ -214,10 +212,7 @@ export class ManagedRuntime implements RealRuntimeStrategy {
         { cwd: this.cwd },
       );
       if (gitAddChangeFolderResult.exitCode !== 0) {
-        // Non-fatal: log warning but don't fail setup
-        stderrWrite(
-          `Warning: failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}`,
-        );
+        throw new Error(`Failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}`);
       }
 
       // Copy draft's usage.json into the change folder (silent no-op if absent)
@@ -268,6 +263,9 @@ export class ManagedRuntime implements RealRuntimeStrategy {
           `git push origin ${branchName} after commit failed (exit ${pushCommitResult.exitCode}): ${pushCommitResult.stderr.trim()}`,
         );
       }
+
+      // Consume canonical draft now that materialization commit has succeeded (and pushed)
+      await consumeDraft(this.cwd, slug, this.spawnFn, opts.requestFilePath);
     }
 
     // Record branchName in state (D3)

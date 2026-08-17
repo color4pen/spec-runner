@@ -813,6 +813,48 @@ describe("TC-STATUS-CONFIRMED-AT-RECORD: archive 実行時点で status が arch
 });
 
 // ---------------------------------------------------------------------------
+// TC-008: draft 消費済み → archive draft cleanup が no-op
+// ---------------------------------------------------------------------------
+
+describe("TC-008: archiving a job whose draft was consumed at start is a no-op for draft cleanup", () => {
+  it("fs.exists returns false for draft paths → fs.rm is not called for any drafts path", async () => {
+    const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
+    (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      makeJobState({ status: "awaiting-archive", branch: BRANCH }),
+    ]);
+
+    const { assertJobFinishable, markJobArchived } = await import("../../../../src/core/finish/job-state-update.js");
+    (assertJobFinishable as ReturnType<typeof vi.fn>).mockReturnValue(undefined);
+    (markJobArchived as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+
+    const { archiveChangeFolder } = await import("../../../../src/core/finish/archive-change-folder.js");
+    (archiveChangeFolder as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, skipped: false, message: "archived" });
+
+    const { commitArchive } = await import("../../../../src/core/finish/commit-archive.js");
+    (commitArchive as ReturnType<typeof vi.fn>).mockResolvedValue({ ok: true, skipped: false, message: "committed" });
+
+    // Draft was consumed at start: exists returns false for drafts paths
+    const mockFs = makeFs();
+    (mockFs.exists as ReturnType<typeof vi.fn>).mockImplementation(async (p: string) => {
+      if ((p as string).includes("specrunner/drafts")) return false;
+      return true;
+    });
+
+    const { runArchiveOrchestrator } = await import("../../../../src/core/archive/orchestrator.js");
+    const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn: makeSpawn(0), fs: mockFs });
+
+    expect(result).toMatchObject({ exitCode: 0 });
+
+    // fs.rm must NOT have been called for any draft path
+    const rmMock = mockFs.rm as ReturnType<typeof vi.fn>;
+    const draftRmCall = rmMock.mock.calls.find(
+      (c: unknown[]) => (c[0] as string).includes("specrunner/drafts"),
+    );
+    expect(draftRmCall).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-AO-NO-INTERMEDIATE-STATUS: 中間 status が導入されていない
 // ---------------------------------------------------------------------------
 
