@@ -166,7 +166,7 @@ interface FollowUpPolicy { maxAttempts; buildPrompt(input): string }  // DEFAULT
 
 ### createRuntime — runtime factory（分岐集約点）
 - **責務**: `config.runtime`（local / managed）の分岐を**ここ1箇所に閉じて** RuntimeStrategy を組む（B-8）。
-- **不変条件**: runtime 分岐を domain / CLI に散らさない。※現状 `executor.ts` 等に分岐残存（`model.md` §5）。
+- **不変条件**: runtime 分岐を domain / CLI に散らさない。
 - → `src/core/runtime/factory.ts`
 
 ### CommandRunner — pipeline 実行の Template Method
