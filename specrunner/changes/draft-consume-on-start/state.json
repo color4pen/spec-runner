@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4865ee5c-4f71-4807-9bb5-ce7a6a6065eb",
   "createdAt": "2026-08-17T11:05:23.605Z",
-  "updatedAt": "2026-08-17T11:27:00.216Z",
+  "updatedAt": "2026-08-17T11:39:23.870Z",
   "request": {
     "title": "request lifecycle の一本化: job start で draft を消費し、resume の draft recopy を廃止する",
     "type": "spec-change",
@@ -67,7 +67,9 @@
     "22d93d44ed47b976c573bc37127bfebb96bea324",
     "1421e45963bd660a7a46327b73b83983914d3f4e",
     "8a7dcd9758c8d8c745243238f41408df149a1ae9",
-    "5a3aaaf929e9438aaacaf9d74590e045236c914b"
+    "5a3aaaf929e9438aaacaf9d74590e045236c914b",
+    "08321944a42664dbfd20aa63f79fa1cf3f0bb793",
+    "9efdea86f0cc212281126546adc20861e0805fbb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -112,15 +114,31 @@
       "src/core/inbox/run-inbox.ts",
       "src/core/step/write-scope.ts",
       "tests/unit/core/runtime/bootstrap-egress-ledger-wm.test.ts"
+    ],
+    "implementer": [
+      "src/core/artifact/copy-artifacts.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "tests/unit/util/copy-artifacts.test.ts",
+      "src/util/paths.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/core/cancel/runner.ts",
+      "tests/unit/core/runtime/bootstrap-egress-ledger-wm.test.ts",
+      "tests/unit/core/cancel/runner.test.ts",
+      "tests/unit/core/runtime/bootstrap-egress-ledger-managed.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }

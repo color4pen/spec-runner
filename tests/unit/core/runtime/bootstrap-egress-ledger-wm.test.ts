@@ -400,7 +400,6 @@ describe("TC-006 (resume): operator-edited request.md is not overwritten by draf
         registerWorkspace: vi.fn(),
         updateJobState: vi.fn().mockImplementation(
           async (_jobId: string, mutator: (s: JobState) => JobState) => {
-            initialState; // just apply, but don't track
             mutator(initialState);
           },
         ),
