@@ -39,8 +39,6 @@ specrunner job resume <slug> --detach
 
 ## 2. 監視 — job wait
 
-起動直後は state 登録に数秒ラグあり。\`specrunner job ls\` で running を確認してから:
-
 \`\`\`bash
 specrunner job wait <slug>
 \`\`\`
@@ -109,7 +107,7 @@ PR が既に MERGED なら archive のみ実行される。
 archive は rebase を行わない。main が進んでいる場合は worktree 内で先に rebase する:
 
 \`\`\`bash
-cd .git/specrunner-worktrees/<slug>-<jobId>
+cd .git/specrunner-worktrees/<slug>-<jobIdの先頭8文字>
 git fetch origin main
 git rebase origin/main
 # 衝突があれば解消 → git rebase --continue
@@ -179,10 +177,10 @@ request.md の \`## 受け入れ基準\` 各項目に対応するコード変更
 - agent の判断場面を消す構造解を検討する
 - scope 外宣言から派生した追加対応候補を列挙する
 
-## レビューの起点 issue 照合
+## issue 対 request.md 転記監査(オプション観点)
 
-- レビューは request.md ではなく起点 issue の正典と照合する
-- request.md 作成時の無言の要件弱体化は全 gate を素通りするため注意
+- issue と request.md を比較して request.md 作成時の無言の要件弱体化を検出するのは audit の 1 観点(転記監査)
+- 転記監査は「issue→request.md 転記そのものを監査する」場合にのみ行う観点であり、通常の AC 突合せとは区別する
 `,
   },
   {
@@ -196,7 +194,7 @@ request.md の \`## 受け入れ基準\` 各項目に対応するコード変更
 bun install    # または npm install
 \`\`\`
 
-## 1. init — 2 層 config scaffold
+## 1. init — global config + repository scaffold
 
 \`\`\`bash
 specrunner init
@@ -310,7 +308,8 @@ specrunner job reopen <slug> --from <step> --reason "<理由>"
 ## 4. 後片付け
 
 \`\`\`bash
-specrunner job cancel <slug> --restore-draft   # job をキャンセルし request.md を drafts/ に復元
+specrunner job show <slug>                     # Job ID を確認
+specrunner job cancel <jobId> --restore-draft  # job をキャンセルし request.md を drafts/ に復元
 specrunner job prune --force                   # orphan worktree・sidecar を削除
 specrunner job attach --branch <branch>        # remote branch の quiescent checkpoint を attach
 \`\`\`
@@ -374,8 +373,8 @@ specrunner job start specrunner/drafts/<slug>.md --detach
 
 ## 基本姿勢
 
-- **起点 issue / request の正典と照合する**: request.md でなく起点 issue の正典を canon とする。
-  request.md 作成時の無言の要件弱体化は全 gate を素通りする。
+- **pipeline 開始後の規範は request.md / spec**: pipeline 開始後は request.md が規範。
+  issue との比較は audit topic の転記監査観点であり、review では行わない。
 - **断定前に現物を読む**: 「収束する」「routing する」と断定する前に該当関数を現物で読む。
   別経路の緑テストを証拠にしない。
 - **AC が名指しした歯の生存を確認**: 受け入れ基準で名指しした pin テスト・assertion が
