@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4865ee5c-4f71-4807-9bb5-ce7a6a6065eb",
   "createdAt": "2026-08-17T11:05:23.605Z",
-  "updatedAt": "2026-08-17T12:07:55.990Z",
+  "updatedAt": "2026-08-17T12:12:25.803Z",
   "request": {
     "title": "request lifecycle の一本化: job start で draft を消費し、resume の draft recopy を廃止する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/draft-consume-on-start-4865ee5c",
   "error": null,
@@ -75,7 +75,8 @@
     "0d2f3df6943389418961b361f63939867b75bdf7",
     "99d2bba1ad60ec1eec6867efbe8ff24a310deb4c",
     "f28efcab8aca572ac5ecf253513862af77b92cf7",
-    "9661516f610b4fd25f9ca33be379eed1731e2d37"
+    "9661516f610b4fd25f9ca33be379eed1731e2d37",
+    "54ac377bd793519f32f04140eb2d2a44e94fa8e3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -135,8 +136,13 @@
       "src/util/paths.ts"
     ],
     "code-fixer": [
-      "tests/unit/core/archive/orchestrator.test.ts",
-      "src/core/archive/orchestrator.ts"
+      "src/core/runtime/managed.ts",
+      "src/core/artifact/copy-artifacts.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
+      "src/util/paths.ts",
+      "tests/unit/util/copy-artifacts.test.ts",
+      "tests/unit/core/runtime/bootstrap-egress-ledger-wm.test.ts"
     ],
     "regression-gate": [
       "src/core/runtime/managed.ts",
@@ -176,7 +182,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -186,7 +192,7 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 1,
+      "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
