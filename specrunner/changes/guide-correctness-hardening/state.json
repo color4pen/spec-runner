@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "16f48392-21a1-4c30-8365-c74e08287d3d",
   "createdAt": "2026-08-16T23:35:49.117Z",
-  "updatedAt": "2026-08-17T00:29:50.536Z",
+  "updatedAt": "2026-08-17T00:42:52.983Z",
   "request": {
     "title": "guide 正本の正確性硬化: 誤案内 3 件の修正・正典モデル記述の是正・コマンド例検証の invocation contract 化",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "fix/guide-correctness-hardening-16f48392",
   "error": null,
@@ -70,7 +70,9 @@
     "d598c9debd0187afae38fcd847dead23c4355328",
     "0a1b6a40d1a2038590ae917f04e2ea1c781331a3",
     "2c28d9029ca504f5230ef2ddda20d7a631699d82",
-    "2252f26639736eeffab2b864f8d70aa2675759e5"
+    "2252f26639736eeffab2b864f8d70aa2675759e5",
+    "b61fd054d5fc1998e84bcdf163e7291239f0c345",
+    "e536516c25a3c96c58ff17e018a72db9a6c7cb31"
   ],
   "touchedFiles": {
     "request-review": [
@@ -104,16 +106,27 @@
       ".claude/skills/acceptance-and-issue-audit/SKILL.md",
       "specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/core/command/guide.ts",
+      "src/core/command/runner.ts",
+      "src/core/command/__tests__/guide.test.ts",
+      ".claude/skills/acceptance-and-issue-audit/SKILL.md",
+      "specrunner/adr/2026-08-17-cli-operational-knowledge-registry.md",
+      "src/cli/command-registry.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 30,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 2,
-      "spec-fixer": 2
+      "spec-fixer": 2,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
