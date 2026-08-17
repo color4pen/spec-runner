@@ -33,7 +33,7 @@ import { assertSlugUnoccupied } from "../occupancy/guard.js";
 import { isProcessAlive } from "../resume/safety.js";
 import type { AgentStep } from "../step/types.js";
 import type { CommitPushInfra } from "../step/commit-push.js";
-import { stderrWrite } from "../../logger/stdout.js";
+
 import { isTerminal } from "../../state/lifecycle.js";
 import type { JobStatus } from "../../state/schema.js";
 
@@ -212,10 +212,7 @@ export class ManagedRuntime implements RealRuntimeStrategy {
         { cwd: this.cwd },
       );
       if (gitAddChangeFolderResult.exitCode !== 0) {
-        // Non-fatal: log warning but don't fail setup
-        stderrWrite(
-          `Warning: failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}`,
-        );
+        throw new Error(`Failed to stage change folder request.md: ${gitAddChangeFolderResult.stderr.trim()}`);
       }
 
       // Copy draft's usage.json into the change folder (silent no-op if absent)
@@ -268,7 +265,7 @@ export class ManagedRuntime implements RealRuntimeStrategy {
       }
 
       // Consume canonical draft now that materialization commit has succeeded (and pushed)
-      await consumeDraft(this.cwd, slug, this.spawnFn);
+      await consumeDraft(this.cwd, slug, this.spawnFn, opts.requestFilePath);
     }
 
     // Record branchName in state (D3)

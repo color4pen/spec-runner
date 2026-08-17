@@ -148,8 +148,15 @@ export async function consumeDraft(
   repoRoot: string,
   slug: string,
   spawn: SpawnFn,
+  requestFilePath?: string,
 ): Promise<void> {
   const dir = draftsDir();
+  // Skip if started from a non-canonical draft location — canonical draft (if present) is unrelated.
+  if (requestFilePath !== undefined) {
+    const flatAbs = path.join(repoRoot, dir, `${slug}.md`);
+    const dirAbs = path.join(repoRoot, dir, slug, "request.md");
+    if (requestFilePath !== flatAbs && requestFilePath !== dirAbs) return;
+  }
   for (const [relPath, absPath] of [
     [path.join(dir, `${slug}.md`), path.join(repoRoot, dir, `${slug}.md`)],
     [path.join(dir, slug),         path.join(repoRoot, dir, slug)],

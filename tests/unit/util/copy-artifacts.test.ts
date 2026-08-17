@@ -313,6 +313,26 @@ describe("TC-005: consumeDraft — no canonical draft exists → no-op", () => {
     // ls-files should not have been called (nothing to check)
     expect(spawnFn).not.toHaveBeenCalled();
   });
+
+  it("non-canonical requestFilePath + canonical draft present → canonical draft is NOT deleted", async () => {
+    const repoRoot = path.join(tempDir, "repo-tc005b");
+    const slug = "my-slug";
+    // Create a canonical directory-form draft
+    const canonicalDraftDir = path.join(repoRoot, "specrunner", "drafts", slug);
+    const canonicalDraftFile = path.join(canonicalDraftDir, "request.md");
+    await fs.mkdir(canonicalDraftDir, { recursive: true });
+    await fs.writeFile(canonicalDraftFile, "# draft content");
+
+    const nonCanonicalPath = path.join(repoRoot, "some", "other", "request.md");
+    const spawnFn = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "", stderr: "" });
+
+    await expect(consumeDraft(repoRoot, slug, spawnFn, nonCanonicalPath)).resolves.toBeUndefined();
+
+    // Canonical draft must still exist — non-canonical start must not touch it
+    await expect(fs.access(canonicalDraftFile)).resolves.toBeUndefined();
+    // No git ls-files called
+    expect(spawnFn).not.toHaveBeenCalled();
+  });
 });
 
 // ---------------------------------------------------------------------------

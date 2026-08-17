@@ -443,7 +443,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       );
 
       // Consume canonical draft now that materialization commit has succeeded
-      await consumeDraft(this.cwd, slug, this.spawnFn);
+      await consumeDraft(this.cwd, slug, this.spawnFn, opts.requestFilePath);
     }
 
     // Record branchName in state

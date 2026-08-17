@@ -238,7 +238,7 @@ export class WorkspaceMaterializer {
           );
 
           // Consume canonical draft now that materialization commit has succeeded
-          await consumeDraft(this.host.cwd, slug, this.host.spawnFn);
+          await consumeDraft(this.host.cwd, slug, this.host.spawnFn, opts.requestFilePath);
         }
 
         // Record branchName in state so downstream steps can use it (D3)

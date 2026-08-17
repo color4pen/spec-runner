@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "4865ee5c-4f71-4807-9bb5-ce7a6a6065eb",
   "createdAt": "2026-08-17T11:05:23.605Z",
-  "updatedAt": "2026-08-17T12:05:15.547Z",
+  "updatedAt": "2026-08-17T12:07:55.990Z",
   "request": {
     "title": "request lifecycle の一本化: job start で draft を消費し、resume の draft recopy を廃止する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/draft-consume-on-start-4865ee5c",
   "error": null,
@@ -74,7 +74,8 @@
     "8c4b0c23dd1e5c962680610f7eaadebd0d392f1d",
     "0d2f3df6943389418961b361f63939867b75bdf7",
     "99d2bba1ad60ec1eec6867efbe8ff24a310deb4c",
-    "f28efcab8aca572ac5ecf253513862af77b92cf7"
+    "f28efcab8aca572ac5ecf253513862af77b92cf7",
+    "9661516f610b4fd25f9ca33be379eed1731e2d37"
   ],
   "touchedFiles": {
     "request-review": [
@@ -136,6 +137,12 @@
     "code-fixer": [
       "tests/unit/core/archive/orchestrator.test.ts",
       "src/core/archive/orchestrator.ts"
+    ],
+    "regression-gate": [
+      "src/core/runtime/managed.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "tests/unit/core/archive/orchestrator.test.ts",
+      "src/core/runtime/local.ts"
     ]
   },
   "reviewerStatuses": [
@@ -169,7 +176,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 55,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -182,7 +189,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

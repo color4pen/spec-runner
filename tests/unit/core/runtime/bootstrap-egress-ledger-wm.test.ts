@@ -249,16 +249,16 @@ describe("TC-001/TC-002 (consume): flat and directory drafts are deleted after s
   it(
     "deletes both specrunner/drafts/<slug>.md and specrunner/drafts/<slug>/ after commit succeeds",
     async () => {
-      const requestFilePath = path.join(tempDir, "request.md");
-      await fs.writeFile(requestFilePath, "# Consume Test\n", "utf-8");
-
-      // Create both canonical draft forms in the repo root (host.cwd = tempDir)
+      // requestFilePath is the canonical directory-form draft (triggers consumption)
       const flatDraft = path.join(tempDir, "specrunner", "drafts", `${SLUG}.md`);
       const dirDraft = path.join(tempDir, "specrunner", "drafts", SLUG);
+      const requestFilePath = path.join(dirDraft, "request.md");
+
+      // Create both canonical draft forms in the repo root (host.cwd = tempDir)
       await fs.mkdir(path.dirname(flatDraft), { recursive: true });
       await fs.writeFile(flatDraft, "# Flat Draft\n");
       await fs.mkdir(path.join(dirDraft), { recursive: true });
-      await fs.writeFile(path.join(dirDraft, "request.md"), "# Dir Draft\n");
+      await fs.writeFile(requestFilePath, "# Dir Draft\n");
 
       const initialState = makeInitialState();
       let trackedState: JobState = { ...initialState };
