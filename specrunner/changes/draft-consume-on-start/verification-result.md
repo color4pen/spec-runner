@@ -6,11 +6,11 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 0.4s | 0 |
-| 2 | typecheck | passed | 5.7s | 0 |
-| 3 | test | passed | 38.7s | 0 |
+| 1 | build | passed | 0.6s | 0 |
+| 2 | typecheck | passed | 5.8s | 0 |
+| 3 | test | passed | 44.3s | 0 |
 | 4 | lint | passed | 6.3s | 0 |
-| 5 | changed-line-coverage | passed | 47.7s | 0 |
+| 5 | changed-line-coverage | passed | 48.0s | 0 |
 | 6 | lockfile-sync | skipped | — | — |
 
 ## Phase: build
@@ -24,7 +24,7 @@ CLI Target: node20
 CLI Cleaning output folder
 ESM Build start
 ESM dist/specrunner.js 1.49 MB
-ESM ⚡️ Build success in 77ms
+ESM ⚡️ Build success in 87ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -51,14 +51,42 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	228d
 {
   "categories": []
 }
-Usage for: metrics-show-test-slug
-────────────────────────────────────────────────────────────
-[2026-01-01T10:00:00.000Z] job / design
-  claude-opus-4-5: in=500 out=200 cacheRead=100 cacheCreate=50
-
-────────────────────────────────────────────────────────────
-Totals by model:
-  claude-opus-4-5: in=500 out=200 cacheRead=100 cacheCreate=50
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
 Detached pipeline started for: my-slug
   Monitor: specrunner job wait my-slug
   Details: specrunner job show my-slug
@@ -74,42 +102,6 @@ Detached pipeline started for: my-slug
 Detached pipeline started for: my-slug
   Monitor: specrunner job wait my-slug
   Details: specrunner job show my-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
 Detached pipeline started for: integration-slug
   Monitor: specrunner job wait integration-slug
   Details: specrunner job show integration-slug
@@ -121,37 +113,41 @@ Detached pipeline started for: wait-compat-slug
   Details: specrunner job show wait-compat-slug
 
  Test Files  787 passed (787)
-      Tests  11755 passed | 1 skipped | 2 todo (11758)
-   Start at  20:40:59
-   Duration  38.37s (transform 6.75s, setup 4.02s, import 29.77s, tests 59.25s, environment 38ms)
+      Tests  11757 passed | 1 skipped | 2 todo (11760)
+   Start at  21:22:06
+   Duration  43.89s (transform 8.04s, setup 4.64s, import 36.60s, tests 65.53s, environment 42ms)
 
 
 $ vitest run
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-Mja9pj/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-TVRyh7/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: pr-create: could not read events.jsonl for attestation, skipping comment
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-1viEQi/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-icI3dU/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: failed to push checkpoint commit for test-slug to origin/fix/test-branch-abc12345. Push manually to ensure state is on the branch.
-Warning: checkpoint persistBeforePush failed for test-slug: disk-full: cannot persist. Continuing with push.
-Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
 Warning: Could not parse verdict from cli step 'pr-create'. Treating as escalation.
+Warning: pr-create: attestation comment failed: GitHub API error
+Warning: pr-create: could not read events.jsonl for attestation, skipping comment
+Warning: failed to push checkpoint commit for test-slug to origin/fix/test-branch-abc12345. Push manually to ensure state is on the branch.
+Warning: checkpoint persistBeforePush failed for test-slug: disk-full: cannot persist. Continuing with push.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not valid json"
 [codex] completion report parse failed (main turn): no-json-found; fragment: "not json at all"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: ""
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: ""
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-[specrunner] warn: session resume failed for 'implementer' (session: old-session-id): session not found: old-session-id. Falling back to new session.
 [codex] completion report parse failed (main turn): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is plain text. No JSON here at all."
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is plain text. No JSON here at all."
@@ -161,21 +157,6 @@ Warning: Could not parse verdict from agent step 'implementer'. Treating as esca
 [codex] completion report parse failed (main turn): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "plain prose no json"
 [codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "plain prose no json"
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'reviewer-beta'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
@@ -189,6 +170,16 @@ Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
 Retrying worktree add: lock contention (attempt 1/3)
 Retrying worktree add: lock contention (attempt 2/3)
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
 [inbox] started job slug=fix-login-bug from issue#1
 [inbox] rejected issue#2: missing title (top-level # heading required) in issue#2
 [inbox] started job slug=fix-login-bug from issue#1
@@ -209,18 +200,6 @@ Retrying worktree add: lock contention (attempt 2/3)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=my-feature (issue#30)
 [inbox] resumed job slug=old-feature (issue#50)
-[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
-[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
-Error: No job found for slug: not-found-slug
-Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
-Error: No job found for slug: not-found-slug
-Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
-Error: No job found for slug: not-found-slug
-Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
-[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
-[codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
@@ -241,17 +220,26 @@ GitHub PR merge retry: Required status check "ci/build" is expected, retrying (1
 GitHub PR merge retry: Pull Request is not mergeable, retrying (1/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (2/3)...
 GitHub PR merge retry: Pull Request is not mergeable, retrying (3/3)...
+[codex] completion report parse failed (main turn): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "This is just prose, no JSON here at all."
+[codex] completion report parse failed (main turn): no-json-found; fragment: "Sorry, no JSON here."
+[specrunner] warn: session resume failed for 'implementer' (session: old-session-id): session not found: old-session-id. Falling back to new session.
+Error: No job found for slug: not-found-slug
+Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
+Error: No job found for slug: not-found-slug
+Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
+Error: No job found for slug: not-found-slug
+Hint: If you used --detach, the job may still be initializing or may have failed to start. Check the detach log: /repo/.specrunner/logs/not-found-slug.detach.log
+[specrunner] warn: steps.code-review.byRequestType.unknown-custom-type is not a known request type. Known types: bug-fix, spec-change, new-feature, refactoring, chore.
+[codex] completion report parse failed (main turn): no-json-found; fragment: "not json"
 Warning: issue-notifier: failed to write comment to issue #42: network error
-[inbox] skip: occupancy comment for priorJobId=abc-1234-5678-90ab-cdef already posted on issue#1
-Mapping --from "test-materialize" → "implementer" (legacy alias)
-Mapping --from "test-materialize" → "implementer" (legacy alias)
-Mapping --from "test-materialize" → "implementer" (legacy alias)
-Mapping resumePoint.step "test-materialize" → "implementer" (legacy alias)
-Mapping resumePoint.step "test-materialize" → "implementer" (legacy alias)
-Mapping state.step "test-materialize" → "implementer" (legacy alias)
-Mapping state.step "test-materialize" → "implementer" (legacy alias)
-Mapping state.step "build-fixer" → "implementer" (legacy alias)
-Mapping state.step "build-fixer" → "implementer" (legacy alias)
+[codex] completion report parse failed (main turn): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (main turn): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "done"
+[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "done"
 Error: Detached pipeline for 'test-slug' failed to start.
 Detach log: /repo/.specrunner/logs/test-slug.detach.log
 --- log tail ---
@@ -281,19 +269,23 @@ Error: Detached pipeline for 'test-slug' failed to start.
 Detach log: /repo/.specrunner/logs/test-slug.detach.log
 --- log tail ---
 log content
-[codex] completion report parse failed (main turn): no-json-found; fragment: "done"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "done"
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "done"
-[codex] completion report parse failed (main turn): no-json-found; fragment: "done"
-[codex] completion report parse failed (attempt 1/2): no-json-found; fragment: "done"
-[codex] completion report parse failed (attempt 2/2): no-json-found; fragment: "done"
+[inbox] skip: occupancy comment for priorJobId=abc-1234-5678-90ab-cdef already posted on issue#1
+Mapping --from "test-materialize" → "implementer" (legacy alias)
+Mapping --from "test-materialize" → "implementer" (legacy alias)
+Mapping --from "test-materialize" → "implementer" (legacy alias)
+Mapping resumePoint.step "test-materialize" → "implementer" (legacy alias)
+Mapping resumePoint.step "test-materialize" → "implementer" (legacy alias)
+Mapping state.step "test-materialize" → "implementer" (legacy alias)
+Mapping state.step "test-materialize" → "implementer" (legacy alias)
+Mapping state.step "build-fixer" → "implementer" (legacy alias)
+Mapping state.step "build-fixer" → "implementer" (legacy alias)
 Warning: Could not parse verdict from agent step 'design'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'spec-review'. Treating as escalation.
 Warning: Could not verify change folder: this.githubClient.verifyPath is not a function
 Warning: Could not verify change folder: this.githubClient.verifyPath is not a function
-Mapping --from "build-fixer" → "implementer" (legacy alias)
 ERROR: file not found
 spawn ENOENT
+Mapping --from "build-fixer" → "implementer" (legacy alias)
 Error: Detached pipeline for 'failure-slug' failed to start.
 Detach log: /repo/.specrunner/logs/failure-slug.detach.log
 --- log tail ---
@@ -305,16 +297,16 @@ preflight: provider not ready
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping resumePoint.step "security" → "custom-reviewers" (member → coordinator)
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 [inbox] started job slug=fix-login-bug from issue#99
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+[code-fixer] no-op detected: no source files changed — overriding verdict to needs-fix
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
+Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "build-fixer" → "implementer" (legacy alias)
 Mapping resumePoint.step "build-fixer" → "implementer" (legacy alias)
 
@@ -330,8 +322,8 @@ $ eslint ./src ./tests --max-warnings 0
 ## Phase: changed-line-coverage
 
 ```
-changed-line-coverage: passed (24 changed files checked, 20 skipped)
-  Skipped (not in coverage surface): .release-please-manifest.json, CHANGELOG.md, package.json, specrunner/changes/draft-consume-on-start/bite-evidence-result.md, specrunner/changes/draft-consume-on-start/design.md, specrunner/changes/draft-consume-on-start/events.jsonl, specrunner/changes/draft-consume-on-start/request-review-attestation.json, specrunner/changes/draft-consume-on-start/request-review-result-001.md, specrunner/changes/draft-consume-on-start/request.md, specrunner/changes/draft-consume-on-start/rules.md, specrunner/changes/draft-consume-on-start/spec-review-result-001.md, specrunner/changes/draft-consume-on-start/spec.md, specrunner/changes/draft-consume-on-start/state.json, specrunner/changes/draft-consume-on-start/tasks.md, specrunner/changes/draft-consume-on-start/test-cases.md, specrunner/changes/draft-consume-on-start/usage.json, specrunner/changes/draft-consume-on-start/verification-result.md, tests/unit/core/runtime/bootstrap-egress-ledger-managed.test.ts, tests/unit/core/runtime/bootstrap-egress-ledger-wm.test.ts, tests/unit/util/copy-artifacts.test.ts
+changed-line-coverage: passed (30 changed files checked, 26 skipped)
+  Skipped (not in coverage surface): .release-please-manifest.json, CHANGELOG.md, package.json, specrunner/changes/draft-consume-on-start/bite-evidence-result.md, specrunner/changes/draft-consume-on-start/conformance-result-001.md, specrunner/changes/draft-consume-on-start/cross-boundary-invariants-result-001.md, specrunner/changes/draft-consume-on-start/design.md, specrunner/changes/draft-consume-on-start/events.jsonl, specrunner/changes/draft-consume-on-start/regression-gate-result-001.md, specrunner/changes/draft-consume-on-start/regression-gate-result-002.md, specrunner/changes/draft-consume-on-start/request-review-attestation.json, specrunner/changes/draft-consume-on-start/request-review-result-001.md, specrunner/changes/draft-consume-on-start/request.md, specrunner/changes/draft-consume-on-start/review-feedback-001.md, specrunner/changes/draft-consume-on-start/rules.md, specrunner/changes/draft-consume-on-start/spec-review-result-001.md, specrunner/changes/draft-consume-on-start/spec.md, specrunner/changes/draft-consume-on-start/state.json, specrunner/changes/draft-consume-on-start/tasks.md, specrunner/changes/draft-consume-on-start/test-cases.md, specrunner/changes/draft-consume-on-start/usage.json, specrunner/changes/draft-consume-on-start/verification-result.md, tests/unit/core/archive/orchestrator.test.ts, tests/unit/core/runtime/bootstrap-egress-ledger-managed.test.ts, tests/unit/core/runtime/bootstrap-egress-ledger-wm.test.ts, tests/unit/util/copy-artifacts.test.ts
 ```
 
 ## Phase: lockfile-sync
