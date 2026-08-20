@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9dcf5a95-c9cb-4172-8b10-b6cf0119a795",
   "createdAt": "2026-08-20T05:14:24.721Z",
-  "updatedAt": "2026-08-20T07:03:16.851Z",
+  "updatedAt": "2026-08-20T07:07:50.858Z",
   "request": {
     "title": "spec-review loop の単一 fixer 化: test-case-gen を review loop から外す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "change/spec-review-loop-single-fixer-9dcf5a95",
   "error": null,
@@ -79,7 +79,8 @@
     "fcd4d5c76e549e7adbea2cf09cd1544421623850",
     "218dbcd05bc4ac414000d0a4572af6777c5c66da",
     "0db1a8d4b0542b940c7c85e6bf60efb828f8180f",
-    "ea39543d1054778741bda63b92369e0fe2a37294"
+    "ea39543d1054778741bda63b92369e0fe2a37294",
+    "cda0e10f31a7069b5183ae76cc9a2a0b184a9903"
   ],
   "touchedFiles": {
     "request-review": [
@@ -166,13 +167,10 @@
     "regression-gate": [
       "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
       "src/prompts/rules.ts",
-      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
       "src/core/pipeline/spec-observation.ts",
+      "tests/pipeline-integration.test.ts",
       "src/core/step/judge-verdict.ts",
-      "src/core/step/canon-escalation.ts",
-      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
-      "tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts",
-      "tests/pipeline-integration.test.ts"
+      "tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -206,7 +204,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 73,
+    "historyCount": 78,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -221,7 +219,7 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
