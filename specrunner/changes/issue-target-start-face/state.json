@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T07:22:34.106Z",
+  "updatedAt": "2026-08-20T07:40:12.270Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -89,7 +89,9 @@
     "edf4af42c3aa638a27a883f719d3951a42acf083",
     "c78b6a5f942dfef4db921583a5988c484eeaa634",
     "fbd3353f2bf58636d6e638eff7698d8db1b0a05d",
-    "7b5623a4e8e598f35444044246f2d5b169d84c75"
+    "7b5623a4e8e598f35444044246f2d5b169d84c75",
+    "4512456825cff887035c286b1c0712fbe1925010",
+    "ad35da51e6c9f78abd3661b77bf6d0df42eea2c0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -155,27 +157,25 @@
     ],
     "code-review": [
       "src/core/issue-target/start.ts",
-      "src/core/job/start-from-issue.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/runtime/workspace-materializer.ts",
-      "src/core/runtime/local.ts",
-      "src/adapter/github/github-client.ts",
-      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
-      "tests/unit/adapter/github/github-client-graphql.test.ts",
       "src/core/job/__tests__/start-from-issue.test.ts",
       "src/cli/__tests__/from-issue.test.ts",
-      "tests/unit/architecture/module-boundary.test.ts",
-      "src/cli/command-registry.ts",
-      "src/cli/from-issue.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
       "src/kernel/github-client.ts",
+      "src/adapter/github/github-client.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
       "src/config/type-config.ts",
+      "src/cli/command-registry.ts",
       "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
       "src/core/inbox/run-inbox.ts",
-      "src/cli/inbox.ts",
+      "src/core/port/runtime-strategy.ts",
       "tests/unit/no-worktree-mode.test.ts",
+      "tests/unit/adapter/github/github-client-graphql.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/cli/from-issue.ts",
       "src/core/command/pipeline-run.ts",
-      "tests/unit/adapter/github/github-client-get-issue.test.ts",
-      "src/cli/run.ts"
+      "tests/unit/adapter/github/github-client-get-issue.test.ts"
     ],
     "code-fixer": [
       "src/cli/__tests__/from-issue.test.ts",
@@ -195,8 +195,39 @@
       "recordedAt": "2026-08-20T05:47:08.970Z"
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "4512456825cff887035c286b1c0712fbe1925010",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/issue-target-start-face/design.md:sha256:5576551b8d064963e2ca27ea64c3d0e07b488a9cdfacbb5f84c11cfd0b6a9c2c|specrunner/changes/issue-target-start-face/request.md:sha256:3e1858cf235ed774ed5fe50296b0ca8437a44d9270e738e4667a5c36b697808a|specrunner/changes/issue-target-start-face/spec.md:sha256:d192e49bf0f1f32dcac63fc7457a1766d71fe6d8a5ba4f9e4d0ea8a765eff211|specrunner/changes/issue-target-start-face/tasks.md:sha256:3e58fab1ec4d6fa245d6aeb8b032a80f4e80db7a0ff11dbab4db6eff98f9d64c|specrunner/changes/issue-target-start-face/test-cases.md:sha256:245745e1684990f4e9ebf8347632959d9f26e13421c8fb3aa6d6737c700c5efb"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "4512456825cff887035c286b1c0712fbe1925010",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/issue-target-start-face/design.md:sha256:5576551b8d064963e2ca27ea64c3d0e07b488a9cdfacbb5f84c11cfd0b6a9c2c|specrunner/changes/issue-target-start-face/request.md:sha256:3e1858cf235ed774ed5fe50296b0ca8437a44d9270e738e4667a5c36b697808a|specrunner/changes/issue-target-start-face/spec.md:sha256:d192e49bf0f1f32dcac63fc7457a1766d71fe6d8a5ba4f9e4d0ea8a765eff211|specrunner/changes/issue-target-start-face/tasks.md:sha256:3e58fab1ec4d6fa245d6aeb8b032a80f4e80db7a0ff11dbab4db6eff98f9d64c|specrunner/changes/issue-target-start-face/test-cases.md:sha256:245745e1684990f4e9ebf8347632959d9f26e13421c8fb3aa6d6737c700c5efb"
+    }
+  ],
   "_journal": {
-    "historyCount": 88,
+    "historyCount": 101,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -206,8 +237,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 2,
-      "code-fixer": 2
+      "code-review": 3,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
