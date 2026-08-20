@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T02:48:41.670Z",
+  "updatedAt": "2026-08-20T02:53:11.060Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
@@ -62,10 +62,28 @@
     }
   ],
   "synthesizedCommits": [
-    "bbd50f56cd3d50852f0ad436dd95c40e76289609"
+    "bbd50f56cd3d50852f0ad436dd95c40e76289609",
+    "a56e9c45bfaf6e79228b9535e282f222c89d6c03"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/cli/run.ts",
+      "src/cli/command-registry.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/gate/issue-fidelity-gate.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/core/inbox/draft-writer.ts",
+      "src/core/inbox/planner.ts",
+      "src/cli/inbox.ts",
+      "src/core/runtime/local.ts",
+      "src/state/schema/types.ts",
+      "src/core/command/guide.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
