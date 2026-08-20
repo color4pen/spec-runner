@@ -20,7 +20,7 @@ ADR-20260715 D4 は「discovery policy は別問題」として branch の発見
 
 issue 側の 3 つの顔に、それぞれ**一つの役割だけ**を与える。
 
-- **D1（issue 本文 = request source、start 時のみ）**: issue 本文は `job start --from-issue` の**入力**であり、draft（request.md）として複写された瞬間に役目を終える。開始後の正典は change folder の request.md で、pipeline・resume のいかなる経路も issue 本文を再読しない。開始時の忠実性は issue fidelity gate（着手前に一度だけ LLM 比較・non-propagation）が担い、以後の突き合わせ口も request-review からの resume に限る。
+- **D1（issue 本文 = request source ／ entrance fidelity reference。job state authority ではない）**: issue 本文は job state authority ではない。`job start --from-issue` では**一度だけ request source として消費**され、draft（request.md）へ複写された時点で開始後の正典は change folder の request.md になる（この経路は inbox 起点と同じく fidelity gate の対象外 — 本文がそのまま request になるため比較対象が無い）。既存 request + `--issue` の経路では issue 本文は request source ではなく **entrance fidelity reference** であり、issue fidelity gate が着手前に request.md と比較する（non-propagation — 本文を state / log に保存しない）。gate halt 後の request-review entrance への resume では、収束のため issue 本文が**再取得・再評価されうる**（`specrunner/adr/2026-08-06-issue-request-fidelity-gate.md` の契約）。いずれの経路でも issue 本文が開始後の正典・state authority になることはない。
 - **D2（escalation marker / Development link = locator）**: issue コメントの escalation marker と Development linked branches は **candidate 発見のための index** であり、authority を持たない。marker は「どの jobId か」、リンクは「どの branch が候補か」を与えるだけで、その正しさは常に checkpoint 側で確定する。index の欠落・不整合は「発見できない」エラー（fail-closed の案内付き）であって state の破壊ではない — 明示指定の手動経路（`job attach --branch` → `job resume`）が常に成立する。リンク登録は best-effort とし、登録失敗で job を止めない。
 - **D3（branch-borne checkpoint = identity / state authority）**: job の identity と state の正本は `origin/<branch>` HEAD の checkpoint のみ。issue 起点の確定は candidate branch の checkpoint が持つ identity（jobId / issueNumber / branch）の一致照合で行い、確定できなければ暗黙選択せず fail-closed で停止する。検証の中身は ADR-20260715 D2（tree の性質検証）を継承する。
 - **D4（event source が増えても役割分担は不変）**: 新しい入口（CI dispatch・別 transport・将来の event source)は、入力を request source として一度だけ消費し、外部システム上の参照は locator に留め、確定と state は checkpoint に委ねる同じ 3 分担を継承する。入口が増えても authority は checkpoint の一本のままにする。
@@ -35,7 +35,7 @@ issue 側の 3 つの顔に、それぞれ**一つの役割だけ**を与える�
 
 - **issue コメントに job state（の要約）を書いて機械可読の正本にする**: GitHub API 依存の第二正本になり、checkpoint との乖離時にどちらを信じるかの裁定問題を持ち込む。コメントは通知（人間向け＋marker）に留める。却下。
 - **Development リンクを identity として信頼する**: リンクは GitHub 上で人手により付け替え・削除できる可変 index であり、identity の担い手にすると外部操作が state 破壊になる。index に降格し、確定は checkpoint 照合に置く。却下。
-- **resume 時に issue 本文を再読して request との一致を検証する**: 開始後の正典は request.md であり（D1）、再読は正本の二重化そのもの。忠実性検証は開始時 gate に一元化されている。却下。
+- **issue 本文を開始後も正典として扱い、任意の経路で再読・同期する**: request.md との二重正本になり、乖離時にどちらを信じるかの裁定問題を持ち込む。issue 本文の参照は entrance fidelity reference（request-review entrance の gate とその resume 再評価）に限定し、それ以外の pipeline / resume 経路は本文を読まない。却下。
 - **locator の欠落時に `origin/*` を走査して補完する**: ADR-20260715 D4 が却下済み（走査コスト・誤検出・排他）。欠落は明示指定の手動経路へ案内する。却下。
 
 ## 結果

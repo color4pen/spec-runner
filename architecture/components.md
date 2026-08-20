@@ -113,7 +113,7 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 - → `src/core/issue-target/`（start / resume face）。CLI orchestration は `src/cli/from-issue.ts` ／ `src/cli/resume-from-issue.ts`。
 
 ### CheckpointVerification — checkpoint 検証の二層分離
-- **責務**: `verifyCheckpoint` が **generic integrity**（journal / projection 整合・counter reversal・profile 自己整合・request.md 存在・repository / job / branch identity）を use-case 非依存に検証し、use-case 固有条件は **`CheckpointVerificationPolicy`**（既定 `attachResumePolicy` ＝ quiescent status・resume point 解決・resume step 入力の存在）の注入で受ける。integrity が閉じてから policy を評価する（corrupt な checkpoint を policy に流さない fail-fast 順序）。
+- **責務**: `verifyCheckpoint` が **generic 検証**（journal / projection 整合・counter reversal・profile 自己整合・request.md 存在・repository / job / branch identity — use-case 非依存）を担い、use-case 固有条件は **`CheckpointVerificationPolicy`**（既定 `attachResumePolicy` ＝ quiescent status・resume point 解決・resume step 入力の存在）の注入で受ける。**実行順は責務分割と別の軸**: integrity core（journal / projection・counter reversal・profile）→ `policy.verify()` → request.md 存在・identity の共通検査、の順（`specrunner/adr/2026-08-20-checkpoint-verification-policy-split.md` が決定した順序）。integrity core が破れた checkpoint は policy に到達しない（fail-fast）。
 - **協調**: attach orchestrator / IssueTarget（resume face の rebind）/ WorktreeManager。束縛の意味論は `dynamic-model.md` reattachment。
 - → `src/core/attach/verify-checkpoint.ts`（generic 層）／ `src/core/attach/checkpoint-policy.ts`（policy 定義）
 
