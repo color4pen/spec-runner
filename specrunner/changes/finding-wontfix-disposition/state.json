@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f8732c22-7cc4-4894-a62e-9f6e8a827e8a",
   "createdAt": "2026-08-20T13:01:11.201Z",
-  "updatedAt": "2026-08-20T13:39:57.551Z",
+  "updatedAt": "2026-08-20T13:40:34.769Z",
   "request": {
     "title": "fixable finding への operator 不採用裁定を decisions 台帳の一般化で機械尊重する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "implementer",
   "status": "running",
   "branch": "change/finding-wontfix-disposition-f8732c22",
   "error": null,
@@ -69,7 +69,8 @@
     "d9f0eac9aec055ca370f008571e33a6421244c99",
     "3e7c385017ed905b3ee06396646515c1e4ebed44",
     "753bd63136ec820df6f2ef65d3884195ef85408d",
-    "39295e86121100ddfb5c31549e5cbc477181d277"
+    "39295e86121100ddfb5c31549e5cbc477181d277",
+    "0cd947e7adddeb48425ccfd92c57a30cf8b8181c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -114,20 +115,16 @@
       "src/core/inbox/planner.ts",
       "src/core/step/regression-gate.ts"
     ],
-    "spec-fixer": [
-      "src/core/step/custom-reviewer-round-context.ts",
-      "src/core/design-layer/topic-emission.ts",
-      "src/core/step/fixer-helpers.ts"
-    ]
+    "spec-fixer": []
   },
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
-      "spec-fixer": 1
+      "spec-fixer": 2
     }
   }
 }

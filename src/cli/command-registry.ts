@@ -389,6 +389,12 @@ Options:
   --adopt-commits     Adopt publish-range commits not in the synthesized-commits ledger
                       before resuming. Required (fail-closed) when you have made commits
                       to the worktree branch outside the pipeline.
+  --wontfix <indices> Mark regression-gate findings as wontfix (comma-separated 1-based indices,
+                      e.g. --wontfix 1,3). Requires --wontfix-reason. Exits with code 2 if
+                      the gate has not run, indices are out of range, or reason is missing.
+  --wontfix-reason <text>
+                      Mandatory reason for the wontfix disposition. Required when --wontfix
+                      is specified.
   --detach            Start resume in detached mode. Parent waits until the job is registered
                       (or reports a start failure), then exits. Use
                       'job wait <slug>' to monitor progress. Mutually exclusive with --json.
@@ -1074,6 +1080,8 @@ export const COMMANDS: Record<string, CommandSpec> = {
           "adopt-commits": { type: "boolean" },
           detach: { type: "boolean" },
           "from-issue": { type: "integer", min: 1 },
+          wontfix: { type: "string" },
+          "wontfix-reason": { type: "string" },
         },
         args: [{ name: "slug", required: false }],
         worktreeGuard: true,
@@ -1182,6 +1190,8 @@ export const COMMANDS: Record<string, CommandSpec> = {
               noWorktree: !!parsed.flags["no-worktree"],
               applyCanon: !!parsed.flags["apply-canon"],
               adoptCommits: !!parsed.flags["adopt-commits"],
+              wontfix: parsed.flags["wontfix"] as string | undefined,
+              wontfixReason: parsed.flags["wontfix-reason"] as string | undefined,
             });
           } catch (err: unknown) {
             if (err instanceof SpecRunnerError) {

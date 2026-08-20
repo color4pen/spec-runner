@@ -270,11 +270,13 @@ export interface DecisionSelectedOption {
 }
 
 /**
- * A recorded human decision for a `decision-needed` finding.
+ * A recorded human decision for a `decision-needed` finding (option arm).
+ * Legacy form: `kind` is optional and defaults to "option" when absent.
  * Persisted in `JobState.decisions` before the job resumes.
- * Verdict derivation uses the decision ledger to suppress re-escalation of already-decided findings.
  */
-export interface DecisionRecord {
+export interface OptionDecisionRecord {
+  /** Discriminant. Optional for backward compatibility — absent means "option". */
+  kind?: "option";
   /** Stable unique ID for this decision record (e.g. "decision-<ISO timestamp>-<counter>"). */
   id: string;
   /** Step that produced the decision-needed finding (e.g. "spec-review"). */
@@ -292,6 +294,42 @@ export interface DecisionRecord {
   /** How the decision was sourced. Currently always "issue-comment". */
   source: "issue-comment";
 }
+
+/**
+ * A recorded operator disposition for a `fixable` finding (disposition arm).
+ * Created by `job resume --wontfix`. Persisted in `JobState.decisions`.
+ */
+export interface DispositionDecisionRecord {
+  /** Discriminant — always "disposition". */
+  kind: "disposition";
+  /** Stable unique ID for this decision record. */
+  id: string;
+  /** Step that produced the fixable finding (e.g. "code-review"). */
+  step: string;
+  /** Deterministic finding key derived from step, file, line, title, and rationale (normalized). */
+  findingKey: string;
+  /** Snapshot of the finding at the time the disposition was recorded. */
+  finding: DecisionFindingSnapshot;
+  /** Disposition value — currently only "wontfix". */
+  disposition: "wontfix";
+  /** Mandatory reason for the disposition. */
+  reason: string;
+  /** ISO 8601 timestamp when the disposition was recorded. */
+  decidedAt: string;
+  /** How the disposition was sourced. Always "operator" for CLI-recorded dispositions. */
+  source: "operator";
+}
+
+/**
+ * A recorded human decision or operator disposition for a finding.
+ * Persisted in `JobState.decisions`.
+ * - option arm (kind === "option" or kind absent): existing decision-needed workflow.
+ * - disposition arm (kind === "disposition"): operator wontfix via `job resume --wontfix`.
+ *
+ * `isFindingDecided` / `filterUndecidedFindings` work on both arms via shared fields
+ * (`step` + `findingKey`).
+ */
+export type DecisionRecord = OptionDecisionRecord | DispositionDecisionRecord;
 
 /**
  * Opaque recorded structure for the budget component of an effective profile.

@@ -177,7 +177,7 @@ export function renderTopicFile(params: {
 
   // Decision ledger lookup
   const matchedDecision = findMatchingDecision(step, finding, decisions);
-  if (matchedDecision) {
+  if (matchedDecision && "selectedOption" in matchedDecision) {
     const opt = matchedDecision.selectedOption;
     lines.push(
       "",

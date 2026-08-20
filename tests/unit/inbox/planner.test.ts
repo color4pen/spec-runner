@@ -10,7 +10,7 @@
 import { describe, it, expect } from "vitest";
 import { planStarts, planResumes, parseResumePrompt, parseResumeDecisionInput, planInbox, planStaleRecoveries, countStepRuns, MAX_STALE_RECOVERY_ATTEMPTS } from "../../../src/core/inbox/planner.js";
 import type { IssueRef, IssueComment } from "../../../src/core/inbox/types.js";
-import type { JobState } from "../../../src/state/schema.js";
+import type { JobState, OptionDecisionRecord } from "../../../src/state/schema.js";
 import type { StepRun } from "../../../src/state/schema.js";
 import { buildMarker } from "../../../src/core/notify/issue-notifier.js";
 
@@ -663,7 +663,7 @@ describe("planResumes — decision recording (T-07)", () => {
     expect(result).toHaveLength(1);
     const action = result[0]!;
     expect(action.decisions).toHaveLength(1);
-    const rec = action.decisions![0]!;
+    const rec = action.decisions![0]! as OptionDecisionRecord;
     expect(rec.step).toBe("spec-review");
     expect(rec.source).toBe("issue-comment");
     expect(rec.selectedOption.number).toBe(1);
@@ -683,8 +683,8 @@ describe("planResumes — decision recording (T-07)", () => {
     const result = planResumes([job], map);
 
     expect(result).toHaveLength(1);
-    expect(result[0]!.decisions![0]!.selectedOption.number).toBe(2);
-    expect(result[0]!.decisions![0]!.selectedOption.label).toBe("Option B");
+    expect((result[0]!.decisions![0]! as OptionDecisionRecord).selectedOption.number).toBe(2);
+    expect((result[0]!.decisions![0]! as OptionDecisionRecord).selectedOption.label).toBe("Option B");
   });
 
   it("prose after selections reaches resumePrompt", () => {
