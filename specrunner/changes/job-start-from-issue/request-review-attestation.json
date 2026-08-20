@@ -1,0 +1,18 @@
+{
+  "requestHash": "sha256:60ca3d97e4bf067fbcaed1148bf6e0b58955e39c637f7f5d9b3ef185394d8b21",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/run.ts:45 — runRunCore options: issue?: number, inboxOrigin?: boolean",
+    "src/cli/command-registry.ts:835 — job start help text includes --issue <number>; inboxOrigin not exposed as CLI flag",
+    "src/cli/command-registry.ts:540-547 — RUN_JOB_FLAGS definition; no from-issue flag yet",
+    "src/core/command/pipeline-run.ts:167-170 — inboxOrigin === true sets jobState.inboxOrigin = true",
+    "src/core/gate/issue-fidelity-gate.ts:106 — inboxOrigin === true skips fidelity comparator",
+    "src/core/inbox/run-inbox.ts:397-400 — writeDraft(repoRoot, slug, issueBody) then runRunCore(draftPath, { cwd, issue, inboxOrigin: true })",
+    "src/core/inbox/planner.ts:134-137 — parseRequestMdContent(issue.body, ...) then slug = parsed.slug",
+    "src/core/inbox/draft-writer.ts — writeDraft delegates to write() from core/request/store.js",
+    "src/core/runtime/local.ts:478-479 — baseBranch used as origin/<baseBranch> for worktree",
+    "src/cli/inbox.ts:44-69 — resolveGitHubToken / getOriginInfo / createGitHubClient assembly present",
+    "src/state/schema/types.ts:476 — inboxOrigin?: boolean field"
+  ],
+  "sourceRevision": "e9a4d494addd29aa9783910b2b07f57bad07d35b"
+}
