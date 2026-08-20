@@ -9,14 +9,13 @@
  * TC-014: linked branch name equals local branch name
  * TC-019: buildFeatureBranchName("bug-fix", ...) returns fix/ prefix
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   WorkspaceMaterializer,
   type MaterializerHost,
   type WorktreeMaterializationPlan,
 } from "../../../../src/core/runtime/workspace-materializer.js";
 import type { WorkspaceSetupPlan } from "../../../../src/core/worktree/setup.js";
-import type { WorkspaceContext } from "../../../../src/core/port/runtime-strategy.js";
 import { buildFeatureBranchName } from "../../../../src/config/type-config.js";
 
 // ---------------------------------------------------------------------------
