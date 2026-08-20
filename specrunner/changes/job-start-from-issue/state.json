@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T04:10:23.814Z",
+  "updatedAt": "2026-08-20T04:25:19.845Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
@@ -83,7 +83,9 @@
     "2f11f50ec5be21bbfbea4f1b6edc0ee6c7def7e3",
     "69bce825e9d43dcd009625f4227834c52a217e5d",
     "ca4a1343c57be0c2537e85144966f04610b547fd",
-    "4b93047b7c7615e3d7c0ff5f959d9fef5898327f"
+    "4b93047b7c7615e3d7c0ff5f959d9fef5898327f",
+    "9bd4b414f159d026056a0e8025bbe8400d5fb562",
+    "f1a46226c2def06971648d414569797391fae2eb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -153,6 +155,16 @@
       "tests/unit/architecture/arch-allowlist.ts",
       "src/git/remote.ts",
       "src/cli/inbox.ts"
+    ],
+    "code-fixer": [
+      "src/core/job/start-from-issue.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/git/__tests__/branch.test.ts",
+      "src/cli/from-issue.ts",
+      "src/errors.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/cli/run.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts"
     ]
   },
   "resumePoint": null,
@@ -169,8 +181,38 @@
       "recordedAt": "2026-08-20T04:10:23.584Z"
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "9bd4b414f159d026056a0e8025bbe8400d5fb562",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/job-start-from-issue/design.md:sha256:52b71bd233f0efb09854a8bd41c9acbba9e3d523f465788e5dda8baef53e72dd|specrunner/changes/job-start-from-issue/request.md:sha256:60ca3d97e4bf067fbcaed1148bf6e0b58955e39c637f7f5d9b3ef185394d8b21|specrunner/changes/job-start-from-issue/spec.md:sha256:1fc00cd93ab1785e2c7819ab303adc8b8012649bd6c9812e8e827445ea87c08c|specrunner/changes/job-start-from-issue/tasks.md:sha256:50adf240cb488f059b60ad6df0f4d949518bd5724cf8a6ac4b1b823c4389d2d0|specrunner/changes/job-start-from-issue/test-cases.md:sha256:a0fb9fc44d0c179f3c4201bbb3797d907012e0266f35c15e114efda5b254b4a1"
+    }
+  ],
   "_journal": {
-    "historyCount": 70,
+    "historyCount": 81,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -180,7 +222,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
