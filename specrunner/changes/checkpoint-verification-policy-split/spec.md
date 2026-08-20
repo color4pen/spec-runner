@@ -25,8 +25,10 @@ current implementation.
 ### Requirement: generic integrity verification shall be independent of use-case policy
 
 `verifyCheckpoint` MUST execute generic integrity checks (journal / projection integrity,
-counter reversal, profile self-consistency, request.md presence, identity) before invoking the
-supplied policy. These checks MUST fire regardless of which policy is passed.
+counter reversal, profile self-consistency, identity) before or after invoking the supplied policy.
+These checks MUST fire regardless of which policy is passed.
+Note: (d) request.md presence is verified after `policy.verify()` and before identity (e),
+consistent with the execution order defined in tasks.md T-02.
 
 #### Scenario: generic checks fire even when a permissive policy is supplied
 

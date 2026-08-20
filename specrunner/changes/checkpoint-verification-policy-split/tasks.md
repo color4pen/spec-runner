@@ -59,6 +59,7 @@
 **Acceptance Criteria**:
 - `tests/attach/checkpoint-policy.test.ts` が存在する
 - スタブ policy で `awaiting-archive` checkpoint が通過することを確認するテストが green
+- corrupted journal の checkpoint で `policy.verify()` が呼ばれる前に `journal-corrupted` で throw することがテストで確認できる（generic → policy の実行順序 pin、TC-004）
 - `attachResumePolicy` の3種の拒否ケース（status 不一致 / resumePoint 解決失敗 / reads() 入力欠落）がそれぞれ独立したテストで green
 - `tests/unit/architecture/arch-allowlist.ts` に新エントリが追加されていない
 
