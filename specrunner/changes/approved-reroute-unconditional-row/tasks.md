@@ -4,7 +4,7 @@
 
 `src/core/pipeline/pipeline.ts:471-479` の cleanTransition 探索を修正する。
 
-- [ ] `pipeline.ts:471-479` の `cleanTransition` 探索を以下に置き換える:
+- [x] `pipeline.ts:471-479` の `cleanTransition` 探索を以下に置き換える:
   ```ts
   const cleanTransition = this.transitions.find(
     (t) =>
@@ -16,7 +16,7 @@
       t.when === undefined
   );
   ```
-- [ ] 探索条件から `!fixerNamesForReroute.has(t.to as string)` を削除する（`fixerNamesForReroute` は発火判定 `:457` のために構築は残す）
+- [x] 探索条件から `!fixerNamesForReroute.has(t.to as string)` を削除する（`fixerNamesForReroute` は発火判定 `:457` のために構築は残す）
 
 **Acceptance Criteria**:
 - `pipeline.ts:471-479` の cleanTransition 探索に `fixerNamesForReroute` への参照が存在しない
@@ -27,9 +27,9 @@
 
 T-03 ブロック (`pipeline.ts:431-501`) のコメントを新しい機能定義に合わせて更新する。
 
-- [ ] `pipeline.ts:468-470` の cleanTransition 探索コメントを「clean approved transition = 同 verdict の unconditional row（`t.when === undefined`）」「除外は `budgetSkippedFixer` 単体と end/escalate のみ」に更新する
-- [ ] `pipeline.ts:431-444` のブロックレベル説明を「T-03: unconditional approved row へ降りる」方針に合わせて更新する
-- [ ] TC-014 の DESTRUCTION CONFIRMATION コメント（`:447-451`）は再現手順が変わらない範囲で保持する
+- [x] `pipeline.ts:468-470` の cleanTransition 探索コメントを「clean approved transition = 同 verdict の unconditional row（`t.when === undefined`）」「除外は `budgetSkippedFixer` 単体と end/escalate のみ」に更新する
+- [x] `pipeline.ts:431-444` のブロックレベル説明を「T-03: unconditional approved row へ降りる」方針に合わせて更新する
+- [x] TC-014 の DESTRUCTION CONFIRMATION コメント（`:447-451`）は再現手順が変わらない範囲で保持する
 
 **Acceptance Criteria**:
 - T-03 ブロックのコメントが「unconditional row」「除外は skip 対象の paired fixer 単体」を説明している
@@ -46,15 +46,15 @@ T-03 ブロック (`pipeline.ts:431-501`) のコメントを新しい機能定�
    → guarded 行 `spec-review → spec-fixer` が選択されるが spec-fixer 予算切れ
    → T-03 が発火し、unconditional 行 `spec-review → implementer` へ reroute
 
-- [ ] `makeSpecReviewNeedsFixRun` ヘルパー（attempt 番号のみ受け取る）を追加または流用し、spec-review needs-fix のステップ run を構築する
-- [ ] `makeSpecReviewApprovedWithRoutableFixableRun` ヘルパーを追加し、approved + fixable finding (severity: "low", resolution: "fixable", spec-fixer-writable な file) を持つ spec-review run を構築する。`specReviewHasRoutableFixables` が true を返すために必要な toolResult 構造を含める。**重要**: `specReviewHasRoutableFixables` は `buildCanonWriteScopeFromState(state)` → `getJobSlug(state)` → slug 由来のパスで writable set を構築する。`state.request.slug` を テスト用スラッグ（例: `"approved-reroute-unconditional-row"`）に設定し、`finding.file` を `specrunner/changes/<slug>/spec.md` など slug-bound なパスにすること（`src/` 下のパスを使うと `writableByFixer["spec-fixer"]` に含まれず `specReviewHasRoutableFixables` が false を返し、guarded 行が選択されず T-03 が発火しない）
-- [ ] TC-017 の `describe` ブロックを追加し、以下を assert する:
+- [x] `makeSpecReviewNeedsFixRun` ヘルパー（attempt 番号のみ受け取る）を追加または流用し、spec-review needs-fix のステップ run を構築する
+- [x] `makeSpecReviewApprovedWithRoutableFixableRun` ヘルパーを追加し、approved + fixable finding (severity: "low", resolution: "fixable", spec-fixer-writable な file) を持つ spec-review run を構築する。`specReviewHasRoutableFixables` が true を返すために必要な toolResult 構造を含める。**重要**: `specReviewHasRoutableFixables` は `buildCanonWriteScopeFromState(state)` → `getJobSlug(state)` → slug 由来のパスで writable set を構築する。`state.request.slug` を テスト用スラッグ（例: `"approved-reroute-unconditional-row"`）に設定し、`finding.file` を `specrunner/changes/<slug>/spec.md` など slug-bound なパスにすること（`src/` 下のパスを使うと `writableByFixer["spec-fixer"]` に含まれず `specReviewHasRoutableFixables` が false を返し、guarded 行が選択されず T-03 が発火しない）
+- [x] TC-017 の `describe` ブロックを追加し、以下を assert する:
   - `result.status === "awaiting-archive"` (`SPEC_REVIEW_RETRIES_EXHAUSTED` が出ない)
   - `budgetSkippedEvents` に `{ step: "spec-review", fixer: "spec-fixer" }` が含まれる
   - `result.history` に未適用 finding 数が入った warning エントリが存在する（`"proceeding to"` 文言含む）
   - `implementerCallCount >= 1` (implementer が実行される)
-- [ ] ファイル冒頭の TC 一覧コメント (`TC-001` 〜 `TC-016`) に `TC-017` を追記する
-- [ ] パイプライン構成: `loopFixerPairs: { "spec-review": "spec-fixer", "verification": "implementer" }`, maxIterations=2, 遷移テーブルは `specReviewHasRoutableFixables` ガード付き `spec-review → spec-fixer` 行と unconditional `spec-review → implementer` 行を含む
+- [x] ファイル冒頭の TC 一覧コメント (`TC-001` 〜 `TC-016`) に `TC-017` を追記する
+- [x] パイプライン構成: `loopFixerPairs: { "spec-review": "spec-fixer", "verification": "implementer" }`, maxIterations=2, 遷移テーブルは `specReviewHasRoutableFixables` ガード付き `spec-review → spec-fixer` 行と unconditional `spec-review → implementer` 行を含む
 
 **Acceptance Criteria**:
 - TC-017 が修正後のコードで green
@@ -63,8 +63,8 @@ T-03 ブロック (`pipeline.ts:431-501`) のコメントを新しい機能定�
 
 ## T-04: 通し確認
 
-- [ ] `bun run typecheck` が通ること
-- [ ] `bun run test` が通ること（既存 TC を含む全テスト green）
+- [x] `bun run typecheck` が通ること
+- [x] `bun run test` が通ること（既存 TC を含む全テスト green）
 
 **Acceptance Criteria**:
 - `bun run typecheck` exit code 0

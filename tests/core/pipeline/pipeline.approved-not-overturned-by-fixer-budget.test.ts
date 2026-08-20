@@ -17,6 +17,7 @@
  * TC-014: 再 routing 無効化で TC-001 が escalation で落ちる（破壊確認）
  * TC-015: 既存テスト群が無変更で green かつ typecheck && test が通る
  * TC-016: spec-review approved (isTestGenExempt) → implementer は fixer 予算切れでも実行される
+ * TC-017: spec-review approved + spec-fixer 予算枯渇時に T-03 が unconditional row (implementer) へ reroute する
  *
  * ⚠ RED TESTS: All integration tests (TC-001〜006, TC-011〜013) and unit tests
  * (TC-007, TC-008, TC-009, TC-010) are written in RED state — they are expected to
@@ -41,6 +42,7 @@ import {
 } from "../../../src/core/pipeline/reviewer-chain.js";
 import { isTestGenExempt } from "../../../src/core/pipeline/test-gen-exemption.js";
 import { verificationFailedLast } from "../../../src/core/pipeline/reverification.js";
+import { specReviewHasRoutableFixables } from "../../../src/core/pipeline/spec-observation.js";
 import { EventBus } from "../../../src/core/event/event-bus.js";
 import { PipelineLogger } from "../../../src/logger/pipeline-logger.js";
 import { StepExecutor } from "../../../src/core/step/executor.js";
@@ -1556,5 +1558,212 @@ describe("TC-016: guard currentStep === exhaustedReviewer prevents budget-skip w
     expect(budgetSkippedEvents).toHaveLength(0);
     // Pipeline completed normally
     expect(result.status).toBe("awaiting-archive");
+  });
+});
+
+// ===========================================================================
+// TC-017: spec-review approved + spec-fixer 予算枯渇時に T-03 が implementer へ reroute
+// ===========================================================================
+
+describe("TC-017: spec-review approved with spec-fixer budget exhausted routes to implementer via T-03", () => {
+  /**
+   * Source: spec.md > Requirement: T-03 reroute shall target only the unconditional approved row
+   * and exclude only the budget-exhausted fixer > Scenario: spec-review approved with spec-fixer
+   * budget exhausted routes to implementer
+   *
+   * Priority: must
+   *
+   * Reproduction of issue #1018 (job bf87f3b1):
+   *   Sequence:
+   *     1. spec-review needs-fix → spec-fixer (specFixerIter=1)
+   *     2. spec-fixer approved → spec-review
+   *     3. spec-review needs-fix → spec-fixer (specFixerIter=2 = maxIterations)
+   *     4. spec-fixer approved → spec-review
+   *     5. spec-review approved + routable fixable finding (spec-fixer-writable canon path)
+   *        → guarded row `spec-review → spec-fixer` selected (specReviewHasRoutableFixables=true)
+   *        → spec-fixer budget = 2/2 exhausted → T-03 fires
+   *        → OLD BUG: fixerNamesForReroute includes implementer → cleanTransition = undefined → HALT
+   *        → FIX: cleanTransition = unconditional `spec-review → implementer` (t.when === undefined)
+   *        → implementer runs
+   *
+   * DESTRUCTION CONFIRMATION:
+   *   Reverting cleanTransition to `(!t.when || t.when(state))` + `!fixerNamesForReroute.has(t.to)`
+   *   causes this test to fail with:
+   *     - result.status === "awaiting-resume"
+   *     - result.error.code === "SPEC_REVIEW_RETRIES_EXHAUSTED"
+   */
+
+  // Slug used to build canon write scope (spec-fixer writable paths include spec.md for this slug)
+  const TEST_SLUG = "approved-reroute-unconditional-row";
+  const SPEC_MD_PATH = `specrunner/changes/${TEST_SLUG}/spec.md`;
+
+  function makeSpecReviewNeedsFixRun(attempt: number): StepRun {
+    const ts = new Date(Date.UTC(2026, 0, 1, 0, 0, attempt)).toISOString();
+    return {
+      attempt,
+      sessionId: null,
+      startedAt: ts,
+      endedAt: ts,
+      outcome: {
+        verdict: "needs-fix",
+        findingsPath: null,
+        error: null,
+        toolResult: { ok: true, approved: false, findings: [] },
+      },
+    };
+  }
+
+  function makeSpecReviewApprovedWithRoutableFixableRun(attempt: number): StepRun {
+    const ts = new Date(Date.UTC(2026, 0, 1, 0, 0, attempt)).toISOString();
+    return {
+      attempt,
+      sessionId: null,
+      startedAt: ts,
+      endedAt: ts,
+      outcome: {
+        verdict: "approved",
+        findingsPath: null,
+        error: null,
+        toolResult: {
+          ok: true,
+          approved: true,
+          // finding.file = spec.md under the test slug → spec-fixer writable → routable
+          findings: [
+            {
+              severity: "low" as const,
+              resolution: "fixable" as const,
+              file: SPEC_MD_PATH,
+              title: "Minor spec wording",
+              rationale: "Optional improvement",
+            },
+          ],
+        },
+      },
+    };
+  }
+
+  it("TC-017: pipeline completes without SPEC_REVIEW_RETRIES_EXHAUSTED when approved + spec-fixer budget exhausted", async () => {
+    const baseState = makeMinimalState({
+      step: "spec-review",
+      request: { path: "/req.md", title: "Reroute Test", type: "bug-fix", slug: TEST_SLUG },
+    });
+    const deps = makeMinimalDeps();
+    const events = new EventBus();
+
+    const budgetSkippedEvents: Array<{ step: string; fixer: string }> = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (events as any).on("pipeline:fixer:budget-skipped", (p: { step: string; fixer: string }) => {
+      budgetSkippedEvents.push(p);
+    });
+
+    let specReviewCallCount = 0;
+    let specFixerCallCount = 0;
+    let implementerCallCount = 0;
+
+    const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
+      if (step.name === "spec-review") {
+        specReviewCallCount++;
+        const run =
+          specReviewCallCount <= 2
+            ? makeSpecReviewNeedsFixRun(specReviewCallCount)
+            : makeSpecReviewApprovedWithRoutableFixableRun(specReviewCallCount);
+        return {
+          ...currentState,
+          steps: {
+            ...currentState.steps,
+            "spec-review": [
+              ...(currentState.steps?.["spec-review"] ?? []),
+              run,
+            ],
+          },
+        };
+      }
+
+      if (step.name === "spec-fixer") {
+        specFixerCallCount++;
+        // spec-fixer returns without modifying state (completionVerdict: "approved")
+        return currentState;
+      }
+
+      if (step.name === "implementer") {
+        implementerCallCount++;
+        return {
+          ...currentState,
+          steps: {
+            ...currentState.steps,
+            "implementer": [
+              ...(currentState.steps?.["implementer"] ?? []),
+              {
+                attempt: implementerCallCount,
+                sessionId: null,
+                startedAt: new Date().toISOString(),
+                endedAt: new Date().toISOString(),
+                outcome: { verdict: "success" as const, findingsPath: null, error: null },
+              },
+            ],
+          },
+        };
+      }
+
+      throw new Error(`Unexpected step in TC-017: ${step.name}`);
+    });
+
+    const mockExecutor = { execute: executeSpy } as unknown as StepExecutor;
+
+    // Transition table mirrors production STANDARD_TRANSITIONS for spec-review section:
+    //   - guarded: spec-review approved → spec-fixer (specReviewHasRoutableFixables)
+    //   - unconditional: spec-review approved → implementer  ← T-03 must find this
+    //   - needs-fix: spec-review needs-fix → spec-fixer
+    //   - spec-fixer approved → spec-review (loop back)
+    //   - implementer success → end (terminal)
+    const transitions = [
+      { step: "spec-review", on: "approved", to: "spec-fixer" as const,    when: specReviewHasRoutableFixables },
+      { step: "spec-review", on: "approved", to: "implementer" as const },
+      { step: "spec-review", on: "needs-fix", to: "spec-fixer" as const },
+      { step: "spec-fixer",  on: "approved", to: "spec-review" as const },
+      { step: "spec-fixer",  on: "error",    to: "escalate" as const },
+      { step: "implementer", on: "success",  to: "end" as const },
+      { step: "implementer", on: "error",    to: "escalate" as const },
+    ];
+
+    const steps = new Map<string, Step>([
+      ["spec-review", makeStep("spec-review")],
+      ["spec-fixer",  makeStep("spec-fixer",  { completionVerdict: "approved" })],
+      ["implementer", makeStep("implementer")],
+    ]);
+
+    const pipeline = new Pipeline({
+      steps,
+      transitions,
+      maxIterations: 2,
+      executor: mockExecutor,
+      events,
+      loopName: "spec-review",
+      loopNames: ["spec-review"],
+      loopFixerPairs: {
+        "spec-review":  "spec-fixer",
+        "verification": "implementer",
+      },
+    });
+
+    const result = await pipeline.run("spec-review", baseState, deps);
+
+    // Pin 1: no SPEC_REVIEW_RETRIES_EXHAUSTED, no awaiting-resume
+    expect(result.status).toBe("awaiting-archive");
+    expect(result.error?.code ?? null).not.toBe("SPEC_REVIEW_RETRIES_EXHAUSTED");
+
+    // Pin 2: budget-skipped event emitted with step=spec-review, fixer=spec-fixer
+    expect(budgetSkippedEvents).toHaveLength(1);
+    expect(budgetSkippedEvents[0]?.step).toBe("spec-review");
+    expect(budgetSkippedEvents[0]?.fixer).toBe("spec-fixer");
+
+    // Pin 3: budget-skip warning history entry contains "proceeding to" text
+    const budgetSkipWarnings = (result.history ?? []).filter(
+      (h) => h.status === "warning" && h.step === "spec-review" && /proceeding to/i.test(h.message ?? ""),
+    );
+    expect(budgetSkipWarnings.length).toBeGreaterThan(0);
+
+    // Pin 4: implementer was executed
+    expect(implementerCallCount).toBeGreaterThanOrEqual(1);
   });
 });
