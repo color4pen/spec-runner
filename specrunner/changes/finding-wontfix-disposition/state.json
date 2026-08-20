@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f8732c22-7cc4-4894-a62e-9f6e8a827e8a",
   "createdAt": "2026-08-20T13:01:11.201Z",
-  "updatedAt": "2026-08-20T13:17:43.975Z",
+  "updatedAt": "2026-08-20T13:20:32.980Z",
   "request": {
     "title": "fixable finding への operator 不採用裁定を decisions 台帳の一般化で機械尊重する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/finding-wontfix-disposition-f8732c22",
   "error": null,
@@ -65,7 +65,8 @@
   "synthesizedCommits": [
     "6444897efe2c9d24466e112e77bf1c77f37e8c75",
     "8ad4fd6c40264653f9a803e928c9f7586330ace3",
-    "481b6c798cb57252199b6d6b24b4bd9d7b741008"
+    "481b6c798cb57252199b6d6b24b4bd9d7b741008",
+    "d9f0eac9aec055ca370f008571e33a6421244c99"
   ],
   "touchedFiles": {
     "request-review": [
@@ -95,13 +96,15 @@
       "src/cli/command-registry.ts",
       "src/core/inbox/planner.ts",
       "src/kernel/report-result.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
