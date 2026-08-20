@@ -145,24 +145,6 @@ function makeStepRun(opts: {
   };
 }
 
-/**
- * Canon write scope WITH test-case-gen writable for test-cases.md.
- * Used for TC-017: spec-review verdict derivation after T-01/T-02 implementation.
- * "test-case-gen" cast required until T-01 adds it to FixTarget union.
- */
-function makeCanonScopeWithTcGen(): CanonWriteScope {
-  const canonPaths = new Set([
-    REQUEST_MD, SPEC_MD, DESIGN_MD, TASKS_MD, TEST_CASES_MD, ATTESTATION_PATH,
-  ]);
-  const writableByFixer = new Map<FixTarget, ReadonlySet<string>>([
-    ["code-fixer", new Set<string>()],
-    ["implementer", new Set<string>([TASKS_MD])],
-    ["spec-fixer", new Set<string>([SPEC_MD, DESIGN_MD, TASKS_MD])],
-    // test-case-gen added in T-01 — cast required in RED phase
-    ["test-case-gen" as FixTarget, new Set<string>([TEST_CASES_MD])],
-  ]);
-  return { canonPaths, writableByFixer };
-}
 
 /**
  * Canon write scope WITHOUT test-case-gen fixer entry.

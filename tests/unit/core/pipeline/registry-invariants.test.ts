@@ -17,7 +17,7 @@ import {
 } from "../../../../src/core/pipeline/registry.js";
 import { assertRuntimeSupportsScope } from "../../../../src/core/pipeline/runtime-capability-gate.js";
 import { PIPELINE_IDS } from "../../../../src/kernel/pipeline-ids.js";
-import { STEP_NAMES } from "../../../../src/core/step/step-names.js";
+
 
 // ---------------------------------------------------------------------------
 // T-06-1: Meta pipeline: design-only が DESIGN_ONLY_DESCRIPTOR に到達する
