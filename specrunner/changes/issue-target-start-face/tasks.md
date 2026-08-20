@@ -12,7 +12,7 @@
 - [ ] builder を **逆引き（branch 名 → job 発見）に使わない**ことを doc-comment に明記する。
 
 **Acceptance Criteria**:
-- `buildFeatureBranchName("bug-fix", "my-slug", "abcdef0123")` が `feat/my-slug-abcdef01`（bug-fix の prefix に依存）を返す最小 unit test が存在し green。
+- `buildFeatureBranchName("bug-fix", "my-slug", "abcdef0123")` が `fix/my-slug-abcdef01`（bug-fix の branchPrefix は `"fix/"` であり `"feat/"` ではない）を返す最小 unit test が存在し green。
 - 作る側 3 箇所（pipeline-run / design / commit-orchestrator）がすべて `buildFeatureBranchName` を参照し、インライン `${getBranchPrefix(...)}...slice(0, 8)` 構成が repo から消える（grep で 0 件）。
 - 3 経路の branch 名が変更前と同一文字列であることが既存テストで green（挙動不変）。
 
@@ -59,6 +59,7 @@
 - worktree 作成（`manager.create`）が throw したとき `onFeatureBranchCreated` が呼ばれないことが test で pin される。
 - `onFeatureBranchCreated` が reject/throw しても materialize が継続し start が成功することが test で pin される（best-effort）。
 - 順序（worktree create → onFeatureBranchCreated → bootstrap commit）が test で pin される。
+- no-worktree 経路（`setupWorkspaceNoWorktree`）でも branch checkout 成功後に `onFeatureBranchCreated` が best-effort で発火し、失敗時は警告のみで start が継続することが test で pin される（spec.md > Scenario: no-worktree route fires link registration after branch creation に対応する TC）。
 
 ## T-05: 3 経路の issue-target route 配線（D2・D8）
 
@@ -72,7 +73,7 @@
 **Acceptance Criteria**:
 - 3 経路（`--from-issue` / inbox / positional + `--issue`）すべてで、start が issue-target を経由し Development リンク登録（`onFeatureBranchCreated`）が発火することが test で pin される。
 - positional + `--issue <n>` が issue-target 経由で route されることが test で pin される（従来の `runRun` 直呼びでないこと）。
-- `tests/unit/inbox/run-inbox-inbox-origin.test.ts`（TC-018）が **挙動 assert 無改変**で green（既定 startJob → `runRunCore({ inboxOrigin: true })`）。port 型拡張（`getIssue` の `nodeId` 追加）に伴う mock リテラルへの `nodeId` フィールド追加のみ許可。
+- `tests/unit/inbox/run-inbox-inbox-origin.test.ts` が **挙動 assert 無改変**で green（既定 startJob → `runRunCore({ inboxOrigin: true })`）。port 型拡張（`getIssue` の `nodeId` 追加）に伴う mock リテラルへの `nodeId` フィールド追加のみ許可。
 - `from-issue.test.ts` / `start-from-issue.test.ts` の変更が mock 対象 / import path 更新に限られ、assert 内容（呼び出し引数契約・書き込み順序・エラー伝播）が保存されている。
 - inbox の他の既存テスト（orchestrator / occupancy-propagation 等、effects 注入型）が無改変で green。
 

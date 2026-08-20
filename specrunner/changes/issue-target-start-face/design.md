@@ -127,6 +127,8 @@ worktree 作成（手順 2）が throw した場合、callback（手順 3）に�
 - [Risk] createLinkedBranch を push 後に実行すると branch 衝突。→ **Mitigation**: D5 の順序（worktree → link → materialize/commit/push）を arm 内位置で固定しテストで pin。
 - [Risk] port `getIssue` に `nodeId` 追加で既存 mock（テスト内 client リテラル）の型が壊れる。→ **Mitigation**: `nodeId: string` は required を維持し、影響を受ける mock リテラル（`run-inbox-inbox-origin.test.ts` / `from-issue.test.ts`）に `nodeId` フィールドを 1 行追加する（B 案）。挙動 assert は無改変のまま型エラーを解消する。optional 化（`nodeId?: string`）は不採用。
 
+<!-- spec-fixer-deferred: no-worktree Scenario に対応する TC を test-cases.md に追加できなかった（spec-fixer は test-cases.md への書き込み権限を持たない）。tasks.md T-04 AC に要件を追記済み。implementer が TC を追加するか、次回 test-case-gen で補完すること。 -->
+
 ## Open Questions
 
 - managed runtime の issue-linked start に Development リンクを登録するか。base OID 契約は local worktree（`origin/<base>` rev-parse）前提で、managed の branch 生成経路は別。本 request では local のみ対象とし、managed は callback を発火しない（リンク不在は後続 resume が fail-closed で受ける）。managed issue-linked start を実際に運用する時点で別途設計する想定 — 実装/レビューで異論あれば要提起。

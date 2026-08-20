@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T05:49:02.304Z",
+  "updatedAt": "2026-08-20T05:58:07.057Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -74,7 +74,8 @@
     "864e2e2e467eb0e0396ec77a799fb7ecf6f953da",
     "2b4f79a0b37e3df15c027686d267c0950f165a1d",
     "6cd078cd0b9384b76f3a2854a88fb7bbc9f3a6dd",
-    "a2592ece4d54e866e44ef0ea2d3b8d2e9875e80e"
+    "a2592ece4d54e866e44ef0ea2d3b8d2e9875e80e",
+    "768e6005d7a3fa4276f4ee8f14c1bf9e1f5991e3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -122,25 +123,12 @@
       "src/config/type-config.ts"
     ],
     "spec-review": [
-      "src/core/job/start-from-issue.ts",
-      "src/cli/from-issue.ts",
-      "src/core/job/__tests__/start-from-issue.test.ts",
-      "src/cli/__tests__/from-issue.test.ts",
-      "src/kernel/github-client.ts",
-      "src/adapter/github/github-client.ts",
-      "src/core/command/pipeline-run.ts",
-      "src/core/step/design.ts",
-      "src/core/step/commit-orchestrator.ts",
       "src/config/type-config.ts",
-      "src/core/inbox/run-inbox.ts",
-      "src/cli/command-registry.ts",
-      "src/core/runtime/workspace-materializer.ts",
-      "src/core/runtime/local.ts",
       "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
-      "tests/unit/architecture/module-boundary.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "tests/unit/architecture/core-invariants.test.ts",
-      "src/core/port/runtime-strategy.ts"
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/kernel/github-client.ts",
+      "src/adapter/github/github-client.ts"
     ],
     "spec-fixer": []
   },
@@ -154,12 +142,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
       "test-case-gen": 2,
-      "spec-review": 2,
+      "spec-review": 3,
       "spec-fixer": 1
     }
   }
