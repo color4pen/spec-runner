@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T05:38:04.098Z",
+  "updatedAt": "2026-08-20T05:44:30.020Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
   "pipelineId": "standard",
@@ -70,7 +70,8 @@
     "4d0851c93ce1fd20c733a3f4c092d7f4cb172ea0",
     "4c6dca53c1871c6fcbb43328377c3ec048652beb",
     "91a57645cdcae8e1d6cc25acb98bbaf3711fc776",
-    "564f535f220b7f696c7d947a6a54a787df017227"
+    "564f535f220b7f696c7d947a6a54a787df017227",
+    "864e2e2e467eb0e0396ec77a799fb7ecf6f953da"
   ],
   "touchedFiles": {
     "request-review": [
@@ -119,35 +120,39 @@
     ],
     "spec-review": [
       "src/core/job/start-from-issue.ts",
+      "src/cli/from-issue.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/kernel/github-client.ts",
+      "src/adapter/github/github-client.ts",
       "src/core/command/pipeline-run.ts",
       "src/core/step/design.ts",
       "src/core/step/commit-orchestrator.ts",
-      "src/adapter/github/github-client.ts",
-      "src/kernel/github-client.ts",
-      "src/core/runtime/local.ts",
-      "src/core/runtime/workspace-materializer.ts",
-      "src/cli/from-issue.ts",
-      "src/core/port/runtime-strategy.ts",
+      "src/config/type-config.ts",
       "src/core/inbox/run-inbox.ts",
       "src/cli/command-registry.ts",
-      "tests/unit/architecture/core-invariants.test.ts",
-      "tests/unit/architecture/module-boundary.test.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
       "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
-      "src/config/type-config.ts",
-      "src/core/job/__tests__/start-from-issue.test.ts",
-      "src/cli/__tests__/from-issue.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts"
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/port/runtime-strategy.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "spec-review escalated",
+    "iterationsExhausted": 2
+  },
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
       "test-case-gen": 2,
-      "spec-review": 1
+      "spec-review": 2
     }
   }
 }
