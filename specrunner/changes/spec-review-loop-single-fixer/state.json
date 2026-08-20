@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9dcf5a95-c9cb-4172-8b10-b6cf0119a795",
   "createdAt": "2026-08-20T05:14:24.721Z",
-  "updatedAt": "2026-08-20T07:07:50.858Z",
+  "updatedAt": "2026-08-20T07:16:22.618Z",
   "request": {
     "title": "spec-review loop の単一 fixer 化: test-case-gen を review loop から外す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/spec-review-loop-single-fixer-9dcf5a95",
   "error": null,
@@ -80,7 +80,9 @@
     "218dbcd05bc4ac414000d0a4572af6777c5c66da",
     "0db1a8d4b0542b940c7c85e6bf60efb828f8180f",
     "ea39543d1054778741bda63b92369e0fe2a37294",
-    "cda0e10f31a7069b5183ae76cc9a2a0b184a9903"
+    "cda0e10f31a7069b5183ae76cc9a2a0b184a9903",
+    "926bcb42576d443e732286d4ba386a2a2ebbc9e2",
+    "1b353029cbeed30f0167d78ce4aac6592f02fc7e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -171,6 +173,28 @@
       "tests/pipeline-integration.test.ts",
       "src/core/step/judge-verdict.ts",
       "tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts"
+    ],
+    "conformance": [
+      "src/core/step/canon-write-scope.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/prompts/spec-fixer-system.ts",
+      "tests/pipeline-integration.test.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts",
+      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
+      "tests/unit/core/pipeline/registry-invariants.test.ts",
+      "src/prompts/rules.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "tests/unit/core/step/canon-write-scope.test.ts",
+      "src/core/pipeline/run.ts"
     ]
   },
   "reviewerStatuses": [
@@ -204,7 +228,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -213,13 +237,14 @@
       "spec-fixer": 2,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 1,
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
