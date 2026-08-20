@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T03:20:01.277Z",
+  "updatedAt": "2026-08-20T03:24:44.729Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
   "pipelineId": "standard",
@@ -68,7 +68,8 @@
     "bbbbfc1fffa1ab044b13ba97038a5f0beca349d2",
     "bc1118f68f3c79fc5480b96d9721f7eb74c2186c",
     "33de9f2a81b74260944fa51b8194c3eb4a0910ee",
-    "02a5f781fa73cc645f6d42d6ace1c7fd85971e06"
+    "02a5f781fa73cc645f6d42d6ace1c7fd85971e06",
+    "ff7afd7f6ae64aff6b87d717cbf1f1c5ec0ec261"
   ],
   "touchedFiles": {
     "request-review": [
@@ -106,30 +107,26 @@
     ],
     "test-case-gen": [],
     "spec-review": [
-      "src/cli/run.ts",
-      "src/cli/inbox.ts",
-      "src/core/inbox/run-inbox.ts",
       "src/cli/command-registry.ts",
       "src/core/gate/issue-fidelity-gate.ts",
-      "src/core/command/pipeline-run.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/cli/inbox.ts",
+      "src/git/source-revision.ts",
       "src/util/git-exec.ts",
+      "src/adapter/github/github-client.ts",
+      "src/core/command/detach.ts",
       "src/errors.ts",
       "src/parser/request-md.ts",
-      "src/state/schema/types.ts",
-      "src/core/command/guide.ts",
       "src/core/inbox/draft-writer.ts",
-      "src/adapter/github/github-client.ts",
-      "src/core/inbox/planner.ts",
-      "src/core/command/detach.ts",
-      "src/core/inbox/__tests__/run-inbox.test.ts",
-      "src/parser/rules/slug-required.ts",
-      "src/parser/rules/index.ts",
-      "bin/specrunner.ts",
-      "src/cli/flag-parser.ts"
+      "src/core/request/store.ts"
     ],
     "spec-fixer": []
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "spec-review escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -139,12 +136,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 21,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1,
+      "spec-review": 2,
       "spec-fixer": 1
     }
   }
