@@ -825,4 +825,47 @@ describe("TC-012: setupWorkspace no-worktree — onFeatureBranchCreated callback
     // Callback was still invoked
     expect(onFeatureBranchCreated).toHaveBeenCalledOnce();
   });
+
+  it("rev-parse HEAD failure: callback is skipped and a warning is written to stderr", async () => {
+    const onFeatureBranchCreated = vi.fn().mockResolvedValue(undefined);
+    const manager = buildMockManager();
+    // spawnFn where rev-parse HEAD fails
+    const spawnFn: SpawnFn = vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
+      if (cmd === "git" && args[0] === "status" && args[1] === "--porcelain") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "rev-parse" && args[1] === "HEAD") {
+        return { exitCode: 1, stdout: "", stderr: "fatal: bad revision 'HEAD'" };
+      }
+      if (cmd === "git" && args[0] === "checkout" && args[1] === "-b") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const slug = "tc012-revparse-fail";
+    const branchName = "change/tc012-revparse-fail-abc12345";
+    const jobState = await makeJobState(slug);
+
+    // Must NOT throw — silent skip
+    await expect(
+      runtime.setupWorkspace(slug, jobState.jobId, {
+        noWorktree: true,
+        branchName,
+        bootstrapState: jobState,
+        onFeatureBranchCreated,
+      }),
+    ).resolves.toBeDefined();
+
+    // Callback must NOT have been called (OID unavailable)
+    expect(onFeatureBranchCreated).not.toHaveBeenCalled();
+
+    // A warning must have been written to stderr
+    const stderrCalls = (vi.mocked(process.stderr.write).mock.calls as unknown[][])
+      .map((c) => String(c[0]));
+    expect(stderrCalls.some((m) => m.includes("could not resolve HEAD OID"))).toBe(true);
+  });
 });

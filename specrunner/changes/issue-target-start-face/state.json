@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T07:40:12.270Z",
+  "updatedAt": "2026-08-20T07:47:05.088Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -91,7 +91,8 @@
     "fbd3353f2bf58636d6e638eff7698d8db1b0a05d",
     "7b5623a4e8e598f35444044246f2d5b169d84c75",
     "4512456825cff887035c286b1c0712fbe1925010",
-    "ad35da51e6c9f78abd3661b77bf6d0df42eea2c0"
+    "ad35da51e6c9f78abd3661b77bf6d0df42eea2c0",
+    "5700fe8ff36bbd9ca53eef200046b024dda7b7f9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -184,6 +185,17 @@
       "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
       "src/cli/from-issue.ts",
       "src/core/inbox/run-inbox.ts"
+    ],
+    "regression-gate": [
+      "src/cli/command-registry.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "tests/unit/no-worktree-mode.test.ts",
+      "tests/unit/core/runtime/local.test.ts",
+      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
+      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
+      "src/core/runtime/local.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "src/core/runtime/workspace-materializer.ts"
     ]
   },
   "resumePoint": null,
@@ -227,7 +239,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 101,
+    "historyCount": 105,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -241,7 +253,8 @@
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

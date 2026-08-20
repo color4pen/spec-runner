@@ -366,7 +366,11 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       let headOidForCallback: string | undefined;
       if (opts?.onFeatureBranchCreated) {
         const revResult = await this.spawnFn("git", ["rev-parse", "HEAD"], { cwd: this.cwd });
-        if (revResult.exitCode === 0) headOidForCallback = revResult.stdout.trim();
+        if (revResult.exitCode === 0) {
+          headOidForCallback = revResult.stdout.trim();
+        } else {
+          stderrWrite(`Warning: could not resolve HEAD OID for linked branch registration (no-worktree): ${revResult.stderr.trim() || "git rev-parse HEAD failed"}`);
+        }
       }
 
       // Create and switch to the feature branch
