@@ -14,6 +14,7 @@ import { LocalRuntime } from "../local.js";
 import { ManagedRuntime } from "../managed.js";
 import { JobStateStore, type NormalizedJobState } from "../../../store/job-state-store.js";
 import { resetSignalHandlerFiredForTest } from "../../lifecycle/signal-state.js";
+import { createExitGuardHandler } from "../../lifecycle/exit-guard.js";
 import type { GitHubClient } from "../../port/github-client.js";
 import type { SessionClient } from "../../port/session-client.js";
 import type { OriginInfo } from "../../../git/remote.js";
@@ -332,5 +333,44 @@ describe("ManagedRuntime: SIGHUP handler registration and deregistration", () =>
 
     const sighupCalls = offSpy.mock.calls.filter((c) => c[0] === "SIGHUP");
     expect(sighupCalls.length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-004: exit-guard fires (no signal handler ran) — signal field absent
+// ---------------------------------------------------------------------------
+
+describe("TC-004: exit-guard fires (no signal handler ran) — signal field absent", () => {
+  beforeEach(() => {
+    // Ensure signal handler has NOT fired — exit-guard should proceed normally
+    resetSignalHandlerFiredForTest();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    resetSignalHandlerFiredForTest();
+  });
+
+  it("appendInterruption called by exit-guard has no 'signal' field", async () => {
+    const appendInterruptionSpy = vi
+      .spyOn(JobStateStore.prototype, "appendInterruption")
+      .mockResolvedValue(undefined);
+    vi.spyOn(JobStateStore.prototype, "load").mockResolvedValue(makeFakeState(JOB_ID));
+    vi.spyOn(JobStateStore.prototype, "persist").mockResolvedValue(undefined);
+    vi.spyOn(process.stderr, "write").mockImplementation(() => true);
+
+    // no-worktree mode invokes handleNoWorktreeExit which calls appendInterruption
+    const handler = createExitGuardHandler("/fake/repo", JOB_ID, { noWorktree: true, slug: SLUG });
+    handler();
+
+    // The handler is fire-and-forget async; wait for microtasks/macrotasks to settle
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+
+    expect(appendInterruptionSpy).toHaveBeenCalledOnce();
+    const record = appendInterruptionSpy.mock.calls[0]![0];
+    expect(record.type).toBe("interruption");
+    expect(record.reason).toBe("signal");
+    // exit-guard does NOT know which signal fired — signal field must be absent
+    expect(record).not.toHaveProperty("signal");
   });
 });

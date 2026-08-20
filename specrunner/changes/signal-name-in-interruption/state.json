@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
   "createdAt": "2026-08-20T14:27:40.099Z",
-  "updatedAt": "2026-08-20T15:50:15.133Z",
+  "updatedAt": "2026-08-20T15:54:13.827Z",
   "request": {
     "title": "interruption レコードにシグナル名を記録する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "fix/signal-name-in-interruption-5ff912e4",
   "error": null,
@@ -74,7 +74,8 @@
     "c8e8c33b3faecc3420d0df2c49a9f9e2967d8a7d",
     "cbdec4dc484183b6eff301365237e499ec94043c",
     "8304c213d1c691d24684ede260930c6ed1cafec9",
-    "021a0192133a7a63cdfb2328fae4bb9b5e51d8b7"
+    "021a0192133a7a63cdfb2328fae4bb9b5e51d8b7",
+    "635fea35d9f1137cfd05b5b66172f74fb165480f"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -123,12 +124,10 @@
       "src/logger/stdout.ts"
     ],
     "code-review": [
-      "src/core/runtime/local.ts",
-      "src/core/runtime/managed.ts",
       "src/store/event-journal.ts",
-      "src/core/lifecycle/exit-guard.ts",
-      "src/core/runtime/__tests__/signal-handler-order.test.ts",
-      "src/core/lifecycle/__tests__/exit-guard.test.ts"
+      "src/core/runtime/__tests__/signal-name-in-interruption.test.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts"
     ]
   },
   "operatorAdjudications": [
@@ -139,7 +138,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 53,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 3,
       "design": 1,
@@ -149,7 +148,7 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 1
+      "code-review": 2
     }
   }
 }

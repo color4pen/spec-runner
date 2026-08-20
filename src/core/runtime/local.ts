@@ -1715,7 +1715,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         // Best-effort persist; state file (layer 2) handles residuals
       }
       releasePowerAssertion();
-      process.exit(130); // 128 + SIGINT(2)
+      process.exit(130); // fixed; per-signal exit codes (128+n) are out of scope
     };
 
     process.on("SIGINT", signalCleanup);
