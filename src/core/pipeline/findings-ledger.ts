@@ -103,7 +103,9 @@ export function collectParallelFixerFindings(
     if (!findings || findings.length === 0) continue;
 
     const fixable = collectFixableFindings(findings);
-    all.push(...fixable);
+    // Exclude disposition-decided findings (mirrors collectFindingsLedger per-step exclusion).
+    const active = filterUndecidedFindings(name, fixable, state.decisions);
+    all.push(...active);
   }
 
   const deduped = dedupeFindings(all);

@@ -23,8 +23,10 @@ import {
 } from "../reviewer-chain.js";
 import { STEP_NAMES } from "../../step/step-names.js";
 import { REGRESSION_GATE_STEP_NAME } from "../../step/regression-gate.js";
-import type { JobState } from "../../../state/schema.js";
+import type { JobState, DispositionDecisionRecord } from "../../../state/schema.js";
 import type { ReviewerSnapshot } from "../../reviewers/types.js";
+import type { Finding } from "../../../kernel/report-result.js";
+import { computeFindingKey } from "../../decision/decision-ledger.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -617,5 +619,157 @@ describe("buildReviewerChainTransitions — TC-032: single code-review is unchan
     );
     // No REGRESSION_GATE or coordinator rows
     expect(stepNames).not.toContain(REGRESSION_GATE_STEP_NAME);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Disposition-aware guard tests (Finding A fix)
+// ---------------------------------------------------------------------------
+
+function makeFixableFinding(overrides: Partial<Finding> = {}): Finding {
+  return {
+    severity: "high",
+    resolution: "fixable",
+    file: "src/foo.ts",
+    line: 10,
+    title: "Default finding",
+    rationale: "Fix this",
+    ...overrides,
+  };
+}
+
+function makeDispositionRecord(stepName: string, finding: Finding): DispositionDecisionRecord {
+  return {
+    kind: "disposition",
+    id: `disp-${stepName}-${finding.title}`,
+    step: stepName,
+    findingKey: computeFindingKey(stepName, finding),
+    finding: {
+      title: finding.title,
+      file: finding.file,
+      line: finding.line,
+      rationale: finding.rationale,
+      severity: finding.severity,
+    },
+    disposition: "wontfix",
+    reason: "accepted risk",
+    decidedAt: "2026-01-01T00:00:00Z",
+    source: "operator",
+  };
+}
+
+/**
+ * Build a full StepRun-shaped state for reviewer-chain `when` guard tests.
+ */
+function makeStateWithRun(
+  stepName: string,
+  verdict: string,
+  findings: Finding[],
+  decisions?: DispositionDecisionRecord[],
+): JobState {
+  return {
+    version: 2,
+    jobId: "test-job",
+    createdAt: "2026-01-01T00:00:00Z",
+    updatedAt: "2026-01-01T00:00:00Z",
+    request: { path: "/req.md", title: "T", type: "bug-fix", slug: "s" },
+    repository: { owner: "o", name: "r" },
+    session: null,
+    step: stepName,
+    status: "running",
+    branch: null,
+    history: [],
+    error: null,
+    decisions,
+    steps: {
+      [stepName]: [
+        {
+          attempt: 1,
+          sessionId: null,
+          startedAt: "2026-01-01T00:01:00Z",
+          endedAt: "2026-01-01T00:01:30Z",
+          outcome: {
+            verdict,
+            findingsPath: null,
+            error: null,
+            toolResult: { ok: true, findings },
+          },
+        },
+      ],
+    } as unknown as JobState["steps"],
+  };
+}
+
+describe("buildReviewerChainTransitions — disposition-aware approved+fixable guard", () => {
+  const chain = [STEP_NAMES.CODE_REVIEW];
+  const transitions = buildReviewerChainTransitions(chain);
+  const guardRow = transitions.find(
+    (t) => t.step === STEP_NAMES.CODE_REVIEW && t.on === "approved" && t.to === STEP_NAMES.CODE_FIXER && t.when,
+  );
+
+  it("guard returns true when fixable finding has no disposition", () => {
+    const f = makeFixableFinding({ title: "unfixed issue" });
+    const state = makeStateWithRun(STEP_NAMES.CODE_REVIEW, "approved", [f]);
+    expect(guardRow!.when!(state)).toBe(true);
+  });
+
+  it("guard returns false when all fixable findings are wontfix'd", () => {
+    const f = makeFixableFinding({ title: "wontfix issue" });
+    const state = makeStateWithRun(
+      STEP_NAMES.CODE_REVIEW,
+      "approved",
+      [f],
+      [makeDispositionRecord(STEP_NAMES.CODE_REVIEW, f)],
+    );
+    expect(guardRow!.when!(state)).toBe(false);
+  });
+
+  it("guard returns true when only some findings are wontfix'd", () => {
+    const f1 = makeFixableFinding({ title: "wontfix issue", file: "a.ts" });
+    const f2 = makeFixableFinding({ title: "still active", file: "b.ts" });
+    const state = makeStateWithRun(
+      STEP_NAMES.CODE_REVIEW,
+      "approved",
+      [f1, f2],
+      [makeDispositionRecord(STEP_NAMES.CODE_REVIEW, f1)],
+    );
+    expect(guardRow!.when!(state)).toBe(true);
+  });
+});
+
+describe("buildParallelReviewerTransitions — disposition-aware code-review approved+fixable guard", () => {
+  const coordinator = "custom-reviewers";
+  const transitions = buildParallelReviewerTransitions({ coordinator, members: ["A", "B"] });
+  const guardRow = transitions.find(
+    (t) => t.step === STEP_NAMES.CODE_REVIEW && t.on === "approved" && t.to === STEP_NAMES.CODE_FIXER && t.when,
+  );
+
+  it("guard returns true when fixable finding has no disposition", () => {
+    const f = makeFixableFinding({ title: "unfixed issue" });
+    const state = makeStateWithRun(STEP_NAMES.CODE_REVIEW, "approved", [f]);
+    expect(guardRow!.when!(state)).toBe(true);
+  });
+
+  it("guard returns false when all fixable findings are wontfix'd", () => {
+    const f = makeFixableFinding({ title: "wontfix issue" });
+    const state = makeStateWithRun(
+      STEP_NAMES.CODE_REVIEW,
+      "approved",
+      [f],
+      [makeDispositionRecord(STEP_NAMES.CODE_REVIEW, f)],
+    );
+    expect(guardRow!.when!(state)).toBe(false);
+  });
+
+  it("guard returns true when only some findings are wontfix'd", () => {
+    const f1 = makeFixableFinding({ title: "wontfix issue", file: "a.ts" });
+    const f2 = makeFixableFinding({ title: "still active", file: "b.ts" });
+    const state = makeStateWithRun(
+      STEP_NAMES.CODE_REVIEW,
+      "approved",
+      [f1, f2],
+      [makeDispositionRecord(STEP_NAMES.CODE_REVIEW, f1)],
+    );
+    expect(guardRow!.when!(state)).toBe(true);
   });
 });

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f8732c22-7cc4-4894-a62e-9f6e8a827e8a",
   "createdAt": "2026-08-20T13:01:11.201Z",
-  "updatedAt": "2026-08-20T14:21:13.705Z",
+  "updatedAt": "2026-08-20T14:24:26.174Z",
   "request": {
     "title": "fixable finding への operator 不採用裁定を decisions 台帳の一般化で機械尊重する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "awaiting-resume",
+  "step": "code-fixer",
+  "status": "running",
   "branch": "change/finding-wontfix-disposition-f8732c22",
   "error": null,
   "pipelineId": "standard",
@@ -76,7 +76,8 @@
     "07878b8d271b71b86c5930cd6abebd37ac18716a",
     "4747c5ee13037d6029193d1847034ed1c46a93aa",
     "bdcd2b1e7836208cb0e65b233acab0220f61f015",
-    "d7d003b5cb734201e12f829573835fde6df6557c"
+    "d7d003b5cb734201e12f829573835fde6df6557c",
+    "9b1916d5d1bcb9ebfb294579d4518d33a22e07ad"
   ],
   "touchedFiles": {
     "request-review": [
@@ -173,13 +174,17 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "custom-reviewers escalation（cross-boundary-invariants Finding A / B)への operator 裁定。両方適用する。方針: disposition 済み finding は verdict だけでなく routing と fixer 入力からも機械的に除外する（decisions を routing が尊重する、という本 request の設計判断の一貫適用）。\n\n## 1. Finding A（適用): `approved + fixable → code-fixer` 遷移ガードに decisions フィルタを挟む\n\n`src/core/pipeline/reviewer-chain.ts` の 2 箇所 — `buildReviewerChainTransitions` の `approved + fixable` ガード（:165-177 付近）と `buildParallelReviewerTransitions` の code-review 行（:350-363 付近）— で、`collectFixableFindings(findings)` の前に `filterUndecidedFindings(<reviewer step 名>, findings, s.decisions)` を挟む（import は `../decision/decision-ledger.js`）。これにより「wontfix 済み finding しか持たない reviewer の approved」で code-fixer が起動しなくなる。\n\n## 2. Finding B（適用): `collectParallelFixerFindings` に decisions フィルタを適用する\n\n`src/core/pipeline/findings-ledger.ts` の `collectParallelFixerFindings` で、member ごとの findings に `filterUndecidedFindings(<member 名>, findings, state.decisions)` を適用してから `collectFixableFindings` に渡す（`collectFindingsLedger` が per-step で行っているのと同じ位置づけ）。\n\n## 3. テストで固定する\n\n- wontfix 済み finding のみを残した reviewer の `approved` で、`approved + fixable → code-fixer` の when ガードが false になる（順次・並列の両方）\n- `collectParallelFixerFindings` が disposition 済み finding を除外する\n- 既存テストは無変更で green を維持する\n",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-20T14:24:26.002Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

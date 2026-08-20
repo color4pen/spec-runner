@@ -597,6 +597,56 @@ describe("TC-010: wontfix 1 件で livelock が解消する", () => {
   });
 });
 
+describe("collectParallelFixerFindings — disposition-decided findings excluded", () => {
+  it("excludes wontfix'd findings from needs-fix member", () => {
+    const f1 = makeFixableFinding({ title: "wontfix issue", file: "src/a.ts", line: 1, rationale: "r1" });
+    const f2 = makeFixableFinding({ title: "active issue", file: "src/b.ts", line: 2, rationale: "r2" });
+
+    const state: JobState = {
+      ...makeState({
+        "A": [
+          {
+            outcome: {
+              verdict: "needs-fix",
+              findingsPath: null,
+              error: null,
+              toolResult: { ok: true, findings: [f1, f2] },
+            },
+          },
+        ],
+      }),
+      decisions: [makeDisposition("A", f1)],
+    };
+
+    const result = collectParallelFixerFindings(state, ["A"]);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.title).toBe("active issue");
+  });
+
+  it("returns empty when all member findings are wontfix'd", () => {
+    const f = makeFixableFinding({ title: "wontfix only", file: "src/a.ts", line: 1, rationale: "r" });
+
+    const state: JobState = {
+      ...makeState({
+        "A": [
+          {
+            outcome: {
+              verdict: "needs-fix",
+              findingsPath: null,
+              error: null,
+              toolResult: { ok: true, findings: [f] },
+            },
+          },
+        ],
+      }),
+      decisions: [makeDisposition("A", f)],
+    };
+
+    const result = collectParallelFixerFindings(state, ["A"]);
+    expect(result).toHaveLength(0);
+  });
+});
+
 describe("TC-011: 除外は照合のみで履歴を変えない", () => {
   it("StepRun still contains F1 after exclusion from ledger", () => {
     const f1 = makeFixableFinding({ title: "F1", file: "a.ts", line: 1, rationale: "r1" });
