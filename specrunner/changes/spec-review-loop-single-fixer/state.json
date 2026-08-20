@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9dcf5a95-c9cb-4172-8b10-b6cf0119a795",
   "createdAt": "2026-08-20T05:14:24.721Z",
-  "updatedAt": "2026-08-20T05:14:27.852Z",
+  "updatedAt": "2026-08-20T05:22:05.760Z",
   "request": {
     "title": "spec-review loop の単一 fixer 化: test-case-gen を review loop から外す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/spec-review-loop-single-fixer-9dcf5a95",
   "error": null,
@@ -62,10 +62,32 @@
     }
   ],
   "synthesizedCommits": [
-    "e96fdb7654e5705ce2a9782d75dac5cb5bb1006f"
+    "e96fdb7654e5705ce2a9782d75dac5cb5bb1006f",
+    "d823e1ed3cb80b1c33c6283049e4eecc26173ce9"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/step/canon-write-scope.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/registry.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts",
+      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/pipeline/test-gen-exemption.ts",
+      "src/prompts/spec-fixer-system.ts",
+      "src/core/step/test-case-gen.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/step/write-scope.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
