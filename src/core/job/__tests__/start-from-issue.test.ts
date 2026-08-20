@@ -11,8 +11,13 @@ vi.mock("../../inbox/draft-writer.js", () => ({
   writeDraft: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("../../../logger/stdout.js", () => ({
+  stderrWrite: vi.fn(),
+}));
+
 import { materializeDraftAndStart, startWithIssueLink, buildLinkedBranchRegistrar } from "../../issue-target/start.js";
 import { writeDraft } from "../../inbox/draft-writer.js";
+import { stderrWrite } from "../../../logger/stdout.js";
 import { slugOccupiedError } from "../../../errors.js";
 import type { GitHubClient } from "../../../kernel/github-client.js";
 
@@ -166,5 +171,7 @@ describe("TC-006: buildLinkedBranchRegistrar fires getIssue → createLinkedBran
     const cb = buildLinkedBranchRegistrar({ githubClient: client, owner: "o", repo: "r", issueNumber: 42 });
     // Must not throw
     await expect(cb("sha123", "feat/my-slug-abcdef01")).resolves.toBeUndefined();
+    // Warning must have been emitted
+    expect(vi.mocked(stderrWrite)).toHaveBeenCalledWith(expect.stringContaining("Warning"));
   });
 });

@@ -824,6 +824,11 @@ describe("TC-012: setupWorkspace no-worktree — onFeatureBranchCreated callback
 
     // Callback was still invoked
     expect(onFeatureBranchCreated).toHaveBeenCalledOnce();
+
+    // A warning must have been written to stderr
+    const stderrCalls = (vi.mocked(process.stderr.write).mock.calls as unknown[][])
+      .map((c) => String(c[0]));
+    expect(stderrCalls.some((m) => m.includes("Warning"))).toBe(true);
   });
 
   it("rev-parse HEAD failure: callback is skipped and a warning is written to stderr", async () => {

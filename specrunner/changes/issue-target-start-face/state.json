@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T08:08:10.420Z",
+  "updatedAt": "2026-08-20T08:15:59.907Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -98,7 +98,8 @@
     "e65525d2d6f1d38c33bdd6a32c695535f8dca11a",
     "212a388cf244cc4a560130c55b11ebbd4323b3e1",
     "627c028a659d3bd063166da5bb5b358a34e04939",
-    "68b0d3e6fa0b1124744e706c3ef14c883719ff46"
+    "68b0d3e6fa0b1124744e706c3ef14c883719ff46",
+    "aa9671f392003d7e7cc209e99c3ebf0631d51ebf"
   ],
   "touchedFiles": {
     "request-review": [
@@ -164,25 +165,24 @@
     ],
     "code-review": [
       "src/core/issue-target/start.ts",
-      "src/core/job/__tests__/start-from-issue.test.ts",
-      "src/cli/__tests__/from-issue.test.ts",
+      "src/core/job/start-from-issue.ts",
       "src/core/runtime/workspace-materializer.ts",
       "src/core/runtime/local.ts",
-      "src/kernel/github-client.ts",
-      "src/adapter/github/github-client.ts",
-      "tests/unit/architecture/module-boundary.test.ts",
       "tests/unit/core/runtime/workspace-materializer-link.test.ts",
-      "src/config/type-config.ts",
-      "src/cli/command-registry.ts",
-      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
-      "src/core/inbox/run-inbox.ts",
-      "src/core/port/runtime-strategy.ts",
-      "tests/unit/no-worktree-mode.test.ts",
+      "src/adapter/github/github-client.ts",
       "tests/unit/adapter/github/github-client-graphql.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "src/cli/from-issue.ts",
-      "src/core/command/pipeline-run.ts",
-      "tests/unit/adapter/github/github-client-get-issue.test.ts"
+      "tests/unit/adapter/github/github-client-get-issue.test.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
+      "tests/unit/no-worktree-mode.test.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "src/cli/command-registry.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/config/type-config.ts",
+      "src/kernel/github-client.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
     ],
     "code-fixer": [
       "tests/unit/core/runtime/workspace-materializer-link.test.ts",
@@ -265,7 +265,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 132,
+    "historyCount": 136,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -275,7 +275,7 @@
       "implementer": 3,
       "bite-evidence": 1,
       "verification": 4,
-      "code-review": 3,
+      "code-review": 4,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
