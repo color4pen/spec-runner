@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-20T23:31:11.658Z",
+  "updatedAt": "2026-08-20T23:42:08.274Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/archive-from-issue-96c14a7e",
   "error": null,
@@ -63,7 +63,8 @@
   ],
   "synthesizedCommits": [
     "9f6341aaeb5e220216adb4381a776e7d275c19f2",
-    "94b4deb8539aa2ac5277698d6df0b62ce84ce9a9"
+    "94b4deb8539aa2ac5277698d6df0b62ce84ce9a9",
+    "b0a4d71027be565c68cb128a08e3fb42730d9fd1"
   ],
   "touchedFiles": {
     "request-review": [
@@ -82,12 +83,34 @@
       "src/kernel/github-client.ts",
       "src/core/attach/orchestrator.ts",
       "src/core/command/guide.ts"
+    ],
+    "design": [
+      "src/cli/resume-from-issue.ts",
+      "src/core/issue-target/resume.ts",
+      "src/core/archive/merge-then-archive.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/cli/attach.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/core/port/github-client.ts",
+      "src/kernel/github-client.ts",
+      "src/adapter/github/github-client.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/archive.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/errors.ts",
+      "src/core/command/guide.ts",
+      "src/core/issue-target/__tests__/resume.test.ts",
+      "src/cli/__tests__/resume-from-issue.test.ts",
+      "src/git/checkpoint-ref.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
