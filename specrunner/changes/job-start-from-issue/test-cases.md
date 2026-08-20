@@ -53,7 +53,7 @@ Result section MUST appear at the very end as a YAML code block:
 - **Total**: 19 cases
 - **Automated** (unit/integration): 14
 - **Manual**: 2
-- **Priority**: must: 13, should: 6, could: 0
+- **Priority**: must: 14, should: 5, could: 0
 
 ---
 
@@ -108,7 +108,7 @@ Result section MUST appear at the very end as a YAML code block:
 ### TC-007: --from-issue と --detach は併用できる
 
 **Category**: integration
-**Priority**: should
+**Priority**: must
 **Source**: spec.md > Requirement: --from-issue と positional / --issue は排他でなければならない > Scenario: --from-issue と --detach は併用できる
 
 ---
