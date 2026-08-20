@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T04:58:43.639Z",
+  "updatedAt": "2026-08-20T05:01:54.161Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "request-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
   "pipelineId": "standard",
@@ -63,7 +63,9 @@
   ],
   "synthesizedCommits": [
     "680fe969744d3662d198d8f1183b506b26c190ad",
-    "7ae242ad1aae6471ca74f8e0aeb6f9563cd0daef"
+    "7ae242ad1aae6471ca74f8e0aeb6f9563cd0daef",
+    "f82f7e63ac9482abbcdf6e2b8d63dbd437ff4e48",
+    "46a96ee37c8f0576eddda6dfd7ce59ec28af30ca"
   ],
   "touchedFiles": {
     "request-review": [
@@ -90,13 +92,10 @@
       "src/core/inbox/__tests__/run-inbox.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "request-review",
-    "reason": "request-review escalated",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 4,
+    "historyCount": 6,
     "stepCounts": {
       "request-review": 1
     }
