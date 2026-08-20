@@ -441,6 +441,18 @@ describe("TC-007: conformance tasks.md finding with fixTarget spec-fixer routes 
     const verdict = deriveConformanceVerdict(findings, true, undefined, scope);
     expect(verdict).toBe("needs-fix:spec-fixer");
   });
+
+  // spec-review-loop-single-fixer: test-cases.md is now in spec-fixer's write scope.
+  // Previously: conformance + test-cases.md + fixTarget:spec-fixer → escalation (spec-fixer couldn't write test-cases.md).
+  // Now: → needs-fix:spec-fixer (spec-fixer can write test-cases.md).
+  it("TC-007: deriveConformanceVerdict(test-cases.md, fixTarget:spec-fixer, real scope) === 'needs-fix:spec-fixer'", () => {
+    const state = makeState();
+    const deps = makeDeps();
+    const scope = buildCanonWriteScope(state, deps);
+    const findings = [makeFinding("high", "fixable", TEST_CASES_MD, "spec-fixer")];
+    const verdict = deriveConformanceVerdict(findings, true, undefined, scope);
+    expect(verdict).toBe("needs-fix:spec-fixer");
+  });
 });
 
 // ---------------------------------------------------------------------------

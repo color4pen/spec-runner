@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9dcf5a95-c9cb-4172-8b10-b6cf0119a795",
   "createdAt": "2026-08-20T05:14:24.721Z",
-  "updatedAt": "2026-08-20T06:57:08.921Z",
+  "updatedAt": "2026-08-20T07:02:00.552Z",
   "request": {
     "title": "spec-review loop の単一 fixer 化: test-case-gen を review loop から外す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/spec-review-loop-single-fixer-9dcf5a95",
   "error": null,
@@ -77,7 +77,8 @@
     "abb7b745991d4d3bcc0f247e91f759825e501ffb",
     "362dbb73e18a3f6a2447b2442a995e607c026a6c",
     "fcd4d5c76e549e7adbea2cf09cd1544421623850",
-    "218dbcd05bc4ac414000d0a4572af6777c5c66da"
+    "218dbcd05bc4ac414000d0a4572af6777c5c66da",
+    "0db1a8d4b0542b940c7c85e6bf60efb828f8180f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -162,6 +163,17 @@
       "src/prompts/spec-fixer-system.ts",
       "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
       "tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
+      "src/prompts/rules.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/judge-verdict.ts",
+      "src/core/step/canon-escalation.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
+      "tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts",
+      "tests/pipeline-integration.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -195,7 +207,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 65,
+    "historyCount": 69,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -209,7 +221,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

@@ -53,7 +53,7 @@ export function specReviewHasRoutableFixables(state: JobState): boolean {
  *
  * Used as the `when` guard on the guarded
  * `spec-fixer approved → implementer` transition row.
- * (test-case-gen already ran before spec-review; observation pass goes directly to implementer)
+ * (spec-fixer is the single fixer for all spec-review findings; observation pass forwards directly to implementer)
  *
  * @param state - Current job state.
  * @returns true when spec-fixer should forward directly to implementer (observation pass).
