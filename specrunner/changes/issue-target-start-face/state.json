@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T06:50:46.162Z",
+  "updatedAt": "2026-08-20T06:53:36.729Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -83,7 +83,9 @@
     "303a6394f45a1770111e7a4189970502a4dcbf83",
     "4635f80095387ce022b7e8151734115a07999d9a",
     "ce9d1a2afc64a9fea51ed5c7e978536f428dfb1c",
-    "e5a53dfa1c1d3e1c2ab6243dbc1c6e1d72bea64f"
+    "e5a53dfa1c1d3e1c2ab6243dbc1c6e1d72bea64f",
+    "fdca80f605790c1fdf8b069fabd3b11bafe449a3",
+    "8723468a02edc827144a848aa53c8d927144e82d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -145,36 +147,7 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/core/job/start-from-issue.ts",
-      "src/config/type-config.ts",
-      "src/kernel/github-client.ts",
-      "src/adapter/github/github-client.ts",
-      "src/core/command/pipeline-run.ts",
-      "src/core/step/design.ts",
-      "src/core/step/commit-orchestrator.ts",
-      "src/core/runtime/local.ts",
-      "src/core/runtime/workspace-materializer.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/inbox/run-inbox.ts",
-      "src/core/job/__tests__/start-from-issue.test.ts",
-      "src/cli/__tests__/from-issue.test.ts",
-      "tests/unit/architecture/module-boundary.test.ts",
-      "src/cli/from-issue.ts",
-      "src/cli/command-registry.ts",
-      "src/cli/run.ts",
-      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "tests/unit/architecture/core-invariants.test.ts",
-      "src/core/port/github-client.ts",
-      "tests/unit/adapter/github/github-client-get-issue.test.ts",
-      "tests/unit/cli/issue-flag.test.ts",
-      "src/core/issue-target/start.ts",
-      "tests/unit/adapter/github/github-client-graphql.test.ts",
-      "tests/unit/core/runtime/workspace-materializer.test.ts",
-      "tests/unit/core/runtime/local.test.ts",
-      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
-      "tests/helpers/pipeline-mock-client.ts",
-      "tests/unit/adapter/managed-agent/agent-runner-verbose-log.test.ts"
+      "tests/unit/core/runtime/workspace-materializer-link.test.ts"
     ]
   },
   "resumePoint": null,
@@ -187,16 +160,16 @@
     }
   ],
   "_journal": {
-    "historyCount": 63,
+    "historyCount": 72,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
       "test-case-gen": 3,
       "spec-review": 4,
       "spec-fixer": 3,
-      "implementer": 1,
+      "implementer": 2,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2
     }
   }
 }
