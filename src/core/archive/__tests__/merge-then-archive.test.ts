@@ -149,6 +149,7 @@ function makeGithubClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
     listIssueComments: vi.fn().mockResolvedValue([]),
     removeLabel: vi.fn().mockResolvedValue(undefined),
     getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   } as GitHubClient;
 }

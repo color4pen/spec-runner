@@ -12,7 +12,7 @@ import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
 import { resolveDesignLayerConfig, type SpecRunnerConfig } from "../../config/schema.js";
 import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
-import { getBranchPrefix } from "../../config/type-config.js";
+import { buildFeatureBranchName } from "../../config/type-config.js";
 import { STEP_NAMES } from "../step/step-names.js";
 import { STANDARD_PIPELINE_ID } from "../../kernel/pipeline-ids.js";
 import { getPipelineDescriptor } from "../pipeline/registry.js";
@@ -43,6 +43,13 @@ export interface PipelineRunOptions {
    * inbox-origin jobs because no transcription step means no divergence is possible.
    */
   inboxOrigin?: boolean;
+  /**
+   * Opaque effect invoked after the local feature branch is created but before the
+   * bootstrap commit. Used by issue-target routes to register the Development linked
+   * branch on GitHub. The pipeline / materializer treat this as an opaque callback
+   * and do not know its meaning (D3). Best-effort: callers must not throw.
+   */
+  onFeatureBranchCreated?: (baseOid: string, branchName: string) => Promise<void>;
 }
 
 // Canonical path pattern: specrunner/drafts/<slug>/request.md
@@ -171,8 +178,7 @@ export class PipelineRunCommand extends CommandRunner {
     }
 
     // Compute branchName: CLI creates the branch before the agent runs
-    const branchPrefix = getBranchPrefix(request.type);
-    const branchName = `${branchPrefix}${slug}-${jobState.jobId.slice(0, 8)}`;
+    const branchName = buildFeatureBranchName(request.type, slug, jobState.jobId);
 
     return {
       jobState,
@@ -190,6 +196,7 @@ export class PipelineRunCommand extends CommandRunner {
         bootstrapState: jobState,
         noWorktree: this.options.noWorktree,
         designLayerEnabled: resolveDesignLayerConfig(config).enabled,
+        onFeatureBranchCreated: this.options.onFeatureBranchCreated,
       },
       json: this.options.json ?? false,
     };

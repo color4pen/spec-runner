@@ -393,8 +393,9 @@ function buildEffects(opts: RunInboxOptions): InboxEffects {
         });
       }
 
-      const { materializeDraftAndStart } = await import("../job/start-from-issue.js");
-      await materializeDraftAndStart({ repoRoot, slug, issueBody, issueNumber });
+      const { runRunCore } = await import("../../cli/run.js");
+      const { materializeDraftAndStart } = await import("../issue-target/start.js");
+      await materializeDraftAndStart({ repoRoot, slug, issueBody, issueNumber, githubClient, owner, repo, startPrimitive: runRunCore });
     },
     async resumeJob(slug: string, resumePrompt: string | undefined): Promise<void> {
       const { runResumeCore } = await import("../../cli/resume.js");

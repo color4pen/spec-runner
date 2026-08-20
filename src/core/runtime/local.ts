@@ -362,10 +362,24 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     const branchName = opts?.branchName;
 
     if (isRunPath && branchName) {
+      // Resolve base OID before checkout so linked branch registration uses the same commit (D4).
+      let headOidForCallback: string | undefined;
+      if (opts?.onFeatureBranchCreated) {
+        const revResult = await this.spawnFn("git", ["rev-parse", "HEAD"], { cwd: this.cwd });
+        if (revResult.exitCode === 0) headOidForCallback = revResult.stdout.trim();
+      }
+
       // Create and switch to the feature branch
       const checkoutResult = await this.spawnFn("git", ["checkout", "-b", branchName], { cwd: this.cwd });
       if (checkoutResult.exitCode !== 0) {
         throw new Error(`git checkout -b ${branchName} failed (exit ${checkoutResult.exitCode}): ${checkoutResult.stderr.trim()}`);
+      }
+
+      // Fire linked branch registration callback after checkout (best-effort, TC-012)
+      if (headOidForCallback && opts?.onFeatureBranchCreated) {
+        await opts.onFeatureBranchCreated(headOidForCallback, branchName).catch((err) => {
+          stderrWrite(`Warning: linked branch registration failed (no-worktree): ${(err as Error).message ?? err}`);
+        });
       }
     }
     // Resume path: branch already checked out — no branch operation needed.
@@ -546,7 +560,11 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         }
       }
 
-      plan = { kind: "new-run", remoteBaseRef, branchName: opts?.branchName };
+      // Resolve base OID once (D4): used for both manager.create and onFeatureBranchCreated.
+      const baseOidResult = await this.spawnFn("git", ["rev-parse", remoteBaseRef], { cwd: this.cwd });
+      const baseOidTrimmed = baseOidResult.exitCode === 0 ? baseOidResult.stdout.trim() : "";
+      const baseOid = baseOidTrimmed || undefined;
+      plan = { kind: "new-run", remoteBaseRef, branchName: opts?.branchName, baseOid };
     }
 
     return this.materializeWorktree(slug, jobId, plan, opts);

@@ -79,7 +79,9 @@ vi.mock("../../adapter/github/github-client.js", () => ({
         "",
         "Test.",
       ].join("\n"),
+      nodeId: "NODE_TEST",
     }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
   }),
 }));
 
@@ -87,7 +89,7 @@ vi.mock("../../git/branch.js", () => ({
   getCurrentBranch: vi.fn().mockResolvedValue("main"),
 }));
 
-vi.mock("../../core/job/start-from-issue.js", () => ({
+vi.mock("../../core/issue-target/start.js", () => ({
   materializeDraftAndStart: vi.fn().mockResolvedValue(0),
 }));
 
@@ -102,7 +104,7 @@ vi.mock("../../core/inbox/draft-writer.js", () => ({
 import { COMMANDS } from "../command-registry.js";
 import { runFromIssue } from "../from-issue.js";
 import { getCurrentBranch } from "../../git/branch.js";
-import { materializeDraftAndStart } from "../../core/job/start-from-issue.js";
+import { materializeDraftAndStart } from "../../core/issue-target/start.js";
 import { logError } from "../../logger/stdout.js";
 import { createGitHubClient } from "../../adapter/github/github-client.js";
 import { detachSelf } from "../../core/command/detach.js";
@@ -331,6 +333,7 @@ describe("TC-009: parse 失敗時に副作用ゼロ停止", () => {
         title: "Bad Issue",
         body: "This is not a valid request.md — no Meta section",
       }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     } as unknown as ReturnType<typeof createGitHubClient>);
 
     const code = await runFromIssue(42, {}, makeCtx());
@@ -344,6 +347,7 @@ describe("TC-009: parse 失敗時に副作用ゼロ停止", () => {
         title: "Bad Issue",
         body: "no meta section",
       }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     } as unknown as ReturnType<typeof createGitHubClient>);
 
     await runFromIssue(42, {}, makeCtx());

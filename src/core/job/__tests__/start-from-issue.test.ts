@@ -1,7 +1,9 @@
 /**
- * TC-001: materializeDraftAndStart が runRunCore を { inboxOrigin: true, issue } で呼ぶ
+ * TC-003: materializeDraftAndStart が start primitive を { inboxOrigin: true, issue } で呼ぶ
+ * TC-004: materializeDraftAndStart が SlugOccupiedError を伝播する
  *
- * If inboxOrigin: true is removed from start-from-issue.ts, these tests turn red.
+ * Relocated from core/job/start-from-issue.ts → core/issue-target/start.ts.
+ * The cli/run.js dynamic import is replaced by an injected startPrimitive mock.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -9,82 +11,114 @@ vi.mock("../../inbox/draft-writer.js", () => ({
   writeDraft: vi.fn().mockResolvedValue(undefined),
 }));
 
-// vitest intercepts dynamic imports too; path is relative to this test file
-vi.mock("../../../cli/run.js", () => ({
-  runRunCore: vi.fn().mockResolvedValue(0),
-  runRun: vi.fn().mockResolvedValue(undefined),
-}));
-
-import { materializeDraftAndStart } from "../start-from-issue.js";
+import { materializeDraftAndStart, buildLinkedBranchRegistrar } from "../../issue-target/start.js";
 import { writeDraft } from "../../inbox/draft-writer.js";
-import { runRunCore } from "../../../cli/run.js";
 import { slugOccupiedError } from "../../../errors.js";
+import type { GitHubClient } from "../../../kernel/github-client.js";
+
+function makeClient(): GitHubClient {
+  return {
+    getIssue: vi.fn().mockResolvedValue({ number: 42, title: "T", body: "b", nodeId: "NODE_123" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
+    verifyBranch: vi.fn(),
+    getRawFile: vi.fn(),
+    verifyPath: vi.fn(),
+    verifyTokenScopes: vi.fn(),
+    getRefSha: vi.fn(),
+    listPullRequests: vi.fn(),
+    createPullRequest: vi.fn(),
+    getPullRequest: vi.fn(),
+    getCheckStatus: vi.fn(),
+    mergePullRequest: vi.fn(),
+    createIssueComment: vi.fn(),
+    listPullRequestFiles: vi.fn(),
+    searchOpenIssuesByLabel: vi.fn(),
+    listIssueComments: vi.fn(),
+    removeLabel: vi.fn(),
+  } as GitHubClient;
+}
+
+const mockStartPrimitive = vi.fn().mockResolvedValue(0);
+
+const baseOpts = {
+  repoRoot: "/repo",
+  slug: "my-slug",
+  issueBody: "body",
+  issueNumber: 42,
+  owner: "owner",
+  repo: "repo",
+};
 
 beforeEach(() => {
   vi.mocked(writeDraft).mockClear();
-  vi.mocked(runRunCore).mockClear();
-  vi.mocked(runRunCore).mockResolvedValue(0);
+  mockStartPrimitive.mockClear();
+  mockStartPrimitive.mockResolvedValue(0);
 });
 
-describe("TC-001: materializeDraftAndStart → runRunCore({ inboxOrigin: true })", () => {
-  it("TC-001: calls runRunCore with inboxOrigin: true", async () => {
-    await materializeDraftAndStart({
-      repoRoot: "/repo",
-      slug: "my-slug",
-      issueBody: "body",
-      issueNumber: 42,
-    });
-    expect(vi.mocked(runRunCore)).toHaveBeenCalledWith(
+describe("TC-003: writeDraft precedes start", () => {
+  it("TC-003: calls start primitive with inboxOrigin: true", async () => {
+    const client = makeClient();
+    await materializeDraftAndStart({ ...baseOpts, githubClient: client, startPrimitive: mockStartPrimitive });
+    expect(mockStartPrimitive).toHaveBeenCalledWith(
       "specrunner/drafts/my-slug/request.md",
       expect.objectContaining({ inboxOrigin: true }),
     );
   });
 
-  it("TC-001: calls runRunCore with the correct issueNumber", async () => {
-    await materializeDraftAndStart({
-      repoRoot: "/repo",
-      slug: "my-slug",
-      issueBody: "body",
-      issueNumber: 42,
-    });
-    expect(vi.mocked(runRunCore)).toHaveBeenCalledWith(
+  it("TC-003: calls start primitive with correct issueNumber", async () => {
+    const client = makeClient();
+    await materializeDraftAndStart({ ...baseOpts, githubClient: client, startPrimitive: mockStartPrimitive });
+    expect(mockStartPrimitive).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ issue: 42 }),
     );
   });
 
-  it("TC-001: calls runRunCore with both inboxOrigin: true and correct issue in one call", async () => {
-    await materializeDraftAndStart({
-      repoRoot: "/repo",
-      slug: "slug-x",
-      issueBody: "body",
-      issueNumber: 99,
-    });
-    expect(vi.mocked(runRunCore)).toHaveBeenCalledWith(
+  it("TC-003: calls start primitive with both inboxOrigin: true and issue in one call", async () => {
+    const client = makeClient();
+    await materializeDraftAndStart({ ...baseOpts, slug: "slug-x", issueNumber: 99, githubClient: client, startPrimitive: mockStartPrimitive });
+    expect(mockStartPrimitive).toHaveBeenCalledWith(
       "specrunner/drafts/slug-x/request.md",
       expect.objectContaining({ inboxOrigin: true, issue: 99 }),
     );
   });
 
-  it("TC-001: calls writeDraft before runRunCore", async () => {
+  it("TC-003: calls writeDraft before start primitive", async () => {
     const order: string[] = [];
     vi.mocked(writeDraft).mockImplementationOnce(async () => { order.push("writeDraft"); });
-    vi.mocked(runRunCore).mockImplementationOnce(async () => { order.push("runRunCore"); return 0; });
+    mockStartPrimitive.mockImplementationOnce(async () => { order.push("startPrimitive"); return 0; });
+    const client = makeClient();
+    await materializeDraftAndStart({ ...baseOpts, githubClient: client, startPrimitive: mockStartPrimitive });
+    expect(order).toEqual(["writeDraft", "startPrimitive"]);
+  });
+});
 
-    await materializeDraftAndStart({
-      repoRoot: "/repo",
-      slug: "slug",
-      issueBody: "body",
-      issueNumber: 1,
-    });
-    expect(order).toEqual(["writeDraft", "runRunCore"]);
+describe("TC-004: occupancy error propagates", () => {
+  it("TC-004: propagates SlugOccupiedError from start primitive", async () => {
+    const err = slugOccupiedError("slug", { jobId: "j1", status: "running" });
+    mockStartPrimitive.mockRejectedValueOnce(err);
+    const client = makeClient();
+    await expect(
+      materializeDraftAndStart({ ...baseOpts, githubClient: client, startPrimitive: mockStartPrimitive }),
+    ).rejects.toThrow(err);
+  });
+});
+
+// TC-006: link callback fires with correct args
+describe("TC-006: buildLinkedBranchRegistrar fires getIssue → createLinkedBranch", () => {
+  it("TC-006: calls getIssue then createLinkedBranch(nodeId, branchName, baseOid)", async () => {
+    const client = makeClient();
+    const cb = buildLinkedBranchRegistrar({ githubClient: client, owner: "o", repo: "r", issueNumber: 42 });
+    await cb("sha123", "feat/my-slug-abcdef01");
+    expect(vi.mocked(client.getIssue)).toHaveBeenCalledWith("o", "r", 42);
+    expect(vi.mocked(client.createLinkedBranch)).toHaveBeenCalledWith("NODE_123", "feat/my-slug-abcdef01", "sha123");
   });
 
-  it("TC-001: propagates SlugOccupiedError from runRunCore (existing path)", async () => {
-    const err = slugOccupiedError("slug", { jobId: "j1", status: "running" });
-    vi.mocked(runRunCore).mockRejectedValueOnce(err);
-    await expect(
-      materializeDraftAndStart({ repoRoot: "/r", slug: "slug", issueBody: "b", issueNumber: 1 }),
-    ).rejects.toThrow(err);
+  it("TC-006: createLinkedBranch throw is swallowed (best-effort)", async () => {
+    const client = makeClient();
+    vi.mocked(client.createLinkedBranch).mockRejectedValueOnce(new Error("GraphQL error"));
+    const cb = buildLinkedBranchRegistrar({ githubClient: client, owner: "o", repo: "r", issueNumber: 42 });
+    // Must not throw
+    await expect(cb("sha123", "feat/my-slug-abcdef01")).resolves.toBeUndefined();
   });
 });

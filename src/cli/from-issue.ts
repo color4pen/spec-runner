@@ -13,7 +13,8 @@ import { parseRequestMdContent } from "../parser/request-md.js";
 import { getCurrentBranch } from "../git/branch.js";
 import { baseBranchMismatchError, SpecRunnerError, EXIT_CODE } from "../errors.js";
 import { isDetachedChild, detachSelf } from "../core/command/detach.js";
-import { materializeDraftAndStart } from "../core/job/start-from-issue.js";
+import { materializeDraftAndStart } from "../core/issue-target/start.js";
+import { runRunCore } from "./run.js";
 import { logError } from "../logger/stdout.js";
 import type { LogLevel } from "../logger/stdout.js";
 import type { CommandContext } from "./command-context.js";
@@ -120,7 +121,7 @@ export async function runFromIssue(
     }
 
     // --- 6. Materialize draft + start ---
-    return await materializeDraftAndStart({ repoRoot, slug, issueBody, issueNumber });
+    return await materializeDraftAndStart({ repoRoot, slug, issueBody, issueNumber, githubClient, owner, repo, startPrimitive: runRunCore });
   } catch (err) {
     if (err instanceof SpecRunnerError) {
       logError(err.message);

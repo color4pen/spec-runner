@@ -255,16 +255,36 @@ export interface GitHubClient {
    * Fetch a single issue by number.
    * GET /repos/{owner}/{repo}/issues/{number}
    *
-   * - 200 → returns { number, title, body } (body: null → "")
+   * - 200 → returns { number, title, body, nodeId } (body: null → ""; nodeId: REST node_id)
    * - 401 → throws SpecRunnerError(GITHUB_TOKEN_EXPIRED) (via shared request() layer)
    * - non-200 (404 included) → throws SpecRunnerError(GITHUB_API_ERROR)
    *
    * Used by the entrance fidelity gate to compare issue requirements with request.md.
+   * Used by issue-target to obtain the GraphQL node ID for createLinkedBranch.
    * Never returns null — fail-closed: any non-200 response throws.
    *
    * @param owner        Repository owner (user or org name).
    * @param repo         Repository name.
    * @param issueNumber  GitHub issue number.
    */
-  getIssue(owner: string, repo: string, issueNumber: number): Promise<{ number: number; title: string; body: string }>;
+  getIssue(owner: string, repo: string, issueNumber: number): Promise<{ number: number; title: string; body: string; nodeId: string }>;
+
+  /**
+   * Register the given branch as a GitHub Development linked branch for an issue.
+   *
+   * Uses GraphQL mutation `createLinkedBranch(input:{issueId,name,oid})`.
+   * Creates a NEW branch linked to the issue at the given base OID — existing branches
+   * cannot be linked after the fact via public API.
+   *
+   * - Success → resolves void.
+   * - Non-2xx HTTP response → throws SpecRunnerError(GITHUB_API_ERROR) (fail-closed).
+   * - GraphQL `errors` non-empty → throws SpecRunnerError(GITHUB_API_ERROR) (fail-closed).
+   *
+   * Callers are responsible for best-effort handling (catch + warn, do not rethrow).
+   *
+   * @param issueId  GraphQL node ID of the issue (e.g. from getIssue().nodeId).
+   * @param name     Branch name to create and link.
+   * @param oid      Base commit SHA (immutable OID) to branch from.
+   */
+  createLinkedBranch(issueId: string, name: string, oid: string): Promise<void>;
 }

@@ -74,3 +74,11 @@ describe("architecture: core/request must not import from adapter/ (baseline sce
     expect(result).toBe("");
   });
 });
+
+// TC-001: issue-target layer must not depend on cli/
+describe("architecture: core/issue-target must not import from cli/ (TC-001)", () => {
+  it('grep -rn "cli/" src/core/issue-target returns 0 matches (static and dynamic imports)', () => {
+    const result = grepImports('"cli/"', "src/core/issue-target");
+    expect(result).toBe("");
+  });
+});

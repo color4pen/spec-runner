@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T06:14:54.482Z",
+  "updatedAt": "2026-08-20T06:15:49.546Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -80,7 +80,8 @@
     "7f3c5a653857ab211ecf12bac65f80d5c485f15c",
     "29075b672f36a1f1c68373534e653833bbe35793",
     "6ab52bf026c283238c8f8ff500fa1405b733a61f",
-    "303a6394f45a1770111e7a4189970502a4dcbf83"
+    "303a6394f45a1770111e7a4189970502a4dcbf83",
+    "4635f80095387ce022b7e8151734115a07999d9a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -152,13 +153,13 @@
     }
   ],
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
       "test-case-gen": 3,
       "spec-review": 4,
-      "spec-fixer": 2
+      "spec-fixer": 3
     }
   }
 }
