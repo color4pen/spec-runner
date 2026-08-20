@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f8732c22-7cc4-4894-a62e-9f6e8a827e8a",
   "createdAt": "2026-08-20T13:01:11.201Z",
-  "updatedAt": "2026-08-20T13:07:52.086Z",
+  "updatedAt": "2026-08-20T13:17:43.975Z",
   "request": {
     "title": "fixable finding への operator 不採用裁定を decisions 台帳の一般化で機械尊重する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/finding-wontfix-disposition-f8732c22",
   "error": null,
@@ -64,7 +64,8 @@
   "issueNumber": 1022,
   "synthesizedCommits": [
     "6444897efe2c9d24466e112e77bf1c77f37e8c75",
-    "8ad4fd6c40264653f9a803e928c9f7586330ace3"
+    "8ad4fd6c40264653f9a803e928c9f7586330ace3",
+    "481b6c798cb57252199b6d6b24b4bd9d7b741008"
   ],
   "touchedFiles": {
     "request-review": [
@@ -78,12 +79,29 @@
       "src/cli/resume.ts",
       "src/cli/command-registry.ts",
       "src/core/pipeline/__tests__/findings-ledger.test.ts"
+    ],
+    "design": [
+      "src/state/schema/types.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/step/step-completion.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/resume.ts",
+      "src/core/command/resume.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/cli/command-registry.ts",
+      "src/core/inbox/planner.ts",
+      "src/kernel/report-result.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
