@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1875919e-d9f4-4db8-8abe-33e24f96cfb9",
   "createdAt": "2026-08-20T03:41:04.851Z",
-  "updatedAt": "2026-08-20T04:27:07.580Z",
+  "updatedAt": "2026-08-20T04:29:36.343Z",
   "request": {
     "title": "checkpoint 検証の分離: generic integrity と use-case policy の二層化",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "refactor/checkpoint-verification-policy-split-1875919e",
   "error": null,
@@ -75,7 +75,9 @@
     "45d090569abf165dfeff9b564d37cb1ad68d8a6d",
     "bd534348186ca3349557350ddc8fdd36541e8579",
     "3a63ecd165153012e4d03deb8b2209cd9453ba50",
-    "37ae8c305db68eeddeae3badab59d30207655322"
+    "37ae8c305db68eeddeae3badab59d30207655322",
+    "fc25bb2fc8873c6a743fd789ac5c590f64ef8367",
+    "25a15f8bcfd756765a544572f2217288da4c4b5a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -107,38 +109,22 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/core/attach/verify-checkpoint.ts",
-      "tests/attach/verify-checkpoint.test.ts",
-      "tests/attach/verify-checkpoint-r1-assurance.test.ts",
-      "src/core/resume/resolve-step.ts",
-      "src/errors.ts",
-      "src/core/attach/orchestrator.ts",
-      "src/core/pipeline/registry.ts",
-      "src/core/step/types.ts",
-      "src/core/port/step-types.ts",
-      "tests/attach/orchestrator.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "src/store/job-state-projection.ts",
-      "src/core/attach/checkpoint-policy.ts",
-      "src/state/pipeline-id.ts",
-      "src/state/job-slug.ts",
-      "tests/attach/checkpoint-policy.test.ts",
-      "src/store/event-journal.ts"
+      "tests/attach/checkpoint-policy.test.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 3,
       "spec-fixer": 2,
-      "implementer": 1,
+      "implementer": 2,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2
     }
   }
 }
