@@ -60,7 +60,8 @@ function makeGitHubClient(): GitHubClient {
     ]),
     listIssueComments: vi.fn().mockResolvedValue([]),
     removeLabel: vi.fn().mockResolvedValue(undefined),
-    getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "", nodeId: "NODE_001" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://..." }),
     verifyBranch: vi.fn(),
     getRawFile: vi.fn(),
@@ -104,5 +105,8 @@ describe("TC-018: inbox startJob が inboxOrigin: true を runRunCore に渡す"
     // 2 番目の引数（options）に inboxOrigin: true が含まれる
     const [, options] = mockRunRunCore.mock.calls[0] as [string, Record<string, unknown>];
     expect(options).toHaveProperty("inboxOrigin", true);
+
+    // onFeatureBranchCreated が options に含まれる（Development リンク登録 callback）
+    expect(typeof options["onFeatureBranchCreated"]).toBe("function");
   });
 });

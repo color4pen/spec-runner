@@ -10,7 +10,7 @@ import { runInit } from "./init.js";
 import { runManagedSetup, runManagedStatus, runManagedReset } from "./managed.js";
 import { runLogin } from "./login.js";
 import { runCredentialsSet, CREDENTIALS_SET_USAGE } from "./credentials.js";
-import { runRun } from "./run.js";
+import { runRun, runRunCore } from "./run.js";
 import { runPs } from "./ps.js";
 import { runDoctor } from "./doctor.js";
 import { runArchive } from "./archive.js";
@@ -48,6 +48,7 @@ import { parseRequestMdRaw } from "../parser/request-md.js";
 import { runJobWait } from "./job-wait.js";
 import { runGuide, GUIDE_TOPICS } from "../core/command/guide.js";
 import { runFromIssue } from "./from-issue.js";
+import { getOriginInfo } from "../git/remote.js";
 
 /** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
 const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
@@ -620,7 +621,55 @@ async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<
   });
   // --issue is now validated as integer by the parser (min: 1)
   const issue = typeof parsed.flags["issue"] === "number" ? parsed.flags["issue"] : undefined;
-  await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"], issue });
+
+  // Positional + --issue: route through issue-target for Development linked branch registration
+  if (issue !== undefined) {
+    const repoRoot = ctx?.repoRoot ?? process.cwd();
+    let config;
+    try {
+      config = await loadConfigWithOverlay(repoRoot, repoRoot);
+    } catch (err) {
+      logError(`Failed to load config: ${(err as Error).message}`);
+      process.exit(EXIT_CODE.GENERAL_ERROR);
+    }
+    const githubHost = resolveGitHubHost(config.github);
+    const githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
+    let githubToken: string;
+    try {
+      const result = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
+      githubToken = result.token;
+    } catch (err) {
+      logError(`Failed to resolve GitHub token: ${(err as Error).message}`);
+      process.exit(EXIT_CODE.GENERAL_ERROR);
+    }
+    let owner: string;
+    let repo: string;
+    try {
+      const origin = await getOriginInfo(repoRoot, githubHost);
+      owner = origin.owner;
+      repo = origin.name;
+    } catch (err) {
+      logError(`Failed to resolve git origin: ${(err as Error).message}`);
+      process.exit(EXIT_CODE.GENERAL_ERROR);
+    }
+    const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
+    const { startWithIssueLink } = await import("../core/issue-target/start.js");
+    const code = await startWithIssueLink({
+      repoRoot,
+      requestMdPath,
+      issueNumber: issue,
+      githubClient,
+      owner,
+      repo,
+      // Closure carries the CLI flags (logLevel / json / no-worktree) so the issue-target
+      // route preserves the same runRunCore contract as the plain positional route.
+      startPrimitive: (path, opts) =>
+        runRunCore(path, { ...opts, logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] }),
+    });
+    process.exit(code);
+  }
+
+  await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] });
 }
 
 // ---------------------------------------------------------------------------

@@ -83,6 +83,7 @@ function makeGitHubClient(overrides: Partial<GitHubClient> = {}): GitHubClient {
     listIssueComments: vi.fn().mockResolvedValue([]),
     removeLabel: vi.fn().mockResolvedValue(undefined),
     getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://..." }),
     verifyBranch: vi.fn(),
     getRawFile: vi.fn(),
@@ -210,6 +211,7 @@ describe("runInboxOrchestrator — resume", () => {
       listIssueComments: vi.fn().mockResolvedValue(comments),
       removeLabel: vi.fn().mockResolvedValue(undefined),
       getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     });
     const effects = makeEffects();
 
@@ -231,6 +233,7 @@ describe("runInboxOrchestrator — resume", () => {
       listIssueComments: vi.fn().mockResolvedValue(comments),
       removeLabel: vi.fn().mockResolvedValue(undefined),
       getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     });
     const effects = makeEffects();
 
@@ -251,6 +254,7 @@ describe("runInboxOrchestrator — resume", () => {
       listIssueComments: vi.fn().mockResolvedValue(comments),
       removeLabel: vi.fn().mockResolvedValue(undefined),
       getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     });
     const effects = makeEffects();
 
@@ -272,6 +276,7 @@ describe("runInboxOrchestrator — resume", () => {
       listIssueComments: vi.fn().mockResolvedValue(comments),
       removeLabel: vi.fn().mockResolvedValue(undefined),
       getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     });
     const effects = makeEffects();
 
@@ -309,6 +314,7 @@ describe("runInboxOrchestrator — dry-run", () => {
       listIssueComments: vi.fn().mockResolvedValue(comments),
       removeLabel: vi.fn().mockResolvedValue(undefined),
       getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     });
     const effects = makeEffects();
 

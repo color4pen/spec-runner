@@ -16,6 +16,7 @@ import type { SpawnFn } from "../../util/spawn.js";
 import type { WorkspaceSetupPlan } from "../worktree/setup.js";
 import type { WorkspaceContext, WorkspaceOptions } from "../port/runtime-strategy.js";
 import type { JobState } from "../../state/schema.js";
+import { stderrWrite } from "../../logger/stdout.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { changeFolderPath } from "../../util/paths.js";
 import {
@@ -31,7 +32,18 @@ export type WorktreeMaterializationPlan =
   | { kind: "resume-existing"; worktreePath: string }
   | { kind: "resume-recreated"; remoteBaseRef: string }
   | { kind: "resume-without-recorded-worktree"; remoteBaseRef: string }
-  | { kind: "new-run"; remoteBaseRef: string; branchName?: string }
+  | {
+      kind: "new-run";
+      remoteBaseRef: string;
+      branchName?: string;
+      /**
+       * Immutable base OID resolved from remoteBaseRef before worktree creation (D4).
+       * When present, used as the base ref for both manager.create and the
+       * onFeatureBranchCreated callback, guaranteeing both use the same SHA.
+       * Absent on plan variants that do not resolve OID (backward compat).
+       */
+      baseOid?: string;
+    }
   | { kind: "attach-from-checkpoint"; checkpointRef: string; branchName: string };
 
 /**
@@ -148,10 +160,14 @@ export class WorkspaceMaterializer {
       }
 
       case "new-run": {
+        // Use the immutable base OID when available (D4: resolved once in setupWorkspace).
+        // Fall back to symbolic remoteBaseRef for backward compatibility.
+        const baseRef = plan.baseOid ?? plan.remoteBaseRef;
+
         // Pass branchName so manager creates the branch in the worktree (D1)
         const setupPlan = this.host.resolveSetupPlan();
         const worktreePath = await this.host.manager.create(
-          this.host.cwd, slug, jobId, plan.remoteBaseRef, plan.branchName, setupPlan,
+          this.host.cwd, slug, jobId, baseRef, plan.branchName, setupPlan,
         );
 
         // workspace must be registered before updateJobState so slugStoreOpts() works (invariant 1)
@@ -171,6 +187,17 @@ export class WorkspaceMaterializer {
         // Record worktreePath in state (slug-based store) and write liveness sidecar
         await this.host.updateJobState(jobId, (s) => ({ ...s, worktreePath }), slugOpts);
         await this.host.writeLivenessSidecar(slug, jobId, worktreePath);
+
+        // Invoke the link-registration callback AFTER worktree creation succeeds and
+        // BEFORE the bootstrap commit (D5 ordering: worktree → link → commit/push).
+        // Best-effort: the callback is responsible for catching internally, but we
+        // also wrap here as a defensive backstop (TC-010).
+        if (plan.branchName && opts?.onFeatureBranchCreated) {
+          const oidForCallback = plan.baseOid ?? plan.remoteBaseRef;
+          await opts.onFeatureBranchCreated(oidForCallback, plan.branchName).catch((err) => {
+            stderrWrite(`Warning: linked branch registration failed: ${(err as Error).message ?? err}`);
+          });
+        }
 
         // Copy request.md into the change folder so the agent can read it
         if (opts?.requestFilePath) {

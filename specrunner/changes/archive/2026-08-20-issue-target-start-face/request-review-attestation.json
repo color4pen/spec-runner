@@ -1,0 +1,22 @@
+{
+  "requestHash": "sha256:691af2bb1dfb438d37bfd5b9eaae50b2a13391c1d5c103d679c4ec44f29f117b",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/job/start-from-issue.ts: materializeDraftAndStart exported function exists",
+    "src/core/job/start-from-issue.ts:31: await import(\"../../cli/run.js\") dynamic import",
+    "src/core/inbox/run-inbox.ts:396: await import(\"../job/start-from-issue.js\") and materializeDraftAndStart call in startJob effect",
+    "src/core/pr-create/body-template.ts:75: Fixes #${jobState.issueNumber}",
+    "src/core/command/pipeline-run.ts:174-175: getBranchPrefix(request.type) + slug + jobId.slice(0,8) inline template",
+    "src/core/step/design.ts:151: getBranchPrefix(deps.request.type) + slug + jobId.slice(0,8) inline template (second site)",
+    "src/core/step/commit-orchestrator.ts:403-404: getBranchPrefix(deps.request.type) + slug + jobId.slice(0,8) inline template (third site)",
+    "src/core/runtime/local.ts:478-479: const baseBranch = opts?.baseBranch ?? \"main\" and const remoteBaseRef = `origin/${baseBranch}`",
+    "src/adapter/github/github-client.ts: REST-only, no GraphQL implementation",
+    "src/core/port/github-client.ts:269: getIssue() port interface returns { number, title, body } only (no nodeId)",
+    "src/adapter/github/github-client.ts:670-682: getIssue() adapter maps REST response to { number, title, body } only (node_id dropped)",
+    "tests/unit/architecture/core-invariants.test.ts: DSM closure test uses static from-import regex only (dynamic imports not checked)",
+    "src/cli/command-registry.ts:622-623: positional + --issue path calls runRun() without issue-target routing",
+    "src/cli/__tests__/from-issue.test.ts:90: vi.mock(\"../../core/job/start-from-issue.js\") pins import path",
+    "src/core/job/__tests__/start-from-issue.test.ts:13: vi.mock(\"../../../cli/run.js\") and asserts runRunCore called with { inboxOrigin: true, issue: N }"
+  ],
+  "sourceRevision": "44c26134e3d2bc82032bccd08804f6944ec55f68"
+}

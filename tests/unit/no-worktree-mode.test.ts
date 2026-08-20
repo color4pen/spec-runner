@@ -136,7 +136,8 @@ function buildMockGitHubClient() {
     searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
     listIssueComments: vi.fn().mockResolvedValue([]),
     removeLabel: vi.fn().mockResolvedValue(undefined),
-    getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "", nodeId: "NODE_001" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -753,5 +754,171 @@ describe("TC-NW-017: setupWorkspace no-worktree run path — bootstrap OID recor
         bootstrapState: jobState,
       }),
     ).rejects.toThrow("Failed to capture bootstrap commit OID");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-012: setupWorkspace no-worktree — onFeatureBranchCreated callback
+// ---------------------------------------------------------------------------
+
+describe("TC-012: setupWorkspace no-worktree — onFeatureBranchCreated callback", () => {
+  const TC012_OID = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
+
+  function buildSpawnFnForCallback(_opts: { callbackResolves?: boolean } = {}): SpawnFn {
+    return vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
+      if (cmd === "git" && args[0] === "status" && args[1] === "--porcelain") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "rev-parse" && args[1] === "HEAD") {
+        return { exitCode: 0, stdout: `${TC012_OID}\n`, stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "checkout" && args[1] === "-b") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+  }
+
+  it("calls onFeatureBranchCreated with correct baseOid and branchName after checkout", async () => {
+    const onFeatureBranchCreated = vi.fn().mockResolvedValue(undefined);
+    const manager = buildMockManager();
+    const spawnFn = buildSpawnFnForCallback();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const slug = "tc012-callback";
+    const branchName = "change/tc012-callback-abc12345";
+    const jobState = await makeJobState(slug);
+
+    await runtime.setupWorkspace(slug, jobState.jobId, {
+      noWorktree: true,
+      branchName,
+      bootstrapState: jobState,
+      onFeatureBranchCreated,
+    });
+
+    expect(onFeatureBranchCreated).toHaveBeenCalledOnce();
+    expect(onFeatureBranchCreated).toHaveBeenCalledWith(TC012_OID, branchName);
+  });
+
+  it("onFeatureBranchCreated rejection is warning-only — setupWorkspace resolves", async () => {
+    const onFeatureBranchCreated = vi.fn().mockRejectedValue(new Error("API error"));
+    const manager = buildMockManager();
+    const spawnFn = buildSpawnFnForCallback();
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const slug = "tc012-callback-fail";
+    const branchName = "change/tc012-callback-fail-abc12345";
+    const jobState = await makeJobState(slug);
+
+    // Must NOT throw — best-effort
+    await expect(
+      runtime.setupWorkspace(slug, jobState.jobId, {
+        noWorktree: true,
+        branchName,
+        bootstrapState: jobState,
+        onFeatureBranchCreated,
+      }),
+    ).resolves.toBeDefined();
+
+    // Callback was still invoked
+    expect(onFeatureBranchCreated).toHaveBeenCalledOnce();
+
+    // A warning must have been written to stderr
+    const stderrCalls = (vi.mocked(process.stderr.write).mock.calls as unknown[][])
+      .map((c) => String(c[0]));
+    expect(stderrCalls.some((m) => m.includes("Warning"))).toBe(true);
+  });
+
+  it("rev-parse HEAD failure: callback is skipped and a warning is written to stderr", async () => {
+    const onFeatureBranchCreated = vi.fn().mockResolvedValue(undefined);
+    const manager = buildMockManager();
+    // spawnFn where rev-parse HEAD fails
+    const spawnFn: SpawnFn = vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
+      if (cmd === "git" && args[0] === "status" && args[1] === "--porcelain") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "rev-parse" && args[1] === "HEAD") {
+        return { exitCode: 1, stdout: "", stderr: "fatal: bad revision 'HEAD'" };
+      }
+      if (cmd === "git" && args[0] === "checkout" && args[1] === "-b") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const slug = "tc012-revparse-fail";
+    const branchName = "change/tc012-revparse-fail-abc12345";
+    const jobState = await makeJobState(slug);
+
+    // Must NOT throw — silent skip
+    await expect(
+      runtime.setupWorkspace(slug, jobState.jobId, {
+        noWorktree: true,
+        branchName,
+        bootstrapState: jobState,
+        onFeatureBranchCreated,
+      }),
+    ).resolves.toBeDefined();
+
+    // Callback must NOT have been called (OID unavailable)
+    expect(onFeatureBranchCreated).not.toHaveBeenCalled();
+
+    // A warning must have been written to stderr
+    const stderrCalls = (vi.mocked(process.stderr.write).mock.calls as unknown[][])
+      .map((c) => String(c[0]));
+    expect(stderrCalls.some((m) => m.includes("could not resolve HEAD OID"))).toBe(true);
+  });
+
+  it("TC-012: onFeatureBranchCreated fires before bootstrap git-commit (ordering pin)", async () => {
+    const order: string[] = [];
+    const manager = buildMockManager();
+
+    // spawnFn records git-commit; returns TC012_OID for both rev-parse HEAD calls
+    const spawnFn: SpawnFn = vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
+      if (cmd === "git" && args[0] === "status" && args[1] === "--porcelain") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "rev-parse" && args[1] === "HEAD") {
+        return { exitCode: 0, stdout: `${TC012_OID}\n`, stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "checkout" && args[1] === "-b") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "commit") {
+        order.push("git-commit");
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const slug = "tc012-ordering";
+    const branchName = "change/tc012-ordering-abc12345";
+    const jobState = await makeJobState(slug);
+
+    const requestFile = path.join(tempDir, `${slug}.md`);
+    await fs.writeFile(requestFile, "# TC-012 Ordering Test\n");
+
+    const onFeatureBranchCreated = vi.fn().mockImplementation(async () => {
+      order.push("callback");
+    });
+
+    await runtime.setupWorkspace(slug, jobState.jobId, {
+      noWorktree: true,
+      branchName,
+      bootstrapState: jobState,
+      onFeatureBranchCreated,
+      requestFilePath: requestFile,
+    });
+
+    expect(order).toContain("callback");
+    expect(order).toContain("git-commit");
+    expect(order.indexOf("callback")).toBeLessThan(order.indexOf("git-commit"));
   });
 });

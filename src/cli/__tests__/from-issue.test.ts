@@ -79,7 +79,9 @@ vi.mock("../../adapter/github/github-client.js", () => ({
         "",
         "Test.",
       ].join("\n"),
+      nodeId: "NODE_TEST",
     }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
   }),
 }));
 
@@ -87,8 +89,9 @@ vi.mock("../../git/branch.js", () => ({
   getCurrentBranch: vi.fn().mockResolvedValue("main"),
 }));
 
-vi.mock("../../core/job/start-from-issue.js", () => ({
+vi.mock("../../core/issue-target/start.js", () => ({
   materializeDraftAndStart: vi.fn().mockResolvedValue(0),
+  startWithIssueLink: vi.fn().mockResolvedValue(0),
 }));
 
 vi.mock("../../core/inbox/draft-writer.js", () => ({
@@ -102,7 +105,9 @@ vi.mock("../../core/inbox/draft-writer.js", () => ({
 import { COMMANDS } from "../command-registry.js";
 import { runFromIssue } from "../from-issue.js";
 import { getCurrentBranch } from "../../git/branch.js";
-import { materializeDraftAndStart } from "../../core/job/start-from-issue.js";
+import { materializeDraftAndStart, startWithIssueLink } from "../../core/issue-target/start.js";
+import type * as StartModule from "../../core/issue-target/start.js";
+import { runRunCore } from "../run.js";
 import { logError } from "../../logger/stdout.js";
 import { createGitHubClient } from "../../adapter/github/github-client.js";
 import { detachSelf } from "../../core/command/detach.js";
@@ -331,6 +336,7 @@ describe("TC-009: parse 失敗時に副作用ゼロ停止", () => {
         title: "Bad Issue",
         body: "This is not a valid request.md — no Meta section",
       }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     } as unknown as ReturnType<typeof createGitHubClient>);
 
     const code = await runFromIssue(42, {}, makeCtx());
@@ -344,6 +350,7 @@ describe("TC-009: parse 失敗時に副作用ゼロ停止", () => {
         title: "Bad Issue",
         body: "no meta section",
       }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     } as unknown as ReturnType<typeof createGitHubClient>);
 
     await runFromIssue(42, {}, makeCtx());
@@ -373,6 +380,19 @@ describe("TC-011: --from-issue が materializeDraftAndStart を経由する", ()
     const call = vi.mocked(materializeDraftAndStart).mock.calls[0]!;
     expect(call[0].issueNumber).toBe(42);
     expect(call[0].slug).toBe("test-slug");
+  });
+
+  it("TC-011: runRunCore (startPrimitive) receives onFeatureBranchCreated via --from-issue route", async () => {
+    // Use real materializeDraftAndStart so the callback flows through to runRunCore
+    const real = await vi.importActual<typeof StartModule>("../../core/issue-target/start.js");
+    vi.mocked(materializeDraftAndStart).mockImplementationOnce(real.materializeDraftAndStart);
+    vi.mocked(runRunCore).mockClear();
+
+    await runFromIssue(42, {}, makeCtx());
+
+    expect(vi.mocked(runRunCore)).toHaveBeenCalledOnce();
+    const [, opts] = vi.mocked(runRunCore).mock.calls[0] as [string, Record<string, unknown>];
+    expect(typeof opts["onFeatureBranchCreated"]).toBe("function");
   });
 });
 
@@ -477,4 +497,94 @@ describe("TC-010: 占有 slug は SlugOccupiedError 経路で拒否される", (
 });
 
 // TC-013/TC-014: getCurrentBranch の実装テストは src/git/__tests__/branch.test.ts が担保する。
+
+// ---------------------------------------------------------------------------
+// TC-005 (test-cases.md): positional + --issue → startWithIssueLink routing
+// ---------------------------------------------------------------------------
+
+describe("TC-005: positional + --issue → startWithIssueLink に route される", () => {
+  beforeEach(() => {
+    vi.mocked(startWithIssueLink).mockClear();
+    vi.mocked(startWithIssueLink).mockResolvedValue(0);
+  });
+
+  it("TC-005: calls startWithIssueLink (not materializeDraftAndStart) when positional + --issue given", async () => {
+    const handler = getJobStartHandler();
+    const spy = exitSpy();
+    try {
+      await handler(
+        { flags: { issue: 42 }, positional: "my-request.md", positionals: ["my-request.md"] },
+        makeCtx(),
+      ).catch(() => {});
+    } finally {
+      spy.mockRestore();
+    }
+    expect(vi.mocked(startWithIssueLink)).toHaveBeenCalledOnce();
+    expect(vi.mocked(materializeDraftAndStart)).not.toHaveBeenCalled();
+  });
+
+  it("TC-005: startWithIssueLink is called with correct issueNumber and requestMdPath", async () => {
+    const handler = getJobStartHandler();
+    const spy = exitSpy();
+    try {
+      await handler(
+        { flags: { issue: 42 }, positional: "my-request.md", positionals: ["my-request.md"] },
+        makeCtx(),
+      ).catch(() => {});
+    } finally {
+      spy.mockRestore();
+    }
+    const call = vi.mocked(startWithIssueLink).mock.calls[0]!;
+    expect(call[0].issueNumber).toBe(42);
+    expect(call[0].requestMdPath).toBe("my-request.md");
+  });
+
+  it("TC-005: CLI flags (logLevel / json / no-worktree) pass through the positional+--issue route to runRunCore", async () => {
+    // Regression pin: the issue-target route must preserve the same runRunCore flag
+    // contract as the plain positional route (flags carried via the injected closure).
+    const real = await vi.importActual<typeof StartModule>("../../core/issue-target/start.js");
+    vi.mocked(startWithIssueLink).mockImplementationOnce(real.startWithIssueLink);
+    vi.mocked(runRunCore).mockClear();
+
+    const handler = getJobStartHandler();
+    const spy = exitSpy();
+    try {
+      await handler(
+        { flags: { issue: 42, "no-worktree": true, verbose: true }, positional: "my-request.md", positionals: ["my-request.md"] },
+        makeCtx(),
+      ).catch(() => {});
+    } finally {
+      spy.mockRestore();
+    }
+
+    expect(vi.mocked(runRunCore)).toHaveBeenCalledOnce();
+    const [, flagOpts] = vi.mocked(runRunCore).mock.calls[0] as [string, Record<string, unknown>];
+    expect(flagOpts["noWorktree"]).toBe(true);
+    // resolveLogLevel is mocked to "normal" in this file — asserting it here pins that the
+    // handler-computed logLevel reaches runRunCore (absent before the closure fix).
+    expect(flagOpts["logLevel"]).toBe("normal");
+  });
+
+  it("TC-005: runRunCore (startPrimitive) receives onFeatureBranchCreated via positional+--issue route", async () => {
+    // Use real startWithIssueLink so the callback flows through to runRunCore
+    const real = await vi.importActual<typeof StartModule>("../../core/issue-target/start.js");
+    vi.mocked(startWithIssueLink).mockImplementationOnce(real.startWithIssueLink);
+    vi.mocked(runRunCore).mockClear();
+
+    const handler = getJobStartHandler();
+    const spy = exitSpy();
+    try {
+      await handler(
+        { flags: { issue: 42 }, positional: "my-request.md", positionals: ["my-request.md"] },
+        makeCtx(),
+      ).catch(() => {});
+    } finally {
+      spy.mockRestore();
+    }
+
+    expect(vi.mocked(runRunCore)).toHaveBeenCalledOnce();
+    const [, opts] = vi.mocked(runRunCore).mock.calls[0] as [string, Record<string, unknown>];
+    expect(typeof opts["onFeatureBranchCreated"]).toBe("function");
+  });
+});
 

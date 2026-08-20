@@ -67,6 +67,7 @@ describe("TC-009: getIssue — 200 応答の射影", () => {
         number: ISSUE_NUMBER,
         title: "Test Issue Title",
         body: "Test body",
+        node_id: "MDExOklzc3VlMTIzNDU2Nzg5",
       }),
     );
 
@@ -78,12 +79,30 @@ describe("TC-009: getIssue — 200 応答の射影", () => {
     expect(result.body).toBe("Test body");
   });
 
+  // TC-015: getIssue returns nodeId from REST node_id
+  it("TC-015: 返り値に nodeId が含まれ REST node_id が射影される", async () => {
+    const mockFetch = vi.fn().mockResolvedValue(
+      makeResponse(200, {
+        number: ISSUE_NUMBER,
+        title: "Test Issue Title",
+        body: "Test body",
+        node_id: "MDExOklzc3VlMTIzNDU2Nzg5",
+      }),
+    );
+
+    const client = buildClient(mockFetch as unknown as typeof fetch);
+    const result = await client.getIssue(OWNER, REPO, ISSUE_NUMBER);
+
+    expect(result.nodeId).toBe("MDExOklzc3VlMTIzNDU2Nzg5");
+  });
+
   it("TC-009: body が null の場合は空文字 '' に射影される", async () => {
     const mockFetch = vi.fn().mockResolvedValue(
       makeResponse(200, {
         number: ISSUE_NUMBER,
         title: "Issue with null body",
         body: null,
+        node_id: "NODE_ID_1",
       }),
     );
 
