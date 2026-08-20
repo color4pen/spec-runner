@@ -11,6 +11,7 @@
  * TC-016: parseEscalationJobId returns null for non-escalation bodies
  * TC-024: spoofed escalation marker with mismatched checkpoint is rejected
  * TC-025: unreadable candidate branches are skipped without blocking a match
+ * TC-026: branch mismatch is rejected fail-closed
  */
 import { describe, it, expect, vi } from "vitest";
 import {
@@ -361,6 +362,32 @@ describe("TC-006: jobId mismatch is rejected fail-closed", () => {
     await expect(
       resolveResumeBranchFromIssue({
         client, owner: "o", repo: "r", issueNumber: 5, jobId: "job-fake", spawnFn, cwd: "/repo",
+      }),
+    ).rejects.toSatisfy(
+      (err: unknown) => err instanceof SpecRunnerError && err.code === ERROR_CODES.RESUME_FROM_ISSUE_UNCONFIRMED,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-026: branch mismatch is rejected fail-closed
+// ---------------------------------------------------------------------------
+
+describe("TC-026: branch mismatch is rejected fail-closed", () => {
+  it("TC-026: branch with wrong state.branch throws RESUME_FROM_ISSUE_UNCONFIRMED", async () => {
+    const jobId = "job-abc";
+    const candidateBranch = "feat/my-feature";
+    // state.json claims a different branch name
+    const stateJson = makeStateJson(jobId, 5, "feat/other-branch");
+
+    const client = makeClient({
+      listIssueLinkedBranches: vi.fn().mockResolvedValue([candidateBranch]),
+    });
+    const spawnFn = makeSpawnFn({ [candidateBranch]: { stateJson } });
+
+    await expect(
+      resolveResumeBranchFromIssue({
+        client, owner: "o", repo: "r", issueNumber: 5, jobId, spawnFn, cwd: "/repo",
       }),
     ).rejects.toSatisfy(
       (err: unknown) => err instanceof SpecRunnerError && err.code === ERROR_CODES.RESUME_FROM_ISSUE_UNCONFIRMED,

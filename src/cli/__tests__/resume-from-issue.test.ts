@@ -344,6 +344,7 @@ describe("TC-013: --from-issue combines with --detach", () => {
       Object.assign(new Error("JOB_NOT_FOUND"), { code: "JOB_NOT_FOUND" }),
     );
     vi.mocked(runResumeCore).mockClear();
+    vi.mocked(runAttachVerification).mockClear();
   });
 
   it("TC-013: detachSelf is called when --detach is set and not a child", async () => {
@@ -353,6 +354,7 @@ describe("TC-013: --from-issue combines with --detach", () => {
 
   it("TC-013: runAttachVerification and runResumeCore are NOT called when parent detaches", async () => {
     await runResumeFromIssue(42, { detach: true }, makeCtx());
+    expect(vi.mocked(runAttachVerification)).not.toHaveBeenCalled();
     expect(vi.mocked(runResumeCore)).not.toHaveBeenCalled();
   });
 });
