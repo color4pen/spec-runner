@@ -597,6 +597,16 @@ describe("TC-011: spec-fixer system prompt write-set names tasks.md", () => {
   it("TC-011: SPEC_FIXER_SYSTEM_PROMPT contains 'tasks.md' in the write-set section", () => {
     expect(SPEC_FIXER_SYSTEM_PROMPT).toContain("tasks.md");
   });
+
+  // spec-review-loop-single-fixer TC-009 (should): SPEC_FIXER_SYSTEM_PROMPT に test-cases.md と
+  // targeted 修正の記述が含まれる。spec-fixer が test-cases.md を wholesale 再生成しないことを
+  // prompt instruction レベルで pin する（structural proxy の残存リスクを部分的に閉じる）。
+  it("TC-011/TC-009: SPEC_FIXER_SYSTEM_PROMPT contains 'test-cases.md' and no-regeneration instruction", () => {
+    // test-cases.md must appear in the write-set and method sections of the prompt
+    expect(SPEC_FIXER_SYSTEM_PROMPT).toContain("test-cases.md");
+    // "再生成はしない" must be present — pins the targeted-修正 contract for test-cases.md
+    expect(SPEC_FIXER_SYSTEM_PROMPT).toContain("再生成はしない");
+  });
 });
 
 // ---------------------------------------------------------------------------
