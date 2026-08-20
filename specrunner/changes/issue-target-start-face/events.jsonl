@@ -72,3 +72,5 @@
 {"type":"finding-recency","step":"spec-review","ts":"2026-08-20T06:07:52.033Z","iteration":4,"priorOid":"768e6005d7a3fa4276f4ee8f14c1bf9e1f5991e3","findings":[{"file":"specrunner/changes/issue-target-start-face/design.md","line":19,"title":"design.md の \"TC-018\" 参照が test-cases.md の TC-018（GraphQL endpoint テスト）と名前衝突","severity":"low","recency":"late"}]}
 {"type":"transition","ts":"2026-08-20T06:07:52.034Z","step":"spec-review","status":"ok","message":"spec-review iteration 2 completed with verdict: approved"}
 {"type":"transition","ts":"2026-08-20T06:07:52.035Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: spec-review did not approve after 2 iterations"}
+{"type":"transition","ts":"2026-08-20T06:14:54.335Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'spec-fixer'"}
+{"type":"transition","ts":"2026-08-20T06:14:54.482Z","step":"spec-fixer-started","status":"started","message":"Starting spec-fixer step"}

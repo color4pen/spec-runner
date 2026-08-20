@@ -16,7 +16,7 @@ issue を起点に job lifecycle を操作する経路が `job start --from-issu
 - `src/core/pr-create/body-template.ts:75` の `Fixes #<issueNumber>` により **PR→issue の Development リンクは既に成立**。branch 側リンクは pipeline がローカル `git worktree add -b` + push で作るため存在しない。
 - GitHub API 制約: linked branch 作成は GraphQL mutation `createLinkedBranch(issueId, oid, name)` のみ。既存 branch の後付けリンクは公開 mutation に無い。
 
-検証で判明した前提の齟齬（重要 — Decisions D2 で扱う）: request は「inbox の既存テストは effects 注入でテストされ配線非依存」と述べるが、`tests/unit/inbox/run-inbox-inbox-origin.test.ts`（ファイル内ラベル TC-018 — test-cases.md の TC-018 とは別物）は effects を **注入せず**、`vi.mock("../../../src/cli/run.js")` で **既定 startJob の配線**（inbox→cli/run）を pin し、`inboxOrigin: true` を assert する。この 1 本だけは配線依存であり、「無改変で green」を満たすには既定 startJob から `runRunCore`（cli/run）が到達可能なままである必要がある。
+検証で判明した前提の齟齬（重要 — Decisions D2 で扱う）: request は「inbox の既存テストは effects 注入でテストされ配線非依存」と述べるが、`tests/unit/inbox/run-inbox-inbox-origin.test.ts` は effects を **注入せず**、`vi.mock("../../../src/cli/run.js")` で **既定 startJob の配線**（inbox→cli/run）を pin し、`inboxOrigin: true` を assert する。この 1 本だけは配線依存であり、「無改変で green」を満たすには既定 startJob から `runRunCore`（cli/run）が到達可能なままである必要がある。
 
 ## Goals / Non-Goals
 

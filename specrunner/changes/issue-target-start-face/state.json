@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T06:07:52.035Z",
+  "updatedAt": "2026-08-20T06:14:54.482Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
-  "status": "awaiting-resume",
+  "step": "spec-fixer",
+  "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
-  "error": {
-    "code": "SPEC_REVIEW_RETRIES_EXHAUSTED",
-    "message": "spec-review did not approve after 2 iterations",
-    "hint": "Review spec-review-result-004.md and adjust the request manually."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -82,7 +78,9 @@
     "768e6005d7a3fa4276f4ee8f14c1bf9e1f5991e3",
     "f9b35210e1adef1f366d6a6250dbf3c801dbe028",
     "7f3c5a653857ab211ecf12bac65f80d5c485f15c",
-    "29075b672f36a1f1c68373534e653833bbe35793"
+    "29075b672f36a1f1c68373534e653833bbe35793",
+    "6ab52bf026c283238c8f8ff500fa1405b733a61f",
+    "303a6394f45a1770111e7a4189970502a4dcbf83"
   ],
   "touchedFiles": {
     "request-review": [
@@ -144,12 +142,7 @@
     ],
     "spec-fixer": []
   },
-  "resumePoint": {
-    "step": "spec-fixer",
-    "reason": "spec-review did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -159,7 +152,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
