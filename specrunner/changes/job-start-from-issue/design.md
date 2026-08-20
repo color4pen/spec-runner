@@ -169,6 +169,4 @@ ADR は adr-gen step が生成する（本 design / tasks では ADR の具体 p
 - 排他 / guard のエラー文言の最終確定（本 design の例で pin する）。実装時に既存 usage 出力トーンへ合わせる。
 - `materializeDraftAndStart` の配置（`src/core/job/` 新設 か `src/core/inbox/` 併設）。挙動には非依存。実装者が近傍の import 都合で決めてよい。
 
-<!-- spec-fixer-deferred: TC-007 priority should→must spec-fixer は test-cases.md への書き込みが拒否された（スコープ外）。実装者または次 step が TC-007 の priority を should から must に変更し、Summary/Result の must カウントを +1 すること。 -->
-<!-- spec-fixer-deferred: fetch 失敗 TC 追加（F-002） spec-fixer は test-cases.md への書き込みが拒否された（スコープ外）。spec.md への fetch 失敗 Requirement 追加は完了済み。test-cases.md に integration/must の TC を追加すること: GitHubClient.getIssue が 404 で throw する mock で draft 不在・job state 不在・非ゼロ exit を assert する。 -->
-<!-- spec-fixer-deferred: detach 子プロセス再 fetch 失敗 TC（F-004） spec-fixer は test-cases.md への書き込みが拒否された（スコープ外）。test-cases.md に manual/could の TC を追加すること: 「親 fetch 成功→exit 0 後、子再 fetch 失敗（issue 削除・ネットワーク断）で親 exit 0・job 不在になることをリリース前に手動確認する」。 -->
+<!-- spec-fixer-deferred: TC-019 GWT 削除 spec-fixer は test-cases.md への書き込みが拒否された（スコープ外）。TC-019 は Scenario 由来 TC のため GWT 3行（GIVEN/WHEN/THEN）を削除し、Source 参照のみにすること。 -->
