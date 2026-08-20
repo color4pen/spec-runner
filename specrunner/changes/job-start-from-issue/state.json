@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T02:53:11.060Z",
+  "updatedAt": "2026-08-20T03:04:42.018Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
@@ -63,7 +63,8 @@
   ],
   "synthesizedCommits": [
     "bbd50f56cd3d50852f0ad436dd95c40e76289609",
-    "a56e9c45bfaf6e79228b9535e282f222c89d6c03"
+    "a56e9c45bfaf6e79228b9535e282f222c89d6c03",
+    "5c992764a3d48add52f310aec1f138c42a6f10c2"
   ],
   "touchedFiles": {
     "request-review": [
@@ -78,12 +79,33 @@
       "src/core/runtime/local.ts",
       "src/state/schema/types.ts",
       "src/core/command/guide.ts"
+    ],
+    "design": [
+      "src/cli/run.ts",
+      "src/cli/inbox.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/core/inbox/draft-writer.ts",
+      "src/core/inbox/planner.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/cli/command-registry.ts",
+      "src/core/gate/issue-fidelity-gate.ts",
+      "src/cli/flag-parser.ts",
+      "src/cli/bootstrap.ts",
+      "bin/specrunner.ts",
+      "src/core/runtime/local.ts",
+      "src/git/source-revision.ts",
+      "src/util/git-exec.ts",
+      "src/adapter/github/github-client.ts",
+      "src/parser/request-md.ts",
+      "src/core/command/detach.ts",
+      "src/core/command/guide.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
