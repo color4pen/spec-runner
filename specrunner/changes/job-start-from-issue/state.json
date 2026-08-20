@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T03:15:22.125Z",
+  "updatedAt": "2026-08-20T03:17:47.784Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
-  "status": "awaiting-resume",
+  "step": "spec-fixer",
+  "status": "running",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
   "pipelineId": "standard",
@@ -66,7 +66,8 @@
     "a56e9c45bfaf6e79228b9535e282f222c89d6c03",
     "5c992764a3d48add52f310aec1f138c42a6f10c2",
     "bbbbfc1fffa1ab044b13ba97038a5f0beca349d2",
-    "bc1118f68f3c79fc5480b96d9721f7eb74c2186c"
+    "bc1118f68f3c79fc5480b96d9721f7eb74c2186c",
+    "33de9f2a81b74260944fa51b8194c3eb4a0910ee"
   ],
   "touchedFiles": {
     "request-review": [
@@ -126,13 +127,17 @@
       "src/cli/flag-parser.ts"
     ]
   },
-  "resumePoint": {
-    "step": "spec-review",
-    "reason": "spec-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "spec-review findings F-001〜F-004 の裁定を以下の通り適用する。\n\nF-001: test-cases.md の TC-007 の priority を should から must に変更する。\n\nF-002: 修正案1を採用。spec.md の parse 失敗要件と並置で fetch 失敗要件を追加する: 「issue fetch 失敗（issue 不存在 404・認証失敗 401・ネットワーク断）は、draft 書き込み・job state 作成のいずれの副作用も発生させずに非ゼロ exit で停止する。exit code は既存 GITHUB_API_ERROR の mapping（GENERAL_ERROR = 1）に従う」。対応する GWT シナリオを追加する。test-cases.md に fetch 失敗 TC を priority: must で追加する（GitHubClient の getIssue が 404 で throw する mock で: draft 不在・job state 不在・非ゼロ exit を assert）。ARG_ERROR への mapping 変更はしない。\n\nF-003: tasks.md の T-02 に 1 行追記する: 「parsed.positional の参照（requestMdPath 代入）は from-issue 委譲の後、positional が確実に存在する経路でのみ行う（現在冒頭にある非 null 断言 parsed.positional! を移動する）」。\n\nF-004: オプション2を採用。test-cases.md に category: manual / priority: could の TC を追加する: 「detach 親の issue fetch 成功後、子プロセスの再 fetch が失敗（issue 削除・編集・ネットワーク断）した場合、親は exit 0（登録完了）を返すが job は存在しない。この経路をリリース前に一度手動確認する」。design.md Risks の記述はそのまま維持する。",
+      "step": "spec-fixer",
+      "recordedAt": "2026-08-20T03:17:47.636Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 15,
+    "historyCount": 17,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

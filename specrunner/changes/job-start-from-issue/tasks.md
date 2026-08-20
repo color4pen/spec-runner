@@ -25,6 +25,8 @@
   - `--from-issue` あり + `--issue` あり → usage エラー + `EXIT_CODE.ARG_ERROR`。
   - `--from-issue` なし + positional なし → 「slug|file か --from-issue が必要」の usage エラー + `EXIT_CODE.ARG_ERROR`。
 - [ ] `--from-issue` があるときは generic detach 分岐（561-575）より前に `runFromIssue`（T-03）へ委譲し return する。
+- [ ] `parsed.positional` の参照（`requestMdPath` 代入）は from-issue 委譲 return の後、positional が確実に存在する経路でのみ行う
+      （現在 `runJobHandler` 冒頭にある `const requestMdPath = parsed.positional!` の非 null 断言を from-issue ルーティングの後に移動する）。
 - [ ] 既存 positional 経路（detach 含む）と inbox 経路の挙動は変えない。
 
 **Acceptance Criteria**:

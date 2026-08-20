@@ -80,6 +80,20 @@ positional / inbox の既存起動経路の挙動は変えない。
 **Then** 親プロセスは job 登録完了まで待機してから return する（通常の detach 契約）
 **And** 起動された job は `issueNumber` と `inboxOrigin = true` を持つ
 
+### Requirement: GitHub API fetch 失敗は副作用ゼロで非ゼロ exit しなければならない
+
+`--from-issue` 起動時、GitHub API による issue 本文の取得（`getIssue()`）が失敗した場合
+（issue 不存在 404・認証失敗 401・ネットワーク断等）、システムは draft 書き込みも job state 作成も行わずに
+非ゼロ exit で停止しなければならない（MUST）。exit code は既存の GITHUB_API_ERROR mapping（GENERAL_ERROR = 1）に従う。
+
+#### Scenario: fetch 失敗時に draft も job state も生成されない
+
+**Given** GitHub API の `getIssue()` が失敗する（404 / 401 / ネットワーク断等）
+**When** `job start --from-issue <n>` を実行する
+**Then** 非ゼロ exit で停止する
+**And** draft は生成されない
+**And** job state は生成されない
+
 ### Requirement: issue 本文の request parse 失敗は副作用ゼロでエラー終了しなければならない
 
 取得した issue 本文が request.md として parse できない場合（Meta 不備・slug 不正等）、システムは draft も job state も
