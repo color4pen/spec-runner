@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T04:08:05.398Z",
+  "updatedAt": "2026-08-20T04:10:23.814Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "awaiting-resume",
+  "step": "code-fixer",
+  "status": "running",
   "branch": "feat/job-start-from-issue-c5bec4bd",
-  "error": {
-    "code": "CANON_FINDING_ESCALATION",
-    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/job-start-from-issue/test-cases.md, title: \"automated: 14 の宣言に対し統合テスト 3 件（TC-001/TC-007/TC-010）が未実装\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -85,7 +81,9 @@
     "69746818c787b6ebb7eb53011abdf9127376e847",
     "c1c8414e549c3387a546848d86a9cf514a3efb4e",
     "2f11f50ec5be21bbfbea4f1b6edc0ee6c7def7e3",
-    "69bce825e9d43dcd009625f4227834c52a217e5d"
+    "69bce825e9d43dcd009625f4227834c52a217e5d",
+    "ca4a1343c57be0c2537e85144966f04610b547fd",
+    "4b93047b7c7615e3d7c0ff5f959d9fef5898327f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -157,21 +155,22 @@
       "src/cli/inbox.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/job-start-from-issue/test-cases.md, title: \"automated: 14 の宣言に対し統合テスト 3 件（TC-001/TC-007/TC-010）が未実装\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
       "text": "spec-review findings F-001〜F-004 の裁定を以下の通り適用する。\n\nF-001: test-cases.md の TC-007 の priority を should から must に変更する。\n\nF-002: 修正案1を採用。spec.md の parse 失敗要件と並置で fetch 失敗要件を追加する: 「issue fetch 失敗（issue 不存在 404・認証失敗 401・ネットワーク断）は、draft 書き込み・job state 作成のいずれの副作用も発生させずに非ゼロ exit で停止する。exit code は既存 GITHUB_API_ERROR の mapping（GENERAL_ERROR = 1）に従う」。対応する GWT シナリオを追加する。test-cases.md に fetch 失敗 TC を priority: must で追加する（GitHubClient の getIssue が 404 で throw する mock で: draft 不在・job state 不在・非ゼロ exit を assert）。ARG_ERROR への mapping 変更はしない。\n\nF-003: tasks.md の T-02 に 1 行追記する: 「parsed.positional の参照（requestMdPath 代入）は from-issue 委譲の後、positional が確実に存在する経路でのみ行う（現在冒頭にある非 null 断言 parsed.positional! を移動する）」。\n\nF-004: オプション2を採用。test-cases.md に category: manual / priority: could の TC を追加する: 「detach 親の issue fetch 成功後、子プロセスの再 fetch が失敗（issue 削除・編集・ネットワーク断）した場合、親は exit 0（登録完了）を返すが job は存在しない。この経路をリリース前に一度手動確認する」。design.md Risks の記述はそのまま維持する。",
       "step": "spec-fixer",
       "recordedAt": "2026-08-20T03:17:47.636Z"
+    },
+    {
+      "text": "code-review findings 4 件の裁定を以下の通り適用する。すべて src/ と tests/（および change folder 外のテスト）で完結させ、test-cases.md 等の canon は編集しないこと。\n\n1) medium（inboxOrigin 未 pin）: 新規テスト src/core/job/__tests__/start-from-issue.test.ts を追加し、materializeDraftAndStart が runRunCore を { inboxOrigin: true, issue: <渡した issueNumber> } で呼ぶことを assert する。runRunCore は注入 mock とし、start-from-issue.ts から inboxOrigin: true を除去したら red になる形にする。これは TC-001（--from-issue が issue 本文を request として起動する）の実体化を兼ねる。\n\n2) low（mock フィールド名）: src/cli/__tests__/from-issue.test.ts の getOriginInfo mock を { owner: 'test-owner', name: 'test-repo' } に修正する（OriginInfo 型は owner/name）。\n\n3) low（mock 自己検証）: from-issue.test.ts L431-451 の TC-013/TC-014 ブロックは getCurrentBranch の mock 設定自体を確認しているだけなので削除する（実装の担保は src/git/__tests__/branch.test.ts に既存）。\n\n4) low（integration TC 未実装）: TC-007（--from-issue と --detach の併用: 親経路で fetch/parse/guard が成功した後 detach 経路に到達する契約）と TC-010（占有 slug への --from-issue が既存 SlugOccupiedError 経路で拒否される）を実装する。TC-001 は 1) で実体化済み。\n\n完了後 bun run typecheck と bun run test が green であること。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-20T04:10:23.584Z"
     }
   ],
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 70,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

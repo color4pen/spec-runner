@@ -6,12 +6,12 @@
  * TC-004: detached HEAD は不一致として扱う
  * TC-005: --from-issue と positional の併用は usage エラー
  * TC-006: --from-issue と --issue の併用は usage エラー
+ * TC-007: --from-issue と --detach は併用できる
  * TC-008: fetch 失敗時に draft も job state も生成されない
  * TC-009: parse 失敗時に draft も job state も生成されない
+ * TC-010: 占有 slug は SlugOccupiedError 経路で拒否される
  * TC-011: inbox と --from-issue が同一の core 関数を経由する
  * TC-012: --from-issue も positional も指定なしで usage エラー
- * TC-013: getCurrentBranch が通常 branch で branch 名を返す
- * TC-014: getCurrentBranch が detached HEAD で null を返す
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -57,7 +57,7 @@ vi.mock("../../config/github-host.js", () => ({
 }));
 
 vi.mock("../../git/remote.js", () => ({
-  getOriginInfo: vi.fn().mockResolvedValue({ owner: "test-owner", repo: "test-repo" }),
+  getOriginInfo: vi.fn().mockResolvedValue({ owner: "test-owner", name: "test-repo" }),
 }));
 
 vi.mock("../../adapter/github/github-client.js", () => ({
@@ -105,6 +105,8 @@ import { getCurrentBranch } from "../../git/branch.js";
 import { materializeDraftAndStart } from "../../core/job/start-from-issue.js";
 import { logError } from "../../logger/stdout.js";
 import { createGitHubClient } from "../../adapter/github/github-client.js";
+import { detachSelf } from "../../core/command/detach.js";
+import { slugOccupiedError } from "../../errors.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -425,28 +427,54 @@ describe("TC-002: fidelity gate が inboxOrigin により comparator を skip �
 });
 
 // ---------------------------------------------------------------------------
-// TC-013: getCurrentBranch が通常 branch で branch 名を返す
+// TC-007: --from-issue と --detach は併用できる
 // ---------------------------------------------------------------------------
 
-describe("TC-013: getCurrentBranch が通常 branch で branch 名を返す", () => {
-  it("TC-013: getCurrentBranch mock returns 'main' for normal branch", async () => {
-    // This test verifies the function contract by testing the real implementation shape
-    // via mock. Integration test would require a real git repo.
-    vi.mocked(getCurrentBranch).mockResolvedValueOnce("main");
-    const result = await getCurrentBranch("/any/cwd");
-    expect(result).toBe("main");
+describe("TC-007: --from-issue と --detach は併用できる", () => {
+  beforeEach(() => {
+    vi.mocked(getCurrentBranch).mockResolvedValue("main");
+    vi.mocked(materializeDraftAndStart).mockClear();
+    vi.mocked(detachSelf).mockClear();
+    vi.mocked(detachSelf).mockResolvedValue(0);
+  });
+
+  it("TC-007: calls detachSelf (not materializeDraftAndStart) when detach=true and not a child", async () => {
+    const code = await runFromIssue(42, { detach: true }, makeCtx());
+    expect(code).toBe(0);
+    expect(vi.mocked(detachSelf)).toHaveBeenCalledOnce();
+    expect(vi.mocked(materializeDraftAndStart)).not.toHaveBeenCalled();
+  });
+
+  it("TC-007: parent succeeds after fetch/parse/guard succeed before detach", async () => {
+    // guard passes (main == main), fetch succeeds, detachSelf is called
+    const code = await runFromIssue(42, { detach: true }, makeCtx());
+    expect(code).toBe(0);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-014: getCurrentBranch が detached HEAD で null を返す
+// TC-010: 占有 slug は SlugOccupiedError 経路で拒否される
 // ---------------------------------------------------------------------------
 
-describe("TC-014: getCurrentBranch が detached HEAD で null を返す", () => {
-  it("TC-014: getCurrentBranch mock returns null for detached HEAD", async () => {
-    vi.mocked(getCurrentBranch).mockResolvedValueOnce(null);
-    const result = await getCurrentBranch("/any/cwd");
-    expect(result).toBeNull();
+describe("TC-010: 占有 slug は SlugOccupiedError 経路で拒否される", () => {
+  beforeEach(() => {
+    vi.mocked(getCurrentBranch).mockResolvedValue("main");
+  });
+
+  it("TC-010: returns non-zero exit when materializeDraftAndStart throws SlugOccupiedError", async () => {
+    const err = slugOccupiedError("test-slug", { jobId: "job-1", status: "running" });
+    vi.mocked(materializeDraftAndStart).mockRejectedValueOnce(err);
+    const code = await runFromIssue(42, {}, makeCtx());
+    expect(code).not.toBe(0);
+  });
+
+  it("TC-010: SlugOccupiedError exit code is ARG_ERROR (2)", async () => {
+    const err = slugOccupiedError("test-slug", { jobId: "job-1", status: "running" });
+    vi.mocked(materializeDraftAndStart).mockRejectedValueOnce(err);
+    const code = await runFromIssue(42, {}, makeCtx());
+    expect(code).toBe(2); // EXIT_CODE.ARG_ERROR
   });
 });
+
+// TC-013/TC-014: getCurrentBranch の実装テストは src/git/__tests__/branch.test.ts が担保する。
 
