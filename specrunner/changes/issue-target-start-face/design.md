@@ -16,7 +16,7 @@ issue を起点に job lifecycle を操作する経路が `job start --from-issu
 - `src/core/pr-create/body-template.ts:75` の `Fixes #<issueNumber>` により **PR→issue の Development リンクは既に成立**。branch 側リンクは pipeline がローカル `git worktree add -b` + push で作るため存在しない。
 - GitHub API 制約: linked branch 作成は GraphQL mutation `createLinkedBranch(issueId, oid, name)` のみ。既存 branch の後付けリンクは公開 mutation に無い。
 
-検証で判明した前提の齟齬（重要 — Decisions D2 で扱う）: request は「inbox の既存テストは effects 注入でテストされ配線非依存」と述べるが、`tests/unit/inbox/run-inbox-inbox-origin.test.ts`（TC-018）は effects を **注入せず**、`vi.mock("../../../src/cli/run.js")` で **既定 startJob の配線**（inbox→cli/run）を pin し、`inboxOrigin: true` を assert する。この 1 本だけは配線依存であり、「無改変で green」を満たすには既定 startJob から `runRunCore`（cli/run）が到達可能なままである必要がある。
+検証で判明した前提の齟齬（重要 — Decisions D2 で扱う）: request は「inbox の既存テストは effects 注入でテストされ配線非依存」と述べるが、`tests/unit/inbox/run-inbox-inbox-origin.test.ts`（ファイル内ラベル TC-018 — test-cases.md の TC-018 とは別物）は effects を **注入せず**、`vi.mock("../../../src/cli/run.js")` で **既定 startJob の配線**（inbox→cli/run）を pin し、`inboxOrigin: true` を assert する。この 1 本だけは配線依存であり、「無改変で green」を満たすには既定 startJob から `runRunCore`（cli/run）が到達可能なままである必要がある。
 
 ## Goals / Non-Goals
 
@@ -60,8 +60,8 @@ issue を起点に job lifecycle を操作する経路が `job start --from-issu
 - positional + `--issue`（`cli/command-registry.ts`）: 同上。
 - inbox 既定 `startJob`（`core/inbox/run-inbox.ts` の `buildEffects`）: **動的 import を start-from-issue.ts から run-inbox.ts の既定 effect へ移す**。`const { runRunCore } = await import("../../cli/run.js")` を effect 内で行い issue-target へ注入する。
 
-**Rationale**: TC-018（Context の齟齬）は既定 startJob → cli/run の配線を無改変で pin する。issue-target を cli-free にしつつ TC-018 を無改変 green に保つ唯一の形は、cli/run 参照を **issue-target の外**（inbox 既定 effect）へ逃がすこと。inbox→cli の動的 edge は既存 `resumeJob` effect と同型で、DSM closure test（静的 import のみ走査、attestation 済）にも掛からず新 allowlist を要しない。issue-target 層自体は完全に cli-free。
-**Alternatives**: (a) `runRunCore` を core primitive へ昇格 → `wireProgressDisplay`（cli/progress）を core へ引き込むか注入増設が必要で、かつ TC-018 の `vi.mock("cli/run")` が経路から外れて赤化。棄却。(b) inbox 既定 effect からも cli を除去（primitive 必須注入）→ TC-018 が注入せず赤化、「無改変」に反する。棄却。
+**Rationale**: inbox 配線テスト `run-inbox-inbox-origin.test.ts`（Context の齟齬）は既定 startJob → cli/run の配線を無改変で pin する。issue-target を cli-free にしつつ同テストを無改変 green に保つ唯一の形は、cli/run 参照を **issue-target の外**（inbox 既定 effect）へ逃がすこと。inbox→cli の動的 edge は既存 `resumeJob` effect と同型で、DSM closure test（静的 import のみ走査、attestation 済）にも掛からず新 allowlist を要しない。issue-target 層自体は完全に cli-free。
+**Alternatives**: (a) `runRunCore` を core primitive へ昇格 → `wireProgressDisplay`（cli/progress）を core へ引き込むか注入増設が必要で、かつ `run-inbox-inbox-origin.test.ts` の `vi.mock("cli/run")` が経路から外れて赤化。棄却。(b) inbox 既定 effect からも cli を除去（primitive 必須注入）→ 同テストが注入せず赤化、「無改変」に反する。棄却。
 
 ### D3: Development リンク登録 — 不透明 callback の注入（pipeline は issueNumber を見ない）
 
@@ -121,13 +121,11 @@ worktree 作成（手順 2）が throw した場合、callback（手順 3）に�
 
 ## Risks / Trade-offs
 
-- [Risk] TC-018 の配線依存を見落とすと、core→cli 完全除去に走って既存 inbox テストが赤化。→ **Mitigation**: D2 で inbox 既定 effect に cli/run 動的 import を残す設計を明示。issue-target 層のみ cli-free を構造検査で pin。
+- [Risk] `run-inbox-inbox-origin.test.ts` の配線依存を見落とすと、core→cli 完全除去に走って既存 inbox テストが赤化。→ **Mitigation**: D2 で inbox 既定 effect に cli/run 動的 import を残す設計を明示。issue-target 層のみ cli-free を構造検査で pin。
 - [Risk] callback を多層に通す配線（runRunCore→PipelineRunOptions→WorkspaceOptions→materializer）でどこか一箇所落とすとリンクが発火しない。→ **Mitigation**: 各層で optional 1 フィールドの受け渡し。3 経路発火をテストで pin。
 - [Risk] base OID を 2 回解決すると「同一 immutable OID」契約が破れる。→ **Mitigation**: new-run arm で 1 回だけ rev-parse、plan に載せ両消費者へ配布。「解決 1 回」をテストで pin。
 - [Risk] createLinkedBranch を push 後に実行すると branch 衝突。→ **Mitigation**: D5 の順序（worktree → link → materialize/commit/push）を arm 内位置で固定しテストで pin。
 - [Risk] port `getIssue` に `nodeId` 追加で既存 mock（テスト内 client リテラル）の型が壊れる。→ **Mitigation**: `nodeId: string` は required を維持し、影響を受ける mock リテラル（`run-inbox-inbox-origin.test.ts` / `from-issue.test.ts`）に `nodeId` フィールドを 1 行追加する（B 案）。挙動 assert は無改変のまま型エラーを解消する。optional 化（`nodeId?: string`）は不採用。
-
-<!-- spec-fixer-deferred: no-worktree Scenario に対応する TC を test-cases.md に追加できなかった（spec-fixer は test-cases.md への書き込み権限を持たない）。tasks.md T-04 AC に要件を追記済み。implementer が TC を追加するか、次回 test-case-gen で補完すること。 -->
 
 ## Open Questions
 
