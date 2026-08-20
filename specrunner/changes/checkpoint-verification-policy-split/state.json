@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1875919e-d9f4-4db8-8abe-33e24f96cfb9",
   "createdAt": "2026-08-20T03:41:04.851Z",
-  "updatedAt": "2026-08-20T04:08:49.229Z",
+  "updatedAt": "2026-08-20T04:10:31.121Z",
   "request": {
     "title": "checkpoint 検証の分離: generic integrity と use-case policy の二層化",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "refactor/checkpoint-verification-policy-split-1875919e",
   "error": null,
@@ -70,7 +70,8 @@
     "1576ab85c9d277790ebde69956cf35178c58f08b",
     "47bf0b04a1182a86212f3f86b9e365f05f37307a",
     "3100a1814995fe014df66bd7b2a58827dc362395",
-    "27da7b71a43eaea898b1c86119546a8d7a0b09f2"
+    "27da7b71a43eaea898b1c86119546a8d7a0b09f2",
+    "c4ff2baed091d2ff5dd434d7274479879b5dd5ad"
   ],
   "touchedFiles": {
     "request-review": [
@@ -92,9 +93,7 @@
       "tests/attach/orchestrator.test.ts"
     ],
     "test-case-gen": [
-      "tests/attach/verify-checkpoint.test.ts",
-      "tests/attach/verify-checkpoint-r1-assurance.test.ts",
-      "src/core/attach/verify-checkpoint.ts"
+      "tests/attach/verify-checkpoint.test.ts"
     ],
     "spec-review": [
       "src/core/attach/verify-checkpoint.ts",
@@ -108,11 +107,11 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 25,
+    "historyCount": 29,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 1,
+      "test-case-gen": 2,
       "spec-review": 2,
       "spec-fixer": 1
     }
