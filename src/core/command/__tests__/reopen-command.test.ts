@@ -646,3 +646,63 @@ describe("TC-021: operator event is appended before the transition is persisted 
     expect(operatorEventOrder).toBeLessThan(transitionRunningOrder as number);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-010, TC-011: invalid --from exits 2 for reopen
+// ---------------------------------------------------------------------------
+
+/** Extract exitCode from a PrepareError (not exported; duck-typed). */
+function getReopenExitCode(err: unknown): number | undefined {
+  return (err as { exitCode?: number }).exitCode;
+}
+
+describe("TC-010: --from bogus-step exits 2 for reopen", () => {
+  it("PrepareError.exitCode === 2 when --from is an unknown step", async () => {
+    // Make resolveResumeStep throw for this test
+    vi.mocked(resolveResumeStep).mockImplementationOnce(() => {
+      throw new Error("Invalid --from value: \"bogus-step\". Available step names: ...");
+    });
+
+    const awaitingState = makeJobState({ status: "awaiting-archive" });
+    vi.mocked(resolveJobStateBySlug).mockResolvedValue(awaitingState);
+
+    const cmd = new ReopenCommand(makeRuntime(), makeEventBus(), "test-slug", {
+      from: "bogus-step",
+      reason: "test",
+      cwd: "/repo",
+      githubClient: MOCK_GITHUB_CLIENT as never,
+    });
+
+    try {
+      await callPrepare(cmd);
+      throw new Error("Expected PrepareError to be thrown");
+    } catch (err) {
+      expect(getReopenExitCode(err)).toBe(2);
+    }
+  });
+});
+
+describe("TC-011: --from regression-gate exits 2 for job without custom reviewers (reopen)", () => {
+  it("PrepareError.exitCode === 2 when reviewers absent and regression-gate is not in allowed set", async () => {
+    vi.mocked(resolveResumeStep).mockImplementationOnce(() => {
+      throw new Error("Invalid --from value: \"regression-gate\". Available step names: ...");
+    });
+
+    const awaitingState = makeJobState({ status: "awaiting-archive" });
+    vi.mocked(resolveJobStateBySlug).mockResolvedValue(awaitingState);
+
+    const cmd = new ReopenCommand(makeRuntime(), makeEventBus(), "test-slug", {
+      from: "regression-gate",
+      reason: "test",
+      cwd: "/repo",
+      githubClient: MOCK_GITHUB_CLIENT as never,
+    });
+
+    try {
+      await callPrepare(cmd);
+      throw new Error("Expected PrepareError to be thrown");
+    } catch (err) {
+      expect(getReopenExitCode(err)).toBe(2);
+    }
+  });
+});

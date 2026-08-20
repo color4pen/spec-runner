@@ -4,9 +4,9 @@
 
 対象: `src/cli/command-registry.ts`
 
-- [ ] resume の `from` flag 定義（:1061）を `{ type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES] as const }` から `{ type: "string" }` に変更する
-- [ ] reopen の `from` flag 定義（:1197）を同様に `{ type: "string" }` に変更する
-- [ ] `AGENT_STEP_NAMES` / `CLI_STEP_NAMES` が `from` flag 以外でも使われているか確認し、使われていない場合は import 整理の必要なし（残しておいて問題ない、usage text テンプレートで使用中）
+- [x] resume の `from` flag 定義（:1061）を `{ type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES] as const }` から `{ type: "string" }` に変更する
+- [x] reopen の `from` flag 定義（:1197）を同様に `{ type: "string" }` に変更する
+- [x] `AGENT_STEP_NAMES` / `CLI_STEP_NAMES` が `from` flag 以外でも使われているか確認し、使われていない場合は import 整理の必要なし（残しておいて問題ない、usage text テンプレートで使用中）
 
 **Acceptance Criteria**:
 - `job resume <slug> --from regression-gate` が flag-parser 段でエラーにならない
@@ -20,10 +20,10 @@
 
 対象: `src/core/command/resume.ts`（:262-267）
 
-- [ ] `resolveResumeStep` を呼ぶ try/catch ブロック（:262-267）の catch 内を修正する
-- [ ] `--from` が明示指定されていた場合（`this.options.from !== undefined`）は `PrepareError(2, "Failed to resolve resume step")` を throw する
-- [ ] `--from` が未指定の場合（`this.options.from === undefined`）は従来どおり `PrepareError(1, "Failed to resolve resume step")` を throw する
-- [ ] `logError` でのエラーメッセージ出力（`(err as Error).message`）は変更しない（core の "Available step names: ..." メッセージがそのまま表示される）
+- [x] `resolveResumeStep` を呼ぶ try/catch ブロック（:262-267）の catch 内を修正する
+- [x] `--from` が明示指定されていた場合（`this.options.from !== undefined`）は `PrepareError(2, "Failed to resolve resume step")` を throw する
+- [x] `--from` が未指定の場合（`this.options.from === undefined`）は従来どおり `PrepareError(1, "Failed to resolve resume step")` を throw する
+- [x] `logError` でのエラーメッセージ出力（`(err as Error).message`）は変更しない（core の "Available step names: ..." メッセージがそのまま表示される）
 
 **Acceptance Criteria**:
 - `--from bogus-step` で resume した場合に `execute()` が exit code 2 を返す
@@ -36,8 +36,8 @@
 
 対象: `src/core/command/reopen.ts`（:222-227）
 
-- [ ] `resolveResumeStep` を呼ぶ try/catch ブロック（:222-227）の catch 内の `PrepareError(1, ...)` を `PrepareError(2, ...)` に変更する
-- [ ] `logError` でのメッセージ出力は変更しない
+- [x] `resolveResumeStep` を呼ぶ try/catch ブロック（:222-227）の catch 内の `PrepareError(1, ...)` を `PrepareError(2, ...)` に変更する
+- [x] `logError` でのメッセージ出力は変更しない
 
 **Acceptance Criteria**:
 - `--from bogus-step` で reopen した場合に `execute()` が exit code 2 を返す
@@ -49,12 +49,12 @@
 
 対象: `src/cli/command-registry.ts`
 
-- [ ] resume の `JOB_RESUME_USAGE`（:368-373）の `--from <step>` 説明を以下のように更新する:
+- [x] resume の `JOB_RESUME_USAGE`（:368-373）の `--from <step>` 説明を以下のように更新する:
   - 「Valid steps: ${[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ")}」の行は保持してもよい（静的 step の参考一覧）
   - 「Note: composite steps (custom-reviewers fan-out, regression-gate) are not valid --from targets and are not listed above.」の行を削除する
   - 代わりに「Note: jobs with custom reviewers also accept: regression-gate, custom-reviewers, or reviewer member names (member names are mapped to the custom-reviewers coordinator).」を追加する
   - 「Note: bite-evidence is an internal step not intended for regular operator use.」は維持する
-- [ ] reopen の `REOPEN_USAGE`（:500）の `--from <step>` 説明を更新する:
+- [x] reopen の `REOPEN_USAGE`（:500）の `--from <step>` 説明を更新する:
   - 静的 step 一覧の後に「Note: jobs with custom reviewers also accept: regression-gate, custom-reviewers, or reviewer member names (member names are mapped to the custom-reviewers coordinator).」を追加する
 
 **Acceptance Criteria**:
@@ -73,10 +73,10 @@
 
 新規ファイル: `src/cli/__tests__/from-flag-no-enum.test.ts`
 
-- [ ] `parseFlags` を直接呼び出し、resume の `from` flag 定義で `--from regression-gate` が FlagParseError を throw しないことを検証する
-- [ ] 同様に `--from custom-reviewers` / `--from alice` が FlagParseError を throw しないことを検証する
-- [ ] reopen の `from` flag 定義でも同様に検証する
-- [ ] flag 定義は `COMMANDS["job"]!.children!["resume"]!.flags!` から取得する（実際の定義を参照）
+- [x] `parseFlags` を直接呼び出し、resume の `from` flag 定義で `--from regression-gate` が FlagParseError を throw しないことを検証する
+- [x] 同様に `--from custom-reviewers` / `--from alice` が FlagParseError を throw しないことを検証する
+- [x] reopen の `from` flag 定義でも同様に検証する
+- [x] flag 定義は `COMMANDS["job"]!.children!["resume"]!.flags!` から取得する（実際の定義を参照）
 
 ### T-05b: resume exit code 区別のテスト
 
@@ -84,18 +84,18 @@
 
 テスト構成は既存 `resume-hard-crash.test.ts` のモック構成を踏襲する。
 
-- [ ] `--from bogus-step` を指定して reviewers なし job を resume → `execute()` が 2 を返す
-- [ ] `--from regression-gate` を指定して reviewers なし job を resume → `execute()` が 2 を返す
-- [ ] `--from regression-gate` を指定して reviewers あり job を resume → `execute()` が 2 を返さない（`resolveResumeStep` が成功する：allowed set に regression-gate が含まれる）
-- [ ] `--from <member-name>` を指定して対応 reviewers あり job を resume → `execute()` が 2 を返さない（member→coordinator 写像で成功）
-- [ ] `--from` 未指定、`resumePoint` なし、`state.step` が pipeline step でない（例: "init"） → `execute()` が 1 を返す（既存 `resume-hard-crash.test.ts:AC2` がカバーするが、exit code が 1 であることも追加アサート）
+- [x] `--from bogus-step` を指定して reviewers なし job を resume → `execute()` が 2 を返す
+- [x] `--from regression-gate` を指定して reviewers なし job を resume → `execute()` が 2 を返す
+- [x] `--from regression-gate` を指定して reviewers あり job を resume → `execute()` が 2 を返さない（`resolveResumeStep` が成功する：allowed set に regression-gate が含まれる）
+- [x] `--from <member-name>` を指定して対応 reviewers あり job を resume → `execute()` が 2 を返さない（member→coordinator 写像で成功）
+- [x] `--from` 未指定、`resumePoint` なし、`state.step` が pipeline step でない（例: "init"） → `execute()` が 1 を返す（既存 `resume-hard-crash.test.ts:AC2` がカバーするが、exit code が 1 であることも追加アサート）
 
 ### T-05c: reopen exit code のテスト
 
 `src/core/command/__tests__/reopen-command.test.ts` に追加、または新規ファイル。
 
-- [ ] `--from bogus-step` を指定して reopen → `execute()` が 2 を返す
-- [ ] `--from regression-gate` を指定して reviewers なし job を reopen → `execute()` が 2 を返す
+- [x] `--from bogus-step` を指定して reopen → `execute()` が 2 を返す
+- [x] `--from regression-gate` を指定して reviewers なし job を reopen → `execute()` が 2 を返す
 
 **Acceptance Criteria**:
 - T-05a: resume と reopen の `from` flag で `--from regression-gate` / `--from custom-reviewers` / `--from alice` が FlagParseError を throw しない

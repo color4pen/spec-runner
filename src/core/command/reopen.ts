@@ -224,7 +224,7 @@ export class ReopenCommand extends CommandRunner {
       startStep = resolveResumeStep(this.options.from, null, state.step, allowedSteps, state.reviewers);
     } catch (err) {
       logError((err as Error).message);
-      throw new PrepareError(1, "Failed to resolve reopen step");
+      throw new PrepareError(2, "Failed to resolve reopen step");
     }
 
     logInfo(`Reopening job '${this.slug}' from step '${startStep}'`);

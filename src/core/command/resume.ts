@@ -264,7 +264,7 @@ export class ResumeCommand extends CommandRunner {
       startStep = resolveResumeStep(this.options.from, resumePoint, state.step, allowedSteps, state.reviewers);
     } catch (err) {
       logError((err as Error).message);
-      throw new PrepareError(1, "Failed to resolve resume step");
+      throw new PrepareError(this.options.from !== undefined ? 2 : 1, "Failed to resolve resume step");
     }
 
     logInfo(`Resuming job '${this.slug}' from step '${startStep}'`);
