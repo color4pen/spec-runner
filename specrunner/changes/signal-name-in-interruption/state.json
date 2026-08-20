@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
   "createdAt": "2026-08-20T14:27:40.099Z",
-  "updatedAt": "2026-08-20T15:36:32.557Z",
+  "updatedAt": "2026-08-20T15:50:15.133Z",
   "request": {
     "title": "interruption レコードにシグナル名を記録する",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "fix/signal-name-in-interruption-5ff912e4",
   "error": null,
   "pipelineId": "standard",
@@ -76,11 +76,7 @@
     "8304c213d1c691d24684ede260930c6ed1cafec9",
     "021a0192133a7a63cdfb2328fae4bb9b5e51d8b7"
   ],
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "code-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "touchedFiles": {
     "request-review": [
@@ -135,8 +131,15 @@
       "src/core/lifecycle/__tests__/exit-guard.test.ts"
     ]
   },
+  "operatorAdjudications": [
+    {
+      "text": "operator 裁定: Decision 1 は選択肢 1（Keep as-is）を採用する。DEBUG / SPECRUNNER_LOG_LEVEL の save/restore はテスト間の env 漏れを防ぐ衛生改善であり、この PR に含めてよい。revert や分離は不要。",
+      "step": "code-review",
+      "recordedAt": "2026-08-20T15:50:14.930Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 53,
     "stepCounts": {
       "request-review": 3,
       "design": 1,
