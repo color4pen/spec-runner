@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T04:34:00.581Z",
+  "updatedAt": "2026-08-20T04:37:43.898Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
   "pipelineId": "standard",
@@ -88,7 +88,8 @@
     "f1a46226c2def06971648d414569797391fae2eb",
     "76b09176889e5ce6c60dc721b003f719314c7780",
     "c5a9f48a53ef104bc29144c9d428df38f8099fba",
-    "0acdf234af03b8350ed12a75928feb6b6423c037"
+    "0acdf234af03b8350ed12a75928feb6b6423c037",
+    "8298fe08817c12e7f1080158b4df2f7be4669ddc"
   ],
   "touchedFiles": {
     "request-review": [
@@ -185,6 +186,11 @@
       "src/core/inbox/run-inbox.ts",
       "src/git/__tests__/branch.test.ts",
       "tests/unit/architecture/arch-allowlist.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-07-no-worktree-execution-mode.md",
+      "specrunner/adr/2026-06-07-protected-paths-merge-guard.md",
+      "specrunner/adr/2026-08-20-job-start-from-issue.md"
     ]
   },
   "resumePoint": null,
@@ -231,8 +237,13 @@
       "canonHash": "specrunner/changes/job-start-from-issue/design.md:sha256:52b71bd233f0efb09854a8bd41c9acbba9e3d523f465788e5dda8baef53e72dd|specrunner/changes/job-start-from-issue/request.md:sha256:60ca3d97e4bf067fbcaed1148bf6e0b58955e39c637f7f5d9b3ef185394d8b21|specrunner/changes/job-start-from-issue/spec.md:sha256:1fc00cd93ab1785e2c7819ab303adc8b8012649bd6c9812e8e827445ea87c08c|specrunner/changes/job-start-from-issue/tasks.md:sha256:50adf240cb488f059b60ad6df0f4d949518bd5724cf8a6ac4b1b823c4389d2d0|specrunner/changes/job-start-from-issue/test-cases.md:sha256:a0fb9fc44d0c179f3c4201bbb3797d907012e0266f35c15e114efda5b254b4a1"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1016",
+    "number": 1016,
+    "createdAt": "2026-08-20T04:37:43.073Z"
+  },
   "_journal": {
-    "historyCount": 95,
+    "historyCount": 100,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -248,7 +259,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
