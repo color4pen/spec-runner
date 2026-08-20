@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T08:05:10.726Z",
+  "updatedAt": "2026-08-20T08:08:10.420Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -96,7 +96,9 @@
     "638bd3817e12cd5cdc91d2f3690ed175ed904f30",
     "485aa7d0426a9afb4d59199b3a31a88a0cfeb87c",
     "e65525d2d6f1d38c33bdd6a32c695535f8dca11a",
-    "212a388cf244cc4a560130c55b11ebbd4323b3e1"
+    "212a388cf244cc4a560130c55b11ebbd4323b3e1",
+    "627c028a659d3bd063166da5bb5b358a34e04939",
+    "68b0d3e6fa0b1124744e706c3ef14c883719ff46"
   ],
   "touchedFiles": {
     "request-review": [
@@ -158,7 +160,7 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "tests/unit/core/runtime/workspace-materializer-link.test.ts"
+      "tests/unit/no-worktree-mode.test.ts"
     ],
     "code-review": [
       "src/core/issue-target/start.ts",
@@ -263,16 +265,16 @@
     }
   ],
   "_journal": {
-    "historyCount": 123,
+    "historyCount": 132,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
       "test-case-gen": 3,
       "spec-review": 4,
       "spec-fixer": 3,
-      "implementer": 2,
+      "implementer": 3,
       "bite-evidence": 1,
-      "verification": 3,
+      "verification": 4,
       "code-review": 3,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
