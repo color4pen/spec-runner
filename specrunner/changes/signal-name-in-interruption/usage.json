@@ -209,6 +209,78 @@
       "durationMs": 236119,
       "durationApiMs": 234293,
       "totalCostUsd": 0.6604388999999999
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-20T15:57:24.969Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 15967,
+          "outputTokens": 22,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 21,
+          "outputTokens": 8993,
+          "cacheReadInputTokens": 673879,
+          "cacheCreationInputTokens": 90280
+        }
+      },
+      "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
+      "stepName": "code-fixer",
+      "numTurns": 17,
+      "durationMs": 149421,
+      "durationApiMs": 133065,
+      "totalCostUsd": 0.45033975000000004
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-20T16:05:33.344Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 21596,
+          "outputTokens": 15,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 6719,
+          "outputTokens": 25432,
+          "cacheReadInputTokens": 2734935,
+          "cacheCreationInputTokens": 90896
+        }
+      },
+      "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
+      "stepName": "cross-boundary-invariants",
+      "numTurns": 58,
+      "durationMs": 486055,
+      "durationApiMs": 479704,
+      "totalCostUsd": 1.5846485000000003
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-20T15:59:45.215Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 21564,
+          "outputTokens": 19,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 6553,
+          "outputTokens": 6381,
+          "cacheReadInputTokens": 734982,
+          "cacheCreationInputTokens": 49474
+        }
+      },
+      "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
+      "stepName": "scale-tolerance",
+      "numTurns": 21,
+      "durationMs": 137891,
+      "durationApiMs": 136439,
+      "totalCostUsd": 0.5430551
     }
   ]
 }
