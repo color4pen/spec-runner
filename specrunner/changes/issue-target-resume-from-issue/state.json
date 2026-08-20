@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
   "createdAt": "2026-08-20T09:24:35.898Z",
-  "updatedAt": "2026-08-20T11:15:42.756Z",
+  "updatedAt": "2026-08-20T11:19:12.498Z",
   "request": {
     "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
-  "status": "awaiting-resume",
+  "step": "conformance",
+  "status": "running",
   "branch": "feat/issue-target-resume-from-issue-5ca3d603",
   "error": null,
   "pipelineId": "standard",
@@ -84,7 +84,8 @@
     "f1d8c7c6230399d22f7e66c13e705ae44e0900ae",
     "71fe277ea0a8ea86671150fb4413bfd9058e528b",
     "4b021004038b5a2725ef8eb80c88ea79b51f424b",
-    "b6e45c5c0d4211997c3b21f066982a445cf10dd2"
+    "b6e45c5c0d4211997c3b21f066982a445cf10dd2",
+    "85812aa4b29925cbcb218aa6254d202be49d40d9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -173,11 +174,7 @@
       "src/adapter/github/github-client.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "code-fixer escalated",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -218,7 +215,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 80,
+    "historyCount": 83,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
