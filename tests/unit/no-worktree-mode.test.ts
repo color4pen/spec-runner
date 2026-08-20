@@ -764,7 +764,7 @@ describe("TC-NW-017: setupWorkspace no-worktree run path — bootstrap OID recor
 describe("TC-012: setupWorkspace no-worktree — onFeatureBranchCreated callback", () => {
   const TC012_OID = "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef";
 
-  function buildSpawnFnForCallback(opts: { callbackResolves?: boolean } = {}): SpawnFn {
+  function buildSpawnFnForCallback(_opts: { callbackResolves?: boolean } = {}): SpawnFn {
     return vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
       if (cmd === "git" && args[0] === "status" && args[1] === "--porcelain") {
         return { exitCode: 0, stdout: "", stderr: "" };
