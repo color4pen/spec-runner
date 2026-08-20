@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
   "createdAt": "2026-08-20T09:24:35.898Z",
-  "updatedAt": "2026-08-20T11:07:55.200Z",
+  "updatedAt": "2026-08-20T11:09:54.409Z",
   "request": {
     "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/issue-target-resume-from-issue-5ca3d603",
   "error": null,
@@ -81,7 +81,8 @@
     "9c63edd1f177646839bf63206e051cca0543ed52",
     "ad8b90eeb2ee2fb715b07e8a9a29160759cadd58",
     "a302a6ad502b63fce7aaec2c88160564f1fc059f",
-    "f1d8c7c6230399d22f7e66c13e705ae44e0900ae"
+    "f1d8c7c6230399d22f7e66c13e705ae44e0900ae",
+    "71fe277ea0a8ea86671150fb4413bfd9058e528b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -158,10 +159,7 @@
       "tests/unit/architecture/arch-allowlist.ts"
     ],
     "code-fixer": [
-      "src/git/checkpoint-ref.ts",
-      "src/core/issue-target/resume.ts",
-      "src/cli/resume-from-issue.ts",
-      "src/cli/__tests__/resume-from-issue.test.ts"
+      "src/core/issue-target/resume.ts"
     ],
     "regression-gate": [
       "src/core/issue-target/resume.ts",
@@ -213,7 +211,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 70,
+    "historyCount": 74,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -223,7 +221,7 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
