@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T05:01:54.161Z",
+  "updatedAt": "2026-08-20T05:09:54.577Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -65,39 +65,33 @@
     "680fe969744d3662d198d8f1183b506b26c190ad",
     "7ae242ad1aae6471ca74f8e0aeb6f9563cd0daef",
     "f82f7e63ac9482abbcdf6e2b8d63dbd437ff4e48",
-    "46a96ee37c8f0576eddda6dfd7ce59ec28af30ca"
+    "46a96ee37c8f0576eddda6dfd7ce59ec28af30ca",
+    "09bd760881af159bd4ffde7403e39c56d1e33750"
   ],
   "touchedFiles": {
     "request-review": [
       "src/core/job/start-from-issue.ts",
-      "src/core/inbox/run-inbox.ts",
-      "src/cli/from-issue.ts",
-      "src/core/command/pipeline-run.ts",
-      "src/core/pr-create/body-template.ts",
-      "src/adapter/github/github-client.ts",
-      "src/core/runtime/local.ts",
-      "src/config/type-config.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "src/core/port/github-client.ts",
-      "src/kernel/github-client.ts",
-      "src/core/runtime/workspace-materializer.ts",
-      "tests/unit/architecture/module-boundary.test.ts",
-      "tests/unit/architecture/core-invariants.test.ts",
-      "src/core/step/design.ts",
-      "src/cli/command-registry.ts",
-      "src/core/step/commit-orchestrator.ts",
-      "src/cli/run.ts",
       "src/core/job/__tests__/start-from-issue.test.ts",
       "src/cli/__tests__/from-issue.test.ts",
-      "src/core/inbox/__tests__/run-inbox.test.ts"
+      "src/core/pr-create/body-template.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/step/design.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/runtime/local.ts",
+      "src/adapter/github/github-client.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/config/type-config.ts",
+      "src/cli/command-registry.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 6,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 2
     }
   }
 }
