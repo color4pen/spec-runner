@@ -81,6 +81,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Enable sandbox prerequisites
+        # 実測（run 32379478853）: ubuntu-latest は bwrap 不在 +
+        # apparmor_restrict_unprivileged_userns=1 で Claude Code の Linux sandbox が
+        # 縮退し、agent が tool を実行できず turn を使い切る。両前提を有効化する。
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq bubblewrap
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Runner sandbox diagnostics
         run: |
           which bwrap || echo "bwrap: absent"
