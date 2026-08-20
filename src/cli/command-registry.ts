@@ -661,7 +661,10 @@ async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<
       githubClient,
       owner,
       repo,
-      startPrimitive: runRunCore,
+      // Closure carries the CLI flags (logLevel / json / no-worktree) so the issue-target
+      // route preserves the same runRunCore contract as the plain positional route.
+      startPrimitive: (path, opts) =>
+        runRunCore(path, { ...opts, logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] }),
     });
     process.exit(code);
   }

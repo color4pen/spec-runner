@@ -539,6 +539,32 @@ describe("TC-005: positional + --issue → startWithIssueLink に route され�
     expect(call[0].requestMdPath).toBe("my-request.md");
   });
 
+  it("TC-005: CLI flags (logLevel / json / no-worktree) pass through the positional+--issue route to runRunCore", async () => {
+    // Regression pin: the issue-target route must preserve the same runRunCore flag
+    // contract as the plain positional route (flags carried via the injected closure).
+    const real = await vi.importActual<typeof StartModule>("../../core/issue-target/start.js");
+    vi.mocked(startWithIssueLink).mockImplementationOnce(real.startWithIssueLink);
+    vi.mocked(runRunCore).mockClear();
+
+    const handler = getJobStartHandler();
+    const spy = exitSpy();
+    try {
+      await handler(
+        { flags: { issue: 42, "no-worktree": true, verbose: true }, positional: "my-request.md", positionals: ["my-request.md"] },
+        makeCtx(),
+      ).catch(() => {});
+    } finally {
+      spy.mockRestore();
+    }
+
+    expect(vi.mocked(runRunCore)).toHaveBeenCalledOnce();
+    const [, flagOpts] = vi.mocked(runRunCore).mock.calls[0] as [string, Record<string, unknown>];
+    expect(flagOpts["noWorktree"]).toBe(true);
+    // resolveLogLevel is mocked to "normal" in this file — asserting it here pins that the
+    // handler-computed logLevel reaches runRunCore (absent before the closure fix).
+    expect(flagOpts["logLevel"]).toBe("normal");
+  });
+
   it("TC-005: runRunCore (startPrimitive) receives onFeatureBranchCreated via positional+--issue route", async () => {
     // Use real startWithIssueLink so the callback flows through to runRunCore
     const real = await vi.importActual<typeof StartModule>("../../core/issue-target/start.js");
