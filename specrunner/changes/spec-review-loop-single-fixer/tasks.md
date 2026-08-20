@@ -9,6 +9,7 @@
 - [ ] 同ファイルの doc コメント（先頭 header 10-13行 / `buildScopeForSlug` の 26-30行 / `buildCanonWriteScope` の 57-61行）の「spec-fixer: {spec.md, design.md, tasks.md}」を「{spec.md, design.md, tasks.md, test-cases.md}」に更新する。
 - [ ] `src/core/step/spec-fixer.ts` の `writes()`（99-106行）に `` { path: `${folder}/test-cases.md` } `` を追加する（drift-guard TC-029 が map と writes() の一致を要求するため必須）。
 - [ ] `src/prompts/spec-fixer-system.ts` の Contract の「入力」「出力」「write-set」に `specrunner/changes/<slug>/test-cases.md` を追記し、Method に「test-cases.md を修正する場合は**既存の TC を尊重した targeted 修正**を行い、**再生成はしない**（finding が指す TC のみを最小限に変更し、無関係な TC・operator 編集には触れない）」旨を追記する。
+- [ ] `src/prompts/rules.ts` の 責任範囲テーブルの spec-fixer 行（`| spec-fixer | change folder 内の spec.md, design.md, tasks.md | source code |`）を `| spec-fixer | change folder 内の spec.md, design.md, tasks.md, test-cases.md | source code |` に更新する（pipeline 実行時に各 change folder へ rules.md としてコピーされる source of truth のため、system prompt との矛盾を防ぐ）。
 
 **Acceptance Criteria**:
 - `buildCanonWriteScope(state, deps).writableByFixer.get("spec-fixer")` が `test-cases.md` を含む。
@@ -48,6 +49,7 @@
 - [ ] `STANDARD_TRANSITIONS` から TC 再生成行（269-270行: `SPEC_FIXER approved → TEST_CASE_GEN` guarded by `specFixerNeedsFixForward`）を削除する。
 - [ ] 残す行を確認: `SPEC_REVIEW needs-fix → SPEC_FIXER`（263行、unconditional）、`SPEC_FIXER approved → IMPLEMENTER`（268行、`specFixerObservationForward` guarded）、`SPEC_FIXER approved → SPEC_REVIEW`（272行、unconditional）、`DESIGN → TEST_CASE_GEN`（254行）、`TEST_CASE_GEN → SPEC_REVIEW`（265行）、exempt bypass（253行）。
 - [ ] 削除に伴い不要になったコメント（256-264行あたり）を整理する。
+- [ ] `src/core/pipeline/spec-observation.ts` の `specReviewHasRoutableFixables` JSDoc（29-30行）の `(spec.md, design.md, tasks.md)` を `(spec.md, design.md, tasks.md, test-cases.md)` に更新する（D1 で spec-fixer writable に test-cases.md が加わるため）。
 
 **Acceptance Criteria**:
 - `specReviewNeedsFixIsTcOnly` / `specFixerNeedsFixForward` が src/ 配下に存在しない（grep 0 件）。
@@ -110,6 +112,10 @@
   - `SPEC_FIXER → TEST_CASE_GEN` transition を探す pin（550/561/595/777行付近）: 削除。
   - 不変で残す: TC-002（DESIGN→TEST_CASE_GEN→SPEC_REVIEW）、TC-012/TC-013（spec-review reads の test-cases.md）、TC-014/TC-015（prompts）、TC-016（test-case-gen writes test-cases.md）。
 - [ ] `tests/unit/pipeline/transition-when.test.ts`: `specReviewNeedsFixIsTcOnly` / `specFixerNeedsFixForward` / 削除 transition を参照する assertion を除去・更新する。
+- [ ] `src/core/step/__tests__/spec-review-fixer-routing.test.ts`:
+  - `makeCanonScope()`（108行）の `"spec-fixer"` エントリに `TEST_CASES_MD` を追加する（`new Set<string>([SPEC_MD, DESIGN_MD, TASKS_MD])` → `new Set<string>([SPEC_MD, DESIGN_MD, TASKS_MD, TEST_CASES_MD])`）。T-01 後の実 `writableByFixer` と一致させるため必須。
+  - TC-013「fixable finding on test-cases.md (routable to test-case-gen) → needs-fix」（949行）: medium test-cases.md finding の verdict 期待を `"needs-fix"` から `"approved"`（observation auto-fix fall-through）に変更し、test 名を新挙動に合わせて更新する。
+  - TC-013「deriveStepCompletion yields needs-fix without escalationReason for test-cases.md finding」（956行）: `completion.verdict` の期待を `"needs-fix"` から `"approved"` に変更し、test 名を更新する（escalationReason は依然 undefined のまま）。
 - [ ] 上記以外に削除シンボル（`testCaseGenEffectiveFixer` / `specReviewNeedsFixIsTcOnly` / `specFixerNeedsFixForward` / `loopIntermediateSteps`）を参照する test が残っていないか grep で確認し、残存を解消する。
 
 **Acceptance Criteria**:
