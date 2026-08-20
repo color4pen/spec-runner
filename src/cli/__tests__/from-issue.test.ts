@@ -91,6 +91,7 @@ vi.mock("../../git/branch.js", () => ({
 
 vi.mock("../../core/issue-target/start.js", () => ({
   materializeDraftAndStart: vi.fn().mockResolvedValue(0),
+  startWithIssueLink: vi.fn().mockResolvedValue(0),
 }));
 
 vi.mock("../../core/inbox/draft-writer.js", () => ({
@@ -104,7 +105,7 @@ vi.mock("../../core/inbox/draft-writer.js", () => ({
 import { COMMANDS } from "../command-registry.js";
 import { runFromIssue } from "../from-issue.js";
 import { getCurrentBranch } from "../../git/branch.js";
-import { materializeDraftAndStart } from "../../core/issue-target/start.js";
+import { materializeDraftAndStart, startWithIssueLink } from "../../core/issue-target/start.js";
 import { logError } from "../../logger/stdout.js";
 import { createGitHubClient } from "../../adapter/github/github-client.js";
 import { detachSelf } from "../../core/command/detach.js";
@@ -481,4 +482,46 @@ describe("TC-010: 占有 slug は SlugOccupiedError 経路で拒否される", (
 });
 
 // TC-013/TC-014: getCurrentBranch の実装テストは src/git/__tests__/branch.test.ts が担保する。
+
+// ---------------------------------------------------------------------------
+// TC-005 (test-cases.md): positional + --issue → startWithIssueLink routing
+// ---------------------------------------------------------------------------
+
+describe("TC-005: positional + --issue → startWithIssueLink に route される", () => {
+  beforeEach(() => {
+    vi.mocked(startWithIssueLink).mockClear();
+    vi.mocked(startWithIssueLink).mockResolvedValue(0);
+  });
+
+  it("TC-005: calls startWithIssueLink (not materializeDraftAndStart) when positional + --issue given", async () => {
+    const handler = getJobStartHandler();
+    const spy = exitSpy();
+    try {
+      await handler(
+        { flags: { issue: 42 }, positional: "my-request.md", positionals: ["my-request.md"] },
+        makeCtx(),
+      ).catch(() => {});
+    } finally {
+      spy.mockRestore();
+    }
+    expect(vi.mocked(startWithIssueLink)).toHaveBeenCalledOnce();
+    expect(vi.mocked(materializeDraftAndStart)).not.toHaveBeenCalled();
+  });
+
+  it("TC-005: startWithIssueLink is called with correct issueNumber and requestMdPath", async () => {
+    const handler = getJobStartHandler();
+    const spy = exitSpy();
+    try {
+      await handler(
+        { flags: { issue: 42 }, positional: "my-request.md", positionals: ["my-request.md"] },
+        makeCtx(),
+      ).catch(() => {});
+    } finally {
+      spy.mockRestore();
+    }
+    const call = vi.mocked(startWithIssueLink).mock.calls[0]!;
+    expect(call[0].issueNumber).toBe(42);
+    expect(call[0].requestMdPath).toBe("my-request.md");
+  });
+});
 

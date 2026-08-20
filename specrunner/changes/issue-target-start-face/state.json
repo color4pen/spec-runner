@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T06:53:36.729Z",
+  "updatedAt": "2026-08-20T07:01:58.483Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -85,7 +85,8 @@
     "ce9d1a2afc64a9fea51ed5c7e978536f428dfb1c",
     "e5a53dfa1c1d3e1c2ab6243dbc1c6e1d72bea64f",
     "fdca80f605790c1fdf8b069fabd3b11bafe449a3",
-    "8723468a02edc827144a848aa53c8d927144e82d"
+    "8723468a02edc827144a848aa53c8d927144e82d",
+    "edf4af42c3aa638a27a883f719d3951a42acf083"
   ],
   "touchedFiles": {
     "request-review": [
@@ -148,6 +149,31 @@
     "spec-fixer": [],
     "implementer": [
       "tests/unit/core/runtime/workspace-materializer-link.test.ts"
+    ],
+    "code-review": [
+      "src/core/issue-target/start.ts",
+      "src/core/job/start-from-issue.ts",
+      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
+      "src/adapter/github/github-client.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "src/cli/command-registry.ts",
+      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
+      "tests/unit/step/executor.test.ts",
+      "tests/unit/adapter/github/github-client-graphql.test.ts",
+      "tests/unit/cli/issue-flag.test.ts",
+      "src/core/inbox/run-inbox.ts",
+      "tests/unit/core/runtime/local.test.ts",
+      "src/kernel/github-client.ts",
+      "tests/unit/cli/job-start-file-path.test.ts",
+      "tests/unit/inbox/orchestrator.test.ts",
+      "tests/unit/no-worktree-mode.test.ts",
+      "src/config/type-config.ts",
+      "tests/unit/adapter/github/github-client-get-issue.test.ts",
+      "src/cli/from-issue.ts"
     ]
   },
   "resumePoint": null,
@@ -160,7 +186,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 72,
+    "historyCount": 76,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -169,7 +195,8 @@
       "spec-fixer": 3,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2
+      "verification": 2,
+      "code-review": 1
     }
   }
 }
