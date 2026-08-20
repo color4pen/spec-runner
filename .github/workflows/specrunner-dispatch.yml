@@ -1,18 +1,31 @@
 name: SpecRunner Dispatch
 
-# Actions 画面から issue を指定して pipeline を 1 本走らせる手動発火。
-# issue 本文は request.md の構造（specrunner request template の形式、Meta に slug 必須）で書く。
+# Actions 画面から issue 番号だけで pipeline を起動 / 再開する手動発火。
+# issue 本文の取得・slug 抽出・draft 実体化・branch 特定はすべて CLI の issue-target 層が担い、
+# workflow は SpecRunner の内部知識を持たない。
+#
+# - start:  issue 本文（request.md 形式、Meta に slug 必須）から新規 job を起動する。
+#           feature branch は issue の Development linked branch として登録される。
+# - resume: escalation で awaiting-resume になった job を issue 番号から再開する。
+#           issue コメントの escalation marker → Development リンク → checkpoint identity 照合
+#           → rebind → resume。checkpoint は feature branch に publish されているため、
+#           別 runner（ephemeral 環境）からでも issue 番号だけで継続できる。
+#
 # 前提: リポジトリ secret CLAUDE_CODE_OAUTH_TOKEN（`claude setup-token` の出力）。
-# 注: escalation で awaiting-resume になった job は checkpoint が origin の feature branch に
-#     publish されるため、別環境から job attach --branch <branch> → job resume <slug> で再開できる。
-#     本 workflow は再開経路を実装していない（再 dispatch は再開ではなく新規 job の起動になる）。
 
 on:
   workflow_dispatch:
     inputs:
       issue:
-        description: "Issue number (body must be request.md format)"
+        description: "Issue number"
         required: true
+      action:
+        description: "start: issue 本文から新規 job を起動 / resume: escalation 済み job を再開"
+        type: choice
+        options:
+          - start
+          - resume
+        default: start
 
 concurrency:
   group: specrunner-dispatch-${{ inputs.issue }}
@@ -24,7 +37,7 @@ jobs:
     permissions:
       contents: write # branch push
       pull-requests: write # PR 作成
-      issues: write # terminal 通知コメント
+      issues: write # terminal 通知コメント・Development リンク登録
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -39,26 +52,15 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-      - name: Materialize draft from issue
-        id: draft
-        env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE: ${{ inputs.issue }}
-        run: |
-          gh issue view "$ISSUE" --json body -q .body > /tmp/issue-body.md
-          slug=$(grep -m1 -E '^\s*-\s*\*\*slug\*\*:' /tmp/issue-body.md | sed -E 's/.*\*\*slug\*\*: *//' | tr -d '[:space:]')
-          if ! printf '%s' "$slug" | grep -qE '^[a-z0-9][a-z0-9-]*$'; then
-            echo "::error::issue body has no valid Meta slug (got: '$slug')"
-            exit 1
-          fi
-          mkdir -p specrunner/drafts
-          mv /tmp/issue-body.md "specrunner/drafts/${slug}.md"
-          echo "slug=$slug" >> "$GITHUB_OUTPUT"
-
       - name: Run pipeline
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          SLUG: ${{ steps.draft.outputs.slug }}
           ISSUE: ${{ inputs.issue }}
-        run: bun ./bin/specrunner.ts job start "specrunner/drafts/${SLUG}.md" --issue "$ISSUE"
+          ACTION: ${{ inputs.action }}
+        run: |
+          if [ "$ACTION" = "resume" ]; then
+            bun ./bin/specrunner.ts job resume --from-issue "$ISSUE"
+          else
+            bun ./bin/specrunner.ts job start --from-issue "$ISSUE"
+          fi
