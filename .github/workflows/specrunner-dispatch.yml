@@ -26,6 +26,12 @@ on:
           - start
           - resume
         default: start
+      from:
+        # choice にしない: 有効な step 名は job の state に依存する（custom reviewer 名は動的）。
+        # 検証は CLI 側が行う。
+        description: "resume 時の再開 step override（通常は空 = checkpoint から自動再開）"
+        required: false
+        type: string
 
 concurrency:
   group: specrunner-dispatch-${{ inputs.issue }}
@@ -58,9 +64,10 @@ jobs:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ISSUE: ${{ inputs.issue }}
           ACTION: ${{ inputs.action }}
+          FROM: ${{ inputs.from }}
         run: |
           if [ "$ACTION" = "resume" ]; then
-            bun ./bin/specrunner.ts job resume --from-issue "$ISSUE"
+            bun ./bin/specrunner.ts job resume --from-issue "$ISSUE" ${FROM:+--from "$FROM"}
           else
             bun ./bin/specrunner.ts job start --from-issue "$ISSUE"
           fi
