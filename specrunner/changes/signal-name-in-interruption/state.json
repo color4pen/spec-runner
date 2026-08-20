@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
   "createdAt": "2026-08-20T14:27:40.099Z",
-  "updatedAt": "2026-08-20T15:30:36.520Z",
+  "updatedAt": "2026-08-20T15:36:32.557Z",
   "request": {
     "title": "interruption レコードにシグナル名を記録する",
     "type": "bug-fix",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "fix/signal-name-in-interruption-5ff912e4",
   "error": null,
   "pipelineId": "standard",
@@ -73,9 +73,14 @@
     "13b7c0ff2ba4ff6fafa7affbe1fa2e05c89f4a0e",
     "c8e8c33b3faecc3420d0df2c49a9f9e2967d8a7d",
     "cbdec4dc484183b6eff301365237e499ec94043c",
-    "8304c213d1c691d24684ede260930c6ed1cafec9"
+    "8304c213d1c691d24684ede260930c6ed1cafec9",
+    "021a0192133a7a63cdfb2328fae4bb9b5e51d8b7"
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "code-review escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
   "touchedFiles": {
     "request-review": [
@@ -120,10 +125,18 @@
       "tests/unit/cli/specrunner-resume-dispatch.test.ts",
       "src/cli/command-registry.ts",
       "src/logger/stdout.ts"
+    ],
+    "code-review": [
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "src/store/event-journal.ts",
+      "src/core/lifecycle/exit-guard.ts",
+      "src/core/runtime/__tests__/signal-handler-order.test.ts",
+      "src/core/lifecycle/__tests__/exit-guard.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 3,
       "design": 1,
@@ -132,7 +145,8 @@
       "spec-fixer": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2
+      "verification": 2,
+      "code-review": 1
     }
   }
 }
