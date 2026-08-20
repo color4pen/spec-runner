@@ -47,7 +47,7 @@ T-03 ブロック (`pipeline.ts:431-501`) のコメントを新しい機能定�
    → T-03 が発火し、unconditional 行 `spec-review → implementer` へ reroute
 
 - [ ] `makeSpecReviewNeedsFixRun` ヘルパー（attempt 番号のみ受け取る）を追加または流用し、spec-review needs-fix のステップ run を構築する
-- [ ] `makeSpecReviewApprovedWithRoutableFixableRun` ヘルパーを追加し、approved + fixable finding (severity: "low", resolution: "fixable", spec-fixer-writable な file) を持つ spec-review run を構築する。`specReviewHasRoutableFixables` が true を返すために必要な toolResult 構造を含める
+- [ ] `makeSpecReviewApprovedWithRoutableFixableRun` ヘルパーを追加し、approved + fixable finding (severity: "low", resolution: "fixable", spec-fixer-writable な file) を持つ spec-review run を構築する。`specReviewHasRoutableFixables` が true を返すために必要な toolResult 構造を含める。**重要**: `specReviewHasRoutableFixables` は `buildCanonWriteScopeFromState(state)` → `getJobSlug(state)` → slug 由来のパスで writable set を構築する。`state.request.slug` を テスト用スラッグ（例: `"approved-reroute-unconditional-row"`）に設定し、`finding.file` を `specrunner/changes/<slug>/spec.md` など slug-bound なパスにすること（`src/` 下のパスを使うと `writableByFixer["spec-fixer"]` に含まれず `specReviewHasRoutableFixables` が false を返し、guarded 行が選択されず T-03 が発火しない）
 - [ ] TC-017 の `describe` ブロックを追加し、以下を assert する:
   - `result.status === "awaiting-archive"` (`SPEC_REVIEW_RETRIES_EXHAUSTED` が出ない)
   - `budgetSkippedEvents` に `{ step: "spec-review", fixer: "spec-fixer" }` が含まれる
