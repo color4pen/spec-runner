@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T08:30:13.556Z",
+  "updatedAt": "2026-08-20T08:33:31.763Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -102,7 +102,8 @@
     "aa9671f392003d7e7cc209e99c3ebf0631d51ebf",
     "4767886e20143c2e2b0b7d7d0598d57488e9c51a",
     "8d51b99500190c8a79dd221a63af4f3e4edb8467",
-    "0283a92120c28f0b970203b080233b71b8a632c0"
+    "0283a92120c28f0b970203b080233b71b8a632c0",
+    "f412016016e49b852afbb8b2ac3f9dd34f987c56"
   ],
   "touchedFiles": {
     "request-review": [
@@ -188,7 +189,7 @@
       "tests/unit/architecture/arch-allowlist.ts"
     ],
     "code-fixer": [
-      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/core/runtime/local.ts",
       "tests/unit/no-worktree-mode.test.ts"
     ],
     "regression-gate": [
@@ -262,7 +263,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 149,
+    "historyCount": 153,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -273,7 +274,7 @@
       "bite-evidence": 1,
       "verification": 4,
       "code-review": 4,
-      "code-fixer": 4,
+      "code-fixer": 5,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
