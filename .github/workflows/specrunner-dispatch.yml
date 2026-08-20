@@ -1,0 +1,93 @@
+name: SpecRunner Dispatch
+
+# Actions 画面から issue 番号だけで pipeline を起動 / 再開する手動発火。
+# issue 本文の取得・slug 抽出・draft 実体化・branch 特定はすべて CLI の issue-target 層が担い、
+# workflow は SpecRunner の内部知識を持たない。
+#
+# - start:  issue 本文（request.md 形式、Meta に slug 必須）から新規 job を起動する。
+#           feature branch は issue の Development linked branch として登録される。
+# - resume: escalation で awaiting-resume になった job を issue 番号から再開する。
+#           issue コメントの escalation marker → Development リンク → checkpoint identity 照合
+#           → rebind → resume。checkpoint は feature branch に publish されているため、
+#           別 runner（ephemeral 環境）からでも issue 番号だけで継続できる。
+#
+# 前提: リポジトリ secret CLAUDE_CODE_OAUTH_TOKEN（`claude setup-token` の出力）。
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue number"
+        required: true
+      action:
+        description: "start: issue 本文から新規 job を起動 / resume: escalation 済み job を再開"
+        type: choice
+        options:
+          - start
+          - resume
+        default: start
+      from:
+        # choice にしない: 有効な step 名は job の state に依存する（custom reviewer 名は動的）。
+        # 検証は CLI 側が行う。
+        description: "resume 時の再開 step override（通常は空 = checkpoint から自動再開）"
+        required: false
+        type: string
+      prompt:
+        # workflow_dispatch input は発火に write 権限が要るため operator input として扱える。
+        description: "resume 時に agent context へ注入する operator 裁定（--prompt）"
+        required: false
+        type: string
+      force:
+        description: "resume 時に 3 連続 escalation guard を override する（--force）"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: specrunner-dispatch-${{ inputs.issue }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # branch push
+      pull-requests: write # PR 作成
+      issues: write # terminal 通知コメント・Development リンク登録
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0 # pipeline の egress 検査 (rev-list --not --remotes) を full history で走らせる
+          # checkout v4 は既定で GITHUB_TOKEN を local git config に保存する。
+          # SpecRunner は agent subprocess の env から token を除去し、git fetch/push は
+          # コマンド単位の transport auth で行うため、config 残留 token はその防壁の裏口になる。
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+
+      - run: bun install --frozen-lockfile
+
+      - name: Git identity for pipeline commits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Run pipeline
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          ISSUE: ${{ inputs.issue }}
+          ACTION: ${{ inputs.action }}
+          FROM: ${{ inputs.from }}
+          PROMPT: ${{ inputs.prompt }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          if [ "$ACTION" = "resume" ]; then
+            set -- --from-issue "$ISSUE"
+            [ -n "$FROM" ] && set -- "$@" --from "$FROM"
+            [ -n "$PROMPT" ] && set -- "$@" --prompt "$PROMPT"
+            [ "$FORCE" = "true" ] && set -- "$@" --force
+            bun ./bin/specrunner.ts job resume "$@"
+          else
+            bun ./bin/specrunner.ts job start --from-issue "$ISSUE"
+          fi
