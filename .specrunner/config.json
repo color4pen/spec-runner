@@ -15,7 +15,18 @@
     }
   },
   "steps": {
-    "design": { "model": "claude-opus-4-8[1m]" }
+    "defaults": {
+      "model": "claude-sonnet-4-6",
+      "maxTurns": null
+    },
+    "design": {
+      "model": "claude-opus-4-8[1m]",
+      "byRequestType": {
+        "chore": { "model": "claude-sonnet-4-6" },
+        "bug-fix": { "model": "claude-sonnet-4-6" },
+        "refactoring": { "model": "claude-sonnet-4-6" }
+      }
+    }
   },
   "archive": {
     "mergeWaitTimeoutMs": null
