@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9dcf5a95-c9cb-4172-8b10-b6cf0119a795",
   "createdAt": "2026-08-20T05:14:24.721Z",
-  "updatedAt": "2026-08-20T06:28:52.071Z",
+  "updatedAt": "2026-08-20T06:31:59.775Z",
   "request": {
     "title": "spec-review loop の単一 fixer 化: test-case-gen を review loop から外す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/spec-review-loop-single-fixer-9dcf5a95",
   "error": null,
@@ -72,7 +72,9 @@
     "9eb90475503ba745fe1cbed347ccf4ea6e9821e1",
     "fc5bd965a1d9bec3db3998764562e04c6ad3ac89",
     "10424cfa762b2cc22cb0951e77ddeacf92a196c6",
-    "a6ab6680a9fa7e978f670cb2c19c89e7983f6870"
+    "a6ab6680a9fa7e978f670cb2c19c89e7983f6870",
+    "a9d65b91ef5cc9e199a61d5761d3d98db80019ad",
+    "abb7b745991d4d3bcc0f247e91f759825e501ffb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -143,43 +145,21 @@
       "tests/unit/pipeline/transition-when.test.ts"
     ],
     "implementer": [
-      "src/core/step/canon-write-scope.ts",
-      "src/core/step/canon-escalation.ts",
-      "src/core/step/judge-verdict.ts",
-      "src/core/pipeline/spec-observation.ts",
-      "src/core/pipeline/types.ts",
-      "src/core/pipeline/registry.ts",
-      "src/core/pipeline/pipeline.ts",
-      "src/core/pipeline/run.ts",
-      "src/core/step/spec-fixer.ts",
-      "src/core/step/step-completion.ts",
-      "src/core/step/test-case-gen.ts",
-      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
-      "tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts",
-      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
-      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
-      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
       "tests/unit/core/pipeline/registry-invariants.test.ts",
-      "tests/unit/pipeline/transition-when.test.ts",
-      "src/prompts/spec-fixer-system.ts",
-      "src/prompts/rules.ts",
-      "tests/pipeline-integration.test.ts",
-      "tests/helpers/pipeline-mock-client.ts",
-      "tests/core/pipeline/pipeline.test.ts",
-      "tests/unit/core/step/canon-write-scope.test.ts"
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 41,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 2,
       "spec-fixer": 2,
-      "implementer": 1,
+      "implementer": 2,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2
     }
   }
 }
