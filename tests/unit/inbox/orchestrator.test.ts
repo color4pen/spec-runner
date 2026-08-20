@@ -19,7 +19,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { GitHubClient } from "../../../src/core/port/github-client.js";
 import { runInboxOrchestrator } from "../../../src/core/inbox/run-inbox.js";
 import { buildMarker } from "../../../src/core/notify/issue-notifier.js";
-import type { JobState } from "../../../src/state/schema.js";
+import type { JobState, OptionDecisionRecord } from "../../../src/state/schema.js";
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -575,8 +575,8 @@ describe("runInboxOrchestrator — decision ledger (T-09)", () => {
     expect(effects.persistState).toHaveBeenCalledOnce();
     const [_jobId, persistedState] = vi.mocked(effects.persistState).mock.calls[0] as [string, JobState];
     expect(persistedState.decisions).toHaveLength(1);
-    expect(persistedState.decisions![0]!.selectedOption.number).toBe(1);
-    expect(persistedState.decisions![0]!.selectedOption.label).toBe("Option A: approach A");
+    expect((persistedState.decisions![0]! as OptionDecisionRecord).selectedOption.number).toBe(1);
+    expect((persistedState.decisions![0]! as OptionDecisionRecord).selectedOption.label).toBe("Option A: approach A");
     expect(persistedState.decisions![0]!.source).toBe("issue-comment");
 
     // resumeJob called after
@@ -601,8 +601,8 @@ describe("runInboxOrchestrator — decision ledger (T-09)", () => {
     await runInboxOrchestrator(makeOpts(client, effects));
 
     const [_jobId, persistedState] = vi.mocked(effects.persistState).mock.calls[0] as [string, JobState];
-    expect(persistedState.decisions![0]!.selectedOption.number).toBe(2);
-    expect(persistedState.decisions![0]!.selectedOption.label).toBe("Option B: approach B");
+    expect((persistedState.decisions![0]! as OptionDecisionRecord).selectedOption.number).toBe(2);
+    expect((persistedState.decisions![0]! as OptionDecisionRecord).selectedOption.label).toBe("Option B: approach B");
   });
 
   it("/resume 1=9 (option out of range) → resumeJob NOT called, job stays awaiting-resume", async () => {

@@ -467,6 +467,14 @@ describe("TC-027: runResumeCore uses verified slug even when resolver slug diver
       expect.any(Object),
     );
   });
+
+  it("wontfix / wontfixReason pass through to runResumeCore", async () => {
+    await runResumeFromIssue(42, { wontfix: "1,3", wontfixReason: "operator ruling" }, makeCtx());
+    expect(vi.mocked(runResumeCore)).toHaveBeenCalledWith(
+      "verified-slug",
+      expect.objectContaining({ wontfix: "1,3", wontfixReason: "operator ruling" }),
+    );
+  });
 });
 
 // ---------------------------------------------------------------------------

@@ -15,7 +15,7 @@ import {
   getOpenDecisionFindings,
 } from "../../../../src/core/decision/decision-ledger.js";
 import type { Finding } from "../../../../src/kernel/report-result.js";
-import type { DecisionRecord, JobState } from "../../../../src/state/schema.js";
+import type { OptionDecisionRecord, DispositionDecisionRecord, JobState } from "../../../../src/state/schema.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -36,7 +36,7 @@ function makeFinding(overrides: Partial<Finding> = {}): Finding {
   };
 }
 
-function makeDecisionRecord(overrides: Partial<DecisionRecord> = {}): DecisionRecord {
+function makeDecisionRecord(overrides: Partial<OptionDecisionRecord> = {}): OptionDecisionRecord {
   return {
     id: "decision-2026-01-01T00:00:00.000Z-1",
     step: "spec-review",
@@ -346,6 +346,25 @@ describe("getOpenDecisionFindings", () => {
     expect(getOpenDecisionFindings(state)).toHaveLength(0);
   });
 
+  // TC-001: kind 無しの既存 decisions が option として読める
+  it("TC-001: kind-less legacy record is treated as option (filter/isFindingDecided work unchanged)", () => {
+    const finding = makeFinding();
+    // A legacy record without `kind` — exactly what's persisted before this change
+    const legacyRecord = {
+      id: "decision-legacy-1",
+      step: "spec-review",
+      findingKey: computeFindingKey("spec-review", finding),
+      finding: { title: finding.title, file: finding.file, rationale: finding.rationale, severity: finding.severity as "medium" },
+      selectedOption: { number: 1, label: "Accept", consequence: "Ok" },
+      decidedAt: "2026-01-01T00:00:00Z",
+      source: "issue-comment" as const,
+    } satisfies OptionDecisionRecord;
+
+    // filterUndecidedFindings must suppress the finding (backward compat)
+    const result = filterUndecidedFindings("spec-review", [finding], [legacyRecord]);
+    expect(result).toHaveLength(0);
+  });
+
   it("returns empty when no runs exist for the resume step", () => {
     const state = makeJobState({
       resumePoint: { step: "spec-review", reason: "test", iterationsExhausted: 0 },
@@ -362,5 +381,81 @@ describe("getOpenDecisionFindings", () => {
       },
     });
     expect(getOpenDecisionFindings(state)).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-012: reviewer が wontfix 済み finding を再報告しても verdict が needs-fix にならない
+// (filterUndecidedFindings は disposition record にも効く)
+// ---------------------------------------------------------------------------
+
+describe("TC-012: disposition record も filterUndecidedFindings で除外される", () => {
+  it("filterUndecidedFindings suppresses a re-reported finding that has a disposition record", () => {
+    // A finding with resolution "fixable" (not decision-needed)
+    const finding: Finding = {
+      severity: "high",
+      resolution: "fixable",
+      file: "src/vuln.ts",
+      line: 42,
+      title: "SQL injection",
+      rationale: "Unescaped input",
+    };
+
+    const dispositionRecord: DispositionDecisionRecord = {
+      kind: "disposition",
+      id: "disp-test-1",
+      step: "code-review",
+      findingKey: computeFindingKey("code-review", finding),
+      finding: {
+        title: finding.title,
+        file: finding.file,
+        line: finding.line,
+        rationale: finding.rationale,
+        severity: finding.severity,
+      },
+      disposition: "wontfix",
+      reason: "accepted risk",
+      decidedAt: "2026-01-01T00:00:00Z",
+      source: "operator",
+    };
+
+    // Reviewer re-reports the same finding
+    const result = filterUndecidedFindings("code-review", [finding], [dispositionRecord]);
+
+    // Must be filtered out — verdict derivation would see 0 findings → no needs-fix
+    expect(result).toHaveLength(0);
+  });
+
+  it("only suppresses matching step+findingKey — different step not suppressed", () => {
+    const finding: Finding = {
+      severity: "high",
+      resolution: "fixable",
+      file: "src/vuln.ts",
+      line: 42,
+      title: "SQL injection",
+      rationale: "Unescaped input",
+    };
+
+    const dispositionRecord: DispositionDecisionRecord = {
+      kind: "disposition",
+      id: "disp-test-2",
+      step: "code-review",
+      findingKey: computeFindingKey("code-review", finding),
+      finding: {
+        title: finding.title,
+        file: finding.file,
+        line: finding.line,
+        rationale: finding.rationale,
+        severity: finding.severity,
+      },
+      disposition: "wontfix",
+      reason: "accepted risk",
+      decidedAt: "2026-01-01T00:00:00Z",
+      source: "operator",
+    };
+
+    // Different step ("security") — should NOT be suppressed
+    const result = filterUndecidedFindings("security", [finding], [dispositionRecord]);
+    expect(result).toHaveLength(1);
   });
 });

@@ -10,10 +10,11 @@
  * (f) collectParallelFixerFindings: TC-024 / TC-025
  */
 import { describe, it, expect } from "vitest";
-import { collectFindingsLedger, dedupeFindings, collectParallelFixerFindings } from "../findings-ledger.js";
-import type { JobState } from "../../../state/schema.js";
+import { collectFindingsLedger, dedupeFindings, collectParallelFixerFindings, computeRegressionLedger } from "../findings-ledger.js";
+import type { JobState, DispositionDecisionRecord } from "../../../state/schema.js";
 import type { Finding, Observation } from "../../../kernel/report-result.js";
 import type { StepRun } from "../../../state/schema.js";
+import { computeFindingKey } from "../../decision/decision-ledger.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -520,5 +521,154 @@ describe("collectFindingsLedger — observations excluded (T-06 invariant)", () 
     // The observation must NOT appear (it has no `resolution` field)
     const observationTitles = ledger.map((f) => f.title);
     expect(observationTitles).not.toContain("Observation title");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-009: wontfix 済み finding が computeRegressionLedger から消える
+// TC-010: wontfix 1 件で livelock が解消する
+// TC-011: 除外は照合のみで履歴を変えない
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a DispositionDecisionRecord for a finding on a given step.
+ */
+function makeDisposition(stepName: string, finding: Finding): DispositionDecisionRecord {
+  return {
+    kind: "disposition",
+    id: `disp-test-${stepName}-${finding.title}`,
+    step: stepName,
+    findingKey: computeFindingKey(stepName, finding),
+    finding: {
+      title: finding.title,
+      file: finding.file,
+      line: finding.line,
+      rationale: finding.rationale,
+      severity: finding.severity,
+    },
+    disposition: "wontfix",
+    reason: "accepted risk",
+    decidedAt: "2026-01-01T00:00:00Z",
+    source: "operator",
+  };
+}
+
+describe("TC-009: wontfix 済み finding が computeRegressionLedger から消える", () => {
+  it("F1 is excluded when its disposition record is in decisions; F2 remains", () => {
+    const f1 = makeFixableFinding({ title: "F1", file: "a.ts", line: 1, rationale: "rationale1" });
+    const f2 = makeFixableFinding({ title: "F2", file: "b.ts", line: 2, rationale: "rationale2" });
+
+    const state = makeState({
+      "code-review": [
+        { outcome: { verdict: "needs-fix", findingsPath: null, error: null, toolResult: { ok: true, findings: [f1, f2] } } },
+      ],
+    });
+    const stateWithDecision: JobState = {
+      ...state,
+      decisions: [makeDisposition("code-review", f1)],
+    };
+
+    const ledger = computeRegressionLedger(["code-review"], stateWithDecision);
+    const titles = ledger.map((f) => f.title);
+    expect(titles).not.toContain("F1");
+    expect(titles).toContain("F2");
+  });
+});
+
+describe("TC-010: wontfix 1 件で livelock が解消する", () => {
+  it("gate active input is empty when only wontfix finding remains; no other regressions", () => {
+    // F1 is the only finding the gate keeps reporting.
+    // After wontfix, it's excluded from the ledger → ledger is empty → gate passes.
+    const f1 = makeFixableFinding({ title: "Livelock finding", file: "x.ts", line: 5, rationale: "rationale" });
+
+    const state = makeState({
+      "code-review": [
+        { outcome: { verdict: "needs-fix", findingsPath: null, error: null, toolResult: { ok: true, findings: [f1] } } },
+      ],
+    });
+    const stateWithDecision: JobState = {
+      ...state,
+      decisions: [makeDisposition("code-review", f1)],
+    };
+
+    const ledger = computeRegressionLedger(["code-review"], stateWithDecision);
+    // F1 excluded → ledger is empty → gate has nothing to flag
+    expect(ledger).toHaveLength(0);
+  });
+});
+
+describe("collectParallelFixerFindings — disposition-decided findings excluded", () => {
+  it("excludes wontfix'd findings from needs-fix member", () => {
+    const f1 = makeFixableFinding({ title: "wontfix issue", file: "src/a.ts", line: 1, rationale: "r1" });
+    const f2 = makeFixableFinding({ title: "active issue", file: "src/b.ts", line: 2, rationale: "r2" });
+
+    const state: JobState = {
+      ...makeState({
+        "A": [
+          {
+            outcome: {
+              verdict: "needs-fix",
+              findingsPath: null,
+              error: null,
+              toolResult: { ok: true, findings: [f1, f2] },
+            },
+          },
+        ],
+      }),
+      decisions: [makeDisposition("A", f1)],
+    };
+
+    const result = collectParallelFixerFindings(state, ["A"]);
+    expect(result).toHaveLength(1);
+    expect(result[0]!.title).toBe("active issue");
+  });
+
+  it("returns empty when all member findings are wontfix'd", () => {
+    const f = makeFixableFinding({ title: "wontfix only", file: "src/a.ts", line: 1, rationale: "r" });
+
+    const state: JobState = {
+      ...makeState({
+        "A": [
+          {
+            outcome: {
+              verdict: "needs-fix",
+              findingsPath: null,
+              error: null,
+              toolResult: { ok: true, findings: [f] },
+            },
+          },
+        ],
+      }),
+      decisions: [makeDisposition("A", f)],
+    };
+
+    const result = collectParallelFixerFindings(state, ["A"]);
+    expect(result).toHaveLength(0);
+  });
+});
+
+describe("TC-011: 除外は照合のみで履歴を変えない", () => {
+  it("StepRun still contains F1 after exclusion from ledger", () => {
+    const f1 = makeFixableFinding({ title: "F1", file: "a.ts", line: 1, rationale: "r1" });
+
+    const state = makeState({
+      "code-review": [
+        { outcome: { verdict: "needs-fix", findingsPath: null, error: null, toolResult: { ok: true, findings: [f1] } } },
+      ],
+    });
+    const stateWithDecision: JobState = {
+      ...state,
+      decisions: [makeDisposition("code-review", f1)],
+    };
+
+    // Ledger excludes F1
+    const ledger = computeRegressionLedger(["code-review"], stateWithDecision);
+    expect(ledger.map((f) => f.title)).not.toContain("F1");
+
+    // But StepRun in state is unchanged — the original finding is still there
+    const stepRuns = stateWithDecision.steps?.["code-review"] ?? [];
+    expect(stepRuns).toHaveLength(1);
+    const toolResult = stepRuns[0]!.outcome.toolResult as { findings?: Finding[] };
+    expect(toolResult.findings?.map((f) => f.title)).toContain("F1");
   });
 });

@@ -33,6 +33,8 @@ export interface ResumeFromIssueOptions {
   force?: boolean;
   applyCanon?: boolean;
   adoptCommits?: boolean;
+  wontfix?: string;
+  wontfixReason?: string;
   noWorktree?: boolean;
   json?: boolean;
   logLevel?: LogLevel;
@@ -226,6 +228,8 @@ export async function runResumeFromIssue(
       noWorktree: opts.noWorktree,
       applyCanon: opts.applyCanon,
       adoptCommits: opts.adoptCommits,
+      wontfix: opts.wontfix,
+      wontfixReason: opts.wontfixReason,
     });
   } catch (err) {
     if (err instanceof SpecRunnerError) {

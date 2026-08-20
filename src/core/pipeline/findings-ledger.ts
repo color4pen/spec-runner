@@ -18,6 +18,7 @@ import {
   type CanonWriteScope,
 } from "../step/canon-escalation.js";
 import { STEP_NAMES } from "../step/step-names.js";
+import { filterUndecidedFindings } from "../decision/decision-ledger.js";
 
 /**
  * Collect all fixable findings from every StepRun in the given reviewer chain.
@@ -48,7 +49,11 @@ export function collectFindingsLedger(
       const findings = toolResult?.findings;
       if (!findings || findings.length === 0) continue;
       const fixable = collectFixableFindings(findings);
-      all.push(...fixable);
+      // Exclude disposition-decided findings before collecting (T-04 / D5).
+      // filterUndecidedFindings checks step + findingKey against decisions;
+      // disposition records use the same fields so no arm check needed.
+      const active = filterUndecidedFindings(stepName, fixable, state.decisions);
+      all.push(...active);
     }
   }
 
@@ -98,7 +103,9 @@ export function collectParallelFixerFindings(
     if (!findings || findings.length === 0) continue;
 
     const fixable = collectFixableFindings(findings);
-    all.push(...fixable);
+    // Exclude disposition-decided findings (mirrors collectFindingsLedger per-step exclusion).
+    const active = filterUndecidedFindings(name, fixable, state.decisions);
+    all.push(...active);
   }
 
   const deduped = dedupeFindings(all);

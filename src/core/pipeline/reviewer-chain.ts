@@ -17,6 +17,7 @@ import type { CodeReviewReportResult } from "../port/report-result.js";
 import { collectFixableFindings } from "../step/judge-verdict.js";
 import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import { getConformanceFixContext } from "../step/fixer-helpers.js";
+import { filterUndecidedFindings } from "../decision/decision-ledger.js";
 
 /**
  * Derive the full reviewer chain for the impl phase from job state.
@@ -163,6 +164,8 @@ export function buildReviewerChainTransitions(chain: string[]): Transition[] {
     const next = nextAfterReviewer(reviewer, chain);
 
     // approved + fixable findings → code-fixer (findings-derived routing)
+    // Exclude disposition-decided findings before checking; a reviewer whose only
+    // fixable findings are wontfix'd should not trigger the code-fixer.
     transitions.push({
       step: reviewer,
       on: "approved",
@@ -173,7 +176,9 @@ export function buildReviewerChainTransitions(chain: string[]): Transition[] {
         const lastRun = runs[runs.length - 1];
         if (!lastRun) return false;
         const findings = lastFindingsOf(s, reviewer);
-        return collectFixableFindings(findings).length > 0;
+        const fixable = collectFixableFindings(findings);
+        const active = filterUndecidedFindings(reviewer, fixable, s.decisions);
+        return active.length > 0;
       },
     });
 
@@ -347,6 +352,7 @@ export function buildParallelReviewerTransitions(opts: {
 
   // --- code-review rows (same pattern as buildReviewerChainTransitions for the first reviewer) ---
   // approved + fixable findings → code-fixer (findings-routing)
+  // Exclude disposition-decided findings before checking (mirrors buildReviewerChainTransitions guard).
   transitions.push({
     step: STEP_NAMES.CODE_REVIEW,
     on: "approved",
@@ -358,7 +364,9 @@ export function buildParallelReviewerTransitions(opts: {
       if (!lastRun) return false;
       const toolResult = lastRun.outcome.toolResult as CodeReviewReportResult | null | undefined;
       const findings = toolResult?.findings ?? [];
-      return collectFixableFindings(findings).length > 0;
+      const fixable = collectFixableFindings(findings);
+      const active = filterUndecidedFindings(STEP_NAMES.CODE_REVIEW, fixable, s.decisions);
+      return active.length > 0;
     },
   });
   // approved (no fixable findings) → coordinator

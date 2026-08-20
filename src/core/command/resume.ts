@@ -33,6 +33,7 @@ import { resolveLivenessWorktreePath } from "../resume/resolve-worktree-path.js"
 import { detectCanonDirtyPaths, commitOperatorCanon } from "../resume/apply-canon.js";
 import { isInterruptionBacked, declaredCanonWritesForStep, isInterruptedStepPartialCanon } from "../resume/canon-provenance.js";
 import { detectUnadoptedCommits, buildAdoptEscalationMessage, buildAdoptionHaltMessage, type UnadoptedCommit } from "../resume/adopt-commits.js";
+import { resolveWontfixDispositions } from "../decision/wontfix.js";
 import { reconcileWorktreeArtifacts, quarantinePartialCanon } from "../resume/reconcile-worktree.js";
 import { defaultSpawnFn, runSubprocess } from "../../util/git-exec.js";
 import type { StepDeps } from "../step/types.js";
@@ -49,6 +50,10 @@ export interface ResumeOptions {
   applyCanon?: boolean;
   /** When true, adopt publish-range commits not in the ledger into synthesizedCommits before resuming. */
   adoptCommits?: boolean;
+  /** Comma-separated 1-based indices of regression-gate findings to mark as wontfix. */
+  wontfix?: string;
+  /** Mandatory reason text when --wontfix is specified. */
+  wontfixReason?: string;
 }
 
 /**
@@ -281,6 +286,20 @@ export class ResumeCommand extends CommandRunner {
       throw new PrepareError(1, "Failed to parse request.md");
     }
 
+    // Resolve --wontfix dispositions BEFORE state transition (all-or-nothing, exit 2 on failure).
+    const now = new Date().toISOString();
+    const wontfixResult = resolveWontfixDispositions(
+      state,
+      this.options.wontfix,
+      this.options.wontfixReason,
+      now,
+    );
+    if (!wontfixResult.ok) {
+      logError(wontfixResult.error);
+      throw new PrepareError(2, wontfixResult.error);
+    }
+    const dispositionRecords = wontfixResult.records;
+
     // State preparation: transition to "running"
     let updatedState: JobState;
     let runStore: JobStateStore | null = null;
@@ -293,13 +312,21 @@ export class ResumeCommand extends CommandRunner {
 
       // Persist operator adjudication when --prompt is provided (non-empty string only).
       // The one-shot deps injection (resumePrompt → pipeline.ts <resume-context>) is unchanged.
-      const stateToWrite: JobState = (this.options.prompt && this.options.prompt.length > 0)
+      let stateToWrite: JobState = (this.options.prompt && this.options.prompt.length > 0)
         ? appendOperatorAdjudication(transitioned, {
             text: this.options.prompt,
             step: startStep,
-            recordedAt: new Date().toISOString(),
+            recordedAt: now,
           })
         : transitioned;
+
+      // Append disposition records to decisions when --wontfix produced any.
+      if (dispositionRecords.length > 0) {
+        stateToWrite = {
+          ...stateToWrite,
+          decisions: [...(stateToWrite.decisions ?? []), ...dispositionRecords],
+        };
+      }
 
       if (this.options.noWorktree) {
         // no-worktree mode: state.json lives in cwd (no worktree path to find)

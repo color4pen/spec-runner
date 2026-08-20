@@ -41,6 +41,10 @@ export interface ResumeOptions {
   applyCanon?: boolean;
   /** When true, adopt publish-range commits not in the ledger into synthesizedCommits before resuming. */
   adoptCommits?: boolean;
+  /** Comma-separated 1-based indices of regression-gate findings to mark as wontfix. */
+  wontfix?: string;
+  /** Mandatory reason text when --wontfix is specified. */
+  wontfixReason?: string;
 }
 
 export async function runResumeCore(slug: string, options: ResumeOptions): Promise<number> {
@@ -81,7 +85,14 @@ export async function runResumeCore(slug: string, options: ResumeOptions): Promi
       runtime,
       events,
       slug,
-      { ...options, noWorktree: options.noWorktree, applyCanon: options.applyCanon, adoptCommits: options.adoptCommits },
+      {
+        ...options,
+        noWorktree: options.noWorktree,
+        applyCanon: options.applyCanon,
+        adoptCommits: options.adoptCommits,
+        wontfix: options.wontfix,
+        wontfixReason: options.wontfixReason,
+      },
       (config) => createIssueFidelityComparator(config),
     ).execute();
   } catch (err) {
