@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
   "createdAt": "2026-08-20T09:24:35.898Z",
-  "updatedAt": "2026-08-20T10:58:43.275Z",
+  "updatedAt": "2026-08-20T11:04:27.616Z",
   "request": {
     "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/issue-target-resume-from-issue-5ca3d603",
   "error": null,
@@ -78,7 +78,9 @@
     "2e89b25f7411cd94c173d539bf08f349d73d0b09",
     "35e93cbce49f549adf96d779f35562d6bf959055",
     "1c40edb8b962c46c919422437d53c404940e9946",
-    "9c63edd1f177646839bf63206e051cca0543ed52"
+    "9c63edd1f177646839bf63206e051cca0543ed52",
+    "ad8b90eeb2ee2fb715b07e8a9a29160759cadd58",
+    "a302a6ad502b63fce7aaec2c88160564f1fc059f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -155,9 +157,10 @@
       "tests/unit/architecture/arch-allowlist.ts"
     ],
     "code-fixer": [
-      "src/core/issue-target/__tests__/resume.test.ts",
-      "src/cli/__tests__/resume-from-issue.test.ts",
-      "src/core/issue-target/resume.ts"
+      "src/git/checkpoint-ref.ts",
+      "src/core/issue-target/resume.ts",
+      "src/cli/resume-from-issue.ts",
+      "src/cli/__tests__/resume-from-issue.test.ts"
     ]
   },
   "resumePoint": null,
@@ -166,7 +169,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "35e93cbce49f549adf96d779f35562d6bf959055",
+      "approvedAtCommit": "ad8b90eeb2ee2fb715b07e8a9a29160759cadd58",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -181,15 +184,16 @@
     },
     {
       "name": "scale-tolerance",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "ad8b90eeb2ee2fb715b07e8a9a29160759cadd58",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
         "src/core/inbox/**",
         "src/logger/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/issue-target-resume-from-issue/design.md:sha256:d31672d51ad10a3148fb0e60f903a5181edaeacd2a0a870831b12abb036c9e59|specrunner/changes/issue-target-resume-from-issue/request.md:sha256:354bcb41320aacfe7e34b3773cb3f7d483918c5914a6538074456b5f55a4736c|specrunner/changes/issue-target-resume-from-issue/spec.md:sha256:6196c4b835405643adaad5429aa733ad20b93dd34a2e7cced1e0450bd719485b|specrunner/changes/issue-target-resume-from-issue/tasks.md:sha256:af68560949495342478d466c83a75873e160968a3dc98c107b8fc17e6f03d1fd|specrunner/changes/issue-target-resume-from-issue/test-cases.md:sha256:ba2a2bf80c9e541c0fc4fb485c8d5b412d6eca263a3bda31a93dfa5c43378b41"
     }
   ],
   "operatorAdjudications": [
@@ -200,7 +204,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 66,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -210,10 +214,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 1,
+      "code-fixer": 2,
       "cross-boundary-invariants": 1,
-      "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "scale-tolerance": 2,
+      "custom-reviewers": 2
     }
   }
 }
