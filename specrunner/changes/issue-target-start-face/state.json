@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T05:47:09.201Z",
+  "updatedAt": "2026-08-20T05:49:02.304Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -73,7 +73,8 @@
     "564f535f220b7f696c7d947a6a54a787df017227",
     "864e2e2e467eb0e0396ec77a799fb7ecf6f953da",
     "2b4f79a0b37e3df15c027686d267c0950f165a1d",
-    "6cd078cd0b9384b76f3a2854a88fb7bbc9f3a6dd"
+    "6cd078cd0b9384b76f3a2854a88fb7bbc9f3a6dd",
+    "a2592ece4d54e866e44ef0ea2d3b8d2e9875e80e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -140,7 +141,8 @@
       "tests/unit/architecture/arch-allowlist.ts",
       "tests/unit/architecture/core-invariants.test.ts",
       "src/core/port/runtime-strategy.ts"
-    ]
+    ],
+    "spec-fixer": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -152,12 +154,13 @@
     }
   ],
   "_journal": {
-    "historyCount": 29,
+    "historyCount": 33,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
       "test-case-gen": 2,
-      "spec-review": 2
+      "spec-review": 2,
+      "spec-fixer": 1
     }
   }
 }
