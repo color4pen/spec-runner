@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
   "createdAt": "2026-08-20T14:27:40.099Z",
-  "updatedAt": "2026-08-20T14:55:00.048Z",
+  "updatedAt": "2026-08-20T14:57:10.346Z",
   "request": {
     "title": "interruption レコードにシグナル名を記録する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "fix/signal-name-in-interruption-5ff912e4",
   "error": null,
@@ -66,7 +66,8 @@
   "synthesizedCommits": [
     "f2d29c473174000d3f06510f2f5a32640d219bb0",
     "53f4b40f5260d965b20ee1380beee750f835e948",
-    "b9679ebb20263b99c70f050f2d2aed9bfdc41d99"
+    "b9679ebb20263b99c70f050f2d2aed9bfdc41d99",
+    "61c4a7bfc5c135ef2047251382110d30169c6898"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -90,13 +91,15 @@
       "src/core/lifecycle/__tests__/exit-guard.test.ts",
       "src/core/pipeline/__tests__/member-resume-routing.test.ts",
       "src/core/command/__tests__/resume-member-context.test.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 20,
     "stepCounts": {
       "request-review": 3,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
