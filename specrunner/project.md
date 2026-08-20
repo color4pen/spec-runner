@@ -20,25 +20,28 @@ CLI-first の dual runtime アーキテクチャ。
 - **Pipeline**: 13 ステップの state-machine で request.md → PR を自動生成
   1. request-review — request の受け入れ判定（不明瞭・却下は即 escalation）
   2. design — ブランチ作成・仕様生成
-  3. spec-review — 仕様レビュー
-  4. spec-fixer — 仕様修正（spec-review が needs-fix の場合）
-  5. test-case-gen — テストケース生成
-  6. implementer — コード実装
-  7. verification — ビルド・テスト検証
-  8. build-fixer — ビルド修正（verification 失敗時）
+  3. test-case-gen — テストケース生成（テスト生成免除 type（chore 等）は skip して spec-review へ）
+  4. spec-review — 仕様レビュー（spec / design / tasks / test-cases の正典全体が対象）
+  5. spec-fixer — 仕様修正（spec-review ⇄ spec-fixer の単一収束ループ。test-cases.md も targeted 修正の対象）
+  6. implementer — コード実装（テストの実体化を含む。verification 失敗時の paired fixer も兼ねる — build-fixer は廃止済み）
+  7. bite-evidence — 新規テストが実装の破壊を検出できることの証拠確認（internal gate。免除 type は skip）
+  8. verification — ビルド・テスト検証（失敗は implementer へ再入）
   9. code-review — コードレビュー
   10. code-fixer — コード修正（code-review または custom reviewer が needs-fix の場合）
-  11. conformance — アーキテクチャ適合性検証
-  12. adr-gen — ADR 生成（request.adr === true の場合）
+  11. conformance — アーキテクチャ適合性検証（needs-fix は fix 対象別に spec-fixer / implementer / code-fixer へ routing）
+  12. adr-gen — ADR 生成（request.adr === true の場合。false は skip）
   13. pr-create — GitHub PR 作成
 
+  pipeline profile は `standard` のほかに `design-only` / `fast` があり、request.md Meta の `pipeline` で選択する（省略時は standard）。
+
   `specrunner/reviewers/` に custom reviewer 定義があるとき、チェーンは動的に延長される:
-  code-review の後に custom reviewer 群が宣言順で直列実行され（needs-fix は共用 code-fixer と収束）、
-  その後に regression-gate（レビュー中に修正された全 findings が最終コードでも修正されたままかの台帳照合）が走り、
-  conformance へ進む。reviewer 定義は job 開始時に state へ snapshot され、実行中の定義変更は影響しない。
+  code-review の後に custom reviewer 群が並列 round（coordinator が編成、member は state を書かない）で実行され
+  （needs-fix は共用 code-fixer と収束）、その後に regression-gate（レビュー中に修正された全 findings が
+  最終コードでも修正されたままかの台帳照合）が走り、conformance へ進む。reviewer 定義は job 開始時に
+  state へ snapshot され、実行中の定義変更は影響しない。
 
   **再検証チョークポイント（post-fixer reverification）**: conformance が approved を返した時点で、
-  implementer / build-fixer / code-fixer のいずれかが最後の verification より後にコードを変更していた場合、
+  implementer / code-fixer のいずれかが最後の verification より後にコードを変更していた場合、
   conformance → verification が再実行され、その passed を確認してから adr-gen → pr-create へ進む。
   verification が fresh な状態（budget リセット済み）で再実行されるため、再検証が即 escalation で打ち切られることはない。
   コードが変更されていなければ再検証はスキップされ、conformance → adr-gen へ直接進む。
@@ -183,16 +186,17 @@ src/
 ├── core/             # ビジネスロジック
 │   ├── pipeline/       # State machine + 遷移テーブル
 │   ├── step/           # Step 定義 + Executor
-│   ├── command/        # 高レベルコマンド (run, resume, finish)
+│   ├── command/        # 高レベルコマンド (run, resume, reopen 等)
 │   ├── runtime/        # RuntimeStrategy 抽象化
 │   ├── port/           # Port インターフェース
 │   ├── agent/          # Agent 定義レジストリ
 │   ├── verification/   # ビルド検証
-│   ├── finish/         # PR ファイナライズ
+│   ├── finish/         # archive 時の change folder 片づけ
 │   ├── pr-create/      # PR テンプレート
 │   ├── job-access/      # jobId → slug → state 解決
 │   ├── resume/         # 中断再開
-│   ├── tools/          # カスタムツール定義
+│   ├── attach/         # remote checkpoint の検証・再束縛
+│   ├── issue-target/   # issue 起点の start / resume 解決
 │   ├── doctor/         # 環境診断
 │   └── event/          # イベントバス
 ├── config/           # 設定解決 (step-config, schema)

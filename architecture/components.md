@@ -106,6 +106,17 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 - **協調**: JobStateStore / resolveCanonicalStateDir / local-job-index（`store/local-job-index.ts`、sidecar 走査）。
 - → `src/core/job-access/`
 
+### IssueTarget — issue を入口とする job lifecycle 変換
+- **責務**: GitHub issue 番号を唯一の入力に、**start face**（issue 本文を request source として draft を実体化し、注入された起動 primitive で job を起動 ＋ Development linked branch を登録）と **resume face**（issue コメントの escalation marker → Development linked branches → checkpoint identity 照合で resumable job を確定）を提供する。CLI の `--from-issue`（start / resume）と inbox が共有する境界。
+- **不変条件**: cli 層を import しない — 起動 primitive は caller 注入（`StartPrimitive`。`runRunCore` 相当を構造的型で受ける）。resume face は issue 本文を読まない（`IssueResumeClient` は `getIssue` を構造的に持たない narrow Pick）。issue / Development リンクは locator（index）であって authority ではない — identity の確定は branch-borne checkpoint の照合のみ・fail-closed（`architecture/adr/2026-08-20-issue-not-job-authority.md`）。linked branch 登録は best-effort（失敗は job を止めない）。
+- **協調**: GitHubClient（narrow 面）/ checkpoint-ref（identity 読み取り）/ CheckpointVerification（rebind 時の検証）/ CommandRunner（実行）。
+- → `src/core/issue-target/`（start / resume face）。CLI orchestration は `src/cli/from-issue.ts` ／ `src/cli/resume-from-issue.ts`。
+
+### CheckpointVerification — checkpoint 検証の二層分離
+- **責務**: `verifyCheckpoint` が **generic 検証**（journal / projection 整合・counter reversal・profile 自己整合・request.md 存在・repository / job / branch identity — use-case 非依存）を担い、use-case 固有条件は **`CheckpointVerificationPolicy`**（既定 `attachResumePolicy` ＝ quiescent status・resume point 解決・resume step 入力の存在）の注入で受ける。**実行順は責務分割と別の軸**: integrity core（journal / projection・counter reversal・profile）→ `policy.verify()` → request.md 存在・identity の共通検査、の順（`specrunner/adr/2026-08-20-checkpoint-verification-policy-split.md` が決定した順序）。integrity core が破れた checkpoint は policy に到達しない（fail-fast）。
+- **協調**: attach orchestrator / IssueTarget（resume face の rebind）/ WorktreeManager。束縛の意味論は `dynamic-model.md` reattachment。
+- → `src/core/attach/verify-checkpoint.ts`（generic 層）／ `src/core/attach/checkpoint-policy.ts`（policy 定義）
+
 ---
 
 ## ports（core/port — domain が要求する seam の interface）
