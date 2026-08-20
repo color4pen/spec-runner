@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d1946274-009d-439f-9aed-83ed558a4654",
   "createdAt": "2026-08-20T07:19:48.603Z",
-  "updatedAt": "2026-08-20T07:20:40.148Z",
+  "updatedAt": "2026-08-20T07:24:30.809Z",
   "request": {
     "title": "approved 温存 reroute の修正: fixer 全体除外をやめ同 verdict の unconditional row へ降りる",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "fix/approved-reroute-unconditional-row-d1946274",
   "error": null,
@@ -63,10 +63,22 @@
   ],
   "issueNumber": 1018,
   "synthesizedCommits": [
-    "28eee6186d16f014d064631d0584ef0d5e31fbae"
+    "28eee6186d16f014d064631d0584ef0d5e31fbae",
+    "7b74b43dc4a2e21b1b9ee0b55162ef5758ab2d96"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/pipeline/registry.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "src/core/pipeline/spec-observation.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
