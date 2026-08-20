@@ -14,7 +14,7 @@ import { getCurrentBranch } from "../git/branch.js";
 import { baseBranchMismatchError, SpecRunnerError, EXIT_CODE } from "../errors.js";
 import { isDetachedChild, detachSelf } from "../core/command/detach.js";
 import { materializeDraftAndStart } from "../core/job/start-from-issue.js";
-import { logError, resolveLogLevel } from "../logger/stdout.js";
+import { logError } from "../logger/stdout.js";
 import type { LogLevel } from "../logger/stdout.js";
 import type { CommandContext } from "./command-context.js";
 

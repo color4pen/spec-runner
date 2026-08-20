@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T03:42:58.123Z",
+  "updatedAt": "2026-08-20T03:57:10.276Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -76,7 +76,9 @@
     "955833e9a68b575b997a089c9309479a6a271ee4",
     "ad03ec5d4d5b30fcd0d985dbd56b4122dd092d90",
     "7762d864e5dab3367a08b3b422280c251c4aaf75",
-    "b3b7d0efccb203e647238f423a7ceeaec20cc5f9"
+    "b3b7d0efccb203e647238f423a7ceeaec20cc5f9",
+    "f27e44eb678ab4947f0be54b979bf141e21a3788",
+    "69746818c787b6ebb7eb53011abdf9127376e847"
   ],
   "touchedFiles": {
     "request-review": [
@@ -129,7 +131,35 @@
       "src/core/command/detach.ts",
       "src/cli/command-registry.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/cli/command-registry.ts",
+      "src/cli/inbox.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/errors.ts",
+      "src/git/source-revision.ts",
+      "src/util/git-exec.ts",
+      "src/core/inbox/draft-writer.ts",
+      "src/parser/request-md.ts",
+      "src/adapter/github/github-client.ts",
+      "src/core/command/detach.ts",
+      "src/core/gate/issue-fidelity-gate.ts",
+      "src/cli/run.ts",
+      "src/core/inbox/__tests__/run-inbox.test.ts",
+      "src/core/command/guide.ts",
+      "src/cli/__tests__/detach-flag-cli.test.ts",
+      "src/cli/flag-parser.ts",
+      "src/core/command/__tests__/guide.test.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/git/branch.ts",
+      "src/core/job/start-from-issue.ts",
+      "src/git/remote.ts",
+      "src/cli/from-issue.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/git/__tests__/branch.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
+    ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -141,13 +171,16 @@
     }
   ],
   "_journal": {
-    "historyCount": 45,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 4,
-      "spec-fixer": 3
+      "spec-fixer": 3,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
