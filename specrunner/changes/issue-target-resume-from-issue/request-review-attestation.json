@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:f4ba032aa4184272013db34d1f02471ee98ef47ae2bb1e74aa99b8aae1781a0f",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/notify/issue-notifier.ts:78-82 buildMarker function with escalation marker format",
+    "src/state/schema/types.ts:412 JobState.branch: string | null",
+    "src/state/schema/types.ts issueNumber field exists at line 458 (not 476 as annotated in request)",
+    "src/core/pr-create/body-template.ts:75 Fixes #${jobState.issueNumber}",
+    "src/adapter/github/github-client.ts graphqlEndpoint() and createLinkedBranch GraphQL support",
+    "src/core/attach/checkpoint-policy.ts attachResumePolicy (status/resumePoint/reads checks)",
+    "src/core/attach/verify-checkpoint.ts verifyCheckpoint injectable policy parameter",
+    "src/core/issue-target/start.ts buildLinkedBranchRegistrar / materializeDraftAndStart / startWithIssueLink",
+    "src/kernel/github-client.ts GitHubClient.listIssueComments port method",
+    "src/kernel/github-client.ts GitHubClient.createLinkedBranch port method"
+  ],
+  "sourceRevision": "404b9ca2b07d2a942aacb206e19b836392ed4172"
+}
