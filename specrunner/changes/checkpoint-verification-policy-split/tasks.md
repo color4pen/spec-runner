@@ -15,6 +15,7 @@
 - `src/core/attach/checkpoint-policy.ts` が存在し、`CheckpointVerificationPolicy`、`PolicyVerificationContext`、`attachResumePolicy` をエクスポートする
 - `bun run typecheck` が green
 - `attachResumePolicy.verify({ state: awaitingArchiveState, slug, treeFiles })` を直接呼んで `not-quiescent` エラーが発火することをコード上確認できる
+- corrupted journal の checkpoint で `policy.verify()` が呼ばれる前に `journal-corrupted` で throw することがテストで確認できる（generic → policy の実行順序 pin、TC-004）
 
 ---
 
@@ -47,9 +48,12 @@
   - `status === "awaiting-archive"` かつ構造的に intact な checkpoint に対して、`verify()` が no-op のスタブ policy を注入した `verifyCheckpoint` を呼ぶ
   - 結果: `VerifiedCheckpoint` が返る（policy スタブが resume 検査をスキップしたため通過）
   - 意味: `status === "awaiting-archive"` の拒否が policy 層の責任であり、generic 層には残っていないことの証拠
+- [ ] generic 検証が policy より先に発火することを pin するテストを書く（TC-004）:
+  - corrupted な `events.jsonl` を持つ checkpoint + 記録用スタブ policy で `verifyCheckpoint` を呼ぶ
+  - 結果: `journal-corrupted` reason で throw し、スタブ policy の `verify()` は一度も呼ばれていない
 - [ ] `attachResumePolicy` 単体テストを書く:
   - `status !== "awaiting-resume"` → `not-quiescent` で reject
-  - resumePoint 解決失敗（無効な step 名を持つ resumePoint） → `resume-step-unresolvable` で reject
+  - resumePoint 解決失敗（`resumePoint = null` かつ `state.step` が resumable allowed step set に無い — 実際の throw 条件。non-null resumePoint は検証なしで passthrough されるため fixture に使わない） → `resume-step-unresolvable` で reject
   - reads() 必須入力 (`tasks.md`) が treeFiles に欠落 → `resume-input-missing` で reject
 
 **Acceptance Criteria**:

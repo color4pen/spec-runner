@@ -3,7 +3,7 @@
 ## Summary
 
 - **Total**: 14 cases
-- **Automated** (unit/integration): 11
+- **Automated**: 14 (unit/integration: 11, gate: 3)
 - **Manual**: 0
 - **Priority**: must: 13, should: 1, could: 0
 

@@ -58,8 +58,9 @@ These checks MUST NOT appear in the generic integrity layer.
 
 #### Scenario: resume point unresolvable is rejected by attachResumePolicy
 
-**Given** a checkpoint with `state.status === "awaiting-resume"` but an unresolvable `resumePoint`
-  (e.g., references a step not present in the pipeline descriptor)
+**Given** a checkpoint with `state.status === "awaiting-resume"`, a `null` resumePoint,
+  and a `state.step` that is not in the resumable allowed step set
+  (the actual trigger of `resolveResumeStep` throwing — a non-null resumePoint passes through without validation)
 **When** `attachResumePolicy.verify({ state, slug, treeFiles })` is called
 **Then** it throws `CHECKPOINT_NOT_ATTACHABLE` with reason `resume-step-unresolvable`
 
