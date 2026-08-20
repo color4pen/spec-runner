@@ -29,6 +29,9 @@ const EXIT_CODE_MAP: Record<string, ExitCode> = {
   SLUG_OCCUPIED: EXIT_CODE.ARG_ERROR,
   SLUG_STATE_UNREADABLE: EXIT_CODE.ARG_ERROR,
   BASE_BRANCH_MISMATCH: EXIT_CODE.ARG_ERROR,
+  RESUME_FROM_ISSUE_NO_MARKER: EXIT_CODE.ARG_ERROR,
+  RESUME_FROM_ISSUE_NO_LINK: EXIT_CODE.ARG_ERROR,
+  RESUME_FROM_ISSUE_UNCONFIRMED: EXIT_CODE.ARG_ERROR,
 };
 
 /**
@@ -144,6 +147,21 @@ export const ERROR_CODES = {
    * (network error / 404 / 401). Gate is fail-closed — halt instead of pass.
    */
   ISSUE_FETCH_FAILED: "ISSUE_FETCH_FAILED",
+  /**
+   * resume --from-issue: no escalation marker found in the issue comments.
+   * Zero side effects — the issue has no resumable escalation.
+   */
+  RESUME_FROM_ISSUE_NO_MARKER: "RESUME_FROM_ISSUE_NO_MARKER",
+  /**
+   * resume --from-issue: issue has an escalation marker but zero Development-linked branches.
+   * Operator must use `job attach --branch <branch>` to attach manually.
+   */
+  RESUME_FROM_ISSUE_NO_LINK: "RESUME_FROM_ISSUE_NO_LINK",
+  /**
+   * resume --from-issue: checkpoint identity could not be confirmed on any candidate branch
+   * (no match, multiple matches, or individual field mismatch).
+   */
+  RESUME_FROM_ISSUE_UNCONFIRMED: "RESUME_FROM_ISSUE_UNCONFIRMED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -557,6 +575,41 @@ export function baseBranchMismatchError(current: string | null, baseBranch: stri
  * Error thrown when a guarded step's worktree changes include paths outside its write-scope.
  * commit-push.ts throws this before staging to prevent boundary violations from being committed.
  */
+/**
+ * resume --from-issue: no escalation marker found in the issue comments.
+ */
+export function resumeFromIssueNoMarkerError(issueNumber: number): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.RESUME_FROM_ISSUE_NO_MARKER,
+    `Check that the job escalated to issue #${issueNumber} and posted an escalation comment before retrying.`,
+    `No resumable escalation found for issue #${issueNumber}: no escalation marker in comments.`,
+  );
+}
+
+/**
+ * resume --from-issue: issue has no Development-linked branches.
+ * Guides the operator to `job attach --branch` for manual recovery.
+ */
+export function resumeFromIssueNoLinkError(issueNumber: number): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.RESUME_FROM_ISSUE_NO_LINK,
+    `Use 'specrunner job attach --branch <branch>' then 'specrunner job resume <slug>' to resume manually.`,
+    `Issue #${issueNumber} has no Development-linked branches (linkedBranches and closedByPullRequestsReferences are both empty).`,
+  );
+}
+
+/**
+ * resume --from-issue: checkpoint identity could not be confirmed.
+ * `detail` should name the candidate branches and what failed (jobId / issueNumber / branch mismatch, or ambiguity).
+ */
+export function resumeFromIssueUnconfirmedError(detail: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.RESUME_FROM_ISSUE_UNCONFIRMED,
+    `Use 'specrunner job attach --branch <branch>' then 'specrunner job resume <slug>' for manual recovery.`,
+    `Cannot confirm target branch identity: ${detail}`,
+  );
+}
+
 export function writeScopeViolationError(
   stepName: string,
   branch: string,

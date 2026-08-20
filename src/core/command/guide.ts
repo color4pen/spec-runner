@@ -322,7 +322,32 @@ specrunner job reopen <slug> --from <step> --reason "<理由>"
 **reopen の制約**: --apply-canon / --adopt-commits / --detach / --prompt は使えない。
 --from と --reason が必須。
 
-## 4. 後片付け
+## 4. issue 番号からの再開 (--from-issue)
+
+issue 番号だけで再開できる:
+
+\`\`\`bash
+specrunner job resume --from-issue <n>
+\`\`\`
+
+**解決規則**:
+1. issue コメントを走査し、最新の escalation marker から jobId を取得する
+2. ローカルに同 jobId の state があれば rebind をスキップして直接再開する
+3. 無ければ Development-linked branches を列挙し、jobId / issueNumber / branch の
+   3 フィールドで checkpoint identity を照合して branch を確定する
+4. 確定した branch を rebind (fetch → verify → setupWorkspace) してから resume する
+
+| 状況 | コマンド |
+|------|----------|
+| issue 番号から再開 (rebind 内包) | \`specrunner job resume --from-issue <n>\` |
+| Development リンクが無い場合は手動 attach | \`specrunner job attach --branch <branch>\` → \`specrunner job resume <slug>\` |
+
+**制約**:
+- \`--from-issue\` と positional \`<slug>\` は排他 (同時指定は usage エラー)
+- \`--detach\` との併用可能
+- rebind は local runtime のみ (managed runtime 非対応)
+
+## 5. 後片付け
 
 \`\`\`bash
 specrunner job show <slug>                     # Job ID を確認

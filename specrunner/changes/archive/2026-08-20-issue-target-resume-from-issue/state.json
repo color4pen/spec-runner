@@ -1,0 +1,267 @@
+{
+  "version": 2,
+  "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
+  "createdAt": "2026-08-20T09:24:35.898Z",
+  "updatedAt": "2026-08-20T11:35:42.216Z",
+  "request": {
+    "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/issue-target-resume-from-issue-5ca3d603",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "42c046f26b4bc289da216500540c34191e640b09",
+    "50c9234eeb0b9bcc1dfe402531fb49571d6f7636",
+    "8c32ac3281b24f96cb6a1e3970ced9e9a70a0eca",
+    "fdf1c083d118085a4559f60f0a56c69cad6bac5c",
+    "82ea7b16065f294f7ff1e8fdc7b8f29f0e52efbc",
+    "ec7e2408b8103e407acdeb32c2da66004e9e322d",
+    "07e07f530a7a1e01c04c0aa179817e71aed3b5ae",
+    "ffebb88555a842eb43049ae6c5bc8c689b696f81",
+    "c221ccabd99db292a968319424db4579a0f331ff",
+    "f1a599437c2d160a268008ff578acc267f97d289",
+    "c2f5e935ffcd96ebb854dbf7b4090ca9d71d7378",
+    "a612ba9ea583e82f7e7e0267746eb62fcc604109",
+    "fbe330eed3f7ae09d3ebe1b5600b83603d42f1b9",
+    "2e89b25f7411cd94c173d539bf08f349d73d0b09",
+    "35e93cbce49f549adf96d779f35562d6bf959055",
+    "1c40edb8b962c46c919422437d53c404940e9946",
+    "9c63edd1f177646839bf63206e051cca0543ed52",
+    "ad8b90eeb2ee2fb715b07e8a9a29160759cadd58",
+    "a302a6ad502b63fce7aaec2c88160564f1fc059f",
+    "f1d8c7c6230399d22f7e66c13e705ae44e0900ae",
+    "71fe277ea0a8ea86671150fb4413bfd9058e528b",
+    "4b021004038b5a2725ef8eb80c88ea79b51f424b",
+    "b6e45c5c0d4211997c3b21f066982a445cf10dd2",
+    "85812aa4b29925cbcb218aa6254d202be49d40d9",
+    "baf07ec43dfc4646046106cd37cee9834a2ee578",
+    "43ee5774835c26b88acaa3644b0084ebd03f3222",
+    "a335f780df0d92d759abaadd75e7b5db8c502043",
+    "712b68edeb5156766d759c43ac78ba84e430fcff"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/notify/issue-notifier.ts",
+      "src/state/schema/types.ts",
+      "src/core/pr-create/body-template.ts",
+      "src/adapter/github/github-client.ts",
+      "src/core/issue-target/start.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/cli/attach.ts",
+      "src/core/port/github-client.ts",
+      "src/kernel/github-client.ts",
+      "src/cli/resume.ts",
+      "src/cli/from-issue.ts",
+      "src/cli/command-registry.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
+    ],
+    "design": [
+      "src/cli/resume.ts",
+      "src/cli/attach.ts",
+      "src/cli/from-issue.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/core/issue-target/start.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/kernel/github-client.ts",
+      "src/core/port/github-client.ts",
+      "src/adapter/github/github-client.ts",
+      "src/cli/command-registry.ts",
+      "src/core/resume/resolve-job.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/git/checkpoint-ref.ts",
+      "src/state/schema/types.ts",
+      "src/errors.ts",
+      "src/core/command/guide.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "tests/error-codes.test.ts",
+      "tests/unit/architecture/module-boundary.test.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/state/schema/types.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/adapter/github/github-client.ts",
+      "src/core/pr-create/body-template.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/kernel/github-client.ts",
+      "src/cli/from-issue.ts",
+      "src/cli/resume.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/core/attach/checkpoint-policy.ts"
+    ],
+    "implementer": [
+      "src/core/issue-target/__tests__/resume.test.ts"
+    ],
+    "code-review": [
+      "src/core/issue-target/resume.ts",
+      "src/cli/resume-from-issue.ts",
+      "src/adapter/github/github-client.ts",
+      "src/errors.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/cli/command-registry.ts",
+      "src/core/issue-target/__tests__/resume.test.ts",
+      "src/cli/__tests__/resume-from-issue.test.ts",
+      "tests/unit/adapter/github/github-client-dev-links.test.ts",
+      "src/core/command/guide.ts",
+      "src/git/checkpoint-ref.ts",
+      "src/state/schema/types.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
+    ],
+    "code-fixer": [
+      "src/core/issue-target/resume.ts",
+      "src/adapter/github/github-client.ts"
+    ],
+    "regression-gate": [
+      "src/core/issue-target/__tests__/resume.test.ts",
+      "src/cli/__tests__/resume-from-issue.test.ts",
+      "src/cli/resume-from-issue.ts",
+      "src/core/issue-target/resume.ts",
+      "tests/unit/adapter/github/github-client-dev-links.test.ts",
+      "src/adapter/github/github-client.ts"
+    ],
+    "conformance": [
+      "src/core/issue-target/resume.ts",
+      "src/cli/resume-from-issue.ts",
+      "src/core/issue-target/__tests__/resume.test.ts",
+      "src/cli/__tests__/resume-from-issue.test.ts",
+      "tests/unit/adapter/github/github-client-dev-links.test.ts",
+      "src/errors.ts",
+      "src/adapter/github/github-client.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/cli/command-registry.ts",
+      "src/core/command/guide.ts",
+      "src/git/checkpoint-ref.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-04-27-cli-first-architecture.md",
+      "specrunner/adr/2026-08-20-issue-target-start-face.md",
+      "specrunner/adr/2026-08-20-checkpoint-verification-policy-split.md",
+      "specrunner/adr/2026-08-20-issue-target-resume-from-issue.md"
+    ]
+  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "ad8b90eeb2ee2fb715b07e8a9a29160759cadd58",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/issue-target-resume-from-issue/design.md:sha256:d31672d51ad10a3148fb0e60f903a5181edaeacd2a0a870831b12abb036c9e59|specrunner/changes/issue-target-resume-from-issue/request.md:sha256:354bcb41320aacfe7e34b3773cb3f7d483918c5914a6538074456b5f55a4736c|specrunner/changes/issue-target-resume-from-issue/spec.md:sha256:6196c4b835405643adaad5429aa733ad20b93dd34a2e7cced1e0450bd719485b|specrunner/changes/issue-target-resume-from-issue/tasks.md:sha256:af68560949495342478d466c83a75873e160968a3dc98c107b8fc17e6f03d1fd|specrunner/changes/issue-target-resume-from-issue/test-cases.md:sha256:ba2a2bf80c9e541c0fc4fb485c8d5b412d6eca263a3bda31a93dfa5c43378b41"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "ad8b90eeb2ee2fb715b07e8a9a29160759cadd58",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/issue-target-resume-from-issue/design.md:sha256:d31672d51ad10a3148fb0e60f903a5181edaeacd2a0a870831b12abb036c9e59|specrunner/changes/issue-target-resume-from-issue/request.md:sha256:354bcb41320aacfe7e34b3773cb3f7d483918c5914a6538074456b5f55a4736c|specrunner/changes/issue-target-resume-from-issue/spec.md:sha256:6196c4b835405643adaad5429aa733ad20b93dd34a2e7cced1e0450bd719485b|specrunner/changes/issue-target-resume-from-issue/tasks.md:sha256:af68560949495342478d466c83a75873e160968a3dc98c107b8fc17e6f03d1fd|specrunner/changes/issue-target-resume-from-issue/test-cases.md:sha256:ba2a2bf80c9e541c0fc4fb485c8d5b412d6eca263a3bda31a93dfa5c43378b41"
+    }
+  ],
+  "operatorAdjudications": [
+    {
+      "text": "custom-reviewers escalation への operator 裁定。以下の 4 点を適用すること。\n\n## 1. cross-boundary-invariants Finding 1（適用する）\n\n`src/cli/resume-from-issue.ts` の needsRebind=true 経路で、`setupWorkspace(verified.slug, ...)` の成功直後に `slug = verified.slug;` を追加する（`runResumeCore` が常に rebind 検証と同一の checkpoint 読み取り由来の slug を受けるようにする）。\n\nあわせて `src/cli/__tests__/resume-from-issue.test.ts` にテストを 1 件追加する: `resolveResumeBranchFromIssue` の mock が `slug: \"stale-slug\"`、`runAttachVerification` の mock が `slug: \"verified-slug\"` を返す divergence シナリオで、`runResumeCore` が `\"verified-slug\"` で呼ばれることを assert する。\n\n## 2. scale-tolerance F-2（適用する）\n\n`src/git/checkpoint-ref.ts` に軽量ヘルパー `readStateJsonFromRef(spawnFn, cwd, ref)` を追加する: `resolveCheckpointSlug` + `git show <ref>:<slug>/state.json` のみを実行し、events.jsonl の read と `git ls-tree` の全ファイル列挙を行わない。`src/core/issue-target/resume.ts` の identity 照合フェーズ（候補ごとの jobId / issueNumber / branch 読み取り）はこのヘルパーに切り替える。既存 `readCheckpointFromRef` は無変更で残す（確定後の rebind 側はそのまま）。\n\n## 3. scale-tolerance F-1（不採用 — コード変更しない）\n\n提案されていた「`direction=desc` で早期打ち切り」は不採用。理由: operator が 2026-08-20 に実測し、per-issue comments endpoint（`GET /repos/{owner}/{repo}/issues/{number}/comments`）は `direction` / `sort` パラメータを無視することを確認した（direction=desc と asc で同一の先頭要素が返る。これらのパラメータは repository 全体の `/issues/comments` endpoint のみ対応）。かつ現実の escalation issue の comment 数は 1 ページ（100 件）に収まり、コストは O(⌈C/100⌉)=1 呼び出し。\n\n対処: `src/core/issue-target/resume.ts` の `resolveEscalationJobId` に、この制約を示す短い comment を残す（例: 「per-issue comments API は direction を無視するため全ページ走査。comment 数は実用上 1 ページに収まる」）。それ以外の変更はしない。\n\n## 4. scale-tolerance F-3（現状維持 — コード変更しない）\n\n`first:50` の上限は設計が明記する意図的な bound として受容する。超過時は `job attach --branch` の手動経路が常に成立する（Development リンクは optional index であり identity の正本は checkpoint、という本 request の設計原則そのもの）。cursor pagination は追加しない。\n",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-20T10:58:43.117Z"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1024",
+    "number": 1024,
+    "createdAt": "2026-08-20T11:35:41.283Z"
+  },
+  "_journal": {
+    "historyCount": 97,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 2,
+      "implementer": 2,
+      "bite-evidence": 1,
+      "verification": 3,
+      "code-review": 1,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 2,
+      "custom-reviewers": 2,
+      "regression-gate": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
