@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T05:30:32.551Z",
+  "updatedAt": "2026-08-20T05:35:59.897Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -68,7 +68,8 @@
     "46a96ee37c8f0576eddda6dfd7ce59ec28af30ca",
     "09bd760881af159bd4ffde7403e39c56d1e33750",
     "4d0851c93ce1fd20c733a3f4c092d7f4cb172ea0",
-    "4c6dca53c1871c6fcbb43328377c3ec048652beb"
+    "4c6dca53c1871c6fcbb43328377c3ec048652beb",
+    "91a57645cdcae8e1d6cc25acb98bbaf3711fc776"
   ],
   "touchedFiles": {
     "request-review": [
@@ -112,16 +113,38 @@
       "src/core/port/runtime-strategy.ts",
       "tests/unit/inbox/run-inbox-inbox-origin.test.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "spec-review": [
+      "src/core/job/start-from-issue.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/step/design.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/adapter/github/github-client.ts",
+      "src/kernel/github-client.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/cli/from-issue.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/cli/command-registry.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
+      "src/config/type-config.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
+    ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 20,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }
