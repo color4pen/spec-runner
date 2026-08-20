@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T08:47:24.645Z",
+  "updatedAt": "2026-08-20T09:11:37.519Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -107,7 +107,9 @@
     "6892bc656fc5d6a1625bb725cc7871a445d7825d",
     "c12e3c2599a22f2067001b70d86c4f93c7b0b5ed",
     "a84bbe8f657fbe2fab1f41e32a5fab2b8559063d",
-    "105a5e7d4628ba4d092e86cf53c96d45344b42ba"
+    "105a5e7d4628ba4d092e86cf53c96d45344b42ba",
+    "0ae9bd0b95901db82a146b8b537a571767d623b9",
+    "a5e784a806791853846e5a44dec28bef7b52f47a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -207,23 +209,22 @@
     ],
     "conformance": [
       "src/core/issue-target/start.ts",
-      "src/config/type-config.ts",
-      "src/kernel/github-client.ts",
-      "src/adapter/github/github-client.ts",
-      "src/core/runtime/workspace-materializer.ts",
-      "src/core/runtime/local.ts",
-      "src/cli/command-registry.ts",
-      "src/core/inbox/run-inbox.ts",
-      "src/cli/from-issue.ts",
-      "tests/unit/architecture/module-boundary.test.ts",
-      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
-      "tests/unit/no-worktree-mode.test.ts",
+      "src/core/job/start-from-issue.ts",
       "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
-      "tests/unit/adapter/github/github-client-graphql.test.ts",
-      "tests/unit/adapter/github/github-client-get-issue.test.ts",
+      "src/core/inbox/run-inbox.ts",
       "src/core/job/__tests__/start-from-issue.test.ts",
       "src/cli/__tests__/from-issue.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts"
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
+      "tests/unit/no-worktree-mode.test.ts",
+      "tests/unit/adapter/github/github-client-graphql.test.ts",
+      "tests/unit/adapter/github/github-client-get-issue.test.ts",
+      "src/adapter/github/github-client.ts",
+      "src/config/type-config.ts",
+      "src/cli/command-registry.ts"
     ]
   },
   "resumePoint": null,
@@ -267,7 +268,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 164,
+    "historyCount": 173,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -276,14 +277,14 @@
       "spec-fixer": 3,
       "implementer": 3,
       "bite-evidence": 1,
-      "verification": 4,
+      "verification": 5,
       "code-review": 4,
       "code-fixer": 5,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 4,
-      "conformance": 2
+      "conformance": 3
     }
   }
 }
