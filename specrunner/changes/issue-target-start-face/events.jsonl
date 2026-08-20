@@ -115,3 +115,9 @@
 {"type":"transition","ts":"2026-08-20T07:01:58.481Z","step":"code-review","status":"warning","message":"code-review iteration 1 completed with verdict: needs-fix"}
 {"type":"transition","ts":"2026-08-20T07:01:58.481Z","step":"step-transition","status":"ok","message":"code-review → code-fixer"}
 {"type":"transition","ts":"2026-08-20T07:01:58.483Z","step":"code-fixer-started","status":"started","message":"Starting code-fixer step"}
+{"type":"transition","ts":"2026-08-20T07:05:23.951Z","step":"code-fixer-verdict","status":"ok","message":"code-fixer verdict: approved"}
+{"type":"step-attempt","step":"code-fixer","sessionId":"528b07a5-240c-4de6-b498-a594af8b9e59","outcome":{"verdict":"approved","findingsPath":null,"error":null,"toolResult":{"ok":true,"status":"success"},"followUpAttempts":0,"transientRetryAttempts":0,"addedTurns":{"reportRetry":0,"postWork":1,"outputRepair":0}},"startedAt":"2026-08-20T07:01:58.533Z","endedAt":"2026-08-20T07:05:22.039Z","commitOid":"c78b6a5f942dfef4db921583a5988c484eeaa634"}
+{"type":"lineage","step":"code-fixer","ts":"2026-08-20T07:05:22.039Z","outputs":[{"path":"specrunner/changes/issue-target-start-face","hash":null}],"inputs":[{"path":"specrunner/changes/issue-target-start-face/review-feedback-001.md","hash":"sha256:1a08637d7e960516d9dfd2b707198d228b8a55a7a5ea3152e9483c39f9720a2c"}]}
+{"type":"transition","ts":"2026-08-20T07:05:23.955Z","step":"step-transition","status":"ok","message":"code-fixer → code-review"}
+{"type":"transition","ts":"2026-08-20T07:05:23.956Z","step":"code-review","status":"started","message":"code-review iteration 2 started"}
+{"type":"transition","ts":"2026-08-20T07:05:23.957Z","step":"code-review-started","status":"started","message":"Starting code-review step"}
