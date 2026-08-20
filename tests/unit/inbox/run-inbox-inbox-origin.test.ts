@@ -105,5 +105,8 @@ describe("TC-018: inbox startJob が inboxOrigin: true を runRunCore に渡す"
     // 2 番目の引数（options）に inboxOrigin: true が含まれる
     const [, options] = mockRunRunCore.mock.calls[0] as [string, Record<string, unknown>];
     expect(options).toHaveProperty("inboxOrigin", true);
+
+    // onFeatureBranchCreated が options に含まれる（Development リンク登録 callback）
+    expect(typeof options["onFeatureBranchCreated"]).toBe("function");
   });
 });

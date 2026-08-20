@@ -11,7 +11,7 @@ vi.mock("../../inbox/draft-writer.js", () => ({
   writeDraft: vi.fn().mockResolvedValue(undefined),
 }));
 
-import { materializeDraftAndStart, buildLinkedBranchRegistrar } from "../../issue-target/start.js";
+import { materializeDraftAndStart, startWithIssueLink, buildLinkedBranchRegistrar } from "../../issue-target/start.js";
 import { writeDraft } from "../../inbox/draft-writer.js";
 import { slugOccupiedError } from "../../../errors.js";
 import type { GitHubClient } from "../../../kernel/github-client.js";
@@ -83,6 +83,15 @@ describe("TC-003: writeDraft precedes start", () => {
     );
   });
 
+  it("TC-003: calls start primitive with onFeatureBranchCreated (Development link callback)", async () => {
+    const client = makeClient();
+    await materializeDraftAndStart({ ...baseOpts, githubClient: client, startPrimitive: mockStartPrimitive });
+    expect(mockStartPrimitive).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ onFeatureBranchCreated: expect.any(Function) }),
+    );
+  });
+
   it("TC-003: calls writeDraft before start primitive", async () => {
     const order: string[] = [];
     vi.mocked(writeDraft).mockImplementationOnce(async () => { order.push("writeDraft"); });
@@ -101,6 +110,43 @@ describe("TC-004: occupancy error propagates", () => {
     await expect(
       materializeDraftAndStart({ ...baseOpts, githubClient: client, startPrimitive: mockStartPrimitive }),
     ).rejects.toThrow(err);
+  });
+});
+
+// TC-005-unit: startWithIssueLink (positional + --issue route) passes onFeatureBranchCreated to startPrimitive
+describe("TC-005-unit: startWithIssueLink passes onFeatureBranchCreated to startPrimitive", () => {
+  it("TC-005-unit: calls startPrimitive with onFeatureBranchCreated", async () => {
+    const client = makeClient();
+    await startWithIssueLink({
+      repoRoot: "/repo",
+      requestMdPath: "some-request.md",
+      issueNumber: 42,
+      githubClient: client,
+      owner: "owner",
+      repo: "repo",
+      startPrimitive: mockStartPrimitive,
+    });
+    expect(mockStartPrimitive).toHaveBeenCalledWith(
+      "some-request.md",
+      expect.objectContaining({ onFeatureBranchCreated: expect.any(Function) }),
+    );
+  });
+
+  it("TC-005-unit: does NOT pass inboxOrigin for positional route", async () => {
+    const client = makeClient();
+    await startWithIssueLink({
+      repoRoot: "/repo",
+      requestMdPath: "some-request.md",
+      issueNumber: 42,
+      githubClient: client,
+      owner: "owner",
+      repo: "repo",
+      startPrimitive: mockStartPrimitive,
+    });
+    expect(mockStartPrimitive).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.not.objectContaining({ inboxOrigin: true }),
+    );
   });
 });
 

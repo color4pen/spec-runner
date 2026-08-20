@@ -106,6 +106,8 @@ import { COMMANDS } from "../command-registry.js";
 import { runFromIssue } from "../from-issue.js";
 import { getCurrentBranch } from "../../git/branch.js";
 import { materializeDraftAndStart, startWithIssueLink } from "../../core/issue-target/start.js";
+import type * as StartModule from "../../core/issue-target/start.js";
+import { runRunCore } from "../run.js";
 import { logError } from "../../logger/stdout.js";
 import { createGitHubClient } from "../../adapter/github/github-client.js";
 import { detachSelf } from "../../core/command/detach.js";
@@ -379,6 +381,19 @@ describe("TC-011: --from-issue が materializeDraftAndStart を経由する", ()
     expect(call[0].issueNumber).toBe(42);
     expect(call[0].slug).toBe("test-slug");
   });
+
+  it("TC-011: runRunCore (startPrimitive) receives onFeatureBranchCreated via --from-issue route", async () => {
+    // Use real materializeDraftAndStart so the callback flows through to runRunCore
+    const real = await vi.importActual<typeof StartModule>("../../core/issue-target/start.js");
+    vi.mocked(materializeDraftAndStart).mockImplementationOnce(real.materializeDraftAndStart);
+    vi.mocked(runRunCore).mockClear();
+
+    await runFromIssue(42, {}, makeCtx());
+
+    expect(vi.mocked(runRunCore)).toHaveBeenCalledOnce();
+    const [, opts] = vi.mocked(runRunCore).mock.calls[0] as [string, Record<string, unknown>];
+    expect(typeof opts["onFeatureBranchCreated"]).toBe("function");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -522,6 +537,28 @@ describe("TC-005: positional + --issue → startWithIssueLink に route され�
     const call = vi.mocked(startWithIssueLink).mock.calls[0]!;
     expect(call[0].issueNumber).toBe(42);
     expect(call[0].requestMdPath).toBe("my-request.md");
+  });
+
+  it("TC-005: runRunCore (startPrimitive) receives onFeatureBranchCreated via positional+--issue route", async () => {
+    // Use real startWithIssueLink so the callback flows through to runRunCore
+    const real = await vi.importActual<typeof StartModule>("../../core/issue-target/start.js");
+    vi.mocked(startWithIssueLink).mockImplementationOnce(real.startWithIssueLink);
+    vi.mocked(runRunCore).mockClear();
+
+    const handler = getJobStartHandler();
+    const spy = exitSpy();
+    try {
+      await handler(
+        { flags: { issue: 42 }, positional: "my-request.md", positionals: ["my-request.md"] },
+        makeCtx(),
+      ).catch(() => {});
+    } finally {
+      spy.mockRestore();
+    }
+
+    expect(vi.mocked(runRunCore)).toHaveBeenCalledOnce();
+    const [, opts] = vi.mocked(runRunCore).mock.calls[0] as [string, Record<string, unknown>];
+    expect(typeof opts["onFeatureBranchCreated"]).toBe("function");
   });
 });
 
