@@ -135,5 +135,3 @@ attach-resume policy の実装に async は不要（I/O なし、純粋な引数
 ## Open Questions
 
 なし。要求・スコープ・受け入れ基準が明確で設計上の未解決事項はない。
-
-<!-- spec-fixer-deferred: [LOW] Result YAML の automated: 11 が Summary の 14 件と不整合 spec-fixer の scoped write paths に test-cases.md が含まれないため修正不可。test-cases.md の Result YAML 内 automated: 11 を automated: 14 に変更する必要がある。 -->
