@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9dcf5a95-c9cb-4172-8b10-b6cf0119a795",
   "createdAt": "2026-08-20T05:14:24.721Z",
-  "updatedAt": "2026-08-20T07:16:22.618Z",
+  "updatedAt": "2026-08-20T07:20:29.028Z",
   "request": {
     "title": "spec-review loop の単一 fixer 化: test-case-gen を review loop から外す",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/spec-review-loop-single-fixer-9dcf5a95",
   "error": null,
   "pipelineId": "standard",
@@ -82,7 +82,8 @@
     "ea39543d1054778741bda63b92369e0fe2a37294",
     "cda0e10f31a7069b5183ae76cc9a2a0b184a9903",
     "926bcb42576d443e732286d4ba386a2a2ebbc9e2",
-    "1b353029cbeed30f0167d78ce4aac6592f02fc7e"
+    "1b353029cbeed30f0167d78ce4aac6592f02fc7e",
+    "34a4cdd55e90326eeaf04e045444860c96dbc19e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -195,6 +196,14 @@
       "src/core/pipeline/reviewer-chain.ts",
       "tests/unit/core/step/canon-write-scope.test.ts",
       "src/core/pipeline/run.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-04-29-spec-fixer-iteration-loop.md",
+      "specrunner/adr/2026-07-23-spec-review-fixer-routing.md",
+      "specrunner/adr/2026-07-24-spec-fixer-tasks-md-writable.md",
+      "specrunner/adr/2026-08-20-checkpoint-verification-policy-split.md",
+      "specrunner/adr/2026-07-23-operator-canon-apply-on-resume.md",
+      "specrunner/adr/2026-08-20-spec-review-loop-single-fixer.md"
     ]
   },
   "reviewerStatuses": [
@@ -227,8 +236,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1019",
+    "number": 1019,
+    "createdAt": "2026-08-20T07:20:27.985Z"
+  },
   "_journal": {
-    "historyCount": 87,
+    "historyCount": 92,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -244,7 +258,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
