@@ -81,9 +81,17 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Runner sandbox diagnostics
+        run: |
+          which bwrap || echo "bwrap: absent"
+          sysctl kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || true
+          sysctl kernel.unprivileged_userns_clone 2>/dev/null || true
+
       - name: Run pipeline
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # debug: agent session transcript を .specrunner/logs/<jobId>/ に書かせる
+          SPECRUNNER_LOG_LEVEL: debug
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ISSUE: ${{ inputs.issue }}
           ACTION: ${{ inputs.action }}
@@ -100,3 +108,14 @@ jobs:
           else
             bun ./bin/specrunner.ts job start --from-issue "$ISSUE"
           fi
+
+      - name: Dump SpecRunner logs
+        # runner の log は VM と共に消えるため、失敗診断用に常時 tail を残す
+        if: always()
+        run: |
+          for f in .specrunner/logs/*.log .specrunner/logs/*/*.jsonl; do
+            [ -e "$f" ] || continue
+            echo "===== $f ====="
+            tail -c 30000 "$f"
+            echo
+          done
