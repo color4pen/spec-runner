@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T04:25:19.845Z",
+  "updatedAt": "2026-08-20T04:27:48.268Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
@@ -85,7 +85,8 @@
     "ca4a1343c57be0c2537e85144966f04610b547fd",
     "4b93047b7c7615e3d7c0ff5f959d9fef5898327f",
     "9bd4b414f159d026056a0e8025bbe8400d5fb562",
-    "f1a46226c2def06971648d414569797391fae2eb"
+    "f1a46226c2def06971648d414569797391fae2eb",
+    "76b09176889e5ce6c60dc721b003f719314c7780"
   ],
   "touchedFiles": {
     "request-review": [
@@ -165,6 +166,12 @@
       "src/core/inbox/run-inbox.ts",
       "src/cli/run.ts",
       "src/core/job/__tests__/start-from-issue.test.ts"
+    ],
+    "regression-gate": [
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/core/job/start-from-issue.ts",
+      "src/cli/from-issue.ts"
     ]
   },
   "resumePoint": null,
@@ -212,7 +219,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 81,
+    "historyCount": 86,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -226,7 +233,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
