@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1875919e-d9f4-4db8-8abe-33e24f96cfb9",
   "createdAt": "2026-08-20T03:41:04.851Z",
-  "updatedAt": "2026-08-20T04:38:44.099Z",
+  "updatedAt": "2026-08-20T04:40:41.208Z",
   "request": {
     "title": "checkpoint 検証の分離: generic integrity と use-case policy の二層化",
     "type": "refactoring",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "refactor/checkpoint-verification-policy-split-1875919e",
   "error": null,
   "pipelineId": "standard",
@@ -81,7 +81,8 @@
     "86374ad58f9bada5235ff1c6c4682fce4735e2df",
     "1984ea01cb2dacab9ec29969cd5ec84104a9af5e",
     "8087264b9a53edb6a4fdcc230320c1f7f9e4b29e",
-    "ce1a7feaf7b9cba67e72dab969713847b03bc4b2"
+    "ce1a7feaf7b9cba67e72dab969713847b03bc4b2",
+    "017f0b24a44c6505fa299f3d507ab70868b74d0d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -128,6 +129,10 @@
       "src/core/attach/verify-checkpoint.ts",
       "tests/attach/checkpoint-policy.test.ts",
       "tests/unit/architecture/arch-allowlist.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-07-resume-point-as-canonical-source.md",
+      "specrunner/adr/2026-08-20-checkpoint-verification-policy-split.md"
     ]
   },
   "resumePoint": null,
@@ -161,8 +166,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1017",
+    "number": 1017,
+    "createdAt": "2026-08-20T04:40:40.415Z"
+  },
   "_journal": {
-    "historyCount": 82,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -177,7 +187,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
