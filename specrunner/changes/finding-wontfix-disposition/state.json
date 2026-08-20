@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f8732c22-7cc4-4894-a62e-9f6e8a827e8a",
   "createdAt": "2026-08-20T13:01:11.201Z",
-  "updatedAt": "2026-08-20T13:03:55.598Z",
+  "updatedAt": "2026-08-20T13:07:52.086Z",
   "request": {
     "title": "fixable finding への operator 不採用裁定を decisions 台帳の一般化で機械尊重する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/finding-wontfix-disposition-f8732c22",
   "error": null,
@@ -63,10 +63,27 @@
   ],
   "issueNumber": 1022,
   "synthesizedCommits": [
-    "6444897efe2c9d24466e112e77bf1c77f37e8c75"
+    "6444897efe2c9d24466e112e77bf1c77f37e8c75",
+    "8ad4fd6c40264653f9a803e928c9f7586330ace3"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/state/schema/types.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/step-completion.ts",
+      "src/cli/flag-parser.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/cli/resume.ts",
+      "src/cli/command-registry.ts",
+      "src/core/pipeline/__tests__/findings-ledger.test.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
