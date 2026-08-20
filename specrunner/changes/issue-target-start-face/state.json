@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T09:11:37.519Z",
+  "updatedAt": "2026-08-20T09:15:26.450Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
   "pipelineId": "standard",
@@ -109,7 +109,8 @@
     "a84bbe8f657fbe2fab1f41e32a5fab2b8559063d",
     "105a5e7d4628ba4d092e86cf53c96d45344b42ba",
     "0ae9bd0b95901db82a146b8b537a571767d623b9",
-    "a5e784a806791853846e5a44dec28bef7b52f47a"
+    "a5e784a806791853846e5a44dec28bef7b52f47a",
+    "e88785e822dbf03c6d032143d8da7ea9033d735d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -225,6 +226,11 @@
       "src/adapter/github/github-client.ts",
       "src/config/type-config.ts",
       "src/cli/command-registry.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-05-19-adr-numbering-removal.md",
+      "specrunner/adr/2026-08-20-job-start-from-issue.md",
+      "specrunner/adr/2026-08-20-issue-target-start-face.md"
     ]
   },
   "resumePoint": null,
@@ -267,8 +273,13 @@
       "canonHash": "specrunner/changes/issue-target-start-face/design.md:sha256:5576551b8d064963e2ca27ea64c3d0e07b488a9cdfacbb5f84c11cfd0b6a9c2c|specrunner/changes/issue-target-start-face/request.md:sha256:3e1858cf235ed774ed5fe50296b0ca8437a44d9270e738e4667a5c36b697808a|specrunner/changes/issue-target-start-face/spec.md:sha256:d192e49bf0f1f32dcac63fc7457a1766d71fe6d8a5ba4f9e4d0ea8a765eff211|specrunner/changes/issue-target-start-face/tasks.md:sha256:3e58fab1ec4d6fa245d6aeb8b032a80f4e80db7a0ff11dbab4db6eff98f9d64c|specrunner/changes/issue-target-start-face/test-cases.md:sha256:245745e1684990f4e9ebf8347632959d9f26e13421c8fb3aa6d6737c700c5efb"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1021",
+    "number": 1021,
+    "createdAt": "2026-08-20T09:15:25.437Z"
+  },
   "_journal": {
-    "historyCount": 173,
+    "historyCount": 178,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -284,7 +295,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 4,
-      "conformance": 3
+      "conformance": 3,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
