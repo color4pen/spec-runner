@@ -541,84 +541,28 @@ describe("TC-005: 免除 type は test-case-gen を通らない（integration）
 //      must change to specFixerNeedsFixForward (needs-fix path)
 // ---------------------------------------------------------------------------
 
-describe("TC-006: spec-fixer 修正後は test-case-gen を再生成する", () => {
-  it("TC-006: STANDARD_TRANSITIONS に spec-fixer --approved→ test-case-gen の guarded row が存在する", () => {
+describe("TC-006: spec-fixer 修正後は spec-review へ直行する（test-case-gen は経由しない）", () => {
+  // Updated: spec-review-loop-single-fixer — spec-fixer → test-case-gen transition removed.
+  // needs-fix 一巡は spec-review → spec-fixer → spec-review（unconditional）。
+  it("TC-006: STANDARD_TRANSITIONS に spec-fixer --approved→ test-case-gen の row は存在しない（削除済み）", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_FIXER &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_CASE_GEN &&
-        !!t.when,
+        t.to === STEP_NAMES.TEST_CASE_GEN,
     );
-    expect(row).toBeDefined();
+    expect(row).toBeUndefined();
   });
 
-  it("TC-006: spec-fixer → test-case-gen の when predicate は needs-fix spec-review 状態で true を返す", () => {
+  it("TC-006: spec-fixer approved（needs-fix 経路）は spec-review へ戻る（unconditional row）", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_FIXER &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_CASE_GEN &&
-        !!t.when,
+        t.to === STEP_NAMES.SPEC_REVIEW &&
+        !t.when,
     );
     expect(row).toBeDefined();
-    if (!row?.when) return;
-
-    // State where latest spec-review verdict was needs-fix (needs-fix path, not observation pass)
-    const t1 = "2026-01-01T00:01:00.000Z";
-    const t2 = "2026-01-01T00:02:00.000Z";
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "needs-fix",
-            findings: [makeFinding("high", "fixable", SPEC_MD)],
-            startedAt: t1,
-            endedAt: t1,
-          }),
-        ],
-        [STEP_NAMES.SPEC_FIXER]: [
-          makeStepRun({ verdict: "approved", startedAt: t2, endedAt: t2 }),
-        ],
-      },
-    });
-
-    // needs-fix path → when returns true (specFixerNeedsFixForward)
-    expect(row.when(state)).toBe(true);
-  });
-
-  it("TC-006: spec-fixer → test-case-gen の when predicate は observation pass 状態で false を返す（区別）", () => {
-    const row = STANDARD_TRANSITIONS.find(
-      (t) =>
-        t.step === STEP_NAMES.SPEC_FIXER &&
-        t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_CASE_GEN &&
-        !!t.when,
-    );
-    expect(row).toBeDefined();
-    if (!row?.when) return;
-
-    // Observation pass state: spec-review verdict was approved (not needs-fix)
-    const t1 = "2026-01-01T00:01:00.000Z";
-    const t2 = "2026-01-01T00:02:00.000Z";
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "approved",
-            findings: [makeFinding("medium", "fixable", SPEC_MD)],
-            startedAt: t1,
-            endedAt: t1,
-          }),
-        ],
-        [STEP_NAMES.SPEC_FIXER]: [
-          makeStepRun({ verdict: "approved", startedAt: t2, endedAt: t2 }),
-        ],
-      },
-    });
-
-    // Observation pass → specFixerNeedsFixForward returns false (it's not a needs-fix path)
-    expect(row.when(state)).toBe(false);
   });
 });
 
@@ -648,71 +592,28 @@ describe("TC-007: 再生成後に spec-review へ戻る", () => {
 // RED: specReviewNeedsFixIsTcOnly not implemented; transition row doesn't exist
 // ---------------------------------------------------------------------------
 
-describe("TC-008: TC のみの needs-fix は test-case-gen へ直行する", () => {
-  it("TC-008: STANDARD_TRANSITIONS に spec-review --needs-fix→ test-case-gen の guarded row が存在する", () => {
+describe("TC-008: spec-review needs-fix は spec-fixer へ進む（test-case-gen 直行経路は削除済み）", () => {
+  // Updated: spec-review-loop-single-fixer — spec-review → test-case-gen（TC-only guarded）row 削除済み。
+  // TC-only 含む全 needs-fix が spec-fixer に route される。
+  it("TC-008: STANDARD_TRANSITIONS に spec-review --needs-fix→ test-case-gen の row は存在しない（削除済み）", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_REVIEW &&
         t.on === "needs-fix" &&
-        t.to === STEP_NAMES.TEST_CASE_GEN &&
-        !!t.when,
+        t.to === STEP_NAMES.TEST_CASE_GEN,
     );
-    expect(row).toBeDefined();
+    expect(row).toBeUndefined();
   });
 
-  it("TC-008: spec-review needs-fix → test-case-gen の when predicate は TC-only finding 状態で true を返す", () => {
+  it("TC-008: spec-review needs-fix → spec-fixer（unconditional row）が存在する", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_REVIEW &&
         t.on === "needs-fix" &&
-        t.to === STEP_NAMES.TEST_CASE_GEN &&
-        !!t.when,
+        t.to === STEP_NAMES.SPEC_FIXER &&
+        !t.when,
     );
     expect(row).toBeDefined();
-    if (!row?.when) return;
-
-    // TC-only: only test-cases.md finding, no spec/design/tasks findings
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "needs-fix",
-            findings: [makeFinding("high", "fixable", TEST_CASES_MD)],
-          }),
-        ],
-      },
-    });
-
-    expect(row.when(state)).toBe(true);
-  });
-
-  it("TC-008: spec-review needs-fix → test-case-gen の when predicate は spec finding 混在状態で false を返す", () => {
-    const row = STANDARD_TRANSITIONS.find(
-      (t) =>
-        t.step === STEP_NAMES.SPEC_REVIEW &&
-        t.on === "needs-fix" &&
-        t.to === STEP_NAMES.TEST_CASE_GEN &&
-        !!t.when,
-    );
-    expect(row).toBeDefined();
-    if (!row?.when) return;
-
-    // Mixed: TC finding + spec finding → spec-fixer needed
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "needs-fix",
-            findings: [
-              makeFinding("high", "fixable", TEST_CASES_MD),
-              makeFinding("high", "fixable", SPEC_MD),
-            ],
-          }),
-        ],
-      },
-    });
-
-    expect(row.when(state)).toBe(false);
   });
 });
 
@@ -768,39 +669,16 @@ describe("TC-010: 観察 pass の spec-fixer は implementer へ継続する", (
     expect(row.when(state)).toBe(true);
   });
 
-  it("TC-010: spec-fixer → test-case-gen の guarded when predicate は observation pass 状態で false（needs-fix 専用）", () => {
-    // The specFixerNeedsFixForward guard on spec-fixer → test-case-gen must return false for observation pass
+  it("TC-010: STANDARD_TRANSITIONS に spec-fixer → test-case-gen row は存在しない（削除済み）", () => {
+    // Updated: spec-review-loop-single-fixer — spec-fixer → test-case-gen row は完全削除。
+    // observation pass: spec-fixer approved → implementer（guarded by specFixerObservationForward）。
     const tcgRow = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_FIXER &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_CASE_GEN &&
-        !!t.when,
+        t.to === STEP_NAMES.TEST_CASE_GEN,
     );
-    expect(tcgRow).toBeDefined();
-    if (!tcgRow?.when) return;
-
-    // Observation pass state
-    const t1 = "2026-01-01T00:01:00.000Z";
-    const t2 = "2026-01-01T00:02:00.000Z";
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "approved",
-            findings: [makeFinding("medium", "fixable", SPEC_MD)],
-            startedAt: t1,
-            endedAt: t1,
-          }),
-        ],
-        [STEP_NAMES.SPEC_FIXER]: [
-          makeStepRun({ verdict: "approved", startedAt: t2, endedAt: t2 }),
-        ],
-      },
-    });
-
-    // specFixerNeedsFixForward returns false for observation pass
-    expect(tcgRow.when(state)).toBe(false);
+    expect(tcgRow).toBeUndefined();
   });
 });
 
@@ -1137,28 +1015,44 @@ describe("TC-016: test-case-gen の write 宣言は test-cases.md のみ", () =>
 // RED: currently deriveSpecReviewVerdict escalates for test-cases.md (unroutable by spec-fixer)
 // ---------------------------------------------------------------------------
 
-describe("TC-017: spec-review の test-cases.md fixable finding は needs-fix になる", () => {
-  it("TC-017: deriveSpecReviewVerdict(test-cases.md fixable, high) === 'needs-fix'（escalation でない）", () => {
+describe("TC-017: spec-review の test-cases.md fixable finding は severity 則に従う", () => {
+  // Updated: spec-review-loop-single-fixer — test-cases.md は spec-fixer の write scope に追加。
+  // severity 則: high/critical → needs-fix（re-review）、low/medium → approved（observation auto-fix）。
+  // makeCanonScopeWithTcGen() は spec-fixer に test-cases.md を含まないため、新しいスコープを使用。
+  function makeCanonScopeWithSpecFixerTcMd(): CanonWriteScope {
+    const canonPaths = new Set([
+      REQUEST_MD, SPEC_MD, DESIGN_MD, TASKS_MD, TEST_CASES_MD, ATTESTATION_PATH,
+    ]);
+    const writableByFixer = new Map<FixTarget, ReadonlySet<string>>([
+      ["code-fixer", new Set<string>()],
+      ["implementer", new Set<string>([TASKS_MD])],
+      ["spec-fixer", new Set<string>([SPEC_MD, DESIGN_MD, TASKS_MD, TEST_CASES_MD])],
+      ["test-case-gen" as FixTarget, new Set<string>([TEST_CASES_MD])],
+    ]);
+    return { canonPaths, writableByFixer };
+  }
+
+  it("TC-017: deriveSpecReviewVerdict(test-cases.md fixable, high) === 'needs-fix'（高 severity は再レビュー）", () => {
     const findings = [makeFinding("high", "fixable", TEST_CASES_MD)];
-    // canonScope with test-case-gen writable for test-cases.md (T-01 adds this)
-    const canonScope = makeCanonScopeWithTcGen();
+    const canonScope = makeCanonScopeWithSpecFixerTcMd();
     const verdict = deriveSpecReviewVerdict(findings, true, undefined, canonScope);
     expect(verdict).toBe("needs-fix");
   });
 
-  it("TC-017: deriveSpecReviewVerdict(test-cases.md fixable, medium) === 'needs-fix'（severity 問わず）", () => {
-    // Per D3-4b: TC findings trigger needs-fix regardless of severity (not observation auto-fix)
+  it("TC-017: deriveSpecReviewVerdict(test-cases.md fixable, medium) === 'approved'（observation auto-fix fall-through）", () => {
+    // Updated: medium → approved (not needs-fix); routed to spec-fixer via observation auto-fix
     const findings = [makeFinding("medium", "fixable", TEST_CASES_MD)];
-    const canonScope = makeCanonScopeWithTcGen();
+    const canonScope = makeCanonScopeWithSpecFixerTcMd();
     const verdict = deriveSpecReviewVerdict(findings, true, undefined, canonScope);
-    expect(verdict).toBe("needs-fix");
+    expect(verdict).toBe("approved");
   });
 
-  it("TC-017: deriveSpecReviewVerdict(test-cases.md fixable, low) === 'needs-fix'（low severity も needs-fix）", () => {
+  it("TC-017: deriveSpecReviewVerdict(test-cases.md fixable, low) === 'approved'（observation auto-fix fall-through）", () => {
+    // Updated: low → approved (not needs-fix); observation auto-fix handles it
     const findings = [makeFinding("low", "fixable", TEST_CASES_MD)];
-    const canonScope = makeCanonScopeWithTcGen();
+    const canonScope = makeCanonScopeWithSpecFixerTcMd();
     const verdict = deriveSpecReviewVerdict(findings, true, undefined, canonScope);
-    expect(verdict).toBe("needs-fix");
+    expect(verdict).toBe("approved");
   });
 });
 
@@ -1169,8 +1063,10 @@ describe("TC-017: spec-review の test-cases.md fixable finding は needs-fix �
 // RED: currently TestCaseGenStep.buildMessage does not inject spec-review findings
 // ---------------------------------------------------------------------------
 
-describe("TC-018: 再生成時に TC finding が test-case-gen へ渡される", () => {
-  it("TC-018: spec-review に test-cases.md finding がある state で buildMessage は当該 finding 本文を含む", () => {
+describe("TC-018: test-case-gen buildMessage は finding 注入なし（設計 phase producer に戻った）", () => {
+  // Updated: spec-review-loop-single-fixer — test-case-gen は design 後の producer に戻り、
+  // spec-review findings をループ内で注入しなくなった。
+  it("TC-018: spec-review に test-cases.md finding がある state でも buildMessage は TC finding を含まない", () => {
     const uniqueTitle = "TC-001 のシナリオ参照が仕様の Scenario と不一致";
     const tcFinding: Finding = {
       severity: "high",
@@ -1192,11 +1088,11 @@ describe("TC-018: 再生成時に TC finding が test-case-gen へ渡される",
 
     const message = TestCaseGenStep.buildMessage(state, deps);
 
-    // After T-06: message must include TC finding title for resolver to act on
-    expect(message).toContain(uniqueTitle);
+    // After spec-review-loop-single-fixer: no finding injection; title must NOT appear
+    expect(message).not.toContain(uniqueTitle);
   });
 
-  it("TC-018: spec-review run が無い（初回生成）状態では buildMessage は finding 埋め込みなし", () => {
+  it("TC-018: spec-review run が無い（初回生成）状態でも buildMessage は valid（変化なし）", () => {
     const state = makeMinimalJobState({
       branch: `change/${TEST_SLUG}-abc12345`,
       steps: {},
@@ -1220,10 +1116,13 @@ describe("TC-018: 再生成時に TC finding が test-case-gen へ渡される",
 //        judge uses judgeEffectiveFixer (code-fixer can't write test-cases.md → escalation)
 // ---------------------------------------------------------------------------
 
-describe("TC-019: 承認後の test-cases.md finding は operator 保護される", () => {
-  it("TC-019: deriveConformanceVerdict(test-cases.md fixable, high) === 'escalation'", () => {
+describe("TC-019: 承認後の test-cases.md finding は spec-fixer targeted 修正で保護される（再生成しない）", () => {
+  // Updated: spec-review-loop-single-fixer — 承認後フェーズ（conformance / code-review）では
+  // test-cases.md finding は escalation（code-fixer / implementer は test-cases.md を書けない）。
+  // 保護は spec-fixer の targeted 修正で担保（ループ内に wholesale 再生成 step が存在しない）。
+  it("TC-019: deriveConformanceVerdict(test-cases.md fixable, high) === 'escalation'（conformance は実装フェーズ）", () => {
     const findings = [makeFinding("high", "fixable", TEST_CASES_MD)];
-    // Post-approval canon scope: no test-case-gen in writableByFixer
+    // Post-approval canon scope: implementer = {tasks.md}（test-cases.md は書けない）
     const canonScope = makeCanonScopeWithoutTcGen();
     const verdict = deriveConformanceVerdict(findings, true, undefined, canonScope);
     expect(verdict).toBe("escalation");
@@ -1237,7 +1136,7 @@ describe("TC-019: 承認後の test-cases.md finding は operator 保護され�
     expect(verdict).toBe("escalation");
   });
 
-  it("TC-019: deriveJudgeVerdict(test-cases.md fixable, high) === 'escalation'（code-review path）", () => {
+  it("TC-019: deriveJudgeVerdict(test-cases.md fixable, high) === 'escalation'（code-review path: code-fixer は test-cases.md 書けない）", () => {
     const findings = [makeFinding("high", "fixable", TEST_CASES_MD)];
     const canonScope = makeCanonScopeWithoutTcGen();
     const verdict = deriveJudgeVerdict(findings, true, undefined, canonScope);
@@ -1324,180 +1223,33 @@ describe("TC-021: specFixerObservationForward が観察 pass 検出を正しく�
 // RED: specFixerNeedsFixForward not yet implemented
 // ---------------------------------------------------------------------------
 
-describe("TC-022: specFixerNeedsFixForward が needs-fix/conformance-triggered で正しく真偽を返す (should)", () => {
-  it("TC-022: specFixerNeedsFixForward は spec-observation.ts からエクスポートされる", () => {
-    expect(specFixerNeedsFixForward).toBeDefined();
-    expect(typeof specFixerNeedsFixForward).toBe("function");
-  });
-
-  it("TC-022 ケース A: specFixerNeedsFixForward は needs-fix spec-review 状態（非 conformance）で true を返す", () => {
-    if (!specFixerNeedsFixForward) return;
-
-    const t1 = "2026-01-01T00:01:00.000Z";
-    const t2 = "2026-01-01T00:02:00.000Z";
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "needs-fix",
-            findings: [makeFinding("high", "fixable", SPEC_MD)],
-            startedAt: t1,
-            endedAt: t1,
-          }),
-        ],
-        [STEP_NAMES.SPEC_FIXER]: [
-          makeStepRun({ verdict: "approved", startedAt: t2, endedAt: t2 }),
-        ],
-      },
-    });
-    expect(specFixerNeedsFixForward(state)).toBe(true);
-  });
-
-  it("TC-022 ケース B: specFixerNeedsFixForward は conformance-triggered 状態で false を返す", () => {
-    if (!specFixerNeedsFixForward) return;
-
-    // Conformance-triggered: conformance needs-fix:spec-fixer ran after spec-review
-    const t1 = "2026-01-01T00:01:00.000Z";
-    const t2 = "2026-01-01T00:02:00.000Z";
-    const t3 = "2026-01-01T00:03:00.000Z";
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({ verdict: "approved", startedAt: t1, endedAt: t1 }),
-        ],
-        [STEP_NAMES.CONFORMANCE]: [
-          makeStepRun({
-            verdict: `needs-fix:${STEP_NAMES.SPEC_FIXER}`,
-            findings: [makeFinding("high", "fixable", SPEC_MD)],
-            startedAt: t2,
-            endedAt: t2,
-          }),
-        ],
-        [STEP_NAMES.SPEC_FIXER]: [
-          makeStepRun({ verdict: "approved", startedAt: t3, endedAt: t3 }),
-        ],
-      },
-    });
-    expect(specFixerNeedsFixForward(state)).toBe(false);
-  });
-
-  it("TC-022: specFixerNeedsFixForward は approved spec-review 状態（observation pass）で false を返す", () => {
-    if (!specFixerNeedsFixForward) return;
-
-    const t1 = "2026-01-01T00:01:00.000Z";
-    const t2 = "2026-01-01T00:02:00.000Z";
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({ verdict: "approved", startedAt: t1, endedAt: t1 }),
-        ],
-        [STEP_NAMES.SPEC_FIXER]: [
-          makeStepRun({ verdict: "approved", startedAt: t2, endedAt: t2 }),
-        ],
-      },
-    });
-    expect(specFixerNeedsFixForward(state)).toBe(false);
+describe("TC-022: specFixerNeedsFixForward は削除済み（spec-review-loop-single-fixer）", () => {
+  // Updated: spec-review-loop-single-fixer — specFixerNeedsFixForward 削除済み。
+  // spec-fixer の needs-fix 経路は unconditional spec-fixer → spec-review row で処理。
+  it("TC-022: specFixerNeedsFixForward は spec-observation.ts から export されない（削除済み）", () => {
+    expect(specFixerNeedsFixForward).toBeUndefined();
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 52 (should)
+// TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 45 (spec-review-loop-single-fixer 後)
 // Source: design.md > D1; tasks.md > T-04
-// RED: currently 49 rows
+// Pin: spec-review-loop-single-fixer — SPEC_REVIEW→TEST_CASE_GEN / SPEC_FIXER→TEST_CASE_GEN 2 行削除
 // ---------------------------------------------------------------------------
 
-describe("TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 47 (absorb-test-materialize 後)", () => {
-  it("TC-026: STANDARD_TRANSITIONS.length === 47（test-materialize 廃止で -4 行）", () => {
-    expect(STANDARD_TRANSITIONS.length).toBe(47);
+describe("TC-026: 組み替え後の STANDARD_TRANSITIONS の行数は 45 (spec-review-loop-single-fixer 後)", () => {
+  it("TC-026: STANDARD_TRANSITIONS.length === 45（test-case-gen routing 2 行削除）", () => {
+    expect(STANDARD_TRANSITIONS.length).toBe(45);
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-028: TC と severity 問わず spec routable finding の混在では specReviewNeedsFixIsTcOnly が false (must)
-// Source: tasks.md > T-10 acceptance criteria
-// RED: specReviewNeedsFixIsTcOnly not yet implemented
+// TC-028: specReviewNeedsFixIsTcOnly は削除済み（spec-review-loop-single-fixer）
+// Pin: spec-review-loop-single-fixer — TC-only routing 廃止に伴い述語削除
 // ---------------------------------------------------------------------------
 
-describe("TC-028: TC と spec routable finding の混在では specReviewNeedsFixIsTcOnly が false (must)", () => {
-  it("TC-028: specReviewNeedsFixIsTcOnly は spec-observation.ts からエクスポートされる", () => {
-    expect(specReviewNeedsFixIsTcOnly).toBeDefined();
-    expect(typeof specReviewNeedsFixIsTcOnly).toBe("function");
-  });
-
-  it("TC-028: TC finding + medium severity spec finding 混在で specReviewNeedsFixIsTcOnly === false", () => {
-    if (!specReviewNeedsFixIsTcOnly) return;
-
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "needs-fix",
-            findings: [
-              makeFinding("high", "fixable", TEST_CASES_MD), // TC finding
-              makeFinding("medium", "fixable", SPEC_MD),     // spec finding (medium)
-            ],
-          }),
-        ],
-      },
-    });
-
-    // spec finding present → not TC-only → false
-    expect(specReviewNeedsFixIsTcOnly(state)).toBe(false);
-  });
-
-  it("TC-028: TC finding + low severity spec finding 混在で specReviewNeedsFixIsTcOnly === false（severity 問わず）", () => {
-    if (!specReviewNeedsFixIsTcOnly) return;
-
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "needs-fix",
-            findings: [
-              makeFinding("high", "fixable", TEST_CASES_MD), // TC finding
-              makeFinding("low", "fixable", SPEC_MD),         // low severity spec finding
-            ],
-          }),
-        ],
-      },
-    });
-
-    // Even low severity spec finding → not TC-only → false
-    expect(specReviewNeedsFixIsTcOnly(state)).toBe(false);
-  });
-
-  it("TC-028: TC finding のみの場合 specReviewNeedsFixIsTcOnly === true（TC-only 正例確認）", () => {
-    if (!specReviewNeedsFixIsTcOnly) return;
-
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "needs-fix",
-            findings: [makeFinding("high", "fixable", TEST_CASES_MD)],
-          }),
-        ],
-      },
-    });
-
-    // TC-only → true (routable to test-case-gen directly)
-    expect(specReviewNeedsFixIsTcOnly(state)).toBe(true);
-  });
-
-  it("TC-028: TC finding が無い場合 specReviewNeedsFixIsTcOnly === false", () => {
-    if (!specReviewNeedsFixIsTcOnly) return;
-
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "needs-fix",
-            findings: [makeFinding("high", "fixable", SPEC_MD)], // spec only, no TC
-          }),
-        ],
-      },
-    });
-
-    expect(specReviewNeedsFixIsTcOnly(state)).toBe(false);
+describe("TC-028: specReviewNeedsFixIsTcOnly は削除済み（spec-review-loop-single-fixer）", () => {
+  it("TC-028: specReviewNeedsFixIsTcOnly は spec-observation.ts から export されない（削除済み）", () => {
+    expect(specReviewNeedsFixIsTcOnly).toBeUndefined();
   });
 });

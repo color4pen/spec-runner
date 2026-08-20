@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9dcf5a95-c9cb-4172-8b10-b6cf0119a795",
   "createdAt": "2026-08-20T05:14:24.721Z",
-  "updatedAt": "2026-08-20T06:02:56.031Z",
+  "updatedAt": "2026-08-20T06:04:02.056Z",
   "request": {
     "title": "spec-review loop の単一 fixer 化: test-case-gen を review loop から外す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "implementer",
   "status": "running",
   "branch": "change/spec-review-loop-single-fixer-9dcf5a95",
   "error": null,
@@ -69,7 +69,8 @@
     "e368bade936a98b97df6303ec136a4b34b467cc2",
     "637ceda92bcb7ef59fd15bffbda51305d0fe5662",
     "1e70769484d822c380855a73b0cf6f60919064a5",
-    "9eb90475503ba745fe1cbed347ccf4ea6e9821e1"
+    "9eb90475503ba745fe1cbed347ccf4ea6e9821e1",
+    "fc5bd965a1d9bec3db3998764562e04c6ad3ac89"
   ],
   "touchedFiles": {
     "request-review": [
@@ -134,19 +135,20 @@
       "src/core/pipeline/__tests__/standard-transitions.test.ts"
     ],
     "spec-fixer": [
-      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
-      "src/prompts/rules.ts",
-      "src/core/pipeline/spec-observation.ts"
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
+      "tests/unit/pipeline/transition-when.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 30,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 2,
-      "spec-fixer": 1
+      "spec-fixer": 2
     }
   }
 }

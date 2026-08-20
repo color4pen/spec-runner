@@ -176,6 +176,15 @@ describe("TC-001: writes() exposes tasks.md alongside spec.md and design.md", ()
     const paths = refs.map((r) => r.path);
     expect(paths).toContain(DESIGN_MD);
   });
+
+  it("TC-001: SpecFixerStep.writes() returns test-cases.md (spec-review-loop-single-fixer)", () => {
+    // spec-fixer write scope expanded to include test-cases.md for targeted TC modification
+    const state = makeState();
+    const deps = makeDeps();
+    const refs = SpecFixerStep.writes!(state, deps);
+    const paths = refs.map((r) => r.path);
+    expect(paths).toContain(TEST_CASES_MD);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -221,12 +230,13 @@ describe("TC-002: D5 canon-write-scope map grants spec-fixer tasks.md and exclud
     expect(specFixer.has(REQUEST_MD)).toBe(false);
   });
 
-  it("TC-002: writableByFixer.get('spec-fixer') does NOT contain test-cases.md", () => {
+  it("TC-002: writableByFixer.get('spec-fixer') contains test-cases.md (spec-review-loop-single-fixer)", () => {
+    // Updated: spec-review-loop-single-fixer — spec-fixer write scope expanded to include test-cases.md
     const state = makeState();
     const deps = makeDeps();
     const scope = buildCanonWriteScope(state, deps);
     const specFixer = scope.writableByFixer.get("spec-fixer") ?? new Set();
-    expect(specFixer.has(TEST_CASES_MD)).toBe(false);
+    expect(specFixer.has(TEST_CASES_MD)).toBe(true);
   });
 });
 
@@ -313,20 +323,20 @@ describe("TC-004: spec-review needs-fix reaches spec-fixer in the transition tab
 // (boundary preserved whether or not tasks.md is added)
 // ---------------------------------------------------------------------------
 
-describe("TC-005: fixable finding on test-cases.md yields needs-fix (routes to test-case-gen)", () => {
-  // Design-phase change: test-cases.md is now TC-routable by test-case-gen.
-  // spec-review sees a test-cases.md fixable finding → needs-fix (4b: TC-routable ≥ 1).
-  // The old behavior was "escalation" (pre-design-phase-move); new behavior is "needs-fix".
-  it("TC-005: verdict is needs-fix for fixable finding on test-cases.md (TC-routable, not escalation)", () => {
+describe("TC-005: medium fixable finding on test-cases.md → approved (observation auto-fix fall-through)", () => {
+  // Updated: spec-review-loop-single-fixer — test-cases.md is now in spec-fixer write scope.
+  // medium fixable finding on test-cases.md → approved (observation auto-fix), not needs-fix.
+  // test-case-gen is no longer triggered in the review loop.
+  it("TC-005: verdict is approved for medium fixable finding on test-cases.md (observation auto-fix fall-through)", () => {
     const state = makeState();
     const deps = makeDeps();
     const scope = buildCanonWriteScope(state, deps);
     const findings = [makeFinding("medium", "fixable", TEST_CASES_MD)];
     const verdict = deriveSpecReviewVerdict(findings, true, undefined, scope);
-    expect(verdict).toBe("needs-fix");
+    expect(verdict).toBe("approved");
   });
 
-  it("TC-005: deriveStepCompletion yields needs-fix verdict for test-cases.md fixable finding", async () => {
+  it("TC-005: deriveStepCompletion yields approved verdict for medium test-cases.md fixable finding (not escalation)", async () => {
     const step = makeSpecReviewJudgeStep();
     (step as unknown as Record<string, unknown>).judgeVerdictFn = deriveSpecReviewVerdict;
 
@@ -347,7 +357,8 @@ describe("TC-005: fixable finding on test-cases.md yields needs-fix (routes to t
       undefined,
     );
 
-    expect(completion.verdict).toBe("needs-fix");
+    expect(completion.verdict).toBe("approved");
+    expect(completion.escalationReason).toBeUndefined();
   });
 });
 
@@ -496,7 +507,8 @@ describe("TC-009: drift-guard confirms spec-fixer writes() equals its D5 map ent
     }
   });
 
-  it("TC-009: writes() ∩ canonPaths contains exactly {spec.md, design.md, tasks.md}", () => {
+  it("TC-009: writes() ∩ canonPaths contains exactly {spec.md, design.md, tasks.md, test-cases.md}", () => {
+    // spec-review-loop-single-fixer: test-cases.md added to spec-fixer write scope
     const state = makeState();
     const deps = makeDeps();
     const scope = buildCanonWriteScope(state, deps);
@@ -511,7 +523,8 @@ describe("TC-009: drift-guard confirms spec-fixer writes() equals its D5 map ent
     expect(actualCanonIntersection.has(SPEC_MD)).toBe(true);
     expect(actualCanonIntersection.has(DESIGN_MD)).toBe(true);
     expect(actualCanonIntersection.has(TASKS_MD)).toBe(true);
-    expect(actualCanonIntersection.size).toBe(3);
+    expect(actualCanonIntersection.has(TEST_CASES_MD)).toBe(true);
+    expect(actualCanonIntersection.size).toBe(4);
   });
 });
 

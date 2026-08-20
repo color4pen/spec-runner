@@ -7,8 +7,6 @@ import { reverificationNeeded, conformanceApprovedForVerifiedRevision, verificat
 import {
   specReviewHasRoutableFixables,
   specFixerObservationForward,
-  specFixerNeedsFixForward,
-  specReviewNeedsFixIsTcOnly,
 } from "./spec-observation.js";
 import { isTestGenExempt } from "./test-gen-exemption.js";
 
@@ -138,22 +136,6 @@ export interface PipelineDescriptor {
    * absent = standard sequential execution (zero-reviewer backward compat preserved)
    */
   parallelReview?: ParallelReviewConfig;
-  /**
-   * Intermediate steps that are transparent to loop-episode detection.
-   *
-   * When a loop step (e.g. spec-review) is entered from one of these steps,
-   * the convergence budget is NOT reset — the intermediate step is treated as
-   * a transparent pass-through within the same episode (not a new convergence start).
-   *
-   * Use case: test-case-gen sits between spec-fixer and spec-review in the
-   * design-phase pipeline. Without this, spec-fixer → test-case-gen → spec-review
-   * would trigger a fresh-episode budget reset on every cycle, making loop
-   * exhaustion impossible (infinite loop on persistent failures).
-   *
-   * Absent = all non-fixer predecessors of a loop step trigger a new episode
-   * (existing behavior for all pipelines that don't need an intermediate).
-   */
-  loopIntermediateSteps?: ReadonlySet<string>;
 }
 
 /**
@@ -258,17 +240,14 @@ export const STANDARD_TRANSITIONS: Transition[] = [
   { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.SPEC_FIXER,       when: specReviewHasRoutableFixables },
   // All types (exempt and non-exempt) route directly from spec-review approved → implementer
   { step: STEP_NAMES.SPEC_REVIEW, on: "approved",  to: STEP_NAMES.IMPLEMENTER },
-  // TC-only needs-fix: no spec-fixer work → route directly to test-case-gen (guarded, must precede unconditional SPEC_FIXER row)
-  { step: STEP_NAMES.SPEC_REVIEW, on: "needs-fix", to: STEP_NAMES.TEST_CASE_GEN,   when: specReviewNeedsFixIsTcOnly },
+  // needs-fix: all findings (spec.md/design.md/tasks.md/test-cases.md) handled by spec-fixer
   { step: STEP_NAMES.SPEC_REVIEW, on: "needs-fix", to: STEP_NAMES.SPEC_FIXER },
   // spec-review halts via loop exhaustion (SPEC_REVIEW_RETRIES_EXHAUSTED) or unroutable canon finding (CANON_FINDING_ESCALATION), whichever occurs first
   { step: STEP_NAMES.TEST_CASE_GEN,    on: "success", to: STEP_NAMES.SPEC_REVIEW },
   { step: STEP_NAMES.TEST_CASE_GEN,    on: "error",   to: "escalate" },
-  // Observation auto-fix: spec-fixer approved after spec-review approved → implementer (test-case-gen already ran; guarded, must precede needs-fix-forward row)
+  // Observation auto-fix: spec-fixer approved after spec-review approved → implementer (guarded, must precede unconditional row)
   { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.IMPLEMENTER,      when: specFixerObservationForward },
-  // Needs-fix path: spec-fixer approved after spec-review needs-fix → test-case-gen (TC regeneration; guarded, must precede unconditional row)
-  { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.TEST_CASE_GEN,     when: specFixerNeedsFixForward },
-  // spec-fixer → spec-review (direct, for conformance reverification paths)
+  // needs-fix path and conformance reverification: spec-fixer → spec-review (re-review)
   { step: STEP_NAMES.SPEC_FIXER,  on: "approved",  to: STEP_NAMES.SPEC_REVIEW },
   { step: STEP_NAMES.SPEC_FIXER,  on: "error",     to: "escalate" },
   // Test-gen bypass: exempt type skips bite-evidence and routes directly to verification (must precede unconditional BITE_EVIDENCE row)

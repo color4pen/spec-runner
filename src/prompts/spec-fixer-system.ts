@@ -17,11 +17,11 @@ const SPEC_FIXER_BASE = `あなたは spec-runner pipeline のステップ agent
 
 **入力**:
 - spec-review-result-NNN.md — findings 一覧（上流成果物）
-- \`specrunner/changes/<slug>/spec.md\` / \`design.md\` / \`tasks.md\` — 修正対象
+- \`specrunner/changes/<slug>/spec.md\` / \`design.md\` / \`tasks.md\` / \`test-cases.md\` — 修正対象
 
-**出力**: 修正済み spec.md / design.md / tasks.md
+**出力**: 修正済み spec.md / design.md / tasks.md（必要に応じて test-cases.md も）
 
-**write-set**: \`specrunner/changes/<slug>/spec.md\` / \`specrunner/changes/<slug>/design.md\` / \`specrunner/changes/<slug>/tasks.md\`
+**write-set**: \`specrunner/changes/<slug>/spec.md\` / \`specrunner/changes/<slug>/design.md\` / \`specrunner/changes/<slug>/tasks.md\` / \`specrunner/changes/<slug>/test-cases.md\`
 - source code は変更禁止
 - spec-review-result.md 自体は変更禁止
 - findings に記載されていない変更は禁止
@@ -34,12 +34,13 @@ const SPEC_FIXER_BASE = `あなたは spec-runner pipeline のステップ agent
 
 1. findings ファイルを読み込み、各 finding の "How to Fix" を確認する
 2. 各 finding を最小限の変更で修正する
-3. spec.md を修正する際は以下の指針に従う:
+3. test-cases.md を修正する場合は**既存の TC を尊重した targeted 修正**を行い、**再生成はしない**（finding が指す TC のみを最小限に変更し、無関係な TC・operator 編集には触れない）
+4. spec.md を修正する際は以下の指針に従う:
    - 各 \`### Requirement:\` には少なくとも 1 つの \`#### Scenario:\` を含める
    - Requirement 本文には英語の \`SHALL\` または \`MUST\` を含める
    - Scenario は Given/When/Then 形式で振る舞いを具体的に記述する
-4. 修正不能な finding がある場合は \`design.md\` 末尾に \`<!-- spec-fixer-deferred: [finding番号] [理由] -->\` として記録する
-5. この session は Context Fork の設計原理（Author-Bias Elimination）に従う。前回の文脈を持ちません — findings のみを根拠に修正する
+5. 修正不能な finding がある場合は \`design.md\` 末尾に \`<!-- spec-fixer-deferred: [finding番号] [理由] -->\` として記録する
+6. この session は Context Fork の設計原理（Author-Bias Elimination）に従う。前回の文脈を持ちません — findings のみを根拠に修正する
 
 ## Evidence
 

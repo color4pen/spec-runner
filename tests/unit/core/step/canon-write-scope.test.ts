@@ -174,7 +174,7 @@ describe("TC-019: buildCanonWriteScope — spec-fixer writable は {spec.md, des
     expect(specFixer.has(`specrunner/changes/${SLUG}/tasks.md`)).toBe(true);
   });
 
-  it("spec-fixer writable に request.md / test-cases.md は含まれない", () => {
+  it("spec-fixer writable に request.md は含まれない（test-cases.md は含まれる: spec-review-loop-single-fixer）", () => {
     const state = makeState();
     const deps = makeDeps();
 
@@ -182,7 +182,8 @@ describe("TC-019: buildCanonWriteScope — spec-fixer writable は {spec.md, des
     const specFixer = scope.writableByFixer.get("spec-fixer") ?? new Set();
 
     expect(specFixer.has(`specrunner/changes/${SLUG}/request.md`)).toBe(false);
-    expect(specFixer.has(`specrunner/changes/${SLUG}/test-cases.md`)).toBe(false);
+    // spec-review-loop-single-fixer: spec-fixer は test-cases.md への targeted 修正を担う
+    expect(specFixer.has(`specrunner/changes/${SLUG}/test-cases.md`)).toBe(true);
   });
 });
 

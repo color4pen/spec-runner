@@ -4,9 +4,6 @@ import type { AgentDefinition } from "../agent/definition.js";
 import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import { TEST_CASE_GEN_SYSTEM_PROMPT, buildTestCaseGenInitialMessage } from "../../prompts/test-case-gen-system.js";
-import { getLatestJudgeFindings, buildFindingsBlock } from "./fixer-helpers.js";
-import { selectRoutableCanonFindings, testCaseGenEffectiveFixer } from "./canon-escalation.js";
-import { buildCanonWriteScope } from "./canon-write-scope.js";
 import { branchNotSetError } from "../../errors.js";
 import { changeFolderPath } from "../../util/paths.js";
 import { STEP_NAMES } from "./step-names.js";
@@ -82,24 +79,12 @@ export const TestCaseGenStep: AgentStep = {
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.TEST_CASE_GEN);
-    // Inject only TC-routable findings (test-cases.md) when re-generating after a needs-fix round.
-    // Non-TC findings (spec.md, design.md, tasks.md) were handled by spec-fixer and should not
-    // be injected here — test-case-gen cannot write those files.
-    const allFindings = getLatestJudgeFindings(state, STEP_NAMES.SPEC_REVIEW);
-    const canonScope = buildCanonWriteScope(state, deps);
-    const tcFindings =
-      allFindings && allFindings.length > 0
-        ? selectRoutableCanonFindings(allFindings, canonScope, testCaseGenEffectiveFixer)
-        : null;
-    const specReviewFindingsBlock =
-      tcFindings && tcFindings.length > 0
-        ? buildFindingsBlock(tcFindings, "spec-review")
-        : undefined;
+    // test-case-gen is a design-phase producer: runs once after design, never in review loops.
+    // No spec-review findings injection needed (loop routing removed; D5).
     return buildTestCaseGenInitialMessage({
       slug: deps.slug,
       branch: state.branch,
       requestContent: deps.request.content,
-      specReviewFindingsBlock,
     });
   },
 

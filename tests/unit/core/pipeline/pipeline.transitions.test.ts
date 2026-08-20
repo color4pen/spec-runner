@@ -268,13 +268,11 @@ describe("TC-001/002/005/006/007/015: conformance transition rows", () => {
 // TC-030: STANDARD_TRANSITIONS テーブルが全 transition を含む
 // TC-022: R3 cutover: 33 → 31 (removed spec-review escalation + code-review escalation)
 describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された全 transition を含む", () => {
-  it("has 47 rows total (absorb-test-materialize: -4 rows net from test-materialize abolition)", () => {
-    // Previous: 51 rows. absorb-test-materialize removes 4 rows net:
-    //   - spec-review approved → test-materialize (1 row) removed; spec-review approved → implementer already existed
-    //   - spec-fixer approved → test-materialize (1 row) removed; now spec-fixer approved → implementer
-    //   - test-materialize success → implementer (1 row) removed
-    //   - test-materialize error → escalate (1 row) removed
-    expect(STANDARD_TRANSITIONS.length).toBe(47);
+  it("has 45 rows total (spec-review-loop-single-fixer: -2 rows from test-case-gen routing removal)", () => {
+    // Previous: 47 rows. spec-review-loop-single-fixer removes 2 rows:
+    //   - spec-review needs-fix → test-case-gen (guarded by specReviewNeedsFixIsTcOnly) removed
+    //   - spec-fixer approved → test-case-gen (guarded by specFixerNeedsFixForward) removed
+    expect(STANDARD_TRANSITIONS.length).toBe(45);
   });
 
   it("verification --passed→ end does NOT exist", () => {
@@ -365,6 +363,43 @@ describe("TC-030: STANDARD_TRANSITIONS テーブルが仕様に定義された�
   it("delta-spec-validation --approved→ spec-review does NOT exist (step removed)", () => {
     const row = STANDARD_TRANSITIONS.find(
       (t) => t.step === "delta-spec-validation" && t.on === "approved" && t.to === "spec-review",
+    );
+    expect(row).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-07 transition pin: spec-review ⇄ spec-fixer loop has no test-case-gen
+// Pin: spec-review-loop-single-fixer — single-fixer, TEST_CASE_GEN 削除
+// ---------------------------------------------------------------------------
+
+describe("T-07 transition pin: spec-review needs-fix loop に TEST_CASE_GEN が現れない", () => {
+  it("spec-review --needs-fix→ spec-fixer transition exists (unconditional)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "spec-review" && t.on === "needs-fix" && t.to === "spec-fixer",
+    );
+    expect(row).toBeDefined();
+    // The core needs-fix loop row must be unconditional (no guard)
+    expect(row!.when).toBeUndefined();
+  });
+
+  it("spec-fixer --approved→ spec-review transition exists", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "spec-fixer" && t.on === "approved" && t.to === "spec-review",
+    );
+    expect(row).toBeDefined();
+  });
+
+  it("spec-review --needs-fix→ test-case-gen does NOT exist (deleted in spec-review-loop-single-fixer)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "spec-review" && t.on === "needs-fix" && t.to === "test-case-gen",
+    );
+    expect(row).toBeUndefined();
+  });
+
+  it("spec-fixer --approved→ test-case-gen does NOT exist (deleted in spec-review-loop-single-fixer)", () => {
+    const row = STANDARD_TRANSITIONS.find(
+      (t) => t.step === "spec-fixer" && t.on === "approved" && t.to === "test-case-gen",
     );
     expect(row).toBeUndefined();
   });
