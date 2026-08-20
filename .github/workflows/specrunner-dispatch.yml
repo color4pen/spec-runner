@@ -95,11 +95,24 @@ jobs:
           sysctl kernel.apparmor_restrict_unprivileged_userns 2>/dev/null || true
           sysctl kernel.unprivileged_userns_clone 2>/dev/null || true
 
+      - name: Claude Code smoke test
+        # pipeline 抜きで claude binary の単発実行が成立するかを検証する。
+        # 失敗時は生 stderr が唯一の証拠（pipeline 経由では握りつぶされる）。
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          bin=node_modules/@anthropic-ai/claude-agent-sdk-linux-x64/claude
+          "$bin" --version
+          timeout 120 "$bin" -p "reply with exactly: SMOKE_OK" 2>claude-stderr.txt || echo "smoke exit=$?"
+          echo "--- stderr ---"; tail -c 4000 claude-stderr.txt || true
+
       - name: Run pipeline
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # debug: agent session transcript を .specrunner/logs/<jobId>/ に書かせる
           SPECRUNNER_LOG_LEVEL: debug
+          # SDK 側の debug log（SpecRunner の plumbing に依存しない証拠経路）
+          CLAUDE_CODE_DEBUG_LOGS_DIR: ${{ github.workspace }}/.claude-debug
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           ISSUE: ${{ inputs.issue }}
           ACTION: ${{ inputs.action }}
@@ -121,8 +134,7 @@ jobs:
         # runner の log は VM と共に消えるため、失敗診断用に常時 tail を残す
         if: always()
         run: |
-          for f in .specrunner/logs/*.log .specrunner/logs/*/*.jsonl; do
-            [ -e "$f" ] || continue
+          for f in $(find .specrunner .git/specrunner-worktrees/*/.specrunner .claude-debug -type f \( -name "*.log" -o -name "*.jsonl" -o -name "*.txt" \) 2>/dev/null); do
             echo "===== $f ====="
             tail -c 30000 "$f"
             echo
