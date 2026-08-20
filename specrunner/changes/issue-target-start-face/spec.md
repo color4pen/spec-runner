@@ -111,6 +111,14 @@ successful start
 **When** the arm proceeds
 **Then** the link effect is invoked before the request.md bootstrap commit is made
 
+#### Scenario: no-worktree route fires link registration after branch creation
+
+**Given** an issue-linked start on the no-worktree path (`setupWorkspaceNoWorktree`)
+**When** the feature branch is checked out successfully
+**Then** `onFeatureBranchCreated` is invoked best-effort after the checkout and before
+request materialisation; if `createLinkedBranch` fails, a warning is emitted and the
+start continues
+
 ### Requirement: branch name is constructed by a single shared builder
 
 The feature-branch name (`<prefix><slug>-<jobId[0:8]>`) SHALL be constructed by a single
@@ -158,3 +166,10 @@ those three values as variables
 **Given** a GraphQL response with a non-empty `errors` array or a non-2xx status
 **When** `createLinkedBranch` processes it
 **Then** it throws (the caller is responsible for best-effort handling)
+
+#### Scenario: GraphQL endpoint is derived correctly for github.com and GHES
+
+**Given** a REST base URL of `https://api.github.com` or `https://HOST/api/v3`
+**When** the adapter derives the GraphQL endpoint
+**Then** `https://api.github.com` maps to `https://api.github.com/graphql` and
+`https://HOST/api/v3` maps to `https://HOST/api/graphql`

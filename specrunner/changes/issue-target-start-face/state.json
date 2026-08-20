@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T05:44:30.020Z",
+  "updatedAt": "2026-08-20T05:47:09.201Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
-  "status": "awaiting-resume",
+  "step": "spec-fixer",
+  "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
   "pipelineId": "standard",
@@ -71,7 +71,9 @@
     "4c6dca53c1871c6fcbb43328377c3ec048652beb",
     "91a57645cdcae8e1d6cc25acb98bbaf3711fc776",
     "564f535f220b7f696c7d947a6a54a787df017227",
-    "864e2e2e467eb0e0396ec77a799fb7ecf6f953da"
+    "864e2e2e467eb0e0396ec77a799fb7ecf6f953da",
+    "2b4f79a0b37e3df15c027686d267c0950f165a1d",
+    "6cd078cd0b9384b76f3a2854a88fb7bbc9f3a6dd"
   ],
   "touchedFiles": {
     "request-review": [
@@ -140,14 +142,17 @@
       "src/core/port/runtime-strategy.ts"
     ]
   },
-  "resumePoint": {
-    "step": "spec-review",
-    "reason": "spec-review escalated",
-    "iterationsExhausted": 2
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "spec-review round 2 findings の裁定を以下の通り適用する。\n\nF-1（TC ID 重複）: test-cases.md の GraphQL endpoint derivation TC は operator が TC-023 に改番済み（apply-canon 適用）。tasks.md に GraphQL の TC を TC-018 と参照する箇所があれば TC-023 に更新する。inbox テスト（tests/unit/inbox/run-inbox-inbox-origin.test.ts）を指す TC-018 参照はそのままでよい。\n\nF-2（getIssue 型拡張と既存 mock）: B 案を採用する。nodeId: string は required を維持し、既存 mock リテラル（run-inbox-inbox-origin.test.ts と from-issue.test.ts）には実装時に nodeId フィールドを 1 行追加する。これに合わせて: tasks.md の「TC-018 が無改変で green」という記述（T-02 本文と T-05 Acceptance Criteria）を「挙動 assert 無改変で green。port 型拡張（getIssue の nodeId 追加）に伴う mock リテラルへの nodeId フィールド追加のみ許可」に更新する。design.md に『as GitHubClient cast のリテラルは structural 代入可能なため cast は通る』という mitigation 注があれば『mock リテラルに nodeId を追加する（B 案）』に訂正する。optional 化（nodeId?: string）は不採用。\n\nF-3（no-worktree 経路）: spec.md の link registration の best-effort / 順序 Requirement 配下に Scenario を 1 件追加する: no-worktree 経路（setupWorkspaceNoWorktree）でも branch 作成成功後に同じ登録 callback が best-effort で発火する。\n\nF-4（GraphQL derivation の spec 網羅）: spec.md の getIssue nodeId 関連 Requirement 配下に Scenario を 1 件追加する: GraphQL endpoint が github.com と GHES の両方で正しく導出される。test-cases.md の TC-023 の Source は tasks.md 由来のままでよい（変更しない）。",
+      "step": "spec-fixer",
+      "recordedAt": "2026-08-20T05:47:08.970Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 29,
     "stepCounts": {
       "request-review": 2,
       "design": 1,

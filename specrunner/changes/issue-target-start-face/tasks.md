@@ -72,7 +72,7 @@
 **Acceptance Criteria**:
 - 3 経路（`--from-issue` / inbox / positional + `--issue`）すべてで、start が issue-target を経由し Development リンク登録（`onFeatureBranchCreated`）が発火することが test で pin される。
 - positional + `--issue <n>` が issue-target 経由で route されることが test で pin される（従来の `runRun` 直呼びでないこと）。
-- `tests/unit/inbox/run-inbox-inbox-origin.test.ts`（TC-018）が **無改変**で green（既定 startJob → `runRunCore({ inboxOrigin: true })`）。
+- `tests/unit/inbox/run-inbox-inbox-origin.test.ts`（TC-018）が **挙動 assert 無改変**で green（既定 startJob → `runRunCore({ inboxOrigin: true })`）。port 型拡張（`getIssue` の `nodeId` 追加）に伴う mock リテラルへの `nodeId` フィールド追加のみ許可。
 - `from-issue.test.ts` / `start-from-issue.test.ts` の変更が mock 対象 / import path 更新に限られ、assert 内容（呼び出し引数契約・書き込み順序・エラー伝播）が保存されている。
 - inbox の他の既存テスト（orchestrator / occupancy-propagation 等、effects 注入型）が無改変で green。
 

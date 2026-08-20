@@ -125,7 +125,7 @@ worktree 作成（手順 2）が throw した場合、callback（手順 3）に�
 - [Risk] callback を多層に通す配線（runRunCore→PipelineRunOptions→WorkspaceOptions→materializer）でどこか一箇所落とすとリンクが発火しない。→ **Mitigation**: 各層で optional 1 フィールドの受け渡し。3 経路発火をテストで pin。
 - [Risk] base OID を 2 回解決すると「同一 immutable OID」契約が破れる。→ **Mitigation**: new-run arm で 1 回だけ rev-parse、plan に載せ両消費者へ配布。「解決 1 回」をテストで pin。
 - [Risk] createLinkedBranch を push 後に実行すると branch 衝突。→ **Mitigation**: D5 の順序（worktree → link → materialize/commit/push）を arm 内位置で固定しテストで pin。
-- [Risk] port `getIssue` に `nodeId` 追加で既存 mock（テスト内 client リテラル）の型が壊れる。→ **Mitigation**: 追加は additive。`as GitHubClient` cast のリテラルは target が source に構造的に代入可能なため cast は通る（node_id 未設定 mock も getIssue を呼ばない経路では無害）。
+- [Risk] port `getIssue` に `nodeId` 追加で既存 mock（テスト内 client リテラル）の型が壊れる。→ **Mitigation**: `nodeId: string` は required を維持し、影響を受ける mock リテラル（`run-inbox-inbox-origin.test.ts` / `from-issue.test.ts`）に `nodeId` フィールドを 1 行追加する（B 案）。挙動 assert は無改変のまま型エラーを解消する。optional 化（`nodeId?: string`）は不採用。
 
 ## Open Questions
 
