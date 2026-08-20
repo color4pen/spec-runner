@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T05:35:59.897Z",
+  "updatedAt": "2026-08-20T05:38:04.098Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -69,7 +69,8 @@
     "09bd760881af159bd4ffde7403e39c56d1e33750",
     "4d0851c93ce1fd20c733a3f4c092d7f4cb172ea0",
     "4c6dca53c1871c6fcbb43328377c3ec048652beb",
-    "91a57645cdcae8e1d6cc25acb98bbaf3711fc776"
+    "91a57645cdcae8e1d6cc25acb98bbaf3711fc776",
+    "564f535f220b7f696c7d947a6a54a787df017227"
   ],
   "touchedFiles": {
     "request-review": [
@@ -113,7 +114,9 @@
       "src/core/port/runtime-strategy.ts",
       "tests/unit/inbox/run-inbox-inbox-origin.test.ts"
     ],
-    "test-case-gen": [],
+    "test-case-gen": [
+      "src/config/type-config.ts"
+    ],
     "spec-review": [
       "src/core/job/start-from-issue.ts",
       "src/core/command/pipeline-run.ts",
@@ -139,11 +142,11 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 20,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
-      "test-case-gen": 1,
+      "test-case-gen": 2,
       "spec-review": 1
     }
   }
