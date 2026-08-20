@@ -1,0 +1,16 @@
+{
+  "requestHash": "sha256:e322ba0c7369eec4d85e2cbf3b7e88cf72a3354a4b567470aa3d73b3838c43ed",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/cli/command-registry.ts:1061 — resume from flag: { type: \"string\", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES] as const }",
+    "src/cli/command-registry.ts:1197 — reopen from flag: { type: \"string\", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES] as const }",
+    "src/core/resume/resolve-step.ts:19-22 — LEGACY_STEP_ALIASES: build-fixer / test-materialize → implementer",
+    "src/core/resume/resolve-step.ts:32-44 — buildAllowedStepSet adds REGRESSION_GATE_STEP_NAME / CUSTOM_REVIEWERS_STEP_NAME / member names when reviewers non-empty",
+    "src/core/resume/resolve-step.ts:60-67 — mapMemberToCoordinator maps member name to CUSTOM_REVIEWERS_STEP_NAME",
+    "src/core/command/resume.ts:262-267 — catch wraps resolveResumeStep throw as PrepareError(1, \"Failed to resolve resume step\")",
+    "src/core/command/reopen.ts:222-227 — catch wraps resolveResumeStep throw as PrepareError(1, \"Failed to resolve reopen step\")",
+    "src/cli/command-registry.ts:368-373 — resume usage: 'composite steps (custom-reviewers fan-out, regression-gate) are not valid --from targets'",
+    "src/cli/command-registry.ts:500 — reopen usage: static step list only, no dynamic step mention"
+  ],
+  "sourceRevision": "d9a1a92bac4a430f05af32c4e78d2396637f9974"
+}

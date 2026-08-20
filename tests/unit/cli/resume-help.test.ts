@@ -232,11 +232,11 @@ describe("TC-016: job resume --help の出力に相互排他対と --from 有効
     expect(output).toContain("Valid steps:");
   });
 
-  it("TC-016: 出力に複合 step が --from 対象外である注記が含まれる", async () => {
+  it("TC-016: 出力に custom reviewers を持つ job での動的 --from 値についての注記が含まれる", async () => {
     await runMain(["job", "resume", "--help"]);
     const output = getStdoutOutput();
-    // JOB_RESUME_USAGE notes composite steps are not valid --from targets
-    expect(output).toContain("composite step");
+    // JOB_RESUME_USAGE notes that jobs with custom reviewers also accept dynamic steps
+    expect(output).toContain("custom reviewers");
   });
 });
 

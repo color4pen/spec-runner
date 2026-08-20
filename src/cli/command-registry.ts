@@ -367,8 +367,9 @@ Options:
                         specrunner job resume <slug>
   --from <step>       Override the start step (default: recorded resumePoint step).
                       Valid steps: ${[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ")}
-                      Note: composite steps (custom-reviewers fan-out, regression-gate)
-                      are not valid --from targets and are not listed above.
+                      Note: jobs with custom reviewers also accept: regression-gate,
+                      custom-reviewers, or reviewer member names (member names are
+                      mapped to the custom-reviewers coordinator).
                       Note: bite-evidence is an internal step not intended for regular
                       operator use.
   --force             Override the 3× consecutive escalation guard and resume anyway.
@@ -498,6 +499,9 @@ Arguments:
 Options:
   --from <step>       Pipeline step to restart from (required).
                       Valid steps: ${[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ")}
+                      Note: jobs with custom reviewers also accept: regression-gate,
+                      custom-reviewers, or reviewer member names (member names are
+                      mapped to the custom-reviewers coordinator).
   --reason <text>     Operator rationale for the reopen (required, recorded in journal).
   --verbose           More detailed output
   --quiet             Suppress informational output
@@ -1058,7 +1062,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         path: ["job", "resume"],
         summary: "Resume a halted job",
         flags: {
-          from: { type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES] as const },
+          from: { type: "string" },
           force: { type: "boolean" },
           verbose: { type: "boolean" },
           quiet: { type: "boolean" },
@@ -1194,7 +1198,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         path: ["job", "reopen"],
         summary: "Reopen an awaiting-archive job",
         flags: {
-          from: { type: "string", values: [...AGENT_STEP_NAMES, ...CLI_STEP_NAMES] as const },
+          from: { type: "string" },
           reason: { type: "string" },
           verbose: { type: "boolean" },
           quiet: { type: "boolean" },
