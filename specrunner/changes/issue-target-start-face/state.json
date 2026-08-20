@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T08:15:59.907Z",
+  "updatedAt": "2026-08-20T08:26:01.793Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -99,7 +99,9 @@
     "212a388cf244cc4a560130c55b11ebbd4323b3e1",
     "627c028a659d3bd063166da5bb5b358a34e04939",
     "68b0d3e6fa0b1124744e706c3ef14c883719ff46",
-    "aa9671f392003d7e7cc209e99c3ebf0631d51ebf"
+    "aa9671f392003d7e7cc209e99c3ebf0631d51ebf",
+    "4767886e20143c2e2b0b7d7d0598d57488e9c51a",
+    "8d51b99500190c8a79dd221a63af4f3e4edb8467"
   ],
   "touchedFiles": {
     "request-review": [
@@ -185,10 +187,7 @@
       "tests/unit/architecture/arch-allowlist.ts"
     ],
     "code-fixer": [
-      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
-      "src/core/runtime/local.ts",
-      "src/core/runtime/workspace-materializer.ts",
-      "src/core/artifact/copy-artifacts.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
       "tests/unit/no-worktree-mode.test.ts"
     ],
     "regression-gate": [
@@ -237,7 +236,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "4512456825cff887035c286b1c0712fbe1925010",
+      "approvedAtCommit": "4767886e20143c2e2b0b7d7d0598d57488e9c51a",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -253,7 +252,7 @@
     {
       "name": "scale-tolerance",
       "status": "approved",
-      "approvedAtCommit": "4512456825cff887035c286b1c0712fbe1925010",
+      "approvedAtCommit": "4767886e20143c2e2b0b7d7d0598d57488e9c51a",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
@@ -265,7 +264,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 136,
+    "historyCount": 145,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -276,10 +275,10 @@
       "bite-evidence": 1,
       "verification": 4,
       "code-review": 4,
-      "code-fixer": 3,
-      "cross-boundary-invariants": 1,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "custom-reviewers": 2,
       "regression-gate": 2,
       "conformance": 1
     }
