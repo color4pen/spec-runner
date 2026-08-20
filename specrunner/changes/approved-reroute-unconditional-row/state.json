@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d1946274-009d-439f-9aed-83ed558a4654",
   "createdAt": "2026-08-20T07:19:48.603Z",
-  "updatedAt": "2026-08-20T07:36:25.351Z",
+  "updatedAt": "2026-08-20T07:43:40.568Z",
   "request": {
     "title": "approved 温存 reroute の修正: fixer 全体除外をやめ同 verdict の unconditional row へ降りる",
     "type": "bug-fix",
@@ -68,7 +68,9 @@
     "a8dc890b377ca5d8c69603b1fff0c29b3d79f6a4",
     "0a8e03b73233556811f640629b096893dc94011a",
     "24415725a7c54ce5847e9f6c8555c66b40b20bc4",
-    "3bf497dd3a07d04fc5bda596de19ece3562695a0"
+    "3bf497dd3a07d04fc5bda596de19ece3562695a0",
+    "09c5c4b4c33d9b532aa365a4fa02dcff358b1b2f",
+    "81e2f26f9690950738357b5e5528ab7a0e87883d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -98,16 +100,31 @@
       "src/core/pipeline/spec-observation.ts",
       "src/core/step/canon-write-scope.ts",
       "src/state/job-slug.ts"
+    ],
+    "implementer": [
+      "src/core/pipeline/pipeline.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/state/job-slug.ts",
+      "src/util/paths.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/pipeline/registry.ts",
+      "src/state/schema.ts"
     ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 30,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }

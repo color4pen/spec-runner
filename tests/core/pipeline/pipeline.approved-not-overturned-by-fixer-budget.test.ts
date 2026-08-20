@@ -1657,7 +1657,7 @@ describe("TC-017: spec-review approved with spec-fixer budget exhausted routes t
     });
 
     let specReviewCallCount = 0;
-    let specFixerCallCount = 0;
+    let _specFixerCallCount = 0;
     let implementerCallCount = 0;
 
     const executeSpy = vi.fn().mockImplementation(async (step: Step, currentState: JobState) => {
@@ -1680,7 +1680,7 @@ describe("TC-017: spec-review approved with spec-fixer budget exhausted routes t
       }
 
       if (step.name === "spec-fixer") {
-        specFixerCallCount++;
+        _specFixerCallCount++;
         // spec-fixer returns without modifying state (completionVerdict: "approved")
         return currentState;
       }
