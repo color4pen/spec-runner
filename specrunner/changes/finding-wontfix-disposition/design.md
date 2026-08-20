@@ -181,9 +181,13 @@ judge / conformance の verdict 導出前に `step-completion.ts` が既に `fil
 
 - **[Risk] union narrowing の取りこぼし**: `kind` を判別に使わず `.selectedOption` を読む既存コードが
   disposition arm でランタイム undefined を踏む可能性。
-  → **Mitigation**: option record を読む経路（inbox planner / round-context / decision-ledger）は
-  reviewerChain の disposition record を混ぜない。disposition は regression 除外と verdict 除外の
-  照合（step + findingKey のみ）でしか読まれない。テストで既存 decisions / inbox / round-context の green を固定。
+  → **Mitigation**: 以下の 2 箇所は `state.decisions` 全体を走査するため、disposition record が存在すると
+  クラッシュする。T-01 で明示的に修正する:
+  1. `src/core/step/custom-reviewer-round-context.ts:198-204` — `.map((d) => ({ ..., selectedOption: d.selectedOption.label }))` を
+     option arm のみにフィルタするよう修正（`.filter((d) => d.kind !== "disposition")` を追加）。
+  2. `src/core/design-layer/topic-emission.ts:181` — `matchedDecision.selectedOption` 参照前に narrowing guard を追加。
+  `isFindingDecided` / `filterUndecidedFindings` / inbox planner は `selectedOption` を参照しないため無変更。
+  テストで既存 decisions / inbox / round-context の green を固定。
 
 ## Open Questions
 

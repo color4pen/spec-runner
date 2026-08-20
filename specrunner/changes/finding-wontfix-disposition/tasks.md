@@ -12,11 +12,20 @@
 - [ ] 永続 field 名 `decisions` は変更しない。`src/state/schema.js` の re-export 経路が両 arm を出すことを確認する。
 - [ ] 既存の option record 構築サイト（`src/core/inbox/planner.ts:329-349` の `records.push({...})`）が
   `kind` を付けなくても option arm として型検査を通ることを確認する（optional discriminant）。
+- [ ] **`src/core/step/custom-reviewer-round-context.ts:198-204`** の
+  `state.decisions.map((d) => ({ ..., selectedOption: d.selectedOption.label, ... }))` を修正する。
+  disposition arm には `selectedOption` が存在しないため、option arm のみにフィルタしてから map する
+  （例: `.filter((d) => d.kind !== "disposition")` を挿入）。
+- [ ] **`src/core/design-layer/topic-emission.ts:181`** の `matchedDecision.selectedOption` 参照を修正する。
+  `findMatchingDecision` が disposition record を返した場合 `selectedOption` は存在しないため、
+  参照前に narrowing guard（`"selectedOption" in matchedDecision` 等）を追加するか、
+  option arm のみを検索対象にする。
 
 **Acceptance Criteria**:
 - `kind` 無しの永続レコードが option arm として読め、既存の decisions / inbox / round-context テストが無変更で green。
 - disposition arm が `kind: "disposition"` / `disposition: "wontfix"` / `reason`(必須) / `source: "operator"` を持つ。
 - `typecheck` が green（既存 DecisionRecord 参照箇所が union で破綻しない）。
+- `custom-reviewer-round-context.ts` と `topic-emission.ts` が disposition record を含む `decisions` でランタイムクラッシュしない。
 
 ## T-02: wontfix 解決・逆引きの純関数を追加する
 
@@ -30,11 +39,13 @@
   `REGRESSION_GATE_STEP_NAME` は `src/core/step/regression-gate.ts`）。null/空ならエラー（gate 未実行）。
 - [ ] 各番号を 1-based で解決。範囲外（< 1 または > findings.length）はエラー。
 - [ ] 各選択 finding の fingerprint = `findingFingerprint(f)`（`src/core/pipeline/findings-ledger.ts`）を算出し、
-  `deriveImplReviewerChain(state)`（`src/core/pipeline/reviewer-chain.ts`）の各 step の各 StepRun の
-  `collectFixableFindings`（`src/core/step/judge-verdict.ts`）を走査。同一 fingerprint を報告した source step ごとに
-  1 record を生成（`step` = source step、`findingKey` = `computeFindingKey(sourceStep, actualFinding)`、
+  `deriveImplReviewerChain(state)`（`src/core/pipeline/reviewer-chain.ts`）の各 step の全 StepRun を
+  走査して同一 fingerprint を報告した StepRun を収集する。ただし **record 生成はステップ単位**で行う:
+  同一 step 名を持つ複数の StepRun が同一 fingerprint を報告していても、その step につき 1 record のみ
+  生成する（最初に見つかった StepRun の finding を代表値として使用）。
+  record の各 field: `step` = source step、`findingKey` = `computeFindingKey(sourceStep, actualFinding)`、
   `finding` = actualFinding の snapshot、`disposition: "wontfix"`、`reason`、`source: "operator"`、
-  `id` は `(番号, sourceStep)` で一意）。
+  `id` は `(番号, sourceStep)` で一意。
 - [ ] どの reviewerChain step にも fingerprint が一致しない選択 finding があればエラー（逆引き不能）。
 - [ ] エラーは all-or-nothing: いずれか 1 つでもエラーなら record を 1 件も返さない。
 - [ ] import 方向を確認し循環を作らない（wontfix.ts → step/pipeline 側への一方向）。

@@ -63,6 +63,13 @@ disposition into `decisions` (all-or-nothing). Unresolvable cases include: `--wo
 empty, the regression-gate has no StepRun, a number is out of range or non-integer, and a selected
 finding's fingerprint matches no step in the impl reviewer chain.
 
+Note: the regression-gate StepRun may report both fixable (regression) findings and decision-needed
+(contradiction) findings. Only fixable findings can be wontfix'd via `--wontfix`. If the operator
+selects the index of a decision-needed finding, its fingerprint will match no step in the impl reviewer
+chain (which only contains fixable findings), so the command will exit with code 2 with an unresolvable
+fingerprint error. This is intentional: decision-needed findings are resolved through the decision
+workflow, not through `--wontfix`.
+
 #### Scenario: regression-gate 未実行
 
 **Given** a job with no regression-gate StepRun
