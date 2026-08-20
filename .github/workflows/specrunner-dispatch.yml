@@ -32,6 +32,16 @@ on:
         description: "resume 時の再開 step override（通常は空 = checkpoint から自動再開）"
         required: false
         type: string
+      prompt:
+        # workflow_dispatch input は発火に write 権限が要るため operator input として扱える。
+        description: "resume 時に agent context へ注入する operator 裁定（--prompt）"
+        required: false
+        type: string
+      force:
+        description: "resume 時に 3 連続 escalation guard を override する（--force）"
+        required: false
+        type: boolean
+        default: false
 
 concurrency:
   group: specrunner-dispatch-${{ inputs.issue }}
@@ -65,9 +75,15 @@ jobs:
           ISSUE: ${{ inputs.issue }}
           ACTION: ${{ inputs.action }}
           FROM: ${{ inputs.from }}
+          PROMPT: ${{ inputs.prompt }}
+          FORCE: ${{ inputs.force }}
         run: |
           if [ "$ACTION" = "resume" ]; then
-            bun ./bin/specrunner.ts job resume --from-issue "$ISSUE" ${FROM:+--from "$FROM"}
+            set -- --from-issue "$ISSUE"
+            [ -n "$FROM" ] && set -- "$@" --from "$FROM"
+            [ -n "$PROMPT" ] && set -- "$@" --prompt "$PROMPT"
+            [ "$FORCE" = "true" ] && set -- "$@" --force
+            bun ./bin/specrunner.ts job resume "$@"
           else
             bun ./bin/specrunner.ts job start --from-issue "$ISSUE"
           fi
