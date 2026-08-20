@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-20T23:42:08.274Z",
+  "updatedAt": "2026-08-20T23:45:47.488Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/archive-from-issue-96c14a7e",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "9f6341aaeb5e220216adb4381a776e7d275c19f2",
     "94b4deb8539aa2ac5277698d6df0b62ce84ce9a9",
-    "b0a4d71027be565c68cb128a08e3fb42730d9fd1"
+    "b0a4d71027be565c68cb128a08e3fb42730d9fd1",
+    "b76054f1cd6508f45aef6e62341d31728b7f74aa"
   ],
   "touchedFiles": {
     "request-review": [
@@ -104,13 +105,15 @@
       "src/core/issue-target/__tests__/resume.test.ts",
       "src/cli/__tests__/resume-from-issue.test.ts",
       "src/git/checkpoint-ref.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
