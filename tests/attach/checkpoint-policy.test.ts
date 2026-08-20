@@ -13,7 +13,7 @@
  * TC-010: verify-checkpoint.ts has no direct resume-specific imports
  * TC-011: verify-checkpoint.ts contains no awaiting-resume status literal
  */
-import { describe, it, expect, vi } from "vitest";
+import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { join, dirname } from "node:path";
