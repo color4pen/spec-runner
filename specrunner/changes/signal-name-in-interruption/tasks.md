@@ -4,8 +4,8 @@
 
 In `src/store/event-journal.ts`, extend the `InterruptionRecord` interface.
 
-- [ ] Add `signal?: "SIGINT" | "SIGTERM" | "SIGHUP"` as an optional field to `InterruptionRecord` (after `reason`, before `errorCode`)
-- [ ] Add a JSDoc comment for the new field, e.g. `/** Signal name when reason === "signal" and the signal handler captured the name. Absent when written by exit-guard (no signal name available). */`
+- [x] Add `signal?: "SIGINT" | "SIGTERM" | "SIGHUP"` as an optional field to `InterruptionRecord` (after `reason`, before `errorCode`)
+- [x] Add a JSDoc comment for the new field, e.g. `/** Signal name when reason === "signal" and the signal handler captured the name. Absent when written by exit-guard (no signal name available). */`
 
 **Acceptance Criteria**:
 - TypeScript accepts `{ type: "interruption", reason: "signal", signal: "SIGTERM", ts: "..." }` as a valid `InterruptionRecord`
@@ -18,11 +18,11 @@ In `src/store/event-journal.ts`, extend the `InterruptionRecord` interface.
 
 In `src/core/runtime/local.ts`, modify the `signalCleanup` closure and its registrations.
 
-- [ ] Change `const signalCleanup = async (): Promise<void> =>` (line ~1683) to `const signalCleanup = async (signal: NodeJS.Signals): Promise<void> =>`
-- [ ] In the `appendInterruption` call (lines ~1695-1699), add `signal` to the record: `{ type: "interruption", reason: "signal", signal, ts: new Date().toISOString() }`
-- [ ] In the `transitionJob` call (lines ~1700-1711), change the `reason` field from `"Interrupted by signal"` to `` `Interrupted by ${signal}` `` — leave `resumePoint.reason` unchanged (still `"Interrupted by signal"`)
-- [ ] After `process.on("SIGTERM", signalCleanup)` (line ~1721), add `process.on("SIGHUP", signalCleanup)`
-- [ ] In `teardown` (lines ~1738-1739), add `process.off("SIGHUP", internals.signalCleanup)` after the SIGTERM deregistration
+- [x] Change `const signalCleanup = async (): Promise<void> =>` (line ~1683) to `const signalCleanup = async (signal: NodeJS.Signals): Promise<void> =>`
+- [x] In the `appendInterruption` call (lines ~1695-1699), add `signal` to the record: `{ type: "interruption", reason: "signal", signal, ts: new Date().toISOString() }`
+- [x] In the `transitionJob` call (lines ~1700-1711), change the `reason` field from `"Interrupted by signal"` to `` `Interrupted by ${signal}` `` — leave `resumePoint.reason` unchanged (still `"Interrupted by signal"`)
+- [x] After `process.on("SIGTERM", signalCleanup)` (line ~1721), add `process.on("SIGHUP", signalCleanup)`
+- [x] In `teardown` (lines ~1738-1739), add `process.off("SIGHUP", internals.signalCleanup)` after the SIGTERM deregistration
 
 **Acceptance Criteria**:
 - `signalCleanup` function accepts `NodeJS.Signals` as its first parameter
@@ -38,10 +38,10 @@ In `src/core/runtime/local.ts`, modify the `signalCleanup` closure and its regis
 
 In `src/core/runtime/managed.ts`, modify the `signalCleanup` closure and its registrations.
 
-- [ ] Change `const signalCleanup = async (): Promise<void> =>` (line ~741) to `const signalCleanup = async (signal: NodeJS.Signals): Promise<void> =>`
-- [ ] In the `transitionJob` call (lines ~746-757), change the `reason` field from `"Interrupted by signal"` to `` `Interrupted by ${signal}` `` — leave `resumePoint.reason` unchanged (still `"Interrupted by signal"`)
-- [ ] After `process.on("SIGTERM", signalCleanup)` (line ~766), add `process.on("SIGHUP", signalCleanup)`
-- [ ] In `teardown` (lines ~774-776), add `process.off("SIGHUP", internals.signalCleanup)` after the SIGTERM deregistration
+- [x] Change `const signalCleanup = async (): Promise<void> =>` (line ~741) to `const signalCleanup = async (signal: NodeJS.Signals): Promise<void> =>`
+- [x] In the `transitionJob` call (lines ~746-757), change the `reason` field from `"Interrupted by signal"` to `` `Interrupted by ${signal}` `` — leave `resumePoint.reason` unchanged (still `"Interrupted by signal"`)
+- [x] After `process.on("SIGTERM", signalCleanup)` (line ~766), add `process.on("SIGHUP", signalCleanup)`
+- [x] In `teardown` (lines ~774-776), add `process.off("SIGHUP", internals.signalCleanup)` after the SIGTERM deregistration
 
 Note: managed.ts `signalCleanup` does not call `appendInterruption` (only `transitionJob` + `persist`), so no interruption record change is needed here — only the transition message.
 
@@ -58,14 +58,14 @@ Note: managed.ts `signalCleanup` does not call `appendInterruption` (only `trans
 
 Create a new test file `src/core/runtime/__tests__/signal-name-in-interruption.test.ts`.
 
-- [ ] Write a parameterized test over `["SIGINT", "SIGTERM", "SIGHUP"]` that invokes `signalCleanup(signal)` on a `LocalRuntime` instance with mocked store, and asserts that `appendInterruption` is called with `{ signal: "<SIGNAME>", reason: "signal", type: "interruption" }`
-- [ ] In the same parameterized loop, assert that `persist` is called with a state whose history entry's `message` field contains the signal name (e.g. `"Interrupted by SIGTERM"`)
-- [ ] Assert that `reason: "signal"` is present and unchanged (backward-compat pin)
-- [ ] Write a test that `registerCleanup` on `LocalRuntime` calls `process.on` with `"SIGHUP"` in addition to `"SIGINT"` and `"SIGTERM"` (use `vi.spyOn(process, "on")`)
-- [ ] Write a test that `teardown` on `LocalRuntime` calls `process.off` with `"SIGHUP"` (use `vi.spyOn(process, "off")`)
-- [ ] Prevent actual process termination in all tests: `vi.spyOn(process, "exit").mockImplementation(() => undefined as never)`
-- [ ] Use the same mock-setup pattern as `signal-handler-order.test.ts` (set `currentSlug` and `workspace` on the runtime instance; spy on `JobStateStore.prototype.appendInterruption` and `JobStateStore.prototype.persist`)
-- [ ] Call `resetSignalHandlerFiredForTest()` in `beforeEach`/`afterEach` and `vi.restoreAllMocks()` in `afterEach`
+- [x] Write a parameterized test over `["SIGINT", "SIGTERM", "SIGHUP"]` that invokes `signalCleanup(signal)` on a `LocalRuntime` instance with mocked store, and asserts that `appendInterruption` is called with `{ signal: "<SIGNAME>", reason: "signal", type: "interruption" }`
+- [x] In the same parameterized loop, assert that `persist` is called with a state whose history entry's `message` field contains the signal name (e.g. `"Interrupted by SIGTERM"`)
+- [x] Assert that `reason: "signal"` is present and unchanged (backward-compat pin)
+- [x] Write a test that `registerCleanup` on `LocalRuntime` calls `process.on` with `"SIGHUP"` in addition to `"SIGINT"` and `"SIGTERM"` (use `vi.spyOn(process, "on")`)
+- [x] Write a test that `teardown` on `LocalRuntime` calls `process.off` with `"SIGHUP"` (use `vi.spyOn(process, "off")`)
+- [x] Prevent actual process termination in all tests: `vi.spyOn(process, "exit").mockImplementation(() => undefined as never)`
+- [x] Use the same mock-setup pattern as `signal-handler-order.test.ts` (set `currentSlug` and `workspace` on the runtime instance; spy on `JobStateStore.prototype.appendInterruption` and `JobStateStore.prototype.persist`)
+- [x] Call `resetSignalHandlerFiredForTest()` in `beforeEach`/`afterEach` and `vi.restoreAllMocks()` in `afterEach`
 
 **Acceptance Criteria**:
 - For each of SIGINT, SIGTERM, SIGHUP: `appendInterruption` receives `{ signal: "<SIGNAME>" }`
@@ -80,12 +80,12 @@ Create a new test file `src/core/runtime/__tests__/signal-name-in-interruption.t
 
 Extend the test file from T-04 (or add a new `describe` block in the same file) for `ManagedRuntime`.
 
-- [ ] Write a parameterized test over `["SIGINT", "SIGTERM", "SIGHUP"]` that invokes `signalCleanup(signal)` on a `ManagedRuntime` instance with mocked store, and asserts that the state passed to `store.persist` has a history entry whose `message` includes the signal name (e.g. `"Interrupted by SIGTERM"`)
-- [ ] Assert that `resumePoint.reason` is NOT the signal name (it remains `"Interrupted by signal"`)
-- [ ] Write a test that `registerCleanup` on `ManagedRuntime` calls `process.on` with `"SIGHUP"`
-- [ ] Write a test that `teardown` on `ManagedRuntime` calls `process.off` with `"SIGHUP"`
-- [ ] Mock `store.load` to return a valid running state; mock `store.persist` to capture calls; prevent `process.exit`
-- [ ] Look at the `ManagedRuntime` internals pattern (access `internals.signalCleanup` via `handle as unknown as ManagedCleanupInternals` cast, or invoke it directly from the mock)
+- [x] Write a parameterized test over `["SIGINT", "SIGTERM", "SIGHUP"]` that invokes `signalCleanup(signal)` on a `ManagedRuntime` instance with mocked store, and asserts that the state passed to `store.persist` has a history entry whose `message` includes the signal name (e.g. `"Interrupted by SIGTERM"`)
+- [x] Assert that `resumePoint.reason` is NOT the signal name (it remains `"Interrupted by signal"`)
+- [x] Write a test that `registerCleanup` on `ManagedRuntime` calls `process.on` with `"SIGHUP"`
+- [x] Write a test that `teardown` on `ManagedRuntime` calls `process.off` with `"SIGHUP"`
+- [x] Mock `store.load` to return a valid running state; mock `store.persist` to capture calls; prevent `process.exit`
+- [x] Look at the `ManagedRuntime` internals pattern (access `internals.signalCleanup` via `handle as unknown as ManagedCleanupInternals` cast, or invoke it directly from the mock)
 
 **Acceptance Criteria**:
 - For each of SIGINT, SIGTERM, SIGHUP: history entry `message` contains the signal name
@@ -99,8 +99,8 @@ Extend the test file from T-04 (or add a new `describe` block in the same file) 
 
 Run the verification commands in the repository root. This task is the final gate — no source changes should be needed if T-01 through T-05 are correctly implemented.
 
-- [ ] Run `bun run typecheck` and confirm zero type errors
-- [ ] Run `bun run test` and confirm all tests pass, including:
+- [x] Run `bun run typecheck` and confirm zero type errors
+- [x] Run `bun run test` and confirm all tests pass, including:
   - The new tests from T-04 and T-05
   - Existing `signal-handler-order.test.ts` (must pass unchanged)
   - Existing `exit-guard.test.ts` (must pass unchanged — `resumePoint.reason: "signal"` assertions are unaffected)

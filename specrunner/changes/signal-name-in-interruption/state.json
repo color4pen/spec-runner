@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
   "createdAt": "2026-08-20T14:27:40.099Z",
-  "updatedAt": "2026-08-20T15:03:29.977Z",
+  "updatedAt": "2026-08-20T15:04:30.372Z",
   "request": {
     "title": "interruption レコードにシグナル名を記録する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "implementer",
   "status": "running",
   "branch": "fix/signal-name-in-interruption-5ff912e4",
   "error": null,
@@ -68,7 +68,8 @@
     "53f4b40f5260d965b20ee1380beee750f835e948",
     "b9679ebb20263b99c70f050f2d2aed9bfdc41d99",
     "61c4a7bfc5c135ef2047251382110d30169c6898",
-    "bdec4cb225980c5bc80e43cb31213d711d03e101"
+    "bdec4cb225980c5bc80e43cb31213d711d03e101",
+    "8a8282e7d459bbd36401a7ee65d3bd76eee696b9"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -106,15 +107,20 @@
       "src/state/lifecycle.ts",
       "src/state/schema.ts",
       "src/state/schema/types.ts"
+    ],
+    "spec-fixer": [
+      "src/state/schema/types.ts",
+      "src/state/lifecycle.ts"
     ]
   },
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 3,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }
