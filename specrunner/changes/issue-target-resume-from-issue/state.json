@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
   "createdAt": "2026-08-20T09:24:35.898Z",
-  "updatedAt": "2026-08-20T10:46:17.453Z",
+  "updatedAt": "2026-08-20T10:56:03.237Z",
   "request": {
     "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/issue-target-resume-from-issue-5ca3d603",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,9 @@
     "c2f5e935ffcd96ebb854dbf7b4090ca9d71d7378",
     "a612ba9ea583e82f7e7e0267746eb62fcc604109",
     "fbe330eed3f7ae09d3ebe1b5600b83603d42f1b9",
-    "2e89b25f7411cd94c173d539bf08f349d73d0b09"
+    "2e89b25f7411cd94c173d539bf08f349d73d0b09",
+    "35e93cbce49f549adf96d779f35562d6bf959055",
+    "1c40edb8b962c46c919422437d53c404940e9946"
   ],
   "touchedFiles": {
     "request-review": [
@@ -150,12 +152,51 @@
       "src/git/checkpoint-ref.ts",
       "src/state/schema/types.ts",
       "tests/unit/architecture/arch-allowlist.ts"
+    ],
+    "code-fixer": [
+      "src/core/issue-target/__tests__/resume.test.ts",
+      "src/cli/__tests__/resume-from-issue.test.ts",
+      "src/core/issue-target/resume.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "35e93cbce49f549adf96d779f35562d6bf959055",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/issue-target-resume-from-issue/design.md:sha256:d31672d51ad10a3148fb0e60f903a5181edaeacd2a0a870831b12abb036c9e59|specrunner/changes/issue-target-resume-from-issue/request.md:sha256:354bcb41320aacfe7e34b3773cb3f7d483918c5914a6538074456b5f55a4736c|specrunner/changes/issue-target-resume-from-issue/spec.md:sha256:6196c4b835405643adaad5429aa733ad20b93dd34a2e7cced1e0450bd719485b|specrunner/changes/issue-target-resume-from-issue/tasks.md:sha256:af68560949495342478d466c83a75873e160968a3dc98c107b8fc17e6f03d1fd|specrunner/changes/issue-target-resume-from-issue/test-cases.md:sha256:ba2a2bf80c9e541c0fc4fb485c8d5b412d6eca263a3bda31a93dfa5c43378b41"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 55,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -164,7 +205,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
