@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
   "createdAt": "2026-08-20T09:24:35.898Z",
-  "updatedAt": "2026-08-20T11:19:12.498Z",
+  "updatedAt": "2026-08-20T11:31:34.739Z",
   "request": {
     "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "feat/issue-target-resume-from-issue-5ca3d603",
   "error": null,
@@ -85,7 +85,9 @@
     "71fe277ea0a8ea86671150fb4413bfd9058e528b",
     "4b021004038b5a2725ef8eb80c88ea79b51f424b",
     "b6e45c5c0d4211997c3b21f066982a445cf10dd2",
-    "85812aa4b29925cbcb218aa6254d202be49d40d9"
+    "85812aa4b29925cbcb218aa6254d202be49d40d9",
+    "baf07ec43dfc4646046106cd37cee9834a2ee578",
+    "43ee5774835c26b88acaa3644b0084ebd03f3222"
   ],
   "touchedFiles": {
     "request-review": [
@@ -172,6 +174,20 @@
       "src/core/issue-target/resume.ts",
       "tests/unit/adapter/github/github-client-dev-links.test.ts",
       "src/adapter/github/github-client.ts"
+    ],
+    "conformance": [
+      "src/core/issue-target/resume.ts",
+      "src/cli/resume-from-issue.ts",
+      "src/core/issue-target/__tests__/resume.test.ts",
+      "src/cli/__tests__/resume-from-issue.test.ts",
+      "tests/unit/adapter/github/github-client-dev-links.test.ts",
+      "src/errors.ts",
+      "src/adapter/github/github-client.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/cli/command-registry.ts",
+      "src/core/command/guide.ts",
+      "src/git/checkpoint-ref.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
     ]
   },
   "resumePoint": null,
@@ -215,7 +231,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 83,
+    "historyCount": 92,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -223,13 +239,14 @@
       "spec-review": 2,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 1,
       "code-fixer": 4,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
