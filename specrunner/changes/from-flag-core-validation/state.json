@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "69b8739a-e422-4fba-b00d-4f2b8e64e9af",
   "createdAt": "2026-08-20T11:53:43.777Z",
-  "updatedAt": "2026-08-20T12:38:49.623Z",
+  "updatedAt": "2026-08-20T12:44:39.836Z",
   "request": {
     "title": "--from の検証正本を core に一本化し CLI 静的 enum を撤去する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/from-flag-core-validation-69b8739a",
   "error": null,
   "pipelineId": "standard",
@@ -70,7 +70,9 @@
     "68b3316190876143d40f1cdb191e508662b49ebd",
     "963e1dfab87695239f7c1fcda1e5c7e19638f611",
     "094607b8dd15ac4baf16d2d6904d130bdc58e778",
-    "50f80d7c5ec25f9fd4ee05545e7b984c1f7dbde8"
+    "50f80d7c5ec25f9fd4ee05545e7b984c1f7dbde8",
+    "6e48757d0debef42a4a80e2d5bb96d46fe6821a4",
+    "1038b8b7cf2063c5e6afa9b6b4b4b4805a04b668"
   ],
   "touchedFiles": {
     "request-review": [
@@ -146,6 +148,16 @@
       "src/core/resume/resolve-request-path.ts",
       "src/core/resume/resolve-worktree-path.ts",
       "src/core/worktree/detection.ts"
+    ],
+    "conformance": [
+      "src/cli/command-registry.ts",
+      "src/core/command/resume.ts",
+      "src/core/command/reopen.ts",
+      "src/cli/__tests__/from-flag-no-enum.test.ts",
+      "src/core/command/__tests__/resume-from-exit-code.test.ts",
+      "src/core/command/__tests__/reopen-command.test.ts",
+      "tests/unit/cli/resume-help.test.ts",
+      "src/core/resume/resolve-step.ts"
     ]
   },
   "reviewerStatuses": [
@@ -177,8 +189,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1026",
+    "number": 1026,
+    "createdAt": "2026-08-20T12:44:38.376Z"
+  },
   "_journal": {
-    "historyCount": 45,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -186,12 +203,15 @@
       "spec-review": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
