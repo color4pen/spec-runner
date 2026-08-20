@@ -427,12 +427,17 @@ export class Pipeline {
       //
       // Conditions (all must be true to fire):
       //   1. outcome === "approved"
-      //   2. nextStep is a paired fixer
+      //   2. nextStep is a paired fixer (any fixer in loopFixerPairs values)
       //   3. fixer iteration budget >= effectiveMax for the paired reviewer
       //
-      // Action: replace nextStep with the clean approved transition (the approved row with
-      // no `when` guard that does NOT target a fixer step). If no clean transition is found,
-      // fall through to the existing fixer exhaustion check (fail-safe = traditional escalation).
+      // Action: replace nextStep with the unconditional approved row (t.when === undefined)
+      // that is NOT the budget-exhausted fixer and NOT "end" or "escalate".
+      // Exclusion is budgetSkippedFixer only — other steps that happen to appear in
+      // loopFixerPairs (e.g. implementer as verification's paired fixer) are valid
+      // unconditional targets and MUST NOT be excluded.
+      //
+      // If no unconditional approved row is found, fall through to the existing fixer
+      // exhaustion check (fail-safe = traditional escalation).
       //
       // T-04: Record the omission in history and emit pipeline:fixer:budget-skipped event.
       //
@@ -457,17 +462,19 @@ export class Pipeline {
           // implementer is entered as creator, not as verification's fixer) must
           // not be overturned by the verification-pair budget.
           if (currentStep === exhaustedReviewer && budget.getFixerIter(budgetSkippedFixer) >= effectiveMaxReroute) {
-            // Find the clean approved transition: target is not a fixer, and no when guard
-            // (or when guard passes). The clean row is the unconditional approved→next row
-            // produced by buildReviewerChainTransitions / buildParallelReviewerTransitions.
+            // Find the unconditional approved row (t.when === undefined).
+            // Exclude only: budgetSkippedFixer (the exhausted step), "end", "escalate".
+            // Do NOT exclude steps that appear in fixerNamesForReroute — implementer is
+            // a valid unconditional target for spec-review approved even though it also
+            // appears as verification's paired fixer in loopFixerPairs.
             const cleanTransition = this.transitions.find(
               (t) =>
                 t.step === currentStep &&
                 t.on === "approved" &&
-                !fixerNamesForReroute.has(t.to as string) &&
+                t.to !== budgetSkippedFixer &&
                 t.to !== "end" &&
                 t.to !== "escalate" &&
-                (!t.when || t.when(state)),
+                t.when === undefined,
             );
             if (cleanTransition !== undefined) {
               // T-04: Record the omission before re-routing

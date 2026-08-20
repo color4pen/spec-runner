@@ -1,0 +1,21 @@
+{
+  "requestHash": "sha256:047f53df4599230e0baa0e2e2b2baad003d7ff377f15313197612bd77923bce2",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/pipeline/types.ts:258 — { step: SPEC_REVIEW, on: 'approved', to: SPEC_FIXER, when: specReviewHasRoutableFixables }",
+    "src/core/pipeline/types.ts:260 — { step: SPEC_REVIEW, on: 'approved', to: IMPLEMENTER }",
+    "src/core/pipeline/types.ts:190-194 — LOOP_ERROR_CODES SPEC_REVIEW_RETRIES_EXHAUSTED",
+    "src/core/pipeline/pipeline.ts:452-502 — T-03 block",
+    "src/core/pipeline/pipeline.ts:453 — fixerNamesForReroute = new Set(Object.values(this.loopFixerPairs))",
+    "src/core/pipeline/pipeline.ts:457 — fixerNamesForReroute.has(nextStep) trigger check",
+    "src/core/pipeline/pipeline.ts:467 — currentStep === exhaustedReviewer guard",
+    "src/core/pipeline/pipeline.ts:471-479 — cleanTransition search with (!t.when || t.when(state))",
+    "src/core/pipeline/pipeline.ts:475 — !fixerNamesForReroute.has(t.to as string) exclusion",
+    "src/core/pipeline/pipeline.ts:483 — pipeline:fixer:budget-skipped event emit",
+    "src/core/pipeline/pipeline.ts:489-494 — warning history with 'proceeding to' text",
+    "src/core/pipeline/pipeline.ts:583-589 — fixer entry budget check (tryExhaust)",
+    "src/core/pipeline/registry.ts:62-67 — loopFixerPairs: code-review→code-fixer, spec-review→spec-fixer, verification→implementer",
+    "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts — TC-001/TC-014(skipped)/TC-016 exist, no spec-fixer reroute test"
+  ],
+  "sourceRevision": "44c26134e3d2bc82032bccd08804f6944ec55f68"
+}
