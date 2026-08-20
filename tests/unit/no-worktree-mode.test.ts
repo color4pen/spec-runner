@@ -873,4 +873,52 @@ describe("TC-012: setupWorkspace no-worktree — onFeatureBranchCreated callback
       .map((c) => String(c[0]));
     expect(stderrCalls.some((m) => m.includes("could not resolve HEAD OID"))).toBe(true);
   });
+
+  it("TC-012: onFeatureBranchCreated fires before bootstrap git-commit (ordering pin)", async () => {
+    const order: string[] = [];
+    const manager = buildMockManager();
+
+    // spawnFn records git-commit; returns TC012_OID for both rev-parse HEAD calls
+    const spawnFn: SpawnFn = vi.fn().mockImplementation(async (cmd: string, args: string[]) => {
+      if (cmd === "git" && args[0] === "status" && args[1] === "--porcelain") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "rev-parse" && args[1] === "HEAD") {
+        return { exitCode: 0, stdout: `${TC012_OID}\n`, stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "checkout" && args[1] === "-b") {
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      if (cmd === "git" && args[0] === "commit") {
+        order.push("git-commit");
+      }
+      return { exitCode: 0, stdout: "", stderr: "" };
+    }) as unknown as SpawnFn;
+
+    const githubClient = buildMockGitHubClient();
+    const runtime = new LocalRuntime({ cwd: tempDir, githubClient, manager, spawnFn });
+
+    const slug = "tc012-ordering";
+    const branchName = "change/tc012-ordering-abc12345";
+    const jobState = await makeJobState(slug);
+
+    const requestFile = path.join(tempDir, `${slug}.md`);
+    await fs.writeFile(requestFile, "# TC-012 Ordering Test\n");
+
+    const onFeatureBranchCreated = vi.fn().mockImplementation(async () => {
+      order.push("callback");
+    });
+
+    await runtime.setupWorkspace(slug, jobState.jobId, {
+      noWorktree: true,
+      branchName,
+      bootstrapState: jobState,
+      onFeatureBranchCreated,
+      requestFilePath: requestFile,
+    });
+
+    expect(order).toContain("callback");
+    expect(order).toContain("git-commit");
+    expect(order.indexOf("callback")).toBeLessThan(order.indexOf("git-commit"));
+  });
 });
