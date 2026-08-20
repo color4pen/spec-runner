@@ -10,22 +10,20 @@
  * This function performs NO I/O beyond the inputs it receives. It is pure in
  * the sense that it does not touch the filesystem, worktrees, or sidecars.
  *
- * Invariant (design.md §D3): all standard pipeline step reads() methods reference
- * only state and deps.slug — not config / request / cwd. The minimum StepDeps
- * constructed here (slug only) satisfies that contract.
+ * Verification is split into two layers (checkpoint-verification-policy-split/design.md):
+ *   - Generic integrity: journal / projection integrity, counter reversal, profile, request.md, identity
+ *   - Use-case policy: injected via CheckpointVerificationPolicy (defaults to attachResumePolicy)
  */
 import { composeSplitLayoutFromContent } from "../../store/job-state-projection.js";
-import { getPipelineDescriptor } from "../pipeline/registry.js";
-import { getPipelineId } from "../../state/pipeline-id.js";
 import { computePolicyDigest, SUPPORTED_PROFILE_SCHEMA_VERSION } from "../../state/profile.js";
 import { getJobSlug } from "../../state/job-slug.js";
-import { resolveResumeStep, buildAllowedStepSet } from "../resume/resolve-step.js";
 import { requestMdPath, slugEventsPath } from "../../util/paths.js";
 import { checkpointNotAttachableError } from "../../errors.js";
 import { fold } from "../../store/event-journal.js";
 import { detectCounterReversal } from "../../store/journal-integrity.js";
 import type { NormalizedJobState } from "../../store/job-state-projection.js";
-import type { StepDeps } from "../step/types.js";
+import { attachResumePolicy } from "./checkpoint-policy.js";
+import type { CheckpointVerificationPolicy } from "./checkpoint-policy.js";
 
 // ---------------------------------------------------------------------------
 // VerifiedCheckpoint
@@ -49,15 +47,17 @@ export interface VerifiedCheckpoint {
  * safe to attach. Returns a VerifiedCheckpoint on success; throws
  * checkpointNotAttachableError on any violation.
  *
- * Verification order (ADR-20260715 D2, design.md D3):
+ * Verification order (ADR-20260715 D2, design.md D3, checkpoint-verification-policy-split):
  *   (b-new) version 2: events.jsonl required in treeFiles
  *   (b)     journal / projection integrity via composeSplitLayoutFromContent
  *   (b-new) counter reversal: _journal counters vs fold counts
- *   (a)     status === "awaiting-resume" (quiescent — currently only awaiting-resume)
- *   (c)     resume point + pipeline definition resolvable
- *   (d-new) resume step reads() required file inputs present in treeFiles
+ *   (profile) profile self-consistency
+ *   [policy] use-case policy (default: attachResumePolicy — status / resumePoint / reads())
  *   (d)     request.md present in treeFiles
  *   (e)     repository / jobId / branch / slug identity match
+ *
+ * The policy parameter is injectable: passing a custom CheckpointVerificationPolicy
+ * replaces the attach-resume use-case checks without touching the generic integrity layer.
  *
  * @param input.slug          - Slug derived from the tree dir name.
  * @param input.stateJson     - Raw state.json string.
@@ -66,6 +66,7 @@ export interface VerifiedCheckpoint {
  * @param input.branch        - Branch name (without "origin/" prefix).
  * @param input.expectedRepo  - Repository identity to verify against.
  * @param input.checkpointOid - Immutable commit OID resolved once after fetch (D1/D2).
+ * @param policy              - Use-case verification policy (default: attachResumePolicy).
  */
 export async function verifyCheckpoint(input: {
   slug: string;
@@ -75,7 +76,7 @@ export async function verifyCheckpoint(input: {
   branch: string;
   expectedRepo: { owner: string; name: string };
   checkpointOid: string;
-}): Promise<VerifiedCheckpoint> {
+}, policy: CheckpointVerificationPolicy = attachResumePolicy): Promise<VerifiedCheckpoint> {
   const { slug, stateJson, eventsJsonl, treeFiles, branch, expectedRepo, checkpointOid } = input;
 
   // (b-new) version 2: events.jsonl is required in treeFiles.
@@ -168,74 +169,10 @@ export async function verifyCheckpoint(input: {
     }
   }
 
-  // (a) Status must be awaiting-resume (quiescent — currently only awaiting-resume is supported)
-  if (state.status !== "awaiting-resume") {
-    throw checkpointNotAttachableError(
-      "not-quiescent",
-      `state.status is '${state.status}', expected 'awaiting-resume'. Only awaiting-resume jobs can be attached.`,
-    );
-  }
-
-  // (c) Resume point + pipeline definition resolvable
-  let descriptor: ReturnType<typeof getPipelineDescriptor>;
-  try {
-    descriptor = getPipelineDescriptor(getPipelineId(state));
-  } catch (err: unknown) {
-    throw checkpointNotAttachableError(
-      "pipeline-unresolvable",
-      `Pipeline descriptor not found: ${err instanceof Error ? err.message : String(err)}`,
-    );
-  }
-
-  let resolvedStepName: string;
-  try {
-    resolvedStepName = resolveResumeStep(
-      undefined,
-      state.resumePoint ?? null,
-      state.step,
-      buildAllowedStepSet(state.reviewers),
-      state.reviewers,
-    );
-  } catch (err: unknown) {
-    throw checkpointNotAttachableError(
-      "resume-step-unresolvable",
-      `Cannot resolve resume step: ${err instanceof Error ? err.message : String(err)}`,
-    );
-  }
-
-  // (d-new) Resume step reads() tree-precheck: required file inputs must be in treeFiles.
-  // Skip dynamic steps (coordinator / regression-gate) not in the static descriptor set.
-  // Invariant: all standard pipeline step reads() reference only state + deps.slug
-  // (audited; config / request / cwd are not accessed).
-  const descriptorStepMap = new Map(descriptor.steps);
-  const resumeStep = descriptorStepMap.get(resolvedStepName);
-  if (resumeStep !== undefined && typeof resumeStep.reads === "function") {
-    const minDeps = { slug } as unknown as StepDeps;
-    let readsRefs: import("../step/types.js").IoRef[] = [];
-    try {
-      readsRefs = resumeStep.reads(state as import("../../state/schema.js").JobState, minDeps);
-    } catch (err: unknown) {
-      // reads() threw — scope unevaluable → fail-closed (scope-unevaluable → reject).
-      // Cannot prove the resume step's required inputs will be present in the checkpoint tree.
-      // Allowing attach when attachability cannot be proven creates a fail-open vulnerability
-      // (B-11: scope-unevaluable → reject). The operator must fix the checkpoint or step
-      // definition before attaching.
-      throw checkpointNotAttachableError(
-        "resume-reads-unevaluable",
-        `Cannot evaluate reads() for resume step '${resolvedStepName}': ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
-    for (const ref of readsRefs) {
-      if (ref.required !== false && ref.artifact !== "gitState") {
-        if (!treeFiles.includes(ref.path)) {
-          throw checkpointNotAttachableError(
-            "resume-input-missing",
-            `Resume step '${resolvedStepName}' requires '${ref.path}' but it is not present in the checkpoint tree.`,
-          );
-        }
-      }
-    }
-  }
+  // [policy] Use-case verification (default: attachResumePolicy).
+  // Runs after generic integrity and profile checks, before request.md and identity.
+  // The policy receives a minimal context: state, slug, treeFiles.
+  policy.verify({ state, slug, treeFiles });
 
   // (d) request.md must be present in treeFiles
   const requiredPath = requestMdPath(slug);
