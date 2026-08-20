@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
   "createdAt": "2026-08-20T14:27:40.099Z",
-  "updatedAt": "2026-08-20T15:04:30.372Z",
+  "updatedAt": "2026-08-20T15:21:38.312Z",
   "request": {
     "title": "interruption レコードにシグナル名を記録する",
     "type": "bug-fix",
@@ -69,7 +69,9 @@
     "b9679ebb20263b99c70f050f2d2aed9bfdc41d99",
     "61c4a7bfc5c135ef2047251382110d30169c6898",
     "bdec4cb225980c5bc80e43cb31213d711d03e101",
-    "8a8282e7d459bbd36401a7ee65d3bd76eee696b9"
+    "8a8282e7d459bbd36401a7ee65d3bd76eee696b9",
+    "13b7c0ff2ba4ff6fafa7affbe1fa2e05c89f4a0e",
+    "c8e8c33b3faecc3420d0df2c49a9f9e2967d8a7d"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -111,16 +113,32 @@
     "spec-fixer": [
       "src/state/schema/types.ts",
       "src/state/lifecycle.ts"
+    ],
+    "implementer": [
+      "src/store/event-journal.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/runtime/__tests__/signal-handler-order.test.ts",
+      "src/core/lifecycle/exit-guard.ts",
+      "src/store/job-state-store.ts",
+      "src/core/runtime/__tests__/managed-round-git.test.ts",
+      "src/state/lifecycle.ts",
+      "src/core/runtime/power-assertion.ts",
+      "src/state/schema/types.ts",
+      "src/core/runtime/__tests__/signal-name-in-interruption.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 38,
     "stepCounts": {
       "request-review": 3,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }

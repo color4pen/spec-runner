@@ -39,9 +39,17 @@ vi.mock("../../../src/core/command/request-new.js", () => ({ executeNew: vi.fn()
 let originalArgv: string[];
 let _exitSpy: ReturnType<typeof vi.spyOn>;
 let stderrSpy: ReturnType<typeof vi.spyOn>;
+// Preserve and clear env vars that affect resolveLogLevel so tests are environment-agnostic
+let originalDebug: string | undefined;
+let originalSpecrunnerLogLevel: string | undefined;
 
 beforeEach(() => {
   originalArgv = process.argv;
+  originalDebug = process.env["DEBUG"];
+  originalSpecrunnerLogLevel = process.env["SPECRUNNER_LOG_LEVEL"];
+  // Clear env vars that would override the default log level
+  delete process.env["DEBUG"];
+  delete process.env["SPECRUNNER_LOG_LEVEL"];
   vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
   _exitSpy = vi.spyOn(process, "exit").mockImplementation((code?: string | number | null) => {
@@ -51,6 +59,17 @@ beforeEach(() => {
 
 afterEach(() => {
   process.argv = originalArgv;
+  // Restore env vars
+  if (originalDebug !== undefined) {
+    process.env["DEBUG"] = originalDebug;
+  } else {
+    delete process.env["DEBUG"];
+  }
+  if (originalSpecrunnerLogLevel !== undefined) {
+    process.env["SPECRUNNER_LOG_LEVEL"] = originalSpecrunnerLogLevel;
+  } else {
+    delete process.env["SPECRUNNER_LOG_LEVEL"];
+  }
   vi.restoreAllMocks();
   vi.resetModules();
 });
