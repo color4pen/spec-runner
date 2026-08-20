@@ -60,8 +60,9 @@ each with `findingKey` computed from that step's own finding
 
 When `--wontfix` cannot be fully resolved, the command MUST exit with code 2 and MUST NOT record any
 disposition into `decisions` (all-or-nothing). Unresolvable cases include: `--wontfix-reason` missing or
-empty, the regression-gate has no StepRun, a number is out of range or non-integer, and a selected
-finding's fingerprint matches no step in the impl reviewer chain.
+empty, the regression-gate has no StepRun, a number is out of range or non-integer, the number list
+contains empty elements or duplicate indices, and a selected finding's fingerprint matches no step in
+the impl reviewer chain.
 
 Note: the regression-gate StepRun may report both fixable (regression) findings and decision-needed
 (contradiction) findings. Only fixable findings can be wontfix'd via `--wontfix`. If the operator

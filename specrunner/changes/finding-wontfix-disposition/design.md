@@ -115,7 +115,7 @@ record 時に、選択された各 finding の fingerprint（`file|line|title`�
 
 - `--wontfix` 指定時に `--wontfix-reason` が欠落 / 空。
 - regression-gate 未実行（`getLatestJudgeFindings` が null / 空）。
-- 番号が範囲外（< 1 または報告 finding 数超過）/ 整数でない。
+- 番号が範囲外（< 1 または報告 finding 数超過）/ 整数でない / 重複 / 空要素を含む。
 - 選択 finding の fingerprint が reviewerChain のどの step にも一致しない（逆引き不能）。
 
 全番号が解決できた場合のみ disposition record 群を生成し、`--prompt` の adjudication 追記と同じ書き込みで

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f8732c22-7cc4-4894-a62e-9f6e8a827e8a",
   "createdAt": "2026-08-20T13:01:11.201Z",
-  "updatedAt": "2026-08-20T13:32:31.624Z",
+  "updatedAt": "2026-08-20T13:39:57.551Z",
   "request": {
     "title": "fixable finding への operator 不採用裁定を decisions 台帳の一般化で機械尊重する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "change/finding-wontfix-disposition-f8732c22",
   "error": null,
@@ -68,7 +68,8 @@
     "481b6c798cb57252199b6d6b24b4bd9d7b741008",
     "d9f0eac9aec055ca370f008571e33a6421244c99",
     "3e7c385017ed905b3ee06396646515c1e4ebed44",
-    "753bd63136ec820df6f2ef65d3884195ef85408d"
+    "753bd63136ec820df6f2ef65d3884195ef85408d",
+    "39295e86121100ddfb5c31549e5cbc477181d277"
   ],
   "touchedFiles": {
     "request-review": [
@@ -104,19 +105,14 @@
       "src/state/schema/types.ts",
       "src/core/decision/decision-ledger.ts",
       "src/core/pipeline/findings-ledger.ts",
-      "src/core/step/step-completion.ts",
-      "src/core/step/fixer-helpers.ts",
-      "src/core/step/regression-gate.ts",
-      "src/core/command/resume.ts",
-      "src/cli/resume.ts",
-      "src/core/pipeline/reviewer-chain.ts",
-      "src/cli/command-registry.ts",
-      "src/core/inbox/planner.ts",
-      "src/core/pipeline/__tests__/findings-ledger.test.ts",
-      "src/core/step/judge-verdict.ts",
       "src/core/step/custom-reviewer-round-context.ts",
       "src/core/design-layer/topic-emission.ts",
-      "src/git/dynamic-context.ts"
+      "src/core/step/fixer-helpers.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/command/resume.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/inbox/planner.ts",
+      "src/core/step/regression-gate.ts"
     ],
     "spec-fixer": [
       "src/core/step/custom-reviewer-round-context.ts",
@@ -125,12 +121,12 @@
     ]
   },
   "_journal": {
-    "historyCount": 20,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1,
+      "spec-review": 2,
       "spec-fixer": 1
     }
   }
