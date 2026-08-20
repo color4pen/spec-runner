@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9dcf5a95-c9cb-4172-8b10-b6cf0119a795",
   "createdAt": "2026-08-20T05:14:24.721Z",
-  "updatedAt": "2026-08-20T05:32:54.069Z",
+  "updatedAt": "2026-08-20T05:35:30.299Z",
   "request": {
     "title": "spec-review loop の単一 fixer 化: test-case-gen を review loop から外す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/spec-review-loop-single-fixer-9dcf5a95",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "e96fdb7654e5705ce2a9782d75dac5cb5bb1006f",
     "d823e1ed3cb80b1c33c6283049e4eecc26173ce9",
-    "cda07e0079a0bfae80ef1e815848badec362d02c"
+    "cda07e0079a0bfae80ef1e815848badec362d02c",
+    "578a4f2f561977da4bc17f384243cf430138586a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -102,13 +103,15 @@
       "tests/pipeline-integration.test.ts",
       "src/core/pipeline/run.ts",
       "tests/unit/core/pipeline/registry-invariants.test.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
