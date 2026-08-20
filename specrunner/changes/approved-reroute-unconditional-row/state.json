@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d1946274-009d-439f-9aed-83ed558a4654",
   "createdAt": "2026-08-20T07:19:48.603Z",
-  "updatedAt": "2026-08-20T07:46:30.158Z",
+  "updatedAt": "2026-08-20T08:01:08.939Z",
   "request": {
     "title": "approved 温存 reroute の修正: fixer 全体除外をやめ同 verdict の unconditional row へ降りる",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "fix/approved-reroute-unconditional-row-d1946274",
   "error": null,
@@ -72,7 +72,9 @@
     "09c5c4b4c33d9b532aa365a4fa02dcff358b1b2f",
     "81e2f26f9690950738357b5e5528ab7a0e87883d",
     "4fcddc06955610ab77dd7b79450cca822a42b710",
-    "d8c2be3e2b201083507567f415a9680903fb98e1"
+    "d8c2be3e2b201083507567f415a9680903fb98e1",
+    "289cf81defd156633b5e453f3f372063afa0f4c9",
+    "1856ea99e2a861cdcf4abe645caa11e2cc5e2a73"
   ],
   "touchedFiles": {
     "request-review": [
@@ -105,10 +107,51 @@
     ],
     "implementer": [
       "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts"
+    ],
+    "code-review": [
+      "src/core/pipeline/pipeline.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/state/job-slug.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/pipeline/convergence-budget.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "289cf81defd156633b5e453f3f372063afa0f4c9",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/approved-reroute-unconditional-row/design.md:sha256:bc093d5e5e3f84d7bff4ae6e5c2479c448aba83efddefd39cd4d3cd966fbd499|specrunner/changes/approved-reroute-unconditional-row/request.md:sha256:047f53df4599230e0baa0e2e2b2baad003d7ff377f15313197612bd77923bce2|specrunner/changes/approved-reroute-unconditional-row/spec.md:sha256:5e3daf5be968dd231ad7f7f09d3563af6ab065a058a2e3e7ae52a61afe82a6ea|specrunner/changes/approved-reroute-unconditional-row/tasks.md:sha256:e1736a23bb44470676d0c23659bd0faaf9b582ed67ad3e873f79c7e0b8fb2c81|specrunner/changes/approved-reroute-unconditional-row/test-cases.md:sha256:f373c9341d26b10d1bc45cbca9f8fe207984b6c2b098166f5ad3ff242cebd2af"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -117,7 +160,11 @@
       "spec-fixer": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2
+      "verification": 2,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
