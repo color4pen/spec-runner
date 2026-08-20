@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9dcf5a95-c9cb-4172-8b10-b6cf0119a795",
   "createdAt": "2026-08-20T05:14:24.721Z",
-  "updatedAt": "2026-08-20T06:39:56.998Z",
+  "updatedAt": "2026-08-20T06:57:08.921Z",
   "request": {
     "title": "spec-review loop の単一 fixer 化: test-case-gen を review loop から外す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/spec-review-loop-single-fixer-9dcf5a95",
   "error": null,
@@ -75,7 +75,9 @@
     "a6ab6680a9fa7e978f670cb2c19c89e7983f6870",
     "a9d65b91ef5cc9e199a61d5761d3d98db80019ad",
     "abb7b745991d4d3bcc0f247e91f759825e501ffb",
-    "362dbb73e18a3f6a2447b2442a995e607c026a6c"
+    "362dbb73e18a3f6a2447b2442a995e607c026a6c",
+    "fcd4d5c76e549e7adbea2cf09cd1544421623850",
+    "218dbcd05bc4ac414000d0a4572af6777c5c66da"
   ],
   "touchedFiles": {
     "request-review": [
@@ -153,10 +155,47 @@
       "src/core/pipeline/types.ts",
       "tests/pipeline-integration.test.ts",
       "src/core/pipeline/pipeline.ts"
+    ],
+    "code-fixer": [
+      "tests/pipeline-integration.test.ts",
+      "tests/helpers/pipeline-mock-client.ts",
+      "src/prompts/spec-fixer-system.ts",
+      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
+      "tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "fcd4d5c76e549e7adbea2cf09cd1544421623850",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/spec-review-loop-single-fixer/design.md:sha256:8f94feae412da38144cc46e27038eaa2641c35725ab970f5312e0a949f6cf9e9|specrunner/changes/spec-review-loop-single-fixer/request.md:sha256:25c2394a5c98d9b44cd04664daa392dbae078536095fce524b4118d1492298d4|specrunner/changes/spec-review-loop-single-fixer/spec.md:sha256:f7cbfed8fe4da2b1b37b98c61af641ab67683cfab654e159ad9d91c857063182|specrunner/changes/spec-review-loop-single-fixer/tasks.md:sha256:e80f567ab7ea590cf4fcfd7201ec87b1be50793d16e82ee60b6b448e00ae3b94|specrunner/changes/spec-review-loop-single-fixer/test-cases.md:sha256:8bbd87fb8162e0754100dc4ef856c1971c4e766cb60862744ee28f313723d4b9"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 54,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -166,7 +205,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
