@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f8732c22-7cc4-4894-a62e-9f6e8a827e8a",
   "createdAt": "2026-08-20T13:01:11.201Z",
-  "updatedAt": "2026-08-20T14:49:35.471Z",
+  "updatedAt": "2026-08-20T14:56:19.832Z",
   "request": {
     "title": "fixable finding への operator 不採用裁定を decisions 台帳の一般化で機械尊重する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/finding-wontfix-disposition-f8732c22",
   "error": null,
@@ -80,7 +80,9 @@
     "9b1916d5d1bcb9ebfb294579d4518d33a22e07ad",
     "7e968a31d64538d4b8afdc5b26e0aff9cf24c79f",
     "df08f9b0d162e8cd995c5f4c16609fb2cf8e1feb",
-    "3c81beed32643cdab4281283892869009c433393"
+    "3c81beed32643cdab4281283892869009c433393",
+    "c73f4f357da66efedce8081c77709949fa5a8448",
+    "d1218bf38019b7a1dab8d48db5b120c8423303b4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -160,6 +162,22 @@
       "src/core/decision/wontfix.ts",
       "src/core/pipeline/reviewer-chain.ts",
       "src/core/pipeline/findings-ledger.ts"
+    ],
+    "conformance": [
+      "src/state/schema/types.ts",
+      "src/core/decision/wontfix.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/command/resume.ts",
+      "src/core/step/custom-reviewer-round-context.ts",
+      "src/core/design-layer/topic-emission.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/resume.ts",
+      "src/core/command/__tests__/resume-wontfix.test.ts",
+      "tests/unit/core/decision/wontfix.test.ts",
+      "src/core/pipeline/__tests__/findings-ledger.test.ts",
+      "tests/unit/core/decision/decision-ledger.test.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts"
     ]
   },
   "reviewerStatuses": [
@@ -202,7 +220,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 73,
+    "historyCount": 82,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -211,13 +229,14 @@
       "spec-fixer": 2,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 1,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "code-fixer": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
