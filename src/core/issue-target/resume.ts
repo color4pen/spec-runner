@@ -51,11 +51,11 @@ interface ResolveEscalationInput {
  */
 export async function resolveEscalationJobId(input: ResolveEscalationInput): Promise<string> {
   const { client, owner, repo, issueNumber } = input;
-  // NOTE: per-issue comments endpoint (GET /repos/{owner}/{repo}/issues/{number}/comments)
-  // ignores the `direction` query parameter — direction=desc returns the same ascending
-  // order as asc. Only the repository-level /issues/comments endpoint supports direction.
-  // Full pagination is therefore required. In practice, escalation issues have well under
-  // 100 comments (one API page), so the cost is O(1) API calls.
+  // ponytail: full pagination (O(⌈C/100⌉) calls) — the per-issue comments endpoint
+  // (GET /repos/{owner}/{repo}/issues/{number}/comments) ignores direction=desc; only
+  // the repository-level /issues/comments endpoint supports it. Early exit is therefore
+  // not possible. Upgrade path: switch to the repo-level endpoint with direction=desc +
+  // issue_number filter if escalation issues ever accumulate > 100 comments.
   const comments = await client.listIssueComments(owner, repo, issueNumber);
 
   // Collect comments that contain an escalation marker
