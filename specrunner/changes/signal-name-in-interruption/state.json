@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
   "createdAt": "2026-08-20T14:27:40.099Z",
-  "updatedAt": "2026-08-20T16:07:40.251Z",
+  "updatedAt": "2026-08-20T16:15:22.134Z",
   "request": {
     "title": "interruption レコードにシグナル名を記録する",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/signal-name-in-interruption-5ff912e4",
   "error": null,
   "pipelineId": "standard",
@@ -78,7 +78,9 @@
     "635fea35d9f1137cfd05b5b66172f74fb165480f",
     "677642be33a072424823c077500bdd7c74361b31",
     "13e52f1a7eb2b9908c31c34dc326b676858d5b2b",
-    "460504651ad87004dfd4a708ce009cde8d1cf428"
+    "460504651ad87004dfd4a708ce009cde8d1cf428",
+    "38a3f56dbb63c182b1677ab2a9c75df0f1348453",
+    "e5df0011e9091cabdfb62249fa6e9fea5ead5d7e"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -140,6 +142,14 @@
     ],
     "regression-gate": [
       "src/core/runtime/__tests__/signal-name-in-interruption.test.ts"
+    ],
+    "conformance": [
+      "src/store/event-journal.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/lifecycle/exit-guard.ts",
+      "src/core/runtime/__tests__/signal-name-in-interruption.test.ts",
+      "src/core/runtime/__tests__/signal-handler-order.test.ts"
     ]
   },
   "operatorAdjudications": [
@@ -180,8 +190,13 @@
       "canonHash": "specrunner/changes/signal-name-in-interruption/design.md:sha256:cd8618a69daf144fc358439726bdf004e4685707a4daed3cc110af7d3000970b|specrunner/changes/signal-name-in-interruption/request.md:sha256:bd6e0ba8c8327160885325d06a9d3757a317e5a964448814f723c0091858e951|specrunner/changes/signal-name-in-interruption/spec.md:sha256:cfb591c54ba55e25df57a111db44813e955be6b21b5fa8c0ee41338ffa5f81c5|specrunner/changes/signal-name-in-interruption/tasks.md:sha256:6b0300b0352e9f8dc9d6bb7e34e68fd373e909739281cb247f711e31f83da81a|specrunner/changes/signal-name-in-interruption/test-cases.md:sha256:4a12b0614dc13f40b78b14bd7d65dc1c754bf634f5ec38fd50d8263891d8228d"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1035",
+    "number": 1035,
+    "createdAt": "2026-08-20T16:15:21.233Z"
+  },
   "_journal": {
-    "historyCount": 73,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 3,
       "design": 1,
@@ -190,13 +205,16 @@
       "spec-fixer": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 2,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
