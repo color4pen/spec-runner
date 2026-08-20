@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
   "createdAt": "2026-08-20T09:24:35.898Z",
-  "updatedAt": "2026-08-20T11:13:09.656Z",
+  "updatedAt": "2026-08-20T11:15:42.756Z",
   "request": {
     "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/issue-target-resume-from-issue-5ca3d603",
   "error": null,
   "pipelineId": "standard",
@@ -83,7 +83,8 @@
     "a302a6ad502b63fce7aaec2c88160564f1fc059f",
     "f1d8c7c6230399d22f7e66c13e705ae44e0900ae",
     "71fe277ea0a8ea86671150fb4413bfd9058e528b",
-    "4b021004038b5a2725ef8eb80c88ea79b51f424b"
+    "4b021004038b5a2725ef8eb80c88ea79b51f424b",
+    "b6e45c5c0d4211997c3b21f066982a445cf10dd2"
   ],
   "touchedFiles": {
     "request-review": [
@@ -160,7 +161,8 @@
       "tests/unit/architecture/arch-allowlist.ts"
     ],
     "code-fixer": [
-      "src/core/issue-target/resume.ts"
+      "src/core/issue-target/resume.ts",
+      "src/adapter/github/github-client.ts"
     ],
     "regression-gate": [
       "src/core/issue-target/__tests__/resume.test.ts",
@@ -171,7 +173,11 @@
       "src/adapter/github/github-client.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "code-fixer escalated",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -212,7 +218,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 80,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -222,7 +228,7 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 3,
+      "code-fixer": 4,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
