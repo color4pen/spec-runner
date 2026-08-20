@@ -129,6 +129,7 @@ Do NOT modify src/core/attach/verify-checkpoint.ts generic layer, the archive or
       直接 `runArchive` へ（rebind せず）。`JOB_NOT_FOUND`（code 判定）のみ次段へ。
 - [ ] branch 解決 + rebind: `resolveArchiveBranchFromIssue(...)` → `runAttachVerification({ ..., policy: attachArchivePolicy })`
       → `LocalRuntime.setupWorkspace(verified.slug, verified.jobId, { attachCheckpoint: { branch, checkpointRef: checkpointOid }, baseBranch })`。
+      `baseBranch` は `verified.state.request.baseBranch ?? "main"` で導出する（resume-from-issue.ts と同パターン）。
       slug は `verified.slug` を採用する。
 - [ ] archive 実行接続: 両経路とも最後に `runArchive({ slug, withMerge: opts.withMerge, cwd: repoRoot, mergeWaitMs: opts.mergeWaitMs })`
       を呼んで exit code を返す。archive orchestrator 本体は触らない。

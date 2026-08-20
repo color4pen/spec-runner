@@ -90,13 +90,15 @@ typed ARCHIVE_FROM_ISSUE_NO_MARKER error.
 ### Requirement: closing-PR branch locator with four-field identity match
 
 The system SHALL locate the archive target branch by enumerating the issue's closing pull request
-references (GraphQL `closedByPullRequestsReferences`, exposing number and headRefName), fetching each
-candidate's checkpoint, and confirming identity via a four-field match: `state.jobId === jobId`,
-`state.issueNumber === issueNumber`, `state.branch === headRefName`, and
+references (GraphQL `closedByPullRequestsReferences(first: 50)`, exposing number and headRefName),
+fetching each candidate's checkpoint, and confirming identity via a four-field match:
+`state.jobId === jobId`, `state.issueNumber === issueNumber`, `state.branch === headRefName`, and
 `state.pullRequest.number === PR.number`. Exactly one confirmed candidate MUST be returned. Zero closing
 PRs MUST raise ARCHIVE_FROM_ISSUE_NO_PR. Zero or multiple confirmed candidates MUST raise
 ARCHIVE_FROM_ISSUE_UNCONFIRMED. Candidates that mismatch any field or whose checkpoint is unreadable MUST
-be skipped without blocking a valid match.
+be skipped without blocking a valid match. If the issue has more than 50 closing PRs, the query returns at
+most 50; any additional closing PRs are not evaluated, which may result in zero confirmed candidates and
+therefore ARCHIVE_FROM_ISSUE_UNCONFIRMED (fail-closed).
 
 #### Scenario: unique four-field match resolves the branch
 

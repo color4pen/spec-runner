@@ -345,7 +345,7 @@ Result section MUST appear at the very end as a YAML code block:
 **Priority**: must
 **Source**: tasks.md > T-10 / request.md 受け入れ基準
 
-`bun run test`（対象: `src/cli/__tests__/resume-from-issue.test.ts`、`src/core/issue-target/__tests__/resume.test.ts`、既存 attach / archive テスト群が無変更で全 pass すること。変更を要した場合は設計回帰とみなす）
+`bun run test`（対象: `src/cli/__tests__/resume-from-issue.test.ts`、`src/core/issue-target/__tests__/resume.test.ts`、既存 attach / archive テスト群が無変更で全 pass すること。「既存テスト」とは本 request の実装追加前から存在するテストファイルを指す（本 request が T-03/T-09/T-12 で新規追加するテストは含まない）。既存テストのいずれかで変更を要した場合は設計回帰とみなす）
 
 ---
 
