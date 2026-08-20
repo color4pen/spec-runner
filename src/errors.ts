@@ -28,6 +28,7 @@ const EXIT_CODE_MAP: Record<string, ExitCode> = {
   DESIGN_LAYER_CHECK_FAILED: EXIT_CODE.ARG_ERROR,
   SLUG_OCCUPIED: EXIT_CODE.ARG_ERROR,
   SLUG_STATE_UNREADABLE: EXIT_CODE.ARG_ERROR,
+  BASE_BRANCH_MISMATCH: EXIT_CODE.ARG_ERROR,
 };
 
 /**
@@ -131,6 +132,7 @@ export const ERROR_CODES = {
   SLUG_OCCUPIED: "SLUG_OCCUPIED",
   SLUG_STATE_UNREADABLE: "SLUG_STATE_UNREADABLE",
   SLUG_OCCUPANCY_AMBIGUOUS: "SLUG_OCCUPANCY_AMBIGUOUS",
+  BASE_BRANCH_MISMATCH: "BASE_BRANCH_MISMATCH",
   /**
    * Entrance fidelity gate: issue requirements not present in request requirements
    * or scope-out declarations (undeclared drop). Job is halted as awaiting-resume.
@@ -532,6 +534,22 @@ export function stagedBytesLimitExceededError(
     `Step '${stepName}' on branch '${branch}': staged byte size limit exceeded. ` +
     `${totalBytes} bytes exceed the limit of ${limitBytes}.\n` +
     `Top directories by size:\n${dirList}`,
+  );
+}
+
+/**
+ * Factory for BASE_BRANCH_MISMATCH: current branch does not match request base-branch.
+ * Used by --from-issue guard before draft creation and job state creation.
+ *
+ * @param current - current branch name, or null for detached HEAD
+ * @param baseBranch - expected base-branch from request.md
+ */
+export function baseBranchMismatchError(current: string | null, baseBranch: string): SpecRunnerError {
+  const currentLabel = current === null ? "(detached HEAD)" : `"${current}"`;
+  return new SpecRunnerError(
+    ERROR_CODES.BASE_BRANCH_MISMATCH,
+    `Switch to branch "${baseBranch}" before running --from-issue, or update the request base-branch.`,
+    `current branch ${currentLabel} does not match request base-branch "${baseBranch}"`,
   );
 }
 
