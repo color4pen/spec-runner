@@ -1,0 +1,18 @@
+{
+  "requestHash": "sha256:8a3c727c5571c77f4e46cd6d82a8059988327c04df096af861afbd0d86c4c17b",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/archive/merge-then-archive.ts:186-199 — listWithSourceDirs + slug/pullRequest.number exit-2 guards",
+    "src/core/attach/checkpoint-policy.ts:45-111 — attachResumePolicy: awaiting-resume check, resumePoint, pipeline, reads()",
+    "src/core/attach/verify-checkpoint.ts:71-79 — verifyCheckpoint policy injection parameter",
+    "src/cli/attach.ts:161-163 — fixed next-step hint: job resume <slug>",
+    "src/cli/resume-from-issue.ts:110-207 — escalation marker → jobId → local short-circuit → branch resolution → rebind → resume",
+    "src/core/issue-target/resume.ts:52-77 — resolveEscalationJobId scans kind=escalation markers only",
+    "src/core/issue-target/resume.ts:119-206 — resolveResumeBranchFromIssue via listIssueLinkedBranches + 3-field match",
+    "src/core/notify/issue-notifier.ts:103-107 — buildMarker(kind: escalation|completed, jobId)",
+    "src/core/notify/issue-notifier.ts:215-226 — buildCompletionComment: kind=completed marker + PR URL + archive hint",
+    "src/core/runtime/local.ts:487-494 — setupWorkspace attachCheckpoint path, status-independent",
+    "src/cli/command-registry.ts:1314-1324 — archive command: args slug required:true"
+  ],
+  "sourceRevision": "04a3123e4bad2fdefb9c57ccac347f264f08a162"
+}
