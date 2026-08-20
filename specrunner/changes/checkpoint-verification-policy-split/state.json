@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1875919e-d9f4-4db8-8abe-33e24f96cfb9",
   "createdAt": "2026-08-20T03:41:04.851Z",
-  "updatedAt": "2026-08-20T04:14:21.919Z",
+  "updatedAt": "2026-08-20T04:14:46.346Z",
   "request": {
     "title": "checkpoint 検証の分離: generic integrity と use-case policy の二層化",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "implementer",
   "status": "running",
   "branch": "refactor/checkpoint-verification-policy-split-1875919e",
   "error": null,
@@ -72,7 +72,8 @@
     "3100a1814995fe014df66bd7b2a58827dc362395",
     "27da7b71a43eaea898b1c86119546a8d7a0b09f2",
     "c4ff2baed091d2ff5dd434d7274479879b5dd5ad",
-    "45d090569abf165dfeff9b564d37cb1ad68d8a6d"
+    "45d090569abf165dfeff9b564d37cb1ad68d8a6d",
+    "bd534348186ca3349557350ddc8fdd36541e8579"
   ],
   "touchedFiles": {
     "request-review": [
@@ -107,13 +108,13 @@
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 33,
+    "historyCount": 36,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
       "spec-review": 3,
-      "spec-fixer": 1
+      "spec-fixer": 2
     }
   }
 }
