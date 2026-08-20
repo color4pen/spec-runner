@@ -15,13 +15,17 @@
       重複を除いた `string[]` を返す。リンク不在は `[]`。
 - [ ] fail-closed: 非 2xx / GraphQL `errors` 非空は `githubApiError(...)` を throw
       （`createLinkedBranch` と同一方針。黙って `[]` に落とさない）。
-- [ ] `issue` が null（存在しない）の場合の扱いを決めて実装する（`githubApiError` を提案）。
+- [ ] `issue` が null（存在しない issue 番号。GraphQL は HTTP 200 + `repository.issue: null` を
+      返す）の場合は `githubApiError(...)` を throw する（黙って `[]` に落とすと「リンク 0 件」の
+      誤ったエラー文言に誘導されるため）。
 
 **Acceptance Criteria**:
 - linked branch 形（`linkedBranches` に ref）と linked PR head 形
   （`closedByPullRequestsReferences` に headRefName）の双方が候補として返ることが
   テストで pin される（両形が union・重複除去される）。
 - 非 2xx / GraphQL errors 非空で `GITHUB_API_ERROR` が throw されることがテストで pin される。
+- 存在しない issue（HTTP 200 + `repository.issue: null`）で `GITHUB_API_ERROR` が throw される
+  ことがテストで pin される（空リンク `[]` と区別される）。
 - GraphQL endpoint が github.com / GHES で正しく導出される（既存 `graphqlEndpoint` を使用）。
 - `GitHubClient` port（`src/kernel/github-client.ts`）の interface は無変更で、既存の
   `: GitHubClient` typed mock が typecheck を通り続ける。
@@ -51,10 +55,13 @@
         `specrunner job attach --branch <branch>` → `job resume` の手動経路を案内する（D6）。
       - `resumeFromIssueUnconfirmedError(detail)`: 何が照合に失敗したか（jobId / issueNumber /
         branch の不一致、複数一致、候補 branch 名）を message に含める。
-- [ ] exit code を `EXIT_CODE_MAP` に登録する（Open Question: `ARG_ERROR`(2) を提案）。
+- [ ] 3 コードすべて exit code `ARG_ERROR`(2) として `EXIT_CODE_MAP` に登録する
+      （`BASE_BRANCH_MISMATCH` → `ARG_ERROR` の先例と同方針。実装者の裁量に委ねない）。
 
 **Acceptance Criteria**:
 - 3 コードが `ERROR_CODES` に存在し、各 factory が対応する `code` を持つ error を返す。
+- 3 コードの exit code が `ARG_ERROR`(2) で `EXIT_CODE_MAP` に登録されていることがテストで
+  pin される。
 - `error-codes.test.ts`（特定コードの有無のみ検査）が無改変で green。
 
 ## T-04: issue-target resume face（core resolver）を実装する
