@@ -14,7 +14,7 @@ import { computeFindingKey } from "./decision-ledger.js";
 import { getLatestJudgeFindings } from "../step/fixer-helpers.js";
 import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import { deriveImplReviewerChain } from "../pipeline/reviewer-chain.js";
-import { findingFingerprint, collectFindingsLedger } from "../pipeline/findings-ledger.js";
+import { findingFingerprint } from "../pipeline/findings-ledger.js";
 import { collectFixableFindings } from "../step/judge-verdict.js";
 
 export type WontfixResolveResult =
