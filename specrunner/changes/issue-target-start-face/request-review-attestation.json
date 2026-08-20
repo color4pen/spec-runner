@@ -1,0 +1,22 @@
+{
+  "requestHash": "sha256:0993a422d42774193877a5812efc8987e074def7a6f5b6c0648e162e70b352e3",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/job/start-from-issue.ts: materializeDraftAndStart function exists",
+    "src/core/job/start-from-issue.ts:31: await import(\"../../cli/run.js\") dynamic import",
+    "src/core/inbox/run-inbox.ts:396: dynamic import of start-from-issue.js in startJob effect",
+    "src/core/pr-create/body-template.ts:75: Fixes #${jobState.issueNumber}",
+    "src/core/command/pipeline-run.ts:174-175: getBranchPrefix + slug + jobId.slice(0,8) inline template",
+    "src/core/runtime/local.ts:478-479: const baseBranch = opts?.baseBranch ?? \"main\" and const remoteBaseRef = `origin/${baseBranch}`",
+    "src/adapter/github/github-client.ts: REST-only, no GraphQL implementation",
+    "src/kernel/github-client.ts: GitHubClient.getIssue() returns { number, title, body } — no node_id",
+    "src/config/type-config.ts:86: getBranchPrefix function exists (shared function for prefix only, not full builder)",
+    "src/core/step/design.ts:151: same inline branch name pattern (second site)",
+    "src/core/step/commit-orchestrator.ts:403-404: same inline branch name pattern (third site)",
+    "tests/unit/architecture/module-boundary.test.ts: only checks src/core/request/ for cli/ imports",
+    "tests/unit/architecture/core-invariants.test.ts B-1: checks adapter/ imports only, not cli/",
+    "src/core/job/__tests__/start-from-issue.test.ts: vi.mock(\"../../../cli/run.js\") and asserts runRunCore called",
+    "src/cli/__tests__/from-issue.test.ts: vi.mock(\"../../core/job/start-from-issue.js\") pins materializeDraftAndStart import path"
+  ],
+  "sourceRevision": "44c26134e3d2bc82032bccd08804f6944ec55f68"
+}
