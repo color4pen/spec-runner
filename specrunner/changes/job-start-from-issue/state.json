@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T03:24:44.729Z",
+  "updatedAt": "2026-08-20T03:27:36.620Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
   "pipelineId": "standard",
@@ -69,7 +69,9 @@
     "bc1118f68f3c79fc5480b96d9721f7eb74c2186c",
     "33de9f2a81b74260944fa51b8194c3eb4a0910ee",
     "02a5f781fa73cc645f6d42d6ace1c7fd85971e06",
-    "ff7afd7f6ae64aff6b87d717cbf1f1c5ec0ec261"
+    "ff7afd7f6ae64aff6b87d717cbf1f1c5ec0ec261",
+    "5a11247a817535fbab59f57d40dd46fb99b0d3a0",
+    "e5ef3646217d107bf2f9b6f1cfd6702f3920c764"
   ],
   "touchedFiles": {
     "request-review": [
@@ -122,11 +124,7 @@
     ],
     "spec-fixer": []
   },
-  "resumePoint": {
-    "step": "spec-review",
-    "reason": "spec-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -136,7 +134,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
