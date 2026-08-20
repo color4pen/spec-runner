@@ -24,7 +24,7 @@ resume は「既にあるものへ戻る」操作である。**issue 本文は�
 - `src/core/notify/issue-notifier.ts:78-82` — escalation 通知コメントは機械可読 marker `<!-- specrunner:notification kind="escalation" jobId="<jobId>" version="1" -->` を含み、full jobId を持つ。marker は HTML コメントにすぎず、それ単独では issue → job binding の真正性を保証しない。
 - GitHub の Development リンク参照（2026-08-20 に GraphQL introspection で確認）: `issue.linkedBranches` と `issue.closedByPullRequestsReferences`（closing keyword でリンクされた PR）。GitHub 仕様上、linked branch から PR が作られると Development 表示は branch から PR に置き換わるため、**両方を解決する必要がある**。PR 側のリンクは `src/core/pr-create/body-template.ts:75` の `Fixes #<issueNumber>` により現行実装で既に成立している。
 - **外部 API の変更可能性**: GitHub の linked branch（Development リンク）機能は Public Preview であり、GitHub 自身が変更可能性を明記している。本 request は Development リンクを **optional な index** としてのみ扱い、identity の正本には使わない（正本は checkpoint）。
-- `src/state/schema/types.ts:412` — `JobState.branch: string | null`。checkpoint 内の state は自分の branch 名と `issueNumber`（同 :476）を持つ。
+- `src/state/schema/types.ts:412` — `JobState.branch: string | null`。checkpoint 内の state は自分の branch 名と `issueNumber`（同 :458）を持つ。
 - `src/adapter/github/github-client.ts` — 現行 client は REST（fetch ベース）のみ。GraphQL 参照は同じ fetch で `/graphql` へ POST する形で追加可能。
 
 ## 要求
