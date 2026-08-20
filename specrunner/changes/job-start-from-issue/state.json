@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T03:17:47.784Z",
+  "updatedAt": "2026-08-20T03:20:01.277Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
@@ -67,7 +67,8 @@
     "5c992764a3d48add52f310aec1f138c42a6f10c2",
     "bbbbfc1fffa1ab044b13ba97038a5f0beca349d2",
     "bc1118f68f3c79fc5480b96d9721f7eb74c2186c",
-    "33de9f2a81b74260944fa51b8194c3eb4a0910ee"
+    "33de9f2a81b74260944fa51b8194c3eb4a0910ee",
+    "02a5f781fa73cc645f6d42d6ace1c7fd85971e06"
   ],
   "touchedFiles": {
     "request-review": [
@@ -125,7 +126,8 @@
       "src/parser/rules/index.ts",
       "bin/specrunner.ts",
       "src/cli/flag-parser.ts"
-    ]
+    ],
+    "spec-fixer": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -137,12 +139,13 @@
     }
   ],
   "_journal": {
-    "historyCount": 17,
+    "historyCount": 21,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }
