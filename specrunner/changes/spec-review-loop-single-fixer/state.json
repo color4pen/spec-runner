@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9dcf5a95-c9cb-4172-8b10-b6cf0119a795",
   "createdAt": "2026-08-20T05:14:24.721Z",
-  "updatedAt": "2026-08-20T05:50:44.636Z",
+  "updatedAt": "2026-08-20T06:02:56.031Z",
   "request": {
     "title": "spec-review loop の単一 fixer 化: test-case-gen を review loop から外す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "change/spec-review-loop-single-fixer-9dcf5a95",
   "error": null,
@@ -68,7 +68,8 @@
     "578a4f2f561977da4bc17f384243cf430138586a",
     "e368bade936a98b97df6303ec136a4b34b467cc2",
     "637ceda92bcb7ef59fd15bffbda51305d0fe5662",
-    "1e70769484d822c380855a73b0cf6f60919064a5"
+    "1e70769484d822c380855a73b0cf6f60919064a5",
+    "9eb90475503ba745fe1cbed347ccf4ea6e9821e1"
   ],
   "touchedFiles": {
     "request-review": [
@@ -112,20 +113,25 @@
       "src/core/step/canon-write-scope.ts",
       "src/core/step/canon-escalation.ts",
       "src/core/pipeline/spec-observation.ts",
-      "src/core/pipeline/types.ts",
-      "src/core/pipeline/registry.ts",
+      "src/prompts/rules.ts",
       "src/core/step/spec-fixer.ts",
       "src/core/step/judge-verdict.ts",
-      "src/core/step/step-completion.ts",
-      "src/core/pipeline/pipeline.ts",
-      "src/core/step/test-case-gen.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/registry.ts",
       "src/prompts/spec-fixer-system.ts",
-      "src/prompts/rules.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/pipeline/run.ts",
       "tests/unit/core/pipeline/registry-invariants.test.ts",
       "tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts",
-      "src/core/pipeline/run.ts",
-      "src/core/pipeline/__tests__/standard-transitions.test.ts",
-      "src/core/step/__tests__/spec-review-fixer-routing.test.ts"
+      "tests/unit/pipeline/transition-when.test.ts",
+      "tests/unit/core/pipeline/test-case-gen-design-phase.test.ts",
+      "tests/unit/core/pipeline/pipeline.transitions.test.ts",
+      "tests/unit/core/pipeline/spec-observation-autofix.test.ts",
+      "tests/unit/core/step/canon-write-scope.test.ts",
+      "tests/pipeline-integration.test.ts",
+      "src/core/pipeline/__tests__/standard-transitions.test.ts"
     ],
     "spec-fixer": [
       "src/core/step/__tests__/spec-review-fixer-routing.test.ts",
@@ -134,12 +140,12 @@
     ]
   },
   "_journal": {
-    "historyCount": 23,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
-      "spec-review": 1,
+      "spec-review": 2,
       "spec-fixer": 1
     }
   }

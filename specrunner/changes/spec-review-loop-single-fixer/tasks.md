@@ -103,15 +103,19 @@
   - TC-006（request.md escalation）は不変で green を確認。
 - [ ] `tests/unit/core/pipeline/spec-observation-autofix.test.ts`:
   - TC-009 / TC-010（448-599行付近）: `spec-fixer → test-case-gen`（`specFixerNeedsFixForward`）前提の pin を「spec-fixer approved(needs-fix path) → spec-review（unconditional）」に更新。`specFixerNeedsFixForward` 参照を除去。
+  - TC-029（1510行）`STANDARD_TRANSITIONS.length === 47` を `45` に更新（T-04 で 2 transition 削除: SPEC_REVIEW→TEST_CASE_GEN / SPEC_FIXER→TEST_CASE_GEN）。コメントも「-2 rows: spec-review-loop-single-fixer」旨を追記。
   - TC-015（FAST に test-case-gen 行なし）は不変で green を確認。
 - [ ] `tests/unit/core/pipeline/test-case-gen-design-phase.test.ts`:
   - `specReviewNeedsFixIsTcOnly` 依存 pin（TC-008 / TC-028 等）: 述語削除に伴い削除。
   - `specFixerNeedsFixForward` 依存 pin（TC-009 系 / TC-022 等）: 削除または「→ spec-review」へ更新。
   - TC-017（test-cases.md fixable → needs-fix）: 「low/medium → approved、high/critical → needs-fix」へ更新。
   - TC-019（承認後 test-cases.md finding の operator 保護）: 「spec-fixer targeted 修正で保護（再生成しない）」へ更新。
+  - TC-026（1411行）`STANDARD_TRANSITIONS.length === 47` を `45` に更新（T-04 で 2 transition 削除）。コメントも対応して修正。
   - `SPEC_FIXER → TEST_CASE_GEN` transition を探す pin（550/561/595/777行付近）: 削除。
   - 不変で残す: TC-002（DESIGN→TEST_CASE_GEN→SPEC_REVIEW）、TC-012/TC-013（spec-review reads の test-cases.md）、TC-014/TC-015（prompts）、TC-016（test-case-gen writes test-cases.md）。
-- [ ] `tests/unit/pipeline/transition-when.test.ts`: `specReviewNeedsFixIsTcOnly` / `specFixerNeedsFixForward` / 削除 transition を参照する assertion を除去・更新する。
+- [ ] `tests/unit/pipeline/transition-when.test.ts`: `specReviewNeedsFixIsTcOnly` / `specFixerNeedsFixForward` / 削除 transition を参照する assertion を除去・更新する。TC-WHEN-02（199行）の `STANDARD_TRANSITIONS.length === 47` を `45` に更新し、コメント内の「+3 test-case-gen design-phase rows」から削除対象 2 行（spec-review needs-fix→test-case-gen / spec-fixer approved→test-case-gen）の差し引きを反映する。
+- [ ] `tests/unit/core/pipeline/pipeline.transitions.test.ts`:
+  - TC-030（277行）`STANDARD_TRANSITIONS.length === 47` を `45` に更新（T-04 で SPEC_REVIEW→TEST_CASE_GEN と SPEC_FIXER→TEST_CASE_GEN の 2 行を削除）。コメントを「-2 rows: spec-review-loop-single-fixer removes SPEC_REVIEW→TEST_CASE_GEN and SPEC_FIXER→TEST_CASE_GEN」旨に更新する。
 - [ ] `src/core/step/__tests__/spec-review-fixer-routing.test.ts`:
   - `makeCanonScope()`（108行）の `"spec-fixer"` エントリに `TEST_CASES_MD` を追加する（`new Set<string>([SPEC_MD, DESIGN_MD, TASKS_MD])` → `new Set<string>([SPEC_MD, DESIGN_MD, TASKS_MD, TEST_CASES_MD])`）。T-01 後の実 `writableByFixer` と一致させるため必須。
   - TC-013「fixable finding on test-cases.md (routable to test-case-gen) → needs-fix」（949行）: medium test-cases.md finding の verdict 期待を `"needs-fix"` から `"approved"`（observation auto-fix fall-through）に変更し、test 名を新挙動に合わせて更新する。
