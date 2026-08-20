@@ -12,7 +12,7 @@
  * TC-024: spoofed escalation marker with mismatched checkpoint is rejected
  * TC-025: unreadable candidate branches are skipped without blocking a match
  */
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   resolveEscalationJobId,
   resolveResumeBranchFromIssue,

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
   "createdAt": "2026-08-20T09:24:35.898Z",
-  "updatedAt": "2026-08-20T10:02:05.029Z",
+  "updatedAt": "2026-08-20T10:34:11.542Z",
   "request": {
     "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
     "type": "new-feature",
@@ -70,7 +70,9 @@
     "ec7e2408b8103e407acdeb32c2da66004e9e322d",
     "07e07f530a7a1e01c04c0aa179817e71aed3b5ae",
     "ffebb88555a842eb43049ae6c5bc8c689b696f81",
-    "c221ccabd99db292a968319424db4579a0f331ff"
+    "c221ccabd99db292a968319424db4579a0f331ff",
+    "f1a599437c2d160a268008ff578acc267f97d289",
+    "c2f5e935ffcd96ebb854dbf7b4090ca9d71d7378"
   ],
   "touchedFiles": {
     "request-review": [
@@ -127,17 +129,57 @@
       "src/core/attach/orchestrator.ts",
       "src/core/attach/verify-checkpoint.ts",
       "src/core/attach/checkpoint-policy.ts"
+    ],
+    "implementer": [
+      "src/adapter/github/github-client.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/errors.ts",
+      "src/cli/from-issue.ts",
+      "src/cli/resume.ts",
+      "src/cli/command-registry.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/cli/attach.ts",
+      "src/core/command/guide.ts",
+      "src/core/port/github-client.ts",
+      "src/kernel/github-client.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/error-codes.test.ts",
+      "src/git/checkpoint-ref.ts",
+      "src/state/schema/types.ts",
+      "src/state/job-slug.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/command/detach.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/cli/__tests__/command-registry-resume.test.ts",
+      "tests/unit/adapter/github/github-client-graphql.test.ts",
+      "src/core/issue-target/resume.ts",
+      "src/git/transport-auth.ts",
+      "src/cli/resume-from-issue.ts",
+      "src/store/job-state-store.ts",
+      "tests/unit/adapter/github/github-client-dev-links.test.ts",
+      "src/core/issue-target/__tests__/resume.test.ts",
+      "src/cli/__tests__/resume-from-issue.test.ts",
+      "tests/unit/cli/specrunner-resume-dispatch.test.ts",
+      "bin/specrunner.ts",
+      "tests/unit/cli/help-flag-dispatch.test.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 22,
+    "historyCount": 33,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 2
+      "spec-review": 2,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
