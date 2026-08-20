@@ -4,18 +4,18 @@
 
 ## T-01: Development リンク列挙を GraphQL adapter に追加する
 
-- [ ] `src/adapter/github/github-client.ts` の `GitHubApiClient` に public メソッド
+- [x] `src/adapter/github/github-client.ts` の `GitHubApiClient` に public メソッド
       `listIssueLinkedBranches(owner: string, repo: string, issueNumber: number): Promise<string[]>`
       を追加する（`GitHubClient` port の shape は変更しない — D2）。
-- [ ] 既存の `graphqlEndpoint()` と `request()` を再利用し、issue **番号**で 1 クエリ発行:
+- [x] 既存の `graphqlEndpoint()` と `request()` を再利用し、issue **番号**で 1 クエリ発行:
       `repository(owner,name){ issue(number){ linkedBranches(first:50){ nodes{ ref{ name } } }
       closedByPullRequestsReferences(first:50){ nodes{ headRefName } } } }`
       （node ID を得るための `getIssue` は呼ばない — D5）。
-- [ ] `linkedBranches` の ref 名と `closedByPullRequestsReferences` の head 名を union し、
+- [x] `linkedBranches` の ref 名と `closedByPullRequestsReferences` の head 名を union し、
       重複を除いた `string[]` を返す。リンク不在は `[]`。
-- [ ] fail-closed: 非 2xx / GraphQL `errors` 非空は `githubApiError(...)` を throw
+- [x] fail-closed: 非 2xx / GraphQL `errors` 非空は `githubApiError(...)` を throw
       （`createLinkedBranch` と同一方針。黙って `[]` に落とさない）。
-- [ ] `issue` が null（存在しない issue 番号。GraphQL は HTTP 200 + `repository.issue: null` を
+- [x] `issue` が null（存在しない issue 番号。GraphQL は HTTP 200 + `repository.issue: null` を
       返す）の場合は `githubApiError(...)` を throw する（黙って `[]` に落とすと「リンク 0 件」の
       誤ったエラー文言に誘導されるため）。
 
@@ -32,12 +32,12 @@
 
 ## T-02: escalation marker から jobId を抽出する純関数を追加する
 
-- [ ] `src/core/notify/issue-notifier.ts` に純関数
+- [x] `src/core/notify/issue-notifier.ts` に純関数
       `parseEscalationJobId(body: string): string | null` を追加する。
-- [ ] `buildMarker("escalation", jobId)` が生成する marker format
+- [x] `buildMarker("escalation", jobId)` が生成する marker format
       `<!-- specrunner:notification kind="escalation" jobId="<jobId>" version="1" -->`
       の逆で jobId を抽出する（format は変更しない — スコープ外）。marker 不在は `null`。
-- [ ] 抽出は `buildMarker` と同一の format 定義に結び付け、format 変更時に両者が乖離しない
+- [x] 抽出は `buildMarker` と同一の format 定義に結び付け、format 変更時に両者が乖離しない
       ようにする（正規表現は marker の literal 構造に対応させる）。
 
 **Acceptance Criteria**:
@@ -47,15 +47,15 @@
 
 ## T-03: 3 種の fail-closed typed error を追加する
 
-- [ ] `src/errors.ts` の `ERROR_CODES` に追加: `RESUME_FROM_ISSUE_NO_MARKER` /
+- [x] `src/errors.ts` の `ERROR_CODES` に追加: `RESUME_FROM_ISSUE_NO_MARKER` /
       `RESUME_FROM_ISSUE_NO_LINK` / `RESUME_FROM_ISSUE_UNCONFIRMED`（D8）。
-- [ ] factory を追加:
+- [x] factory を追加:
       - `resumeFromIssueNoMarkerError(issueNumber)`: 「issue #n に再開可能な escalation が無い」。
       - `resumeFromIssueNoLinkError(issueNumber)`: Development リンク 0 件。hint で
         `specrunner job attach --branch <branch>` → `job resume` の手動経路を案内する（D6）。
       - `resumeFromIssueUnconfirmedError(detail)`: 何が照合に失敗したか（jobId / issueNumber /
         branch の不一致、複数一致、候補 branch 名）を message に含める。
-- [ ] 3 コードすべて exit code `ARG_ERROR`(2) として `EXIT_CODE_MAP` に登録する
+- [x] 3 コードすべて exit code `ARG_ERROR`(2) として `EXIT_CODE_MAP` に登録する
       （`BASE_BRANCH_MISMATCH` → `ARG_ERROR` の先例と同方針。実装者の裁量に委ねない）。
 
 **Acceptance Criteria**:
@@ -66,15 +66,15 @@
 
 ## T-04: issue-target resume face（core resolver）を実装する
 
-- [ ] 新 `src/core/issue-target/resume.ts` を追加する。`cli/`・`adapter/` を import しない
+- [x] 新 `src/core/issue-target/resume.ts` を追加する。`cli/`・`adapter/` を import しない
       （module-boundary TC-001 / B-1）。import 可能: `kernel`/`core/port`（port 型）、
       `git/checkpoint-ref`、`state`、`errors`、`logger`、`core/notify/issue-notifier`（T-02）。
-- [ ] 狭い locator port を定義する（D2）:
+- [x] 狭い locator port を定義する（D2）:
       `Pick<GitHubClient, "listIssueComments"> & { listIssueLinkedBranches(owner,repo,issueNumber): Promise<string[]> }`。
-- [ ] `resolveEscalationJobId({ client, owner, repo, issueNumber }): Promise<string>`:
+- [x] `resolveEscalationJobId({ client, owner, repo, issueNumber }): Promise<string>`:
       `listIssueComments` を走査 → 各 comment body に `parseEscalationJobId` → 一致した中で
       `createdAt` 最新の jobId を返す。0 件 → `resumeFromIssueNoMarkerError`。
-- [ ] `resolveResumeBranchFromIssue({ client, owner, repo, issueNumber, jobId, spawnFn, cwd }):
+- [x] `resolveResumeBranchFromIssue({ client, owner, repo, issueNumber, jobId, spawnFn, cwd }):
       Promise<{ branch: string; slug: string; checkpointOid: string }>`:
       - `listIssueLinkedBranches` で候補 branch を列挙。0 件 → `resumeFromIssueNoLinkError`。
       - 各候補: `git fetch origin <branch>` → `readCheckpointFromRef(spawnFn, cwd, "origin/<branch>")`
@@ -84,9 +84,9 @@
         && state.branch===候補 branch 名`。全一致のみ「確定」。
       - 確定が 1 本 → その branch / slug / checkpointOid を返す。0 本 or 複数 →
         `resumeFromIssueUnconfirmedError`（不一致理由・候補名を明示）。
-- [ ] checkpointOid は `git rev-parse origin/<branch>^{commit}` 由来を返す（後段 rebind と
+- [x] checkpointOid は `git rev-parse origin/<branch>^{commit}` 由来を返す（後段 rebind と
       整合する OID。実体化の一次情報は rebind 側 `runAttachVerification` が再解決する）。
-- [ ] resolve 経路で `getIssue`（body を返す）を呼ばない（D5）。
+- [x] resolve 経路で `getIssue`（body を返す）を呼ばない（D5）。
 
 **Acceptance Criteria**:
 - marker 複数時に `createdAt` 最新の jobId が選ばれることが単体テストで pin される。
@@ -102,14 +102,14 @@
 
 ## T-05: CLI orchestrator（resume-from-issue）を実装する
 
-- [ ] 新 `src/cli/resume-from-issue.ts` に
+- [x] 新 `src/cli/resume-from-issue.ts` に
       `runResumeFromIssue(issueNumber, opts, ctx?): Promise<number>` を追加する。
       cwd / repoRoot は引数で受け、ファイル内で `process.cwd()` を直読みしない（D7）。
-- [ ] setup: config / token / origin / `createGitHubClient` を from-issue.ts と同一パターンで
+- [x] setup: config / token / origin / `createGitHubClient` を from-issue.ts と同一パターンで
       解決する。runtime が local でなければ `attachRuntimeUnsupportedError`（rebind は local 専用）。
-- [ ] transport-auth: `createTransportAuth({ token, cwd: repoRoot })` + `wrapSpawn(spawnCommand)`
+- [x] transport-auth: `createTransportAuth({ token, cwd: repoRoot })` + `wrapSpawn(spawnCommand)`
       で spawnFn を作り、resolver（identity read）と rebind（`runAttachVerification`）に渡す。
-- [ ] 連鎖:
+- [x] 連鎖:
       1. `jobId = resolveEscalationJobId(...)`。
       2. local short-circuit（D4）: `loadStateByJobId(repoRoot, jobId)` を try。存在すれば
          `slug = getJobSlug(state)`、rebind 不要フラグ、以降 5 へ。
@@ -121,10 +121,10 @@
          { attachCheckpoint:{ branch: verified.branch, checkpointRef: verified.checkpointOid },
          baseBranch })`（attach.ts と同一）。検証失敗は既存エラーをそのまま伝播。
       6. resume 合流: `runResumeCore(slug, { ...resumeOpts, cwd: repoRoot, repoRoot })` を return。
-- [ ] `opts` は resume 契約を透過させる: `prompt` / `detach` / `from` / `force` / `applyCanon`
+- [x] `opts` は resume 契約を透過させる: `prompt` / `detach` / `from` / `force` / `applyCanon`
       / `adoptCommits` / `noWorktree` / `json` / `logLevel`（`--from` などその他 resume flag の
       挙動は変更しない）。
-- [ ] 各 SpecRunnerError は logError + hint + exitCode で終了（副作用ゼロ停止を保つ）。
+- [x] 各 SpecRunnerError は logError + hint + exitCode で終了（副作用ゼロ停止を保つ）。
 
 **Acceptance Criteria**:
 - ローカル state 無し相当（`loadStateByJobId` が JOB_NOT_FOUND）で、marker → jobId → 候補列挙
@@ -139,18 +139,18 @@
 
 ## T-06: command-registry に --from-issue を配線する
 
-- [ ] `job resume` spec の flags に `"from-issue": { type: "integer", min: 1 }` を追加する。
-- [ ] resume handler で `--from-issue` を検出:
+- [x] `job resume` spec の flags に `"from-issue": { type: "integer", min: 1 }` を追加する。
+- [x] resume handler で `--from-issue` を検出:
       - positional `<slug>` と `--from-issue` 同時指定は usage エラー（`logError` + `ARG_ERROR`）。
       - `--from-issue` 指定時は `runResumeFromIssue(issueNumber, { ...resumeOpts, cwd: process.cwd(),
         repoRoot: ctx?.repoRoot }, ctx)` へ route し `process.exit(code)`。`process.cwd()` は
         既存 CWD allowlist と同一 literal `cwd: process.cwd(),` として書く（D7 / 新エントリ不要）。
       - `--detach` / `--prompt` / `--prompt-file` などの既存前処理（相互排他・警告）は
         `--from-issue` 経路でも成立させる（`--prompt-file` 読込などは既存分岐を流用）。
-- [ ] `JOB_RESUME_USAGE` に `--from-issue <n>` の契約を追記する: locator 解決規則（marker →
+- [x] `JOB_RESUME_USAGE` に `--from-issue <n>` の契約を追記する: locator 解決規則（marker →
       Development リンク → checkpoint identity）・rebind 内包・positional 排他・リンク不在時の
       `job attach --branch` 誘導。
-- [ ] `job resume` の help `summary` に `--from-issue` の 1 行を追加する。
+- [x] `job resume` の help `summary` に `--from-issue` の 1 行を追加する。
 
 **Acceptance Criteria**:
 - positional slug と `--from-issue` 同時指定で `ARG_ERROR`(2) + "mutually exclusive" 系メッセージ
@@ -162,10 +162,10 @@
 
 ## T-07: CLI 組み込み guide に契約を反映する
 
-- [ ] `src/core/command/guide.ts` の `escalation` topic に `--from-issue` の復帰経路を追記する:
+- [x] `src/core/command/guide.ts` の `escalation` topic に `--from-issue` の復帰経路を追記する:
       issue 番号だけで再開する契約（locator 解決規則・rebind 内包・positional 排他・リンク不在時の
       `job attach --branch` 誘導）。
-- [ ] 表として既存の復帰 flag 分岐と並べ、`--from-issue` を「issue 起点の再開」行として加える。
+- [x] 表として既存の復帰 flag 分岐と並べ、`--from-issue` を「issue 起点の再開」行として加える。
 
 **Acceptance Criteria**:
 - `specrunner guide escalation` の本文に `resume --from-issue` と `job attach --branch` 誘導が
@@ -174,12 +174,12 @@
 
 ## T-08: 統合テストと回帰確認
 
-- [ ] T-01〜T-06 の Acceptance Criteria を満たすテストを、既存の colocated 様式で配置する
+- [x] T-01〜T-06 の Acceptance Criteria を満たすテストを、既存の colocated 様式で配置する
       （resolver: `src/core/issue-target/__tests__/resume.test.ts`、CLI: `src/cli/__tests__/
       resume-from-issue.test.ts`、adapter: 新 `tests/unit/adapter/github/*dev-links*.test.ts`）。
       既存 `from-issue.test.ts` の mock 様式（port / detach / runRunCore の vi.mock）を流用する。
-- [ ] 主連鎖テストは linked branch 形と linked PR head 形の両方を張る。
-- [ ] 既存 attach / resume / inbox のテストを無改変で green に保つ（新規メソッドは port shape を
+- [x] 主連鎖テストは linked branch 形と linked PR head 形の両方を張る。
+- [x] 既存 attach / resume / inbox のテストを無改変で green に保つ（新規メソッドは port shape を
       変えないため既存 `: GitHubClient` mock は無改変）。
 
 **Acceptance Criteria**:

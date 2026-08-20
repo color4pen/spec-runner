@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
   "createdAt": "2026-08-20T09:24:35.898Z",
-  "updatedAt": "2026-08-20T09:57:10.743Z",
+  "updatedAt": "2026-08-20T10:02:05.029Z",
   "request": {
     "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/issue-target-resume-from-issue-5ca3d603",
   "error": null,
@@ -69,7 +69,8 @@
     "82ea7b16065f294f7ff1e8fdc7b8f29f0e52efbc",
     "ec7e2408b8103e407acdeb32c2da66004e9e322d",
     "07e07f530a7a1e01c04c0aa179817e71aed3b5ae",
-    "ffebb88555a842eb43049ae6c5bc8c689b696f81"
+    "ffebb88555a842eb43049ae6c5bc8c689b696f81",
+    "c221ccabd99db292a968319424db4579a0f331ff"
   ],
   "touchedFiles": {
     "request-review": [
@@ -115,37 +116,28 @@
     ],
     "test-case-gen": [],
     "spec-review": [
-      "src/core/notify/issue-notifier.ts",
-      "src/core/issue-target/start.ts",
-      "src/adapter/github/github-client.ts",
-      "src/kernel/github-client.ts",
-      "src/core/attach/checkpoint-policy.ts",
-      "src/core/attach/verify-checkpoint.ts",
-      "src/core/attach/orchestrator.ts",
       "src/state/schema/types.ts",
-      "src/errors.ts",
-      "src/cli/from-issue.ts",
-      "src/core/job-access/load-by-job-id.ts",
-      "src/git/checkpoint-ref.ts",
-      "src/core/port/github-client.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "src/cli/command-registry.ts",
-      "src/cli/__tests__/from-issue.test.ts",
-      "tests/unit/architecture/module-boundary.test.ts",
-      "tests/error-codes.test.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/adapter/github/github-client.ts",
       "src/core/pr-create/body-template.ts",
-      "tests/unit/architecture/core-invariants.test.ts"
+      "src/core/job-access/load-by-job-id.ts",
+      "src/kernel/github-client.ts",
+      "src/cli/from-issue.ts",
+      "src/cli/resume.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/core/attach/checkpoint-policy.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 18,
+    "historyCount": 22,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 2
     }
   }
 }

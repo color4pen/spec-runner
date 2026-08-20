@@ -724,6 +724,78 @@ export class GitHubApiClient implements GitHubClient {
   }
 
   /**
+   * List the Development-linked branches and PR head branches for a GitHub issue.
+   *
+   * Issues a single GraphQL query for:
+   *   - `linkedBranches(first:50)` — branches linked via Development panel
+   *   - `closedByPullRequestsReferences(first:50)` — PR head branches (closing-keyword linked)
+   *
+   * Returns the union of branch names with duplicates removed.
+   * Empty links → returns `[]`.
+   * Non-2xx / GraphQL `errors` non-empty / null issue → throws GITHUB_API_ERROR (fail-closed).
+   */
+  async listIssueLinkedBranches(owner: string, repo: string, issueNumber: number): Promise<string[]> {
+    const endpoint = this.graphqlEndpoint();
+    const query = `
+      query ListIssueLinkedBranches($owner: String!, $repo: String!, $number: Int!) {
+        repository(owner: $owner, name: $repo) {
+          issue(number: $number) {
+            linkedBranches(first: 50) {
+              nodes { ref { name } }
+            }
+            closedByPullRequestsReferences(first: 50) {
+              nodes { headRefName }
+            }
+          }
+        }
+      }
+    `;
+    const resp = await this.request(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, variables: { owner, repo, number: issueNumber } }),
+    });
+    if (resp.status < 200 || resp.status >= 300) {
+      throw githubApiError(resp.status, `listIssueLinkedBranches(${owner}/${repo}#${issueNumber})`);
+    }
+    const body = (await resp.json()) as {
+      errors?: unknown[];
+      data?: {
+        repository?: {
+          issue?: {
+            linkedBranches?: { nodes?: Array<{ ref?: { name?: string } | null }> };
+            closedByPullRequestsReferences?: { nodes?: Array<{ headRefName?: string }> };
+          } | null;
+        } | null;
+      };
+    };
+    if (body.errors && body.errors.length > 0) {
+      throw githubApiError(resp.status, `listIssueLinkedBranches GraphQL errors: ${JSON.stringify(body.errors)}`);
+    }
+    const issue = body.data?.repository?.issue;
+    if (issue === null || issue === undefined) {
+      throw githubApiError(200, `listIssueLinkedBranches(${owner}/${repo}#${issueNumber}): issue not found`);
+    }
+    const seen = new Set<string>();
+    const result: string[] = [];
+    for (const node of issue.linkedBranches?.nodes ?? []) {
+      const name = node.ref?.name;
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        result.push(name);
+      }
+    }
+    for (const node of issue.closedByPullRequestsReferences?.nodes ?? []) {
+      const name = node.headRefName;
+      if (name && !seen.has(name)) {
+        seen.add(name);
+        result.push(name);
+      }
+    }
+    return result;
+  }
+
+  /**
    * List all comments on an issue in ascending creation order.
    * Follows Link header pagination to fetch all pages.
    */
