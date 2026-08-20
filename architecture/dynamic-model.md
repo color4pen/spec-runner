@@ -57,9 +57,11 @@
 ### reattachment — remote branch から quiescent job を materialize する束縛
 - **束縛**: `origin/<branch>` HEAD の checkpoint tree ↔ ローカル実行コンテキスト。**attach → validate → materialize → rebind** の順で、tree の自己整合を検証してから liveness を再 establish する。materialize（tree → 実行環境）と FSM 再開（resume）は責務が別。
 - **寿命**: quiescent job（owner が checkpoint で手放した状態。attach-then-resume では `awaiting-resume`）に対する再開前の一回。`running` job の takeover は対象外（lease / epoch を持つ別束縛）。
-- **不変条件**: フラグ信頼ではなく tree の性質検証（journal / projection 整合・`status` quiescent・resume point 解決可能・必須成果物存在・repository / job / branch identity 一致）が閉じて初めて liveness を生成する。branch は明示指定（`origin/*` の暗黙走査はしない）。
-- **binder**: attach 経路（behavior 相で実装）＋ `WorktreeManager`。
-- → 発見・fetch 戦略・エラー分類・attach 後の自動 resume 可否は behavior（spec / `specrunner/adr/`）。
+- **candidate 発見と確定の分離**: 束縛の成立は 2 相 — **locator が candidate branch を発見**し、**checkpoint identity が確定**する。locator は 2 形態: 人間の明示指定（`job attach --branch` — primitive）と、issue-borne index（issue コメントの escalation marker → jobId、issue の Development linked branches → candidate 集合）。いずれの locator も index であって authority ではない — 確定は candidate の branch-borne checkpoint が持つ identity（jobId / issueNumber / branch）の一致のみが行い、確定できなければ fail-closed（暗黙選択しない）。`origin/*` の暗黙走査はしない — 発見は明示指定または issue-borne index に限る（ADR-20260715 D4 の discovery policy の答えが locator 相。役割固定は ADR `2026-08-20-issue-not-job-authority`）。
+- **検証の二層**: validate は **generic integrity**（journal / projection 整合・profile 自己整合・必須成果物存在・repository / job / branch identity — use-case 非依存）を先に閉じ、その上で **use-case policy**（`CheckpointVerificationPolicy` 注入。attach-then-resume では `status` quiescent・resume point 解決可能・resume step 入力の存在）を評価する。integrity が破れた tree は policy に到達しない。policy は use-case ごとに差し替わる（issue 起点 resume・将来の checkpoint use-case）。
+- **不変条件**: フラグ信頼ではなく tree の性質検証が閉じて初めて liveness を生成する。
+- **binder**: attach 経路（`verifyCheckpoint` ＋ policy）＋ `WorktreeManager`。issue-borne locator の解決は `IssueTarget`（`components.md`）。
+- → `src/core/attach/verify-checkpoint.ts`（generic integrity）／ `src/core/attach/checkpoint-policy.ts`（policy 注入点）／ `src/core/issue-target/resume.ts`（issue-borne locator ＋ identity 照合）／ `src/git/checkpoint-ref.ts`（checkpoint 読み取り）。fetch 戦略・エラー分類・attach 後の自動 resume 可否は behavior（spec / `specrunner/adr/`）。
 
 ### resume context — 再開時の文脈注入の束縛
 - **束縛**: resume 実行で、`ResumeContextSnapshot`（`resumePoint` の写し）＋ 人間の `--prompt` を、最初の agent step の prompt（`AgentRunContext.session.resumePrompt`）へ注入する束縛。自動文脈は state から決定的に生成する（attempt 数 / 前回 verdict / 停止理由 / 「worktree の前 attempt 成果物は完了を意味しない」の再開意味論）。

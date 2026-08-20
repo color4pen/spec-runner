@@ -4,14 +4,15 @@
 > 構造の定規は `model.md`（層 / closure / B-x 不変条件）で、本書は「actual がそこへどれだけ収束しているか」の現状記録にすぎない。設計書（`model.md` / `components.md` / `domain-model.md` / `conformance.md`）は時間に依存しない構造のみを持ち、状況断面は持たない。
 > **live な真実**は歯: `tests/unit/architecture/core-invariants.test.ts`（検査）＋ `tests/unit/architecture/arch-allowlist.ts`（既知 divergence の grandfather 台帳、削除のみで縮む ratchet）。本書はその人間向け要約。
 
-## 現状（2026-08-17 時点）
+## 現状（2026-08-20 時点）
 
-- **B-1〜B-18 ＋ §3 DSM closure に対する実 divergence = ゼロ**（`tests/unit/architecture/` 全 green）。
-- `arch-allowlist.ts` の残エントリ実数: **B-1×3**（`R2-*-adapter` — composition-root が adapter を import する §3 許可 edge の記録であり**違反ではない**）／ **B-6×7** ／ **B-12×6** ／ **CWD×39** ＝ 計 55 entry（2026-08-17 実数確認）。CWD ratchet・repo-root confinement は B-x 番号を持たない delete-only ratchet（`model.md` §6）。
-- **既知の未解消 divergence（コード側）: なし**。前回断面の唯一の未解消（liveness 生存判定の jobId 非照合）は `liveness-probe-jobid-scope` で解消済み — stale-running 判定（`src/core/resume/safety.ts`）と `job wait` の sidecar 読み（`src/cli/job-wait.ts`）は `resolveJobPid` の `expectedJobId` 照合を経由し、`dynamic-model.md` liveness の所有規則（sidecar は自 jobId 一致時のみ fallback）に実装が追随した。
-- **定義 doc の追随（2026-08-13）**: detach/job wait の実行所有権・cancel の pid 生存 gate 化・process group 回収・operator reopen 遷移・issue fidelity gate・resume preflight（apply-canon / auto-quarantine / adopt-commits）・CommitOrchestrator/ParallelReviewRound・projection-only 台帳群（touchedFiles / operatorAdjudications 等）・B-18 の 4 本目 LLM port（`IssueFidelityComparator`）を各定義 doc と歯に反映。
-- **収束済み（2026-07-31）**: 構造 ADR `2026-07-31-deterministic-request-entrance` の実装が完了（change `deterministic-request-entrance`）。`OneShotQueryClient` port・adapter・request 生成一本鎖を削除、B-18 の歯（`request-entrance-llm-boundary.test.ts`）を実装し、`model.md` §4 に B-18 を ratify 済み。なお B-18 が禁じていた port barrel（`port/index`）は死コード削除で**モジュールごと消滅**済み — 歯は barrel 再導入の検知として維持。
-- **scope/permission サブシステム ＋ pipeline 選択 ＋ fast profile を反映済み**（弧 #689→#692→#693→#694）: B-11 を `model.md` §4 ＋歯に追加、`permissionScope` / `Finding.origin` / scope derivation を `domain-model.md`・`components.md` に、pipeline 選択 / 着手前 capability gate / scope checkpoint 束縛を `dynamic-model.md` に反映。`PIPELINE_REGISTRY` は `standard` / `design-only` / `fast` の 3 本で、`permissionScope` 宣言は `fast` の1件。
+- **B-1〜B-18 ＋ §3 DSM closure に対する実 divergence = ゼロ**（`tests/unit/architecture/` 全 126 test green、2026-08-20 実測）。
+- `arch-allowlist.ts` の残エントリ実数: **B-1×3**（`R2-*-adapter` — composition-root が adapter を import する §3 許可 edge の記録であり**違反ではない**）／ **B-6×7** ／ **B-12×6** ／ **CWD×40** ＝ 計 56 entry（2026-08-20 実数確認）。CWD ratchet・repo-root confinement は B-x 番号を持たない delete-only ratchet（`model.md` §6）。
+- **既知の未解消 divergence（コード側）: なし**。
+- **定義 doc の追随（2026-08-20）**: issue 起点 lifecycle（`core/issue-target/` — start / resume face）と checkpoint 検証の二層分離（generic integrity / use-case policy）を `components.md` に、reattachment の locator（candidate 発見）／ checkpoint identity（確定）の 2 相分離を `dynamic-model.md` に反映。構造 ADR `2026-08-20-issue-not-job-authority` を追加（issue body = request source ／ Development link = locator ／ branch-borne checkpoint = identity・state authority の役割固定）。
+- **前回断面（2026-08-17）以降に取り込まれた弧**: request lifecycle 一本化（draft consume-on-start）→ `job start --from-issue` → checkpoint 検証 policy 分離 → spec-review 単一 fixer ループ → issue-target start face → `job resume --from-issue`（`specrunner/adr/` の 2026-08-17〜2026-08-20 各 ADR が behavior 正典）。構造面の変化は新 domain サブディレクトリ `core/issue-target/`（DSM 被覆内・cli 非依存）と `core/attach/` の policy 分離（cross-layer import なし）に限られ、pipeline step 集合の変化（build-fixer / test-materialize 廃止・bite-evidence 追加・test-case-gen の spec-review 前倒し・spec-review ⇄ spec-fixer 単一ループ化）は descriptor（コード正典）内の変化であり構造 divergence を生んでいない。
+- **収束済み（2026-07-31）**: 構造 ADR `2026-07-31-deterministic-request-entrance` の実装が完了。B-18 は `model.md` §4 に ratify 済み・歯（`request-entrance-llm-boundary.test.ts`）は barrel 再導入の検知として維持。
+- **scope/permission サブシステム ＋ pipeline 選択 ＋ fast profile は反映済み**（弧 #689→#692→#693→#694）。`PIPELINE_REGISTRY` は `standard` / `design-only` / `fast` の 3 本で、`permissionScope` 宣言は `fast` の 1 件。
 
 ## burn-down 履歴（どの change が何を解消したか）
 
@@ -51,7 +52,7 @@
 
 ### ratchet 変動（#945 以降）
 
-- **追加**: `B6-runner-foreground-notice`（前景実行 notice の env 参照、`src/core/command/runner.ts`）— detach 内蔵化の弧で追加。
+- **追加**: `B6-runner-foreground-notice`（前景実行 notice の env 参照、`src/core/command/runner.ts`）— detach 内蔵化の弧で追加。`CWD-from-issue-reporoot-di-default`（`src/cli/from-issue.ts` の repoRoot DI 既定）— `job start --from-issue` の弧で追加。
 - **削除**: `CWD-finish-resolve-target-di-default` — 対象ファイル `src/core/finish/resolve-target.ts` が死コード削除で消滅。
 - **構造変化（divergence を生んでいない）**: barrel / 死コード削除（`core/port/index.ts`・`core/step/index.ts`・`core/event/index.ts`・`core/doctor/index.ts`・`store/index.ts`・`state/store.ts`・`state/reconcile.ts`、`core/tools/`・`core/validation/` ディレクトリ消滅）／ glob matcher 3 実装の `util/glob-match.ts` 統一／ 新 core サブディレクトリ `lifecycle/`・`liveness/`・`gate/`・`inbox/`（いずれも domain 層として DSM 被覆内）。
 
