@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T03:07:24.623Z",
+  "updatedAt": "2026-08-20T03:15:22.125Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
   "pipelineId": "standard",
@@ -65,7 +65,8 @@
     "bbd50f56cd3d50852f0ad436dd95c40e76289609",
     "a56e9c45bfaf6e79228b9535e282f222c89d6c03",
     "5c992764a3d48add52f310aec1f138c42a6f10c2",
-    "bbbbfc1fffa1ab044b13ba97038a5f0beca349d2"
+    "bbbbfc1fffa1ab044b13ba97038a5f0beca349d2",
+    "bc1118f68f3c79fc5480b96d9721f7eb74c2186c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -101,14 +102,42 @@
       "src/core/command/detach.ts",
       "src/core/command/guide.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "spec-review": [
+      "src/cli/run.ts",
+      "src/cli/inbox.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/cli/command-registry.ts",
+      "src/core/gate/issue-fidelity-gate.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/util/git-exec.ts",
+      "src/errors.ts",
+      "src/parser/request-md.ts",
+      "src/state/schema/types.ts",
+      "src/core/command/guide.ts",
+      "src/core/inbox/draft-writer.ts",
+      "src/adapter/github/github-client.ts",
+      "src/core/inbox/planner.ts",
+      "src/core/command/detach.ts",
+      "src/core/inbox/__tests__/run-inbox.test.ts",
+      "src/parser/rules/slug-required.ts",
+      "src/parser/rules/index.ts",
+      "bin/specrunner.ts",
+      "src/cli/flag-parser.ts"
+    ]
+  },
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "spec-review escalated",
+    "iterationsExhausted": 1
   },
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 15,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }
