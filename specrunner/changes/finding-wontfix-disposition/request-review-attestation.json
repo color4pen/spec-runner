@@ -1,0 +1,21 @@
+{
+  "requestHash": "sha256:d0574bc23d2553687fd03b4c5f8e9843dd1872b319ba3450417d317f6b1a14bd",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/state/schema/types.ts:277-294 DecisionRecord interface (decision-needed only, no kind, source: 'issue-comment')",
+    "src/core/decision/decision-ledger.ts:32-38 computeFindingKey format step|file|line|title|rationale",
+    "src/core/decision/decision-ledger.ts:49-72 isFindingDecided/filterUndecidedFindings match step+findingKey only, no kind check",
+    "src/core/step/step-completion.ts:178 filterUndecidedFindings before request-review verdict",
+    "src/core/step/step-completion.ts:187 filterUndecidedFindings before conformance verdict",
+    "src/core/step/step-completion.ts:199 filterUndecidedFindings before judge verdict",
+    "src/core/step/step-completion.ts:252 filterUndecidedFindings before post-verdict ref check",
+    "src/core/pipeline/findings-ledger.ts:35-64 collectFindingsLedger loop has stepName available before dedupe, state: JobState in scope",
+    "src/core/pipeline/findings-ledger.ts:205-211 computeRegressionLedger calls collectFindingsLedger",
+    "src/core/step/regression-gate.ts:115 skipWhen uses computeRegressionLedger",
+    "src/core/step/regression-gate.ts:144 buildMessage uses computeRegressionLedger",
+    "src/core/inbox/run-inbox.ts:293 decisions array is the sole writer via issue-comment path",
+    "src/state/schema/types.ts:576-583 OperatorAdjudication is free-text only, step=resume-target step",
+    "src/cli/flag-parser.ts FlagDef.type is string|boolean|integer only (no array type)"
+  ],
+  "sourceRevision": "41e48814af3ee5a2f192c48a91c72dff37ee7b29"
+}
