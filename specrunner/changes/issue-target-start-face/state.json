@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T08:37:34.847Z",
+  "updatedAt": "2026-08-20T08:45:42.688Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "conformance",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
   "pipelineId": "standard",
@@ -104,7 +104,8 @@
     "8d51b99500190c8a79dd221a63af4f3e4edb8467",
     "0283a92120c28f0b970203b080233b71b8a632c0",
     "f412016016e49b852afbb8b2ac3f9dd34f987c56",
-    "6892bc656fc5d6a1625bb725cc7871a445d7825d"
+    "6892bc656fc5d6a1625bb725cc7871a445d7825d",
+    "c12e3c2599a22f2067001b70d86c4f93c7b0b5ed"
   ],
   "touchedFiles": {
     "request-review": [
@@ -204,28 +205,30 @@
     ],
     "conformance": [
       "src/core/issue-target/start.ts",
-      "src/core/job/start-from-issue.ts",
+      "src/config/type-config.ts",
       "src/kernel/github-client.ts",
       "src/adapter/github/github-client.ts",
       "src/core/runtime/workspace-materializer.ts",
       "src/core/runtime/local.ts",
-      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
-      "tests/unit/architecture/module-boundary.test.ts",
-      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
-      "src/cli/__tests__/from-issue.test.ts",
-      "src/core/job/__tests__/start-from-issue.test.ts",
-      "tests/unit/adapter/github/github-client-get-issue.test.ts",
-      "tests/unit/adapter/github/github-client-graphql.test.ts",
-      "src/config/type-config.ts",
       "src/cli/command-registry.ts",
       "src/core/inbox/run-inbox.ts",
+      "src/cli/from-issue.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
       "tests/unit/no-worktree-mode.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/cli/from-issue.ts"
+      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
+      "tests/unit/adapter/github/github-client-graphql.test.ts",
+      "tests/unit/adapter/github/github-client-get-issue.test.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "conformance",
+    "reason": "conformance escalated",
+    "iterationsExhausted": 2
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -266,7 +269,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 158,
+    "historyCount": 161,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -282,7 +285,7 @@
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 4,
-      "conformance": 1
+      "conformance": 2
     }
   }
 }
