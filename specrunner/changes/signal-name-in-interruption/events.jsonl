@@ -1,0 +1,5 @@
+{"type":"transition","ts":"2026-08-20T14:27:40.099Z","step":"init","status":"started","message":"job created"}
+{"type":"transition","ts":"2026-08-20T14:27:42.733Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
+{"type":"transition","ts":"2026-08-20T14:29:24.746Z","step":"store-fail","status":"ok","message":"running → failed: Claude Code SDK query failed: Claude Code returned an error result: Reached maximum number of turns (15)"}
+{"type":"step-attempt","step":"request-review","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CLAUDE_CODE_QUERY_FAILED","message":"Claude Code SDK query failed: Claude Code returned an error result: Reached maximum number of turns (15)","hint":""},"transientRetryAttempts":0},"startedAt":"2026-08-20T14:27:42.959Z","endedAt":"2026-08-20T14:29:24.745Z"}
+{"type":"transition","ts":"2026-08-20T14:29:24.749Z","step":"pipeline","status":"ok","message":"failed → awaiting-resume: Claude Code SDK query failed: Claude Code returned an error result: Reached maximum number of turns (15)"}
