@@ -50,10 +50,10 @@ Result section MUST appear at the very end as a YAML code block:
 
 ## Summary
 
-- **Total**: 18 cases
-- **Automated** (unit/integration): 16
-- **Manual**: 0
-- **Priority**: must: 15, should: 3, could: 0
+- **Total**: 20 cases
+- **Automated** (unit/integration): 17
+- **Manual**: 1
+- **Priority**: must: 17, should: 2, could: 1
 
 ---
 
@@ -108,7 +108,7 @@ Result section MUST appear at the very end as a YAML code block:
 ### TC-007: --from-issue と --detach は併用できる
 
 **Category**: integration
-**Priority**: should
+**Priority**: must
 **Source**: spec.md > Requirement: --from-issue と positional / --issue は排他でなければならない > Scenario: --from-issue と --detach は併用できる
 
 ---
@@ -229,15 +229,39 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
+### TC-019: issue fetch 失敗時に draft も job state も生成されない
+
+**Category**: integration
+**Priority**: must
+**Source**: spec.md > Requirement: GitHub API fetch 失敗は副作用ゼロで非ゼロ exit しなければならない > Scenario: fetch 失敗時に draft も job state も生成されない
+
+**GIVEN** GitHubClient の `getIssue()` が失敗する mock（404 相当の throw）
+**WHEN** `job start --from-issue <n>` を実行する
+**THEN** `specrunner/drafts/` に draft が書き込まれず、job state が作成されず、非ゼロ exit code で終了する
+
+---
+
+### TC-020: detach 親 fetch 成功後の子プロセス再 fetch 失敗（手動確認）
+
+**Category**: manual
+**Priority**: could
+**Source**: design.md > Risks（detach で issue を二度 fetch/parse/guard する）
+
+**GIVEN** `job start --from-issue <n> --detach` の親プロセスが issue fetch に成功し exit 0 を返した直後
+**WHEN** 子プロセスの再 fetch が失敗する（issue 削除・編集・ネットワーク断）
+**THEN** 親は exit 0（登録完了）を返しているが job は存在しない。この経路をリリース前に一度手動確認する
+
+---
+
 ## Result
 
 ```yaml
 result: completed
-total: 18
-automated: 16
-manual: 0
-must: 15
-should: 3
-could: 0
+total: 20
+automated: 17
+manual: 1
+must: 17
+should: 2
+could: 1
 blocked_reasons: []
 ```
