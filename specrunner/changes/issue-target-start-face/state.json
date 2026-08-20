@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T05:26:31.751Z",
+  "updatedAt": "2026-08-20T05:30:32.551Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -67,7 +67,8 @@
     "f82f7e63ac9482abbcdf6e2b8d63dbd437ff4e48",
     "46a96ee37c8f0576eddda6dfd7ce59ec28af30ca",
     "09bd760881af159bd4ffde7403e39c56d1e33750",
-    "4d0851c93ce1fd20c733a3f4c092d7f4cb172ea0"
+    "4d0851c93ce1fd20c733a3f4c092d7f4cb172ea0",
+    "4c6dca53c1871c6fcbb43328377c3ec048652beb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -110,15 +111,17 @@
       "tests/unit/architecture/module-boundary.test.ts",
       "src/core/port/runtime-strategy.ts",
       "tests/unit/inbox/run-inbox-inbox-origin.test.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 2,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
