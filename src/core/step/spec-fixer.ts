@@ -102,6 +102,7 @@ export const SpecFixerStep: AgentStep = {
       { path: `${folder}/design.md` },
       { path: `${folder}/spec.md` },
       { path: `${folder}/tasks.md` },
+      { path: `${folder}/test-cases.md` },
     ];
   },
 

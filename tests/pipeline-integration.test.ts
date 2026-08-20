@@ -1783,3 +1783,47 @@ describe("TC-070: escalation → resume roundtrip", () => {
     expect(lastSpecReview ? toLegacyStepResult(lastSpecReview).verdict : undefined).toBe("approved");
   });
 });
+
+// ---------------------------------------------------------------------------
+// T-07: #1015 歯 — spec-review needs-fix loop に test-case-gen が現れない
+// Pin: spec-review-loop-single-fixer — single-fixer で test-cases.md を targeted 修正し
+// wholesale 再生成（test-case-gen）をループ中に起動しないことを observable な step 実行列で検証
+// ---------------------------------------------------------------------------
+
+describe("T-07: #1015 歯 — spec-review needs-fix loop は test-case-gen を起動しない", () => {
+  it("spec-review needs-fix → spec-fixer runs, test-case-gen は steps に現れない", async () => {
+    const { runPipeline } = await import("../src/core/pipeline/index.js");
+    const jobState = await makeJobState();
+
+    // needs-fix (1 iteration) then approved — spec-fixer should run, test-case-gen must not
+    const { client } = buildPipelineMockClient({ specReviewVerdicts: ["needs-fix", "approved"] });
+    const githubClient = buildMockGithubClient({ specReviewVerdicts: ["needs-fix", "approved"] });
+
+    const result = await runPipeline(jobState, {
+      client,
+      config: buildConfig(),
+      request: buildRequest(),
+      slug: "test-slug",
+      sleepFn: vi.fn().mockResolvedValue(undefined),
+      githubClient,
+      runner: buildRunner(client, githubClient),
+      owner: "testowner",
+      repo: "testrepo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+    });
+
+    // spec-fixer IS invoked (loop ran)
+    expect(result.steps?.["spec-fixer"]).toBeDefined();
+    expect((result.steps?.["spec-fixer"] ?? []).length).toBeGreaterThanOrEqual(1);
+
+    // spec-review runs at least 2 times (iter1 needs-fix, iter2 approved)
+    expect((result.steps?.["spec-review"] ?? []).length).toBeGreaterThanOrEqual(2);
+
+    // test-case-gen runs exactly ONCE (initial design phase only, never re-invoked in the loop)
+    // OLD behavior: spec-review needs-fix could route back to test-case-gen (wholesale 再生成)
+    // NEW behavior: spec-review-loop-single-fixer — spec-fixer handles all fixable findings (#1015)
+    const testCaseGenSteps = result.steps?.["test-case-gen"] ?? [];
+    expect(testCaseGenSteps.length).toBe(1);
+  });
+});

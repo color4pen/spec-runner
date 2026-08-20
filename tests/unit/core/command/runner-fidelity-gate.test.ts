@@ -172,6 +172,7 @@ function buildMockGithubClient(opts: {
     listIssueComments: vi.fn().mockResolvedValue([]),
     removeLabel: vi.fn().mockResolvedValue(undefined),
     getIssue: vi.fn().mockResolvedValue({ number: 875, title: "Test Issue", body: "Issue body" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
   };
 }
 

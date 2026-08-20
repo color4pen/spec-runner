@@ -105,7 +105,7 @@ function makeCanonScope(): CanonWriteScope {
   const writableByFixer = new Map<FixTarget, ReadonlySet<string>>([
     ["code-fixer", new Set<string>()],
     ["implementer", new Set<string>([TASKS_MD])],
-    ["spec-fixer", new Set<string>([SPEC_MD, DESIGN_MD, TASKS_MD])],
+    ["spec-fixer", new Set<string>([SPEC_MD, DESIGN_MD, TASKS_MD, TEST_CASES_MD])],
     ["test-case-gen", new Set<string>([TEST_CASES_MD])],
   ]);
   return { canonPaths, writableByFixer };
@@ -946,14 +946,17 @@ describe("TC-013: deriveSpecReviewVerdict — fixable finding on tasks.md routes
     expect(verdict).toBe("approved");
   });
 
-  it("TC-013: fixable finding on test-cases.md (routable to test-case-gen) → needs-fix", () => {
+  it("TC-013: medium fixable finding on test-cases.md → approved (observation auto-fix fall-through, not needs-fix)", () => {
+    // Updated: spec-review-loop-single-fixer — test-cases.md now in spec-fixer write scope.
+    // medium severity → approved (observation auto-fix), not needs-fix.
     expect(deriveSpecReviewVerdict).toBeDefined();
     const findings = [makeFinding("medium", "fixable", TEST_CASES_MD)];
     const verdict = deriveSpecReviewVerdict!(findings, true, undefined, makeCanonScope());
-    expect(verdict).toBe("needs-fix");
+    expect(verdict).toBe("approved");
   });
 
-  it("TC-013: deriveStepCompletion yields needs-fix without escalationReason for test-cases.md finding", async () => {
+  it("TC-013: deriveStepCompletion yields approved without escalationReason for medium test-cases.md finding", async () => {
+    // Updated: spec-review-loop-single-fixer — verdict changes from needs-fix to approved for medium.
     expect(deriveSpecReviewVerdict).toBeDefined();
     const step = makeMinimalJudgeStep(STEP_NAMES.SPEC_REVIEW, JUDGE_REPORT_TOOL);
     (step as unknown as Record<string, unknown>).judgeVerdictFn = deriveSpecReviewVerdict;
@@ -977,7 +980,7 @@ describe("TC-013: deriveSpecReviewVerdict — fixable finding on tasks.md routes
       undefined,
     );
 
-    expect(completion.verdict).toBe("needs-fix");
+    expect(completion.verdict).toBe("approved");
     expect(completion.escalationReason).toBeUndefined();
   });
 });

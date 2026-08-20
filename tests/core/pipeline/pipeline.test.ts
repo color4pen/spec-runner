@@ -120,6 +120,7 @@ function makeMinimalDeps(): PipelineDeps {
     listIssueComments: vi.fn().mockResolvedValue([]),
     removeLabel: vi.fn().mockResolvedValue(undefined),
     getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     },
     owner: "user",
     repo: "repo",
@@ -592,17 +593,17 @@ describe("TC-067: STANDARD_TRANSITIONS — correct transition table", () => {
     //   unconditional fallback (→ implementer) — comes second (absorb-test-materialize: was test-materialize)
     expect(find("spec-review",  "approved")).toMatchObject({ to: "spec-fixer" }); // guarded first
     expect(findWithTo("spec-review", "approved", "implementer")).toBeDefined(); // unconditional fallback
-    // spec-review needs-fix: TC-only → test-case-gen (first), otherwise → spec-fixer (unconditional)
-    expect(find("spec-review",  "needs-fix")).toMatchObject({ to: "test-case-gen" }); // guarded first
-    expect(findWithTo("spec-review", "needs-fix", "spec-fixer")).toBeDefined(); // unconditional fallback
+    // spec-review needs-fix: → spec-fixer (unconditional, spec-review-loop-single-fixer)
+    // TEST_CASE_GEN guarded row removed (was: TC-only → test-case-gen)
+    expect(find("spec-review",  "needs-fix")).toMatchObject({ to: "spec-fixer" }); // unconditional
+    expect(findWithTo("spec-review", "needs-fix", "test-case-gen")).toBeUndefined(); // deleted
     // spec-review escalation transition no longer exists (R3 cutover)
     expect(find("spec-review",  "escalation")).toBeUndefined();
-    // spec-fixer approved has three rows (absorb-test-materialize: test-materialize row replaced by implementer):
+    // spec-fixer approved has two rows (spec-review-loop-single-fixer: test-case-gen row deleted):
     //   guarded (observation pass: → implementer) — first
-    //   guarded (needs-fix forward: → test-case-gen) — second
-    //   unconditional fallback (→ spec-review) — third
+    //   unconditional fallback (→ spec-review) — second
     expect(findWithTo("spec-fixer", "approved", "implementer")).toBeDefined(); // guarded observation pass
-    expect(findWithTo("spec-fixer", "approved", "test-case-gen")).toBeDefined(); // guarded needs-fix forward
+    expect(findWithTo("spec-fixer", "approved", "test-case-gen")).toBeUndefined(); // deleted (spec-review-loop-single-fixer)
     expect(findWithTo("spec-fixer", "approved", "spec-review")).toBeDefined(); // unconditional fallback
     expect(find("spec-fixer",   "error")).toMatchObject({ to: "escalate" });
   });

@@ -31,11 +31,28 @@ export const GUIDE_TOPICS: readonly GuideTopic[] = [
 
 \`\`\`bash
 specrunner job start <slug|file> --detach [--issue <n>]
+specrunner job start --from-issue <n> --detach
 specrunner job resume <slug> --detach
 \`\`\`
 
 - **run_in_background を使わない**: harness が SIGTERM で撃つ。--detach がプロセスを切り離す正しい経路。
 - 並列起動は \`sleep 3\` で stagger する (worktree ロック競合 Issue #166 の回避)。
+
+### --from-issue: issue を request として直接起動
+
+\`\`\`bash
+specrunner job start --from-issue <n> [--detach]
+\`\`\`
+
+issue 番号だけで起動できる。呼び出し側は slug 抽出・draft 実体化・issue linkage を知らなくてよい。
+
+**契約**:
+- issue 本文を request.md として parse し draft を実体化してから start する
+- issue fidelity comparator は実行されない (byte 同一転記のため skip)
+- 実行元 checkout の現在 branch が request の base-branch と不一致なら job state 作成前に fail-closed で停止
+- \`--from-issue\` と positional は排他 (同時指定は usage エラー)
+- \`--from-issue\` と \`--issue\` は排他 (linkage を内包するため)
+- \`--detach\` とは併用可能
 
 ## 2. 監視 — job wait
 
@@ -305,7 +322,32 @@ specrunner job reopen <slug> --from <step> --reason "<理由>"
 **reopen の制約**: --apply-canon / --adopt-commits / --detach / --prompt は使えない。
 --from と --reason が必須。
 
-## 4. 後片付け
+## 4. issue 番号からの再開 (--from-issue)
+
+issue 番号だけで再開できる:
+
+\`\`\`bash
+specrunner job resume --from-issue <n>
+\`\`\`
+
+**解決規則**:
+1. issue コメントを走査し、最新の escalation marker から jobId を取得する
+2. ローカルに同 jobId の state があれば rebind をスキップして直接再開する
+3. 無ければ Development-linked branches を列挙し、jobId / issueNumber / branch の
+   3 フィールドで checkpoint identity を照合して branch を確定する
+4. 確定した branch を rebind (fetch → verify → setupWorkspace) してから resume する
+
+| 状況 | コマンド |
+|------|----------|
+| issue 番号から再開 (rebind 内包) | \`specrunner job resume --from-issue <n>\` |
+| Development リンクが無い場合は手動 attach | \`specrunner job attach --branch <branch>\` → \`specrunner job resume <slug>\` |
+
+**制約**:
+- \`--from-issue\` と positional \`<slug>\` は排他 (同時指定は usage エラー)
+- \`--detach\` との併用可能
+- rebind は local runtime のみ (managed runtime 非対応)
+
+## 5. 後片付け
 
 \`\`\`bash
 specrunner job show <slug>                     # Job ID を確認

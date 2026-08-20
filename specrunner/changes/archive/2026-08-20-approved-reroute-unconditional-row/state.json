@@ -1,0 +1,193 @@
+{
+  "version": 2,
+  "jobId": "d1946274-009d-439f-9aed-83ed558a4654",
+  "createdAt": "2026-08-20T07:19:48.603Z",
+  "updatedAt": "2026-08-20T08:09:20.354Z",
+  "request": {
+    "title": "approved 温存 reroute の修正: fixer 全体除外をやめ同 verdict の unconditional row へ降りる",
+    "type": "bug-fix",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "fix/approved-reroute-unconditional-row-d1946274",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1018,
+  "synthesizedCommits": [
+    "28eee6186d16f014d064631d0584ef0d5e31fbae",
+    "7b74b43dc4a2e21b1b9ee0b55162ef5758ab2d96",
+    "a8dc890b377ca5d8c69603b1fff0c29b3d79f6a4",
+    "0a8e03b73233556811f640629b096893dc94011a",
+    "24415725a7c54ce5847e9f6c8555c66b40b20bc4",
+    "3bf497dd3a07d04fc5bda596de19ece3562695a0",
+    "09c5c4b4c33d9b532aa365a4fa02dcff358b1b2f",
+    "81e2f26f9690950738357b5e5528ab7a0e87883d",
+    "4fcddc06955610ab77dd7b79450cca822a42b710",
+    "d8c2be3e2b201083507567f415a9680903fb98e1",
+    "289cf81defd156633b5e453f3f372063afa0f4c9",
+    "1856ea99e2a861cdcf4abe645caa11e2cc5e2a73",
+    "dd04f9c285e9ce2832c3652aac3c66d1d0f69d11",
+    "aeaf0c738ac690cb2f7204f19738c3dd6a28e222",
+    "8877414fb477addb7928b5adf97652ad189dc1e2",
+    "d09fbf0da04b7070879b46f22468e1d62cb2e7cb"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/pipeline/registry.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "src/core/pipeline/spec-observation.ts"
+    ],
+    "design": [
+      "src/core/pipeline/pipeline.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/registry.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/core/pipeline/pipeline.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/registry.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/canon-escalation.ts"
+    ],
+    "spec-fixer": [
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/state/job-slug.ts"
+    ],
+    "implementer": [
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts"
+    ],
+    "code-review": [
+      "src/core/pipeline/pipeline.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/state/job-slug.ts",
+      "src/core/step/canon-escalation.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/fixer-helpers.ts",
+      "src/core/pipeline/convergence-budget.ts"
+    ],
+    "regression-gate": [
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts"
+    ],
+    "conformance": [
+      "src/core/pipeline/pipeline.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/state/job-slug.ts"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "289cf81defd156633b5e453f3f372063afa0f4c9",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/approved-reroute-unconditional-row/design.md:sha256:bc093d5e5e3f84d7bff4ae6e5c2479c448aba83efddefd39cd4d3cd966fbd499|specrunner/changes/approved-reroute-unconditional-row/request.md:sha256:047f53df4599230e0baa0e2e2b2baad003d7ff377f15313197612bd77923bce2|specrunner/changes/approved-reroute-unconditional-row/spec.md:sha256:5e3daf5be968dd231ad7f7f09d3563af6ab065a058a2e3e7ae52a61afe82a6ea|specrunner/changes/approved-reroute-unconditional-row/tasks.md:sha256:e1736a23bb44470676d0c23659bd0faaf9b582ed67ad3e873f79c7e0b8fb2c81|specrunner/changes/approved-reroute-unconditional-row/test-cases.md:sha256:f373c9341d26b10d1bc45cbca9f8fe207984b6c2b098166f5ad3ff242cebd2af"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1020",
+    "number": 1020,
+    "createdAt": "2026-08-20T08:09:19.317Z"
+  },
+  "_journal": {
+    "historyCount": 70,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 2,
+      "bite-evidence": 1,
+      "verification": 3,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

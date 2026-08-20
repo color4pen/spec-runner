@@ -34,7 +34,7 @@ import {
 import { transitionJob } from "../../state/lifecycle.js";
 import { appendInvocation } from "../usage/store.js";
 import { usageJsonPath } from "../../util/paths.js";
-import { getBranchPrefix } from "../../config/type-config.js";
+import { buildFeatureBranchName } from "../../config/type-config.js";
 import { logVerbose } from "../../logger/stdout.js";
 import { STEP_NAMES } from "./step-names.js";
 import { recordFindingRecency } from "./finding-recency.js";
@@ -400,8 +400,7 @@ export class CommitOrchestrator {
       s = { ...s, branch: agentBranch };
     }
     if ("setsBranch" in step && (step as { setsBranch?: boolean }).setsBranch === true && !s.branch) {
-      const prefix = getBranchPrefix(deps.request.type);
-      s = { ...s, branch: `${prefix}${deps.slug}-${s.jobId.slice(0, 8)}` };
+      s = { ...s, branch: buildFeatureBranchName(deps.request.type, deps.slug, s.jobId) };
     }
 
     // pullRequest reflection

@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:25c2394a5c98d9b44cd04664daa392dbae078536095fce524b4118d1492298d4",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/canon-write-scope.ts:37-48 — writableByFixer: spec-fixer={spec.md,design.md,tasks.md}, test-case-gen={test-cases.md}",
+    "src/core/step/canon-escalation.ts:56 — specReviewEffectiveFixer always returns 'spec-fixer'",
+    "src/core/step/canon-escalation.ts:63 — testCaseGenEffectiveFixer always returns 'test-case-gen'",
+    "src/core/pipeline/spec-observation.ts:129 — specReviewNeedsFixIsTcOnly predicate exists",
+    "src/core/pipeline/spec-observation.ts:103 — specFixerNeedsFixForward predicate exists",
+    "src/core/pipeline/types.ts:261 — TC-only needs-fix → test-case-gen transition (guarded by specReviewNeedsFixIsTcOnly)",
+    "src/core/pipeline/types.ts:269 — spec-fixer approved (needs-fix path) → test-case-gen transition (guarded by specFixerNeedsFixForward)",
+    "src/core/pipeline/types.ts:267 — observation auto-fix: spec-fixer approved → implementer (guarded by specFixerObservationForward)",
+    "src/core/pipeline/registry.ts:87 — loopIntermediateSteps: new Set([STEP_NAMES.TEST_CASE_GEN])",
+    "src/core/pipeline/pipeline.ts:99,113,126,523-527 — loopIntermediateSteps consumption points",
+    "src/core/step/spec-fixer.ts writes() — returns {design.md, spec.md, tasks.md}, no test-cases.md",
+    "src/prompts/spec-fixer-system.ts — write-set excludes test-cases.md"
+  ],
+  "sourceRevision": "44c26134e3d2bc82032bccd08804f6944ec55f68"
+}

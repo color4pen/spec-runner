@@ -88,6 +88,20 @@ export function getBranchPrefix(type: string): string {
 }
 
 /**
+ * Build the feature branch name from request type, slug, and job ID.
+ *
+ * Format: <prefix><slug>-<jobId[0:8]>
+ *
+ * @note This builder is for CREATING branch names only. Do NOT use it as an
+ * inverse function for branch discovery (i.e., do not parse branch names to
+ * recover slug or jobId). Branch discovery must use Development links +
+ * checkpoint identity.
+ */
+export function buildFeatureBranchName(type: string, slug: string, jobId: string): string {
+  return `${getBranchPrefix(type)}${slug}-${jobId.slice(0, 8)}`;
+}
+
+/**
  * Get the spec-review mode for a request type.
  * Unknown types fall back to "full" for backward compatibility.
  */

@@ -1,0 +1,15 @@
+{
+  "requestHash": "sha256:81679f6d40f69dd3bbdd4face6b7ce2b97bb040770631565b1e912561e6d02a3",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/attach/verify-checkpoint.ts:54-58 — JSDoc comment enumerates (b-new, b, b-new, a, c, d-new, d, e) verification order in single function",
+    "src/core/attach/verify-checkpoint.ts:172 — status === 'awaiting-resume' check (resume-specific policy)",
+    "src/core/attach/verify-checkpoint.ts:190-204 — resume point + pipeline definition resolution (resume-specific)",
+    "src/core/attach/verify-checkpoint.ts:206-238 — reads() required inputs check (resume-specific, d-new)",
+    "src/cli/attach.ts:1-13 — JSDoc describes fetch → OID 固定 → runAttachVerification → setupWorkspace flow; orchestration in orchestrator.ts",
+    "src/core/attach/orchestrator.ts — runAttachVerification calls verifyCheckpoint, no local state created",
+    "src/core/pipeline/pipeline.ts:612-620 — commitFinalState is single-seam for awaiting-resume checkpoint publish",
+    "tests/unit/architecture/arch-allowlist.ts — ARCH_ALLOWLIST is delete-only ratchet; new entries require approval"
+  ],
+  "sourceRevision": "e9a4d494addd29aa9783910b2b07f57bad07d35b"
+}

@@ -190,6 +190,16 @@ export interface WorkspaceOptions {
     /** Fully-qualified git ref to checkout (e.g. "origin/<branch>"). */
     checkpointRef: string;
   };
+  /**
+   * Opaque effect invoked after the local feature branch is successfully created but
+   * before the bootstrap commit / push. Used by issue-target routes to register the
+   * feature branch as a GitHub Development linked branch. The materializer treats this
+   * as an opaque side-effect and does not inspect its semantics (D3).
+   *
+   * Best-effort: callers (issue-target) construct this callback to catch internally.
+   * The materializer also wraps the call in a catch to guard against any throw.
+   */
+  onFeatureBranchCreated?: (baseOid: string, branchName: string) => Promise<void>;
 }
 
 /**

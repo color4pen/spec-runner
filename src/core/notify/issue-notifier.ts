@@ -69,6 +69,31 @@ export function buildRejectComment(issueNumber: number, validateError: string): 
 }
 
 /**
+ * Regex that matches an escalation marker produced by `buildMarker("escalation", jobId)`.
+ * Captures the jobId in group 1.
+ *
+ * Format: `<!-- specrunner:notification kind="escalation" jobId="<jobId>" version="1" -->`
+ *
+ * Anchored to the exact literal structure of `buildMarker` so format changes in `buildMarker`
+ * must be mirrored here.
+ */
+const ESCALATION_MARKER_RE =
+  /<!-- specrunner:notification kind="escalation" jobId="([^"]+)" version="1" -->/;
+
+/**
+ * Extract the jobId from the first escalation marker found in `body`.
+ *
+ * Inverse of `buildMarker("escalation", jobId)`.
+ *
+ * @param body  Comment body (may contain zero or more markers).
+ * @returns The extracted jobId string, or `null` if no escalation marker is present.
+ */
+export function parseEscalationJobId(body: string): string | null {
+  const match = ESCALATION_MARKER_RE.exec(body);
+  return match ? (match[1] ?? null) : null;
+}
+
+/**
  * Build the machine-readable HTML comment marker for a notification.
  *
  * Format: `<!-- specrunner:notification kind="<kind>" jobId="<jobId>" version="1" -->`

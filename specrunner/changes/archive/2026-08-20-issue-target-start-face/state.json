@@ -1,0 +1,304 @@
+{
+  "version": 2,
+  "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
+  "createdAt": "2026-08-20T04:51:31.132Z",
+  "updatedAt": "2026-08-20T09:15:26.450Z",
+  "request": {
+    "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/issue-target-start-face-bf87f3b1",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "synthesizedCommits": [
+    "680fe969744d3662d198d8f1183b506b26c190ad",
+    "7ae242ad1aae6471ca74f8e0aeb6f9563cd0daef",
+    "f82f7e63ac9482abbcdf6e2b8d63dbd437ff4e48",
+    "46a96ee37c8f0576eddda6dfd7ce59ec28af30ca",
+    "09bd760881af159bd4ffde7403e39c56d1e33750",
+    "4d0851c93ce1fd20c733a3f4c092d7f4cb172ea0",
+    "4c6dca53c1871c6fcbb43328377c3ec048652beb",
+    "91a57645cdcae8e1d6cc25acb98bbaf3711fc776",
+    "564f535f220b7f696c7d947a6a54a787df017227",
+    "864e2e2e467eb0e0396ec77a799fb7ecf6f953da",
+    "2b4f79a0b37e3df15c027686d267c0950f165a1d",
+    "6cd078cd0b9384b76f3a2854a88fb7bbc9f3a6dd",
+    "a2592ece4d54e866e44ef0ea2d3b8d2e9875e80e",
+    "768e6005d7a3fa4276f4ee8f14c1bf9e1f5991e3",
+    "f9b35210e1adef1f366d6a6250dbf3c801dbe028",
+    "7f3c5a653857ab211ecf12bac65f80d5c485f15c",
+    "29075b672f36a1f1c68373534e653833bbe35793",
+    "6ab52bf026c283238c8f8ff500fa1405b733a61f",
+    "303a6394f45a1770111e7a4189970502a4dcbf83",
+    "4635f80095387ce022b7e8151734115a07999d9a",
+    "ce9d1a2afc64a9fea51ed5c7e978536f428dfb1c",
+    "e5a53dfa1c1d3e1c2ab6243dbc1c6e1d72bea64f",
+    "fdca80f605790c1fdf8b069fabd3b11bafe449a3",
+    "8723468a02edc827144a848aa53c8d927144e82d",
+    "edf4af42c3aa638a27a883f719d3951a42acf083",
+    "c78b6a5f942dfef4db921583a5988c484eeaa634",
+    "fbd3353f2bf58636d6e638eff7698d8db1b0a05d",
+    "7b5623a4e8e598f35444044246f2d5b169d84c75",
+    "4512456825cff887035c286b1c0712fbe1925010",
+    "ad35da51e6c9f78abd3661b77bf6d0df42eea2c0",
+    "5700fe8ff36bbd9ca53eef200046b024dda7b7f9",
+    "638bd3817e12cd5cdc91d2f3690ed175ed904f30",
+    "485aa7d0426a9afb4d59199b3a31a88a0cfeb87c",
+    "e65525d2d6f1d38c33bdd6a32c695535f8dca11a",
+    "212a388cf244cc4a560130c55b11ebbd4323b3e1",
+    "627c028a659d3bd063166da5bb5b358a34e04939",
+    "68b0d3e6fa0b1124744e706c3ef14c883719ff46",
+    "aa9671f392003d7e7cc209e99c3ebf0631d51ebf",
+    "4767886e20143c2e2b0b7d7d0598d57488e9c51a",
+    "8d51b99500190c8a79dd221a63af4f3e4edb8467",
+    "0283a92120c28f0b970203b080233b71b8a632c0",
+    "f412016016e49b852afbb8b2ac3f9dd34f987c56",
+    "6892bc656fc5d6a1625bb725cc7871a445d7825d",
+    "c12e3c2599a22f2067001b70d86c4f93c7b0b5ed",
+    "a84bbe8f657fbe2fab1f41e32a5fab2b8559063d",
+    "105a5e7d4628ba4d092e86cf53c96d45344b42ba",
+    "0ae9bd0b95901db82a146b8b537a571767d623b9",
+    "a5e784a806791853846e5a44dec28bef7b52f47a",
+    "e88785e822dbf03c6d032143d8da7ea9033d735d",
+    "429da295330b3212381e654e17426c8f53934f31"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/job/start-from-issue.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/core/pr-create/body-template.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/step/design.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/runtime/local.ts",
+      "src/adapter/github/github-client.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/config/type-config.ts",
+      "src/cli/command-registry.ts"
+    ],
+    "design": [
+      "src/core/job/start-from-issue.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/cli/from-issue.ts",
+      "src/cli/run.ts",
+      "src/cli/command-registry.ts",
+      "src/core/port/github-client.ts",
+      "src/adapter/github/github-client.ts",
+      "src/kernel/github-client.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/step/design.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
+      "src/core/worktree/manager.ts",
+      "src/cli/inbox.ts",
+      "src/config/github-host.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "src/core/port/runtime-strategy.ts",
+      "tests/unit/inbox/run-inbox-inbox-origin.test.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/config/type-config.ts",
+      "src/adapter/github/github-client.ts",
+      "src/kernel/github-client.ts",
+      "src/core/job/start-from-issue.ts",
+      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/cli/command-registry.ts",
+      "src/core/inbox/run-inbox.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      "tests/unit/no-worktree-mode.test.ts"
+    ],
+    "code-review": [
+      "src/core/issue-target/start.ts",
+      "src/core/job/start-from-issue.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
+      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
+      "src/adapter/github/github-client.ts",
+      "tests/unit/adapter/github/github-client-graphql.test.ts",
+      "tests/unit/adapter/github/github-client-get-issue.test.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
+      "tests/unit/no-worktree-mode.test.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "src/cli/command-registry.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/config/type-config.ts",
+      "src/kernel/github-client.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
+    ],
+    "code-fixer": [
+      "src/core/runtime/local.ts",
+      "tests/unit/no-worktree-mode.test.ts"
+    ],
+    "regression-gate": [
+      "src/cli/command-registry.ts",
+      "tests/unit/no-worktree-mode.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
+      "src/core/runtime/local.ts",
+      "tests/unit/inbox/run-inbox-inbox-origin.test.ts"
+    ],
+    "conformance": [
+      "src/core/issue-target/start.ts",
+      "src/core/job/start-from-issue.ts",
+      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/runtime/local.ts",
+      "tests/unit/no-worktree-mode.test.ts",
+      "tests/unit/adapter/github/github-client-graphql.test.ts",
+      "tests/unit/adapter/github/github-client-get-issue.test.ts",
+      "src/adapter/github/github-client.ts",
+      "src/config/type-config.ts",
+      "src/cli/command-registry.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-05-19-adr-numbering-removal.md",
+      "specrunner/adr/2026-08-20-job-start-from-issue.md",
+      "specrunner/adr/2026-08-20-issue-target-start-face.md"
+    ]
+  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "spec-review round 2 findings の裁定を以下の通り適用する。\n\nF-1（TC ID 重複）: test-cases.md の GraphQL endpoint derivation TC は operator が TC-023 に改番済み（apply-canon 適用）。tasks.md に GraphQL の TC を TC-018 と参照する箇所があれば TC-023 に更新する。inbox テスト（tests/unit/inbox/run-inbox-inbox-origin.test.ts）を指す TC-018 参照はそのままでよい。\n\nF-2（getIssue 型拡張と既存 mock）: B 案を採用する。nodeId: string は required を維持し、既存 mock リテラル（run-inbox-inbox-origin.test.ts と from-issue.test.ts）には実装時に nodeId フィールドを 1 行追加する。これに合わせて: tasks.md の「TC-018 が無改変で green」という記述（T-02 本文と T-05 Acceptance Criteria）を「挙動 assert 無改変で green。port 型拡張（getIssue の nodeId 追加）に伴う mock リテラルへの nodeId フィールド追加のみ許可」に更新する。design.md に『as GitHubClient cast のリテラルは structural 代入可能なため cast は通る』という mitigation 注があれば『mock リテラルに nodeId を追加する（B 案）』に訂正する。optional 化（nodeId?: string）は不採用。\n\nF-3（no-worktree 経路）: spec.md の link registration の best-effort / 順序 Requirement 配下に Scenario を 1 件追加する: no-worktree 経路（setupWorkspaceNoWorktree）でも branch 作成成功後に同じ登録 callback が best-effort で発火する。\n\nF-4（GraphQL derivation の spec 網羅）: spec.md の getIssue nodeId 関連 Requirement 配下に Scenario を 1 件追加する: GraphQL endpoint が github.com と GHES の両方で正しく導出される。test-cases.md の TC-023 の Source は tasks.md 由来のままでよい（変更しない）。",
+      "step": "spec-fixer",
+      "recordedAt": "2026-08-20T05:47:08.970Z"
+    }
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "4767886e20143c2e2b0b7d7d0598d57488e9c51a",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/issue-target-start-face/design.md:sha256:5576551b8d064963e2ca27ea64c3d0e07b488a9cdfacbb5f84c11cfd0b6a9c2c|specrunner/changes/issue-target-start-face/request.md:sha256:3e1858cf235ed774ed5fe50296b0ca8437a44d9270e738e4667a5c36b697808a|specrunner/changes/issue-target-start-face/spec.md:sha256:d192e49bf0f1f32dcac63fc7457a1766d71fe6d8a5ba4f9e4d0ea8a765eff211|specrunner/changes/issue-target-start-face/tasks.md:sha256:3e58fab1ec4d6fa245d6aeb8b032a80f4e80db7a0ff11dbab4db6eff98f9d64c|specrunner/changes/issue-target-start-face/test-cases.md:sha256:245745e1684990f4e9ebf8347632959d9f26e13421c8fb3aa6d6737c700c5efb"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "4767886e20143c2e2b0b7d7d0598d57488e9c51a",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/issue-target-start-face/design.md:sha256:5576551b8d064963e2ca27ea64c3d0e07b488a9cdfacbb5f84c11cfd0b6a9c2c|specrunner/changes/issue-target-start-face/request.md:sha256:3e1858cf235ed774ed5fe50296b0ca8437a44d9270e738e4667a5c36b697808a|specrunner/changes/issue-target-start-face/spec.md:sha256:d192e49bf0f1f32dcac63fc7457a1766d71fe6d8a5ba4f9e4d0ea8a765eff211|specrunner/changes/issue-target-start-face/tasks.md:sha256:3e58fab1ec4d6fa245d6aeb8b032a80f4e80db7a0ff11dbab4db6eff98f9d64c|specrunner/changes/issue-target-start-face/test-cases.md:sha256:245745e1684990f4e9ebf8347632959d9f26e13421c8fb3aa6d6737c700c5efb"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1021",
+    "number": 1021,
+    "createdAt": "2026-08-20T09:15:25.437Z"
+  },
+  "_journal": {
+    "historyCount": 178,
+    "stepCounts": {
+      "request-review": 2,
+      "design": 1,
+      "test-case-gen": 3,
+      "spec-review": 4,
+      "spec-fixer": 3,
+      "implementer": 3,
+      "bite-evidence": 1,
+      "verification": 5,
+      "code-review": 4,
+      "code-fixer": 5,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 1,
+      "custom-reviewers": 2,
+      "regression-gate": 4,
+      "conformance": 3,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

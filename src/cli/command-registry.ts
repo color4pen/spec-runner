@@ -10,7 +10,7 @@ import { runInit } from "./init.js";
 import { runManagedSetup, runManagedStatus, runManagedReset } from "./managed.js";
 import { runLogin } from "./login.js";
 import { runCredentialsSet, CREDENTIALS_SET_USAGE } from "./credentials.js";
-import { runRun } from "./run.js";
+import { runRun, runRunCore } from "./run.js";
 import { runPs } from "./ps.js";
 import { runDoctor } from "./doctor.js";
 import { runArchive } from "./archive.js";
@@ -47,6 +47,9 @@ import { isDetachedChild, detachSelf } from "../core/command/detach.js";
 import { parseRequestMdRaw } from "../parser/request-md.js";
 import { runJobWait } from "./job-wait.js";
 import { runGuide, GUIDE_TOPICS } from "../core/command/guide.js";
+import { runFromIssue } from "./from-issue.js";
+import { runResumeFromIssue } from "./resume-from-issue.js";
+import { getOriginInfo } from "../git/remote.js";
 
 /** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
 const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
@@ -343,14 +346,25 @@ Options:
 export const NO_DETAILED_HELP_USAGE = "No detailed help available.\nRun 'specrunner --help' for the command list.\n";
 
 export const JOB_RESUME_USAGE = `Usage: specrunner job resume <slug> [options]
+       specrunner job resume --from-issue <n> [options]
 
 Resume a halted or awaiting-resume job.
 
 Arguments:
   <slug>              Job slug to resume. Resolved by slug first; if not found,
                       falls back to a short Job ID prefix.
+                      Mutually exclusive with --from-issue.
 
 Options:
+  --from-issue <n>    Locate the resumable job by GitHub issue number instead of slug.
+                      Locator resolution: scans issue comments for the latest escalation
+                      marker (→ jobId), then enumerates Development-linked branches and
+                      confirms identity by matching jobId / issueNumber / branch name in
+                      the branch-borne checkpoint. Rebind is performed automatically when
+                      no local job state is found. Mutually exclusive with positional <slug>.
+                      When no Development-linked branch is found, use:
+                        specrunner job attach --branch <branch>
+                        specrunner job resume <slug>
   --from <step>       Override the start step (default: recorded resumePoint step).
                       Valid steps: ${[...AGENT_STEP_NAMES, ...CLI_STEP_NAMES].join(", ")}
                       Note: composite steps (custom-reviewers fan-out, regression-gate)
@@ -380,8 +394,9 @@ Options:
   --help, -h          Show this help message.
 
 Mutually exclusive pairs:
-  --detach  /  --json         (only one output mode can be active at a time)
-  --prompt  /  --prompt-file  (only one operator guidance source at a time)
+  --detach     /  --json         (only one output mode can be active at a time)
+  --prompt     /  --prompt-file  (only one operator guidance source at a time)
+  --from-issue /  <slug>         (only one job locator at a time)
 `;
 
 export const INBOX_RUN_USAGE = `Usage: specrunner inbox run [options]
@@ -544,6 +559,7 @@ const RUN_JOB_FLAGS = {
   "no-worktree": { type: "boolean" },
   issue: { type: "integer", min: 1 },
   detach: { type: "boolean" },
+  "from-issue": { type: "integer", min: 1 },
 } as const satisfies Record<string, FlagDef>;
 
 // ---------------------------------------------------------------------------
@@ -551,12 +567,49 @@ const RUN_JOB_FLAGS = {
 // ---------------------------------------------------------------------------
 
 async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
-  const requestMdPath = parsed.positional!;
+  const fromIssue = typeof parsed.flags["from-issue"] === "number" ? parsed.flags["from-issue"] : undefined;
+  const hasPositional = parsed.positional !== undefined;
+
+  // --- Presence check: need exactly one of positional or --from-issue ---
+  if (fromIssue === undefined && !hasPositional) {
+    logError("Usage error: 'job start' requires a <slug|file> positional or --from-issue <n>");
+    process.exit(EXIT_CODE.ARG_ERROR);
+  }
+
+  // --- Exclusivity: --from-issue + positional ---
+  if (fromIssue !== undefined && hasPositional) {
+    logError("Usage error: --from-issue and positional <slug|file> are mutually exclusive");
+    process.exit(EXIT_CODE.ARG_ERROR);
+  }
+
+  // --- Exclusivity: --from-issue + --issue ---
+  if (fromIssue !== undefined && parsed.flags["issue"] !== undefined) {
+    logError("Usage error: --from-issue and --issue are mutually exclusive (--from-issue includes issue linkage)");
+    process.exit(EXIT_CODE.ARG_ERROR);
+  }
 
   if (parsed.flags["detach"] && parsed.flags["json"]) {
     logError("--detach and --json are mutually exclusive");
     process.exit(EXIT_CODE.ARG_ERROR);
   }
+
+  // --- Route --from-issue before generic detach branch ---
+  if (fromIssue !== undefined) {
+    const logLevel = resolveLogLevel({
+      quiet: !!parsed.flags["quiet"],
+      verbose: !!parsed.flags["verbose"],
+      debug: !!parsed.flags["debug"],
+    });
+    const code = await runFromIssue(
+      fromIssue,
+      { detach: !!parsed.flags["detach"], logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] },
+      ctx,
+    );
+    process.exit(code);
+  }
+
+  // --- Positional path (confirmed present) ---
+  const requestMdPath = parsed.positional!;
 
   if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
     const repoRoot = ctx?.repoRoot ?? process.cwd();
@@ -581,7 +634,55 @@ async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<
   });
   // --issue is now validated as integer by the parser (min: 1)
   const issue = typeof parsed.flags["issue"] === "number" ? parsed.flags["issue"] : undefined;
-  await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"], issue });
+
+  // Positional + --issue: route through issue-target for Development linked branch registration
+  if (issue !== undefined) {
+    const repoRoot = ctx?.repoRoot ?? process.cwd();
+    let config;
+    try {
+      config = await loadConfigWithOverlay(repoRoot, repoRoot);
+    } catch (err) {
+      logError(`Failed to load config: ${(err as Error).message}`);
+      process.exit(EXIT_CODE.GENERAL_ERROR);
+    }
+    const githubHost = resolveGitHubHost(config.github);
+    const githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
+    let githubToken: string;
+    try {
+      const result = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
+      githubToken = result.token;
+    } catch (err) {
+      logError(`Failed to resolve GitHub token: ${(err as Error).message}`);
+      process.exit(EXIT_CODE.GENERAL_ERROR);
+    }
+    let owner: string;
+    let repo: string;
+    try {
+      const origin = await getOriginInfo(repoRoot, githubHost);
+      owner = origin.owner;
+      repo = origin.name;
+    } catch (err) {
+      logError(`Failed to resolve git origin: ${(err as Error).message}`);
+      process.exit(EXIT_CODE.GENERAL_ERROR);
+    }
+    const githubClient = createGitHubClient(fetch, githubToken, githubApiBaseUrl);
+    const { startWithIssueLink } = await import("../core/issue-target/start.js");
+    const code = await startWithIssueLink({
+      repoRoot,
+      requestMdPath,
+      issueNumber: issue,
+      githubClient,
+      owner,
+      repo,
+      // Closure carries the CLI flags (logLevel / json / no-worktree) so the issue-target
+      // route preserves the same runRunCore contract as the plain positional route.
+      startPrimitive: (path, opts) =>
+        runRunCore(path, { ...opts, logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] }),
+    });
+    process.exit(code);
+  }
+
+  await runRun(requestMdPath, { logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] });
 }
 
 // ---------------------------------------------------------------------------
@@ -827,12 +928,12 @@ export const COMMANDS: Record<string, CommandSpec> = {
         path: ["job", "start"],
         summary: "Start a job",
         flags: RUN_JOB_FLAGS,
-        args: [{ name: "slug|file", required: true }],
+        args: [{ name: "slug|file", required: false }],
         worktreeGuard: true,
         visibility: "normal",
         help: {
           group: "Job commands",
-          summary: "  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)",
+          summary: "  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)\n  job start --from-issue <n>      issue 本文を request として直接起動 (fidelity skip・base-branch guard・--issue/positional 排他)",
         },
         handler: runJobHandler,
       },
@@ -968,13 +1069,14 @@ export const COMMANDS: Record<string, CommandSpec> = {
           "apply-canon": { type: "boolean" },
           "adopt-commits": { type: "boolean" },
           detach: { type: "boolean" },
+          "from-issue": { type: "integer", min: 1 },
         },
-        args: [{ name: "slug", required: true }],
+        args: [{ name: "slug", required: false }],
         worktreeGuard: true,
         visibility: "normal",
         help: {
           group: "Job commands",
-          summary: "  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger",
+          summary: "  job resume <slug>               halted job を再開\n  job resume <slug> --detach      agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job resume <slug> --adopt-commits  adopt operator-made commits into the egress ledger\n  job resume --from-issue <n>     issue 番号から escalation marker を特定して再開 (rebind 内包)",
           detail: JOB_RESUME_USAGE,
         },
         handler: async (parsed, ctx) => {
@@ -983,22 +1085,15 @@ export const COMMANDS: Record<string, CommandSpec> = {
             process.exit(EXIT_CODE.ARG_ERROR);
           }
 
-          if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
-            const slug = parsed.positional!;
-            if (!SLUG_REGEX.test(slug)) {
-              logError(`Invalid slug '${slug}' for --detach.`);
-              process.exit(EXIT_CODE.GENERAL_ERROR);
-            }
-            const repoRoot = ctx?.repoRoot ?? process.cwd();
-            const code = await detachSelf({
-              args: process.argv.slice(2),
-              repoRoot,
-              slug,
-              env: process.env as Record<string, string | undefined>,
-            });
-            process.exit(code);
+          const fromIssue = typeof parsed.flags["from-issue"] === "number" ? parsed.flags["from-issue"] : undefined;
+
+          // Exclusivity: --from-issue + positional slug
+          if (fromIssue !== undefined && parsed.positional !== undefined) {
+            logError("Usage error: --from-issue and positional <slug> are mutually exclusive");
+            process.exit(EXIT_CODE.ARG_ERROR);
           }
 
+          // Prompt resolution (shared by both --from-issue and slug paths)
           const promptText = parsed.flags["prompt"] as string | undefined;
           const promptFile = parsed.flags["prompt-file"] as string | undefined;
 
@@ -1028,8 +1123,51 @@ export const COMMANDS: Record<string, CommandSpec> = {
             debug: !!parsed.flags["debug"],
           });
 
+          // --from-issue path
+          if (fromIssue !== undefined) {
+            const code = await runResumeFromIssue(
+              fromIssue,
+              {
+                detach: !!parsed.flags["detach"],
+                prompt: resolvedPrompt,
+                from: parsed.flags["from"] as string | undefined,
+                force: !!parsed.flags["force"],
+                applyCanon: !!parsed.flags["apply-canon"],
+                adoptCommits: !!parsed.flags["adopt-commits"],
+                noWorktree: !!parsed.flags["no-worktree"],
+                json: !!parsed.flags["json"],
+                logLevel,
+                cwd: process.cwd(),
+                repoRoot: ctx?.repoRoot,
+              },
+              ctx,
+            );
+            process.exit(code);
+          }
+
+          // Normal slug path — slug is required when --from-issue is absent
+          if (!parsed.positional) {
+            throw new FlagParseError("Usage error: 'job resume' requires a <slug> argument or --from-issue <n>");
+          }
+
+          if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
+            const slug = parsed.positional;
+            if (!SLUG_REGEX.test(slug)) {
+              logError(`Invalid slug '${slug}' for --detach.`);
+              process.exit(EXIT_CODE.GENERAL_ERROR);
+            }
+            const repoRoot = ctx?.repoRoot ?? process.cwd();
+            const code = await detachSelf({
+              args: process.argv.slice(2),
+              repoRoot,
+              slug,
+              env: process.env as Record<string, string | undefined>,
+            });
+            process.exit(code);
+          }
+
           try {
-            await runResume(parsed.positional!, {
+            await runResume(parsed.positional, {
               from: parsed.flags["from"] as string | undefined,
               force: !!parsed.flags["force"],
               logLevel,

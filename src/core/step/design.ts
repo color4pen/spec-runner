@@ -5,7 +5,7 @@ import { AGENT_TOOLSET_TYPE } from "../agent/definition.js";
 import type { JobState } from "../../state/schema.js";
 import type { DynamicContext } from "../../git/dynamic-context.js";
 import { buildInitialMessage, DESIGN_SYSTEM_PROMPT } from "../../prompts/design-system.js";
-import { getBranchPrefix, isSpecRequired } from "../../config/type-config.js";
+import { buildFeatureBranchName, isSpecRequired } from "../../config/type-config.js";
 import { requestMdPath, changeFolderPath, factCheckAttestationPath } from "../../util/paths.js";
 import { evaluateFactCheckAttestation, buildFactCheckDirective } from "../factcheck-attestation.js";
 import { readSourceRevision } from "../../git/source-revision.js";
@@ -148,7 +148,7 @@ export const DesignStep: AgentStep = {
     // Fall back to computing from type/slug/jobId for backward compatibility.
     const branch = state.branch
       ? state.branch
-      : `${getBranchPrefix(deps.request.type)}${deps.slug}-${state.jobId.slice(0, 8)}`;
+      : buildFeatureBranchName(deps.request.type, deps.slug, state.jobId);
 
     // Pre-compute the fact-check directive so design-system.ts (shared-kernel)
     // does not need to import buildFactCheckDirective from domain (core/).

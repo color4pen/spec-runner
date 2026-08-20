@@ -69,7 +69,6 @@ export function buildPipeline(
     summaryStep: descriptor.summaryStep,
     maxIterationsByStep: descriptor.maxIterationsByStep ? { ...descriptor.maxIterationsByStep } : undefined,
     parallelReview: descriptor.parallelReview,
-    loopIntermediateSteps: descriptor.loopIntermediateSteps,
   });
 }
 

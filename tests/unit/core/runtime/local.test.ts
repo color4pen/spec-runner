@@ -49,7 +49,8 @@ function buildMockGitHubClient() {
     searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
     listIssueComments: vi.fn().mockResolvedValue([]),
     removeLabel: vi.fn().mockResolvedValue(undefined),
-    getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "", nodeId: "NODE_001" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -66,7 +67,10 @@ function buildRequest() {
   return { type: "new-feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false };
 }
 
-// Helper: build a spawnFn mock for LocalRuntime (covers fetch + rev-list calls in run path)
+/** Stable test SHA returned by git rev-parse mock (origin/main → baseOid) */
+export const MOCK_BASE_OID = "aabbccddaabbccddaabbccddaabbccddaabbccdd";
+
+// Helper: build a spawnFn mock for LocalRuntime (covers fetch + rev-list + rev-parse calls in run path)
 function buildMockSpawnFn(opts: {
   fetchExitCode?: number;
   fetchStderr?: string;
@@ -95,6 +99,10 @@ function buildMockSpawnFn(opts: {
     // git fetch origin
     if (cmd === "git" && args[0] === "fetch") {
       return { exitCode: fetchExitCode, stdout: "", stderr: fetchStderr };
+    }
+    // git rev-parse: resolve a ref to its OID (D4 base OID resolution)
+    if (cmd === "git" && args[0] === "rev-parse") {
+      return { exitCode: 0, stdout: `${MOCK_BASE_OID}\n`, stderr: "" };
     }
     // git rev-list dispatch: behind = HEAD..<remote>, ahead = <remote>..<local>
     if (cmd === "git" && args[0] === "rev-list") {
@@ -228,11 +236,11 @@ describe("TC-LR-008: setupWorkspace run path calls git fetch origin and uses ori
     expect(fetchCall).toBeDefined();
     expect(fetchCall?.args).toContain("origin");
 
-    // manager.create was called with "origin/main" as baseRef
+    // manager.create was called with the resolved base OID (D4: rev-parse once, use SHA not symbolic ref)
     expect(createdPaths.length).toBe(1);
     const createMock = manager.create as ReturnType<typeof vi.fn>;
     const createCall = createMock.mock.calls[0];
-    expect(createCall?.[3]).toBe("origin/main");
+    expect(createCall?.[3]).toBe(MOCK_BASE_OID);
   });
 
   it("throws when git fetch origin fails", async () => {

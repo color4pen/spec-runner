@@ -457,77 +457,16 @@ describe("TC-009: needs-fix spec-fixer returns to spec-review", () => {
     expect(row).toBeDefined();
   });
 
-  it("TC-009: guarded spec-fixer → test-case-gen when predicate returns true when latest spec-review verdict is needs-fix", () => {
-    // After the test-case-gen design-phase change, spec-fixer approved after needs-fix routes
-    // to test-case-gen (for TC regeneration) via specFixerNeedsFixForward guard.
+  it("TC-009: STANDARD_TRANSITIONS has NO spec-fixer → test-case-gen row (spec-review-loop-single-fixer removed it)", () => {
+    // Updated: spec-review-loop-single-fixer — spec-fixer no longer routes to test-case-gen after needs-fix.
+    // The needs-fix path now goes: spec-fixer approved → spec-review (unconditional).
     const guardedRow = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_FIXER &&
         t.on === "approved" &&
         t.to === STEP_NAMES.TEST_CASE_GEN,
     );
-    expect(guardedRow).toBeDefined();
-    expect(guardedRow!.when).toBeDefined();
-
-    // State where latest spec-review verdict is "needs-fix" (not observation pass)
-    const specReviewTs = "2026-01-01T00:01:00.000Z";
-    const specFixerTs  = "2026-01-01T00:02:00.000Z";
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "needs-fix",
-            findings: [makeFinding("high", "fixable", SPEC_MD)],
-            startedAt: specReviewTs,
-            endedAt: specReviewTs,
-          }),
-        ],
-        [STEP_NAMES.SPEC_FIXER]: [
-          makeStepRun({
-            verdict: "approved",
-            startedAt: specFixerTs,
-            endedAt: specFixerTs,
-          }),
-        ],
-      },
-    });
-
-    // when(state) returns true → specFixerNeedsFixForward fires → routes to test-case-gen for TC regeneration
-    expect(guardedRow!.when!(state)).toBe(true);
-  });
-
-  it("TC-009: guarded spec-fixer → test-case-gen when predicate returns false for exempt type (chore + needs-fix → SPEC_REVIEW, not TEST_CASE_GEN)", () => {
-    // Exempt types (chore) must NOT route to test-case-gen even when spec-review verdict is needs-fix.
-    // specFixerNeedsFixForward must return false so the fallback unconditional row routes to spec-review.
-    const guardedRow = STANDARD_TRANSITIONS.find(
-      (t) =>
-        t.step === STEP_NAMES.SPEC_FIXER &&
-        t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_CASE_GEN,
-    );
-    expect(guardedRow).toBeDefined();
-    expect(guardedRow!.when).toBeDefined();
-
-    const ts = "2026-01-01T00:01:00.000Z";
-    const state = makeMinimalJobState({
-      request: {
-        path: REQUEST_MD,
-        title: "Chore Exempt Test",
-        type: "chore",
-        slug: TEST_SLUG,
-      },
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({ verdict: "needs-fix", startedAt: ts, endedAt: ts }),
-        ],
-        [STEP_NAMES.SPEC_FIXER]: [
-          makeStepRun({ verdict: "approved", startedAt: ts, endedAt: ts }),
-        ],
-      },
-    });
-
-    // Exempt type → specFixerNeedsFixForward returns false → unconditional row wins → SPEC_REVIEW
-    expect(guardedRow!.when!(state)).toBe(false);
+    expect(guardedRow).toBeUndefined();
   });
 });
 
@@ -539,21 +478,20 @@ describe("TC-009: needs-fix spec-fixer returns to spec-review", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-010: conformance-triggered spec-fixer returns to spec-review", () => {
-  it("TC-010: guarded spec-fixer → test-case-gen when predicate returns false when conformance needs-fix:spec-fixer is newer than latest spec-review", () => {
-    const guardedRow = STANDARD_TRANSITIONS.find(
+  it("TC-010: spec-fixer approved → spec-review (unconditional) covers conformance reverification path", () => {
+    // Updated: spec-review-loop-single-fixer — spec-fixer → test-case-gen row removed.
+    // Conformance reverification path: spec-fixer approved → spec-review (unconditional row fires).
+    const unconditionalRow = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_FIXER &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_CASE_GEN,
+        t.to === STEP_NAMES.SPEC_REVIEW &&
+        !t.when,
     );
-    expect(guardedRow).toBeDefined();
-    expect(guardedRow!.when).toBeDefined();
+    expect(unconditionalRow).toBeDefined();
 
-    // State where:
-    // - Latest spec-review ran at T1
-    // - Conformance ran at T2 > T1 with needs-fix:spec-fixer
-    // → getConformanceFixContext(state, SPEC_FIXER) returns non-null
-    // → specFixerObservationForward returns false → routes back to spec-review for reverification
+    // The observation-forward guarded row (spec-fixer → implementer) must return false
+    // for conformance context so the unconditional row fires.
     const specReviewTs  = "2026-01-01T00:01:00.000Z";
     const conformanceTs = "2026-01-01T00:02:00.000Z";
     const specFixerTs   = "2026-01-01T00:03:00.000Z";
@@ -586,9 +524,16 @@ describe("TC-010: conformance-triggered spec-fixer returns to spec-review", () =
       },
     });
 
-    // Conformance context is present (newer than spec-review) → must return false
-    // → fallback row fires → spec-fixer approved → spec-review (reverification)
-    expect(guardedRow!.when!(state)).toBe(false);
+    // specFixerObservationForward must return false for conformance context
+    const observationRow = STANDARD_TRANSITIONS.find(
+      (t) =>
+        t.step === STEP_NAMES.SPEC_FIXER &&
+        t.on === "approved" &&
+        t.to === STEP_NAMES.IMPLEMENTER &&
+        !!t.when,
+    );
+    expect(observationRow).toBeDefined();
+    expect(observationRow!.when!(state)).toBe(false);
   });
 });
 
@@ -1367,39 +1312,15 @@ describe("TC-027: high fixable verdict path — full needs-fix loop (spec-review
     expect(row).toBeDefined();
   });
 
-  it("TC-027: for needs-fix context, spec-fixer approved → test-case-gen (specFixerNeedsFixForward)", () => {
-    // After the test-case-gen design-phase change, spec-fixer after needs-fix routes to test-case-gen
-    // (for TC regeneration) via the specFixerNeedsFixForward guard.
+  it("TC-027: spec-fixer approved → test-case-gen row は存在しない（spec-review-loop-single-fixer で削除）", () => {
+    // spec-review-loop-single-fixer: specFixerNeedsFixForward guarded row 削除済み
     const guardedRow = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_FIXER &&
         t.on === "approved" &&
         t.to === STEP_NAMES.TEST_CASE_GEN,
     );
-    expect(guardedRow).toBeDefined();
-    expect(guardedRow!.when).toBeDefined();
-
-    // State: spec-review verdict was needs-fix (high fixable)
-    const specReviewTs = "2026-01-01T00:01:00.000Z";
-    const specFixerTs  = "2026-01-01T00:02:00.000Z";
-    const state = makeMinimalJobState({
-      steps: {
-        [STEP_NAMES.SPEC_REVIEW]: [
-          makeStepRun({
-            verdict: "needs-fix",
-            findings: [makeFinding("high", "fixable", SPEC_MD)],
-            startedAt: specReviewTs,
-            endedAt: specReviewTs,
-          }),
-        ],
-        [STEP_NAMES.SPEC_FIXER]: [
-          makeStepRun({ verdict: "approved", startedAt: specFixerTs, endedAt: specFixerTs }),
-        ],
-      },
-    });
-
-    // when returns true → specFixerNeedsFixForward fires → routes to test-case-gen for TC regeneration
-    expect(guardedRow!.when!(state)).toBe(true);
+    expect(guardedRow).toBeUndefined();
   });
 
   it("TC-027: unconditional spec-fixer approved → spec-review row exists (fallback for needs-fix path)", () => {
@@ -1500,14 +1421,13 @@ describe("TC-028: request.md spec-review fixable finding is excluded from ledger
 // GREEN: 51 - 2 test-materialize rows - 2 (spec-review→test-mat + spec-fixer→test-mat replaced by implementer)
 // ---------------------------------------------------------------------------
 
-describe("TC-029: STANDARD_TRANSITIONS length is 47 after absorb-test-materialize", () => {
-  it("TC-029: STANDARD_TRANSITIONS.length === 47 (test-materialize step abolished, -4 rows net)", () => {
-    // Previously 51 rows (build-fixer abolished);
-    // absorb-test-materialize: test-materialize step removed entirely (-2 own rows),
-    // spec-review approved → implementer (was test-materialize, same count),
-    // spec-fixer approved → implementer (was test-materialize, same count),
-    // implementer success → bite-evidence already existed → net -4 rows (2 own + 2 extra implementer guards)
-    expect(STANDARD_TRANSITIONS.length).toBe(47);
+describe("TC-029: STANDARD_TRANSITIONS length is 45 after spec-review-loop-single-fixer", () => {
+  it("TC-029: STANDARD_TRANSITIONS.length === 45 (-2 rows: spec-review-loop-single-fixer removes SPEC_REVIEW→TEST_CASE_GEN and SPEC_FIXER→TEST_CASE_GEN)", () => {
+    // Previously 47 rows (absorb-test-materialize);
+    // spec-review-loop-single-fixer: -2 rows:
+    //   - spec-review needs-fix → test-case-gen (TC-only guard) removed
+    //   - spec-fixer approved → test-case-gen (TC regeneration guard) removed
+    expect(STANDARD_TRANSITIONS.length).toBe(45);
   });
 
   it("TC-029: the guarded rows are distinct from the existing unconditional rows", () => {
@@ -1521,15 +1441,14 @@ describe("TC-029: STANDARD_TRANSITIONS length is 47 after absorb-test-materializ
     );
     expect(guardedSpecReviewRow).toBeDefined();
 
-    // Guarded row: spec-fixer approved → test-case-gen (with when, specFixerNeedsFixForward)
-    const guardedSpecFixerRow = STANDARD_TRANSITIONS.find(
+    // spec-fixer → test-case-gen row is GONE (spec-review-loop-single-fixer)
+    const removedSpecFixerRow = STANDARD_TRANSITIONS.find(
       (t) =>
         t.step === STEP_NAMES.SPEC_FIXER &&
         t.on === "approved" &&
-        t.to === STEP_NAMES.TEST_CASE_GEN &&
-        !!t.when,
+        t.to === STEP_NAMES.TEST_CASE_GEN,
     );
-    expect(guardedSpecFixerRow).toBeDefined();
+    expect(removedSpecFixerRow).toBeUndefined();
 
     // Existing unconditional rows still present
     const unconditionalSpecReviewRow = STANDARD_TRANSITIONS.find(

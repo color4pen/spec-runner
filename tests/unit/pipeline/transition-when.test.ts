@@ -91,6 +91,7 @@ function makeMinimalDeps(): PipelineDeps {
     listIssueComments: vi.fn().mockResolvedValue([]),
     removeLabel: vi.fn().mockResolvedValue(undefined),
     getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
+    createLinkedBranch: vi.fn().mockResolvedValue(undefined),
     },
     owner: "user",
     repo: "repo",
@@ -189,14 +190,11 @@ describe("TC-WHEN-01: conditional transition row has `when` predicate", () => {
 // TC-WHEN-02: STANDARD_TRANSITIONS has expected row count
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-WHEN-02: STANDARD_TRANSITIONS row count", () => {
-  it("has correct number of rows (+3 test-case-gen design-phase rows)", () => {
-    // 48 previous + 3 new guarded rows for test-case-gen design-phase:
-    //   1. design success → spec-review (when: isTestGenExempt)
-    //   2. spec-review needs-fix → test-case-gen (when: specReviewNeedsFixIsTcOnly)
-    //   3. spec-fixer approved → test-case-gen (when: specFixerNeedsFixForward)
-    // (build-fixer rows removed: verification failed→implementer replaces old build-fixer path;
-    //  implementer→verification(when verificationFailedLast) added; 2 build-fixer rows removed → net -1)
-    expect(STANDARD_TRANSITIONS.length).toBe(47);
+  it("has 45 rows (spec-review-loop-single-fixer: -2 from test-case-gen routing removal)", () => {
+    // Previous: 47 rows. spec-review-loop-single-fixer removes 2 guarded rows:
+    //   - spec-review needs-fix → test-case-gen (when: specReviewNeedsFixIsTcOnly) removed
+    //   - spec-fixer approved → test-case-gen (when: specFixerNeedsFixForward) removed
+    expect(STANDARD_TRANSITIONS.length).toBe(45);
   });
 });
 
