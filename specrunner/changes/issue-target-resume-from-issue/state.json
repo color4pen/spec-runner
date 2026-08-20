@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
   "createdAt": "2026-08-20T09:24:35.898Z",
-  "updatedAt": "2026-08-20T09:46:44.749Z",
+  "updatedAt": "2026-08-20T09:55:23.072Z",
   "request": {
     "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
     "type": "new-feature",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "spec-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/issue-target-resume-from-issue-5ca3d603",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/issue-target-resume-from-issue/request.md, title: \"issueNumber の行番号参照が不正確（:476 → 実際は :458）\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -65,7 +69,8 @@
     "42c046f26b4bc289da216500540c34191e640b09",
     "50c9234eeb0b9bcc1dfe402531fb49571d6f7636",
     "8c32ac3281b24f96cb6a1e3970ced9e9a70a0eca",
-    "fdf1c083d118085a4559f60f0a56c69cad6bac5c"
+    "fdf1c083d118085a4559f60f0a56c69cad6bac5c",
+    "82ea7b16065f294f7ff1e8fdc7b8f29f0e52efbc"
   ],
   "touchedFiles": {
     "request-review": [
@@ -109,14 +114,42 @@
       "tests/error-codes.test.ts",
       "tests/unit/architecture/module-boundary.test.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "spec-review": [
+      "src/core/notify/issue-notifier.ts",
+      "src/core/issue-target/start.ts",
+      "src/adapter/github/github-client.ts",
+      "src/kernel/github-client.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/state/schema/types.ts",
+      "src/errors.ts",
+      "src/cli/from-issue.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/git/checkpoint-ref.ts",
+      "src/core/port/github-client.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/error-codes.test.ts",
+      "src/core/pr-create/body-template.ts",
+      "tests/unit/architecture/core-invariants.test.ts"
+    ]
+  },
+  "resumePoint": {
+    "step": "spec-review",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/issue-target-resume-from-issue/request.md, title: \"issueNumber の行番号参照が不正確（:476 → 実際は :458）\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "iterationsExhausted": 1
   },
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 15,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }
