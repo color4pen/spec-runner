@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
   "createdAt": "2026-08-20T14:27:40.099Z",
-  "updatedAt": "2026-08-20T14:57:10.346Z",
+  "updatedAt": "2026-08-20T15:03:29.977Z",
   "request": {
     "title": "interruption レコードにシグナル名を記録する",
     "type": "bug-fix",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "fix/signal-name-in-interruption-5ff912e4",
   "error": null,
@@ -67,7 +67,8 @@
     "f2d29c473174000d3f06510f2f5a32640d219bb0",
     "53f4b40f5260d965b20ee1380beee750f835e948",
     "b9679ebb20263b99c70f050f2d2aed9bfdc41d99",
-    "61c4a7bfc5c135ef2047251382110d30169c6898"
+    "61c4a7bfc5c135ef2047251382110d30169c6898",
+    "bdec4cb225980c5bc80e43cb31213d711d03e101"
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -92,14 +93,28 @@
       "src/core/pipeline/__tests__/member-resume-routing.test.ts",
       "src/core/command/__tests__/resume-member-context.test.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "spec-review": [
+      "src/store/event-journal.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/lifecycle/exit-guard.ts",
+      "src/core/resume/canon-provenance.ts",
+      "src/core/runtime/__tests__/signal-handler-order.test.ts",
+      "src/core/lifecycle/__tests__/exit-guard.test.ts",
+      "src/store/job-journal.ts",
+      "src/state/lifecycle.ts",
+      "src/state/schema.ts",
+      "src/state/schema/types.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 20,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 3,
       "design": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }

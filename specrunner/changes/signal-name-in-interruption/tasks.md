@@ -59,7 +59,7 @@ Note: managed.ts `signalCleanup` does not call `appendInterruption` (only `trans
 Create a new test file `src/core/runtime/__tests__/signal-name-in-interruption.test.ts`.
 
 - [ ] Write a parameterized test over `["SIGINT", "SIGTERM", "SIGHUP"]` that invokes `signalCleanup(signal)` on a `LocalRuntime` instance with mocked store, and asserts that `appendInterruption` is called with `{ signal: "<SIGNAME>", reason: "signal", type: "interruption" }`
-- [ ] In the same parameterized loop, assert that `persist` is called with a state whose history entry's `reason` field contains the signal name (e.g. `"Interrupted by SIGTERM"`)
+- [ ] In the same parameterized loop, assert that `persist` is called with a state whose history entry's `message` field contains the signal name (e.g. `"Interrupted by SIGTERM"`)
 - [ ] Assert that `reason: "signal"` is present and unchanged (backward-compat pin)
 - [ ] Write a test that `registerCleanup` on `LocalRuntime` calls `process.on` with `"SIGHUP"` in addition to `"SIGINT"` and `"SIGTERM"` (use `vi.spyOn(process, "on")`)
 - [ ] Write a test that `teardown` on `LocalRuntime` calls `process.off` with `"SIGHUP"` (use `vi.spyOn(process, "off")`)
@@ -69,7 +69,7 @@ Create a new test file `src/core/runtime/__tests__/signal-name-in-interruption.t
 
 **Acceptance Criteria**:
 - For each of SIGINT, SIGTERM, SIGHUP: `appendInterruption` receives `{ signal: "<SIGNAME>" }`
-- For each of SIGINT, SIGTERM, SIGHUP: transition `reason` contains the signal name
+- For each of SIGINT, SIGTERM, SIGHUP: history entry `message` contains the signal name
 - `reason: "signal"` (the interruption record's `reason`) is asserted unchanged
 - `process.on` is called with `"SIGHUP"` during `registerCleanup`
 - `process.off` is called with `"SIGHUP"` during `teardown`
@@ -80,7 +80,7 @@ Create a new test file `src/core/runtime/__tests__/signal-name-in-interruption.t
 
 Extend the test file from T-04 (or add a new `describe` block in the same file) for `ManagedRuntime`.
 
-- [ ] Write a parameterized test over `["SIGINT", "SIGTERM", "SIGHUP"]` that invokes `signalCleanup(signal)` on a `ManagedRuntime` instance with mocked store, and asserts that the state passed to `store.persist` has a history entry whose `reason` includes the signal name (e.g. `"Interrupted by SIGTERM"`)
+- [ ] Write a parameterized test over `["SIGINT", "SIGTERM", "SIGHUP"]` that invokes `signalCleanup(signal)` on a `ManagedRuntime` instance with mocked store, and asserts that the state passed to `store.persist` has a history entry whose `message` includes the signal name (e.g. `"Interrupted by SIGTERM"`)
 - [ ] Assert that `resumePoint.reason` is NOT the signal name (it remains `"Interrupted by signal"`)
 - [ ] Write a test that `registerCleanup` on `ManagedRuntime` calls `process.on` with `"SIGHUP"`
 - [ ] Write a test that `teardown` on `ManagedRuntime` calls `process.off` with `"SIGHUP"`
@@ -88,7 +88,7 @@ Extend the test file from T-04 (or add a new `describe` block in the same file) 
 - [ ] Look at the `ManagedRuntime` internals pattern (access `internals.signalCleanup` via `handle as unknown as ManagedCleanupInternals` cast, or invoke it directly from the mock)
 
 **Acceptance Criteria**:
-- For each of SIGINT, SIGTERM, SIGHUP: transition history reason contains the signal name
+- For each of SIGINT, SIGTERM, SIGHUP: history entry `message` contains the signal name
 - `resumePoint.reason` remains `"Interrupted by signal"` (unchanged from current managed behavior)
 - `process.on` is called with `"SIGHUP"` during `registerCleanup`
 - `process.off` is called with `"SIGHUP"` during `teardown`
