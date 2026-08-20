@@ -17,7 +17,7 @@ import {
 } from "../../../../src/core/pipeline/registry.js";
 import { assertRuntimeSupportsScope } from "../../../../src/core/pipeline/runtime-capability-gate.js";
 import { PIPELINE_IDS } from "../../../../src/kernel/pipeline-ids.js";
-import { STEP_NAMES } from "../../../../src/core/step/step-names.js";
+
 
 // ---------------------------------------------------------------------------
 // T-06-1: Meta pipeline: design-only が DESIGN_ONLY_DESCRIPTOR に到達する
@@ -150,16 +150,12 @@ describe("T-06-5: 未知 id は getPipelineDescriptor の既存エラーで弾�
 });
 
 // ---------------------------------------------------------------------------
-// T-06-6: STANDARD_DESCRIPTOR.loopIntermediateSteps には TEST_CASE_GEN が含まれる
-// Pin: removal causes spec-fixer → test-case-gen → spec-review to reset convergence budget
+// T-06-6: STANDARD_DESCRIPTOR.loopIntermediateSteps は削除済み
+// Pin: spec-review-loop-single-fixer — test-case-gen をループから除去し loopIntermediateSteps パラメータ削除
 // ---------------------------------------------------------------------------
 
-describe("T-06-6: STANDARD_DESCRIPTOR.loopIntermediateSteps に TEST_CASE_GEN が含まれる", () => {
-  it("loopIntermediateSteps is defined", () => {
-    expect(STANDARD_DESCRIPTOR.loopIntermediateSteps).toBeDefined();
-  });
-
-  it("loopIntermediateSteps contains TEST_CASE_GEN", () => {
-    expect(STANDARD_DESCRIPTOR.loopIntermediateSteps!.has(STEP_NAMES.TEST_CASE_GEN)).toBe(true);
+describe("T-06-6: STANDARD_DESCRIPTOR に loopIntermediateSteps が存在しない（削除済み）", () => {
+  it("loopIntermediateSteps is undefined (field removed with spec-review-loop-single-fixer)", () => {
+    expect((STANDARD_DESCRIPTOR as unknown as Record<string, unknown>)["loopIntermediateSteps"]).toBeUndefined();
   });
 });

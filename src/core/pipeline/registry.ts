@@ -82,9 +82,6 @@ export const STANDARD_DESCRIPTOR: PipelineDescriptor = {
     [STEP_NAMES.PR_CREATE]:        { role: "gate",     phase: "impl" },
   },
   summaryStep: STEP_NAMES.SPEC_REVIEW,
-  // test-case-gen is transparent to spec-review episode detection:
-  // spec-fixer → test-case-gen → spec-review must NOT reset the convergence budget.
-  loopIntermediateSteps: new Set([STEP_NAMES.TEST_CASE_GEN]),
 };
 
 /**

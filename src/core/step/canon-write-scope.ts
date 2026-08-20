@@ -10,7 +10,7 @@
  * Single source of truth:
  *   - code-fixer:   ∅ (writes only gitState artifact, no canon files)
  *   - implementer:  {tasks.md} (declared for task checkbox updates)
- *   - spec-fixer:   {spec.md, design.md, tasks.md} (declared for spec/design/task corrections)
+ *   - spec-fixer:   {spec.md, design.md, tasks.md, test-cases.md} (declared for spec/design/task/TC corrections)
  */
 import type { FixTarget } from "../../kernel/report-result.js";
 import type { JobState } from "../../state/schema.js";
@@ -26,8 +26,8 @@ import { getJobSlug } from "../../state/job-slug.js";
  * Single source of truth for the explicit D5 fixer → canon-paths map:
  *   - code-fixer:    ∅ (code-fixer writes only gitState)
  *   - implementer:   {tasks.md} (for task checkbox updates)
- *   - spec-fixer:    {spec.md, design.md, tasks.md} (for spec/design/task corrections)
- *   - test-case-gen: {test-cases.md} (generates test scenarios)
+ *   - spec-fixer:    {spec.md, design.md, tasks.md, test-cases.md} (for spec/design/task/TC corrections)
+ *   - test-case-gen: {test-cases.md} (generates test scenarios; producer declaration for drift-guard)
  */
 function buildScopeForSlug(slug: string): CanonWriteScope {
   const folder = changeFolderPath(slug);
@@ -39,8 +39,8 @@ function buildScopeForSlug(slug: string): CanonWriteScope {
     ["code-fixer", new Set<string>()],
     // implementer: tasks.md only (task checkbox updates)
     ["implementer", new Set<string>([`${folder}/tasks.md`])],
-    // spec-fixer: spec.md + design.md + tasks.md (spec/design/task corrections)
-    ["spec-fixer", new Set<string>([`${folder}/spec.md`, `${folder}/design.md`, `${folder}/tasks.md`])],
+    // spec-fixer: spec.md + design.md + tasks.md + test-cases.md (spec/design/task/TC corrections)
+    ["spec-fixer", new Set<string>([`${folder}/spec.md`, `${folder}/design.md`, `${folder}/tasks.md`, `${folder}/test-cases.md`])],
     // test-case-gen: test-cases.md only (generates test scenarios)
     ["test-case-gen", new Set<string>([`${folder}/test-cases.md`])],
   ]);
@@ -57,8 +57,8 @@ function buildScopeForSlug(slug: string): CanonWriteScope {
  * writableByFixer uses an explicit map (D5) to avoid import cycles:
  *   - code-fixer:    ∅ (code-fixer writes only gitState)
  *   - implementer:   {tasks.md} (for task checkbox updates)
- *   - spec-fixer:    {spec.md, design.md, tasks.md} (for spec/design/task corrections)
- *   - test-case-gen: {test-cases.md} (generates test scenarios)
+ *   - spec-fixer:    {spec.md, design.md, tasks.md, test-cases.md} (for spec/design/task/TC corrections)
+ *   - test-case-gen: {test-cases.md} (generates test scenarios; producer declaration for drift-guard)
  *
  * Drift-guard (TC-029): canon-write-scope.test.ts asserts that each entry matches
  * the corresponding fixer's writes() ∩ protectedCanonPaths at test time.
