@@ -58,6 +58,10 @@ jobs:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0 # pipeline の egress 検査 (rev-list --not --remotes) を full history で走らせる
+          # checkout v4 は既定で GITHUB_TOKEN を local git config に保存する。
+          # SpecRunner は agent subprocess の env から token を除去し、git fetch/push は
+          # コマンド単位の transport auth で行うため、config 残留 token はその防壁の裏口になる。
+          persist-credentials: false
 
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
 
