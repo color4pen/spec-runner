@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1875919e-d9f4-4db8-8abe-33e24f96cfb9",
   "createdAt": "2026-08-20T03:41:04.851Z",
-  "updatedAt": "2026-08-20T04:32:21.989Z",
+  "updatedAt": "2026-08-20T04:33:39.826Z",
   "request": {
     "title": "checkpoint 検証の分離: generic integrity と use-case policy の二層化",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "refactor/checkpoint-verification-policy-split-1875919e",
   "error": null,
@@ -78,7 +78,8 @@
     "37ae8c305db68eeddeae3badab59d30207655322",
     "fc25bb2fc8873c6a743fd789ac5c590f64ef8367",
     "25a15f8bcfd756765a544572f2217288da4c4b5a",
-    "86374ad58f9bada5235ff1c6c4682fce4735e2df"
+    "86374ad58f9bada5235ff1c6c4682fce4735e2df",
+    "1984ea01cb2dacab9ec29969cd5ec84104a9af5e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -118,7 +119,8 @@
       "tests/attach/checkpoint-policy.test.ts",
       "tests/attach/verify-checkpoint.test.ts",
       "tests/unit/architecture/arch-allowlist.ts"
-    ]
+    ],
+    "regression-gate": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -152,7 +154,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 73,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -165,7 +167,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
