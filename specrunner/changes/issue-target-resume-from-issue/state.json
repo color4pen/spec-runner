@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
   "createdAt": "2026-08-20T09:24:35.898Z",
-  "updatedAt": "2026-08-20T09:29:05.169Z",
+  "updatedAt": "2026-08-20T09:43:07.387Z",
   "request": {
     "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/issue-target-resume-from-issue-5ca3d603",
   "error": null,
@@ -63,7 +63,8 @@
   ],
   "synthesizedCommits": [
     "42c046f26b4bc289da216500540c34191e640b09",
-    "50c9234eeb0b9bcc1dfe402531fb49571d6f7636"
+    "50c9234eeb0b9bcc1dfe402531fb49571d6f7636",
+    "8c32ac3281b24f96cb6a1e3970ced9e9a70a0eca"
   ],
   "touchedFiles": {
     "request-review": [
@@ -82,12 +83,37 @@
       "src/cli/from-issue.ts",
       "src/cli/command-registry.ts",
       "tests/unit/architecture/arch-allowlist.ts"
+    ],
+    "design": [
+      "src/cli/resume.ts",
+      "src/cli/attach.ts",
+      "src/cli/from-issue.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/core/issue-target/start.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/kernel/github-client.ts",
+      "src/core/port/github-client.ts",
+      "src/adapter/github/github-client.ts",
+      "src/cli/command-registry.ts",
+      "src/core/resume/resolve-job.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/git/checkpoint-ref.ts",
+      "src/state/schema/types.ts",
+      "src/errors.ts",
+      "src/core/command/guide.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "tests/error-codes.test.ts",
+      "tests/unit/architecture/module-boundary.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
