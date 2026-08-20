@@ -1,0 +1,24 @@
+{
+  "requestHash": "sha256:bd6e0ba8c8327160885325d06a9d3757a317e5a964448814f723c0091858e951",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/runtime/local.ts:1683 — signalCleanup defined as async (): Promise<void> (no arguments)",
+    "src/core/runtime/local.ts:1695-1699 — appendInterruption called with reason: \"signal\"",
+    "src/core/runtime/local.ts:1701-1702 — transition trigger: \"signal-handler\", reason: \"Interrupted by signal\"",
+    "src/core/runtime/local.ts:1717 — process.exit(130)",
+    "src/core/runtime/local.ts:1720-1721 — process.on(\"SIGINT\", signalCleanup) and process.on(\"SIGTERM\", signalCleanup)",
+    "src/core/runtime/managed.ts:741 — signalCleanup defined as async (): Promise<void> (no arguments)",
+    "src/core/runtime/managed.ts:746-757 — transitionJob with trigger: \"signal-handler\", reason: \"Interrupted by signal\"",
+    "src/core/runtime/managed.ts:765-766 — process.on(\"SIGINT\", signalCleanup) and process.on(\"SIGTERM\", signalCleanup)",
+    "src/core/runtime/managed.ts:775-776 — process.off(\"SIGINT\", internals.signalCleanup) and process.off(\"SIGTERM\", internals.signalCleanup) in teardown",
+    "src/core/lifecycle/exit-guard.ts:65 — appendInterruption({ reason: \"signal\" }) in handleNoWorktreeExit",
+    "src/core/lifecycle/exit-guard.ts:71 — resumePoint: { reason: \"signal\" } in handleNoWorktreeExit",
+    "src/core/lifecycle/exit-guard.ts:134 — appendInterruption({ reason: \"signal\" }) in handlePerJobExit",
+    "src/core/lifecycle/exit-guard.ts:140 — resumePoint: { reason: \"signal\" } in handlePerJobExit",
+    "src/core/lifecycle/exit-guard.ts:164 — resumePoint: { reason: \"signal\" } in handleGlobalExit",
+    "src/core/resume/canon-provenance.ts:27-32 — INTERRUPTION_REASONS = new Set([\"signal\", \"timeout\", \"failure\", \"exhaustion\"])",
+    "src/core/resume/canon-provenance.ts:53 — INTERRUPTION_REASONS.has(resumePoint.reason) — reason value only, field addition does not affect judgment",
+    "SIGHUP absent from entire src/ directory (grep confirmed)"
+  ],
+  "sourceRevision": "419185d5289488a4b1f35ddadea2426d1a3d0f99"
+}

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
   "createdAt": "2026-08-20T14:27:40.099Z",
-  "updatedAt": "2026-08-20T14:38:47.667Z",
+  "updatedAt": "2026-08-20T14:44:20.445Z",
   "request": {
     "title": "interruption レコードにシグナル名を記録する",
     "type": "bug-fix",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "request-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "fix/signal-name-in-interruption-5ff912e4",
-  "error": {
-    "code": "CLAUDE_CODE_QUERY_FAILED",
-    "message": "Claude Code SDK query failed: Claude Code returned an error result: Reached maximum number of turns (15)",
-    "hint": ""
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -70,14 +66,10 @@
   "synthesizedCommits": [
     "f2d29c473174000d3f06510f2f5a32640d219bb0"
   ],
-  "resumePoint": {
-    "step": "request-review",
-    "reason": "Claude Code SDK query failed: Claude Code returned an error result: Reached maximum number of turns (15)",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 10,
     "stepCounts": {
       "request-review": 2
     }

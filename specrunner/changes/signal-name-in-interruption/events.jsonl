@@ -8,3 +8,5 @@
 {"type":"transition","ts":"2026-08-20T14:38:47.664Z","step":"store-fail","status":"ok","message":"running → failed: Claude Code SDK query failed: Claude Code returned an error result: Reached maximum number of turns (15)"}
 {"type":"step-attempt","step":"request-review","sessionId":null,"outcome":{"verdict":null,"findingsPath":null,"error":{"code":"CLAUDE_CODE_QUERY_FAILED","message":"Claude Code SDK query failed: Claude Code returned an error result: Reached maximum number of turns (15)","hint":""},"transientRetryAttempts":0},"startedAt":"2026-08-20T14:37:01.640Z","endedAt":"2026-08-20T14:38:47.664Z"}
 {"type":"transition","ts":"2026-08-20T14:38:47.667Z","step":"pipeline","status":"ok","message":"failed → awaiting-resume: Claude Code SDK query failed: Claude Code returned an error result: Reached maximum number of turns (15)"}
+{"type":"transition","ts":"2026-08-20T14:44:20.263Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'request-review'"}
+{"type":"transition","ts":"2026-08-20T14:44:20.445Z","step":"request-review-started","status":"started","message":"Starting request-review step"}
