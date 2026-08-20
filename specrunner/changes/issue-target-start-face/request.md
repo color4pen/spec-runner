@@ -33,7 +33,7 @@ issue を起点に job lifecycle を操作する経路が増えつつある: `jo
 
 ### 1. `core/issue-target/` 層の新設と start 面の移設
 
-issue → job lifecycle 変換を単一所有するディレクトリ `core/issue-target/` を設け、先行 request の issue → request source 変換（`materializeDraftAndStart` と issue 本文 parse）を移設する。移設は挙動保存である。挙動保存の意味は次の通り: **inbox の既存テストは無改変で green**（effects 注入でテストされており配線に依存しないため）。先行 request `job-start-from-issue` のテスト（`src/cli/__tests__/from-issue.test.ts` / `src/core/job/__tests__/start-from-issue.test.ts`）は mock 対象パスで配線自体を pin しているため移設で必ずパスが変わる — これらは **assert 内容（呼び出し引数契約・書き込み順序・エラー伝播）を保存**したまま、mock 対象 / import path の更新のみを許可する。
+issue → job lifecycle 変換を単一所有するディレクトリ `core/issue-target/` を設け、先行 request の issue → request source 変換（`materializeDraftAndStart` と issue 本文 parse）を移設する。移設は挙動保存である。挙動保存の意味は次の通り: **inbox の既存テストは挙動 assert 無改変で green**（effects 注入でテストされており配線に依存しないため。ただし `getIssue()` の返り値型拡張（`nodeId: string`、required を維持）に伴う mock リテラルへの `nodeId` フィールド追加のみ許可する — optional 化 + non-null 断言で型を弱めない）。先行 request `job-start-from-issue` のテスト（`src/cli/__tests__/from-issue.test.ts` / `src/core/job/__tests__/start-from-issue.test.ts`）は mock 対象パスで配線自体を pin しているため移設で必ずパスが変わる — これらは **assert 内容（呼び出し引数契約・書き込み順序・エラー伝播）を保存**したまま、mock 対象 / import path の更新のみを許可する。
 
 層の依存方向は issue-target → core primitives の一方向のみ。job start 本体・pipeline・step 群は issue-target 層に依存しない。
 
@@ -60,7 +60,7 @@ worktree 作成に失敗した場合、GitHub 側に空の linked branch が残�
 
 ## 受け入れ基準
 
-- [ ] 移設後、**inbox の既存テストが無改変で green**（移設が挙動保存であることの証拠）
+- [ ] 移設後、**inbox の既存テストが挙動 assert 無改変で green**（移設が挙動保存であることの証拠。port 型拡張に伴う mock リテラルへの `nodeId` フィールド追加のみ許可）
 - [ ] 先行 request のテスト（`from-issue.test.ts` / `start-from-issue.test.ts`）は assert 内容（呼び出し引数契約・書き込み順序・エラー伝播）が保存され、変更は mock 対象 / import path の更新のみに限られる
 - [ ] issue-target 層から cli/ への import（静的・動的とも）が存在しない（構造検査またはテストで pin する）
 - [ ] positional request + `--issue <n>` の start も issue-target 経由で route されることがテストで pin される（Development リンク登録が 3 経路すべてで発火する）

@@ -55,7 +55,7 @@
 **Priority**: must
 **Source**: spec.md > Requirement: getIssue exposes the GraphQL node id and createLinkedBranch is available > Scenario: createLinkedBranch fails closed at the adapter
 
-### TC-018: GraphQL endpoint derivation covers github.com and GHES
+### TC-023: GraphQL endpoint derivation covers github.com and GHES
 
 **Category**: unit
 **Priority**: must
