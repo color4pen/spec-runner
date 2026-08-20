@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T04:51:34.143Z",
+  "updatedAt": "2026-08-20T04:58:43.639Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "request-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
   "pipelineId": "standard",
@@ -62,10 +62,43 @@
     }
   ],
   "synthesizedCommits": [
-    "680fe969744d3662d198d8f1183b506b26c190ad"
+    "680fe969744d3662d198d8f1183b506b26c190ad",
+    "7ae242ad1aae6471ca74f8e0aeb6f9563cd0daef"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/job/start-from-issue.ts",
+      "src/core/inbox/run-inbox.ts",
+      "src/cli/from-issue.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/pr-create/body-template.ts",
+      "src/adapter/github/github-client.ts",
+      "src/core/runtime/local.ts",
+      "src/config/type-config.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/core/port/github-client.ts",
+      "src/kernel/github-client.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "tests/unit/architecture/module-boundary.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/core/step/design.ts",
+      "src/cli/command-registry.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/cli/run.ts",
+      "src/core/job/__tests__/start-from-issue.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
+      "src/core/inbox/__tests__/run-inbox.test.ts"
+    ]
+  },
+  "resumePoint": {
+    "step": "request-review",
+    "reason": "request-review escalated",
+    "iterationsExhausted": 0
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 4,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
