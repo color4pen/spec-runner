@@ -12,7 +12,7 @@
 import type { GitHubClient } from "../../kernel/github-client.js";
 import type { SpawnFn } from "../../util/spawn.js";
 import { parseEscalationJobId } from "../notify/issue-notifier.js";
-import { readCheckpointFromRef } from "../../git/checkpoint-ref.js";
+import { readStateJsonFromRef } from "../../git/checkpoint-ref.js";
 import {
   resumeFromIssueNoMarkerError,
   resumeFromIssueNoLinkError,
@@ -51,6 +51,11 @@ interface ResolveEscalationInput {
  */
 export async function resolveEscalationJobId(input: ResolveEscalationInput): Promise<string> {
   const { client, owner, repo, issueNumber } = input;
+  // NOTE: per-issue comments endpoint (GET /repos/{owner}/{repo}/issues/{number}/comments)
+  // ignores the `direction` query parameter — direction=desc returns the same ascending
+  // order as asc. Only the repository-level /issues/comments endpoint supports direction.
+  // Full pagination is therefore required. In practice, escalation issues have well under
+  // 100 comments (one API page), so the cost is O(1) API calls.
   const comments = await client.listIssueComments(owner, repo, issueNumber);
 
   // Collect comments that contain an escalation marker
@@ -146,11 +151,11 @@ export async function resolveResumeBranchFromIssue(
     }
     const checkpointOid = revParseResult.stdout.trim();
 
-    // Read checkpoint state.json
+    // Read state.json only (lightweight — no events.jsonl, no recursive ls-tree)
     let slug: string;
     let stateJson: string;
     try {
-      ({ slug, stateJson } = await readCheckpointFromRef(spawnFn, cwd, checkpointOid));
+      ({ slug, stateJson } = await readStateJsonFromRef(spawnFn, cwd, checkpointOid));
     } catch (err) {
       logWarn(
         `resume-from-issue: skipping branch '${branch}': cannot read checkpoint: ${(err as Error).message}`,

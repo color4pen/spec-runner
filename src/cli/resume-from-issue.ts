@@ -199,6 +199,9 @@ export async function runResumeFromIssue(
         logError(`Failed to set up workspace: ${(err as Error).message}`);
         return EXIT_CODE.GENERAL_ERROR;
       }
+      // Use the slug from the verified checkpoint — not the resolver's preliminary slug —
+      // so that runResumeCore always receives the identity-confirmed value.
+      slug = verified.slug;
     }
 
     // Detach for the local-state short-circuit path (slug known from local state)

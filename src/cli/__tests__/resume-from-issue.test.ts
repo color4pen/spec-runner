@@ -12,6 +12,7 @@
  * TC-021: resumeFromIssueNoLinkError hint references job attach --branch
  * TC-022: resolver does not call getIssue in the CLI orchestrator path
  * TC-023: guide escalation topic includes --from-issue and job attach --branch guidance
+ * TC-027: runResumeCore receives slug from runAttachVerification even when resolver slug diverges
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
@@ -429,6 +430,42 @@ describe("TC-014: usage text documents --from-issue", () => {
 
   it("TC-014: JOB_RESUME_USAGE documents positional exclusivity", () => {
     expect(JOB_RESUME_USAGE).toContain("Mutually exclusive");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-027: runResumeCore receives slug from runAttachVerification (not resolver)
+// ---------------------------------------------------------------------------
+
+describe("TC-027: runResumeCore uses verified slug even when resolver slug diverges", () => {
+  beforeEach(() => {
+    vi.mocked(loadStateByJobId).mockRejectedValue(
+      Object.assign(new Error("JOB_NOT_FOUND"), { code: "JOB_NOT_FOUND" }),
+    );
+    vi.mocked(resolveResumeBranchFromIssue).mockResolvedValue({
+      branch: "feat/test-branch",
+      slug: "stale-slug",
+      checkpointOid: "abc123oid",
+    });
+    vi.mocked(runAttachVerification).mockResolvedValue({
+      slug: "verified-slug",
+      jobId: "test-job-id",
+      branch: "feat/test-branch",
+      checkpointOid: "abc123oid",
+      state: {
+        request: { baseBranch: "main", slug: "verified-slug" },
+        repository: { owner: "test-owner", name: "test-repo" },
+      },
+    } as Awaited<ReturnType<typeof runAttachVerification>>);
+    vi.mocked(runResumeCore).mockResolvedValue(0);
+  });
+
+  it("TC-027: runResumeCore is called with verified-slug, not stale-slug", async () => {
+    await runResumeFromIssue(42, {}, makeCtx());
+    expect(vi.mocked(runResumeCore)).toHaveBeenCalledWith(
+      "verified-slug",
+      expect.any(Object),
+    );
   });
 });
 

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ca3d603-7e95-4466-a862-9bfb0b61d8ea",
   "createdAt": "2026-08-20T09:24:35.898Z",
-  "updatedAt": "2026-08-20T10:56:03.237Z",
+  "updatedAt": "2026-08-20T10:58:43.275Z",
   "request": {
     "title": "job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/issue-target-resume-from-issue-5ca3d603",
   "error": null,
   "pipelineId": "standard",
@@ -77,7 +77,8 @@
     "fbe330eed3f7ae09d3ebe1b5600b83603d42f1b9",
     "2e89b25f7411cd94c173d539bf08f349d73d0b09",
     "35e93cbce49f549adf96d779f35562d6bf959055",
-    "1c40edb8b962c46c919422437d53c404940e9946"
+    "1c40edb8b962c46c919422437d53c404940e9946",
+    "9c63edd1f177646839bf63206e051cca0543ed52"
   ],
   "touchedFiles": {
     "request-review": [
@@ -159,11 +160,7 @@
       "src/core/issue-target/resume.ts"
     ]
   },
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -195,8 +192,15 @@
       "invalidatedByCommit": null
     }
   ],
+  "operatorAdjudications": [
+    {
+      "text": "custom-reviewers escalation への operator 裁定。以下の 4 点を適用すること。\n\n## 1. cross-boundary-invariants Finding 1（適用する）\n\n`src/cli/resume-from-issue.ts` の needsRebind=true 経路で、`setupWorkspace(verified.slug, ...)` の成功直後に `slug = verified.slug;` を追加する（`runResumeCore` が常に rebind 検証と同一の checkpoint 読み取り由来の slug を受けるようにする）。\n\nあわせて `src/cli/__tests__/resume-from-issue.test.ts` にテストを 1 件追加する: `resolveResumeBranchFromIssue` の mock が `slug: \"stale-slug\"`、`runAttachVerification` の mock が `slug: \"verified-slug\"` を返す divergence シナリオで、`runResumeCore` が `\"verified-slug\"` で呼ばれることを assert する。\n\n## 2. scale-tolerance F-2（適用する）\n\n`src/git/checkpoint-ref.ts` に軽量ヘルパー `readStateJsonFromRef(spawnFn, cwd, ref)` を追加する: `resolveCheckpointSlug` + `git show <ref>:<slug>/state.json` のみを実行し、events.jsonl の read と `git ls-tree` の全ファイル列挙を行わない。`src/core/issue-target/resume.ts` の identity 照合フェーズ（候補ごとの jobId / issueNumber / branch 読み取り）はこのヘルパーに切り替える。既存 `readCheckpointFromRef` は無変更で残す（確定後の rebind 側はそのまま）。\n\n## 3. scale-tolerance F-1（不採用 — コード変更しない）\n\n提案されていた「`direction=desc` で早期打ち切り」は不採用。理由: operator が 2026-08-20 に実測し、per-issue comments endpoint（`GET /repos/{owner}/{repo}/issues/{number}/comments`）は `direction` / `sort` パラメータを無視することを確認した（direction=desc と asc で同一の先頭要素が返る。これらのパラメータは repository 全体の `/issues/comments` endpoint のみ対応）。かつ現実の escalation issue の comment 数は 1 ページ（100 件）に収まり、コストは O(⌈C/100⌉)=1 呼び出し。\n\n対処: `src/core/issue-target/resume.ts` の `resolveEscalationJobId` に、この制約を示す短い comment を残す（例: 「per-issue comments API は direction を無視するため全ページ走査。comment 数は実用上 1 ページに収まる」）。それ以外の変更はしない。\n\n## 4. scale-tolerance F-3（現状維持 — コード変更しない）\n\n`first:50` の上限は設計が明記する意図的な bound として受容する。超過時は `job attach --branch` の手動経路が常に成立する（Development リンクは optional index であり identity の正本は checkpoint、という本 request の設計原則そのもの）。cursor pagination は追加しない。\n",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-20T10:58:43.117Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 55,
+    "historyCount": 57,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

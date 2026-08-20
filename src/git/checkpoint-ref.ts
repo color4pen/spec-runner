@@ -124,6 +124,39 @@ export interface CheckpointRefResult {
 }
 
 // ---------------------------------------------------------------------------
+// readStateJsonFromRef  (lightweight — identity-check only)
+// ---------------------------------------------------------------------------
+
+/**
+ * Read only state.json from the given ref — no events.jsonl, no recursive ls-tree.
+ *
+ * Use this for the identity-check phase where only jobId / issueNumber / branch
+ * are needed. For the full checkpoint (rebind / verify path) use readCheckpointFromRef.
+ *
+ * @param spawnFn  Spawn function.
+ * @param cwd      Working directory.
+ * @param ref      Git ref (e.g. an OID or "origin/feat/x-abc").
+ */
+export async function readStateJsonFromRef(
+  spawnFn: SpawnFn,
+  cwd: string,
+  ref: string,
+): Promise<{ slug: string; stateJson: string }> {
+  const slug = await resolveCheckpointSlug(spawnFn, cwd, ref);
+  const changeDir = changeFolderPath(slug);
+  const showResult = await runGit(spawnFn, cwd, [
+    "show", `${ref}:${changeDir}/state.json`,
+  ]);
+  if (showResult.exitCode !== 0) {
+    throw checkpointNotFoundError(
+      ref,
+      `git show ${ref}:${changeDir}/state.json failed (exit ${showResult.exitCode}): ${showResult.stderr.trim()}`,
+    );
+  }
+  return { slug, stateJson: showResult.stdout };
+}
+
+// ---------------------------------------------------------------------------
 // readCheckpointFromRef
 // ---------------------------------------------------------------------------
 
