@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "d1946274-009d-439f-9aed-83ed558a4654",
   "createdAt": "2026-08-20T07:19:48.603Z",
-  "updatedAt": "2026-08-20T08:02:25.167Z",
+  "updatedAt": "2026-08-20T08:09:20.354Z",
   "request": {
     "title": "approved 温存 reroute の修正: fixer 全体除外をやめ同 verdict の unconditional row へ降りる",
     "type": "bug-fix",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "fix/approved-reroute-unconditional-row-d1946274",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,9 @@
     "d8c2be3e2b201083507567f415a9680903fb98e1",
     "289cf81defd156633b5e453f3f372063afa0f4c9",
     "1856ea99e2a861cdcf4abe645caa11e2cc5e2a73",
-    "dd04f9c285e9ce2832c3652aac3c66d1d0f69d11"
+    "dd04f9c285e9ce2832c3652aac3c66d1d0f69d11",
+    "aeaf0c738ac690cb2f7204f19738c3dd6a28e222",
+    "8877414fb477addb7928b5adf97652ad189dc1e2"
   ],
   "touchedFiles": {
     "request-review": [
@@ -122,6 +124,13 @@
     ],
     "regression-gate": [
       "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts"
+    ],
+    "conformance": [
+      "src/core/pipeline/pipeline.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "src/core/pipeline/spec-observation.ts",
+      "src/core/step/canon-write-scope.ts",
+      "src/state/job-slug.ts"
     ]
   },
   "reviewerStatuses": [
@@ -154,8 +163,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1020",
+    "number": 1020,
+    "createdAt": "2026-08-20T08:09:19.317Z"
+  },
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 70,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -164,12 +178,15 @@
       "spec-fixer": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
