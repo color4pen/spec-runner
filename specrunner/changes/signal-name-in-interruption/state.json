@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "5ff912e4-3d42-451c-a10d-24aea7018b2b",
   "createdAt": "2026-08-20T14:27:40.099Z",
-  "updatedAt": "2026-08-20T14:29:24.749Z",
+  "updatedAt": "2026-08-20T14:38:47.667Z",
   "request": {
     "title": "interruption レコードにシグナル名を記録する",
     "type": "bug-fix",
@@ -75,10 +75,11 @@
     "reason": "Claude Code SDK query failed: Claude Code returned an error result: Reached maximum number of turns (15)",
     "iterationsExhausted": 0
   },
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 4,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 2
     }
   }
 }
