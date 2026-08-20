@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f8732c22-7cc4-4894-a62e-9f6e8a827e8a",
   "createdAt": "2026-08-20T13:01:11.201Z",
-  "updatedAt": "2026-08-20T13:57:38.321Z",
+  "updatedAt": "2026-08-20T14:01:42.771Z",
   "request": {
     "title": "fixable finding への operator 不採用裁定を decisions 台帳の一般化で機械尊重する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/finding-wontfix-disposition-f8732c22",
   "error": null,
@@ -72,7 +72,9 @@
     "39295e86121100ddfb5c31549e5cbc477181d277",
     "0cd947e7adddeb48425ccfd92c57a30cf8b8181c",
     "f8b935b0c9357b7b1d8bac04eed6f6b2804f089c",
-    "3b235946dc6961eb6455015354d8b59cf7dbd637"
+    "3b235946dc6961eb6455015354d8b59cf7dbd637",
+    "07878b8d271b71b86c5930cd6abebd37ac18716a",
+    "4747c5ee13037d6029193d1847034ed1c46a93aa"
   ],
   "touchedFiles": {
     "request-review": [
@@ -119,42 +121,20 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/state/schema/types.ts",
-      "src/core/decision/decision-ledger.ts",
-      "src/core/pipeline/findings-ledger.ts",
-      "src/core/step/fixer-helpers.ts",
-      "src/core/pipeline/reviewer-chain.ts",
-      "src/core/command/resume.ts",
-      "src/core/step/custom-reviewer-round-context.ts",
-      "src/core/design-layer/topic-emission.ts",
-      "src/cli/resume.ts",
-      "src/cli/command-registry.ts",
-      "src/core/pipeline/__tests__/findings-ledger.test.ts",
-      "src/state/schema.ts",
-      "src/core/command/__tests__/resume-operator-adjudication.test.ts",
-      "src/core/step/step-completion.ts",
-      "src/core/inbox/planner.ts",
-      "src/core/step/regression-gate.ts",
-      "src/core/decision/wontfix.ts",
-      "tests/unit/core/decision/decision-ledger.test.ts",
-      "tests/unit/inbox/planner.test.ts",
-      "tests/unit/inbox/orchestrator.test.ts",
-      "tests/unit/core/decision/wontfix.test.ts",
-      "src/core/step/__tests__/judge-verdict.test.ts",
-      "src/core/command/__tests__/resume-wontfix.test.ts"
+      "src/core/decision/wontfix.ts"
     ]
   },
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
       "spec-fixer": 2,
-      "implementer": 1,
+      "implementer": 2,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2
     }
   }
 }
