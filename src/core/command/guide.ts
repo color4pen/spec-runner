@@ -31,11 +31,28 @@ export const GUIDE_TOPICS: readonly GuideTopic[] = [
 
 \`\`\`bash
 specrunner job start <slug|file> --detach [--issue <n>]
+specrunner job start --from-issue <n> --detach
 specrunner job resume <slug> --detach
 \`\`\`
 
 - **run_in_background を使わない**: harness が SIGTERM で撃つ。--detach がプロセスを切り離す正しい経路。
 - 並列起動は \`sleep 3\` で stagger する (worktree ロック競合 Issue #166 の回避)。
+
+### --from-issue: issue を request として直接起動
+
+\`\`\`bash
+specrunner job start --from-issue <n> [--detach]
+\`\`\`
+
+issue 番号だけで起動できる。呼び出し側は slug 抽出・draft 実体化・issue linkage を知らなくてよい。
+
+**契約**:
+- issue 本文を request.md として parse し draft を実体化してから start する
+- issue fidelity comparator は実行されない (byte 同一転記のため skip)
+- 実行元 checkout の現在 branch が request の base-branch と不一致なら job state 作成前に fail-closed で停止
+- \`--from-issue\` と positional は排他 (同時指定は usage エラー)
+- \`--from-issue\` と \`--issue\` は排他 (linkage を内包するため)
+- \`--detach\` とは併用可能
 
 ## 2. 監視 — job wait
 

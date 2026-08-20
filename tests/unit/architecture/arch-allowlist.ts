@@ -575,5 +575,12 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
     tracking: "CWD-registry-doctor-repair-reporoot-fallback",
     comment: "role-a: doctor repair uses ctx.repoRoot with process.cwd() fallback when repoRoot is unavailable (outside a repo).",
   },
+  {
+    file: "src/cli/from-issue.ts",
+    pattern: "ctx?.repoRoot ?? process.cwd()",
+    invariant: "CWD",
+    tracking: "CWD-from-issue-reporoot-di-default",
+    comment: "di-default: --from-issue handler resolves repoRoot from ctx injection; process.cwd() is the fallback when no context is provided.",
+  },
 
 ];

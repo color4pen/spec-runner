@@ -47,6 +47,7 @@ import { isDetachedChild, detachSelf } from "../core/command/detach.js";
 import { parseRequestMdRaw } from "../parser/request-md.js";
 import { runJobWait } from "./job-wait.js";
 import { runGuide, GUIDE_TOPICS } from "../core/command/guide.js";
+import { runFromIssue } from "./from-issue.js";
 
 /** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
 const VALID_JOB_ID_CHARS = /^[a-f0-9-]+$/;
@@ -544,6 +545,7 @@ const RUN_JOB_FLAGS = {
   "no-worktree": { type: "boolean" },
   issue: { type: "integer", min: 1 },
   detach: { type: "boolean" },
+  "from-issue": { type: "integer", min: 1 },
 } as const satisfies Record<string, FlagDef>;
 
 // ---------------------------------------------------------------------------
@@ -551,12 +553,49 @@ const RUN_JOB_FLAGS = {
 // ---------------------------------------------------------------------------
 
 async function runJobHandler(parsed: ParsedArgs, ctx?: CommandContext): Promise<void> {
-  const requestMdPath = parsed.positional!;
+  const fromIssue = typeof parsed.flags["from-issue"] === "number" ? parsed.flags["from-issue"] : undefined;
+  const hasPositional = parsed.positional !== undefined;
+
+  // --- Presence check: need exactly one of positional or --from-issue ---
+  if (fromIssue === undefined && !hasPositional) {
+    logError("Usage error: 'job start' requires a <slug|file> positional or --from-issue <n>");
+    process.exit(EXIT_CODE.ARG_ERROR);
+  }
+
+  // --- Exclusivity: --from-issue + positional ---
+  if (fromIssue !== undefined && hasPositional) {
+    logError("Usage error: --from-issue and positional <slug|file> are mutually exclusive");
+    process.exit(EXIT_CODE.ARG_ERROR);
+  }
+
+  // --- Exclusivity: --from-issue + --issue ---
+  if (fromIssue !== undefined && parsed.flags["issue"] !== undefined) {
+    logError("Usage error: --from-issue and --issue are mutually exclusive (--from-issue includes issue linkage)");
+    process.exit(EXIT_CODE.ARG_ERROR);
+  }
 
   if (parsed.flags["detach"] && parsed.flags["json"]) {
     logError("--detach and --json are mutually exclusive");
     process.exit(EXIT_CODE.ARG_ERROR);
   }
+
+  // --- Route --from-issue before generic detach branch ---
+  if (fromIssue !== undefined) {
+    const logLevel = resolveLogLevel({
+      quiet: !!parsed.flags["quiet"],
+      verbose: !!parsed.flags["verbose"],
+      debug: !!parsed.flags["debug"],
+    });
+    const code = await runFromIssue(
+      fromIssue,
+      { detach: !!parsed.flags["detach"], logLevel, json: !!parsed.flags["json"], noWorktree: !!parsed.flags["no-worktree"] },
+      ctx,
+    );
+    process.exit(code);
+  }
+
+  // --- Positional path (confirmed present) ---
+  const requestMdPath = parsed.positional!;
 
   if (parsed.flags["detach"] && !isDetachedChild(process.env as Record<string, string | undefined>)) {
     const repoRoot = ctx?.repoRoot ?? process.cwd();
@@ -827,12 +866,12 @@ export const COMMANDS: Record<string, CommandSpec> = {
         path: ["job", "start"],
         summary: "Start a job",
         flags: RUN_JOB_FLAGS,
-        args: [{ name: "slug|file", required: true }],
+        args: [{ name: "slug|file", required: false }],
         worktreeGuard: true,
         visibility: "normal",
         help: {
           group: "Job commands",
-          summary: "  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)",
+          summary: "  job start <request-slug|file>   pipeline 開始、jobId 発行\n  job start ... --detach          agent session 向け: 登録完了まで待機後に return (job wait で監視)\n  job start ... --issue <number>  起点 issue に紐付け (terminal 時にコメント通知)\n  job start --from-issue <n>      issue 本文を request として直接起動 (fidelity skip・base-branch guard・--issue/positional 排他)",
         },
         handler: runJobHandler,
       },
