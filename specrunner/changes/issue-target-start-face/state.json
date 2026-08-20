@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T08:33:31.763Z",
+  "updatedAt": "2026-08-20T08:37:34.847Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -103,7 +103,8 @@
     "4767886e20143c2e2b0b7d7d0598d57488e9c51a",
     "8d51b99500190c8a79dd221a63af4f3e4edb8467",
     "0283a92120c28f0b970203b080233b71b8a632c0",
-    "f412016016e49b852afbb8b2ac3f9dd34f987c56"
+    "f412016016e49b852afbb8b2ac3f9dd34f987c56",
+    "6892bc656fc5d6a1625bb725cc7871a445d7825d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -193,11 +194,13 @@
       "tests/unit/no-worktree-mode.test.ts"
     ],
     "regression-gate": [
-      "src/cli/__tests__/from-issue.test.ts",
+      "src/cli/command-registry.ts",
       "tests/unit/no-worktree-mode.test.ts",
-      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
+      "src/cli/__tests__/from-issue.test.ts",
       "src/core/job/__tests__/start-from-issue.test.ts",
-      "src/core/runtime/local.ts"
+      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
+      "src/core/runtime/local.ts",
+      "tests/unit/inbox/run-inbox-inbox-origin.test.ts"
     ],
     "conformance": [
       "src/core/issue-target/start.ts",
@@ -263,7 +266,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 153,
+    "historyCount": 158,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -278,7 +281,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 3,
+      "regression-gate": 4,
       "conformance": 1
     }
   }
