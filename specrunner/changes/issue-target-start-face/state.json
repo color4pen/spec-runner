@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T07:47:05.088Z",
+  "updatedAt": "2026-08-20T07:51:09.766Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
@@ -92,7 +92,8 @@
     "7b5623a4e8e598f35444044246f2d5b169d84c75",
     "4512456825cff887035c286b1c0712fbe1925010",
     "ad35da51e6c9f78abd3661b77bf6d0df42eea2c0",
-    "5700fe8ff36bbd9ca53eef200046b024dda7b7f9"
+    "5700fe8ff36bbd9ca53eef200046b024dda7b7f9",
+    "638bd3817e12cd5cdc91d2f3690ed175ed904f30"
   ],
   "touchedFiles": {
     "request-review": [
@@ -179,12 +180,11 @@
       "tests/unit/adapter/github/github-client-get-issue.test.ts"
     ],
     "code-fixer": [
-      "src/cli/__tests__/from-issue.test.ts",
-      "src/core/issue-target/start.ts",
-      "src/core/job/__tests__/start-from-issue.test.ts",
-      "tests/unit/inbox/run-inbox-inbox-origin.test.ts",
-      "src/cli/from-issue.ts",
-      "src/core/inbox/run-inbox.ts"
+      "tests/unit/core/runtime/workspace-materializer-link.test.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/artifact/copy-artifacts.ts",
+      "tests/unit/no-worktree-mode.test.ts"
     ],
     "regression-gate": [
       "src/cli/command-registry.ts",
@@ -239,7 +239,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 105,
+    "historyCount": 109,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
@@ -250,7 +250,7 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 3,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
