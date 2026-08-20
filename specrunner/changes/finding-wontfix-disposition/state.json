@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f8732c22-7cc4-4894-a62e-9f6e8a827e8a",
   "createdAt": "2026-08-20T13:01:11.201Z",
-  "updatedAt": "2026-08-20T14:56:19.832Z",
+  "updatedAt": "2026-08-20T15:00:17.410Z",
   "request": {
     "title": "fixable finding への operator 不採用裁定を decisions 台帳の一般化で機械尊重する",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/finding-wontfix-disposition-f8732c22",
   "error": null,
   "pipelineId": "standard",
@@ -82,7 +82,8 @@
     "df08f9b0d162e8cd995c5f4c16609fb2cf8e1feb",
     "3c81beed32643cdab4281283892869009c433393",
     "c73f4f357da66efedce8081c77709949fa5a8448",
-    "d1218bf38019b7a1dab8d48db5b120c8423303b4"
+    "d1218bf38019b7a1dab8d48db5b120c8423303b4",
+    "c5f8451ee81d1f908ffe702fb962f9bcde546d3a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -178,6 +179,10 @@
       "tests/unit/core/decision/decision-ledger.test.ts",
       "src/core/pipeline/reviewer-chain.ts",
       "src/core/step/fixer-helpers.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-08-20-spec-review-loop-single-fixer.md",
+      "specrunner/adr/2026-08-20-finding-wontfix-disposition.md"
     ]
   },
   "reviewerStatuses": [
@@ -219,8 +224,13 @@
       "recordedAt": "2026-08-20T14:24:26.002Z"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1034",
+    "number": 1034,
+    "createdAt": "2026-08-20T15:00:16.172Z"
+  },
   "_journal": {
-    "historyCount": 82,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -236,7 +246,9 @@
       "custom-reviewers": 2,
       "code-fixer": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
