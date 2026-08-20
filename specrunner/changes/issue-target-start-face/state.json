@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "bf87f3b1-42a4-4e43-b4f8-c6481c8fc67f",
   "createdAt": "2026-08-20T04:51:31.132Z",
-  "updatedAt": "2026-08-20T08:45:42.688Z",
+  "updatedAt": "2026-08-20T08:47:24.645Z",
   "request": {
     "title": "issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "conformance",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/issue-target-start-face-bf87f3b1",
   "error": null,
   "pipelineId": "standard",
@@ -105,7 +105,9 @@
     "0283a92120c28f0b970203b080233b71b8a632c0",
     "f412016016e49b852afbb8b2ac3f9dd34f987c56",
     "6892bc656fc5d6a1625bb725cc7871a445d7825d",
-    "c12e3c2599a22f2067001b70d86c4f93c7b0b5ed"
+    "c12e3c2599a22f2067001b70d86c4f93c7b0b5ed",
+    "a84bbe8f657fbe2fab1f41e32a5fab2b8559063d",
+    "105a5e7d4628ba4d092e86cf53c96d45344b42ba"
   ],
   "touchedFiles": {
     "request-review": [
@@ -224,11 +226,7 @@
       "tests/unit/architecture/arch-allowlist.ts"
     ]
   },
-  "resumePoint": {
-    "step": "conformance",
-    "reason": "conformance escalated",
-    "iterationsExhausted": 2
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -269,7 +267,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 161,
+    "historyCount": 164,
     "stepCounts": {
       "request-review": 2,
       "design": 1,
