@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "9dcf5a95-c9cb-4172-8b10-b6cf0119a795",
   "createdAt": "2026-08-20T05:14:24.721Z",
-  "updatedAt": "2026-08-20T05:48:41.375Z",
+  "updatedAt": "2026-08-20T05:50:44.636Z",
   "request": {
     "title": "spec-review loop の単一 fixer 化: test-case-gen を review loop から外す",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/spec-review-loop-single-fixer-9dcf5a95",
   "error": null,
@@ -67,7 +67,8 @@
     "cda07e0079a0bfae80ef1e815848badec362d02c",
     "578a4f2f561977da4bc17f384243cf430138586a",
     "e368bade936a98b97df6303ec136a4b34b467cc2",
-    "637ceda92bcb7ef59fd15bffbda51305d0fe5662"
+    "637ceda92bcb7ef59fd15bffbda51305d0fe5662",
+    "1e70769484d822c380855a73b0cf6f60919064a5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -133,11 +134,11 @@
     ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 23,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 1,
+      "test-case-gen": 2,
       "spec-review": 1,
       "spec-fixer": 1
     }
