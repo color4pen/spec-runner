@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1875919e-d9f4-4db8-8abe-33e24f96cfb9",
   "createdAt": "2026-08-20T03:41:04.851Z",
-  "updatedAt": "2026-08-20T04:29:36.343Z",
+  "updatedAt": "2026-08-20T04:32:21.989Z",
   "request": {
     "title": "checkpoint 検証の分離: generic integrity と use-case policy の二層化",
     "type": "refactoring",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "refactor/checkpoint-verification-policy-split-1875919e",
   "error": null,
@@ -77,7 +77,8 @@
     "3a63ecd165153012e4d03deb8b2209cd9453ba50",
     "37ae8c305db68eeddeae3badab59d30207655322",
     "fc25bb2fc8873c6a743fd789ac5c590f64ef8367",
-    "25a15f8bcfd756765a544572f2217288da4c4b5a"
+    "25a15f8bcfd756765a544572f2217288da4c4b5a",
+    "86374ad58f9bada5235ff1c6c4682fce4735e2df"
   ],
   "touchedFiles": {
     "request-review": [
@@ -110,12 +111,48 @@
     "spec-fixer": [],
     "implementer": [
       "tests/attach/checkpoint-policy.test.ts"
+    ],
+    "code-review": [
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "tests/attach/checkpoint-policy.test.ts",
+      "tests/attach/verify-checkpoint.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -124,7 +161,11 @@
       "spec-fixer": 2,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2
+      "verification": 2,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
