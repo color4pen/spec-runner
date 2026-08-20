@@ -1146,6 +1146,8 @@ export const COMMANDS: Record<string, CommandSpec> = {
                 force: !!parsed.flags["force"],
                 applyCanon: !!parsed.flags["apply-canon"],
                 adoptCommits: !!parsed.flags["adopt-commits"],
+                wontfix: parsed.flags["wontfix"] as string | undefined,
+                wontfixReason: parsed.flags["wontfix-reason"] as string | undefined,
                 noWorktree: !!parsed.flags["no-worktree"],
                 json: !!parsed.flags["json"],
                 logLevel,
