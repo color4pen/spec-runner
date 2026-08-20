@@ -168,5 +168,3 @@ ADR は adr-gen step が生成する（本 design / tasks では ADR の具体 p
 
 - 排他 / guard のエラー文言の最終確定（本 design の例で pin する）。実装時に既存 usage 出力トーンへ合わせる。
 - `materializeDraftAndStart` の配置（`src/core/job/` 新設 か `src/core/inbox/` 併設）。挙動には非依存。実装者が近傍の import 都合で決めてよい。
-
-<!-- spec-fixer-deferred: TC-019 GWT 削除 spec-fixer は test-cases.md への書き込みが拒否された（スコープ外）。TC-019 は Scenario 由来 TC のため GWT 3行（GIVEN/WHEN/THEN）を削除し、Source 参照のみにすること。 -->

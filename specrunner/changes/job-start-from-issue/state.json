@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T03:35:57.718Z",
+  "updatedAt": "2026-08-20T03:42:21.318Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
@@ -74,7 +74,8 @@
     "e5ef3646217d107bf2f9b6f1cfd6702f3920c764",
     "323deaa2e8f0b09efd089125ebe2fd35c0f0eef0",
     "955833e9a68b575b997a089c9309479a6a271ee4",
-    "ad03ec5d4d5b30fcd0d985dbd56b4122dd092d90"
+    "ad03ec5d4d5b30fcd0d985dbd56b4122dd092d90",
+    "7762d864e5dab3367a08b3b422280c251c4aaf75"
   ],
   "touchedFiles": {
     "request-review": [
@@ -111,7 +112,22 @@
       "src/core/command/guide.ts"
     ],
     "test-case-gen": [],
-    "spec-review": [],
+    "spec-review": [
+      "src/parser/request-md.ts",
+      "src/core/inbox/draft-writer.ts",
+      "src/core/request/store.js",
+      "src/parser/rules/slug-required.ts",
+      "src/util/validation-patterns.ts",
+      "src/core/request/store.ts",
+      "src/errors.ts",
+      "src/adapter/github/github-client.ts",
+      "src/cli/inbox.ts",
+      "src/core/gate/issue-fidelity-gate.ts",
+      "src/parser/rules/base-branch-required.ts",
+      "src/parser/rules/index.ts",
+      "src/core/command/detach.ts",
+      "src/cli/command-registry.ts"
+    ],
     "spec-fixer": []
   },
   "resumePoint": null,
@@ -124,12 +140,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 2,
-      "spec-review": 3,
+      "spec-review": 4,
       "spec-fixer": 2
     }
   }
