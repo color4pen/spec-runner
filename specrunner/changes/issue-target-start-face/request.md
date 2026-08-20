@@ -25,15 +25,15 @@ issue を起点に job lifecycle を操作する経路が増えつつある: `jo
 - 同実装は `runRunCore`（cli/run）への参照を inbox 既存パターン踏襲の**動的 import**（`await import("../../cli/run.js")`）としており、静的依存はないが core→cli の実行時依存が残っている。
 - `src/core/pr-create/body-template.ts:75` — issue-linked job の PR body には `Fixes #<issueNumber>` が既に入る。**PR → issue の Development リンクは現行実装で既に成立している**。branch 側の Development リンクは存在しない: pipeline は branch をローカル `git checkout -b` + push で作るため、GitHub 側の linked branch は生まれない。
 - GitHub API の制約（2026-08-20 に GraphQL introspection で確認）: linked branch の作成は mutation `createLinkedBranch`（`issueId` / `oid`（基点 SHA）/ `name`）で、**新規 branch を issue に紐付けて作る**形。既存 branch を後からリンクする公開 mutation は無い。`deleteLinkedBranch` も存在する。参照は `issue.linkedBranches`。
-- `src/adapter/github/github-client.ts` — 現行 client は REST（fetch ベース）のみで GraphQL 呼び出しは未実装。GraphQL は同じ fetch で `/graphql` へ POST する形で追加可能。issueId（GraphQL node ID）は REST の issue 取得結果（`node_id`）から得られる。
-- `src/core/command/pipeline-run.ts:174-175` — branch 名は `getBranchPrefix(request.type)` + slug + jobId 先頭 8 文字のインライン template で構成される（prefix は request.type に依存）。共有 builder 関数は存在しない。
+- `src/adapter/github/github-client.ts` — 現行 client は REST（fetch ベース）のみで GraphQL 呼び出しは未実装。GraphQL は同じ fetch で `/graphql` へ POST する形で追加可能。REST の issue レスポンスは `node_id`（GraphQL node ID）を含むが、**現行の port（`src/kernel/github-client.ts`）と adapter の `getIssue()` は `{ number, title, body }` のみに型マッピングして `node_id` を落としている**。`createLinkedBranch` に渡す issueId を得るには port 拡張（`getIssue()` 返り値への `nodeId` 追加、または nodeId 取得手段の追加）が必要。
+- branch 名の `getBranchPrefix(request.type)` + slug + jobId 先頭 8 文字というインライン template は **3 箇所**に重複している: `src/core/command/pipeline-run.ts:174-175`、`src/core/step/design.ts:151`、`src/core/step/commit-orchestrator.ts:403-404`。共有 builder 関数は存在しない（prefix は request.type に依存）。
 - 新規 start の実行順序は「worktree + local branch 作成（`origin/<base-branch>` 基点、`src/core/runtime/local.ts:478-479`）→ request/state materialize → bootstrap commit → push」（`src/core/runtime/workspace-materializer.ts`）。pipeline は `issueNumber` を state へ載せるだけで、GitHub API を issue 目的で叩くことはない。
 
 ## 要求
 
 ### 1. `core/issue-target/` 層の新設と start 面の移設
 
-issue → job lifecycle 変換を単一所有するディレクトリ `core/issue-target/` を設け、先行 request の issue → request source 変換（`materializeDraftAndStart` と issue 本文 parse）を移設する。移設は挙動保存であり、inbox・`job start --from-issue` の既存テスト期待を書き換えない。
+issue → job lifecycle 変換を単一所有するディレクトリ `core/issue-target/` を設け、先行 request の issue → request source 変換（`materializeDraftAndStart` と issue 本文 parse）を移設する。移設は挙動保存である。挙動保存の意味は次の通り: **inbox の既存テストは無改変で green**（effects 注入でテストされており配線に依存しないため）。先行 request `job-start-from-issue` のテスト（`src/cli/__tests__/from-issue.test.ts` / `src/core/job/__tests__/start-from-issue.test.ts`）は mock 対象パスで配線自体を pin しているため移設で必ずパスが変わる — これらは **assert 内容（呼び出し引数契約・書き込み順序・エラー伝播）を保存**したまま、mock 対象 / import path の更新のみを許可する。
 
 層の依存方向は issue-target → core primitives の一方向のみ。job start 本体・pipeline・step 群は issue-target 層に依存しない。
 
@@ -52,15 +52,16 @@ issue-linked start は、feature branch を issue の Development linked branch 
 3. `createLinkedBranch(issueId, branch 名, 同一の base OID)` で Development リンクを登録する
 4. request materialize → bootstrap commit → push（push は同一基点からの fast-forward として成立する）
 
-worktree 作成に失敗した場合、GitHub 側に空の linked branch が残らない（手順 2 の成功が手順 3 の前提）。登録失敗（権限・API 障害等）は **警告つき best-effort** とし、start を止めない（リンク不在時の issue 起点 resume は後続 request が fail-closed + `job attach --branch` 誘導で受け止める）。
+worktree 作成に失敗した場合、GitHub 側に空の linked branch が残らない（手順 2 の成功が手順 3 の前提）。登録失敗（権限・API 障害等）は **警告つき best-effort** とし、start を止めない（リンク不在時の issue 起点 resume は後続 request が fail-closed + `job attach --branch` 誘導で受け止める）。issueId（GraphQL node ID）取得のための port 拡張（前提参照）を本要求に含める。
 
 ### 4. branch 名 builder の単一定義化（作る側のみ）
 
-`getBranchPrefix(request.type)` + slug + jobId8 のインライン構成を共有 builder 関数に抽出し、branch を作る側（pipeline-run とリンク登録）がそれを呼ぶ。この builder を **branch 発見の逆関数として使うことは禁止**する（issue からの job 発見は Development リンク + checkpoint identity で行う。後続 request の契約）。
+`getBranchPrefix(request.type)` + slug + jobId8 のインライン構成を共有 builder 関数に抽出し、branch 名を構成する既存 3 箇所すべて（`pipeline-run.ts` / `design.ts` / `commit-orchestrator.ts`、前提参照）とリンク登録がそれを呼ぶ。この builder を **branch 発見の逆関数として使うことは禁止**する（issue からの job 発見は Development リンク + checkpoint identity で行う。後続 request の契約）。
 
 ## 受け入れ基準
 
-- [ ] 移設後、inbox・`job start --from-issue` の**既存テストが無改変で green**（移設が挙動保存であることの証拠）
+- [ ] 移設後、**inbox の既存テストが無改変で green**（移設が挙動保存であることの証拠）
+- [ ] 先行 request のテスト（`from-issue.test.ts` / `start-from-issue.test.ts`）は assert 内容（呼び出し引数契約・書き込み順序・エラー伝播）が保存され、変更は mock 対象 / import path の更新のみに限られる
 - [ ] issue-target 層から cli/ への import（静的・動的とも）が存在しない（構造検査またはテストで pin する）
 - [ ] positional request + `--issue <n>` の start も issue-target 経由で route されることがテストで pin される（Development リンク登録が 3 経路すべてで発火する）
 - [ ] issue-linked start が Development linked branch を登録することがテストで pin される（GitHub API は mock、issueId / oid / name の契約を assert）
