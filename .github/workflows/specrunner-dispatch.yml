@@ -1,0 +1,63 @@
+name: SpecRunner Dispatch
+
+# Actions 画面から issue を指定して pipeline を 1 本走らせる手動発火。
+# issue 本文は request.md の構造（specrunner request template の形式、Meta に slug 必須）で書く。
+# 前提: リポジトリ secret CLAUDE_CODE_OAUTH_TOKEN（`claude setup-token` の出力）。
+# 制約: escalation 後の再開（job resume）は runner に state が残らないためローカルで行う。
+#       再 dispatch は再開ではなく新規 job の起動になる。
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: "Issue number (body must be request.md format)"
+        required: true
+
+concurrency:
+  group: specrunner-dispatch-${{ inputs.issue }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # branch push
+      pull-requests: write # PR 作成
+      issues: write # terminal 通知コメント
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0 # pipeline の egress 検査 (rev-list --not --remotes) を full history で走らせる
+
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+
+      - run: bun install --frozen-lockfile
+
+      - name: Git identity for pipeline commits
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Materialize draft from issue
+        id: draft
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ inputs.issue }}
+        run: |
+          gh issue view "$ISSUE" --json body -q .body > /tmp/issue-body.md
+          slug=$(grep -m1 -E '^\s*-\s*\*\*slug\*\*:' /tmp/issue-body.md | sed -E 's/.*\*\*slug\*\*: *//' | tr -d '[:space:]')
+          if ! printf '%s' "$slug" | grep -qE '^[a-z0-9][a-z0-9-]*$'; then
+            echo "::error::issue body has no valid Meta slug (got: '$slug')"
+            exit 1
+          fi
+          mkdir -p specrunner/drafts
+          mv /tmp/issue-body.md "specrunner/drafts/${slug}.md"
+          echo "slug=$slug" >> "$GITHUB_OUTPUT"
+
+      - name: Run pipeline
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          SLUG: ${{ steps.draft.outputs.slug }}
+          ISSUE: ${{ inputs.issue }}
+        run: bun ./bin/specrunner.ts job start "specrunner/drafts/${SLUG}.md" --issue "$ISSUE"
