@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c5bec4bd-4963-4560-ac77-2db9813dbcdd",
   "createdAt": "2026-08-20T02:48:38.502Z",
-  "updatedAt": "2026-08-20T03:04:42.018Z",
+  "updatedAt": "2026-08-20T03:07:24.623Z",
   "request": {
     "title": "job start --from-issue: issue を request source として直接起動する CLI 契約",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/job-start-from-issue-c5bec4bd",
   "error": null,
@@ -64,7 +64,8 @@
   "synthesizedCommits": [
     "bbd50f56cd3d50852f0ad436dd95c40e76289609",
     "a56e9c45bfaf6e79228b9535e282f222c89d6c03",
-    "5c992764a3d48add52f310aec1f138c42a6f10c2"
+    "5c992764a3d48add52f310aec1f138c42a6f10c2",
+    "bbbbfc1fffa1ab044b13ba97038a5f0beca349d2"
   ],
   "touchedFiles": {
     "request-review": [
@@ -99,13 +100,15 @@
       "src/parser/request-md.ts",
       "src/core/command/detach.ts",
       "src/core/command/guide.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
