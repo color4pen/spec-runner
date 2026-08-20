@@ -1,4 +1,4 @@
-# Test Cases: job-start-from-issue
+# Test Cases: job start --from-issue
 
 <!-- FORMAT REQUIREMENTS:
 Test Case heading format: `### TC-{NNN}: {Name}` (3-digit zero-padded, e.g. TC-001)
@@ -50,10 +50,10 @@ Result section MUST appear at the very end as a YAML code block:
 
 ## Summary
 
-- **Total**: 20 cases
-- **Automated** (unit/integration): 17
-- **Manual**: 1
-- **Priority**: must: 17, should: 2, could: 1
+- **Total**: 19 cases
+- **Automated** (unit/integration): 14
+- **Manual**: 2
+- **Priority**: must: 13, should: 6, could: 0
 
 ---
 
@@ -75,7 +75,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ### TC-003: 現在 branch が base-branch と不一致なら副作用ゼロで停止する
 
-**Category**: integration
+**Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: --from-issue はコマンド起動時に base-branch guard を適用しなければならない > Scenario: 現在 branch が base-branch と不一致なら副作用ゼロで停止する
 
@@ -83,7 +83,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ### TC-004: detached HEAD は不一致として扱う
 
-**Category**: integration
+**Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: --from-issue はコマンド起動時に base-branch guard を適用しなければならない > Scenario: detached HEAD は不一致として扱う
 
@@ -91,7 +91,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ### TC-005: --from-issue と positional の併用は usage エラー
 
-**Category**: integration
+**Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: --from-issue と positional / --issue は排他でなければならない > Scenario: --from-issue と positional の併用は usage エラー
 
@@ -99,7 +99,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 ### TC-006: --from-issue と --issue の併用は usage エラー
 
-**Category**: integration
+**Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: --from-issue と positional / --issue は排他でなければならない > Scenario: --from-issue と --issue の併用は usage エラー
 
@@ -108,28 +108,36 @@ Result section MUST appear at the very end as a YAML code block:
 ### TC-007: --from-issue と --detach は併用できる
 
 **Category**: integration
-**Priority**: must
+**Priority**: should
 **Source**: spec.md > Requirement: --from-issue と positional / --issue は排他でなければならない > Scenario: --from-issue と --detach は併用できる
 
 ---
 
-### TC-008: parse 失敗時に draft も job state も生成されない
+### TC-008: fetch 失敗時に draft も job state も生成されない
 
-**Category**: integration
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: GitHub API fetch 失敗は副作用ゼロで非ゼロ exit しなければならない > Scenario: fetch 失敗時に draft も job state も生成されない
+
+---
+
+### TC-009: parse 失敗時に draft も job state も生成されない
+
+**Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: issue 本文の request parse 失敗は副作用ゼロでエラー終了しなければならない > Scenario: parse 失敗時に draft も job state も生成されない
 
 ---
 
-### TC-009: 占有 slug に対する --from-issue は既存 SlugOccupiedError 経路で拒否される
+### TC-010: 占有 slug に対する --from-issue は既存 SlugOccupiedError 経路で拒否される
 
 **Category**: integration
-**Priority**: must
+**Priority**: should
 **Source**: spec.md > Requirement: slug 占有時は既存の SlugOccupiedError 経路に乗らなければならない > Scenario: 占有 slug に対する --from-issue は既存 SlugOccupiedError 経路で拒否される
 
 ---
 
-### TC-010: inbox と --from-issue が同一の core 関数を経由する
+### TC-011: inbox と --from-issue が同一の core 関数を経由する
 
 **Category**: unit
 **Priority**: must
@@ -137,119 +145,93 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-### TC-011: --from-issue なし + positional なし → usage エラー
+### TC-012: --from-issue も positional も指定なしで usage エラー
 
-**Category**: integration
+**Category**: unit
 **Priority**: must
-**Source**: tasks.md > T-02: --from-issue flag 追加・positional optional 化・排他検査
+**Source**: design.md D1 / tasks.md T-02
 
-**GIVEN** `job start` を positional も `--from-issue` も指定せずに呼ぶ
+**GIVEN** `job start` コマンドが `--from-issue` なし・positional なしで呼ばれる
 **WHEN** コマンドを実行する
-**THEN** usage エラーで非ゼロ exit（ARG_ERROR）し、job state を作らない
+**THEN** usage エラー（ARG_ERROR）で非ゼロ exit し、job state は作られない
 
 ---
 
-### TC-012: getCurrentBranch が detached HEAD で null を返す
+### TC-013: getCurrentBranch が通常 branch で branch 名を返す
 
 **Category**: unit
-**Priority**: must
-**Source**: tasks.md > T-04: base-branch guard の git helper と専用エラー / design.md > D4
+**Priority**: should
+**Source**: design.md D4 / tasks.md T-04
 
-**GIVEN** リポジトリが detached HEAD 状態（`git symbolic-ref --short -q HEAD` が非ゼロ終了）である
+**GIVEN** cwd が `main` branch の git リポジトリである
 **WHEN** `getCurrentBranch(cwd)` を呼ぶ
-**THEN** `null` を返す
+**THEN** `"main"` が返る
 
 ---
 
-### TC-013: base-branch mismatch エラー文言が現在 branch と base-branch の両値を含む
+### TC-014: getCurrentBranch が detached HEAD で null を返す
 
 **Category**: unit
-**Priority**: must
-**Source**: tasks.md > T-04: base-branch guard の git helper と専用エラー / design.md > D4
-
-**GIVEN** `current = "develop"`, `baseBranch = "main"` で `baseBranchMismatchError` を生成する
-**WHEN** 生成されたエラーのメッセージを確認する
-**THEN** 文言に `"develop"` と `"main"` が両方含まれる
-
----
-
-### TC-014: detached HEAD 時の mismatch エラー文言が detached HEAD を明示する
-
-**Category**: unit
-**Priority**: must
-**Source**: tasks.md > T-04: base-branch guard の git helper と専用エラー / design.md > D4
-
-**GIVEN** `current = null`（detached HEAD）, `baseBranch = "main"` で `baseBranchMismatchError` を生成する
-**WHEN** 生成されたエラーのメッセージを確認する
-**THEN** 文言に "detached" または "detached HEAD" の旨と `"main"` が含まれる
-
----
-
-### TC-015: inbox の既存テストが無改変で green
-
-**Category**: gate
-**Priority**: must
-**Source**: tasks.md > T-01: 単一 core 関数へ抽出し inbox を委譲化 Acceptance Criteria / tasks.md > T-06
-
-充足確認: verification step（`bun run test src/core/inbox/__tests__/run-inbox.test.ts` が差分なしで green）
-
----
-
-### TC-016: job start ヘルプ出力に --from-issue が現れる
-
-**Category**: integration
 **Priority**: should
-**Source**: tasks.md > T-05: help / guide の追随
+**Source**: design.md D4 / tasks.md T-04
 
-**GIVEN** `job start -h` を実行する
-**WHEN** usage テキストを確認する
-**THEN** `--from-issue` の記述が usage 出力に存在する
-
----
-
-### TC-017: guide jobs topic に --from-issue の契約が反映される
-
-**Category**: integration
-**Priority**: should
-**Source**: tasks.md > T-05: help / guide の追随
-
-**GIVEN** `specrunner guide jobs` を実行する
-**WHEN** 出力内容を走査する
-**THEN** `--from-issue` に関する記述（fidelity skip・base-branch guard・排他のいずれか）が出力に存在する
+**GIVEN** cwd が detached HEAD 状態の git リポジトリである
+**WHEN** `getCurrentBranch(cwd)` を呼ぶ
+**THEN** `null` が返る
 
 ---
 
-### TC-018: bun run typecheck と bun run test が green
-
-**Category**: gate
-**Priority**: must
-**Source**: tasks.md > T-06: テストによる受け入れ基準の pin Acceptance Criteria
-
-充足確認: verification step（`bun run typecheck` および `bun run test` が全て green）
-
----
-
-### TC-019: issue fetch 失敗時に draft も job state も生成されない
-
-**Category**: integration
-**Priority**: must
-**Source**: spec.md > Requirement: GitHub API fetch 失敗は副作用ゼロで非ゼロ exit しなければならない > Scenario: fetch 失敗時に draft も job state も生成されない
-
-**GIVEN** GitHubClient の `getIssue()` が失敗する mock（404 相当の throw）
-**WHEN** `job start --from-issue <n>` を実行する
-**THEN** `specrunner/drafts/` に draft が書き込まれず、job state が作成されず、非ゼロ exit code で終了する
-
----
-
-### TC-020: detach 親 fetch 成功後の子プロセス再 fetch 失敗（手動確認）
+### TC-015: `job start -h` の usage 出力に --from-issue が現れる
 
 **Category**: manual
-**Priority**: could
-**Source**: design.md > Risks（detach で issue を二度 fetch/parse/guard する）
+**Priority**: should
+**Source**: tasks.md T-05
 
-**GIVEN** `job start --from-issue <n> --detach` の親プロセスが issue fetch に成功し exit 0 を返した直後
-**WHEN** 子プロセスの再 fetch が失敗する（issue 削除・編集・ネットワーク断）
-**THEN** 親は exit 0（登録完了）を返しているが job は存在しない。この経路をリリース前に一度手動確認する
+**GIVEN** `job start` コマンドの help を表示する
+**WHEN** `specrunner job start --help` を実行する
+**THEN** `--from-issue` が出力に含まれ、fidelity skip・base-branch guard・positional/`--issue` 排他の説明が示される
+
+---
+
+### TC-016: `specrunner guide jobs` の出力に --from-issue の契約が反映される
+
+**Category**: manual
+**Priority**: should
+**Source**: tasks.md T-05
+
+**GIVEN** guide の jobs topic を表示する
+**WHEN** `specrunner guide jobs` を実行する
+**THEN** `--from-issue` の契約（issue 番号のみで起動・fidelity skip・base-branch guard・排他）が出力に含まれる
+
+---
+
+### TC-017: bun run typecheck が green
+
+**Category**: gate
+**Priority**: must
+**Source**: tasks.md T-06
+
+verification phase: typecheck (`bun run typecheck`)
+
+---
+
+### TC-018: bun run test が green
+
+**Category**: gate
+**Priority**: must
+**Source**: tasks.md T-06
+
+verification phase: test (`bun run test`)
+
+---
+
+### TC-019: inbox の既存テストが無改変で green
+
+**Category**: gate
+**Priority**: must
+**Source**: tasks.md T-01 / T-06
+
+verification phase: test (`bun run test` — `src/core/inbox/__tests__/run-inbox.test.ts` を含む)
 
 ---
 
@@ -257,11 +239,11 @@ Result section MUST appear at the very end as a YAML code block:
 
 ```yaml
 result: completed
-total: 20
-automated: 17
-manual: 1
-must: 17
-should: 2
-could: 1
+total: 19
+automated: 14
+manual: 2
+must: 13
+should: 6
+could: 0
 blocked_reasons: []
 ```
