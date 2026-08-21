@@ -6,25 +6,25 @@
 
 | # | Phase | Status | Duration | Exit Code |
 |---|-------|--------|----------|-----------|
-| 1 | build | passed | 0.4s | 0 |
-| 2 | typecheck | passed | 11.0s | 0 |
-| 3 | test | passed | 70.2s | 0 |
-| 4 | lint | passed | 11.1s | 0 |
+| 1 | build | passed | 1.3s | 0 |
+| 2 | typecheck | passed | 6.2s | 0 |
+| 3 | test | passed | 40.6s | 0 |
+| 4 | lint | passed | 6.9s | 0 |
 | 5 | changed-line-coverage | skipped | — | — |
 | 6 | lockfile-sync | skipped | — | — |
 
 ## Phase: build
 
 ```
-[34mCLI[39m Building entry: bin/specrunner.ts
-[34mCLI[39m Using tsconfig: tsconfig.json
-[34mCLI[39m tsup v8.5.1
-[34mCLI[39m Using tsup config: tsup.config.ts
-[34mCLI[39m Target: node20
-[34mCLI[39m Cleaning output folder
-[34mESM[39m Build start
-[32mESM[39m [1mdist/specrunner.js [22m[32m1.54 MB[39m
-[32mESM[39m ⚡️ Build success in 164ms
+CLI Building entry: bin/specrunner.ts
+CLI Using tsconfig: tsconfig.json
+CLI tsup v8.5.1
+CLI Using tsup config: tsup.config.ts
+CLI Target: node20
+CLI Cleaning output folder
+ESM Build start
+ESM dist/specrunner.js 1.54 MB
+ESM ⚡️ Build success in 88ms
 
 $ tsup
 $ ! grep -qE "from ['\"]zod|require\\(['\"]zod" dist/specrunner.js
@@ -42,110 +42,8 @@ $ tsc --noEmit
 
 ```
 
-[1m[30m[46m RUN [49m[39m[22m [36mv4.1.5 [39m[90m.[39m
+ RUN  v4.1.5 .
 
- [32m✓[39m tests/unit/core/archive/merge-then-archive.test.ts [2m([22m[2m37 tests[22m[2m)[22m[33m 318[2mms[22m[39m
- [32m✓[39m tests/unit/step/write-scope-bypass-closure.test.ts [2m([22m[2m42 tests[22m[2m)[22m[32m 221[2mms[22m[39m
- [32m✓[39m tests/unit/architecture/core-invariants.test.ts [2m([22m[2m72 tests[22m[2m)[22m[33m 483[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/claude-code/agent-runner.test.ts [2m([22m[2m75 tests[22m[2m)[22m[33m 468[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/managed-agent/agent-runner.test.ts [2m([22m[2m55 tests[22m[2m)[22m[32m 284[2mms[22m[39m
- [32m✓[39m tests/unit/step/commit-push-write-scope.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 173[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/spec-observation-autofix.test.ts [2m([22m[2m59 tests[22m[2m)[22m[32m 31[2mms[22m[39m
- [32m✓[39m tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts [2m([22m[2m30 tests[22m[2m | [22m[33m1 skipped[39m[2m)[22m[32m 268[2mms[22m[39m
- [32m✓[39m src/core/archive/__tests__/merge-then-archive.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 40[2mms[22m[39m
- [32m✓[39m src/core/step/bite-evidence/__tests__/gate.test.ts [2m([22m[2m40 tests[22m[2m)[22m[32m 84[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor.test.ts [2m([22m[2m27 tests[22m[2m)[22m[33m 385[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/workspace-tool-guard.test.ts [2m([22m[2m85 tests[22m[2m)[22m[32m 183[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/scope-escalation.test.ts [2m([22m[2m62 tests[22m[2m)[22m[33m 339[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/test-case-gen-design-phase.test.ts [2m([22m[2m49 tests[22m[2m)[22m[32m 29[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/spec-review-fixer-routing.test.ts [2m([22m[2m47 tests[22m[2m)[22m[32m 30[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/verdict-channel-unification.test.ts [2m([22m[2m102 tests[22m[2m)[22m[32m 110[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/local.test.ts [2m([22m[2m42 tests[22m[2m)[22m[33m 454[2mms[22m[39m
- [32m✓[39m tests/unit/cli/repo-root-exactly-once.test.ts [2m([22m[2m49 tests[22m[2m)[22m[33m 2372[2mms[22m[39m
-     [33m[2m✓[22m[39m TC-024: COMMANDS.init has requiresRepo: true [33m 1871[2mms[22m[39m
- [32m✓[39m tests/unit/step/factcheck-attestation.test.ts [2m([22m[2m84 tests[22m[2m)[22m[33m 458[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/post-fix-context.test.ts [2m([22m[2m39 tests[22m[2m)[22m[32m 29[2mms[22m[39m
- [32m✓[39m tests/pipeline-integration.test.ts [2m([22m[2m31 tests[22m[2m)[22m[33m 3993[2mms[22m[39m
-     [33m[2m✓[22m[39m returns status='awaiting-merge', steps['spec-review'] has 1 element with verdict=approved, no spec-fixer steps [33m 1187[2mms[22m[39m
- [32m✓[39m tests/core/pipeline/pipeline.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 226[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/github/github-client-pr.test.ts [2m([22m[2m57 tests[22m[2m)[22m[32m 42[2mms[22m[39m
- [32m✓[39m tests/unit/step/pipeline-sole-committer-synthesis.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 79[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/executor-no-op.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 40[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/spec-review-prior-round-context.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 33[2mms[22m[39m
- [32m✓[39m tests/unit/core/archive/orchestrator.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 129[2mms[22m[39m
- [32m✓[39m tests/unit/core/archive/merge-then-archive-floor-provenance.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 129[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/test-coverage.test.ts [2m([22m[2m58 tests[22m[2m)[22m[32m 141[2mms[22m[39m
- [32m✓[39m src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts [2m([22m[2m354 tests[22m[2m)[22m[32m 57[2mms[22m[39m
- [32m✓[39m tests/custom-reviewers-e2e.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 2063[2mms[22m[39m
-     [33m[2m✓[22m[39m security reviewer runs after code-review and pipeline completes [33m 354[2mms[22m[39m
- [32m✓[39m tests/adapter/managed-agent/agent-runner.test.ts [2m([22m[2m41 tests[22m[2m)[22m[32m 70[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/commit-push-egress-invariant.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 77[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline.transitions.test.ts [2m([22m[2m72 tests[22m[2m)[22m[32m 260[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/custom-reviewer-round-context.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 135[2mms[22m[39m
- [32m✓[39m tests/unit/core/archive/achieved-assurance-revision-binding-unit.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 24[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/adr-gen.test.ts [2m([22m[2m51 tests[22m[2m)[22m[32m 38[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/runner-fidelity-gate.test.ts [2m([22m[2m19 tests[22m[2m)[22m[33m 317[2mms[22m[39m
- [32m✓[39m tests/unit/core/archive/achieved-assurance-completeness-unit.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 22[2mms[22m[39m
- [32m✓[39m tests/unit/core/archive/achieved-assurance-revision-binding-integration.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 119[2mms[22m[39m
- [32m✓[39m tests/store/event-journal.test.ts [2m([22m[2m37 tests[22m[2m)[22m[32m 81[2mms[22m[39m
- [32m✓[39m tests/unit/core/decision/wontfix.test.ts [2m([22m[2m45 tests[22m[2m)[22m[32m 23[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/guide.test.ts [2m([22m[2m188 tests[22m[2m)[22m[32m 37[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/job-wait.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 33[2mms[22m[39m
- [32m✓[39m tests/core/worktree/manager.test.ts [2m([22m[2m40 tests[22m[2m)[22m[32m 56[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/resume-operator-guidance.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 33[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor.commit.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 151[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/resume-adopt-commits.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 62[2mms[22m[39m
- [32m✓[39m tests/unit/step/commit-and-push.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 145[2mms[22m[39m
- [32m✓[39m tests/package-smoke-contract.test.ts [2m([22m[2m63 tests[22m[2m)[22m[32m 95[2mms[22m[39m
- [32m✓[39m tests/unit/step/review-exit-contract.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 75[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/runner.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 176[2mms[22m[39m
- [32m✓[39m tests/unit/core/cancel/runner.test.ts [2m([22m[2m39 tests[22m[2m)[22m[33m 346[2mms[22m[39m
- [32m✓[39m tests/unit/no-worktree-mode.test.ts [2m([22m[2m26 tests[22m[2m)[22m[33m 760[2mms[22m[39m
- [32m✓[39m tests/unit/core/prune/sidecar-runner.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 24[2mms[22m[39m
- [32m✓[39m tests/store/job-state-store.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 118[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/step-completion-missing-file-finding.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 27[2mms[22m[39m
- [32m✓[39m tests/adapter/codex/agent-runner.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 66[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline.reverification.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 247[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/resume-partial-canon.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 111[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/spec-fixer-tasks-md-writable.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m tests/unit/inbox/orchestrator.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 44[2mms[22m[39m
- [32m✓[39m tests/unit/core/archive/achieved-assurance-completeness-integration.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 139[2mms[22m[39m
- [32m✓[39m tests/unit/inbox/planner.test.ts [2m([22m[2m61 tests[22m[2m)[22m[32m 66[2mms[22m[39m
- [32m✓[39m tests/unit/step/test-coverage-violation-detail.test.ts [2m([22m[2m19 tests[22m[2m | [22m[90m2 todo[39m[2m)[22m[32m 52[2mms[22m[39m
- [32m✓[39m src/core/archive/__tests__/orchestrator.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 26[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 86[2mms[22m[39m
- [32m✓[39m tests/unit/core/job-list/operations-view.test.ts [2m([22m[2m48 tests[22m[2m)[22m[32m 27[2mms[22m[39m
- [32m✓[39m tests/unit/step/severity-fixability-split.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 30[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/parallel-review-round-canon.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 30[2mms[22m[39m
- [32m✓[39m tests/resume-worktree-reconciliation-e2e.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 645[2mms[22m[39m
- [32m✓[39m src/core/design-layer/__tests__/topic-emission.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 25[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline.conformance-routing.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 338[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 29[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/job-stats.test.ts [2m([22m[2m39 tests[22m[2m)[22m[32m 96[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/reopen-command.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/reviewer-chain.test.ts [2m([22m[2m55 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m tests/attach/verify-checkpoint.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m tests/core/provider-readiness-gate.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 47[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/parallel-review-round-invalidation.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline.episode-reset.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 159[2mms[22m[39m
- [32m✓[39m tests/reviewer-activation-e2e.test.ts [2m([22m[2m9 tests[22m[2m)[22m[33m 877[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/changed-line-coverage-type-only.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 66[2mms[22m[39m
- [32m✓[39m tests/pipeline-sole-committer-e2e.test.ts [2m([22m[2m4 tests[22m[2m)[22m[33m 314[2mms[22m[39m
- [32m✓[39m tests/unit/step/content-format-detection.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 103[2mms[22m[39m
- [32m✓[39m tests/unit/cli/command-spec-api.test.ts [2m([22m[2m94 tests[22m[2m)[22m[32m 68[2mms[22m[39m
- [32m✓[39m tests/unit/core/notify/issue-notifier.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 22[2mms[22m[39m
- [32m✓[39m src/git/__tests__/transport-auth.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 38[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/commit-orchestrator.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 19[2mms[22m[39m
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
-Detached pipeline started for: test-slug
-  Monitor: specrunner job wait test-slug
-  Details: specrunner job show test-slug
- [32m✓[39m tests/unit/core/command/request.test.ts [2m([22m[2m41 tests[22m[2m)[22m[32m 122[2mms[22m[39m
 Detached pipeline started for: test-slug
   Monitor: specrunner job wait test-slug
   Details: specrunner job show test-slug
@@ -173,148 +71,15 @@ Detached pipeline started for: test-slug
 Detached pipeline started for: test-slug
   Monitor: specrunner job wait test-slug
   Details: specrunner job show test-slug
- [32m✓[39m src/core/command/__tests__/detach-ack.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 23[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/lineage-output-attribution.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 29[2mms[22m[39m
- [32m✓[39m tests/unit/pipeline/transition-when.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 59[2mms[22m[39m
- [32m✓[39m tests/dead-code-adapter-cli.test.ts [2m([22m[2m75 tests[22m[2m)[22m[33m 4160[2mms[22m[39m
-     [33m[2m✓[22m[39m assertBreakAfterCompletion has no references [33m 302[2mms[22m[39m
-     [33m[2m✓[22m[39m checkConfigComplete has no references [33m 355[2mms[22m[39m
-     [33m[2m✓[22m[39m MANAGED_RESET_USAGE has no references [33m 305[2mms[22m[39m
-     [33m[2m✓[22m[39m runManagedAgentSession has no references in src/ bin/ tests/ [33m 304[2mms[22m[39m
-     [33m[2m✓[22m[39m isResultMessage has no references in src/ bin/ tests/ [33m 377[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/findings-ledger.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/judge-verdict-canon.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline-roles.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 48[2mms[22m[39m
- [32m✓[39m tests/config/schema.test.ts [2m([22m[2m69 tests[22m[2m)[22m[32m 39[2mms[22m[39m
- [32m✓[39m tests/unit/pipeline/pipeline-sole-committer-round-guard.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 108[2mms[22m[39m
- [32m✓[39m tests/error-path-integration.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 418[2mms[22m[39m
- [32m✓[39m tests/attach/attach-integration.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 1477[2mms[22m[39m
- [32m✓[39m tests/unit/dead-code-core.test.ts [2m([22m[2m124 tests[22m[2m)[22m[33m 1118[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/commit-push-guarded-staging.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 49[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/claude-code/query-one-shot.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 80[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/fast-scope-checkpoint.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 203[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline.build-fixer-reentry.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 87[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/commit-push-staged-bytes-guard.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 32[2mms[22m[39m
- [32m✓[39m tests/operator-canon-apply-on-resume-e2e.test.ts [2m([22m[2m11 tests[22m[2m)[22m[33m 562[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/agent-runner-report-settles.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 32[2mms[22m[39m
- [32m✓[39m tests/unit/core/archive/merge-then-archive-floor.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 137[2mms[22m[39m
- [32m✓[39m tests/attach/attach-resume-e2e.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 504[2mms[22m[39m
-     [33m[2m✓[22m[39m Machine A creates awaiting-resume checkpoint on origin; Machine B attaches and resumes implementer via real ResumeCommand [33m 503[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/reverification.test.ts [2m([22m[2m37 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/from-issue.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 35[2mms[22m[39m
- [32m✓[39m tests/init.test.ts [2m([22m[2m30 tests[22m[2m)[22m[33m 589[2mms[22m[39m
-     [33m[2m✓[22m[39m TC-001: COMMANDS.init.requiresRepo === true（dispatch レベルで repo 必須が宣言されている） [33m 414[2mms[22m[39m
- [32m✓[39m tests/canon-binding-e2e.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 399[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/finding-recency.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m tests/config/step-config.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/state/lifecycle.test.ts [2m([22m[2m105 tests[22m[2m)[22m[32m 27[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/agent-runner-port.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 98[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline.loop-iter-stdout.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 66[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/runner-integrity.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 134[2mms[22m[39m
- [32m✓[39m tests/unit/step/code-fixer.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 16[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/resume-reconcile.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 59[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/resume-apply-canon.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 56[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/job-stats-metrics.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 61[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor-verdict.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 139[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/prior-round-context.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 80[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/agent-runner-timeout-last-tool.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 42[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/bite-evidence-e2e-gate.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 558[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/github/github-client-request.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 21[2mms[22m[39m
- [32m✓[39m tests/unit/step/write-scope-bypass-closure-integration.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 368[2mms[22m[39m
- [32m✓[39m tests/resume-partial-canon-quarantine-e2e.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 404[2mms[22m[39m
- [32m✓[39m tests/anthropic-step-model-refresh.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 95[2mms[22m[39m
- [32m✓[39m tests/unit/architecture/write-scope-invariants.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 135[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline.cli-step-output.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 53[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/test-coverage-gate-exclusion.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 62[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/lockfile-sync.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 55[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor-activation.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 150[2mms[22m[39m
- [32m✓[39m src/core/issue-target/__tests__/resume.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/runner.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 98[2mms[22m[39m
- [32m✓[39m tests/unit/cli/managed.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 266[2mms[22m[39m
- [32m✓[39m tests/unit/cli/progress.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m tests/unit/step/pr-create.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 97[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/runner-reload-egress-e2e.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 364[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/changed-line-coverage.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 73[2mms[22m[39m
- [32m✓[39m tests/unit/core/occupancy/guard.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 46[2mms[22m[39m
- [32m✓[39m tests/completion.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 84[2mms[22m[39m
- [32m✓[39m tests/unit/cli/job-show.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 66[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/runner-reload-after-setup.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 41[2mms[22m[39m
- [32m✓[39m tests/core/pipeline/pipeline.guard-halt.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 52[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/resume-from-issue.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 21[2mms[22m[39m
- [32m✓[39m src/core/lifecycle/__tests__/exit-guard.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 792[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/reviewer-status-canon.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/read-file-at-commit.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 23[2mms[22m[39m
- [32m✓[39m tests/finish-ps-integration.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 80[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/reviewer-status.test.ts [2m([22m[2m42 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/bootstrap-egress-ledger-wm.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 43[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor-output-gate.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 106[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/executor-verdict.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 132[2mms[22m[39m
- [32m✓[39m tests/pipeline.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 427[2mms[22m[39m
- [32m✓[39m tests/dedup-verified-safe.test.ts [2m([22m[2m24 tests[22m[2m)[22m[33m 1992[2mms[22m[39m
-     [33m[2m✓[22m[39m TC-005: 'computeCodeReviewIteration' call/definition is absent from src/ and tests/ [33m 329[2mms[22m[39m
-     [33m[2m✓[22m[39m TC-005: 'computeSpecReviewIteration' call/definition is absent from src/ and tests/ [33m 378[2mms[22m[39m
-     [33m[2m✓[22m[39m TC-005: 'computeRequestReviewIteration' call/definition is absent from src/ and tests/ [33m 361[2mms[22m[39m
-     [33m[2m✓[22m[39m TC-005: 'computeConformanceIteration' call/definition is absent from src/ and tests/ [33m 406[2mms[22m[39m
- [32m✓[39m tests/adapter/claude-code/provider-readiness-probe.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/resolve-scope.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/managed.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 144[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/executor.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 278[2mms[22m[39m
- [32m✓[39m tests/unit/contract/agent-runner-contracts.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 57[2mms[22m[39m
- [32m✓[39m src/core/inbox/__tests__/run-inbox.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m src/core/step/bite-evidence/__tests__/evidence-base-gate.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/core/port/report-result-findings.test.ts [2m([22m[2m47 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/custom-reviewer-step.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 21[2mms[22m[39m
- [32m✓[39m tests/unit/util/detect-pm.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 23[2mms[22m[39m
- [32m✓[39m tests/unit/step/code-review.test.ts [2m([22m[2m33 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/config/schema.test.ts [2m([22m[2m51 tests[22m[2m)[22m[32m 26[2mms[22m[39m
- [32m✓[39m src/core/resume/__tests__/apply-canon.test.ts [2m([22m[2m19 tests[22m[2m)[22m[33m 353[2mms[22m[39m
- [32m✓[39m tests/spec-review-step.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 386[2mms[22m[39m
- [32m✓[39m tests/unit/step/step-io-contracts.test.ts [2m([22m[2m76 tests[22m[2m)[22m[32m 26[2mms[22m[39m
- [32m✓[39m tests/unit/core/decision/decision-ledger.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/prompts/__tests__/fragment-coverage.test.ts [2m([22m[2m125 tests[22m[2m)[22m[32m 28[2mms[22m[39m
- [32m✓[39m src/core/resume/__tests__/apply-canon-provenance.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/executor-sequential-regression.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 33[2mms[22m[39m
- [32m✓[39m src/core/resume/__tests__/adopt-commits.test.ts [2m([22m[2m17 tests[22m[2m)[22m[33m 806[2mms[22m[39m
- [32m✓[39m tests/unit/prompts/result-yaml-ownership.test.ts [2m([22m[2m35 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/step/output-verify.test.ts [2m([22m[2m42 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/shared/artifact-bundle.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 47[2mms[22m[39m
- [32m✓[39m tests/unit/state/pipeline-sole-committer-state.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/absorb-build-fixer/pipeline-exhaustion.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 76[2mms[22m[39m
- [32m✓[39m src/core/port/__tests__/evidence-enforcement.test.ts [2m([22m[2m35 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m tests/unit/config/runtime-config.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 224[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/pipeline-run-input-completeness.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 33[2mms[22m[39m
- [32m✓[39m tests/adapter/codex/strict-schema.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 16[2mms[22m[39m
- [32m✓[39m src/state/__tests__/artifact-observability.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 30[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/staging-containment.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/test-coverage-manual-exclusion.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 71[2mms[22m[39m
- [32m✓[39m tests/unit/cli/resume.test.ts [2m([22m[2m14 tests[22m[2m)[22m[33m 1394[2mms[22m[39m
-     [33m[2m✓[22m[39m runs pipeline and returns exit code 0 when job is awaiting-resume [33m 390[2mms[22m[39m
- [32m✓[39m tests/unit/core/attestation/build-attestation.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/runtime/validate-step-outputs.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 74[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/step-context-builder.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/staged-bytes-containment.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/login.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/util/copy-artifacts.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 61[2mms[22m[39m
- [32m✓[39m src/core/archive/__tests__/workflow-ci-detection.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/credentials.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 64[2mms[22m[39m
- [32m✓[39m src/adapter/codex/__tests__/completion-contract-injection.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 36[2mms[22m[39m
- [32m✓[39m tests/unit/absorb-build-fixer/implementer-recovery.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 16[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/resume.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 66[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/judge-verdict.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m src/core/resume/__tests__/reconcile-worktree.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/spec-review-scope-exclusion.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 38[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/git-command-classifier.test.ts [2m([22m[2m94 tests[22m[2m)[22m[32m 34[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/executor-drift-detection.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 63[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/conformance.test.ts [2m([22m[2m51 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/signal-name-in-interruption.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 69[2mms[22m[39m
- [32m✓[39m tests/core/step/step-interface.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 39[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 86[2mms[22m[39m
- [32m✓[39m tests/cli-stdout-snapshot.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 49[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/round-git-scope.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 16[2mms[22m[39m
- [32m✓[39m tests/templates/step-output-templates.test.ts [2m([22m[2m48 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m src/core/issue-target/__tests__/archive.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor-no-op.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 58[2mms[22m[39m
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
+Detached pipeline started for: test-slug
+  Monitor: specrunner job wait test-slug
+  Details: specrunner job show test-slug
 Detached pipeline started for: my-slug
   Monitor: specrunner job wait my-slug
   Details: specrunner job show my-slug
@@ -330,62 +95,6 @@ Detached pipeline started for: my-slug
 Detached pipeline started for: my-slug
   Monitor: specrunner job wait my-slug
   Details: specrunner job show my-slug
- [32m✓[39m src/core/command/__tests__/detach.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/cli/doctor-repo-root.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 415[2mms[22m[39m
-     [33m[2m✓[22m[39m runDoctor with extended opts { repoRoot: null } completes and returns non-zero exit code [33m 327[2mms[22m[39m
- [32m✓[39m tests/finish-job-state.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 85[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/parallel-review-round-state-commit.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/judge-verdict-evidence.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 103[2mms[22m[39m
- [32m✓[39m tests/core/usage/usage-summary.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 22[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/verification-phase-outcome-executor.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 52[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor-input-validation.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 48[2mms[22m[39m
- [32m✓[39m tests/unit/core/port/report-result-observations.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/sandbox-scope.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 25[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/archive-from-issue.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 16[2mms[22m[39m
- [32m✓[39m tests/unit/step/fixer-findings.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor-resume-context.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 68[2mms[22m[39m
- [32m✓[39m tests/attach/checkpoint-policy.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/findings-ledger-canon.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/resume-wontfix.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/core/cancel/runner-process-gate.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 98[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline.notification.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/adapter/codex/agent-runner-transient-retry.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 31[2mms[22m[39m
- [32m✓[39m tests/unit/store/finding-recency-journal.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m src/core/step/bite-evidence/__tests__/test-file-selection.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/rules-new.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 99[2mms[22m[39m
- [32m✓[39m tests/unit/step/write-scope.test.ts [2m([22m[2m29 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/core/request/store.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 65[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/pipeline-run-gate.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 37[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor-drift-detection.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 60[2mms[22m[39m
- [32m✓[39m tests/state-store.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 143[2mms[22m[39m
- [32m✓[39m tests/unit/core/gate/issue-fidelity-gate.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/archive/__tests__/achieved-assurance-no-base-oid.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/absorb-build-fixer/transitions.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/core/resume/__tests__/safety.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/core/design-layer/orchestrator-hook.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 129[2mms[22m[39m
- [32m✓[39m tests/unit/core/sidecar/orphan.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 31[2mms[22m[39m
- [32m✓[39m tests/attach/orchestrator.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 16[2mms[22m[39m
- [32m✓[39m tests/bootstrap-egress-ledger-e2e.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 259[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/runner-coverage-gate.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 57[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/executor-cli-entry-oid.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 46[2mms[22m[39m
- [32m✓[39m tests/parser.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 31[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/canon-write-scope.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 136[2mms[22m[39m
- [32m✓[39m tests/unit/state/satisfies-floor.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/state/helpers.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/util/__tests__/spawn-background-detach.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/runner-lockfile-gate.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 57[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor-commit-mutex.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 82[2mms[22m[39m
- [32m✓[39m tests/core/usage/pricing.test.ts [2m([22m[2m36 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/store/journal-integrity.test.ts [2m([22m[2m23 tests[22m[2m)[22m[32m 35[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/local-read-revision-content.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/resume-from-exit-code.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m src/adapter/codex/__tests__/agent-runner-completion-report.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 31[2mms[22m[39m
- [32m✓[39m tests/prompts/design-system.test.ts [2m([22m[2m44 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/touched-files-recorder.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/local-power-assertion.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 62[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/main-checkout-guard.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 70[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/parallel-review-round-resume.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/type-only.test.ts [2m([22m[2m52 tests[22m[2m)[22m[32m 17[2mms[22m[39m
 No jobs found.
 [実行中]
 JOB_ID	SLUG	STEP	STATUS	NEXT	AGE
@@ -393,109 +102,6 @@ job-run-	slug-job-run-1	init	running (stale?)	job resume slug-job-run-1	232d
 {
   "categories": []
 }
- [32m✓[39m tests/unit/cli/ps-filter.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 32[2mms[22m[39m
- [32m✓[39m tests/unit/inbox/occupancy-propagation.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/unit/cli/flag-parser.test.ts [2m([22m[2m39 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m tests/unit/core/worktree/orphan.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/resume-operator-adjudication.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/claude-code/agent-runner-invocation-metrics.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 28[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/pipeline-sole-committer-final-state.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/store/__tests__/event-journal-operator-event.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/select-pending-revision-binding.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m src/core/archive/__tests__/post-merge-integrity.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/util/gitignore.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 39[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/bite-evidence-scoped-exec.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 385[2mms[22m[39m
- [32m✓[39m tests/unit/cli/removed-commands.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 1364[2mms[22m[39m
-     [33m[2m✓[22m[39m specrunner ps → 'Unknown command: ps' を出力し exit 2 で終了 [33m 517[2mms[22m[39m
- [32m✓[39m tests/unit/generate-chain-removed.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 92[2mms[22m[39m
- [32m✓[39m tests/unit/core/archive/achieved-assurance-test-file-selection.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/error-codes.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 139[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/compose-reviewers.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 34[2mms[22m[39m
- [32m✓[39m tests/unit/core/resume/safety.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m tests/unit/pipeline/descriptor-input-completeness.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/routed-findings.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/cli/hint-command-references.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 52[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/pipeline-run-reviewer-snapshot.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 26[2mms[22m[39m
- [32m✓[39m src/adapter/managed-agent/__tests__/prompt-rules-injection.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/core/doctor/orphan-sidecars-check.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/agent/syncer.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/logger/__tests__/pipeline-logger.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 39[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/commit-orchestrator-touched-files.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/resume-hard-crash.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/scope-warning.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/post-work-prompt-invariant.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/conformance-revision-binding.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline.storeFactory.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/parser/extract-section.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/executor-round-produce.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 43[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/workspace-materializer-link.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 27[2mms[22m[39m
- [32m✓[39m tests/unit/cli/request-new-repo-root.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 676[2mms[22m[39m
-     [33m[2m✓[22m[39m exits with code 2 when there is no git repository (repoRoot is null) [33m 451[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/verify-finding-refs.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 38[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/canon-escalation.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/local-no-jobs-dir-writes.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 259[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/reopen-approval-invalidation.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m src/state/__tests__/operator-adjudication-schema.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 16[2mms[22m[39m
- [32m✓[39m tests/unit/doctor/next-steps.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 38[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/run-result.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor-skip-when.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 78[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/commit-orchestrator-usage-metrics.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 22[2mms[22m[39m
- [32m✓[39m src/core/port/__tests__/report-result.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 39[2mms[22m[39m
- [32m✓[39m tests/config/store.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 60[2mms[22m[39m
- [32m✓[39m tests/unit/cli/prune-combined.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/unit/cli/resume-help.test.ts [2m([22m[2m20 tests[22m[2m)[22m[33m 1320[2mms[22m[39m
-     [33m[2m✓[22m[39m TC-007: job resume --help で exit 0 [33m 458[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/runtime-capability-gate.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/test-gen-exemption.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/detach-output-contract.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/core/cancel/sidecar-teardown.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 73[2mms[22m[39m
- [32m✓[39m tests/unit/core/resume/resolve-step.test.ts [2m([22m[2m37 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/core/steps/spec-review.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 60[2mms[22m[39m
- [32m✓[39m tests/unit/step/pipeline-sole-committer-egress.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m src/core/command/__tests__/resume-member-context.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/runtime/validate-step-inputs.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 42[2mms[22m[39m
- [32m✓[39m tests/unit/core/lifecycle/exit-guard.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 400[2mms[22m[39m
- [32m✓[39m src/core/archive/__tests__/evidence-base-archive-floor.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/store/__tests__/job-state-store-list-with-source-dirs.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 31[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/artifact-bundle-injection.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 149[2mms[22m[39m
- [32m✓[39m src/core/reviewers/__tests__/load-validate.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/regression-gate-false-loop.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/adapter/codex/__tests__/agent-runner-timeout-last-tool.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/bootstrap-egress-ledger-managed.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 76[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/commit-scoped-paths.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 24[2mms[22m[39m
- [32m✓[39m tests/unit/cli/specrunner-resume-dispatch.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 1209[2mms[22m[39m
-     [33m[2m✓[22m[39m calls runResume with the slug argument [33m 430[2mms[22m[39m
- [32m✓[39m tests/unit/no-worktree-archive.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 52[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/credential-injection.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 21[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/doctor-config-overlay.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 65[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/round-git-scope-pipeline-managed.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/core/prune/runner.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m tests/unit/step/pr-create-attestation.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 63[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/types.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m src/core/resume/__tests__/resolve-step.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/prompts/test-case-gen-system.test.ts [2m([22m[2m30 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/job-stats-cross-slug.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 85[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/transient-error.test.ts [2m([22m[2m48 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m src/core/resume/__tests__/resolve-step-test-materialize-alias.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/adapter/managed-agent/error-helpers.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/detach-flag-cli.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/cli.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 452[2mms[22m[39m
-     [33m[2m✓[22m[39m exits with code 2 when config does not exist (CONFIG_MISSING → ARG_ERROR) [33m 412[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/request-review-verdict-evidence.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/runner-abort-hub.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/github/github-client-inbox.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/architecture/invariant-catalog-parity.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/pipeline-run-duplicate-guard.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 27[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/fast-descriptor.test.ts [2m([22m[2m42 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/multi-layer-defense.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 406[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/synthesized-tree-exec.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 179[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 119[2mms[22m[39m
- [32m✓[39m tests/test-case-gen-step.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/core/runtime/provider-readiness.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/core/occupancy/scan.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/core/pr-create/runner.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/verification-config-reload.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 35[2mms[22m[39m
 Detached pipeline started for: integration-slug
   Monitor: specrunner job wait integration-slug
   Details: specrunner job show integration-slug
@@ -505,462 +111,11 @@ Detached pipeline started for: ordering-test-slug
 Detached pipeline started for: wait-compat-slug
   Monitor: specrunner job wait wait-compat-slug
   Details: specrunner job show wait-compat-slug
- [32m✓[39m src/core/command/__tests__/detach-integration.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor-helpers.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 31[2mms[22m[39m
- [32m✓[39m src/core/attach/__tests__/checkpoint-policy.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/regression-gate-step.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 23[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/executor-oid-capture.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 22[2mms[22m[39m
- [32m✓[39m src/templates/__tests__/step-output-templates.test.ts [2m([22m[2m31 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m src/state/__tests__/evidence-backward-compat.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/resume/__tests__/adoption-halt.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/agent/syncer-rollback.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/pipeline-one-shot-resume.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/prompts/test-placement.test.ts [2m([22m[2m26 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/core/occupancy/repair.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/contract/golden-cases.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 38[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/local-duplicate-guard.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 27[2mms[22m[39m
- [32m✓[39m tests/unit/cli/job-stats-repo-root.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 760[2mms[22m[39m
-     [33m[2m✓[22m[39m reports the same run count when invoked from subdir vs repo root [33m 596[2mms[22m[39m
- [32m✓[39m src/config/__tests__/staging-config-validation.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/scope.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/adapter/codex/agent-runner-inactivity-timeout.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor-verbose-log.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 42[2mms[22m[39m
- [32m✓[39m tests/prompts/spec-review-system.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m tests/unit/core/resume/state-based-resolve.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 47[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/judge-verdict-conformance.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/test-coverage-comment-form.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 35[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline.crash-state.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 30[2mms[22m[39m
- [32m✓[39m tests/core/usage/store.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m tests/unit/command/request-prompt.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m src/adapter/shared/__tests__/touched-files-bundle.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/core/doctor/checks/storage/slug-occupancy.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/fixer-helpers-conformance.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/test-coverage-boundary.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 60[2mms[22m[39m
- [32m✓[39m tests/unit/prompts/fragments.test.ts [2m([22m[2m40 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/runtime/list-changed-files.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/config/schema-minimum-assurance.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/commit-final-state.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/evidence-base-e2e.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 215[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/step-completion-canon.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m src/core/credentials/__tests__/credentials-io.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/prompts/dynamic-context-prompts.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/reload-coverage-config.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 25[2mms[22m[39m
- [32m✓[39m tests/git/checkpoint-ref.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 16[2mms[22m[39m
- [32m✓[39m tests/unit/config/migrate.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/local-round-git.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/unit/cli/login.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/logger/log-level.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/verification-step.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/verification/runner-test-gen-exemption.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 80[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/spec-exempt-runtime.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 30[2mms[22m[39m
- [32m✓[39m tests/unit/step/judge-verdict.test.ts [2m([22m[2m27 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/no-op-detect-exemption.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/absorb-test-materialize-transitions.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/core/step/rules-delivery.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/config/schema-coverage.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/core/reviewers/__tests__/activation.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/logger/verbose-log.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 33[2mms[22m[39m
- [32m✓[39m src/adapter/codex/__tests__/touched-files-injection.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/command-registry-reopen.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/cli/cancel.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 203[2mms[22m[39m
- [32m✓[39m tests/unit/cli/command-context.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 23[2mms[22m[39m
- [32m✓[39m tests/util/copy-artifacts.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 31[2mms[22m[39m
- [32m✓[39m src/core/inbox/__tests__/planner.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/step/test-cases-decouple.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/docs/test-coverage-gate-contract.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/agent/registry.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/cli/doctor-repair.test.ts [2m([22m[2m6 tests[22m[2m)[22m[33m 806[2mms[22m[39m
-     [33m[2m✓[22m[39m calls process.exit(2) when no slug is provided [33m 464[2mms[22m[39m
- [32m✓[39m tests/schema.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/remove-session-timeout.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 166[2mms[22m[39m
- [32m✓[39m tests/config/model-registry.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/util/git-exec.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/member-resume-routing.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/cli/help-flag-dispatch.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 1312[2mms[22m[39m
-     [33m[2m✓[22m[39m exits with code 0 [33m 458[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/touched-files-injection.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 25[2mms[22m[39m
- [32m✓[39m tests/unit/architecture/request-entrance-llm-boundary.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 134[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/bite-evidence-pipeline.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/step/spec-review-lightweight.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/cli-run-verdict.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/reopen-terminal-slug.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 322[2mms[22m[39m
-     [33m[2m✓[22m[39m execute() returns 1 when the slug has only a terminal job [33m 315[2mms[22m[39m
- [32m✓[39m tests/unit/util/glob-match.test.ts [2m([22m[2m32 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/bootstrap-egress-ledger-local.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 42[2mms[22m[39m
- [32m✓[39m src/core/port/__tests__/request-review-evidence-parse.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/core/pr-create/body-template.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/store/job-state-store-changedir.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 34[2mms[22m[39m
- [32m✓[39m tests/unit/cli/archive-minimum-assurance.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 178[2mms[22m[39m
- [32m✓[39m src/core/port/__tests__/request-review-legacy-compat.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/step/write-scope-bypass-closure-write-scope.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/prompts/__tests__/evidence-fragment-coverage.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/request-review-step-completion-evidence.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/core/credentials/anthropic.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 91[2mms[22m[39m
- [32m✓[39m tests/config/merge.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/config/type-config.test.ts [2m([22m[2m47 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/attach/verify-checkpoint-r1-assurance.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/state/job-slug.test.ts [2m([22m[2m24 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/bite-evidence-isolated-exec.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 212[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/managed-agent/agent-runner-verbose-log.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 23[2mms[22m[39m
- [32m✓[39m src/core/reviewers/__tests__/definition.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/occupancy-e2e.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 52[2mms[22m[39m
- [32m✓[39m tests/local-job-index.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 41[2mms[22m[39m
- [32m✓[39m tests/core/credentials/github.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 98[2mms[22m[39m
- [32m✓[39m tests/prompts/implementer-system.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/core/step/step-names.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/doctor/checks/runtime/__tests__/aozu-cli.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/jobs-dir-no-readdir.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 33[2mms[22m[39m
- [32m✓[39m tests/unit/step/regression-gate-skip-when.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/runner-skip-detect.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 57[2mms[22m[39m
- [32m✓[39m tests/unit/core/port/report-result.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/verification/runner-commands.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 84[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/reviewer-capability.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/last-commit-touching-path.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m tests/unit/cli/specrunner-worktree-guard.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 961[2mms[22m[39m
-     [33m[2m✓[22m[39m exits with code 2 and prints worktree guard error [33m 441[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/egress-resolution-options.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/step/write-scope-rules-consistency.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/implementer-materialize.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/cli/issue-flag.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/core/doctor/checks/config/__tests__/claude-code-token-present.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/cli/inbox-run.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 27[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/session-log-writer.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 26[2mms[22m[39m
- [32m✓[39m tests/unit/core/occupancy/claim.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/github/github-client-dev-links.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/attach/workspace-materializer-attach.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/state/__tests__/touched-files-schema.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/state/bite-evidence-record-schema.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/hint-command-existence.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 28[2mms[22m[39m
- [32m✓[39m tests/unit/state/profile-roundtrip.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 26[2mms[22m[39m
- [32m✓[39m tests/unit/core/usage/store-backward-compat.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/iteration-display.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/step/executor.store-cache.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/executor-commit-mutex.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 68[2mms[22m[39m
- [32m✓[39m tests/core/step/fixer-helpers.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/step/agent-definition.test.ts [2m([22m[2m22 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/local-snapshot-guard.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/runner-path-mask.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 57[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/usage-show-metrics.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 24[2mms[22m[39m
- [32m✓[39m tests/unit/prompts/design-system.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/state/__tests__/lifecycle-reopen.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/executor-round-commit.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 28[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/design-spec-exempt-contract.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/provider-sdk-loader.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/util/__tests__/paths-canonical.test.ts [2m([22m[2m25 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/core/job/__tests__/start-from-issue.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m tests/cancel-process-group-integration.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 532[2mms[22m[39m
-     [33m[2m✓[22m[39m TC-021 (破壊確認): child survives when isGroupLeader returns false [33m 338[2mms[22m[39m
- [32m✓[39m tests/unit/core/job-access/resolve-state-store.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 27[2mms[22m[39m
- [32m✓[39m tests/unit/core/cancel/pid-kill.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/claude-code/agent-runner-hub.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/adapter/codex/agent-runner-observability.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/unit/core/usage/invocation-types.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/unit/doctor/xdg-config-file-exists.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/prompts/test-case-gen-gate-contract.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/runtime/git-fetch-error.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/registry-invariants.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/pipeline-run.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m src/core/step/bite-evidence/__tests__/gate-no-test-materialize.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/config/__tests__/verification-scoped-patterns.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/util/spawn-background.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/runner-git-show-env.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 75[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/agent-redirect-integration.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m src/store/__tests__/touched-files-resume.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m src/adapter/codex/__tests__/prompt-rules-injection.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m src/adapter/codex/__tests__/artifact-bundle-injection.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 24[2mms[22m[39m
- [32m✓[39m tests/unit/git/git-spawn-env.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 21[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/claude-code/issue-fidelity-comparator.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/cli/doctor-help.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 718[2mms[22m[39m
-     [33m[2m✓[22m[39m doctor --help で exit 0 [33m 449[2mms[22m[39m
- [32m✓[39m tests/unit/absorb-build-fixer/state-compat.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/github/list-pull-request-files.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/step-completion-evidence-diagnostic.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/docs/test-coverage-manual-contract.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/attach.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/managed-verify-finding-refs.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/storage/journal-integrity.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/step/spec-fixer.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/util/atomic-write.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 47[2mms[22m[39m
- [32m✓[39m tests/load-by-job-id.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 28[2mms[22m[39m
- [32m✓[39m tests/unit/core/occupancy/errors.test.ts [2m([22m[2m20 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/core/design-layer/check-gate.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m src/config/__tests__/staged-bytes-config-validation.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/state/__tests__/transient-retry-state.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/credentials/__tests__/github.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/adapter/codex/agent-runner-output-verification.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/core/archive/post-merge-cleanup.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/github/github-client-get-issue.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/cli/progress-halt-guidance.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/propagate.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 20[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/factory.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/list-changed-files-between-commits.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/job-stats-jobid-filter.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/doctor/xdg-integration.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 25[2mms[22m[39m
- [32m✓[39m tests/store/compose-split-layout-from-content.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m src/logger/__tests__/log-retention.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 25[2mms[22m[39m
- [32m✓[39m tests/core/preflight.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline-fatal-codes.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/codex/agent-runner-env.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m src/adapter/shared/__tests__/last-tool-tracker.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/core/doctor/formatter-detailshuman.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/draft-move.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 25[2mms[22m[39m
- [32m✓[39m tests/doctor-readiness.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/attach/attach-cli.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 532[2mms[22m[39m
-     [33m[2m✓[22m[39m command-registry exits 2 when --branch is omitted [33m 459[2mms[22m[39m
- [32m✓[39m tests/unit/core/design-layer/mark-hook.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/job-show-detach-log.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/core/doctor/orphan-worktrees-check.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 153[2mms[22m[39m
- [32m✓[39m src/core/archive/__tests__/achieved-assurance.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/core/cancel/pid-kill-group.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/state/session-timeout-migration.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 150[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/report-tool-evidence-schema.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/docs/test-coverage-docs-contract.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/core/doctor/doctor-cli.test.ts [2m([22m[2m8 tests[22m[2m)[22m[33m 797[2mms[22m[39m
-     [33m[2m✓[22m[39m TC-062: writes USAGE to stderr and exits 2 when no command given [33m 459[2mms[22m[39m
- [32m✓[39m tests/unit/docs/doc-drift-sync.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/core/finish/archive-change-folder.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/resolve-job-id.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 25[2mms[22m[39m
- [32m✓[39m tests/unit/pipeline/pipeline-sole-committer-bite-evidence.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/lcov.test.ts [2m([22m[2m16 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/core/credentials/credentials-io.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 62[2mms[22m[39m
- [32m✓[39m tests/core/worktree/detection.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 25[2mms[22m[39m
- [32m✓[39m src/core/credentials/__tests__/claude-code.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/pipeline-run-inbox-origin.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/parse-result.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/core/worktree/setup.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/util/paths.test.ts [2m([22m[2m28 tests[22m[2m)[22m[32m 21[2mms[22m[39m
- [32m✓[39m tests/unit/state/reviewer-activation-state.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/cli/run-json-flag.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 933[2mms[22m[39m
-     [33m[2m✓[22m[39m calls runRun with json: true when --json is specified [33m 524[2mms[22m[39m
- [32m✓[39m tests/unit/core/resume/resume-context.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/cli/config-effective.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 43[2mms[22m[39m
- [32m✓[39m tests/unit/verification/commands.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 32[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/github/github-client-issue-comment.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/state/io.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 53[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/shared-glob-match-imports.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/regression-gate-source-checks.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 28[2mms[22m[39m
- [32m✓[39m tests/grep-workflow-actions-pinned.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/command-registry-apply-canon.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/core/event/event-bus.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/cli/ps-pr-hint.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/adapter/codex/__tests__/resume-prompt-injection.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/docs/operations-recovery-contract.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/github-device.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/core/step/bite-evidence/__tests__/shared-selection-imports.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/core/attestation/render-comment.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m src/prompts/__tests__/spec-exempt-prompt.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/config/github-token-present.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/cli/version-flag.test.ts [2m([22m[2m5 tests[22m[2m)[22m[33m 698[2mms[22m[39m
-     [33m[2m✓[22m[39m exits with code 0 [33m 445[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/view-commands-worktree-guard.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/command-registry-adopt-commits.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/core/doctor/formatter.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/git/dynamic-context.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 115[2mms[22m[39m
- [32m✓[39m src/prompts/__tests__/spec-review-full-enumeration-prompt.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/grep-no-step-name-hardcode.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/adapter/shared/__tests__/inactivity-watchdog.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/finish-commit-archive.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m src/prompts/__tests__/request-review-evidence-prompt.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/managed-agent/sse-stream-verbose-log.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/compose-reviewers.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/claude-code/query-one-shot-metrics.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/step/implementer.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/state/profile.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/git/origin-not-configured.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 41[2mms[22m[39m
- [32m✓[39m tests/unit/logger/verbose-log-errors.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 24[2mms[22m[39m
- [32m✓[39m src/prompts/__tests__/artifact-hygiene-discipline.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/prompts/request-review-seam.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/state/__tests__/bite-evidence-schema.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/config/design-layer-config.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/cli/version.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/claude-code/agent-runner-verbose-log.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 15[2mms[22m[39m
- [32m✓[39m tests/config/step-config-trace.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/github/github-client-graphql.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/state/inbox-origin-schema.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m tests/unit/core/resume/resolve-request-path.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 18[2mms[22m[39m
- [32m✓[39m src/config/__tests__/verification-scoped-command.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/step/implementer-lockfile.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/managed-agent/session-client.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m src/core/resume/__tests__/authorized-canon-writer-steps.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/fixer-reviewer.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m src/store/__tests__/job-state-store-archive-skip.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 22[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/github/get-raw-file.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/exit-code-standardization.test.ts [2m([22m[2m15 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/core/archive/protected-paths.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/core/step/rules-resolve.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/rules-md.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/contract/invariants.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 29[2mms[22m[39m
- [32m✓[39m tests/unit/errors/repo-required-error.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/from-flag-no-enum.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/core/resume/resolve-job.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 23[2mms[22m[39m
- [32m✓[39m tests/unit/state/base-branch-roundtrip.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/step/spec-review-reads.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/core/finish/resolve-canonical-state-dir.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 26[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/request-new.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 132[2mms[22m[39m
- [32m✓[39m tests/finish-archive-change-folder.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m src/core/step/__tests__/executor-resume-context.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/verification-hint.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/step/io-iteration.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/git-remote.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 35[2mms[22m[39m
- [32m✓[39m src/prompts/__tests__/custom-reviewer-system.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/power-assertion.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m src/config/__tests__/transient-retry-config.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/pipeline/round-all-skip-pass-through-static.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/prompts/__tests__/tc-source-contract.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/state/__tests__/reviewers-schema.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/cli/ps-check-pr-merged.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/init-provider-notice.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 150[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/github/get-ref-sha.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 14[2mms[22m[39m
- [32m✓[39m tests/unit/step/verification.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/inbox/run-inbox-inbox-origin.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 13[2mms[22m[39m
- [32m✓[39m tests/util/retry.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/claude-code/message-types.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/adapter/shared/prompt-builder.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/pipeline.conformance-resume.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/adapter/dispatching/agent-runner.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/errors/issue-fidelity-error-codes.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/core/doctor/aozu-cli-check.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 194[2mms[22m[39m
- [32m✓[39m src/core/step/bite-evidence/__tests__/evidence-base-oids.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/unit/step/write-scope-error.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/config/file-exists.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/step/step-model-maxturn-config.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/util/detect-pm-lockfile.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/config/inbox-config.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/core/cancel/__tests__/runner-branch-delete.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 24[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/skip-detect.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/auth/managed-key-valid.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/runtime/codex-cli.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/signal-handler-order.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/storage/jobs-writable.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/cli/run-worktree-signal.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/core/lifecycle/query-abort-hub.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/templates/test-cases-template-gate-contract.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/managed-agent/completion-verbose-log.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/unit/prompts/issue-fidelity-prompt-contract.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/runtime/package-manager.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/config/getAgentId.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/changed-lines-filelist.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/command/reviewers-new.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 28[2mms[22m[39m
- [32m✓[39m tests/unit/cli/run-worktree-git-staging.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/core/preflight.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m src/core/lifecycle/__tests__/diagnostic.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 9[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/auth/github-token-valid.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/command-registry-resume.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/validation-tc.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 117[2mms[22m[39m
- [32m✓[39m tests/unit/cli/runtime-tc.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 596[2mms[22m[39m
-     [33m[2m✓[22m[39m specrunner runtime status → runManagedStatus が呼ばれる [33m 518[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/progress-retry.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/core/credentials/claude-code.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 62[2mms[22m[39m
- [32m✓[39m src/util/__tests__/paths.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/parser/rules/base-branch-required.test.ts [2m([22m[2m11 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/prompts/common-context-catch.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/grep-no-bun-imports.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 352[2mms[22m[39m
- [32m✓[39m tests/unit/doctor/workflow-structure-hint.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/util/path-mask.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/core/design-layer/template-section.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m src/core/resume/__tests__/resume-context.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/util/spawn.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 148[2mms[22m[39m
- [32m✓[39m src/adapter/github/__tests__/github-client-closing-prs.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/prompts/request-review-system.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/doctor/token-hint.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/init-git-guard.test.ts [2m([22m[2m2 tests[22m[2m)[22m[33m 517[2mms[22m[39m
-     [33m[2m✓[22m[39m TC-002: COMMANDS.init.requiresRepo === true (ゲートが dispatch レベルに移動した) [33m 507[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/repo/workflow-structure.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/util/env-filter.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/pipeline/reviewer-chain-skipped.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/config/config-source-metadata.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 16[2mms[22m[39m
- [32m✓[39m tests/unit/core/port/issue-fidelity-comparator-layering.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/dead-guidance.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 210[2mms[22m[39m
- [32m✓[39m tests/unit/architecture/module-boundary.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 26[2mms[22m[39m
- [32m✓[39m tests/unit/cli/bootstrap.test.ts [2m([22m[2m3 tests[22m[2m)[22m[33m 360[2mms[22m[39m
- [32m✓[39m tests/adapter/shared/follow-up.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m src/util/__tests__/xdg-read-sidecar-tail.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/github/verify-path.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/core/runtime/workspace-materializer.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/agents/definition-drift.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 17[2mms[22m[39m
- [32m✓[39m tests/unit/util/repo-root.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/core/step/bite-evidence/__tests__/oid-capture.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/logger/stdout-mask.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/util/paths.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/step/requires-commit-flags.test.ts [2m([22m[2m12 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/readme-quickstart.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/adr-tc.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/managed-round-git.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m src/adapter/claude-code/__tests__/agent-redirect.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m src/core/pipeline/__tests__/standard-transitions.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/unit/core/command/pipeline-run-canonical.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/core/verification/changed-lines.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/managed-agent/usage.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/prompts/fragment-coverage.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/parser/rules/slug-required.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/core/doctor/runner.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/core/step/rules-followup-prompts.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/cli/__tests__/init-snippet.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m src/logger/__tests__/mask-sensitive.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/cli/doctor-execfile-env.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/cli/help-output-tc.test.ts [2m([22m[2m7 tests[22m[2m)[22m[33m 546[2mms[22m[39m
-     [33m[2m✓[22m[39m USAGE には 'Request commands' ブロックが含まれる [33m 531[2mms[22m[39m
- [32m✓[39m tests/unit/step/custom-reviewer-activation.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m tests/unit/agent/hash.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/core/credentials/requirements.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/core/validation/registry.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m src/core/pr-create/__tests__/body-template.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/core/liveness/resolve-pid.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/parser/rules/rule-name-typesafe.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/parser/request-md.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/finish-escalation.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/config/managed-key-present.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/cli/job-start-file-path.test.ts [2m([22m[2m1 test[22m[2m)[22m[33m 396[2mms[22m[39m
-     [33m[2m✓[22m[39m 既存ファイルパスが指定された場合は slug lookup をスキップして preflight に進む [33m 395[2mms[22m[39m
- [32m✓[39m src/util/__tests__/xdg-detach-log.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m src/core/runtime/__tests__/workspace-materializer-structure.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/unit/adr.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 10[2mms[22m[39m
- [32m✓[39m src/config/__tests__/github-host.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/git/__tests__/branch.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/config/__tests__/type-config.test.ts [2m([22m[2m13 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/readme-tc.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 12[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/repo/github-origin.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/docs/request-authoring-granularity.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/core/credentials/__tests__/requirements.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/cli/prune-usage.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m src/core/lifecycle/__tests__/keepalive-integration.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/logger/stdout-verbose.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m tests/agent-definition.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 79[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/agents/agents-registered.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/run.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 212[2mms[22m[39m
- [32m✓[39m tests/dependabot-config.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 8[2mms[22m[39m
- [32m✓[39m src/core/verification/__tests__/lockfile-sync-phase-constant.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/unit/adapter/claude-code/completion-directive.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 7[2mms[22m[39m
- [32m✓[39m src/core/lifecycle/__tests__/keepalive.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/runtime/node.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/docs/security-policy.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 11[2mms[22m[39m
- [32m✓[39m tests/unit/docs/readme-pipeline-sync.test.ts [2m([22m[2m18 tests[22m[2m)[22m[32m 19[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/agents/environment-registered.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/parser/rules/adr-required.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/parser/rules/adr-valid.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/repo/git-repository.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/repo/specrunner-project-md.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/storage/old-state-files.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/unit/prompts/builder.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/unit/parser/rules/type-known.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/runtime/git.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 6[2mms[22m[39m
- [32m✓[39m tests/auth/constants.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/core/doctor/checks/env/github-client-id.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m src/core/port/__tests__/agent-runner.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/unit/parser/rules/registry-integration.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/inbox/draft-writer.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/unit/state/pipeline-id.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/unit/parser/rules/title-required.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m src/util/__tests__/git-push.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/unit/util/xdg.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 4[2mms[22m[39m
- [32m✓[39m tests/unit/parser/rules/type-required.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 5[2mms[22m[39m
- [32m✓[39m tests/unit/docs/readme-resume-command.test.ts [2m([22m[2m1 test[22m[2m)[22m[32m 3[2mms[22m[39m
- [32m✓[39m tests/unit/core/pipeline/buildMockPipeline.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 3[2mms[22m[39m
 
-[2m Test Files [22m [1m[32m809 passed[39m[22m[90m (809)[39m
-[2m      Tests [22m [1m[32m12107 passed[39m[22m[2m | [22m[33m1 skipped[39m[2m | [22m[90m2 todo[39m[90m (12110)[39m
-[2m   Start at [22m 10:16:36
-[2m   Duration [22m 69.74s[2m (transform 16.65s, setup 9.37s, import 76.26s, tests 75.23s, environment 94ms)[22m
+ Test Files  809 passed (809)
+      Tests  12107 passed | 1 skipped | 2 todo (12110)
+   Start at  19:32:53
+   Duration  39.35s (transform 7.52s, setup 4.18s, import 32.28s, tests 58.54s, environment 39ms)
 
 
 $ vitest run
@@ -1099,9 +254,9 @@ Warning: archive-from-issue: skipping PR #99 (branch 'feat/my-feature'): 4-field
 Warning: Could not verify change folder: this.githubClient.verifyPath is not a function
 Warning: Could not verify change folder: this.githubClient.verifyPath is not a function
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
-Warning: linked branch registration failed: link failed
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'implementer'. Treating as escalation.
+Warning: linked branch registration failed: link failed
 Mapping --from "build-fixer" → "implementer" (legacy alias)
 Warning: pr-create: attestation comment failed: GitHub API error
 Warning: pr-create: could not read events.jsonl for attestation, skipping comment
@@ -1134,10 +289,10 @@ Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (mem
 Mapping resumePoint.step "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
 Mapping --from "cross-boundary-invariants" → "custom-reviewers" (member → coordinator)
-Warning: /tmp/cred-test-gPtGf3/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: /tmp/cred-test-W3CGpY/specrunner/credentials.json has loose permissions (recommend 0600).
-Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-cvrPHW/specrunner/credentials.json has loose permissions (recommend 0600).
+Warning: /var/folders/s0/vp_nbg893qnchk0fxlkvb4sm0000gn/T/cred-test-O6lPyi/specrunner/credentials.json has loose permissions (recommend 0600).
 Warning: Could not parse verdict from agent step 'reviewer-A'. Treating as escalation.
+Warning: Could not parse verdict from agent step 'reviewer-B'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'code-review'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
 Warning: Could not parse verdict from agent step 'reviewer-alpha'. Treating as escalation.
@@ -1173,4 +328,4 @@ _(skipped — test-generation-exempt request type: chore)_
 
 ## Phase: lockfile-sync
 
-lockfile-sync: package.json の変更なし — スキップ
+lockfile-sync: 依存関連セクションの変更なし — スキップ
