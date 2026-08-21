@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "656b7563-0495-41c6-bc28-388494bbdf8b",
   "createdAt": "2026-08-21T02:24:47.582Z",
-  "updatedAt": "2026-08-21T04:06:17.498Z",
+  "updatedAt": "2026-08-21T04:11:58.794Z",
   "request": {
     "title": "regression-gate の finding 再報告に由来を保持し --wontfix の逆引きを識別子照合にする",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/finding-provenance-carry-656b7563",
   "error": null,
   "pipelineId": "standard",
@@ -83,7 +83,8 @@
     "a273ad8a34cfc22a5b1a3d713e5920cd51c10a01",
     "38d1fc007659d552d571f23acaf8ee0d0fbfd370",
     "bea152297e66251d5212ef97345ebb56616634bb",
-    "d27e489f3333c01004a87aac9e3ae10f7b05ed13"
+    "d27e489f3333c01004a87aac9e3ae10f7b05ed13",
+    "b5335ed2402c592f03c7e677b848a16a8b629507"
   ],
   "touchedFiles": {
     "request-review": [
@@ -173,6 +174,10 @@
       "src/core/step/__tests__/regression-gate-step.test.ts",
       "src/core/step/__tests__/regression-gate-false-loop.test.ts",
       "src/core/command/__tests__/resume-wontfix.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-10-config-schema-zod-validation.md",
+      "specrunner/adr/2026-08-21-finding-provenance-carry.md"
     ]
   },
   "reviewerStatuses": [
@@ -205,8 +210,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1041",
+    "number": 1041,
+    "createdAt": "2026-08-21T04:11:58.271Z"
+  },
   "_journal": {
-    "historyCount": 86,
+    "historyCount": 91,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -222,7 +232,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
