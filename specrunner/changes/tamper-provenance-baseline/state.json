@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1fd44058-a07a-46d1-afe3-41e2db6da0a7",
   "createdAt": "2026-08-21T02:24:48.638Z",
-  "updatedAt": "2026-08-21T06:01:47.780Z",
+  "updatedAt": "2026-08-21T06:05:52.931Z",
   "request": {
     "title": "bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/tamper-provenance-baseline-1fd44058",
   "error": null,
@@ -81,7 +81,8 @@
     "340fdf189849203453b74b1a0a87eb8cd826aff8",
     "f2c8adbb1c4172e79aa63bd33e61f6fd31b74ca0",
     "0a3b7eb03cd982df7f69df55e691b78fdd83d848",
-    "eeae38a82134270656703fe62a34d96fc588baea"
+    "eeae38a82134270656703fe62a34d96fc588baea",
+    "fd2d15b01794433fadd0106dcc6cfe704bcae9e5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -162,6 +163,17 @@
     ],
     "code-fixer": [
       "src/core/step/bite-evidence/__tests__/gate.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/bite-evidence/step.ts",
+      "src/core/step/bite-evidence/tamper.ts",
+      "src/core/types.ts",
+      "src/core/pipeline/run.ts",
+      "src/core/resume/canon-provenance.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/port/step-types.ts",
+      "src/core/step/types.ts",
+      "src/core/resume/__tests__/authorized-canon-writer-steps.test.ts"
     ]
   },
   "resumePoint": null,
@@ -204,7 +216,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 76,
+    "historyCount": 80,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -218,7 +230,8 @@
       "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }

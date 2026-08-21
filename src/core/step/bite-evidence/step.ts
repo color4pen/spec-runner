@@ -32,6 +32,23 @@ import { runBiteEvidenceGate } from "./gate.js";
 import { checkTamperStatus, parseCommitToken } from "./tamper.js";
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/**
+ * Sentinel token used when a commit exists (lastCommitTouchingPath returned "found") but
+ * its subject does not conform to the "<token>: <slug>" convention (parseCommitToken → null).
+ *
+ * Using a non-null sentinel ensures checkTamperStatus routes to branch 5 (mismatch /
+ * fail-closed) rather than branch 3 (inconclusive / fail-open). Branch 3 is reserved for
+ * the distinct "no git history" case (commitResult.kind === "none").
+ *
+ * The value is deliberately not a valid step name or operator token, so it can never
+ * accidentally match an authorized writer.
+ */
+const NON_CONFORMING_SUBJECT_SENTINEL = "__non-conforming-subject__";
+
+// ---------------------------------------------------------------------------
 // BiteEvidenceStep
 // ---------------------------------------------------------------------------
 
@@ -48,9 +65,9 @@ export const BiteEvidenceStep: CliStep = {
     try {
       const testCasesMdPath = `${changeFolderPath(slug)}/test-cases.md`;
 
-      // 1. Derive authorized writers from pre-computed injection (buildPipelineForJob).
+      // 1. Derive authorized writers from pre-computed injection (buildPipelineForJob / runPipeline).
       //    When absent or empty → evidenceAvailable=false (fail-open for gate).
-      const authorizedWriters = (deps as { authorizedCanonWriters?: ReadonlySet<string> }).authorizedCanonWriters;
+      const authorizedWriters = deps.authorizedCanonWriters;
       let evidenceAvailable = !!(authorizedWriters && authorizedWriters.size > 0);
 
       // 2. Determine if test-cases.md has uncommitted worktree changes.
@@ -86,7 +103,7 @@ export const BiteEvidenceStep: CliStep = {
           // not branch 3 (inconclusive). Branch 3 (null) is reserved for "no git history"
           // (commitResult.kind === "none"), which is a distinct case where the file has
           // never been committed at all. Non-conforming subject on a real commit must fail-closed.
-          lastCanonCommitToken = token ?? "__non-conforming-subject__";
+          lastCanonCommitToken = token ?? NON_CONFORMING_SUBJECT_SENTINEL;
         }
       } else if (evidenceAvailable) {
         // lastCommitTouchingPath not available on runtime → cannot determine provenance
