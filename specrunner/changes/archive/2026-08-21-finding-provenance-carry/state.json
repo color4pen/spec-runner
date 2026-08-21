@@ -1,0 +1,240 @@
+{
+  "version": 2,
+  "jobId": "656b7563-0495-41c6-bc28-388494bbdf8b",
+  "createdAt": "2026-08-21T02:24:47.582Z",
+  "updatedAt": "2026-08-21T04:11:58.794Z",
+  "request": {
+    "title": "regression-gate の finding 再報告に由来を保持し --wontfix の逆引きを識別子照合にする",
+    "type": "spec-change",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/finding-provenance-carry-656b7563",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1040,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "f9d628b64fbfa563e63c8875a069f5630bef7074",
+    "eb8ef525439ca4cd09e7645705507261acebb068",
+    "f0cacae24177e2393ecad1ca097507e88ac76db6",
+    "fb5d60f0367d0afe901849963ead15ef23b063c2",
+    "fddfd125c154d0f562d15369c7171a434eb87d00",
+    "b3be5df20029424f1be61cfc411ddb15b0134253",
+    "3ca5611e3d74963644c7e165f6b969d1859877ad",
+    "5db22fd52b72e8337d3639362ceb2bcc393183c9",
+    "7207576afa9bd1c4d0a112f8a1d510016e31bf20",
+    "6a924beb5a58ca63251a3216f878cdbbbab7b122",
+    "64b2f563c879bd55a36531ee9b2989337a556b4a",
+    "d0a80782158a34483e3edc3d8a15e82716ec949b",
+    "95eb9c2d91f9887c079dd3ad02f3e3701d2e52af",
+    "46c771e746639d0bdae03c145ad5dc5ff8754888",
+    "29fa66a9172d6bf12f6b80784d13712acbf76092",
+    "ac55c36719c2feeb52e7b0367be23101e1dfc479",
+    "a273ad8a34cfc22a5b1a3d713e5920cd51c10a01",
+    "38d1fc007659d552d571f23acaf8ee0d0fbfd370",
+    "bea152297e66251d5212ef97345ebb56616634bb",
+    "d27e489f3333c01004a87aac9e3ae10f7b05ed13",
+    "b5335ed2402c592f03c7e677b848a16a8b629507"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/decision/wontfix.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/state/schema/types.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "tests/unit/core/decision/wontfix.test.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/kernel/report-result.ts",
+      "src/core/step/regression-gate.ts"
+    ],
+    "design": [
+      "src/core/decision/wontfix.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/kernel/report-result.ts",
+      "src/core/step/regression-gate.ts",
+      "src/state/schema/types.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/fixer-helpers.ts",
+      "tests/unit/core/decision/wontfix.test.ts",
+      "src/core/port/report-result.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/step/__tests__/regression-gate-step.test.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/core/decision/wontfix.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/kernel/report-result.ts",
+      "src/core/port/report-result.ts",
+      "src/state/schema/types.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/core/decision/decision-ledger.ts",
+      "tests/unit/core/decision/wontfix.test.ts",
+      "src/core/step/__tests__/regression-gate-step.test.ts"
+    ],
+    "spec-fixer": [
+      "src/core/pipeline/findings-ledger.ts"
+    ],
+    "implementer": [
+      "src/core/decision/wontfix.ts",
+      "src/core/step/regression-gate.ts"
+    ],
+    "code-review": [
+      "src/kernel/report-result.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/port/report-result.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/decision/wontfix.ts",
+      "src/core/step/regression-gate.ts",
+      "src/prompts/regression-gate-system.ts",
+      "tests/unit/core/decision/wontfix.test.ts",
+      "src/core/step/__tests__/regression-gate-step.test.ts",
+      "src/core/command/__tests__/resume-wontfix.test.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/state/schema/types.ts"
+    ],
+    "code-fixer": [
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/state/schema/types.ts"
+    ],
+    "regression-gate": [
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/step/__tests__/regression-gate-step.test.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "src/core/step/report-tool.ts"
+    ],
+    "conformance": [
+      "src/kernel/report-result.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/port/report-result.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/core/decision/wontfix.ts",
+      "src/core/step/regression-gate.ts",
+      "src/prompts/regression-gate-system.ts",
+      "tests/unit/core/decision/wontfix.test.ts",
+      "src/core/step/__tests__/regression-gate-step.test.ts",
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "src/core/command/__tests__/resume-wontfix.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-10-config-schema-zod-validation.md",
+      "specrunner/adr/2026-08-21-finding-provenance-carry.md"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "46c771e746639d0bdae03c145ad5dc5ff8754888",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/finding-provenance-carry/design.md:sha256:bd49ccc790d3a1061b7a71f0dc06a3c27582c5f64a1fb635457a707f82e08848|specrunner/changes/finding-provenance-carry/request.md:sha256:68d53ce0eb9a4b44357697d6a5273358a72f382c18b2f433ae478eb6a1dadeef|specrunner/changes/finding-provenance-carry/spec.md:sha256:5f92d8fc135573d731343cb84a579ee695b334618bfc514c19c5957c336ae65d|specrunner/changes/finding-provenance-carry/tasks.md:sha256:cf9002d894e8198f358faeb4b91a37aa9b5bf65744b08eac2296ba8e285b8254|specrunner/changes/finding-provenance-carry/test-cases.md:sha256:efb173bd80e1cb5c2890fee4cc4fdfe51f547941203e54c8b53b27d931120afb"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1041",
+    "number": 1041,
+    "createdAt": "2026-08-21T04:11:58.271Z"
+  },
+  "_journal": {
+    "historyCount": 91,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 2,
+      "spec-fixer": 1,
+      "implementer": 2,
+      "bite-evidence": 1,
+      "verification": 3,
+      "code-review": 2,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 2,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

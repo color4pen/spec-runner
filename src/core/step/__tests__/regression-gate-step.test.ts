@@ -11,6 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { createRegressionGateStep, REGRESSION_GATE_STEP_NAME } from "../regression-gate.js";
 import { JUDGE_REPORT_TOOL } from "../report-tool.js";
+import { computeLedgerRef } from "../../pipeline/findings-ledger.js";
 import { resolveReviewerResultPath } from "../../../util/paths.js";
 import type { JobState } from "../../../state/schema.js";
 import type { StepDeps } from "../types.js";
@@ -230,6 +231,26 @@ describe("createRegressionGateStep — buildMessage (non-empty ledger)", () => {
     const msg = step.buildMessage(state, deps);
     expect(msg).toContain("CR Issue");
     expect(msg).toContain("Security Issue");
+  });
+
+  it("message contains the provenance ref for each ledger entry (TC-001)", () => {
+    // TC-001 (must): buildMessage for a non-empty ledger MUST include each entry's
+    // provenance ref so that the gate can echo it verbatim into the reported finding.
+    // This pins the buildLedgerEntry contract: if the ref line is removed, this test fails.
+    const step = createRegressionGateStep();
+    const finding = makeFixableFinding("src/auth.ts", "Hardcoded secret");
+    const state = makeJobState({
+      steps: {
+        "code-review": [makeStepRun([finding])],
+      },
+    });
+    const deps = makeDeps("my-slug");
+
+    const expectedRef = computeLedgerRef(finding);
+    const msg = step.buildMessage(state, deps);
+
+    // The ref must appear somewhere in the message so the gate can transport it verbatim.
+    expect(msg).toContain(expectedRef);
   });
 });
 

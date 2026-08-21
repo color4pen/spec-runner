@@ -25,6 +25,7 @@ import {
   dedupeFindings,
 } from "../../pipeline/findings-ledger.js";
 import { collectRoutedFixerFindings } from "../routed-findings.js";
+import { computeFindingKey } from "../../decision/decision-ledger.js";
 import type { Finding } from "../../../kernel/report-result.js";
 import type { JobState, StepRun } from "../../../state/schema.js";
 import { STEP_NAMES } from "../step-names.js";
@@ -227,5 +228,47 @@ describe("TC-011: computeRegressionLedger は regression-gate の skipWhen/build
     const state = makeState({});
     const actual = computeRegressionLedger([], state);
     expect(actual).toHaveLength(0);
+  });
+
+  it("TC-011: decisions あり状態で spec-review disposed finding は collectSpecReviewLedger から除外される", () => {
+    // Verifies the filterUndecidedFindings path added to collectSpecReviewLedger (T-02).
+    // Without this exclusion, a wontfix-disposed spec-review finding would still appear
+    // in computeRegressionLedger, breaking TC-008 for spec-review-origin cases.
+    const specFinding = f("high", "fixable", { file: "specrunner/changes/s/spec.md", title: "DisposedSpecIssue" });
+    const findingKey = computeFindingKey(STEP_NAMES.SPEC_REVIEW, specFinding);
+
+    const baseState = makeState({
+      [STEP_NAMES.SPEC_REVIEW]: [makeStepRun([specFinding])],
+    });
+
+    const stateWithDecision: JobState = {
+      ...baseState,
+      decisions: [
+        {
+          kind: "disposition",
+          id: "test-disp-1",
+          step: STEP_NAMES.SPEC_REVIEW,
+          findingKey,
+          finding: {
+            file: specFinding.file,
+            title: specFinding.title,
+            rationale: specFinding.rationale,
+            severity: specFinding.severity,
+          },
+          disposition: "wontfix",
+          reason: "test reason",
+          decidedAt: "2026-01-01T00:00:00Z",
+          source: "operator",
+        },
+      ],
+    };
+
+    // collectSpecReviewLedger must exclude the disposed finding
+    const specLedger = collectSpecReviewLedger(stateWithDecision);
+    expect(specLedger).toHaveLength(0);
+
+    // computeRegressionLedger (which calls collectSpecReviewLedger) must also exclude it
+    const ledger = computeRegressionLedger([], stateWithDecision);
+    expect(ledger).toHaveLength(0);
   });
 });

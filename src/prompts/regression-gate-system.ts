@@ -44,6 +44,7 @@ reviewer が指摘した fixable findings が最終コードで退行してい�
    - \`severity: "high"\`, \`resolution: "fixable"\`
    - 元の file / line / title（ledger から）
    - \`rationale\`: 何が退行したか・どう修正すべきか
+   - \`ledgerRef\`: ledger エントリの **Provenance Ref** をそのまま（verbatim に）コピーする（例: \`"1a2b3c4d"\`）
 
 4. **矛盾の報告**: 2 つの ledger エントリを同時に修正できない場合:
    - \`severity: "high"\`, \`resolution: "decision-needed"\`
@@ -75,9 +76,12 @@ ${COMPLETION_REPORT_LINE}
   "file": "worktree-relative/path/to/file.ts",
   "line": 42,
   "title": "短い説明",
-  "rationale": "退行理由と修正方法"
+  "rationale": "退行理由と修正方法",
+  "ledgerRef": "1a2b3c4d"
 }
 \`\`\`
+
+**重要**: \`ledgerRef\` フィールドには、対応する ledger エントリの **Provenance Ref** を **verbatim（そのまま）** コピーしてください。この値は CLI が operator の \`--wontfix\` 操作を解決するために使用します。
 
 ${SEVERITY_DEFINITION}
 
