@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e7dc8301-1fea-4649-b634-47ce46b57572",
   "createdAt": "2026-08-21T10:02:27.789Z",
-  "updatedAt": "2026-08-21T11:48:51.598Z",
+  "updatedAt": "2026-08-21T11:59:39.779Z",
   "request": {
     "title": "実効モデル名を SDK の supportedModels() で実在検証する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
-  "status": "awaiting-resume",
+  "step": "regression-gate",
+  "status": "running",
   "branch": "feat/model-name-validation-e7dc8301",
   "error": null,
   "pipelineId": "standard",
@@ -78,7 +78,8 @@
     "e0236dc4b4622a00a08a078abee0d29425c902c1",
     "d893b0dc75f5e9518550f98bb67914218533674f",
     "9a4f97f7157897384027206ccb90a5a207b8fa97",
-    "8d566da79be17fdccfa691d9df0789a9f78977ec"
+    "8d566da79be17fdccfa691d9df0789a9f78977ec",
+    "a92aaf272bca615347eaf725624410de946d7d74"
   ],
   "touchedFiles": {
     "request-review": [
@@ -197,8 +198,8 @@
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "45d76b5c78f8c55da44a34edd739d45ca4545c7c",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -208,7 +209,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/model-name-validation/design.md:sha256:d4c858d35faca2d02f8a17ac9d50a4dbe53ca3df9ff4f1fc58df295cc2ec7b3f|specrunner/changes/model-name-validation/request.md:sha256:00244e3ccd403bcdeedeb596299f7b5169ce90a9c67cbd90bf2fc980029c9250|specrunner/changes/model-name-validation/spec.md:sha256:13f18429162ab652577e364b5cf9c4eb8aaefa19c3c7b721f779b852c2db9811|specrunner/changes/model-name-validation/tasks.md:sha256:c2b68c11415661147a3fa1281c66a48890fa657ac0d12a611af936f2283fd716|specrunner/changes/model-name-validation/test-cases.md:sha256:ab8a6f345a4552e05363488f10d014905773716996612ef53cf0456fe8fce631"
     },
     {
       "name": "scale-tolerance",
@@ -223,13 +225,17 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "custom-reviewers escalation への operator 裁定。F-01 は選択肢 2 を採用: DoctorContext に rawConfig を追加し、doctor check が実効 config（deep-merge 後）と mergeModelRegistry(config) で collectEffectiveModels を呼ぶ。doctor が実行と異なる model 集合を検証する false assurance を許容しない。F-03 は選択肢 2 を採用: ResumeCommand の prepare() にも assertEffectiveModelsExist を追加する。既存の assertProviderReadiness と対称にし、resume 時の model 失効も preflight で検出する。取得失敗時の warn+skip（fail-open）は起動時と同一とする。F-02 は指摘どおり修正: 同一解決チェーンの二重呼び出しを一本化する。",
+      "step": "custom-reviewers",
+      "recordedAt": "2026-08-21T11:51:05.962Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 60,
+    "historyCount": 68,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -241,9 +247,9 @@
       "verification": 2,
       "code-review": 1,
       "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
