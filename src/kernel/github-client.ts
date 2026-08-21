@@ -236,6 +236,25 @@ export interface GitHubClient {
   ): Promise<Array<{ id: number; body: string; authorAssociation: string; createdAt: string }>>;
 
   /**
+   * List pull requests that close the given issue via `closedByPullRequestsReferences`.
+   *
+   * Uses GraphQL `closedByPullRequestsReferences(first: 50)` — not `linkedBranches`,
+   * which becomes empty after a PR is created for the issue.
+   *
+   * - Returns `{ number, headRefName }[]` for each closing PR.
+   * - Non-2xx / GraphQL errors / null issue → throws SpecRunnerError(GITHUB_API_ERROR).
+   *
+   * @param owner        Repository owner (user or org name).
+   * @param repo         Repository name.
+   * @param issueNumber  GitHub issue number.
+   */
+  listIssueClosingPullRequests(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+  ): Promise<Array<{ number: number; headRefName: string }>>;
+
+  /**
    * Remove a label from an issue.
    * DELETE /repos/{owner}/{repo}/issues/{issueNumber}/labels/{label}
    *

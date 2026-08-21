@@ -100,6 +100,7 @@ function makeLocalRuntime(): LocalRuntime {
       removeLabel: vi.fn().mockResolvedValue(undefined),
       getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
     createLinkedBranch: vi.fn().mockResolvedValue(undefined),
+    listIssueClosingPullRequests: vi.fn().mockResolvedValue([]),
     } as unknown as ConstructorParameters<typeof LocalRuntime>[0]["githubClient"],
     githubToken: "token",
     spawnFn: async () => ({ exitCode: 0, stdout: "", stderr: "" }),

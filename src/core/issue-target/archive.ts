@@ -27,9 +27,7 @@ import { logWarn } from "../../logger/stdout.js";
 /**
  * Minimum GitHub API surface needed for issue-target archive resolution.
  */
-export type IssueArchiveClient = Pick<GitHubClient, "listIssueComments"> & {
-  listIssueClosingPullRequests(owner: string, repo: string, issueNumber: number): Promise<Array<{ number: number; headRefName: string }>>;
-};
+export type IssueArchiveClient = Pick<GitHubClient, "listIssueComments" | "listIssueClosingPullRequests">;
 
 // ---------------------------------------------------------------------------
 // resolveCompletedJobId

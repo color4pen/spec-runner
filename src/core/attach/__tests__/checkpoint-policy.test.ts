@@ -7,7 +7,7 @@
  * TC-004: awaiting-archive checkpoint で pullRequest.number 欠落時に reject される
  * TC-020: resume policy が awaiting-archive checkpoint を not-quiescent で reject する
  * TC-022: policy 未指定の runAttachVerification は attachResumePolicy で動作する
- *         (awaiting-archive を not-quiescent で reject することで resume policy 維持を確認)
+ *         (verifyCheckpoint に policy を渡さない → awaiting-archive を not-quiescent で reject)
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -16,6 +16,7 @@ import {
   attachQuiescentPolicy,
   type PolicyVerificationContext,
 } from "../checkpoint-policy.js";
+import { verifyCheckpoint } from "../verify-checkpoint.js";
 import { SpecRunnerError, ERROR_CODES } from "../../../errors.js";
 
 // ---------------------------------------------------------------------------
@@ -128,21 +129,71 @@ describe("TC-020: attachResumePolicy rejects awaiting-archive with not-quiescent
 });
 
 // ---------------------------------------------------------------------------
-// TC-022: attachQuiescentPolicy composite (not-quiescent for unknown status)
+// TC-022: policy 未指定の verifyCheckpoint は attachResumePolicy で動作する
 // ---------------------------------------------------------------------------
 
-describe("TC-022: attachQuiescentPolicy rejects non-quiescent statuses", () => {
-  it("TC-022: throws not-quiescent for running status", () => {
+/**
+ * Minimal valid state.json for an awaiting-archive checkpoint.
+ * All fields required by validateJobState are present.
+ */
+function makeArchiveStateJson(slug: string, branch: string): string {
+  return JSON.stringify({
+    version: 2,
+    jobId: "job-tc-022",
+    branch,
+    createdAt: "2026-01-01T00:00:00.000Z",
+    updatedAt: "2026-01-01T00:00:00.000Z",
+    request: { slug, path: `specrunner/changes/${slug}/request.md`, baseBranch: "main" },
+    repository: { owner: "owner", name: "repo" },
+    step: "code-review",
+    status: "awaiting-archive",
+    history: [],
+    steps: {},
+    pullRequest: { number: 7, url: "https://github.com/owner/repo/pull/7" },
+  });
+}
+
+describe("TC-022: verifyCheckpoint without policy defaults to attachResumePolicy", () => {
+  it("TC-022: rejects awaiting-archive with not-quiescent when no policy is passed", async () => {
+    const slug = "tc-022-slug";
+    const branch = "feat/tc-022";
+    const stateJson = makeArchiveStateJson(slug, branch);
+    const treeFiles = [
+      `specrunner/changes/${slug}/events.jsonl`,
+      `specrunner/changes/${slug}/request.md`,
+    ];
+
+    await expect(
+      verifyCheckpoint({
+        slug,
+        stateJson,
+        eventsJsonl: "",
+        treeFiles,
+        branch,
+        expectedRepo: { owner: "owner", name: "repo" },
+        checkpointOid: "deadbeef",
+        // policy omitted → defaults to attachResumePolicy
+      }),
+    ).rejects.toMatchObject({ code: ERROR_CODES.CHECKPOINT_NOT_ATTACHABLE });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// attachQuiescentPolicy composite: delegates by status
+// ---------------------------------------------------------------------------
+
+describe("attachQuiescentPolicy: delegates by status", () => {
+  it("throws not-quiescent for running status", () => {
     const ctx = makeCtx("running");
     expectThrowsSatisfying(() => attachQuiescentPolicy.verify(ctx), (err) => isNotAttachable(err, "not-quiescent"));
   });
 
-  it("TC-022: delegates awaiting-archive to attachArchivePolicy (rejects missing PR number)", () => {
+  it("delegates awaiting-archive to attachArchivePolicy (rejects missing PR number)", () => {
     const ctx = makeCtx("awaiting-archive"); // no PR number
     expectThrowsSatisfying(() => attachQuiescentPolicy.verify(ctx), (err) => isNotAttachable(err, "missing-pr-number"));
   });
 
-  it("TC-022: accepts awaiting-archive with pullRequest.number via composite policy", () => {
+  it("accepts awaiting-archive with pullRequest.number via composite policy", () => {
     const ctx = makeCtx("awaiting-archive", { pullRequestNumber: 3 });
     expect(() => attachQuiescentPolicy.verify(ctx)).not.toThrow();
   });

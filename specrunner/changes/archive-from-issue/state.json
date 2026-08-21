@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-21T00:34:40.351Z",
+  "updatedAt": "2026-08-21T00:41:50.996Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/archive-from-issue-96c14a7e",
   "error": null,
@@ -73,7 +73,8 @@
     "cc08bf1ac6e8016397466a5623b946ea750b1aec",
     "23c8c83c2880f30a2574b37b6c760ccab3ca0133",
     "4ac9fdb2e02068186404f43bcfbb931e8e37907b",
-    "940f4dfcc58f30ae7a3a729b39025b54799213ed"
+    "940f4dfcc58f30ae7a3a729b39025b54799213ed",
+    "ffda064091c3fa7d822e3ace461f84671a000e94"
   ],
   "touchedFiles": {
     "request-review": [
@@ -134,12 +135,30 @@
     "implementer": [
       "src/adapter/github/github-client.ts",
       "src/adapter/github/__tests__/github-client-closing-prs.test.ts"
+    ],
+    "code-review": [
+      "src/core/issue-target/archive.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/cli/attach.ts",
+      "src/errors.ts",
+      "src/adapter/github/github-client.ts",
+      "src/kernel/github-client.ts",
+      "src/core/issue-target/__tests__/archive.test.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "src/cli/__tests__/attach.test.ts",
+      "src/core/attach/__tests__/checkpoint-policy.test.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/cli/command-registry.ts",
+      "src/core/command/guide.ts",
+      "src/adapter/github/__tests__/github-client-closing-prs.test.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -148,7 +167,8 @@
       "spec-fixer": 1,
       "implementer": 2,
       "bite-evidence": 2,
-      "verification": 2
+      "verification": 2,
+      "code-review": 1
     }
   }
 }

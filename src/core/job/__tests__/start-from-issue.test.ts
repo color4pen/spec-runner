@@ -25,6 +25,7 @@ function makeClient(): GitHubClient {
   return {
     getIssue: vi.fn().mockResolvedValue({ number: 42, title: "T", body: "b", nodeId: "NODE_123" }),
     createLinkedBranch: vi.fn().mockResolvedValue(undefined),
+    listIssueClosingPullRequests: vi.fn().mockResolvedValue([]),
     verifyBranch: vi.fn(),
     getRawFile: vi.fn(),
     verifyPath: vi.fn(),
