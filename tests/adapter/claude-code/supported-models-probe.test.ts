@@ -166,8 +166,10 @@ describe("TC-017: returns unavailable when SDK loader throws (never throw)", () 
 // ---------------------------------------------------------------------------
 
 describe("TC-019: session is closed after successful retrieval", () => {
-  it("close() is called after supportedModels() resolves", async () => {
+  it("abort() and close() are both called after supportedModels() resolves", async () => {
     const closeSpy = vi.fn();
+    const abortSpy = vi.spyOn(AbortController.prototype, "abort");
+
     const fakeQuery = makeFakeQuery({
       supportedModels: async () => [{ value: "claude-sonnet-5" }],
       closeSpy,
@@ -179,9 +181,14 @@ describe("TC-019: session is closed after successful retrieval", () => {
       resolveTokenFn: noopTokenResolver,
     });
 
-    const result = await probe({});
-    expect(result.kind).toBe("listed");
-    expect(closeSpy).toHaveBeenCalled();
+    try {
+      const result = await probe({});
+      expect(result.kind).toBe("listed");
+      expect(abortSpy).toHaveBeenCalled();
+      expect(closeSpy).toHaveBeenCalled();
+    } finally {
+      abortSpy.mockRestore();
+    }
   });
 });
 
@@ -190,8 +197,10 @@ describe("TC-019: session is closed after successful retrieval", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-020: session is closed even when SDK throws", () => {
-  it("close() is called when supportedModels() throws", async () => {
+  it("abort() and close() are both called when supportedModels() throws", async () => {
     const closeSpy = vi.fn();
+    const abortSpy = vi.spyOn(AbortController.prototype, "abort");
+
     const fakeQuery = makeFakeQuery({
       supportedModels: async () => { throw new Error("SDK error"); },
       closeSpy,
@@ -203,9 +212,14 @@ describe("TC-020: session is closed even when SDK throws", () => {
       resolveTokenFn: noopTokenResolver,
     });
 
-    const result = await probe({});
-    expect(result.kind).toBe("unavailable");
-    expect(closeSpy).toHaveBeenCalled();
+    try {
+      const result = await probe({});
+      expect(result.kind).toBe("unavailable");
+      expect(abortSpy).toHaveBeenCalled();
+      expect(closeSpy).toHaveBeenCalled();
+    } finally {
+      abortSpy.mockRestore();
+    }
   });
 });
 
