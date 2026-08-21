@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0215f3b4-099e-49e7-b86c-dfb2c462bdd8",
   "createdAt": "2026-08-21T14:07:17.359Z",
-  "updatedAt": "2026-08-21T14:07:19.539Z",
+  "updatedAt": "2026-08-21T14:11:48.909Z",
   "request": {
     "title": "plain archive の状態遷移を merge 境界に合わせる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/archive-state-after-merge-0215f3b4",
   "error": null,
@@ -64,10 +64,28 @@
   "issueNumber": 1049,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "daa0036434b573014153b421dd11a4cf37837935"
+    "daa0036434b573014153b421dd11a4cf37837935",
+    "3ade80b1524c8fca6125b87c8fa432ce304e595d"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/archive/orchestrator.ts",
+      "src/core/archive/merge-then-archive.ts",
+      "src/core/finish/job-state-update.ts",
+      "src/core/archive/__tests__/orchestrator.test.ts",
+      "src/state/lifecycle.ts",
+      "src/core/archive/post-merge-cleanup.ts",
+      "src/cli/archive.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/finish/commit-archive.ts",
+      "src/core/finish/archive-change-folder.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
