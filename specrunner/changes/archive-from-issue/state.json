@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-21T01:52:13.701Z",
+  "updatedAt": "2026-08-21T01:56:52.142Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/archive-from-issue-96c14a7e",
   "error": null,
   "pipelineId": "standard",
@@ -84,7 +84,8 @@
     "14b2a43bb9ee4e9559402148efb91ae429e6c7d8",
     "50b68700ec20252ae4b8fa73382561419e015030",
     "4ee46ff413d3e693c80ccd753dc6652f42c3a491",
-    "020e17ae19592d1eb896446e514ef28106a42463"
+    "020e17ae19592d1eb896446e514ef28106a42463",
+    "f9033c427111aa2cef977069c1636750e50399cf"
   ],
   "touchedFiles": {
     "request-review": [
@@ -195,6 +196,12 @@
       "src/core/issue-target/resume.ts",
       "src/cli/resume-from-issue.ts",
       "src/cli/__tests__/from-issue.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-03-archive-command-client-closed.md",
+      "specrunner/adr/2026-08-20-checkpoint-verification-policy-split.md",
+      "specrunner/adr/2026-08-20-issue-target-resume-from-issue.md",
+      "specrunner/adr/2026-08-21-archive-from-issue.md"
     ]
   },
   "resumePoint": null,
@@ -242,8 +249,13 @@
       "recordedAt": "2026-08-21T01:28:21.414Z"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1038",
+    "number": 1038,
+    "createdAt": "2026-08-21T01:56:51.193Z"
+  },
   "_journal": {
-    "historyCount": 92,
+    "historyCount": 97,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -259,7 +271,9 @@
       "scale-tolerance": 2,
       "custom-reviewers": 2,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
