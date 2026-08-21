@@ -1,0 +1,10 @@
+{
+  "requestHash": "sha256:6be9b5d76e40c01d3945968b0c2be16a81e7cf312890296f57d99bbd2c800af0",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    ".github/workflows/specrunner-dispatch.yml:22-27 — action choices are start / resume only",
+    "src/core/issue-target/archive.ts:132-140 — resolveArchiveBranchFromIssue fetches headRefName via git fetch origin <branch> and skips failed candidates",
+    "src/core/archive/merge-completion.ts:completeAfterMerge — calls markJobArchived(slug, recordDir) then runPostMergeCleanup"
+  ],
+  "sourceRevision": "82ac65f88c9d9a1d0bbf76aa135181506ee5f4f4"
+}
