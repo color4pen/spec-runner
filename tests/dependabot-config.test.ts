@@ -29,9 +29,11 @@ describe("dependabot.yml 不変条件", () => {
     expect(content).toContain("weekly");
   });
 
-  it("allow に @anthropic-ai/claude-agent-sdk が含まれる", async () => {
+  it("allow に LLM SDK 3 依存が含まれる", async () => {
     const content = await fs.readFile(DEPENDABOT_PATH, "utf-8");
     expect(content).toContain('dependency-name: "@anthropic-ai/claude-agent-sdk"');
+    expect(content).toContain('dependency-name: "@anthropic-ai/sdk"');
+    expect(content).toContain('dependency-name: "@openai/codex-sdk"');
   });
 
   it("auto-merge キーが存在しない", async () => {

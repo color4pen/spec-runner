@@ -1,19 +1,22 @@
 version: 2
 
-# Dependabot 設定: @anthropic-ai/claude-agent-sdk の更新 PR 自動生成
+# Dependabot 設定: LLM SDK 3 依存の更新 PR 自動生成
 #
-# 対象: @anthropic-ai/claude-agent-sdk のみ（allow フィルタで限定）
+# 対象（allow フィルタで限定）:
+#   - @anthropic-ai/claude-agent-sdk（agent 実行基盤・binary 同梱）
+#   - @anthropic-ai/sdk（raw API client）
+#   - @openai/codex-sdk（codex adapter 用、optional）
 # 他の依存（bun 本体・devDependencies）は対象外（依存極小の方針）
 #
-# ⚠️  初回更新の注意:
-#   現在のバージョンは ^0.2.128 だが、upstream は既に 0.3.x まで進んでいる。
-#   初回の Dependabot PR は 0.x の minor 境界を越える大型更新になる見込みのため、
-#   定常的な patch 更新と区別し、merge 前に pipeline の実地動作まで確認すること。
+# ⚠️  claude-agent-sdk の更新 PR の注意:
+#   同梱 Claude Code binary ごと差し替わるため、unit CI が検知できない層
+#   （binary の platform 解決・agent 実行挙動）に影響した実績がある。
+#   merge 前に pipeline の実地動作（SDK session smoke 等）まで確認すること。
 #
 # auto-merge は設定しない。
-# SDK 更新は unit CI が検知できない層（同梱 binary の platform 解決・agent 実行挙動）に
-# 影響した実績があり、CI green のみでは安全性を保証できない。
 # 更新 PR は CI を通した上で人間が merge する。
+# codex-sdk は現構成（OpenAI model step 未構成）では実行経路が無く、
+# 実地確認は OpenAI model step を構成した時点の doctor（codex-cli check）で行う。
 
 updates:
   - package-ecosystem: "bun"
@@ -22,3 +25,5 @@ updates:
       interval: "weekly"
     allow:
       - dependency-name: "@anthropic-ai/claude-agent-sdk"
+      - dependency-name: "@anthropic-ai/sdk"
+      - dependency-name: "@openai/codex-sdk"
