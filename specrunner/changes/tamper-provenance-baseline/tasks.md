@@ -5,7 +5,8 @@
   - src/core/port/runtime-strategy.ts          (D5: port method 追加)
   - src/core/runtime/local.ts                  (D5: local 実装)
   - src/core/runtime/managed.ts                (D5: managed 実装 = unavailable)
-  - src/core/port/step-types.ts                (T-03: CliStepDeps に authorizedCanonWriters フィールド追加)
+  - src/core/types.ts                          (T-03: PipelineDeps に authorizedCanonWriters フィールド追加)
+  - src/core/pipeline/run.ts                   (T-03: buildPipelineForJob で authorizedCanonWriterSteps を計算・注入)
   - src/core/resume/canon-provenance.ts        (T-02: authorizedCanonWriterSteps helper 追加)
   - src/core/step/bite-evidence/tamper.ts      (D1/D2/D4: 分類ロジック書き換え)
   - src/core/step/bite-evidence/step.ts        (D1/D3: provenance 入力の計算と配線)
@@ -19,7 +20,16 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
 `step.ts` は `tamper.ts` を import する（行 30）。このため `tamper.ts` も `step.ts` も
 `registry.ts` を import できない（`registry → step → tamper → registry` の循環になる）。
 `authorizedCanonWriterSteps` helper は registry の import chain 外のモジュール
-（`src/core/resume/canon-provenance.ts`）に配置し、`CliStepDeps` 経由で注入する。
+（`src/core/resume/canon-provenance.ts`）に配置し、`PipelineDeps` 経由で注入する。
+
+[注意: 注入の配線経路]
+`executor.ts::runCliStep` は `step.run(state, deps: PipelineDeps)` を呼び出す。TypeScript の
+構造的型付けにより `PipelineDeps` は `CliStepDeps` を満たす（`spawn`, `runtimeStrategy` 等を持つ）。
+したがって、`BiteEvidenceStep.run(state, deps: CliStepDeps)` が受け取る `deps` の実態は
+`PipelineDeps` オブジェクトである。`PipelineDeps` に `authorizedCanonWriters` フィールドを追加し、
+`buildPipelineForJob` の内部で事前計算・注入しないと、実行時は常に `undefined` となり
+`evidenceAvailable=false → inconclusive` が確定してしまう（fail-closed が無効化される）。
+`CliStepDeps` に単独でフィールドを追加しても `PipelineDeps` に反映されないため不十分。
 -->
 
 ## T-01: durable な最終変更 commit を取得する port method を追加する
@@ -93,16 +103,35 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
 
 ## T-03: bite-evidence step で provenance 入力を計算し配線する / gate reason を更新する
 
-- [ ] `src/core/port/step-types.ts` の `CliStepDeps` インターフェースに、executor が事前計算して
-      注入する新フィールドを追加する:
+- [ ] **`src/core/types.ts` の `PipelineDeps` インターフェースに新フィールドを追加する**:
       `authorizedCanonWriters?: ReadonlySet<string>`
-      executor（`pipeline/run.ts` または `step-executor.ts` 等、registry の import chain 外にある
-      モジュール）が `authorizedCanonWriterSteps`（`canon-provenance.ts` 内）を呼び出して
-      `test-cases.md` の所有 step 集合を事前計算し、`BiteEvidenceStep.run()` 呼び出し前に
-      `deps.authorizedCanonWriters` として渡す。
+      理由: `executor.ts::runCliStep` は `step.run(state, deps)` に `PipelineDeps` を渡す。
+      TypeScript の構造的型付けにより `PipelineDeps` が `CliStepDeps` を満たすため、
+      `BiteEvidenceStep.run(state, deps: CliStepDeps)` の `deps` の実態は `PipelineDeps`。
+      `PipelineDeps` にフィールドが無ければ実行時は常に `undefined`（fail-closed が無効化）。
+      `CliStepDeps`（`src/core/port/step-types.ts`）にも同フィールドを追加して型宣言を揃える
+      （`PipelineDeps extends StepContext` かつ `CliStepDeps extends StepDeps = StepContext`
+      であるため、`PipelineDeps` が `CliStepDeps` を満たすには双方に宣言が必要）。
+
+- [ ] **`src/core/pipeline/run.ts` の `buildPipelineForJob` でフィールドを注入する**:
+      `buildPipelineForJob(jobState, deps, events)` は内部で `getPipelineDescriptor` を呼び
+      `descriptor` を保持する唯一の箇所。`buildPipeline` を呼ぶ前に以下を実行:
+      ```
+      const canonPath = `${changeFolderPath(deps.slug)}/test-cases.md`;
+      const writers = authorizedCanonWriterSteps(canonPath, descriptor.steps, jobState, deps);
+      if (writers.size > 0) {
+        deps.authorizedCanonWriters = writers;  // PipelineDeps オブジェクトを直接書き換え
+      }
+      ```
+      これにより `runner.ts` が後続で呼ぶ `pipeline.run(startStep, jobState, deps)` に
+      同じ `deps` オブジェクトが渡されるため、`BiteEvidenceStep.run()` で値が取得できる。
+      `authorizedCanonWriterSteps` は `src/core/resume/canon-provenance.ts` から import する
+      （`run.ts` は `pipeline/` に属し registry → step → tamper の import chain 外にあるため
+      `canon-provenance.ts` を安全に import できる）。
+
 - [ ] `src/core/step/bite-evidence/step.ts` の tamper 計算ブロック
       （現状の lineage fold + currentHash 計算）を provenance 入力の計算に置き換える:
-      - `authorizedWriters` = `deps.authorizedCanonWriters`（executor 注入値）。
+      - `authorizedWriters` = `deps.authorizedCanonWriters`（`buildPipelineForJob` 注入値）。
         `undefined` または空集合なら `evidenceAvailable=false` に倒す。
         （`step.ts` は registry を import できないため、自身では `authorizedCanonWriterSteps` を
         呼び出さない。`pipeline/registry.ts` が `step.ts` を import しているため循環になる。）
@@ -124,11 +153,12 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
 - [ ] gate の `GateDeps.tamperStatus` の型・受け渡しは不変（D4）。
 
 **Acceptance Criteria**:
-- `BiteEvidenceStep.run` が、fake runtime を用いた統合テストで、executor 注入の
-  `deps.authorizedCanonWriters` と runtime port の provenance 照会から `tamperStatus` を
-  計算し gate に渡すことを確認する（下記 T-04 の統合ケースで検証）。
-- `CliStepDeps.authorizedCanonWriters` フィールドが追加され、`step.ts` がこれを参照する
-  （registry の import chain を通じた循環依存が生じないことを typecheck で確認）。
+- `BiteEvidenceStep.run` が、fake runtime を用いた統合テストで、`deps.authorizedCanonWriters`
+  と runtime port の provenance 照会から `tamperStatus` を計算し gate に渡すことを確認する
+  （下記 T-04 の統合ケースで検証）。
+- `PipelineDeps.authorizedCanonWriters` フィールドが `src/core/types.ts` に追加され、
+  `buildPipelineForJob` で計算・注入されることを確認する。`CliStepDeps` にも同フィールドが
+  宣言されており、`step.ts` が `deps.authorizedCanonWriters` を参照できること（typecheck green）。
 - `gate.ts` の tamper reason が provenance を反映しつつ `/tamper/i` に一致する。
 - `evidence-base-gate.test.ts` / `gate-empty-selection.test.ts`（生の `tamperStatus:"mismatch"` /
   `"inconclusive"` を gate に渡す既存 test）が **無変更で green**。

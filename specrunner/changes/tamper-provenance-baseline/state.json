@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1fd44058-a07a-46d1-afe3-41e2db6da0a7",
   "createdAt": "2026-08-21T02:24:48.638Z",
-  "updatedAt": "2026-08-21T02:59:50.105Z",
+  "updatedAt": "2026-08-21T03:11:40.921Z",
   "request": {
     "title": "bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "change/tamper-provenance-baseline-1fd44058",
   "error": null,
@@ -69,7 +69,8 @@
     "38bae2cd5559add5697665857ca147ac232f394d",
     "e1f1aba5e1f47a55d7ada26511b08d6de27369fb",
     "e6333004d131d5ed760f75d122543f9bf77670ca",
-    "dcac35832594ffe5489d36725df23e9a50f8e2ee"
+    "dcac35832594ffe5489d36725df23e9a50f8e2ee",
+    "d7abf5de1f8833a8d4f6ed2411612d6bc03a7a1e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -110,18 +111,17 @@
     ],
     "spec-review": [
       "src/core/step/bite-evidence/tamper.ts",
-      "src/core/step/bite-evidence/gate.ts",
       "src/core/step/bite-evidence/step.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/step/bite-evidence/gate.ts",
       "src/core/resume/canon-provenance.ts",
-      "src/core/resume/apply-canon.ts",
-      "src/core/step/commit-orchestrator.ts",
+      "src/core/port/step-types.ts",
+      "src/core/pipeline/registry.ts",
       "src/core/step/spec-fixer.ts",
-      "src/core/step/write-scope.ts",
-      "src/core/step/bite-evidence/__tests__/evidence-base-gate.test.ts",
-      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts",
-      "src/core/pipeline/registry.ts"
+      "src/core/port/runtime-strategy.ts",
+      "src/core/types.ts",
+      "src/core/pipeline/run.ts",
+      "src/core/step/executor.ts",
+      "src/core/resume/apply-canon.ts"
     ],
     "spec-fixer": [
       "src/core/step/bite-evidence/tamper.ts",
@@ -133,12 +133,12 @@
     ]
   },
   "_journal": {
-    "historyCount": 20,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1,
+      "spec-review": 2,
       "spec-fixer": 1
     }
   }

@@ -105,9 +105,10 @@ request の芯」を直接実装する。authorizedWriters を descriptor から
 で、rules.md の「classification は tool が決定する」原則に沿い、将来の所有変更に
 追随する（canon-provenance の先例と同型）。
 
-**実装上の制約 — circular import 回避**: `authorizedCanonWriterSteps` helper の
-配置は `tamper.ts` ではなく `src/core/resume/canon-provenance.ts`（または registry
-の import chain 外の別モジュール）とする。`pipeline/registry.ts` は
+**実装上の制約 — circular import 回避と注入経路**:
+
+`authorizedCanonWriterSteps` helper の配置は `tamper.ts` ではなく
+`src/core/resume/canon-provenance.ts` とする。`pipeline/registry.ts` は
 `bite-evidence/step.ts` を import し（行 24）、`step.ts` は `tamper.ts` を import
 するため、`tamper.ts` から `registry.ts` を import すると静的 circular import
 （`registry → step → tamper → registry`）が生じる。`step.ts` も同様に
@@ -115,9 +116,14 @@ request の芯」を直接実装する。authorizedWriters を descriptor から
 registry の import chain 外にあるため cycle を持たない（`declaredCanonWritesForStep`
 の先例と同一の状況）。`authorizedCanonWriterSteps` は descriptor の steps 配列を
 引数で受け取る純粋関数として実装し、`registry.ts` を直接 import しない。
-`step.ts` への配線は executor 層（`CliStepDeps.authorizedCanonWriters` フィールド
-経由）で行い、executor は registry の import chain 外にあるため descriptor を
-自由に参照できる。
+
+`step.ts` への配線は `src/core/types.ts` の `PipelineDeps` にフィールドを追加し、
+`src/core/pipeline/run.ts` の `buildPipelineForJob` 内で注入する。理由: executor の
+`runCliStep` は `step.run(state, deps)` に `PipelineDeps` を渡すため、実行時の `deps`
+の実態は `PipelineDeps` オブジェクトである。`PipelineDeps` にフィールドが無ければ
+`deps.authorizedCanonWriters` は常に `undefined`（fail-closed 要件をサイレントに無効化）。
+`buildPipelineForJob` は descriptor を内部解決する唯一の場所であり、`canon-provenance.ts`
+を安全に import できる（`run.ts` は registry の import chain 外）。
 
 **Alternatives considered**:
 
