@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-21T01:42:31.849Z",
+  "updatedAt": "2026-08-21T01:44:30.380Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/archive-from-issue-96c14a7e",
   "error": null,
@@ -81,7 +81,8 @@
     "8e87632492922e53c0c50f07ae0940062f998982",
     "09e3db732cf73d70e2f384af6cd27d0058f9ec13",
     "6ab8a07f44bd208a037080a079a035c18d68117f",
-    "14b2a43bb9ee4e9559402148efb91ae429e6c7d8"
+    "14b2a43bb9ee4e9559402148efb91ae429e6c7d8",
+    "50b68700ec20252ae4b8fa73382561419e015030"
   ],
   "touchedFiles": {
     "request-review": [
@@ -170,12 +171,8 @@
     "regression-gate": [
       "src/kernel/github-client.ts",
       "src/core/issue-target/archive.ts",
-      "src/core/issue-target/resume.ts",
       "src/adapter/github/github-client.ts",
-      "src/core/attach/__tests__/checkpoint-policy.test.ts",
-      "src/core/attach/orchestrator.ts",
-      "src/core/attach/verify-checkpoint.ts",
-      "src/cli/archive-from-issue.ts"
+      "src/core/attach/__tests__/checkpoint-policy.test.ts"
     ]
   },
   "resumePoint": null,
@@ -224,7 +221,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 83,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -239,7 +236,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 2,
       "custom-reviewers": 2,
-      "regression-gate": 1
+      "regression-gate": 2
     }
   }
 }
