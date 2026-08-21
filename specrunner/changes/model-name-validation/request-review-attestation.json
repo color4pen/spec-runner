@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:00244e3ccd403bcdeedeb596299f7b5169ce90a9c67cbd90bf2fc980029c9250",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts:2098 — supportedModels(): Promise<ModelInfo[]> on Query interface",
+    "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts:1061-1097 — ModelInfo type with value, displayName, description fields",
+    "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts:56 — AgentDefinition.model accepts alias ('sonnet', 'opus', 'haiku') or full model ID",
+    "src/config/model-registry.ts — BUILTIN_MODEL_REGISTRY contains provider:anthropic and provider:openai models; no aliases (sonnet/opus/haiku) present",
+    "src/config/schema/validation.ts — validateConfig() performs model registry check via checkModelRegistry()",
+    "src/config/step-config.ts:62 — getStepExecutionConfig() resolves effective model via 6-level resolution chain",
+    "src/core/step/custom-reviewer.ts — createCustomReviewerStep uses snapshot.model ?? DEFAULT_REVIEW_MODEL for agentDef.model",
+    "src/core/step/regression-gate.ts — createRegressionGateStep uses DEFAULT_REVIEW_MODEL ('claude-sonnet-5') for agentDef.model",
+    "src/core/pipeline/types.ts — PipelineDescriptor.steps is readonly (readonly [string, Step])[] iterable for model collection",
+    "src/core/pipeline/compose-reviewers.ts — composeReviewerDescriptor inserts custom reviewer steps and regression-gate step"
+  ],
+  "sourceRevision": "3b0b53b77a585683e43178cf56e46a335bc62fc6"
+}
