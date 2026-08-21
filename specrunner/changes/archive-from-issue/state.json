@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-20T23:53:43.174Z",
+  "updatedAt": "2026-08-21T00:22:50.302Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
-  "status": "running",
+  "step": "bite-evidence",
+  "status": "awaiting-resume",
   "branch": "feat/archive-from-issue-96c14a7e",
   "error": null,
   "pipelineId": "standard",
@@ -67,7 +67,8 @@
     "b0a4d71027be565c68cb128a08e3fb42730d9fd1",
     "b76054f1cd6508f45aef6e62341d31728b7f74aa",
     "3f432b9587d358591f5c5137843118c30ecfa319",
-    "843eb884d6f43680085a556194bc00fa8aca31fa"
+    "843eb884d6f43680085a556194bc00fa8aca31fa",
+    "d2d03e4844b35a8562d8d9fcb70306e6dd5e7ed8"
   ],
   "touchedFiles": {
     "request-review": [
@@ -124,16 +125,54 @@
       "src/cli/command-registry.ts",
       "src/core/job-access/load-by-job-id.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/cli/attach.ts",
+      "src/core/issue-target/resume.ts",
+      "src/cli/resume-from-issue.ts",
+      "src/errors.ts",
+      "src/core/notify/issue-notifier.ts",
+      "src/kernel/github-client.ts",
+      "src/adapter/github/github-client.ts",
+      "src/cli/command-registry.ts",
+      "src/cli/archive.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/core/issue-target/__tests__/resume.test.ts",
+      "src/cli/__tests__/resume-from-issue.test.ts",
+      "src/core/command/guide.ts",
+      "src/git/checkpoint-ref.ts",
+      "src/cli/__tests__/command-registry-resume.test.ts",
+      "src/core/issue-target/archive.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/core/attach/__tests__/checkpoint-policy.test.ts",
+      "src/cli/__tests__/attach.test.ts",
+      "src/core/issue-target/__tests__/archive.test.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "tests/helpers/pipeline-mock-client.ts",
+      "src/cli/__tests__/command-registry-reopen.test.ts",
+      "src/cli/__tests__/trace-tc015.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
+    ]
+  },
+  "resumePoint": {
+    "step": "bite-evidence",
+    "reason": "bite-evidence escalated",
+    "iterationsExhausted": 0
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1
     }
   }
 }
