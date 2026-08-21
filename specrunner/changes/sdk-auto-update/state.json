@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "58484b6c-6791-4380-b6d1-c1df037a4e0e",
   "createdAt": "2026-08-21T10:02:29.679Z",
-  "updatedAt": "2026-08-21T10:21:53.409Z",
+  "updatedAt": "2026-08-21T10:28:25.506Z",
   "request": {
     "title": "Claude Agent SDK の依存更新 PR を自動化する",
     "type": "chore",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "conformance",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "chore/sdk-auto-update-58484b6c",
-  "error": null,
+  "error": {
+    "code": "CANON_FINDING_ESCALATION",
+    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/sdk-auto-update/request.md, title: \"PR body に初回大型更新の運用注記（実地確認後の人間 merge）が含まれない\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -70,7 +74,8 @@
     "55264c0b979e0e2e10ed62c2d798eb2cbb56ad2a",
     "4b02877796e8ae201353c0bf80a0d742aad14cbd",
     "1af45f8e8014654a1268543ea9c1aed72de46335",
-    "6ab3ca1a741ee2926f2e97d02f292608d3db39dd"
+    "6ab3ca1a741ee2926f2e97d02f292608d3db39dd",
+    "822c1008514673f420e29a6cbb208b1fa26fc2c8"
   ],
   "touchedFiles": {
     "request-review": [
@@ -103,6 +108,12 @@
       "tests/dependabot-config.test.ts",
       "vitest.config.ts",
       "tests/grep-workflow-actions-pinned.test.ts"
+    ],
+    "conformance": [
+      ".github/dependabot.yml",
+      "tests/dependabot-config.test.ts",
+      "src/core/pr-create/body-template.ts",
+      "src/parser/request-md.ts"
     ]
   },
   "reviewerStatuses": [
@@ -134,8 +145,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "resumePoint": {
+    "step": "conformance",
+    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/sdk-auto-update/request.md, title: \"PR body に初回大型更新の運用注記（実地確認後の人間 merge）が含まれない\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 42,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -146,7 +162,8 @@
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1
     }
   }
 }
