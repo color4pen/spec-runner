@@ -16,6 +16,7 @@ import { readCheckpointFromRef } from "../../git/checkpoint-ref.js";
 import { verifyCheckpoint } from "./verify-checkpoint.js";
 import { attachFetchFailedError, checkpointNotFoundError } from "../../errors.js";
 import type { VerifiedCheckpoint } from "./verify-checkpoint.js";
+import type { CheckpointVerificationPolicy } from "./checkpoint-policy.js";
 
 // ---------------------------------------------------------------------------
 // runAttachVerification
@@ -30,6 +31,11 @@ export interface AttachVerificationInput {
   spawnFn: SpawnFn;
   /** Expected repository identity (owner + name). */
   expectedRepo: { owner: string; name: string };
+  /**
+   * Use-case verification policy (default: attachResumePolicy via verifyCheckpoint default).
+   * Pass attachArchivePolicy for awaiting-archive, attachQuiescentPolicy for both statuses.
+   */
+  policy?: CheckpointVerificationPolicy;
 }
 
 /**
@@ -46,7 +52,7 @@ export interface AttachVerificationInput {
 export async function runAttachVerification(
   input: AttachVerificationInput,
 ): Promise<VerifiedCheckpoint> {
-  const { cwd, branch, spawnFn, expectedRepo } = input;
+  const { cwd, branch, spawnFn, expectedRepo, policy } = input;
 
   // Fetch the remote-tracking ref so object store has the latest checkpoint
   const fetchResult = await spawnFn("git", ["fetch", "origin", branch], { cwd });
@@ -81,5 +87,6 @@ export async function runAttachVerification(
   );
 
   // Verify self-consistency (pure predicate — no I/O side effects)
-  return verifyCheckpoint({ slug, stateJson, eventsJsonl, treeFiles, branch, expectedRepo, checkpointOid });
+  // Pass policy if provided; verifyCheckpoint defaults to attachResumePolicy when undefined.
+  return verifyCheckpoint({ slug, stateJson, eventsJsonl, treeFiles, branch, expectedRepo, checkpointOid }, policy);
 }

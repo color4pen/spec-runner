@@ -93,6 +93,22 @@ export function parseEscalationJobId(body: string): string | null {
   return match ? (match[1] ?? null) : null;
 }
 
+const COMPLETED_MARKER_RE =
+  /<!-- specrunner:notification kind="completed" jobId="([^"]+)" version="1" -->/;
+
+/**
+ * Extract the jobId from the first completed marker found in `body`.
+ *
+ * Inverse of `buildMarker("completed", jobId)`.
+ *
+ * @param body  Comment body (may contain zero or more markers).
+ * @returns The extracted jobId string, or `null` if no completed marker is present.
+ */
+export function parseCompletedJobId(body: string): string | null {
+  const match = COMPLETED_MARKER_RE.exec(body);
+  return match ? (match[1] ?? null) : null;
+}
+
 /**
  * Build the machine-readable HTML comment marker for a notification.
  *

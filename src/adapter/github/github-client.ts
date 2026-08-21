@@ -796,6 +796,72 @@ export class GitHubApiClient implements GitHubClient {
   }
 
   /**
+   * List pull requests that close the given issue via closing keyword references.
+   *
+   * Uses GraphQL `closedByPullRequestsReferences(first: 50)` — not `linkedBranches`,
+   * which becomes empty after a PR is created.
+   *
+   * - Returns `{ number, headRefName }[]` for each closing PR.
+   * - Non-2xx / GraphQL errors / null issue → throws GITHUB_API_ERROR (fail-closed).
+   */
+  async listIssueClosingPullRequests(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+  ): Promise<Array<{ number: number; headRefName: string }>> {
+    const endpoint = this.graphqlEndpoint();
+    const query = `
+      query ListIssueClosingPRs($owner: String!, $repo: String!, $number: Int!) {
+        repository(owner: $owner, name: $repo) {
+          issue(number: $number) {
+            closedByPullRequestsReferences(first: 50) {
+              nodes { number headRefName }
+            }
+          }
+        }
+      }
+    `;
+    const resp = await this.request(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, variables: { owner, repo, number: issueNumber } }),
+    });
+    if (resp.status < 200 || resp.status >= 300) {
+      throw githubApiError(resp.status, `listIssueClosingPullRequests(${owner}/${repo}#${issueNumber})`);
+    }
+    const body = (await resp.json()) as {
+      errors?: unknown[];
+      data?: {
+        repository?: {
+          issue?: {
+            closedByPullRequestsReferences?: { nodes?: Array<{ number?: number; headRefName?: string }> };
+          } | null;
+        } | null;
+      };
+    };
+    if (body.errors && body.errors.length > 0) {
+      throw githubApiError(
+        resp.status,
+        `listIssueClosingPullRequests GraphQL errors: ${JSON.stringify(body.errors)}`,
+      );
+    }
+    const issue = body.data?.repository?.issue;
+    if (issue === null || issue === undefined) {
+      throw githubApiError(
+        200,
+        `listIssueClosingPullRequests(${owner}/${repo}#${issueNumber}): issue not found`,
+      );
+    }
+    const result: Array<{ number: number; headRefName: string }> = [];
+    for (const node of issue.closedByPullRequestsReferences?.nodes ?? []) {
+      if (typeof node.number === "number" && typeof node.headRefName === "string") {
+        result.push({ number: node.number, headRefName: node.headRefName });
+      }
+    }
+    return result;
+  }
+
+  /**
    * List all comments on an issue in ascending creation order.
    * Follows Link header pagination to fetch all pages.
    */

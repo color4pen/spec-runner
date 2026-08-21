@@ -32,6 +32,9 @@ const EXIT_CODE_MAP: Record<string, ExitCode> = {
   RESUME_FROM_ISSUE_NO_MARKER: EXIT_CODE.ARG_ERROR,
   RESUME_FROM_ISSUE_NO_LINK: EXIT_CODE.ARG_ERROR,
   RESUME_FROM_ISSUE_UNCONFIRMED: EXIT_CODE.ARG_ERROR,
+  ARCHIVE_FROM_ISSUE_NO_MARKER: EXIT_CODE.ARG_ERROR,
+  ARCHIVE_FROM_ISSUE_NO_PR: EXIT_CODE.ARG_ERROR,
+  ARCHIVE_FROM_ISSUE_UNCONFIRMED: EXIT_CODE.ARG_ERROR,
 };
 
 /**
@@ -162,6 +165,20 @@ export const ERROR_CODES = {
    * (no match, multiple matches, or individual field mismatch).
    */
   RESUME_FROM_ISSUE_UNCONFIRMED: "RESUME_FROM_ISSUE_UNCONFIRMED",
+  /**
+   * archive --from-issue: no completed marker found in issue comments.
+   */
+  ARCHIVE_FROM_ISSUE_NO_MARKER: "ARCHIVE_FROM_ISSUE_NO_MARKER",
+  /**
+   * archive --from-issue: no closing PR found for the issue.
+   * Operator must use `job attach --branch <branch>` to attach manually.
+   */
+  ARCHIVE_FROM_ISSUE_NO_PR: "ARCHIVE_FROM_ISSUE_NO_PR",
+  /**
+   * archive --from-issue: PR identity could not be uniquely confirmed
+   * (no match, multiple matches, or field mismatch in 4-point identity check).
+   */
+  ARCHIVE_FROM_ISSUE_UNCONFIRMED: "ARCHIVE_FROM_ISSUE_UNCONFIRMED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -607,6 +624,41 @@ export function resumeFromIssueUnconfirmedError(detail: string): SpecRunnerError
     ERROR_CODES.RESUME_FROM_ISSUE_UNCONFIRMED,
     `Use 'specrunner job attach --branch <branch>' then 'specrunner job resume <slug>' for manual recovery.`,
     `Cannot confirm target branch identity: ${detail}`,
+  );
+}
+
+/**
+ * archive --from-issue: no completed marker found in issue comments.
+ */
+export function archiveFromIssueNoMarkerError(issueNumber: number): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.ARCHIVE_FROM_ISSUE_NO_MARKER,
+    `Check that the job completed and posted a completion comment to issue #${issueNumber} before retrying.`,
+    `No completed marker found for issue #${issueNumber}: no completed marker in comments.`,
+  );
+}
+
+/**
+ * archive --from-issue: no closing PR found for the issue.
+ * Guides the operator to `job attach --branch` for manual recovery.
+ */
+export function archiveFromIssueNoPrError(issueNumber: number): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.ARCHIVE_FROM_ISSUE_NO_PR,
+    `Use 'specrunner job attach --branch <branch>' then 'specrunner job archive <slug> --with-merge' to archive manually.`,
+    `Issue #${issueNumber} has no closing pull requests (closedByPullRequestsReferences is empty).`,
+  );
+}
+
+/**
+ * archive --from-issue: PR identity could not be uniquely confirmed.
+ * `detail` should describe the candidates and what failed.
+ */
+export function archiveFromIssueUnconfirmedError(detail: string): SpecRunnerError {
+  return new SpecRunnerError(
+    ERROR_CODES.ARCHIVE_FROM_ISSUE_UNCONFIRMED,
+    `Use 'specrunner job attach --branch <branch>' then 'specrunner job archive <slug> --with-merge' for manual recovery.`,
+    `Cannot confirm target PR/branch identity: ${detail}`,
   );
 }
 

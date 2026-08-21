@@ -287,4 +287,5 @@ export interface GitHubClient {
    * @param oid      Base commit SHA (immutable OID) to branch from.
    */
   createLinkedBranch(issueId: string, name: string, oid: string): Promise<void>;
+
 }
