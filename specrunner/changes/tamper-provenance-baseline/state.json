@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1fd44058-a07a-46d1-afe3-41e2db6da0a7",
   "createdAt": "2026-08-21T02:24:48.638Z",
-  "updatedAt": "2026-08-21T03:51:18.383Z",
+  "updatedAt": "2026-08-21T04:02:56.033Z",
   "request": {
     "title": "bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "change/tamper-provenance-baseline-1fd44058",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,8 @@
     "410bb3273674b5286fb463d57cf586b0a13e473c",
     "465a092e8510a85b42d48157392332d3d651db37",
     "bbca22e21763804e11bac0eabe27bb83f6c25a0c",
-    "17bdc47688cd2078de27bfa23a2bd5f8c31fcaca"
+    "17bdc47688cd2078de27bfa23a2bd5f8c31fcaca",
+    "cf0266edbfcd868c49172e631e65765501d46392"
   ],
   "touchedFiles": {
     "request-review": [
@@ -138,10 +139,32 @@
     ],
     "implementer": [
       "src/core/step/bite-evidence/__tests__/gate.test.ts"
+    ],
+    "code-review": [
+      "src/core/step/bite-evidence/tamper.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/step/bite-evidence/step.ts",
+      "src/core/resume/canon-provenance.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/types.ts",
+      "src/core/pipeline/run.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/resume/__tests__/authorized-canon-writer-steps.test.ts",
+      "src/core/runtime/__tests__/last-commit-touching-path.test.ts",
+      "src/core/port/step-types.ts",
+      "src/core/command/runner.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/core/step/test-case-gen.ts"
     ]
   },
+  "resumePoint": {
+    "step": "code-review",
+    "reason": "code-review escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 50,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -150,7 +173,8 @@
       "spec-fixer": 2,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2
+      "verification": 2,
+      "code-review": 1
     }
   }
 }
