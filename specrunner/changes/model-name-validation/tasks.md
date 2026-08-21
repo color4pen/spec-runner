@@ -29,6 +29,12 @@
 - [ ] `src/core/model-validation/collect-effective-models.ts` を新規作成する。
 - [ ] `EffectiveModelRef` 型（`{ stepName: string; model: string; provider: "anthropic" | "openai" | undefined; configPath: string | null }`）
       を定義・export する（provider は merged registry 未登録時 `undefined`）。
+  - **`configPath` の意味**: ここでの `configPath` は **dotted key パス**（例: `steps.code-review.model`）であり、
+    エラーメッセージで「どの config キーが問題か」をユーザーに示すために使う。
+    `TracedStepConfigSource`（`src/config/step-config.ts`）にも同名の `configPath?: string` フィールドが
+    存在するが、そちらは**設定ファイルの絶対パス**（`/home/user/.claude/settings.json` 等）を意味する。
+    `traceStepExecutionConfig().fields.model.source` から取得する際は、**`source.path`**（dotted key）を使い、
+    `source.configPath`（絶対ファイルパス）と混同しないこと。
 - [ ] `collectEffectiveModels(descriptor: PipelineDescriptor, config: SpecRunnerConfig, requestType: string | undefined, merged: ModelsConfig): EffectiveModelRef[]`
       を実装する。`descriptor.steps` を走査し `step.kind === "agent"` のみ対象とする。
 - [ ] 各 agent step の実効 model を
@@ -87,6 +93,31 @@
 - [ ] `stripSecrets(env)` + OAuth token best-effort 解決（token 絶対値を返り値・log に出さない）を行う。
 - [ ] SDK を **streaming input mode** で起動する（`prompt` を `AsyncIterable` として渡す — control request
       `supportedModels()` は streaming mode でのみ利用可能: sdk.d.ts:2026-2030）。
+  - `ClaudeSdkQuery` の戻り値型 `ClaudeSdkQueryResult`（`src/adapter/claude-code/sdk-loader.ts`）に
+    `supportedModels(): Promise<SdkModelInfo[]>` と `close(): void` を追加すること。SDK は streaming input
+    で起動した場合にのみこれらのメソッドを提供するため、probe は必ず `prompt` を `AsyncIterable` として渡す
+    （そうしない場合 `supportedModels()` 呼び出しは実行時エラーになる）。
+    型安全のために `ClaudeSdkQueryResult` を拡張するか、`sdk.query()` の戻り値を
+    `as ClaudeSdkQueryResult` でキャストするかのどちらかを採用すること（実装者判断）。
+  - **AsyncIterable の構成パターン**: streaming input として渡す `AsyncIterable<SDKUserMessage>` は、
+    `AbortController.signal` の abort イベントで終了させる方式で実装する。具体的には以下のパターンを使うこと:
+    ```typescript
+    async function* makePromptIterable(signal: AbortSignal): AsyncIterable<SDKUserMessage> {
+      // セッションを維持するために何も yield しない（control request のみを使う用途）。
+      // finally で return することで streaming input channel を正常終了させる。
+      try {
+        await new Promise<void>((resolve) => {
+          if (signal.aborted) { resolve(); return; }
+          signal.addEventListener("abort", () => resolve(), { once: true });
+        });
+      } finally {
+        return; // AsyncIterable を正常終了（streaming input channel を閉じる）
+      }
+    }
+    // 使用例: sdk.query({ prompt: makePromptIterable(abortController.signal), ... })
+    ```
+    この方式により、`AbortController.abort()` を呼ぶだけで iterable が終了し、
+    streaming input channel が閉じられる。
 - [ ] 起動した `Query` の `supportedModels()` を呼び、`ModelInfo[].value` を抽出して
       `{ kind: "listed", models }` を返す。
 - [ ] wall-clock timeout を `AbortController` + `setTimeout` で設定する（既定は provider readiness と同値 30s を推奨）。

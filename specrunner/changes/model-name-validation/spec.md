@@ -12,7 +12,8 @@ snapshot 由来モデルと regression-gate の動的注入モデルを含み、
 
 **Given** custom reviewer step（snapshot.model 指定）と regression-gate step を含む composed descriptor と、request type
 **When** システムが実効モデルを収集する
-**Then** custom reviewer の実効モデルは snapshot.model、regression-gate の実効モデルは `claude-sonnet-5` として
+**Then** custom reviewer の実効モデルは `snapshot.model ?? DEFAULT_REVIEW_MODEL`（snapshot.model 未設定時は
+`DEFAULT_REVIEW_MODEL`（`claude-sonnet-5`）にフォールバック）、regression-gate の実効モデルは `claude-sonnet-5` として
 収集結果に含まれ、各エントリは step 名と config path を持つ
 
 #### Scenario: config の byRequestType override が実効モデルに反映される

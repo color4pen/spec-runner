@@ -51,7 +51,7 @@ Result section MUST appear at the very end as a YAML code block:
 ## Summary
 
 - **Total**: 33 cases
-- **Automated** (unit/integration): 32
+- **Automated** (unit/integration): 31
 - **Manual**: 0
 - **Priority**: must: 22, should: 9, could: 2
 
@@ -64,6 +64,10 @@ Result section MUST appear at the very end as a YAML code block:
 **Category**: unit
 **Priority**: must
 **Source**: spec.md > Requirement: 実効モデルは composed pipeline の解決後モデルから収集される > Scenario: custom reviewer と regression-gate の実効モデルが収集される
+
+<!-- 注意: custom reviewer の実効モデルは `snapshot.model ?? DEFAULT_REVIEW_MODEL`。
+snapshot.model 設定あり・未設定の両パターン（フォールバック `claude-sonnet-5` 含む）をテストで固定すること。
+（spec.md Scenario は両ケースを含む、src/core/step/custom-reviewer.ts:106 参照） -->
 
 ### TC-002: config の byRequestType override が実効モデルに反映される
 
@@ -331,13 +335,11 @@ Result section MUST appear at the very end as a YAML code block:
 
 ### TC-030: port ファイルが adapter / core/runtime に依存しない
 
-**Category**: unit
+**Category**: gate
 **Priority**: should
 **Source**: tasks.md > T-04 Acceptance Criteria
 
-**GIVEN** `src/core/port/model-listing.ts` のインポートグラフ
-**WHEN** `bun run typecheck` を実行する
-**THEN** adapter/ または core/runtime/ への静的 import が存在せず、型チェックが green になる（DSM 準拠）
+`bun run typecheck` が green。`src/core/port/model-listing.ts` に adapter/ または core/runtime/ への静的 import が存在しないことを型チェックの通過で確認する（DSM 準拠）。
 
 ---
 
@@ -382,7 +384,7 @@ Result section MUST appear at the very end as a YAML code block:
 ```yaml
 result: completed
 total: 33
-automated: 32
+automated: 31
 manual: 0
 must: 22
 should: 9
