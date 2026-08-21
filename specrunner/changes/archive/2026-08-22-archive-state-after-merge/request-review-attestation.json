@@ -1,0 +1,24 @@
+{
+  "requestHash": "sha256:5b5aa3b75d7aaf10effdc4790000025d998b2df0d58a9a3191f7ff587c6feef5",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/archive/orchestrator.ts:59-61 — deferArchivedTransition?: boolean field with comment 'Default: false (plain `job archive` transitions at record time)'",
+    "src/core/archive/orchestrator.ts:242-258 — if (!input.deferArchivedTransition) → markJobArchived() called at record time",
+    "src/core/archive/orchestrator.ts:349-361 — git push origin <branch> to feature branch (not base)",
+    "src/core/archive/orchestrator.ts:4 (comment) — Design invariant: does NOT import GitHubClient — no GitHub API calls",
+    "src/core/archive/merge-then-archive.ts:282-285 — runArchiveOrchestrator called with deferArchivedTransition: true",
+    "src/core/archive/merge-then-archive.ts:463-701 — CI wait loop present",
+    "src/core/archive/merge-then-archive.ts:782-788 — performPostMergeTransition + runPostMergeCleanup called after merge success",
+    "src/core/archive/merge-then-archive.ts:251-260 — MERGED state detection in Step 2 with archiveRecorded branch",
+    "src/core/finish/job-state-update.ts:markJobArchived — resolveCanonicalStateDir + transitionJob('archived') + noop idempotency",
+    "src/core/finish/archive-change-folder.ts:37-43 — fs.exists check for active folder; skipped: true when folder absent (idempotent)",
+    "src/core/finish/commit-archive.ts:47-50 — git diff --cached --quiet; skipped: true when no staged changes (idempotent)",
+    "src/cli/archive-from-issue.ts:127-132 — runAttachVerification with attachArchivePolicy (awaiting-archive policy)",
+    "src/cli/archive-from-issue.ts:179-184 — runArchive called as final step",
+    "src/core/attach/checkpoint-policy.ts:128-143 — attachArchivePolicy requires status=awaiting-archive + pullRequest.number",
+    "src/state/lifecycle.ts:39 — VALID_TRANSITIONS: awaiting-archive → archived defined",
+    "src/state/lifecycle.ts:58 — TERMINAL_STATUSES includes 'archived'",
+    "src/core/archive/__tests__/orchestrator.test.ts:790-803 — TC-010 pins plain archive calling markJobArchived (test to be updated)"
+  ],
+  "sourceRevision": "f3abe2c7c08bb1a952c899199ce6a52e1d883e1d"
+}

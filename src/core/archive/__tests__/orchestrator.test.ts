@@ -17,7 +17,7 @@
  * T-DTE-02: topic emission runs before mark-hook (spawn call order)
  * T-DTE-03: designLayer disabled → no topic file written
  * TC-009: deferArchivedTransition: true → markJobArchived NOT called; mv/commit/push still run
- * TC-010: deferArchivedTransition unset → markJobArchived IS called (regression guard)
+ * TC-010: deferArchivedTransition unset → markJobArchived NOT called; mv/commit/push/headSha still executed
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { FinishFs } from "../../finish/types.js";
@@ -784,21 +784,43 @@ describe("archive orchestrator — deferArchivedTransition (TC-009, TC-010)", ()
   });
 
   /**
-   * TC-010: deferArchivedTransition unset (default false) → markJobArchived IS called.
-   * Plain `job archive` must still transition to archived at record time.
+   * TC-010: deferArchivedTransition unset → markJobArchived NOT called.
+   * Orchestrator no longer calls markJobArchived regardless of deferArchivedTransition.
+   * mv / commit / push / headSha capture must still execute.
    */
-  it("TC-010: deferArchivedTransition unset → markJobArchived IS called (regression guard)", async () => {
+  it("TC-010: deferArchivedTransition unset → markJobArchived NOT called; mv/commit/push/headSha executed", async () => {
+    const spawnMock = vi.fn().mockResolvedValue({ exitCode: 0, stdout: "deadbeef\n", stderr: "" });
+
     const result = await runArchiveOrchestrator({
       slug: FAKE_SLUG,
       cwd: FAKE_CWD,
-      spawn: makeSpawn(),
+      spawn: spawnMock as unknown as SpawnFn,
       fs: makeFs(),
-      // deferArchivedTransition absent → defaults to false
+      // deferArchivedTransition absent → defaults to false (now a no-op — ignored)
     });
 
     expect(result.exitCode).toBe(0);
 
-    // markJobArchived must have been called (plain `job archive` transitions at record time)
-    expect(vi.mocked(markJobArchived)).toHaveBeenCalled();
+    // markJobArchived must NOT have been called (orchestrator no longer performs transition)
+    expect(vi.mocked(markJobArchived)).not.toHaveBeenCalled();
+
+    // archiveChangeFolder (folder mv) must have been called
+    expect(vi.mocked(archiveChangeFolder)).toHaveBeenCalled();
+
+    // commitArchive must have been called
+    expect(vi.mocked(commitArchive)).toHaveBeenCalled();
+
+    // git push origin <branch> must have been called
+    const pushCall = spawnMock.mock.calls.find(
+      (c: unknown[]) =>
+        c[0] === "git" &&
+        Array.isArray(c[1]) &&
+        (c[1] as string[])[0] === "push" &&
+        (c[1] as string[])[1] === "origin",
+    );
+    expect(pushCall).toBeDefined();
+
+    // headSha must have been captured (exitCode 0 with headSha set)
+    expect("headSha" in result && (result as { headSha?: string }).headSha).toBeDefined();
   });
 });

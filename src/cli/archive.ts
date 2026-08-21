@@ -11,7 +11,7 @@
 import * as nodeFsPromises from "node:fs/promises";
 import * as path from "node:path";
 import { spawnCommand } from "../util/spawn.js";
-import { runArchiveOrchestrator } from "../core/archive/orchestrator.js";
+import { runPlainArchive } from "../core/archive/plain-archive.js";
 import { runMergeThenArchive } from "../core/archive/merge-then-archive.js";
 import type { FinishFs } from "../core/finish/types.js";
 import { parseRequestMd } from "../parser/request-md.js";
@@ -244,26 +244,44 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
         logResult,
       );
     } else {
-      // No --with-merge: optionally resolve token for authenticated git push
+      // No --with-merge: build GitHub client best-effort for merge-state detection.
       let archiveToken: string | undefined;
       let designLayerNoMerge: ResolvedDesignLayer = disabledDesignLayer;
+      let plainGithubClient: import("../core/port/github-client.js").GitHubClient | undefined;
+      let plainOwner: string | undefined;
+      let plainRepo: string | undefined;
+
       try {
         let githubHost = "github.com";
+        let githubApiBaseUrl = "https://api.github.com";
         try {
           const config = await loadConfig();
           githubHost = resolveGitHubHost(config.github);
+          githubApiBaseUrl = resolveGitHubApiBaseUrl(config.github);
           designLayerNoMerge = resolveDesignLayerConfig(config);
         } catch {
           // Config not available — use default host / disabled design layer
         }
+
         const resolved = await resolveGitHubToken(process.env as Record<string, string | undefined>, { host: githubHost });
         archiveToken = resolved.token;
+
+        try {
+          const originInfo = await getOriginInfo(opts.cwd, githubHost);
+          plainOwner = originInfo.owner;
+          plainRepo = originInfo.name;
+        } catch {
+          // Origin not resolvable — proceed without client (no merge-state check)
+        }
+
+        if (archiveToken && plainOwner && plainRepo) {
+          plainGithubClient = createGitHubClient(fetch, archiveToken, githubApiBaseUrl);
+        }
       } catch {
         // Token not required for non-merge path — best-effort
       }
 
-      // Run archive orchestrator directly
-      archiveResult = await runArchiveOrchestrator(
+      archiveResult = await runPlainArchive(
         {
           slug: opts.slug,
           cwd: opts.cwd,
@@ -272,6 +290,9 @@ export async function runArchive(opts: RunArchiveOptions): Promise<number> {
           baseBranch,
           githubToken: archiveToken,
           designLayer: designLayerNoMerge,
+          githubClient: plainGithubClient,
+          owner: plainOwner,
+          repo: plainRepo,
         },
         logResult,
       );

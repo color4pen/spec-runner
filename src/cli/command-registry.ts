@@ -480,7 +480,12 @@ export const ARCHIVE_USAGE = `Usage: specrunner job archive <slug> [options]
        specrunner job archive --from-issue <n> [options]
 
 Archive the completed change folder, remove worktree, and update job status.
-Merge must already be done before running this command (or use --with-merge).
+
+Plain archive (without --with-merge): pushes an archive record commit to the feature branch
+and leaves the job in awaiting-archive until the PR is merged. After the PR is merged,
+re-run the same command to complete the transition (archived status + worktree cleanup).
+
+Use --with-merge to wait for CI, merge the PR, and complete the full cleanup in one step.
 
 Arguments:
   <slug>            Slug of the request to archive.
@@ -1332,7 +1337,7 @@ export const COMMANDS: Record<string, CommandSpec> = {
         visibility: "normal",
         help: {
           group: "Job commands",
-          summary: "  job archive <slug>              change folder 移動・worktree 撤去・status 更新",
+          summary: "  job archive <slug>              archive record を記帳し、PR merge 後に archived + cleanup を完了する",
           detail: ARCHIVE_USAGE,
         },
         handler: async (parsed, ctx) => {
