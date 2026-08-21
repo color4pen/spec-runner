@@ -5,12 +5,21 @@
   - src/core/port/runtime-strategy.ts          (D5: port method 追加)
   - src/core/runtime/local.ts                  (D5: local 実装)
   - src/core/runtime/managed.ts                (D5: managed 実装 = unavailable)
-  - src/core/step/bite-evidence/tamper.ts      (D1/D2/D4: 分類ロジック書き換え + 導出 helper)
+  - src/core/port/step-types.ts                (T-03: CliStepDeps に authorizedCanonWriters フィールド追加)
+  - src/core/resume/canon-provenance.ts        (T-02: authorizedCanonWriterSteps helper 追加)
+  - src/core/step/bite-evidence/tamper.ts      (D1/D2/D4: 分類ロジック書き換え)
   - src/core/step/bite-evidence/step.ts        (D1/D3: provenance 入力の計算と配線)
   - src/core/step/bite-evidence/gate.ts        (D4: reason 文字列のみ変更、routing 不変)
   - src/core/step/bite-evidence/__tests__/gate.test.ts (更新許容 pin ケースの更新 + 新規テスト)
 
 TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は不変に保つ (D4)。
+
+[注意: circular import 制約]
+`pipeline/registry.ts` は `bite-evidence/step.ts` を import し（行 24）、
+`step.ts` は `tamper.ts` を import する（行 30）。このため `tamper.ts` も `step.ts` も
+`registry.ts` を import できない（`registry → step → tamper → registry` の循環になる）。
+`authorizedCanonWriterSteps` helper は registry の import chain 外のモジュール
+（`src/core/resume/canon-provenance.ts`）に配置し、`CliStepDeps` 経由で注入する。
 -->
 
 ## T-01: durable な最終変更 commit を取得する port method を追加する
@@ -58,28 +67,45 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
       `null`（＝認可外扱いに倒す。ただし呼び出し側で null token は authorizedWriters に無い
       文字列として `mismatch` になるよう扱う。トークン抽出失敗と「commit 不在」は区別すること）。
 - [ ] `test-cases.md` の認可された所有 step 集合を pipeline descriptor から導出する pure helper
-      を追加する（例: `authorizedCanonWriterSteps(canonPath: string, state: JobState, deps: StepDeps): Set<string>`）。
-      `canon-provenance.ts` の `declaredCanonWritesForStep` と同型に、
-      `getPipelineDescriptor(getPipelineId(state))` の全 step を走査し、`step.writes?.(state, deps)`
-      に `canonPath` を含む step 名を集める。導出結果に operator 適用トークン `operator-apply` を
-      加える。例外時は空集合を返す（呼び出し側が evidence 不十分として扱う）。
+      を追加する。**配置は `tamper.ts` ではなく `src/core/resume/canon-provenance.ts`** とする。
+      理由: `pipeline/registry.ts` が `bite-evidence/step.ts` を import し（行 24）、`step.ts` が
+      `tamper.ts` を import するため（行 30）、`tamper.ts` から `registry.ts` を import すると
+      `registry → step → tamper → registry` の静的 circular import が生じる。`canon-provenance.ts`
+      は `core/resume/` に属し registry の import chain 外にあるため安全（`declaredCanonWritesForStep`
+      の先例と同じ状況）。
+      - シグネチャ: `authorizedCanonWriterSteps(canonPath: string, steps: ReadonlyArray<readonly [string, import("../step/types.js").Step]>, state: JobState, deps: StepDeps): Set<string>`
+        （descriptor 内の steps 配列を直接引数で受け取る — `registry` を内部 import しない）。
+      - 全 step を走査し `step.writes?.(state, deps)` に `canonPath` を含む step 名を集める。
+      - 導出結果に operator 適用トークン `operator-apply` を加える。
+      - 例外時は空集合を返す（呼び出し側が evidence 不十分として扱う）。
 - [ ] 旧実装が参照していた `LineageRecord` ベースの test-case-gen 凍結 hash 照合ロジックを削除する。
 
 **Acceptance Criteria**:
 - `checkTamperStatus` が新 signature の pure 関数として、上記 5 分岐を正しく返すユニットテストが
   green（`match` / `mismatch` / `inconclusive` の各分岐）。
-- `authorizedCanonWriterSteps` が、標準 pipeline で `test-cases.md` の所有 step として少なくとも
-  `test-case-gen` と `spec-fixer` を含み、かつ `operator-apply` を含む集合を返すことをテストで確認する。
+- `authorizedCanonWriterSteps` が `canon-provenance.ts` に追加され、標準 pipeline descriptor の
+  steps 配列を渡したとき `test-cases.md` の所有 step として少なくとも `test-case-gen` と
+  `spec-fixer` を含み、かつ `operator-apply` を含む集合を返すことをテストで確認する
+  （実際の step 実装を必要とするため integration テストとして分類すること）。
 - `parseCommitToken` が `spec-fixer: <slug>` → `"spec-fixer"`、`operator-apply: <slug>` →
   `"operator-apply"`、cross-slug / 非準拠 subject → `null` を返すことをテストで確認する。
 - `typecheck` green。
 
 ## T-03: bite-evidence step で provenance 入力を計算し配線する / gate reason を更新する
 
+- [ ] `src/core/port/step-types.ts` の `CliStepDeps` インターフェースに、executor が事前計算して
+      注入する新フィールドを追加する:
+      `authorizedCanonWriters?: ReadonlySet<string>`
+      executor（`pipeline/run.ts` または `step-executor.ts` 等、registry の import chain 外にある
+      モジュール）が `authorizedCanonWriterSteps`（`canon-provenance.ts` 内）を呼び出して
+      `test-cases.md` の所有 step 集合を事前計算し、`BiteEvidenceStep.run()` 呼び出し前に
+      `deps.authorizedCanonWriters` として渡す。
 - [ ] `src/core/step/bite-evidence/step.ts` の tamper 計算ブロック
       （現状の lineage fold + currentHash 計算）を provenance 入力の計算に置き換える:
-      - `authorizedWriters` = `authorizedCanonWriterSteps(<test-cases.md path>, state, deps)`。
-        空集合なら `evidenceAvailable=false` に倒す。
+      - `authorizedWriters` = `deps.authorizedCanonWriters`（executor 注入値）。
+        `undefined` または空集合なら `evidenceAvailable=false` に倒す。
+        （`step.ts` は registry を import できないため、自身では `authorizedCanonWriterSteps` を
+        呼び出さない。`pipeline/registry.ts` が `step.ts` を import しているため循環になる。）
       - `lastCanonCommitToken` = `deps.runtimeStrategy.lastCommitTouchingPath(<path>, cwd)` の結果を
         `parseCommitToken` に通したトークン。`found` → トークン、`none` → `null`、`unavailable` →
         `evidenceAvailable=false`。
@@ -98,8 +124,11 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
 - [ ] gate の `GateDeps.tamperStatus` の型・受け渡しは不変（D4）。
 
 **Acceptance Criteria**:
-- `BiteEvidenceStep.run` が、fake runtime を用いた統合テストで、provenance 入力から
-  `tamperStatus` を計算し gate に渡すことを確認する（下記 T-04 の統合ケースで検証）。
+- `BiteEvidenceStep.run` が、fake runtime を用いた統合テストで、executor 注入の
+  `deps.authorizedCanonWriters` と runtime port の provenance 照会から `tamperStatus` を
+  計算し gate に渡すことを確認する（下記 T-04 の統合ケースで検証）。
+- `CliStepDeps.authorizedCanonWriters` フィールドが追加され、`step.ts` がこれを参照する
+  （registry の import chain を通じた循環依存が生じないことを typecheck で確認）。
 - `gate.ts` の tamper reason が provenance を反映しつつ `/tamper/i` に一致する。
 - `evidence-base-gate.test.ts` / `gate-empty-selection.test.ts`（生の `tamperStatus:"mismatch"` /
   `"inconclusive"` を gate に渡す既存 test）が **無変更で green**。

@@ -241,12 +241,12 @@ Result section MUST appear at the very end as a YAML code block:
 
 ### TC-017: authorizedCanonWriterSteps が標準 pipeline で test-case-gen / spec-fixer / operator-apply を含む
 
-**Category**: unit
+**Category**: integration
 **Priority**: must
 **Source**: tasks.md > T-02
 
-**GIVEN** 標準 pipeline descriptor が存在し、`test-cases.md` を `writes()` で宣言する step として `test-case-gen` と `spec-fixer` がある
-**WHEN** `authorizedCanonWriterSteps("<slug>/test-cases.md", state, deps)` を呼び出す
+**GIVEN** 標準 pipeline descriptor の steps 配列（`test-case-gen` と `spec-fixer` の `writes()` 実装を含む全 step）が存在する
+**WHEN** `authorizedCanonWriterSteps("<slug>/test-cases.md", descriptor.steps, state, deps)` を呼び出す
 **THEN** 返り値の集合が少なくとも `{ "test-case-gen", "spec-fixer", "operator-apply" }` を含む
 
 ---
