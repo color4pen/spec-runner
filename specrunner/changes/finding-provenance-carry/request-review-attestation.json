@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:68d53ce0eb9a4b44357697d6a5273358a72f382c18b2f433ae478eb6a1dadeef",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/decision/wontfix.ts:85-117 — resolveWontfixDispositions builds fingerprint→Map index from deriveImplReviewerChain(state) findings only; fingerprint mismatch causes all-or-nothing exit 2",
+    "src/core/decision/wontfix.ts:87 — deriveImplReviewerChain(state) called to build reviewerChain",
+    "src/core/decision/wontfix.ts:116-122 — findingFingerprint(gateFinding) reverse-lookup fails with 'not found in any reviewer chain step' error",
+    "src/core/pipeline/findings-ledger.ts:138 — collectSpecReviewLedger collects all spec-review StepRun fixable findings",
+    "src/core/pipeline/findings-ledger.ts:212-219 — computeRegressionLedger merges collectSpecReviewLedger + collectFindingsLedger via dedupeFindings",
+    "src/core/pipeline/findings-ledger.ts:55 — collectFindingsLedger calls filterUndecidedFindings per step",
+    "src/core/pipeline/findings-ledger.ts:138-162 — collectSpecReviewLedger does NOT call filterUndecidedFindings (asymmetry not documented in request)",
+    "src/state/schema/types.ts:332 — DecisionRecord = OptionDecisionRecord | DispositionDecisionRecord",
+    "src/state/schema/types.ts:277-296 — OptionDecisionRecord definition",
+    "src/state/schema/types.ts:302-321 — DispositionDecisionRecord definition",
+    "src/state/schema/types.ts:528 — JobState.decisions?: DecisionRecord[] persisted field",
+    "src/core/step/regression-gate.ts:146 — buildLedgerBlock(ledger) injects ledger as text into LLM prompt (no verbatim title contract)"
+  ],
+  "sourceRevision": "fe75d19deaa238eae4f0e25d6a467cdbcebc136c"
+}
