@@ -55,16 +55,6 @@ function makeFakeSdk(fakeQuery: ClaudeSdkQueryResult): ClaudeAgentSdk {
   };
 }
 
-/**
- * Build a fake ClaudeAgentSdk whose query() throws the given error.
- */
-function makeFakeSdkThrowing(err: unknown): ClaudeAgentSdk {
-  return {
-    query: vi.fn().mockImplementation(() => { throw err; }),
-    createSdkMcpServer: vi.fn(),
-  };
-}
-
 /** A loader that returns the given SDK. */
 function fakeLoader(sdk: ClaudeAgentSdk): ClaudeSupportedModelsProbeOptions["loadSdkFn"] {
   return async () => sdk;

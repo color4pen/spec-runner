@@ -10,11 +10,9 @@
 import { describe, it, expect } from "vitest";
 import {
   collectEffectiveModels,
-  type EffectiveModelRef,
 } from "../../../src/core/model-validation/collect-effective-models.js";
 import type { PipelineDescriptor } from "../../../src/core/pipeline/types.js";
 import type { SpecRunnerConfig } from "../../../src/config/schema.js";
-import type { ModelsConfig } from "../../../src/config/model-registry.js";
 import { BUILTIN_MODEL_REGISTRY, mergeModelRegistry } from "../../../src/config/model-registry.js";
 import type { AgentStep, CliStep, Step } from "../../../src/core/port/step-types.js";
 import { STANDARD_DESCRIPTOR } from "../../../src/core/pipeline/registry.js";

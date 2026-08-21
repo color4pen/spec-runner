@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e7dc8301-1fea-4649-b634-47ce46b57572",
   "createdAt": "2026-08-21T10:02:27.789Z",
-  "updatedAt": "2026-08-21T10:48:48.813Z",
+  "updatedAt": "2026-08-21T11:24:11.710Z",
   "request": {
     "title": "実効モデル名を SDK の supportedModels() で実在検証する",
     "type": "new-feature",
@@ -71,7 +71,9 @@
     "b906baa9e0b7f903f56bf43c90aa0eac127fe88f",
     "cf802b342b2d3d8c6947c738e3849c859f1a32ed",
     "86c7620498e911377d8eeaa852aa5db8d8e74c69",
-    "7e9cec3170a839a8f36f12fc531666efdd04c6cc"
+    "7e9cec3170a839a8f36f12fc531666efdd04c6cc",
+    "86354e9b29e52782db178ab8f1f013a6eba982a3",
+    "0aafda03e17f22f03625fb4c12a8d84fe1d66276"
   ],
   "touchedFiles": {
     "request-review": [
@@ -153,16 +155,69 @@
       "src/core/runtime/local.ts",
       "tests/config/model-registry.test.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/config/model-registry.ts",
+      "src/config/step-config.ts",
+      "src/config/schema/validation.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/step/types.ts",
+      "src/core/step/custom-reviewer.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/port/step-types.ts",
+      "src/adapter/claude-code/provider-readiness-probe.ts",
+      "src/adapter/claude-code/sdk-loader.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/runtime/local.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/doctor/types.ts",
+      "src/core/doctor/checks/index.ts",
+      "src/core/doctor/runner.ts",
+      "src/core/preflight.ts",
+      "tests/config/model-registry.test.ts",
+      "src/errors.ts",
+      "src/core/pipeline/compose-reviewers.ts",
+      "src/util/env-filter.ts",
+      "src/core/port/provider-readiness.ts",
+      "src/core/pipeline/registry.ts",
+      "tests/core/provider-readiness-gate.test.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/doctor/checks/config/claude-code-token-present.ts",
+      "src/config/schema.ts",
+      "src/config/schema/types.ts",
+      "tests/adapter/claude-code/provider-readiness-probe.test.ts",
+      "src/core/port/model-listing.ts",
+      "src/adapter/claude-code/supported-models-probe.ts",
+      "src/core/model-validation/collect-effective-models.ts",
+      "src/core/model-validation/check-model-existence.ts",
+      "src/core/model-validation/preflight.ts",
+      "src/core/doctor/checks/config/model-existence.ts",
+      "tests/config/model-registry-aliases.test.ts",
+      "tests/core/model-validation/collect-effective-models.test.ts",
+      "tests/core/model-validation/check-model-existence.test.ts",
+      "tests/adapter/claude-code/supported-models-probe.test.ts",
+      "tests/core/model-validation/preflight.test.ts",
+      "tests/core/doctor/checks/config/file-exists.test.ts",
+      "tests/core/doctor/mock-context.ts",
+      "tests/core/doctor/checks/config/model-existence.test.ts",
+      "src/kernel/reviewer-snapshot.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "tests/core/usage/pricing.test.ts",
+      "src/core/usage/pricing.ts",
+      "src/cli/doctor.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 38,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
-      "spec-fixer": 2
+      "spec-fixer": 2,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
