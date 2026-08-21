@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-21T00:41:50.996Z",
+  "updatedAt": "2026-08-21T00:59:11.793Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/archive-from-issue-96c14a7e",
   "error": null,
@@ -74,7 +74,9 @@
     "23c8c83c2880f30a2574b37b6c760ccab3ca0133",
     "4ac9fdb2e02068186404f43bcfbb931e8e37907b",
     "940f4dfcc58f30ae7a3a729b39025b54799213ed",
-    "ffda064091c3fa7d822e3ace461f84671a000e94"
+    "ffda064091c3fa7d822e3ace461f84671a000e94",
+    "54b29642d44e8a0ade1b4fe9b6c8e528f5d8cf92",
+    "c76571c65bfc2d8807e06cdfc3a539feaa0352f5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -153,12 +155,56 @@
       "src/cli/command-registry.ts",
       "src/core/command/guide.ts",
       "src/adapter/github/__tests__/github-client-closing-prs.test.ts"
+    ],
+    "code-fixer": [
+      "src/kernel/github-client.ts",
+      "src/core/attach/__tests__/checkpoint-policy.test.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/port/github-client.ts",
+      "src/adapter/github/github-client.ts",
+      "src/core/issue-target/archive.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/store/job-state-projection.ts",
+      "src/state/schema/operations.ts",
+      "tests/helpers/pipeline-mock-client.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "54b29642d44e8a0ade1b4fe9b6c8e528f5d8cf92",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/archive-from-issue/design.md:sha256:847f9c77cc0f2fa8b4b03d3860938e61d05dae24a568e3ab616128c6872b30ca|specrunner/changes/archive-from-issue/request.md:sha256:8a3c727c5571c77f4e46cd6d82a8059988327c04df096af861afbd0d86c4c17b|specrunner/changes/archive-from-issue/spec.md:sha256:8be1014df6697fa037f851834165ad827c5dd6764ca069c8f2f73fa22a76fa89|specrunner/changes/archive-from-issue/tasks.md:sha256:a381bf3e001e34600e908909851c4480cba5f0936b23f6236b17e27e5c0bd9f4|specrunner/changes/archive-from-issue/test-cases.md:sha256:583fbd5948698d59cc417ad721725f112771e404ec10e357dab758a5aa455fcc"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "54b29642d44e8a0ade1b4fe9b6c8e528f5d8cf92",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/archive-from-issue/design.md:sha256:847f9c77cc0f2fa8b4b03d3860938e61d05dae24a568e3ab616128c6872b30ca|specrunner/changes/archive-from-issue/request.md:sha256:8a3c727c5571c77f4e46cd6d82a8059988327c04df096af861afbd0d86c4c17b|specrunner/changes/archive-from-issue/spec.md:sha256:8be1014df6697fa037f851834165ad827c5dd6764ca069c8f2f73fa22a76fa89|specrunner/changes/archive-from-issue/tasks.md:sha256:a381bf3e001e34600e908909851c4480cba5f0936b23f6236b17e27e5c0bd9f4|specrunner/changes/archive-from-issue/test-cases.md:sha256:583fbd5948698d59cc417ad721725f112771e404ec10e357dab758a5aa455fcc"
+    }
+  ],
   "_journal": {
-    "historyCount": 47,
+    "historyCount": 58,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -168,7 +214,11 @@
       "implementer": 2,
       "bite-evidence": 2,
       "verification": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
