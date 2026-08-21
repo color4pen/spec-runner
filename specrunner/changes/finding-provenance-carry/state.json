@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "656b7563-0495-41c6-bc28-388494bbdf8b",
   "createdAt": "2026-08-21T02:24:47.582Z",
-  "updatedAt": "2026-08-21T02:36:20.496Z",
+  "updatedAt": "2026-08-21T02:40:05.394Z",
   "request": {
     "title": "regression-gate の finding 再報告に由来を保持し --wontfix の逆引きを識別子照合にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/finding-provenance-carry-656b7563",
   "error": null,
@@ -66,7 +66,8 @@
   "synthesizedCommits": [
     "f9d628b64fbfa563e63c8875a069f5630bef7074",
     "eb8ef525439ca4cd09e7645705507261acebb068",
-    "f0cacae24177e2393ecad1ca097507e88ac76db6"
+    "f0cacae24177e2393ecad1ca097507e88ac76db6",
+    "fb5d60f0367d0afe901849963ead15ef23b063c2"
   ],
   "touchedFiles": {
     "request-review": [
@@ -94,13 +95,15 @@
       "src/prompts/regression-gate-system.ts",
       "src/core/step/step-completion.ts",
       "src/core/step/__tests__/regression-gate-step.test.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
