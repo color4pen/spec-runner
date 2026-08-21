@@ -1,22 +1,29 @@
 /**
- * Tamper detection for the bite-evidence gate (R4, bite-evidence-forward T-09).
+ * Tamper detection for the bite-evidence gate — provenance-based.
  *
- * Verifies that the test-cases.md file has not been modified since test-case-gen
- * produced it by comparing the frozen hash recorded in events.jsonl lineage against
- * the current file hash.
+ * Verifies that the last change to test-cases.md is attributable to an authorized
+ * change path (an owner step or an operator-apply commit). The check is based on
+ * the sole-committer invariant: every pipeline step change is recorded as a step-named
+ * commit (e.g. "spec-fixer: <slug>"), which is durable even when lineage recording
+ * (appendLineage) fails.
  *
  * Contract:
- * - match:       both hashes present and equal → test-cases.md is intact.
- * - mismatch:    both hashes present and different → test-cases.md was tampered.
- * - inconclusive: frozen hash absent (no test-case-gen lineage record) → proceed.
+ * - match:        last change was by an authorized writer → proceed.
+ * - mismatch:     last change was by an unauthorized writer, or worktree has uncommitted
+ *                 changes to test-cases.md → fail-closed.
+ * - inconclusive: provenance could not be derived (runtime unavailable, no git history,
+ *                 authorizedWriters empty) → proceed (fail-open).
  *
- * The gate (T-06) treats:
+ * Motivation: spec-fixer owns test-cases.md via writes() and can legitimately edit it
+ * during a spec-review finding cycle. The old hash-comparison approach treated such
+ * legitimate edits as tamper, producing false-positive halts. The provenance approach
+ * asks "who made the last change?" instead of "is the hash frozen?".
+ *
+ * The gate (gate.ts) treats:
  *   - mismatch     → failed (fail-closed)
  *   - inconclusive → proceed with base/candidate evaluation
  *   - match        → proceed
  */
-
-import type { LineageRecord } from "../../../store/event-journal.js";
 
 export type TamperStatus = "match" | "mismatch" | "inconclusive";
 
@@ -25,50 +32,85 @@ export interface TamperCheckResult {
 }
 
 /**
- * Check the tamper status of `test-cases.md` by comparing the frozen hash from
- * the `test-case-gen` lineage record against the provided current hash.
+ * Provenance-based tamper classification.
  *
- * @param lineage     All lineage records from events.jsonl fold (chronological order).
- * @param currentHash The current hash of test-cases.md (e.g. "sha256:<hex>").
- *                    Computed by the caller via `digestArtifacts`.
+ * All inputs are pre-computed by the caller; this function is pure.
  *
- * @returns TamperCheckResult with one of: "match" | "mismatch" | "inconclusive".
+ * Classification order (D1):
+ *   1. evidenceAvailable === false → inconclusive (cannot determine provenance)
+ *   2. worktreeDirty === true      → mismatch (uncommitted changes = unauthorized write)
+ *   3. lastCanonCommitToken === null → inconclusive (no git history — file never committed)
+ *   4. authorizedWriters.has(lastCanonCommitToken) → match (authorized change path)
+ *   5. otherwise                   → mismatch (unauthorized change path)
+ *
+ * @param input.authorizedWriters     Set of authorized step/operator tokens
+ *                                    (e.g. { "test-case-gen", "spec-fixer", "operator-apply" }).
+ * @param input.lastCanonCommitToken  Token extracted from the last commit that touched
+ *                                    test-cases.md (via parseCommitToken). null when
+ *                                    the path has no git history.
+ * @param input.worktreeDirty         true when test-cases.md has uncommitted changes.
+ * @param input.evidenceAvailable     false when any required evidence (authorizedWriters,
+ *                                    lastCommitTouchingPath, listWorktreeChanges) could
+ *                                    not be derived.
  */
-export function checkTamperStatus(
-  lineage: LineageRecord[],
-  currentHash: string | null | undefined,
-): TamperCheckResult {
-  // Find the last test-case-gen lineage record (latest run wins).
-  const testCaseGenRecord = [...lineage]
-    .reverse()
-    .find((r) => r.step === "test-case-gen");
+export function checkTamperStatus(input: {
+  authorizedWriters: ReadonlySet<string>;
+  lastCanonCommitToken: string | null;
+  worktreeDirty: boolean;
+  evidenceAvailable: boolean;
+}): TamperCheckResult {
+  const { authorizedWriters, lastCanonCommitToken, worktreeDirty, evidenceAvailable } = input;
 
-  if (!testCaseGenRecord) {
-    // No test-case-gen lineage record → inconclusive (cannot verify)
+  // 1. Evidence unavailable → inconclusive (fail-open; cannot determine provenance)
+  if (!evidenceAvailable) {
     return { status: "inconclusive" };
   }
 
-  // Find the test-cases.md output in the lineage record.
-  // Match by path suffix to be slug-agnostic.
-  const testCasesOutput = testCaseGenRecord.outputs.find((o) =>
-    o.path.endsWith("test-cases.md"),
-  );
+  // 2. Uncommitted changes to test-cases.md → mismatch (unauthorized in-flight write)
+  if (worktreeDirty) {
+    return { status: "mismatch" };
+  }
 
-  if (!testCasesOutput || testCasesOutput.hash === null || testCasesOutput.hash === undefined) {
-    // Lineage exists but hash is absent → inconclusive
+  // 3. No git history for the path → inconclusive (cannot attribute; proceed)
+  if (lastCanonCommitToken === null) {
     return { status: "inconclusive" };
   }
 
-  const frozenHash = testCasesOutput.hash;
-
-  if (!currentHash) {
-    // Cannot compute current hash (e.g. file missing) → inconclusive
-    return { status: "inconclusive" };
-  }
-
-  if (frozenHash === currentHash) {
+  // 4. Last commit token is an authorized writer → match
+  if (authorizedWriters.has(lastCanonCommitToken)) {
     return { status: "match" };
   }
 
+  // 5. Token exists but is not authorized → mismatch (fail-closed)
   return { status: "mismatch" };
+}
+
+/**
+ * Extract the step/operator attribution token from a pipeline commit subject.
+ *
+ * Pipeline commits follow the convention "<token>: <slug>" where <token> is the
+ * step name (e.g. "spec-fixer") or "operator-apply". Returns the token only when
+ * the subject matches the given slug exactly — cross-slug attribution is rejected
+ * to prevent accidental authorization of changes from other jobs.
+ *
+ * Returns null when:
+ *   - The subject does not contain ": " (non-conforming commit message).
+ *   - The part after ": " does not match <slug> exactly.
+ *
+ * @param subject - Commit subject line (first line of commit message).
+ * @param slug    - Expected job slug (e.g. "my-feature").
+ * @returns The token string (e.g. "spec-fixer") or null.
+ */
+export function parseCommitToken(subject: string, slug: string): string | null {
+  const sep = ": ";
+  const idx = subject.indexOf(sep);
+  if (idx === -1) {
+    return null; // non-conforming subject
+  }
+  const token = subject.slice(0, idx);
+  const subjectSlug = subject.slice(idx + sep.length);
+  if (subjectSlug !== slug) {
+    return null; // cross-slug mismatch — reject to prevent accidental authorization
+  }
+  return token || null; // empty token is not valid
 }

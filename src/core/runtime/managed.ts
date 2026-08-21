@@ -735,6 +735,18 @@ export class ManagedRuntime implements RealRuntimeStrategy {
     return { current, prior: null };
   }
 
+  /**
+   * ManagedRuntime has no local worktree — always returns unavailable.
+   * Structural limitation: provenance commit lookup requires a local git repository.
+   */
+  async lastCommitTouchingPath(_path: string, _cwd: string): Promise<
+    | { kind: "found"; oid: string; subject: string }
+    | { kind: "none" }
+    | { kind: "unavailable"; reason: string }
+  > {
+    return { kind: "unavailable", reason: "managed runtime has no local worktree for lastCommitTouchingPath" };
+  }
+
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
     const slug = this.currentSlug;
 

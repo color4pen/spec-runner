@@ -34,17 +34,17 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
 
 ## T-01: durable な最終変更 commit を取得する port method を追加する
 
-- [ ] `src/core/port/runtime-strategy.ts` に、指定 path を最後に変更した commit の
+- [x] `src/core/port/runtime-strategy.ts` に、指定 path を最後に変更した commit の
       OID と subject を返す method（例: `lastCommitTouchingPath(path: string, cwd: string)`）を
       **optional** で追加する。返り値は throw しない discriminated union:
       `{ kind: "found"; oid: string; subject: string } | { kind: "none" } | { kind: "unavailable"; reason: string }`。
-- [ ] 同ファイル末尾の `RealRuntimeStrategy` 交差型に、この method を **required** で追加する
+- [x] 同ファイル末尾の `RealRuntimeStrategy` 交差型に、この method を **required** で追加する
       （具体 runtime に compile-time 強制。既存の `listCommitChangedFiles` 等と同じ扱い）。
-- [ ] `src/core/runtime/local.ts` に実装を追加する。`git log -1 --format=<oid><区切り><subject> -- <path>`
+- [x] `src/core/runtime/local.ts` に実装を追加する。`git log -1 --format=<oid><区切り><subject> -- <path>`
       を cwd で実行（区切りは US 制御文字 `\x1f` 等の衝突しにくいもの）。
       空 stdout → `{ kind: "none" }`、非 0 exit / spawn 例外 → `{ kind: "unavailable", reason }`、
       成功 → `{ kind: "found", oid, subject }`。stdout を汚さない既存 spawn 規約に従う。
-- [ ] `src/core/runtime/managed.ts`（managed runtime）に実装を追加する。常に
+- [x] `src/core/runtime/managed.ts`（managed runtime）に実装を追加する。常に
       `{ kind: "unavailable", reason: <local worktree 不在の旨> }` を返す。
 
 **Acceptance Criteria**:
@@ -58,11 +58,11 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
 
 ## T-02: checkTamperStatus を provenance 分類へ書き換え、authorizedWriters 導出 helper を追加する
 
-- [ ] `src/core/step/bite-evidence/tamper.ts` の `TamperStatus` union
+- [x] `src/core/step/bite-evidence/tamper.ts` の `TamperStatus` union
       (`"match" | "mismatch" | "inconclusive"`) は **変更しない**（D4）。ドキュメンテーション
       コメントを provenance 意味論に更新する（`match`=認可された出自 / `mismatch`=認可外の出自 /
       `inconclusive`=判定不能）。
-- [ ] `checkTamperStatus` を pure な provenance 分類関数に書き換える。新 signature（入力は
+- [x] `checkTamperStatus` を pure な provenance 分類関数に書き換える。新 signature（入力は
       すべて呼び出し側が用意した pure な値）:
       `checkTamperStatus(input: { authorizedWriters: ReadonlySet<string>; lastCanonCommitToken: string | null; worktreeDirty: boolean; evidenceAvailable: boolean }): { status: TamperStatus }`。
       分類ロジック（D1）:
@@ -71,12 +71,12 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
       - `lastCanonCommitToken === null` → `inconclusive`
       - `authorizedWriters.has(lastCanonCommitToken)` → `match`
       - それ以外 → `mismatch`
-- [ ] commit subject から step 帰属トークンを取り出す pure helper を追加する（例:
+- [x] commit subject から step 帰属トークンを取り出す pure helper を追加する（例:
       `parseCommitToken(subject: string, slug: string): string | null`）。subject の先頭
       `<token>: <slug>` から `<token>` を返し、`<slug>` が一致しない／`: ` を含まない場合は
       `null`（＝認可外扱いに倒す。ただし呼び出し側で null token は authorizedWriters に無い
       文字列として `mismatch` になるよう扱う。トークン抽出失敗と「commit 不在」は区別すること）。
-- [ ] `test-cases.md` の認可された所有 step 集合を pipeline descriptor から導出する pure helper
+- [x] `test-cases.md` の認可された所有 step 集合を pipeline descriptor から導出する pure helper
       を追加する。**配置は `tamper.ts` ではなく `src/core/resume/canon-provenance.ts`** とする。
       理由: `pipeline/registry.ts` が `bite-evidence/step.ts` を import し（行 24）、`step.ts` が
       `tamper.ts` を import するため（行 30）、`tamper.ts` から `registry.ts` を import すると
@@ -88,7 +88,7 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
       - 全 step を走査し `step.writes?.(state, deps)` に `canonPath` を含む step 名を集める。
       - 導出結果に operator 適用トークン `operator-apply` を加える。
       - 例外時は空集合を返す（呼び出し側が evidence 不十分として扱う）。
-- [ ] 旧実装が参照していた `LineageRecord` ベースの test-case-gen 凍結 hash 照合ロジックを削除する。
+- [x] 旧実装が参照していた `LineageRecord` ベースの test-case-gen 凍結 hash 照合ロジックを削除する。
 
 **Acceptance Criteria**:
 - `checkTamperStatus` が新 signature の pure 関数として、上記 5 分岐を正しく返すユニットテストが
@@ -103,7 +103,7 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
 
 ## T-03: bite-evidence step で provenance 入力を計算し配線する / gate reason を更新する
 
-- [ ] **`src/core/types.ts` の `PipelineDeps` インターフェースに新フィールドを追加する**:
+- [x] **`src/core/types.ts` の `PipelineDeps` インターフェースに新フィールドを追加する**:
       `authorizedCanonWriters?: ReadonlySet<string>`
       理由: `executor.ts::runCliStep` は `step.run(state, deps)` に `PipelineDeps` を渡す。
       TypeScript の構造的型付けにより `PipelineDeps` が `CliStepDeps` を満たすため、
@@ -113,7 +113,7 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
       （`PipelineDeps extends StepContext` かつ `CliStepDeps extends StepDeps = StepContext`
       であるため、`PipelineDeps` が `CliStepDeps` を満たすには双方に宣言が必要）。
 
-- [ ] **`src/core/pipeline/run.ts` の `buildPipelineForJob` でフィールドを注入する**:
+- [x] **`src/core/pipeline/run.ts` の `buildPipelineForJob` でフィールドを注入する**:
       `buildPipelineForJob(jobState, deps, events)` は内部で `getPipelineDescriptor` を呼び
       `descriptor` を保持する唯一の箇所。`buildPipeline` を呼ぶ前に以下を実行:
       ```
@@ -129,7 +129,7 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
       （`run.ts` は `pipeline/` に属し registry → step → tamper の import chain 外にあるため
       `canon-provenance.ts` を安全に import できる）。
 
-- [ ] `src/core/step/bite-evidence/step.ts` の tamper 計算ブロック
+- [x] `src/core/step/bite-evidence/step.ts` の tamper 計算ブロック
       （現状の lineage fold + currentHash 計算）を provenance 入力の計算に置き換える:
       - `authorizedWriters` = `deps.authorizedCanonWriters`（`buildPipelineForJob` 注入値）。
         `undefined` または空集合なら `evidenceAvailable=false` に倒す。
@@ -144,13 +144,13 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
         （または新 method 不在の fake）なら false。
       - これらを `checkTamperStatus(...)` に渡し、得た `status` を gate に渡す。
       - 既存どおり、計算全体を try/catch で包み、例外時は `inconclusive` に倒す。
-- [ ] `test-cases.md` の path は既存の `changeFolderPath(slug)` + `/test-cases.md` を用いる。
-- [ ] `src/core/step/bite-evidence/gate.ts:104-111` の tamper mismatch 分岐の **routing は変更しない**
+- [x] `test-cases.md` の path は既存の `changeFolderPath(slug)` + `/test-cases.md` を用いる。
+- [x] `src/core/step/bite-evidence/gate.ts:104-111` の tamper mismatch 分岐の **routing は変更しない**
       （`mismatch → failed` のまま）。reason 文字列のみ provenance を反映した文言に更新する。
       文言には正規表現 `/tamper/i` に一致する語（`tamper`）を必ず残すこと
       （他 test 互換のため）。例: "tamper detected: current test-cases.md is not attributable to
       an authorized change path (owner step or operator-apply)"。
-- [ ] gate の `GateDeps.tamperStatus` の型・受け渡しは不変（D4）。
+- [x] gate の `GateDeps.tamperStatus` の型・受け渡しは不変（D4）。
 
 **Acceptance Criteria**:
 - `BiteEvidenceStep.run` が、fake runtime を用いた統合テストで、`deps.authorizedCanonWriters`
@@ -166,29 +166,29 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
 
 ## T-04: テストを更新・追加して新契約を固定する
 
-- [ ] `src/core/step/bite-evidence/__tests__/gate.test.ts` の「test-case-gen 固定基準」を pin する
+- [x] `src/core/step/bite-evidence/__tests__/gate.test.ts` の「test-case-gen 固定基準」を pin する
       ケース（TC-032 群の `checkTamperStatus(lineage, currentHash)` 直呼び、および必要なら TC-006 の
       reason 期待）を新契約へ更新する。受け入れ基準により、この pin ケースのみ更新可。
       - `checkTamperStatus` の呼び出しを新 signature（`{ authorizedWriters, lastCanonCommitToken,
         worktreeDirty, evidenceAvailable }`）に置き換える。
       - `match` / `mismatch` / `inconclusive` の各分岐を新入力で固定する。
-- [ ] 認可経路の偽陽性再現テストを追加する（受け入れ基準 1）: test-case-gen → spec-review →
+- [x] 認可経路の偽陽性再現テストを追加する（受け入れ基準 1）: test-case-gen → spec-review →
       spec-fixer（正規編集）→ bite-evidence の経路を、fake runtime
       （`lastCommitTouchingPath` が `spec-fixer: <slug>` を返す／worktree clean）で構成し、
       `checkTamperStatus` が `match`（＝ gate 進行、非 failed）になることを固定する。
       可能なら `BiteEvidenceStep.run` レベルの統合ケースとして、gate verdict が tamper で
       `failed` にならないことまで固定する。
-- [ ] operator 適用テストを追加する（受け入れ基準 2）: `lastCommitTouchingPath` が
+- [x] operator 適用テストを追加する（受け入れ基準 2）: `lastCommitTouchingPath` が
       `operator-apply: <slug>` を返す構成で `match`（非 failed）を固定する。
-- [ ] 認可外テストを追加する（受け入れ基準 3）:
+- [x] 認可外テストを追加する（受け入れ基準 3）:
       - 非所有 step 帰属: `lastCommitTouchingPath` が `implementer: <slug>` を返す構成で
         `mismatch` → gate `failed` を固定する。
       - 証跡外の書き換え: `worktreeDirty === true`（`listWorktreeChanges` に `test-cases.md` を含む）
         構成で `mismatch` → gate `failed` を固定する。
-- [ ] 証跡欠落テストを追加する（受け入れ基準 4、D2）: lineage record が空／不在でも、durable な
+- [x] 証跡欠落テストを追加する（受け入れ基準 4、D2）: lineage record が空／不在でも、durable な
       `spec-fixer: <slug>` commit 帰属が取得できる構成で `match`（非 failed）になることを固定する
       （「lineage 記録失敗でも偽陽性にならない」を証明）。
-- [ ] 判定不能テストを追加する（D3）: `lastCommitTouchingPath` / `listWorktreeChanges` が
+- [x] 判定不能テストを追加する（D3）: `lastCommitTouchingPath` / `listWorktreeChanges` が
       `unavailable`、または authorizedWriters 導出不能の構成で `inconclusive` → gate 進行
       （非 failed）を固定する。
 
@@ -203,9 +203,9 @@ TamperStatus union ("match" | "mismatch" | "inconclusive") と gate routing は�
 
 ## T-05: 全体検証
 
-- [ ] `bun run typecheck` が green。
-- [ ] `bun run test` が green（新規・更新テストを含む全 suite）。
-- [ ] 変更が Non-Goals（他保護正典への拡張・所有宣言変更・base/candidate 評価変更）に
+- [x] `bun run typecheck` が green。
+- [x] `bun run test` が green（新規・更新テストを含む全 suite）。
+- [x] 変更が Non-Goals（他保護正典への拡張・所有宣言変更・base/candidate 評価変更）に
       踏み込んでいないことを確認する。
 
 **Acceptance Criteria**:

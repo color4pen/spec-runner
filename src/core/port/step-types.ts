@@ -67,6 +67,14 @@ export interface CliStepDeps extends StepDeps {
   spawn: SpawnFn;
   /** Runtime strategy for artifact lifecycle and git operations. Optional in tests. */
   runtimeStrategy?: RuntimeStrategy | null;
+  /**
+   * Pre-computed set of step names and operator tokens authorized to write the canon
+   * test-cases.md path for this job. Injected by buildPipelineForJob.
+   *
+   * tamper-provenance-baseline: authorized writers for the provenance-based tamper gate.
+   * When absent or empty, BiteEvidenceStep treats tamper evidence as unavailable → inconclusive.
+   */
+  authorizedCanonWriters?: ReadonlySet<string>;
 }
 
 /**
