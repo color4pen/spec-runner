@@ -85,7 +85,8 @@
     "50b68700ec20252ae4b8fa73382561419e015030",
     "4ee46ff413d3e693c80ccd753dc6652f42c3a491",
     "020e17ae19592d1eb896446e514ef28106a42463",
-    "f9033c427111aa2cef977069c1636750e50399cf"
+    "f9033c427111aa2cef977069c1636750e50399cf",
+    "2eabf16038b58d97ab152010edcc163f052e5665"
   ],
   "touchedFiles": {
     "request-review": [
@@ -204,7 +205,11 @@
       "specrunner/adr/2026-08-21-archive-from-issue.md"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "pr-create",
+    "reason": "timeout",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
