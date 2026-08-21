@@ -90,6 +90,11 @@ export interface TransitionRecord {
 export interface InterruptionRecord {
   type: "interruption";
   reason: "timeout" | "signal" | "failure" | "exhaustion";
+  /**
+   * Signal name when reason === "signal" and the signal handler captured the name.
+   * Absent when written by exit-guard (no signal name available).
+   */
+  signal?: "SIGINT" | "SIGTERM" | "SIGHUP";
   /** Error code for failure (optional). */
   errorCode?: string;
   /** Phase name for exhaustion (optional). */

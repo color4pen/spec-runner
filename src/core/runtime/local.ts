@@ -74,7 +74,7 @@ interface LocalCleanupInternals {
   cwd: string;
   worktreePath: string | null;
   startStep: string;
-  signalCleanup: () => Promise<void>;
+  signalCleanup: (signal: NodeJS.Signals) => Promise<void>;
   cleanupWorktreeOnFailure: () => Promise<void>;
   releasePowerAssertion: () => void;
 }
@@ -1680,7 +1680,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     };
 
     // Signal handler (layer 1 of 3-layer cleanup)
-    const signalCleanup = async (): Promise<void> => {
+    const signalCleanup = async (signal: NodeJS.Signals): Promise<void> => {
       // markSignalHandlerFired MUST be the first synchronous statement — called before
       // any await so the flag is set before the beforeExit event fires (TC-016 invariant).
       markSignalHandlerFired();
@@ -1695,11 +1695,12 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         await store.appendInterruption({
           type: "interruption",
           reason: "signal",
+          signal: signal as "SIGINT" | "SIGTERM" | "SIGHUP",
           ts: new Date().toISOString(),
         });
         const { state: updated } = transitionJob(current as JobState, "awaiting-resume", {
           trigger: "signal-handler",
-          reason: "Interrupted by signal",
+          reason: `Interrupted by ${signal}`,
           patch: {
             pid: null,
             resumePoint: {
@@ -1714,11 +1715,12 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         // Best-effort persist; state file (layer 2) handles residuals
       }
       releasePowerAssertion();
-      process.exit(130); // 128 + SIGINT(2)
+      process.exit(130); // fixed; per-signal exit codes (128+n) are out of scope
     };
 
     process.on("SIGINT", signalCleanup);
     process.on("SIGTERM", signalCleanup);
+    process.on("SIGHUP", signalCleanup);
 
     return makeHandle({
       jobId,
@@ -1737,6 +1739,7 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     // Deregister signal handlers
     process.off("SIGINT", internals.signalCleanup);
     process.off("SIGTERM", internals.signalCleanup);
+    process.off("SIGHUP", internals.signalCleanup);
 
     // Release power assertion (idempotent, all finalStatus values)
     internals.releasePowerAssertion();

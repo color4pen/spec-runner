@@ -41,7 +41,7 @@ import type { JobStatus } from "../../state/schema.js";
 interface ManagedCleanupInternals {
   jobId: string;
   slug: string | null;
-  signalCleanup: () => Promise<void>;
+  signalCleanup: (signal: NodeJS.Signals) => Promise<void>;
 }
 
 /**
@@ -738,14 +738,14 @@ export class ManagedRuntime implements RealRuntimeStrategy {
   registerCleanup(jobId: string, startStep: string): CleanupHandle {
     const slug = this.currentSlug;
 
-    const signalCleanup = async (): Promise<void> => {
+    const signalCleanup = async (signal: NodeJS.Signals): Promise<void> => {
       try {
         if (!slug) return; // best-effort skip: slug not set, cannot resolve managed store
         const store = this.managedLocalStore(jobId, slug);
         const current = await store.load();
         const { state: updated } = transitionJob(current as JobState, "awaiting-resume", {
           trigger: "signal-handler",
-          reason: "Interrupted by signal",
+          reason: `Interrupted by ${signal}`,
           patch: {
             pid: null,
             resumePoint: {
@@ -764,6 +764,7 @@ export class ManagedRuntime implements RealRuntimeStrategy {
 
     process.on("SIGINT", signalCleanup);
     process.on("SIGTERM", signalCleanup);
+    process.on("SIGHUP", signalCleanup);
 
     const internals: ManagedCleanupInternals = { jobId, slug, signalCleanup };
     return internals as unknown as CleanupHandle;
@@ -774,6 +775,7 @@ export class ManagedRuntime implements RealRuntimeStrategy {
     if (internals.signalCleanup) {
       process.off("SIGINT", internals.signalCleanup);
       process.off("SIGTERM", internals.signalCleanup);
+      process.off("SIGHUP", internals.signalCleanup);
     }
 
     // Clear managed marker on terminal status (D7: finish / cancel 完了時に clear)
