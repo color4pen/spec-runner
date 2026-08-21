@@ -2,8 +2,13 @@
  * Pure functions for resolving `--wontfix` dispositions at resume time.
  *
  * Resolves comma-separated 1-based indices against the latest regression-gate
- * StepRun findings, reverse-maps each selected finding to its source step(s) in
- * the impl reviewer chain, and produces DispositionDecisionRecord[] for persistence.
+ * StepRun findings, resolves each selected finding to its source step(s) via the
+ * carried provenance ref (ledgerRef), and produces DispositionDecisionRecord[] for
+ * persistence.
+ *
+ * Resolution is performed by matching the gate finding's carried provenance ref
+ * against the all-origins provenance index (spec-review + impl reviewer chain),
+ * NOT by recomputing a fingerprint from the gate finding's LLM-regenerated title.
  *
  * All-or-nothing: any resolution failure returns an error and zero records.
  */
@@ -14,8 +19,7 @@ import { computeFindingKey } from "./decision-ledger.js";
 import { getLatestJudgeFindings } from "../step/fixer-helpers.js";
 import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";
 import { deriveImplReviewerChain } from "../pipeline/reviewer-chain.js";
-import { findingFingerprint } from "../pipeline/findings-ledger.js";
-import { collectFixableFindings } from "../step/judge-verdict.js";
+import { buildProvenanceIndex } from "../pipeline/findings-ledger.js";
 
 export type WontfixResolveResult =
   | { ok: true; records: DispositionDecisionRecord[] }
@@ -82,45 +86,37 @@ export function resolveWontfixDispositions(
   // Collect selected findings from gate
   const selectedGateFindings = indices.map((idx) => gateFindings[idx - 1]!);
 
-  // Build a lookup: fingerprint → list of (stepName, actualFinding) from reviewerChain
-  // One record per source step (deduplicated by step name for the same fingerprint).
+  // Build the all-origins provenance index over spec-review + impl reviewer chain.
+  // This replaces the old impl-chain-only fingerprint index, covering the confirmed
+  // spec-review-origin gap (design D4).
   const reviewerChain = deriveImplReviewerChain(state);
+  const provenanceIndex = buildProvenanceIndex(reviewerChain, state);
 
-  // Map: fingerprint → Map<stepName, Finding>
-  const chainIndex = new Map<string, Map<string, Finding>>();
-  for (const stepName of reviewerChain) {
-    const runs = state.steps?.[stepName] ?? [];
-    for (const run of runs) {
-      const toolResult = run.outcome.toolResult as { findings?: Finding[] } | null | undefined;
-      const findings = toolResult?.findings;
-      if (!findings || findings.length === 0) continue;
-      const fixable = collectFixableFindings(findings);
-      for (const f of fixable) {
-        const fp = findingFingerprint(f);
-        if (!chainIndex.has(fp)) {
-          chainIndex.set(fp, new Map());
-        }
-        const stepMap = chainIndex.get(fp)!;
-        // First occurrence wins per step (step-level dedup)
-        if (!stepMap.has(stepName)) {
-          stepMap.set(stepName, f);
-        }
-      }
-    }
-  }
-
-  // Resolve each selected finding to records
+  // Resolve each selected finding to records via the carried provenance ref.
+  // Resolution depends on the gate finding's ledgerRef field (echoed verbatim from
+  // the ledger block), NOT on recomputing a fingerprint from the gate's regenerated title.
   const records: DispositionDecisionRecord[] = [];
   for (let i = 0; i < selectedGateFindings.length; i++) {
     const gateFinding = selectedGateFindings[i]!;
-    const fp = findingFingerprint(gateFinding);
-    const stepMap = chainIndex.get(fp);
+    const ref = gateFinding.ledgerRef;
+
+    // Fail all-or-nothing if the gate finding has no provenance ref
+    if (!ref || typeof ref !== "string") {
+      return {
+        ok: false,
+        error: `--wontfix: index ${indices[i]} finding has no provenance ref (ledgerRef absent) — cannot resolve to origin step`,
+      };
+    }
+
+    // Fail all-or-nothing if the ref doesn't resolve to any ledger-contributing step
+    const stepMap = provenanceIndex.get(ref);
     if (!stepMap || stepMap.size === 0) {
       return {
         ok: false,
-        error: `--wontfix: index ${indices[i]} finding fingerprint '${fp}' not found in any reviewer chain step`,
+        error: `--wontfix: index ${indices[i]} provenance ref '${ref}' not found in any reviewer chain step`,
       };
     }
+
     for (const [stepName, actualFinding] of stepMap) {
       const findingKey = computeFindingKey(stepName, actualFinding);
       const id = `disposition-${decidedAt}-${indices[i]}-${stepName}`;

@@ -24,7 +24,7 @@ import { REGRESSION_GATE_SYSTEM_PROMPT } from "../../prompts/regression-gate-sys
 import { resolveReviewerResultPath, changeFolderPath } from "../../util/paths.js";
 import { nextIteration } from "./io-iteration.js";
 import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
-import { computeRegressionLedger } from "../pipeline/findings-ledger.js";
+import { computeRegressionLedger, computeLedgerRef } from "../pipeline/findings-ledger.js";
 import { deriveImplReviewerChain } from "../pipeline/reviewer-chain.js";
 import { deriveRegressionGateVerdict } from "./judge-verdict.js";
 import { buildFindingsBlock } from "./fixer-helpers.js";
@@ -48,14 +48,33 @@ export const REGRESSION_GATE_MAX_ITERATIONS = 3;
 const DEFAULT_REVIEW_MODEL = "claude-sonnet-5";
 
 /**
+ * Format a single ledger entry for the findings ledger block.
+ * Includes the provenance ref alongside file, line, and title so the gate can echo it.
+ */
+function buildLedgerEntry(finding: Finding, index: number): string {
+  const ref = computeLedgerRef(finding);
+  const location = finding.line !== undefined ? `${finding.file}:${finding.line}` : finding.file;
+  return [
+    `### [${index}] [${finding.severity.toUpperCase()}] ${finding.title}`,
+    `- **File**: ${location}`,
+    `- **Resolution**: ${finding.resolution}`,
+    `- **Rationale**: ${finding.rationale}`,
+    `- **Provenance Ref**: \`${ref}\``,
+    "",
+  ].join("\n");
+}
+
+/**
  * Format the findings ledger for injection into the user message.
- * Empty ledger → single-line notice; non-empty → formatted block per finding.
+ * Empty ledger → single-line notice; non-empty → formatted block per finding,
+ * each annotated with its machine-assigned provenance ref for verbatim echo.
  */
 function buildLedgerBlock(findings: Finding[]): string {
   if (findings.length === 0) {
     return "## Findings Ledger\n\nNo fixable findings were recorded in the reviewer chain. Approve immediately with an empty findings array.";
   }
-  return `## Findings Ledger (${findings.length} item${findings.length === 1 ? "" : "s"})\n\nThe following findings were identified by reviewers during this job. Not all may have been fixed. Verify each one to determine whether it is still present in the current code (i.e. whether it has regressed).\n\n${buildFindingsBlock(findings)}`;
+  const entries = findings.map((f, i) => buildLedgerEntry(f, i + 1)).join("\n");
+  return `## Findings Ledger (${findings.length} item${findings.length === 1 ? "" : "s"})\n\nThe following findings were identified by reviewers during this job. Not all may have been fixed. Verify each one to determine whether it is still present in the current code (i.e. whether it has regressed).\n\nEach entry includes a **Provenance Ref** — echo this ref verbatim into the \`ledgerRef\` field of your \`report_result\` finding when reporting a regression for that entry.\n\n${entries}`;
 }
 
 /**

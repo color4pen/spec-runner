@@ -82,6 +82,7 @@ const findingSchema = array(object({
   options: optional(array(decisionOptionSchema)),
   origin: optional(literal("scope")),
   fileMissing: optional(boolean()),
+  ledgerRef: optional(string()),
 }));
 
 /**
@@ -160,6 +161,7 @@ const conformanceFindingSchema = array(object({
   options: optional(array(decisionOptionSchema)),
   origin: optional(literal("scope")),
   fileMissing: optional(boolean()),
+  ledgerRef: optional(string()),
 }));
 
 /**

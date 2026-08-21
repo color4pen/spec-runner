@@ -113,6 +113,7 @@ import { transitionJob } from "../../../state/lifecycle.js";
 import { resolveStateStoreByJobId } from "../../job-access/resolve-state-store.js";
 import { parseRequestMd } from "../../../parser/request-md.js";
 import { loadConfig } from "../../../config/store.js";
+import { computeLedgerRef } from "../../pipeline/findings-ledger.js";
 import type { JobState, DispositionDecisionRecord } from "../../../state/schema.js";
 import type { Finding } from "../../../kernel/report-result.js";
 import type { StepRun } from "../../../state/schema.js";
@@ -314,10 +315,12 @@ describe("TC-008: reason 欠落で exit code 2", () => {
 describe("TC-003: --wontfix が発生 step 由来の disposition record を永続する", () => {
   it("persists a DispositionDecisionRecord with correct fields", async () => {
     const finding = makeFixableFinding({ title: "SQL injection", file: "src/db.ts", line: 42 });
+    // Gate finding carries the provenance ref (new contract: ref-based resolution)
+    const gateFinding = { ...finding, ledgerRef: computeLedgerRef(finding) };
 
     const baseState = makeAwaitingResumeState({
       steps: {
-        "regression-gate": [makeStepRun([finding])],
+        "regression-gate": [makeStepRun([gateFinding])],
         "code-review": [makeStepRun([finding])],
       },
     });
@@ -355,10 +358,12 @@ describe("TC-003: --wontfix が発生 step 由来の disposition record を永�
 describe("TC-005: --prompt と --wontfix は併用できる", () => {
   it("records both operatorAdjudication and disposition record", async () => {
     const finding = makeFixableFinding({ title: "XSS", file: "src/render.ts", line: 5 });
+    // Gate finding carries the provenance ref (new contract: ref-based resolution)
+    const gateFinding = { ...finding, ledgerRef: computeLedgerRef(finding) };
 
     const baseState = makeAwaitingResumeState({
       steps: {
-        "regression-gate": [makeStepRun([finding])],
+        "regression-gate": [makeStepRun([gateFinding])],
         "code-review": [makeStepRun([finding])],
       },
     });

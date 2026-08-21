@@ -84,6 +84,18 @@ export interface Finding {
    * Additive discriminator — absent/false is treated identically to all pre-existing behavior.
    */
   fileMissing?: boolean;
+  /**
+   * Machine-assigned regression-gate provenance token.
+   *
+   * Carries the ledger provenance ref from the regression-gate ledger entry back through
+   * the gate's typed report so `--wontfix` can resolve the gate finding to its origin step
+   * without depending on LLM-regenerated title/rationale text.
+   *
+   * Additive and backward-compatible: absent = pre-existing behavior (no provenance carry).
+   * Only populated by the regression-gate step (echoed verbatim from the ledger block);
+   * other steps leave this field unset and it is ignored by all existing consumers.
+   */
+  ledgerRef?: string;
 }
 
 /**

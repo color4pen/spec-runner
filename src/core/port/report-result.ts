@@ -234,6 +234,10 @@ export function parseFindings(raw: unknown, strict = false): { ok: true; value: 
     if (f["fileMissing"] === true) {
       finding.fileMissing = true;
     }
+    // ledgerRef: capture when present and a string; non-string/absent silently ignored (not in missingFields)
+    if (typeof f["ledgerRef"] === "string") {
+      finding.ledgerRef = f["ledgerRef"];
+    }
     findings.push(finding);
   }
   return { ok: true, value: findings };

@@ -7,6 +7,7 @@
  *
  * All functions are pure (no side effects, no I/O).
  */
+import { createHash } from "crypto";
 import type { JobState } from "../../state/schema.js";
 import type { Finding } from "../../kernel/report-result.js";
 import { collectFixableFindings } from "../step/judge-verdict.js";
@@ -126,6 +127,11 @@ export function collectParallelFixerFindings(
  * Walks all StepRuns in state.steps[STEP_NAMES.SPEC_REVIEW] and collects findings
  * where resolution === "fixable". Applies dedupeFindings before returning.
  *
+ * Applies filterUndecidedFindings per StepRun (mirroring collectFindingsLedger) so that
+ * a spec-review-origin finding disposed via wontfix (step="spec-review") is excluded from
+ * the merged regression ledger — without this, disposed spec-review findings would still
+ * appear in computeRegressionLedger.
+ *
  * When canonScope is provided, findings that are unroutable to spec-fixer
  * (i.e. on canon files spec-fixer cannot write: request.md, test-cases.md, attestation)
  * are excluded. Findings on spec-fixer-writable paths (spec.md, design.md, tasks.md)
@@ -144,7 +150,11 @@ export function collectSpecReviewLedger(state: JobState, canonScope?: CanonWrite
     const findings = toolResult?.findings;
     if (!findings || findings.length === 0) continue;
     const fixable = collectFixableFindings(findings);
-    all.push(...fixable);
+    // Exclude disposition-decided findings before collecting (mirrors collectFindingsLedger per-run exclusion).
+    // filterUndecidedFindings checks step + findingKey against decisions;
+    // disposition records use the same fields so no arm check needed.
+    const active = filterUndecidedFindings(STEP_NAMES.SPEC_REVIEW, fixable, state.decisions);
+    all.push(...active);
   }
 
   const deduped = dedupeFindings(all);
@@ -217,5 +227,95 @@ export function computeRegressionLedger(
   const specLedger = collectSpecReviewLedger(state, canonScope);
   const implLedger = collectFindingsLedger(reviewerChain, state, canonScope);
   return dedupeFindings([...specLedger, ...implLedger]);
+}
+
+/**
+ * Compute a deterministic, collision-resistant provenance ref for a finding.
+ *
+ * The ref is derived from the finding's stable fingerprint (file|line|title) via
+ * SHA-256, encoded as the first 8 hex characters (32 bits of entropy). This is:
+ * - Deterministic: equal fingerprints always yield equal refs (design D3).
+ * - Positionally stable: independent of ledger membership or ordering.
+ * - Compact: 8 hex chars are easy for the LLM to transport verbatim.
+ *
+ * Two findings with the same fingerprint (file, line, title) yield the same ref.
+ * This ref is NOT a redesign of computeFindingKey or findingFingerprint — it is
+ * derived from the existing fingerprint formula (scope-out per tasks T-02).
+ *
+ * @param finding - The finding to derive a ref for.
+ * @returns An 8-character lowercase hex string.
+ */
+export function computeLedgerRef(finding: Finding): string {
+  const fp = findingFingerprint(finding);
+  return createHash("sha256").update(fp, "utf8").digest("hex").slice(0, 8);
+}
+
+/**
+ * Build the wontfix provenance index over ALL ledger-contributing steps.
+ *
+ * Walks spec-review StepRuns AND the impl reviewer chain StepRuns (the same
+ * source sets that feed computeRegressionLedger), collects collectFixableFindings
+ * per run, and produces Map<ref, Map<stepName, Finding>> (first-occurrence-wins
+ * per step, mirroring the current step-level dedup in the old fingerprint index).
+ *
+ * This index is used by resolveWontfixDispositions to resolve a gate finding's
+ * carried ledgerRef to its origin step(s) without depending on the LLM-regenerated
+ * title or rationale.
+ *
+ * **Import cycle note**: reviewerChain is supplied by the caller (NOT derived
+ * internally) to avoid the findings-ledger → reviewer-chain → regression-gate →
+ * findings-ledger cycle (same reason as computeRegressionLedger).
+ *
+ * @param reviewerChain - Ordered impl reviewer step names (from deriveImplReviewerChain).
+ * @param state         - Current job state.
+ * @returns Map from provenance ref to Map<stepName, Finding>.
+ */
+export function buildProvenanceIndex(
+  reviewerChain: string[],
+  state: JobState,
+): Map<string, Map<string, Finding>> {
+  const index = new Map<string, Map<string, Finding>>();
+
+  /** Add a finding to the provenance index (first-occurrence-wins per step). */
+  function addFinding(stepName: string, finding: Finding): void {
+    const ref = computeLedgerRef(finding);
+    if (!index.has(ref)) {
+      index.set(ref, new Map());
+    }
+    const stepMap = index.get(ref)!;
+    // First occurrence wins per step (step-level dedup, same as old chainIndex)
+    if (!stepMap.has(stepName)) {
+      stepMap.set(stepName, finding);
+    }
+  }
+
+  // Walk spec-review StepRuns (covers the confirmed gap where the old impl-chain-only
+  // index failed to cover spec-review-origin findings).
+  const specRuns = state.steps?.[STEP_NAMES.SPEC_REVIEW] ?? [];
+  for (const run of specRuns) {
+    const toolResult = run.outcome.toolResult as { findings?: Finding[] } | null | undefined;
+    const findings = toolResult?.findings;
+    if (!findings || findings.length === 0) continue;
+    const fixable = collectFixableFindings(findings);
+    for (const f of fixable) {
+      addFinding(STEP_NAMES.SPEC_REVIEW, f);
+    }
+  }
+
+  // Walk impl reviewer chain StepRuns.
+  for (const stepName of reviewerChain) {
+    const runs = state.steps?.[stepName] ?? [];
+    for (const run of runs) {
+      const toolResult = run.outcome.toolResult as { findings?: Finding[] } | null | undefined;
+      const findings = toolResult?.findings;
+      if (!findings || findings.length === 0) continue;
+      const fixable = collectFixableFindings(findings);
+      for (const f of fixable) {
+        addFinding(stepName, f);
+      }
+    }
+  }
+
+  return index;
 }
 
