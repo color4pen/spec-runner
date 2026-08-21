@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-21T01:28:21.627Z",
+  "updatedAt": "2026-08-21T01:42:31.849Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/archive-from-issue-96c14a7e",
   "error": null,
@@ -79,7 +79,9 @@
     "c76571c65bfc2d8807e06cdfc3a539feaa0352f5",
     "6e5c8a179442e3f7bab207222fc38035e055eca2",
     "8e87632492922e53c0c50f07ae0940062f998982",
-    "09e3db732cf73d70e2f384af6cd27d0058f9ec13"
+    "09e3db732cf73d70e2f384af6cd27d0058f9ec13",
+    "6ab8a07f44bd208a037080a079a035c18d68117f",
+    "14b2a43bb9ee4e9559402148efb91ae429e6c7d8"
   ],
   "touchedFiles": {
     "request-review": [
@@ -160,17 +162,10 @@
       "src/adapter/github/__tests__/github-client-closing-prs.test.ts"
     ],
     "code-fixer": [
-      "src/kernel/github-client.ts",
       "src/core/attach/__tests__/checkpoint-policy.test.ts",
-      "src/core/attach/orchestrator.ts",
-      "src/core/attach/checkpoint-policy.ts",
-      "src/core/port/github-client.ts",
-      "src/adapter/github/github-client.ts",
       "src/core/issue-target/archive.ts",
-      "src/core/attach/verify-checkpoint.ts",
-      "src/store/job-state-projection.ts",
-      "src/state/schema/operations.ts",
-      "tests/helpers/pipeline-mock-client.ts"
+      "src/adapter/github/github-client.ts",
+      "src/core/issue-target/resume.ts"
     ],
     "regression-gate": [
       "src/kernel/github-client.ts",
@@ -189,7 +184,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "54b29642d44e8a0ade1b4fe9b6c8e528f5d8cf92",
+      "approvedAtCommit": "6ab8a07f44bd208a037080a079a035c18d68117f",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -205,7 +200,7 @@
     {
       "name": "scale-tolerance",
       "status": "approved",
-      "approvedAtCommit": "54b29642d44e8a0ade1b4fe9b6c8e528f5d8cf92",
+      "approvedAtCommit": "6ab8a07f44bd208a037080a079a035c18d68117f",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
@@ -229,7 +224,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 67,
+    "historyCount": 78,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -240,10 +235,10 @@
       "bite-evidence": 2,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 2,
-      "cross-boundary-invariants": 1,
-      "scale-tolerance": 1,
-      "custom-reviewers": 1,
+      "code-fixer": 3,
+      "cross-boundary-invariants": 2,
+      "scale-tolerance": 2,
+      "custom-reviewers": 2,
       "regression-gate": 1
     }
   }
