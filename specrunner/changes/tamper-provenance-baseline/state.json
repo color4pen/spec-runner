@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1fd44058-a07a-46d1-afe3-41e2db6da0a7",
   "createdAt": "2026-08-21T02:24:48.638Z",
-  "updatedAt": "2026-08-21T06:05:52.931Z",
+  "updatedAt": "2026-08-21T06:07:36.722Z",
   "request": {
     "title": "bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/tamper-provenance-baseline-1fd44058",
   "error": null,
@@ -82,7 +82,8 @@
     "f2c8adbb1c4172e79aa63bd33e61f6fd31b74ca0",
     "0a3b7eb03cd982df7f69df55e691b78fdd83d848",
     "eeae38a82134270656703fe62a34d96fc588baea",
-    "fd2d15b01794433fadd0106dcc6cfe704bcae9e5"
+    "fd2d15b01794433fadd0106dcc6cfe704bcae9e5",
+    "a04dd9f2be6cc73d3706162b5f0080e25662699b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -162,7 +163,8 @@
       "src/core/resume/__tests__/authorized-canon-writer-steps.test.ts"
     ],
     "code-fixer": [
-      "src/core/step/bite-evidence/__tests__/gate.test.ts"
+      "src/core/step/bite-evidence/step.ts",
+      "src/core/types.ts"
     ],
     "regression-gate": [
       "src/core/step/bite-evidence/step.ts",
@@ -216,7 +218,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 80,
+    "historyCount": 84,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -227,7 +229,7 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 3,
-      "code-fixer": 2,
+      "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
