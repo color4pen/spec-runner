@@ -197,6 +197,24 @@
       "durationMs": 214566,
       "durationApiMs": 213949,
       "totalCostUsd": 0.6151992000000001
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-21T01:03:15.122Z",
+      "modelUsage": {
+        "claude-sonnet-4-6": {
+          "inputTokens": 20,
+          "outputTokens": 13214,
+          "cacheReadInputTokens": 904529,
+          "cacheCreationInputTokens": 60966
+        }
+      },
+      "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
+      "stepName": "regression-gate",
+      "numTurns": 27,
+      "durationMs": 234962,
+      "durationApiMs": 234176,
+      "totalCostUsd": 0.6982512000000002
     }
   ]
 }
