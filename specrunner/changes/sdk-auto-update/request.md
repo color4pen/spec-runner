@@ -26,7 +26,7 @@ merge は自動化しない。SDK 更新は CI（unit test）で見えない層 
 1. **Dependabot による weekly 更新 PR**: `.github/dependabot.yml` を追加し、`package-ecosystem: "bun"` / `directory: "/"` / weekly スケジュールで、週次チェック時に検出された `@anthropic-ai/claude-agent-sdk` の新バージョンの更新 PR（`package.json` + `bun.lock`）が自動で作られるようにする。
 2. **対象の限定**: `allow` の `dependency-name` で `@anthropic-ai/claude-agent-sdk` のみに限定する。他の依存は対象外（依存極小の方針）。
 3. **merge は自動化しない**: auto-merge に相当する設定を入れない。更新 PR は CI を通した上で人間が merge する。
-4. **初回更新の運用注記**: 初回 PR は 0.x minor 境界を越える大型更新になるため、定常的な patch 更新と区別し、人間が pipeline の実地動作まで確認してから merge する前提を導入 PR の説明（PR body）に明記する。
+4. **初回更新の運用注記**: 初回 PR は 0.x minor 境界を越える大型更新になるため、定常的な patch 更新と区別し、人間が pipeline の実地動作まで確認してから merge する前提を `.github/dependabot.yml` 内のコメントとして明記する（設定と同じ場所に運用注記を置き、機械照合可能にする）。
 
 ## スコープ外
 
@@ -38,7 +38,7 @@ merge は自動化しない。SDK 更新は CI（unit test）で見えない層 
 
 - [ ] `.github/dependabot.yml` が追加され、`package-ecosystem: "bun"`・weekly・`allow` による `@anthropic-ai/claude-agent-sdk` 限定を設定検査テストで固定する（設定ファイルを parse して assert する）
 - [ ] auto-merge に相当する指定が含まれないことを同テストで固定する
-- [ ] 導入 PR の説明に初回大型更新の運用注記（実地確認後の人間 merge）が含まれる
+- [ ] `.github/dependabot.yml` に初回大型更新の運用注記（実地確認後の人間 merge）がコメントとして含まれる
 - [ ] `typecheck && test` が green
 
 ## architect 評価済みの設計判断
