@@ -660,67 +660,6 @@ describe("TC-022: gate tamper mismatch reason matches /tamper/i", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-001: spec-fixer 正規編集は tamper 扱いにならない", () => {
-  /**
-   * Fake runtime for BiteEvidenceStep.run integration tests.
-   * Provides: lastCommitTouchingPath, listWorktreeChanges, and gate methods.
-   */
-  function makeBiteEvidenceStepRuntime(options: {
-    lastCommitSubject?: string | null; // null = none, undefined = unavailable
-    worktreeChanges?: string[];
-    // gate methods omitted — step will get strategy-deferred (not tamper-failed)
-  }) {
-    return {
-      lastCommitTouchingPath: async (
-        _path: string,
-        _cwd: string,
-      ): Promise<
-        | { kind: "found"; oid: string; subject: string }
-        | { kind: "none" }
-        | { kind: "unavailable"; reason: string }
-      > => {
-        const s = options.lastCommitSubject;
-        if (s === undefined) {
-          return { kind: "unavailable", reason: "test-configured unavailable" };
-        }
-        if (s === null) {
-          return { kind: "none" };
-        }
-        return { kind: "found", oid: "abc123def456", subject: s };
-      },
-      listWorktreeChanges: async (_cwd: string): Promise<
-        | { kind: "success"; paths: string[] }
-        | { kind: "unavailable"; reason: string }
-      > => {
-        return { kind: "success", paths: options.worktreeChanges ?? [] };
-      },
-      // Gate methods — not needed for tamper-only test; will short-circuit to strategy-deferred
-      captureHeadSha: async (_cwd: string): Promise<string | null> => null,
-    };
-  }
-
-  function makeStepState(requestType: string): JobState {
-    return {
-      version: 2,
-      jobId: "step-run-test-job",
-      createdAt: "2026-01-01T00:00:00.000Z",
-      updatedAt: "2026-01-01T00:00:00.000Z",
-      request: {
-        path: "specrunner/changes/my-slug/request.md",
-        title: "Test",
-        type: requestType,
-        slug: "my-slug",
-      },
-      repository: { owner: "octo", name: "repo" },
-      session: null,
-      step: "bite-evidence",
-      status: "running",
-      branch: "change/my-slug-abc",
-      history: [],
-      error: null,
-      steps: {},
-    };
-  }
-
   it("TC-001: spec-fixer 正規編集 (spec-fixer: my-slug) は match → gate が tamper で failed にならない", () => {
     // Direct tamper calculation test using the provenance-based checkTamperStatus:
     const authorizedWriters = new Set(["test-case-gen", "spec-fixer", "operator-apply"]);
