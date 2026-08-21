@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e7dc8301-1fea-4649-b634-47ce46b57572",
   "createdAt": "2026-08-21T10:02:27.789Z",
-  "updatedAt": "2026-08-21T10:37:44.067Z",
+  "updatedAt": "2026-08-21T10:48:07.324Z",
   "request": {
     "title": "実効モデル名を SDK の supportedModels() で実在検証する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "feat/model-name-validation-e7dc8301",
   "error": null,
@@ -69,7 +69,8 @@
     "c1d51016e276196c46a7b06289798ce53bed1451",
     "165ff7ef26571bab644069451d56cb547c578f4d",
     "b906baa9e0b7f903f56bf43c90aa0eac127fe88f",
-    "cf802b342b2d3d8c6947c738e3849c859f1a32ed"
+    "cf802b342b2d3d8c6947c738e3849c859f1a32ed",
+    "86c7620498e911377d8eeaa852aa5db8d8e74c69"
   ],
   "touchedFiles": {
     "request-review": [
@@ -137,28 +138,19 @@
       "tests/config/model-registry.test.ts"
     ],
     "spec-review": [
-      "src/config/model-registry.ts",
-      "src/config/step-config.ts",
-      "src/config/schema/validation.ts",
-      "src/adapter/claude-code/provider-readiness-probe.ts",
-      "src/core/port/provider-readiness.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/pipeline/types.ts",
-      "src/core/preflight.ts",
-      "src/core/command/pipeline-run.ts",
-      "src/core/runtime/local.ts",
-      "src/core/doctor/types.ts",
       "src/adapter/claude-code/sdk-loader.ts",
-      "src/core/runtime/provider-readiness.ts",
+      "src/config/step-config.ts",
+      "src/adapter/claude-code/provider-readiness-probe.ts",
+      "src/config/model-registry.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/doctor/types.ts",
+      "src/core/doctor/checks/index.ts",
+      "src/core/port/runtime-strategy.ts",
       "src/core/step/custom-reviewer.ts",
       "src/core/step/regression-gate.ts",
-      "src/core/doctor/checks/index.ts",
-      "src/core/pipeline/compose-reviewers.ts",
-      "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts",
-      "tests/config/model-registry.test.ts",
-      "tests/core/provider-readiness-gate.test.ts",
-      "src/core/step/types.ts",
-      "src/core/port/step-types.ts"
+      "src/core/doctor/runner.ts",
+      "src/core/runtime/local.ts",
+      "tests/config/model-registry.test.ts"
     ],
     "spec-fixer": [
       "src/adapter/claude-code/sdk-loader.ts",
@@ -168,12 +160,12 @@
     ]
   },
   "_journal": {
-    "historyCount": 20,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1,
+      "spec-review": 2,
       "spec-fixer": 1
     }
   }

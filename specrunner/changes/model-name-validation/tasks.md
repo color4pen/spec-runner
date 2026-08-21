@@ -93,10 +93,20 @@
 - [ ] `stripSecrets(env)` + OAuth token best-effort 解決（token 絶対値を返り値・log に出さない）を行う。
 - [ ] SDK を **streaming input mode** で起動する（`prompt` を `AsyncIterable` として渡す — control request
       `supportedModels()` は streaming mode でのみ利用可能: sdk.d.ts:2026-2030）。
-  - `ClaudeSdkQuery` の戻り値型 `ClaudeSdkQueryResult`（`src/adapter/claude-code/sdk-loader.ts`）に
-    `supportedModels(): Promise<SdkModelInfo[]>` と `close(): void` を追加すること。SDK は streaming input
-    で起動した場合にのみこれらのメソッドを提供するため、probe は必ず `prompt` を `AsyncIterable` として渡す
-    （そうしない場合 `supportedModels()` 呼び出しは実行時エラーになる）。
+  - `src/adapter/claude-code/sdk-loader.ts` に以下の型を追加すること:
+    - **`SdkModelInfo`**: SDK の `ModelInfo`（sdk.d.ts:1064-1097）の minimal local alias。
+      probe が使うのは `.value` フィールドのみなので、`{ value: string }` の最小定義で十分。
+      SDK パッケージから `ModelInfo` を static import すると adapter→SDK の型依存が発生するため、
+      local 定義とする（runtime の import は行われないので型のみの依存でも DSM 上問題ないが、
+      最小定義の方がシンプル）。定義例:
+      ```typescript
+      /** Minimal local alias for sdk.d.ts ModelInfo — only the value field is needed by the probe. */
+      export interface SdkModelInfo { value: string; }
+      ```
+    - **`ClaudeSdkQueryResult`**: `ClaudeSdkQuery` の戻り値型。`AsyncGenerator<unknown, void>` を拡張し
+      `supportedModels(): Promise<SdkModelInfo[]>` と `close(): void` を追加すること。SDK は streaming input
+      で起動した場合にのみこれらのメソッドを提供するため、probe は必ず `prompt` を `AsyncIterable` として渡す
+      （そうしない場合 `supportedModels()` 呼び出しは実行時エラーになる）。
     型安全のために `ClaudeSdkQueryResult` を拡張するか、`sdk.query()` の戻り値を
     `as ClaudeSdkQueryResult` でキャストするかのどちらかを採用すること（実装者判断）。
   - **AsyncIterable の構成パターン**: streaming input として渡す `AsyncIterable<SDKUserMessage>` は、
