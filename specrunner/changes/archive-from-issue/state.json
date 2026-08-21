@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-21T01:03:17.201Z",
+  "updatedAt": "2026-08-21T01:26:58.653Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -12,13 +12,13 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "awaiting-resume",
   "branch": "feat/archive-from-issue-96c14a7e",
   "error": {
-    "code": "CANON_FINDING_ESCALATION",
-    "message": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/archive-from-issue/test-cases.md, title: \"TC-030: 「既存テスト」の範囲が依然として曖昧\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "hint": "保護正典への fixable finding が write-scope により解消不能です。escalation reason の finding を手動で修正したうえで、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。手動の git 操作 (commit / push) は不要です。"
+    "code": "STEP_TIMEOUT",
+    "message": "Step 'code-fixer' inactivity timeout: no agent event for 1003896ms",
+    "hint": "no tool observed before timeout (no tool activity in session)"
   },
   "pipelineId": "standard",
   "profile": {
@@ -81,7 +81,8 @@
     "ffda064091c3fa7d822e3ace461f84671a000e94",
     "54b29642d44e8a0ade1b4fe9b6c8e528f5d8cf92",
     "c76571c65bfc2d8807e06cdfc3a539feaa0352f5",
-    "6e5c8a179442e3f7bab207222fc38035e055eca2"
+    "6e5c8a179442e3f7bab207222fc38035e055eca2",
+    "8e87632492922e53c0c50f07ae0940062f998982"
   ],
   "touchedFiles": {
     "request-review": [
@@ -186,9 +187,9 @@
     ]
   },
   "resumePoint": {
-    "step": "regression-gate",
-    "reason": "[CANON_FINDING_ESCALATION]\n保護正典への fixable finding が write-scope により解消不能なため escalation に倒します。\n\n該当 finding:\n  - file: specrunner/changes/archive-from-issue/test-cases.md, title: \"TC-030: 「既存テスト」の範囲が依然として曖昧\"\n\nfixer は write-scope により当該 file を修正できない。保護正典を修正後、job resume <slug> --apply-canon で operator 適用 commit として取り込んでから再開してください。\n\n詳細: `specrunner guide escalation`",
-    "iterationsExhausted": 1
+    "step": "code-fixer",
+    "reason": "timeout",
+    "iterationsExhausted": 0
   },
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
@@ -222,8 +223,15 @@
       "canonHash": "specrunner/changes/archive-from-issue/design.md:sha256:847f9c77cc0f2fa8b4b03d3860938e61d05dae24a568e3ab616128c6872b30ca|specrunner/changes/archive-from-issue/request.md:sha256:8a3c727c5571c77f4e46cd6d82a8059988327c04df096af861afbd0d86c4c17b|specrunner/changes/archive-from-issue/spec.md:sha256:8be1014df6697fa037f851834165ad827c5dd6764ca069c8f2f73fa22a76fa89|specrunner/changes/archive-from-issue/tasks.md:sha256:a381bf3e001e34600e908909851c4480cba5f0936b23f6236b17e27e5c0bd9f4|specrunner/changes/archive-from-issue/test-cases.md:sha256:583fbd5948698d59cc417ad721725f112771e404ec10e357dab758a5aa455fcc"
     }
   ],
+  "operatorAdjudications": [
+    {
+      "text": "regression-gate findings のうち以下 3 件を適用する。(1) TC-022: src/core/attach/__tests__/checkpoint-policy.test.ts の「policy 未指定」テストを runAttachVerification 経由の統合テストにする — spawnFn を fixture で mock（fetch / rev-parse / ls-tree / show が awaiting-resume checkpoint を返す）し、policy 引数を渡さずに呼び、attachResumePolicy が適用されること（awaiting-resume 受理）を固定する。verifyCheckpoint 直呼びのままにしない。(2) src/core/issue-target/archive.ts の resolveCompletedJobId の listIssueComments 呼び出しに、src/core/issue-target/resume.ts の resolveEscalationJobId（:54-58）と同型の ponytail: full pagination コメント（O(⌈C/100⌉)、per-issue comments endpoint は direction=desc 非対応、repo-level endpoint への upgrade path）を付ける。(3) src/adapter/github/github-client.ts の listIssueClosingPullRequests で結果件数が 50 に達した場合に logWarn で切り捨ての可能性を警告し、ponytail: コメントで first:50 の ceiling と pagination への upgrade path を記録する。test-cases.md（TC-030 文言）には触れない",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-21T01:07:20.106Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 61,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -234,7 +242,7 @@
       "bite-evidence": 2,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 1,
+      "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
