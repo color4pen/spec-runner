@@ -55,6 +55,7 @@ function buildMockGitHubClient(getRawFileFn?: (...args: unknown[]) => Promise<st
     removeLabel: vi.fn().mockResolvedValue(undefined),
     getIssue: vi.fn().mockResolvedValue({ number: 1, title: "Test Issue", body: "" }),
     createLinkedBranch: vi.fn().mockResolvedValue(undefined),
+    listIssueClosingPullRequests: vi.fn().mockResolvedValue([]),
   };
 }
 

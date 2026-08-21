@@ -14,6 +14,7 @@
 import * as path from "node:path";
 import { detectSpecrunnerWorktree } from "../core/worktree/detection.js";
 import { runAttachVerification } from "../core/attach/orchestrator.js";
+import { attachQuiescentPolicy } from "../core/attach/checkpoint-policy.js";
 import { loadConfig } from "../config/store.js";
 import { resolveGitHubToken } from "../core/credentials/github.js";
 import { getOriginInfo } from "../git/remote.js";
@@ -112,6 +113,7 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
       branch: opts.branch,
       spawnFn,
       expectedRepo: { owner, name: repoName },
+      policy: attachQuiescentPolicy,
     });
   } catch (err: unknown) {
     if (err instanceof SpecRunnerError) {
@@ -160,6 +162,10 @@ export async function runAttach(opts: RunAttachOptions): Promise<number> {
 
   // 6. Success — print next-step hint (do NOT resume pipeline)
   logResult(`Attached job '${verified.slug}' (jobId: ${verified.jobId}) from branch '${verified.branch}'.`);
-  stderrWrite(`Run 'specrunner job resume ${verified.slug}' to resume the pipeline.`);
+  if (verified.state.status === "awaiting-archive") {
+    stderrWrite(`Run 'specrunner job archive ${verified.slug} --with-merge' to take the job in.`);
+  } else {
+    stderrWrite(`Run 'specrunner job resume ${verified.slug}' to resume the pipeline.`);
+  }
   return 0;
 }

@@ -49,6 +49,7 @@ import { runJobWait } from "./job-wait.js";
 import { runGuide, GUIDE_TOPICS } from "../core/command/guide.js";
 import { runFromIssue } from "./from-issue.js";
 import { runResumeFromIssue } from "./resume-from-issue.js";
+import { runArchiveFromIssue } from "./archive-from-issue.js";
 import { getOriginInfo } from "../git/remote.js";
 
 /** Path-traversal guard for jobId; accepts full UUIDs and short prefixes. */
@@ -476,18 +477,23 @@ Options:
 `;
 
 export const ARCHIVE_USAGE = `Usage: specrunner job archive <slug> [options]
+       specrunner job archive --from-issue <n> [options]
 
 Archive the completed change folder, remove worktree, and update job status.
 Merge must already be done before running this command (or use --with-merge).
 
 Arguments:
-  <slug>            Slug of the request to archive (required).
+  <slug>            Slug of the request to archive.
 
 Options:
+  --from-issue <n>       Issue number to archive from (finds completed marker and closing PR).
+                         Mutually exclusive with <slug>: specify exactly one.
   --with-merge           Wait for PR checks to pass, merge, then archive
   --merge-wait-ms <ms>   Override the wait timeout for --with-merge (in milliseconds).
                          For unlimited wait, set archive.mergeWaitTimeoutMs: null in config.
   --help, -h             Show this help message
+
+Note: <slug> and --from-issue are mutually exclusive. Specify exactly one.
 `;
 
 export const REOPEN_USAGE = `Usage: specrunner job reopen <slug> --from <step> --reason <text> [options]
@@ -1319,8 +1325,9 @@ export const COMMANDS: Record<string, CommandSpec> = {
           // ponytail: lenient parse — behavior preservation; strict integer typing forbidden (TC-027)
           // mergeWaitMs is lenient: invalid values (non-numeric) are silently ignored
           "merge-wait-ms": { type: "string" },
+          "from-issue": { type: "integer", min: 1 },
         },
-        args: [{ name: "slug", required: true }],
+        args: [{ name: "slug", required: false }],
         worktreeGuard: true,
         visibility: "normal",
         help: {
@@ -1328,8 +1335,23 @@ export const COMMANDS: Record<string, CommandSpec> = {
           summary: "  job archive <slug>              change folder 移動・worktree 撤去・status 更新",
           detail: ARCHIVE_USAGE,
         },
-        handler: async (parsed) => {
-          const slug = parsed.positional!;
+        handler: async (parsed, ctx) => {
+          const slug = parsed.positional as string | undefined;
+          const fromIssue = parsed.flags["from-issue"] as number | undefined;
+          const withMerge = !!parsed.flags["with-merge"];
+
+          // Strict XOR: exactly one of slug or --from-issue
+          if (fromIssue !== undefined && slug !== undefined) {
+            logError("'job archive': <slug> and --from-issue are mutually exclusive. Specify exactly one.");
+            process.exit(EXIT_CODE.ARG_ERROR);
+          }
+          if (fromIssue === undefined && slug === undefined) {
+            logError("'job archive': either <slug> or --from-issue is required.");
+            stderrWrite(ARCHIVE_USAGE);
+            process.exit(EXIT_CODE.ARG_ERROR);
+          }
+
+          // Lenient parse of --merge-wait-ms (shared by both paths)
           let mergeWaitMs: number | undefined;
           const mergeWaitMsRaw = parsed.flags["merge-wait-ms"] as string | undefined;
           if (mergeWaitMsRaw !== undefined) {
@@ -1339,15 +1361,22 @@ export const COMMANDS: Record<string, CommandSpec> = {
             }
             // Ignore invalid values (non-numeric) — lenient behavior
           }
+
           try {
-            process.exit(
-              await runArchive({
-                slug,
-                withMerge: !!parsed.flags["with-merge"],
-                cwd: process.cwd(),
-                mergeWaitMs,
-              }),
-            );
+            if (fromIssue !== undefined) {
+              process.exit(
+                await runArchiveFromIssue(fromIssue, { withMerge, mergeWaitMs, cwd: process.cwd(), }, ctx),
+              );
+            } else {
+              process.exit(
+                await runArchive({
+                  slug: slug!,
+                  withMerge,
+                  cwd: process.cwd(),
+                  mergeWaitMs,
+                }),
+              );
+            }
           } catch (err: unknown) {
             if (err instanceof SpecRunnerError) {
               stderrWrite(`Error: ${err.message}`);

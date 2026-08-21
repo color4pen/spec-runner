@@ -8,6 +8,8 @@
  *   - CheckpointVerificationPolicy: injectable policy interface
  *   - PolicyVerificationContext: minimal context passed to policy.verify()
  *   - attachResumePolicy: default policy implementing awaiting-resume checks
+ *   - attachArchivePolicy: policy for awaiting-archive attach (D1, T-01)
+ *   - attachQuiescentPolicy: composite — delegates by status (T-01)
  */
 import { getPipelineDescriptor } from "../pipeline/registry.js";
 import { getPipelineId } from "../../state/pipeline-id.js";
@@ -107,6 +109,61 @@ export const attachResumePolicy: CheckpointVerificationPolicy = {
           }
         }
       }
+    }
+  },
+};
+
+// ---------------------------------------------------------------------------
+// attachArchivePolicy — policy for awaiting-archive attach (T-01)
+// ---------------------------------------------------------------------------
+
+/**
+ * Verification policy for `job archive --from-issue` (awaiting-archive path):
+ *   (a) status === "awaiting-archive"
+ *   (b) state.pullRequest?.number is present
+ *
+ * Does NOT verify resumePoint, pipeline descriptor, or reads() — archive path
+ * does not resume the pipeline.
+ */
+export const attachArchivePolicy: CheckpointVerificationPolicy = {
+  verify({ state }: PolicyVerificationContext): void {
+    if (state.status !== "awaiting-archive") {
+      throw checkpointNotAttachableError(
+        "not-quiescent",
+        `state.status is '${state.status}', expected 'awaiting-archive'. Only awaiting-archive jobs can be attached via archive path.`,
+      );
+    }
+    if (typeof (state as { pullRequest?: { number?: unknown } }).pullRequest?.number !== "number") {
+      throw checkpointNotAttachableError(
+        "missing-pr-number",
+        `state.pullRequest.number is absent. Cannot archive without a PR number.`,
+      );
+    }
+  },
+};
+
+// ---------------------------------------------------------------------------
+// attachQuiescentPolicy — composite: delegates by status (T-01)
+// ---------------------------------------------------------------------------
+
+/**
+ * Composite policy that accepts both quiescent statuses:
+ *   - awaiting-resume → attachResumePolicy
+ *   - awaiting-archive → attachArchivePolicy
+ *   - anything else → not-quiescent error
+ */
+export const attachQuiescentPolicy: CheckpointVerificationPolicy = {
+  verify(ctx: PolicyVerificationContext): void {
+    const status = ctx.state.status;
+    if (status === "awaiting-resume") {
+      attachResumePolicy.verify(ctx);
+    } else if (status === "awaiting-archive") {
+      attachArchivePolicy.verify(ctx);
+    } else {
+      throw checkpointNotAttachableError(
+        "not-quiescent",
+        `state.status is '${status}', expected 'awaiting-resume' or 'awaiting-archive'.`,
+      );
     }
   },
 };

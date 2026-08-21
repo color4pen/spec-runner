@@ -17,7 +17,7 @@ import type { GitHubClient, CheckRollup } from "../../core/port/github-client.js
 import { githubApiError, githubTokenExpiredError } from "../../errors.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { retryWithBackoff } from "../../util/retry.js";
-import { stderrWrite } from "../../logger/stdout.js";
+import { stderrWrite, logWarn } from "../../logger/stdout.js";
 
 /** Current stable GitHub REST API version (D5). */
 const API_VERSION = "2022-11-28";
@@ -791,6 +791,80 @@ export class GitHubApiClient implements GitHubClient {
         seen.add(name);
         result.push(name);
       }
+    }
+    return result;
+  }
+
+  /**
+   * List pull requests that close the given issue via closing keyword references.
+   *
+   * Uses GraphQL `closedByPullRequestsReferences(first: 50)` — not `linkedBranches`,
+   * which becomes empty after a PR is created.
+   *
+   * - Returns `{ number, headRefName }[]` for each closing PR.
+   * - Non-2xx / GraphQL errors / null issue → throws GITHUB_API_ERROR (fail-closed).
+   */
+  async listIssueClosingPullRequests(
+    owner: string,
+    repo: string,
+    issueNumber: number,
+  ): Promise<Array<{ number: number; headRefName: string }>> {
+    const endpoint = this.graphqlEndpoint();
+    const query = `
+      query ListIssueClosingPRs($owner: String!, $repo: String!, $number: Int!) {
+        repository(owner: $owner, name: $repo) {
+          issue(number: $number) {
+            closedByPullRequestsReferences(first: 50) {
+              nodes { number headRefName }
+            }
+          }
+        }
+      }
+    `;
+    const resp = await this.request(endpoint, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, variables: { owner, repo, number: issueNumber } }),
+    });
+    if (resp.status < 200 || resp.status >= 300) {
+      throw githubApiError(resp.status, `listIssueClosingPullRequests(${owner}/${repo}#${issueNumber})`);
+    }
+    const body = (await resp.json()) as {
+      errors?: unknown[];
+      data?: {
+        repository?: {
+          issue?: {
+            closedByPullRequestsReferences?: { nodes?: Array<{ number?: number; headRefName?: string }> };
+          } | null;
+        } | null;
+      };
+    };
+    if (body.errors && body.errors.length > 0) {
+      throw githubApiError(
+        resp.status,
+        `listIssueClosingPullRequests GraphQL errors: ${JSON.stringify(body.errors)}`,
+      );
+    }
+    const issue = body.data?.repository?.issue;
+    if (issue === null || issue === undefined) {
+      throw githubApiError(
+        200,
+        `listIssueClosingPullRequests(${owner}/${repo}#${issueNumber}): issue not found`,
+      );
+    }
+    // ponytail: first:50 hard cap — closedByPullRequestsReferences has no pagination cursor.
+    // Upgrade path: implement cursor-based pagination when an issue can have > 50 closing PRs.
+    const result: Array<{ number: number; headRefName: string }> = [];
+    for (const node of issue.closedByPullRequestsReferences?.nodes ?? []) {
+      if (typeof node.number === "number" && typeof node.headRefName === "string") {
+        result.push({ number: node.number, headRefName: node.headRefName });
+      }
+    }
+    if (result.length === 50) {
+      logWarn(
+        `listIssueClosingPullRequests(${owner}/${repo}#${issueNumber}): returned 50 results — ` +
+        "response may be truncated (closedByPullRequestsReferences first:50 cap reached).",
+      );
     }
     return result;
   }

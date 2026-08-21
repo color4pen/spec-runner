@@ -82,6 +82,7 @@ vi.mock("../../adapter/github/github-client.js", () => ({
       nodeId: "NODE_TEST",
     }),
     createLinkedBranch: vi.fn().mockResolvedValue(undefined),
+    listIssueClosingPullRequests: vi.fn().mockResolvedValue([]),
   }),
 }));
 
@@ -337,6 +338,7 @@ describe("TC-009: parse 失敗時に副作用ゼロ停止", () => {
         body: "This is not a valid request.md — no Meta section",
       }),
     createLinkedBranch: vi.fn().mockResolvedValue(undefined),
+    listIssueClosingPullRequests: vi.fn().mockResolvedValue([]),
     } as unknown as ReturnType<typeof createGitHubClient>);
 
     const code = await runFromIssue(42, {}, makeCtx());
@@ -351,6 +353,7 @@ describe("TC-009: parse 失敗時に副作用ゼロ停止", () => {
         body: "no meta section",
       }),
     createLinkedBranch: vi.fn().mockResolvedValue(undefined),
+    listIssueClosingPullRequests: vi.fn().mockResolvedValue([]),
     } as unknown as ReturnType<typeof createGitHubClient>);
 
     await runFromIssue(42, {}, makeCtx());

@@ -88,6 +88,24 @@ specrunner job archive <slug> --with-merge
 - --with-merge: CI 待ち → squash merge → cleanup を一括実行。gh で merge を分割しない。
 - 完了判定は archive プロセス終了 + ログの「marked as archived」で行う (job ls ではない)。
 
+### issue 起点取り込み (remote 完走 job)
+
+remote 環境 (GitHub Actions 等) で完走した job は local state がないため slug が分からない。
+issue 番号だけで取り込める:
+
+\`\`\`bash
+specrunner job archive --from-issue <n> --with-merge
+\`\`\`
+
+**解決規則**:
+1. issue コメントを走査し、最新の completed marker から jobId を取得する
+2. local に同 jobId の state があれば rebind をスキップして直接 archive する
+3. 無ければ closing PR references を列挙し、jobId / issueNumber / branch / PR.number の
+   4 フィールドで checkpoint identity を照合して PR を確定する
+4. 確定した branch を awaiting-archive policy で rebind してから archive する
+
+\`--from-issue\` と positional \`<slug>\` は排他 (同時指定は usage エラー)。
+
 ## 5. 並列起動の stagger
 
 \`\`\`bash
@@ -141,6 +159,30 @@ specrunner job archive <slug> --with-merge
 ## 複数 PR を順次 archive する場合
 
 1 件完了 → \`git pull --ff-only\` で main 最新化 → 次の worktree で rebase → archive を繰り返す。
+
+## issue 起点取り込み (remote 完走 job)
+
+remote 環境 (GitHub Actions 等) で完走した job は local state がなく slug が不明。
+issue 番号を使って一括取り込みできる:
+
+\`\`\`bash
+specrunner job archive --from-issue <n> --with-merge
+\`\`\`
+
+**解決フロー**:
+1. issue コメントから completed marker → jobId を取得
+2. local state があれば rebind を省略して直接 archive
+3. 無ければ closing PR references で 4 フィールド照合 (jobId / issueNumber / branch / PR.number)
+4. awaiting-archive policy で rebind → archive
+
+**Development リンクが解決できない場合の手動経路**:
+
+\`closedByPullRequestsReferences\` が空、または自動照合に失敗した場合は手動で attach する:
+
+\`\`\`bash
+specrunner job attach --branch <branch>   # awaiting-archive checkpoint を rebind
+specrunner job archive <slug> --with-merge
+\`\`\`
 
 ## 失敗パターン
 
