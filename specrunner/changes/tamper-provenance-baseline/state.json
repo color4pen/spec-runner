@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1fd44058-a07a-46d1-afe3-41e2db6da0a7",
   "createdAt": "2026-08-21T02:24:48.638Z",
-  "updatedAt": "2026-08-21T04:02:56.033Z",
+  "updatedAt": "2026-08-21T05:18:45.274Z",
   "request": {
     "title": "bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える",
     "type": "spec-change",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "change/tamper-provenance-baseline-1fd44058",
   "error": null,
   "pipelineId": "standard",
@@ -158,13 +158,17 @@
       "src/core/step/test-case-gen.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-review",
-    "reason": "code-review escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "runPipeline にも authorizedCanonWriters を注入する方針で進めてください。",
+      "step": "code-review",
+      "recordedAt": "2026-08-21T05:18:44.748Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 50,
+    "historyCount": 53,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
