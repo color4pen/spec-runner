@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "656b7563-0495-41c6-bc28-388494bbdf8b",
   "createdAt": "2026-08-21T02:24:47.582Z",
-  "updatedAt": "2026-08-21T03:51:23.620Z",
+  "updatedAt": "2026-08-21T03:56:12.341Z",
   "request": {
     "title": "regression-gate の finding 再報告に由来を保持し --wontfix の逆引きを識別子照合にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/finding-provenance-carry-656b7563",
   "error": null,
@@ -79,7 +79,8 @@
     "95eb9c2d91f9887c079dd3ad02f3e3701d2e52af",
     "46c771e746639d0bdae03c145ad5dc5ff8754888",
     "29fa66a9172d6bf12f6b80784d13712acbf76092",
-    "ac55c36719c2feeb52e7b0367be23101e1dfc479"
+    "ac55c36719c2feeb52e7b0367be23101e1dfc479",
+    "a273ad8a34cfc22a5b1a3d713e5920cd51c10a01"
   ],
   "touchedFiles": {
     "request-review": [
@@ -146,9 +147,10 @@
       "src/state/schema/types.ts"
     ],
     "code-fixer": [
-      "src/core/step/__tests__/regression-gate-step.test.ts",
-      "src/core/step/regression-gate.ts",
-      "src/core/pipeline/findings-ledger.ts"
+      "src/core/step/__tests__/regression-gate-false-loop.test.ts",
+      "src/core/step/report-tool.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/state/schema/types.ts"
     ],
     "regression-gate": [
       "src/core/step/__tests__/regression-gate-false-loop.test.ts",
@@ -187,7 +189,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 72,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -198,7 +200,7 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 2,
-      "code-fixer": 1,
+      "code-fixer": 2,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
