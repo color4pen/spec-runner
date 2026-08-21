@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1fd44058-a07a-46d1-afe3-41e2db6da0a7",
   "createdAt": "2026-08-21T02:24:48.638Z",
-  "updatedAt": "2026-08-21T05:48:38.573Z",
+  "updatedAt": "2026-08-21T06:01:47.780Z",
   "request": {
     "title": "bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/tamper-provenance-baseline-1fd44058",
   "error": null,
@@ -79,7 +79,9 @@
     "cf0266edbfcd868c49172e631e65765501d46392",
     "15ff14cb0751f5a697177d3064e9854ddb0db777",
     "340fdf189849203453b74b1a0a87eb8cd826aff8",
-    "f2c8adbb1c4172e79aa63bd33e61f6fd31b74ca0"
+    "f2c8adbb1c4172e79aa63bd33e61f6fd31b74ca0",
+    "0a3b7eb03cd982df7f69df55e691b78fdd83d848",
+    "eeae38a82134270656703fe62a34d96fc588baea"
   ],
   "touchedFiles": {
     "request-review": [
@@ -159,16 +161,7 @@
       "src/core/resume/__tests__/authorized-canon-writer-steps.test.ts"
     ],
     "code-fixer": [
-      "src/core/step/bite-evidence/step.ts",
-      "src/core/step/bite-evidence/tamper.ts",
-      "src/core/step/bite-evidence/__tests__/gate.test.ts",
-      "src/core/pipeline/run.ts",
-      "src/core/step/types.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/port/step-types.ts",
-      "src/core/resume/canon-provenance.ts",
-      "src/core/port/step-context.ts",
-      "src/parser/types.ts"
+      "src/core/step/bite-evidence/__tests__/gate.test.ts"
     ]
   },
   "resumePoint": null,
@@ -180,8 +173,38 @@
       "recordedAt": "2026-08-21T05:18:44.748Z"
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "0a3b7eb03cd982df7f69df55e691b78fdd83d848",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/tamper-provenance-baseline/design.md:sha256:d18df5cd1d6fb13a836a49b86e6d1b92343695830bbc43a5dba36de617f64211|specrunner/changes/tamper-provenance-baseline/request.md:sha256:bd400ee1b920a9ba35eceb3a3dd4a3f2503a6c492ef3d685dcddcefc34334abc|specrunner/changes/tamper-provenance-baseline/spec.md:sha256:3f715fea4f7c0ec5ce606d5176f6f5d6ac04c04777eb53cef784a9dcf57bb900|specrunner/changes/tamper-provenance-baseline/tasks.md:sha256:0678cc2b238f4e8bb7b2b0d25c901a6eb66e36dae035807abe7f3f71f066c3b0|specrunner/changes/tamper-provenance-baseline/test-cases.md:sha256:8848a24c39a23541b9f69b9066005e43409cf1ba890ce9959a89ec186769935c"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 65,
+    "historyCount": 76,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -192,7 +215,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 3,
-      "code-fixer": 1
+      "code-fixer": 2,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
