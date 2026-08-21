@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1fd44058-a07a-46d1-afe3-41e2db6da0a7",
   "createdAt": "2026-08-21T02:24:48.638Z",
-  "updatedAt": "2026-08-21T06:10:34.838Z",
+  "updatedAt": "2026-08-21T06:21:58.590Z",
   "request": {
     "title": "bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "adr-gen",
   "status": "running",
   "branch": "change/tamper-provenance-baseline-1fd44058",
   "error": null,
@@ -84,7 +84,9 @@
     "eeae38a82134270656703fe62a34d96fc588baea",
     "fd2d15b01794433fadd0106dcc6cfe704bcae9e5",
     "a04dd9f2be6cc73d3706162b5f0080e25662699b",
-    "fe8c0001966a964e089a1772ee57cad81c224ea3"
+    "fe8c0001966a964e089a1772ee57cad81c224ea3",
+    "9483260c9c29498d37c91c20342a0de70793237b",
+    "ca36ed64fe7034578c6e535fbb743366abb91bab"
   ],
   "touchedFiles": {
     "request-review": [
@@ -177,6 +179,20 @@
       "src/core/resume/__tests__/authorized-canon-writer-steps.test.ts",
       "src/core/resume/canon-provenance.ts",
       "src/core/step/bite-evidence/gate.ts"
+    ],
+    "conformance": [
+      "src/core/step/bite-evidence/tamper.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/step/bite-evidence/step.ts",
+      "src/core/resume/canon-provenance.ts",
+      "src/core/port/runtime-strategy.ts",
+      "src/core/types.ts",
+      "src/core/pipeline/run.ts",
+      "src/core/runtime/local.ts",
+      "src/core/port/step-types.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/runtime/__tests__/last-commit-touching-path.test.ts",
+      "src/core/resume/__tests__/authorized-canon-writer-steps.test.ts"
     ]
   },
   "resumePoint": null,
@@ -219,7 +235,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 89,
+    "historyCount": 98,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -228,13 +244,14 @@
       "spec-fixer": 2,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2,
+      "verification": 3,
       "code-review": 3,
       "code-fixer": 3,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }
