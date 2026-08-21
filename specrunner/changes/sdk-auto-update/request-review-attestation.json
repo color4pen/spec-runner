@@ -1,0 +1,14 @@
+{
+  "requestHash": "sha256:fd384103bc40846bca2d4b290a3be1aa19131d9c5c6662158742bc63ab889391",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "package.json:40 — \"@anthropic-ai/claude-agent-sdk\": \"^0.2.128\" (optionalDependencies)",
+    ".github/dependabot.yml is absent",
+    "renovate config is absent",
+    "bun.lock exists as text (JSON) format",
+    "CODEOWNERS line 22: /.github/ @color4pen",
+    "package.json is not listed in CODEOWNERS",
+    "bun.lock is not listed in CODEOWNERS"
+  ],
+  "sourceRevision": "3b0b53b77a585683e43178cf56e46a335bc62fc6"
+}
