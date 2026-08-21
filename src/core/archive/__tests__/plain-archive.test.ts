@@ -9,7 +9,7 @@
  * TC-016: PR MERGED + !archiveRecorded → exit 1 escalation / markJobArchived NOT called / cleanup NOT called
  * TC-017: archiveRecorded + OPEN (re-run) → orchestrator called (idempotent) / no transition / exit 0
  * TC-018: plain archive never calls getCheckStatus (CI non-observation pin)
- * TC-019: CI failure does not affect state (awaiting-archive stays; state not transitioned)
+ * TC-019: CI failure does not affect state — archiveRecorded + OPEN re-run → markJobArchived / runPostMergeCleanup / getCheckStatus NOT called
  * TC-020: githubClient absent → orchestrator called / no transition / no cleanup / exit 0
  * TC-021: getPullRequest throws → orchestrator called / no transition / no cleanup / exit 0
  * TC-022: PR-less job → orchestrator called / markJobArchived called / cleanup NOT called / exit 0
@@ -162,7 +162,7 @@ function makeFs(): FinishFs {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe("plain archive — PR OPEN path (TC-011, TC-012, TC-014, TC-018, TC-019, TC-025)", () => {
+describe("plain archive — PR OPEN path (TC-011, TC-012, TC-014, TC-018, TC-025)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(JobStateStore.listWithSourceDirs).mockResolvedValue(makeActiveEntries());
@@ -591,7 +591,7 @@ describe("plain archive — stdout guidance (TC-024)", () => {
 // TC-017: archiveRecorded + OPEN (idempotent re-run)
 // ---------------------------------------------------------------------------
 
-describe("plain archive — idempotent re-run (TC-017)", () => {
+describe("plain archive — idempotent re-run (TC-017, TC-019)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     // Archive is recorded but PR is OPEN (typical re-run after push failure/resume)
@@ -622,6 +622,37 @@ describe("plain archive — idempotent re-run (TC-017)", () => {
     // No transition — PR not yet merged
     expect(vi.mocked(markJobArchived)).not.toHaveBeenCalled();
     expect(vi.mocked(runPostMergeCleanup)).not.toHaveBeenCalled();
+  });
+
+  /**
+   * TC-019: archive record push 後に CI が failure でも state は awaiting-archive のまま
+   * （再実行シナリオ: archiveRecorded=true, PR OPEN）
+   *
+   * plain archive は CI を観測しない（getCheckStatus を呼ばない）ため、CI の結果に
+   * 関わらず job state は遷移しない。PR が OPEN のまま再実行した場合も同様。
+   */
+  it("TC-019: archiveRecorded + OPEN re-run → markJobArchived / runPostMergeCleanup / getCheckStatus NOT called", async () => {
+    const githubClient = makeGithubClient({
+      getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN" }),
+    });
+
+    const result = await runPlainArchive({
+      slug: FAKE_SLUG,
+      cwd: FAKE_CWD,
+      spawn: makeSpawn(),
+      fs: makeFs(),
+      githubClient,
+      owner: "test",
+      repo: "repo",
+    });
+
+    expect(result.exitCode).toBe(0);
+    // State must NOT be transitioned to archived — awaiting-archive is maintained
+    expect(vi.mocked(markJobArchived)).not.toHaveBeenCalled();
+    // Post-merge cleanup must NOT run — merge has not occurred
+    expect(vi.mocked(runPostMergeCleanup)).not.toHaveBeenCalled();
+    // CI observation must NOT happen — plain archive is CI-agnostic
+    expect(vi.mocked(githubClient.getCheckStatus)).not.toHaveBeenCalled();
   });
 });
 

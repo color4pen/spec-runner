@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0215f3b4-099e-49e7-b86c-dfb2c462bdd8",
   "createdAt": "2026-08-21T14:07:17.359Z",
-  "updatedAt": "2026-08-21T15:16:32.952Z",
+  "updatedAt": "2026-08-21T15:25:50.175Z",
   "request": {
     "title": "plain archive の状態遷移を merge 境界に合わせる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/archive-state-after-merge-0215f3b4",
   "error": null,
@@ -71,7 +71,8 @@
     "157ac828fad520c79f222ea3015f68a6f05a5293",
     "ae35a22cf08af349d4c19bc64ac8c249a2e144d1",
     "b46117bbaf02486baf99c0434ede251277b70ec5",
-    "11abc0a618233ca31412e0e19f95d74382605f6e"
+    "11abc0a618233ca31412e0e19f95d74382605f6e",
+    "057e7ed5e05dc961b3b71883605e116b2c007503"
   ],
   "touchedFiles": {
     "request-review": [
@@ -144,10 +145,23 @@
       "tests/unit/cli/help-flag-dispatch.test.ts",
       "tests/unit/cli/archive-plain-merge-detection.test.ts",
       "tests/unit/core/archive/orchestrator.test.ts"
+    ],
+    "code-review": [
+      "src/core/archive/plain-archive.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/core/archive/job-context.ts",
+      "src/core/archive/merge-completion.ts",
+      "src/core/archive/merge-then-archive.ts",
+      "src/core/archive/__tests__/plain-archive.test.ts",
+      "src/core/archive/__tests__/orchestrator.test.ts",
+      "src/cli/archive.ts",
+      "tests/unit/cli/archive-plain-merge-detection.test.ts",
+      "src/cli/command-registry.ts",
+      "tests/unit/core/archive/orchestrator.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 35,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -156,7 +170,8 @@
       "spec-fixer": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1
     }
   }
 }
