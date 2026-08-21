@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1fd44058-a07a-46d1-afe3-41e2db6da0a7",
   "createdAt": "2026-08-21T02:24:48.638Z",
-  "updatedAt": "2026-08-21T06:21:58.590Z",
+  "updatedAt": "2026-08-21T06:26:36.887Z",
   "request": {
     "title": "bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える",
     "type": "spec-change",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "adr-gen",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "change/tamper-provenance-baseline-1fd44058",
   "error": null,
   "pipelineId": "standard",
@@ -86,7 +86,8 @@
     "a04dd9f2be6cc73d3706162b5f0080e25662699b",
     "fe8c0001966a964e089a1772ee57cad81c224ea3",
     "9483260c9c29498d37c91c20342a0de70793237b",
-    "ca36ed64fe7034578c6e535fbb743366abb91bab"
+    "ca36ed64fe7034578c6e535fbb743366abb91bab",
+    "79afe02412f21a9152f5787d20b722e2667f6ed3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -193,6 +194,11 @@
       "src/core/step/bite-evidence/__tests__/gate.test.ts",
       "src/core/runtime/__tests__/last-commit-touching-path.test.ts",
       "src/core/resume/__tests__/authorized-canon-writer-steps.test.ts"
+    ],
+    "adr-gen": [
+      "specrunner/adr/2026-06-07-protected-paths-merge-guard.md",
+      "specrunner/adr/2026-08-15-evidence-base.md",
+      "specrunner/adr/2026-08-21-tamper-provenance-baseline.md"
     ]
   },
   "resumePoint": null,
@@ -234,8 +240,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1042",
+    "number": 1042,
+    "createdAt": "2026-08-21T06:26:36.141Z"
+  },
   "_journal": {
-    "historyCount": 98,
+    "historyCount": 103,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -251,7 +262,9 @@
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 2,
-      "conformance": 1
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
