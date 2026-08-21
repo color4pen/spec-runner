@@ -11,19 +11,38 @@
  *   - TC-022: gate emits strategy-deferred when base OID is absent
  *   - TC-030: state.biteEvidence is populated after forward-strategy gate (via commitSuccess)
  *   - TC-031: strategy-deferred run does not populate state.biteEvidence
- *   - TC-032: tamper check returns inconclusive when frozen hash is absent
+ *   - TC-032: tamper check — new provenance-based API (updated from lineage-hash to provenance)
  *
  * strip-test-authority additions:
  *   - TC-007 (strip-test-authority): 再走で base に実装が混入したとき deferral になる
  *   - TC-008 (strip-test-authority): 初回一巡での base-green は従来どおり failed のまま
+ *
+ * tamper-provenance-baseline additions (TC-001..TC-006, TC-012..TC-016, TC-022..TC-028):
+ *   - TC-001: spec-fixer の正規編集は tamper 扱いにならない
+ *   - TC-002: operator 適用は tamper 扱いにならない
+ *   - TC-003(provenance): 非所有 step 帰属変更は failed
+ *   - TC-004(provenance): 証跡外未 commit 書き換えは failed
+ *   - TC-005(provenance): lineage 記録欠落でも durable commit 帰属で match
+ *   - TC-006(provenance): provenance 導出不能 runtime では tamper で halt しない
+ *   - TC-012..TC-016: checkTamperStatus pure function の各分岐
+ *   - TC-018..TC-021: parseCommitToken helper
+ *   - TC-022: gate reason が /tamper/i に一致
+ *   - TC-025: lineage 欠落でも durable commit 帰属が match
+ *   - TC-026: runtimeStrategy 不在で inconclusive
+ *   - TC-027: authorizedWriters 空で inconclusive
+ *   - TC-028: 例外時 inconclusive に倒れる
  */
 
-import { describe, it, expect, vi } from "vitest";
+import * as os from "node:os";
+import * as fsp from "node:fs/promises";
+import * as nodePath from "node:path";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { runBiteEvidenceGate } from "../gate.js";
-import { checkTamperStatus } from "../tamper.js";
+import { checkTamperStatus, parseCommitToken } from "../tamper.js";
+import { BiteEvidenceStep } from "../step.js";
 import type { JobState, StepRun } from "../../../../state/schema.js";
 import type { BiteEvidenceRecord } from "../../../../state/schema.js";
-import type { LineageRecord } from "../../../../store/event-journal.js";
+import type { CliStepDeps } from "../../../port/step-types.js";
 import { STANDARD_TRANSITIONS } from "../../../pipeline/types.js";
 
 // ---------------------------------------------------------------------------
@@ -485,51 +504,66 @@ describe("TC-008: only materialized test files are executed (not full suite)", (
 });
 
 // ---------------------------------------------------------------------------
-// TC-032: tamper check returns inconclusive when frozen hash is absent
+// TC-032: tamper check — updated to new provenance-based API
+// (tamper-provenance-baseline: TC-024 — gate.test.ts pin ケースを新契約へ更新)
 // ---------------------------------------------------------------------------
 
-describe("TC-032: tamper check inconclusive when frozen hash absent", () => {
-  it("TC-032: checkTamperStatus returns inconclusive when lineage is empty", () => {
-    // No lineage records → no test-case-gen record → inconclusive
-    const result = checkTamperStatus([], "sha256:abc123");
+describe("TC-032: tamper check — provenance-based API (TC-024)", () => {
+  const AUTHORIZED_WRITERS = new Set(["test-case-gen", "spec-fixer", "operator-apply"]);
+
+  it("TC-032 / TC-012: checkTamperStatus returns inconclusive when evidenceAvailable=false", () => {
+    // TC-012: evidenceAvailable=false → inconclusive regardless of other fields
+    const result = checkTamperStatus({
+      evidenceAvailable: false,
+      worktreeDirty: false,
+      lastCanonCommitToken: "spec-fixer",
+      authorizedWriters: AUTHORIZED_WRITERS,
+    });
     expect(result.status).toBe("inconclusive");
   });
 
-  it("TC-032: checkTamperStatus returns inconclusive when lineage has no test-case-gen step", () => {
-    // Lineage from another step, not test-case-gen
-    const lineage: LineageRecord[] = [
-      {
-        type: "lineage",
-        step: "spec-review",
-        ts: "2026-01-01T00:00:00.000Z",
-        outputs: [
-          { path: "specrunner/changes/example/spec-review-result-001.md", hash: "sha256:def456" },
-        ],
-        inputs: [],
-      },
-    ];
+  it("TC-032 / TC-013: checkTamperStatus returns mismatch when worktreeDirty=true", () => {
+    // TC-013: worktreeDirty=true (uncommitted changes) → mismatch (fail-closed)
+    const result = checkTamperStatus({
+      evidenceAvailable: true,
+      worktreeDirty: true,
+      lastCanonCommitToken: "spec-fixer",
+      authorizedWriters: AUTHORIZED_WRITERS,
+    });
+    expect(result.status).toBe("mismatch");
+  });
 
-    const result = checkTamperStatus(lineage, "sha256:abc123");
+  it("TC-032 / TC-014: checkTamperStatus returns inconclusive when lastCanonCommitToken=null", () => {
+    // TC-014: no git history (lastCanonCommitToken=null) → inconclusive (proceed)
+    const result = checkTamperStatus({
+      evidenceAvailable: true,
+      worktreeDirty: false,
+      lastCanonCommitToken: null,
+      authorizedWriters: AUTHORIZED_WRITERS,
+    });
     expect(result.status).toBe("inconclusive");
   });
 
-  it("TC-032: checkTamperStatus returns inconclusive when test-case-gen lineage lacks test-cases.md hash", () => {
-    // test-case-gen lineage exists but doesn't include test-cases.md output
-    const lineage: LineageRecord[] = [
-      {
-        type: "lineage",
-        step: "test-case-gen",
-        ts: "2026-01-01T00:00:00.000Z",
-        outputs: [
-          // Only other files, not test-cases.md
-          { path: "specrunner/changes/example/spec.md", hash: "sha256:other" },
-        ],
-        inputs: [],
-      },
-    ];
+  it("TC-032 / TC-015: checkTamperStatus returns match when token is in authorizedWriters", () => {
+    // TC-015: spec-fixer is authorized → match (proceed)
+    const result = checkTamperStatus({
+      evidenceAvailable: true,
+      worktreeDirty: false,
+      lastCanonCommitToken: "spec-fixer",
+      authorizedWriters: AUTHORIZED_WRITERS,
+    });
+    expect(result.status).toBe("match");
+  });
 
-    const result = checkTamperStatus(lineage, "sha256:abc123");
-    expect(result.status).toBe("inconclusive");
+  it("TC-032 / TC-016: checkTamperStatus returns mismatch when token is not in authorizedWriters", () => {
+    // TC-016: implementer is NOT authorized → mismatch (fail-closed)
+    const result = checkTamperStatus({
+      evidenceAvailable: true,
+      worktreeDirty: false,
+      lastCanonCommitToken: "implementer",
+      authorizedWriters: AUTHORIZED_WRITERS,
+    });
+    expect(result.status).toBe("mismatch");
   });
 
   it("TC-032: inconclusive tamper allows gate to proceed evaluating base/candidate", async () => {
@@ -568,44 +602,408 @@ describe("TC-032: tamper check inconclusive when frozen hash absent", () => {
     expect(result.verdict).toBe("passed");
     expect(result.records[0]!.verified).toBe(true);
   });
+});
 
-  it("TC-032: checkTamperStatus returns mismatch when hashes differ", () => {
-    const frozenHash = "sha256:frozen-abc123";
-    const currentHash = "sha256:different-xyz789";
+// ---------------------------------------------------------------------------
+// TC-018..TC-021: parseCommitToken helper
+// ---------------------------------------------------------------------------
 
-    const lineage: LineageRecord[] = [
-      {
-        type: "lineage",
-        step: "test-case-gen",
-        ts: "2026-01-01T00:00:00.000Z",
-        outputs: [
-          { path: "specrunner/changes/example/test-cases.md", hash: frozenHash },
-        ],
-        inputs: [],
-      },
-    ];
-
-    const result = checkTamperStatus(lineage, currentHash);
-    expect(result.status).toBe("mismatch");
+describe("parseCommitToken helper (TC-018..TC-021)", () => {
+  it("TC-018: returns 'spec-fixer' from 'spec-fixer: my-slug'", () => {
+    expect(parseCommitToken("spec-fixer: my-slug", "my-slug")).toBe("spec-fixer");
   });
 
-  it("TC-032: checkTamperStatus returns match when hashes are equal", () => {
-    const hash = "sha256:same-abc123";
+  it("TC-019: returns 'operator-apply' from 'operator-apply: my-slug'", () => {
+    expect(parseCommitToken("operator-apply: my-slug", "my-slug")).toBe("operator-apply");
+  });
 
-    const lineage: LineageRecord[] = [
-      {
-        type: "lineage",
-        step: "test-case-gen",
-        ts: "2026-01-01T00:00:00.000Z",
-        outputs: [
-          { path: "specrunner/changes/example/test-cases.md", hash },
-        ],
-        inputs: [],
+  it("TC-020: returns null for cross-slug (slug mismatch)", () => {
+    expect(parseCommitToken("spec-fixer: other-slug", "my-slug")).toBeNull();
+  });
+
+  it("TC-021: returns null for non-conforming subject without ': '", () => {
+    expect(parseCommitToken("initial commit", "my-slug")).toBeNull();
+  });
+
+  it("TC-021: returns null for subject with wrong separator", () => {
+    expect(parseCommitToken("spec-fixer my-slug", "my-slug")).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-022: gate reason が /tamper/i に一致
+// ---------------------------------------------------------------------------
+
+describe("TC-022: gate tamper mismatch reason matches /tamper/i", () => {
+  it("TC-022: mismatch verdict has tamper in reason string", async () => {
+    const state = makeState("bug-fix", {
+      synthesizedCommits: ["bootstrap-sha-tamper-reason"],
+      steps: {
+        "test-materialize": [makeStepRunWithOid("base-sha-tamper-reason")],
+        "implementer": [makeStepRunWithOid("candidate-sha-tamper-reason")],
       },
-    ];
+    });
+    const { runtime } = makeFakeRuntime({ headOid: "head-sha-tamper-reason" });
 
-    const result = checkTamperStatus(lineage, hash);
+    const result = await runBiteEvidenceGate({
+      state,
+      cwd: "/tmp/test-cwd",
+      slug: "example",
+      config: {} as never,
+      runtimeStrategy: runtime as never,
+      tamperStatus: "mismatch",
+    });
+
+    expect(result.verdict).toBe("failed");
+    expect(result.reason).toMatch(/tamper/i);
+    expect(result.reason).toMatch(/authorized/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-001: spec-fixer の正規編集は tamper 扱いにならない (BiteEvidenceStep.run)
+// ---------------------------------------------------------------------------
+
+describe("TC-001: spec-fixer 正規編集は tamper 扱いにならない", () => {
+  it("TC-001: spec-fixer 正規編集 (spec-fixer: my-slug) は match → gate が tamper で failed にならない", () => {
+    // Direct tamper calculation test using the provenance-based checkTamperStatus:
+    const authorizedWriters = new Set(["test-case-gen", "spec-fixer", "operator-apply"]);
+    const tamperResult = checkTamperStatus({
+      authorizedWriters,
+      lastCanonCommitToken: parseCommitToken("spec-fixer: my-slug", "my-slug"),
+      worktreeDirty: false,
+      evidenceAvailable: true,
+    });
+    expect(tamperResult.status).toBe("match");
+  });
+
+  it("TC-001 integration: spec-fixer 帰属 commit がある場合 gate が tamper で failed にならない", async () => {
+    // Integration: verify that with spec-fixer subject, tamper=match → gate proceeds
+    // Use gate directly with tamperStatus="match" to confirm it's not failed
+    const state = makeState("bug-fix", {
+      // No synthesizedCommits → gate will strategy-defer after tamper check passes
+      steps: {},
+    });
+
+    const result = await runBiteEvidenceGate({
+      state,
+      cwd: "/tmp/test-cwd",
+      slug: "example",
+      config: {} as never,
+      runtimeStrategy: null,
+      tamperStatus: "match", // spec-fixer 正規編集 → match
+    });
+
+    // tamper=match proceeds; no synthesizedCommits → strategy-deferred (not tamper-failed)
+    expect(result.verdict).toBe("strategy-deferred");
+    expect(result.verdict).not.toBe("failed");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-002: operator 適用は tamper 扱いにならない
+// ---------------------------------------------------------------------------
+
+describe("TC-002: operator 適用は tamper 扱いにならない", () => {
+  it("TC-002: operator-apply 帰属 commit → match → gate が tamper で failed にならない", () => {
+    const authorizedWriters = new Set(["test-case-gen", "spec-fixer", "operator-apply"]);
+    const result = checkTamperStatus({
+      authorizedWriters,
+      lastCanonCommitToken: parseCommitToken("operator-apply: example", "example"),
+      worktreeDirty: false,
+      evidenceAvailable: true,
+    });
     expect(result.status).toBe("match");
+  });
+
+  it("TC-002 integration: operator-apply tamper=match の場合 gate は tamper で failed を発火しない", async () => {
+    const state = makeState("bug-fix", { steps: {} });
+    const result = await runBiteEvidenceGate({
+      state,
+      cwd: "/tmp/test-cwd",
+      slug: "example",
+      config: {} as never,
+      runtimeStrategy: null,
+      tamperStatus: "match", // operator-apply → match
+    });
+    // No synthesizedCommits → strategy-deferred (not tamper-failed)
+    expect(result.verdict).not.toBe("failed");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-003(provenance): 非所有 step 帰属変更は failed
+// ---------------------------------------------------------------------------
+
+describe("TC-003(provenance): 非所有 step 帰属変更は failed になる", () => {
+  it("TC-003: implementer 帰属 commit → mismatch → gate failed", async () => {
+    const authorizedWriters = new Set(["test-case-gen", "spec-fixer", "operator-apply"]);
+    const token = parseCommitToken("implementer: example", "example");
+    const result = checkTamperStatus({
+      authorizedWriters,
+      lastCanonCommitToken: token,
+      worktreeDirty: false,
+      evidenceAvailable: true,
+    });
+    expect(result.status).toBe("mismatch");
+
+    // Gate integration: mismatch → failed
+    const state = makeState("bug-fix", {
+      synthesizedCommits: ["bootstrap-sha-impl-attr"],
+      steps: {},
+    });
+    const gateResult = await runBiteEvidenceGate({
+      state,
+      cwd: "/tmp/test-cwd",
+      slug: "example",
+      config: {} as never,
+      runtimeStrategy: null,
+      tamperStatus: "mismatch",
+    });
+    expect(gateResult.verdict).toBe("failed");
+    expect(gateResult.reason).toMatch(/tamper/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-004(provenance): 証跡外の未 commit 書き換えは failed
+// ---------------------------------------------------------------------------
+
+describe("TC-004(provenance): 証跡外の未 commit 書き換えは failed になる", () => {
+  it("TC-004: worktreeDirty=true → mismatch → gate failed", async () => {
+    const authorizedWriters = new Set(["test-case-gen", "spec-fixer", "operator-apply"]);
+    const result = checkTamperStatus({
+      authorizedWriters,
+      lastCanonCommitToken: "spec-fixer",
+      worktreeDirty: true, // uncommitted changes!
+      evidenceAvailable: true,
+    });
+    expect(result.status).toBe("mismatch");
+
+    const state = makeState("bug-fix", {
+      synthesizedCommits: ["bootstrap-sha-dirty"],
+      steps: {},
+    });
+    const gateResult = await runBiteEvidenceGate({
+      state,
+      cwd: "/tmp/test-cwd",
+      slug: "example",
+      config: {} as never,
+      runtimeStrategy: null,
+      tamperStatus: "mismatch",
+    });
+    expect(gateResult.verdict).toBe("failed");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-005(provenance): lineage 記録欠落でも durable commit 帰属で match
+// ---------------------------------------------------------------------------
+
+describe("TC-005(provenance): lineage 記録が欠落しても durable commit 帰属で match になる (TC-025)", () => {
+  it("TC-025: lineage record なしでも spec-fixer: my-slug commit があれば match", () => {
+    // Simulate: appendLineage failed (best-effort) so no lineage record exists.
+    // But git log shows "spec-fixer: my-slug" as the last commit.
+    const authorizedWriters = new Set(["test-case-gen", "spec-fixer", "operator-apply"]);
+    const token = parseCommitToken("spec-fixer: my-slug", "my-slug");
+
+    // token should be "spec-fixer" regardless of lineage record absence
+    expect(token).toBe("spec-fixer");
+
+    const result = checkTamperStatus({
+      authorizedWriters,
+      lastCanonCommitToken: token,
+      worktreeDirty: false,
+      evidenceAvailable: true,
+    });
+    // match — provenance is durable (commit history), not fragile (lineage record)
+    expect(result.status).toBe("match");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-006(provenance): provenance 導出不能 runtime では halt しない (TC-026)
+// ---------------------------------------------------------------------------
+
+describe("TC-006(provenance): provenance 導出不能 runtime では tamper で halt しない (TC-026)", () => {
+  it("TC-026: evidenceAvailable=false → inconclusive → gate は tamper で failed を発火しない", async () => {
+    const result = checkTamperStatus({
+      authorizedWriters: new Set(["spec-fixer"]),
+      lastCanonCommitToken: null,
+      worktreeDirty: false,
+      evidenceAvailable: false, // runtime unavailable
+    });
+    expect(result.status).toBe("inconclusive");
+
+    const state = makeState("bug-fix", { steps: {} });
+    const gateResult = await runBiteEvidenceGate({
+      state,
+      cwd: "/tmp/test-cwd",
+      slug: "example",
+      config: {} as never,
+      runtimeStrategy: null,
+      tamperStatus: "inconclusive",
+    });
+    // inconclusive → proceed (not failed)
+    expect(gateResult.verdict).not.toBe("failed");
+  });
+
+  it("TC-026 wiring: BiteEvidenceStep.run で runtimeStrategy=null のとき tamper で failed にならない", async () => {
+    // GIVEN: deps.runtimeStrategy is null → listWorktreeChanges and lastCommitTouchingPath
+    //        are unreachable → step.ts wiring forces evidenceAvailable=false → inconclusive.
+    // This exercises the null-runtimeStrategy path in step.ts (~lines 67-70, 91-94):
+    //   deps.runtimeStrategy?.listWorktreeChanges → undefined → evidenceAvailable=false
+    //   → checkTamperStatus(evidenceAvailable=false) → inconclusive
+    //   → runBiteEvidenceGate(tamperStatus="inconclusive") → no synthesizedCommits → strategy-deferred
+    const slug = "tc026-wiring-slug";
+    const tempDir = await fsp.mkdtemp(nodePath.join(os.tmpdir(), "bite-ev-tc026-"));
+    try {
+      const deps: CliStepDeps = {
+        config: {} as never,
+        slug,
+        cwd: tempDir,
+        spawn: vi.fn() as never,
+        request: {
+          type: "bug-fix",
+          title: "TC-026 Wiring Test",
+          slug,
+          baseBranch: "main",
+          content: "TC-026 wiring test request",
+          adr: false,
+        },
+        runtimeStrategy: null,  // null → wiring forces evidenceAvailable=false
+        authorizedCanonWriters: new Set(["test-case-gen", "spec-fixer", "operator-apply"]),
+      };
+
+      const state: JobState = {
+        version: 2,
+        jobId: "tc026-wiring-job",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        request: { path: `specrunner/changes/${slug}/request.md`, title: "TC-026", type: "bug-fix", slug },
+        repository: { owner: "octo", name: "repo" },
+        session: null,
+        step: "bite-evidence",
+        status: "running",
+        branch: `change/${slug}-abc12345`,
+        history: [],
+        error: null,
+        steps: {},
+      };
+
+      await BiteEvidenceStep.run(state, deps);
+
+      const resultPath = nodePath.join(tempDir, `specrunner/changes/${slug}/bite-evidence-result.md`);
+      const content = await fsp.readFile(resultPath, "utf-8");
+
+      // runtimeStrategy=null → evidenceAvailable=false → inconclusive → gate proceeds → strategy-deferred
+      expect(content).not.toMatch(/## Verdict: failed/);
+    } finally {
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-027: authorizedWriters 空で evidenceAvailable=false → inconclusive
+// ---------------------------------------------------------------------------
+
+describe("TC-027: authorizedWriters が空のとき evidenceAvailable=false で inconclusive になる", () => {
+  it("TC-027: empty authorizedWriters → evidenceAvailable=false → inconclusive", () => {
+    // When authorizedWriters is empty, step.ts sets evidenceAvailable=false
+    const result = checkTamperStatus({
+      authorizedWriters: new Set<string>(), // empty — step sets evidenceAvailable=false
+      lastCanonCommitToken: "spec-fixer",
+      worktreeDirty: false,
+      evidenceAvailable: false, // forced false because writers empty
+    });
+    expect(result.status).toBe("inconclusive");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-028: tamper 計算ブロックが例外を throw した場合 inconclusive に倒れる
+// ---------------------------------------------------------------------------
+
+describe("TC-028: 例外時 inconclusive に倒れる", () => {
+  it("TC-028: checkTamperStatus input boundary — all branches covered via existing TC-012..016", () => {
+    // This test confirms the outer try/catch in step.ts works by testing the underlying
+    // pure function directly. The actual exception catch is tested by the inconclusive path.
+    // TC-028 is covered by the evidenceAvailable=false branch.
+    const result = checkTamperStatus({
+      authorizedWriters: new Set<string>(),
+      lastCanonCommitToken: null,
+      worktreeDirty: false,
+      evidenceAvailable: false,
+    });
+    expect(result.status).toBe("inconclusive");
+  });
+
+  it("TC-028 wiring: lastCommitTouchingPath が throw したとき BiteEvidenceStep.run は tamper で failed にならない", async () => {
+    // GIVEN: runtimeStrategy.lastCommitTouchingPath throws unexpectedly.
+    // THEN:  The try/catch in step.ts (lines ~98-101) catches the exception and sets
+    //        tamperStatus="inconclusive" → runBiteEvidenceGate proceeds → strategy-deferred
+    //        (no synthesizedCommits). Result file must NOT contain "## Verdict: failed".
+    // This exercises the catch block: `tamperStatus = "inconclusive"` (step.ts:103-106 area).
+    const slug = "tc028-wiring-slug";
+    const tempDir = await fsp.mkdtemp(nodePath.join(os.tmpdir(), "bite-ev-tc028-"));
+    try {
+      const fakeRuntime = {
+        listWorktreeChanges: vi.fn(async (_cwd: string) => ({
+          kind: "success" as const,
+          paths: [],
+        })),
+        lastCommitTouchingPath: vi.fn(async (_path: string, _cwd: string): Promise<never> => {
+          throw new Error("unexpected internal error from lastCommitTouchingPath");
+        }),
+      };
+
+      const deps: CliStepDeps = {
+        config: {} as never,
+        slug,
+        cwd: tempDir,
+        spawn: vi.fn() as never,
+        request: {
+          type: "bug-fix",
+          title: "TC-028 Wiring Test",
+          slug,
+          baseBranch: "main",
+          content: "TC-028 wiring test request",
+          adr: false,
+        },
+        runtimeStrategy: fakeRuntime as never,
+        authorizedCanonWriters: new Set(["test-case-gen", "spec-fixer", "operator-apply"]),
+      };
+
+      const state: JobState = {
+        version: 2,
+        jobId: "tc028-wiring-job",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        request: { path: `specrunner/changes/${slug}/request.md`, title: "TC-028", type: "bug-fix", slug },
+        repository: { owner: "octo", name: "repo" },
+        session: null,
+        step: "bite-evidence",
+        status: "running",
+        branch: `change/${slug}-abc12345`,
+        history: [],
+        error: null,
+        steps: {},
+      };
+
+      await BiteEvidenceStep.run(state, deps);
+
+      const resultPath = nodePath.join(tempDir, `specrunner/changes/${slug}/bite-evidence-result.md`);
+      const content = await fsp.readFile(resultPath, "utf-8");
+
+      // Exception in tamper block → catch → inconclusive → gate proceeds → strategy-deferred (no EB)
+      expect(content).not.toMatch(/## Verdict: failed/);
+
+      // Verify lastCommitTouchingPath was actually called and threw (wiring exercised)
+      expect(fakeRuntime.lastCommitTouchingPath).toHaveBeenCalled();
+    } finally {
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
   });
 });
 
@@ -834,19 +1232,203 @@ describe("TC-007 (strip-test-authority): 再走で Evidence Base が base-red �
 });
 
 // ---------------------------------------------------------------------------
-// TC-008 (strip-test-authority): 初回一巡での base-green は従来どおり failed のまま  [expected-green]
+// TC-033..TC-034: BiteEvidenceStep.run wiring integration tests
 //
-// Source: specrunner/changes/strip-test-authority/spec.md
-//   > Requirement: bite-evidence は base に過去の implementer commit が混入した場合
-//     fail でなく理由付き deferral を返す
-//   > Scenario: 初回一巡での base-green は従来どおり failed のまま
+// These tests call BiteEvidenceStep.run directly (not runBiteEvidenceGate) to verify
+// the full wiring: deps.runtimeStrategy.lastCommitTouchingPath → parseCommitToken
+// → checkTamperStatus → tamperStatus → runBiteEvidenceGate verdict chain.
 //
-// First-pass shape: test-materialize@t0(=base) → implementer@t1(=candidate), t0 < t1
-//   No implementer run precedes base → no contamination → gate proceeds normally.
-//   base-green (genuine hollow) → "failed" verdict unchanged.
-//
-// Regression guard: T-05 must not alter first-pass behavior.
-// All assertions pass on the current implementation (expected-green).
+// tasks.md T-04: gate verdict が tamper で failed にならないことまで BiteEvidenceStep.run
+// レベルで固定する。
+// ---------------------------------------------------------------------------
+
+describe("TC-033: BiteEvidenceStep.run wiring — spec-fixer attribution → verdict は strategy-deferred (tamper 非発火)", () => {
+  const tempDirs: string[] = [];
+  afterEach(async () => {
+    for (const d of tempDirs) {
+      await fsp.rm(d, { recursive: true, force: true }).catch(() => {});
+    }
+    tempDirs.length = 0;
+  });
+
+  function makeMinimalState(slug: string): JobState {
+    return {
+      version: 2,
+      jobId: "wiring-test-job",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: {
+        path: `specrunner/changes/${slug}/request.md`,
+        title: "Wiring Test",
+        type: "bug-fix",
+        slug,
+      },
+      repository: { owner: "octo", name: "repo" },
+      session: null,
+      step: "bite-evidence",
+      status: "running",
+      branch: `change/${slug}-abc12345`,
+      history: [],
+      error: null,
+      steps: {},
+    };
+  }
+
+  it("TC-033: spec-fixer 帰属 commit がある場合 BiteEvidenceStep.run は tamper で failed を発火しない", async () => {
+    // This test exercises the full wiring chain in BiteEvidenceStep.run:
+    //   runtimeStrategy.listWorktreeChanges → worktreeDirty=false
+    //   runtimeStrategy.lastCommitTouchingPath → subject "spec-fixer: wiring-slug"
+    //   parseCommitToken → "spec-fixer"
+    //   checkTamperStatus → match (spec-fixer is authorized)
+    //   runBiteEvidenceGate → strategy-deferred (no synthesizedCommits)
+    // Outcome: NOT failed (tamper check passes; gate defers due to absent EB)
+    const slug = "wiring-slug";
+    const tempDir = await fsp.mkdtemp(nodePath.join(os.tmpdir(), "bite-ev-wiring-"));
+    tempDirs.push(tempDir);
+
+    const fakeRuntime = {
+      listWorktreeChanges: vi.fn(async (_cwd: string) => ({
+        kind: "success" as const,
+        paths: [],
+      })),
+      lastCommitTouchingPath: vi.fn(async (_path: string, _cwd: string) => ({
+        kind: "found" as const,
+        oid: "abc123def456",
+        subject: `spec-fixer: ${slug}`,
+      })),
+    };
+
+    const authorizedWriters = new Set(["test-case-gen", "spec-fixer", "operator-apply"]);
+
+    const deps: CliStepDeps = {
+      config: {} as never,
+      slug,
+      cwd: tempDir,
+      spawn: vi.fn() as never,
+      request: {
+        type: "bug-fix",
+        title: "Wiring Test",
+        slug,
+        baseBranch: "main",
+        content: "Wiring test request",
+        adr: false,
+      },
+      runtimeStrategy: fakeRuntime as never,
+      authorizedCanonWriters: authorizedWriters,
+    };
+
+    const state = makeMinimalState(slug);
+    await BiteEvidenceStep.run(state, deps);
+
+    // Read the written result file
+    const resultPath = nodePath.join(tempDir, `specrunner/changes/${slug}/bite-evidence-result.md`);
+    const content = await fsp.readFile(resultPath, "utf-8");
+
+    // Verdict must NOT be "failed" (tamper check passed → match → gate proceeds to EB check)
+    // No synthesizedCommits → gate defers → strategy-deferred
+    expect(content).toMatch(/## Verdict: strategy-deferred/);
+    expect(content).not.toMatch(/## Verdict: failed/);
+
+    // Verify the fake runtime was actually called (wiring chain exercised)
+    expect(fakeRuntime.listWorktreeChanges).toHaveBeenCalled();
+    expect(fakeRuntime.lastCommitTouchingPath).toHaveBeenCalled();
+  });
+});
+
+describe("TC-034: BiteEvidenceStep.run wiring — 非準拠 subject → mismatch → verdict は failed (HIGH fix)", () => {
+  const tempDirs: string[] = [];
+  afterEach(async () => {
+    for (const d of tempDirs) {
+      await fsp.rm(d, { recursive: true, force: true }).catch(() => {});
+    }
+    tempDirs.length = 0;
+  });
+
+  it("TC-034: 非準拠 commit subject (git history あり) → mismatch → BiteEvidenceStep.run が failed を返す", async () => {
+    // This test validates the HIGH finding fix:
+    //   runtimeStrategy.lastCommitTouchingPath → subject "random commit message" (non-conforming)
+    //   parseCommitToken("random commit message", slug) → null
+    //   sentinel "__non-conforming-subject__" is used (not null)
+    //   checkTamperStatus(token="__non-conforming-subject__", ...) → branch 5 → mismatch
+    //   runBiteEvidenceGate → failed (tamper detected)
+    // Before the fix, null would route to branch 3 (inconclusive → proceed).
+    // After the fix, sentinel routes to branch 5 (mismatch → fail-closed).
+    const slug = "wiring-slug-2";
+    const tempDir = await fsp.mkdtemp(nodePath.join(os.tmpdir(), "bite-ev-mismatch-"));
+    tempDirs.push(tempDir);
+
+    const fakeRuntime = {
+      listWorktreeChanges: vi.fn(async (_cwd: string) => ({
+        kind: "success" as const,
+        paths: [],
+      })),
+      lastCommitTouchingPath: vi.fn(async (_path: string, _cwd: string) => ({
+        kind: "found" as const,
+        oid: "deadbeef",
+        subject: "random commit message without conforming format",  // non-conforming subject
+      })),
+    };
+
+    const authorizedWriters = new Set(["test-case-gen", "spec-fixer", "operator-apply"]);
+
+    const deps: CliStepDeps = {
+      config: {} as never,
+      slug,
+      cwd: tempDir,
+      spawn: vi.fn() as never,
+      request: {
+        type: "bug-fix",
+        title: "Wiring Test 2",
+        slug,
+        baseBranch: "main",
+        content: "Wiring test request 2",
+        adr: false,
+      },
+      runtimeStrategy: fakeRuntime as never,
+      authorizedCanonWriters: authorizedWriters,
+    };
+
+    // State with synthesizedCommits so the gate doesn't defer before tamper check
+    const state: JobState = {
+      version: 2,
+      jobId: "wiring-test-job-2",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: {
+        path: `specrunner/changes/${slug}/request.md`,
+        title: "Wiring Test 2",
+        type: "bug-fix",
+        slug,
+      },
+      repository: { owner: "octo", name: "repo" },
+      session: null,
+      step: "bite-evidence",
+      status: "running",
+      branch: `change/${slug}-abc12345`,
+      history: [],
+      error: null,
+      steps: {},
+      synthesizedCommits: ["some-bootstrap-sha"],  // present so gate doesn't defer early
+    };
+
+    await BiteEvidenceStep.run(state, deps);
+
+    // Read the written result file
+    const resultPath = nodePath.join(tempDir, `specrunner/changes/${slug}/bite-evidence-result.md`);
+    const content = await fsp.readFile(resultPath, "utf-8");
+
+    // Verdict MUST be "failed" — non-conforming subject with git history → mismatch → fail-closed
+    // Before the HIGH fix this would be "strategy-deferred" (inconclusive → proceed)
+    expect(content).toMatch(/## Verdict: failed/);
+
+    // Verify the fake runtime was actually called (wiring chain exercised)
+    expect(fakeRuntime.listWorktreeChanges).toHaveBeenCalled();
+    expect(fakeRuntime.lastCommitTouchingPath).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-008 (strip-test-authority): 初回一巡での base-green は従来どおり failed のまま
 // ---------------------------------------------------------------------------
 
 describe("TC-008 (strip-test-authority): 初回一巡での base-green は従来どおり failed のまま", () => {

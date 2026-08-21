@@ -1,0 +1,12 @@
+{
+  "requestHash": "sha256:bd400ee1b920a9ba35eceb3a3dd4a3f2503a6c492ef3d685dcddcefc34334abc",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/step/bite-evidence/tamper.ts:37-74 — checkTamperStatus は test-case-gen lineage record のみを凍結基準として参照し、spec-fixer の lineage record は参照しない",
+    "src/core/step/bite-evidence/gate.ts:109 — mismatch 時の reason 文字列「tamper detected: test-cases.md hash does not match the frozen hash recorded at test-case-gen」（lines 104-111）",
+    "src/core/step/spec-fixer.ts:99-107 — writes() が test-cases.md を宣言（folder/test-cases.md を含む4ファイル）",
+    "src/core/step/write-scope.ts:62-72 — protectedCanonPaths に test-cases.md が含まれる",
+    "src/core/step/commit-orchestrator.ts:269-291 — appendLineage が catch ブロックで「Best-effort: lineage recording failure must not affect step completion」として握りつぶされている"
+  ],
+  "sourceRevision": "fe75d19deaa238eae4f0e25d6a467cdbcebc136c"
+}

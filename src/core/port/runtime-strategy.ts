@@ -815,6 +815,33 @@ export interface RuntimeStrategy {
     cwd: string,
     branch: string | null,
   ): Promise<RevisionContentPair>;
+
+  /**
+   * Return the commit that most recently changed the given path.
+   *
+   * Used by the bite-evidence tamper gate to determine provenance: the commit subject
+   * encodes the step/operator that made the change (e.g. "spec-fixer: <slug>").
+   *
+   * Contract:
+   * - Never throws — returns a discriminated union instead.
+   * - found:       git history has a commit for this path; oid is the commit SHA and
+   *               subject is the first line of the commit message.
+   * - none:        the path has never been committed (empty git log output).
+   * - unavailable: git command failed (non-zero exit, spawn error, etc.); reason carries
+   *               the error summary.
+   *
+   * - local:   `git log -1 --format="%H\x1f%s" -- <path>` executed in cwd.
+   *            empty stdout → none; non-zero exit / spawn error → unavailable; else → found.
+   * - managed: always returns unavailable (no local worktree; structural limitation).
+   *
+   * Optional on the port so RuntimeStrategy-typed test fakes may omit it.
+   * RealRuntimeStrategy requires it (compile-time enforcement on concrete runtimes).
+   */
+  lastCommitTouchingPath?(path: string, cwd: string): Promise<
+    | { kind: "found"; oid: string; subject: string }
+    | { kind: "none" }
+    | { kind: "unavailable"; reason: string }
+  >;
 }
 
 // ---------------------------------------------------------------------------
@@ -871,4 +898,9 @@ export type RealRuntimeStrategy = RuntimeStrategy & {
     cwd: string,
     branch: string | null,
   ): Promise<RevisionContentPair>;
+  lastCommitTouchingPath(path: string, cwd: string): Promise<
+    | { kind: "found"; oid: string; subject: string }
+    | { kind: "none" }
+    | { kind: "unavailable"; reason: string }
+  >;
 };

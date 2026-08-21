@@ -5,10 +5,12 @@
  * kind: "cli" — no agent session is created.
  *
  * Workflow:
- *   1. Resolve base/candidate OIDs from state.
- *   2. Compute tamper status from events.jsonl lineage.
- *   3. Run the gate decision logic (gate.ts).
- *   4. Write bite-evidence-result.md with verdict + JSON records.
+ *   1. Compute tamper status using provenance-based approach (tamper-provenance-baseline):
+ *      - authorizedCanonWriters injected via buildPipelineForJob (PipelineDeps)
+ *      - listWorktreeChanges → worktreeDirty flag
+ *      - lastCommitTouchingPath → commit subject → parseCommitToken → step token
+ *   2. Run the gate decision logic (gate.ts).
+ *   3. Write bite-evidence-result.md with verdict + JSON records.
  *
  * Verdict mapping:
  *   - "passed"           → bite-evidence / passed → verification
@@ -24,11 +26,27 @@ import type { CliStep, CliStepDeps, IoRef, ParsedStepResult } from "../types.js"
 import type { JobState } from "../../../state/schema.js";
 import type { StepDeps } from "../types.js";
 import type { BiteEvidenceRecord } from "../../../state/schema.js";
-import { biteEvidenceResultPath, changeFolderPath, slugEventsPath } from "../../../util/paths.js";
+import { biteEvidenceResultPath, changeFolderPath } from "../../../util/paths.js";
 import { STEP_NAMES } from "../../../kernel/step-names.js";
 import { runBiteEvidenceGate } from "./gate.js";
-import { checkTamperStatus } from "./tamper.js";
-import { fold } from "../../../store/event-journal.js";
+import { checkTamperStatus, parseCommitToken } from "./tamper.js";
+
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/**
+ * Sentinel token used when a commit exists (lastCommitTouchingPath returned "found") but
+ * its subject does not conform to the "<token>: <slug>" convention (parseCommitToken → null).
+ *
+ * Using a non-null sentinel ensures checkTamperStatus routes to branch 5 (mismatch /
+ * fail-closed) rather than branch 3 (inconclusive / fail-open). Branch 3 is reserved for
+ * the distinct "no git history" case (commitResult.kind === "none").
+ *
+ * The value is deliberately not a valid step name or operator token, so it can never
+ * accidentally match an authorized writer.
+ */
+const NON_CONFORMING_SUBJECT_SENTINEL = "__non-conforming-subject__";
 
 // ---------------------------------------------------------------------------
 // BiteEvidenceStep
@@ -42,34 +60,62 @@ export const BiteEvidenceStep: CliStep = {
     const cwd = deps.cwd ?? process.cwd();
     const slug = deps.slug;
 
-    // Compute tamper status from events.jsonl.
+    // Compute tamper status using provenance-based approach (tamper-provenance-baseline).
     let tamperStatus: "match" | "mismatch" | "inconclusive" = "inconclusive";
     try {
-      const eventsPath = path.join(cwd, slugEventsPath(slug));
-      let eventsContent: string;
-      try {
-        eventsContent = await fs.readFile(eventsPath, "utf-8");
-      } catch {
-        // events.jsonl not found → inconclusive
-        eventsContent = "";
+      const testCasesMdPath = `${changeFolderPath(slug)}/test-cases.md`;
+
+      // 1. Derive authorized writers from pre-computed injection (buildPipelineForJob / runPipeline).
+      //    When absent or empty → evidenceAvailable=false (fail-open for gate).
+      const authorizedWriters = deps.authorizedCanonWriters;
+      let evidenceAvailable = !!(authorizedWriters && authorizedWriters.size > 0);
+
+      // 2. Determine if test-cases.md has uncommitted worktree changes.
+      let worktreeDirty = false;
+      if (evidenceAvailable && deps.runtimeStrategy?.listWorktreeChanges) {
+        const wtResult = await deps.runtimeStrategy.listWorktreeChanges(cwd);
+        if (wtResult.kind === "unavailable") {
+          evidenceAvailable = false;
+        } else {
+          // Check if test-cases.md appears in the worktree changes (exact path match).
+          // Suffix-match would cause false-positives for other slugs' test-cases.md files.
+          worktreeDirty = wtResult.paths.some((p) => p === testCasesMdPath);
+        }
+      } else if (evidenceAvailable && !deps.runtimeStrategy?.listWorktreeChanges) {
+        // listWorktreeChanges not available on this fake/runtime → cannot verify
+        evidenceAvailable = false;
       }
 
-      const foldResult = fold(eventsContent);
-      const lineage = foldResult.lineage;
-
-      // Compute current hash of test-cases.md if runtimeStrategy is available.
-      let currentHash: string | null = null;
-      if (deps.runtimeStrategy) {
-        const testCasesMdPath = `${changeFolderPath(slug)}/test-cases.md`;
-        const refs = await deps.runtimeStrategy.digestArtifacts(
-          [{ path: testCasesMdPath }],
-          cwd,
-          state.branch ?? null,
-        );
-        currentHash = refs[0]?.hash ?? null;
+      // 3. Find the last commit that touched test-cases.md, and extract the step token.
+      let lastCanonCommitToken: string | null = null;
+      if (evidenceAvailable && deps.runtimeStrategy && typeof (deps.runtimeStrategy as { lastCommitTouchingPath?: unknown }).lastCommitTouchingPath === "function") {
+        const rt = deps.runtimeStrategy as { lastCommitTouchingPath: (p: string, cwd: string) => Promise<{ kind: "found"; oid: string; subject: string } | { kind: "none" } | { kind: "unavailable"; reason: string }> };
+        const commitResult = await rt.lastCommitTouchingPath(testCasesMdPath, cwd);
+        if (commitResult.kind === "unavailable") {
+          evidenceAvailable = false;
+        } else if (commitResult.kind === "none") {
+          lastCanonCommitToken = null; // no history → inconclusive
+        } else {
+          // Parse token from commit subject: "<token>: <slug>"
+          const token = parseCommitToken(commitResult.subject, slug);
+          // null means non-conforming subject or cross-slug → unauthorized write.
+          // Use a sentinel (not null) so checkTamperStatus routes to branch 5 (mismatch),
+          // not branch 3 (inconclusive). Branch 3 (null) is reserved for "no git history"
+          // (commitResult.kind === "none"), which is a distinct case where the file has
+          // never been committed at all. Non-conforming subject on a real commit must fail-closed.
+          lastCanonCommitToken = token ?? NON_CONFORMING_SUBJECT_SENTINEL;
+        }
+      } else if (evidenceAvailable) {
+        // lastCommitTouchingPath not available on runtime → cannot determine provenance
+        evidenceAvailable = false;
       }
 
-      const tamperResult = checkTamperStatus(lineage, currentHash);
+      const tamperResult = checkTamperStatus({
+        authorizedWriters: authorizedWriters ?? new Set<string>(),
+        lastCanonCommitToken,
+        worktreeDirty,
+        evidenceAvailable,
+      });
       tamperStatus = tamperResult.status;
     } catch {
       // Best-effort — inconclusive on error

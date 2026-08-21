@@ -1444,6 +1444,52 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   }
 
   /**
+   * Return the commit that most recently changed the given path.
+   *
+   * Runs `git log -1 --format="%H\x1f%s" -- <path>` in cwd.
+   * The \x1f (US) field separator is used to reliably split OID from subject without
+   * colliding with characters that may appear in commit subjects.
+   *
+   * - empty stdout   → { kind: "none" }   (path has no git history)
+   * - non-0 exit / spawn error → { kind: "unavailable", reason }
+   * - success → { kind: "found", oid, subject }
+   *
+   * Never throws — uses a discriminated union to express failure.
+   */
+  async lastCommitTouchingPath(pathArg: string, cwd: string): Promise<
+    | { kind: "found"; oid: string; subject: string }
+    | { kind: "none" }
+    | { kind: "unavailable"; reason: string }
+  > {
+    const SEP = "\x1f"; // ASCII Unit Separator — unlikely in commit subjects
+    try {
+      const result = await this.spawnFn(
+        "git",
+        ["log", "-1", `--format=%H${SEP}%s`, "--", pathArg],
+        { cwd },
+      );
+      if (result.exitCode !== 0) {
+        return { kind: "unavailable", reason: `git log exited with code ${result.exitCode}` };
+      }
+      const raw = result.stdout.trim();
+      if (!raw) {
+        return { kind: "none" }; // no commits touch this path
+      }
+      const sepIdx = raw.indexOf(SEP);
+      if (sepIdx === -1) {
+        // Unexpected format — treat as unavailable (fail-safe)
+        return { kind: "unavailable", reason: `unexpected git log output format: ${raw.slice(0, 80)}` };
+      }
+      const oid = raw.slice(0, sepIdx);
+      const subject = raw.slice(sepIdx + 1);
+      return { kind: "found", oid, subject };
+    } catch (err) {
+      const reason = err instanceof Error ? err.message : String(err);
+      return { kind: "unavailable", reason };
+    }
+  }
+
+  /**
    * Compute sha256 content hashes for a list of artifact paths (D4, artifact-observability).
    * Reads each file from disk; returns hash: null for missing/unreadable files.
    * Never throws — errors are silently swallowed per the best-effort lineage contract.

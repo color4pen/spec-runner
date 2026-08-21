@@ -106,7 +106,7 @@ export async function runBiteEvidenceGate(deps: GateDeps): Promise<GateResult> {
     return {
       verdict: "failed",
       records: [],
-      reason: "tamper detected: test-cases.md hash does not match the frozen hash recorded at test-case-gen",
+      reason: "tamper detected: current test-cases.md is not attributable to an authorized change path (owner step or operator-apply)",
     };
   }
 
