@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e7dc8301-1fea-4649-b634-47ce46b57572",
   "createdAt": "2026-08-21T10:02:27.789Z",
-  "updatedAt": "2026-08-21T10:02:30.473Z",
+  "updatedAt": "2026-08-21T10:11:27.996Z",
   "request": {
     "title": "実効モデル名を SDK の supportedModels() で実在検証する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/model-name-validation-e7dc8301",
   "error": null,
@@ -64,10 +64,42 @@
   "issueNumber": 1044,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "fb718d336a08d57ee3805daac6fc37a54a7bf24b"
+    "fb718d336a08d57ee3805daac6fc37a54a7bf24b",
+    "0f7538a4d46ab276148b4b2e9742c945f9ac340e"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/config/model-registry.ts",
+      "src/config/step-config.ts",
+      "src/config/schema/validation.ts",
+      "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/runtime/local.ts",
+      "src/core/preflight.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/doctor/runner.ts",
+      "src/core/doctor/checks/index.ts",
+      "src/core/step/types.ts",
+      "src/adapter/dispatching/agent-runner.ts",
+      "src/core/port/step-types.ts",
+      "src/core/step/custom-reviewer.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/reviewers/types.ts",
+      "src/core/reviewers/definition.ts",
+      "src/kernel/reviewer-snapshot.ts",
+      "src/core/doctor/types.ts",
+      "src/adapter/claude-code/sdk-loader.ts",
+      "src/core/runtime/provider-readiness.ts",
+      "src/core/port/provider-readiness.ts",
+      "src/adapter/claude-code/provider-readiness-probe.ts",
+      "src/core/pipeline/types.ts",
+      "src/core/pipeline/compose-reviewers.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
