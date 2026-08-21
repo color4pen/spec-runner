@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1fd44058-a07a-46d1-afe3-41e2db6da0a7",
   "createdAt": "2026-08-21T02:24:48.638Z",
-  "updatedAt": "2026-08-21T02:24:50.961Z",
+  "updatedAt": "2026-08-21T02:27:58.205Z",
   "request": {
     "title": "bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/tamper-provenance-baseline-1fd44058",
   "error": null,
@@ -64,10 +64,26 @@
   "issueNumber": 1039,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "6dd0427feee52cafddf2141098a6887c9fe5c335"
+    "6dd0427feee52cafddf2141098a6887c9fe5c335",
+    "421b575a4b546033f50a7534af085e9e11e9bdd1"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/step/bite-evidence/tamper.ts",
+      "src/core/step/bite-evidence/gate.ts",
+      "src/core/step/spec-fixer.ts",
+      "src/core/step/write-scope.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/step/bite-evidence/__tests__/gate.test.ts",
+      "src/core/resume/canon-provenance.ts",
+      "src/core/resume/apply-canon.ts",
+      "src/core/step/bite-evidence/step.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
