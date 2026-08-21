@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-21T00:27:48.515Z",
+  "updatedAt": "2026-08-21T00:34:40.351Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/archive-from-issue-96c14a7e",
   "error": null,
@@ -71,7 +71,9 @@
     "d2d03e4844b35a8562d8d9fcb70306e6dd5e7ed8",
     "265f143f0d2bb150a1aaeeb908b2981071113ef7",
     "cc08bf1ac6e8016397466a5623b946ea750b1aec",
-    "23c8c83c2880f30a2574b37b6c760ccab3ca0133"
+    "23c8c83c2880f30a2574b37b6c760ccab3ca0133",
+    "4ac9fdb2e02068186404f43bcfbb931e8e37907b",
+    "940f4dfcc58f30ae7a3a729b39025b54799213ed"
   ],
   "touchedFiles": {
     "request-review": [
@@ -130,50 +132,23 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/core/attach/checkpoint-policy.ts",
-      "src/core/attach/verify-checkpoint.ts",
-      "src/core/attach/orchestrator.ts",
-      "src/cli/attach.ts",
-      "src/core/issue-target/resume.ts",
-      "src/cli/resume-from-issue.ts",
-      "src/errors.ts",
-      "src/core/notify/issue-notifier.ts",
-      "src/kernel/github-client.ts",
       "src/adapter/github/github-client.ts",
-      "src/cli/command-registry.ts",
-      "src/cli/archive.ts",
-      "src/core/job-access/load-by-job-id.ts",
-      "src/core/issue-target/__tests__/resume.test.ts",
-      "src/cli/__tests__/resume-from-issue.test.ts",
-      "src/core/command/guide.ts",
-      "src/git/checkpoint-ref.ts",
-      "src/cli/__tests__/command-registry-resume.test.ts",
-      "src/core/issue-target/archive.ts",
-      "src/cli/archive-from-issue.ts",
-      "src/core/attach/__tests__/checkpoint-policy.test.ts",
-      "src/cli/__tests__/attach.test.ts",
-      "src/core/issue-target/__tests__/archive.test.ts",
-      "src/cli/__tests__/archive-from-issue.test.ts",
-      "tests/helpers/pipeline-mock-client.ts",
-      "src/cli/__tests__/command-registry-reopen.test.ts",
-      "src/cli/__tests__/trace-tc015.test.ts",
-      "tests/unit/architecture/core-invariants.test.ts",
-      "tests/unit/architecture/arch-allowlist.ts"
+      "src/adapter/github/__tests__/github-client-closing-prs.test.ts"
     ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 34,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "implementer": 1,
+      "implementer": 2,
       "bite-evidence": 2,
-      "verification": 1
+      "verification": 2
     }
   }
 }
