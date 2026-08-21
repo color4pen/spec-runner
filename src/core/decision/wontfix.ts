@@ -14,7 +14,6 @@
  */
 import type { JobState } from "../../state/schema.js";
 import type { DispositionDecisionRecord } from "../../state/schema.js";
-import type { Finding } from "../../kernel/report-result.js";
 import { computeFindingKey } from "./decision-ledger.js";
 import { getLatestJudgeFindings } from "../step/fixer-helpers.js";
 import { REGRESSION_GATE_STEP_NAME } from "../step/regression-gate.js";

@@ -27,7 +27,6 @@ import { JUDGE_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
 import { computeRegressionLedger, computeLedgerRef } from "../pipeline/findings-ledger.js";
 import { deriveImplReviewerChain } from "../pipeline/reviewer-chain.js";
 import { deriveRegressionGateVerdict } from "./judge-verdict.js";
-import { buildFindingsBlock } from "./fixer-helpers.js";
 import type { Finding } from "../../kernel/report-result.js";
 import { buildCanonWriteScope } from "./canon-write-scope.js";
 
