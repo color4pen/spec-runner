@@ -50,6 +50,11 @@ interface ResolveCompletedInput {
  */
 export async function resolveCompletedJobId(input: ResolveCompletedInput): Promise<string> {
   const { client, owner, repo, issueNumber } = input;
+  // ponytail: full pagination (O(⌈C/100⌉) calls) — the per-issue comments endpoint
+  // (GET /repos/{owner}/{repo}/issues/{number}/comments) ignores direction=desc; only
+  // the repository-level /issues/comments endpoint supports it. Early exit is therefore
+  // not possible. Upgrade path: switch to the repo-level endpoint with direction=desc +
+  // issue_number filter if completed issues ever accumulate > 100 comments.
   const comments = await client.listIssueComments(owner, repo, issueNumber);
 
   const candidates: Array<{ jobId: string; createdAt: string }> = [];

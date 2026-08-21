@@ -7,7 +7,7 @@
  * TC-004: awaiting-archive checkpoint で pullRequest.number 欠落時に reject される
  * TC-020: resume policy が awaiting-archive checkpoint を not-quiescent で reject する
  * TC-022: policy 未指定の runAttachVerification は attachResumePolicy で動作する
- *         (verifyCheckpoint に policy を渡さない → awaiting-archive を not-quiescent で reject)
+ *         (awaiting-archive を not-quiescent で reject することで resume policy 維持を確認)
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -16,7 +16,8 @@ import {
   attachQuiescentPolicy,
   type PolicyVerificationContext,
 } from "../checkpoint-policy.js";
-import { verifyCheckpoint } from "../verify-checkpoint.js";
+import { runAttachVerification } from "../orchestrator.js";
+import type { SpawnFn } from "../../../util/spawn.js";
 import { SpecRunnerError, ERROR_CODES } from "../../../errors.js";
 
 // ---------------------------------------------------------------------------
@@ -129,50 +130,68 @@ describe("TC-020: attachResumePolicy rejects awaiting-archive with not-quiescent
 });
 
 // ---------------------------------------------------------------------------
-// TC-022: policy 未指定の verifyCheckpoint は attachResumePolicy で動作する
+// TC-022: policy 未指定の runAttachVerification は attachResumePolicy で動作する
 // ---------------------------------------------------------------------------
 
+// Fixture constants for the mock checkpoint
+const TC022_SLUG = "tc-022-slug";
+const TC022_BRANCH = "feat/tc-022";
+const TC022_OID = "deadbeefcafe";
+const TC022_CHANGE_DIR = `specrunner/changes/${TC022_SLUG}`;
+
+const TC022_ARCHIVE_STATE_JSON = JSON.stringify({
+  version: 2,
+  jobId: "job-tc-022",
+  branch: TC022_BRANCH,
+  createdAt: "2026-01-01T00:00:00.000Z",
+  updatedAt: "2026-01-01T00:00:00.000Z",
+  request: { slug: TC022_SLUG, path: `${TC022_CHANGE_DIR}/request.md`, baseBranch: "main" },
+  repository: { owner: "owner", name: "repo" },
+  step: "code-review",
+  status: "awaiting-archive",
+  history: [],
+  steps: {},
+  pullRequest: { number: 7, url: "https://github.com/owner/repo/pull/7" },
+});
+
 /**
- * Minimal valid state.json for an awaiting-archive checkpoint.
- * All fields required by validateJobState are present.
+ * SpawnFn fixture that simulates a remote branch containing an awaiting-archive
+ * checkpoint. Handles the git calls issued by runAttachVerification and
+ * readCheckpointFromRef (fetch → rev-parse → ls-tree → cat-file → show × 2 → ls-tree -r).
  */
-function makeArchiveStateJson(slug: string, branch: string): string {
-  return JSON.stringify({
-    version: 2,
-    jobId: "job-tc-022",
-    branch,
-    createdAt: "2026-01-01T00:00:00.000Z",
-    updatedAt: "2026-01-01T00:00:00.000Z",
-    request: { slug, path: `specrunner/changes/${slug}/request.md`, baseBranch: "main" },
-    repository: { owner: "owner", name: "repo" },
-    step: "code-review",
-    status: "awaiting-archive",
-    history: [],
-    steps: {},
-    pullRequest: { number: 7, url: "https://github.com/owner/repo/pull/7" },
-  });
+function makeTC022SpawnFn(): SpawnFn {
+  return async (_cmd, args, _opts) => {
+    const ok = (stdout = ""): { exitCode: number; stdout: string; stderr: string } =>
+      ({ exitCode: 0, stdout, stderr: "" });
+
+    if (args[0] === "fetch") return ok();
+    if (args[0] === "rev-parse") return ok(`${TC022_OID}\n`);
+    if (args[0] === "cat-file") return ok();
+    if (args[0] === "show" && args[1]?.includes("state.json")) return ok(TC022_ARCHIVE_STATE_JSON);
+    if (args[0] === "show" && args[1]?.includes("events.jsonl")) return ok("");
+    // ls-tree -r: return treeFiles
+    if (args[0] === "ls-tree" && args.includes("-r")) {
+      return ok([
+        `${TC022_CHANGE_DIR}/events.jsonl`,
+        `${TC022_CHANGE_DIR}/request.md`,
+        `${TC022_CHANGE_DIR}/state.json`,
+      ].join("\n") + "\n");
+    }
+    // ls-tree (slug discovery): return the change folder path
+    if (args[0] === "ls-tree") return ok(`${TC022_CHANGE_DIR}\n`);
+    return { exitCode: 1, stdout: "", stderr: `unexpected: ${args.join(" ")}` };
+  };
 }
 
-describe("TC-022: verifyCheckpoint without policy defaults to attachResumePolicy", () => {
+describe("TC-022: runAttachVerification without policy defaults to attachResumePolicy", () => {
   it("TC-022: rejects awaiting-archive with not-quiescent when no policy is passed", async () => {
-    const slug = "tc-022-slug";
-    const branch = "feat/tc-022";
-    const stateJson = makeArchiveStateJson(slug, branch);
-    const treeFiles = [
-      `specrunner/changes/${slug}/events.jsonl`,
-      `specrunner/changes/${slug}/request.md`,
-    ];
-
     await expect(
-      verifyCheckpoint({
-        slug,
-        stateJson,
-        eventsJsonl: "",
-        treeFiles,
-        branch,
+      runAttachVerification({
+        cwd: "/tmp",
+        branch: TC022_BRANCH,
+        spawnFn: makeTC022SpawnFn(),
         expectedRepo: { owner: "owner", name: "repo" },
-        checkpointOid: "deadbeef",
-        // policy omitted → defaults to attachResumePolicy
+        // policy omitted → verifyCheckpoint defaults to attachResumePolicy
       }),
     ).rejects.toMatchObject({ code: ERROR_CODES.CHECKPOINT_NOT_ATTACHABLE });
   });

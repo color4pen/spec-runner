@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-21T01:26:58.653Z",
+  "updatedAt": "2026-08-21T01:28:21.627Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/archive-from-issue-96c14a7e",
-  "error": {
-    "code": "STEP_TIMEOUT",
-    "message": "Step 'code-fixer' inactivity timeout: no agent event for 1003896ms",
-    "hint": "no tool observed before timeout (no tool activity in session)"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -82,7 +78,8 @@
     "54b29642d44e8a0ade1b4fe9b6c8e528f5d8cf92",
     "c76571c65bfc2d8807e06cdfc3a539feaa0352f5",
     "6e5c8a179442e3f7bab207222fc38035e055eca2",
-    "8e87632492922e53c0c50f07ae0940062f998982"
+    "8e87632492922e53c0c50f07ae0940062f998982",
+    "09e3db732cf73d70e2f384af6cd27d0058f9ec13"
   ],
   "touchedFiles": {
     "request-review": [
@@ -186,11 +183,7 @@
       "src/cli/archive-from-issue.ts"
     ]
   },
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "timeout",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "reviewerStatuses": [
     {
@@ -228,10 +221,15 @@
       "text": "regression-gate findings のうち以下 3 件を適用する。(1) TC-022: src/core/attach/__tests__/checkpoint-policy.test.ts の「policy 未指定」テストを runAttachVerification 経由の統合テストにする — spawnFn を fixture で mock（fetch / rev-parse / ls-tree / show が awaiting-resume checkpoint を返す）し、policy 引数を渡さずに呼び、attachResumePolicy が適用されること（awaiting-resume 受理）を固定する。verifyCheckpoint 直呼びのままにしない。(2) src/core/issue-target/archive.ts の resolveCompletedJobId の listIssueComments 呼び出しに、src/core/issue-target/resume.ts の resolveEscalationJobId（:54-58）と同型の ponytail: full pagination コメント（O(⌈C/100⌉)、per-issue comments endpoint は direction=desc 非対応、repo-level endpoint への upgrade path）を付ける。(3) src/adapter/github/github-client.ts の listIssueClosingPullRequests で結果件数が 50 に達した場合に logWarn で切り捨ての可能性を警告し、ponytail: コメントで first:50 の ceiling と pagination への upgrade path を記録する。test-cases.md（TC-030 文言）には触れない",
       "step": "code-fixer",
       "recordedAt": "2026-08-21T01:07:20.106Z"
+    },
+    {
+      "text": "regression-gate findings のうち以下 3 件を適用する。(1) TC-022: src/core/attach/__tests__/checkpoint-policy.test.ts の「policy 未指定」テストを runAttachVerification 経由の統合テストにする — spawnFn を fixture で mock（fetch / rev-parse / ls-tree / show が awaiting-resume checkpoint を返す）し、policy 引数を渡さずに呼び、attachResumePolicy が適用されること（awaiting-resume 受理）を固定する。verifyCheckpoint 直呼びのままにしない。(2) src/core/issue-target/archive.ts の resolveCompletedJobId の listIssueComments 呼び出しに、src/core/issue-target/resume.ts の resolveEscalationJobId（:54-58）と同型の ponytail: full pagination コメント（O(⌈C/100⌉)、per-issue comments endpoint は direction=desc 非対応、repo-level endpoint への upgrade path）を付ける。(3) src/adapter/github/github-client.ts の listIssueClosingPullRequests で結果件数が 50 に達した場合に logWarn で切り捨ての可能性を警告し、ponytail: コメントで first:50 の ceiling と pagination への upgrade path を記録する。test-cases.md（TC-030 文言）には触れない",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-21T01:28:21.414Z"
     }
   ],
   "_journal": {
-    "historyCount": 65,
+    "historyCount": 67,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

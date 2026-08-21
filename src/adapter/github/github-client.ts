@@ -17,7 +17,7 @@ import type { GitHubClient, CheckRollup } from "../../core/port/github-client.js
 import { githubApiError, githubTokenExpiredError } from "../../errors.js";
 import { SpecRunnerError, ERROR_CODES } from "../../errors.js";
 import { retryWithBackoff } from "../../util/retry.js";
-import { stderrWrite } from "../../logger/stdout.js";
+import { stderrWrite, logWarn } from "../../logger/stdout.js";
 
 /** Current stable GitHub REST API version (D5). */
 const API_VERSION = "2022-11-28";
@@ -852,11 +852,19 @@ export class GitHubApiClient implements GitHubClient {
         `listIssueClosingPullRequests(${owner}/${repo}#${issueNumber}): issue not found`,
       );
     }
+    // ponytail: first:50 hard cap — closedByPullRequestsReferences has no pagination cursor.
+    // Upgrade path: implement cursor-based pagination when an issue can have > 50 closing PRs.
     const result: Array<{ number: number; headRefName: string }> = [];
     for (const node of issue.closedByPullRequestsReferences?.nodes ?? []) {
       if (typeof node.number === "number" && typeof node.headRefName === "string") {
         result.push({ number: node.number, headRefName: node.headRefName });
       }
+    }
+    if (result.length === 50) {
+      logWarn(
+        `listIssueClosingPullRequests(${owner}/${repo}#${issueNumber}): returned 50 results — ` +
+        "response may be truncated (closedByPullRequestsReferences first:50 cap reached).",
+      );
     }
     return result;
   }
