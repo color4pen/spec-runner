@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "0215f3b4-099e-49e7-b86c-dfb2c462bdd8",
   "createdAt": "2026-08-21T14:07:17.359Z",
-  "updatedAt": "2026-08-21T15:25:50.175Z",
+  "updatedAt": "2026-08-21T15:28:48.167Z",
   "request": {
     "title": "plain archive の状態遷移を merge 境界に合わせる",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "change/archive-state-after-merge-0215f3b4",
   "error": null,
@@ -72,7 +72,8 @@
     "ae35a22cf08af349d4c19bc64ac8c249a2e144d1",
     "b46117bbaf02486baf99c0434ede251277b70ec5",
     "11abc0a618233ca31412e0e19f95d74382605f6e",
-    "057e7ed5e05dc961b3b71883605e116b2c007503"
+    "057e7ed5e05dc961b3b71883605e116b2c007503",
+    "b71593bcccfb60c69df076491d0ada7f94663a8e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -158,10 +159,42 @@
       "tests/unit/cli/archive-plain-merge-detection.test.ts",
       "src/cli/command-registry.ts",
       "tests/unit/core/archive/orchestrator.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/archive/__tests__/plain-archive.test.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 35,
+    "historyCount": 46,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -171,7 +204,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
