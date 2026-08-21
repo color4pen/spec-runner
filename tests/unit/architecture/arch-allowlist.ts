@@ -205,6 +205,17 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "calls stripSecrets(env) internally before passing env to the Claude Agent SDK. " +
       "process.env is not forwarded raw to any subprocess.",
   },
+  {
+    file: "src/core/command/resume.ts",
+    pattern: "env: process.env,",
+    invariant: "B-6",
+    tracking: "B6-resume-model-preflight-port-call",
+    comment:
+      "assertEffectiveModelsExist is a domain-layer port-method call, not a direct subprocess or SDK spawn. " +
+      "The adapter implementation (LocalRuntime.listSupportedModels → createClaudeSupportedModelsProbe) " +
+      "calls stripSecrets(env) internally before passing env to the Claude Agent SDK. " +
+      "process.env is not forwarded raw to any subprocess.",
+  },
 
   // ── B-12: direct `node:child_process` import banned outside seam modules ─────
   //

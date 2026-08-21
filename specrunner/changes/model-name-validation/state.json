@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e7dc8301-1fea-4649-b634-47ce46b57572",
   "createdAt": "2026-08-21T10:02:27.789Z",
-  "updatedAt": "2026-08-21T11:59:39.779Z",
+  "updatedAt": "2026-08-21T12:04:51.575Z",
   "request": {
     "title": "実効モデル名を SDK の supportedModels() で実在検証する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/model-name-validation-e7dc8301",
   "error": null,
@@ -79,7 +79,8 @@
     "d893b0dc75f5e9518550f98bb67914218533674f",
     "9a4f97f7157897384027206ccb90a5a207b8fa97",
     "8d566da79be17fdccfa691d9df0789a9f78977ec",
-    "a92aaf272bca615347eaf725624410de946d7d74"
+    "a92aaf272bca615347eaf725624410de946d7d74",
+    "4dc224b0ba05f7bfd2ce12151ba840da278a9782"
   ],
   "touchedFiles": {
     "request-review": [
@@ -193,6 +194,17 @@
     "code-fixer": [
       "tests/adapter/claude-code/supported-models-probe.test.ts",
       "src/adapter/claude-code/supported-models-probe.ts"
+    ],
+    "regression-gate": [
+      "src/adapter/claude-code/sdk-loader.ts",
+      "src/core/model-validation/collect-effective-models.ts",
+      "tests/adapter/claude-code/supported-models-probe.test.ts",
+      "src/core/doctor/types.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/doctor/checks/config/model-existence.ts",
+      "src/core/doctor/runner.ts",
+      "src/core/command/resume.ts",
+      "src/config/step-config.ts"
     ]
   },
   "reviewerStatuses": [
@@ -235,7 +247,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 68,
+    "historyCount": 72,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -249,7 +261,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 2
+      "custom-reviewers": 2,
+      "regression-gate": 1
     }
   }
 }

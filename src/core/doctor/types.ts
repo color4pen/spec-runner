@@ -7,6 +7,7 @@
 
 import type * as nodeFsSync from "node:fs";
 import type { SupportedModelsProbe } from "../port/model-listing.js";
+import type { SpecRunnerConfig } from "../../config/schema.js";
 
 // Re-export for use in doctor checks without requiring them to import from port.
 export type { SupportedModelsProbe };
@@ -154,6 +155,13 @@ export interface DoctorContext {
    * Used by config-file-exists check so that the check honours XDG_CONFIG_HOME.
    */
   configPath: string;
+  /**
+   * Raw SpecRunnerConfig loaded at dispatch time.
+   * Injected by the doctor CLI so that checks can walk the full config resolution
+   * chain (e.g. model-existence check respects step-level model overrides).
+   * Absent (undefined) when config failed to load — checks fall back to MINIMAL_CONFIG.
+   */
+  rawConfig?: SpecRunnerConfig;
   /**
    * Injectable supported-models probe for the model-existence doctor check.
    *

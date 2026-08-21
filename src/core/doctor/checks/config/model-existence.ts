@@ -13,13 +13,13 @@
  * required: false (model staleness is not a hard doctor requirement — users may be offline).
  */
 import type { DoctorCheck, DoctorContext } from "../../types.js";
-import { BUILTIN_MODEL_REGISTRY } from "../../../../config/model-registry.js";
+import { mergeModelRegistry } from "../../../../config/model-registry.js";
 import { STANDARD_DESCRIPTOR } from "../../../pipeline/registry.js";
 import { collectEffectiveModels } from "../../../model-validation/collect-effective-models.js";
 import { checkModelExistence } from "../../../model-validation/check-model-existence.js";
 import type { SpecRunnerConfig } from "../../../../config/schema.js";
 
-/** Minimal SpecRunnerConfig for descriptor walking (no step overrides needed). */
+/** Fallback SpecRunnerConfig when ctx.rawConfig is absent (config failed to load). */
 const MINIMAL_CONFIG: SpecRunnerConfig = { version: 1, agents: {} };
 
 export const modelExistenceCheck: DoctorCheck = {
@@ -39,12 +39,14 @@ export const modelExistenceCheck: DoctorCheck = {
       };
     }
 
-    // Use BUILTIN_MODEL_REGISTRY as the merged registry (doctor context has no SpecRunnerConfig).
-    const merged = BUILTIN_MODEL_REGISTRY;
+    // Use the loaded config (or MINIMAL_CONFIG fallback) to honour step-level model overrides.
+    // Use mergeModelRegistry so that user-defined model entries are included alongside built-ins.
+    const rawConfig = ctx.rawConfig ?? MINIMAL_CONFIG;
+    const merged = mergeModelRegistry(rawConfig);
 
     // Collect effective models from the base standard descriptor (no custom reviewers — doctor
     // cannot know which reviewers the current job would inject).
-    const refs = collectEffectiveModels(STANDARD_DESCRIPTOR, MINIMAL_CONFIG, undefined, merged);
+    const refs = collectEffectiveModels(STANDARD_DESCRIPTOR, rawConfig, undefined, merged);
 
     // Run the probe.
     const result = await probe(ctx.env);

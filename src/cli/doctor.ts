@@ -220,6 +220,7 @@ export async function runDoctor(opts: {
     resolvedClaudeCodeOAuthToken,
     claudeCodeOAuthTokenSource,
     configPath: getConfigPath(),
+    rawConfig: rawConfig ?? undefined,
     supportedModelsProbe,
   };
   const checks = [

@@ -16,7 +16,7 @@
 import type { PipelineDescriptor } from "../pipeline/types.js";
 import type { SpecRunnerConfig } from "../../config/schema.js";
 import type { ModelsConfig } from "../../config/model-registry.js";
-import { getStepExecutionConfig, traceStepExecutionConfig } from "../../config/step-config.js";
+import { traceStepExecutionConfig } from "../../config/step-config.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -78,11 +78,10 @@ export function collectEffectiveModels(
     // Step defaults use the agent definition's model as the hardcoded fallback (level 5).
     const stepDefaults = { model: step.agent.model };
 
-    // Resolve the effective model via the 6-level config chain.
-    const model = getStepExecutionConfig(config, stepName, stepDefaults, requestType).model;
-
-    // Trace to find the config key path (dotted path, or null for step-def fallback).
+    // Trace the model through the 6-level config chain: single call yields both
+    // the resolved model value and the config key path (dotted path).
     const traced = traceStepExecutionConfig(config, stepName, stepDefaults, requestType);
+    const model = traced.fields.model.value;
     // source.path is the dotted key (e.g. "steps.design.model") — null for stepdef/sdk layers.
     const configPath: string | null = traced.fields.model.source.path ?? null;
 

@@ -10,7 +10,7 @@ import { resolveRepoRoot } from "../../util/repo-root.js";
 import { JobStateStore } from "../../store/job-state-store.js";
 import { loadStateByJobId } from "../job-access/load-by-job-id.js";
 import { resolveStateStoreByJobId } from "../job-access/resolve-state-store.js";
-import { logInfo, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
+import { logInfo, logWarn, setLogLevel, logError, stderrWrite, type LogLevel } from "../../logger/stdout.js";
 import { SpecRunnerError, ERROR_CODES, worktreeGuardError } from "../../errors.js";
 import type { JobState, StepName } from "../../state/schema.js";
 import { appendSynthesizedCommit, appendOperatorAdjudication } from "../../state/schema.js";
@@ -37,6 +37,11 @@ import { resolveWontfixDispositions } from "../decision/wontfix.js";
 import { reconcileWorktreeArtifacts, quarantinePartialCanon } from "../resume/reconcile-worktree.js";
 import { defaultSpawnFn, runSubprocess } from "../../util/git-exec.js";
 import type { StepDeps } from "../step/types.js";
+import { assertEffectiveModelsExist } from "../model-validation/preflight.js";
+import { getPipelineDescriptor } from "../pipeline/registry.js";
+import { composeReviewerDescriptor } from "../pipeline/compose-reviewers.js";
+import { mergeModelRegistry } from "../../config/model-registry.js";
+import { STANDARD_PIPELINE_ID } from "../../kernel/pipeline-ids.js";
 
 export interface ResumeOptions {
   from?: string;
@@ -360,6 +365,32 @@ export class ResumeCommand extends CommandRunner {
         logError((err as Error).message);
       }
       throw new PrepareError(1, "Failed to load config");
+    }
+
+    // Validate effective model existence (local runtime only) — mirrors the run path guard.
+    // Placed after config load and before worktree operations for fail-fast behaviour.
+    // The composed descriptor includes state-snapshotted custom reviewers (if any).
+    try {
+      const pipelineId = updatedState.pipelineId ?? STANDARD_PIPELINE_ID;
+      const baseDescriptor = getPipelineDescriptor(pipelineId);
+      const composedDescriptor = composeReviewerDescriptor(baseDescriptor, updatedState.reviewers ?? []);
+      await assertEffectiveModelsExist({
+        runtime: this.runtime,
+        descriptor: composedDescriptor,
+        config,
+        requestType: request.type,
+        env: process.env,
+        merged: mergeModelRegistry(config),
+        logWarn,
+      });
+    } catch (err) {
+      if (err instanceof SpecRunnerError) {
+        logError(err.message);
+        if (err.hint) stderrWrite(`Hint: ${err.hint}`);
+      } else {
+        logError((err as Error).message);
+      }
+      throw new PrepareError(1, "Model validation failed");
     }
 
     // Resolve existing worktree path: prefer state field, fall back to liveness sidecar (T-09).
