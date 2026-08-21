@@ -60,8 +60,9 @@ export const BiteEvidenceStep: CliStep = {
         if (wtResult.kind === "unavailable") {
           evidenceAvailable = false;
         } else {
-          // Check if test-cases.md appears in the worktree changes (by path suffix)
-          worktreeDirty = wtResult.paths.some((p) => p.endsWith("test-cases.md"));
+          // Check if test-cases.md appears in the worktree changes (exact path match).
+          // Suffix-match would cause false-positives for other slugs' test-cases.md files.
+          worktreeDirty = wtResult.paths.some((p) => p === testCasesMdPath);
         }
       } else if (evidenceAvailable && !deps.runtimeStrategy?.listWorktreeChanges) {
         // listWorktreeChanges not available on this fake/runtime → cannot verify
@@ -79,9 +80,13 @@ export const BiteEvidenceStep: CliStep = {
           lastCanonCommitToken = null; // no history → inconclusive
         } else {
           // Parse token from commit subject: "<token>: <slug>"
-          lastCanonCommitToken = parseCommitToken(commitResult.subject, slug);
-          // Note: null here means non-conforming subject → treated as unauthorized → mismatch
-          // (evidenceAvailable stays true so the mismatch branch fires)
+          const token = parseCommitToken(commitResult.subject, slug);
+          // null means non-conforming subject or cross-slug → unauthorized write.
+          // Use a sentinel (not null) so checkTamperStatus routes to branch 5 (mismatch),
+          // not branch 3 (inconclusive). Branch 3 (null) is reserved for "no git history"
+          // (commitResult.kind === "none"), which is a distinct case where the file has
+          // never been committed at all. Non-conforming subject on a real commit must fail-closed.
+          lastCanonCommitToken = token ?? "__non-conforming-subject__";
         }
       } else if (evidenceAvailable) {
         // lastCommitTouchingPath not available on runtime → cannot determine provenance

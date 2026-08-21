@@ -33,11 +33,16 @@
  *   - TC-028: 例外時 inconclusive に倒れる
  */
 
-import { describe, it, expect, vi } from "vitest";
+import * as os from "node:os";
+import * as fsp from "node:fs/promises";
+import * as nodePath from "node:path";
+import { describe, it, expect, vi, afterEach } from "vitest";
 import { runBiteEvidenceGate } from "../gate.js";
 import { checkTamperStatus, parseCommitToken } from "../tamper.js";
+import { BiteEvidenceStep } from "../step.js";
 import type { JobState, StepRun } from "../../../../state/schema.js";
 import type { BiteEvidenceRecord } from "../../../../state/schema.js";
+import type { CliStepDeps } from "../../../port/step-types.js";
 import { STANDARD_TRANSITIONS } from "../../../pipeline/types.js";
 
 // ---------------------------------------------------------------------------
@@ -1105,19 +1110,203 @@ describe("TC-007 (strip-test-authority): 再走で Evidence Base が base-red �
 });
 
 // ---------------------------------------------------------------------------
-// TC-008 (strip-test-authority): 初回一巡での base-green は従来どおり failed のまま  [expected-green]
+// TC-033..TC-034: BiteEvidenceStep.run wiring integration tests
 //
-// Source: specrunner/changes/strip-test-authority/spec.md
-//   > Requirement: bite-evidence は base に過去の implementer commit が混入した場合
-//     fail でなく理由付き deferral を返す
-//   > Scenario: 初回一巡での base-green は従来どおり failed のまま
+// These tests call BiteEvidenceStep.run directly (not runBiteEvidenceGate) to verify
+// the full wiring: deps.runtimeStrategy.lastCommitTouchingPath → parseCommitToken
+// → checkTamperStatus → tamperStatus → runBiteEvidenceGate verdict chain.
 //
-// First-pass shape: test-materialize@t0(=base) → implementer@t1(=candidate), t0 < t1
-//   No implementer run precedes base → no contamination → gate proceeds normally.
-//   base-green (genuine hollow) → "failed" verdict unchanged.
-//
-// Regression guard: T-05 must not alter first-pass behavior.
-// All assertions pass on the current implementation (expected-green).
+// tasks.md T-04: gate verdict が tamper で failed にならないことまで BiteEvidenceStep.run
+// レベルで固定する。
+// ---------------------------------------------------------------------------
+
+describe("TC-033: BiteEvidenceStep.run wiring — spec-fixer attribution → verdict は strategy-deferred (tamper 非発火)", () => {
+  const tempDirs: string[] = [];
+  afterEach(async () => {
+    for (const d of tempDirs) {
+      await fsp.rm(d, { recursive: true, force: true }).catch(() => {});
+    }
+    tempDirs.length = 0;
+  });
+
+  function makeMinimalState(slug: string): JobState {
+    return {
+      version: 2,
+      jobId: "wiring-test-job",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: {
+        path: `specrunner/changes/${slug}/request.md`,
+        title: "Wiring Test",
+        type: "bug-fix",
+        slug,
+      },
+      repository: { owner: "octo", name: "repo" },
+      session: null,
+      step: "bite-evidence",
+      status: "running",
+      branch: `change/${slug}-abc12345`,
+      history: [],
+      error: null,
+      steps: {},
+    };
+  }
+
+  it("TC-033: spec-fixer 帰属 commit がある場合 BiteEvidenceStep.run は tamper で failed を発火しない", async () => {
+    // This test exercises the full wiring chain in BiteEvidenceStep.run:
+    //   runtimeStrategy.listWorktreeChanges → worktreeDirty=false
+    //   runtimeStrategy.lastCommitTouchingPath → subject "spec-fixer: wiring-slug"
+    //   parseCommitToken → "spec-fixer"
+    //   checkTamperStatus → match (spec-fixer is authorized)
+    //   runBiteEvidenceGate → strategy-deferred (no synthesizedCommits)
+    // Outcome: NOT failed (tamper check passes; gate defers due to absent EB)
+    const slug = "wiring-slug";
+    const tempDir = await fsp.mkdtemp(nodePath.join(os.tmpdir(), "bite-ev-wiring-"));
+    tempDirs.push(tempDir);
+
+    const fakeRuntime = {
+      listWorktreeChanges: vi.fn(async (_cwd: string) => ({
+        kind: "success" as const,
+        paths: [],
+      })),
+      lastCommitTouchingPath: vi.fn(async (_path: string, _cwd: string) => ({
+        kind: "found" as const,
+        oid: "abc123def456",
+        subject: `spec-fixer: ${slug}`,
+      })),
+    };
+
+    const authorizedWriters = new Set(["test-case-gen", "spec-fixer", "operator-apply"]);
+
+    const deps: CliStepDeps = {
+      config: {} as never,
+      slug,
+      cwd: tempDir,
+      spawn: vi.fn() as never,
+      request: {
+        type: "bug-fix",
+        title: "Wiring Test",
+        slug,
+        baseBranch: "main",
+        content: "Wiring test request",
+        adr: false,
+      },
+      runtimeStrategy: fakeRuntime as never,
+      authorizedCanonWriters: authorizedWriters,
+    };
+
+    const state = makeMinimalState(slug);
+    await BiteEvidenceStep.run(state, deps);
+
+    // Read the written result file
+    const resultPath = nodePath.join(tempDir, `specrunner/changes/${slug}/bite-evidence-result.md`);
+    const content = await fsp.readFile(resultPath, "utf-8");
+
+    // Verdict must NOT be "failed" (tamper check passed → match → gate proceeds to EB check)
+    // No synthesizedCommits → gate defers → strategy-deferred
+    expect(content).toMatch(/## Verdict: strategy-deferred/);
+    expect(content).not.toMatch(/## Verdict: failed/);
+
+    // Verify the fake runtime was actually called (wiring chain exercised)
+    expect(fakeRuntime.listWorktreeChanges).toHaveBeenCalled();
+    expect(fakeRuntime.lastCommitTouchingPath).toHaveBeenCalled();
+  });
+});
+
+describe("TC-034: BiteEvidenceStep.run wiring — 非準拠 subject → mismatch → verdict は failed (HIGH fix)", () => {
+  const tempDirs: string[] = [];
+  afterEach(async () => {
+    for (const d of tempDirs) {
+      await fsp.rm(d, { recursive: true, force: true }).catch(() => {});
+    }
+    tempDirs.length = 0;
+  });
+
+  it("TC-034: 非準拠 commit subject (git history あり) → mismatch → BiteEvidenceStep.run が failed を返す", async () => {
+    // This test validates the HIGH finding fix:
+    //   runtimeStrategy.lastCommitTouchingPath → subject "random commit message" (non-conforming)
+    //   parseCommitToken("random commit message", slug) → null
+    //   sentinel "__non-conforming-subject__" is used (not null)
+    //   checkTamperStatus(token="__non-conforming-subject__", ...) → branch 5 → mismatch
+    //   runBiteEvidenceGate → failed (tamper detected)
+    // Before the fix, null would route to branch 3 (inconclusive → proceed).
+    // After the fix, sentinel routes to branch 5 (mismatch → fail-closed).
+    const slug = "wiring-slug-2";
+    const tempDir = await fsp.mkdtemp(nodePath.join(os.tmpdir(), "bite-ev-mismatch-"));
+    tempDirs.push(tempDir);
+
+    const fakeRuntime = {
+      listWorktreeChanges: vi.fn(async (_cwd: string) => ({
+        kind: "success" as const,
+        paths: [],
+      })),
+      lastCommitTouchingPath: vi.fn(async (_path: string, _cwd: string) => ({
+        kind: "found" as const,
+        oid: "deadbeef",
+        subject: "random commit message without conforming format",  // non-conforming subject
+      })),
+    };
+
+    const authorizedWriters = new Set(["test-case-gen", "spec-fixer", "operator-apply"]);
+
+    const deps: CliStepDeps = {
+      config: {} as never,
+      slug,
+      cwd: tempDir,
+      spawn: vi.fn() as never,
+      request: {
+        type: "bug-fix",
+        title: "Wiring Test 2",
+        slug,
+        baseBranch: "main",
+        content: "Wiring test request 2",
+        adr: false,
+      },
+      runtimeStrategy: fakeRuntime as never,
+      authorizedCanonWriters: authorizedWriters,
+    };
+
+    // State with synthesizedCommits so the gate doesn't defer before tamper check
+    const state: JobState = {
+      version: 2,
+      jobId: "wiring-test-job-2",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      request: {
+        path: `specrunner/changes/${slug}/request.md`,
+        title: "Wiring Test 2",
+        type: "bug-fix",
+        slug,
+      },
+      repository: { owner: "octo", name: "repo" },
+      session: null,
+      step: "bite-evidence",
+      status: "running",
+      branch: `change/${slug}-abc12345`,
+      history: [],
+      error: null,
+      steps: {},
+      synthesizedCommits: ["some-bootstrap-sha"],  // present so gate doesn't defer early
+    };
+
+    await BiteEvidenceStep.run(state, deps);
+
+    // Read the written result file
+    const resultPath = nodePath.join(tempDir, `specrunner/changes/${slug}/bite-evidence-result.md`);
+    const content = await fsp.readFile(resultPath, "utf-8");
+
+    // Verdict MUST be "failed" — non-conforming subject with git history → mismatch → fail-closed
+    // Before the HIGH fix this would be "strategy-deferred" (inconclusive → proceed)
+    expect(content).toMatch(/## Verdict: failed/);
+
+    // Verify the fake runtime was actually called (wiring chain exercised)
+    expect(fakeRuntime.listWorktreeChanges).toHaveBeenCalled();
+    expect(fakeRuntime.lastCommitTouchingPath).toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-008 (strip-test-authority): 初回一巡での base-green は従来どおり failed のまま
 // ---------------------------------------------------------------------------
 
 describe("TC-008 (strip-test-authority): 初回一巡での base-green は従来どおり failed のまま", () => {
