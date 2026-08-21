@@ -1,0 +1,24 @@
+version: 2
+
+# Dependabot 設定: @anthropic-ai/claude-agent-sdk の更新 PR 自動生成
+#
+# 対象: @anthropic-ai/claude-agent-sdk のみ（allow フィルタで限定）
+# 他の依存（bun 本体・devDependencies）は対象外（依存極小の方針）
+#
+# ⚠️  初回更新の注意:
+#   現在のバージョンは ^0.2.128 だが、upstream は既に 0.3.x まで進んでいる。
+#   初回の Dependabot PR は 0.x の minor 境界を越える大型更新になる見込みのため、
+#   定常的な patch 更新と区別し、merge 前に pipeline の実地動作まで確認すること。
+#
+# auto-merge は設定しない。
+# SDK 更新は unit CI が検知できない層（同梱 binary の platform 解決・agent 実行挙動）に
+# 影響した実績があり、CI green のみでは安全性を保証できない。
+# 更新 PR は CI を通した上で人間が merge する。
+
+updates:
+  - package-ecosystem: "bun"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    allow:
+      - dependency-name: "@anthropic-ai/claude-agent-sdk"
