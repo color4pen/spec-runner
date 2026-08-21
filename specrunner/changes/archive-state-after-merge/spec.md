@@ -167,6 +167,15 @@ status が既に terminal（`archived` / `canceled`）の job に対する plain
 **And** post-merge cleanup は行われない
 **And** コマンドは exit code 0 を返し、既に完了している旨を出力する
 
+#### Scenario: 既に canceled の job
+
+**Given** slug `demo` の job の status が `canceled` である
+**When** plain `job archive demo` を実行する
+**Then** archive record の記帳は行われない
+**And** PR 状態の問い合わせは行われない
+**And** post-merge cleanup は行われない
+**And** コマンドは exit code 0 を返し、既に完了している旨を出力する
+
 ### Requirement: --with-merge の既存経路は維持される
 
 `job archive --with-merge` は従来どおり「archive record 記帳 → CI green 待ち → PR merge → `archived` 遷移 → post-merge cleanup」の順で動作しなければならない（SHALL）。CI failure / timeout / merge 失敗の場合は `archived` へ遷移しては**ならない**（MUST NOT）。

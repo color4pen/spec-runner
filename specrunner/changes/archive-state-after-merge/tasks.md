@@ -62,7 +62,7 @@
 - `src/core/archive/orchestrator.ts` に `markJobArchived` の参照が存在しない
 - `orchestrator.ts` が GitHubClient を import していない
 - `deferArchivedTransition` の有無で `runArchiveOrchestrator` の副作用が変わらない
-- `src/core/archive/__tests__/orchestrator.test.ts` の TC-010 以外のテスト（T-01〜T-10 / T-DTE-01〜03 / TC-009）が無変更で green
+- `src/core/archive/__tests__/orchestrator.test.ts` の TC-010 以外のテスト（T-01〜T-10 / T-DTE-01〜03 / TC-009）が無変更で green（ここで TC-009 は `orchestrator.test.ts` 内のテストラベル「deferArchivedTransition: true → markJobArchived NOT called」を指す。`test-cases.md` の TC-009「merge-then-archive.ts が markJobArchived / runPostMergeCleanup を直接呼ばない」とは別物）
 - `bun run typecheck` / `bun run build` が成功する
 
 ---

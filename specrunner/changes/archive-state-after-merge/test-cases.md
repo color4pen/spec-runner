@@ -50,10 +50,10 @@ Result section MUST appear at the very end as a YAML code block:
 
 ## Summary
 
-- **Total**: 39 cases
-- **Automated** (unit/integration): 39
+- **Total**: 41 cases
+- **Automated** (unit/integration): 41
 - **Manual**: 0
-- **Priority**: must: 27, should: 11, could: 1
+- **Priority**: must: 29, should: 11, could: 1
 
 ---
 
@@ -397,6 +397,26 @@ Result section MUST appear at the very end as a YAML code block:
 **THEN** 「PR が merge されるまで job は `awaiting-archive` のまま」の旨が含まれている
 **AND** 「merge 後に同じコマンドを再実行すると `archived` + cleanup が完了する」の旨が含まれている
 
+### TC-040: 既に canceled の job は no-op で exit 0 を返す
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: terminal status の job に対する plain archive は no-op である > Scenario: 既に canceled の job
+
+### TC-041: PR を持たない job で markJobArchived が失敗した場合は escalation を返す
+
+**Category**: unit
+**Priority**: should
+**Source**: design.md > D3 step 5
+
+**GIVEN** slug `demo` の job が status `awaiting-archive` で `pullRequest` を持たない
+**AND** `markJobArchived(slug, recordDir)` が `SpecRunnerError` を投げる
+**WHEN** `runPlainArchive` が実行される
+**THEN** `runArchiveOrchestrator` は呼ばれ、exitCode 0 を返す
+**AND** `markJobArchived` が呼ばれて例外を投げる
+**AND** 関数は `{ exitCode: 1, escalation }` を返す
+**AND** `runPostMergeCleanup` は呼ばれない
+
 ---
 
 ## Gate
@@ -431,10 +451,10 @@ bun run typecheck / bun run build
 
 ```yaml
 result: completed
-total: 39
-automated: 39
+total: 41
+automated: 41
 manual: 0
-must: 27
+must: 29
 should: 11
 could: 1
 blocked_reasons: []
