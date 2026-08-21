@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1fd44058-a07a-46d1-afe3-41e2db6da0a7",
   "createdAt": "2026-08-21T02:24:48.638Z",
-  "updatedAt": "2026-08-21T03:41:37.454Z",
+  "updatedAt": "2026-08-21T03:51:18.383Z",
   "request": {
     "title": "bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/tamper-provenance-baseline-1fd44058",
   "error": null,
@@ -73,7 +73,9 @@
     "d7abf5de1f8833a8d4f6ed2411612d6bc03a7a1e",
     "d6b4bc2481fd7e3f6e61867b552a1995db3ede4d",
     "410bb3273674b5286fb463d57cf586b0a13e473c",
-    "465a092e8510a85b42d48157392332d3d651db37"
+    "465a092e8510a85b42d48157392332d3d651db37",
+    "bbca22e21763804e11bac0eabe27bb83f6c25a0c",
+    "17bdc47688cd2078de27bfa23a2bd5f8c31fcaca"
   ],
   "touchedFiles": {
     "request-review": [
@@ -135,37 +137,20 @@
       "src/core/pipeline/pipeline.ts"
     ],
     "implementer": [
-      "src/core/step/bite-evidence/tamper.ts",
-      "src/core/step/bite-evidence/gate.ts",
-      "src/core/step/bite-evidence/step.ts",
-      "src/core/step/bite-evidence/__tests__/gate.test.ts",
-      "src/core/port/runtime-strategy.ts",
-      "src/core/resume/canon-provenance.ts",
-      "src/core/types.ts",
-      "src/core/runtime/local.ts",
-      "src/core/pipeline/run.ts",
-      "src/core/runtime/managed.ts",
-      "src/core/port/step-types.ts",
-      "src/core/step/bite-evidence/__tests__/evidence-base-gate.test.ts",
-      "src/core/step/bite-evidence/__tests__/gate-empty-selection.test.ts",
-      "src/core/pipeline/types.ts",
-      "src/core/runtime/__tests__/list-changed-files-between-commits.test.ts",
-      "src/core/resume/__tests__/apply-canon-provenance.test.ts",
-      "src/core/runtime/__tests__/last-commit-touching-path.test.ts",
-      "src/core/resume/__tests__/authorized-canon-writer-steps.test.ts"
+      "src/core/step/bite-evidence/__tests__/gate.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 38,
+    "historyCount": 47,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
       "spec-fixer": 2,
-      "implementer": 1,
+      "implementer": 2,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 2
     }
   }
 }
