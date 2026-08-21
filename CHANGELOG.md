@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.4.12](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.11...specrunner-v0.4.12) (2026-08-21)
+
+
+### Features
+
+* awaiting-archive checkpoint の issue 起点取り込み ([#1038](https://github.com/color4pen/spec-runner/issues/1038)) ([819a90f](https://github.com/color4pen/spec-runner/commit/819a90f73d9bc5a2fd911f84be29ba605e446d72))
+* bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える ([#1042](https://github.com/color4pen/spec-runner/issues/1042)) ([e4ca137](https://github.com/color4pen/spec-runner/commit/e4ca1374c65e6f2d8bd7fa2626710621df88d8ce))
+* fixable finding への operator 不採用裁定を decisions 台帳の一般化で機械尊重する ([#1034](https://github.com/color4pen/spec-runner/issues/1034)) ([04a3123](https://github.com/color4pen/spec-runner/commit/04a3123e4bad2fdefb9c57ccac347f264f08a162))
+* issue-target 層の新設: start 面の移設・core→cli 解消・Development リンク登録 ([#1021](https://github.com/color4pen/spec-runner/issues/1021)) ([404b9ca](https://github.com/color4pen/spec-runner/commit/404b9ca2b07d2a942aacb206e19b836392ed4172))
+* job resume --from-issue: Development リンクと checkpoint identity による issue 起点再開 ([#1024](https://github.com/color4pen/spec-runner/issues/1024)) ([d9a1a92](https://github.com/color4pen/spec-runner/commit/d9a1a92bac4a430f05af32c4e78d2396637f9974))
+* job start --from-issue: issue を request source として直接起動する CLI 契約 ([#1016](https://github.com/color4pen/spec-runner/issues/1016)) ([e3625eb](https://github.com/color4pen/spec-runner/commit/e3625ebe253f2cb4dd833e3a1f82dc3894fb788d))
+* regression-gate の finding 再報告に由来を保持し --wontfix の逆引きを識別子照合にする ([#1041](https://github.com/color4pen/spec-runner/issues/1041)) ([85fad40](https://github.com/color4pen/spec-runner/commit/85fad408fd1d6697569ccdccc674065674b1fee6))
+* request lifecycle の一本化: job start で draft を消費し、resume の draft recopy を廃止する ([#1012](https://github.com/color4pen/spec-runner/issues/1012)) ([e9a4d49](https://github.com/color4pen/spec-runner/commit/e9a4d494addd29aa9783910b2b07f57bad07d35b))
+* spec-review loop の単一 fixer 化: test-case-gen を review loop から外す ([#1019](https://github.com/color4pen/spec-runner/issues/1019)) ([8e594ef](https://github.com/color4pen/spec-runner/commit/8e594ef42a8f0c8ad710500d776399f70bb97897))
+
+
+### Bug Fixes
+
+* --from の検証正本を core に一本化し CLI 静的 enum を撤去する ([#1026](https://github.com/color4pen/spec-runner/issues/1026)) ([41e4881](https://github.com/color4pen/spec-runner/commit/41e48814af3ee5a2f192c48a91c72dff37ee7b29))
+* approved 温存 reroute の修正: fixer 全体除外をやめ同 verdict の unconditional row へ降りる ([#1020](https://github.com/color4pen/spec-runner/issues/1020)) ([0467aae](https://github.com/color4pen/spec-runner/commit/0467aaee70a1e59613c2215291ee26887a77f0a0))
+* interruption レコードにシグナル名を記録する ([#1035](https://github.com/color4pen/spec-runner/issues/1035)) ([fe75d19](https://github.com/color4pen/spec-runner/commit/fe75d19deaa238eae4f0e25d6a467cdbcebc136c))
+
 ## [0.4.11](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.10...specrunner-v0.4.11) (2026-08-17)
 
 
