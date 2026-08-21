@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e7dc8301-1fea-4649-b634-47ce46b57572",
   "createdAt": "2026-08-21T10:02:27.789Z",
-  "updatedAt": "2026-08-21T12:04:51.575Z",
+  "updatedAt": "2026-08-21T12:15:46.976Z",
   "request": {
     "title": "実効モデル名を SDK の supportedModels() で実在検証する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/model-name-validation-e7dc8301",
   "error": null,
@@ -80,7 +80,8 @@
     "9a4f97f7157897384027206ccb90a5a207b8fa97",
     "8d566da79be17fdccfa691d9df0789a9f78977ec",
     "a92aaf272bca615347eaf725624410de946d7d74",
-    "4dc224b0ba05f7bfd2ce12151ba840da278a9782"
+    "4dc224b0ba05f7bfd2ce12151ba840da278a9782",
+    "1cd87926d89d3c93c654f20b23098456f019d6e7"
   ],
   "touchedFiles": {
     "request-review": [
@@ -192,8 +193,21 @@
       "tests/unit/architecture/arch-allowlist.ts"
     ],
     "code-fixer": [
-      "tests/adapter/claude-code/supported-models-probe.test.ts",
-      "src/adapter/claude-code/supported-models-probe.ts"
+      "src/core/model-validation/collect-effective-models.ts",
+      "src/core/doctor/types.ts",
+      "src/core/command/resume.ts",
+      "src/core/doctor/checks/config/model-existence.ts",
+      "src/core/model-validation/preflight.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/config/step-config.ts",
+      "src/core/command/runner.ts",
+      "src/core/doctor/runner.ts",
+      "src/cli/doctor.ts",
+      "src/state/schema.ts",
+      "tests/core/doctor/checks/config/model-existence.test.ts",
+      "tests/core/model-validation/collect-effective-models.test.ts",
+      "tests/core/doctor/mock-context.ts",
+      "tests/unit/architecture/arch-allowlist.ts"
     ],
     "regression-gate": [
       "src/adapter/claude-code/sdk-loader.ts",
@@ -247,7 +261,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 72,
+    "historyCount": 76,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -258,7 +272,7 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 1,
+      "code-fixer": 2,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
