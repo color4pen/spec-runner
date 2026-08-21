@@ -8,7 +8,7 @@
  * TC-006: awaiting-archive → archived 遷移
  * TC-013: terminal status の job は archive で no-op exit 0
  * TC-AO-NOTFOUND: slug に対応する job が存在しない場合は exit 2
- * TC-AO-ORDER: Phase 1 順序 (mv → markJobArchived → git add → commit → push feature-branch)
+ * TC-AO-ORDER: Phase 1 順序 (mv → git add → commit → push feature-branch; markJobArchived NOT called)
  * TC-AO-IDEMPOTENT: folder 移動済み・awaiting-archive の冪等再実行
  * TC-AO-NO-BASE: base への git checkout / git push origin base が一切呼ばれない
  * TC-AO-FEATURE-PUSH: 記帳 commit が feature branch へ push される
@@ -219,8 +219,8 @@ describe("TC-003: change folder が存在する場合のアーカイブ（正常
     );
     expect(featurePushCall).toBeDefined();
 
-    // markJobArchived called
-    expect(markJobArchived).toHaveBeenCalledWith(SLUG, expect.any(String));
+    // T-03: markJobArchived NOT called by orchestrator (caller's responsibility)
+    expect(markJobArchived).not.toHaveBeenCalled();
   });
 });
 
@@ -463,7 +463,7 @@ describe("TC-034: orchestrator does not access .specrunner/jobs/ paths", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-006: awaiting-archive の job を archive する", () => {
-  it("markJobArchived が recordDir を repoRoot として呼ばれる", async () => {
+  it("T-03: orchestrator は markJobArchived を呼ばない（呼び出し責任は caller にある）", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     const jobId = "job-awaiting-archive-001";
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
@@ -485,8 +485,8 @@ describe("TC-006: awaiting-archive の job を archive する", () => {
     const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn: makeSpawn(0), fs: makeFs() });
 
     expect(result).toMatchObject({ exitCode: 0 });
-    // In no-worktree=false mode with no worktreePath: falls back to cwd (convention path is resolved)
-    expect(markJobArchived).toHaveBeenCalledWith(SLUG, expect.any(String));
+    // T-03: status transition is NOT performed by orchestrator — caller is responsible
+    expect(markJobArchived).not.toHaveBeenCalled();
   });
 });
 
@@ -495,7 +495,7 @@ describe("TC-006: awaiting-archive の job を archive する", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-AO-ORDER: Phase 1 実行順序の検証", () => {
-  it("archiveChangeFolder → markJobArchived → git-add specrunner/changes/ → commitArchive → push feature-branch", async () => {
+  it("archiveChangeFolder → git-add specrunner/changes/ → commitArchive → push feature-branch (markJobArchived NOT called)", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
       makeJobState({ status: "awaiting-archive", branch: BRANCH }),
@@ -513,9 +513,6 @@ describe("TC-AO-ORDER: Phase 1 実行順序の検証", () => {
       callOrder.push("archiveChangeFolder");
       return { ok: true, skipped: false, message: "archived" };
     });
-    (markJobArchived as ReturnType<typeof vi.fn>).mockImplementation(async () => {
-      callOrder.push("markJobArchived");
-    });
     (commitArchive as ReturnType<typeof vi.fn>).mockImplementation(async () => {
       callOrder.push("commitArchive");
       return { ok: true, skipped: false, message: "committed" };
@@ -532,16 +529,17 @@ describe("TC-AO-ORDER: Phase 1 実行順序の検証", () => {
 
     expect(result).toMatchObject({ exitCode: 0 });
 
-    // Verify ordering: archiveChangeFolder → markJobArchived → git-add-changes → commitArchive → git-push-feature
+    // T-03: markJobArchived must NOT be called by orchestrator
+    expect(markJobArchived).not.toHaveBeenCalled();
+
+    // Verify ordering: archiveChangeFolder → git-add-changes → commitArchive → git-push-feature
     const archiveIdx = callOrder.indexOf("archiveChangeFolder");
-    const markIdx = callOrder.indexOf("markJobArchived");
     const addIdx = callOrder.indexOf("git-add-changes");
     const commitIdx = callOrder.indexOf("commitArchive");
     const pushIdx = callOrder.indexOf("git-push-feature");
 
     expect(archiveIdx).toBeGreaterThanOrEqual(0);
-    expect(markIdx).toBeGreaterThan(archiveIdx);
-    expect(addIdx).toBeGreaterThan(markIdx);
+    expect(addIdx).toBeGreaterThan(archiveIdx);
     expect(commitIdx).toBeGreaterThan(addIdx);
     expect(pushIdx).toBeGreaterThan(commitIdx);
   });
@@ -552,7 +550,7 @@ describe("TC-AO-ORDER: Phase 1 実行順序の検証", () => {
 // ---------------------------------------------------------------------------
 
 describe("TC-AO-IDEMPOTENT: folder 移動済みで awaiting-archive の冪等再実行", () => {
-  it("archiveChangeFolder skip → markJobArchived → stage → commit → push feature-branch", async () => {
+  it("archiveChangeFolder skip → stage → commit → push feature-branch (markJobArchived NOT called)", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
       makeJobState({ status: "awaiting-archive", branch: BRANCH }),
@@ -578,8 +576,8 @@ describe("TC-AO-IDEMPOTENT: folder 移動済みで awaiting-archive の冪等再
     const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn, fs: makeFs() });
 
     expect(result).toMatchObject({ exitCode: 0 });
-    // markJobArchived still called to transition status in archive location
-    expect(markJobArchived).toHaveBeenCalledWith(SLUG, expect.any(String));
+    // T-03: markJobArchived NOT called by orchestrator even on idempotent re-run
+    expect(markJobArchived).not.toHaveBeenCalled();
 
     // git add called to stage state.json changes
     const spawnMock = spawn as ReturnType<typeof vi.fn>;
@@ -782,11 +780,11 @@ describe("TC-STATUS-ARCHIVED-NO-OP: archive 記帳済み → no-op", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-STATUS-CONFIRMED-AT-RECORD: status が archive 時点で archived に確定する
+// TC-STATUS-CONFIRMED-AT-RECORD: T-03: status 遷移は orchestrator では行われない
 // ---------------------------------------------------------------------------
 
-describe("TC-STATUS-CONFIRMED-AT-RECORD: archive 実行時点で status が archived に確定する", () => {
-  it("markJobArchived が呼ばれ status を archived に遷移させる", async () => {
+describe("TC-STATUS-CONFIRMED-AT-RECORD: T-03: orchestrator は status 遷移を行わない", () => {
+  it("markJobArchived は呼ばれない — 遷移責任は caller (plain-archive / merge-then-archive) にある", async () => {
     const { JobStateStore } = await import("../../../../src/store/job-state-store.js");
     (JobStateStore.list as ReturnType<typeof vi.fn>).mockResolvedValue([
       makeJobState({ status: "awaiting-archive", branch: BRANCH }),
@@ -806,9 +804,8 @@ describe("TC-STATUS-CONFIRMED-AT-RECORD: archive 実行時点で status が arch
     const result = await runArchiveOrchestrator({ slug: SLUG, cwd: CWD, spawn: makeSpawn(0), fs: makeFs() });
 
     expect(result).toMatchObject({ exitCode: 0 });
-    // markJobArchived must have been called (status transition)
-    expect(markJobArchived).toHaveBeenCalledTimes(1);
-    expect(markJobArchived).toHaveBeenCalledWith(SLUG, expect.any(String));
+    // T-03: status transition is NOT performed by orchestrator (caller's responsibility)
+    expect(markJobArchived).not.toHaveBeenCalled();
   });
 });
 

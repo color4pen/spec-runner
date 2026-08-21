@@ -2,7 +2,7 @@
  * Merge-then-archive orchestrator for `job archive --with-merge`.
  *
  * Flow:
- * 1. Load job state → resolve PR number + branch/worktree info
+ * 1. resolveArchiveJobContext → resolve PR number + branch/worktree info
  * 2. Run archive recording on feature branch (runArchiveOrchestrator — idempotent)
  *    → capture archiveSha for CI-wait headSha tracking
  * 3. getPullRequest to check PR status
@@ -21,29 +21,26 @@
  * 6. squash merge via mergePullRequest (final mergeability decided by merge endpoint)
  * 7. merge success → runPostMergeCleanup → done
  */
-import * as nodePath from "node:path";
 import type { SpawnFn } from "../../util/spawn.js";
 import type { FinishFs } from "../finish/types.js";
 import type { GitHubClient } from "../port/github-client.js";
 import type { WorktreeManager } from "../worktree/manager.js";
 import type { ResolvedDesignLayer, ShellCommand, MinimumAssuranceConfig, SpecRunnerConfig } from "../../config/schema.js";
-import { JobStateStore } from "../../store/job-state-store.js";
-import { getJobSlug } from "../../state/job-slug.js";
 import { satisfiesFloor } from "../../state/profile.js";
 import type { JobState } from "../../state/schema.js";
-import { runArchiveOrchestrator, resolveWorktreePathForArchive } from "./orchestrator.js";
+import { runArchiveOrchestrator } from "./orchestrator.js";
 import { deriveAchievedAssurance } from "./achieved-assurance.js";
 import type { AssuranceProvenanceRuntime } from "./achieved-assurance.js";
 import type { ArchiveResult } from "./orchestrator.js";
-import { runPostMergeCleanup } from "./post-merge-cleanup.js";
 import { runPostMergeIntegrityCheck } from "./post-merge-integrity.js";
 import { detectWorkflowCiPresence } from "./workflow-ci-detection.js";
 import type { CiPresenceResult } from "./workflow-ci-detection.js";
 import { formatEscalation } from "../finish/escalation.js";
-import { logResult, stderrWrite } from "../../logger/stdout.js";
+import { logResult } from "../../logger/stdout.js";
 import { DEFAULT_MERGE_WAIT_TIMEOUT_MS, DEFAULT_MERGE_WAIT_POLL_INTERVAL_MS } from "../../config/schema.js";
 import { evaluateProtectedPaths } from "./protected-paths.js";
-import { markJobArchived } from "../finish/job-state-update.js";
+import { resolveArchiveJobContext } from "./job-context.js";
+import { completeAfterMerge, mergedBeforeRecordEscalation } from "./merge-completion.js";
 
 /**
  * Grace period (ms) to wait for the first check run to appear after a push.
@@ -183,15 +180,13 @@ export async function runMergeThenArchive(
   let jobStateForFloor: JobState | undefined;
 
   try {
-    const allEntries = await JobStateStore.listWithSourceDirs(cwd, { includeArchived: true });
-    const matching = allEntries.filter((e) => getJobSlug(e.state) === slug);
+    const ctx = await resolveArchiveJobContext({ cwd, slug });
 
-    if (matching.length === 0) {
-      return { exitCode: 2, message: `No job found with slug '${slug}'. Run 'specrunner ps' to see available jobs.` };
+    if (!ctx.found) {
+      return { exitCode: 2, message: ctx.message };
     }
 
-    matching.sort((a, b) => new Date(b.state.updatedAt).getTime() - new Date(a.state.updatedAt).getTime());
-    const { state, sourceChangeDir } = matching[0]!;
+    const { state } = ctx;
 
     if (!state.pullRequest?.number) {
       return {
@@ -201,17 +196,11 @@ export async function runMergeThenArchive(
     }
 
     prNumber = state.pullRequest.number;
-    branch = state.branch;
-    worktreePath = await resolveWorktreePathForArchive(state, cwd);
-    noWorktree = state.noWorktree === true;
-
-    // D2: "archive recorded" signal — change folder is in archive/ if dirname basename === "archive".
-    // e.g. ".../specrunner/changes/archive/2026-01-01-slug" → dirname "archive"
-    // e.g. ".../specrunner/changes/slug" → dirname "changes"
-    archiveRecorded = nodePath.basename(nodePath.dirname(sourceChangeDir)) === "archive";
-
-    // D3: recordDir — the working tree where the archive-record commit was/will be made.
-    recordDir = noWorktree ? cwd : (worktreePath ?? cwd);
+    branch = ctx.branch;
+    worktreePath = ctx.worktreePath;
+    noWorktree = ctx.noWorktree;
+    archiveRecorded = ctx.archiveRecorded;
+    recordDir = ctx.recordDir;
 
     // Capture full state for the achieved-assurance floor gate (Step 3.6).
     jobStateForFloor = state;
@@ -252,26 +241,19 @@ export async function runMergeThenArchive(
     if (archiveRecorded) {
       // Archive was recorded before the merge → finish the (interrupted) cleanup.
       stdoutWrite(`PR #${prNumber} already merged and archive recorded. Running post-merge cleanup...`);
-      await performPostMergeTransition(slug, recordDir, stdoutWrite);
-      await runPostMergeCleanup(
-        { slug, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
+      await completeAfterMerge(
+        { slug, recordDir, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
         stdoutWrite,
       );
       return { exitCode: 0 };
     }
     // Merged before archiving: the change folder cannot ride the (already merged) PR.
-    return {
-      exitCode: 1,
-      escalation: formatEscalation({
-        failedStep: "merge gate (PR merged before archive)",
-        detectedState:
-          `PR #${prNumber} is already merged but the archive was not recorded first ` +
-          `(change folder is still at active location). The archive folder move rides the PR, ` +
-          `so archiving must happen before the PR is merged.`,
-        recommendedAction: `Archive before merging. The change folder for '${slug}' remains at its active location on ${resolvedBaseBranch} and can only be relocated by a direct ${resolvedBaseBranch} commit (which job archive does not perform).`,
-        resumeCommand: `specrunner job archive --with-merge ${slug}`,
-      }),
-    };
+    return mergedBeforeRecordEscalation({
+      slug,
+      prNumber,
+      baseBranch: resolvedBaseBranch,
+      resumeCommand: `specrunner job archive --with-merge ${slug}`,
+    });
   }
 
   // ---------------------------------------------------------------------------
@@ -482,9 +464,8 @@ export async function runMergeThenArchive(
     // Already merged (e.g. merged by another process during wait)
     if (prData.state === "MERGED") {
       stdoutWrite(`PR #${prNumber} merged during wait. Running post-merge cleanup...`);
-      await performPostMergeTransition(slug, recordDir, stdoutWrite);
-      await runPostMergeCleanup(
-        { slug, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
+      await completeAfterMerge(
+        { slug, recordDir, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
         stdoutWrite,
       );
       return { exitCode: 0 };
@@ -779,9 +760,8 @@ export async function runMergeThenArchive(
   // ---------------------------------------------------------------------------
   // Step 6: Transition to archived + post-merge cleanup (worktree teardown + branch delete)
   // ---------------------------------------------------------------------------
-  await performPostMergeTransition(slug, recordDir, stdoutWrite);
-  await runPostMergeCleanup(
-    { slug, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
+  await completeAfterMerge(
+    { slug, recordDir, cwd, branch, worktreePath, noWorktree, baseBranch: resolvedBaseBranch, spawn, fs, worktreeManagerFn },
     stdoutWrite,
   );
 
@@ -790,26 +770,6 @@ export async function runMergeThenArchive(
 
 function defaultSleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
- * Best-effort post-merge status transition: awaiting-archive → archived.
- * Called immediately before runPostMergeCleanup on every merge-success path.
- * Idempotent (already archived → no-op). Failures emit a warning but do not
- * abort the caller — the merge is already done and cleanup must proceed.
- */
-async function performPostMergeTransition(
-  slug: string,
-  recordDir: string,
-  stdoutWrite: (msg: string) => void,
-): Promise<void> {
-  try {
-    await markJobArchived(slug, recordDir);
-    stdoutWrite(`Job ${slug} marked as archived.`);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    stderrWrite(`Warning: failed to transition ${slug} to archived: ${message}. Continuing cleanup.`);
-  }
 }
 
 /**

@@ -201,7 +201,7 @@ specrunner job ls                          List all jobs
 specrunner job show <jobId|slug>           Show job state
 specrunner job resume <slug>               Resume a halted job
 specrunner job cancel <jobId>              Cancel job and cleanup
-specrunner job archive <slug>              Archive and teardown
+specrunner job archive <slug>              Push archive record; re-run after PR merge to complete teardown
 specrunner job stats [--json]             Run-level statistics (cost, convergence, duration)
 ```
 
