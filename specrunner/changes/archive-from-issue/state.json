@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "96c14a7e-3cca-4ca9-8e98-54f851859737",
   "createdAt": "2026-08-20T23:25:16.569Z",
-  "updatedAt": "2026-08-21T00:22:50.302Z",
+  "updatedAt": "2026-08-21T00:27:48.515Z",
   "request": {
     "title": "awaiting-archive checkpoint の issue 起点取り込み",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "bite-evidence",
-  "status": "awaiting-resume",
+  "step": "implementer",
+  "status": "running",
   "branch": "feat/archive-from-issue-96c14a7e",
   "error": null,
   "pipelineId": "standard",
@@ -68,7 +68,10 @@
     "b76054f1cd6508f45aef6e62341d31728b7f74aa",
     "3f432b9587d358591f5c5137843118c30ecfa319",
     "843eb884d6f43680085a556194bc00fa8aca31fa",
-    "d2d03e4844b35a8562d8d9fcb70306e6dd5e7ed8"
+    "d2d03e4844b35a8562d8d9fcb70306e6dd5e7ed8",
+    "265f143f0d2bb150a1aaeeb908b2981071113ef7",
+    "cc08bf1ac6e8016397466a5623b946ea750b1aec",
+    "23c8c83c2880f30a2574b37b6c760ccab3ca0133"
   ],
   "touchedFiles": {
     "request-review": [
@@ -158,13 +161,10 @@
       "tests/unit/architecture/arch-allowlist.ts"
     ]
   },
-  "resumePoint": {
-    "step": "bite-evidence",
-    "reason": "bite-evidence escalated",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 34,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -172,7 +172,8 @@
       "spec-review": 1,
       "spec-fixer": 1,
       "implementer": 1,
-      "bite-evidence": 1
+      "bite-evidence": 2,
+      "verification": 1
     }
   }
 }
