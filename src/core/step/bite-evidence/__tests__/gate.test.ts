@@ -847,6 +847,61 @@ describe("TC-006(provenance): provenance 導出不能 runtime では tamper で 
     // inconclusive → proceed (not failed)
     expect(gateResult.verdict).not.toBe("failed");
   });
+
+  it("TC-026 wiring: BiteEvidenceStep.run で runtimeStrategy=null のとき tamper で failed にならない", async () => {
+    // GIVEN: deps.runtimeStrategy is null → listWorktreeChanges and lastCommitTouchingPath
+    //        are unreachable → step.ts wiring forces evidenceAvailable=false → inconclusive.
+    // This exercises the null-runtimeStrategy path in step.ts (~lines 67-70, 91-94):
+    //   deps.runtimeStrategy?.listWorktreeChanges → undefined → evidenceAvailable=false
+    //   → checkTamperStatus(evidenceAvailable=false) → inconclusive
+    //   → runBiteEvidenceGate(tamperStatus="inconclusive") → no synthesizedCommits → strategy-deferred
+    const slug = "tc026-wiring-slug";
+    const tempDir = await fsp.mkdtemp(nodePath.join(os.tmpdir(), "bite-ev-tc026-"));
+    try {
+      const deps: CliStepDeps = {
+        config: {} as never,
+        slug,
+        cwd: tempDir,
+        spawn: vi.fn() as never,
+        request: {
+          type: "bug-fix",
+          title: "TC-026 Wiring Test",
+          slug,
+          baseBranch: "main",
+          content: "TC-026 wiring test request",
+          adr: false,
+        },
+        runtimeStrategy: null,  // null → wiring forces evidenceAvailable=false
+        authorizedCanonWriters: new Set(["test-case-gen", "spec-fixer", "operator-apply"]),
+      };
+
+      const state: JobState = {
+        version: 2,
+        jobId: "tc026-wiring-job",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        request: { path: `specrunner/changes/${slug}/request.md`, title: "TC-026", type: "bug-fix", slug },
+        repository: { owner: "octo", name: "repo" },
+        session: null,
+        step: "bite-evidence",
+        status: "running",
+        branch: `change/${slug}-abc12345`,
+        history: [],
+        error: null,
+        steps: {},
+      };
+
+      await BiteEvidenceStep.run(state, deps);
+
+      const resultPath = nodePath.join(tempDir, `specrunner/changes/${slug}/bite-evidence-result.md`);
+      const content = await fsp.readFile(resultPath, "utf-8");
+
+      // runtimeStrategy=null → evidenceAvailable=false → inconclusive → gate proceeds → strategy-deferred
+      expect(content).not.toMatch(/## Verdict: failed/);
+    } finally {
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -882,6 +937,73 @@ describe("TC-028: 例外時 inconclusive に倒れる", () => {
       evidenceAvailable: false,
     });
     expect(result.status).toBe("inconclusive");
+  });
+
+  it("TC-028 wiring: lastCommitTouchingPath が throw したとき BiteEvidenceStep.run は tamper で failed にならない", async () => {
+    // GIVEN: runtimeStrategy.lastCommitTouchingPath throws unexpectedly.
+    // THEN:  The try/catch in step.ts (lines ~98-101) catches the exception and sets
+    //        tamperStatus="inconclusive" → runBiteEvidenceGate proceeds → strategy-deferred
+    //        (no synthesizedCommits). Result file must NOT contain "## Verdict: failed".
+    // This exercises the catch block: `tamperStatus = "inconclusive"` (step.ts:103-106 area).
+    const slug = "tc028-wiring-slug";
+    const tempDir = await fsp.mkdtemp(nodePath.join(os.tmpdir(), "bite-ev-tc028-"));
+    try {
+      const fakeRuntime = {
+        listWorktreeChanges: vi.fn(async (_cwd: string) => ({
+          kind: "success" as const,
+          paths: [],
+        })),
+        lastCommitTouchingPath: vi.fn(async (_path: string, _cwd: string): Promise<never> => {
+          throw new Error("unexpected internal error from lastCommitTouchingPath");
+        }),
+      };
+
+      const deps: CliStepDeps = {
+        config: {} as never,
+        slug,
+        cwd: tempDir,
+        spawn: vi.fn() as never,
+        request: {
+          type: "bug-fix",
+          title: "TC-028 Wiring Test",
+          slug,
+          baseBranch: "main",
+          content: "TC-028 wiring test request",
+          adr: false,
+        },
+        runtimeStrategy: fakeRuntime as never,
+        authorizedCanonWriters: new Set(["test-case-gen", "spec-fixer", "operator-apply"]),
+      };
+
+      const state: JobState = {
+        version: 2,
+        jobId: "tc028-wiring-job",
+        createdAt: "2026-01-01T00:00:00.000Z",
+        updatedAt: "2026-01-01T00:00:00.000Z",
+        request: { path: `specrunner/changes/${slug}/request.md`, title: "TC-028", type: "bug-fix", slug },
+        repository: { owner: "octo", name: "repo" },
+        session: null,
+        step: "bite-evidence",
+        status: "running",
+        branch: `change/${slug}-abc12345`,
+        history: [],
+        error: null,
+        steps: {},
+      };
+
+      await BiteEvidenceStep.run(state, deps);
+
+      const resultPath = nodePath.join(tempDir, `specrunner/changes/${slug}/bite-evidence-result.md`);
+      const content = await fsp.readFile(resultPath, "utf-8");
+
+      // Exception in tamper block → catch → inconclusive → gate proceeds → strategy-deferred (no EB)
+      expect(content).not.toMatch(/## Verdict: failed/);
+
+      // Verify lastCommitTouchingPath was actually called and threw (wiring exercised)
+      expect(fakeRuntime.lastCommitTouchingPath).toHaveBeenCalled();
+    } finally {
+      await fsp.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    }
   });
 });
 

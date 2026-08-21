@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "1fd44058-a07a-46d1-afe3-41e2db6da0a7",
   "createdAt": "2026-08-21T02:24:48.638Z",
-  "updatedAt": "2026-08-21T05:40:14.628Z",
+  "updatedAt": "2026-08-21T05:48:38.573Z",
   "request": {
     "title": "bite-evidence の tamper 判定基準を「認可された変更経路」ベースに変える",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/tamper-provenance-baseline-1fd44058",
   "error": null,
@@ -78,7 +78,8 @@
     "17bdc47688cd2078de27bfa23a2bd5f8c31fcaca",
     "cf0266edbfcd868c49172e631e65765501d46392",
     "15ff14cb0751f5a697177d3064e9854ddb0db777",
-    "340fdf189849203453b74b1a0a87eb8cd826aff8"
+    "340fdf189849203453b74b1a0a87eb8cd826aff8",
+    "f2c8adbb1c4172e79aa63bd33e61f6fd31b74ca0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -150,8 +151,8 @@
       "src/core/port/runtime-strategy.ts",
       "src/core/runtime/local.ts",
       "src/core/runtime/managed.ts",
-      "src/core/pipeline/run.ts",
       "src/core/types.ts",
+      "src/core/pipeline/run.ts",
       "src/core/port/step-types.ts",
       "src/core/step/bite-evidence/__tests__/gate.test.ts",
       "src/core/runtime/__tests__/last-commit-touching-path.test.ts",
@@ -180,7 +181,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 61,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -190,7 +191,7 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 2,
+      "code-review": 3,
       "code-fixer": 1
     }
   }
