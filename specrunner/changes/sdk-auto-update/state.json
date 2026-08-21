@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "58484b6c-6791-4380-b6d1-c1df037a4e0e",
   "createdAt": "2026-08-21T10:02:29.679Z",
-  "updatedAt": "2026-08-21T10:30:05.202Z",
+  "updatedAt": "2026-08-21T10:33:43.369Z",
   "request": {
     "title": "Claude Agent SDK の依存更新 PR を自動化する",
     "type": "chore",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "chore/sdk-auto-update-58484b6c",
   "error": null,
   "pipelineId": "standard",
@@ -72,7 +72,9 @@
     "1af45f8e8014654a1268543ea9c1aed72de46335",
     "6ab3ca1a741ee2926f2e97d02f292608d3db39dd",
     "822c1008514673f420e29a6cbb208b1fa26fc2c8",
-    "1d71cceca0721f24c2b05e4223138c6614c25dde"
+    "1d71cceca0721f24c2b05e4223138c6614c25dde",
+    "0c96f897e2174e6c704a8db0e431b7504ec2cdc0",
+    "37b45273eda256037b5e1741a7d36e34d624f40e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -108,9 +110,7 @@
     ],
     "conformance": [
       ".github/dependabot.yml",
-      "tests/dependabot-config.test.ts",
-      "src/core/pr-create/body-template.ts",
-      "src/parser/request-md.ts"
+      "tests/dependabot-config.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -144,20 +144,27 @@
   ],
   "resumePoint": null,
   "mainCheckoutDrift": null,
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1046",
+    "number": 1046,
+    "createdAt": "2026-08-21T10:33:42.701Z"
+  },
   "_journal": {
-    "historyCount": 45,
+    "historyCount": 59,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "spec-review": 1,
       "implementer": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
       "regression-gate": 1,
-      "conformance": 1
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
