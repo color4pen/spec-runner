@@ -20,6 +20,7 @@ alongside their production task but the suite is pinned in T-05).
 
 - [ ] In `src/core/pipeline/findings-ledger.ts`, add a pure `computeLedgerRef(finding: Finding): string` that derives a deterministic, collision-resistant ref from the finding's stable fingerprint (`findingFingerprint`, i.e. `file|line|title`). It MUST be positionally stable (independent of ledger membership/order — see design D3). Two findings with the same fingerprint yield the same ref.
 - [ ] Add a pure helper that builds the wontfix provenance index over ALL ledger-contributing steps: walk spec-review StepRuns (as `collectSpecReviewLedger` sources do) AND the impl reviewer chain StepRuns (as `collectFindingsLedger` sources do), collecting `collectFixableFindings` per run, and produce `Map<ref, Map<stepName, Finding>>` (first-occurrence-wins per step, mirroring the current step-level dedup). Signature takes `reviewerChain: string[]` and `state` (do not derive the chain internally — avoid the documented import cycle).
+- [ ] Update `collectSpecReviewLedger` to call `filterUndecidedFindings` per StepRun (mirroring the per-run exclusion already applied in `collectFindingsLedger` at line 55). Without this, a spec-review-origin finding disposed via wontfix (step="spec-review") would still appear in `computeRegressionLedger` → merged ledger, causing TC-008 to fail for spec-review-origin cases.
 - [ ] Do NOT modify `computeFindingKey`, `findingFingerprint`, or the ledger identity formula (scope-out). `computeLedgerRef` is derived FROM the existing fingerprint, not a redesign of it.
 
 **Acceptance Criteria**:
@@ -27,6 +28,7 @@ alongside their production task but the suite is pinned in T-05).
 - The provenance index includes spec-review as a source step (verified by a finding that only exists on spec-review resolving to `step: spec-review`).
 - The index yields one `(step, finding)` entry per source step for a shared fingerprint (matches TC-004 semantics).
 - `computeRegressionLedger` behavior is unchanged; existing `findings-ledger` tests remain green without modification.
+- A spec-review-origin finding disposed with `step: spec-review` is absent from `collectSpecReviewLedger` output (verifying the `filterUndecidedFindings` addition).
 
 ## T-03: Surface the ref in the regression-gate ledger block and instruct verbatim echo
 
@@ -61,13 +63,13 @@ alongside their production task but the suite is pinned in T-05).
 - [ ] Add a test reproducing the observed failure form: the gate re-reports a finding with a **paraphrased title** but the correct provenance ref; `--wontfix` succeeds and records the correct origin step (fixes the observed `not found in any reviewer chain step` exit 2).
 - [ ] Add a test: a **spec-review-origin** finding (present only on spec-review, echoed by the gate with its ref) is disposed successfully with `step: spec-review`.
 - [ ] Add a test: a selected gate finding with **absent/unresolvable ref** fails all-or-nothing (ok=false, zero records) — the new form of the exit-2 guarantee.
-- [ ] Add/confirm machine-respect coverage for the new resolution path: a DispositionDecisionRecord produced via the ref path is (a) excluded from the regression-gate ledger (`collectFindingsLedger` / `computeRegressionLedger` via `filterUndecidedFindings`), (b) excluded from fixer input (`collectParallelFixerFindings`), and (c) does not trigger the approved+fixable reviewer-chain guard (`buildReviewerChainTransitions` / `buildParallelReviewerTransitions`). Reuse existing helpers; these keys are `step` + `findingKey`, unchanged.
+- [ ] Add/confirm machine-respect coverage for the new resolution path: a DispositionDecisionRecord produced via the ref path is (a) excluded from the regression-gate ledger via `filterUndecidedFindings` in both `collectFindingsLedger` (impl chain) AND `collectSpecReviewLedger` (spec-review) — the TC-008 ledger-exclusion test MUST include a spec-review-origin DispositionDecisionRecord (step="spec-review") to verify the `collectSpecReviewLedger` path; (b) excluded from fixer input (`collectParallelFixerFindings`); and (c) does not trigger the approved+fixable reviewer-chain guard (`buildReviewerChainTransitions` / `buildParallelReviewerTransitions`). Reuse existing helpers; these keys are `step` + `findingKey`, unchanged.
 - [ ] Run the full suite; ensure all tests outside `wontfix.test.ts` remain green without modification.
 
 **Acceptance Criteria**:
 - Paraphrased-title `--wontfix` test passes and asserts the recorded origin `step`.
 - spec-review-origin `--wontfix` test passes with `step: spec-review`.
 - Absent/unresolvable-ref test asserts `ok: false` and zero records.
-- Machine-respect tests (ledger exclusion / fixer-input exclusion / approved+fixable guard) pass under the new resolution.
+- Machine-respect tests (ledger exclusion / fixer-input exclusion / approved+fixable guard) pass under the new resolution; the ledger-exclusion test (TC-008) covers both impl-chain-origin and spec-review-origin DispositionDecisionRecords.
 - Only `wontfix.test.ts` "title 文字列照合" pin cases are modified; every other existing test is unchanged and green.
 - `typecheck && test` is green.

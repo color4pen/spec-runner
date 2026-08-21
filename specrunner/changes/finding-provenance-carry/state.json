@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "656b7563-0495-41c6-bc28-388494bbdf8b",
   "createdAt": "2026-08-21T02:24:47.582Z",
-  "updatedAt": "2026-08-21T02:40:05.394Z",
+  "updatedAt": "2026-08-21T02:46:48.466Z",
   "request": {
     "title": "regression-gate の finding 再報告に由来を保持し --wontfix の逆引きを識別子照合にする",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "change/finding-provenance-carry-656b7563",
   "error": null,
@@ -67,7 +67,8 @@
     "f9d628b64fbfa563e63c8875a069f5630bef7074",
     "eb8ef525439ca4cd09e7645705507261acebb068",
     "f0cacae24177e2393ecad1ca097507e88ac76db6",
-    "fb5d60f0367d0afe901849963ead15ef23b063c2"
+    "fb5d60f0367d0afe901849963ead15ef23b063c2",
+    "fddfd125c154d0f562d15369c7171a434eb87d00"
   ],
   "touchedFiles": {
     "request-review": [
@@ -96,14 +97,32 @@
       "src/core/step/step-completion.ts",
       "src/core/step/__tests__/regression-gate-step.test.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "spec-review": [
+      "src/core/decision/wontfix.ts",
+      "src/core/pipeline/findings-ledger.ts",
+      "src/kernel/report-result.ts",
+      "src/core/port/report-result.ts",
+      "src/core/step/regression-gate.ts",
+      "src/core/step/report-tool.ts",
+      "src/state/schema/types.ts",
+      "tests/unit/core/decision/wontfix.test.ts",
+      "src/prompts/regression-gate-system.ts",
+      "src/core/pipeline/reviewer-chain.ts",
+      "src/core/step/__tests__/regression-gate-step.test.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/decision/decision-ledger.ts",
+      "src/core/step/fixer-helpers.ts",
+      "tests/unit/core/pipeline/findings-ledger-canon.test.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }
