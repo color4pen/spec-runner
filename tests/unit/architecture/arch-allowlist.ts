@@ -194,6 +194,17 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "The key is already stripped from strippedEnv by the preceding stripSecrets call. " +
       "Not passed as full env to a subprocess — only forwarded as a named SDK parameter.",
   },
+  {
+    file: "src/core/command/pipeline-run.ts",
+    pattern: "env: process.env,",
+    invariant: "B-6",
+    tracking: "B6-pipeline-run-model-preflight-port-call",
+    comment:
+      "assertEffectiveModelsExist is a domain-layer port-method call, not a direct subprocess or SDK spawn. " +
+      "The adapter implementation (LocalRuntime.listSupportedModels → createClaudeSupportedModelsProbe) " +
+      "calls stripSecrets(env) internally before passing env to the Claude Agent SDK. " +
+      "process.env is not forwarded raw to any subprocess.",
+  },
 
   // ── B-12: direct `node:child_process` import banned outside seam modules ─────
   //

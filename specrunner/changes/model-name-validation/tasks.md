@@ -6,13 +6,13 @@
 
 ## T-01: alias 3 種を BUILTIN_MODEL_REGISTRY に anthropic として登録
 
-- [ ] `src/config/model-registry.ts` の `BUILTIN_MODEL_REGISTRY` に `"sonnet"` / `"opus"` / `"haiku"` を
+- [x] `src/config/model-registry.ts` の `BUILTIN_MODEL_REGISTRY` に `"sonnet"` / `"opus"` / `"haiku"` を
       `{ provider: "anthropic" }` で追加する（既定 model の置換はしない）。
-- [ ] 同ファイルに `export const ANTHROPIC_MODEL_ALIASES: ReadonlySet<string> = new Set(["sonnet", "opus", "haiku"])`
+- [x] 同ファイルに `export const ANTHROPIC_MODEL_ALIASES: ReadonlySet<string> = new Set(["sonnet", "opus", "haiku"])`
       を追加する（live 検証で「実在扱い」する集合の単一真理）。
-- [ ] `resolveProvider("sonnet" | "opus" | "haiku", merged)` が `"anthropic"` を返すことを確認する
+- [x] `resolveProvider("sonnet" | "opus" | "haiku", merged)` が `"anthropic"` を返すことを確認する
       （registry 追加により自動的に成立）。
-- [ ] `validateConfig()` → `checkModelRegistry()`（`src/config/schema/validation.ts`）が
+- [x] `validateConfig()` → `checkModelRegistry()`（`src/config/schema/validation.ts`）が
       alias を含む config（例 `steps.design.model = "sonnet"`）を throw せず pass することを確認する
       （registry 追加により自動的に成立、コード改修不要のはず — 不足があれば補う）。
 
@@ -26,8 +26,8 @@
 
 ## T-02: 実効モデル収集 pure module `collectEffectiveModels`
 
-- [ ] `src/core/model-validation/collect-effective-models.ts` を新規作成する。
-- [ ] `EffectiveModelRef` 型（`{ stepName: string; model: string; provider: "anthropic" | "openai" | undefined; configPath: string | null }`）
+- [x] `src/core/model-validation/collect-effective-models.ts` を新規作成する。
+- [x] `EffectiveModelRef` 型（`{ stepName: string; model: string; provider: "anthropic" | "openai" | undefined; configPath: string | null }`）
       を定義・export する（provider は merged registry 未登録時 `undefined`）。
   - **`configPath` の意味**: ここでの `configPath` は **dotted key パス**（例: `steps.code-review.model`）であり、
     エラーメッセージで「どの config キーが問題か」をユーザーに示すために使う。
@@ -35,15 +35,15 @@
     存在するが、そちらは**設定ファイルの絶対パス**（`/home/user/.claude/settings.json` 等）を意味する。
     `traceStepExecutionConfig().fields.model.source` から取得する際は、**`source.path`**（dotted key）を使い、
     `source.configPath`（絶対ファイルパス）と混同しないこと。
-- [ ] `collectEffectiveModels(descriptor: PipelineDescriptor, config: SpecRunnerConfig, requestType: string | undefined, merged: ModelsConfig): EffectiveModelRef[]`
+- [x] `collectEffectiveModels(descriptor: PipelineDescriptor, config: SpecRunnerConfig, requestType: string | undefined, merged: ModelsConfig): EffectiveModelRef[]`
       を実装する。`descriptor.steps` を走査し `step.kind === "agent"` のみ対象とする。
-- [ ] 各 agent step の実効 model を
+- [x] 各 agent step の実効 model を
       `getStepExecutionConfig(config, step.name, { model: step.agent.model }, requestType).model` で解決する
       （custom reviewer / regression-gate は step 名が config に無く `step.agent.model` = snapshot 値 / dynamic 値へ fallback）。
-- [ ] provider は `merged[model]?.provider` で解決する（`resolveProvider` は未登録で throw するため使わない）。
-- [ ] `configPath` は `traceStepExecutionConfig(config, step.name, { model: step.agent.model }, requestType).fields.model.source.path`
+- [x] provider は `merged[model]?.provider` で解決する（`resolveProvider` は未登録で throw するため使わない）。
+- [x] `configPath` は `traceStepExecutionConfig(config, step.name, { model: step.agent.model }, requestType).fields.model.source.path`
       から取得する（step 定義 fallback は `null`）。
-- [ ] pure（no I/O）を維持する。
+- [x] pure（no I/O）を維持する。
 
 **Acceptance Criteria**:
 - composed descriptor（custom reviewer step + regression-gate step を含む）を渡すと、それら step の実効 model が
@@ -54,16 +54,16 @@
 
 ## T-03: 照合 pure checker `checkModelExistence`
 
-- [ ] `src/core/model-validation/check-model-existence.ts` を新規作成する。
-- [ ] 戻り値 DU を定義・export する:
+- [x] `src/core/model-validation/check-model-existence.ts` を新規作成する。
+- [x] 戻り値 DU を定義・export する:
       `{ kind: "ok" } | { kind: "skipped"; reason: string } | { kind: "invalid"; unknown: EffectiveModelRef[] }`。
-- [ ] `checkModelExistence(refs: EffectiveModelRef[], result: SupportedModelsResult): ModelExistenceOutcome` を実装する。
-- [ ] `result.kind === "unavailable"` → `{ kind: "skipped", reason: result.reason }`。
-- [ ] `refs` を `provider === "anthropic"` のみに絞る（OpenAI / provider 未登録は照合対象外）。
-- [ ] anthropic ref のうち `ANTHROPIC_MODEL_ALIASES.has(model)` は実在扱い（pass）。
+- [x] `checkModelExistence(refs: EffectiveModelRef[], result: SupportedModelsResult): ModelExistenceOutcome` を実装する。
+- [x] `result.kind === "unavailable"` → `{ kind: "skipped", reason: result.reason }`。
+- [x] `refs` を `provider === "anthropic"` のみに絞る（OpenAI / provider 未登録は照合対象外）。
+- [x] anthropic ref のうち `ANTHROPIC_MODEL_ALIASES.has(model)` は実在扱い（pass）。
       それ以外は `result.models` に含まれれば pass、含まれなければ unknown に積む。
-- [ ] unknown が 1 件以上 → `{ kind: "invalid", unknown }`、0 件 → `{ kind: "ok" }`。
-- [ ] pure（no I/O）を維持する。
+- [x] unknown が 1 件以上 → `{ kind: "invalid", unknown }`、0 件 → `{ kind: "ok" }`。
+- [x] pure（no I/O）を維持する。
 
 **Acceptance Criteria**:
 - `provider === "openai"` の ref は `result.models` に無くても照合対象外で unknown に入らない（false positive 防止）ことをテストで固定する。
@@ -74,10 +74,10 @@
 
 ## T-04: model listing port 定義
 
-- [ ] `src/core/port/model-listing.ts` を新規作成する（port 層 — adapter / core-runtime を import しない）。
-- [ ] `SupportedModelsResult = { kind: "listed"; models: string[] } | { kind: "unavailable"; reason: string }`
+- [x] `src/core/port/model-listing.ts` を新規作成する（port 層 — adapter / core-runtime を import しない）。
+- [x] `SupportedModelsResult = { kind: "listed"; models: string[] } | { kind: "unavailable"; reason: string }`
       を定義・export する。
-- [ ] `SupportedModelsProbe = (env: Record<string, string | undefined>) => Promise<SupportedModelsResult>`
+- [x] `SupportedModelsProbe = (env: Record<string, string | undefined>) => Promise<SupportedModelsResult>`
       を定義・export する（contract: never throw — 全エラーを `unavailable` に分類）。
 
 **Acceptance Criteria**:
@@ -86,12 +86,12 @@
 
 ## T-05: SDK model 一覧 adapter probe `createClaudeSupportedModelsProbe`
 
-- [ ] `src/adapter/claude-code/supported-models-probe.ts` を新規作成する
+- [x] `src/adapter/claude-code/supported-models-probe.ts` を新規作成する
       （`provider-readiness-probe.ts` を範として構成する）。
-- [ ] `createClaudeSupportedModelsProbe(opts?)` を実装し `SupportedModelsProbe` を返す。
+- [x] `createClaudeSupportedModelsProbe(opts?)` を実装し `SupportedModelsProbe` を返す。
       `opts` に `loadSdkFn?`（既定 `loadClaudeAgentSdk`）・`resolveTokenFn?`・`timeoutMs?` を注入可能にする。
-- [ ] `stripSecrets(env)` + OAuth token best-effort 解決（token 絶対値を返り値・log に出さない）を行う。
-- [ ] SDK を **streaming input mode** で起動する（`prompt` を `AsyncIterable` として渡す — control request
+- [x] `stripSecrets(env)` + OAuth token best-effort 解決（token 絶対値を返り値・log に出さない）を行う。
+- [x] SDK を **streaming input mode** で起動する（`prompt` を `AsyncIterable` として渡す — control request
       `supportedModels()` は streaming mode でのみ利用可能: sdk.d.ts:2026-2030）。
   - `src/adapter/claude-code/sdk-loader.ts` に以下の型を追加すること:
     - **`SdkModelInfo`**: SDK の `ModelInfo`（sdk.d.ts:1064-1097）の minimal local alias。
@@ -128,12 +128,12 @@
     ```
     この方式により、`AbortController.abort()` を呼ぶだけで iterable が終了し、
     streaming input channel が閉じられる。
-- [ ] 起動した `Query` の `supportedModels()` を呼び、`ModelInfo[].value` を抽出して
+- [x] 起動した `Query` の `supportedModels()` を呼び、`ModelInfo[].value` を抽出して
       `{ kind: "listed", models }` を返す。
-- [ ] wall-clock timeout を `AbortController` + `setTimeout` で設定する（既定は provider readiness と同値 30s を推奨）。
-- [ ] **never throw**: SDK unavailable / auth 失敗 / offline / timeout / その他例外はすべて捕捉し
+- [x] wall-clock timeout を `AbortController` + `setTimeout` で設定する（既定は provider readiness と同値 30s を推奨）。
+- [x] **never throw**: SDK unavailable / auth 失敗 / offline / timeout / その他例外はすべて捕捉し
       `{ kind: "unavailable", reason }` に分類する（reason に token 絶対値を含めない）。
-- [ ] `try/finally` で成功・取得失敗・timeout の全経路において
+- [x] `try/finally` で成功・取得失敗・timeout の全経路において
       `AbortController.abort()` + `Query.close()`（sdk.d.ts:2230）+ `clearTimeout` を実行し、
       streaming input iterable を終了させる（session / bundled CLI subprocess を残さない）。
 
@@ -147,24 +147,24 @@
 
 ## T-06: runtime port + LocalRuntime 実装 + preflight 統合（local 限定）
 
-- [ ] `src/core/port/runtime-strategy.ts` の `RuntimeStrategy` に optional method
+- [x] `src/core/port/runtime-strategy.ts` の `RuntimeStrategy` に optional method
       `listSupportedModels?(env: Record<string, string | undefined>): Promise<SupportedModelsResult>` を追加する
       （`RealRuntimeStrategy` の required 集合には**加えない** — managed に実装を強制しない）。
-- [ ] `src/core/runtime/local.ts`（`LocalRuntime`）に `listSupportedModels(env)` を実装する。
+- [x] `src/core/runtime/local.ts`（`LocalRuntime`）に `listSupportedModels(env)` を実装する。
       constructor opts に `supportedModelsProbe?` を追加し（`providerReadinessProbe` と同じ注入パターン）、
       未注入時は adapter probe を lazy import（`createClaudeSupportedModelsProbe`）して使う。
-- [ ] `ManagedRuntime`（`src/core/runtime/managed.ts`）には実装しない（method presence = local 限定を表現）。
-- [ ] `src/core/model-validation/preflight.ts` を新規作成し
+- [x] `ManagedRuntime`（`src/core/runtime/managed.ts`）には実装しない（method presence = local 限定を表現）。
+- [x] `src/core/model-validation/preflight.ts` を新規作成し
       `assertEffectiveModelsExist({ runtime, descriptor, config, requestType, env, merged, logWarn }): Promise<void>`
       を実装する。処理順:
-  - [ ] `runtime.listSupportedModels` が無ければ即 return（managed skip）。
-  - [ ] `collectEffectiveModels(descriptor, config, requestType, merged)` で ref を収集。
+  - [x] `runtime.listSupportedModels` が無ければ即 return（managed skip）。
+  - [x] `collectEffectiveModels(descriptor, config, requestType, merged)` で ref を収集。
         `provider === "anthropic"` の ref が 0 件なら probe を起動せず return（不要 session 抑制）。
-  - [ ] `result = await runtime.listSupportedModels(env)` → `checkModelExistence(refs, result)`。
-  - [ ] `invalid` → step 名 + config path を列挙した message で
+  - [x] `result = await runtime.listSupportedModels(env)` → `checkModelExistence(refs, result)`。
+  - [x] `invalid` → step 名 + config path を列挙した message で
         `new SpecRunnerError(ERROR_CODES.CONFIG_INVALID, hint, message)` を throw する。
-  - [ ] `skipped` → `logWarn(...)`（理由を含める）で継続。`ok` → 何もしない。
-- [ ] `src/core/command/pipeline-run.ts` の `prepare()` で、`composeReviewerDescriptor` +
+  - [x] `skipped` → `logWarn(...)`（理由を含める）で継続。`ok` → 何もしない。
+- [x] `src/core/command/pipeline-run.ts` の `prepare()` で、`composeReviewerDescriptor` +
       `validateDescriptorInputCompleteness` の**後**、`assertNoDuplicateLiveJob` / `bootstrapJob` の**前**に
       `await assertEffectiveModelsExist(...)` を呼ぶ（`merged` は `mergeModelRegistry(config)`、
       `requestType` は `request.type`、`env` は `process.env`、`logWarn` は logger）。
@@ -179,15 +179,15 @@
 
 ## T-07: doctor への同一 checker 再利用配置（条件付き）
 
-- [ ] `DoctorContext`（`src/core/doctor/types.ts`）に optional field
+- [x] `DoctorContext`（`src/core/doctor/types.ts`）に optional field
       `supportedModelsProbe?: SupportedModelsProbe` を追加する（未注入 → skip=warn）。
-- [ ] `src/core/doctor/checks/config/model-existence.ts` を新規作成し `DoctorCheck` を実装する。
+- [x] `src/core/doctor/checks/config/model-existence.ts` を新規作成し `DoctorCheck` を実装する。
       `collectEffectiveModels`（base standard descriptor、requestType 無し、`merged = BUILTIN_MODEL_REGISTRY` +
       config.models）+ `checkModelExistence` を再利用する。
-- [ ] 判定マッピング: `probe 未注入` / `skipped` → `warn`、`invalid` → `fail`（未知モデルを step / config path 付きで
+- [x] 判定マッピング: `probe 未注入` / `skipped` → `warn`、`invalid` → `fail`（未知モデルを step / config path 付きで
       `details` 化）、`ok` → `pass`。`required: false`。
-- [ ] `localChecks`（`src/core/doctor/checks/index.ts`）に登録する。
-- [ ] doctor の runner（`src/core/doctor/runner.ts`）で local runtime のとき probe を注入する
+- [x] `localChecks`（`src/core/doctor/checks/index.ts`）に登録する。
+- [x] doctor の runner（`src/core/doctor/runner.ts`）で local runtime のとき probe を注入する
       （既存の provider-alive 系 check の注入経路に倣う）。
 
 **Acceptance Criteria**:
@@ -198,10 +198,10 @@
 
 ## T-08: 型チェック・全テスト green 確認
 
-- [ ] `bun run typecheck` が green。
-- [ ] `bun run test` が green（既存テストは無変更で green — 特に `tests/config/model-registry.test.ts` /
+- [x] `bun run typecheck` が green。
+- [x] `bun run test` が green（既存テストは無変更で green — 特に `tests/config/model-registry.test.ts` /
       registry 依存テスト、`tests/core/provider-readiness-gate.test.ts` を確認）。
-- [ ] 新規テストが受け入れ基準の全項目を固定していることを確認する。
+- [x] 新規テストが受け入れ基準の全項目を固定していることを確認する。
 
 **Acceptance Criteria**:
 - `typecheck && test` が green。

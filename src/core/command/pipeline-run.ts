@@ -6,7 +6,7 @@
  * the result to the constructor, per spec-review finding #1.
  */
 import type { PreflightResult } from "../preflight.js";
-import { logInfo, setLogLevel, type LogLevel } from "../../logger/stdout.js";
+import { logInfo, logWarn, setLogLevel, type LogLevel } from "../../logger/stdout.js";
 import { CommandRunner, type PrepareResult } from "./runner.js";
 import type { RuntimeStrategy } from "../port/runtime-strategy.js";
 import type { EventBus } from "../event/event-bus.js";
@@ -29,6 +29,8 @@ import { validateReviewerDefinitions } from "../reviewers/validate.js";
 import type { ReviewerSnapshot } from "../reviewers/types.js";
 import { requestMdPath } from "../../util/paths.js";
 import * as fsPromises from "node:fs/promises";
+import { mergeModelRegistry } from "../../config/model-registry.js";
+import { assertEffectiveModelsExist } from "../model-validation/preflight.js";
 
 export interface PipelineRunOptions {
   cwd?: string;
@@ -133,6 +135,19 @@ export class PipelineRunCommand extends CommandRunner {
         inputViolations,
       );
     }
+
+    // Validate effective model existence via SDK supportedModels() (local runtime only).
+    // Placed after descriptor composition + input-completeness checks, before bootstrapJob,
+    // so a CONFIG_INVALID model does not leave job state behind.
+    await assertEffectiveModelsExist({
+      runtime: this.runtime,
+      descriptor: composedDescriptor,
+      config,
+      requestType: request.type,
+      env: process.env,
+      merged: mergeModelRegistry(config),
+      logWarn,
+    });
 
     // Reject a second run while a live job already holds this slug. Placed before
     // bootstrapJob so a rejected run creates no job state. Optional on the port

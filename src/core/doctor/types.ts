@@ -6,6 +6,10 @@
  */
 
 import type * as nodeFsSync from "node:fs";
+import type { SupportedModelsProbe } from "../port/model-listing.js";
+
+// Re-export for use in doctor checks without requiring them to import from port.
+export type { SupportedModelsProbe };
 
 export type DoctorCategory =
   | "runtime"
@@ -150,6 +154,14 @@ export interface DoctorContext {
    * Used by config-file-exists check so that the check honours XDG_CONFIG_HOME.
    */
   configPath: string;
+  /**
+   * Injectable supported-models probe for the model-existence doctor check.
+   *
+   * When present (injected by the doctor runner for local runtime), the check
+   * validates effective Anthropic model IDs against the SDK supported-models list.
+   * When absent (undefined), the check returns warn (probe unavailable).
+   */
+  supportedModelsProbe?: SupportedModelsProbe;
 }
 
 /**

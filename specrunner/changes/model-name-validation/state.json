@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e7dc8301-1fea-4649-b634-47ce46b57572",
   "createdAt": "2026-08-21T10:02:27.789Z",
-  "updatedAt": "2026-08-21T10:48:07.324Z",
+  "updatedAt": "2026-08-21T10:48:48.813Z",
   "request": {
     "title": "実効モデル名を SDK の supportedModels() で実在検証する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/model-name-validation-e7dc8301",
   "error": null,
@@ -70,7 +70,8 @@
     "165ff7ef26571bab644069451d56cb547c578f4d",
     "b906baa9e0b7f903f56bf43c90aa0eac127fe88f",
     "cf802b342b2d3d8c6947c738e3849c859f1a32ed",
-    "86c7620498e911377d8eeaa852aa5db8d8e74c69"
+    "86c7620498e911377d8eeaa852aa5db8d8e74c69",
+    "7e9cec3170a839a8f36f12fc531666efdd04c6cc"
   ],
   "touchedFiles": {
     "request-review": [
@@ -152,21 +153,16 @@
       "src/core/runtime/local.ts",
       "tests/config/model-registry.test.ts"
     ],
-    "spec-fixer": [
-      "src/adapter/claude-code/sdk-loader.ts",
-      "src/config/step-config.ts",
-      "src/adapter/claude-code/provider-readiness-probe.ts",
-      "node_modules/@anthropic-ai/claude-agent-sdk/sdk.d.ts"
-    ]
+    "spec-fixer": []
   },
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 2,
-      "spec-fixer": 1
+      "spec-fixer": 2
     }
   }
 }

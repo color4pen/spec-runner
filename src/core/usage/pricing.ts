@@ -107,10 +107,24 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheRead: 0.1,
     cacheWrite: 1.25,
   },
+  // Alias "haiku" → claude-haiku-4-5 pricing (SDK resolves alias at execution time)
+  "haiku": {
+    input: 1.0,
+    output: 5.0,
+    cacheRead: 0.1,
+    cacheWrite: 1.25,
+  },
 
   // Claude Opus 5 — Anthropic 公表値(2026-08-09 確認)
   // cacheRead = input × 0.1 / cacheWrite = input × 1.25 (Anthropic 実測則)
   "claude-opus-5": {
+    input: 5.0,
+    output: 25.0,
+    cacheRead: 0.5,
+    cacheWrite: 6.25,
+  },
+  // Alias "opus" → claude-opus-5 pricing (SDK resolves alias at execution time)
+  "opus": {
     input: 5.0,
     output: 25.0,
     cacheRead: 0.5,
@@ -122,6 +136,13 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   // 注意: 2026-08-31 まで introductory 価格 $2/$10 が適用されるため、
   // 期間中の SDK 実測 probe は本表と乖離する(本表は 2026-09-01 以降の定価)
   "claude-sonnet-5": {
+    input: 3.0,
+    output: 15.0,
+    cacheRead: 0.3,
+    cacheWrite: 3.75,
+  },
+  // Alias "sonnet" → claude-sonnet-5 pricing (SDK resolves alias at execution time)
+  "sonnet": {
     input: 3.0,
     output: 15.0,
     cacheRead: 0.3,

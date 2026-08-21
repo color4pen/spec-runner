@@ -2,6 +2,26 @@ import { loadOptionalProviderSdk } from "../shared/provider-sdk-loader.js";
 
 export const CLAUDE_AGENT_SDK_PACKAGE = "@anthropic-ai/claude-agent-sdk";
 
+/**
+ * Minimal local alias for sdk.d.ts ModelInfo — only the value field is needed by the probe.
+ * Defined locally to avoid a static import of the SDK package (DSM §3 compliance).
+ */
+export interface SdkModelInfo {
+  value: string;
+}
+
+/**
+ * Extended result type for sdk.query() when called in streaming input mode.
+ * supportedModels() and close() are only available in streaming input mode
+ * (sdk.d.ts:2026-2030, 2098, 2230).
+ *
+ * Use `sdk.query(...) as ClaudeSdkQueryResult` to cast, then call supportedModels().
+ */
+export interface ClaudeSdkQueryResult extends AsyncGenerator<unknown, void> {
+  supportedModels(): Promise<SdkModelInfo[]>;
+  close(): void;
+}
+
 export type ClaudeSdkQuery = (params: {
   prompt: string | AsyncIterable<unknown>;
   options?: Record<string, unknown>;

@@ -597,6 +597,22 @@ export interface RuntimeStrategy {
   assertNoDuplicateLiveJob?(repoRoot: string, slug: string): Promise<void>;
 
   /**
+   * List supported Anthropic models via the SDK.
+   *
+   * Called by assertEffectiveModelsExist() (preflight) to validate effective model IDs.
+   * Only implemented by LocalRuntime — absence on ManagedRuntime indicates managed skip.
+   *
+   * Contract:
+   * - Never throws — returns SupportedModelsResult DU instead.
+   * - listed: the SDK returned a model list; models contains ModelInfo.value strings.
+   * - unavailable: offline / auth unset / SDK unavailable / timeout → job continues with warning.
+   *
+   * Optional on the port: absence = runtime cannot list models (managed skip).
+   * Only LocalRuntime implements this.
+   */
+  listSupportedModels?(env: Record<string, string | undefined>): Promise<import("./model-listing.js").SupportedModelsResult>;
+
+  /**
    * Assert that the provider is ready before any side effects (job state / worktree / branch
    * / journal) are created.
    *

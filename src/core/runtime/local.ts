@@ -114,6 +114,12 @@ export interface LocalRuntimeOptions {
    * Test fakes return a predetermined ProviderReadinessResult without any real network call.
    */
   providerReadinessProbe?: import("../port/provider-readiness.js").ProviderReadinessProbe;
+  /**
+   * Injectable supported-models probe for dependency injection in tests.
+   * Defaults to the real adapter-backed probe from adapter/claude-code/supported-models-probe.ts.
+   * Test fakes return a predetermined SupportedModelsResult without any real network call.
+   */
+  supportedModelsProbe?: import("../port/model-listing.js").SupportedModelsProbe;
 }
 
 export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
@@ -140,6 +146,9 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
 
   /** Injectable provider readiness probe (defaults to real adapter probe at composition root). */
   private readonly providerReadinessProbe: import("../port/provider-readiness.js").ProviderReadinessProbe | undefined;
+
+  /** Injectable supported-models probe (defaults to real adapter probe at composition root). */
+  private readonly supportedModelsProbe: import("../port/model-listing.js").SupportedModelsProbe | undefined;
 
   // Set by setupWorkspace(); used by buildDeps() and registerCleanup()
   private workspace: WorkspaceContext | null = null;
@@ -175,6 +184,8 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     // the real adapter-backed probe. Leaving it undefined here means tests that
     // construct LocalRuntime without a probe option also avoid network calls.
     this.providerReadinessProbe = opts.providerReadinessProbe;
+    // Default is undefined — lazy-imported at call time (same pattern as providerReadinessProbe).
+    this.supportedModelsProbe = opts.supportedModelsProbe;
   }
 
   /**
@@ -974,6 +985,28 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     const result = await probe(env);
     const err = classifyProviderReadiness(result);
     if (err) throw err;
+  }
+
+  /**
+   * List supported Anthropic models via the Claude Agent SDK.
+   *
+   * Used by assertEffectiveModelsExist() (model-validation preflight) to validate
+   * effective model IDs before job start. The real probe is lazy-imported to avoid
+   * pulling adapter dependencies at class construction time.
+   *
+   * Contract: never throws — returns SupportedModelsResult DU (listed | unavailable).
+   */
+  async listSupportedModels(
+    env: Record<string, string | undefined>,
+  ): Promise<import("../port/model-listing.js").SupportedModelsResult> {
+    let probe = this.supportedModelsProbe;
+    if (!probe) {
+      const { createClaudeSupportedModelsProbe } = await import(
+        "../../adapter/claude-code/supported-models-probe.js"
+      );
+      probe = createClaudeSupportedModelsProbe();
+    }
+    return probe(env);
   }
 
   // ---------------------------------------------------------------------------

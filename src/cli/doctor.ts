@@ -186,6 +186,19 @@ export async function runDoctor(opts: {
   // Build GitHub client (uses resolved token — may be null → empty string fallback)
   const githubClient: DoctorGitHubClient = createGitHubClient(globalThis.fetch, resolvedGitHubToken ?? "", githubApiBaseUrl);
 
+  // Run runtime-specific checks
+  const runtime = rawConfig?.runtime ?? "local";
+
+  // Inject supported-models probe for local runtime (model-existence doctor check).
+  // Loaded lazily to avoid importing adapter code in managed-runtime paths.
+  let supportedModelsProbe: DoctorContext["supportedModelsProbe"] | undefined;
+  if (runtime === "local") {
+    const { createClaudeSupportedModelsProbe } = await import(
+      "../adapter/claude-code/supported-models-probe.js"
+    );
+    supportedModelsProbe = createClaudeSupportedModelsProbe();
+  }
+
   // Assemble DoctorContext
   const ctx: DoctorContext = {
     cwd: invokerCwd,
@@ -207,10 +220,8 @@ export async function runDoctor(opts: {
     resolvedClaudeCodeOAuthToken,
     claudeCodeOAuthTokenSource,
     configPath: getConfigPath(),
+    supportedModelsProbe,
   };
-
-  // Run runtime-specific checks
-  const runtime = rawConfig?.runtime ?? "local";
   const checks = [
     ...commonChecks,
     ...(runtime === "managed" ? managedChecks : localChecks),

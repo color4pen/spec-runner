@@ -23,6 +23,11 @@ export const BUILTIN_MODEL_REGISTRY: ModelsConfig = {
   "claude-opus-5":     { provider: "anthropic" },
   "claude-sonnet-5":   { provider: "anthropic" },
   "claude-fable-5":    { provider: "anthropic" },
+  // Anthropic short aliases — accepted by the SDK but absent from supportedModels() listing.
+  // Registered here so validateConfig / resolveProvider / live-validation all pass.
+  "sonnet":            { provider: "anthropic" },
+  "opus":              { provider: "anthropic" },
+  "haiku":             { provider: "anthropic" },
   "gpt-5.5":           { provider: "openai" },
   "gpt-5.4":           { provider: "openai" },
   "gpt-5.4-mini":      { provider: "openai" },
@@ -31,6 +36,15 @@ export const BUILTIN_MODEL_REGISTRY: ModelsConfig = {
   "gpt-5.6-terra":     { provider: "openai" },
   "gpt-5.6-luna":      { provider: "openai" },
 };
+
+/**
+ * Anthropic model short aliases accepted by the SDK.
+ * These aliases are treated as "always valid" in live model existence checks —
+ * the SDK resolves them at execution time, so they never appear in supportedModels().
+ *
+ * Single source of truth for the alias set used in checkModelExistence.
+ */
+export const ANTHROPIC_MODEL_ALIASES: ReadonlySet<string> = new Set(["sonnet", "opus", "haiku"]);
 
 /**
  * Provider-specific default models used by `specrunner init` to scaffold config.

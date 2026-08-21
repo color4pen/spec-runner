@@ -20,6 +20,7 @@ import { configFileExistsCheck } from "./config/file-exists.js";
 import { managedKeyPresentCheck } from "./config/managed-key-present.js";
 import { githubTokenPresentCheck } from "./config/github-token-present.js";
 import { claudeCodeTokenPresentCheck } from "./config/claude-code-token-present.js";
+import { modelExistenceCheck } from "./config/model-existence.js";
 
 // Env
 import { githubClientIdCheck } from "./env/github-client-id.js";
@@ -89,5 +90,6 @@ export const managedChecks: DoctorCheck[] = [
 export const localChecks: DoctorCheck[] = [
   claudeCodeTokenPresentCheck,
   codexCliCheck,
+  modelExistenceCheck,
 ];
 
