@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f6d2e71c-5ff1-4454-ad35-1073cc427a7f",
   "createdAt": "2026-08-22T13:47:16.472Z",
-  "updatedAt": "2026-08-22T15:02:11.825Z",
+  "updatedAt": "2026-08-22T15:24:45.615Z",
   "request": {
     "title": "agent session の active context / compaction を計測可能にする",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "awaiting-resume",
+  "step": "regression-gate",
+  "status": "running",
   "branch": "feat/agent-context-observability-f6d2e71c",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,8 @@
     "fa4e0167d8b278e82778950b9330735707fc1d0e",
     "4c17b711fb238911203675729b1a823316769327",
     "5c315615ce9c7675a4021f238b0c753c1159c45b",
-    "c0c0d97106984ee653cbcb5888d1cb288c425bfc"
+    "c0c0d97106984ee653cbcb5888d1cb288c425bfc",
+    "c7838755911171522dd1b71baae62af728df24cc"
   ],
   "touchedFiles": {
     "request-review": [
@@ -194,8 +195,8 @@
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "93a3711deff53e144cec31167f1849f4bd0c03cc",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -205,7 +206,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/agent-context-observability/design.md:sha256:4f13fcc8aebdd318513dd7bfd26b79d07b913822078b5b6560d96f6ae09318ff|specrunner/changes/agent-context-observability/request.md:sha256:b8e1ca0cbd86ff30abaedf6282c644b8bfbe3f2d8d7fd4f0e933e9eaed74bb6a|specrunner/changes/agent-context-observability/spec.md:sha256:16dc90bcad50aac5f6db83685f6bf2da72166ea2b3c333b7eb366e793c949d20|specrunner/changes/agent-context-observability/tasks.md:sha256:ab7236d2e62942a24be24693de1d572d9c1287f59df68cd1ffdb28c3cf937adc|specrunner/changes/agent-context-observability/test-cases.md:sha256:366bd5c2863eca4958a7657ff70cb006bd73730a9ca6678a457eaf6c8822281b"
     },
     {
       "name": "scale-tolerance",
@@ -220,13 +222,17 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "custom-reviewers (cross-boundary-invariants) escalation の操作者裁定: [F-1 medium/fixable commit-orchestrator.ts applySuccessPostPersistEffects] 修正する。contextMetrics の永続化を modelUsage ガードから独立させる: modelUsage が無い成功 run でも contextMetrics が存在すれば usage.json へ append する (その entry は modelUsage: null とし invocation metrics は載せない — design D7 の halt entry と同じ形)。aggregateUsage / job stats は modelUsage 無し entry をスキップするため既存集計は不変。回帰テストを追加すること。 [F-2 low/decision-needed commitRound parallel member halt の contextMetrics 廃棄] 現状維持 (提示 option 2) を採る。design.md Risks に既知の限界として明示済みで、本 Issue の観測対象は sequential step (implementer/fixer) が主。canon もコードも変更しない。 [F-3 low/fixable agent-runner.ts output-repair ループ] 修正する。postWork follow-up と同じ扱いに揃える: repair ストリームで result message の subtype が success 以外の場合に contextObserver.observeResult と errors 由来の markExhaustion を行い、catch 経路でも error message を markExhaustion へ渡す。回帰テストを追加すること。 修正は F-1 / F-3 の最小差分に限定し、canon (design.md / spec.md / test-cases.md) は変更しないこと。",
+      "step": "custom-reviewers",
+      "recordedAt": "2026-08-22T15:18:52.824Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 41,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -237,9 +243,9 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 1,
-      "cross-boundary-invariants": 1,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }
