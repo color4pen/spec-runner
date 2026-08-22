@@ -3,6 +3,7 @@
  *
  * TC-RC-01: output contains json fence block that parses to the original attestation
  * TC-RC-02: human-readable summary contains journal hash and gate count
+ * TC-RC-03: sections are collapsed in <details>, summary stays outside (#1073)
  */
 import { describe, it, expect } from "vitest";
 import { renderAttestationComment } from "../../../../src/core/attestation/render-comment.js";
@@ -139,5 +140,54 @@ describe("TC-RC-02: human-readable summary contains journalHash and gate count",
 
     // code-review perStep costUsd is null
     expect(comment).toContain("$?");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-RC-03: sections are collapsed in <details>, summary stays outside (#1073)
+// ---------------------------------------------------------------------------
+
+describe("TC-RC-03: sections are collapsed in <details>, summary stays outside", () => {
+  it("always-visible summary shows gate count, total cost, and shortened journal hash", () => {
+    const attestation = makeAttestation();
+    const comment = renderAttestationComment(attestation);
+    const firstDetailsIdx = comment.indexOf("<details>");
+    const visible = comment.slice(0, firstDetailsIdx);
+
+    expect(visible).toContain("## SpecRunner Attestation");
+    expect(visible).toContain(`**Gates:** ${attestation.gates.length}`);
+    expect(visible).toContain("**Cost:** $0.0025");
+    expect(visible).toContain(`\`${attestation.journalHash.slice(0, 12)}…\``);
+  });
+
+  it("gate history, step models, cost breakdown, and raw JSON each have a <details> section", () => {
+    const attestation = makeAttestation();
+    const comment = renderAttestationComment(attestation);
+
+    expect(comment).toContain(`<summary>Gate history (${attestation.gates.length})</summary>`);
+    expect(comment).toContain("<summary>Step models</summary>");
+    expect(comment).toContain("<summary>Cost breakdown</summary>");
+    expect(comment).toContain("<summary>Raw attestation JSON</summary>");
+    expect((comment.match(/<details>/g) ?? []).length).toBe(4);
+    expect((comment.match(/<\/details>/g) ?? []).length).toBe(4);
+  });
+
+  it("tables and JSON live inside the folds — nothing but the summary precedes the first <details>", () => {
+    const attestation = makeAttestation();
+    const comment = renderAttestationComment(attestation);
+    const firstDetailsIdx = comment.indexOf("<details>");
+    const visible = comment.slice(0, firstDetailsIdx);
+
+    expect(visible).not.toContain("|");
+    expect(visible).not.toContain("```json");
+  });
+
+  it("without step models, only that fold is omitted", () => {
+    const attestation = makeAttestation();
+    attestation.stepModels = [];
+    const comment = renderAttestationComment(attestation);
+
+    expect(comment).not.toContain("<summary>Step models</summary>");
+    expect((comment.match(/<details>/g) ?? []).length).toBe(3);
   });
 });
