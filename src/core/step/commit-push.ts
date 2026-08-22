@@ -30,6 +30,8 @@ import {
 } from "./staging-containment.js";
 import { stagingModeFor, findWriteScopeViolations, findScopedCommitViolations } from "./write-scope.js";
 import { pipelineManagedPaths } from "./round-git-scope.js";
+import { restackCheckpointOntoPublishedTip } from "./checkpoint-restack.js";
+import type { CheckpointRestackRecord } from "../../store/event-journal.js";
 
 /**
  * Default worktree size probe for the staged byte-size guard.
@@ -777,8 +779,15 @@ export async function commitFinalState(params: {
   /**
    * Optional callback invoked after commit and before push to persist the commit OID
    * to the synthesizedCommits ledger. Best-effort: throw is caught and warned; push proceeds.
+   * Also reused as `persistCommit` for the restack module (D7).
    */
   persistBeforePush?: (oid: string) => Promise<void>;
+  /**
+   * Optional callback invoked by the restack module to append a CheckpointRestackRecord
+   * to the job's events.jsonl journal BEFORE tree construction (D5, halt-checkpoint-restack).
+   * Best-effort: throw is caught and warned inside restackCheckpointOntoPublishedTip.
+   */
+  recordRestack?: (record: CheckpointRestackRecord) => Promise<void>;
 }): Promise<void> {
   const { cwd, branch, slug, spawnFn, messageLabel = "finalize", synthesizedCommits, persistBeforePush } = params;
 
@@ -880,6 +889,44 @@ export async function commitFinalState(params: {
       `Push manually to ensure state is on the branch.` +
       (push2Stderr ? ` git stderr: ${push2Stderr}` : ""),
   );
+
+  // D1 (halt-checkpoint-restack): after push double-failure, attempt to restack
+  // the checkpoint onto the last successful remote tip (origin/<branch>).
+  // Called ONLY on the failure path; the success path above exits early.
+  // Early-return branches (staging 0, no staged diff, commit failure, egress failure)
+  // are also excluded — restack is irrelevant when no checkpoint commit was created.
+  const restackOutcome = await restackCheckpointOntoPublishedTip({
+    cwd,
+    branch,
+    slug,
+    spawnFn,
+    messageLabel,
+    pushFailureStderr: push2Stderr,
+    recordRestack: params.recordRestack,
+    persistCommit: persistBeforePush,
+  });
+
+  // Output restack result message (after the existing warn, per D1)
+  switch (restackOutcome.kind) {
+    case "published":
+      stderrWrite(
+        `Info: checkpoint-restack: published restacked checkpoint for ${slug} ` +
+          `at ${restackOutcome.restackedOid} (parent: ${restackOutcome.parentOid}, ` +
+          `${restackOutcome.unpublishedCount} unpublished commit(s), graft: ${restackOutcome.graft})`,
+      );
+      break;
+    case "push-failed":
+      stderrWrite(
+        `Warning: checkpoint-restack: push of restacked checkpoint also failed for ${slug}` +
+          (restackOutcome.stderr ? `: ${restackOutcome.stderr}` : ""),
+      );
+      break;
+    case "skipped":
+      stderrWrite(
+        `Info: checkpoint-restack: skipped for ${slug} (reason: ${restackOutcome.reason})`,
+      );
+      break;
+  }
 }
 
 /**

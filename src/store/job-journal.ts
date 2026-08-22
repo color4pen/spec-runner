@@ -7,7 +7,7 @@ import {
   stepRunToRecord,
   historyEntryToRecord,
 } from "./event-journal.js";
-import type { FoldResult, EventRecord, InterruptionRecord, LineageRecord, OperatorEventRecord, FindingRecencyRecord } from "./event-journal.js";
+import type { FoldResult, EventRecord, InterruptionRecord, LineageRecord, OperatorEventRecord, FindingRecencyRecord, CheckpointRestackRecord } from "./event-journal.js";
 import { detectCounterReversal, describeJournalIssue } from "./journal-integrity.js";
 import { atomicWriteJson } from "../util/atomic-write.js";
 import { appendHistoryEntry } from "../state/schema.js";
@@ -248,6 +248,18 @@ export class JobJournal {
    * Best-effort: callers wrap in try/catch (same pattern as appendLineage).
    */
   async appendFindingRecency(record: FindingRecencyRecord): Promise<void> {
+    return this._appendRecord(record);
+  }
+
+  /**
+   * Append a checkpoint-restack record to the events journal (D5, halt-checkpoint-restack).
+   * Does not update state.json — checkpoint-restack is journal-only and never materialized
+   * into NormalizedJobState (does not affect historyCount / stepCounts).
+   * Called BEFORE tree construction so that the record is included in the published
+   * checkpoint's tree.
+   * Best-effort: callers wrap in try/catch.
+   */
+  async appendCheckpointRestack(record: CheckpointRestackRecord): Promise<void> {
     return this._appendRecord(record);
   }
 }

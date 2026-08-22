@@ -169,8 +169,41 @@ export interface FindingRecencyRecord {
   }>;
 }
 
+/**
+ * Records a halt checkpoint restack event (D5, halt-checkpoint-restack).
+ *
+ * Appended by restackCheckpointOntoPublishedTip() BEFORE tree construction,
+ * so that the record is included in the published checkpoint's tree.
+ * Journal-only: NOT materialized into state.json / NormalizedJobState.
+ *
+ * D5 (halt-checkpoint-restack): journal-only record enabling post-facto
+ * identification of "which local commits were not published" from the
+ * checkpoint tree alone (no local state required).
+ *
+ * counter reversal 検査は `transition` / `step-attempt` の件数のみを見るため、
+ * この record は `historyCount` / `stepCounts` に一切寄与しない
+ * （lineage / operator-event / finding-recency と同じ journal-only 扱い）。
+ */
+export interface CheckpointRestackRecord {
+  type: "checkpoint-restack";
+  /** ISO 8601 timestamp of the restack event. */
+  ts: string;
+  /** Job slug. */
+  slug: string;
+  /** Branch name (without "origin/" prefix). */
+  branch: string;
+  /** The parent commit OID — last successful push tip (origin/<branch>). */
+  parentOid: string;
+  /** The local tip OID at the time of halt — the commit that failed to push. */
+  localTipOid: string;
+  /** OID list of commits that were NOT published (git rev-list <parentOid>..<localTipOid>). */
+  unpublishedCommits: string[];
+  /** Push failure reason — push stderr masked with maskSensitive(), truncated to ~500 chars. */
+  reason: string;
+}
+
 /** All valid event record types. */
-export type EventRecord = StepAttemptRecord | TransitionRecord | InterruptionRecord | LineageRecord | OperatorEventRecord | FindingRecencyRecord;
+export type EventRecord = StepAttemptRecord | TransitionRecord | InterruptionRecord | LineageRecord | OperatorEventRecord | FindingRecencyRecord | CheckpointRestackRecord;
 
 // ---------------------------------------------------------------------------
 // Fold corruption
@@ -231,6 +264,13 @@ export interface FoldResult {
    * Optional so pre-existing hand-built FoldResult literals compile without change.
    */
   findingRecency?: FindingRecencyRecord[];
+  /**
+   * All checkpoint-restack records in chronological order (D5, halt-checkpoint-restack).
+   * NOT materialized into state.json / NormalizedJobState — journal-only.
+   * Optional so pre-existing hand-built FoldResult literals compile without change.
+   * fold() populates this field; absent == empty (no restack events).
+   */
+  checkpointRestacks?: CheckpointRestackRecord[];
   /**
    * Present when a mid-journal corruption was detected (a committed line that is
    * not valid JSON or not a plain object). Absent when the journal is clean.
@@ -304,6 +344,7 @@ export function fold(content: string): FoldResult {
   const lineageRecords: LineageRecord[] = [];
   const operatorEventRecords: OperatorEventRecord[] = [];
   const findingRecencyRecords: FindingRecencyRecord[] = [];
+  const checkpointRestackRecords: CheckpointRestackRecord[] = [];
   let corruption: FoldCorruption | undefined;
 
   for (let i = 0; i < committedLines.length; i++) {
@@ -358,6 +399,10 @@ export function fold(content: string): FoldResult {
     } else if (obj["type"] === "finding-recency") {
       // Collect finding-recency records (D4, spec-review-full-enumeration)
       findingRecencyRecords.push(obj as unknown as FindingRecencyRecord);
+    } else if (obj["type"] === "checkpoint-restack") {
+      // Collect checkpoint-restack records (D5, halt-checkpoint-restack)
+      // NOT counted in historyCount / stepCounts — journal-only
+      checkpointRestackRecords.push(obj as unknown as CheckpointRestackRecord);
     }
     // Unknown / legacy types (e.g. "history") are silently ignored for forward compat.
     // Unknown type is NOT a corruption — forward compatibility.
@@ -409,6 +454,7 @@ export function fold(content: string): FoldResult {
     lineage: lineageRecords,
     operatorEvents: operatorEventRecords,
     findingRecency: findingRecencyRecords,
+    ...(checkpointRestackRecords.length > 0 ? { checkpointRestacks: checkpointRestackRecords } : {}),
     ...(lastInterruption !== undefined ? { lastInterruption } : {}),
     ...(corruption !== undefined ? { corruption } : {}),
   };

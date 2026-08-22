@@ -43,7 +43,7 @@ import { commitAndPush, commitFinalState, commitScopedPaths } from "../step/comm
 import type { CommitPushInfra } from "../step/commit-push.js";
 import type { AgentStep } from "../step/types.js";
 import type { RealRuntimeStrategy, QueryOptions, WorkspaceOptions, WorkspaceContext, CleanupHandle, RequiredInput, FindingRef, MainCheckoutGuardSnapshot, WorktreeInspectionResult } from "../port/runtime-strategy.js";
-import type { ArtifactRef } from "../../store/event-journal.js";
+import type { ArtifactRef, CheckpointRestackRecord } from "../../store/event-journal.js";
 import type { OutputContract, OutputCheckResult } from "../port/output-contract.js";
 import { parseIncompleteTaskLabels, evaluateContentFormatChecks } from "../step/output-verify.js";
 import { evaluateTestCoverage } from "../verification/test-coverage.js";
@@ -757,7 +757,34 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
     // Persist-before-push invariant: pass a persistBeforePush callback so the
     // checkpoint/finalize commit OID is written to the synthesizedCommits ledger
     // before push. Best-effort (commitFinalState warns on failure; push proceeds).
+    // This callback is also reused as `persistCommit` inside restackCheckpointOntoPublishedTip (D7).
     const slugOpts = this.slugStoreOpts();
+    const persistBeforePush: ((oid: string) => Promise<void>) | undefined = slugOpts
+      ? async (oid: string) => {
+          await this.updateJobState(
+            state.jobId,
+            (s) => appendSynthesizedCommit(s, oid),
+            slugOpts,
+          );
+          // Keep the caller's in-memory state consistent with the disk ledger so any
+          // later wholesale store.persist of this state cannot roll back the append.
+          const ledger = (state.synthesizedCommits ??= []);
+          if (!ledger.includes(oid)) ledger.push(oid);
+        }
+      : undefined;
+
+    // D5 (halt-checkpoint-restack): recordRestack callback appends a checkpoint-restack
+    // record to the job's events.jsonl BEFORE tree construction inside restack.
+    // Not called in the success path — only passed to commitFinalState for use after
+    // push double-failure.
+    const recordRestack: ((record: CheckpointRestackRecord) => Promise<void>) | undefined =
+      slugOpts
+        ? async (record: CheckpointRestackRecord) => {
+            const store = new JobStateStore(state.jobId, slugOpts.stateRoot, slugOpts);
+            await store.appendCheckpointRestack(record);
+          }
+        : undefined;
+
     await commitFinalState({
       cwd,
       branch,
@@ -765,19 +792,8 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
       spawnFn: this.wrappedSpawnFn,
       messageLabel,
       synthesizedCommits: state.synthesizedCommits,
-      persistBeforePush: slugOpts
-        ? async (oid: string) => {
-            await this.updateJobState(
-              state.jobId,
-              (s) => appendSynthesizedCommit(s, oid),
-              slugOpts,
-            );
-            // Keep the caller's in-memory state consistent with the disk ledger so any
-            // later wholesale store.persist of this state cannot roll back the append.
-            const ledger = (state.synthesizedCommits ??= []);
-            if (!ledger.includes(oid)) ledger.push(oid);
-          }
-        : undefined,
+      persistBeforePush,
+      recordRestack,
     });
   }
 
