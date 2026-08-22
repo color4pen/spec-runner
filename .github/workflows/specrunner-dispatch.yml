@@ -16,13 +16,14 @@ name: SpecRunner Dispatch
 #           wontfix / wontfix_reason は regression-gate findings への operator 不採用裁定
 #           （--wontfix / --wontfix-reason）をそのまま透過する。
 # - reopen: PR 作成後に awaiting-archive で待機する job を pipeline に戻す（#1066）。
-#           Development linked branch を解決して attach → （canon_patch があれば worktree へ
-#           dirty apply。commit はしない）→ job reopen <slug> --from <step> --reason <text>。
-#           reopen は commit を作らず、canon 変更と operator-event は再実行後の最初の
-#           checkpoint commit に pipeline 規約で載る。PR が OPEN であること・status が
-#           awaiting-archive であることは CLI の reopen gate が検証する。
-#           reopen は --apply-canon / --prompt を受けない（CLI 契約）ため、canon_patch は
-#           dirty apply のみ・prompt は透過しない。
+#           Development linked branch（無ければ closing PR 参照）を解決して attach →
+#           （canon_patch があれば worktree へ適用し operator-apply commit として push）→
+#           job reopen <slug> --from <step> --reason <text>。reopen transition 自体は
+#           commit を作らない。canon を dirty のまま置くと step 境界の write-scope 検査に
+#           誤帰属される（実測: run 32569597460）ため、resume --apply-canon と同型の
+#           commit + push で取り込む。PR が OPEN であること・status が awaiting-archive
+#           であることは CLI の reopen gate が検証する。reopen は --apply-canon / --prompt
+#           を受けない（CLI 契約）ため commit は workflow 側で行い、prompt は透過しない。
 # - archive: 完走した job を issue 番号から取り込む。2 相の実行を前提とする。
 #            1 回目（merge 前）: completed marker → archive record を feature branch に push し
 #            awaiting-archive を維持する。
@@ -184,7 +185,18 @@ jobs:
                 -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){linkedBranches(first:20){nodes{ref{name}}}}}}' \
                 --jq '[.data.repository.issue.linkedBranches.nodes[].ref.name] | (map(select(startswith("change/"))) + .) | first // empty')
               if [ -z "$BRANCH" ]; then
-                echo "::error::issue #$ISSUE に Development linked branch が無い（canon_patch 経路には必須）"
+                # PR 作成後は Development link が branch から PR へ置き換わり linkedBranches が
+                # 空になる (実測: run 32568457970)。PR 作成後の halt (write-scope violation 等)
+                # からの resume でも必要なため、closing PR 参照 (OPEN のみ) へ fallback する。
+                BRANCH=$(gh api graphql \
+                  -F owner='${{ github.repository_owner }}' \
+                  -F name='${{ github.event.repository.name }}' \
+                  -F number="$ISSUE" \
+                  -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{headRefName}}}}}' \
+                  --jq '[.data.repository.issue.closedByPullRequestsReferences.nodes[].headRefName] | (map(select(startswith("change/"))) + .) | first // empty')
+              fi
+              if [ -z "$BRANCH" ]; then
+                echo "::error::issue #$ISSUE の branch を解決できない（Development linked branch も OPEN な closing PR も無い。canon_patch 経路には必須）"
                 exit 1
               fi
               bun ./bin/specrunner.ts job attach --branch "$BRANCH" | tee attach-out.txt
@@ -274,10 +286,18 @@ jobs:
                   exit 1
                 fi
               fi
-              # reopen は --apply-canon を持たない: commit せず dirty のまま置き、
-              # 再実行後の最初の checkpoint commit に pipeline 規約で載せる（reopen の
-              # 「reopen のためだけの commit を作らない」契約と整合）。
               git -C "$WT" apply --whitespace=nowarn /tmp/canon.patch
+              # dirty のままだと次の step 境界の write-scope 検査が canon 変更を step の
+              # 書き込みとして誤帰属し halt する (実測: run 32569597460 の implementer
+              # write-scope violation)。resume --apply-canon と同型の operator-apply
+              # commit として取り込み、egress 台帳外 OID を publish range に残さないよう
+              # reopen 前に push まで済ませる (pushed commit は rev-list HEAD --not
+              # --remotes の範囲に入らない)。checkout は persist-credentials: false の
+              # ため、push はコマンド単位の transport auth で行う。
+              git -C "$WT" add -- "specrunner/changes/"
+              git -C "$WT" commit -m "operator-apply: $SLUG"
+              git -C "$WT" -c "http.https://github.com/.extraheader=AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GITHUB_TOKEN" | base64 -w0)" \
+                push origin "HEAD:refs/heads/$BRANCH"
             fi
             bun ./bin/specrunner.ts job reopen "$SLUG" --from "$FROM" --reason "$REASON"
           elif [ "$ACTION" = "archive" ]; then
