@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-22T23:00:43.081Z",
+  "updatedAt": "2026-08-22T23:48:03.762Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -69,7 +69,9 @@
     "4c609ebee818f6149299bb8a9e1900abe25a8542",
     "190859033f2a5d604d0226a0b4a7e497e08fc40a",
     "1c22b9f126b235c945dcb21ae91515f62481be56",
-    "42120783df0680e00c1239827a0e28189ed380ed"
+    "42120783df0680e00c1239827a0e28189ed380ed",
+    "a9f1a2c928b65458a3fecca5539033b2f9a625a0",
+    "7218de6a3bd5ad0da9b2c7524c28cdd78af72958"
   ],
   "touchedFiles": {
     "request-review": [
@@ -117,16 +119,56 @@
       "tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts",
       "src/config/schema/validation.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "src/config/schema/types.ts",
+      "src/config/schema/resolution.ts",
+      "src/config/schema/validation.ts",
+      "src/config/schema/index.ts",
+      "src/config/schema.ts",
+      "src/core/port/agent-runner.ts",
+      "src/kernel/event-types.ts",
+      "src/core/event/types.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/config/__tests__/transient-retry-config.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts",
+      "src/logger/pipeline-logger.ts",
+      "src/cli/progress.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts",
+      "src/adapter/claude-code/completion-directive.ts",
+      "src/core/usage/store.ts",
+      "src/core/usage/types.ts",
+      "tests/unit/core/step/commit-orchestrator-context-metrics.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-context-metrics.test.ts",
+      "src/config/__tests__/context-rollover-config.test.ts",
+      "src/adapter/claude-code/rollover-prompt.ts",
+      "tests/unit/adapter/claude-code/rollover-prompt.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts",
+      "tests/unit/core/step/commit-orchestrator-rollover.test.ts",
+      "src/core/step/executor.ts",
+      "tests/unit/core/command/runner.test.ts",
+      "tests/unit/core/step/scope-escalation.test.ts",
+      "src/util/git-exec.ts",
+      "src/core/step/no-op-detect.ts",
+      "docs/configuration.md",
+      "docs/operations.md"
+    ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
