@@ -1,6 +1,6 @@
 name: SpecRunner Dispatch
 
-# Actions 画面から issue 番号だけで pipeline を起動 / 再開する手動発火。
+# Actions 画面から issue 番号だけで pipeline を起動 / 再開 / 取り込みする手動発火。
 # issue 本文の取得・slug 抽出・draft 実体化・branch 特定はすべて CLI の issue-target 層が担い、
 # workflow は SpecRunner の内部知識を持たない。
 #
@@ -10,6 +10,12 @@ name: SpecRunner Dispatch
 #           issue コメントの escalation marker → Development リンク → checkpoint identity 照合
 #           → rebind → resume。checkpoint は feature branch に publish されているため、
 #           別 runner（ephemeral 環境）からでも issue 番号だけで継続できる。
+# - archive: 完走した job を issue 番号から取り込む。2 相の実行を前提とする。
+#            1 回目（merge 前）: completed marker → archive record を feature branch に push し
+#            awaiting-archive を維持する。
+#            2 回目（merge 後・head branch 削除済み）: checkout 済み base の archive record から
+#            slug を解決し completeAfterMerge を実行して exit 0 で終わる。
+#            相の判定と完了処理はすべて CLI 側（runPlainArchive）にあり、workflow は状態を見ない。
 #
 # 前提: リポジトリ secret CLAUDE_CODE_OAUTH_TOKEN（`claude setup-token` の出力）。
 
@@ -20,11 +26,12 @@ on:
         description: "Issue number"
         required: true
       action:
-        description: "start: issue 本文から新規 job を起動 / resume: escalation 済み job を再開"
+        description: "start: issue 本文から新規 job を起動 / resume: escalation 済み job を再開 / archive: 完走した job を取り込む"
         type: choice
         options:
           - start
           - resume
+          - archive
         default: start
       from:
         # choice にしない: 有効な step 名は job の state に依存する（custom reviewer 名は動的）。
@@ -126,6 +133,8 @@ jobs:
             [ -n "$PROMPT" ] && set -- "$@" --prompt "$PROMPT"
             [ "$FORCE" = "true" ] && set -- "$@" --force
             bun ./bin/specrunner.ts job resume "$@"
+          elif [ "$ACTION" = "archive" ]; then
+            bun ./bin/specrunner.ts job archive --from-issue "$ISSUE"
           else
             bun ./bin/specrunner.ts job start --from-issue "$ISSUE"
           fi

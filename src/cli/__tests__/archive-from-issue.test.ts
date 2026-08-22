@@ -106,6 +106,10 @@ vi.mock("../archive.js", () => ({
   runArchive: vi.fn().mockResolvedValue(0),
 }));
 
+vi.mock("../../core/archive/job-context.js", () => ({
+  resolveArchivedSlugByJobId: vi.fn().mockResolvedValue(null),
+}));
+
 // ---------------------------------------------------------------------------
 // Imports after mocks
 // ---------------------------------------------------------------------------
@@ -119,6 +123,8 @@ import { runAttachVerification } from "../../core/attach/orchestrator.js";
 import { resolveCompletedJobId, resolveArchiveBranchFromIssue } from "../../core/issue-target/archive.js";
 import { loadConfigWithOverlay } from "../load-config-with-overlay.js";
 import { findTopic } from "../../core/command/guide.js";
+import { resolveArchivedSlugByJobId } from "../../core/archive/job-context.js";
+import { archiveFromIssueUnconfirmedError } from "../../errors.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -155,6 +161,7 @@ describe("TC-018: local state exists → locator and rebind are skipped", () => 
     } as unknown as Awaited<ReturnType<typeof loadStateByJobId>>);
     vi.mocked(resolveArchiveBranchFromIssue).mockClear();
     vi.mocked(runAttachVerification).mockClear();
+    vi.mocked(resolveArchivedSlugByJobId).mockClear();
     vi.mocked(runArchive).mockResolvedValue(0);
   });
 
@@ -166,6 +173,11 @@ describe("TC-018: local state exists → locator and rebind are skipped", () => 
   it("TC-018: runAttachVerification is NOT called when local state found", async () => {
     await runArchiveFromIssue(42, {}, makeCtx());
     expect(vi.mocked(runAttachVerification)).not.toHaveBeenCalled();
+  });
+
+  it("TC-018: resolveArchivedSlugByJobId is NOT called when local state found", async () => {
+    await runArchiveFromIssue(42, {}, makeCtx());
+    expect(vi.mocked(resolveArchivedSlugByJobId)).not.toHaveBeenCalled();
   });
 
   it("TC-018: runArchive is called with slug from local state", async () => {
@@ -185,6 +197,8 @@ describe("TC-019: no local state → rebind with awaiting-archive policy → arc
     vi.mocked(loadStateByJobId).mockRejectedValue(
       Object.assign(new Error("JOB_NOT_FOUND"), { code: "JOB_NOT_FOUND" }),
     );
+    // archive record fallback returns null → falls through to closing PR path
+    vi.mocked(resolveArchivedSlugByJobId).mockResolvedValue(null);
     vi.mocked(resolveCompletedJobId).mockResolvedValue("test-job-id");
     vi.mocked(resolveArchiveBranchFromIssue).mockResolvedValue({
       branch: "feat/test-branch",
@@ -262,6 +276,78 @@ describe("TC-017: --with-merge is carried through the from-issue path", () => {
     expect(vi.mocked(runArchive)).toHaveBeenCalledWith(
       expect.objectContaining({ withMerge: true }),
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// New: post-merge / head branch deleted → archive record fallback hits
+// ---------------------------------------------------------------------------
+
+describe("post-merge: archive record fallback resolves slug, skips branch fetch and rebind", () => {
+  beforeEach(() => {
+    vi.mocked(loadStateByJobId).mockRejectedValue(
+      Object.assign(new Error("JOB_NOT_FOUND"), { code: "JOB_NOT_FOUND" }),
+    );
+    vi.mocked(resolveArchivedSlugByJobId).mockResolvedValue("archived-slug");
+    vi.mocked(resolveArchiveBranchFromIssue).mockClear();
+    vi.mocked(runAttachVerification).mockClear();
+    vi.mocked(runArchive).mockResolvedValue(0);
+  });
+
+  it("resolveArchiveBranchFromIssue is NOT called (no branch fetch)", async () => {
+    await runArchiveFromIssue(42, {}, makeCtx());
+    expect(vi.mocked(resolveArchiveBranchFromIssue)).not.toHaveBeenCalled();
+  });
+
+  it("runAttachVerification is NOT called (no rebind)", async () => {
+    await runArchiveFromIssue(42, {}, makeCtx());
+    expect(vi.mocked(runAttachVerification)).not.toHaveBeenCalled();
+  });
+
+  it("runArchive is called with the archive record slug", async () => {
+    await runArchiveFromIssue(42, {}, makeCtx());
+    expect(vi.mocked(runArchive)).toHaveBeenCalledWith(
+      expect.objectContaining({ slug: "archived-slug" }),
+    );
+  });
+
+  it("returns 0 (runArchive exits successfully)", async () => {
+    const code = await runArchiveFromIssue(42, {}, makeCtx());
+    expect(code).toBe(0);
+  });
+});
+
+describe("TC-013: resolveArchivedSlugByJobId receives exact jobId and issueNumber", () => {
+  beforeEach(() => {
+    vi.mocked(loadStateByJobId).mockRejectedValue(
+      Object.assign(new Error("JOB_NOT_FOUND"), { code: "JOB_NOT_FOUND" }),
+    );
+    vi.mocked(resolveCompletedJobId).mockResolvedValue("test-job-id");
+    vi.mocked(resolveArchivedSlugByJobId).mockResolvedValue(null);
+  });
+
+  it("TC-013: called with { jobId: 'test-job-id', issueNumber: 42 }", async () => {
+    await runArchiveFromIssue(42, {}, makeCtx());
+    expect(vi.mocked(resolveArchivedSlugByJobId)).toHaveBeenCalledWith(
+      expect.objectContaining({ jobId: "test-job-id", issueNumber: 42 }),
+    );
+  });
+});
+
+describe("fallback miss + closing PR also fails → ARCHIVE_FROM_ISSUE_UNCONFIRMED", () => {
+  beforeEach(() => {
+    vi.mocked(loadStateByJobId).mockRejectedValue(
+      Object.assign(new Error("JOB_NOT_FOUND"), { code: "JOB_NOT_FOUND" }),
+    );
+    vi.mocked(resolveArchivedSlugByJobId).mockResolvedValue(null);
+    vi.mocked(resolveArchiveBranchFromIssue).mockRejectedValue(
+      archiveFromIssueUnconfirmedError("no confirmed PR"),
+    );
+  });
+
+  it("returns ARCHIVE_FROM_ISSUE_UNCONFIRMED exit code (2)", async () => {
+    const code = await runArchiveFromIssue(42, {}, makeCtx());
+    expect(code).toBe(2); // EXIT_CODE.ARG_ERROR
   });
 });
 

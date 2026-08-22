@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
   "createdAt": "2026-08-21T22:28:13.507Z",
-  "updatedAt": "2026-08-22T01:22:09.598Z",
+  "updatedAt": "2026-08-22T01:22:57.858Z",
   "request": {
     "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/dispatch-archive-action-c2c7ba44",
   "error": null,
@@ -72,7 +72,8 @@
     "02a08844798aebac397537ad9fb0b333b80a5a60",
     "b5d44f6548007acad61d191f7b8e6e2ac9b94d05",
     "aed063786c5616c4a6b0967a86b6b8347690d4a6",
-    "0f5d2d5a1718bc6e573d400947ce447c80ffa63a"
+    "0f5d2d5a1718bc6e573d400947ce447c80ffa63a",
+    "01309fc064bfdb0573c25bd07730d6fa137939d5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -121,7 +122,8 @@
       "src/cli/command-registry.ts",
       "src/core/command/pipeline-run.ts",
       "src/core/issue-target/start.ts"
-    ]
+    ],
+    "spec-fixer": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -138,12 +140,13 @@
     }
   ],
   "_journal": {
-    "historyCount": 24,
+    "historyCount": 27,
     "stepCounts": {
       "request-review": 2,
       "design": 2,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }
