@@ -10,6 +10,11 @@ name: SpecRunner Dispatch
 #           issue コメントの escalation marker → Development リンク → checkpoint identity 照合
 #           → rebind → resume。checkpoint は feature branch に publish されているため、
 #           別 runner（ephemeral 環境）からでも issue 番号だけで継続できる。
+#           canon_patch 指定時は経路が変わる: Development linked branch を解決して
+#           attach → patch を worktree へ適用 → slug 指定の resume --apply-canon で
+#           operator-apply commit として取り込む（CANON_FINDING_ESCALATION の復帰手順）。
+#           wontfix / wontfix_reason は regression-gate findings への operator 不採用裁定
+#           （--wontfix / --wontfix-reason）をそのまま透過する。
 # - archive: 完走した job を issue 番号から取り込む。2 相の実行を前提とする。
 #            1 回目（merge 前）: completed marker → archive record を feature branch に push し
 #            awaiting-archive を維持する。
@@ -49,6 +54,21 @@ on:
         required: false
         type: boolean
         default: false
+      canon_patch:
+        # 保護正典（design.md 等）への operator 編集を unified diff で渡す。
+        # Actions UI の text input は単一行のため、複数行 patch は API / MCP の
+        # workflow dispatch で渡すこと（inputs 合計 64KB 上限に注意）。
+        description: "resume 時に job worktree へ適用する canon patch（unified diff。base64 も可・推奨。--apply-canon で operator-apply commit として取り込む）"
+        required: false
+        type: string
+      wontfix:
+        description: "resume 時に regression-gate findings を wontfix にする 1-based index（comma 区切り、--wontfix。wontfix_reason 必須）"
+        required: false
+        type: string
+      wontfix_reason:
+        description: "wontfix の理由（--wontfix-reason）"
+        required: false
+        type: string
 
 concurrency:
   group: specrunner-dispatch-${{ inputs.issue }}
@@ -126,12 +146,60 @@ jobs:
           FROM: ${{ inputs.from }}
           PROMPT: ${{ inputs.prompt }}
           FORCE: ${{ inputs.force }}
+          CANON_PATCH: ${{ inputs.canon_patch }}
+          WONTFIX: ${{ inputs.wontfix }}
+          WONTFIX_REASON: ${{ inputs.wontfix_reason }}
         run: |
           if [ "$ACTION" = "resume" ]; then
-            set -- --from-issue "$ISSUE"
+            if [ -n "$CANON_PATCH" ]; then
+              # canon patch 経路: --from-issue は attach と resume を一体で行うため
+              # patch 適用の隙間が無い。ここでは branch を Development link から解決して
+              # attach を分離し、patch 適用後に slug 指定で resume --apply-canon する。
+              BRANCH=$(gh api graphql \
+                -F owner='${{ github.repository_owner }}' \
+                -F name='${{ github.event.repository.name }}' \
+                -F number="$ISSUE" \
+                -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){linkedBranches(first:20){nodes{ref{name}}}}}}' \
+                --jq '[.data.repository.issue.linkedBranches.nodes[].ref.name] | (map(select(startswith("change/"))) + .) | first // empty')
+              if [ -z "$BRANCH" ]; then
+                echo "::error::issue #$ISSUE に Development linked branch が無い（canon_patch 経路には必須）"
+                exit 1
+              fi
+              bun ./bin/specrunner.ts job attach --branch "$BRANCH" | tee attach-out.txt
+              SLUG=$(sed -n "s/^Attached job '\([^']*\)'.*/\1/p" attach-out.txt)
+              if [ -z "$SLUG" ]; then
+                echo "::error::attach 出力から slug を特定できない"
+                exit 1
+              fi
+              WT=$(git worktree list --porcelain | sed -n 's/^worktree //p' | grep '/specrunner-worktrees/' | head -1)
+              if [ -z "$WT" ]; then
+                echo "::error::attach 後の specrunner worktree が見つからない"
+                exit 1
+              fi
+              # workflow input → env の輸送は空白のみの文脈行を壊すことがある
+              # (実測: run 32554216686 で corrupt patch)。raw で検査が通らなければ
+              # base64 として解釈し直す。patch は base64 で渡すのが確実。
+              printf '%s\n' "$CANON_PATCH" > /tmp/canon.patch
+              if ! git -C "$WT" apply --check --whitespace=nowarn /tmp/canon.patch 2>/dev/null; then
+                if printf '%s' "$CANON_PATCH" | base64 -d > /tmp/canon.patch 2>/dev/null \
+                   && git -C "$WT" apply --check --whitespace=nowarn /tmp/canon.patch; then
+                  echo "canon_patch: base64 として適用する"
+                else
+                  echo "::error::canon_patch を適用できない (raw / base64 とも git apply --check 失敗)"
+                  exit 1
+                fi
+              fi
+              git -C "$WT" apply --whitespace=nowarn /tmp/canon.patch
+              set -- "$SLUG" --apply-canon
+            else
+              set -- --from-issue "$ISSUE"
+            fi
             [ -n "$FROM" ] && set -- "$@" --from "$FROM"
             [ -n "$PROMPT" ] && set -- "$@" --prompt "$PROMPT"
             [ "$FORCE" = "true" ] && set -- "$@" --force
+            if [ -n "$WONTFIX" ]; then
+              set -- "$@" --wontfix "$WONTFIX" --wontfix-reason "$WONTFIX_REASON"
+            fi
             bun ./bin/specrunner.ts job resume "$@"
           elif [ "$ACTION" = "archive" ]; then
             bun ./bin/specrunner.ts job archive --from-issue "$ISSUE"
