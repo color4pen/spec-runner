@@ -280,6 +280,10 @@ describe("TC-016: tree build git call sequence and GIT_INDEX_FILE env", () => {
     expect(hashObjectIdx).toBeGreaterThan(firstLsTree);
     expect(hashObjectIdx).toBeLessThan(writeTreeIdx);
 
+    // hash-object must be called with the events.jsonl path
+    const hashObjectCall = treeCalls.find((c) => c.args[0] === "hash-object");
+    expect(hashObjectCall?.args).toContain(EVENTS_PATH);
+
     // Verify ls-tree args: first is for parent, second is for local
     const lsTreeCalls = treeCalls.filter((c) => c.args[0] === "ls-tree");
     expect(lsTreeCalls.length).toBeGreaterThanOrEqual(2);
@@ -813,6 +817,10 @@ describe("TC-028: no worktree/index-modifying git subcommands issued", () => {
     for (const c of calls) {
       const sub = c.args[0];
       const hasIndexFile = c.env?.["GIT_INDEX_FILE"] !== undefined;
+      if (sub && treeBuildSubcmds.has(sub)) {
+        // Tree-building commands MUST have GIT_INDEX_FILE
+        expect(hasIndexFile, `Expected GIT_INDEX_FILE for '${sub}'`).toBe(true);
+      }
       if (sub && nonTreeBuildSubcmds.has(sub)) {
         // Non-tree-building commands should NOT have GIT_INDEX_FILE
         // (Note: some like commit-tree don't need it)
