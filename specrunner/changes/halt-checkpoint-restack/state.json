@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a3a7b448-7124-4c08-a727-e4cc46224c6f",
   "createdAt": "2026-08-22T01:30:39.186Z",
-  "updatedAt": "2026-08-22T06:50:18.209Z",
+  "updatedAt": "2026-08-22T11:32:25.889Z",
   "request": {
     "title": "halt checkpoint を未 push 作業 commit から分離して publish する",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
+  "step": "implementer",
+  "status": "awaiting-resume",
   "branch": "change/halt-checkpoint-restack-a3a7b448",
-  "error": null,
+  "error": {
+    "code": "WRITE_SCOPE_VIOLATION",
+    "message": "Step 'implementer' on branch 'change/halt-checkpoint-restack-a3a7b448' attempted to write outside its declared scope.\nForbidden paths changed:\n  - specrunner/changes/halt-checkpoint-restack/design.md\n  - specrunner/changes/halt-checkpoint-restack/spec.md\n  - specrunner/changes/halt-checkpoint-restack/test-cases.md\n違反内容の退避先（machine-local、commit されない）: /home/runner/work/spec-runner/spec-runner/.git/specrunner-worktrees/halt-checkpoint-restack-a3a7b448/.specrunner/local/halt-checkpoint-restack/write-scope-violation-implementer-1787398345873.md",
+    "hint": "境界外への変更を検出したため commit を中止した。違反変更は worktree から復元済み（checkpoint commit への混入防止）。\nViolating paths:\n  - specrunner/changes/halt-checkpoint-restack/design.md\n  - specrunner/changes/halt-checkpoint-restack/spec.md\n  - specrunner/changes/halt-checkpoint-restack/test-cases.md\n違反内容の退避先（machine-local、commit されない）: /home/runner/work/spec-runner/spec-runner/.git/specrunner-worktrees/halt-checkpoint-restack-a3a7b448/.specrunner/local/halt-checkpoint-restack/write-scope-violation-implementer-1787398345873.md"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -214,7 +218,11 @@
       "canonHash": "specrunner/changes/halt-checkpoint-restack/design.md:sha256:e7ee4ad37cd5585a832c81f55f1524eb3de98432955593612cdd2753d7919bad|specrunner/changes/halt-checkpoint-restack/request.md:sha256:63a7046c4061e89d3feee58d52716aa8852d2d7c9dc765adcc9455a6f4d71d32|specrunner/changes/halt-checkpoint-restack/spec.md:sha256:275f0ed09d4d886292879614d6adc5155c3ac45122c5c216679bd4e5b6bbd1d2|specrunner/changes/halt-checkpoint-restack/tasks.md:sha256:e2014bcad36f9e3907a0e9458d07a4cb3c43a98afcbba3b5b9e3a9ec8e070723|specrunner/changes/halt-checkpoint-restack/test-cases.md:sha256:6c2240aad70406a51037a483086fe10561ff252ea6e5649847899b5c1fcb2594"
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "implementer",
+    "reason": "Step 'implementer' on branch 'change/halt-checkpoint-restack-a3a7b448' attempted to write outside its declared scope.\nForbidden paths changed:\n  - specrunner/changes/halt-checkpoint-restack/design.md\n  - specrunner/changes/halt-checkpoint-restack/spec.md\n  - specrunner/changes/halt-checkpoint-restack/test-cases.md\n違反内容の退避先（machine-local、commit されない）: /home/runner/work/spec-runner/spec-runner/.git/specrunner-worktrees/halt-checkpoint-restack-a3a7b448/.specrunner/local/halt-checkpoint-restack/write-scope-violation-implementer-1787398345873.md",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -244,14 +252,14 @@
     "createdAt": "2026-08-22T06:50:17.653Z"
   },
   "_journal": {
-    "historyCount": 155,
+    "historyCount": 159,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "implementer": 5,
+      "implementer": 6,
       "bite-evidence": 1,
       "verification": 7,
       "code-review": 2,
