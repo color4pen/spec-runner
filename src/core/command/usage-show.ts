@@ -72,6 +72,22 @@ export async function showUsage(slug: string, cwd: string): Promise<number> {
     if (metricsParts.length > 0) {
       stdoutWrite(`  metrics: ${metricsParts.join("  ")}\n`);
     }
+
+    // Display active context and compaction metrics if present (agent-context-observability).
+    // absent = invocation did not observe context metrics (older entries or unsupported runtimes).
+    if (inv.contextMetrics) {
+      const cm = inv.contextMetrics;
+      const contextParts: string[] = [];
+      contextParts.push(`provider=${cm.provider}`);
+      if (cm.model !== undefined) contextParts.push(`model=${cm.model}`);
+      if (cm.contextWindowTokens !== undefined) contextParts.push(`window=${cm.contextWindowTokens}`);
+      if (cm.peakActiveContextTokens !== undefined) contextParts.push(`peak=${cm.peakActiveContextTokens}`);
+      if (cm.compactionCount !== undefined) contextParts.push(`compactions=${cm.compactionCount}`);
+      if (cm.contextTokensBeforeCompaction !== undefined) contextParts.push(`preCompact=${cm.contextTokensBeforeCompaction}`);
+      if (cm.contextTokensAfterCompaction !== undefined) contextParts.push(`postCompact=${cm.contextTokensAfterCompaction}`);
+      if (cm.exhaustionAtTokens !== undefined) contextParts.push(`exhaustedAt=${cm.exhaustionAtTokens}`);
+      stdoutWrite(`  context: ${contextParts.join("  ")}\n`);
+    }
   }
 
   stdoutWrite(`\n${"─".repeat(60)}\n`);

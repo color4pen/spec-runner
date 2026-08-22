@@ -2,6 +2,7 @@
  * Types for usage.json — append-only record of token usage per command invocation.
  */
 import type { ModelUsage } from "../port/model-usage.js";
+import type { AgentContextMetrics } from "../../kernel/context-metrics.js";
 
 /**
  * A single command invocation entry in usage.json.
@@ -55,6 +56,18 @@ export interface CommandInvocation {
    * predates the agent-invocation-metrics feature.
    */
   totalCostUsd?: number;
+  /**
+   * Active context and compaction metrics for this invocation.
+   * Stored as a nested object (unlike scalar invocationMetrics fields above).
+   *
+   * absent = the invocation did not observe any context metrics (either the provider
+   * does not support reporting context size / compaction, or the metrics feature
+   * was not yet available when this entry was written — backward compatible).
+   *
+   * Values are NEVER derived from cumulative modelUsage fields. absent means absent.
+   * Added in agent-context-observability.
+   */
+  contextMetrics?: AgentContextMetrics;
 }
 
 /**

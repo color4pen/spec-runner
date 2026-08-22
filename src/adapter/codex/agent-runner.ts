@@ -11,6 +11,11 @@
  * D5 (design.md): transient-error auto-retry via retryWithBackoff (main + follow-up turns).
  * D6 (design.md): output-verification repair loop mirrors ClaudeCodeRunner.
  *
+ * agent-context-observability: Codex SDK's Usage type reports input/output token counts but
+ * does NOT expose a per-request context window size, compaction events, or exhaustion errors
+ * with a standard context-limit message. Therefore `contextMetrics` is never set in any
+ * AgentRunResult returned by this runner. Values are NOT derived from cumulative modelUsage.
+ *
  * tool-driven-step-completion (codex-typed-outcome):
  * - ctx.policy.reportTool set → outputSchema injected into thread.runStreamed() for main work turn.
  * - finalResponse is parsed as JSON and validated via reportTool.parseInput().

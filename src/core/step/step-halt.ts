@@ -17,6 +17,7 @@
  */
 import type { ErrorInfo, JobState, StepName, HistoryEntry } from "../../state/schema.js";
 import type { AgentRunResult } from "../port/agent-runner.js";
+import type { AgentContextMetrics } from "../../kernel/context-metrics.js";
 import type { OutputViolation } from "../port/output-contract.js";
 import type { GuardDrift } from "./main-checkout-guard.js";
 import type { StepResultInput } from "../../state/helpers.js";
@@ -51,6 +52,12 @@ export type StepHalt =
       thrownErr: Error;
       recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">;
       history?: Omit<HistoryEntry, "ts">;
+      /**
+       * Active context and compaction metrics observed during this invocation.
+       * Forwarded from AgentRunResult.contextMetrics (agent-context-observability).
+       * absent = runner did not observe context metrics (Codex / managed / pre-feature runs).
+       */
+      contextMetrics?: AgentContextMetrics;
     }
   | {
       kind: "awaiting-resume";
@@ -69,6 +76,12 @@ export type StepHalt =
       statePatch?: { mainCheckoutDrift?: MainCheckoutDrift };
       recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">;
       history?: Omit<HistoryEntry, "ts">;
+      /**
+       * Active context and compaction metrics observed during this invocation.
+       * Forwarded from AgentRunResult.contextMetrics (agent-context-observability).
+       * absent = runner did not observe context metrics (Codex / managed / pre-feature runs).
+       */
+      contextMetrics?: AgentContextMetrics;
     };
 
 // ---------------------------------------------------------------------------
@@ -117,7 +130,7 @@ export function makeAgentThrowHalt(
  * history: `{step}-timeout` / error / `${step} timed out: ${message}`
  */
 export function makeTimeoutHalt(
-  runResult: Pick<AgentRunResult, "error">,
+  runResult: Pick<AgentRunResult, "error" | "contextMetrics">,
   stepName: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
 ): StepHalt & { kind: "awaiting-resume" } {
@@ -146,6 +159,7 @@ export function makeTimeoutHalt(
       status: "error",
       message: `${stepName} timed out: ${error.message}`,
     },
+    ...(runResult.contextMetrics !== undefined ? { contextMetrics: runResult.contextMetrics } : {}),
   };
 }
 
@@ -161,7 +175,7 @@ export function makeTimeoutHalt(
  * history: none (no history append for non-success)
  */
 export function makeNonSuccessHalt(
-  runResult: Pick<AgentRunResult, "error">,
+  runResult: Pick<AgentRunResult, "error" | "contextMetrics">,
   stepName: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
 ): StepHalt & { kind: "failed" } {
@@ -174,7 +188,13 @@ export function makeNonSuccessHalt(
     message: err.message,
     hint: (err as Error & { hint?: string }).hint ?? "",
   };
-  return { kind: "failed", error, thrownErr: err as Error, recordOpts };
+  return {
+    kind: "failed",
+    error,
+    thrownErr: err as Error,
+    recordOpts,
+    ...(runResult.contextMetrics !== undefined ? { contextMetrics: runResult.contextMetrics } : {}),
+  };
 }
 
 // ---------------------------------------------------------------------------

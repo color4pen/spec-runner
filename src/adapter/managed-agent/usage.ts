@@ -13,6 +13,12 @@ import type { SessionUsage } from "../../core/port/session-client.js";
  * - Returns undefined when raw is null/undefined (best-effort contract).
  * - Undefined fields default to 0.
  * - cache_creation ネストを平坦化: ephemeral_1h + ephemeral_5m → cacheCreationInputTokens.
+ *
+ * agent-context-observability: BetaManagedAgentsSessionUsage contains only token counts
+ * (input / output / cache). It does NOT include context_window size, compaction events,
+ * or a per-request active-context breakdown. Therefore `contextMetrics` is NOT populated
+ * from this function or any managed-agent usage path. Values are never derived from
+ * cumulative session usage fields.
  */
 export function mapSessionUsage(
   raw: BetaManagedAgentsSessionUsage | null | undefined,

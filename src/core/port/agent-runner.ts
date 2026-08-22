@@ -209,6 +209,9 @@ export interface AgentRunContext {
 import type { CompletionReportDiagnostic } from "../../kernel/completion-report-diagnostic.js";
 export type { CompletionReportDiagnostic } from "../../kernel/completion-report-diagnostic.js";
 
+import type { AgentContextMetrics } from "../../kernel/context-metrics.js";
+export type { AgentContextMetrics } from "../../kernel/context-metrics.js";
+
 /**
  * Metrics extracted from the SDK result message for a single agent invocation.
  *
@@ -302,6 +305,19 @@ export interface AgentRunResult {
    * Added in reduce-added-agent-turns.
    */
   addedTurns?: { reportRetry: number; postWork: number; outputRepair: number };
+  /**
+   * Active context and compaction metrics observed during this invocation.
+   * undefined = provider did not report context metrics (unavailable) OR no observations
+   * were made during this invocation.
+   *
+   * Populated by ClaudeCodeRunner when the SDK emits observable context events.
+   * ManagedAgentRunner and CodexAgentRunner always leave this undefined because their
+   * respective SDKs do not expose context window or compaction information.
+   *
+   * Values are NEVER derived from cumulative ModelUsage fields — absent means absent.
+   * Added in agent-context-observability.
+   */
+  contextMetrics?: AgentContextMetrics;
   /**
    * SDK-measured invocation metrics extracted from the result message.
    * Populated by ClaudeCodeRunner (local runtime) for both success and error subtypes.

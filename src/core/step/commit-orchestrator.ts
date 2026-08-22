@@ -21,7 +21,7 @@ import type { PipelineDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
 import type { LineageRecord } from "../../store/event-journal.js";
-import type { CompletionReportDiagnostic, AgentInvocationMetrics } from "../port/agent-runner.js";
+import type { CompletionReportDiagnostic, AgentInvocationMetrics, AgentContextMetrics } from "../port/agent-runner.js";
 import type { PermissionScope } from "../pipeline/types.js";
 import type { StepCompletion } from "./step-completion.js";
 import type { StepHalt } from "./step-halt.js";
@@ -111,6 +111,13 @@ export type StepExecutionResult =
        * Added in verification-phase-outcome-record.
        */
       verificationPhases?: VerificationPhaseOutcome[];
+      /**
+       * Active context and compaction metrics observed during this invocation.
+       * Forwarded from AgentRunResult.contextMetrics (agent-context-observability).
+       * absent = runner did not observe context metrics (Codex / managed / pre-feature runs,
+       * or CLI steps where no agent is invoked).
+       */
+      contextMetrics?: AgentContextMetrics;
     }
   | { kind: "halt"; halt: StepHalt }
   | { kind: "skipped"; skipReason: string };
@@ -245,7 +252,7 @@ export class CommitOrchestrator {
     preWriteIo: IoRef[],
     preReadIo: IoRef[],
   ): Promise<void> {
-    const { completion, completedAt, modelUsage, followUpAttempts, invocationMetrics } = result;
+    const { completion, completedAt, modelUsage, followUpAttempts, invocationMetrics, contextMetrics } = result;
     const { verdict, persistToolResult } = completion;
 
     // usage (appendInvocation — best-effort)
@@ -260,6 +267,8 @@ export class CommitOrchestrator {
           stepName: step.name,
           // agent-invocation-metrics: spread metrics when provided; omit fields when absent.
           ...(invocationMetrics ?? {}),
+          // agent-context-observability: include context metrics when observed.
+          ...(contextMetrics !== undefined ? { contextMetrics } : {}),
         });
       } catch {
         // Best-effort: usage append failure must not block step completion
@@ -502,7 +511,7 @@ export class CommitOrchestrator {
    *   recordFailedStepResult → (failed: store.fail | awaiting-resume: transitionJob + appendInterruption)
    *   → history (if halt.history set) → store.persist → attachStateAndRethrow
    */
-  async commitHalt(step: Step, state: JobState, halt: StepHalt): Promise<never> {
+  async commitHalt(step: Step, state: JobState, halt: StepHalt, deps?: PipelineDeps): Promise<never> {
     const store = this.getStore(state.jobId);
 
     let s = recordFailedStepResult(state, step.name, halt.error, halt.recordOpts ?? {});
@@ -537,6 +546,27 @@ export class CommitOrchestrator {
     }
 
     await store.persist(s);
+
+    // agent-context-observability: best-effort persist of context metrics on halt path.
+    // Only written when context metrics were observed AND deps provides cwd/slug.
+    // Failure is silently swallowed — halt's FSM transition and rethrow are unaffected.
+    if (halt.contextMetrics !== undefined && deps?.cwd && deps?.slug) {
+      const timestamp = halt.recordOpts?.completedAt ?? new Date().toISOString();
+      const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
+      try {
+        await appendInvocation(usageAbsPath, {
+          command: "job",
+          timestamp,
+          modelUsage: null,
+          jobId: state.jobId,
+          stepName: step.name,
+          contextMetrics: halt.contextMetrics,
+        });
+      } catch {
+        // Best-effort: never interfere with halt FSM transition or rethrow
+      }
+    }
+
     attachStateAndRethrow(halt.thrownErr, s);
   }
 
@@ -705,7 +735,7 @@ export class CommitOrchestrator {
     if (result.kind === "skipped") {
       return this.commitSkipped(step as AgentStep, state, result.skipReason);
     }
-    // kind === "halt" — always throws
-    return this.commitHalt(step, state, result.halt);
+    // kind === "halt" — always throws; pass deps so commitHalt can persist contextMetrics
+    return this.commitHalt(step, state, result.halt, deps);
   }
 }

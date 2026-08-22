@@ -517,6 +517,8 @@ export class StepExecutor {
       completionReportDiagnostics: runResult.completionReportDiagnostics,
       addedTurns: runResult.addedTurns,
       invocationMetrics: runResult.invocationMetrics,
+      // agent-context-observability: forward context metrics from the agent runner.
+      ...(runResult.contextMetrics !== undefined ? { contextMetrics: runResult.contextMetrics } : {}),
       ...(commitOid !== undefined ? { commitOid } : {}),
       ...(runResult.touchedFiles !== undefined ? { touchedFiles: runResult.touchedFiles } : {}),
     };
