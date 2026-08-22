@@ -108,6 +108,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+      - name: Materialize local main ref
+        # changed-line-coverage は `git diff main...HEAD` で変更行を導出する
+        # (changed-lines.ts の baseBranch 既定値は local ref の "main")。checkout は
+        # dispatch ref だけを local branch 化するため main が unknown revision になり
+        # 検証が fail-closed する (実測: run 32554432594 verification iter 3)。
+        # origin/main から local ref を補う。main を checkout している場合は何もしない。
+        run: git rev-parse --verify -q main >/dev/null || git branch main origin/main
+
       - name: Enable sandbox prerequisites
         # 実測（run 32379478853）: ubuntu-latest は bwrap 不在 +
         # apparmor_restrict_unprivileged_userns=1 で Claude Code の Linux sandbox が
