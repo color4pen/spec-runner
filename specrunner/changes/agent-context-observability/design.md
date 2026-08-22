@@ -130,6 +130,7 @@ Codex adapter / Managed adapter は `AgentRunResult.contextMetrics` を設定し
 
 - **Rationale**: 要件 4「session log だけに閉じず、job 完了後に比較・集計できる永続データ」＋「既存 usage / invocation metrics と同じ観測経路」。usage.json は active / archive 双方で読める唯一の per-invocation 永続 file であり、表示経路（`usage show`）も既にある。失敗経路を state.json 側に分けると exhaustion だけ別 file・別表示になり「比較・集計できる」が満たせない。
 - cost 集計の不変性: 追加 entry は `modelUsage: null` かつ `totalCostUsd` 無しなので、`usage summary`（`inv.modelUsage` が falsy なら skip）も `job stats`（`costUsd` / `measuredCostUsd` / `turns` はいずれも値が存在する entry のみ加算）も数値が変わらない。既存 TC-019（error 時に invocation metrics を usage.json に書かない）も、`contextMetrics` を持たない halt では append しないため維持される。
+- context 観測専用 entry の判別: `CommandInvocation` に optional `contextOnly: true` を追加し、本 feature が `modelUsage: null` で書く entry（halt 経路 / modelUsage 欠落 + contextMetrics ありの成功）にのみ付与する。`build-attestation` は **`contextOnly` 付きの null entry のみ** skip し、marker の無い null entry は従来どおり `stepHasUnpriced` を立てて step cost を unknown にする。`modelUsage: null` = 「usage 取得不能（managed runtime 等）」という既存契約を維持するためで、null の一律 skip は同一 step の priced retry entry を確定値として見せる過少計上になる（PR #1070 再レビュー指摘）。`contextMetrics` の有無での判別も、成功 path が modelUsage 欠落 + contextMetrics ありを許容するため不可。
 - **Alternatives considered**:
   - *失敗時は `StepRun.outcome` に載せる（state.json）*: 型変更は最小だが集計・表示経路が二重になり、「job 完了後に step / model / provider 単位で確認できる」を 1 コマンドで満たせない。却下。
   - *session log のみ*: 要件 4 が明示的に否定。却下。

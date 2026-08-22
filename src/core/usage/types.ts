@@ -57,6 +57,22 @@ export interface CommandInvocation {
    */
   totalCostUsd?: number;
   /**
+   * Marks a context-observation-only entry.
+   *
+   * true = this entry was appended solely to persist contextMetrics (halt paths:
+   * post-success drift / output-gate / commit-fail / context exhaustion, or a success
+   * whose provider returned no usage but did report context metrics). Such entries
+   * carry modelUsage: null but MUST NOT be interpreted as "usage unavailable" —
+   * cost / turn aggregation skips them entirely so results stay identical to the
+   * entry being absent.
+   *
+   * absent = normal entry. modelUsage: null on an unmarked entry keeps its original
+   * meaning: usage was unavailable for a real invocation (e.g. managed runtime), and
+   * aggregation must treat the step cost as unknown (unpriced), not as zero.
+   * Added in agent-context-observability.
+   */
+  contextOnly?: true;
+  /**
    * Active context and compaction metrics for this invocation.
    * Stored as a nested object (unlike scalar invocationMetrics fields above).
    *

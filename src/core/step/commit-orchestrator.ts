@@ -266,6 +266,9 @@ export class CommitOrchestrator {
           command: "job",
           timestamp: completedAt,
           modelUsage: modelUsage ?? null,
+          // No usage but observed context metrics: mark as context-observation-only so
+          // aggregation skips it instead of reading modelUsage: null as "usage unavailable".
+          ...(modelUsage ? {} : { contextOnly: true as const }),
           jobId: state.jobId,
           stepName: step.name,
           // agent-invocation-metrics: spread metrics when provided; omit fields when absent.
@@ -561,6 +564,9 @@ export class CommitOrchestrator {
           command: "job",
           timestamp,
           modelUsage: null,
+          // Halt entries persist context observations only — mark them so aggregation
+          // skips them instead of reading modelUsage: null as "usage unavailable".
+          contextOnly: true,
           jobId: state.jobId,
           stepName: step.name,
           contextMetrics: halt.contextMetrics,

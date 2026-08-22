@@ -180,11 +180,27 @@ metrics (`numTurns` / `durationMs` / `durationApiMs` / `totalCostUsd`), so that 
 aggregation results stay identical to the pre-change behavior.
 context metrics が観測されていない halt では usage entry を追加しない。
 
+`modelUsage: null` の既存意味（実 invocation の usage が取得できなかった — 例: managed runtime。
+step cost は不明として扱う）は維持する。本変更が追加する context 観測専用 entry
+（halt 経路、および modelUsage 欠落 + contextMetrics ありの成功 step）は、
+entry 自体に明示的な判別 field（`contextOnly: true`）を carry SHALL し、
+集計側は **marker 付き entry のみ** を「entry が無い場合と同一」として skip する。
+marker の無い `modelUsage: null` entry は従来どおり step cost を unknown（unpriced）に
+すること — `modelUsage: null` の有無だけで context 観測専用 entry と判別してはならない
+（PR #1070 再レビュー: contextMetrics の有無でも判別不能 — 成功 path でも
+modelUsage 欠落 + contextMetrics ありを許容するため）。
+
 #### Scenario: halt entry が cost 集計を動かさない
 
 **Given** context metrics を伴う halt が usage.json に 1 entry を追加した slug
 **When** `usage summary` / `job stats` の集計を実行する
 **Then** cost / turns の集計値は、その entry が無い場合と同一である
+
+#### Scenario: 既存の usage 不明 entry の意味が変わらない
+
+**Given** 同一 step に、marker の無い `modelUsage: null` entry（usage 取得不能の実 invocation）と priced entry が 1 件ずつある
+**When** attestation の cost 集計を実行する
+**Then** その step の `costUsd` は null（unknown）であり、priced entry の値を確定値として出さない
 
 #### Scenario: context metrics の無い halt では entry を追加しない
 

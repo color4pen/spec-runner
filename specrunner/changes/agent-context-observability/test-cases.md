@@ -2,10 +2,10 @@
 
 ## Summary
 
-- **Total**: 44 cases
-- **Automated** (unit/integration): 40
+- **Total**: 45 cases
+- **Automated** (unit/integration): 41
 - **Manual**: 0
-- **Priority**: must: 40, should: 4, could: 0
+- **Priority**: must: 41, should: 4, could: 0
 
 ---
 
@@ -454,6 +454,16 @@
 **Given** main work で active context が観測された後、output-repair ターンで provider が context 溢れを示す非成功 result（または throw）を返す
 **When** invocation が完了する
 **Then** `contextMetrics.exhaustionAtTokens` に最後に観測された active context 値が入る
+
+### TC-045: marker の無い modelUsage:null entry は usage 不明のまま扱われる
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: 既存の usage / cost 集計の意味を変えない > Scenario: 既存の usage 不明 entry の意味が変わらない + PR #1070 再レビュー（build-attestation の null 一律 skip は既存契約違反）
+
+**Given** 同一 step に、`contextOnly` marker の無い `modelUsage: null` entry と priced entry が 1 件ずつある
+**When** buildAttestation を実行する
+**Then** その step の `costUsd` は null になる。逆に `contextOnly: true` 付きの null entry（halt 由来）は skip され、同一 step の priced retry entry の cost がそのまま step cost になる
 
 ---
 

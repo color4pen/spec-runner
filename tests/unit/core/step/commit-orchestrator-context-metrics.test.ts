@@ -293,6 +293,7 @@ describe("TC-014: exhaustion で halt した step の metrics が usage.json に
 
     // TC-032: modelUsage MUST be null (halt entry)
     expect(inv.modelUsage).toBeNull();
+    expect(inv.contextOnly).toBe(true);
 
     // TC-032: invocation metrics must NOT be in the halt entry
     expect(Object.prototype.hasOwnProperty.call(inv, "numTurns")).toBe(false);
@@ -346,6 +347,7 @@ describe("TC-014: exhaustion で halt した step の metrics が usage.json に
     const inv = usageFile.commandInvocations[0]!;
 
     expect(inv.modelUsage).toBeNull();
+    expect(inv.contextOnly).toBe(true);
     expect(inv.contextMetrics).toBeDefined();
     expect(inv.contextMetrics!.provider).toBe("claude-code");
     expect(inv.contextMetrics!.peakActiveContextTokens).toBe(75000);
@@ -515,10 +517,13 @@ describe("TC-017: halt entry が cost 集計を動かさない", () => {
     const successInv = usageFile.commandInvocations[0]!;
     expect(successInv.modelUsage).not.toBeNull();
     expect(successInv.modelUsage!["claude-sonnet-4-5"]).toBeDefined();
+    // Priced entries are never marked context-only
+    expect(successInv.contextOnly).toBeUndefined();
 
     // Halt entry has modelUsage: null — does not contribute to cost
     const haltInv = usageFile.commandInvocations[1]!;
     expect(haltInv.modelUsage).toBeNull();
+    expect(haltInv.contextOnly).toBe(true);
 
     // The null modelUsage entry must not break cost aggregation
     // (aggregation code skips entries with modelUsage: null — backward compat)
@@ -666,6 +671,7 @@ describe("TC-040: agent 成功後の output contract halt でも contextMetrics 
 
     // TC-040: modelUsage MUST be null (halt entry)
     expect(inv.modelUsage).toBeNull();
+    expect(inv.contextOnly).toBe(true);
 
     // TC-040: contextMetrics from the runner's success MUST be in the halt entry
     expect(inv.contextMetrics).toBeDefined();
@@ -734,6 +740,7 @@ describe("TC-041: agent 成功後の commit / push 失敗 halt でも contextMet
 
     // TC-041: modelUsage MUST be null (halt entry)
     expect(inv.modelUsage).toBeNull();
+    expect(inv.contextOnly).toBe(true);
 
     // TC-041: contextMetrics from the runner's success MUST be in the halt entry
     expect(inv.contextMetrics).toBeDefined();
@@ -790,6 +797,7 @@ describe("TC-043: modelUsage 欠落 + contextMetrics ありの成功 step でも
 
     // TC-043: modelUsage MUST be null (not undefined — JSON serialization)
     expect(inv.modelUsage).toBeNull();
+    expect(inv.contextOnly).toBe(true);
 
     // TC-043: contextMetrics must be persisted correctly
     expect(inv.contextMetrics).toBeDefined();
@@ -871,6 +879,7 @@ describe("TC-042: agent 成功後の main-checkout drift halt でも contextMetr
 
     // TC-042: modelUsage MUST be null (halt entry)
     expect(inv.modelUsage).toBeNull();
+    expect(inv.contextOnly).toBe(true);
 
     // TC-042: contextMetrics from the runner's success MUST be in the halt entry
     expect(inv.contextMetrics).toBeDefined();

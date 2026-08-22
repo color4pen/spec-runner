@@ -410,6 +410,59 @@ describe("TC-ATT-06: modelUsage === null invocation → model empty, cost null",
 });
 
 // ---------------------------------------------------------------------------
+// TC-ATT-08: unmarked modelUsage:null keeps "usage unavailable" semantics
+// ---------------------------------------------------------------------------
+
+describe("TC-ATT-08: unmarked modelUsage:null entry (usage unavailable) keeps step cost unknown", () => {
+  it("legacy null entry + priced entry in the same step yields costUsd null, not the priced value", () => {
+    // Contract: modelUsage: null WITHOUT contextOnly means "usage was unavailable for a
+    // real invocation" (e.g. managed runtime attempt). The step's true cost is unknown,
+    // so a priced entry from another attempt must NOT be presented as the definitive cost.
+    const journal = makeStepAttempt({
+      step: "implementer",
+      startedAt: "2026-01-01T00:00:00Z",
+      endedAt: "2026-01-01T00:05:00Z",
+      verdict: "approved",
+    });
+
+    const usage: UsageFile = {
+      commandInvocations: [
+        {
+          // Attempt 1 — managed runtime, usage unavailable (no contextOnly marker)
+          command: "job",
+          timestamp: "2026-01-01T00:03:00Z",
+          modelUsage: null,
+          jobId: "job-1",
+          stepName: "implementer",
+        },
+        {
+          // Attempt 2 — priced usage
+          command: "job",
+          timestamp: "2026-01-01T00:05:00Z",
+          modelUsage: {
+            "claude-sonnet-4-6": { inputTokens: 50000, outputTokens: 5000, cacheReadInputTokens: 20000, cacheCreationInputTokens: 1000 },
+          },
+          jobId: "job-1",
+          stepName: "implementer",
+        },
+      ],
+    };
+
+    const attestation = buildAttestation({ journalContent: journal, usage });
+    const stepCost = attestation.cost.perStep.find((ps) => ps.step === "implementer");
+
+    // The step contains an unpriced real invocation → step cost is unknown (null), never
+    // a definitive-looking undercount from the priced entry alone. (totalCostUsd keeps its
+    // pre-change semantics: it accumulates priced entries as a lower bound regardless of
+    // per-step unpriced state — only the step-level cost is nulled.)
+    expect(stepCost?.costUsd).toBeNull();
+    // Token totals still accumulate from the priced entry (tokens are additive facts,
+    // not a claim of completeness — same as the pre-change behavior for null entries).
+    expect(stepCost?.tokens.input).toBe(50000);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // TC-ATT-07: halt entry (modelUsage:null) + retry-success entry → cost from priced entry
 // ---------------------------------------------------------------------------
 
@@ -434,6 +487,7 @@ describe("TC-ATT-07: halt entry (modelUsage:null) + retry-success entry → cost
           command: "job",
           timestamp: "2026-01-01T00:03:00Z",
           modelUsage: null,
+          contextOnly: true,
           jobId: "job-1",
           stepName: "implementer",
         },
@@ -490,6 +544,7 @@ describe("TC-ATT-07: halt entry (modelUsage:null) + retry-success entry → cost
           command: "job",
           timestamp: "2026-01-01T00:03:00Z",
           modelUsage: null,
+          contextOnly: true,
           jobId: "job-1",
           stepName: "implementer",
         },
