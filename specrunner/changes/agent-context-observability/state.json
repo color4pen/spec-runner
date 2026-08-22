@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f6d2e71c-5ff1-4454-ad35-1073cc427a7f",
   "createdAt": "2026-08-22T13:47:16.472Z",
-  "updatedAt": "2026-08-22T15:57:06.316Z",
+  "updatedAt": "2026-08-22T16:09:28.941Z",
   "request": {
     "title": "agent session の active context / compaction を計測可能にする",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/agent-context-observability-f6d2e71c",
   "error": null,
   "pipelineId": "standard",
@@ -79,7 +79,9 @@
     "be55a70943baaf2955821cd73cebddb0af2f6f52",
     "9d2b218c2d851db75fbc91072621de29a7db3265",
     "a15d7400d593e28cc746f19c4d59756cc97496e4",
-    "0ee066dbab93ced88f289074680fc854316b1b2e"
+    "0ee066dbab93ced88f289074680fc854316b1b2e",
+    "164b9bcb29e4bcd67a26e5c912e77a9b27184b91",
+    "0436b22397e959200ba3b55bdc713cbfdfd7fe41"
   ],
   "touchedFiles": {
     "request-review": [
@@ -213,24 +215,20 @@
     ],
     "conformance": [
       "src/kernel/context-metrics.ts",
-      "src/kernel/model-usage.ts",
       "src/core/port/agent-runner.ts",
+      "src/kernel/model-usage.ts",
+      "src/core/usage/types.ts",
       "src/adapter/claude-code/context-observer.ts",
       "src/adapter/claude-code/agent-runner.ts",
       "src/core/step/step-halt.ts",
       "src/core/step/commit-orchestrator.ts",
-      "src/core/usage/types.ts",
+      "src/core/step/executor.ts",
       "src/core/command/usage-show.ts",
       "src/adapter/codex/agent-runner.ts",
       "src/adapter/managed-agent/agent-runner.ts",
       "src/adapter/managed-agent/usage.ts",
-      "src/core/step/executor.ts",
-      "tests/unit/adapter/claude-code/context-observer.test.ts",
-      "tests/unit/adapter/claude-code/agent-runner-context-metrics.test.ts",
-      "src/adapter/claude-code/touched-files-recorder.ts",
-      "tests/unit/adapter/claude-code/agent-runner-invocation-metrics.test.ts",
-      "src/adapter/claude-code/message-types.ts",
-      "tests/unit/adapter/claude-code/agent-runner.test.ts"
+      "tests/unit/core/usage/context-metrics-types.test.ts",
+      "tests/unit/adapter/claude-code/context-observer.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -272,8 +270,13 @@
       "recordedAt": "2026-08-22T15:18:52.824Z"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1070",
+    "number": 1070,
+    "createdAt": "2026-08-22T16:09:28.352Z"
+  },
   "_journal": {
-    "historyCount": 70,
+    "historyCount": 84,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -282,14 +285,16 @@
       "spec-fixer": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
       "regression-gate": 2,
       "code-fixer": 2,
-      "conformance": 1
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
