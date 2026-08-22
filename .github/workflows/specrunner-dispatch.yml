@@ -58,7 +58,7 @@ on:
         # 保護正典（design.md 等）への operator 編集を unified diff で渡す。
         # Actions UI の text input は単一行のため、複数行 patch は API / MCP の
         # workflow dispatch で渡すこと（inputs 合計 64KB 上限に注意）。
-        description: "resume 時に job worktree へ適用する canon patch（unified diff。--apply-canon で operator-apply commit として取り込む）"
+        description: "resume 時に job worktree へ適用する canon patch（unified diff。base64 も可・推奨。--apply-canon で operator-apply commit として取り込む）"
         required: false
         type: string
       wontfix:
@@ -176,7 +176,20 @@ jobs:
                 echo "::error::attach 後の specrunner worktree が見つからない"
                 exit 1
               fi
-              printf '%s\n' "$CANON_PATCH" | git -C "$WT" apply --whitespace=nowarn -
+              # workflow input → env の輸送は空白のみの文脈行を壊すことがある
+              # (実測: run 32554216686 で corrupt patch)。raw で検査が通らなければ
+              # base64 として解釈し直す。patch は base64 で渡すのが確実。
+              printf '%s\n' "$CANON_PATCH" > /tmp/canon.patch
+              if ! git -C "$WT" apply --check --whitespace=nowarn /tmp/canon.patch 2>/dev/null; then
+                if printf '%s' "$CANON_PATCH" | base64 -d > /tmp/canon.patch 2>/dev/null \
+                   && git -C "$WT" apply --check --whitespace=nowarn /tmp/canon.patch; then
+                  echo "canon_patch: base64 として適用する"
+                else
+                  echo "::error::canon_patch を適用できない (raw / base64 とも git apply --check 失敗)"
+                  exit 1
+                fi
+              fi
+              git -C "$WT" apply --whitespace=nowarn /tmp/canon.patch
               set -- "$SLUG" --apply-canon
             else
               set -- --from-issue "$ISSUE"
