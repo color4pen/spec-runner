@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
   "createdAt": "2026-08-21T22:28:13.507Z",
-  "updatedAt": "2026-08-22T01:34:34.580Z",
+  "updatedAt": "2026-08-22T01:39:14.422Z",
   "request": {
     "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/dispatch-archive-action-c2c7ba44",
   "error": null,
@@ -75,7 +75,8 @@
     "0f5d2d5a1718bc6e573d400947ce447c80ffa63a",
     "01309fc064bfdb0573c25bd07730d6fa137939d5",
     "1c1746136b09e789afdd1b1375e948d0a3331d1a",
-    "6ccbc3e4e6c28a3d7dfed4ad5f19ff721046f67e"
+    "6ccbc3e4e6c28a3d7dfed4ad5f19ff721046f67e",
+    "e395d5d60a5774d9507b8ff8b4ea137c1593ebb6"
   ],
   "touchedFiles": {
     "request-review": [
@@ -140,6 +141,15 @@
       "tests/dispatch-workflow-archive-action.test.ts",
       "src/state/schema.ts",
       "src/core/archive/__tests__/archived-slug-by-job-id.test.ts"
+    ],
+    "code-review": [
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/job-context.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "src/core/archive/__tests__/archived-slug-by-job-id.test.ts",
+      "tests/dispatch-workflow-archive-action.test.ts",
+      "src/core/issue-target/archive.ts"
     ]
   },
   "resumePoint": null,
@@ -156,8 +166,37 @@
       "recordedAt": "2026-08-22T01:02:35.595Z"
     }
   ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 2,
       "design": 2,
@@ -166,7 +205,11 @@
       "spec-fixer": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
