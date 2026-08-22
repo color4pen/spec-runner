@@ -251,6 +251,18 @@ exitCode≠0 または stdout が空なら「publish 済み tip が存在しな�
   overlay 単位は 1 箇所の定数であり、方針を戻す場合の変更量は小さい。
 - **[Trade-off] restack 中の git 呼び出し回数が change folder の entry 数に比例して増える** →
   halt 1 回あたり数十回の軽量 plumbing 呼び出しで、halt という低頻度イベントに限定される。
+- **[Trade-off] graft（D6）後の non-ephemeral runner では、restack の原因となった push 拒否が
+  解消されるまで halt → restack が繰り返され得る** → operator 裁定（2026-08-22, issue #1060）で
+  許容範囲とした。halt 時の warn メッセージに「以降の push も同じ理由で拒否される可能性がある。
+  ローカル branch を手当てしてから resume すること」を含め、operator の手当てへ誘導する。
+  graft の無効化は non-fast-forward 問題を再発させるため採らない。
+- **[既知事項] published restack commit の tree に含まれる state.json の `synthesizedCommits` は、
+  restack commit 自身の OID（checkpointOid / restackedOid / mergeOid）を含まない**（publish 時点の
+  snapshot に自身の OID を含められない構造のため）→ semantic inconsistency として既知とする。
+  現行の attach / egress 契約上の functional impact は確認されていない: restack OID は origin に
+  存在するため `rev-list HEAD --not --remotes=origin` の publish range に入らず、
+  `EGRESS_UNKNOWN_COMMIT` は発生しない。runtime 側の台帳（disk / in-memory）は
+  persist-before-push で両 OID を追記済み。
 
 ## Open Questions
 
