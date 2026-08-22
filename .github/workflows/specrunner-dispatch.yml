@@ -238,7 +238,18 @@ jobs:
               -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){linkedBranches(first:20){nodes{ref{name}}}}}}' \
               --jq '[.data.repository.issue.linkedBranches.nodes[].ref.name] | (map(select(startswith("change/"))) + .) | first // empty')
             if [ -z "$BRANCH" ]; then
-              echo "::error::issue #$ISSUE に Development linked branch が無い（reopen には必須）"
+              # PR 作成後は Development link が branch から PR へ置き換わり linkedBranches が
+              # 空になる (実測: run 32568457970)。reopen は常に PR 作成後なので、
+              # issue の closing PR 参照 (OPEN のみ) の head branch へ fallback する。
+              BRANCH=$(gh api graphql \
+                -F owner='${{ github.repository_owner }}' \
+                -F name='${{ github.event.repository.name }}' \
+                -F number="$ISSUE" \
+                -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){closedByPullRequestsReferences(first:20,includeClosedPrs:false){nodes{headRefName}}}}}' \
+                --jq '[.data.repository.issue.closedByPullRequestsReferences.nodes[].headRefName] | (map(select(startswith("change/"))) + .) | first // empty')
+            fi
+            if [ -z "$BRANCH" ]; then
+              echo "::error::issue #$ISSUE の branch を解決できない（Development linked branch も OPEN な closing PR も無い）"
               exit 1
             fi
             bun ./bin/specrunner.ts job attach --branch "$BRANCH" | tee attach-out.txt
