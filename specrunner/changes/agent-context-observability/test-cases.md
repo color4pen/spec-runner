@@ -2,10 +2,10 @@
 
 ## Summary
 
-- **Total**: 39 cases
-- **Automated** (unit/integration): 35
+- **Total**: 44 cases
+- **Automated** (unit/integration): 40
 - **Manual**: 0
-- **Priority**: must: 35, should: 4, could: 0
+- **Priority**: must: 40, should: 4, could: 0
 
 ---
 
@@ -398,6 +398,62 @@
 **Source**: tasks.md > T-08: Acceptance Criteria
 
 `tests/unit/dead-code-core.test.ts` が green であることを確認する。新規 export がすべて実使用され、port barrel を再導入していないことを保証する。
+
+<!-- ================================================================
+     PR #1070 再レビュー由来の追加 TC（reopen 2026-08-22）
+     ================================================================ -->
+
+## 再レビュー由来の回帰固定
+
+### TC-040: agent 成功後の output contract halt でも contextMetrics が usage.json に残る
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: context metrics は usage.json に永続化され step / model / provider 単位で確認できる（halted step の append 条項）+ PR #1070 再レビュー [High]
+
+**Given** runner.run() が success と観測済み contextMetrics を返し、その後の output contract 検査の violation で halt が生成される
+**When** commitHalt が実行される
+**Then** usage.json に `modelUsage: null` かつ contextMetrics 付きの entry が 1 件 append される
+
+### TC-041: agent 成功後の commit / push 失敗 halt でも contextMetrics が usage.json に残る
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: context metrics は usage.json に永続化され step / model / provider 単位で確認できる（halted step の append 条項）+ PR #1070 再レビュー [High]
+
+**Given** runner.run() が success と観測済み contextMetrics を返し、その後の step artifact の commit / push 失敗で halt が生成される
+**When** commitHalt が実行される
+**Then** usage.json に `modelUsage: null` かつ contextMetrics 付きの entry が 1 件 append される
+
+### TC-042: 観測済み invocation では compactionCount 0 が明示される
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: Claude adapter は provider native compaction の発火を記録する > Scenario: 観測済み invocation では compaction 0 回が明示される
+
+**Given** active context（または context window）は観測されるが compact_boundary は 1 件も観測されない
+**When** snapshot() を呼ぶ
+**Then** `compactionCount` は 0 であり undefined ではない。観測ゼロの invocation では従来どおり snapshot() が undefined を返すことも同時に固定する
+
+### TC-043: modelUsage 欠落 + contextMetrics ありの成功 step でも entry が書かれる
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: context metrics は usage.json に永続化され step / model / provider 単位で確認できる + escalation 裁定 F-1 の回帰固定
+
+**Given** success の StepExecutionResult が modelUsage undefined かつ contextMetrics を持つ
+**When** commitSuccess が実行される
+**Then** usage.json に `modelUsage: null` + contextMetrics 付きの entry が append される
+
+### TC-044: output-repair ターンの context 溢れで exhaustionAtTokens が設定される
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: context exhaustion 時に観測できていた context size が残る + escalation 裁定 F-3 の回帰固定
+
+**Given** main work で active context が観測された後、output-repair ターンで provider が context 溢れを示す非成功 result（または throw）を返す
+**When** invocation が完了する
+**Then** `contextMetrics.exhaustionAtTokens` に最後に観測された active context 値が入る
 
 ---
 

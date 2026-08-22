@@ -79,7 +79,7 @@
 
 - `contextWindowTokens` — その invocation で provider が認識していた context window
 - `peakActiveContextTokens` — 観測できた active context の最大値
-- `compactionCount` — invocation 中に観測した compaction 回数
+- `compactionCount` — invocation 中に観測した compaction 回数。他の context 観測値が 1 つ以上ある invocation では 0 を明示し、報告能力の無い provider / pre-feature entry の absent と集計時に区別できるようにする
 - `contextTokensBeforeCompaction` — **最後に観測した** compaction の直前 context size
 - `contextTokensAfterCompaction` — **最後に観測した** compaction の直後 context size
 - `exhaustionAtTokens` — context exhaustion 検知時点で観測できていた最新の active context size
@@ -94,7 +94,7 @@
 `src/adapter/claude-code/context-observer.ts`（新規・pure module）が SDK message を観測して metric を組み立てる。情報源は次の 4 つに限定する。
 
 1. `peakActiveContextTokens`: `type: "assistant"` message の `message.usage` から `input_tokens + cache_read_input_tokens + cache_creation_input_tokens` を計算し、その最大値を採る。**単一 request の prompt token 数**であり累計ではない。`parent_tool_use_id !== null`（sub-agent）と `isReplay === true`（過去 session の再生）は除外する。
-2. `compactionCount` / `contextTokensBeforeCompaction` / `contextTokensAfterCompaction`: `type: "system", subtype: "compact_boundary"` の `compact_metadata.pre_tokens` / `post_tokens`。
+2. `compactionCount` / `contextTokensBeforeCompaction` / `contextTokensAfterCompaction`: `type: "system", subtype: "compact_boundary"` の `compact_metadata.pre_tokens` / `post_tokens`。boundary を 1 件も観測しなくても、他の観測値が 1 つ以上あれば snapshot 時に `compactionCount: 0` を明示する（観測ゼロなら snapshot 自体が undefined のまま）。
 3. `contextWindowTokens`: result message の `modelUsage[model].contextWindow`。複数 model が含まれる場合は resolved model の値を優先し、無ければ観測値の最大を採る。
 4. `exhaustionAtTokens`: error 文字列が context 溢れを示すと分類できたときのみ、**観測済みの最新 active context 値**を入れる。観測が 1 件も無ければ undefined。
 
@@ -126,6 +126,7 @@ Codex adapter / Managed adapter は `AgentRunResult.contextMetrics` を設定し
 - success 経路: `applySuccessPostPersistEffects` が `appendInvocation` するとき `contextMetrics` を nested field として載せる（`invocationMetrics` と同じ経路。ただし flat spread ではなく nested field）。
 - halt 経路: `StepHalt` に `contextMetrics` を持たせ、`CommitOrchestrator.commitHalt` が **`contextMetrics` を持つ halt に限り** best-effort で usage.json に 1 entry append する。その entry は `modelUsage: null` とし、`numTurns` 等の invocation metrics は載せない。
 - `commitHalt` は `deps` を optional な追加引数で受け取る（`apply()` から渡す）。既存呼び出し（テスト含む）は互換のまま。
+- agent が success を返した後の post-run halt（main-checkout drift / output contract violation / step artifact の commit・push 失敗）でも、`runResult.contextMetrics` を `StepHalt.contextMetrics` へ引き継ぐ。引き継がないと、観測済みの context lifecycle 証跡が halt 種別によって失われ、「halted step は観測があれば必ず 1 entry append する」の spec 条項を満たせない（PR #1070 再レビュー [High]）。
 
 - **Rationale**: 要件 4「session log だけに閉じず、job 完了後に比較・集計できる永続データ」＋「既存 usage / invocation metrics と同じ観測経路」。usage.json は active / archive 双方で読める唯一の per-invocation 永続 file であり、表示経路（`usage show`）も既にある。失敗経路を state.json 側に分けると exhaustion だけ別 file・別表示になり「比較・集計できる」が満たせない。
 - cost 集計の不変性: 追加 entry は `modelUsage: null` かつ `totalCostUsd` 無しなので、`usage summary`（`inv.modelUsage` が falsy なら skip）も `job stats`（`costUsd` / `measuredCostUsd` / `turns` はいずれも値が存在する entry のみ加算）も数値が変わらない。既存 TC-019（error 時に invocation metrics を usage.json に書かない）も、`contextMetrics` を持たない halt では append しないため維持される。

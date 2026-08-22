@@ -65,6 +65,16 @@ adapter SHALL increment `compactionCount` for every observed compaction boundary
 SHALL record `contextTokensBeforeCompaction` / `contextTokensAfterCompaction` from the
 most recently observed boundary's provider-reported values.
 provider が after 側の値を返さない場合、`contextTokensAfterCompaction` は undefined のままとする。
+compaction boundary を 1 件も観測しなかった invocation でも、他の context 観測値
+（active context または context window）が 1 つ以上得られた場合、adapter SHALL set
+`compactionCount` to 0 — 「compaction 0 回」と「観測不能（`contextMetrics` 自体が undefined、
+または pre-feature entry）」を集計時に区別できるようにするためである。
+
+#### Scenario: 観測済み invocation では compaction 0 回が明示される
+
+**Given** invocation 中に active context を報告する assistant message は観測されるが compaction boundary は 1 件も観測されない
+**When** invocation が完了する
+**Then** `contextMetrics.compactionCount` は 0 になり、undefined ではない
 
 #### Scenario: compaction 2 回で回数と直近の前後値が残る
 
