@@ -28,6 +28,11 @@
  * TC-014: constructor accepts sessionClient, githubClient, configStore deps
  * TC-020: ctx.branch is included in the session prompt
  * TC-030: ManagedAgentRunner.verifyBranch → error when branch not found (404)
+ *
+ * agent-context-observability: The managed runtime SessionUsage schema does not include
+ * a context window size, compaction events, or a context-limit exhaustion signal. Therefore
+ * `contextMetrics` is never set in any AgentRunResult returned by this runner. Values are
+ * NOT derived from cumulative modelUsage (see mapSessionUsage in usage.ts).
  */
 import type { AgentRunner, AgentRunContext, AgentRunResult } from "../../core/port/agent-runner.js";
 import type { ModelUsage } from "../../core/port/model-usage.js";

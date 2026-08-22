@@ -1,0 +1,19 @@
+{
+  "requestHash": "sha256:b8e1ca0cbd86ff30abaedf6282c644b8bfbe3f2d8d7fd4f0e933e9eaed74bb6a",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/kernel/model-usage.ts: ModelUsage has inputTokens, outputTokens, cacheReadInputTokens, cacheCreationInputTokens",
+    "src/core/port/agent-runner.ts: AgentInvocationMetrics has numTurns, durationMs, durationApiMs, totalCostUsd",
+    "src/core/port/agent-runner.ts: AgentRunResult has modelUsage?: Record<string, ModelUsage>",
+    "src/core/usage/types.ts: CommandInvocation has modelUsage, numTurns, durationMs, durationApiMs, totalCostUsd",
+    "src/state/schema/types.ts: StepRun has modelUsage?: Record<string, ModelUsage>",
+    "src/adapter/claude-code/agent-runner.ts: extractedModelUsage accumulates across follow-up/repair turns (lines 1083-1096, 1133-1145)",
+    "src/adapter/claude-code/agent-runner.ts: extractInvocationMetrics extracts num_turns, duration_ms, duration_api_ms, total_cost_usd from raw SDK result",
+    "src/adapter/managed-agent/usage.ts: mapSessionUsage maps BetaManagedAgentsSessionUsage to SessionUsage",
+    "src/core/step/commit-orchestrator.ts: applySuccessPostPersistEffects writes modelUsage + invocationMetrics to usage.json via appendInvocation",
+    "src/core/usage/store.ts: appendInvocation appends CommandInvocation to usage.json atomically",
+    "src/core/command/usage-show.ts: displays per-step usage from usage.json including numTurns, durationMs, durationApiMs, totalCostUsd",
+    "src/core/port/session-client.ts: SessionUsage has inputTokens, outputTokens, cacheReadInputTokens, cacheCreationInputTokens (no context window field)"
+  ],
+  "sourceRevision": "0d2378f2376f22d8ce0ff727515e84de8a13b073"
+}

@@ -1,0 +1,290 @@
+{
+  "version": 2,
+  "jobId": "f6d2e71c-5ff1-4454-ad35-1073cc427a7f",
+  "createdAt": "2026-08-22T13:47:16.472Z",
+  "updatedAt": "2026-08-22T19:42:32.542Z",
+  "request": {
+    "title": "agent session の active context / compaction を計測可能にする",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/agent-context-observability-f6d2e71c",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1064,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "b7747e0ff8da82eec86c81f2c32939462792012f",
+    "a53facb7dbda3b9f44bb5050b15faab8c717fad9",
+    "e179318bde4454378dc4db7191935590f5234c0a",
+    "9710c00912dab063900203c126f2811294e7cb87",
+    "3bc7d47c94a688f32a324dd17114161de07624f7",
+    "83f6ac532de7535cadb93742dfa632093c5a56af",
+    "fa4e0167d8b278e82778950b9330735707fc1d0e",
+    "4c17b711fb238911203675729b1a823316769327",
+    "5c315615ce9c7675a4021f238b0c753c1159c45b",
+    "c0c0d97106984ee653cbcb5888d1cb288c425bfc",
+    "c7838755911171522dd1b71baae62af728df24cc",
+    "814f9ebf533d0367187672ff629ba13d1d594c27",
+    "be55a70943baaf2955821cd73cebddb0af2f6f52",
+    "9d2b218c2d851db75fbc91072621de29a7db3265",
+    "a15d7400d593e28cc746f19c4d59756cc97496e4",
+    "0ee066dbab93ced88f289074680fc854316b1b2e",
+    "164b9bcb29e4bcd67a26e5c912e77a9b27184b91",
+    "0436b22397e959200ba3b55bdc713cbfdfd7fe41",
+    "d17b006fff851bb484a709a771ce562c1fb167a3",
+    "3c4d1fe3a13c454a09bef69152cedecf6f0ad73d",
+    "9d233545a8836c7f9790593d2b0fd1faa5a3cbc4",
+    "1b257ea2733fb6360f7dc1a70fd17fcdbe9805fc",
+    "d6a42c60c2bea7715270fc0419b9618e1145c189",
+    "f2b7329f4401cb7776b5abc504c067e51cf5d1b7",
+    "81eb34d464d2a322d1f27c399536dd9d0179a20a",
+    "075ab1588b78aefbf7332f85e46048dd24dfa3ff",
+    "6b6d521b804b40ab16d744356f9d07aab362aba5",
+    "949ee8e73ec8a9b33a5a3e07727f76098a52303f"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/port/model-usage.ts",
+      "src/state/schema/types.ts",
+      "src/kernel/model-usage.ts",
+      "src/core/usage/types.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/managed-agent/usage.ts",
+      "src/core/step/step-completion.ts",
+      "src/core/command/usage-show.ts",
+      "src/state/__tests__/artifact-observability.test.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/core/usage/store.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "src/core/port/session-client.ts"
+    ],
+    "design": [
+      "src/kernel/model-usage.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/usage/types.ts",
+      "src/core/usage/store.ts",
+      "src/core/command/usage-show.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/message-types.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/executor.ts",
+      "src/core/command/usage-summary.ts"
+    ],
+    "test-case-gen": [
+      "tests/unit/adapter/claude-code/agent-runner-invocation-metrics.test.ts",
+      "tests/unit/core/step/commit-orchestrator-usage-metrics.test.ts",
+      "tests/unit/core/usage/invocation-types.test.ts",
+      "tests/unit/core/command/usage-show-metrics.test.ts"
+    ],
+    "spec-review": [
+      "src/kernel/context-metrics.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/usage/types.ts",
+      "src/kernel/model-usage.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/command/usage-show.ts",
+      "src/adapter/claude-code/message-types.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/managed-agent/usage.ts",
+      "src/core/step/executor.ts",
+      "tests/unit/adapter/claude-code/agent-runner-invocation-metrics.test.ts",
+      "tests/unit/core/step/commit-orchestrator-usage-metrics.test.ts",
+      "tests/unit/core/usage/invocation-types.test.ts",
+      "tests/unit/core/command/usage-show-metrics.test.ts",
+      "src/state/__tests__/artifact-observability.test.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/state/schema/types.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "src/core/port/model-usage.ts",
+      "src/core/usage/store.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      "src/kernel/context-metrics.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "tests/unit/adapter/claude-code/context-observer.test.ts",
+      "tests/unit/core/step/commit-orchestrator-context-metrics.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-context-metrics.test.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/port/output-contract.ts",
+      "tests/unit/core/command/usage-show-context-metrics.test.ts"
+    ],
+    "code-review": [
+      "src/kernel/context-metrics.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/executor.ts",
+      "src/core/usage/types.ts",
+      "src/core/command/usage-show.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/managed-agent/usage.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "tests/unit/adapter/claude-code/context-observer.test.ts",
+      "tests/unit/core/step/commit-orchestrator-context-metrics.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-context-metrics.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/step-halt.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/step/executor.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/attestation/build-attestation.ts"
+    ],
+    "code-fixer": [
+      "src/core/attestation/build-attestation.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "tests/unit/core/attestation/build-attestation.test.ts"
+    ],
+    "conformance": [
+      "src/kernel/context-metrics.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "src/core/usage/types.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/command/usage-show.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "src/adapter/managed-agent/usage.ts",
+      "src/kernel/model-usage.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "tests/unit/adapter/claude-code/context-observer.test.ts",
+      "tests/unit/core/step/commit-orchestrator-context-metrics.test.ts",
+      "tests/unit/core/usage/context-metrics-types.test.ts",
+      "tests/unit/core/command/usage-show-context-metrics.test.ts",
+      "tests/unit/adapter/codex/agent-runner-context-metrics.test.ts",
+      "tests/unit/adapter/managed-agent/agent-runner-context-metrics.test.ts",
+      "src/core/attestation/build-attestation.ts",
+      "tests/unit/core/attestation/build-attestation.test.ts"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "1b257ea2733fb6360f7dc1a70fd17fcdbe9805fc",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/agent-context-observability/design.md:sha256:c423324d294956f320225d372ea6cd28f0478178d0327d3eecbaec0f96d0ac90|specrunner/changes/agent-context-observability/request.md:sha256:b8e1ca0cbd86ff30abaedf6282c644b8bfbe3f2d8d7fd4f0e933e9eaed74bb6a|specrunner/changes/agent-context-observability/spec.md:sha256:f49bf8d39fef18e7e5e8abb09f838ef89c6773f8839bec3c6ca531dde2b2b1c3|specrunner/changes/agent-context-observability/tasks.md:sha256:ab7236d2e62942a24be24693de1d572d9c1287f59df68cd1ffdb28c3cf937adc|specrunner/changes/agent-context-observability/test-cases.md:sha256:20d024f88892914aa59d280b83d1d2f81f5941bee3a7acb2f73df997653dff03"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "custom-reviewers (cross-boundary-invariants) escalation の操作者裁定: [F-1 medium/fixable commit-orchestrator.ts applySuccessPostPersistEffects] 修正する。contextMetrics の永続化を modelUsage ガードから独立させる: modelUsage が無い成功 run でも contextMetrics が存在すれば usage.json へ append する (その entry は modelUsage: null とし invocation metrics は載せない — design D7 の halt entry と同じ形)。aggregateUsage / job stats は modelUsage 無し entry をスキップするため既存集計は不変。回帰テストを追加すること。 [F-2 low/decision-needed commitRound parallel member halt の contextMetrics 廃棄] 現状維持 (提示 option 2) を採る。design.md Risks に既知の限界として明示済みで、本 Issue の観測対象は sequential step (implementer/fixer) が主。canon もコードも変更しない。 [F-3 low/fixable agent-runner.ts output-repair ループ] 修正する。postWork follow-up と同じ扱いに揃える: repair ストリームで result message の subtype が success 以外の場合に contextObserver.observeResult と errors 由来の markExhaustion を行い、catch 経路でも error message を markExhaustion へ渡す。回帰テストを追加すること。 修正は F-1 / F-3 の最小差分に限定し、canon (design.md / spec.md / test-cases.md) は変更しないこと。",
+      "step": "custom-reviewers",
+      "recordedAt": "2026-08-22T15:18:52.824Z"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1070",
+    "number": 1070,
+    "createdAt": "2026-08-22T19:42:31.837Z"
+  },
+  "_journal": {
+    "historyCount": 138,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 2,
+      "bite-evidence": 2,
+      "verification": 4,
+      "code-review": 2,
+      "cross-boundary-invariants": 3,
+      "scale-tolerance": 1,
+      "custom-reviewers": 3,
+      "regression-gate": 4,
+      "code-fixer": 4,
+      "conformance": 3,
+      "adr-gen": 2,
+      "pr-create": 2
+    }
+  }
+}

@@ -17,6 +17,7 @@
  */
 import type { ErrorInfo, JobState, StepName, HistoryEntry } from "../../state/schema.js";
 import type { AgentRunResult } from "../port/agent-runner.js";
+import type { AgentContextMetrics } from "../../kernel/context-metrics.js";
 import type { OutputViolation } from "../port/output-contract.js";
 import type { GuardDrift } from "./main-checkout-guard.js";
 import type { StepResultInput } from "../../state/helpers.js";
@@ -51,6 +52,12 @@ export type StepHalt =
       thrownErr: Error;
       recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">;
       history?: Omit<HistoryEntry, "ts">;
+      /**
+       * Active context and compaction metrics observed during this invocation.
+       * Forwarded from AgentRunResult.contextMetrics (agent-context-observability).
+       * absent = runner did not observe context metrics (Codex / managed / pre-feature runs).
+       */
+      contextMetrics?: AgentContextMetrics;
     }
   | {
       kind: "awaiting-resume";
@@ -69,6 +76,12 @@ export type StepHalt =
       statePatch?: { mainCheckoutDrift?: MainCheckoutDrift };
       recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">;
       history?: Omit<HistoryEntry, "ts">;
+      /**
+       * Active context and compaction metrics observed during this invocation.
+       * Forwarded from AgentRunResult.contextMetrics (agent-context-observability).
+       * absent = runner did not observe context metrics (Codex / managed / pre-feature runs).
+       */
+      contextMetrics?: AgentContextMetrics;
     };
 
 // ---------------------------------------------------------------------------
@@ -117,7 +130,7 @@ export function makeAgentThrowHalt(
  * history: `{step}-timeout` / error / `${step} timed out: ${message}`
  */
 export function makeTimeoutHalt(
-  runResult: Pick<AgentRunResult, "error">,
+  runResult: Pick<AgentRunResult, "error" | "contextMetrics">,
   stepName: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
 ): StepHalt & { kind: "awaiting-resume" } {
@@ -146,6 +159,7 @@ export function makeTimeoutHalt(
       status: "error",
       message: `${stepName} timed out: ${error.message}`,
     },
+    ...(runResult.contextMetrics !== undefined ? { contextMetrics: runResult.contextMetrics } : {}),
   };
 }
 
@@ -161,7 +175,7 @@ export function makeTimeoutHalt(
  * history: none (no history append for non-success)
  */
 export function makeNonSuccessHalt(
-  runResult: Pick<AgentRunResult, "error">,
+  runResult: Pick<AgentRunResult, "error" | "contextMetrics">,
   stepName: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
 ): StepHalt & { kind: "failed" } {
@@ -174,7 +188,13 @@ export function makeNonSuccessHalt(
     message: err.message,
     hint: (err as Error & { hint?: string }).hint ?? "",
   };
-  return { kind: "failed", error, thrownErr: err as Error, recordOpts };
+  return {
+    kind: "failed",
+    error,
+    thrownErr: err as Error,
+    recordOpts,
+    ...(runResult.contextMetrics !== undefined ? { contextMetrics: runResult.contextMetrics } : {}),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -188,15 +208,21 @@ export function makeNonSuccessHalt(
  *
  * history: `{step}-main-checkout-write-detected` / error / `${step}: main checkout write detected — ${pathSummary}`
  *
- * @param drift    Result of diffGuardSnapshots — must have drifted === true.
- * @param stepName Name of the step during which the drift was detected.
- * @param slug     Job slug for the resume command hint message.
+ * @param drift          Result of diffGuardSnapshots — must have drifted === true.
+ * @param stepName       Name of the step during which the drift was detected.
+ * @param slug           Job slug for the resume command hint message.
+ * @param recordOpts     Forwarded to recordFailedStepResult (startedAt / completedAt / transientRetryAttempts).
+ * @param contextMetrics Active context metrics observed during the agent invocation (agent-context-observability).
+ *                       Forwarded from AgentRunResult.contextMetrics so that drift halt entries are also recorded
+ *                       in usage.json per spec "halted step SHALL also append one usage entry when — and only when —
+ *                       context metrics were observed" (D7).
  */
 export function makeDriftHalt(
   drift: GuardDrift,
   stepName: string,
   slug: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
+  contextMetrics?: AgentContextMetrics,
 ): StepHalt & { kind: "awaiting-resume" } {
   const pathSummary = drift.changes.map((c) => `${c.kind}: ${c.path}`).join(", ");
   const detectedAtStep = toStepName(stepName);
@@ -236,6 +262,9 @@ export function makeDriftHalt(
       status: "error",
       message: `${stepName}: main checkout write detected — ${pathSummary}`,
     },
+    // agent-context-observability: carry context metrics from the successful runner invocation
+    // so that commitHalt can persist them even when the halt is due to a post-success drift guard.
+    ...(contextMetrics !== undefined ? { contextMetrics } : {}),
   };
 }
 
@@ -282,6 +311,7 @@ export function makeOutputGateHalt(
   stepName: string,
   branch: string | null,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
+  contextMetrics?: AgentContextMetrics,
 ): StepHalt & { kind: "failed" } {
   const violationPaths = violations.map((v) =>
     v.kind === "tasks-complete"
@@ -313,6 +343,9 @@ export function makeOutputGateHalt(
       status: "error",
       message: `${stepName} failed: ${error.code} — ${error.message}`,
     },
+    // agent-context-observability: carry context metrics from the successful runner invocation
+    // so that commitHalt can persist them even when the halt is due to a post-success guard.
+    ...(contextMetrics !== undefined ? { contextMetrics } : {}),
   };
 }
 
@@ -331,13 +364,22 @@ export function makeCommitFailHalt(
   err: Error & { code?: string; hint?: string },
   _stepName: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
+  contextMetrics?: AgentContextMetrics,
 ): StepHalt & { kind: "failed" } {
   const error: ErrorInfo = {
     code: err.code ?? "COMMIT_AND_PUSH_FAILED",
     message: err.message,
     hint: err.hint ?? "",
   };
-  return { kind: "failed", error, thrownErr: err, recordOpts };
+  return {
+    kind: "failed",
+    error,
+    thrownErr: err,
+    recordOpts,
+    // agent-context-observability: carry context metrics from the successful runner invocation
+    // so that commitHalt can persist them even when the halt is due to a post-success commit failure.
+    ...(contextMetrics !== undefined ? { contextMetrics } : {}),
+  };
 }
 
 // ---------------------------------------------------------------------------

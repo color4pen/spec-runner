@@ -7,6 +7,7 @@
  * TC-ATT-04: outcome.toolResult.findings → FindingsSummary with correct severity/resolution counts
  * TC-ATT-05: unpriced model → step costUsd null, model in unpricedModels
  * TC-ATT-06: modelUsage === null invocation → model empty, cost null
+ * TC-ATT-07: halt entry (modelUsage:null) + retry-success entry → cost from priced entry, not null
  */
 import { describe, it, expect } from "vitest";
 import { createHash } from "node:crypto";
@@ -405,5 +406,162 @@ describe("TC-ATT-06: modelUsage === null invocation → model empty, cost null",
     expect(attestation.cost.perStep[0]?.step).toBe("design");
     // Tokens should only reflect the "job" invocation, not the request-review
     expect(attestation.cost.perStep[0]?.tokens.input).toBe(100);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-ATT-08: unmarked modelUsage:null keeps "usage unavailable" semantics
+// ---------------------------------------------------------------------------
+
+describe("TC-ATT-08: unmarked modelUsage:null entry (usage unavailable) keeps step cost unknown", () => {
+  it("legacy null entry + priced entry in the same step yields costUsd null, not the priced value", () => {
+    // Contract: modelUsage: null WITHOUT contextOnly means "usage was unavailable for a
+    // real invocation" (e.g. managed runtime attempt). The step's true cost is unknown,
+    // so a priced entry from another attempt must NOT be presented as the definitive cost.
+    const journal = makeStepAttempt({
+      step: "implementer",
+      startedAt: "2026-01-01T00:00:00Z",
+      endedAt: "2026-01-01T00:05:00Z",
+      verdict: "approved",
+    });
+
+    const usage: UsageFile = {
+      commandInvocations: [
+        {
+          // Attempt 1 — managed runtime, usage unavailable (no contextOnly marker)
+          command: "job",
+          timestamp: "2026-01-01T00:03:00Z",
+          modelUsage: null,
+          jobId: "job-1",
+          stepName: "implementer",
+        },
+        {
+          // Attempt 2 — priced usage
+          command: "job",
+          timestamp: "2026-01-01T00:05:00Z",
+          modelUsage: {
+            "claude-sonnet-4-6": { inputTokens: 50000, outputTokens: 5000, cacheReadInputTokens: 20000, cacheCreationInputTokens: 1000 },
+          },
+          jobId: "job-1",
+          stepName: "implementer",
+        },
+      ],
+    };
+
+    const attestation = buildAttestation({ journalContent: journal, usage });
+    const stepCost = attestation.cost.perStep.find((ps) => ps.step === "implementer");
+
+    // The step contains an unpriced real invocation → step cost is unknown (null), never
+    // a definitive-looking undercount from the priced entry alone. (totalCostUsd keeps its
+    // pre-change semantics: it accumulates priced entries as a lower bound regardless of
+    // per-step unpriced state — only the step-level cost is nulled.)
+    expect(stepCost?.costUsd).toBeNull();
+    // Token totals still accumulate from the priced entry (tokens are additive facts,
+    // not a claim of completeness — same as the pre-change behavior for null entries).
+    expect(stepCost?.tokens.input).toBe(50000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-ATT-07: halt entry (modelUsage:null) + retry-success entry → cost from priced entry
+// ---------------------------------------------------------------------------
+
+describe("TC-ATT-07: halt entry (modelUsage:null) + retry-success entry → cost from priced entry, not null", () => {
+  it("step with halt entry followed by retry-success entry uses priced cost, not null", () => {
+    // Simulate a step that halted (context exhaustion) then was resumed and succeeded.
+    // The halt produces a modelUsage:null entry; the retry produces a real modelUsage entry.
+    // The step cost must be the retry-success cost, NOT null.
+    const journal = [
+      makeStepAttempt({
+        step: "implementer",
+        startedAt: "2026-01-01T00:00:00Z",
+        endedAt: "2026-01-01T00:05:00Z",
+        verdict: "approved",
+      }),
+    ].join("");
+
+    const usage: UsageFile = {
+      commandInvocations: [
+        {
+          // Halt entry — context exhaustion during first attempt (modelUsage: null)
+          command: "job",
+          timestamp: "2026-01-01T00:03:00Z",
+          modelUsage: null,
+          contextOnly: true,
+          jobId: "job-1",
+          stepName: "implementer",
+        },
+        {
+          // Retry-success entry — second attempt succeeded with real model usage
+          command: "job",
+          timestamp: "2026-01-01T00:05:00Z",
+          modelUsage: {
+            "claude-sonnet-4-6": { inputTokens: 50000, outputTokens: 5000, cacheReadInputTokens: 20000, cacheCreationInputTokens: 1000 },
+          },
+          jobId: "job-1",
+          stepName: "implementer",
+        },
+      ],
+    };
+
+    const attestation = buildAttestation({ journalContent: journal, usage });
+
+    const stepCost = attestation.cost.perStep.find((ps) => ps.step === "implementer");
+    const stepModel = attestation.stepModels.find((sm) => sm.step === "implementer");
+
+    // TC-ATT-07: cost must be derived from the priced entry, not nulled by the halt entry
+    expect(stepCost?.costUsd).not.toBeNull();
+    expect(stepCost?.costUsd).toBeGreaterThan(0);
+    expect(stepCost?.tokens.input).toBe(50000);
+    expect(stepCost?.tokens.output).toBe(5000);
+    expect(stepCost?.tokens.cacheRead).toBe(20000);
+    expect(stepCost?.tokens.cacheWrite).toBe(1000);
+
+    // Model should be listed from the priced entry
+    expect(stepModel?.models).toContain("claude-sonnet-4-6");
+
+    // Total cost must also be non-null
+    expect(attestation.cost.totalCostUsd).not.toBeNull();
+    expect(attestation.cost.totalCostUsd).toBeGreaterThan(0);
+
+    // No unpriced models (halt entries with modelUsage:null are not unpriced — they're observed-only)
+    expect(attestation.cost.unpricedModels).toHaveLength(0);
+  });
+
+  it("step with only halt entries (all modelUsage:null) has null cost and empty models", () => {
+    // When a step has ONLY halt entries (no successful retry), cost must remain null.
+    const journal = makeStepAttempt({
+      step: "implementer",
+      startedAt: "2026-01-01T00:00:00Z",
+      endedAt: "2026-01-01T00:03:00Z",
+      verdict: null,
+    });
+
+    const usage: UsageFile = {
+      commandInvocations: [
+        {
+          // Only halt entry — no retry succeeded
+          command: "job",
+          timestamp: "2026-01-01T00:03:00Z",
+          modelUsage: null,
+          contextOnly: true,
+          jobId: "job-1",
+          stepName: "implementer",
+        },
+      ],
+    };
+
+    const attestation = buildAttestation({ journalContent: journal, usage });
+
+    const stepCost = attestation.cost.perStep.find((ps) => ps.step === "implementer");
+
+    // TC-ATT-07: step with only halt entries still has null cost (no priced invocations)
+    expect(stepCost?.costUsd).toBeNull();
+    // No models accumulated
+    expect(attestation.stepModels.find((sm) => sm.step === "implementer")?.models).toHaveLength(0);
+    // Total cost stays null
+    expect(attestation.cost.totalCostUsd).toBeNull();
+    // No unpriced models (halt entries are not "unpriced")
+    expect(attestation.cost.unpricedModels).toHaveLength(0);
   });
 });

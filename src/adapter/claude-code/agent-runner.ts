@@ -47,6 +47,7 @@ import { buildTouchedFilesSection } from "../shared/touched-files-bundle.js";
 import { extractTouchedFilesFromMessages } from "./touched-files-recorder.js";
 import { buildReportToolCompletionDirective } from "./completion-directive.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
+import { createContextObserver } from "./context-observer.js";
 import { logVerbose, stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../../logger/diagnostic.js";
 import { SessionLogWriter } from "../shared/session-log-writer.js";
@@ -480,6 +481,10 @@ export class ClaudeCodeRunner implements AgentRunner {
       model: step.agent.model,
       maxTurns: dynamicMaxTurns ?? step.maxTurns,
     }, ctx.requestType);
+    // agent-context-observability: create context observer for this invocation.
+    // Accumulates active context peaks, compaction events, and exhaustion markers.
+    const contextObserver = createContextObserver({ provider: "claude-code", model: resolvedConfig.model });
+
     const abortController = new AbortController();
     // D4 (design.md): register with the abort hub; deregister in the finally block.
     const deregisterFromHub = this.queryAbortHub?.register(abortController);
@@ -730,6 +735,8 @@ export class ClaudeCodeRunner implements AgentRunner {
           for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
             watchdog.bump(); // reset on each event arrival
             observeMessage(message);
+            // agent-context-observability: observe every main-work message for context metrics.
+            contextObserver.observe(message);
             // T-02: capture session_id from any message as soon as it arrives.
             // Final success result assignment below uses ?? to preserve the early value.
             if (!extractedSessionId) {
@@ -885,6 +892,8 @@ export class ClaudeCodeRunner implements AgentRunner {
         for await (const message of messages as AsyncGenerator<SDKMessage, void>) {
           watchdog.bump(); // reset on each event arrival
           onMessage(message);
+          // agent-context-observability: observe follow-up messages independently of onMessage.
+          contextObserver.observe(message);
           if (message.type === "result") {
             lastResult = message as SDKResultMessage;
           }
@@ -964,6 +973,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           followUpAttempts: 0,
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           addedTurns: ADDED_TURNS_ZERO,
+          contextMetrics: contextObserver.snapshot(),
           error: Object.assign(
             new Error(`Step '${step.name}': Agent/Task tool redirect limit exceeded (max 3)`),
             { code: "AGENT_REDIRECT_LIMIT_EXCEEDED" },
@@ -975,6 +985,10 @@ export class ClaudeCodeRunner implements AgentRunner {
 
       if (lastResult && lastResult.subtype !== "success") {
         const errorResult = lastResult as SDKResultMessage & { errors?: string[] };
+        // agent-context-observability: observe result metrics and mark exhaustion if applicable.
+        contextObserver.observeResult(errorResult as Record<string, unknown>);
+        const errorJoined = (errorResult.errors ?? []).join(" ").trim();
+        if (errorJoined) contextObserver.markExhaustion(errorJoined);
         sessionLogWriter?.close();
         return {
           completionReason: "error",
@@ -984,6 +998,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           addedTurns: ADDED_TURNS_ZERO,
           invocationMetrics: extractInvocationMetrics(errorResult as Record<string, unknown>),
+          contextMetrics: contextObserver.snapshot(),
           error: Object.assign(
             new Error(`Claude Code SDK query failed: ${errorResult.subtype}`),
             { code: "CLAUDE_CODE_QUERY_FAILED" },
@@ -1010,6 +1025,8 @@ export class ClaudeCodeRunner implements AgentRunner {
         // T-02: ?? preserves an early-captured session_id from init messages.
         extractedSessionId = successResult.session_id ?? extractedSessionId;
         extractedMetrics = extractInvocationMetrics(successResult as unknown as Record<string, unknown>);
+        // agent-context-observability: extract contextWindow from modelUsage in result message.
+        contextObserver.observeResult(successResult as unknown as Record<string, unknown>);
       }
 
       // --- report_result follow-up retry (main work turn only) ---
@@ -1024,9 +1041,17 @@ export class ClaudeCodeRunner implements AgentRunner {
           };
           // Remove MCP server from retry options to avoid re-registering
           // (the closure is still active so tool calls will be captured)
-          await runFollowUpQueryWithRetry(retryPrompt, retryOptions);
+          const retryLastResult = await runFollowUpQueryWithRetry(retryPrompt, retryOptions);
           followUpAttempts++;
           reportRetry++;
+
+          // agent-context-observability: observe non-success result and mark exhaustion for
+          // report_result retry turns (mirrors postWork and output-repair paths).
+          if (retryLastResult && retryLastResult.subtype !== "success") {
+            contextObserver.observeResult(retryLastResult as Record<string, unknown>);
+            const retryErrorJoined = ((retryLastResult as SDKResultMessage & { errors?: string[] }).errors ?? []).join(" ").trim();
+            if (retryErrorJoined) contextObserver.markExhaustion(retryErrorJoined);
+          }
 
           if (capturedToolResult !== null) break;
 
@@ -1057,6 +1082,10 @@ export class ClaudeCodeRunner implements AgentRunner {
 
           if (followLastResult && followLastResult.subtype !== "success") {
             const followErrorResult = followLastResult as SDKResultMessage & { errors?: string[] };
+            // agent-context-observability: observe result and mark exhaustion for postWork error.
+            contextObserver.observeResult(followErrorResult as Record<string, unknown>);
+            const followErrorJoined = (followErrorResult.errors ?? []).join(" ").trim();
+            if (followErrorJoined) contextObserver.markExhaustion(followErrorJoined);
             return {
               completionReason: "error",
               resultContent: null,
@@ -1066,6 +1095,7 @@ export class ClaudeCodeRunner implements AgentRunner {
               addedTurns: { reportRetry, postWork, outputRepair },
               // Main-work metrics are available (extractedMetrics was set when main work succeeded).
               invocationMetrics: extractedMetrics,
+              contextMetrics: contextObserver.snapshot(),
               error: Object.assign(
                 new Error(`Claude Code SDK follow-up query failed: ${followErrorResult.subtype}`),
                 { code: "CLAUDE_CODE_QUERY_FAILED" },
@@ -1127,6 +1157,8 @@ export class ClaudeCodeRunner implements AgentRunner {
             for await (const message of repairMessages as AsyncGenerator<SDKMessage, void>) {
               watchdog.bump(); // reset on each event arrival
               observeMessage(message);
+              // agent-context-observability: observe output-repair messages for context metrics.
+              contextObserver.observe(message);
               if (message.type === "result" && (message as SDKResultMessage).subtype === "success") {
                 const su = (message as SDKResultSuccess);
                 const rawUsage = su.modelUsage;
@@ -1143,11 +1175,22 @@ export class ClaudeCodeRunner implements AgentRunner {
                   }
                   extractedModelUsage = summed;
                 }
+              } else if (message.type === "result") {
+                // agent-context-observability: non-success result — observe for contextWindow
+                // and check whether the error indicates context exhaustion (mirrors postWork path).
+                const errorResult = message as SDKResultMessage & { errors?: string[] };
+                contextObserver.observeResult(errorResult as Record<string, unknown>);
+                const errorJoined = (errorResult.errors ?? []).join(" ").trim();
+                if (errorJoined) contextObserver.markExhaustion(errorJoined);
               }
             }
           } catch (err) {
             // Re-throw abort errors so watchdog-triggered timeouts reach the outer catch (D4 design).
             if (abortController.signal.aborted) throw err;
+            // agent-context-observability: check whether a thrown error is a context exhaustion
+            // signal (e.g. SDK throws instead of emitting a result event on repair turns).
+            const errText = err instanceof Error ? err.message : String(err);
+            contextObserver.markExhaustion(errText);
             // best-effort: repair turn failure → preserve work turn result
             stderrWrite(
               `[specrunner] warn: output verification repair turn ${attempt} failed for '${step.name}'. Continuing.\n`,
@@ -1188,6 +1231,7 @@ export class ClaudeCodeRunner implements AgentRunner {
             followUpAttempts,
             ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
             addedTurns: { reportRetry, postWork, outputRepair },
+            contextMetrics: contextObserver.snapshot(),
             error: Object.assign(
               new Error(`result file not found: ${resultFilePath}`),
               { code: "RESULT_FILE_NOT_FOUND" },
@@ -1213,6 +1257,8 @@ export class ClaudeCodeRunner implements AgentRunner {
         addedTurns: { reportRetry, postWork, outputRepair },
         // agent-invocation-metrics: SDK-measured metrics from the success result.
         invocationMetrics: extractedMetrics,
+        // agent-context-observability: active context and compaction metrics.
+        contextMetrics: contextObserver.snapshot(),
         // touched-files-propagation: worktree-relative paths touched during this step.
         touchedFiles,
       };
@@ -1237,6 +1283,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           modelUsage: extractedModelUsage,
           sessionId: extractedSessionId,
           invocationMetrics: extractedMetrics,
+          contextMetrics: contextObserver.snapshot(),
           touchedFiles: extractTouchedFilesFromMessages(touchedFileMessages, cwd),
         };
       }
@@ -1254,6 +1301,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           followUpAttempts: 0,
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           addedTurns: ADDED_TURNS_ZERO,
+          contextMetrics: contextObserver.snapshot(),
           error: Object.assign(
             new Error(timeoutMessage),
             { code: "STEP_TIMEOUT", hint: tracker.timeoutHint() },
@@ -1264,6 +1312,8 @@ export class ClaudeCodeRunner implements AgentRunner {
       const cause = err as Error;
       logVerbose("session", "query error", { stepName: step.name, runtime: "local", error: cause.message });
       sessionLogWriter?.close();
+      // agent-context-observability: classify error as context exhaustion before snapshotting.
+      contextObserver.markExhaustion(cause.message);
       return {
         completionReason: "error",
         resultContent: null,
@@ -1271,6 +1321,7 @@ export class ClaudeCodeRunner implements AgentRunner {
         followUpAttempts: 0,
         ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
         addedTurns: ADDED_TURNS_ZERO,
+        contextMetrics: contextObserver.snapshot(),
         error: Object.assign(
           new Error(`Claude Code SDK query failed: ${cause.message}`),
           { code: "CLAUDE_CODE_QUERY_FAILED", cause },
