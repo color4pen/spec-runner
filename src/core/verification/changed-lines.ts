@@ -103,6 +103,10 @@ function spawnGit(
  * Fail-closed: any git failure throws. Callers (e.g. runLockfileSyncGate)
  * catch the throw and skip the gate rather than failing silently.
  *
+ * When baseBranch is not available as a local ref (e.g. in a git worktree
+ * where only remote-tracking refs exist), automatically falls back to
+ * origin/<baseBranch>. If both fail, rethrows the original error.
+ *
  * @returns Array of repo-root-relative POSIX paths (empty lines excluded).
  * @throws Error when git diff fails (non-0 exit, spawn error, etc.).
  */
@@ -113,11 +117,27 @@ export async function getChangedFileList(options: {
 }): Promise<string[]> {
   const { cwd, baseBranch = "main", spawn = nodeSpawn } = options;
 
-  const output = await spawnGit(
-    ["diff", "--name-only", "--diff-filter=d", `${baseBranch}...HEAD`],
-    cwd,
-    spawn,
-  );
+  let output: string;
+  try {
+    output = await spawnGit(
+      ["diff", "--name-only", "--diff-filter=d", `${baseBranch}...HEAD`],
+      cwd,
+      spawn,
+    );
+  } catch (primaryErr) {
+    // When baseBranch is not available as a local ref (common in git worktree
+    // environments where main isn't checked out), fall back to origin/<baseBranch>.
+    // If the fallback also fails, rethrow the original error so callers can skip.
+    try {
+      output = await spawnGit(
+        ["diff", "--name-only", "--diff-filter=d", `origin/${baseBranch}...HEAD`],
+        cwd,
+        spawn,
+      );
+    } catch {
+      throw primaryErr;
+    }
+  }
 
   return output
     .split("\n")
@@ -150,6 +170,10 @@ export interface ChangedFilesOptions {
  * ("0 changed files checked") — dropping the declared guarantee. Callers convert
  * the throw into a failed verification result.
  *
+ * When baseBranch is not available as a local ref (e.g. in a git worktree where
+ * only remote-tracking refs exist), automatically falls back to origin/<baseBranch>.
+ * If both fail, the original error is thrown (fail-closed behavior preserved).
+ *
  * @returns Map where keys are repo-root-relative POSIX paths (as output by git)
  *          and values are Sets of changed line numbers on the HEAD side.
  * @throws Error when git diff fails for the file list or for any individual file.
@@ -162,18 +186,34 @@ export async function getChangedFilesAndLines(
 
   // Step 1: List changed (non-deleted) files.
   let fileListOutput: string;
+  // effectiveBase tracks which ref was actually used (baseBranch or origin/<baseBranch>)
+  // so that per-file diffs use the same ref that succeeded for the file list.
+  let effectiveBase = baseBranch;
   try {
     fileListOutput = await spawnGit(
       ["diff", "--name-only", "--diff-filter=d", `${baseBranch}...HEAD`],
       cwd,
       spawn,
     );
-  } catch (err) {
+  } catch (primaryErr) {
     // Fail-closed: an empty map would make the gate report "passed (0 changed
     // files checked)" — silently dropping the declared guarantee.
-    throw new Error(
-      `changed-line derivation failed: git diff --name-only ${baseBranch}...HEAD: ${(err as Error).message}`,
-    );
+    // When baseBranch is not available as a local ref (common in git worktree
+    // environments where main isn't checked out), fall back to origin/<baseBranch>.
+    const originBase = `origin/${baseBranch}`;
+    try {
+      fileListOutput = await spawnGit(
+        ["diff", "--name-only", "--diff-filter=d", `${originBase}...HEAD`],
+        cwd,
+        spawn,
+      );
+      effectiveBase = originBase;
+    } catch {
+      // Both primary and origin fallback failed — fail closed with original error.
+      throw new Error(
+        `changed-line derivation failed: git diff --name-only ${baseBranch}...HEAD: ${(primaryErr as Error).message}`,
+      );
+    }
   }
 
   const files = fileListOutput
@@ -190,7 +230,7 @@ export async function getChangedFilesAndLines(
     let diffText: string;
     try {
       diffText = await spawnGit(
-        ["diff", "--unified=0", `${baseBranch}...HEAD`, "--", file],
+        ["diff", "--unified=0", `${effectiveBase}...HEAD`, "--", file],
         cwd,
         spawn,
       );

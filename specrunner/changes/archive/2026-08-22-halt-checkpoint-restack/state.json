@@ -1,0 +1,283 @@
+{
+  "version": 2,
+  "jobId": "a3a7b448-7124-4c08-a727-e4cc46224c6f",
+  "createdAt": "2026-08-22T01:30:39.186Z",
+  "updatedAt": "2026-08-22T12:58:14.956Z",
+  "request": {
+    "title": "halt checkpoint を未 push 作業 commit から分離して publish する",
+    "type": "spec-change",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "change/halt-checkpoint-restack-a3a7b448",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1060,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "1d534c2466b939789628ae556c2d3b2f5b0edba2",
+    "1ea1a0e1db2cd2868eb1928d84636b8c550e4f76",
+    "62beef0cd2c99a623070af67bb6416ce6e672671",
+    "a0429bc4ff685500ea4ef02176e4a546a13a4962",
+    "56a1bf047c69b4c5d42af9325edd835ab6f8848d",
+    "16a6b71ff759943d95f8db3ffc8588889f20d726",
+    "7431512435c35ed5db65bd1b4c78e77471362cbc",
+    "56e1ec8ffe0ffbcf745115c769161b92f1591839",
+    "2338aa781330eece644d1667557817d80f7a885e",
+    "f41311a4a45e2a8eacb18c9c4d28e9a9d4620a50",
+    "c7639111481c4f6b65ef0f0dfbe4c9097c421f13",
+    "ee1a665120a5059c7af28288b462e74b584206df",
+    "5e2f92010c62a391595a13bc5f656f46d37826fd",
+    "eea6162956a439b9b4fd268e88ae0e81b74e7cc8",
+    "ede849b7359577d0e9b333c48c4ddd751bbcf356",
+    "156e4c5088445baddd8b5efabaae0696cd0cff71",
+    "99ba7f3b9b014713f9cf88c9a4d604d50425984f",
+    "b9c297fc50318afed59a9961de0df8bffe6b0cf1",
+    "41a8da353b2a53eff23ed88e51747c3b75a56cb2",
+    "5a50061ff80451b02dfe7e5093ba16b98bc7a80a",
+    "1325d2da2bf0254cc1071b562ec82c5c93735b3d",
+    "401d4ccdac1228d556d4dae0d9835a8236a7de4f",
+    "9226f8115f93a6d20c00cedc4373c2fa28dece4d",
+    "36ec1b4aa6cc7b110ac19bb759f5bedacad3baa3",
+    "142d72a4931baca817dfa7a1749b14eb2540c391",
+    "a93b925761dd1bbaadf655136f20c621ca2e56c1",
+    "587cd10df098d2cf0bdc4914f23e59982000d75b",
+    "dec6553bc90174d7f06e8f3d1a27f32f840a39fa",
+    "73a369924fe62b9763424a43e82bdcbb5f056da6",
+    "9e95193423faf0b48d018b0f3947fd0ca644f638",
+    "d0f2f4b296e3bef77635fc8be7943dfb0c497f5d",
+    "15cda6ec174519c709516b6e838ef78a616af0c7",
+    "90a420895d4b0526989d8b57cf7f8e1e701a1357",
+    "c77c8ae7906adc34b57e5f50166efadafacfe833",
+    "32e0f4d06e0fe744a57e029911f2447639fdba62",
+    "072702765aa52f030d8d53f8e7a6cb521a12f16c",
+    "4230d748028bef9f001437f1bd5a03f16aae8243",
+    "9bf51e8883729f1dd8602715fbe74cbbf6c79ea9",
+    "41b0cd0446aec83e9c01170c94db2282b0aed332",
+    "15e5850f246ab9bd4260548177750992b7b937d1",
+    "dfdb1576b4013a4513d3fa48d244657224ccc29b",
+    "6dc2c20492eb4d9f02f831637e61a3dde31417f1",
+    "ec26d27f81917bb54eb4dfe8101c7cf82cec631f"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/runtime/local.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/command/runner.ts",
+      "src/core/pipeline/pipeline.ts",
+      "src/core/step/__tests__/commit-push-egress-invariant.test.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/core/pipeline/round-git-scope.ts",
+      "src/store/event-journal.ts"
+    ],
+    "design": [
+      "src/core/step/commit-push.ts",
+      "src/core/runtime/local.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/pipeline/round-git-scope.ts",
+      "src/store/job-state-projection.ts",
+      "src/util/spawn.ts",
+      "src/store/event-journal.ts",
+      "src/store/job-journal.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/git/checkpoint-ref.ts",
+      "src/store/job-state-store.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/core/runtime/local.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/store/event-journal.ts",
+      "src/core/pipeline/round-git-scope.ts",
+      "src/store/job-journal.ts",
+      "src/store/job-state-store.ts",
+      "src/git/checkpoint-ref.ts",
+      "src/core/step/__tests__/commit-push-egress-invariant.test.ts",
+      "src/util/spawn.ts",
+      "src/util/paths.ts",
+      "src/logger/stdout.ts",
+      "src/core/attach/orchestrator.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      "src/core/step/checkpoint-restack.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/step/__tests__/checkpoint-restack.test.ts",
+      "tests/halt-checkpoint-restack-e2e.test.ts",
+      "src/store/__tests__/event-journal-checkpoint-restack.test.ts",
+      "src/core/step/__tests__/commit-push-restack-integration.test.ts"
+    ],
+    "code-review": [
+      "src/store/__tests__/event-journal-checkpoint-restack.test.ts",
+      "src/core/step/__tests__/checkpoint-restack.test.ts",
+      "src/store/journal-integrity.ts"
+    ],
+    "code-fixer": [
+      "src/store/__tests__/event-journal-checkpoint-restack.test.ts",
+      "src/store/journal-integrity.ts",
+      "src/store/event-journal.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/checkpoint-restack.ts",
+      "src/store/event-journal.ts",
+      "src/core/step/commit-push.ts",
+      "tests/halt-checkpoint-restack-e2e.test.ts",
+      "src/store/__tests__/event-journal-checkpoint-restack.test.ts",
+      "src/core/step/__tests__/commit-push-egress-invariant.test.ts",
+      "src/core/step/__tests__/checkpoint-restack.test.ts",
+      "src/core/step/__tests__/commit-push-restack-integration.test.ts"
+    ],
+    "conformance": [
+      "src/core/step/checkpoint-restack.ts",
+      "src/core/step/commit-push.ts",
+      "src/store/event-journal.ts",
+      "src/store/job-journal.ts",
+      "src/store/job-state-store.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/__tests__/checkpoint-restack.test.ts",
+      "tests/halt-checkpoint-restack-e2e.test.ts",
+      "src/core/step/__tests__/commit-push-restack-integration.test.ts",
+      "src/store/__tests__/event-journal-checkpoint-restack.test.ts"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "41b0cd0446aec83e9c01170c94db2282b0aed332",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/halt-checkpoint-restack/design.md:sha256:aa744e074ffc94d3bf3afdbb2d6897089355c17299b9eb6bbbd3e2a46664947d|specrunner/changes/halt-checkpoint-restack/request.md:sha256:63a7046c4061e89d3feee58d52716aa8852d2d7c9dc765adcc9455a6f4d71d32|specrunner/changes/halt-checkpoint-restack/spec.md:sha256:375ced86f9d61830ea47b6cf4647c83a54fd6a109ecc7e145ced77c2bb846b5f|specrunner/changes/halt-checkpoint-restack/tasks.md:sha256:0c3976433fcd1feb29058022667260f29dc2f719761820195df14e865f9ca701|specrunner/changes/halt-checkpoint-restack/test-cases.md:sha256:00767cbe39ba18d1ef5603a4590261339b6331acb52979daede0fd5529443ccb"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "41b0cd0446aec83e9c01170c94db2282b0aed332",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/halt-checkpoint-restack/design.md:sha256:aa744e074ffc94d3bf3afdbb2d6897089355c17299b9eb6bbbd3e2a46664947d|specrunner/changes/halt-checkpoint-restack/request.md:sha256:63a7046c4061e89d3feee58d52716aa8852d2d7c9dc765adcc9455a6f4d71d32|specrunner/changes/halt-checkpoint-restack/spec.md:sha256:375ced86f9d61830ea47b6cf4647c83a54fd6a109ecc7e145ced77c2bb846b5f|specrunner/changes/halt-checkpoint-restack/tasks.md:sha256:0c3976433fcd1feb29058022667260f29dc2f719761820195df14e865f9ca701|specrunner/changes/halt-checkpoint-restack/test-cases.md:sha256:00767cbe39ba18d1ef5603a4590261339b6331acb52979daede0fd5529443ccb"
+    }
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "custom-reviewers escalation への operator 裁定: F-02 は選択肢 A を採用。graft 後の non-ephemeral runner で push 再拒否 → halt → restack が繰り返され得る挙動は許容範囲として明示する。(1) halt 時の warn メッセージに「以降の push も同じ理由で拒否される可能性がある。ローカル branch を手当てしてから resume すること」を追加し、(2) design.md の Risks に本トレードオフを記載する。graft の無効化(B)は non-fast-forward 問題を再発させるため採らない。F-01(localTipOid 空文字 record は no-local-tip 早期 return 前に記録される→ガードで囲む)、F-03(checkpointRestacks を常に配列で emit)、F-04 は fixable として修正すること。F-04 は semantic inconsistency の解消が変更量に見合わない場合、design.md に既知事項として記載する対応でもよい。",
+      "step": "custom-reviewers",
+      "recordedAt": "2026-08-22T03:47:43.287Z"
+    },
+    {
+      "text": "custom-reviewers escalation への operator 裁定: F-02 は選択肢 A を採用。graft 後の non-ephemeral runner で push 再拒否 → halt → restack が繰り返され得る挙動は許容範囲として明示する。(1) halt 時の warn メッセージに「以降の push も同じ理由で拒否される可能性がある。ローカル branch を手当てしてから resume すること」を追加し、(2) design.md の Risks に本トレードオフを記載する。graft の無効化(B)は non-fast-forward 問題を再発させるため採らない。F-01(localTipOid 空文字 record は no-local-tip 早期 return 前に記録される→ガードで囲む)、F-03(checkpointRestacks を常に配列で emit)、F-04 は fixable として修正すること。F-04 は semantic inconsistency の解消が変更量に見合わない場合、design.md に既知事項として記載する対応でもよい。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-22T04:16:53.986Z"
+    },
+    {
+      "text": "operator 裁定(追記): 前回 resume で code-fixer が design.md を編集し write-scope violation で halt した。design.md は保護正典で code-fixer は書けないため、今回は specrunner/changes/halt-checkpoint-restack/ 配下の正典ファイルに一切書き込まないこと。実施事項: (1) F-01 — recordRestack 呼び出しを localTipOid 取得成功時のみ実行するガードで囲む。(2) F-03 — checkpointRestacks を常に配列で emit する。(3) F-02(1) — halt 時 warn メッセージに「以降の push も同じ理由で拒否される可能性がある。ローカル branch を手当てしてから resume すること」を追加する。(4) F-04 — code 側で対応可能な範囲でのみ修正し、design.md への記載は行わない。F-02(2) の design.md Risks 追記と F-04 の既知事項記載は operator が pipeline 外で別途実施する。この裁定を根拠に、design.md 未記載は本 round では needs-fix としないこと。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-22T04:35:57.677Z"
+    },
+    {
+      "text": "operator注記: verification iter5 の changed-line-coverage 失敗は環境要因である (runner checkout に local ref `main` が無く、pipeline 側プロセスの `git diff main...HEAD` が unknown revision で fail-closed した)。runner 側の workflow で local main ref を補う修正を適用済みのため、コード変更は一切不要。worktree の実装 (changed-lines.ts の origin fallback を含む) はそのまま維持し、何も変更せずにこの implementer iteration を完了して verification の再実行に進むこと。",
+      "step": "implementer",
+      "recordedAt": "2026-08-22T06:15:59.486Z"
+    },
+    {
+      "text": "Operator 裁定 (code-review iteration 3 の escalation への回答): [F-01] fixable として解消すること — event-journal-checkpoint-restack.test.ts に TC-006 の describe を追加し、checkpoint-restack record 追記後の fold 結果に対して detectCounterReversal(existingCounters, foldResult) が null を返すことを直接 assert する。 [F-02] accept as-is と裁定する — changed-lines.ts の origin fallback は runner checkout 環境の実測障害 (run 32554432594: local main ref 不在で changed-line-coverage が fail-closed) への自己完結・テスト付きの修正であり、workflow 側の main ref 補完 (PR #1067) と併せた belt-and-braces として本 change に含めることを operator が承認する。別 request への分離は不要。スコープ外変更の追跡は review-feedback-003.md の記録をもって足りる。上記 2 点以外の新規変更は行わないこと。",
+      "step": "code-review",
+      "recordedAt": "2026-08-22T12:21:48.934Z"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1065",
+    "number": 1065,
+    "createdAt": "2026-08-22T12:58:14.283Z"
+  },
+  "_journal": {
+    "historyCount": 213,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 7,
+      "bite-evidence": 2,
+      "verification": 9,
+      "code-review": 4,
+      "code-fixer": 5,
+      "cross-boundary-invariants": 5,
+      "scale-tolerance": 4,
+      "custom-reviewers": 5,
+      "regression-gate": 4,
+      "conformance": 3,
+      "adr-gen": 2,
+      "pr-create": 2
+    }
+  }
+}

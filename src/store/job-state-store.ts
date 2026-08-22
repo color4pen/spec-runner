@@ -3,7 +3,7 @@ import type { JobState, StepRun, ErrorInfo, HistoryEntry, RequestInfo, Repositor
 import { STANDARD_PIPELINE_ID } from "../kernel/pipeline-ids.js";
 import { STANDARD_PROFILE } from "../state/profile.js";
 import { transitionJob } from "../state/lifecycle.js";
-import type { InterruptionRecord, LineageRecord, OperatorEventRecord, FindingRecencyRecord } from "./event-journal.js";
+import type { InterruptionRecord, LineageRecord, OperatorEventRecord, FindingRecencyRecord, CheckpointRestackRecord } from "./event-journal.js";
 import { JobLocationResolver } from "./job-location-resolver.js";
 import { JobJournal } from "./job-journal.js";
 import { JobCatalog } from "./job-catalog.js";
@@ -290,6 +290,17 @@ export class JobStateStore {
    */
   async appendFindingRecency(record: FindingRecencyRecord): Promise<void> {
     return this._journal.appendFindingRecency(record);
+  }
+
+  /**
+   * Append a checkpoint-restack record to the events journal (D5, halt-checkpoint-restack).
+   * Does not update state.json — checkpoint-restack is journal-only and never materialized
+   * into NormalizedJobState (does not affect historyCount / stepCounts).
+   * Called BEFORE tree construction so that the record is included in the published
+   * checkpoint's tree (same best-effort pattern as appendLineage / appendOperatorEvent).
+   */
+  async appendCheckpointRestack(record: CheckpointRestackRecord): Promise<void> {
+    return this._journal.appendCheckpointRestack(record);
   }
 
   /**

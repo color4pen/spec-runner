@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:63a7046c4061e89d3feee58d52716aa8852d2d7c9dc765adcc9455a6f4d71d32",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/runtime/local.ts:752 async commitFinalState(deps: PipelineDeps, state: JobState): Promise<void>",
+    "src/core/attach/checkpoint-policy.ts attachQuiescentPolicy (line 155) — delegates by status: awaiting-resume→attachResumePolicy, awaiting-archive→attachArchivePolicy, else→not-quiescent",
+    "src/core/step/commit-push.ts commitFinalState — push failure is stderrWrite only, no throw (lines 877-882)",
+    "src/core/step/commit-push.ts commitFinalState — commits on current local HEAD without rebasing (parent = local branch tip)",
+    "src/core/pipeline/round-git-scope.ts:109 pipelineManagedPaths — returns [state.json, events.jsonl, usage.json, bite-evidence-result.md, pr-create-result.md]",
+    "src/core/pipeline/pipeline.ts:615 — awaiting-resume seam calls commitFinalState after local persist"
+  ],
+  "sourceRevision": "bc7b7e934529fa1883b2185c532538535df4bb45"
+}
