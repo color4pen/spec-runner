@@ -23,7 +23,7 @@
 - [ ] `src/core/usage/types.ts` の `CommandInvocation` に `contextMetrics?: AgentContextMetrics` を追加する（`src/kernel/context-metrics.ts` から type import）
 - [ ] doc comment に「invocationMetrics と異なり nested object として保存する」「absent = 該当 invocation で context metrics が観測できなかった（本機能以前の entry も absent）」を明記する
 - [ ] `src/core/usage/store.ts` の `readUsageFile` / `appendInvocation` はロジック変更なしで通ることを確認する（backward compat: 旧 entry は field 欠落のまま読める）
-- [ ] `tests/unit/core/usage/` に型 round-trip テストを追加する（`invocation-types.test.ts` と同じスタイルで、`contextMetrics` を持つ entry と持たない entry が append→read で保持されること）
+- [ ] `tests/unit/core/usage/context-metrics-types.test.ts` を新規作成し、型 round-trip テストを追加する（`invocation-types.test.ts` と同じスタイルで同じファイルを拡張するのではなく別ファイルとして作成すること。`contextMetrics` を持つ entry と持たない entry が append→read で保持されること）
 
 **Acceptance Criteria**:
 - `contextMetrics` を含む `CommandInvocation` が `appendInvocation` → `readUsageFile` で欠落なく round-trip する

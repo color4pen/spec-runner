@@ -202,6 +202,7 @@
 **Category**: unit
 **Priority**: must
 **Source**: tasks.md > T-02: Acceptance Criteria
+**File**: `tests/unit/core/usage/context-metrics-types.test.ts`（新規作成）
 
 **GIVEN** `contextMetrics` を持つ `CommandInvocation` オブジェクト（`provider`, `peakActiveContextTokens`, `compactionCount` を含む）
 **WHEN** `appendInvocation` で usage.json に書き出し、`readUsageFile` で読み直す
@@ -214,6 +215,7 @@
 **Category**: unit
 **Priority**: must
 **Source**: tasks.md > T-02: Acceptance Criteria
+**File**: `tests/unit/core/usage/context-metrics-types.test.ts`（新規作成、TC-023 と同一ファイル）
 
 **GIVEN** `contextMetrics` field を持たない旧フォーマットの `CommandInvocation` が usage.json に存在する
 **WHEN** `readUsageFile` で読み込む

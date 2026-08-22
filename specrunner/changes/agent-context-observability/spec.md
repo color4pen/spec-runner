@@ -52,6 +52,12 @@ main-work / follow-up / postWork / output-repair turns.
 **When** invocation が完了する
 **Then** その message の観測は 1 回だけ反映され、`compactionCount` も peak も二重計上されない
 
+> **Note: `contextWindowTokens` の multi-model 解決ロジック**
+> result message の `modelUsage` が複数 model を含む場合、`contextWindowTokens` の解決順序は次の通り:
+> (1) resolved model key が存在し `contextWindow` が number なら、その値を採る。
+> (2) resolved model key が不在または `contextWindow` が number 以外なら、観測できた全 model の `contextWindow` のうち最大値を採る。
+> number 以外の値は無視する。この解決ロジックは adapter（`context-observer.ts`）が担い、core 型には関与しない。
+
 ### Requirement: Claude adapter は provider native compaction の発火を記録する
 
 Claude adapter は `type: "system"` かつ `subtype: "compact_boundary"` の message を compaction の発火として扱う。
@@ -137,6 +143,12 @@ observed な field のみを含む専用行を表示する。
 **Given** implementer step が context 溢れで halt し、context metrics が観測されている
 **When** CommitOrchestrator が halt を適用する
 **Then** usage.json に `modelUsage` が null の invocation entry が 1 件追加され、その `contextMetrics.exhaustionAtTokens` から溢れ直前の context size を確認できる
+
+> **Note: runner throw（予期しない例外）経路での contextMetrics**
+> 上記 "exhaustion で halt した step の metrics が usage.json に残る" シナリオは、`runner.run()` が `AgentRunResult`（`completionReason: "error"`）を返す正常失敗経路を指す。
+> これに対して `runner.run()` 自体が予期しない例外を throw した場合（SDK 内部エラー等）、executor は `makeAgentThrowHalt` を生成するが、この経路では `runResult` が得られないため `contextMetrics` は伝播せず、usage.json への追記も行われない。
+> context exhaustion は runner 内部で catch されて `AgentRunResult` として返るため、exhaustion 経路がこの制限を受けることはない。
+> この挙動は設計上 acceptable であり、runner throw 経路に限った既知の限界である。
 
 #### Scenario: usage show が context 行を表示する
 
