@@ -164,3 +164,5 @@
 {"type":"lineage","step":"verification","ts":"2026-08-22T06:13:43.525Z","outputs":[{"path":"specrunner/changes/halt-checkpoint-restack/verification-result.md","hash":"sha256:915ce434b38bac0e47a42661c212541d2aada5bb24decaabfa3afce69f5d7a0a"}],"inputs":[{"path":".","hash":null}]}
 {"type":"transition","ts":"2026-08-22T06:13:43.531Z","step":"verification","status":"warning","message":"verification iteration 3 completed with verdict: failed"}
 {"type":"transition","ts":"2026-08-22T06:13:43.531Z","step":"pipeline","status":"ok","message":"running → awaiting-resume: verification did not pass after 2 iterations"}
+{"type":"transition","ts":"2026-08-22T06:15:59.486Z","step":"resume","status":"ok","message":"awaiting-resume → running: Resuming from step 'implementer'"}
+{"type":"transition","ts":"2026-08-22T06:15:59.836Z","step":"implementer-started","status":"started","message":"Starting implementer step"}

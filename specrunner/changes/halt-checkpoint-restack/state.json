@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a3a7b448-7124-4c08-a727-e4cc46224c6f",
   "createdAt": "2026-08-22T01:30:39.186Z",
-  "updatedAt": "2026-08-22T06:13:43.531Z",
+  "updatedAt": "2026-08-22T06:15:59.836Z",
   "request": {
     "title": "halt checkpoint を未 push 作業 commit から分離して publish する",
     "type": "spec-change",
@@ -12,14 +12,10 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "verification",
-  "status": "awaiting-resume",
+  "step": "implementer",
+  "status": "running",
   "branch": "change/halt-checkpoint-restack-a3a7b448",
-  "error": {
-    "code": "VERIFICATION_RETRIES_EXHAUSTED",
-    "message": "verification did not pass after 2 iterations",
-    "hint": "Review verification-result.md and fix the build errors manually. Phase-level details (which phase failed and exit code) are available in the step-attempt outcome in events.jsonl."
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -208,12 +204,7 @@
       "canonHash": "specrunner/changes/halt-checkpoint-restack/design.md:sha256:75f2e77f873dbfca3595f0b4971ce2b2df68304463d32a7eb5762378987a811b|specrunner/changes/halt-checkpoint-restack/request.md:sha256:63a7046c4061e89d3feee58d52716aa8852d2d7c9dc765adcc9455a6f4d71d32|specrunner/changes/halt-checkpoint-restack/spec.md:sha256:275f0ed09d4d886292879614d6adc5155c3ac45122c5c216679bd4e5b6bbd1d2|specrunner/changes/halt-checkpoint-restack/tasks.md:sha256:e2014bcad36f9e3907a0e9458d07a4cb3c43a98afcbba3b5b9e3a9ec8e070723|specrunner/changes/halt-checkpoint-restack/test-cases.md:sha256:6c2240aad70406a51037a483086fe10561ff252ea6e5649847899b5c1fcb2594"
     }
   ],
-  "resumePoint": {
-    "step": "implementer",
-    "reason": "verification did not pass after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -230,10 +221,15 @@
       "text": "operator 裁定(追記): 前回 resume で code-fixer が design.md を編集し write-scope violation で halt した。design.md は保護正典で code-fixer は書けないため、今回は specrunner/changes/halt-checkpoint-restack/ 配下の正典ファイルに一切書き込まないこと。実施事項: (1) F-01 — recordRestack 呼び出しを localTipOid 取得成功時のみ実行するガードで囲む。(2) F-03 — checkpointRestacks を常に配列で emit する。(3) F-02(1) — halt 時 warn メッセージに「以降の push も同じ理由で拒否される可能性がある。ローカル branch を手当てしてから resume すること」を追加する。(4) F-04 — code 側で対応可能な範囲でのみ修正し、design.md への記載は行わない。F-02(2) の design.md Risks 追記と F-04 の既知事項記載は operator が pipeline 外で別途実施する。この裁定を根拠に、design.md 未記載は本 round では needs-fix としないこと。",
       "step": "code-fixer",
       "recordedAt": "2026-08-22T04:35:57.677Z"
+    },
+    {
+      "text": "operator注記: verification iter5 の changed-line-coverage 失敗は環境要因である (runner checkout に local ref `main` が無く、pipeline 側プロセスの `git diff main...HEAD` が unknown revision で fail-closed した)。runner 側の workflow で local main ref を補う修正を適用済みのため、コード変更は一切不要。worktree の実装 (changed-lines.ts の origin fallback を含む) はそのまま維持し、何も変更せずにこの implementer iteration を完了して verification の再実行に進むこと。",
+      "step": "implementer",
+      "recordedAt": "2026-08-22T06:15:59.486Z"
     }
   ],
   "_journal": {
-    "historyCount": 110,
+    "historyCount": 112,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
