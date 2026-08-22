@@ -457,6 +457,19 @@ export const configSchema = object({
       "must be an object.",
     ),
   ),
+  contextRollover: optional(
+    object(
+      {
+        maxRollovers: optional(
+          number("must be a non-negative integer.").check(
+            int("must be a non-negative integer."),
+            gte(0, "must be a non-negative integer."),
+          ),
+        ),
+      },
+      "must be an object.",
+    ),
+  ),
   tests: optional(
     object(
       {

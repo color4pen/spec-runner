@@ -33,21 +33,22 @@ import * as path from "node:path";
 import { isToolUse, isToolResult } from "./message-types.js";
 import { createLastToolTracker } from "../shared/last-tool-tracker.js";
 import { loadClaudeAgentSdk, type ClaudeAgentSdkLoader, type ClaudeSdkCreateMcpServer } from "./sdk-loader.js";
-import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage, AgentWriteScope, AgentInvocationMetrics } from "../../core/port/agent-runner.js";
+import type { AgentRunner, AgentRunContext, AgentRunResult, ModelUsage, AgentWriteScope, AgentInvocationMetrics, AgentSessionRollover } from "../../core/port/agent-runner.js";
 import { ADDED_TURNS_ZERO } from "../../core/port/agent-runner.js";
 import { classifyGitCommand } from "./git-command-classifier.js";
 import { dotSpecrunnerDirRel } from "../../util/paths.js";
 import type { DomainEvent } from "../../kernel/event-types.js";
 import type { StepContext } from "../../core/port/step-context.js";
 import { getStepExecutionConfig } from "../../config/step-config.js";
-import { resolveTransientRetryConfig } from "../../config/schema.js";
+import { resolveTransientRetryConfig, resolveContextRolloverConfig } from "../../config/schema.js";
 import { buildAdditionalInstructions } from "../shared/prompt-builder.js";
 import { buildArtifactBundle } from "../shared/artifact-bundle.js";
 import { buildTouchedFilesSection } from "../shared/touched-files-bundle.js";
 import { extractTouchedFilesFromMessages } from "./touched-files-recorder.js";
 import { buildReportToolCompletionDirective } from "./completion-directive.js";
+import { buildRolloverContinuationSection } from "./rollover-prompt.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
-import { createContextObserver } from "./context-observer.js";
+import { createContextObserver, isContextExhaustionError } from "./context-observer.js";
 import { logVerbose, stderrWrite } from "../../logger/stdout.js";
 import { logPipelineDiag } from "../../logger/diagnostic.js";
 import { SessionLogWriter } from "../shared/session-log-writer.js";
@@ -59,6 +60,45 @@ import { isTransientAgentError } from "../shared/transient-error.js";
 import { SpecRunnerError } from "../../errors.js";
 import type { QueryAbortRegistration } from "../../core/port/query-abort.js";
 import { createInactivityWatchdog, formatInactivityTimeoutMessage } from "../shared/inactivity-watchdog.js";
+
+/**
+ * Typed error code for context window exhaustion (T-02).
+ * Adapter-local — not in src/errors.ts ERROR_CODES (same convention as existing adapter-local codes).
+ * Used when isContextExhaustionError() classifies the error text as a known exhaustion pattern.
+ */
+export const CONTEXT_WINDOW_EXHAUSTED_CODE = "CONTEXT_WINDOW_EXHAUSTED";
+
+/**
+ * Join the errors[] array from an SDK result message into a single trimmed string.
+ * Returns "" when errors is absent or empty.
+ * Used as input to isContextExhaustionError() — does NOT perform classification itself.
+ */
+function joinErrorsFromResult(result: { errors?: string[] }): string {
+  return (result.errors ?? []).join(" ").trim();
+}
+
+/**
+ * Collect message text from an error's message + cause chain.
+ * Returns all non-empty messages joined with ": ".
+ * Used as input to isContextExhaustionError() — does NOT perform classification itself.
+ */
+function collectCauseText(err: unknown): string {
+  const parts: string[] = [];
+  let current: unknown = err;
+  while (current instanceof Error) {
+    if (current.message) parts.push(current.message);
+    current = (current as Error & { cause?: unknown }).cause;
+  }
+  return parts.join(": ");
+}
+
+/**
+ * Truncate a string to maxLen characters, appending "…" if truncated.
+ */
+function truncateText(text: string, maxLen = 500): string {
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen) + "…";
+}
 
 /**
  * Fixed grace period after report_result reception before aborting the main work turn.
@@ -483,7 +523,9 @@ export class ClaudeCodeRunner implements AgentRunner {
     }, ctx.requestType);
     // agent-context-observability: create context observer for this invocation.
     // Accumulates active context peaks, compaction events, and exhaustion markers.
-    const contextObserver = createContextObserver({ provider: "claude-code", model: resolvedConfig.model });
+    // fresh-session-rollover: declared as `let` so rollover can replace it with a fresh observer
+    // for the next session (each session gets its own isolated metrics — not merged).
+    let contextObserver = createContextObserver({ provider: "claude-code", model: resolvedConfig.model });
 
     const abortController = new AbortController();
     // D4 (design.md): register with the abort hub; deregister in the finally block.
@@ -562,7 +604,10 @@ export class ClaudeCodeRunner implements AgentRunner {
       ? `\n\n${ctx.policy.promptRules}`
       : "";
 
-    const fullPrompt = firstTurnCompletionDirective
+    // fresh-session-rollover: declared as `let` so rollover can replace it with the continuation
+    // prompt for subsequent sessions. `baseFullPrompt`, `promptRulesSection`, and
+    // `firstTurnCompletionDirective` are stable across rollovers (base task is unchanged).
+    let currentPrompt = firstTurnCompletionDirective
       ? `${baseFullPrompt}${promptRulesSection}${firstTurnCompletionDirective}`
       : `${baseFullPrompt}${promptRulesSection}`;
 
@@ -726,7 +771,8 @@ export class ClaudeCodeRunner implements AgentRunner {
         // Pass mainQueryAbort to the main work turn so grace can abort it independently
         // of shared. postWork / output-repair turns spread queryOptions directly (shared).
         const mainQueryOptions = { ...queryOptions, abortController: mainQueryAbort };
-        const messages = effectiveQueryFn({ prompt: fullPrompt, options: mainQueryOptions });
+        // fresh-session-rollover: use currentPrompt (may be updated by rollover loop).
+        const messages = effectiveQueryFn({ prompt: currentPrompt, options: mainQueryOptions });
         watchdog.bump(); // arm before first message (covers query→first-event interval, req.2)
         // Guard: if signal fired during pre-query I/O, addEventListener in the generator
         // body is never called retroactively (W3C spec) — for-await would hang. Throw now.
@@ -801,10 +847,15 @@ export class ClaudeCodeRunner implements AgentRunner {
 
     // Resolve transient retry config (T-04).
     const { maxRetries, baseDelayMs } = resolveTransientRetryConfig(ctx.config);
+    // Resolve context rollover config (fresh-session-rollover T-04).
+    const { maxRollovers } = resolveContextRolloverConfig(ctx.config);
     // Tracks the number of transient retries actually taken in this run().
     let transientRetryAttempts = 0;
     // Tracks whether the resume→new-session fallback has already been attempted.
     let resumeFallbackDone = false;
+    // fresh-session-rollover: accumulate per-rollover observation records.
+    // Non-empty only when at least one context-exhaustion rollover occurred.
+    const sessionRollovers: AgentSessionRollover[] = [];
 
     /**
      * If the query returned an error result whose text is a known transient
@@ -939,30 +990,140 @@ export class ClaudeCodeRunner implements AgentRunner {
     try {
       let queryResult: { lastResult: SDKResultMessage | null };
 
-      if (maxRetries === 0) {
-        // Feature disabled — call runMainWorkTurn directly (no wrapper, no events).
-        queryResult = await runMainWorkTurn();
-      } else {
-        // Feature enabled — wrap with retryWithBackoff.
-        queryResult = await retryWithBackoff(runMainWorkTurn, {
-          maxAttempts: maxRetries + 1,
-          baseDelayMs,
-          isTransientError: (err) =>
-            !abortController.signal.aborted && isTransientAgentError(err),
-          sleepFn: this.sleepFn,
-          onRetry: (attempt) => {
-            const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
-            transientRetryAttempts++;
-            ctx.emit("step:retry", {
-              step: step.name,
-              attempt,
-              maxRetries,
-              delayMs,
-            });
-          },
-        });
+      // fresh-session-rollover: bounded loop — at most maxRollovers + 1 total sessions.
+      // Each iteration is one full main-work attempt (transient retry is inside runMainWorkTurn).
+      // Loop exits when:
+      //   (a) session succeeds or returns non-exhaustion error → break
+      //   (b) exhaustion + rollover budget left → record observation, reset state, next iteration
+      //   (c) exhaustion + no budget → break (will return CONTEXT_WINDOW_EXHAUSTED below)
+      //   (d) abort fired → throw propagates to outer catch unchanged
+      let rolloverExhausted = false; // set when we exhaust rollover budget on exhaustion
+      for (let rolloverAttempt = 0; rolloverAttempt <= maxRollovers; rolloverAttempt++) {
+        if (maxRetries === 0) {
+          // Feature disabled — call runMainWorkTurn directly (no wrapper, no events).
+          queryResult = await runMainWorkTurn();
+        } else {
+          // Feature enabled — wrap with retryWithBackoff.
+          queryResult = await retryWithBackoff(runMainWorkTurn, {
+            maxAttempts: maxRetries + 1,
+            baseDelayMs,
+            isTransientError: (err) =>
+              !abortController.signal.aborted && isTransientAgentError(err),
+            sleepFn: this.sleepFn,
+            onRetry: (attempt) => {
+              const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
+              transientRetryAttempts++;
+              ctx.emit("step:retry", {
+                step: step.name,
+                attempt,
+                maxRetries,
+                delayMs,
+              });
+            },
+          });
+        }
+
+        const { lastResult: iterResult } = queryResult;
+
+        // Check for non-success: determine if it's context exhaustion.
+        if (iterResult && iterResult.subtype !== "success") {
+          const errorResult = iterResult as SDKResultMessage & { errors?: string[] };
+          const errorJoined = joinErrorsFromResult(errorResult);
+          const isExhaustion = errorJoined ? isContextExhaustionError(errorJoined) : false;
+
+          if (isExhaustion && !abortController.signal.aborted) {
+            // Context exhaustion detected. Record observation for this session.
+            contextObserver.observeResult(errorResult as Record<string, unknown>);
+            contextObserver.markExhaustion(errorJoined);
+
+            const rolloverOrdinal = rolloverAttempt + 1; // 1-based
+
+            if (rolloverAttempt < maxRollovers) {
+              // Budget available — perform rollover.
+              // 1. Capture session ID and snapshot BEFORE resetting extractedSessionId.
+              const capturedSessionId = extractedSessionId;
+              const sessionSnapshot = contextObserver.snapshot();
+
+              // Record the discarded session's observation.
+              const errorMsg = truncateText(errorJoined);
+              sessionRollovers.push({
+                attempt: rolloverOrdinal,
+                reason: "context-exhaustion",
+                ...(capturedSessionId !== undefined ? { sessionId: capturedSessionId } : {}),
+                errorMessage: errorMsg,
+                ...(sessionSnapshot !== undefined ? { contextMetrics: sessionSnapshot } : {}),
+              });
+
+              // Accumulate discarded session's modelUsage if present.
+              const discardedUsage = (errorResult as Record<string, unknown>)["modelUsage"];
+              if (discardedUsage && typeof discardedUsage === "object" && Object.keys(discardedUsage as object).length > 0) {
+                const summed: Record<string, ModelUsage> = { ...(extractedModelUsage ?? {}) };
+                for (const [mdl, usage] of Object.entries(discardedUsage as Record<string, ModelUsage>)) {
+                  const prev = summed[mdl];
+                  summed[mdl] = {
+                    inputTokens: (prev?.inputTokens ?? 0) + (usage.inputTokens ?? 0),
+                    outputTokens: (prev?.outputTokens ?? 0) + (usage.outputTokens ?? 0),
+                    cacheReadInputTokens: (prev?.cacheReadInputTokens ?? 0) + (usage.cacheReadInputTokens ?? 0),
+                    cacheCreationInputTokens: (prev?.cacheCreationInputTokens ?? 0) + (usage.cacheCreationInputTokens ?? 0),
+                  };
+                }
+                extractedModelUsage = summed;
+              }
+
+              // 2. Reset session state for fresh session.
+              delete queryOptions["resume"];
+              extractedSessionId = undefined;
+              capturedToolResult = null;
+              resumeFallbackDone = true; // prevent the resume-fallback from kicking in again
+
+              // 3. Replace context observer with a fresh one for the next session.
+              contextObserver = createContextObserver({ provider: "claude-code", model: resolvedConfig.model });
+
+              // 4. Build rollover continuation prompt.
+              const rolloverSection = buildRolloverContinuationSection({
+                attempt: rolloverOrdinal,
+                maxRollovers,
+              });
+              currentPrompt = firstTurnCompletionDirective
+                ? `${baseFullPrompt}${promptRulesSection}${rolloverSection}${firstTurnCompletionDirective}`
+                : `${baseFullPrompt}${promptRulesSection}${rolloverSection}`;
+
+              // 5. Emit step:rollover event and log.
+              stderrWrite(
+                `[specrunner] warn: step '${step.name}' context exhausted (rollover ${rolloverOrdinal}/${maxRollovers}). Starting fresh session in same worktree.\n`,
+              );
+              logVerbose("session", "context exhaustion rollover", {
+                stepName: step.name,
+                rolloverAttempt: rolloverOrdinal,
+                maxRollovers,
+                reason: "context-exhaustion",
+              });
+              ctx.emit("step:rollover", {
+                step: step.name,
+                attempt: rolloverOrdinal,
+                maxRollovers,
+                reason: "context-exhaustion",
+              });
+
+              // Continue to next loop iteration (fresh session).
+              continue;
+            } else {
+              // Rollover budget exhausted — signal and break.
+              rolloverExhausted = true;
+              break;
+            }
+          }
+
+          // Non-exhaustion error OR abort fired — break to existing error handling.
+          // (The outer code will produce the appropriate error result.)
+          break;
+        }
+
+        // Success — exit loop.
+        break;
       }
 
+      // --- Post-loop: handle agent redirect limit ---
       // If agent redirect limit exceeded, return error without proceeding.
       if (agentRedirectCounter.count > 3) {
         sessionLogWriter?.close();
@@ -974,6 +1135,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           addedTurns: ADDED_TURNS_ZERO,
           contextMetrics: contextObserver.snapshot(),
+          ...(sessionRollovers.length > 0 ? { sessionRollovers } : {}),
           error: Object.assign(
             new Error(`Step '${step.name}': Agent/Task tool redirect limit exceeded (max 3)`),
             { code: "AGENT_REDIRECT_LIMIT_EXCEEDED" },
@@ -981,14 +1143,28 @@ export class ClaudeCodeRunner implements AgentRunner {
         };
       }
 
-      const { lastResult } = queryResult;
+      const { lastResult } = queryResult!;
 
+      // --- Handle non-success result (post-rollover) ---
       if (lastResult && lastResult.subtype !== "success") {
         const errorResult = lastResult as SDKResultMessage & { errors?: string[] };
         // agent-context-observability: observe result metrics and mark exhaustion if applicable.
         contextObserver.observeResult(errorResult as Record<string, unknown>);
-        const errorJoined = (errorResult.errors ?? []).join(" ").trim();
+        const errorJoined = joinErrorsFromResult(errorResult);
         if (errorJoined) contextObserver.markExhaustion(errorJoined);
+
+        // Determine typed error code: exhaustion or generic.
+        const isExhaustion = errorJoined ? isContextExhaustionError(errorJoined) : false;
+        const errorCode = (isExhaustion || rolloverExhausted)
+          ? CONTEXT_WINDOW_EXHAUSTED_CODE
+          : "CLAUDE_CODE_QUERY_FAILED";
+
+        // Build error message: subtype + errors[] body (truncated).
+        const errorBody = errorJoined ? `: ${truncateText(errorJoined)}` : "";
+        const errorMessage = rolloverExhausted
+          ? `Claude Code SDK query failed: context window exhausted after ${sessionRollovers.length} rollover(s). Consider splitting this request into smaller tasks.`
+          : `Claude Code SDK query failed: ${errorResult.subtype}${errorBody}`;
+
         sessionLogWriter?.close();
         return {
           completionReason: "error",
@@ -999,9 +1175,13 @@ export class ClaudeCodeRunner implements AgentRunner {
           addedTurns: ADDED_TURNS_ZERO,
           invocationMetrics: extractInvocationMetrics(errorResult as Record<string, unknown>),
           contextMetrics: contextObserver.snapshot(),
+          ...(sessionRollovers.length > 0 ? { sessionRollovers } : {}),
           error: Object.assign(
-            new Error(`Claude Code SDK query failed: ${errorResult.subtype}`),
-            { code: "CLAUDE_CODE_QUERY_FAILED" },
+            new Error(errorMessage),
+            {
+              code: errorCode,
+              ...(rolloverExhausted ? { hint: "Context window exhausted after all rollover attempts. Consider splitting the request into smaller, focused tasks." } : {}),
+            },
           ),
         };
       }
@@ -1011,16 +1191,19 @@ export class ClaudeCodeRunner implements AgentRunner {
         const successResult = lastResult as SDKResultSuccess;
         const rawUsage = successResult.modelUsage;
         if (rawUsage && typeof rawUsage === "object" && Object.keys(rawUsage).length > 0) {
-          const mappedUsage: Record<string, ModelUsage> = {};
+          // fresh-session-rollover: accumulate final session's usage with rollover sessions.
+          // The success result's modelUsage is ADDED to any previously accumulated rollover data.
+          const summed: Record<string, ModelUsage> = { ...(extractedModelUsage ?? {}) };
           for (const [model, usage] of Object.entries(rawUsage)) {
-            mappedUsage[model] = {
-              inputTokens: usage.inputTokens,
-              outputTokens: usage.outputTokens,
-              cacheReadInputTokens: usage.cacheReadInputTokens,
-              cacheCreationInputTokens: usage.cacheCreationInputTokens,
+            const prev = summed[model];
+            summed[model] = {
+              inputTokens: (prev?.inputTokens ?? 0) + usage.inputTokens,
+              outputTokens: (prev?.outputTokens ?? 0) + usage.outputTokens,
+              cacheReadInputTokens: (prev?.cacheReadInputTokens ?? 0) + usage.cacheReadInputTokens,
+              cacheCreationInputTokens: (prev?.cacheCreationInputTokens ?? 0) + usage.cacheCreationInputTokens,
             };
           }
-          extractedModelUsage = mappedUsage;
+          extractedModelUsage = summed;
         }
         // T-02: ?? preserves an early-captured session_id from init messages.
         extractedSessionId = successResult.session_id ?? extractedSessionId;
@@ -1084,8 +1267,12 @@ export class ClaudeCodeRunner implements AgentRunner {
             const followErrorResult = followLastResult as SDKResultMessage & { errors?: string[] };
             // agent-context-observability: observe result and mark exhaustion for postWork error.
             contextObserver.observeResult(followErrorResult as Record<string, unknown>);
-            const followErrorJoined = (followErrorResult.errors ?? []).join(" ").trim();
+            const followErrorJoined = joinErrorsFromResult(followErrorResult);
             if (followErrorJoined) contextObserver.markExhaustion(followErrorJoined);
+            // D8: follow-up query exhaustion is typed but does NOT trigger rollover.
+            const followIsExhaustion = followErrorJoined ? isContextExhaustionError(followErrorJoined) : false;
+            const followErrorCode = followIsExhaustion ? CONTEXT_WINDOW_EXHAUSTED_CODE : "CLAUDE_CODE_QUERY_FAILED";
+            const followErrorBody = followErrorJoined ? `: ${truncateText(followErrorJoined)}` : "";
             return {
               completionReason: "error",
               resultContent: null,
@@ -1096,9 +1283,10 @@ export class ClaudeCodeRunner implements AgentRunner {
               // Main-work metrics are available (extractedMetrics was set when main work succeeded).
               invocationMetrics: extractedMetrics,
               contextMetrics: contextObserver.snapshot(),
+              ...(sessionRollovers.length > 0 ? { sessionRollovers } : {}),
               error: Object.assign(
-                new Error(`Claude Code SDK follow-up query failed: ${followErrorResult.subtype}`),
-                { code: "CLAUDE_CODE_QUERY_FAILED" },
+                new Error(`Claude Code SDK follow-up query failed: ${followErrorResult.subtype}${followErrorBody}`),
+                { code: followErrorCode },
               ),
             };
           }
@@ -1232,6 +1420,7 @@ export class ClaudeCodeRunner implements AgentRunner {
             ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
             addedTurns: { reportRetry, postWork, outputRepair },
             contextMetrics: contextObserver.snapshot(),
+            ...(sessionRollovers.length > 0 ? { sessionRollovers } : {}),
             error: Object.assign(
               new Error(`result file not found: ${resultFilePath}`),
               { code: "RESULT_FILE_NOT_FOUND" },
@@ -1261,6 +1450,8 @@ export class ClaudeCodeRunner implements AgentRunner {
         contextMetrics: contextObserver.snapshot(),
         // touched-files-propagation: worktree-relative paths touched during this step.
         touchedFiles,
+        // fresh-session-rollover: per-session observations. Absent when no rollovers occurred.
+        ...(sessionRollovers.length > 0 ? { sessionRollovers } : {}),
       };
       return mergeFollowUpResult(baseResult, resultContent);
     } catch (err) {
@@ -1285,6 +1476,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           invocationMetrics: extractedMetrics,
           contextMetrics: contextObserver.snapshot(),
           touchedFiles: extractTouchedFilesFromMessages(touchedFileMessages, cwd),
+          ...(sessionRollovers.length > 0 ? { sessionRollovers } : {}),
         };
       }
       if (abortController.signal.aborted && (timeoutId !== undefined || watchdog.fired)) {
@@ -1302,6 +1494,7 @@ export class ClaudeCodeRunner implements AgentRunner {
           ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
           addedTurns: ADDED_TURNS_ZERO,
           contextMetrics: contextObserver.snapshot(),
+          ...(sessionRollovers.length > 0 ? { sessionRollovers } : {}),
           error: Object.assign(
             new Error(timeoutMessage),
             { code: "STEP_TIMEOUT", hint: tracker.timeoutHint() },
@@ -1314,6 +1507,10 @@ export class ClaudeCodeRunner implements AgentRunner {
       sessionLogWriter?.close();
       // agent-context-observability: classify error as context exhaustion before snapshotting.
       contextObserver.markExhaustion(cause.message);
+      // T-02: classify throw as typed context exhaustion or generic.
+      const causeChainText = collectCauseText(cause);
+      const throwIsExhaustion = causeChainText ? isContextExhaustionError(causeChainText) : false;
+      const throwCode = throwIsExhaustion ? CONTEXT_WINDOW_EXHAUSTED_CODE : "CLAUDE_CODE_QUERY_FAILED";
       return {
         completionReason: "error",
         resultContent: null,
@@ -1322,9 +1519,10 @@ export class ClaudeCodeRunner implements AgentRunner {
         ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
         addedTurns: ADDED_TURNS_ZERO,
         contextMetrics: contextObserver.snapshot(),
+        ...(sessionRollovers.length > 0 ? { sessionRollovers } : {}),
         error: Object.assign(
           new Error(`Claude Code SDK query failed: ${cause.message}`),
-          { code: "CLAUDE_CODE_QUERY_FAILED", cause },
+          { code: throwCode, cause },
         ),
       };
     } finally {

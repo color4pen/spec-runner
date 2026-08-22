@@ -213,6 +213,35 @@ import type { AgentContextMetrics } from "../../kernel/context-metrics.js";
 export type { AgentContextMetrics } from "../../kernel/context-metrics.js";
 
 /**
+ * Observation record for a single rolled-over (discarded) agent session.
+ *
+ * Captured at rollover time — before the fresh session starts.
+ * Carries the discarded session's identity and context metrics snapshot.
+ *
+ * contextMetrics: the observer's snapshot for that session only — never merged
+ *   with the final AgentRunResult.contextMetrics (which belongs to the last session).
+ * sessionId: the discarded session ID if captured from the stream; undefined otherwise.
+ *
+ * Note: src/kernel/ has a zero-import invariant — do NOT add new types there.
+ *   AgentContextMetrics is already imported from kernel here; reuse that import.
+ */
+export interface AgentSessionRollover {
+  /** 1-based rollover attempt number. First rollover = 1. */
+  attempt: number;
+  /** Reason for the rollover — always "context-exhaustion" in this feature. */
+  reason: "context-exhaustion";
+  /** Discarded session ID, if it was captured from the SDK stream before exhaustion. */
+  sessionId?: string;
+  /** Concatenated error text that triggered the rollover (may be truncated). */
+  errorMessage: string;
+  /**
+   * Context metrics snapshot of the discarded session — isolated to that session.
+   * Absent when the observer collected no observable data for that session.
+   */
+  contextMetrics?: AgentContextMetrics;
+}
+
+/**
  * Metrics extracted from the SDK result message for a single agent invocation.
  *
  * All fields are optional because:
@@ -339,6 +368,22 @@ export interface AgentRunResult {
    * Added in touched-files-propagation.
    */
   touchedFiles?: string[];
+  /**
+   * Observation records for each rolled-over (discarded) session within this run.
+   *
+   * absent = rollover never occurred, or this runtime does not support rollover.
+   *   Callers must treat absent as equivalent to [] for counting purposes.
+   *
+   * sessionRollovers.length equals the number of fresh-session rollovers that occurred.
+   * Each element's attempt field is 1-based (first rollover = 1).
+   *
+   * IMPORTANT: each element's contextMetrics is the isolated snapshot for that discarded
+   * session. It MUST NOT be merged or summed with AgentRunResult.contextMetrics (which
+   * belongs to the final session only). Context metrics are per-session, not cumulative.
+   *
+   * Added in fresh-session-rollover.
+   */
+  sessionRollovers?: AgentSessionRollover[];
 }
 
 /**

@@ -20,5 +20,6 @@ export type DomainEvent =
   | "step:error"
   | "step:progress"
   | "step:retry"
+  | "step:rollover"
   | "verdict:parsed"
   | "commit:push";

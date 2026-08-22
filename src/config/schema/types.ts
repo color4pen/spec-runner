@@ -480,6 +480,29 @@ export interface TransientRetryConfig {
 }
 
 /**
+ * Default maximum number of fresh-session rollovers on context exhaustion.
+ * 1 = one rollover allowed (two total sessions per step).
+ */
+export const DEFAULT_CONTEXT_ROLLOVER_MAX = 1;
+
+/**
+ * Configuration for fresh-session rollover on context exhaustion.
+ * Applied to local runtime (ClaudeCodeRunner) only; ignored by the managed runtime.
+ *
+ * When context exhaustion is detected (isContextExhaustionError), the runner starts
+ * a fresh session in the same worktree and continues from where it left off.
+ * Git diff / tasks.md are used as the progress source of truth.
+ */
+export interface ContextRolloverConfig {
+  /**
+   * Maximum number of fresh-session rollovers allowed per step run.
+   * 0 = disable rollover entirely (one session only).
+   * Default: 1.
+   */
+  maxRollovers?: number;
+}
+
+/**
  * Design-layer CLI (aozu) integration configuration.
  * Controls opt-in wiring of the design layer check gate and mark-implemented hook.
  */
@@ -594,6 +617,13 @@ export interface SpecRunnerConfig {
    */
   transientRetry?: TransientRetryConfig;
   /**
+   * Fresh-session rollover configuration on context exhaustion.
+   * When a session hits the context window limit, the runner starts a fresh session
+   * in the same worktree and continues from the git diff / tasks.md progress state.
+   * Applied to local runtime (ClaudeCodeRunner) only; ignored by the managed runtime.
+   */
+  contextRollover?: ContextRolloverConfig;
+  /**
    * Test file generation settings.
    * When tests.placement is set, the implementer step injects a deterministic
    * test placement directive into its user message, overriding free-form agent judgment.
@@ -646,6 +676,8 @@ export interface RawConfig {
   inbox?: Partial<Record<string, unknown>>;
   /** Transient-retry configuration — passed through as-is. Validated in validateConfig(). */
   transientRetry?: Partial<Record<string, unknown>>;
+  /** Context-rollover configuration — passed through as-is. Validated in validateConfig(). */
+  contextRollover?: Partial<Record<string, unknown>>;
   /** Tests configuration — passed through as-is. Validated in validateConfig(). */
   tests?: unknown;
   /** Design-layer configuration — passed through as-is. Validated in validateConfig(). */

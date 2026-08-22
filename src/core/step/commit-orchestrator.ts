@@ -21,7 +21,7 @@ import type { PipelineDeps, StoreFactory } from "../types.js";
 import type { EventBus } from "../event/event-bus.js";
 import type { JobStateStore } from "../../store/job-state-store.js";
 import type { LineageRecord } from "../../store/event-journal.js";
-import type { CompletionReportDiagnostic, AgentInvocationMetrics, AgentContextMetrics } from "../port/agent-runner.js";
+import type { CompletionReportDiagnostic, AgentInvocationMetrics, AgentContextMetrics, AgentSessionRollover } from "../port/agent-runner.js";
 import type { PermissionScope } from "../pipeline/types.js";
 import type { StepCompletion } from "./step-completion.js";
 import type { StepHalt } from "./step-halt.js";
@@ -118,6 +118,13 @@ export type StepExecutionResult =
        * or CLI steps where no agent is invoked).
        */
       contextMetrics?: AgentContextMetrics;
+      /**
+       * Per-rollover observation records forwarded from AgentRunResult.sessionRollovers.
+       * Absent when no context-exhaustion rollovers occurred.
+       * Used by CommitOrchestrator to append contextOnly entries to usage.json.
+       * Added in fresh-session-rollover.
+       */
+      sessionRollovers?: AgentSessionRollover[];
     }
   | { kind: "halt"; halt: StepHalt }
   | { kind: "skipped"; skipReason: string };
@@ -252,10 +259,32 @@ export class CommitOrchestrator {
     preWriteIo: IoRef[],
     preReadIo: IoRef[],
   ): Promise<void> {
-    const { completion, completedAt, modelUsage, followUpAttempts, invocationMetrics, contextMetrics } = result;
+    const { completion, completedAt, modelUsage, followUpAttempts, invocationMetrics, contextMetrics, sessionRollovers } = result;
     const { verdict, persistToolResult } = completion;
 
     // usage (appendInvocation — best-effort)
+    // fresh-session-rollover: append rollover contextOnly entries BEFORE the main success entry.
+    // Each rollover entry has modelUsage: null and contextOnly: true (aggregation skips them).
+    if (sessionRollovers && sessionRollovers.length > 0 && deps.cwd && deps.slug) {
+      const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
+      for (const rollover of sessionRollovers) {
+        if (rollover.contextMetrics === undefined) continue;
+        try {
+          await appendInvocation(usageAbsPath, {
+            command: "job",
+            timestamp: completedAt,
+            modelUsage: null,
+            contextOnly: true,
+            jobId: state.jobId,
+            stepName: step.name,
+            contextMetrics: rollover.contextMetrics,
+          });
+        } catch {
+          // Best-effort: rollover usage append failure must not block step completion
+        }
+      }
+    }
+
     // Write when modelUsage is available OR contextMetrics were observed — whichever is present.
     // Using `modelUsage &&` alone would silently discard contextMetrics in runs where
     // modelUsage happens to be absent (e.g. provider does not return usage on a turn).
@@ -552,6 +581,29 @@ export class CommitOrchestrator {
     }
 
     await store.persist(s);
+
+    // fresh-session-rollover: best-effort persist of rollover contextOnly entries on halt path.
+    // Append one entry per rollover session that observed context metrics, BEFORE the main entry.
+    if (halt.sessionRollovers && halt.sessionRollovers.length > 0 && deps?.cwd && deps?.slug) {
+      const timestamp = halt.recordOpts?.completedAt ?? new Date().toISOString();
+      const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
+      for (const rollover of halt.sessionRollovers) {
+        if (rollover.contextMetrics === undefined) continue;
+        try {
+          await appendInvocation(usageAbsPath, {
+            command: "job",
+            timestamp,
+            modelUsage: null,
+            contextOnly: true,
+            jobId: state.jobId,
+            stepName: step.name,
+            contextMetrics: rollover.contextMetrics,
+          });
+        } catch {
+          // Best-effort: never interfere with halt FSM transition or rethrow
+        }
+      }
+    }
 
     // agent-context-observability: best-effort persist of context metrics on halt path.
     // Only written when context metrics were observed AND deps provides cwd/slug.

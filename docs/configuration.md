@@ -14,6 +14,7 @@
 - [Progress display](#progress-display)
 - [GitHub Enterprise (GHES)](#github-enterprise-ghes)
 - [Transient error retries](#transient-error-retries)
+- [Context rollover](#context-rollover)
 
 ## Config layers
 
@@ -499,3 +500,25 @@ When absent, defaults to `github.com` / `api.github.com`. `apiBaseUrl` is derive
 | `transientRetry.baseDelayMs` | `1000` | Base delay for first retry (doubles on each subsequent retry) |
 
 Applied to local runtime runners only; ignored by managed runtime.
+
+## Context rollover
+
+When the claude-code adapter detects that the agent's context window is exhausted, it can automatically start a fresh session in the same worktree and continue from where the previous session left off. The fresh session is given a continuation prompt that instructs it to inspect existing changes via `git diff` and `tasks.md` before resuming.
+
+```jsonc
+{
+  "contextRollover": {
+    "maxRollovers": 1
+  }
+}
+```
+
+| Key | Default | Description |
+|---|---|---|
+| `contextRollover.maxRollovers` | `1` | Maximum number of fresh-session rollovers. `0` = disable rollover |
+
+Applied to local runtime (claude-code adapter) only; ignored by managed and Codex runtimes.
+
+When all rollover attempts are exhausted and the context is still full, the step halts with `CONTEXT_WINDOW_EXHAUSTED`. Consider splitting the request into smaller tasks if this occurs repeatedly.
+
+Rollover sessions are recorded in `usage.json` as `contextOnly: true` entries (no cost data) alongside the final session's normal entry. Each rollover also emits a `step:rollover` event that appears in the pipeline log and progress display.
