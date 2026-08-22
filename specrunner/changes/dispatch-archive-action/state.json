@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
   "createdAt": "2026-08-21T22:28:13.507Z",
-  "updatedAt": "2026-08-22T01:39:14.422Z",
+  "updatedAt": "2026-08-22T01:40:23.152Z",
   "request": {
     "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/dispatch-archive-action-c2c7ba44",
   "error": null,
@@ -76,7 +76,8 @@
     "01309fc064bfdb0573c25bd07730d6fa137939d5",
     "1c1746136b09e789afdd1b1375e948d0a3331d1a",
     "6ccbc3e4e6c28a3d7dfed4ad5f19ff721046f67e",
-    "e395d5d60a5774d9507b8ff8b4ea137c1593ebb6"
+    "e395d5d60a5774d9507b8ff8b4ea137c1593ebb6",
+    "7454045baa195666eb257a9bd582a162597e2cfb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -150,7 +151,8 @@
       "src/core/archive/__tests__/archived-slug-by-job-id.test.ts",
       "tests/dispatch-workflow-archive-action.test.ts",
       "src/core/issue-target/archive.ts"
-    ]
+    ],
+    "regression-gate": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -196,7 +198,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 2,
       "design": 2,
@@ -209,7 +211,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
