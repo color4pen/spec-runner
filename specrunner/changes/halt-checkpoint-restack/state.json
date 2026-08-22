@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a3a7b448-7124-4c08-a727-e4cc46224c6f",
   "createdAt": "2026-08-22T01:30:39.186Z",
-  "updatedAt": "2026-08-22T06:15:59.836Z",
+  "updatedAt": "2026-08-22T06:22:23.200Z",
   "request": {
     "title": "halt checkpoint を未 push 作業 commit から分離して publish する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "change/halt-checkpoint-restack-a3a7b448",
   "error": null,
@@ -88,7 +88,9 @@
     "401d4ccdac1228d556d4dae0d9835a8236a7de4f",
     "9226f8115f93a6d20c00cedc4373c2fa28dece4d",
     "36ec1b4aa6cc7b110ac19bb759f5bedacad3baa3",
-    "142d72a4931baca817dfa7a1749b14eb2540c391"
+    "142d72a4931baca817dfa7a1749b14eb2540c391",
+    "a93b925761dd1bbaadf655136f20c621ca2e56c1",
+    "587cd10df098d2cf0bdc4914f23e59982000d75b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -134,9 +136,7 @@
       "src/core/attach/orchestrator.ts"
     ],
     "spec-fixer": [],
-    "implementer": [
-      "src/core/step/__tests__/commit-push-restack-integration.test.ts"
-    ],
+    "implementer": [],
     "code-review": [
       "src/core/step/checkpoint-restack.ts",
       "src/core/runtime/local.ts",
@@ -229,16 +229,16 @@
     }
   ],
   "_journal": {
-    "historyCount": 112,
+    "historyCount": 121,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "implementer": 4,
+      "implementer": 5,
       "bite-evidence": 1,
-      "verification": 5,
+      "verification": 6,
       "code-review": 1,
       "code-fixer": 3,
       "cross-boundary-invariants": 3,
