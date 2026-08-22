@@ -15,6 +15,14 @@ name: SpecRunner Dispatch
 #           operator-apply commit として取り込む（CANON_FINDING_ESCALATION の復帰手順）。
 #           wontfix / wontfix_reason は regression-gate findings への operator 不採用裁定
 #           （--wontfix / --wontfix-reason）をそのまま透過する。
+# - reopen: PR 作成後に awaiting-archive で待機する job を pipeline に戻す（#1066）。
+#           Development linked branch を解決して attach → （canon_patch があれば worktree へ
+#           dirty apply。commit はしない）→ job reopen <slug> --from <step> --reason <text>。
+#           reopen は commit を作らず、canon 変更と operator-event は再実行後の最初の
+#           checkpoint commit に pipeline 規約で載る。PR が OPEN であること・status が
+#           awaiting-archive であることは CLI の reopen gate が検証する。
+#           reopen は --apply-canon / --prompt を受けない（CLI 契約）ため、canon_patch は
+#           dirty apply のみ・prompt は透過しない。
 # - archive: 完走した job を issue 番号から取り込む。2 相の実行を前提とする。
 #            1 回目（merge 前）: completed marker → archive record を feature branch に push し
 #            awaiting-archive を維持する。
@@ -31,17 +39,22 @@ on:
         description: "Issue number"
         required: true
       action:
-        description: "start: issue 本文から新規 job を起動 / resume: escalation 済み job を再開 / archive: 完走した job を取り込む"
+        description: "start: issue 本文から新規 job を起動 / resume: escalation 済み job を再開 / reopen: awaiting-archive job を pipeline に戻す / archive: 完走した job を取り込む"
         type: choice
         options:
           - start
           - resume
+          - reopen
           - archive
         default: start
       from:
         # choice にしない: 有効な step 名は job の state に依存する（custom reviewer 名は動的）。
         # 検証は CLI 側が行う。
-        description: "resume 時の再開 step override（通常は空 = checkpoint から自動再開）"
+        description: "resume 時の再開 step override（通常は空 = checkpoint から自動再開）。reopen 時は必須"
+        required: false
+        type: string
+      reason:
+        description: "reopen 時の operator rationale（--reason。reopen 時は必須）"
         required: false
         type: string
       prompt:
@@ -58,7 +71,7 @@ on:
         # 保護正典（design.md 等）への operator 編集を unified diff で渡す。
         # Actions UI の text input は単一行のため、複数行 patch は API / MCP の
         # workflow dispatch で渡すこと（inputs 合計 64KB 上限に注意）。
-        description: "resume 時に job worktree へ適用する canon patch（unified diff。base64 も可・推奨。--apply-canon で operator-apply commit として取り込む）"
+        description: "resume / reopen 時に job worktree へ適用する canon patch（unified diff。base64 も可・推奨。resume は --apply-canon で operator-apply commit、reopen は dirty apply で次の checkpoint commit に載る）"
         required: false
         type: string
       wontfix:
@@ -152,6 +165,7 @@ jobs:
           ISSUE: ${{ inputs.issue }}
           ACTION: ${{ inputs.action }}
           FROM: ${{ inputs.from }}
+          REASON: ${{ inputs.reason }}
           PROMPT: ${{ inputs.prompt }}
           FORCE: ${{ inputs.force }}
           CANON_PATCH: ${{ inputs.canon_patch }}
@@ -209,6 +223,52 @@ jobs:
               set -- "$@" --wontfix "$WONTFIX" --wontfix-reason "$WONTFIX_REASON"
             fi
             bun ./bin/specrunner.ts job resume "$@"
+          elif [ "$ACTION" = "reopen" ]; then
+            # awaiting-archive job の reopen（#1066）。from / reason は CLI 契約上も必須。
+            if [ -z "$FROM" ] || [ -z "$REASON" ]; then
+              echo "::error::reopen には from と reason の両方が必須"
+              exit 1
+            fi
+            # branch 解決 → attach → slug 特定は resume の canon_patch 経路と同一手順。
+            # remote runner に local state は無いため、attach で job/worktree を復元する。
+            BRANCH=$(gh api graphql \
+              -F owner='${{ github.repository_owner }}' \
+              -F name='${{ github.event.repository.name }}' \
+              -F number="$ISSUE" \
+              -f query='query($owner:String!,$name:String!,$number:Int!){repository(owner:$owner,name:$name){issue(number:$number){linkedBranches(first:20){nodes{ref{name}}}}}}' \
+              --jq '[.data.repository.issue.linkedBranches.nodes[].ref.name] | (map(select(startswith("change/"))) + .) | first // empty')
+            if [ -z "$BRANCH" ]; then
+              echo "::error::issue #$ISSUE に Development linked branch が無い（reopen には必須）"
+              exit 1
+            fi
+            bun ./bin/specrunner.ts job attach --branch "$BRANCH" | tee attach-out.txt
+            SLUG=$(sed -n "s/^Attached job '\([^']*\)'.*/\1/p" attach-out.txt)
+            if [ -z "$SLUG" ]; then
+              echo "::error::attach 出力から slug を特定できない"
+              exit 1
+            fi
+            if [ -n "$CANON_PATCH" ]; then
+              WT=$(git worktree list --porcelain | sed -n 's/^worktree //p' | grep '/specrunner-worktrees/' | head -1)
+              if [ -z "$WT" ]; then
+                echo "::error::attach 後の specrunner worktree が見つからない"
+                exit 1
+              fi
+              printf '%s\n' "$CANON_PATCH" > /tmp/canon.patch
+              if ! git -C "$WT" apply --check --whitespace=nowarn /tmp/canon.patch 2>/dev/null; then
+                if printf '%s' "$CANON_PATCH" | base64 -d > /tmp/canon.patch 2>/dev/null \
+                   && git -C "$WT" apply --check --whitespace=nowarn /tmp/canon.patch; then
+                  echo "canon_patch: base64 として適用する"
+                else
+                  echo "::error::canon_patch を適用できない (raw / base64 とも git apply --check 失敗)"
+                  exit 1
+                fi
+              fi
+              # reopen は --apply-canon を持たない: commit せず dirty のまま置き、
+              # 再実行後の最初の checkpoint commit に pipeline 規約で載せる（reopen の
+              # 「reopen のためだけの commit を作らない」契約と整合）。
+              git -C "$WT" apply --whitespace=nowarn /tmp/canon.patch
+            fi
+            bun ./bin/specrunner.ts job reopen "$SLUG" --from "$FROM" --reason "$REASON"
           elif [ "$ACTION" = "archive" ]; then
             bun ./bin/specrunner.ts job archive --from-issue "$ISSUE"
           else
