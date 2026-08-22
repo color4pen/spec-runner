@@ -4,13 +4,21 @@
 
 ### Requirement: halt checkpoint の push が失敗したとき、最終 publish 済み tip を親として checkpoint を積み直して publish する
 
-terminal 遷移後の checkpoint / finalize commit の push が retry を含めて失敗した場合、システムは
+terminal 遷移後の commit の push が retry を含めて失敗し、かつその commit の label が
+`checkpoint`（`awaiting-resume` への halt）である場合、システムは
 最後に push が成功している remote tip（`origin/<branch>`）を親とする checkpoint commit を新たに作り、
 それを `origin/<branch>` へ push SHALL する（同じく 1 retry）。積み直された commit は
 ローカル branch tip に存在する未 push commit を親系列に一切含んではならない（MUST NOT）。
+label が `finalize`（`awaiting-archive`）の場合は積み直しを行わず、既存どおり warn のみで
+継続 SHALL する（archive 経路の quiescence 要求との相互作用は本 change の非目標）。
 
 `origin/<branch>` が解決できない場合（1 度も publish されていない branch）は積み直しを行わず、
 既存どおり warn のみで継続 SHALL する。
+
+fetch 後に解決した `origin/<branch>` tip がローカル branch tip の ancestor でない場合
+（他 runner が同一 branch を先に進めている divergence）、システムは積み直しを行わず、
+既存どおり warn のみで継続 SHALL する。remote 側の state を古い local state で
+上書きしてはならない（MUST NOT）。
 
 #### Scenario: 作業 commit の push が拒否される状況で halt した
 
@@ -28,6 +36,25 @@ terminal 遷移後の checkpoint / finalize commit の push が retry を含め�
 **Given** `origin/<branch>` が存在しない（branch が 1 度も push 成功していない）
 **When** halt checkpoint の push が retry 込みで失敗する
 **Then** 積み直し commit は作られず push も行われない
+**And** 呼び出しは例外を投げずに完了する
+
+#### Scenario: remote が local history と分岐している場合は積み直しをしない
+
+**Given** 別 runner が同一 branch の `specrunner/changes/<slug>/` を commit `R1` まで進めて push 済みである
+**And** ローカル branch tip は `R1` を親系列に含まない古い halt checkpoint である
+**When** ローカル checkpoint の push が non-fast-forward で retry 込みで拒否され、
+fetch 後の `origin/<branch>` が `R1` を指す
+**Then** 積み直し commit は作られず push も行われない
+**And** `origin/<branch>` の tree（`state.json` / `events.jsonl` / 成果物）は `R1` の内容のまま変化しない
+**And** events.jsonl に `checkpoint-restack` record は追記されない
+**And** 呼び出しは例外を投げずに完了する
+
+#### Scenario: finalize commit の push 失敗では積み直しをしない
+
+**Given** job が `awaiting-archive` へ遷移し finalize commit の push が retry 込みで失敗する
+**When** publish 処理が完了する
+**Then** 積み直し用の git 操作（fetch / ls-tree / commit-tree / update-ref）は 1 度も呼ばれない
+**And** events.jsonl に `checkpoint-restack` record は追記されない
 **And** 呼び出しは例外を投げずに完了する
 
 ### Requirement: 積み直した checkpoint の tree は change folder のみを差し替え、それ以外を publish しない

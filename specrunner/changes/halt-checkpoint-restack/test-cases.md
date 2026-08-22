@@ -50,10 +50,10 @@ Result section MUST appear at the very end as a YAML code block:
 
 ## Summary
 
-- **Total**: 36 cases
-- **Automated** (unit/integration): 33
+- **Total**: 39 cases
+- **Automated** (unit/integration): 36
 - **Manual**: 0
-- **Priority**: must: 33, should: 3, could: 0
+- **Priority**: must: 36, should: 3, could: 0
 
 ---
 
@@ -437,14 +437,55 @@ verification フェーズで `git diff --name-only main` の変更ファイル�
 
 ---
 
+## 追裼（reopen iteration 001: PR #1065 review 対応）
+
+### TC-037: remote divergence 検知時の積み直しスキップ（remote-diverged)
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: halt checkpoint の push が失敗したとき、最終 publish 済み tip を親として checkpoint を積み直して publish する > Scenario: remote が local history と分岐している場合は積み直しをしない
+
+fake `spawnFn` で `merge-base --is-ancestor` が exitCode 1 を返すとき、outcome が
+`skipped`（reason: `remote-diverged`）であり、`checkpoint-restack` record の append
+（`recordRestack`）・tree 構築（read-tree / ls-tree / update-index / write-tree / commit-tree）・
+push・`persistCommit` がいずれも呼ばれないことを確認する。
+
+---
+
+### TC-038: 別 runner 先行時に remote state を上書きしない（E2E）
+
+**Category**: integration
+**Priority**: must
+**Source**: spec.md > Requirement: halt checkpoint の push が失敗したとき、最終 publish 済み tip を親として checkpoint を積み直して publish する > Scenario: remote が local history と分岐している場合は積み直しをしない
+
+**実 git（bare remote + 2 clone）で、runner B が同一 branch の change folder を `R1` まで進めて
+push 済みの状態から、古い local tip を持つ runner A の checkpoint push を non-fast-forward で
+拒否させ restack を実行する。restack が `remote-diverged` で skip し、`origin/<branch>` の tip が
+`R1` のまま・`R1` の tree（state.json / events.jsonl / 成果物）が変化しないことを確認する。
+
+---
+
+### TC-039: finalize label では restack が発動しない
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: halt checkpoint の push が失敗したとき、最終 publish 済み tip を親として checkpoint を積み直して publish する > Scenario: finalize commit の push 失敗では積み直しをしない
+
+`messageLabel: "finalize"` で push が二重失敗したとき、restack 用の git 操作
+（fetch / rev-parse origin ref / merge-base / read-tree / commit-tree / update-ref）が 1 度も
+発行されず、events.jsonl に `checkpoint-restack` record が追記されず、既存の push 失敗 warn のみで
+呼び出しが例外なく完了することを確認する。
+
+---
+
 ## Result
 
 ```yaml
 result: completed
-total: 36
-automated: 33
+total: 39
+automated: 36
 manual: 0
-must: 33
+must: 36
 should: 3
 could: 0
 blocked_reasons: []

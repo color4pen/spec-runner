@@ -75,6 +75,12 @@ halt 記録が作業 commit と push を相乗りする現構造はこの契約�
 早期 return する分岐（staging 0 件 / staged 差分なし / commit 失敗 / egress 失敗）からは restack を
 呼ばない。egress 失敗は fail-closed の判断であり、そこから publish を試みるのは backstop の迂回になる。
 
+restack の試行は `messageLabel === "checkpoint"`（`awaiting-resume` への halt）の場合に**限る**。
+`finalize`（`awaiting-archive`）経路では試行せず、既存どおり warn のみで継続する。
+Non-Goals（archive / `--with-merge` 経路の変更をしない）との整合を実装レベルでも固定する
+（PR #1065 review [Medium] 対応。finalize まで広げる場合は awaiting-archive 側の
+self-consistency / archive quiescence との相互作用を E2E で固定してから別 change で行う）。
+
 - Rationale: 成功経路の spawn 列が変わらないため「push 成功の通常経路は既存テスト無変更で green」を
   構造的に保証できる（既存 TC-003 の sequence 期待が壊れない）。既存 warn を先に出すことで
   TC-011（push stderr を warn に含む）も無変更で green。
@@ -212,10 +218,25 @@ pushFailureStderr, recordRestack?, persistCommit? })` が判別可能 union の 
     絡み合う。棄却。
   - **`LocalRuntime` に直書き**: runtime 層に git plumbing が漏れ、unit test が重くなる。棄却。
 
-### D8: remote tip の解決は「best-effort fetch → remote-tracking ref の rev-parse」。解決できなければ restack しない
+### D8: remote tip の解決は「best-effort fetch → remote-tracking ref の rev-parse → ancestor guard」。解決できないか diverge していれば restack しない
 
 `git fetch origin <branch>`（失敗は無視）→ `git rev-parse refs/remotes/origin/<branch>^{commit}`。
 exitCode≠0 または stdout が空なら「publish 済み tip が存在しない」とみなし、warn して skip する。
+
+解決した remote tip（`parentOid`）については、続けて
+`git merge-base --is-ancestor <parentOid> <localTipOid>` で **local tip の ancestor であること**を
+確認する。exitCode≠0（divergence、または判定不能）の場合は `skipped: "remote-diverged"` として
+warn して skip する。この guard は D5 の record append より**前**（restack 実行決定前）に置き、
+diverged の場合は `checkpoint-restack` record も追記しない。
+
+- Rationale（ancestor guard、PR #1065 review [High] 対応）: push 拒否の原因が「他 runner が同一
+  branch を先に進めた」divergence である場合、その remote tip を親に local の change folder を
+  overlay すると、**より新しい remote state（state.json / events.jsonl / 成果物）を古い local state で
+  上書きする commit が fast-forward push として成立してしまう**。D4 の封じ込め検査は
+  change folder 内の差分を許容するためこの上書きを検出できない。ancestor guard により
+  「restack が publish するのは、remote が local の過去そのものである場合に限る」ことを
+  構造的に保証する。guard 通過後に remote がさらに進む race（TOCTOU）は残るが、その場合の
+  restack push は non-fast-forward で拒否される（force push はしない）ため上書きは起きない。
 
 - Rationale: push 失敗が non-fast-forward（他 runner が進めた）の場合、stale な tracking ref を
   親にすると restack push も無駄に拒否される。fetch は失敗経路でのみ発生するので通常経路の
@@ -269,8 +290,11 @@ exitCode≠0 または stdout が空なら「publish 済み tip が存在しな�
 - publish された restack checkpoint に含まれる `unpublishedCommits` を、operator が後から
   救出（cherry-pick）するための CLI 補助（例: `job show` での表示）を用意するか。
   本 request では journal record に残すところまでとし、UI は別 request に委ねる。
-- `finalize`（awaiting-archive）経路でも restack は同じコードパスで働くが、archive 経路の
+- ~~`finalize`（awaiting-archive）経路でも restack は同じコードパスで働くが、archive 経路の
   受け入れ条件は本 request の対象外。archive 側の quiescence 要求（PR number 等）との
-  相互作用を別途整理する必要があるか。
+  相互作用を別途整理する必要があるか。~~ → **確定（D1 改訂）**: restack は `checkpoint` label に
+  限定し、finalize 経路では発動しない。finalize 対応は必要になれば別 change とする。
 - 同一 branch を複数 runner が同時に触る状況（fetch 後も remote が進む race）では restack push が
   拒否されうる。lease / epoch を前提としない現行方針のままで良いか（ADR-20260715 D4 の射程）。
+  divergence を検知した場合の挙動は D8 の ancestor guard で `remote-diverged` skip として確定済み
+  （上書きは構造的に起きない）。残る論点は「skip 後の operator 復旧手順」のみ。
