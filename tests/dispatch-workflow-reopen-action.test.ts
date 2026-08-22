@@ -233,6 +233,14 @@ describe("TC-R02: reopen branch resolves the job via attach and delegates to job
     expect(body).toContain("job attach --branch");
   });
 
+  it("falls back to the issue's open closing PR head branch (post-PR reopen)", () => {
+    // PR 作成後は Development link が branch から PR に置き換わり linkedBranches が
+    // 空になる (実測: run 32568457970) — closing PR 参照からの解決を固定する
+    const body = reopenBranchBody(branches);
+    expect(body).toContain("closedByPullRequestsReferences");
+    expect(body).toContain("headRefName");
+  });
+
   it("delegates to 'job reopen' with --from and --reason", () => {
     const body = reopenBranchBody(branches);
     expect(body).toContain("job reopen");
