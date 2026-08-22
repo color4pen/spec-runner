@@ -2,7 +2,7 @@
  * TC-R01: action choices contain reopen
  * TC-R02: reopen branch resolves the job via attach and delegates to `job reopen`
  * TC-R03: reopen branch requires from and reason
- * TC-R04: reopen canon_patch is a dirty apply (no --apply-canon, no commit)
+ * TC-R04: canon_patch is removed — canon edits enter as operator-apply pushes
  *
  * Structural assertions on .github/workflows/specrunner-dispatch.yml (issue #1066).
  * No yaml parser package is used — blocks are extracted by indent scope, mirroring
@@ -278,38 +278,34 @@ describe("TC-R03: reopen branch requires from and reason", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-R04: reopen canon_patch is committed as operator-apply and pushed before reopen
+// TC-R04: canon_patch input is removed — canon edits enter as operator pushes
 // ---------------------------------------------------------------------------
 
-describe("TC-R04: reopen canon_patch is committed as operator-apply and pushed", () => {
-  let branches: Map<string, string[]>;
+describe("TC-R04: canon_patch is removed from the dispatch workflow", () => {
+  // patch の inline 輸送 (raw / base64) は env 輸送や operator の転記で壊れる
+  // (実測: run 32554216686 whitespace 破損 / run 32590206028 転記破損)。
+  // canon の operator 修正は feature branch への operator-apply commit の直接 push で
+  // 入れる運用に一本化し、workflow は patch を一切受け取らないことを固定する。
 
-  beforeAll(() => {
+  it("workflow declares no canon_patch input", () => {
+    const { block } = extractOptionsBlock(lines, [
+      "on",
+      "workflow_dispatch",
+      "inputs",
+      "canon_patch",
+    ]);
+    expect(block).toBeNull();
+  });
+
+  it("run script has no CANON_PATCH handling", () => {
+    expect(content).not.toContain("CANON_PATCH");
+    expect(content).not.toContain("canon.patch");
+  });
+
+  it("reopen branch does not use --apply-canon (reopen CLI contract rejects it)", () => {
     const scriptLines = extractRunScript(lines, "Run pipeline");
     if (!scriptLines) throw new Error("Could not find 'Run pipeline' step in workflow");
-    branches = parseBranches(scriptLines);
-  });
-
-  it("applies canon_patch to the worktree when provided", () => {
-    const body = reopenBranchBody(branches);
-    expect(body).toContain('-n "$CANON_PATCH"');
-    expect(body).toContain("apply --whitespace=nowarn");
-  });
-
-  it("commits the canon as operator-apply and pushes before job reopen", () => {
-    // dirty のままでは step 境界の write-scope 検査が canon 変更を step に誤帰属して
-    // halt する (実測: run 32569597460)。commit + push が reopen より先にあることを固定する
-    const body = reopenBranchBody(branches);
-    const commitIdx = body.indexOf('commit -m "operator-apply: $SLUG"');
-    const pushIdx = body.indexOf('push origin "HEAD:refs/heads/$BRANCH"');
-    const reopenIdx = body.indexOf("job reopen");
-    expect(commitIdx).toBeGreaterThanOrEqual(0);
-    expect(pushIdx).toBeGreaterThan(commitIdx);
-    expect(reopenIdx).toBeGreaterThan(pushIdx);
-  });
-
-  it("does not use --apply-canon (reopen CLI contract rejects it)", () => {
-    // comment lines explain the CLI contract and may name the flag — exclude them
+    const branches = parseBranches(scriptLines);
     const codeLines = reopenBranchBody(branches)
       .split("\n")
       .filter((l) => !l.trim().startsWith("#"))
