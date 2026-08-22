@@ -1,5 +1,8 @@
 /**
- * TC-008, TC-014, TC-015 — store/fold layer unit tests for CheckpointRestackRecord.
+ * TC-006, TC-008, TC-014, TC-015 — store/fold layer unit tests for CheckpointRestackRecord.
+ *
+ * TC-006: detectCounterReversal() が checkpoint-restack を含む foldResult に対して null を返す
+ *         (detectCounterReversal() returns null when foldResult includes a checkpoint-restack record)
  *
  * TC-008: fold() が checkpoint-restack record で historyCount/stepCounts/history/steps を変更しない
  *         (fold() does NOT change historyCount/stepCounts/history/steps with a checkpoint-restack record)
@@ -17,6 +20,7 @@ import * as os from "node:os";
 import { fold } from "../event-journal.js";
 import type { CheckpointRestackRecord } from "../event-journal.js";
 import { JobStateStore } from "../job-state-store.js";
+import { detectCounterReversal } from "../journal-integrity.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -62,6 +66,79 @@ function makeCheckpointRestackLine(
   };
   return JSON.stringify(record);
 }
+
+// ---------------------------------------------------------------------------
+// TC-006: detectCounterReversal() が checkpoint-restack を含む foldResult に対して null を返す
+// ---------------------------------------------------------------------------
+
+describe("TC-006: detectCounterReversal() returns null when foldResult includes a checkpoint-restack record", () => {
+  it("TC-006-a: stored counters equal fold counts — checkpoint-restack record does not cause reversal", () => {
+    // GIVEN a journal with step-attempt, transition, and checkpoint-restack records
+    const content =
+      [
+        makeStepAttemptLine("design"),
+        makeTransitionLine(),
+        makeCheckpointRestackLine(),
+      ].join("\n") + "\n";
+
+    // WHEN fold() is called — checkpoint-restack must NOT affect historyCount or stepCounts
+    const foldResult = fold(content);
+
+    // stored counters reflect the state.json snapshot BEFORE the checkpoint-restack was appended
+    // (1 transition → historyCount = 1, 1 design step-attempt → stepCounts = { design: 1 })
+    const storedCounters = {
+      historyCount: 1,
+      stepCounts: { design: 1 },
+    };
+
+    // THEN detectCounterReversal returns null — no reversal detected
+    const result = detectCounterReversal(storedCounters, foldResult);
+    expect(result).toBeNull();
+  });
+
+  it("TC-006-b: multiple checkpoint-restack records still yield null from detectCounterReversal", () => {
+    // GIVEN a journal with baseline records and two checkpoint-restack records
+    const content =
+      [
+        makeStepAttemptLine("implementer"),
+        makeStepAttemptLine("code-review"),
+        makeTransitionLine(),
+        makeCheckpointRestackLine({ ts: "2026-07-01T09:05:00.000Z", reason: "first push failure" }),
+        makeCheckpointRestackLine({ ts: "2026-07-01T09:10:00.000Z", reason: "second push failure" }),
+      ].join("\n") + "\n";
+
+    // WHEN fold() is called
+    const foldResult = fold(content);
+
+    // stored counters match the baseline step-attempts and transition counts
+    const storedCounters = {
+      historyCount: 1,
+      stepCounts: { implementer: 1, "code-review": 1 },
+    };
+
+    // THEN no counter reversal is reported despite the two checkpoint-restack records
+    const result = detectCounterReversal(storedCounters, foldResult);
+    expect(result).toBeNull();
+  });
+
+  it("TC-006-c: checkpoint-restack-only journal yields null for zero-baseline stored counters", () => {
+    // GIVEN a journal containing only a checkpoint-restack record (edge case: first event ever)
+    const content = makeCheckpointRestackLine() + "\n";
+
+    // WHEN fold() is called
+    const foldResult = fold(content);
+
+    // stored counters are all zero (no transitions or step-attempts have been committed yet)
+    const storedCounters = {
+      historyCount: 0,
+      stepCounts: {},
+    };
+
+    // THEN detectCounterReversal returns null — zero <= zero, no reversal
+    const result = detectCounterReversal(storedCounters, foldResult);
+    expect(result).toBeNull();
+  });
+});
 
 // ---------------------------------------------------------------------------
 // TC-008: checkpoint-restack record が projection（history/steps）を変更しない

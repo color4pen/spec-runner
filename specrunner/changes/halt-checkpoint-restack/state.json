@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a3a7b448-7124-4c08-a727-e4cc46224c6f",
   "createdAt": "2026-08-22T01:30:39.186Z",
-  "updatedAt": "2026-08-22T12:21:49.358Z",
+  "updatedAt": "2026-08-22T12:30:49.036Z",
   "request": {
     "title": "halt checkpoint を未 push 作業 commit から分離して publish する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "change/halt-checkpoint-restack-a3a7b448",
   "error": null,
@@ -100,7 +100,8 @@
     "c77c8ae7906adc34b57e5f50166efadafacfe833",
     "32e0f4d06e0fe744a57e029911f2447639fdba62",
     "072702765aa52f030d8d53f8e7a6cb521a12f16c",
-    "4230d748028bef9f001437f1bd5a03f16aae8243"
+    "4230d748028bef9f001437f1bd5a03f16aae8243",
+    "9bf51e8883729f1dd8602715fbe74cbbf6c79ea9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -155,16 +156,9 @@
       "src/core/step/__tests__/commit-push-restack-integration.test.ts"
     ],
     "code-review": [
-      "src/core/step/checkpoint-restack.ts",
-      "src/core/step/commit-push.ts",
-      "src/store/event-journal.ts",
-      "src/store/job-journal.ts",
-      "src/store/job-state-store.ts",
-      "src/core/runtime/local.ts",
+      "src/store/__tests__/event-journal-checkpoint-restack.test.ts",
       "src/core/step/__tests__/checkpoint-restack.test.ts",
-      "src/core/step/__tests__/commit-push-restack-integration.test.ts",
-      "tests/halt-checkpoint-restack-e2e.test.ts",
-      "src/store/__tests__/event-journal-checkpoint-restack.test.ts"
+      "src/store/journal-integrity.ts"
     ],
     "code-fixer": [
       "tests/halt-checkpoint-restack-e2e.test.ts"
@@ -258,7 +252,7 @@
     "createdAt": "2026-08-22T06:50:17.653Z"
   },
   "_journal": {
-    "historyCount": 179,
+    "historyCount": 183,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -268,7 +262,7 @@
       "implementer": 7,
       "bite-evidence": 2,
       "verification": 8,
-      "code-review": 3,
+      "code-review": 4,
       "code-fixer": 4,
       "cross-boundary-invariants": 4,
       "scale-tolerance": 3,
