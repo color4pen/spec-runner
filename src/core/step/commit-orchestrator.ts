@@ -256,13 +256,16 @@ export class CommitOrchestrator {
     const { verdict, persistToolResult } = completion;
 
     // usage (appendInvocation — best-effort)
-    if (modelUsage && deps.cwd && deps.slug) {
+    // Write when modelUsage is available OR contextMetrics were observed — whichever is present.
+    // Using `modelUsage &&` alone would silently discard contextMetrics in runs where
+    // modelUsage happens to be absent (e.g. provider does not return usage on a turn).
+    if ((modelUsage || contextMetrics !== undefined) && deps.cwd && deps.slug) {
       const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
       try {
         await appendInvocation(usageAbsPath, {
           command: "job",
           timestamp: completedAt,
-          modelUsage,
+          modelUsage: modelUsage ?? null,
           jobId: state.jobId,
           stepName: step.name,
           // agent-invocation-metrics: spread metrics when provided; omit fields when absent.

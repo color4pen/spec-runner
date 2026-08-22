@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f6d2e71c-5ff1-4454-ad35-1073cc427a7f",
   "createdAt": "2026-08-22T13:47:16.472Z",
-  "updatedAt": "2026-08-22T15:24:45.615Z",
+  "updatedAt": "2026-08-22T15:27:07.020Z",
   "request": {
     "title": "agent session の active context / compaction を計測可能にする",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/agent-context-observability-f6d2e71c",
   "error": null,
@@ -74,7 +74,8 @@
     "4c17b711fb238911203675729b1a823316769327",
     "5c315615ce9c7675a4021f238b0c753c1159c45b",
     "c0c0d97106984ee653cbcb5888d1cb288c425bfc",
-    "c7838755911171522dd1b71baae62af728df24cc"
+    "c7838755911171522dd1b71baae62af728df24cc",
+    "814f9ebf533d0367187672ff629ba13d1d594c27"
   ],
   "touchedFiles": {
     "request-review": [
@@ -190,6 +191,10 @@
       "tests/unit/core/command/usage-show-context-metrics.test.ts",
       "tests/unit/adapter/managed-agent/agent-runner-context-metrics.test.ts",
       "src/adapter/managed-agent/usage.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/commit-orchestrator.ts",
+      "src/adapter/claude-code/agent-runner.ts"
     ]
   },
   "reviewerStatuses": [
@@ -232,7 +237,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 53,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -245,7 +250,8 @@
       "code-review": 1,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 2
+      "custom-reviewers": 2,
+      "regression-gate": 1
     }
   }
 }

@@ -49,6 +49,9 @@ function makeConfig(overrides: Partial<SpecRunnerConfig> = {}): SpecRunnerConfig
     version: 1,
     runtime: "local",
     agents: {},
+    // Disable transient retries in tests to prevent retry delays from causing timeouts.
+    // Tests that specifically test retry behavior should override this via `overrides`.
+    transientRetry: { maxRetries: 0 },
     ...overrides,
   };
 }

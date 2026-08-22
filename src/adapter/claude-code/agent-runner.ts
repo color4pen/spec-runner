@@ -1167,11 +1167,22 @@ export class ClaudeCodeRunner implements AgentRunner {
                   }
                   extractedModelUsage = summed;
                 }
+              } else if (message.type === "result") {
+                // agent-context-observability: non-success result — observe for contextWindow
+                // and check whether the error indicates context exhaustion (mirrors postWork path).
+                const errorResult = message as SDKResultMessage & { errors?: string[] };
+                contextObserver.observeResult(errorResult as Record<string, unknown>);
+                const errorJoined = (errorResult.errors ?? []).join(" ").trim();
+                if (errorJoined) contextObserver.markExhaustion(errorJoined);
               }
             }
           } catch (err) {
             // Re-throw abort errors so watchdog-triggered timeouts reach the outer catch (D4 design).
             if (abortController.signal.aborted) throw err;
+            // agent-context-observability: check whether a thrown error is a context exhaustion
+            // signal (e.g. SDK throws instead of emitting a result event on repair turns).
+            const errText = err instanceof Error ? err.message : String(err);
+            contextObserver.markExhaustion(errText);
             // best-effort: repair turn failure → preserve work turn result
             stderrWrite(
               `[specrunner] warn: output verification repair turn ${attempt} failed for '${step.name}'. Continuing.\n`,
