@@ -53,7 +53,7 @@ Result section MUST appear at the very end as a YAML code block:
 - **Total**: 36 cases
 - **Automated** (unit/integration): 33
 - **Manual**: 0
-- **Priority**: must: 32, should: 4, could: 0
+- **Priority**: must: 33, should: 3, could: 0
 
 ---
 
@@ -348,7 +348,7 @@ Result section MUST appear at the very end as a YAML code block:
 ### TC-029: reason フィールドに maskSensitive が適用されセンシティブ文字列が伏字化される
 
 **Category**: unit
-**Priority**: should
+**Priority**: must
 **Source**: design.md > D5 / tasks.md > T-02
 
 **GIVEN** `pushFailureStderr` にセンシティブ文字列（例: `token`, `secret`, `password`）を含む git エラー出力が渡される
@@ -444,8 +444,8 @@ result: completed
 total: 36
 automated: 33
 manual: 0
-must: 32
-should: 4
+must: 33
+should: 3
 could: 0
 blocked_reasons: []
 ```

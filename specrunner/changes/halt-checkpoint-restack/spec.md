@@ -79,7 +79,8 @@ profile）・`attachQuiescentPolicy`・identity（repository / jobId / branch / 
 システムは積み直しを実施する際、`checkpoint-restack` 種別の journal-only record を events.jsonl へ
 append SHALL し、その record が publish される checkpoint の tree に含まれるようにしなければならない
 （MUST）。record は親 commit OID、push を拒否された local tip OID、publish されなかった commit の
-OID 列を含む SHALL。この record は state.json の projection（history / steps / counters）を
+OID 列、および push 失敗理由（センシティブ情報は伏字化して截断した文字列）を含む SHALL。
+この record は state.json の projection（history / steps / counters）を
 変更してはならない（MUST NOT）。
 
 #### Scenario: publish された checkpoint から未 publish commit を判別できる

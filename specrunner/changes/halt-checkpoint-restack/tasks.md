@@ -32,6 +32,8 @@
       `{ kind: "skipped"; reason: "no-branch" | "no-remote-tip" | "no-local-tip" | "no-delta" | "tree-build-failed" | "containment-violation" }`
       / `{ kind: "published"; restackedOid; parentOid; graft: "merged" | "skipped" | "failed" }`
       / `{ kind: "push-failed"; restackedOid; parentOid; stderr }`
+- [ ] `branch` パラメータが空文字列の場合は fetch を試みず即座に `skipped: no-branch` を返す
+      （`no-branch` の唯一のトリガー条件）
 - [ ] 手順 1（remote tip 解決, design D8）: `git fetch origin <branch>`（失敗は無視）→
       `git rev-parse refs/remotes/origin/<branch>^{commit}`。exitCode≠0 または stdout が空文字なら
       `skipped: no-remote-tip` を返す（**この早期 skip により既存 failure-path unit test が
@@ -181,7 +183,9 @@
       `checkpoint-restack` record が含まれ、`parentOid` / `unpublishedCommits` が
       実際の OID と一致することを assert する
 - [ ] TC（graft）: restack 成功後に `git merge-base --is-ancestor <restackedOid> HEAD` が真で、
-      作業 commit がローカル branch から到達可能であることを assert する
+      作業 commit がローカル branch から到達可能であることを assert する（TC-023）
+- [ ] TC（synthesizedCommits / TC-027）: state.json の `synthesizedCommits` 配列に
+      restack commit OID と graft merge commit OID の両方が含まれることを assert する
 - [ ] TC（受け入れ条件 3）: pre-receive がすべての push を拒否する fixture で、
       `commitFinalState` が throw せず（`resolves`）、ローカル branch tip が元の checkpoint commit の
       ままであることを assert する
