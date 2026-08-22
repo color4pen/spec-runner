@@ -98,8 +98,13 @@ export function createContextObserver(input: { provider: string; model?: string 
         // Exclude replayed messages from prior sessions
         if (msg["isReplay"] === true) return;
 
-        // Extract usage from message.usage
-        const usage = msg["usage"];
+        // Extract usage from message.message.usage.
+        // SDKAssistantMessage wraps the Anthropic SDK BetaMessage in a `message` field;
+        // usage lives at SDKAssistantMessage.message.usage (BetaMessage.usage), NOT at
+        // the top-level SDKAssistantMessage.usage which does not exist.
+        const innerMessage = msg["message"];
+        if (innerMessage === null || typeof innerMessage !== "object") return;
+        const usage = (innerMessage as Record<string, unknown>)["usage"];
         if (usage === null || typeof usage !== "object") return;
         const u = usage as Record<string, unknown>;
 

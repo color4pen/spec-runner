@@ -77,32 +77,39 @@ describe("TC-003: 複数 turn の assistant message から最大値を採る", (
     const observer = createContextObserver({ provider: "claude-code", model: "claude-sonnet-4-5" });
 
     // Turn 1: 50000 tokens
+    // SDKAssistantMessage wraps BetaMessage in `message` field; usage is at message.message.usage
     observer.observe({
       type: "assistant",
-      usage: {
-        input_tokens: 30000,
-        cache_read_input_tokens: 15000,
-        cache_creation_input_tokens: 5000,
+      message: {
+        usage: {
+          input_tokens: 30000,
+          cache_read_input_tokens: 15000,
+          cache_creation_input_tokens: 5000,
+        },
       },
     });
 
     // Turn 2: 80000 tokens (peak)
     observer.observe({
       type: "assistant",
-      usage: {
-        input_tokens: 50000,
-        cache_read_input_tokens: 20000,
-        cache_creation_input_tokens: 10000,
+      message: {
+        usage: {
+          input_tokens: 50000,
+          cache_read_input_tokens: 20000,
+          cache_creation_input_tokens: 10000,
+        },
       },
     });
 
     // Turn 3: 60000 tokens (not peak)
     observer.observe({
       type: "assistant",
-      usage: {
-        input_tokens: 40000,
-        cache_read_input_tokens: 15000,
-        cache_creation_input_tokens: 5000,
+      message: {
+        usage: {
+          input_tokens: 40000,
+          cache_read_input_tokens: 15000,
+          cache_creation_input_tokens: 5000,
+        },
       },
     });
 
@@ -116,10 +123,12 @@ describe("TC-003: 複数 turn の assistant message から最大値を採る", (
 
     observer.observe({
       type: "assistant",
-      usage: {
-        input_tokens: 10000,
-        cache_read_input_tokens: 5000,
-        cache_creation_input_tokens: 2000,
+      message: {
+        usage: {
+          input_tokens: 10000,
+          cache_read_input_tokens: 5000,
+          cache_creation_input_tokens: 2000,
+        },
       },
     });
 
@@ -137,14 +146,14 @@ describe("TC-004: sub-agent と replay の message は peak に数えない", ()
     // Regular assistant message first (to ensure peak starts)
     observer.observe({
       type: "assistant",
-      usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     });
 
     // Sub-agent message (has parent_tool_use_id) — should be excluded
     observer.observe({
       type: "assistant",
       parent_tool_use_id: "tool-use-abc123",
-      usage: { input_tokens: 500000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 500000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     });
 
     const metrics = observer.snapshot();
@@ -159,13 +168,13 @@ describe("TC-004: sub-agent と replay の message は peak に数えない", ()
     observer.observe({
       type: "assistant",
       isReplay: true,
-      usage: { input_tokens: 500000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 500000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     });
 
     // Regular message
     observer.observe({
       type: "assistant",
-      usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     });
 
     const metrics = observer.snapshot();
@@ -179,7 +188,7 @@ describe("TC-004: sub-agent と replay の message は peak に数えない", ()
     observer.observe({
       type: "assistant",
       parent_tool_use_id: null,
-      usage: { input_tokens: 25000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 25000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     });
 
     const metrics = observer.snapshot();
@@ -198,7 +207,7 @@ describe("TC-005: 同一 message を二重に数えない", () => {
 
     const msg = {
       type: "assistant",
-      usage: { input_tokens: 30000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 30000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     };
 
     observer.observe(msg);
@@ -288,14 +297,14 @@ describe("TC-008: 溢れ直前の観測値が exhaustionAtTokens になる", () 
   it("exhaustionAtTokens is the last observed active context value before markExhaustion", () => {
     const observer = createContextObserver({ provider: "claude-code" });
 
-    // Observe some turns
+    // Observe some turns — using correct SDKAssistantMessage structure (usage at message.message.usage)
     observer.observe({
       type: "assistant",
-      usage: { input_tokens: 100000, cache_read_input_tokens: 50000, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 100000, cache_read_input_tokens: 50000, cache_creation_input_tokens: 0 } },
     });
     observer.observe({
       type: "assistant",
-      usage: { input_tokens: 120000, cache_read_input_tokens: 60000, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 120000, cache_read_input_tokens: 60000, cache_creation_input_tokens: 0 } },
     });
 
     // Mark exhaustion (last observed was 180000 from second turn)
@@ -334,10 +343,10 @@ describe("TC-010: context 溢れ以外の失敗では exhaustionAtTokens を付�
   it("markExhaustion with non-exhaustion text does not set exhaustionAtTokens", () => {
     const observer = createContextObserver({ provider: "claude-code" });
 
-    // Observe a normal turn
+    // Observe a normal turn — using correct SDKAssistantMessage structure
     observer.observe({
       type: "assistant",
-      usage: { input_tokens: 50000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 50000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     });
 
     // Non-exhaustion error
@@ -403,7 +412,7 @@ describe("TC-027: observeResult が result message から contextWindow を抽�
     // Only observe an assistant message to ensure there's something to snapshot
     observer.observe({
       type: "assistant",
-      usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     });
 
     observer.observeResult({
@@ -420,7 +429,7 @@ describe("TC-027: observeResult が result message から contextWindow を抽�
 
     observer.observe({
       type: "assistant",
-      usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     });
 
     observer.observeResult({
@@ -443,8 +452,8 @@ describe("Additional edge cases", () => {
   it("ignores non-assistant, non-compact_boundary message types", () => {
     const observer = createContextObserver({ provider: "claude-code" });
 
-    observer.observe({ type: "user", usage: { input_tokens: 100000 } });
-    observer.observe({ type: "tool_use", usage: { input_tokens: 100000 } });
+    observer.observe({ type: "user", message: { usage: { input_tokens: 100000 } } });
+    observer.observe({ type: "tool_use", message: { usage: { input_tokens: 100000 } } });
     observer.observe({ type: "result", subtype: "success" });
     observer.observe({ type: "system", subtype: "other_event" });
 
@@ -457,7 +466,7 @@ describe("Additional edge cases", () => {
 
     observer.observe({
       type: "assistant",
-      usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     });
 
     const metrics = observer.snapshot();
@@ -470,7 +479,7 @@ describe("Additional edge cases", () => {
 
     observer.observe({
       type: "assistant",
-      usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 10000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     });
 
     const metrics = observer.snapshot();
@@ -478,11 +487,21 @@ describe("Additional edge cases", () => {
     expect("model" in metrics!).toBe(false);
   });
 
-  it("handles assistant message with no usage field gracefully", () => {
+  it("handles assistant message with no message field gracefully", () => {
     const observer = createContextObserver({ provider: "claude-code" });
 
-    // No usage field
+    // No message field (top-level usage would also not work — must be nested)
     observer.observe({ type: "assistant" });
+
+    const metrics = observer.snapshot();
+    expect(metrics).toBeUndefined();
+  });
+
+  it("handles assistant message with message field but no usage gracefully", () => {
+    const observer = createContextObserver({ provider: "claude-code" });
+
+    // message field present but no usage inside
+    observer.observe({ type: "assistant", message: {} });
 
     const metrics = observer.snapshot();
     expect(metrics).toBeUndefined();
@@ -508,7 +527,7 @@ describe("Additional edge cases", () => {
 
     observer.observe({
       type: "assistant",
-      usage: { input_tokens: 187000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 },
+      message: { usage: { input_tokens: 187000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
     });
 
     observer.markExhaustion("Claude Code returned an error result: Prompt is too long");

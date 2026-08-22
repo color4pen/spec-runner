@@ -127,7 +127,8 @@ function makeSuccessResult(sessionId = "sess-ctx-1", modelName = "claude-sonnet-
   } as unknown;
 }
 
-// Helper: build an assistant message with usage data
+// Helper: build an assistant message with usage data.
+// SDKAssistantMessage wraps BetaMessage in a `message` field; usage lives at message.message.usage.
 function makeAssistantMessage(usage: {
   input_tokens?: number;
   cache_read_input_tokens?: number;
@@ -135,10 +136,12 @@ function makeAssistantMessage(usage: {
 }) {
   return {
     type: "assistant" as const,
-    usage: {
-      input_tokens: usage.input_tokens ?? 0,
-      cache_read_input_tokens: usage.cache_read_input_tokens ?? 0,
-      cache_creation_input_tokens: usage.cache_creation_input_tokens ?? 0,
+    message: {
+      usage: {
+        input_tokens: usage.input_tokens ?? 0,
+        cache_read_input_tokens: usage.cache_read_input_tokens ?? 0,
+        cache_creation_input_tokens: usage.cache_creation_input_tokens ?? 0,
+      },
     },
     // No parent_tool_use_id (main agent), not a replay
   } as unknown;
