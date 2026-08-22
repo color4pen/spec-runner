@@ -6,8 +6,6 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
-import { EventEmitter } from "node:events";
-import type { SpawnOptions } from "node:child_process";
 
 import { commitFinalState } from "../commit-push.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../util/spawn.js";

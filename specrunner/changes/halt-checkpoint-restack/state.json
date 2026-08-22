@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "a3a7b448-7124-4c08-a727-e4cc46224c6f",
   "createdAt": "2026-08-22T01:30:39.186Z",
-  "updatedAt": "2026-08-22T05:50:29.522Z",
+  "updatedAt": "2026-08-22T06:09:40.437Z",
   "request": {
     "title": "halt checkpoint を未 push 作業 commit から分離して publish する",
     "type": "spec-change",
@@ -84,7 +84,9 @@
     "b9c297fc50318afed59a9961de0df8bffe6b0cf1",
     "41a8da353b2a53eff23ed88e51747c3b75a56cb2",
     "5a50061ff80451b02dfe7e5093ba16b98bc7a80a",
-    "1325d2da2bf0254cc1071b562ec82c5c93735b3d"
+    "1325d2da2bf0254cc1071b562ec82c5c93735b3d",
+    "401d4ccdac1228d556d4dae0d9835a8236a7de4f",
+    "9226f8115f93a6d20c00cedc4373c2fa28dece4d"
   ],
   "touchedFiles": {
     "request-review": [
@@ -131,7 +133,19 @@
     ],
     "spec-fixer": [],
     "implementer": [
-      "src/core/step/__tests__/checkpoint-restack.test.ts"
+      "src/core/verification/changed-line-coverage.ts",
+      "src/core/verification/changed-lines.ts",
+      "src/core/verification/runner.ts",
+      ".specrunner/config.json",
+      "src/core/step/verification.ts",
+      "tests/unit/core/verification/changed-line-coverage.test.ts",
+      "tests/unit/core/verification/changed-line-coverage-type-only.test.ts",
+      "src/core/verification/lockfile-sync.ts",
+      "tests/unit/core/verification/changed-lines.test.ts",
+      "tests/unit/core/verification/changed-lines-filelist.test.ts",
+      "src/core/step/__tests__/commit-push-egress-invariant.test.ts",
+      "tests/unit/core/verification/changed-lines-origin-fallback.test.ts",
+      "src/core/step/__tests__/commit-push-restack-integration.test.ts"
     ],
     "code-review": [
       "src/core/step/checkpoint-restack.ts",
@@ -220,16 +234,16 @@
     }
   ],
   "_journal": {
-    "historyCount": 95,
+    "historyCount": 103,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
       "spec-fixer": 1,
-      "implementer": 2,
+      "implementer": 3,
       "bite-evidence": 1,
-      "verification": 3,
+      "verification": 4,
       "code-review": 1,
       "code-fixer": 3,
       "cross-boundary-invariants": 3,
