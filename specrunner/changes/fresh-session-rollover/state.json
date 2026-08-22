@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-22T22:46:47.604Z",
+  "updatedAt": "2026-08-22T22:49:46.718Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -66,7 +66,8 @@
   "synthesizedCommits": [
     "9e3aa4c8e92e0932f255fca2f822a8915718e418",
     "a5d1ab989b63ba58a79c7176dc0310d502865d01",
-    "4c609ebee818f6149299bb8a9e1900abe25a8542"
+    "4c609ebee818f6149299bb8a9e1900abe25a8542",
+    "190859033f2a5d604d0226a0b4a7e497e08fc40a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -94,13 +95,15 @@
       "src/core/event/types.ts",
       "src/core/usage/types.ts",
       "src/adapter/claude-code/completion-directive.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
