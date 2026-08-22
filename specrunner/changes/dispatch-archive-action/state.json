@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
   "createdAt": "2026-08-21T22:28:13.507Z",
-  "updatedAt": "2026-08-21T22:35:45.512Z",
+  "updatedAt": "2026-08-22T00:13:56.307Z",
   "request": {
     "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "request-review",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/dispatch-archive-action-c2c7ba44",
   "error": null,
   "pipelineId": "standard",
@@ -81,13 +81,17 @@
       "src/core/archive/__tests__/plain-archive.test.ts"
     ]
   },
-  "resumePoint": {
-    "step": "request-review",
-    "reason": "request-review escalated",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "request-review escalation への operator 裁定: 選択肢 B を採用。runAttachVerification に fetch 済み checkpointOid を受け取る任意入力を追加し、指定時は fetch / rev-parse を省略して checkpoint 読み込みと verifyCheckpoint（generic integrity + policy + identity）のみを実行する。archive-from-issue の pull ref fallback 経路はこのオプションで検証を通す。resume --from-issue / job attach --branch の既存経路は OID を渡さず現行動作のまま。実装範囲に archive-from-issue.ts と orchestrator の該当拡張を含め、受け入れ条件の「branch 削除済みシナリオ」は ephemeral（local state 無し）の end-to-end で固定すること。\n",
+      "step": "request-review",
+      "recordedAt": "2026-08-22T00:13:56.089Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 4,
+    "historyCount": 6,
     "stepCounts": {
       "request-review": 1
     }
