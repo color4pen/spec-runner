@@ -278,10 +278,10 @@ describe("TC-R03: reopen branch requires from and reason", () => {
 });
 
 // ---------------------------------------------------------------------------
-// TC-R04: reopen canon_patch is a dirty apply (no --apply-canon, no commit)
+// TC-R04: reopen canon_patch is committed as operator-apply and pushed before reopen
 // ---------------------------------------------------------------------------
 
-describe("TC-R04: reopen canon_patch is a dirty apply", () => {
+describe("TC-R04: reopen canon_patch is committed as operator-apply and pushed", () => {
   let branches: Map<string, string[]>;
 
   beforeAll(() => {
@@ -296,14 +296,24 @@ describe("TC-R04: reopen canon_patch is a dirty apply", () => {
     expect(body).toContain("apply --whitespace=nowarn");
   });
 
-  it("does not use --apply-canon and does not commit in the reopen branch", () => {
+  it("commits the canon as operator-apply and pushes before job reopen", () => {
+    // dirty のままでは step 境界の write-scope 検査が canon 変更を step に誤帰属して
+    // halt する (実測: run 32569597460)。commit + push が reopen より先にあることを固定する
+    const body = reopenBranchBody(branches);
+    const commitIdx = body.indexOf('commit -m "operator-apply: $SLUG"');
+    const pushIdx = body.indexOf('push origin "HEAD:refs/heads/$BRANCH"');
+    const reopenIdx = body.indexOf("job reopen");
+    expect(commitIdx).toBeGreaterThanOrEqual(0);
+    expect(pushIdx).toBeGreaterThan(commitIdx);
+    expect(reopenIdx).toBeGreaterThan(pushIdx);
+  });
+
+  it("does not use --apply-canon (reopen CLI contract rejects it)", () => {
     // comment lines explain the CLI contract and may name the flag — exclude them
     const codeLines = reopenBranchBody(branches)
       .split("\n")
       .filter((l) => !l.trim().startsWith("#"))
       .join("\n");
     expect(codeLines).not.toContain("--apply-canon");
-    expect(codeLines).not.toContain("git commit");
-    expect(codeLines).not.toContain('git -C "$WT" commit');
   });
 });
