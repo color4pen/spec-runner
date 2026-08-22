@@ -526,6 +526,9 @@ export class StepExecutor {
       invocationMetrics: runResult.invocationMetrics,
       // agent-context-observability: forward context metrics from the agent runner.
       ...(runResult.contextMetrics !== undefined ? { contextMetrics: runResult.contextMetrics } : {}),
+      // fresh-session-rollover: forward rollover observation records so CommitOrchestrator
+      // can append contextOnly entries to usage.json for each discarded session.
+      ...(runResult.sessionRollovers && runResult.sessionRollovers.length > 0 ? { sessionRollovers: runResult.sessionRollovers } : {}),
       ...(commitOid !== undefined ? { commitOid } : {}),
       ...(runResult.touchedFiles !== undefined ? { touchedFiles: runResult.touchedFiles } : {}),
     };
