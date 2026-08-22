@@ -23,6 +23,30 @@
       "durationMs": 230873,
       "durationApiMs": 231211,
       "totalCostUsd": 0.8776540500000002
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-22T14:03:33.308Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 11517,
+          "outputTokens": 24,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-opus-5": {
+          "inputTokens": 102,
+          "outputTokens": 51519,
+          "cacheReadInputTokens": 4894214,
+          "cacheCreationInputTokens": 162845
+        }
+      },
+      "jobId": "f6d2e71c-5ff1-4454-ad35-1073cc427a7f",
+      "stepName": "design",
+      "numTurns": 59,
+      "durationMs": 740477,
+      "durationApiMs": 735437,
+      "totalCostUsd": 2.8636609500000003
     }
   ]
 }
