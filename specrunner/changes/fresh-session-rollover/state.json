@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-22T22:31:54.667Z",
+  "updatedAt": "2026-08-22T22:46:47.604Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -65,7 +65,8 @@
   "inboxOrigin": true,
   "synthesizedCommits": [
     "9e3aa4c8e92e0932f255fca2f822a8915718e418",
-    "a5d1ab989b63ba58a79c7176dc0310d502865d01"
+    "a5d1ab989b63ba58a79c7176dc0310d502865d01",
+    "4c609ebee818f6149299bb8a9e1900abe25a8542"
   ],
   "touchedFiles": {
     "request-review": [
@@ -81,12 +82,25 @@
       "src/core/step/step-halt.ts",
       "src/kernel/context-metrics.ts",
       "src/core/usage/types.ts"
+    ],
+    "design": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "src/kernel/context-metrics.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/shared/transient-error.ts",
+      "src/core/step/step-halt.ts",
+      "src/kernel/event-types.ts",
+      "src/core/event/types.ts",
+      "src/core/usage/types.ts",
+      "src/adapter/claude-code/completion-directive.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
