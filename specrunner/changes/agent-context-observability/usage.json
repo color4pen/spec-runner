@@ -263,6 +263,30 @@
       "durationMs": 437336,
       "durationApiMs": 377199,
       "totalCostUsd": 1.4844814000000002
+    },
+    {
+      "command": "job",
+      "timestamp": "2026-08-22T15:36:56.284Z",
+      "modelUsage": {
+        "claude-haiku-4-5-20251001": {
+          "inputTokens": 9656,
+          "outputTokens": 29,
+          "cacheReadInputTokens": 0,
+          "cacheCreationInputTokens": 0
+        },
+        "claude-sonnet-4-6": {
+          "inputTokens": 10,
+          "outputTokens": 7425,
+          "cacheReadInputTokens": 212958,
+          "cacheCreationInputTokens": 34283
+        }
+      },
+      "jobId": "f6d2e71c-5ff1-4454-ad35-1073cc427a7f",
+      "stepName": "regression-gate",
+      "numTurns": 12,
+      "durationMs": 127728,
+      "durationApiMs": 127990,
+      "totalCostUsd": 0.31365465
     }
   ]
 }

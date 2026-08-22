@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f6d2e71c-5ff1-4454-ad35-1073cc427a7f",
   "createdAt": "2026-08-22T13:47:16.472Z",
-  "updatedAt": "2026-08-22T15:34:47.809Z",
+  "updatedAt": "2026-08-22T15:36:57.560Z",
   "request": {
     "title": "agent session の active context / compaction を計測可能にする",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/agent-context-observability-f6d2e71c",
   "error": null,
@@ -76,7 +76,8 @@
     "c0c0d97106984ee653cbcb5888d1cb288c425bfc",
     "c7838755911171522dd1b71baae62af728df24cc",
     "814f9ebf533d0367187672ff629ba13d1d594c27",
-    "be55a70943baaf2955821cd73cebddb0af2f6f52"
+    "be55a70943baaf2955821cd73cebddb0af2f6f52",
+    "9d2b218c2d851db75fbc91072621de29a7db3265"
   ],
   "touchedFiles": {
     "request-review": [
@@ -249,7 +250,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 57,
+    "historyCount": 62,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -263,7 +264,7 @@
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,
-      "regression-gate": 1,
+      "regression-gate": 2,
       "code-fixer": 1
     }
   }
