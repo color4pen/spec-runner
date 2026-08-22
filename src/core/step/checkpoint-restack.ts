@@ -190,9 +190,15 @@ export async function restackCheckpointOntoPublishedTip(params: {
       }
     }
 
+    // Early exit: no local tip means we cannot build a restack tree and there
+    // is no valid localTipOid to include in the journal record (CheckpointRestackRecord
+    // requires a non-empty 40-char SHA per spec). Skip both record and tree build.
+    if (localTipFailed) {
+      return { kind: "skipped", reason: "no-local-tip" };
+    }
+
     // ── Step 3: journal record BEFORE tree construction (D5) ────────────────
-    // Appended here (after localTipOid resolution, before no-local-tip early exit)
-    // so that the restack attempt is journaled even on partial-failure paths.
+    // Appended after localTipOid is confirmed valid (non-empty).
     // The reason field is sanitized via maskSensitive (D5).
     const reason = maskSensitive(pushFailureStderr).slice(0, 500);
     const restackRecord: CheckpointRestackRecord = {
@@ -213,11 +219,6 @@ export async function restackCheckpointOntoPublishedTip(params: {
           `Warning: checkpoint-restack: journal append failed for ${slug}: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
-    }
-
-    // Early exit after journal record: no local tip means we cannot build a restack tree.
-    if (localTipFailed) {
-      return { kind: "skipped", reason: "no-local-tip" };
     }
 
     // ── Step 4: tree construction via temp index (D3) ────────────────────────

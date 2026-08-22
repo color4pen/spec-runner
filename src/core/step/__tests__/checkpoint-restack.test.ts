@@ -496,10 +496,14 @@ describe("TC-029: reason field is masked by maskSensitive", () => {
       capturedRecord = r;
     });
 
+    // recordRestack is only called when localTipOid is valid (non-empty 40-char SHA).
+    // Use LOCAL_TIP as a valid HEAD; let read-tree fail to terminate early after journaling.
     const { fn } = makeFakeSpawnFn([
-      { exitCode: 0, stdout: "" },                 // fetch
-      { exitCode: 0, stdout: PARENT_OID + "\n" }, // rev-parse remote
-      { exitCode: 0, stdout: "" },                 // rev-parse HEAD → empty → no-local-tip
+      { exitCode: 0, stdout: "" },                  // fetch
+      { exitCode: 0, stdout: PARENT_OID + "\n" },   // rev-parse remote
+      { exitCode: 0, stdout: LOCAL_TIP + "\n" },    // rev-parse HEAD → valid local tip
+      { exitCode: 0, stdout: "" },                  // rev-list → no unpublished commits
+      { exitCode: 1, stderr: "read-tree error\n" }, // read-tree → fail → tree-build-failed (early exit after journal)
     ]);
 
     await restackCheckpointOntoPublishedTip({
@@ -518,6 +522,34 @@ describe("TC-029: reason field is masked by maskSensitive", () => {
     expect(capturedRecord!.reason).not.toContain("ABCDEFGH1234567890123456789012345");
     // The prefix should still be there (masked as "sk-ant-...")
     expect(capturedRecord!.reason).toContain("sk-ant-...");
+  });
+
+  it("TC-029-b: recordRestack is NOT called when rev-parse HEAD fails (no-local-tip)", async () => {
+    // Per F-01: CheckpointRestackRecord.localTipOid must be a non-empty 40-char SHA.
+    // When localTipFailed, we skip journaling to avoid writing a semantically invalid record.
+    const recordRestack = vi.fn();
+
+    const { fn } = makeFakeSpawnFn([
+      { exitCode: 0, stdout: "" },                 // fetch
+      { exitCode: 0, stdout: PARENT_OID + "\n" }, // rev-parse remote
+      { exitCode: 0, stdout: "" },                 // rev-parse HEAD → empty → no-local-tip
+    ]);
+
+    const outcome = await restackCheckpointOntoPublishedTip({
+      cwd: CWD,
+      branch: BRANCH,
+      slug: SLUG,
+      spawnFn: fn,
+      messageLabel: "checkpoint",
+      pushFailureStderr: "some error",
+      recordRestack,
+    });
+
+    expect(outcome.kind).toBe("skipped");
+    if (outcome.kind === "skipped") {
+      expect(outcome.reason).toBe("no-local-tip");
+    }
+    expect(recordRestack).not.toHaveBeenCalled();
   });
 });
 

@@ -914,6 +914,9 @@ export async function commitFinalState(params: {
           `at ${restackOutcome.restackedOid} (parent: ${restackOutcome.parentOid}, ` +
           `${restackOutcome.unpublishedCount} unpublished commit(s), graft: ${restackOutcome.graft})`,
       );
+      stderrWrite(
+        `Warning: checkpoint-restack: 以降の push も同じ理由で拒否される可能性がある。ローカル branch を手当てしてから resume すること`,
+      );
       break;
     case "push-failed":
       stderrWrite(

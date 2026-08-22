@@ -454,7 +454,7 @@ export function fold(content: string): FoldResult {
     lineage: lineageRecords,
     operatorEvents: operatorEventRecords,
     findingRecency: findingRecencyRecords,
-    ...(checkpointRestackRecords.length > 0 ? { checkpointRestacks: checkpointRestackRecords } : {}),
+    checkpointRestacks: checkpointRestackRecords,
     ...(lastInterruption !== undefined ? { lastInterruption } : {}),
     ...(corruption !== undefined ? { corruption } : {}),
   };
