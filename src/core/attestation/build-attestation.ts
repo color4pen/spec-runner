@@ -144,8 +144,10 @@ export function buildAttestation(input: AttestationInput): Attestation {
 
     for (const inv of invocations) {
       if (inv.modelUsage === null) {
-        // No usage data — cost stays null direction
-        stepHasUnpriced = true;
+        // Halt entry (context metrics observed, no model usage) — skip for cost computation.
+        // modelUsage: null entries are written by halt paths (post-success drift / output-gate /
+        // commit-fail / context exhaustion) and must NOT set stepHasUnpriced, which would
+        // suppress priced entries from retry-success invocations in the same step.
         continue;
       }
 

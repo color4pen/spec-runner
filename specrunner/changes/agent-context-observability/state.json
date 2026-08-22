@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f6d2e71c-5ff1-4454-ad35-1073cc427a7f",
   "createdAt": "2026-08-22T13:47:16.472Z",
-  "updatedAt": "2026-08-22T19:20:16.160Z",
+  "updatedAt": "2026-08-22T19:24:50.307Z",
   "request": {
     "title": "agent session の active context / compaction を計測可能にする",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/agent-context-observability-f6d2e71c",
   "error": null,
@@ -86,7 +86,8 @@
     "3c4d1fe3a13c454a09bef69152cedecf6f0ad73d",
     "9d233545a8836c7f9790593d2b0fd1faa5a3cbc4",
     "1b257ea2733fb6360f7dc1a70fd17fcdbe9805fc",
-    "d6a42c60c2bea7715270fc0419b9618e1145c189"
+    "d6a42c60c2bea7715270fc0419b9618e1145c189",
+    "f2b7329f4401cb7776b5abc504c067e51cf5d1b7"
   ],
   "touchedFiles": {
     "request-review": [
@@ -181,8 +182,12 @@
       "tests/unit/adapter/claude-code/agent-runner-context-metrics.test.ts"
     ],
     "regression-gate": [
+      "src/core/step/step-halt.ts",
       "src/core/step/commit-orchestrator.ts",
-      "src/adapter/claude-code/agent-runner.ts"
+      "src/core/step/executor.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "src/core/attestation/build-attestation.ts"
     ],
     "code-fixer": [
       "src/core/step/step-halt.ts",
@@ -253,7 +258,7 @@
     "createdAt": "2026-08-22T16:09:28.352Z"
   },
   "_journal": {
-    "historyCount": 111,
+    "historyCount": 115,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -267,7 +272,7 @@
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
       "custom-reviewers": 3,
-      "regression-gate": 2,
+      "regression-gate": 3,
       "code-fixer": 3,
       "conformance": 2,
       "adr-gen": 1,

@@ -1041,9 +1041,17 @@ export class ClaudeCodeRunner implements AgentRunner {
           };
           // Remove MCP server from retry options to avoid re-registering
           // (the closure is still active so tool calls will be captured)
-          await runFollowUpQueryWithRetry(retryPrompt, retryOptions);
+          const retryLastResult = await runFollowUpQueryWithRetry(retryPrompt, retryOptions);
           followUpAttempts++;
           reportRetry++;
+
+          // agent-context-observability: observe non-success result and mark exhaustion for
+          // report_result retry turns (mirrors postWork and output-repair paths).
+          if (retryLastResult && retryLastResult.subtype !== "success") {
+            contextObserver.observeResult(retryLastResult as Record<string, unknown>);
+            const retryErrorJoined = ((retryLastResult as SDKResultMessage & { errors?: string[] }).errors ?? []).join(" ").trim();
+            if (retryErrorJoined) contextObserver.markExhaustion(retryErrorJoined);
+          }
 
           if (capturedToolResult !== null) break;
 
