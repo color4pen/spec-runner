@@ -536,3 +536,88 @@ describe("Additional edge cases", () => {
     expect(metrics!.exhaustionAtTokens).toBe(187000);
   });
 });
+
+// ─── TC-042: 観測済み invocation では compactionCount 0 が明示される ────────────
+
+describe("TC-042: 観測済み invocation では compactionCount 0 が明示される", () => {
+  it("compactionCount is 0 when active context is observed but no compact_boundary events occur", () => {
+    const observer = createContextObserver({ provider: "claude-code" });
+
+    // Active context observed, no compaction boundary
+    observer.observe({
+      type: "assistant",
+      message: { usage: { input_tokens: 50000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
+    });
+
+    const metrics = observer.snapshot();
+    expect(metrics).toBeDefined();
+    // TC-042: explicitly 0, not undefined — distinguishes "0 observed" from "unavailable"
+    expect(metrics!.compactionCount).toBe(0);
+    expect(metrics!.peakActiveContextTokens).toBe(50000);
+  });
+
+  it("compactionCount is 0 when only contextWindow is observed (observeResult with no compaction)", () => {
+    const observer = createContextObserver({ provider: "claude-code", model: "claude-sonnet-4-5" });
+
+    // Context window observed via observeResult, no assistant messages, no compaction
+    observer.observeResult({
+      modelUsage: {
+        "claude-sonnet-4-5": { contextWindow: 200000 },
+      },
+    });
+
+    const metrics = observer.snapshot();
+    expect(metrics).toBeDefined();
+    expect(metrics!.contextWindowTokens).toBe(200000);
+    // TC-042: compactionCount is 0, not undefined
+    expect(metrics!.compactionCount).toBe(0);
+  });
+
+  it("snapshot() still returns undefined when no observations at all (zero-observation contract unchanged)", () => {
+    const observer = createContextObserver({ provider: "claude-code", model: "claude-sonnet-4-5" });
+
+    // No calls to observe() or observeResult()
+    const metrics = observer.snapshot();
+    // TC-042: observation-zero invocation → snapshot() MUST return undefined, not {} or { compactionCount: 0 }
+    expect(metrics).toBeUndefined();
+  });
+
+  it("compactionCount stays at the observed non-zero value when compaction events occurred", () => {
+    const observer = createContextObserver({ provider: "claude-code" });
+
+    // Active context + actual compaction events
+    observer.observe({
+      type: "assistant",
+      message: { usage: { input_tokens: 50000, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 } },
+    });
+    observer.observe({
+      type: "system",
+      subtype: "compact_boundary",
+      compact_metadata: { pre_tokens: 80000, post_tokens: 20000 },
+    });
+
+    const metrics = observer.snapshot();
+    // The actual observed count (1), not 0
+    expect(metrics!.compactionCount).toBe(1);
+    expect(metrics!.contextTokensBeforeCompaction).toBe(80000);
+    expect(metrics!.contextTokensAfterCompaction).toBe(20000);
+  });
+
+  it("compactionCount is set when ONLY compaction events occurred (no assistant messages, no contextWindow)", () => {
+    const observer = createContextObserver({ provider: "claude-code" });
+
+    // Only a compaction event — no assistant messages, no result with contextWindow
+    observer.observe({
+      type: "system",
+      subtype: "compact_boundary",
+      compact_metadata: { pre_tokens: 100000, post_tokens: 30000 },
+    });
+
+    const metrics = observer.snapshot();
+    expect(metrics).toBeDefined();
+    // compactionCount is the observed value (1), not overridden to 0
+    // (because neither peakActiveContextTokens nor contextWindowTokens was observed,
+    //  the "set 0 if absent" logic does not apply)
+    expect(metrics!.compactionCount).toBe(1);
+  });
+});

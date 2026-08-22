@@ -302,6 +302,7 @@ export function makeOutputGateHalt(
   stepName: string,
   branch: string | null,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
+  contextMetrics?: AgentContextMetrics,
 ): StepHalt & { kind: "failed" } {
   const violationPaths = violations.map((v) =>
     v.kind === "tasks-complete"
@@ -333,6 +334,9 @@ export function makeOutputGateHalt(
       status: "error",
       message: `${stepName} failed: ${error.code} — ${error.message}`,
     },
+    // agent-context-observability: carry context metrics from the successful runner invocation
+    // so that commitHalt can persist them even when the halt is due to a post-success guard.
+    ...(contextMetrics !== undefined ? { contextMetrics } : {}),
   };
 }
 
@@ -351,13 +355,22 @@ export function makeCommitFailHalt(
   err: Error & { code?: string; hint?: string },
   _stepName: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
+  contextMetrics?: AgentContextMetrics,
 ): StepHalt & { kind: "failed" } {
   const error: ErrorInfo = {
     code: err.code ?? "COMMIT_AND_PUSH_FAILED",
     message: err.message,
     hint: err.hint ?? "",
   };
-  return { kind: "failed", error, thrownErr: err, recordOpts };
+  return {
+    kind: "failed",
+    error,
+    thrownErr: err,
+    recordOpts,
+    // agent-context-observability: carry context metrics from the successful runner invocation
+    // so that commitHalt can persist them even when the halt is due to a post-success commit failure.
+    ...(contextMetrics !== undefined ? { contextMetrics } : {}),
+  };
 }
 
 // ---------------------------------------------------------------------------

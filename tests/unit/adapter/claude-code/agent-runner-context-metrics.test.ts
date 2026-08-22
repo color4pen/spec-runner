@@ -514,3 +514,129 @@ describe("TC-029: postWork ターンの compaction も contextMetrics.compaction
     expect(result.contextMetrics!.compactionCount).toBe(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-044: output-repair ターンの context 溢れで exhaustionAtTokens が設定される
+// ---------------------------------------------------------------------------
+
+describe("TC-044: output-repair ターンの context 溢れで exhaustionAtTokens が設定される", () => {
+  it("exhaustionAtTokens is set when output-repair turn throws a context exhaustion error", async () => {
+    let callCount = 0;
+
+    const repairQueryFn: QueryFn = async function* () {
+      callCount++;
+
+      if (callCount === 1) {
+        // Main work: observe active context (100000 tokens), then return success with session_id
+        yield makeAssistantMessage({ input_tokens: 100000 });
+        yield makeSuccessResult("sess-repair-throw-1");
+      } else {
+        // Output-repair turn: throw context exhaustion error (adapter's catch path marks exhaustion)
+        throw new Error("Prompt is too long for this model's context window");
+      }
+    } as unknown as QueryFn;
+
+    let detectCallCount = 0;
+    // Output verification mock: first detect() returns 1 follow-up violation to trigger repair.
+    // The repair call then throws with "Prompt is too long", which markExhaustion picks up.
+    const outputVerification = {
+      maxAttempts: 2,
+      detect: async () => {
+        detectCallCount++;
+        if (detectCallCount === 1) {
+          // Return one follow-up violation — triggers the repair turn
+          return {
+            violations: [
+              { kind: "produced" as const, path: "output.md", policy: "follow-up" as const, detail: [] },
+            ],
+          };
+        }
+        // After the repair attempt, no more violations
+        return { violations: [] as Array<{ kind: "produced"; path: string; policy: "follow-up"; detail: string[] }> };
+      },
+      buildPrompt: (_violations: unknown, _attempt: number) => "Please produce the required output.",
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: repairQueryFn });
+    const result = await runner.run(
+      makeCtx(tempDir, {
+        policy: { outputVerification },
+      }),
+    );
+
+    // The main invocation still succeeds (repair failure is best-effort, logged and continued)
+    expect(result.completionReason).toBe("success");
+    expect(callCount).toBe(2); // main work + repair attempt
+
+    expect(result.contextMetrics).toBeDefined();
+    // TC-044: exhaustionAtTokens must be set to the last observed active context (100000 from main work)
+    expect(result.contextMetrics!.exhaustionAtTokens).toBe(100000);
+    expect(result.contextMetrics!.peakActiveContextTokens).toBe(100000);
+  });
+
+  it("exhaustionAtTokens is set when output-repair turn returns non-success result with context exhaustion error", async () => {
+    let callCount = 0;
+
+    const repairErrorQueryFn: QueryFn = async function* () {
+      callCount++;
+
+      if (callCount === 1) {
+        // Main work: observe active context, then return success
+        yield makeAssistantMessage({ input_tokens: 185000, cache_read_input_tokens: 5000 });
+        yield makeSuccessResult("sess-repair-nserr-1");
+      } else {
+        // Output-repair turn: return a non-success result with context exhaustion error text
+        yield {
+          type: "result" as const,
+          subtype: "error_during_execution" as const,
+          is_error: true,
+          stop_reason: null,
+          errors: ["context window exceeded for this request"],
+          modelUsage: {},
+          usage: {
+            input_tokens: 0,
+            output_tokens: 0,
+            cache_creation_input_tokens: 0,
+            cache_read_input_tokens: 0,
+            server_tool_use_input_tokens: 0,
+          },
+          permission_denials: [],
+          uuid: "test-uuid-repair-nserr",
+          session_id: "sess-repair-nserr-1",
+        } as unknown;
+      }
+    } as unknown as QueryFn;
+
+    let detectCallCount2 = 0;
+    const outputVerification2 = {
+      maxAttempts: 2,
+      detect: async () => {
+        detectCallCount2++;
+        if (detectCallCount2 === 1) {
+          return {
+            violations: [
+              { kind: "produced" as const, path: "output.md", policy: "follow-up" as const, detail: [] },
+            ],
+          };
+        }
+        return { violations: [] as Array<{ kind: "produced"; path: string; policy: "follow-up"; detail: string[] }> };
+      },
+      buildPrompt: (_violations: unknown, _attempt: number) => "Repair output.",
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: repairErrorQueryFn });
+    const result = await runner.run(
+      makeCtx(tempDir, {
+        policy: { outputVerification: outputVerification2 },
+      }),
+    );
+
+    expect(result.completionReason).toBe("success");
+    expect(callCount).toBe(2);
+
+    expect(result.contextMetrics).toBeDefined();
+    // TC-044: exhaustionAtTokens = last observed active context = 185000 + 5000 = 190000
+    expect(result.contextMetrics!.exhaustionAtTokens).toBe(190000);
+    expect(result.contextMetrics!.peakActiveContextTokens).toBe(190000);
+  });
+});

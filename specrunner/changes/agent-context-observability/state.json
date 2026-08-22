@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f6d2e71c-5ff1-4454-ad35-1073cc427a7f",
   "createdAt": "2026-08-22T13:47:16.472Z",
-  "updatedAt": "2026-08-22T16:09:28.941Z",
+  "updatedAt": "2026-08-22T18:32:44.018Z",
   "request": {
     "title": "agent session の active context / compaction を計測可能にする",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "pr-create",
-  "status": "awaiting-archive",
+  "step": "implementer",
+  "status": "running",
   "branch": "feat/agent-context-observability-f6d2e71c",
   "error": null,
   "pipelineId": "standard",
@@ -276,7 +276,7 @@
     "createdAt": "2026-08-22T16:09:28.352Z"
   },
   "_journal": {
-    "historyCount": 84,
+    "historyCount": 86,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

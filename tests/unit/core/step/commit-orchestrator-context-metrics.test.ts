@@ -605,3 +605,221 @@ describe("TC-031: StepExecutionResult success variant includes contextMetrics", 
     expect(halt.contextMetrics!.peakActiveContextTokens).toBe(70000);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-040: agent 成功後の output contract halt でも contextMetrics が usage.json に残る
+// ---------------------------------------------------------------------------
+
+describe("TC-040: agent 成功後の output contract halt でも contextMetrics が usage.json に残る", () => {
+  it("output gate halt with contextMetrics writes modelUsage:null entry to usage.json", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("implementer");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    // Simulate an output contract halt that carries contextMetrics from a successful runner invocation.
+    // makeOutputGateHalt now accepts an optional contextMetrics parameter (TC-040 implementation).
+    const contextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      model: "claude-sonnet-4-5",
+      peakActiveContextTokens: 150000,
+      compactionCount: 0,
+    };
+
+    // Construct the halt as makeOutputGateHalt would produce it (with contextMetrics forwarded
+    // from the successful runResult)
+    const halt: StepHalt = {
+      kind: "failed",
+      error: {
+        code: "STEP_OUTPUT_MISSING",
+        message: "Step 'implementer' output contract(s) not satisfied: specrunner/changes/test-ctx-metrics-slug/spec.md",
+        hint: "Required step output(s) missing or incomplete.",
+      },
+      thrownErr: Object.assign(
+        new Error("Step 'implementer' output contract(s) not satisfied"),
+        { code: "STEP_OUTPUT_MISSING" },
+      ),
+      recordOpts: { startedAt: "2026-01-01T00:00:00.000Z" },
+      history: {
+        step: "implementer-failed",
+        status: "error",
+        message: "implementer failed: STEP_OUTPUT_MISSING — output missing",
+      },
+      contextMetrics,
+    };
+
+    try {
+      await orchestrator.commitHalt(step, state, halt, deps);
+    } catch {
+      // Expected throw from attachStateAndRethrow
+    }
+
+    const usageFile = await readUsageFile(usagePath);
+    // One entry added by commitHalt for the halt's contextMetrics
+    expect(usageFile.commandInvocations).toHaveLength(1);
+
+    const inv = usageFile.commandInvocations[0]!;
+
+    // TC-040: modelUsage MUST be null (halt entry)
+    expect(inv.modelUsage).toBeNull();
+
+    // TC-040: contextMetrics from the runner's success MUST be in the halt entry
+    expect(inv.contextMetrics).toBeDefined();
+    expect(inv.contextMetrics!.provider).toBe("claude-code");
+    expect(inv.contextMetrics!.model).toBe("claude-sonnet-4-5");
+    expect(inv.contextMetrics!.peakActiveContextTokens).toBe(150000);
+
+    // invocation metrics must NOT be in the halt entry
+    expect(Object.prototype.hasOwnProperty.call(inv, "numTurns")).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(inv, "durationMs")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-041: agent 成功後の commit / push 失敗 halt でも contextMetrics が usage.json に残る
+// ---------------------------------------------------------------------------
+
+describe("TC-041: agent 成功後の commit / push 失敗 halt でも contextMetrics が usage.json に残る", () => {
+  it("commit/push fail halt with contextMetrics writes modelUsage:null entry to usage.json", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("implementer");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    // Simulate a commit/push fail halt that carries contextMetrics from a successful runner invocation.
+    // makeCommitFailHalt now accepts an optional contextMetrics parameter (TC-041 implementation).
+    const contextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      peakActiveContextTokens: 120000,
+      compactionCount: 1,
+      contextTokensBeforeCompaction: 180000,
+      contextTokensAfterCompaction: 50000,
+    };
+
+    // Construct the halt as makeCommitFailHalt would produce it (with contextMetrics forwarded
+    // from the successful runResult)
+    const halt: StepHalt = {
+      kind: "failed",
+      error: {
+        code: "COMMIT_AND_PUSH_FAILED",
+        message: "git push failed: remote: Permission denied",
+        hint: "",
+      },
+      thrownErr: Object.assign(
+        new Error("git push failed: remote: Permission denied"),
+        { code: "COMMIT_AND_PUSH_FAILED" },
+      ),
+      recordOpts: { startedAt: "2026-01-01T00:00:00.000Z" },
+      contextMetrics,
+    };
+
+    try {
+      await orchestrator.commitHalt(step, state, halt, deps);
+    } catch {
+      // Expected throw from attachStateAndRethrow
+    }
+
+    const usageFile = await readUsageFile(usagePath);
+    // One entry added by commitHalt for the halt's contextMetrics
+    expect(usageFile.commandInvocations).toHaveLength(1);
+
+    const inv = usageFile.commandInvocations[0]!;
+
+    // TC-041: modelUsage MUST be null (halt entry)
+    expect(inv.modelUsage).toBeNull();
+
+    // TC-041: contextMetrics from the runner's success MUST be in the halt entry
+    expect(inv.contextMetrics).toBeDefined();
+    expect(inv.contextMetrics!.provider).toBe("claude-code");
+    expect(inv.contextMetrics!.peakActiveContextTokens).toBe(120000);
+    expect(inv.contextMetrics!.compactionCount).toBe(1);
+    expect(inv.contextMetrics!.contextTokensBeforeCompaction).toBe(180000);
+    expect(inv.contextMetrics!.contextTokensAfterCompaction).toBe(50000);
+
+    // invocation metrics must NOT be in the halt entry
+    expect(Object.prototype.hasOwnProperty.call(inv, "numTurns")).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(inv, "durationMs")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-043: modelUsage 欠落 + contextMetrics ありの成功 step でも entry が書かれる
+// ---------------------------------------------------------------------------
+
+describe("TC-043: modelUsage 欠落 + contextMetrics ありの成功 step でも entry が書かれる", () => {
+  it("success step with undefined modelUsage but contextMetrics writes modelUsage:null entry to usage.json", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("implementer");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const contextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      peakActiveContextTokens: 75000,
+      compactionCount: 0,
+    };
+
+    // Success result with undefined modelUsage but with contextMetrics
+    const result: StepExecutionResult & { kind: "success" } = {
+      kind: "success",
+      completion: makeCompletion("approved"),
+      completedAt: "2026-01-01T00:01:00.000Z",
+      startedAt: "2026-01-01T00:00:00.000Z",
+      session: null,
+      // modelUsage is intentionally absent (undefined) — provider did not return usage
+      contextMetrics,
+    } as StepExecutionResult & { kind: "success" };
+
+    await orchestrator.commitSuccess(step, state, deps, result);
+
+    const usageFile = await readUsageFile(usagePath);
+    // TC-043: entry MUST be written even when modelUsage is absent
+    expect(usageFile.commandInvocations).toHaveLength(1);
+
+    const inv = usageFile.commandInvocations[0]!;
+
+    // TC-043: modelUsage MUST be null (not undefined — JSON serialization)
+    expect(inv.modelUsage).toBeNull();
+
+    // TC-043: contextMetrics must be persisted correctly
+    expect(inv.contextMetrics).toBeDefined();
+    expect(inv.contextMetrics!.provider).toBe("claude-code");
+    expect(inv.contextMetrics!.peakActiveContextTokens).toBe(75000);
+    expect(inv.contextMetrics!.compactionCount).toBe(0);
+  });
+
+  it("success step with both undefined modelUsage and no contextMetrics writes NO entry", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("implementer");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    // Neither modelUsage nor contextMetrics — no entry should be written
+    const result: StepExecutionResult & { kind: "success" } = {
+      kind: "success",
+      completion: makeCompletion("approved"),
+      completedAt: "2026-01-01T00:01:00.000Z",
+      startedAt: "2026-01-01T00:00:00.000Z",
+      session: null,
+      // No modelUsage, no contextMetrics
+    } as StepExecutionResult & { kind: "success" };
+
+    await orchestrator.commitSuccess(step, state, deps, result);
+
+    const usageFile = await readUsageFile(usagePath);
+    // No entry — neither condition is true
+    expect(usageFile.commandInvocations).toHaveLength(0);
+  });
+});

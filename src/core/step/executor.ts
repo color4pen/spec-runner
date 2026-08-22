@@ -417,7 +417,9 @@ export class StepExecutor {
 
         if (haltViolations.length > 0 || followUp.length > 0) {
           const allViolations = [...haltViolations, ...followUp];
-          const halt = makeOutputGateHalt(allViolations, step.name, state.branch ?? null, { startedAt });
+          // agent-context-observability: forward contextMetrics from the successful runner result
+          // so commitHalt can persist them even though the halt is due to a post-success gate.
+          const halt = makeOutputGateHalt(allViolations, step.name, state.branch ?? null, { startedAt }, runResult.contextMetrics);
           return { kind: "halt", halt };
         }
       }
@@ -453,10 +455,13 @@ export class StepExecutor {
       await myFinalize;
 
       if (finalizeError !== undefined) {
+        // agent-context-observability: forward contextMetrics from the successful runner result
+        // so commitHalt can persist them even though the halt is due to a post-success commit failure.
         const halt = makeCommitFailHalt(
           finalizeError as Error & { code?: string; hint?: string },
           step.name,
           { startedAt },
+          runResult.contextMetrics,
         );
         return { kind: "halt", halt };
       }

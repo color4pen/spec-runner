@@ -206,12 +206,23 @@ export function createContextObserver(input: { provider: string; model?: string 
 
       if (!hasAnyValue) return undefined;
 
+      // TC-042 (spec: Requirement: Claude adapter は provider native compaction の発火を記録する):
+      // When active context OR context window was observed (i.e., we have enough signal to know
+      // the agent ran), explicitly set compactionCount=0 if no compact_boundary events were seen.
+      // This distinguishes "0 compactions confirmed" from "context metrics unavailable"
+      // (contextMetrics: undefined, or pre-feature entries without compactionCount) at
+      // aggregation/analysis time.
+      const resolvedCompactionCount =
+        peakActiveContextTokens !== undefined || contextWindowTokens !== undefined
+          ? (compactionCount ?? 0)
+          : compactionCount;
+
       return {
         provider,
         ...(model !== undefined ? { model } : {}),
         ...(contextWindowTokens !== undefined ? { contextWindowTokens } : {}),
         ...(peakActiveContextTokens !== undefined ? { peakActiveContextTokens } : {}),
-        ...(compactionCount !== undefined ? { compactionCount } : {}),
+        ...(resolvedCompactionCount !== undefined ? { compactionCount: resolvedCompactionCount } : {}),
         ...(contextTokensBeforeCompaction !== undefined ? { contextTokensBeforeCompaction } : {}),
         ...(contextTokensAfterCompaction !== undefined ? { contextTokensAfterCompaction } : {}),
         ...(exhaustionAtTokens !== undefined ? { exhaustionAtTokens } : {}),
