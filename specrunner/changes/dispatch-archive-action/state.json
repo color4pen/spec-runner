@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
   "createdAt": "2026-08-21T22:28:13.507Z",
-  "updatedAt": "2026-08-22T00:18:16.591Z",
+  "updatedAt": "2026-08-22T00:34:45.217Z",
   "request": {
     "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "design",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/dispatch-archive-action-c2c7ba44",
   "error": null,
   "pipelineId": "standard",
@@ -66,7 +66,8 @@
   "synthesizedCommits": [
     "a594d63ac0f639106194dc5e785ac45c79fd8775",
     "601740e3f83df7a10434c8638fbc351899d8ac43",
-    "92d3ac1085472c563eee98d80d0775ac48c1db75"
+    "92d3ac1085472c563eee98d80d0775ac48c1db75",
+    "9f766a55c405443568da330b1a1380f803040b43"
   ],
   "touchedFiles": {
     "request-review": [
@@ -78,9 +79,37 @@
       "src/core/archive/plain-archive.ts",
       "src/core/issue-target/__tests__/archive.test.ts",
       "src/cli/__tests__/archive-from-issue.test.ts"
+    ],
+    "design": [
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/issue-target/archive.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/core/archive/plain-archive.ts",
+      "src/core/archive/merge-completion.ts",
+      "src/core/runtime/workspace-materializer.ts",
+      "src/core/archive/post-merge-cleanup.ts",
+      "src/core/archive/job-context.ts",
+      "tests/grep-workflow-actions-pinned.test.ts",
+      "tests/dependabot-config.test.ts",
+      "src/core/issue-target/__tests__/archive.test.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "tests/attach/attach-resume-e2e.test.ts",
+      "src/cli/archive.ts",
+      "src/git/checkpoint-ref.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/core/attach/verify-checkpoint.ts",
+      "src/core/attach/checkpoint-policy.ts",
+      "src/core/finish/archive-change-folder.ts",
+      "src/core/finish/resolve-canonical-state-dir.ts"
     ]
   },
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "design",
+    "reason": "design escalated",
+    "iterationsExhausted": 0
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -90,9 +119,10 @@
     }
   ],
   "_journal": {
-    "historyCount": 9,
+    "historyCount": 11,
     "stepCounts": {
-      "request-review": 2
+      "request-review": 2,
+      "design": 1
     }
   }
 }
