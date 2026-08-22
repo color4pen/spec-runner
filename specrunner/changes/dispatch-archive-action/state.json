@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
   "createdAt": "2026-08-21T22:28:13.507Z",
-  "updatedAt": "2026-08-22T01:02:35.839Z",
+  "updatedAt": "2026-08-22T01:11:19.508Z",
   "request": {
     "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/dispatch-archive-action-c2c7ba44",
   "error": null,
@@ -69,7 +69,8 @@
     "92d3ac1085472c563eee98d80d0775ac48c1db75",
     "9f766a55c405443568da330b1a1380f803040b43",
     "41e3c0d1e70d0efe8e9001a7175f221ce18d40dc",
-    "02a08844798aebac397537ad9fb0b333b80a5a60"
+    "02a08844798aebac397537ad9fb0b333b80a5a60",
+    "b5d44f6548007acad61d191f7b8e6e2ac9b94d05"
   ],
   "touchedFiles": {
     "request-review": [
@@ -86,25 +87,15 @@
       ".github/workflows/specrunner-dispatch.yml",
       "src/core/issue-target/archive.ts",
       "src/cli/archive-from-issue.ts",
-      "src/core/attach/orchestrator.ts",
+      "src/core/archive/job-context.ts",
+      "src/core/job-access/load-by-job-id.ts",
       "src/core/archive/plain-archive.ts",
       "src/core/archive/merge-completion.ts",
-      "src/core/runtime/workspace-materializer.ts",
-      "src/core/archive/post-merge-cleanup.ts",
-      "src/core/archive/job-context.ts",
-      "tests/grep-workflow-actions-pinned.test.ts",
-      "tests/dependabot-config.test.ts",
-      "src/core/issue-target/__tests__/archive.test.ts",
+      "src/store/job-catalog.ts",
       "src/cli/__tests__/archive-from-issue.test.ts",
-      "tests/attach/attach-resume-e2e.test.ts",
-      "src/cli/archive.ts",
-      "src/git/checkpoint-ref.ts",
-      "src/core/archive/orchestrator.ts",
-      "src/core/job-access/load-by-job-id.ts",
-      "src/core/attach/verify-checkpoint.ts",
-      "src/core/attach/checkpoint-policy.ts",
-      "src/core/finish/archive-change-folder.ts",
-      "src/core/finish/resolve-canonical-state-dir.ts"
+      "tests/grep-workflow-actions-pinned.test.ts",
+      "src/core/archive/workflow-ci-detection.ts",
+      "src/core/archive/post-merge-cleanup.ts"
     ]
   },
   "resumePoint": null,
@@ -122,10 +113,10 @@
     }
   ],
   "_journal": {
-    "historyCount": 13,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 2,
-      "design": 1
+      "design": 2
     }
   }
 }
