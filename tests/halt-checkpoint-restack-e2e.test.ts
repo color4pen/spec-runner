@@ -379,17 +379,12 @@ describe(
         expect(persistedOids.length).toBeGreaterThanOrEqual(2);
         expect(persistedOids).toContain(restackedOid);
 
-        // Check that the local branch tip (after graft) is NOT the same as the checkpoint commit
-        // (the graft merge commit should be the new local tip)
+        // TC-027: local HEAD (graft merge commit) must be unconditionally in persistedOids
         const localTip = gitSync(["rev-parse", "HEAD"], repoDir);
-        // graft merge commit is in persistedOids and is the local HEAD
-        const graftMergeOid = persistedOids.find((oid) => oid !== restackedOid && oid !== persistedOids[0]);
-        if (graftMergeOid) {
-          expect(
-            localTip,
-            "local HEAD should be the graft merge commit",
-          ).toBe(graftMergeOid);
-        }
+        expect(
+          persistedOids,
+          "graft merge commit (local HEAD) should be recorded in synthesizedCommits",
+        ).toContain(localTip);
 
         // TC-007: the recordRestack callback was invoked with a record containing the correct OIDs
         expect(restackRecords.length).toBeGreaterThanOrEqual(1);
@@ -420,6 +415,8 @@ describe(
         });
 
         expect(verifiedCheckpoint.state.status).toBe("awaiting-resume");
+        // AC-2: resume must restart from the halted step — assert the resolved resume step explicitly
+        expect(verifiedCheckpoint.state.resumePoint?.step).toBe("implementer");
         expect(verifiedCheckpoint.checkpointOid).toBe(restackedOid);
         expect(verifiedCheckpoint.slug).toBe(SLUG);
         expect(verifiedCheckpoint.branch).toBe(BRANCH);
