@@ -24,22 +24,36 @@ Actions で archive record を作る
 
 **問題 1**: `.github/workflows/specrunner-dispatch.yml` の `action` は `start / resume` の 2 択のみで、archive を dispatch できない。`job archive --from-issue <n>` は既に存在するため、workflow が archive の状態機械を持つ必要はなく、CLI に委譲するだけでよい。
 
-**問題 2**: `archive --from-issue` の locator は closing PR の head branch 名を `git fetch origin <headRefName>` して checkpoint を復元する。GitHub UI で merge と同時に head branch が削除されると（標準的な運用）、2 回目の archive で fetch が失敗し、terminal completion に到達できない。
+**問題 2**: merge 後の 2 回目の archive 実行が、local state の無い環境（ephemeral runner）で job を解決できない。1 回目の archive record 作成は change folder を `specrunner/changes/archive/<YYYY-MM-DD>-<slug>/` へ git mv するため、merge 後は active な change folder がどこにも存在しない。`archive --from-issue` の locator は closing PR の head branch から checkpoint を復元するが、checkpoint slug 解決は archive / canceled 配下を候補から除外するため PR head からは解決できず、`loadStateByJobId` の fallback scan も archive 配下を skip するため local 解決も成立しない。加えて GitHub UI の merge では head branch が削除される（標準運用）ため、branch fetch 自体も失敗する。branch-borne checkpoint の再構成で解こうとする前提自体が誤りで、merge 後は main に載った archive record を正とすべきである。
 
 ## 現状コードの前提
 
-- `.github/workflows/specrunner-dispatch.yml:22-27` — `action` の choices は `start` / `resume` のみ
-- `src/core/issue-target/archive.ts:132-140` — `resolveArchiveBranchFromIssue` は候補 PR の `headRefName` を `git fetch origin <branch>` で fetch し、失敗した候補は skip する。全候補 skip なら `ARCHIVE_FROM_ISSUE_UNCONFIRMED`
-- **実測**: head branch 削除済みの PR でも `git fetch origin refs/pull/<n>/head` は成功する（PR #1051 で確認）。`headRefName` / `number` は branch 削除後も PR metadata に残る
-- **実測**: main に merge 済みの archive record 内 `state.json` の status は `awaiting-archive` のまま。`archived` の永続効果は main には存在せず、「archive/ 配下という path」+ local 側の遷移で表現されている。`completeAfterMerge()`（`src/core/archive/merge-completion.ts`）は local state への `markJobArchived` + `runPostMergeCleanup` である
-- local state がある環境では `loadStateByJobId` の short-circuit が locator を回避するため、branch 削除の影響は local state の無い環境（ephemeral runner）に限定される
+- `.github/workflows/specrunner-dispatch.yml` — `action` の choices は `start` / `resume` のみ
+- `src/core/finish/archive-change-folder.ts` — 1 回目の archive record 作成は `specrunner/changes/<slug>/` を `specrunner/changes/archive/<YYYY-MM-DD>-<slug>/` へ git mv する
+- `src/git/checkpoint-ref.ts` — checkpoint slug 解決は `archive` / `canceled` を候補から除外する（`EXCLUDED_CHANGE_DIRS`）
+- `src/core/job-access/load-by-job-id.ts:85` — jobId の fallback scan は `archive` / `canceled` を skip する
+- `src/core/archive/job-context.ts:47` — `resolveArchiveJobContext` は `listWithSourceDirs(cwd, { includeArchived: true })` で archive 配下の record を既に読んでいる。不足しているのは jobId→slug の対応付けのみ
+- **実測**: main に merge 済みの archive record 内 `state.json` の status は `awaiting-archive` のまま。`archived` の永続効果は「archive/ 配下という path」+ local 側の遷移で表現され、`completeAfterMerge()`（`src/core/archive/merge-completion.ts`）は local state への `markJobArchived` + `runPostMergeCleanup` である
+- merge 前は PR が open で head branch が存在するため、既存の closing PR branch fetch + `runAttachVerification` の attach 経路がそのまま機能する
 
 ## 実装範囲
 
+次の 2 相の正規フローで Actions 完結させる。
+
+```text
+1回目（merge 前）: completed marker -> jobId -> closing PR head branch
+  -> 既存 runAttachVerification（branch fetch）-> archive record push -> awaiting-archive
+2回目（merge 後）: completed marker -> jobId
+  -> checkout 済み base の archive record を listWithSourceDirs({ includeArchived: true }) で検索
+  -> jobId + issueNumber 照合で slug 解決 -> runArchive(slug)
+  -> 既存 runPlainArchive が archiveRecorded + PR MERGED を確認 -> completeAfterMerge -> exit 0
+```
+
 1. **dispatch への archive 追加**: `SpecRunner Dispatch` の `action` に `archive` を追加し、`specrunner job archive --from-issue "$ISSUE"` を呼ぶ。workflow は archive の状態機械・merge 判定を持たず、CLI に委譲する。`--with-merge` は渡さない。
-2. **locator の pull ref fallback**: `resolveArchiveBranchFromIssue` で head branch の fetch が失敗した候補について、`refs/pull/<prNumber>/head` の fetch に fallback する。取得する checkpoint tree は同一なので、既存の 4 点 identity verification（jobId / issueNumber / branch=headRefName / pullRequest.number）を無改変で適用する。新しい main 探索・復元経路は作らない。
-3. **既存契約の維持**: 4 点 identity verification の強度と `--with-merge` 経路の挙動は変えない。
-4. **merge 後の完了の定義**: remote / ephemeral runner での完了は「PR state が `MERGED`」「archive record が PR head に存在し identity verification を通過」「`completeAfterMerge()` 実行で exit 0」で成立させる。完了状態を永続化するための新しい status / marker / main への直接 commit は追加しない。
+2. **post-merge の archive record fallback**: `runArchiveFromIssue` の local jobId lookup miss 時に、`listWithSourceDirs({ includeArchived: true })` の record から `jobId + issueNumber` 一致で slug を解決する archive 専用 fallback を追加する。
+3. fallback で一致したら rebind / attach を通さず既存 `runArchive` に直行する。merge 済み確認（PR MERGED）と完了処理は既存 `runPlainArchive` / `completeAfterMerge` に委譲する。
+4. archive record が見つからない merge 前は、従来どおり closing PR branch + `runAttachVerification` の経路を使う。
+5. **一般契約の維持**: `resolveCheckpointSlug` / `loadStateByJobId` / resume・attach の一般契約は変更しない。新しい pipeline step / status / verifier は追加しない。
 
 ## 非目標
 
@@ -49,19 +63,21 @@ Actions で archive record を作る
 - 新しい archive 専用 workflow を増やすこと
 - merge 後に main へ `archived` を書き戻すこと（`archived` の永続効果は path + local 側で表現済み）
 - 新しい job status の追加
+- `refs/pull/<n>/head` への fetch fallback の追加（merge 前は head branch が存在し、merge 後は branch-borne checkpoint を使わないため不要）
+- `runAttachVerification` の interface 拡張（fetch 済み OID の受け渡し等）
 
 ## 受け入れ条件
 
 - [ ] `workflow_dispatch` の `action` choices に `archive` が含まれ、archive 分岐が `specrunner job archive --from-issue <issue>` の呼び出しのみであることを設定検査テストで固定する（workflow yaml を parse して assert）
-- [ ] head branch fetch 失敗の候補が `refs/pull/<prNumber>/head` へ fallback し、4 点 identity 照合が成立することをテストで固定する
-- [ ] fallback 経路でも identity 不一致の候補は skip され、全候補不成立なら `ARCHIVE_FROM_ISSUE_UNCONFIRMED` になることをテストで固定する
-- [ ] PR MERGED + archive record 済み + identity 通過で `completeAfterMerge` が実行され exit 0 になることをテストで固定する（branch 削除済みシナリオ）
+- [ ] local jobId lookup miss + archive record（jobId + issueNumber 一致）で slug が解決され、attach / branch fetch を経ずに `runArchive` へ直行し `completeAfterMerge` が exit 0 になることをテストで固定する（head branch 削除済みシナリオ）
+- [ ] jobId または issueNumber が一致しない record は解決対象にならないこと、archive record 不在かつ closing PR 経路も不成立の場合は従来どおり `ARCHIVE_FROM_ISSUE_UNCONFIRMED` になることをテストで固定する
+- [ ] merge 前（archive record が base に無く PR が open）は従来の closing PR branch + `runAttachVerification` 経路が使われることをテストで固定する
 - [ ] archive record 作成後・merge 前は `awaiting-archive` のままである（#1051 の既存テストが無変更で green）
-- [ ] `--with-merge` 経路の既存テストは無変更で green
-- [ ] 既存テストのうち locator の旧 fetch 挙動（head branch 名のみ）を pin するテストに限り新契約への更新を許容する。それ以外は無変更で green
+- [ ] `--with-merge` 経路・resume / attach の既存テストは無変更で green
+- [ ] `runArchiveFromIssue` の解決順序を pin する既存テストに限り新契約への更新を許容する。それ以外は無変更で green
 - [ ] `typecheck && test` が green
 
 ## 関連
 
 - #1049 / #1051（状態遷移を merge 境界に揃えた前提）
-- 実装前レビューと方針整理は本 issue のコメントを参照
+- 実装前レビューと方針整理・裁定は本 issue のコメントを参照
