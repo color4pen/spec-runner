@@ -1,141 +1,146 @@
-# Tasks: dispatch archive action と PR head 経由の archive 経路
+# Tasks: Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える
 
-実装順は T-01 → T-02 → T-03 → T-04 → T-05 → テスト群（T-06..T-09）→ T-10。
-T-05 と T-08 は design.md の Open Question 1（D4 の採否）の裁定を前提とする。
+## T-01: dispatch workflow に archive action を追加する
 
-## T-01: dispatch workflow に archive action を足す（D1）
+対象: `.github/workflows/specrunner-dispatch.yml`
 
-- [ ] `.github/workflows/specrunner-dispatch.yml` の `action` input の `options` に `- archive` を追加する
-- [ ] `action` の `description` に archive の説明を足す（例: "archive: merge 済み PR の job を取り込む"）
-- [ ] ファイル冒頭のコメントブロック（`- start:` / `- resume:` の説明）に `- archive:` の項を追加する
-- [ ] "Run pipeline" step の shell 分岐に archive の枝を追加する。既存の `if [ "$ACTION" = "resume" ]` の後に `elif [ "$ACTION" = "archive" ]; then bun ./bin/specrunner.ts job archive --from-issue "$ISSUE"` を置き、`else` は `job start` のまま残す
-- [ ] archive の枝では `--with-merge` / `--from` / `--prompt` / `--force` を渡さない
-
-**Acceptance Criteria**:
-- `action` の choice が `start` / `resume` / `archive` の 3 つになっている
-- archive 選択時に実行されるコマンドが `bun ./bin/specrunner.ts job archive --from-issue "$ISSUE"` の 1 行のみである
-- `elif` を欠いて `archive` が `else`（= `job start`）へ落ちる状態になっていない
-- `resume` / `start` の分岐は diff 上で無改変である
-
-## T-02: locator に refs/pull/<n>/head fallback を足す（D2）
-
-- [ ] `src/core/issue-target/archive.ts` の候補 loop で、`git fetch origin <headRefName>` が非 0 のときに即 `continue` せず、`git fetch origin refs/pull/<prNumber>/head` を試す
-- [ ] head branch 経路が成功した場合の OID 解決は現行どおり `git rev-parse origin/<branch>^{commit}`、fallback 経路は `git rev-parse FETCH_HEAD^{commit}` とする
-- [ ] fallback の fetch または rev-parse が失敗した場合は、どちらの失敗かが分かる `logWarn` を出して `continue`（現行と同じ skip 挙動）
-- [ ] OID 確定後の処理（`readStateJsonFromRef` → JSON parse → 4 点 identity → `confirmed.push`）は 2 経路で共通の 1 本にする。identity の項目・比較対象は変更しない
-- [ ] `FETCH_HEAD` を使う設計上の天井（loop を並列化すると別 PR の OID を掴みうる。並列化するなら専用 refspec へ切り替える）をコード内コメントで明示する
+- [ ] `on.workflow_dispatch.inputs.action.options` に `- archive` を追加する（`start` / `resume` は維持、`default: start` も維持）
+- [ ] `action` の `description` を archive を含む説明に更新する（例: `start: issue 本文から新規 job を起動 / resume: escalation 済み job を再開 / archive: 完走した job を取り込む`）
+- [ ] ファイル冒頭のコメントブロックに archive の 1 段落を追加する。2 相であること（1 回目 = archive record 作成で `awaiting-archive` 維持、PR merge 後に再実行して完了）と、相判定は CLI 側にあることを書く
+- [ ] `Run pipeline` step の shell 分岐に archive の枝を追加する。既存の `if [ "$ACTION" = "resume" ] ... else ... fi` に `elif [ "$ACTION" = "archive" ]; then` を挿入し、本文は `bun ./bin/specrunner.ts job archive --from-issue "$ISSUE"` の 1 行のみとする
+- [ ] `--with-merge` を付けない。PR / merge 状態を見るコマンド（`gh pr` 等）を足さない
+- [ ] `env:` block は変更しない（`ISSUE` / `ACTION` は既に渡っている）
+- [ ] `concurrency.group` / `permissions` / checkout 以降の step 構成は変更しない
 
 **Acceptance Criteria**:
-- head branch fetch 成功時は `refs/pull/<n>/head` の fetch が呼ばれない
-- head branch fetch 失敗 + pull ref fetch 成功時に、`FETCH_HEAD^{commit}` の OID で identity 検証が走る
-- 両方失敗した PR は warning 付きで skip され、確定候補が 0 なら `ARCHIVE_FROM_ISSUE_UNCONFIRMED` になる
-- 4 点 identity のフィールド・比較対象が diff 上で変わっていない
+- `action` の `options` が `start` / `resume` / `archive` の 3 件になっている
+- `$ACTION` が `archive` のときの分岐本文が `job archive --from-issue "$ISSUE"` の呼び出し 1 件のみで構成されている
+- workflow yaml 全体に `--with-merge` の文字列が存在しない
+- `resume` / `start` の分岐本文が従来と一致している（引数の条件付き付与を含む）
+- `tests/grep-workflow-actions-pinned.test.ts` が無変更で green（`uses:` 行を触っていないこと）
 
-## T-03: runAttachVerification に任意入力 checkpointOid を足す（D3）
+---
 
-- [ ] `src/core/attach/orchestrator.ts` の `AttachVerificationInput` に `checkpointOid?: string` を追加する
-- [ ] `checkpointOid` 指定時は `git fetch origin <branch>` と `git rev-parse origin/<branch>^{commit}` を両方 skip し、その OID で `readCheckpointFromRef` → `verifyCheckpoint` を実行する
-- [ ] 未指定時のコードパス（fetch → rev-parse → 読み込み → 検証、失敗時 `ATTACH_FETCH_FAILED`）は無改変で残す
-- [ ] 返り値の `branch` は引数の branch 名をそのまま返し、`checkpointOid` は検証に使った OID を返す
-- [ ] 「呼び出し側が identity 検証済みの OID を渡す前提」であることを JSDoc に明記する
+## T-02: archive record からの slug 解決を core に追加する
 
-**Acceptance Criteria**:
-- `checkpointOid` を渡すと git の fetch / rev-parse が 1 度も呼ばれない
-- `checkpointOid` を渡さない呼び出しは既存テスト（`tests/attach/orchestrator.test.ts` 等）が無改変で緑
-- `job resume --from-issue` / `job attach --branch` の呼び出し側に `checkpointOid` が渡っていない
+対象: `src/core/archive/job-context.ts`
 
-## T-04: archive-from-issue で検証済み OID を持ち回す（D3 wiring）
-
-- [ ] `src/cli/archive-from-issue.ts` の `runAttachVerification` 呼び出しに `checkpointOid: resolved.checkpointOid` を追加する
-- [ ] head branch 経路 / fallback 経路のどちらでも渡す（分岐させない）
-- [ ] `setupWorkspace` に渡す `attachCheckpoint.checkpointRef` は従来どおり `verified.checkpointOid` を使う
+- [ ] `isArchiveRecordDir(sourceChangeDir: string): boolean` を export する。実装は `nodePath.basename(nodePath.dirname(sourceChangeDir)) === "archive"`
+- [ ] `resolveArchiveJobContext` 内の `archiveRecorded` 算出（現行のインライン式）を `isArchiveRecordDir(sourceChangeDir)` の呼び出しに置き換える。判定内容は変えない
+- [ ] `resolveArchivedSlugByJobId({ cwd, jobId, issueNumber }: { cwd: string; jobId: string; issueNumber: number }): Promise<string | null>` を export する
+- [ ] 実装: `JobStateStore.listWithSourceDirs(cwd, { includeArchived: true })` を呼び、`entry.state.jobId === jobId` かつ `entry.state.issueNumber === issueNumber` かつ `isArchiveRecordDir(entry.sourceChangeDir)` を満たす最初の entry を選ぶ
+- [ ] 該当 entry の `getJobSlug(entry.state)` が空文字列でなければそれを返す。該当なし、または slug が空文字列なら `null` を返す
+- [ ] 多重一致の分岐・エラーは実装しない（`listWithSourceDirs` が jobId で dedup 済みのため到達しない）
+- [ ] 新規 import を追加しない（`nodePath` / `JobStateStore` / `getJobSlug` は既に import 済み）。`src/adapter` / `src/cli` を import しない
+- [ ] JSDoc に「merge 後は base に載った archive record が正である」ことと、jobId + issueNumber の 2 field 照合である理由を書く
 
 **Acceptance Criteria**:
-- locator が確定した OID と `setupWorkspace` が materialize する OID が同一である
-- head branch 削除済みシナリオで `ATTACH_FETCH_FAILED` が発生しない
-- `src/cli/__tests__/archive-from-issue.test.ts` の既存アサーション（`expect.objectContaining` ベース）が緑のまま
+- `isArchiveRecordDir` / `resolveArchivedSlugByJobId` が `src/core/archive/job-context.ts` から export されている
+- `resolveArchiveJobContext` の `archiveRecorded` が `isArchiveRecordDir` を経由して算出されている（archive record の判定式がファイル内に 2 つ存在しない）
+- `src/core/archive/job-context.ts` の import 集合が変更前と同一である
+- `src/core/archive/__tests__/` 配下の既存テストが無変更で green
 
-## T-05: merge 後の slug 解決を base branch の archive record から行う（D4）
+---
 
-> design.md の Open Question 1 の裁定が (A) の場合に実施する。(B)/(C) の裁定なら本タスクを差し替える。
+## T-03: `runArchiveFromIssue` に archive record fallback を挿入する
 
-- [ ] `src/cli/archive-from-issue.ts` で `loadStateByJobId` が `JOB_NOT_FOUND` を返した直後に、`JobStateStore.listWithSourceDirs(repoRoot, { includeArchived: true })` を引く解決を追加する
-- [ ] `state.jobId === jobId` かつ `state.issueNumber === issueNumber` の entry のみを候補にする
-- [ ] 候補の `sourceChangeDir` が `specrunner/changes/archive/` 配下であることを必須にする（merge 済み record であることの確認）
-- [ ] 候補が 1 件なら slug を採用し、locator（`resolveArchiveBranchFromIssue`）と attach 検証・`setupWorkspace` を skip して `runArchive({slug})` へ直行する
-- [ ] 候補が 0 件なら従来どおり locator 経路へ落ちる
-- [ ] 候補が 2 件以上なら確定させず `ARCHIVE_FROM_ISSUE_UNCONFIRMED` を投げる
-- [ ] `src/core/job-access/load-by-job-id.ts` は変更しない（`resume --from-issue` の解決規則を動かさないため）
-- [ ] この経路が 4 点 identity ではなく「jobId + issueNumber + archive 配下 + 後段の PR MERGED 再確認」で成立していることを、根拠を含めてコード内コメントに残す
+対象: `src/cli/archive-from-issue.ts`
 
-**Acceptance Criteria**:
-- local state 無し + merge 済み archive record ありの checkout で slug が解決される
-- 解決後の `runArchive` が `archiveRecorded = true` を得て `completeAfterMerge` に到達する
-- active な change folder がある通常環境では従来の local short-circuit が先に成立し、本経路が走らない
-- jobId は一致するが issueNumber が異なる record は候補にならない
-- `src/core/job-access/load-by-job-id.ts` の diff が空である
-
-## T-06: dispatch workflow の不変条件テスト（AC1）
-
-- [ ] `tests/` 直下に workflow 検証テストを追加する（例: `tests/dispatch-workflow-archive.test.ts`）
-- [ ] YAML parser 依存を追加しない。`tests/grep-workflow-actions-pinned.test.ts` / `tests/dependabot-config.test.ts` と同様に、ファイル読み込み + ブロック抽出 + 文字列/正規表現で判定する
-- [ ] `action` の `options` ブロックを抽出し、`start` / `resume` / `archive` を含むことを assert する
-- [ ] "Run pipeline" step の run ブロックを抽出し、`archive` 分岐が `job archive --from-issue "$ISSUE"` を呼ぶこと、その分岐に `--with-merge` が現れないことを assert する
-- [ ] `archive` が `else`（`job start`）へ落ちないこと（`archive` 用の条件分岐が存在すること）を assert する
+- [ ] `resolveArchivedSlugByJobId` を `../core/archive/job-context.js` から import する
+- [ ] `localState !== null` の分岐（既存）の直後、closing PR 解決ブロック（`resolveArchiveBranchFromIssue` 以降）の**前**に、archive record fallback の分岐を挿入する
+- [ ] fallback 分岐: `resolveArchivedSlugByJobId({ cwd: repoRoot, jobId, issueNumber })` を呼び、非 null なら `slug` に代入して以降の解決処理をすべて skip する
+- [ ] fallback が hit したとき、`resolveArchiveBranchFromIssue` / `runAttachVerification` / `LocalRuntime#setupWorkspace` をいずれも呼ばない
+- [ ] fallback が hit したとき、post-merge 経路であることが分かる 1 行を stdout に出す（例: 解決元が base 上の archive record である旨と slug）
+- [ ] fallback が `null` を返したときは、既存の closing PR + attach 経路をそのまま実行する（既存コードを移動・改変しない）
+- [ ] 最終の `runArchive({ slug, withMerge: opts.withMerge, cwd: repoRoot, mergeWaitMs: opts.mergeWaitMs })` 呼び出しは 3 経路で共有したまま変更しない
+- [ ] `runPlainArchive` / `completeAfterMerge` / `runPostMergeCleanup` / `runAttachVerification` / `resolveCheckpointSlug` / `loadStateByJobId` を変更しない
+- [ ] ファイル冒頭の JSDoc（現在は「completed marker → local short-circuit → closing-PR → rebind → archive」）を 3 段の解決順序に更新する
 
 **Acceptance Criteria**:
-- 新規依存が `package.json` に追加されていない
-- `options` から `archive` を消すとテストが落ちる
-- archive 分岐に `--with-merge` を足すとテストが落ちる
-- archive の `elif` を消すとテストが落ちる
+- 解決順序が local state → archive record → closing PR + attach の 3 段になっている
+- `src/core/attach/` / `src/core/issue-target/` / `src/core/archive/plain-archive.ts` / `src/core/archive/merge-completion.ts` / `src/git/checkpoint-ref.ts` / `src/core/job-access/load-by-job-id.ts` に差分が無い
+- 新しい job status / pipeline step / verifier / error code を追加していない
 
-## T-07: locator fallback の単体テスト（AC2 / AC3）
+---
 
-- [ ] `src/core/issue-target/__tests__/archive.test.ts` に fallback ケースを追加する（既存 TC の変更ではなく追加）
-- [ ] ケース 1: head branch fetch 失敗 → `refs/pull/<n>/head` fetch 成功 → 4 点 identity 一致 → branch / slug / checkpointOid が返る
-- [ ] ケース 2: head branch fetch 失敗 → pull ref fetch 成功 → identity 不一致 → skip → `ARCHIVE_FROM_ISSUE_UNCONFIRMED`
-- [ ] ケース 3: head branch fetch 失敗 → pull ref fetch も失敗 → skip → `ARCHIVE_FROM_ISSUE_UNCONFIRMED`
-- [ ] ケース 4: head branch fetch 成功時に pull ref fetch が呼ばれないことを spawn stub の呼び出し履歴で assert する
-- [ ] spawn stub は既存の branch 名キー方式を踏襲し、`refs/pull/<n>/head` と `FETCH_HEAD` を扱えるよう拡張する
+## T-04: 設定検査テスト（dispatch workflow）
 
-**Acceptance Criteria**:
-- 上記 4 ケースが緑
-- 既存の head branch 主経路テスト（TC-011 等）が無改変で緑
-- fallback を実装から外すとケース 1〜3 が落ちる
+対象: 新規 `tests/dispatch-workflow-archive-action.test.ts`
 
-## T-08: ephemeral な merge 後 archive の end-to-end テスト（AC4）
-
-- [ ] `tests/attach/attach-resume-e2e.test.ts` の real-git fixture 方式（bare origin + clone）を踏襲した e2e を追加する
-- [ ] fixture 条件: local state 無し（sidecar index 無し・active change folder 無し）、base branch checkout に merge 済み archive record（`specrunner/changes/archive/<date>-<slug>/state.json`, status `awaiting-archive`, `pullRequest.number` あり）、head branch は remote から削除済み、`refs/pull/<n>/head` 相当の ref は存在
-- [ ] GitHub client は stub とし、closing PR 列挙・`getPullRequest` は `MERGED` を返す。issue の completed marker から jobId が解決される状態にする
-- [ ] `job archive --from-issue <n>` の exit code が 0 であることを assert する
-- [ ] `completeAfterMerge` に到達したこと（post-merge cleanup の stdout 行、および job status が `archived` になったこと）を assert する
-- [ ] 新しい archive record commit が push されていないことを assert する
-- [ ] `worktreePath` が現在のマシンに存在しない場合でも warning のみで exit 0 を維持することを assert する
+- [ ] `.github/workflows/specrunner-dispatch.yml` を `fs.readFile` で読む（`tests/grep-workflow-actions-pinned.test.ts` の `path.resolve(__dirname, "../.github/workflows")` と同じ解決方法を使う）
+- [ ] yaml parser package を追加しない。テストファイル内に indent scope で block を切り出す helper を書く
+- [ ] helper 1: 指定した key 行（例: `action:` → その配下の `options:`）から、より深い indent が続く範囲を block として返す
+- [ ] helper 2: `run: |` script 本文を取り出し、`$ACTION` の分岐（`if` / `elif` / `else` の各枝）ごとに本文行を返す
+- [ ] `on.workflow_dispatch.inputs.action.options` の block を切り出し、`- ` 要素列が `start` / `resume` / `archive` を含むことを assert する
+- [ ] archive 分岐の本文行（空行・コメント除去後）が 1 行であり、`job archive` と `--from-issue` と `"$ISSUE"` を含むことを assert する
+- [ ] archive 分岐の本文に `--with-merge` が含まれないことを assert する
+- [ ] workflow yaml 全体に `--with-merge` が含まれないことを assert する
+- [ ] `resume` 分岐の本文に `job resume --from-issue` が、`else`（start）分岐の本文に `job start --from-issue` が含まれることを assert する（既存分岐の非退行）
+- [ ] block 抽出に失敗した場合（`options:` が見つからない等）は、抽出できなかった旨と読み取った block をそのまま error message に含めて fail させる
 
 **Acceptance Criteria**:
-- local state 無しの環境で exit 0 かつ job status が `archived`
-- record commit が増えていない
-- cleanup の空振り warning が exit code に影響しない
-- T-05 の実装を外すとこのテストが落ちる
+- ファイル全体に対する素の `expect(content).toContain("archive")` を使っていない（すべて切り出した block に対する assert である）
+- `package.json` の `dependencies` / `devDependencies` / `optionalDependencies` に差分が無い
+- T-01 の workflow 変更を revert すると本テストが fail する
 
-## T-09: 既存契約の回帰確認
+---
 
-- [ ] `src/core/archive/__tests__/plain-archive.test.ts` の MERGED + record 済み → `completeAfterMerge` を固定するケースが無改変で緑であることを確認する
-- [ ] `--with-merge` 経路のテストが無改変で緑であることを確認する
-- [ ] `tests/attach/` 配下の attach / resume テストが無改変で緑であることを確認する
-- [ ] 更新してよいのは「head branch のみを fetch する旧挙動を pin しているテスト」に限る。更新した場合は対象テストと更新理由を PR 説明に列挙する
-- [ ] `src/git/checkpoint-ref.ts` の `EXCLUDED_CHANGE_DIRS` を変更していないことを確認する
+## T-05: archive record fallback の解決テスト（core）
 
-**Acceptance Criteria**:
-- 上記テスト群の diff が空、または旧 fetch 挙動 pin テストの更新のみ
-- `src/git/checkpoint-ref.ts` の diff が空
+対象: 新規 `src/core/archive/__tests__/archived-slug-by-job-id.test.ts`
 
-## T-10: typecheck / test 全体緑
-
-- [ ] `bun run typecheck` が通る
-- [ ] `bun run test` が全て通る
+- [ ] tmpdir に実ファイルで `<tmp>/specrunner/changes/archive/2026-01-01-<slug>/state.json` を作る fixture helper を書く（既存 `src/store/__tests__/job-state-store-list-with-source-dirs.test.ts` の fixture 構成を参照する）
+- [ ] state.json には `jobId` / `issueNumber` / `request.slug` / `status: "awaiting-archive"` / `updatedAt` / `pullRequest.number` を含める
+- [ ] jobId + issueNumber 一致の archive record → 当該 slug が返ること
+- [ ] jobId 不一致（issueNumber 一致）→ `null` が返ること
+- [ ] issueNumber 不一致（jobId 一致）→ `null` が返ること
+- [ ] `issueNumber` を持たない record（jobId 一致）→ `null` が返ること
+- [ ] active な `<tmp>/specrunner/changes/<slug>/state.json`（archive 配下ではない）に jobId + issueNumber 一致の state がある → `null` が返ること
+- [ ] archive dir 自体が存在しない tmpdir → `null` が返ること
+- [ ] 同じ fixture に対し `resolveArchiveJobContext({ cwd, slug })` を呼び、`archiveRecorded === true` になることを assert する（fallback が返す slug と `archiveRecorded` の整合を pin する）
 
 **Acceptance Criteria**:
-- typecheck / test が緑
-- 新規依存が追加されていない
+- 上記 7 ケースがすべて green
+- `resolveArchivedSlugByJobId` の照合条件のいずれか 1 つ（jobId / issueNumber / archive 配下）を実装から外すと、対応するケースが fail する
+
+---
+
+## T-06: 解決順序 routing テスト（CLI）
+
+対象: `src/cli/__tests__/archive-from-issue.test.ts`（既存ファイルへの追記 + 最小限の更新）
+
+- [ ] `vi.mock("../../core/archive/job-context.js", ...)` を追加し、`resolveArchivedSlugByJobId` を mock 化する（既定は `null` を返す = miss）
+- [ ] 既存 TC-018（local state hit）: `resolveArchivedSlugByJobId` が呼ばれないことの assert を追加する。既存の assert は変更しない
+- [ ] 既存 TC-019（closing PR 経路）: `resolveArchivedSlugByJobId` が `null` を返す前提を beforeEach に明示する。既存の assert（`resolveArchiveBranchFromIssue` / `runAttachVerification` が呼ばれる）は変更しない
+- [ ] 新規ケース「post-merge / head branch 削除済み」: `loadStateByJobId` が `JOB_NOT_FOUND`、`resolveArchivedSlugByJobId` が `"archived-slug"` を返す。assert:
+  - [ ] `resolveArchiveBranchFromIssue` が呼ばれない（= closing PR 列挙と `git fetch` を経ない）
+  - [ ] `runAttachVerification` が呼ばれない
+  - [ ] `LocalRuntime#setupWorkspace` が呼ばれない
+  - [ ] `runArchive` が `{ slug: "archived-slug" }` を含む引数で呼ばれる
+  - [ ] `runArchiveFromIssue` の戻り値が 0（`runArchive` mock が 0 を返す前提）
+- [ ] 新規ケース「fallback miss + closing PR 経路も不成立」: `resolveArchivedSlugByJobId` が `null`、`resolveArchiveBranchFromIssue` が `archiveFromIssueUnconfirmedError` を throw → 戻り値が `ARCHIVE_FROM_ISSUE_UNCONFIRMED` の exit code（`EXIT_CODE.ARG_ERROR`）であることを assert する
+- [ ] 新規ケース「`resolveArchivedSlugByJobId` に jobId と issueNumber が渡る」: 呼び出し引数が `{ jobId: "test-job-id", issueNumber: 42 }` を含むことを assert する
+- [ ] 既存 TC-015 / TC-016 / TC-017 / TC-025 / TC-026 / TC-027 / TC-028 は変更しない
+
+**Acceptance Criteria**:
+- 上記の新規ケースがすべて green
+- 変更したのは TC-018 / TC-019 の 2 describe（および共通 mock 定義）のみで、他の describe は無変更
+- `--with-merge` 経路（TC-017）が無変更で green
+
+---
+
+## T-07: 非退行確認
+
+- [ ] `bun run typecheck` が green
+- [ ] `bun run test` が green
+- [ ] `bun run lint` が green
+- [ ] `src/core/archive/__tests__/plain-archive.test.ts`（#1051 の `awaiting-archive` 維持を pin）が無変更で green
+- [ ] `src/core/issue-target/__tests__/archive.test.ts` が無変更で green
+- [ ] `src/cli/__tests__/attach.test.ts` / `src/cli/__tests__/resume-from-issue.test.ts` が無変更で green
+- [ ] `tests/unit/architecture/` 配下の DSM / 不変条件テストが無変更で green
+- [ ] `git diff --stat` を確認し、変更ファイルが次の範囲に収まっていること: `.github/workflows/specrunner-dispatch.yml` / `src/core/archive/job-context.ts` / `src/cli/archive-from-issue.ts` / `src/cli/__tests__/archive-from-issue.test.ts` / 新規テスト 2 件 / `specrunner/changes/dispatch-archive-action/tasks.md`
+
+**Acceptance Criteria**:
+- `typecheck && test && lint` がすべて green
+- 上記以外の source file に差分が無い
+- `package.json` の依存 3 種に差分が無い

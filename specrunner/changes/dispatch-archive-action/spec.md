@@ -1,106 +1,131 @@
-# Spec: dispatch archive action と PR head 経由の archive 経路
+# Spec: Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える
 
 ## Requirements
 
-### Requirement: dispatch workflow は archive action を提供する
+### Requirement: The dispatch workflow shall expose an archive action that delegates to the CLI
 
-`.github/workflows/specrunner-dispatch.yml` の `workflow_dispatch` は `action` input に `archive` を選択肢として提供し、選択時は `specrunner job archive --from-issue "$ISSUE"` **のみ** を実行しなければならない（MUST）。archive 分岐は `--with-merge` を渡してはならず（MUST NOT）、merge 可否・CI 状態・record 有無の判定を workflow 側で行ってはならない（MUST NOT）。`start` / `resume` の分岐は変更してはならない（MUST NOT）。
+`SpecRunner Dispatch` workflow の `workflow_dispatch.inputs.action` は
+`start` / `resume` に加えて `archive` を選択肢として提供 SHALL する。
+`archive` が選択されたとき、workflow は `specrunner job archive --from-issue <issue>` を
+呼び出すだけで、archive の相判定（record 作成か完了処理か）・PR merge 状態の判定・
+job status の解釈を一切行っては MUST ならない。
+`--with-merge` を渡しては MUST ならない。
 
-#### Scenario: archive を選んで dispatch する
+#### Scenario: action choices contain archive
 
-**Given** issue #N に completed marker が付いており、対応する PR が merge 済みである
-**When** dispatch workflow を `action=archive`, `issue=N` で実行する
-**Then** "Run pipeline" step は `bun ./bin/specrunner.ts job archive --from-issue "N"` を実行し、`--with-merge` を含まない
+**Given** `.github/workflows/specrunner-dispatch.yml`
+**When** `on.workflow_dispatch.inputs.action.options` の要素列を取り出す
+**Then** その要素列は `start` / `resume` / `archive` を含む
 
-#### Scenario: start / resume の挙動は変わらない
+#### Scenario: archive branch delegates to the CLI only
 
-**Given** dispatch workflow が `archive` choice を持つ
-**When** `action=start` または `action=resume` で実行する
-**Then** それぞれ従来と同じ `job start --from-issue` / `job resume --from-issue`（`--from` / `--prompt` / `--force` の受け渡しを含む）が実行される
+**Given** `Run pipeline` step の `run:` script
+**When** `$ACTION` が `archive` のときに実行される分岐の本文を取り出す
+**Then** その本文は `bun ./bin/specrunner.ts job archive --from-issue "$ISSUE"` の
+呼び出し 1 件のみからなり、`--with-merge` を含まず、PR / merge 状態を参照する
+コマンドを含まない
 
-### Requirement: locator は head branch 削除時に pull ref へ fallback する
+#### Scenario: existing start and resume dispatch behavior is unchanged
 
-`resolveArchiveBranchFromIssue` は、候補 PR の `git fetch origin <headRefName>` が失敗した場合、その PR を skip する前に `git fetch origin refs/pull/<prNumber>/head` を試みなければならない（MUST）。fallback が成功した場合は `FETCH_HEAD` から確定した commit OID を用い、head branch 経路と同一の 4 点 identity 検証（`state.jobId` / `state.issueNumber` / `state.branch === headRefName` / `state.pullRequest.number === PR.number`）を適用しなければならない（MUST）。identity 検証の項目・比較対象を fallback 経路で緩めてはならない（MUST NOT）。
+**Given** `.github/workflows/specrunner-dispatch.yml`
+**When** `$ACTION` が `resume` または既定の `start` のときに実行される分岐の本文を取り出す
+**Then** それぞれ `job resume --from-issue`（`--from` / `--prompt` / `--force` の
+条件付き付与を含む）と `job start --from-issue "$ISSUE"` を呼び出す従来の内容のままである
 
-#### Scenario: head branch 削除済み PR を pull ref で特定する
+---
 
-**Given** issue #N の closing PR #P の head branch が merge 時に削除されている
-**And** PR head tree に active な change folder の state.json が存在し 4 点 identity が一致する
-**When** `job archive --from-issue N` を local state 無しの環境で実行する
-**Then** locator は `refs/pull/P/head` を fetch して候補を確定し、その branch / slug / checkpointOid を返す
+### Requirement: Archive-from-issue shall resolve the slug from a base-borne archive record when local state is absent
 
-#### Scenario: fallback 経路でも identity 不一致は skip される
+`job archive --from-issue <n>` は、completed marker から得た jobId で local state を
+引き当てられなかったとき、checkout 済み base 上の archive record から slug を解決
+SHALL する。照合は record の `jobId` と `issueNumber` の**両方**が一致することを
+要件とし、change folder が `specrunner/changes/archive/` 配下にある record のみを
+対象と SHALL する。
 
-**Given** issue #N の closing PR #P の head branch が削除されている
-**And** `refs/pull/P/head` は fetch できるが、state.json の jobId が completed marker の jobId と一致しない
-**When** `job archive --from-issue N` を実行する
-**Then** PR #P は warning とともに skip され、他に確定候補が無ければ `ARCHIVE_FROM_ISSUE_UNCONFIRMED` で終了する
+この経路で slug が解決されたとき、closing PR の列挙・head branch の fetch・
+checkpoint の rebind・workspace の setup をいずれも実行しては MUST ならない。
+merge 済みの確認と終端処理は既存の archive 実行経路に委譲 SHALL する。
 
-#### Scenario: head branch が生きている場合は fallback を使わない
+#### Scenario: post-merge resolution with the head branch deleted
 
-**Given** issue #N の closing PR #P の head branch が remote に存在する
-**When** `job archive --from-issue N` を実行する
-**Then** `git fetch origin <headRefName>` が成功し、`refs/pull/P/head` の fetch は実行されない
+**Given** completed marker から jobId が解決でき、
+かつ local state 参照が job を引き当てられず、
+かつ checkout 済み base の `specrunner/changes/archive/<YYYY-MM-DD>-<slug>/state.json` に
+同じ `jobId` と同じ `issueNumber` を持つ record が存在し、
+かつ PR の head branch は merge 時に削除済みである
+**When** `job archive --from-issue <n>` を実行する
+**Then** 当該 record の slug で archive 実行に入り、closing PR の head branch fetch と
+checkpoint rebind はいずれも行われず、exit code 0 で終了する
 
-### Requirement: attach 検証は検証済み OID を受け取れる
+#### Scenario: record with a mismatched jobId is not resolved
 
-`runAttachVerification` は任意入力 `checkpointOid` を受け取り、指定された場合は `git fetch` と `git rev-parse` を実行せず、その OID から checkpoint を読み込んで `verifyCheckpoint` のみを実行しなければならない（MUST）。`checkpointOid` が未指定の場合は現行どおり branch を fetch して OID を解決しなければならない（MUST）。`job resume --from-issue` および `job attach --branch` の呼び出しは `checkpointOid` を渡してはならない（MUST NOT）。
+**Given** local state 参照が job を引き当てられず、
+かつ base の archive record の `issueNumber` は一致するが `jobId` が異なる
+**When** `job archive --from-issue <n>` を実行する
+**Then** その record は解決対象にならず、closing PR 経路へ移る
 
-#### Scenario: archive 経路は locator の OID をそのまま検証する
+#### Scenario: record with a mismatched issueNumber is not resolved
 
-**Given** locator が PR head の commit OID を identity 検証済みで返した
-**When** `runArchiveFromIssue` が `runAttachVerification` を呼ぶ
-**Then** `checkpointOid` が渡され、`git fetch` は実行されず、checkpoint はその OID から読まれる
+**Given** local state 参照が job を引き当てられず、
+かつ base の archive record の `jobId` は一致するが `issueNumber` が異なる
+（`issueNumber` を持たない record を含む）
+**When** `job archive --from-issue <n>` を実行する
+**Then** その record は解決対象にならず、closing PR 経路へ移る
 
-#### Scenario: 削除済み branch でも attach 検証が通る
+#### Scenario: an active change folder is not treated as an archive record
 
-**Given** locator が `refs/pull/P/head` fallback で OID を確定し、head branch は remote に存在しない
-**When** `runArchiveFromIssue` が attach 検証へ進む
-**Then** `ATTACH_FETCH_FAILED` は発生せず、`awaiting-archive` policy による検証が実行される
+**Given** local state 参照が job を引き当てられず、
+かつ `jobId` と `issueNumber` が一致する state が
+`specrunner/changes/<slug>/`（archive 配下ではない位置）にのみ存在する
+**When** `job archive --from-issue <n>` を実行する
+**Then** その state は archive record fallback の解決対象にならない
 
-#### Scenario: resume / attach の既存経路は現行動作を保つ
+---
 
-**Given** `job resume --from-issue` または `job attach --branch` を実行する
-**When** attach 検証が走る
-**Then** 従来どおり `git fetch origin <branch>` と `git rev-parse origin/<branch>^{commit}` が実行される
+### Requirement: Existing resolution paths shall retain priority and fallback behavior
 
-### Requirement: merge 後の archive は completeAfterMerge に到達し exit 0 で終わる
+archive record fallback は、local state 参照の**後**、closing PR 経路の**前**に位置
+SHALL する。local state が引き当たる場合は従来どおり local state の slug を用い、
+archive record fallback を実行しては MUST ならない。
+archive record が見つからない場合は従来どおり closing PR + attach 検証の経路を
+用い SHALL する。いずれの経路でも target を確定できない場合は
+`ARCHIVE_FROM_ISSUE_UNCONFIRMED` を返 SHALL す。
 
-archive record 済みの job について、PR が MERGED であり base branch の checkout に archive record が存在する場合、`job archive --from-issue <n>` は `completeAfterMerge`（`markJobArchived` + `runPostMergeCleanup`）を実行し exit 0 を返さなければならない（MUST）。この完了のために新しい status / marker / main への commit を導入してはならない（MUST NOT）。local state（sidecar index / active change folder）が存在しない環境でも同じ結果にならなければならない（MUST）。
+#### Scenario: local state takes priority over the archive record
 
-#### Scenario: ephemeral runner で merge 後 archive が完了する
+**Given** completed marker から得た jobId で local state が引き当たる
+**When** `job archive --from-issue <n>` を実行する
+**Then** archive record の探索も closing PR の列挙も行われず、
+local state から得た slug で archive 実行に入る
 
-**Given** local state を持たない checkout に merge 済みの archive record（`specrunner/changes/archive/<date>-<slug>/state.json`, status `awaiting-archive`）がある
-**And** PR #P は MERGED で head branch は削除済み
-**When** `job archive --from-issue N` を実行する
-**Then** `completeAfterMerge` が実行され、job は `archived` になり exit 0 で終了する
-**And** 新しい archive record commit は push されない
+#### Scenario: pre-merge falls through to the closing PR path
 
-#### Scenario: cleanup の空振りは失敗にしない
+**Given** local state 参照が job を引き当てられず、
+かつ checkout 済み base に当該 jobId の archive record が存在せず、
+かつ closing PR が open で head branch が存在する
+**When** `job archive --from-issue <n>` を実行する
+**Then** closing PR の head branch から checkpoint identity を照合する経路と
+attach 検証が実行され、その結果得られた slug で archive 実行に入る
 
-**Given** merge 済み archive record の `worktreePath` が現在のマシンに存在しない
-**And** remote の head branch は既に削除されている
-**When** merge 後 archive を実行する
-**Then** post-merge cleanup の warning が出ても exit 0 を維持する
+#### Scenario: neither path resolves a target
 
-#### Scenario: record 前に merge された場合は escalation のまま
+**Given** local state 参照が job を引き当てられず、
+かつ checkout 済み base に当該 jobId の archive record が存在せず、
+かつ closing PR のいずれも identity 照合を通らない
+**When** `job archive --from-issue <n>` を実行する
+**Then** `ARCHIVE_FROM_ISSUE_UNCONFIRMED` が返る
 
-**Given** PR #P は MERGED だが archive record が存在しない
-**When** `job archive --from-issue N` を実行する
-**Then** 順序エラーの escalation が出力され、exit 0 にはならない
+---
 
-### Requirement: 既存の archive 契約を変更しない
+### Requirement: The archive-record signal shall have a single definition
 
-本変更は `--with-merge` 経路の挙動、および archive record 後に `awaiting-archive` へ留まる状態機械を変更してはならない（MUST NOT）。`resolveCheckpointSlug` が `archive` / `canceled` を active checkpoint 候補から除外する規則も変更してはならない（MUST NOT）。
+change folder が archive record であるか（`specrunner/changes/archive/` 配下にあるか）の
+判定は単一の共有述語を経由 SHALL し、archive record fallback の slug 解決と
+archive 実行時の `archiveRecorded` 判定はその同じ述語を使用 SHALL する。
 
-#### Scenario: PR が open のうちは awaiting-archive に留まる
+#### Scenario: fallback-resolved slug is seen as archive-recorded by the archive run
 
-**Given** PR #P が OPEN である
-**When** `job archive <slug>` を実行する
-**Then** archive record が feature branch に push され、job は `awaiting-archive` のまま exit 0 で終了する
-
-#### Scenario: --with-merge の挙動は不変
-
-**Given** `job archive <slug> --with-merge` を実行する
-**When** merge → archive の一連の処理が走る
-**Then** 従来と同一の順序・出力・終了コードになる
+**Given** archive record fallback が base 上の record から slug を解決した
+**When** その slug で archive 実行の job context を解決する
+**Then** その job context の `archiveRecorded` は true になり、
+「record 作成前に merge された」という順序エラーの escalation は発生しない

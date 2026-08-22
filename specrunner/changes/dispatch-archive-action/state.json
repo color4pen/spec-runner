@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
   "createdAt": "2026-08-21T22:28:13.507Z",
-  "updatedAt": "2026-08-22T00:34:45.217Z",
+  "updatedAt": "2026-08-22T01:02:35.839Z",
   "request": {
     "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "design",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/dispatch-archive-action-c2c7ba44",
   "error": null,
   "pipelineId": "standard",
@@ -67,7 +67,9 @@
     "a594d63ac0f639106194dc5e785ac45c79fd8775",
     "601740e3f83df7a10434c8638fbc351899d8ac43",
     "92d3ac1085472c563eee98d80d0775ac48c1db75",
-    "9f766a55c405443568da330b1a1380f803040b43"
+    "9f766a55c405443568da330b1a1380f803040b43",
+    "41e3c0d1e70d0efe8e9001a7175f221ce18d40dc",
+    "02a08844798aebac397537ad9fb0b333b80a5a60"
   ],
   "touchedFiles": {
     "request-review": [
@@ -105,21 +107,22 @@
       "src/core/finish/resolve-canonical-state-dir.ts"
     ]
   },
-  "resumePoint": {
-    "step": "design",
-    "reason": "design escalated",
-    "iterationsExhausted": 0
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
       "text": "request-review escalation への operator 裁定: 選択肢 B を採用。runAttachVerification に fetch 済み checkpointOid を受け取る任意入力を追加し、指定時は fetch / rev-parse を省略して checkpoint 読み込みと verifyCheckpoint（generic integrity + policy + identity）のみを実行する。archive-from-issue の pull ref fallback 経路はこのオプションで検証を通す。resume --from-issue / job attach --branch の既存経路は OID を渡さず現行動作のまま。実装範囲に archive-from-issue.ts と orchestrator の該当拡張を含め、受け入れ条件の「branch 削除済みシナリオ」は ephemeral（local state 無し）の end-to-end で固定すること。\n",
       "step": "request-review",
       "recordedAt": "2026-08-22T00:13:56.089Z"
+    },
+    {
+      "text": "design escalation（Open Question 1 / D4）への operator 裁定: 選択肢 A を採用。ただし scope をさらに縮小する。\n\n- post-merge finalization を branch-borne checkpoint の rebind で解く前提は撤回。merge 後は main（checkout 済み base）に載った archive record が正。\n- `runArchiveFromIssue` の local jobId lookup miss 時に、`listWithSourceDirs({ includeArchived: true })` の record から jobId + issueNumber 一致で slug を解決する archive 専用 fallback を追加し、一致したら rebind / attach を通さず既存 `runArchive` に直行する。merge 済み確認と完了処理は既存 `runPlainArchive` / `completeAfterMerge` に委譲する。\n- archive record が見つからない merge 前は従来どおり closing PR branch + `runAttachVerification` を使う（merge 前は PR が open で head branch が存在するため既存経路で足りる）。\n- 先の request-review 裁定で指定した `refs/pull/<n>/head` fetch fallback と `runAttachVerification` の checkpointOid 拡張は、この 2 相フローでは不要のため本 request から削除する（当該裁定は本裁定で上書き）。\n- `resolveCheckpointSlug` / `loadStateByJobId` / resume・attach の一般契約は変更しない。新しい pipeline step / status / verifier は追加しない。\n\nrequest.md は operator が上記の縮小 scope（実装範囲 5 点・非目標に pull-ref fallback / checkpointOid 拡張を明記・受け入れ条件の差し替え）へ更新済み（apply-canon）。design.md / spec.md / tasks.md を更新後の request.md に合わせて改訂すること。確定済みの要求 1（dispatch archive action）の設計は維持してよい。\n",
+      "step": "design",
+      "recordedAt": "2026-08-22T01:02:35.595Z"
     }
   ],
   "_journal": {
-    "historyCount": 11,
+    "historyCount": 13,
     "stepCounts": {
       "request-review": 2,
       "design": 1
