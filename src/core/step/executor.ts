@@ -399,7 +399,9 @@ export class StepExecutor {
       if (guardAfter !== null) {
         const drift = diffGuardSnapshots(guardBefore, guardAfter);
         if (drift.drifted) {
-          const halt = makeDriftHalt(drift, step.name, deps.slug, { startedAt });
+          // agent-context-observability: forward contextMetrics from the successful runner result
+          // so commitHalt can persist them even though the halt is due to a post-success drift guard.
+          const halt = makeDriftHalt(drift, step.name, deps.slug, { startedAt }, runResult.contextMetrics);
           return { kind: "halt", halt };
         }
       }

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f6d2e71c-5ff1-4454-ad35-1073cc427a7f",
   "createdAt": "2026-08-22T13:47:16.472Z",
-  "updatedAt": "2026-08-22T18:54:38.745Z",
+  "updatedAt": "2026-08-22T19:05:02.314Z",
   "request": {
     "title": "agent session の active context / compaction を計測可能にする",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/agent-context-observability-f6d2e71c",
   "error": null,
@@ -83,7 +83,8 @@
     "164b9bcb29e4bcd67a26e5c912e77a9b27184b91",
     "0436b22397e959200ba3b55bdc713cbfdfd7fe41",
     "d17b006fff851bb484a709a771ce562c1fb167a3",
-    "3c4d1fe3a13c454a09bef69152cedecf6f0ad73d"
+    "3c4d1fe3a13c454a09bef69152cedecf6f0ad73d",
+    "9d233545a8836c7f9790593d2b0fd1faa5a3cbc4"
   ],
   "touchedFiles": {
     "request-review": [
@@ -163,23 +164,19 @@
     "code-review": [
       "src/kernel/context-metrics.ts",
       "src/adapter/claude-code/context-observer.ts",
-      "src/core/port/agent-runner.ts",
       "src/adapter/claude-code/agent-runner.ts",
-      "src/core/step/step-halt.ts",
+      "src/core/port/agent-runner.ts",
       "src/core/step/commit-orchestrator.ts",
+      "src/core/step/step-halt.ts",
       "src/core/step/executor.ts",
       "src/core/usage/types.ts",
       "src/core/command/usage-show.ts",
       "src/adapter/codex/agent-runner.ts",
+      "src/adapter/managed-agent/usage.ts",
       "src/adapter/managed-agent/agent-runner.ts",
       "tests/unit/adapter/claude-code/context-observer.test.ts",
-      "tests/unit/core/usage/context-metrics-types.test.ts",
       "tests/unit/core/step/commit-orchestrator-context-metrics.test.ts",
-      "tests/unit/adapter/claude-code/agent-runner-context-metrics.test.ts",
-      "tests/unit/adapter/codex/agent-runner-context-metrics.test.ts",
-      "tests/unit/core/command/usage-show-context-metrics.test.ts",
-      "tests/unit/adapter/managed-agent/agent-runner-context-metrics.test.ts",
-      "src/adapter/managed-agent/usage.ts"
+      "tests/unit/adapter/claude-code/agent-runner-context-metrics.test.ts"
     ],
     "regression-gate": [
       "src/core/step/commit-orchestrator.ts",
@@ -259,7 +256,7 @@
     "createdAt": "2026-08-22T16:09:28.352Z"
   },
   "_journal": {
-    "historyCount": 98,
+    "historyCount": 102,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -269,7 +266,7 @@
       "implementer": 2,
       "bite-evidence": 2,
       "verification": 3,
-      "code-review": 1,
+      "code-review": 2,
       "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
       "custom-reviewers": 2,

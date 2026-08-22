@@ -8,6 +8,7 @@
  * TC-014: exhaustion で halt した step の metrics が usage.json に残る
  * TC-017: halt entry が cost 集計を動かさない
  * TC-018: context metrics の無い halt では entry を追加しない
+ * TC-042: agent 成功後の main-checkout drift halt でも contextMetrics が usage.json に残る
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -22,7 +23,7 @@ import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { StepCompletion } from "../../../../src/core/step/step-completion.js";
 import type { StepExecutionResult } from "../../../../src/core/step/commit-orchestrator.js";
 import type { StepHalt } from "../../../../src/core/step/step-halt.js";
-import { makeNonSuccessHalt, makeTimeoutHalt } from "../../../../src/core/step/step-halt.js";
+import { makeNonSuccessHalt, makeTimeoutHalt, makeDriftHalt } from "../../../../src/core/step/step-halt.js";
 import type { AgentContextMetrics } from "../../../../src/kernel/context-metrics.js";
 import type { Verdict } from "../../../../src/state/schema.js";
 
@@ -820,6 +821,127 @@ describe("TC-043: modelUsage 欠落 + contextMetrics ありの成功 step でも
 
     const usageFile = await readUsageFile(usagePath);
     // No entry — neither condition is true
+    expect(usageFile.commandInvocations).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-042: agent 成功後の main-checkout drift halt でも contextMetrics が usage.json に残る
+// ---------------------------------------------------------------------------
+
+describe("TC-042: agent 成功後の main-checkout drift halt でも contextMetrics が usage.json に残る", () => {
+  it("drift halt with contextMetrics writes modelUsage:null entry to usage.json", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("implementer");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    // Simulate a drift halt that carries contextMetrics from a successful runner invocation.
+    // makeDriftHalt now accepts an optional contextMetrics parameter (TC-042 implementation).
+    const contextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      model: "claude-sonnet-4-5",
+      peakActiveContextTokens: 95000,
+      compactionCount: 1,
+      contextTokensBeforeCompaction: 160000,
+      contextTokensAfterCompaction: 40000,
+    };
+
+    const drift = {
+      drifted: true,
+      changes: [{ path: ".specrunner/config.yaml", kind: "modified" as const }],
+    };
+
+    const halt = makeDriftHalt(drift, "implementer", TEST_SLUG, { startedAt: "2026-01-01T00:00:00.000Z" }, contextMetrics);
+
+    try {
+      await orchestrator.commitHalt(step, state, halt, deps);
+    } catch {
+      // Expected throw from attachStateAndRethrow
+    }
+
+    const usageFile = await readUsageFile(usagePath);
+    // One entry added by commitHalt for the halt's contextMetrics
+    expect(usageFile.commandInvocations).toHaveLength(1);
+
+    const inv = usageFile.commandInvocations[0]!;
+
+    // TC-042: modelUsage MUST be null (halt entry)
+    expect(inv.modelUsage).toBeNull();
+
+    // TC-042: contextMetrics from the runner's success MUST be in the halt entry
+    expect(inv.contextMetrics).toBeDefined();
+    expect(inv.contextMetrics!.provider).toBe("claude-code");
+    expect(inv.contextMetrics!.model).toBe("claude-sonnet-4-5");
+    expect(inv.contextMetrics!.peakActiveContextTokens).toBe(95000);
+    expect(inv.contextMetrics!.compactionCount).toBe(1);
+    expect(inv.contextMetrics!.contextTokensBeforeCompaction).toBe(160000);
+    expect(inv.contextMetrics!.contextTokensAfterCompaction).toBe(40000);
+
+    // invocation metrics must NOT be in the halt entry
+    expect(Object.prototype.hasOwnProperty.call(inv, "numTurns")).toBe(false);
+    expect(Object.prototype.hasOwnProperty.call(inv, "durationMs")).toBe(false);
+  });
+
+  it("makeDriftHalt includes contextMetrics in halt when provided", () => {
+    const contextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      peakActiveContextTokens: 80000,
+    };
+
+    const drift = {
+      drifted: true,
+      changes: [{ path: "specrunner/changes/test-slug/design.md", kind: "modified" as const }],
+    };
+
+    const halt = makeDriftHalt(drift, "implementer", "test-slug", {}, contextMetrics);
+
+    expect(halt.contextMetrics).toBeDefined();
+    expect(halt.contextMetrics!.provider).toBe("claude-code");
+    expect(halt.contextMetrics!.peakActiveContextTokens).toBe(80000);
+  });
+
+  it("makeDriftHalt without contextMetrics has no contextMetrics field", () => {
+    const drift = {
+      drifted: true,
+      changes: [{ path: ".specrunner/config.yaml", kind: "created" as const }],
+    };
+
+    // No contextMetrics argument — simulates pre-feature or non-claude-code runner
+    const halt = makeDriftHalt(drift, "implementer", "test-slug", {});
+
+    expect(halt.contextMetrics).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(halt, "contextMetrics")).toBe(false);
+  });
+
+  it("drift halt without contextMetrics does not add a usage.json entry", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("implementer");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const drift = {
+      drifted: true,
+      changes: [{ path: ".specrunner/config.yaml", kind: "modified" as const }],
+    };
+
+    // No contextMetrics — simulates Codex / managed runner path
+    const halt = makeDriftHalt(drift, "implementer", TEST_SLUG, { startedAt: "2026-01-01T00:00:00.000Z" });
+
+    try {
+      await orchestrator.commitHalt(step, state, halt, deps);
+    } catch {
+      // Expected throw from attachStateAndRethrow
+    }
+
+    const usageFile = await readUsageFile(usagePath);
+    // No entry — drift halt without contextMetrics should not write to usage.json
     expect(usageFile.commandInvocations).toHaveLength(0);
   });
 });

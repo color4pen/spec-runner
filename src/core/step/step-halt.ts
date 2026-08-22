@@ -208,15 +208,21 @@ export function makeNonSuccessHalt(
  *
  * history: `{step}-main-checkout-write-detected` / error / `${step}: main checkout write detected — ${pathSummary}`
  *
- * @param drift    Result of diffGuardSnapshots — must have drifted === true.
- * @param stepName Name of the step during which the drift was detected.
- * @param slug     Job slug for the resume command hint message.
+ * @param drift          Result of diffGuardSnapshots — must have drifted === true.
+ * @param stepName       Name of the step during which the drift was detected.
+ * @param slug           Job slug for the resume command hint message.
+ * @param recordOpts     Forwarded to recordFailedStepResult (startedAt / completedAt / transientRetryAttempts).
+ * @param contextMetrics Active context metrics observed during the agent invocation (agent-context-observability).
+ *                       Forwarded from AgentRunResult.contextMetrics so that drift halt entries are also recorded
+ *                       in usage.json per spec "halted step SHALL also append one usage entry when — and only when —
+ *                       context metrics were observed" (D7).
  */
 export function makeDriftHalt(
   drift: GuardDrift,
   stepName: string,
   slug: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
+  contextMetrics?: AgentContextMetrics,
 ): StepHalt & { kind: "awaiting-resume" } {
   const pathSummary = drift.changes.map((c) => `${c.kind}: ${c.path}`).join(", ");
   const detectedAtStep = toStepName(stepName);
@@ -256,6 +262,9 @@ export function makeDriftHalt(
       status: "error",
       message: `${stepName}: main checkout write detected — ${pathSummary}`,
     },
+    // agent-context-observability: carry context metrics from the successful runner invocation
+    // so that commitHalt can persist them even when the halt is due to a post-success drift guard.
+    ...(contextMetrics !== undefined ? { contextMetrics } : {}),
   };
 }
 
