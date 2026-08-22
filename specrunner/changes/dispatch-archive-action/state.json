@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
   "createdAt": "2026-08-21T22:28:13.507Z",
-  "updatedAt": "2026-08-22T01:22:57.858Z",
+  "updatedAt": "2026-08-22T01:34:34.580Z",
   "request": {
     "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/dispatch-archive-action-c2c7ba44",
   "error": null,
@@ -73,7 +73,9 @@
     "b5d44f6548007acad61d191f7b8e6e2ac9b94d05",
     "aed063786c5616c4a6b0967a86b6b8347690d4a6",
     "0f5d2d5a1718bc6e573d400947ce447c80ffa63a",
-    "01309fc064bfdb0573c25bd07730d6fa137939d5"
+    "01309fc064bfdb0573c25bd07730d6fa137939d5",
+    "1c1746136b09e789afdd1b1375e948d0a3331d1a",
+    "6ccbc3e4e6c28a3d7dfed4ad5f19ff721046f67e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -123,7 +125,22 @@
       "src/core/command/pipeline-run.ts",
       "src/core/issue-target/start.ts"
     ],
-    "spec-fixer": []
+    "spec-fixer": [],
+    "implementer": [
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/job-context.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "src/store/__tests__/job-state-store-list-with-source-dirs.test.ts",
+      "src/core/archive/__tests__",
+      "tests/grep-workflow-actions-pinned.test.ts",
+      "src/errors.ts",
+      "src/logger/stdout.ts",
+      "src/core/archive/__tests__/plain-archive.test.ts",
+      "tests/dispatch-workflow-archive-action.test.ts",
+      "src/state/schema.ts",
+      "src/core/archive/__tests__/archived-slug-by-job-id.test.ts"
+    ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -140,13 +157,16 @@
     }
   ],
   "_journal": {
-    "historyCount": 27,
+    "historyCount": 39,
     "stepCounts": {
       "request-review": 2,
       "design": 2,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
