@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:8f8c68345f440ef9049b875dac42ab7b28050eb905c861dc569e291db881b2d6",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/adapter/claude-code/agent-runner.ts: main work runs as a single SDK query() / session in runQuery(), no fresh-session rollover mechanism exists",
+    "src/core/step/implementer.ts: maxTurns is 60 (line 204)",
+    "src/prompts/fragments.ts: COMMIT_DISCIPLINE forbids git add / git commit / git push, pipeline executor does commit/push",
+    "src/core/step/executor.ts: finalizeStepArtifacts (commit/push) is only reached after completionReason === 'success'; non-success path returns halt early (lines 377-385)",
+    "src/adapter/shared/artifact-bundle.ts: MAX_ARTIFACT_BUNDLE_BYTES = 64*1024, returns '' when exceeded (lines 25, 56)",
+    "src/adapter/claude-code/agent-runner.ts: non-success error result returns code 'CLAUDE_CODE_QUERY_FAILED' (lines 1004, 1328), CONTEXT_WINDOW_EXHAUSTED is not implemented",
+    "src/adapter/claude-code/context-observer.ts: isContextExhaustionError() exists as fail-closed allowlist matching 'prompt is too long', 'context length exceeded', 'context window exceeded' (line 34)",
+    "src/adapter/claude-code/context-observer.ts: exhaustionAtTokens, compactionCount, peakActiveContextTokens are tracked in AgentContextMetrics",
+    "src/core/usage/types.ts: contextMetrics?: AgentContextMetrics is persisted in usage.json CommandInvocation (line 86)",
+    "src/adapter/shared/transient-error.ts: TRANSIENT_TOKENS does not include context exhaustion patterns; isTransientAgentError() is fail-closed"
+  ],
+  "sourceRevision": "129a035ae6a68845cd0fa66b3bbabae390caec57"
+}
