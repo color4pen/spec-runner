@@ -50,10 +50,10 @@ Result section MUST appear at the very end as a YAML code block:
 
 ## Summary
 
-- **Total**: 34 cases
-- **Automated** (unit/integration): 32
+- **Total**: 35 cases
+- **Automated** (unit/integration): 33
 - **Manual**: 0
-- **Priority**: must: 27, should: 6, could: 1
+- **Priority**: must: 27, should: 7, could: 1
 
 ---
 
@@ -422,15 +422,31 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
+## Throw 経路の error 詳細保全
+
+### TC-035: throw 経路で exhaustion と判定された場合 error.message と cause チェーンが保全される
+
+**Category**: unit
+**Priority**: should
+**Source**: tasks.md > T-02
+
+**GIVEN** SDK query が exhaustion 文字列（例: `"Prompt is too long"`）を cause に持つ Error を throw する（例: `new Error("Claude Code SDK query failed", { cause: new Error("Prompt is too long") })`）
+**WHEN** `ClaudeCodeRunner.run()` が完了する
+**THEN** `AgentRunResult.error.code` は `"CONTEXT_WINDOW_EXHAUSTED"` である
+**AND** `AgentRunResult.error.message` に元の throw message（例: `"Claude Code SDK query failed"`）が含まれる（現行どおり保全）
+**AND** `AgentRunResult.error` の `cause` チェーンに元の cause が保持されている（message の劣化なし）
+
+---
+
 ## Result
 
 ```yaml
 result: completed
-total: 34
-automated: 32
+total: 35
+automated: 33
 manual: 0
 must: 27
-should: 6
+should: 7
 could: 1
 blocked_reasons: []
 ```

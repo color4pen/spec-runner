@@ -59,7 +59,7 @@
   - exhaustion の error result / throw かつ `abortController.signal.aborted === false` かつ rollover 残数あり → rollover 実行して次イテレーション
   - exhaustion だが rollover 残数なし → ループ脱出し、`CONTEXT_WINDOW_EXHAUSTED` の error を返す（message に rollover 回数を使い切った旨、hint に request 分割の示唆を入れる）
   - abort 発火中 → rollover せず従来どおり再 throw（timeout / watchdog 経路を保持）
-- [ ] rollover 実行の内容（design D6）: `delete queryOptions["resume"]`、`extractedSessionId = undefined`、`capturedToolResult = null`、resume→fresh fallback の latch（`resumeFallbackDone`）を true にする、現 session prompt を `baseFullPrompt + promptRules + buildRolloverContinuationSection(...) + firstTurnCompletionDirective` に差し替える
+- [ ] rollover 実行の内容（design D6）: まず **T-05 の `snapshot()` と sessionId キャプチャを先行させてから**（順序依存: T-05 参照）、`delete queryOptions["resume"]`、`extractedSessionId = undefined`、`capturedToolResult = null`、resume→fresh fallback の latch（`resumeFallbackDone`）を true にする、現 session prompt を `baseFullPrompt + promptRules + buildRolloverContinuationSection(...) + firstTurnCompletionDirective` に差し替える。`extractedSessionId = undefined` は T-05 の snapshot が sessionId を取り出した後でなければならない（先にリセットすると `AgentSessionRollover.sessionId` が常に undefined になる）
 - [ ] 捨てた session の error result が `modelUsage` を持つ場合は `extractedModelUsage` に per-model 加算する（既存 follow-up 加算と同じ形）
 - [ ] rollover 時に `stderrWrite` の warn 行と `logVerbose("session", …)` を出す（step 名・rollover 回数・上限・理由）
 - [ ] `touchedFileMessages` は rollover 後もそのまま蓄積を継続する（リセットしない）
@@ -72,14 +72,14 @@
 - fresh session の query options に `resume` キーが存在しない
 - `maxRollovers: 0` および非 exhaustion error では query が 1 回のみ
 - abort（step timeout / watchdog）発火時に rollover が起きず、`completionReason === "timeout"` の既存挙動が保たれる
-- 既存 adapter テスト（`agent-runner.test.ts` / `agent-runner-transient-retry.test.ts` / `agent-runner-inactivity-timeout.test.ts` / `agent-runner-report-settles.test.ts`）が無変更で green
+- 既存 adapter テスト（`tests/unit/adapter/claude-code/agent-runner.test.ts` / `src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts` / `tests/unit/adapter/claude-code/agent-runner-inactivity-timeout.test.ts` / `src/adapter/claude-code/__tests__/agent-runner-report-settles.test.ts`）が無変更で green
 
 ## T-05: session 単位 context metrics と rollover observation を実装する
 
 - [ ] `src/core/port/agent-runner.ts` に `AgentSessionRollover` を追加する: `{ attempt: number; reason: "context-exhaustion"; sessionId?: string; errorMessage: string; contextMetrics?: AgentContextMetrics }`（`AgentContextMetrics` は既存 import を再利用。`src/kernel/` には import ゼロ規約があるため新しい型を kernel に置かない）
 - [ ] `AgentRunResult` に `sessionRollovers?: AgentSessionRollover[]` を追加し、doc comment で「absent = rollover 未発生 / 非対応 runtime」「`contextMetrics` は各 session 個別の観測値であり最終 `contextMetrics` と合成しない」ことを明記する
 - [ ] `agent-runner.ts` の `contextObserver` を `const` から `let` に変え、rollover 時に `createContextObserver({ provider: "claude-code", model: resolvedConfig.model })` で新規生成して差し替える（design D7）
-- [ ] rollover 実行時に、差し替え前の observer に対して exhaustion テキストで `markExhaustion()` を呼んでから `snapshot()` を取り、`sessionRollovers` に push する（`errorMessage` は truncate 済みテキスト、`sessionId` は捨てる session の ID があれば設定）
+- [ ] rollover 実行時に、差し替え前の observer に対して exhaustion テキストで `markExhaustion()` を呼んでから `snapshot()` を取り、`sessionRollovers` に push する（`errorMessage` は truncate 済みテキスト、`sessionId` は捨てる session の ID があれば設定）。**この `snapshot()` および `extractedSessionId` からの sessionId キャプチャは、T-04 の `extractedSessionId = undefined` リセットより必ず前に実行すること**（リセット後では sessionId が undefined になるため）
 - [ ] `run()` の全 return 経路（success / 各 error / timeout）で `sessionRollovers` が非空のときのみ当該フィールドを含める
 - [ ] `src/kernel/event-types.ts` の `DomainEvent` に `"step:rollover"` を追加し、`src/core/event/types.ts` の `EventPayloadMap` に `{ step: string; attempt: number; maxRollovers: number; reason: "context-exhaustion" }` を追加する
 - [ ] rollover 時に `ctx.emit("step:rollover", …)` する

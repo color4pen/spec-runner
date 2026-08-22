@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-22T22:49:46.718Z",
+  "updatedAt": "2026-08-22T22:57:12.783Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -67,7 +67,8 @@
     "9e3aa4c8e92e0932f255fca2f822a8915718e418",
     "a5d1ab989b63ba58a79c7176dc0310d502865d01",
     "4c609ebee818f6149299bb8a9e1900abe25a8542",
-    "190859033f2a5d604d0226a0b4a7e497e08fc40a"
+    "190859033f2a5d604d0226a0b4a7e497e08fc40a",
+    "1c22b9f126b235c945dcb21ae91515f62481be56"
   ],
   "touchedFiles": {
     "request-review": [
@@ -96,14 +97,33 @@
       "src/core/usage/types.ts",
       "src/adapter/claude-code/completion-directive.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "spec-review": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/step-halt.ts",
+      "src/adapter/shared/transient-error.ts",
+      "src/kernel/event-types.ts",
+      "src/core/event/types.ts",
+      "src/config/schema",
+      "src/adapter/claude-code/completion-directive.ts",
+      "src/config/schema.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/config/schema/types.ts",
+      "src/config/schema/resolution.ts",
+      "tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts",
+      "src/config/schema/validation.ts"
+    ]
   },
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }
