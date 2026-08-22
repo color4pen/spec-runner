@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
   "createdAt": "2026-08-21T22:28:13.507Z",
-  "updatedAt": "2026-08-22T01:14:12.549Z",
+  "updatedAt": "2026-08-22T01:22:09.598Z",
   "request": {
     "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "feat/dispatch-archive-action-c2c7ba44",
   "error": null,
@@ -71,7 +71,8 @@
     "41e3c0d1e70d0efe8e9001a7175f221ce18d40dc",
     "02a08844798aebac397537ad9fb0b333b80a5a60",
     "b5d44f6548007acad61d191f7b8e6e2ac9b94d05",
-    "aed063786c5616c4a6b0967a86b6b8347690d4a6"
+    "aed063786c5616c4a6b0967a86b6b8347690d4a6",
+    "0f5d2d5a1718bc6e573d400947ce447c80ffa63a"
   ],
   "touchedFiles": {
     "request-review": [
@@ -98,7 +99,29 @@
       "src/core/archive/workflow-ci-detection.ts",
       "src/core/archive/post-merge-cleanup.ts"
     ],
-    "test-case-gen": []
+    "test-case-gen": [],
+    "spec-review": [
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/job-context.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/git/checkpoint-ref.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/core/archive/merge-completion.ts",
+      "src/core/archive/post-merge-cleanup.ts",
+      "src/store/job-catalog.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "tests/grep-workflow-actions-pinned.test.ts",
+      "src/core/archive/plain-archive.ts",
+      "src/core/issue-target/archive.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/store/job-state-store.ts",
+      "src/state/schema.ts",
+      "src/state/job-slug.ts",
+      "src/errors.ts",
+      "src/cli/command-registry.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/issue-target/start.ts"
+    ]
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -115,11 +138,12 @@
     }
   ],
   "_journal": {
-    "historyCount": 20,
+    "historyCount": 24,
     "stepCounts": {
       "request-review": 2,
       "design": 2,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }

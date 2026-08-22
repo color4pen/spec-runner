@@ -88,8 +88,10 @@ archive record fallback は、local state 参照の**後**、closing PR 経路�
 SHALL する。local state が引き当たる場合は従来どおり local state の slug を用い、
 archive record fallback を実行しては MUST ならない。
 archive record が見つからない場合は従来どおり closing PR + attach 検証の経路を
-用い SHALL する。いずれの経路でも target を確定できない場合は
-`ARCHIVE_FROM_ISSUE_UNCONFIRMED` を返 SHALL す。
+用い SHALL する。closing PR が存在するがいずれも identity 照合を通らない場合は
+`ARCHIVE_FROM_ISSUE_UNCONFIRMED` を返 SHALL す。closing PR がゼロ件である場合は
+この Requirement のスコープ外であり、`ARCHIVE_FROM_ISSUE_NO_PR`（pre-existing 動作）を
+返すことは本 Requirement に矛盾しない。
 
 #### Scenario: local state takes priority over the archive record
 
