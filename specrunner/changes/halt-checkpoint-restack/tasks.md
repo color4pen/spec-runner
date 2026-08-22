@@ -206,3 +206,30 @@
 **Acceptance Criteria**:
 - `bun run typecheck` と `bun run test` がいずれも green
 - 既存テストファイルへの変更が 0 件（新規テストファイルの追加のみ）
+
+## T-09: reopen iteration 001 — remote divergence 検知と finalize ラベルガード
+
+PR #1065 レビューフィードバックへの対応:
+
+- [x] `src/core/step/checkpoint-restack.ts` の `RestackOutcome.reason` union に
+      `"remote-diverged"` を追加する
+- [x] `restackCheckpointOntoPublishedTip` の手順 2.5 として、
+      `git merge-base --is-ancestor <parentOid> <localTipOid>` を実行し、
+      exit code ≠ 0（remote が local より進んでいる divergence）のとき
+      `skipped: remote-diverged` を返す（recordRestack / tree 構築 / push / persistCommit は呼ばない）
+- [x] `src/core/step/commit-push.ts` の `commitFinalState` に finalize ラベルガードを追加:
+      `messageLabel === "checkpoint"` の場合のみ `restackCheckpointOntoPublishedTip` を呼ぶ
+      （`"finalize"` では restack は発動しない）
+- [x] `src/core/step/__tests__/checkpoint-restack.test.ts` の `makeHappyPathResponses()` と
+      すべての明示的レスポンスシーケンスを更新して merge-base 呼び出しを追加する
+- [x] TC-037 unit test を `checkpoint-restack.test.ts` に追加する
+      （merge-base が exit 1 → remote-diverged, no callbacks / tree build / push）
+- [x] TC-038 E2E test を `halt-checkpoint-restack-e2e.test.ts` に追加する
+      （Runner B が remote を先行した状態で Runner A の restack が remote-diverged で skip し
+       origin/<branch> の tree が変化しないことを確認）
+- [x] TC-039 unit test を `commit-push-restack-integration.test.ts` に追加する
+      （messageLabel: "finalize" で push 二重失敗 → restack 系 git 操作未発行、既存 warn のみ）
+
+**Acceptance Criteria**:
+- `bun run typecheck && bun run test` が green
+- TC-037 / TC-038 / TC-039 が vitest で green

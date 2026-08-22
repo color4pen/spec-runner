@@ -180,3 +180,79 @@ describe("TC-026 (should): push double-failure warn appears before restack resul
     },
   );
 });
+
+// ---------------------------------------------------------------------------
+// TC-039: finalize label では restack が発動しない
+// ---------------------------------------------------------------------------
+
+describe("TC-039 (must): messageLabel 'finalize' → restack git operations are never issued", () => {
+  it(
+    // TC-039
+    "TC-039: when messageLabel is 'finalize', no fetch/rev-parse-origin/merge-base/read-tree/commit-tree/update-ref are issued",
+    async () => {
+      const FINALIZE_OID = "sha-finalize-039";
+
+      // Setup: commit succeeds, both push attempts fail.
+      // Sequence ends after the second push failure — restack must NOT be triggered.
+      // Note: no persistBeforePush callback → only 1 rev-parse for egress, not 2.
+      const { fn: pipelineSpawnFn, calls } = makePipelineSpawnFnFromSequence([
+        { exitCode: 0 },                                  // 0: add state.json
+        { exitCode: 0 },                                  // 1: add events.jsonl
+        { exitCode: 0 },                                  // 2: add usage.json
+        { exitCode: 0 },                                  // 3: add bite-evidence-result.md
+        { exitCode: 0 },                                  // 4: add pr-create-result.md
+        { exitCode: 1 },                                  // 5: diff --cached --quiet → staged changes
+        { exitCode: 0, stdout: `${FINALIZE_OID}\n` },     // 6: commit
+        { exitCode: 0, stdout: `${FINALIZE_OID}\n` },     // 7: rev-parse HEAD (verifyEgressLedger)
+        { exitCode: 0, stdout: `${FINALIZE_OID}\n` },     // 8: rev-list → FINALIZE_OID in synthesizedCommits → pass
+        { exitCode: 1 },                                  // 9: push1 → fails
+        { exitCode: 1 },                                  // 10: push2 → fails → existing warn emitted
+        // NO further calls expected: restack is NOT triggered for finalize
+      ]);
+
+      const stderrSpy = vi
+        .spyOn(process.stderr, "write")
+        .mockImplementation(() => true);
+
+      try {
+        // TC-039: commitFinalState must NOT throw
+        await expect(
+          commitFinalState({
+            cwd: CWD,
+            branch: BRANCH,
+            slug: SLUG,
+            spawnFn: pipelineSpawnFn,
+            messageLabel: "finalize",          // ← finalize label
+            synthesizedCommits: [FINALIZE_OID], // ledger passes egress
+          }),
+        ).resolves.toBeUndefined();
+
+        // TC-039: restack git operations must not have been issued
+        // (the function returns after the existing warn without calling restackCheckpointOntoPublishedTip)
+        const subcommands = calls.map((c) => c[0]);
+        expect(subcommands).not.toContain("fetch");
+        // rev-parse is used by egress check (allowed), but must not appear for restack's "origin/<branch>" parsing
+        // We verify by checking that merge-base, read-tree, and commit-tree were not called:
+        expect(subcommands).not.toContain("merge-base");
+        expect(subcommands).not.toContain("read-tree");
+        expect(subcommands).not.toContain("commit-tree");
+
+        // TC-039: the existing warn message appears (finalize path is unchanged)
+        const messages = stderrSpy.mock.calls.map((c) => String(c[0]));
+        const warnIdx = messages.findIndex((m) => m.includes("Warning: failed to push"));
+        expect(
+          warnIdx,
+          "Expected 'Warning: failed to push' to appear in stderr for finalize path",
+        ).toBeGreaterThan(-1);
+        // TC-039: finalize warn must reference "finalize" label
+        expect(messages[warnIdx]).toContain("finalize commit for");
+
+        // TC-039: no checkpoint-restack message (restack was not invoked)
+        const hasRestackMsg = messages.some((m) => m.includes("checkpoint-restack"));
+        expect(hasRestackMsg).toBe(false);
+      } finally {
+        stderrSpy.mockRestore();
+      }
+    },
+  );
+});

@@ -552,3 +552,179 @@ describe("TC-009: all-reject path — commitFinalState never throws", () => {
     60000,
   );
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-038: 別 runner 先行時に remote state を上書きしない（E2E）
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-038: remote divergence (runner B先行) → restack skips without overwriting remote", () => {
+  it(
+    "restack skips with remote-diverged when origin/<branch> has been advanced by another runner",
+    async () => {
+      // =======================================================================
+      // ── 1. Git fixture: bare remote + Runner A clone + Runner B clone ───────
+      // =======================================================================
+
+      const bareDir = path.join(tempDir, "origin-tc038.git");
+      const runnerADir = path.join(tempDir, "runner-a");
+      const runnerBDir = path.join(tempDir, "runner-b");
+
+      await fs.mkdir(bareDir, { recursive: true });
+      await fs.mkdir(runnerADir, { recursive: true });
+      await fs.mkdir(runnerBDir, { recursive: true });
+
+      gitSync(["init", "--bare", "--initial-branch=main"], bareDir);
+
+      // Initialize runner A
+      gitSync(["init", "--initial-branch=main"], runnerADir);
+      gitSync(["config", "user.email", "runner-a@e2e.local"], runnerADir);
+      gitSync(["config", "user.name", "Runner A"], runnerADir);
+      gitSync(["remote", "add", "origin", bareDir], runnerADir);
+
+      // Initial commit on main
+      await fs.writeFile(path.join(runnerADir, "README.md"), "# TC-038\n");
+      gitSync(["add", "README.md"], runnerADir);
+      gitSync(["commit", "-m", "initial"], runnerADir);
+      gitSync(["push", "origin", "HEAD:main"], runnerADir);
+
+      // Create feature branch on runner A
+      gitSync(["checkout", "-b", BRANCH], runnerADir);
+
+      // =======================================================================
+      // ── 2. Runner A: publish initial checkpoint ──────────────────────────────
+      // =======================================================================
+
+      const changeDir = path.join(runnerADir, "specrunner", "changes", SLUG);
+      await fs.mkdir(changeDir, { recursive: true });
+
+      await fs.writeFile(
+        path.join(changeDir, "request.md"),
+        `# TC-038 Test\n\n## Meta\n\n- **type**: new-feature\n- **slug**: ${SLUG}\n- **base-branch**: main\n- **adr**: false\n\nTest.\n`,
+      );
+      await fs.writeFile(path.join(changeDir, "spec.md"), "# Spec\n\nTest spec.\n");
+      await fs.writeFile(path.join(changeDir, "tasks.md"), "# Tasks\n\n- [ ] Do something\n");
+
+      const storeA = new JobStateStore(JOB_ID, runnerADir, { slug: SLUG, stateRoot: runnerADir });
+      const baseStateA = {
+        ...buildInitialJobState({
+          request: { path: `specrunner/changes/${SLUG}/request.md`, title: "TC-038", type: "new-feature" as const, slug: SLUG },
+          repository: EXPECTED_REPO,
+        }),
+        jobId: JOB_ID,
+        branch: BRANCH,
+      };
+      await storeA.persist(baseStateA);
+      const runningA = await storeA.update(baseStateA, { status: "running", step: "implementer" });
+      await storeA.update(runningA, {
+        status: "awaiting-resume",
+        step: "implementer",
+        resumePoint: { step: "implementer", reason: "timeout", iterationsExhausted: 1 },
+      });
+
+      gitSync(["add", "--", path.join("specrunner", "changes", SLUG)], runnerADir);
+      gitSync(["commit", "-m", `checkpoint: ${SLUG}`], runnerADir);
+      const initialTipA = gitSync(["rev-parse", "HEAD"], runnerADir);
+      gitSync(["push", "origin", BRANCH], runnerADir);
+
+      // =======================================================================
+      // ── 3. Runner B: clone and advance origin/<branch> to R1 ─────────────
+      // =======================================================================
+
+      gitSync(["clone", bareDir, runnerBDir], tempDir);
+      gitSync(["config", "user.email", "runner-b@e2e.local"], runnerBDir);
+      gitSync(["config", "user.name", "Runner B"], runnerBDir);
+      gitSync(["checkout", "-b", BRANCH, `origin/${BRANCH}`], runnerBDir);
+
+      // Runner B advances change folder (simulates next step completion)
+      const changeDirB = path.join(runnerBDir, "specrunner", "changes", SLUG);
+      await fs.writeFile(
+        path.join(changeDirB, "design.md"),
+        "# Design\n\nRunner B designed this.\n",
+      );
+      gitSync(["add", "--", path.join("specrunner", "changes", SLUG)], runnerBDir);
+      gitSync(["commit", "-m", `design: ${SLUG}`], runnerBDir);
+      const r1Oid = gitSync(["rev-parse", "HEAD"], runnerBDir);
+      gitSync(["push", "origin", BRANCH], runnerBDir);
+
+      // Verify R1 is now the remote tip
+      const remoteTipAfterB = gitSync(["rev-parse", `refs/remotes/origin/${BRANCH}`], runnerADir.replace("/runner-a", "/runner-a") ?? runnerADir);
+      // Actually fetch on runner A to see the new remote tip
+      gitSync(["fetch", "origin"], runnerADir);
+      const remoteTipA = gitSync(["rev-parse", `refs/remotes/origin/${BRANCH}`], runnerADir);
+      expect(remoteTipA).toBe(r1Oid);
+
+      // =======================================================================
+      // ── 4. Runner A: add work commit on old local tip ────────────────────
+      // =======================================================================
+      // Runner A's local HEAD is still at initialTipA, which is NOT an ancestor of R1.
+      // (R1 is a child of initialTipA from Runner B's perspective, but Runner A's local
+      // branch hasn't been updated.)
+      // Wait - R1 IS a child of initialTipA. Let me reconsider...
+      //
+      // Actually the scenario is: runner A is at initialTipA, runner B pushed R1 on top.
+      // R1's parent IS initialTipA, so R1 is a descendant of initialTipA.
+      // merge-base --is-ancestor <R1> <initialTipA> → exit 1 (R1 is NOT an ancestor of initialTipA)
+      //
+      // But the check is: merge-base --is-ancestor <parentOid=remoteTip=R1> <localTipOid=initialTipA>
+      // → is R1 an ancestor of initialTipA? No! → exit 1 → remote-diverged ✓
+      //
+      // So as long as runner A's local branch is still at initialTipA (behind R1),
+      // the divergence check correctly fires.
+
+      // Make state dirty on runner A (so there's something to commit)
+      const runningA2 = await storeA.update(runningA, { status: "running", step: "spec-review" });
+      await storeA.update(runningA2, {
+        status: "awaiting-resume",
+        step: "spec-review",
+        resumePoint: { step: "spec-review", reason: "timeout", iterationsExhausted: 1 },
+      });
+
+      // =======================================================================
+      // ── 5. Runner A: commitFinalState with all-reject spawnFn ──────────────
+      // =======================================================================
+      // We use makeRejectAllPushesSpawnFn so the direct push fails,
+      // then restack fires and should detect divergence (R1 is not ancestor of initialTipA)
+      // and return remote-diverged.
+
+      const spawnFn = makeRejectAllPushesSpawnFn(runnerADir);
+
+      // Capture restack records to verify none were written
+      const restackRecords: CheckpointRestackRecord[] = [];
+
+      await commitFinalState({
+        cwd: runnerADir,
+        branch: BRANCH,
+        slug: SLUG,
+        spawnFn,
+        messageLabel: "checkpoint",
+        synthesizedCommits: [initialTipA],
+        recordRestack: async (record: CheckpointRestackRecord) => {
+          restackRecords.push(record);
+        },
+      });
+
+      // TC-038: origin/<branch> tip must still be R1 (runner B's commit unchanged)
+      // Fetch to see latest remote state
+      gitSync(["fetch", "origin"], runnerADir);
+      const finalRemoteTip = gitSync(["rev-parse", `refs/remotes/origin/${BRANCH}`], runnerADir);
+      expect(
+        finalRemoteTip,
+        "origin/<branch> should still be R1 after remote-diverged skip",
+      ).toBe(r1Oid);
+
+      // TC-038: recordRestack must NOT have been called (remote-diverged fires before journaling)
+      expect(
+        restackRecords.length,
+        "No checkpoint-restack record should have been appended when remote-diverged",
+      ).toBe(0);
+
+      // TC-038: runner A's change folder at R1 must be unchanged
+      const r1Tree = gitSync(["show", `${r1Oid}:specrunner/changes/${SLUG}/design.md`], runnerADir);
+      expect(r1Tree).toContain("Runner B designed this");
+
+      void remoteTipAfterB; // suppress unused warning
+      void r1Oid;
+    },
+    60000,
+  );
+});

@@ -85,22 +85,23 @@ function makeFakeSpawnFn(
  *   1:  rev-parse refs/remotes/origin/<branch>^{commit} → PARENT_OID
  *   2:  rev-parse HEAD                                   → LOCAL_TIP
  *   3:  rev-list <parent>..<local>                       → (empty)
- *   4:  read-tree <parent>                               → exit 0
- *   5:  ls-tree -r <parent> -- <changeDir>/              → 1 entry (state.json)
- *   6:  ls-tree -r <local>  -- <changeDir>/              → 1 entry (state.json)
- *   7:  update-index --add --cacheinfo ...               → exit 0
- *   8:  hash-object -w -- <eventsPath>                   → BLOB_OID
- *   9:  update-index --add --cacheinfo 100644,...        → exit 0
- *  10:  write-tree                                        → TREE_OID
- *  11:  rev-parse <parent>^{tree}                        → PARENT_TREE  (≠ TREE_OID)
- *  12:  commit-tree <tree> -p <parent> -m ...            → RESTACK_OID
- *  13:  diff --name-only <parent> <restack>              → <changeDir>/state.json
- *  14:  push origin <restack>:refs/heads/<branch>        → exit 0
- *  15:  update-ref refs/remotes/origin/<branch> <restack>→ exit 0
- *  16:  symbolic-ref -q HEAD                             → refs/heads/<branch>
- *  17:  rev-parse HEAD^{tree}                            → PARENT_TREE  (local HEAD tree)
- *  18:  commit-tree <headTree> -p <local> -p <restack> -m merge:...  → MERGE_OID
- *  19:  update-ref refs/heads/<branch> <merge> <local>   → exit 0
+ *   4:  merge-base --is-ancestor <parent> <local>        → exit 0  (no divergence)
+ *   5:  read-tree <parent>                               → exit 0
+ *   6:  ls-tree -r <parent> -- <changeDir>/              → 1 entry (state.json)
+ *   7:  ls-tree -r <local>  -- <changeDir>/              → 1 entry (state.json)
+ *   8:  update-index --add --cacheinfo ...               → exit 0
+ *   9:  hash-object -w -- <eventsPath>                   → BLOB_OID
+ *  10:  update-index --add --cacheinfo 100644,...        → exit 0
+ *  11:  write-tree                                        → TREE_OID
+ *  12:  rev-parse <parent>^{tree}                        → PARENT_TREE  (≠ TREE_OID)
+ *  13:  commit-tree <tree> -p <parent> -m ...            → RESTACK_OID
+ *  14:  diff --name-only <parent> <restack>              → <changeDir>/state.json
+ *  15:  push origin <restack>:refs/heads/<branch>        → exit 0
+ *  16:  update-ref refs/remotes/origin/<branch> <restack>→ exit 0
+ *  17:  symbolic-ref -q HEAD                             → refs/heads/<branch>
+ *  18:  rev-parse HEAD^{tree}                            → PARENT_TREE  (local HEAD tree)
+ *  19:  commit-tree <headTree> -p <local> -p <restack> -m merge:...  → MERGE_OID
+ *  20:  update-ref refs/heads/<branch> <merge> <local>   → exit 0
  */
 function makeHappyPathResponses() {
   const stateJsonEntry = `100644 blob 2222222222222222222222222222222222222222\t${CHANGE_DIR}/state.json`;
@@ -109,22 +110,23 @@ function makeHappyPathResponses() {
     { exitCode: 0, stdout: PARENT_OID + "\n" },   // 1: rev-parse remote
     { exitCode: 0, stdout: LOCAL_TIP + "\n" },    // 2: rev-parse HEAD
     { exitCode: 0, stdout: "" },                  // 3: rev-list (no unpublished)
-    { exitCode: 0 },                              // 4: read-tree
-    { exitCode: 0, stdout: stateJsonEntry + "\n" }, // 5: ls-tree parent
-    { exitCode: 0, stdout: stateJsonEntry + "\n" }, // 6: ls-tree local
-    { exitCode: 0 },                              // 7: update-index (cacheinfo for state.json)
-    { exitCode: 0, stdout: BLOB_OID + "\n" },     // 8: hash-object events.jsonl
-    { exitCode: 0 },                              // 9: update-index (cacheinfo for events.jsonl)
-    { exitCode: 0, stdout: TREE_OID + "\n" },     // 10: write-tree
-    { exitCode: 0, stdout: PARENT_TREE + "\n" },  // 11: rev-parse parent^{tree}
-    { exitCode: 0, stdout: RESTACK_OID + "\n" },  // 12: commit-tree (restack)
-    { exitCode: 0, stdout: `${CHANGE_DIR}/state.json\n` }, // 13: diff --name-only
-    { exitCode: 0 },                              // 14: push origin restack:refs/heads/<branch>
-    { exitCode: 0 },                              // 15: update-ref remote tracking
-    { exitCode: 0, stdout: `refs/heads/${BRANCH}\n` }, // 16: symbolic-ref
-    { exitCode: 0, stdout: PARENT_TREE + "\n" },  // 17: rev-parse HEAD^{tree}
-    { exitCode: 0, stdout: MERGE_OID + "\n" },    // 18: commit-tree (merge/graft)
-    { exitCode: 0 },                              // 19: update-ref branch
+    { exitCode: 0 },                              // 4: merge-base --is-ancestor (no divergence)
+    { exitCode: 0 },                              // 5: read-tree
+    { exitCode: 0, stdout: stateJsonEntry + "\n" }, // 6: ls-tree parent
+    { exitCode: 0, stdout: stateJsonEntry + "\n" }, // 7: ls-tree local
+    { exitCode: 0 },                              // 8: update-index (cacheinfo for state.json)
+    { exitCode: 0, stdout: BLOB_OID + "\n" },     // 9: hash-object events.jsonl
+    { exitCode: 0 },                              // 10: update-index (cacheinfo for events.jsonl)
+    { exitCode: 0, stdout: TREE_OID + "\n" },     // 11: write-tree
+    { exitCode: 0, stdout: PARENT_TREE + "\n" },  // 12: rev-parse parent^{tree}
+    { exitCode: 0, stdout: RESTACK_OID + "\n" },  // 13: commit-tree (restack)
+    { exitCode: 0, stdout: `${CHANGE_DIR}/state.json\n` }, // 14: diff --name-only
+    { exitCode: 0 },                              // 15: push origin restack:refs/heads/<branch>
+    { exitCode: 0 },                              // 16: update-ref remote tracking
+    { exitCode: 0, stdout: `refs/heads/${BRANCH}\n` }, // 17: symbolic-ref
+    { exitCode: 0, stdout: PARENT_TREE + "\n" },  // 18: rev-parse HEAD^{tree}
+    { exitCode: 0, stdout: MERGE_OID + "\n" },    // 19: commit-tree (merge/graft)
+    { exitCode: 0 },                              // 20: update-ref branch
   ];
 }
 
@@ -370,6 +372,7 @@ describe("TC-020: write-tree OID matches parent^{tree} → skipped: no-delta", (
       { exitCode: 0, stdout: PARENT_OID + "\n" },   // rev-parse remote
       { exitCode: 0, stdout: LOCAL_TIP + "\n" },    // rev-parse HEAD
       { exitCode: 0, stdout: "" },                  // rev-list
+      { exitCode: 0 },                              // merge-base --is-ancestor (no divergence)
       { exitCode: 0 },                              // read-tree
       { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree parent
       { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree local
@@ -410,6 +413,7 @@ describe("TC-004: containment-violation → push not called", () => {
       { exitCode: 0, stdout: PARENT_OID + "\n" },   // rev-parse remote
       { exitCode: 0, stdout: LOCAL_TIP + "\n" },    // rev-parse HEAD
       { exitCode: 0, stdout: "" },                  // rev-list
+      { exitCode: 0 },                              // merge-base --is-ancestor (no divergence)
       { exitCode: 0 },                              // read-tree
       { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree parent
       { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree local
@@ -452,6 +456,7 @@ describe("TC-021: push double-failure → push-failed (no throw)", () => {
       { exitCode: 0, stdout: PARENT_OID + "\n" },   // rev-parse remote
       { exitCode: 0, stdout: LOCAL_TIP + "\n" },    // rev-parse HEAD
       { exitCode: 0, stdout: "" },                  // rev-list
+      { exitCode: 0 },                              // merge-base --is-ancestor (no divergence)
       { exitCode: 0 },                              // read-tree
       { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree parent
       { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree local
@@ -503,6 +508,7 @@ describe("TC-029: reason field is masked by maskSensitive", () => {
       { exitCode: 0, stdout: PARENT_OID + "\n" },   // rev-parse remote
       { exitCode: 0, stdout: LOCAL_TIP + "\n" },    // rev-parse HEAD → valid local tip
       { exitCode: 0, stdout: "" },                  // rev-list → no unpublished commits
+      { exitCode: 0 },                              // merge-base --is-ancestor → no divergence
       { exitCode: 1, stderr: "read-tree error\n" }, // read-tree → fail → tree-build-failed (early exit after journal)
     ]);
 
@@ -566,6 +572,7 @@ describe("TC-024: detached HEAD → update-ref refs/heads/... not called", () =>
       { exitCode: 0, stdout: PARENT_OID + "\n" },   // rev-parse remote
       { exitCode: 0, stdout: LOCAL_TIP + "\n" },    // rev-parse HEAD
       { exitCode: 0, stdout: "" },                  // rev-list
+      { exitCode: 0 },                              // merge-base --is-ancestor (no divergence)
       { exitCode: 0 },                              // read-tree
       { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree parent
       { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree local
@@ -613,23 +620,24 @@ describe("TC-012: detached HEAD → graft: skipped in RestackOutcome", () => {
     const stateJsonEntry = `100644 blob 2222222222222222222222222222222222222222\t${CHANGE_DIR}/state.json`;
 
     const { fn } = makeFakeSpawnFn([
-      { exitCode: 0, stdout: "" },
-      { exitCode: 0, stdout: PARENT_OID + "\n" },
-      { exitCode: 0, stdout: LOCAL_TIP + "\n" },
-      { exitCode: 0, stdout: "" },
-      { exitCode: 0 },
-      { exitCode: 0, stdout: stateJsonEntry + "\n" },
-      { exitCode: 0, stdout: stateJsonEntry + "\n" },
-      { exitCode: 0 },
-      { exitCode: 0, stdout: BLOB_OID + "\n" },
-      { exitCode: 0 },
-      { exitCode: 0, stdout: TREE_OID + "\n" },
-      { exitCode: 0, stdout: PARENT_TREE + "\n" },
-      { exitCode: 0, stdout: RESTACK_OID + "\n" },
-      { exitCode: 0, stdout: `${CHANGE_DIR}/state.json\n` },
-      { exitCode: 0 },
-      { exitCode: 0 },
-      { exitCode: 1, stdout: "" }, // symbolic-ref fails → detached
+      { exitCode: 0, stdout: "" },                 // fetch
+      { exitCode: 0, stdout: PARENT_OID + "\n" },  // rev-parse remote
+      { exitCode: 0, stdout: LOCAL_TIP + "\n" },   // rev-parse HEAD
+      { exitCode: 0, stdout: "" },                 // rev-list
+      { exitCode: 0 },                             // merge-base --is-ancestor (no divergence)
+      { exitCode: 0 },                             // read-tree
+      { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree parent
+      { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree local
+      { exitCode: 0 },                             // update-index
+      { exitCode: 0, stdout: BLOB_OID + "\n" },    // hash-object
+      { exitCode: 0 },                             // update-index events
+      { exitCode: 0, stdout: TREE_OID + "\n" },    // write-tree
+      { exitCode: 0, stdout: PARENT_TREE + "\n" }, // rev-parse parent^{tree}
+      { exitCode: 0, stdout: RESTACK_OID + "\n" }, // commit-tree
+      { exitCode: 0, stdout: `${CHANGE_DIR}/state.json\n` }, // diff
+      { exitCode: 0 },                             // push
+      { exitCode: 0 },                             // update-ref remote
+      { exitCode: 1, stdout: "" },                 // symbolic-ref fails → detached
     ]);
 
     const outcome = await restackCheckpointOntoPublishedTip({
@@ -658,26 +666,27 @@ describe("TC-022: graft merge commit tree equals local HEAD tree", () => {
     const stateJsonEntry = `100644 blob 2222222222222222222222222222222222222222\t${CHANGE_DIR}/state.json`;
 
     const { fn, calls } = makeFakeSpawnFn([
-      { exitCode: 0, stdout: "" },
-      { exitCode: 0, stdout: PARENT_OID + "\n" },
-      { exitCode: 0, stdout: LOCAL_TIP + "\n" },
-      { exitCode: 0, stdout: "" },
-      { exitCode: 0 },
-      { exitCode: 0, stdout: stateJsonEntry + "\n" },
-      { exitCode: 0, stdout: stateJsonEntry + "\n" },
-      { exitCode: 0 },
-      { exitCode: 0, stdout: BLOB_OID + "\n" },
-      { exitCode: 0 },
-      { exitCode: 0, stdout: TREE_OID + "\n" },
-      { exitCode: 0, stdout: PARENT_TREE + "\n" },
-      { exitCode: 0, stdout: RESTACK_OID + "\n" },
-      { exitCode: 0, stdout: `${CHANGE_DIR}/state.json\n` },
-      { exitCode: 0 },    // push
-      { exitCode: 0 },    // update-ref remote
+      { exitCode: 0, stdout: "" },                 // fetch
+      { exitCode: 0, stdout: PARENT_OID + "\n" },  // rev-parse remote
+      { exitCode: 0, stdout: LOCAL_TIP + "\n" },   // rev-parse HEAD
+      { exitCode: 0, stdout: "" },                 // rev-list
+      { exitCode: 0 },                             // merge-base --is-ancestor (no divergence)
+      { exitCode: 0 },                             // read-tree
+      { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree parent
+      { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree local
+      { exitCode: 0 },                             // update-index
+      { exitCode: 0, stdout: BLOB_OID + "\n" },    // hash-object
+      { exitCode: 0 },                             // update-index events
+      { exitCode: 0, stdout: TREE_OID + "\n" },    // write-tree
+      { exitCode: 0, stdout: PARENT_TREE + "\n" }, // rev-parse parent^{tree}
+      { exitCode: 0, stdout: RESTACK_OID + "\n" }, // commit-tree restack
+      { exitCode: 0, stdout: `${CHANGE_DIR}/state.json\n` }, // diff
+      { exitCode: 0 },                             // push
+      { exitCode: 0 },                             // update-ref remote
       { exitCode: 0, stdout: `refs/heads/${BRANCH}\n` }, // symbolic-ref
-      { exitCode: 0, stdout: HEAD_TREE + "\n" },  // rev-parse HEAD^{tree}
-      { exitCode: 0, stdout: MERGE_OID + "\n" },  // commit-tree merge
-      { exitCode: 0 },    // update-ref branch
+      { exitCode: 0, stdout: HEAD_TREE + "\n" },   // rev-parse HEAD^{tree}
+      { exitCode: 0, stdout: MERGE_OID + "\n" },   // commit-tree merge
+      { exitCode: 0 },                             // update-ref branch
     ]);
 
     await restackCheckpointOntoPublishedTip({
@@ -766,26 +775,27 @@ describe("TC-032: graft update-ref failure → graft:failed (no throw)", () => {
     const stateJsonEntry = `100644 blob 2222222222222222222222222222222222222222\t${CHANGE_DIR}/state.json`;
 
     const { fn } = makeFakeSpawnFn([
-      { exitCode: 0, stdout: "" },
-      { exitCode: 0, stdout: PARENT_OID + "\n" },
-      { exitCode: 0, stdout: LOCAL_TIP + "\n" },
-      { exitCode: 0, stdout: "" },
-      { exitCode: 0 },
-      { exitCode: 0, stdout: stateJsonEntry + "\n" },
-      { exitCode: 0, stdout: stateJsonEntry + "\n" },
-      { exitCode: 0 },
-      { exitCode: 0, stdout: BLOB_OID + "\n" },
-      { exitCode: 0 },
-      { exitCode: 0, stdout: TREE_OID + "\n" },
-      { exitCode: 0, stdout: PARENT_TREE + "\n" },
-      { exitCode: 0, stdout: RESTACK_OID + "\n" },
-      { exitCode: 0, stdout: `${CHANGE_DIR}/state.json\n` },
-      { exitCode: 0 },    // push
-      { exitCode: 0 },    // update-ref remote tracking
+      { exitCode: 0, stdout: "" },                 // fetch
+      { exitCode: 0, stdout: PARENT_OID + "\n" },  // rev-parse remote
+      { exitCode: 0, stdout: LOCAL_TIP + "\n" },   // rev-parse HEAD
+      { exitCode: 0, stdout: "" },                 // rev-list
+      { exitCode: 0 },                             // merge-base --is-ancestor (no divergence)
+      { exitCode: 0 },                             // read-tree
+      { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree parent
+      { exitCode: 0, stdout: stateJsonEntry + "\n" }, // ls-tree local
+      { exitCode: 0 },                             // update-index
+      { exitCode: 0, stdout: BLOB_OID + "\n" },    // hash-object
+      { exitCode: 0 },                             // update-index events
+      { exitCode: 0, stdout: TREE_OID + "\n" },    // write-tree
+      { exitCode: 0, stdout: PARENT_TREE + "\n" }, // rev-parse parent^{tree}
+      { exitCode: 0, stdout: RESTACK_OID + "\n" }, // commit-tree restack
+      { exitCode: 0, stdout: `${CHANGE_DIR}/state.json\n` }, // diff
+      { exitCode: 0 },                             // push
+      { exitCode: 0 },                             // update-ref remote tracking
       { exitCode: 0, stdout: `refs/heads/${BRANCH}\n` }, // symbolic-ref
-      { exitCode: 0, stdout: PARENT_TREE + "\n" },  // rev-parse HEAD^{tree}
-      { exitCode: 0, stdout: MERGE_OID + "\n" },  // commit-tree merge
-      { exitCode: 1 },    // update-ref branch FAILS
+      { exitCode: 0, stdout: PARENT_TREE + "\n" }, // rev-parse HEAD^{tree}
+      { exitCode: 0, stdout: MERGE_OID + "\n" },   // commit-tree merge
+      { exitCode: 1 },                             // update-ref branch FAILS
     ]);
 
     const outcome = await restackCheckpointOntoPublishedTip({
@@ -844,7 +854,7 @@ describe("TC-028: no worktree/index-modifying git subcommands issued", () => {
     });
 
     const treeBuildSubcmds = new Set(["read-tree", "ls-tree", "update-index", "hash-object", "write-tree"]);
-    const nonTreeBuildSubcmds = new Set(["fetch", "rev-parse", "rev-list", "commit-tree", "diff", "push", "update-ref", "symbolic-ref"]);
+    const nonTreeBuildSubcmds = new Set(["fetch", "rev-parse", "rev-list", "merge-base", "commit-tree", "diff", "push", "update-ref", "symbolic-ref"]);
 
     for (const c of calls) {
       const sub = c.args[0];
@@ -860,4 +870,83 @@ describe("TC-028: no worktree/index-modifying git subcommands issued", () => {
       }
     }
   });
+});
+
+// ---------------------------------------------------------------------------
+// TC-037: remote divergence 検知時の積み直しスキップ（remote-diverged）
+// ---------------------------------------------------------------------------
+
+describe("TC-037: remote divergence → skipped: remote-diverged", () => {
+  it(
+    "TC-037: merge-base --is-ancestor exit 1 → remote-diverged; no recordRestack, tree build, push, or persistCommit",
+    async () => {
+      const recordRestack = vi.fn(async (_r: CheckpointRestackRecord) => {});
+      const persistCommit = vi.fn(async (_oid: string) => {});
+
+      const { fn, calls } = makeFakeSpawnFn([
+        { exitCode: 0, stdout: "" },                 // fetch
+        { exitCode: 0, stdout: PARENT_OID + "\n" },  // rev-parse remote → PARENT_OID
+        { exitCode: 0, stdout: LOCAL_TIP + "\n" },   // rev-parse HEAD → LOCAL_TIP
+        { exitCode: 0, stdout: LOCAL_TIP + "\n" },   // rev-list → unpublished commits
+        // merge-base --is-ancestor <parentOid> <localTip> exits 1 → diverged
+        { exitCode: 1, stdout: "", stderr: "" },      // merge-base → exit 1 (divergence detected)
+      ]);
+
+      const outcome = await restackCheckpointOntoPublishedTip({
+        cwd: CWD,
+        branch: BRANCH,
+        slug: SLUG,
+        spawnFn: fn,
+        messageLabel: "checkpoint",
+        pushFailureStderr: "remote: error: non-fast-forward push rejected",
+        recordRestack,
+        persistCommit,
+      });
+
+      // TC-037: outcome must be skipped with reason remote-diverged
+      expect(outcome).toEqual({ kind: "skipped", reason: "remote-diverged" });
+
+      // TC-037: recordRestack must NOT have been called (record only when proceeding)
+      expect(recordRestack).not.toHaveBeenCalled();
+
+      // TC-037: persistCommit must NOT have been called
+      expect(persistCommit).not.toHaveBeenCalled();
+
+      // TC-037: no tree-building git calls
+      const subcommands = calls.map((c) => c.args[0]);
+      expect(subcommands).not.toContain("read-tree");
+      expect(subcommands).not.toContain("ls-tree");
+      expect(subcommands).not.toContain("update-index");
+      expect(subcommands).not.toContain("write-tree");
+      expect(subcommands).not.toContain("commit-tree");
+      expect(subcommands).not.toContain("push");
+
+      // TC-037: merge-base was called (it's the gate that fired)
+      const mergeBaseCall = calls.find((c) => c.args[0] === "merge-base");
+      expect(mergeBaseCall).toBeDefined();
+      expect(mergeBaseCall!.args).toContain("--is-ancestor");
+      expect(mergeBaseCall!.args).toContain(PARENT_OID);
+      expect(mergeBaseCall!.args).toContain(LOCAL_TIP);
+    },
+  );
+
+  it(
+    "TC-037-b: merge-base exit 0 → no divergence → proceeds to tree build (not remote-diverged)",
+    async () => {
+      // Verify the positive case: merge-base exit 0 means NO divergence → proceed normally
+      const { fn } = makeFakeSpawnFn(makeHappyPathResponses());
+
+      const outcome = await restackCheckpointOntoPublishedTip({
+        cwd: CWD,
+        branch: BRANCH,
+        slug: SLUG,
+        spawnFn: fn,
+        messageLabel: "checkpoint",
+        pushFailureStderr: "",
+      });
+
+      // No remote-diverged → should proceed to published
+      expect(outcome.kind).toBe("published");
+    },
+  );
 });

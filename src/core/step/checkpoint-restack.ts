@@ -51,7 +51,13 @@ export type RestackOutcome =
         | "no-local-tip"
         | "no-delta"
         | "tree-build-failed"
-        | "containment-violation";
+        | "containment-violation"
+        /**
+         * remote-diverged: origin/<branch> is NOT an ancestor of localTipOid.
+         * Another runner has already advanced origin/<branch> beyond the local history.
+         * Restacking would overwrite the remote state — must not proceed (spec D8).
+         */
+        | "remote-diverged";
     }
   | {
       kind: "published";
@@ -195,6 +201,27 @@ export async function restackCheckpointOntoPublishedTip(params: {
     // requires a non-empty 40-char SHA per spec). Skip both record and tree build.
     if (localTipFailed) {
       return { kind: "skipped", reason: "no-local-tip" };
+    }
+
+    // ── Step 2.5: divergence check (D8) ─────────────────────────────────────
+    // Verify that origin/<branch> is an ancestor of local HEAD.
+    // If another runner has already advanced origin/<branch> beyond our local
+    // history (non-fast-forward), restacking would silently overwrite their state.
+    // We must not restack in that case (MUST NOT per spec).
+    {
+      const mergeBaseResult = await spawnFn(
+        "git",
+        ["merge-base", "--is-ancestor", parentOid, localTipOid],
+        { cwd },
+      );
+      if ((mergeBaseResult.exitCode ?? 1) !== 0) {
+        // parentOid is NOT an ancestor of localTipOid → remote has diverged.
+        stderrWrite(
+          `Warning: checkpoint-restack: remote divergence detected for ${slug} — ` +
+          `origin/${branch} is not an ancestor of local HEAD; skipping restack to avoid overwriting remote state`,
+        );
+        return { kind: "skipped", reason: "remote-diverged" };
+      }
     }
 
     // ── Step 3: journal record BEFORE tree construction (D5) ────────────────

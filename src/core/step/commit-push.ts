@@ -895,40 +895,46 @@ export async function commitFinalState(params: {
   // Called ONLY on the failure path; the success path above exits early.
   // Early-return branches (staging 0, no staged diff, commit failure, egress failure)
   // are also excluded — restack is irrelevant when no checkpoint commit was created.
-  const restackOutcome = await restackCheckpointOntoPublishedTip({
-    cwd,
-    branch,
-    slug,
-    spawnFn,
-    messageLabel,
-    pushFailureStderr: push2Stderr,
-    recordRestack: params.recordRestack,
-    persistCommit: persistBeforePush,
-  });
+  //
+  // Guard: restack only for checkpoint commits (awaiting-resume halt).
+  // Finalize commits (awaiting-archive, messageLabel="finalize") are excluded:
+  // the archive path has different quiescence requirements and is out-of-scope (spec).
+  if (messageLabel === "checkpoint") {
+    const restackOutcome = await restackCheckpointOntoPublishedTip({
+      cwd,
+      branch,
+      slug,
+      spawnFn,
+      messageLabel,
+      pushFailureStderr: push2Stderr,
+      recordRestack: params.recordRestack,
+      persistCommit: persistBeforePush,
+    });
 
-  // Output restack result message (after the existing warn, per D1)
-  switch (restackOutcome.kind) {
-    case "published":
-      stderrWrite(
-        `Info: checkpoint-restack: published restacked checkpoint for ${slug} ` +
-          `at ${restackOutcome.restackedOid} (parent: ${restackOutcome.parentOid}, ` +
-          `${restackOutcome.unpublishedCount} unpublished commit(s), graft: ${restackOutcome.graft})`,
-      );
-      stderrWrite(
-        `Warning: checkpoint-restack: 以降の push も同じ理由で拒否される可能性がある。ローカル branch を手当てしてから resume すること`,
-      );
-      break;
-    case "push-failed":
-      stderrWrite(
-        `Warning: checkpoint-restack: push of restacked checkpoint also failed for ${slug}` +
-          (restackOutcome.stderr ? `: ${restackOutcome.stderr}` : ""),
-      );
-      break;
-    case "skipped":
-      stderrWrite(
-        `Info: checkpoint-restack: skipped for ${slug} (reason: ${restackOutcome.reason})`,
-      );
-      break;
+    // Output restack result message (after the existing warn, per D1)
+    switch (restackOutcome.kind) {
+      case "published":
+        stderrWrite(
+          `Info: checkpoint-restack: published restacked checkpoint for ${slug} ` +
+            `at ${restackOutcome.restackedOid} (parent: ${restackOutcome.parentOid}, ` +
+            `${restackOutcome.unpublishedCount} unpublished commit(s), graft: ${restackOutcome.graft})`,
+        );
+        stderrWrite(
+          `Warning: checkpoint-restack: 以降の push も同じ理由で拒否される可能性がある。ローカル branch を手当てしてから resume すること`,
+        );
+        break;
+      case "push-failed":
+        stderrWrite(
+          `Warning: checkpoint-restack: push of restacked checkpoint also failed for ${slug}` +
+            (restackOutcome.stderr ? `: ${restackOutcome.stderr}` : ""),
+        );
+        break;
+      case "skipped":
+        stderrWrite(
+          `Info: checkpoint-restack: skipped for ${slug} (reason: ${restackOutcome.reason})`,
+        );
+        break;
+    }
   }
 }
 
