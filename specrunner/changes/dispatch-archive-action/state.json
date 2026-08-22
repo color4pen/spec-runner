@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
   "createdAt": "2026-08-21T22:28:13.507Z",
-  "updatedAt": "2026-08-22T00:13:56.307Z",
+  "updatedAt": "2026-08-22T00:18:16.591Z",
   "request": {
     "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/dispatch-archive-action-c2c7ba44",
   "error": null,
@@ -65,20 +65,19 @@
   "inboxOrigin": true,
   "synthesizedCommits": [
     "a594d63ac0f639106194dc5e785ac45c79fd8775",
-    "601740e3f83df7a10434c8638fbc351899d8ac43"
+    "601740e3f83df7a10434c8638fbc351899d8ac43",
+    "92d3ac1085472c563eee98d80d0775ac48c1db75"
   ],
   "touchedFiles": {
     "request-review": [
       ".github/workflows/specrunner-dispatch.yml",
       "src/core/issue-target/archive.ts",
-      "src/core/archive/merge-completion.ts",
-      "src/core/issue-target/__tests__/archive.test.ts",
-      "src/cli/archive.ts",
       "src/cli/archive-from-issue.ts",
-      "src/core/archive/plain-archive.ts",
       "src/core/attach/orchestrator.ts",
-      "src/cli/__tests__/archive-from-issue.test.ts",
-      "src/core/archive/__tests__/plain-archive.test.ts"
+      "src/core/archive/merge-completion.ts",
+      "src/core/archive/plain-archive.ts",
+      "src/core/issue-target/__tests__/archive.test.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts"
     ]
   },
   "resumePoint": null,
@@ -91,9 +90,9 @@
     }
   ],
   "_journal": {
-    "historyCount": 6,
+    "historyCount": 9,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 2
     }
   }
 }
