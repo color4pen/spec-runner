@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "f6d2e71c-5ff1-4454-ad35-1073cc427a7f",
   "createdAt": "2026-08-22T13:47:16.472Z",
-  "updatedAt": "2026-08-22T14:46:33.315Z",
+  "updatedAt": "2026-08-22T15:02:11.825Z",
   "request": {
     "title": "agent session の active context / compaction を計測可能にする",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/agent-context-observability-f6d2e71c",
   "error": null,
   "pipelineId": "standard",
@@ -71,7 +71,9 @@
     "3bc7d47c94a688f32a324dd17114161de07624f7",
     "83f6ac532de7535cadb93742dfa632093c5a56af",
     "fa4e0167d8b278e82778950b9330735707fc1d0e",
-    "4c17b711fb238911203675729b1a823316769327"
+    "4c17b711fb238911203675729b1a823316769327",
+    "5c315615ce9c7675a4021f238b0c753c1159c45b",
+    "c0c0d97106984ee653cbcb5888d1cb288c425bfc"
   ],
   "touchedFiles": {
     "request-review": [
@@ -166,10 +168,65 @@
       "tests/unit/adapter/codex/agent-runner-env.test.ts",
       "tests/unit/adapter/codex/agent-runner-context-metrics.test.ts",
       "tests/unit/adapter/managed-agent/agent-runner-context-metrics.test.ts"
+    ],
+    "code-review": [
+      "src/kernel/context-metrics.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/step/executor.ts",
+      "src/core/usage/types.ts",
+      "src/core/command/usage-show.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/managed-agent/agent-runner.ts",
+      "tests/unit/adapter/claude-code/context-observer.test.ts",
+      "tests/unit/core/usage/context-metrics-types.test.ts",
+      "tests/unit/core/step/commit-orchestrator-context-metrics.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-context-metrics.test.ts",
+      "tests/unit/adapter/codex/agent-runner-context-metrics.test.ts",
+      "tests/unit/core/command/usage-show-context-metrics.test.ts",
+      "tests/unit/adapter/managed-agent/agent-runner-context-metrics.test.ts",
+      "src/adapter/managed-agent/usage.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 41,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -178,7 +235,11 @@
       "spec-fixer": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
