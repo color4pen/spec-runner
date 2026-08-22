@@ -1,0 +1,13 @@
+{
+  "requestHash": "sha256:6be9b5d76e40c01d3945968b0c2be16a81e7cf312890296f57d99bbd2c800af0",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    ".github/workflows/specrunner-dispatch.yml:22-28 — action choices are 'start' / 'resume' only (no 'archive')",
+    "src/core/issue-target/archive.ts:132-140 — for..of loop fetches origin/<headRefName>, skip on failure, throws archiveFromIssueUnconfirmedError when all skip",
+    "src/core/archive/merge-completion.ts:completeAfterMerge — calls markJobArchived(slug, recordDir) then runPostMergeCleanup",
+    "src/cli/archive-from-issue.ts:103-115 — loadStateByJobId short-circuit skips resolveArchiveBranchFromIssue and runAttachVerification when local state found",
+    "src/core/attach/orchestrator.ts:58-64 — runAttachVerification executes git fetch origin <branch> unconditionally; ATTACH_FETCH_FAILED on non-zero exit",
+    "src/core/archive/plain-archive.ts:126-147 — PR state MERGED + archiveRecorded → completeAfterMerge → exitCode 0"
+  ],
+  "sourceRevision": "82ac65f88c9d9a1d0bbf76aa135181506ee5f4f4"
+}

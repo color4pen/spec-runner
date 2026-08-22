@@ -10,6 +10,66 @@ import { getJobSlug } from "../../state/job-slug.js";
 import type { JobState } from "../../state/schema.js";
 import { resolveWorktreePathForArchive } from "./orchestrator.js";
 
+/**
+ * Returns true when the change folder has been moved to archive/ (i.e. it is an archive record).
+ *
+ * Archive record path pattern: `.../specrunner/changes/archive/<YYYY-MM-DD-slug>/`
+ * Active change folder pattern: `.../specrunner/changes/<slug>/`
+ *
+ * The single shared predicate ensures fallback slug resolution and resolveArchiveJobContext
+ * agree on what constitutes an archive record — avoiding the risk that a fallback-resolved
+ * slug is seen as archiveRecorded: false by the subsequent archive run.
+ */
+export function isArchiveRecordDir(sourceChangeDir: string): boolean {
+  return nodePath.basename(nodePath.dirname(sourceChangeDir)) === "archive";
+}
+
+/**
+ * Resolve the slug of an archive record from jobId + issueNumber.
+ *
+ * After merge, the base branch (main) holds the archive record in
+ * `specrunner/changes/archive/<YYYY-MM-DD-slug>/`. The feature branch that
+ * carried the checkpoint may have been deleted by GitHub on merge. This
+ * function lets `runArchiveFromIssue` bypass the branch-fetch path and go
+ * directly to `runArchive` using the slug from the base-borne record.
+ *
+ * Matching requires both jobId AND issueNumber to match, following the same
+ * two-field identity approach as `resolveArchiveBranchFromIssue`. This guards
+ * against archiving the wrong job when a completed marker is copied to another
+ * issue.
+ *
+ * Only archive records (`isArchiveRecordDir`) are considered. An active change
+ * folder in `specrunner/changes/<slug>/` with the same jobId indicates the job
+ * has not been archived yet (merge is still pending) — the closing-PR path
+ * handles that case.
+ *
+ * Returns the slug string, or null if no matching archive record is found or
+ * if the derived slug is empty.
+ */
+export async function resolveArchivedSlugByJobId({
+  cwd,
+  jobId,
+  issueNumber,
+}: {
+  cwd: string;
+  jobId: string;
+  issueNumber: number;
+}): Promise<string | null> {
+  const allEntries = await JobStateStore.listWithSourceDirs(cwd, { includeArchived: true });
+
+  const match = allEntries.find(
+    (e) =>
+      e.state.jobId === jobId &&
+      e.state.issueNumber === issueNumber &&
+      isArchiveRecordDir(e.sourceChangeDir),
+  );
+
+  if (!match) return null;
+
+  const slug = getJobSlug(match.state);
+  return slug || null;
+}
+
 export type ResolvedArchiveJobContext =
   | {
       found: true;
@@ -65,7 +125,7 @@ export async function resolveArchiveJobContext({
   // D2: "archive recorded" signal — change folder is in archive/ if dirname basename === "archive".
   // e.g. ".../specrunner/changes/archive/2026-01-01-slug" → dirname "archive"
   // e.g. ".../specrunner/changes/slug" → dirname "changes"
-  const archiveRecorded = nodePath.basename(nodePath.dirname(sourceChangeDir)) === "archive";
+  const archiveRecorded = isArchiveRecordDir(sourceChangeDir);
 
   // D3: recordDir — the working tree where the archive-record commit was/will be made.
   const recordDir = noWorktree ? cwd : (worktreePath ?? cwd);

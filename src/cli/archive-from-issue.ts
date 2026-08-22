@@ -1,9 +1,14 @@
 /**
  * CLI handler for `job archive --from-issue <n>`.
  *
- * Orchestrates: GitHub client setup → completed marker scan → optional local
- * short-circuit → closing-PR enumeration → 4-field identity check → rebind →
- * archive.
+ * Orchestrates: GitHub client setup → completed marker scan → 3-stage slug resolution → archive.
+ *
+ * Resolution order:
+ *   1. local state (loadStateByJobId) — fastest; skips all network calls.
+ *   2. base-borne archive record (resolveArchivedSlugByJobId) — for post-merge runs where the
+ *      head branch has been deleted by GitHub. No branch fetch or rebind is performed.
+ *   3. closing PR branch + rebind (resolveArchiveBranchFromIssue → runAttachVerification) —
+ *      for pre-merge runs where the head branch still exists.
  *
  * cwd / repoRoot are received as arguments. process.cwd() is not called here.
  */
@@ -15,8 +20,9 @@ import { getOriginInfo } from "../git/remote.js";
 import { createTransportAuth } from "../git/transport-auth.js";
 import { spawnCommand } from "../util/spawn.js";
 import { SpecRunnerError, EXIT_CODE, attachRuntimeUnsupportedError, ERROR_CODES } from "../errors.js";
-import { logError, stderrWrite, type LogLevel } from "../logger/stdout.js";
+import { logError, logInfo, stderrWrite, type LogLevel } from "../logger/stdout.js";
 import { resolveCompletedJobId, resolveArchiveBranchFromIssue } from "../core/issue-target/archive.js";
+import { resolveArchivedSlugByJobId } from "../core/archive/job-context.js";
 import { loadStateByJobId } from "../core/job-access/load-by-job-id.js";
 import { getJobSlug } from "../state/job-slug.js";
 import type { JobState } from "../state/schema.js";
@@ -113,69 +119,77 @@ export async function runArchiveFromIssue(
     if (localState !== null) {
       slug = getJobSlug(localState as unknown as JobState);
     } else {
-      // --- 5. Resolve branch from closing PRs ---
-      const resolved = await resolveArchiveBranchFromIssue({
-        client: githubClient,
-        owner,
-        repo,
-        issueNumber,
-        jobId,
-        spawnFn,
-        cwd: repoRoot,
-      });
+      // --- 5. Archive record fallback (post-merge: head branch may be deleted) ---
+      const archivedSlug = await resolveArchivedSlugByJobId({ cwd: repoRoot, jobId, issueNumber });
 
-      // --- 6. Rebind: verify checkpoint with awaiting-archive policy ---
-      let verified: import("../core/attach/verify-checkpoint.js").VerifiedCheckpoint;
-      try {
-        verified = await runAttachVerification({
-          cwd: repoRoot,
-          branch: resolved.branch,
+      if (archivedSlug !== null) {
+        logInfo(`archive-from-issue: resolved slug "${archivedSlug}" from base-borne archive record (post-merge path)`);
+        slug = archivedSlug;
+      } else {
+        // --- 6. Resolve branch from closing PRs ---
+        const resolved = await resolveArchiveBranchFromIssue({
+          client: githubClient,
+          owner,
+          repo,
+          issueNumber,
+          jobId,
           spawnFn,
-          expectedRepo: { owner, name: repo },
-          policy: attachArchivePolicy,
+          cwd: repoRoot,
         });
-      } catch (err) {
-        if (err instanceof SpecRunnerError) {
-          logError(err.message);
-          stderrWrite(`Hint: ${err.hint}`);
-          return err.exitCode;
+
+        // --- 7. Rebind: verify checkpoint with awaiting-archive policy ---
+        let verified: import("../core/attach/verify-checkpoint.js").VerifiedCheckpoint;
+        try {
+          verified = await runAttachVerification({
+            cwd: repoRoot,
+            branch: resolved.branch,
+            spawnFn,
+            expectedRepo: { owner, name: repo },
+            policy: attachArchivePolicy,
+          });
+        } catch (err) {
+          if (err instanceof SpecRunnerError) {
+            logError(err.message);
+            stderrWrite(`Hint: ${err.hint}`);
+            return err.exitCode;
+          }
+          logError(`Attach verification failed: ${(err as Error).message}`);
+          return EXIT_CODE.GENERAL_ERROR;
         }
-        logError(`Attach verification failed: ${(err as Error).message}`);
-        return EXIT_CODE.GENERAL_ERROR;
-      }
 
-      const runtime = new LocalRuntime({
-        cwd: repoRoot,
-        githubClient,
-        githubToken,
-        owner,
-        repo,
-        workspaceSetup: config.workspace?.setup,
-      });
-
-      const baseBranch = verified.state.request.baseBranch ?? "main";
-      try {
-        await runtime.setupWorkspace(verified.slug, verified.jobId, {
-          attachCheckpoint: {
-            branch: verified.branch,
-            checkpointRef: verified.checkpointOid,
-          },
-          baseBranch,
+        const runtime = new LocalRuntime({
+          cwd: repoRoot,
+          githubClient,
+          githubToken,
+          owner,
+          repo,
+          workspaceSetup: config.workspace?.setup,
         });
-      } catch (err) {
-        if (err instanceof SpecRunnerError) {
-          logError(err.message);
-          stderrWrite(`Hint: ${err.hint}`);
-          return err.exitCode;
+
+        const baseBranch = verified.state.request.baseBranch ?? "main";
+        try {
+          await runtime.setupWorkspace(verified.slug, verified.jobId, {
+            attachCheckpoint: {
+              branch: verified.branch,
+              checkpointRef: verified.checkpointOid,
+            },
+            baseBranch,
+          });
+        } catch (err) {
+          if (err instanceof SpecRunnerError) {
+            logError(err.message);
+            stderrWrite(`Hint: ${err.hint}`);
+            return err.exitCode;
+          }
+          logError(`Failed to set up workspace: ${(err as Error).message}`);
+          return EXIT_CODE.GENERAL_ERROR;
         }
-        logError(`Failed to set up workspace: ${(err as Error).message}`);
-        return EXIT_CODE.GENERAL_ERROR;
-      }
 
-      slug = verified.slug;
-    }
+        slug = verified.slug;
+      } // end else (archivedSlug === null)
+    } // end else (localState === null)
 
-    // --- 7. Archive ---
+    // --- 8. Archive ---
     return await runArchive({
       slug,
       withMerge: opts.withMerge,

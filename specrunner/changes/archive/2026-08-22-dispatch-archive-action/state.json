@@ -1,0 +1,237 @@
+{
+  "version": 2,
+  "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
+  "createdAt": "2026-08-21T22:28:13.507Z",
+  "updatedAt": "2026-08-22T01:46:36.324Z",
+  "request": {
+    "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/dispatch-archive-action-c2c7ba44",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1054,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "a594d63ac0f639106194dc5e785ac45c79fd8775",
+    "601740e3f83df7a10434c8638fbc351899d8ac43",
+    "92d3ac1085472c563eee98d80d0775ac48c1db75",
+    "9f766a55c405443568da330b1a1380f803040b43",
+    "41e3c0d1e70d0efe8e9001a7175f221ce18d40dc",
+    "02a08844798aebac397537ad9fb0b333b80a5a60",
+    "b5d44f6548007acad61d191f7b8e6e2ac9b94d05",
+    "aed063786c5616c4a6b0967a86b6b8347690d4a6",
+    "0f5d2d5a1718bc6e573d400947ce447c80ffa63a",
+    "01309fc064bfdb0573c25bd07730d6fa137939d5",
+    "1c1746136b09e789afdd1b1375e948d0a3331d1a",
+    "6ccbc3e4e6c28a3d7dfed4ad5f19ff721046f67e",
+    "e395d5d60a5774d9507b8ff8b4ea137c1593ebb6",
+    "7454045baa195666eb257a9bd582a162597e2cfb",
+    "e7f433c1b589e55dd8378dfe111e21a32409ffdb",
+    "0de7b1e0db56f327ea7f1b5cddc4858f5861ea4d",
+    "d0b98d577ddee58eea74ca9d7a138160902ba5a7"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/issue-target/archive.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/core/attach/orchestrator.ts",
+      "src/core/archive/merge-completion.ts",
+      "src/core/archive/plain-archive.ts",
+      "src/core/issue-target/__tests__/archive.test.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts"
+    ],
+    "design": [
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/issue-target/archive.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/core/archive/job-context.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/core/archive/plain-archive.ts",
+      "src/core/archive/merge-completion.ts",
+      "src/store/job-catalog.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "tests/grep-workflow-actions-pinned.test.ts",
+      "src/core/archive/workflow-ci-detection.ts",
+      "src/core/archive/post-merge-cleanup.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/job-context.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/git/checkpoint-ref.ts",
+      "src/core/job-access/load-by-job-id.ts",
+      "src/core/archive/merge-completion.ts",
+      "src/core/archive/post-merge-cleanup.ts",
+      "src/store/job-catalog.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "tests/grep-workflow-actions-pinned.test.ts",
+      "src/core/archive/plain-archive.ts",
+      "src/core/issue-target/archive.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/store/job-state-store.ts",
+      "src/state/schema.ts",
+      "src/state/job-slug.ts",
+      "src/errors.ts",
+      "src/cli/command-registry.ts",
+      "src/core/command/pipeline-run.ts",
+      "src/core/issue-target/start.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/job-context.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "src/store/__tests__/job-state-store-list-with-source-dirs.test.ts",
+      "src/core/archive/__tests__",
+      "tests/grep-workflow-actions-pinned.test.ts",
+      "src/errors.ts",
+      "src/logger/stdout.ts",
+      "src/core/archive/__tests__/plain-archive.test.ts",
+      "tests/dispatch-workflow-archive-action.test.ts",
+      "src/state/schema.ts",
+      "src/core/archive/__tests__/archived-slug-by-job-id.test.ts"
+    ],
+    "code-review": [
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/job-context.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts",
+      "src/core/archive/__tests__/archived-slug-by-job-id.test.ts",
+      "tests/dispatch-workflow-archive-action.test.ts",
+      "src/core/issue-target/archive.ts"
+    ],
+    "regression-gate": [],
+    "conformance": [
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/job-context.ts",
+      "src/cli/archive-from-issue.ts",
+      "tests/dispatch-workflow-archive-action.test.ts",
+      "src/core/archive/__tests__/archived-slug-by-job-id.test.ts",
+      "src/cli/__tests__/archive-from-issue.test.ts"
+    ]
+  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "request-review escalation への operator 裁定: 選択肢 B を採用。runAttachVerification に fetch 済み checkpointOid を受け取る任意入力を追加し、指定時は fetch / rev-parse を省略して checkpoint 読み込みと verifyCheckpoint（generic integrity + policy + identity）のみを実行する。archive-from-issue の pull ref fallback 経路はこのオプションで検証を通す。resume --from-issue / job attach --branch の既存経路は OID を渡さず現行動作のまま。実装範囲に archive-from-issue.ts と orchestrator の該当拡張を含め、受け入れ条件の「branch 削除済みシナリオ」は ephemeral（local state 無し）の end-to-end で固定すること。\n",
+      "step": "request-review",
+      "recordedAt": "2026-08-22T00:13:56.089Z"
+    },
+    {
+      "text": "design escalation（Open Question 1 / D4）への operator 裁定: 選択肢 A を採用。ただし scope をさらに縮小する。\n\n- post-merge finalization を branch-borne checkpoint の rebind で解く前提は撤回。merge 後は main（checkout 済み base）に載った archive record が正。\n- `runArchiveFromIssue` の local jobId lookup miss 時に、`listWithSourceDirs({ includeArchived: true })` の record から jobId + issueNumber 一致で slug を解決する archive 専用 fallback を追加し、一致したら rebind / attach を通さず既存 `runArchive` に直行する。merge 済み確認と完了処理は既存 `runPlainArchive` / `completeAfterMerge` に委譲する。\n- archive record が見つからない merge 前は従来どおり closing PR branch + `runAttachVerification` を使う（merge 前は PR が open で head branch が存在するため既存経路で足りる）。\n- 先の request-review 裁定で指定した `refs/pull/<n>/head` fetch fallback と `runAttachVerification` の checkpointOid 拡張は、この 2 相フローでは不要のため本 request から削除する（当該裁定は本裁定で上書き）。\n- `resolveCheckpointSlug` / `loadStateByJobId` / resume・attach の一般契約は変更しない。新しい pipeline step / status / verifier は追加しない。\n\nrequest.md は operator が上記の縮小 scope（実装範囲 5 点・非目標に pull-ref fallback / checkpointOid 拡張を明記・受け入れ条件の差し替え）へ更新済み（apply-canon）。design.md / spec.md / tasks.md を更新後の request.md に合わせて改訂すること。確定済みの要求 1（dispatch archive action）の設計は維持してよい。\n",
+      "step": "design",
+      "recordedAt": "2026-08-22T01:02:35.595Z"
+    }
+  ],
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1062",
+    "number": 1062,
+    "createdAt": "2026-08-22T01:46:35.187Z"
+  },
+  "_journal": {
+    "historyCount": 70,
+    "stepCounts": {
+      "request-review": 2,
+      "design": 2,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 2,
+      "code-review": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1,
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}
