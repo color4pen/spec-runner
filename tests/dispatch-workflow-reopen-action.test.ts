@@ -1,10 +1,12 @@
 /**
- * TC-001: action choices contain archive
- * TC-002: archive branch delegates to the CLI only
- * TC-003: existing start and resume dispatch behavior is unchanged
+ * TC-R01: action choices contain reopen
+ * TC-R02: reopen branch resolves the job via attach and delegates to `job reopen`
+ * TC-R03: reopen branch requires from and reason
+ * TC-R04: reopen canon_patch is a dirty apply (no --apply-canon, no commit)
  *
- * Structural assertions on .github/workflows/specrunner-dispatch.yml.
- * No yaml parser package is used — blocks are extracted by indent scope.
+ * Structural assertions on .github/workflows/specrunner-dispatch.yml (issue #1066).
+ * No yaml parser package is used — blocks are extracted by indent scope, mirroring
+ * tests/dispatch-workflow-archive-action.test.ts.
  */
 
 import { describe, it, expect, beforeAll } from "vitest";
@@ -22,14 +24,9 @@ beforeAll(async () => {
 });
 
 // ---------------------------------------------------------------------------
-// Indent-scope helpers
+// Indent-scope helpers (same contract as dispatch-workflow-archive-action.test.ts)
 // ---------------------------------------------------------------------------
 
-/**
- * Starting at `startIdx`, collect all subsequent lines whose indent (leading spaces)
- * is strictly greater than `parentIndent`. Stops at the first line that is non-empty
- * and has indent <= parentIndent.
- */
 function collectIndentedBlock(lines: string[], startIdx: number, parentIndent: number): string[] {
   const block: string[] = [];
   for (let i = startIdx; i < lines.length; i++) {
@@ -45,13 +42,6 @@ function collectIndentedBlock(lines: string[], startIdx: number, parentIndent: n
   return block;
 }
 
-/**
- * Extract the `options:` block under a given key path in the YAML.
- * keyPath is an array of keys from outermost to innermost.
- * Returns the lines of the options block (content lines only).
- *
- * On failure, returns null and fills `failureReason`.
- */
 function extractOptionsBlock(
   lines: string[],
   keyPath: string[],
@@ -83,21 +73,16 @@ function extractOptionsBlock(
   return { block: searchLines, failureReason: null };
 }
 
-/**
- * Extract the `run: |` script from a step named by matching a line containing `name: <stepName>`.
- * Returns lines of the script body (the indented block under `run:`).
- */
 function extractRunScript(lines: string[], stepName: string): string[] | null {
   const namePattern = new RegExp(`name:\\s*${stepName}`);
   for (let i = 0; i < lines.length; i++) {
     if (namePattern.test(lines[i]!)) {
-      // Find the `run:` key within this step's block
       const stepIndent = lines[i]!.length - lines[i]!.trimStart().length;
       for (let j = i + 1; j < lines.length; j++) {
         const line = lines[j]!;
         if (line.trim() === "") continue;
         const indent = line.length - line.trimStart().length;
-        if (indent <= stepIndent) break; // left the step block
+        if (indent <= stepIndent) break;
         if (/^\s+run:\s*\|/.test(line)) {
           return collectIndentedBlock(lines, j + 1, indent);
         }
@@ -108,25 +93,19 @@ function extractRunScript(lines: string[], stepName: string): string[] | null {
 }
 
 /**
- * Parse the top-level `if / elif / else` branches from a shell script body.
- * Returns a map: { "if:<condition>": lines[], "elif:<condition>": lines[], "else": lines[] }
- *
- * Nested `if ... fi` blocks inside a branch (e.g. the resume canon_patch path)
- * are tracked by depth and kept as branch body lines — only depth-0 if/elif/else
- * delimit branches. Without depth tracking, the first nested `if` was misread as
- * a new branch and the enclosing branch body came back empty.
+ * Depth-aware top-level if/elif/else branch parser — nested `if ... fi` blocks
+ * (attach / canon_patch guards) stay inside the enclosing branch body.
  */
 function parseBranches(scriptLines: string[]): Map<string, string[]> {
   const branches = new Map<string, string[]>();
   let currentKey: string | null = null;
   let currentLines: string[] = [];
-  let depth = 0; // nesting depth of if-blocks inside the current branch
+  let depth = 0;
 
   for (const line of scriptLines) {
     const trimmed = line.trim();
 
     if (currentKey === null) {
-      // Outside the top-level if-chain: look for its opening `if [ ... ]`
       const ifMatch = /^if\s+\[([^\]]*)\]/.exec(trimmed);
       if (ifMatch) {
         currentKey = `if:${ifMatch[1]!.trim()}`;
@@ -135,7 +114,6 @@ function parseBranches(scriptLines: string[]): Map<string, string[]> {
       continue;
     }
 
-    // Inside a branch: nested `if` (any form, incl. `if !` / `if cmd`) opens a block
     if (/^if\s/.test(trimmed)) {
       depth++;
       currentLines.push(trimmed);
@@ -147,7 +125,6 @@ function parseBranches(scriptLines: string[]): Map<string, string[]> {
         depth--;
         currentLines.push(trimmed);
       } else {
-        // top-level chain closed
         branches.set(currentKey, currentLines);
         currentKey = null;
         currentLines = [];
@@ -177,12 +154,20 @@ function parseBranches(scriptLines: string[]): Map<string, string[]> {
   return branches;
 }
 
+function reopenBranchBody(branches: Map<string, string[]>): string {
+  const reopenKey = [...branches.keys()].find(
+    (k) => k.startsWith("elif:") && k.includes('"reopen"'),
+  );
+  expect(reopenKey, `Branch keys: ${[...branches.keys()].join(", ")}`).toBeDefined();
+  return (branches.get(reopenKey!) ?? []).join("\n");
+}
+
 // ---------------------------------------------------------------------------
-// TC-001: action choices contain archive
+// TC-R01: action choices contain reopen
 // ---------------------------------------------------------------------------
 
-describe("TC-001: action choices contain archive", () => {
-  it("options block contains start, resume, and archive", () => {
+describe("TC-R01: action choices contain reopen", () => {
+  it("options block contains reopen alongside start, resume, and archive", () => {
     const { block, failureReason } = extractOptionsBlock(lines, [
       "on",
       "workflow_dispatch",
@@ -192,9 +177,7 @@ describe("TC-001: action choices contain archive", () => {
     ]);
 
     if (block === null) {
-      throw new Error(
-        `Failed to extract options block: ${failureReason}\nFull workflow (first 60 lines):\n${lines.slice(0, 60).join("\n")}`,
-      );
+      throw new Error(`Failed to extract options block: ${failureReason}`);
     }
 
     const items = block
@@ -202,17 +185,33 @@ describe("TC-001: action choices contain archive", () => {
       .filter((l) => l.startsWith("- "))
       .map((l) => l.slice(2).trim());
 
-    expect(items, `Extracted options: ${JSON.stringify(items)}`).toContain("start");
-    expect(items, `Extracted options: ${JSON.stringify(items)}`).toContain("resume");
-    expect(items, `Extracted options: ${JSON.stringify(items)}`).toContain("archive");
+    expect(items, `Extracted options: ${JSON.stringify(items)}`).toEqual([
+      "start",
+      "resume",
+      "reopen",
+      "archive",
+    ]);
+  });
+
+  it("reason input is declared", () => {
+    const { block, failureReason } = extractOptionsBlock(lines, [
+      "on",
+      "workflow_dispatch",
+      "inputs",
+      "reason",
+    ]);
+    if (block === null) {
+      throw new Error(`Failed to extract reason input block: ${failureReason}`);
+    }
+    expect(block.join("\n")).toContain("type: string");
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-002: archive branch delegates to the CLI only
+// TC-R02: reopen branch resolves the job via attach and delegates to `job reopen`
 // ---------------------------------------------------------------------------
 
-describe("TC-002: archive branch delegates to the CLI only", () => {
+describe("TC-R02: reopen branch resolves the job via attach and delegates to job reopen", () => {
   let branches: Map<string, string[]>;
 
   beforeAll(() => {
@@ -221,65 +220,37 @@ describe("TC-002: archive branch delegates to the CLI only", () => {
     branches = parseBranches(scriptLines);
   });
 
-  it("archive branch exists as an elif", () => {
-    const archiveKey = [...branches.keys()].find(
-      (k) => k.startsWith("elif:") && k.includes('"archive"'),
+  it("reopen branch exists as an elif", () => {
+    const reopenKey = [...branches.keys()].find(
+      (k) => k.startsWith("elif:") && k.includes('"reopen"'),
     );
-    expect(archiveKey, `Branch keys: ${[...branches.keys()].join(", ")}`).toBeDefined();
+    expect(reopenKey, `Branch keys: ${[...branches.keys()].join(", ")}`).toBeDefined();
   });
 
-  it("archive branch body is exactly 1 non-empty, non-comment line", () => {
-    const archiveKey = [...branches.keys()].find(
-      (k) => k.startsWith("elif:") && k.includes('"archive"'),
-    )!;
-    const body = (branches.get(archiveKey) ?? []).filter(
-      (l) => l.trim() !== "" && !l.trim().startsWith("#"),
-    );
-    expect(body).toHaveLength(1);
+  it("resolves the Development linked branch and attaches before reopen", () => {
+    const body = reopenBranchBody(branches);
+    expect(body).toContain("linkedBranches");
+    expect(body).toContain("job attach --branch");
   });
 
-  it("archive branch body contains 'job archive'", () => {
-    const archiveKey = [...branches.keys()].find(
-      (k) => k.startsWith("elif:") && k.includes('"archive"'),
-    )!;
-    const body = (branches.get(archiveKey) ?? []).join("\n");
-    expect(body).toContain("job archive");
+  it("delegates to 'job reopen' with --from and --reason", () => {
+    const body = reopenBranchBody(branches);
+    expect(body).toContain("job reopen");
+    expect(body).toContain('--from "$FROM"');
+    expect(body).toContain('--reason "$REASON"');
   });
 
-  it("archive branch body contains '--from-issue'", () => {
-    const archiveKey = [...branches.keys()].find(
-      (k) => k.startsWith("elif:") && k.includes('"archive"'),
-    )!;
-    const body = (branches.get(archiveKey) ?? []).join("\n");
-    expect(body).toContain("--from-issue");
-  });
-
-  it('archive branch body contains "$ISSUE"', () => {
-    const archiveKey = [...branches.keys()].find(
-      (k) => k.startsWith("elif:") && k.includes('"archive"'),
-    )!;
-    const body = (branches.get(archiveKey) ?? []).join("\n");
-    expect(body).toContain('"$ISSUE"');
-  });
-
-  it("archive branch body does not contain --with-merge", () => {
-    const archiveKey = [...branches.keys()].find(
-      (k) => k.startsWith("elif:") && k.includes('"archive"'),
-    )!;
-    const body = (branches.get(archiveKey) ?? []).join("\n");
-    expect(body).not.toContain("--with-merge");
-  });
-
-  it("workflow yaml has no --with-merge anywhere", () => {
-    expect(content).not.toContain("--with-merge");
+  it("does not pass --prompt (reopen CLI contract rejects it)", () => {
+    const body = reopenBranchBody(branches);
+    expect(body).not.toContain("--prompt");
   });
 });
 
 // ---------------------------------------------------------------------------
-// TC-003: existing start and resume dispatch behavior is unchanged
+// TC-R03: reopen branch requires from and reason
 // ---------------------------------------------------------------------------
 
-describe("TC-003: existing start and resume dispatch behavior is unchanged", () => {
+describe("TC-R03: reopen branch requires from and reason", () => {
   let branches: Map<string, string[]>;
 
   beforeAll(() => {
@@ -288,18 +259,43 @@ describe("TC-003: existing start and resume dispatch behavior is unchanged", () 
     branches = parseBranches(scriptLines);
   });
 
-  it("resume branch contains 'job resume --from-issue'", () => {
-    const resumeKey = [...branches.keys()].find(
-      (k) => k.startsWith("if:") && k.includes('"resume"'),
-    )!;
-    const body = (branches.get(resumeKey) ?? []).join("\n");
-    expect(body).toContain("job resume");
-    expect(body).toContain("--from-issue");
+  it("guards on empty FROM or REASON before any git/CLI work", () => {
+    const body = reopenBranchBody(branches);
+    const guardIdx = body.indexOf('-z "$FROM"');
+    const attachIdx = body.indexOf("job attach");
+    expect(guardIdx).toBeGreaterThanOrEqual(0);
+    expect(body).toContain('-z "$REASON"');
+    expect(attachIdx).toBeGreaterThan(guardIdx);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-R04: reopen canon_patch is a dirty apply (no --apply-canon, no commit)
+// ---------------------------------------------------------------------------
+
+describe("TC-R04: reopen canon_patch is a dirty apply", () => {
+  let branches: Map<string, string[]>;
+
+  beforeAll(() => {
+    const scriptLines = extractRunScript(lines, "Run pipeline");
+    if (!scriptLines) throw new Error("Could not find 'Run pipeline' step in workflow");
+    branches = parseBranches(scriptLines);
   });
 
-  it("start (else) branch contains 'job start --from-issue'", () => {
-    const body = (branches.get("else") ?? []).join("\n");
-    expect(body).toContain("job start");
-    expect(body).toContain("--from-issue");
+  it("applies canon_patch to the worktree when provided", () => {
+    const body = reopenBranchBody(branches);
+    expect(body).toContain('-n "$CANON_PATCH"');
+    expect(body).toContain("apply --whitespace=nowarn");
+  });
+
+  it("does not use --apply-canon and does not commit in the reopen branch", () => {
+    // comment lines explain the CLI contract and may name the flag — exclude them
+    const codeLines = reopenBranchBody(branches)
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("#"))
+      .join("\n");
+    expect(codeLines).not.toContain("--apply-canon");
+    expect(codeLines).not.toContain("git commit");
+    expect(codeLines).not.toContain('git -C "$WT" commit');
   });
 });
