@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "c2c7ba44-9281-4264-bc52-6b2c9821324a",
   "createdAt": "2026-08-21T22:28:13.507Z",
-  "updatedAt": "2026-08-22T01:11:19.508Z",
+  "updatedAt": "2026-08-22T01:14:12.549Z",
   "request": {
     "title": "Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/dispatch-archive-action-c2c7ba44",
   "error": null,
@@ -70,7 +70,8 @@
     "9f766a55c405443568da330b1a1380f803040b43",
     "41e3c0d1e70d0efe8e9001a7175f221ce18d40dc",
     "02a08844798aebac397537ad9fb0b333b80a5a60",
-    "b5d44f6548007acad61d191f7b8e6e2ac9b94d05"
+    "b5d44f6548007acad61d191f7b8e6e2ac9b94d05",
+    "aed063786c5616c4a6b0967a86b6b8347690d4a6"
   ],
   "touchedFiles": {
     "request-review": [
@@ -96,7 +97,8 @@
       "tests/grep-workflow-actions-pinned.test.ts",
       "src/core/archive/workflow-ci-detection.ts",
       "src/core/archive/post-merge-cleanup.ts"
-    ]
+    ],
+    "test-case-gen": []
   },
   "resumePoint": null,
   "mainCheckoutDrift": null,
@@ -113,10 +115,11 @@
     }
   ],
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 20,
     "stepCounts": {
       "request-review": 2,
-      "design": 2
+      "design": 2,
+      "test-case-gen": 1
     }
   }
 }
