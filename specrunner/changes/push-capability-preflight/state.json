@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T09:31:10.164Z",
+  "updatedAt": "2026-08-23T09:38:53.289Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "feat/push-capability-preflight-e57e9dd3",
   "error": null,
@@ -66,7 +66,8 @@
   "synthesizedCommits": [
     "acc0a05a38e6f14814d2a67658998e042f50a17b",
     "10337ee84ce0199b57dc79900c9a5faa93343671",
-    "afd6163343adabd4d1825890a3aabdd41de4c718"
+    "afd6163343adabd4d1825890a3aabdd41de4c718",
+    "154eb2a468da862f4865a5ac190774d10368bba8"
   ],
   "touchedFiles": {
     "request-review": [
@@ -93,13 +94,18 @@
       ".github/workflows/specrunner-dispatch.yml",
       "src/core/step/step-halt.ts",
       "src/core/port/step-context.ts"
+    ],
+    "test-case-gen": [
+      "src/core/port/agent-runner.ts",
+      "src/core/port/output-contract.ts"
     ]
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
