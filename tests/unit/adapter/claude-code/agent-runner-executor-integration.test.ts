@@ -735,3 +735,288 @@ describe("TC-006: executor.ts / commit-orchestrator.ts uses setsBranch flag, not
     expect(orchestratorSrc).toContain("setsBranch");
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-007: rollover + success → finalizeStepArtifacts 1 回呼ばれ step は success
+// TC-009: budget 超過 → CONTEXT_WINDOW_EXHAUSTED halt、finalizeStepArtifacts 呼ばれない
+// (T-07 fresh-session-rollover)
+// ---------------------------------------------------------------------------
+
+/**
+ * Minimal RuntimeStrategy mock for rollover integration tests.
+ * Provides the seams exercised by StepExecutor when runtimeStrategy is set:
+ *   - prepareStepArtifacts (before runner)
+ *   - finalizeStepArtifacts (after success — THE spy)
+ *   - captureHeadSha (for commitOid capture)
+ * All other methods return safe no-op values.
+ */
+function makeRolloverRuntimeStrategy(opts: {
+  finalizeStepArtifacts?: ReturnType<typeof vi.fn>;
+} = {}) {
+  return {
+    async *query() {},
+    createAgentRunner() {
+      return { run: vi.fn() };
+    },
+    async setupWorkspace() { return { cwd: "" }; },
+    buildDeps() { return {} as never; },
+    registerCleanup() { return {} as never; },
+    async teardown() {},
+    captureHeadSha: vi.fn().mockResolvedValue(null),
+    prepareStepArtifacts: vi.fn().mockResolvedValue(undefined),
+    finalizeStepArtifacts: opts.finalizeStepArtifacts ?? vi.fn().mockResolvedValue(undefined),
+    validateStepInputs: vi.fn().mockResolvedValue(undefined),
+    validateStepOutputs: vi.fn().mockResolvedValue({ violations: [] }),
+    commitFinalState: vi.fn().mockResolvedValue(undefined),
+    async bootstrapJob() { throw new Error("not implemented"); },
+    async persistJobState() {},
+    verifyFindingRefs: vi.fn().mockResolvedValue([]),
+    digestArtifacts: vi.fn().mockResolvedValue([]),
+    listChangedFiles: vi.fn().mockResolvedValue({ kind: "success" as const, files: [] }),
+  } as never;
+}
+
+/** QueryFn that returns exhaustion on first call, success on second call. */
+function makeRolloverQueryFn(): QueryFn {
+  let callCount = 0;
+  return async function* rolloverQuery() {
+    callCount++;
+    if (callCount === 1) {
+      // First call: context exhaustion
+      yield {
+        type: "result" as const,
+        subtype: "error_during_execution" as const,
+        is_error: true,
+        stop_reason: null,
+        errors: ["Prompt is too long for this model's context window"],
+        session_id: "sess-exhaust-1",
+        modelUsage: {
+          "claude-sonnet-4-5": {
+            inputTokens: 190000,
+            outputTokens: 1000,
+            cacheReadInputTokens: 0,
+            cacheCreationInputTokens: 0,
+          },
+        },
+        usage: { input_tokens: 190000, output_tokens: 1000, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        permission_denials: [],
+        uuid: "uuid-exhaust-1",
+        num_turns: 5,
+        duration_ms: 1000,
+        duration_api_ms: 900,
+        total_cost_usd: 0.05,
+      } as unknown;
+    } else {
+      // Second+ call: success
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        session_id: "sess-success-1",
+        is_error: false,
+        stop_reason: "end_turn",
+        num_turns: 3,
+        duration_ms: 5000,
+        duration_api_ms: 4000,
+        total_cost_usd: 0.01,
+        usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {
+          "claude-sonnet-4-5": {
+            inputTokens: 80000,
+            outputTokens: 5000,
+            cacheReadInputTokens: 5000,
+            cacheCreationInputTokens: 2000,
+            contextWindow: 200000,
+          },
+        },
+        permission_denials: [],
+        uuid: "uuid-success-1",
+      } as unknown;
+    }
+  } as QueryFn;
+}
+
+/** QueryFn that always returns context exhaustion. */
+function makeAlwaysExhaustQueryFn(): QueryFn {
+  return async function* alwaysExhaust() {
+    yield {
+      type: "result" as const,
+      subtype: "error_during_execution" as const,
+      is_error: true,
+      stop_reason: null,
+      errors: ["Prompt is too long for this model's context window"],
+      session_id: "sess-exhaust-always",
+      modelUsage: {
+        "claude-sonnet-4-5": {
+          inputTokens: 195000,
+          outputTokens: 500,
+          cacheReadInputTokens: 0,
+          cacheCreationInputTokens: 0,
+        },
+      },
+      usage: { input_tokens: 195000, output_tokens: 500, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+      permission_denials: [],
+      uuid: "uuid-exhaust-always",
+      num_turns: 5,
+      duration_ms: 1000,
+      duration_api_ms: 900,
+      total_cost_usd: 0.05,
+    } as unknown;
+  } as QueryFn;
+}
+
+describe("TC-007 (T-07): rollover + success → finalizeStepArtifacts が 1 回だけ呼ばれ、step が success になる", () => {
+  it("1 回目 exhaustion → 2 回目 success: executor が success で完了し、finalizeStepArtifacts は 1 回", async () => {
+    const jobId = "tc007-rollover-success-job";
+    const initialState = makeJobState(jobId);
+    await seedJobState(jobId, initialState);
+
+    const finalizeStepArtifacts = vi.fn().mockResolvedValue(undefined);
+    const runtimeStrategy = makeRolloverRuntimeStrategy({ finalizeStepArtifacts });
+
+    const queryFn = makeRolloverQueryFn();
+    // Config with default maxRollovers=1 (no explicit contextRollover → resolved as 1)
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+
+    const step: AgentStep = {
+      kind: "agent",
+      name: "implementer",
+      agent: {
+        name: "specrunner-implementer",
+        role: "implementer",
+        model: "claude-sonnet-4-5",
+        system: "implement this",
+        tools: [],
+      },
+      toolHandlers: undefined,
+      completionVerdict: "success",
+      buildMessage: () => "implement this",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "success" as const, findingsPath: null }),
+    };
+
+    const config = makeConfig();
+    const deps: PipelineDeps = {
+      config,
+      request: { type: "feature", title: "TC-007", slug: "tc007-slug", baseBranch: "main", content: "content", adr: false },
+      slug: "tc007-slug",
+      githubClient: {
+        verifyBranch: vi.fn(),
+        getRawFile: vi.fn(),
+        verifyPath: vi.fn(),
+        verifyTokenScopes: vi.fn(),
+        getRefSha: vi.fn(),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+        getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
+        listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
+        createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://github.com/o/r/issues/1#issuecomment-1" }),
+        searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+        listIssueComments: vi.fn().mockResolvedValue([]),
+        removeLabel: vi.fn().mockResolvedValue(undefined),
+        getIssue: vi.fn().mockResolvedValue({ number: 1, title: "TC007", body: "" }),
+        createLinkedBranch: vi.fn().mockResolvedValue(undefined),
+        listIssueClosingPullRequests: vi.fn().mockResolvedValue([]),
+      },
+      cwd: tempDir,
+      owner: "user",
+      repo: "repo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+      runtimeStrategy,
+    };
+
+    const resultState = await executor.execute(step, initialState, deps);
+
+    // TC-007: step result is "success"
+    const stepResults = resultState.steps?.["implementer"];
+    expect(stepResults).toBeDefined();
+    const lastResult = stepResults![stepResults!.length - 1] as import("../../../../src/state/schema.js").StepRun;
+    expect(lastResult.outcome.verdict).toBe("success");
+
+    // TC-007: finalizeStepArtifacts called exactly once (not once per rollover session)
+    expect(finalizeStepArtifacts).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("TC-009 (T-07): rollover budget 超過 → CONTEXT_WINDOW_EXHAUSTED halt、finalizeStepArtifacts 呼ばれない", () => {
+  it("maxRollovers=1 で毎回 exhaustion → executor が CONTEXT_WINDOW_EXHAUSTED で throw し、finalizeStepArtifacts は 0 回", async () => {
+    const jobId = "tc009-budget-exceeded-job";
+    const initialState = makeJobState(jobId);
+    await seedJobState(jobId, initialState);
+
+    const finalizeStepArtifacts = vi.fn().mockResolvedValue(undefined);
+    const runtimeStrategy = makeRolloverRuntimeStrategy({ finalizeStepArtifacts });
+
+    const queryFn = makeAlwaysExhaustQueryFn();
+    // Config with maxRollovers=1 (default) — 2 calls (1 initial + 1 rollover) then budget exceeded
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const events = new EventBus();
+    const executor = new StepExecutor(events, runner, makeStoreFactory(tempDir));
+
+    const step: AgentStep = {
+      kind: "agent",
+      name: "implementer",
+      agent: {
+        name: "specrunner-implementer",
+        role: "implementer",
+        model: "claude-sonnet-4-5",
+        system: "implement this",
+        tools: [],
+      },
+      toolHandlers: undefined,
+      buildMessage: () => "implement this",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: "success" as const, findingsPath: null }),
+    };
+
+    const config = makeConfig();
+    const deps: PipelineDeps = {
+      config,
+      request: { type: "feature", title: "TC-009", slug: "tc009-slug", baseBranch: "main", content: "content", adr: false },
+      slug: "tc009-slug",
+      githubClient: {
+        verifyBranch: vi.fn(),
+        getRawFile: vi.fn(),
+        verifyPath: vi.fn(),
+        verifyTokenScopes: vi.fn(),
+        getRefSha: vi.fn(),
+        listPullRequests: vi.fn().mockResolvedValue([]),
+        createPullRequest: vi.fn().mockResolvedValue({ url: "", number: 0 }),
+        getPullRequest: vi.fn().mockResolvedValue({ state: "OPEN", mergeStateStatus: "CLEAN", headRefName: "", mergeable: "MERGEABLE" }),
+        mergePullRequest: vi.fn().mockResolvedValue({ merged: true, message: "" }),
+        getCheckStatus: vi.fn().mockResolvedValue({ state: "success", total: 0, failing: [], pending: [] }),
+        listPullRequestFiles: vi.fn().mockResolvedValue({ files: [], truncated: false }),
+        createIssueComment: vi.fn().mockResolvedValue({ id: 1, url: "https://github.com/o/r/issues/1#issuecomment-1" }),
+        searchOpenIssuesByLabel: vi.fn().mockResolvedValue([]),
+        listIssueComments: vi.fn().mockResolvedValue([]),
+        removeLabel: vi.fn().mockResolvedValue(undefined),
+        getIssue: vi.fn().mockResolvedValue({ number: 1, title: "TC009", body: "" }),
+        createLinkedBranch: vi.fn().mockResolvedValue(undefined),
+        listIssueClosingPullRequests: vi.fn().mockResolvedValue([]),
+      },
+      cwd: tempDir,
+      owner: "user",
+      repo: "repo",
+      spawn: noopSpawn,
+      storeFactory: makeStoreFactory(tempDir),
+      runtimeStrategy,
+    };
+
+    // executor.execute() must throw with CONTEXT_WINDOW_EXHAUSTED
+    await expect(executor.execute(step, initialState, deps)).rejects.toMatchObject({
+      code: "CONTEXT_WINDOW_EXHAUSTED",
+    });
+
+    // TC-009: finalizeStepArtifacts must NOT be called (budget exceeded → halt before finalize)
+    expect(finalizeStepArtifacts).toHaveBeenCalledTimes(0);
+
+    // TC-009: persisted state has CONTEXT_WINDOW_EXHAUSTED as the error code
+    const persisted = await makeStoreFactory(tempDir)(jobId).load();
+    expect(persisted.error?.code).toBe("CONTEXT_WINDOW_EXHAUSTED");
+  });
+});

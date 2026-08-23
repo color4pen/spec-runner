@@ -1,0 +1,270 @@
+{
+  "version": 2,
+  "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
+  "createdAt": "2026-08-22T22:28:04.854Z",
+  "updatedAt": "2026-08-23T02:23:35.070Z",
+  "request": {
+    "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/fresh-session-rollover-99eec99c",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1058,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "9e3aa4c8e92e0932f255fca2f822a8915718e418",
+    "a5d1ab989b63ba58a79c7176dc0310d502865d01",
+    "4c609ebee818f6149299bb8a9e1900abe25a8542",
+    "190859033f2a5d604d0226a0b4a7e497e08fc40a",
+    "1c22b9f126b235c945dcb21ae91515f62481be56",
+    "42120783df0680e00c1239827a0e28189ed380ed",
+    "a9f1a2c928b65458a3fecca5539033b2f9a625a0",
+    "7218de6a3bd5ad0da9b2c7524c28cdd78af72958",
+    "55b49ec12d15a6ef7f188265776f49c0d87755a6",
+    "e1c8fc45ad8ebc10313cd7b5d4cf5965dee6ade5",
+    "86f67de2dc23681481c07cea279adfb46a2bed10",
+    "f32099c897cdefb09a89026fd13cbd90b56f696f",
+    "5eb07261aeeff3440c2ae4340e4cb6565ef3cb12",
+    "eb9da8160c05aed8849c3e4620e40f852f7c9be4",
+    "c56ee09fa633bf767991208c8736902ce7805d44",
+    "92333abdc2e58f746df2e840ce2ddeb0f97439f9",
+    "c5e620a099b837ef4d4a29c451cab60a6f79731b",
+    "381b4198a9b66abea73bc8e0d22b83bc4f9676b2",
+    "0e399dbeb3249cfc2686be103c233776bb46997c",
+    "889083b88c2b73d22c32fd97bc70f17e733f118c",
+    "c64f7a6b6cc3898942962018ede0f989c62124ed",
+    "ec82f283d43a673f1c11df6c10bbd2b29bddbc64",
+    "58b03af6ba472829c44610e27654efa65207aa7e",
+    "480830d66c626470077b9049990062e0a8e3aab3",
+    "4c34b7773ce22be65765550ee089513623c7671e",
+    "349c31c31fa9fbfc1b6519570787e66b56e99afb",
+    "ac8cf405b4054496cbef95646877f7fb495753b3",
+    "ee9d18946b28d1d32265305d9e014c0a524acaba",
+    "6b86ac9be6c348bcb54a104f0f6c31d5e4ab9eb7",
+    "fc56a57d1523081ad7ecfb2a936fe019da558cdb"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/implementer.ts",
+      "src/prompts/fragments.ts",
+      "src/core/step/executor.ts",
+      "src/adapter/shared/artifact-bundle.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/shared/transient-error.ts",
+      "src/core/usage/store.ts",
+      "src/core/step/step-halt.ts",
+      "src/kernel/context-metrics.ts",
+      "src/core/usage/types.ts"
+    ],
+    "design": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "src/kernel/context-metrics.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/shared/transient-error.ts",
+      "src/core/step/step-halt.ts",
+      "src/kernel/event-types.ts",
+      "src/core/event/types.ts",
+      "src/core/usage/types.ts",
+      "src/adapter/claude-code/completion-directive.ts"
+    ],
+    "test-case-gen": [],
+    "spec-review": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/context-observer.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/step-halt.ts",
+      "src/adapter/shared/transient-error.ts",
+      "src/kernel/event-types.ts",
+      "src/core/event/types.ts",
+      "src/config/schema",
+      "src/adapter/claude-code/completion-directive.ts",
+      "src/config/schema.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/config/schema/types.ts",
+      "src/config/schema/resolution.ts",
+      "tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts",
+      "src/config/schema/validation.ts"
+    ],
+    "spec-fixer": [],
+    "implementer": [
+      "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts"
+    ],
+    "code-review": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/rollover-prompt.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/executor.ts",
+      "src/config/schema/types.ts",
+      "src/config/schema/resolution.ts",
+      "src/config/schema/validation.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/kernel/event-types.ts",
+      "src/core/event/types.ts",
+      "src/logger/pipeline-logger.ts",
+      "src/cli/progress.ts",
+      "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts",
+      "tests/unit/adapter/claude-code/rollover-prompt.test.ts",
+      "src/core/attestation/render-comment.ts",
+      "src/config/__tests__/context-rollover-config.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/step/commit-orchestrator.ts",
+      "tests/unit/core/step/commit-orchestrator-rollover.test.ts",
+      "src/core/step/step-halt.ts",
+      "src/state/schema/types.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/executor.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "tests/unit/logger/pipeline-logger-rollover.test.ts"
+    ],
+    "conformance": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/rollover-prompt.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/config/schema/types.ts",
+      "src/config/schema/resolution.ts",
+      "src/config/schema/validation.ts",
+      "src/core/event/types.ts",
+      "src/kernel/event-types.ts",
+      "src/logger/pipeline-logger.ts",
+      "src/cli/progress.ts",
+      "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts",
+      "tests/unit/adapter/claude-code/rollover-prompt.test.ts",
+      "src/config/__tests__/context-rollover-config.test.ts",
+      "tests/unit/core/step/commit-orchestrator-rollover.test.ts",
+      "tests/unit/logger/pipeline-logger-rollover.test.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "480830d66c626470077b9049990062e0a8e3aab3",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/fresh-session-rollover/design.md:sha256:c4eb15decb5277f3a163ca4bdd8425fa8a03e77b11409eb870b6b795ef492656|specrunner/changes/fresh-session-rollover/request.md:sha256:8f8c68345f440ef9049b875dac42ab7b28050eb905c861dc569e291db881b2d6|specrunner/changes/fresh-session-rollover/spec.md:sha256:0abe09db6fe4a661a7348fd57d17a423f21e759664d3b5d936d41267cd63ca63|specrunner/changes/fresh-session-rollover/tasks.md:sha256:d942da5ad15207d5bdae166614cdbeac1338db5983e51d01df96d7c9b3f670b3|specrunner/changes/fresh-session-rollover/test-cases.md:sha256:9d0ac8cb8fb4cfb974bd1252792fd12baa95a87979f961b7844d939f70057d86"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "480830d66c626470077b9049990062e0a8e3aab3",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/fresh-session-rollover/design.md:sha256:c4eb15decb5277f3a163ca4bdd8425fa8a03e77b11409eb870b6b795ef492656|specrunner/changes/fresh-session-rollover/request.md:sha256:8f8c68345f440ef9049b875dac42ab7b28050eb905c861dc569e291db881b2d6|specrunner/changes/fresh-session-rollover/spec.md:sha256:0abe09db6fe4a661a7348fd57d17a423f21e759664d3b5d936d41267cd63ca63|specrunner/changes/fresh-session-rollover/tasks.md:sha256:d942da5ad15207d5bdae166614cdbeac1338db5983e51d01df96d7c9b3f670b3|specrunner/changes/fresh-session-rollover/test-cases.md:sha256:9d0ac8cb8fb4cfb974bd1252792fd12baa95a87979f961b7844d939f70057d86"
+    }
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "operator 裁定 (cross-boundary-invariants escalation への対応):\n(1) [high] rollover ループの各 iteration を try-catch で包み、throw として伝播する context exhaustion も rollover 分岐へルーティングする(budget 超過時は既存の typed halt)。tasks.md T-04 の throw 経路を実装すること。\n(2) [medium] budget 枯渇時の contextObserver.observeResult / markExhaustion の二重呼出しを除去する。\n(3) [low] sessionLogWriter.writeSummary の per-session log integrity 指摘を修正する(複数セッション混在時のサマリー紐付けを実態と一致させる)。\n(4) [decision-needed] transientRetryAttempts は累積維持(現状挙動)とする。design D6 の全セッション合算方針と整合させるため、rollover 時にリセットしない。必要なら design にこの決定を明記してよい。",
+      "step": "custom-reviewers",
+      "recordedAt": "2026-08-23T00:34:11.980Z"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1076",
+    "number": 1076,
+    "createdAt": "2026-08-23T02:23:33.679Z"
+  },
+  "_journal": {
+    "historyCount": 136,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 2,
+      "bite-evidence": 1,
+      "verification": 4,
+      "code-review": 3,
+      "code-fixer": 5,
+      "cross-boundary-invariants": 4,
+      "scale-tolerance": 1,
+      "custom-reviewers": 4,
+      "regression-gate": 4,
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

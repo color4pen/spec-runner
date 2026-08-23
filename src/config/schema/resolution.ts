@@ -6,6 +6,7 @@ import type {
   SpecRunnerConfig,
   InboxConfig,
   TransientRetryConfig,
+  ContextRolloverConfig,
   ResolvedDesignLayer,
   ForbiddenSurfaceConfig,
 } from "./types.js";
@@ -14,6 +15,7 @@ import {
   DEFAULT_INBOX_MAX_STARTS_PER_RUN,
   DEFAULT_TRANSIENT_RETRY_MAX,
   DEFAULT_TRANSIENT_RETRY_BASE_DELAY_MS,
+  DEFAULT_CONTEXT_ROLLOVER_MAX,
 } from "./types.js";
 
 /**
@@ -35,6 +37,17 @@ export function resolveTransientRetryConfig(config: SpecRunnerConfig): Required<
   return {
     maxRetries: config.transientRetry?.maxRetries ?? DEFAULT_TRANSIENT_RETRY_MAX,
     baseDelayMs: config.transientRetry?.baseDelayMs ?? DEFAULT_TRANSIENT_RETRY_BASE_DELAY_MS,
+  };
+}
+
+/**
+ * Resolve ContextRolloverConfig with defaults applied.
+ * Returns a fully-resolved config with all fields present.
+ * Follows the same pattern as resolveTransientRetryConfig.
+ */
+export function resolveContextRolloverConfig(config: SpecRunnerConfig): Required<ContextRolloverConfig> {
+  return {
+    maxRollovers: config.contextRollover?.maxRollovers ?? DEFAULT_CONTEXT_ROLLOVER_MAX,
   };
 }
 

@@ -111,6 +111,10 @@ export class PipelineLogger {
       this.write({ type: "step:retry", step, attempt, maxRetries, delayMs });
     });
 
+    events.on("step:rollover", ({ step, attempt, maxRollovers, reason }) => {
+      this.write({ type: "step:rollover", step, attempt, maxRollovers, reason });
+    });
+
     events.on("verdict:parsed", ({ step, outcome }) => {
       this.write({
         type: "verdict:parsed",

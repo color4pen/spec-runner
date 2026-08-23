@@ -16,7 +16,7 @@
  *   - history: forwarded to store.appendHistory (absent = no history append for this halt).
  */
 import type { ErrorInfo, JobState, StepName, HistoryEntry } from "../../state/schema.js";
-import type { AgentRunResult } from "../port/agent-runner.js";
+import type { AgentRunResult, AgentSessionRollover } from "../port/agent-runner.js";
 import type { AgentContextMetrics } from "../../kernel/context-metrics.js";
 import type { OutputViolation } from "../port/output-contract.js";
 import type { GuardDrift } from "./main-checkout-guard.js";
@@ -58,6 +58,12 @@ export type StepHalt =
        * absent = runner did not observe context metrics (Codex / managed / pre-feature runs).
        */
       contextMetrics?: AgentContextMetrics;
+      /**
+       * Per-rollover observation records forwarded from AgentRunResult.sessionRollovers.
+       * Absent when no context-exhaustion rollovers occurred (most steps).
+       * Added in fresh-session-rollover.
+       */
+      sessionRollovers?: AgentSessionRollover[];
     }
   | {
       kind: "awaiting-resume";
@@ -82,6 +88,12 @@ export type StepHalt =
        * absent = runner did not observe context metrics (Codex / managed / pre-feature runs).
        */
       contextMetrics?: AgentContextMetrics;
+      /**
+       * Per-rollover observation records forwarded from AgentRunResult.sessionRollovers.
+       * Absent when no context-exhaustion rollovers occurred (most steps).
+       * Added in fresh-session-rollover.
+       */
+      sessionRollovers?: AgentSessionRollover[];
     };
 
 // ---------------------------------------------------------------------------
@@ -130,7 +142,7 @@ export function makeAgentThrowHalt(
  * history: `{step}-timeout` / error / `${step} timed out: ${message}`
  */
 export function makeTimeoutHalt(
-  runResult: Pick<AgentRunResult, "error" | "contextMetrics">,
+  runResult: Pick<AgentRunResult, "error" | "contextMetrics" | "sessionRollovers">,
   stepName: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
 ): StepHalt & { kind: "awaiting-resume" } {
@@ -160,6 +172,7 @@ export function makeTimeoutHalt(
       message: `${stepName} timed out: ${error.message}`,
     },
     ...(runResult.contextMetrics !== undefined ? { contextMetrics: runResult.contextMetrics } : {}),
+    ...(runResult.sessionRollovers && runResult.sessionRollovers.length > 0 ? { sessionRollovers: runResult.sessionRollovers } : {}),
   };
 }
 
@@ -175,7 +188,7 @@ export function makeTimeoutHalt(
  * history: none (no history append for non-success)
  */
 export function makeNonSuccessHalt(
-  runResult: Pick<AgentRunResult, "error" | "contextMetrics">,
+  runResult: Pick<AgentRunResult, "error" | "contextMetrics" | "sessionRollovers">,
   stepName: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
 ): StepHalt & { kind: "failed" } {
@@ -194,6 +207,7 @@ export function makeNonSuccessHalt(
     thrownErr: err as Error,
     recordOpts,
     ...(runResult.contextMetrics !== undefined ? { contextMetrics: runResult.contextMetrics } : {}),
+    ...(runResult.sessionRollovers && runResult.sessionRollovers.length > 0 ? { sessionRollovers: runResult.sessionRollovers } : {}),
   };
 }
 
@@ -208,14 +222,17 @@ export function makeNonSuccessHalt(
  *
  * history: `{step}-main-checkout-write-detected` / error / `${step}: main checkout write detected — ${pathSummary}`
  *
- * @param drift          Result of diffGuardSnapshots — must have drifted === true.
- * @param stepName       Name of the step during which the drift was detected.
- * @param slug           Job slug for the resume command hint message.
- * @param recordOpts     Forwarded to recordFailedStepResult (startedAt / completedAt / transientRetryAttempts).
- * @param contextMetrics Active context metrics observed during the agent invocation (agent-context-observability).
- *                       Forwarded from AgentRunResult.contextMetrics so that drift halt entries are also recorded
- *                       in usage.json per spec "halted step SHALL also append one usage entry when — and only when —
- *                       context metrics were observed" (D7).
+ * @param drift            Result of diffGuardSnapshots — must have drifted === true.
+ * @param stepName         Name of the step during which the drift was detected.
+ * @param slug             Job slug for the resume command hint message.
+ * @param recordOpts       Forwarded to recordFailedStepResult (startedAt / completedAt / transientRetryAttempts).
+ * @param contextMetrics   Active context metrics observed during the agent invocation (agent-context-observability).
+ *                         Forwarded from AgentRunResult.contextMetrics so that drift halt entries are also recorded
+ *                         in usage.json per spec "halted step SHALL also append one usage entry when — and only when —
+ *                         context metrics were observed" (D7).
+ * @param sessionRollovers Per-rollover observation records forwarded from AgentRunResult.sessionRollovers.
+ *                         Ensures rollover contextOnly entries are persisted to usage.json even when
+ *                         the halt is due to a post-success drift guard (design D7 invariant).
  */
 export function makeDriftHalt(
   drift: GuardDrift,
@@ -223,6 +240,7 @@ export function makeDriftHalt(
   slug: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
   contextMetrics?: AgentContextMetrics,
+  sessionRollovers?: AgentSessionRollover[],
 ): StepHalt & { kind: "awaiting-resume" } {
   const pathSummary = drift.changes.map((c) => `${c.kind}: ${c.path}`).join(", ");
   const detectedAtStep = toStepName(stepName);
@@ -265,6 +283,9 @@ export function makeDriftHalt(
     // agent-context-observability: carry context metrics from the successful runner invocation
     // so that commitHalt can persist them even when the halt is due to a post-success drift guard.
     ...(contextMetrics !== undefined ? { contextMetrics } : {}),
+    // fresh-session-rollover: carry rollover records so usage.json contextOnly entries are
+    // written even when the halt is due to a post-success drift guard (design D7 invariant).
+    ...(sessionRollovers && sessionRollovers.length > 0 ? { sessionRollovers } : {}),
   };
 }
 
@@ -312,6 +333,7 @@ export function makeOutputGateHalt(
   branch: string | null,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
   contextMetrics?: AgentContextMetrics,
+  sessionRollovers?: AgentSessionRollover[],
 ): StepHalt & { kind: "failed" } {
   const violationPaths = violations.map((v) =>
     v.kind === "tasks-complete"
@@ -346,6 +368,9 @@ export function makeOutputGateHalt(
     // agent-context-observability: carry context metrics from the successful runner invocation
     // so that commitHalt can persist them even when the halt is due to a post-success guard.
     ...(contextMetrics !== undefined ? { contextMetrics } : {}),
+    // fresh-session-rollover: carry rollover records so usage.json contextOnly entries are
+    // written even when the halt is due to a post-success output-gate (design D7 invariant).
+    ...(sessionRollovers && sessionRollovers.length > 0 ? { sessionRollovers } : {}),
   };
 }
 
@@ -365,6 +390,7 @@ export function makeCommitFailHalt(
   _stepName: string,
   recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
   contextMetrics?: AgentContextMetrics,
+  sessionRollovers?: AgentSessionRollover[],
 ): StepHalt & { kind: "failed" } {
   const error: ErrorInfo = {
     code: err.code ?? "COMMIT_AND_PUSH_FAILED",
@@ -379,6 +405,9 @@ export function makeCommitFailHalt(
     // agent-context-observability: carry context metrics from the successful runner invocation
     // so that commitHalt can persist them even when the halt is due to a post-success commit failure.
     ...(contextMetrics !== undefined ? { contextMetrics } : {}),
+    // fresh-session-rollover: carry rollover records so usage.json contextOnly entries are
+    // written even when the halt is due to a post-success commit failure (design D7 invariant).
+    ...(sessionRollovers && sessionRollovers.length > 0 ? { sessionRollovers } : {}),
   };
 }
 
