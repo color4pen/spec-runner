@@ -994,33 +994,134 @@ export class ClaudeCodeRunner implements AgentRunner {
       // Each iteration is one full main-work attempt (transient retry is inside runMainWorkTurn).
       // Loop exits when:
       //   (a) session succeeds or returns non-exhaustion error → break
-      //   (b) exhaustion + rollover budget left → record observation, reset state, next iteration
-      //   (c) exhaustion + no budget → break (will return CONTEXT_WINDOW_EXHAUSTED below)
-      //   (d) abort fired → throw propagates to outer catch unchanged
+      //   (b) exhaustion result + rollover budget left → record observation, reset state, next iteration
+      //   (c) exhaustion result + no budget → break (will return CONTEXT_WINDOW_EXHAUSTED below)
+      //   (d) exhaustion throw + rollover budget left → same rollover logic, continue
+      //   (e) exhaustion throw + no budget → return CONTEXT_WINDOW_EXHAUSTED immediately
+      //   (f) non-exhaustion throw or abort fired → rethrow to outer catch unchanged
       let rolloverExhausted = false; // set when we exhaust rollover budget on exhaustion
       for (let rolloverAttempt = 0; rolloverAttempt <= maxRollovers; rolloverAttempt++) {
-        if (maxRetries === 0) {
-          // Feature disabled — call runMainWorkTurn directly (no wrapper, no events).
-          queryResult = await runMainWorkTurn();
-        } else {
-          // Feature enabled — wrap with retryWithBackoff.
-          queryResult = await retryWithBackoff(runMainWorkTurn, {
-            maxAttempts: maxRetries + 1,
-            baseDelayMs,
-            isTransientError: (err) =>
-              !abortController.signal.aborted && isTransientAgentError(err),
-            sleepFn: this.sleepFn,
-            onRetry: (attempt) => {
-              const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
-              transientRetryAttempts++;
-              ctx.emit("step:retry", {
-                step: step.name,
-                attempt,
-                maxRetries,
-                delayMs,
-              });
-            },
-          });
+        // Wrap the SDK call in try-catch so that context exhaustion delivered as a throw
+        // is intercepted here and routed through the same rollover logic as the result path.
+        // Without this, a throw bypasses the rollover branch and goes to the outer catch (T-04).
+        try {
+          if (maxRetries === 0) {
+            // Feature disabled — call runMainWorkTurn directly (no wrapper, no events).
+            queryResult = await runMainWorkTurn();
+          } else {
+            // Feature enabled — wrap with retryWithBackoff.
+            queryResult = await retryWithBackoff(runMainWorkTurn, {
+              maxAttempts: maxRetries + 1,
+              baseDelayMs,
+              isTransientError: (err) =>
+                !abortController.signal.aborted && isTransientAgentError(err),
+              sleepFn: this.sleepFn,
+              onRetry: (attempt) => {
+                const delayMs = baseDelayMs * Math.pow(2, attempt - 1);
+                transientRetryAttempts++;
+                ctx.emit("step:retry", {
+                  step: step.name,
+                  attempt,
+                  maxRetries,
+                  delayMs,
+                });
+              },
+            });
+          }
+        } catch (iterErr) {
+          // Only handle as potential context exhaustion when abort is NOT fired.
+          // Abort-triggered throws must propagate to the outer catch unchanged.
+          if (!abortController.signal.aborted) {
+            const causeText = collectCauseText(iterErr instanceof Error ? iterErr : new Error(String(iterErr)));
+            const throwIterIsExhaustion = causeText ? isContextExhaustionError(causeText) : false;
+
+            if (throwIterIsExhaustion) {
+              // Context exhaustion delivered as a throw — route through rollover logic.
+              const errMsg = iterErr instanceof Error ? iterErr.message : String(iterErr);
+              contextObserver.markExhaustion(errMsg);
+
+              const rolloverOrdinal = rolloverAttempt + 1; // 1-based
+
+              if (rolloverAttempt < maxRollovers) {
+                // Budget available — perform rollover (mirrors the result-path rollover logic).
+                // 1. Capture session ID and snapshot BEFORE resetting extractedSessionId.
+                const capturedSessionId = extractedSessionId;
+                const sessionSnapshot = contextObserver.snapshot();
+
+                // Record the discarded session's observation (no modelUsage in throw path).
+                sessionRollovers.push({
+                  attempt: rolloverOrdinal,
+                  reason: "context-exhaustion",
+                  ...(capturedSessionId !== undefined ? { sessionId: capturedSessionId } : {}),
+                  errorMessage: truncateText(errMsg),
+                  ...(sessionSnapshot !== undefined ? { contextMetrics: sessionSnapshot } : {}),
+                });
+
+                // 2. Reset session state for fresh session.
+                delete queryOptions["resume"];
+                extractedSessionId = undefined;
+                capturedToolResult = null;
+                resumeFallbackDone = true; // prevent the resume-fallback from kicking in again
+
+                // 3. Replace context observer with a fresh one for the next session.
+                contextObserver = createContextObserver({ provider: "claude-code", model: resolvedConfig.model });
+
+                // 4. Build rollover continuation prompt.
+                const rolloverSection = buildRolloverContinuationSection({
+                  attempt: rolloverOrdinal,
+                  maxRollovers,
+                });
+                currentPrompt = firstTurnCompletionDirective
+                  ? `${baseFullPrompt}${promptRulesSection}${rolloverSection}${firstTurnCompletionDirective}`
+                  : `${baseFullPrompt}${promptRulesSection}${rolloverSection}`;
+
+                // 5. Emit step:rollover event and log.
+                stderrWrite(
+                  `[specrunner] warn: step '${step.name}' context exhausted (rollover ${rolloverOrdinal}/${maxRollovers}). Starting fresh session in same worktree.\n`,
+                );
+                logVerbose("session", "context exhaustion rollover", {
+                  stepName: step.name,
+                  rolloverAttempt: rolloverOrdinal,
+                  maxRollovers,
+                  reason: "context-exhaustion",
+                });
+                ctx.emit("step:rollover", {
+                  step: step.name,
+                  attempt: rolloverOrdinal,
+                  maxRollovers,
+                  reason: "context-exhaustion",
+                });
+
+                // Continue to next loop iteration (fresh session).
+                continue;
+              } else {
+                // Rollover budget exhausted — return immediately with typed exhaustion error.
+                // Preserve the original thrown error as `cause` for observability/debugging.
+                sessionLogWriter?.close();
+                return {
+                  completionReason: "error",
+                  resultContent: null,
+                  toolResult: null,
+                  followUpAttempts: 0,
+                  ...(maxRetries > 0 ? { transientRetryAttempts } : {}),
+                  addedTurns: ADDED_TURNS_ZERO,
+                  contextMetrics: contextObserver.snapshot(),
+                  ...(sessionRollovers.length > 0 ? { sessionRollovers } : {}),
+                  error: Object.assign(
+                    new Error(`Claude Code SDK query failed: context window exhausted after ${sessionRollovers.length} rollover(s). Consider splitting this request into smaller tasks.`),
+                    {
+                      code: CONTEXT_WINDOW_EXHAUSTED_CODE,
+                      cause: iterErr instanceof Error ? iterErr : new Error(errMsg),
+                      hint: "Context window exhausted after all rollover attempts. Consider splitting the request into smaller, focused tasks.",
+                    },
+                  ),
+                };
+              }
+            }
+          }
+
+          // Not context exhaustion, or abort is fired — re-throw to outer catch unchanged.
+          throw iterErr;
         }
 
         const { lastResult: iterResult } = queryResult;
@@ -1149,9 +1250,13 @@ export class ClaudeCodeRunner implements AgentRunner {
       if (lastResult && lastResult.subtype !== "success") {
         const errorResult = lastResult as SDKResultMessage & { errors?: string[] };
         // agent-context-observability: observe result metrics and mark exhaustion if applicable.
-        contextObserver.observeResult(errorResult as Record<string, unknown>);
+        // Skip when rolloverExhausted=true: observeResult + markExhaustion were already called
+        // in the loop body when the budget-exhausted branch fired (avoids double-write to observer).
+        if (!rolloverExhausted) {
+          contextObserver.observeResult(errorResult as Record<string, unknown>);
+        }
         const errorJoined = joinErrorsFromResult(errorResult);
-        if (errorJoined) contextObserver.markExhaustion(errorJoined);
+        if (errorJoined && !rolloverExhausted) contextObserver.markExhaustion(errorJoined);
 
         // Determine typed error code: exhaustion or generic.
         const isExhaustion = errorJoined ? isContextExhaustionError(errorJoined) : false;
@@ -1391,10 +1496,13 @@ export class ClaudeCodeRunner implements AgentRunner {
 
       logVerbose("session", "query completed", { stepName: step.name, runtime: "local", sessionId: extractedSessionId });
 
-      // Write session summary to session log (session ID, model, token usage)
+      // Write session summary to session log (session ID, model, token usage).
+      // When rollovers occurred, modelUsage is cumulative across all sessions but extractedSessionId
+      // refers only to the final session — passing undefined avoids misattributing multi-session cost
+      // to a single session ID, which would mislead log-analysis tooling.
       if (sessionLogWriter) {
         sessionLogWriter.writeSummary({
-          sessionId: extractedSessionId,
+          sessionId: sessionRollovers.length > 0 ? undefined : extractedSessionId,
           model: resolvedConfig.model,
           modelUsage: extractedModelUsage,
         });

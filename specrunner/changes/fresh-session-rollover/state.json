@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-23T00:20:37.953Z",
+  "updatedAt": "2026-08-23T00:39:33.024Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "awaiting-resume",
+  "step": "code-fixer",
+  "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,8 @@
     "55b49ec12d15a6ef7f188265776f49c0d87755a6",
     "e1c8fc45ad8ebc10313cd7b5d4cf5965dee6ade5",
     "86f67de2dc23681481c07cea279adfb46a2bed10",
-    "f32099c897cdefb09a89026fd13cbd90b56f696f"
+    "f32099c897cdefb09a89026fd13cbd90b56f696f",
+    "5eb07261aeeff3440c2ae4340e4cb6565ef3cb12"
   ],
   "touchedFiles": {
     "request-review": [
@@ -203,7 +204,7 @@
     {
       "name": "scale-tolerance",
       "status": "approved",
-      "approvedAtCommit": "86f67de2dc23681481c07cea279adfb46a2bed10",
+      "approvedAtCommit": "bcc27d8b729e6f495d336c570fbd6b9648bf8646",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
@@ -214,13 +215,17 @@
       "canonHash": "specrunner/changes/fresh-session-rollover/design.md:sha256:c4eb15decb5277f3a163ca4bdd8425fa8a03e77b11409eb870b6b795ef492656|specrunner/changes/fresh-session-rollover/request.md:sha256:8f8c68345f440ef9049b875dac42ab7b28050eb905c861dc569e291db881b2d6|specrunner/changes/fresh-session-rollover/spec.md:sha256:0abe09db6fe4a661a7348fd57d17a423f21e759664d3b5d936d41267cd63ca63|specrunner/changes/fresh-session-rollover/tasks.md:sha256:d942da5ad15207d5bdae166614cdbeac1338db5983e51d01df96d7c9b3f670b3|specrunner/changes/fresh-session-rollover/test-cases.md:sha256:9d0ac8cb8fb4cfb974bd1252792fd12baa95a87979f961b7844d939f70057d86"
     }
   ],
-  "resumePoint": {
-    "step": "custom-reviewers",
-    "reason": "custom-reviewers escalated",
-    "iterationsExhausted": 1
-  },
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "operator 裁定 (cross-boundary-invariants escalation への対応):\n(1) [high] rollover ループの各 iteration を try-catch で包み、throw として伝播する context exhaustion も rollover 分岐へルーティングする(budget 超過時は既存の typed halt)。tasks.md T-04 の throw 経路を実装すること。\n(2) [medium] budget 枯渇時の contextObserver.observeResult / markExhaustion の二重呼出しを除去する。\n(3) [low] sessionLogWriter.writeSummary の per-session log integrity 指摘を修正する(複数セッション混在時のサマリー紐付けを実態と一致させる)。\n(4) [decision-needed] transientRetryAttempts は累積維持(現状挙動)とする。design D6 の全セッション合算方針と整合させるため、rollover 時にリセットしない。必要なら design にこの決定を明記してよい。",
+      "step": "custom-reviewers",
+      "recordedAt": "2026-08-23T00:34:11.980Z"
+    }
+  ],
   "_journal": {
-    "historyCount": 49,
+    "historyCount": 56,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -232,9 +237,9 @@
       "verification": 1,
       "code-review": 2,
       "code-fixer": 1,
-      "cross-boundary-invariants": 1,
+      "cross-boundary-invariants": 2,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 2
     }
   }
 }

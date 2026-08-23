@@ -16,6 +16,8 @@
  * TC-026: 捨てた session の modelUsage は最終 AgentRunResult の modelUsage に加算される
  * TC-028: rollover が発生しない場合 sessionRollovers は undefined である
  * TC-035: throw 経路で exhaustion と判定された場合 error.message と cause チェーンが保全される
+ * TC-036: throw 経路での exhaustion が rollover ループへ正しくルーティングされ成功する
+ * TC-037: throw 経路での exhaustion が budget 枯渇時に CONTEXT_WINDOW_EXHAUSTED を返す
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as fs from "node:fs/promises";
@@ -980,5 +982,176 @@ describe("Budget-exceeded error message includes rollover count hint", () => {
     expect(result.completionReason).toBe("error");
     // Message should mention rollover/context/split
     expect(result.error?.message).toMatch(/rollover|context window|split/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-036: throw 経路での exhaustion が rollover ループへ正しくルーティングされ成功する
+// ---------------------------------------------------------------------------
+
+describe("TC-036: throw 経路での exhaustion が rollover ループへ正しくルーティングされ成功する", () => {
+  it("SDK throw exhaustion on 1st call, result success on 2nd call → completionReason=success, query called twice", async () => {
+    let callCount = 0;
+    const emit = vi.fn();
+
+    const queryFn: QueryFn = async function* (params: { prompt: string; options?: Record<string, unknown> }) {
+      callCount++;
+      if (callCount === 1) {
+        throw new Error("Prompt is too long for this model's context window");
+      }
+      yield makeSuccessResult("sess-2");
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+      emit,
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(callCount).toBe(2);
+    // step:rollover event should have been emitted once
+    const rolloverEvents = (emit as ReturnType<typeof vi.fn>).mock.calls.filter(
+      ([event]) => event === "step:rollover",
+    );
+    expect(rolloverEvents).toHaveLength(1);
+    expect(rolloverEvents[0][1]).toMatchObject({ attempt: 1, reason: "context-exhaustion" });
+  });
+
+  it("SDK throw with cause chain exhaustion on 1st call, result success on 2nd call → completionReason=success", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        throw new Error("SDK internal error", {
+          cause: new Error("Prompt is too long for this model's context window"),
+        });
+      }
+      yield makeSuccessResult("sess-2");
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(callCount).toBe(2);
+  });
+
+  it("sessionRollovers has 1 entry after throw-path rollover + success", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        throw new Error("Prompt is too long for this model's context window");
+      }
+      yield makeSuccessResult("sess-2");
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.sessionRollovers).toBeDefined();
+    expect(result.sessionRollovers!.length).toBe(1);
+    expect(result.sessionRollovers![0].attempt).toBe(1);
+    expect(result.sessionRollovers![0].reason).toBe("context-exhaustion");
+    expect(typeof result.sessionRollovers![0].errorMessage).toBe("string");
+    expect(result.sessionRollovers![0].errorMessage.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-037: throw 経路での exhaustion が budget 枯渇時に CONTEXT_WINDOW_EXHAUSTED を返す
+// ---------------------------------------------------------------------------
+
+describe("TC-037: throw 経路での exhaustion が budget 枯渇時に CONTEXT_WINDOW_EXHAUSTED を返す", () => {
+  it("SDK throw exhaustion on every call with maxRollovers=1 → CONTEXT_WINDOW_EXHAUSTED after 2 calls", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      throw new Error("Prompt is too long for this model's context window");
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("error");
+    expect((result.error as Error & { code?: string })?.code).toBe(CONTEXT_WINDOW_EXHAUSTED_CODE);
+    expect(callCount).toBe(2); // maxRollovers=1 → 2 total attempts
+    expect(result.error?.message).toMatch(/rollover|context window|split/i);
+  });
+
+  it("SDK throw exhaustion with no budget (maxRollovers=0) → CONTEXT_WINDOW_EXHAUSTED, cause preserved", async () => {
+    const causeErr = new Error("Prompt is too long for this model's context window");
+
+    const queryFn: QueryFn = async function* () {
+      throw new Error("outer error", { cause: causeErr });
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 0 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("error");
+    expect((result.error as Error & { code?: string })?.code).toBe(CONTEXT_WINDOW_EXHAUSTED_CODE);
+    // cause chain should be preserved
+    const cause = (result.error as Error & { cause?: unknown })?.cause;
+    expect(cause).toBeInstanceOf(Error);
+  });
+
+  it("sessionRollovers has 1 entry after throw-path rollover + budget exhausted", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      throw new Error("Prompt is too long for this model's context window");
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("error");
+    expect(result.sessionRollovers).toBeDefined();
+    expect(result.sessionRollovers!.length).toBe(1);
+    expect(result.sessionRollovers![0].attempt).toBe(1);
+    expect(result.sessionRollovers![0].reason).toBe("context-exhaustion");
+  });
+
+  it("non-exhaustion SDK throw does NOT trigger rollover even with budget available", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      throw new Error("Network error: connection refused");
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 2 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("error");
+    expect((result.error as Error & { code?: string })?.code).toBe("CLAUDE_CODE_QUERY_FAILED");
+    expect(callCount).toBe(1); // no rollover
+    expect(result.sessionRollovers).toBeUndefined();
   });
 });
