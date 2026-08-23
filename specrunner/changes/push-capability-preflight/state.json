@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T12:56:00.551Z",
+  "updatedAt": "2026-08-23T13:04:08.134Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/push-capability-preflight-e57e9dd3",
   "error": null,
@@ -84,7 +84,9 @@
     "61cf01e9093be94d1dc5b0d0bd10f6e9cb915e75",
     "705ed733bfe73d80301bf1bd6d4d068fb8d42147",
     "b0f89e26dea09763c8f1bc72bc36778f874eeed0",
-    "5583a00e1fcdef6f7b8bb66dd3464808ba505ae6"
+    "5583a00e1fcdef6f7b8bb66dd3464808ba505ae6",
+    "217937872b1d8df6959235c2f9fbf8e600b87733",
+    "f602f72c7ef79b940cc8d5e67907fd7d83722006"
   ],
   "touchedFiles": {
     "request-review": [
@@ -164,19 +166,16 @@
       "tests/unit/runtime/unpushable-path-validate.test.ts"
     ],
     "code-fixer": [
-      "src/git/push-capability.ts",
       "src/core/pipeline/parallel-review-round.ts",
-      "src/core/step/commit-orchestrator.ts",
-      "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts",
-      "tests/unit/git/push-capability.test.ts",
-      "tests/unit/step/unpushable-path-escalation.test.ts"
+      "tests/unit/pipeline/pipeline-sole-committer-round-guard.test.ts",
+      "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
     ]
   },
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "217937872b1d8df6959235c2f9fbf8e600b87733",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -186,7 +185,8 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/push-capability-preflight/design.md:sha256:88757e1a2f4c8c56c751a211ab4127a098cb333fc45299c57e57c7f28eff0877|specrunner/changes/push-capability-preflight/request.md:sha256:7bb118be461e4b655821453f410286f66ebc290570e3a5c4132ccb0bbfe6e31e|specrunner/changes/push-capability-preflight/spec.md:sha256:097769a4f2792ffcabfcc067dce43855b3ac4a05afbc7b976ba36587ef53915a|specrunner/changes/push-capability-preflight/tasks.md:sha256:46c0a16fa4115ef285795c491111c3819b11de2bf908684e43aaaca897c6ce9e|specrunner/changes/push-capability-preflight/test-cases.md:sha256:eb2d049c6288e9c5ce15b6869d194fd1ee7cb896dfdddba07919ec10fd1e3a38"
     },
     {
       "name": "scale-tolerance",
@@ -221,7 +221,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 88,
+    "historyCount": 97,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -232,10 +232,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 5,
-      "cross-boundary-invariants": 5,
+      "code-fixer": 6,
+      "cross-boundary-invariants": 6,
       "scale-tolerance": 1,
-      "custom-reviewers": 5
+      "custom-reviewers": 6
     }
   }
 }
