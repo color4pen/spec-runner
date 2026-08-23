@@ -159,6 +159,8 @@ jobs:
           # SDK 側の debug log（SpecRunner の plumbing に依存しない証拠経路）
           CLAUDE_CODE_DEBUG_LOGS_DIR: ${{ github.workspace }}/.claude-debug
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # cross-boundary-invariants は gpt-5.6-sol (openai provider) で実行される
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ISSUE: ${{ inputs.issue }}
           ACTION: ${{ inputs.action }}
           FROM: ${{ inputs.from }}
