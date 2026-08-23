@@ -15,6 +15,7 @@ export const SECRET_DENYLIST = [
   "SPECRUNNER_API_KEY",
   "ANTHROPIC_API_KEY",
   "ANTHROPIC_BASE_URL",
+  "CODEX_AUTH_JSON",
 ] as const;
 
 /**

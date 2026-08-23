@@ -194,6 +194,17 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "The key is already stripped from strippedEnv by the preceding stripSecrets call. " +
       "Not passed as full env to a subprocess — only forwarded as a named SDK parameter.",
   },
+  {
+    file: "src/adapter/codex/agent-runner.ts",
+    pattern: "CODEX_AUTH_JSON",
+    invariant: "B-6",
+    tracking: "B6-codex-auth-json-read",
+    comment:
+      "Reads CODEX_AUTH_JSON from process.env to materialize a scoped ChatGPT auth.json into a " +
+      "temporary CODEX_HOME for the duration of one Codex run (removed in the run() finally). " +
+      "The key itself is in SECRET_DENYLIST, so stripSecrets removes it from every subprocess env — " +
+      "the credential reaches the codex binary only as the scoped file, never as an env value.",
+  },
 
   // ── B-12: direct `node:child_process` import banned outside seam modules ─────
   //

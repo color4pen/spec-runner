@@ -26,6 +26,18 @@ describe("stripSecrets", () => {
     expect(result["GH_TOKEN"]).toBeUndefined();
   });
 
+  it("(a) removes CODEX_AUTH_JSON (ChatGPT credential must not reach subprocesses)", () => {
+    const env: Record<string, string | undefined> = {
+      CODEX_AUTH_JSON: '{"tokens":{"access_token":"secret"}}',
+      CODEX_HOME: "/tmp/scoped-codex-home",
+      PATH: "/usr/bin",
+    };
+    const result = stripSecrets(env);
+    expect(result["CODEX_AUTH_JSON"]).toBeUndefined();
+    // CODEX_HOME is a path, not a credential — it must survive.
+    expect(result["CODEX_HOME"]).toBe("/tmp/scoped-codex-home");
+  });
+
   it("(b) preserves non-denylist keys", () => {
     const env: Record<string, string | undefined> = {
       GITHUB_TOKEN: "ghp_abc",
