@@ -109,8 +109,12 @@ export function matchUnpushablePaths(
  * A path contributed by any single unpushed commit is included even when a
  * later commit reverts it.
  *
- * Returns [] on any git command failure (fail-open: callers treat as no violation).
- * Never throws.
+ * Failure semantics:
+ *   - git status failure: fail-open (worktree changes still caught by commit step).
+ *   - git rev-list failure: throws — cannot enumerate unpushed commits; callers
+ *     must halt rather than proceed with incomplete path information.
+ *   - git diff-tree failure for any OID: throws — partial evidence cannot be
+ *     trusted; a missing commit may contain protected paths.
  */
 export async function collectPublishablePaths(
   spawnFn: SpawnFn,
@@ -118,8 +122,10 @@ export async function collectPublishablePaths(
 ): Promise<string[]> {
   const paths = new Set<string>();
 
+  // (a) Worktree changes: modified + untracked files.
+  // Fail-open: a status failure does not prevent unpushed-commit enumeration,
+  // and staged/committed worktree changes will be caught by the commit step.
   try {
-    // (a) Worktree changes: modified + untracked files
     const statusResult = await spawnFn(
       "git",
       ["status", "--porcelain", "-z", "--no-renames", "--untracked-files=all"],
@@ -135,46 +141,48 @@ export async function collectPublishablePaths(
       }
     }
   } catch {
-    // Best-effort; fall through
+    // Best-effort for worktree changes; fall through to unpushed-commit enumeration
   }
 
-  try {
-    // (b) Unpushed commits: all commits reachable from HEAD not on any origin ref
-    const revListResult = await spawnFn(
+  // (b) Unpushed commits: all commits reachable from HEAD not on any origin ref.
+  // Fail-closed: rev-list or diff-tree failure throws so callers halt rather than
+  // mistaking a partial path set for complete evidence of a safe push.
+  const revListResult = await spawnFn(
+    "git",
+    ["rev-list", "HEAD", "--not", "--remotes=origin"],
+    { cwd },
+  );
+  if (revListResult.exitCode !== 0) {
+    throw new Error(
+      `collectPublishablePaths: git rev-list failed (exit ${revListResult.exitCode}) — cannot enumerate unpushed commits`,
+    );
+  }
+  const oids = revListResult.stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  for (const oid of oids) {
+    // Enumerate paths touched by each unpushed commit.
+    // Failure for any OID throws — a single missing commit may contain a
+    // protected path, so partial evidence must not be trusted.
+    const diffResult = await spawnFn(
       "git",
-      ["rev-list", "HEAD", "--not", "--remotes=origin"],
+      ["diff-tree", "--no-commit-id", "-r", "--name-only", oid],
       { cwd },
     );
-    if (revListResult.exitCode === 0) {
-      const oids = revListResult.stdout
-        .split("\n")
-        .map((s) => s.trim())
-        .filter(Boolean);
-
-      for (const oid of oids) {
-        try {
-          // Enumerate paths touched by each unpushed commit
-          const diffResult = await spawnFn(
-            "git",
-            ["diff-tree", "--no-commit-id", "-r", "--name-only", oid],
-            { cwd },
-          );
-          if (diffResult.exitCode === 0) {
-            const filePaths = diffResult.stdout
-              .split("\n")
-              .map((s) => s.trim())
-              .filter(Boolean);
-            for (const fp of filePaths) {
-              paths.add(fp);
-            }
-          }
-        } catch {
-          // Skip failed oid
-        }
-      }
+    if (diffResult.exitCode !== 0) {
+      throw new Error(
+        `collectPublishablePaths: git diff-tree failed for ${oid} (exit ${diffResult.exitCode}) — cannot enumerate commit paths`,
+      );
     }
-  } catch {
-    // Best-effort; fall through
+    const filePaths = diffResult.stdout
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    for (const fp of filePaths) {
+      paths.add(fp);
+    }
   }
 
   return Array.from(paths).sort();

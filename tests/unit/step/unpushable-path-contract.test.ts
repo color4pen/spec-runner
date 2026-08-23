@@ -431,10 +431,11 @@ describe("TC-033 & TC-034: maxAttempts and per-attempt filtering in outputVerifi
     expect(prompt1).toContain("Unpushable path");
     expect(prompt1).toContain(".github/workflows/ci.yml");
 
-    // Attempt 2: unpushable-path filtered — no further follow-up for this constraint
+    // Attempt 2: only unpushable-path violation remains — all violations filtered → null.
+    // The adapter treats null as "skip this repair turn", enforcing the exactly-one-follow-up
+    // invariant: no second repair turn is sent even when the violation persists.
     const prompt2 = ctx.policy.outputVerification!.buildPrompt([unpushableViolation], 2);
-    expect(prompt2).not.toContain("Unpushable path");
-    expect(prompt2).not.toContain(".github/workflows/ci.yml");
+    expect(prompt2).toBeNull();
   });
 
   it("TC-012: maxAttempts=2 (not 1) so tasks-complete can use both attempts while unpushable-path is prompt-limited", async () => {

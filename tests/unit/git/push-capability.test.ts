@@ -338,13 +338,55 @@ describe("collectPublishablePaths", () => {
     expect(result).toContain("src/foo.ts");
   });
 
-  it("git status failure returns empty (fail-open, no throw)", async () => {
+  it("git status failure is fail-open: still enumerates unpushed commits", async () => {
     const { spawnFn } = makeFakeSpawnFn([
-      { stdout: "", exitCode: 1 }, // status failure
-      { stdout: "", exitCode: 0 }, // rev-list empty
+      { stdout: "", exitCode: 1 }, // status failure (fail-open)
+      { stdout: "abc123\n", exitCode: 0 }, // rev-list: one unpushed commit
+      { stdout: "src/foo.ts\n", exitCode: 0 }, // diff-tree: path from commit
     ]);
-    // Should not throw
+    // Should not throw — status failure is fail-open
     const result = await collectPublishablePaths(spawnFn, "/fake/cwd");
-    expect(Array.isArray(result)).toBe(true);
+    // Unpushed commit paths are still included even though status failed
+    expect(result).toContain("src/foo.ts");
+  });
+
+  // Fail-closed: rev-list failure throws
+  it("rev-list failure throws (fail-closed: cannot enumerate unpushed commits)", async () => {
+    const { spawnFn } = makeFakeSpawnFn([
+      { stdout: "", exitCode: 0 }, // git status: clean
+      { stdout: "", exitCode: 128 }, // git rev-list: failure
+    ]);
+    await expect(collectPublishablePaths(spawnFn, "/fake/cwd")).rejects.toThrow(
+      /rev-list failed/,
+    );
+  });
+
+  it("rev-list spawn failure throws (fail-closed: cannot enumerate unpushed commits)", async () => {
+    const calls: SpawnCall[] = [];
+    let callIdx = 0;
+    const spawnFn: SpawnFn = async (_cmd: string, args: string[]) => {
+      calls.push({ cmd: _cmd, args });
+      callIdx++;
+      if (callIdx === 1) {
+        // git status: succeed
+        return { exitCode: 0, stdout: "", stderr: "" };
+      }
+      // git rev-list: spawn failure (throws)
+      throw new Error("spawn: ENOENT");
+    };
+    await expect(collectPublishablePaths(spawnFn, "/fake/cwd")).rejects.toThrow("spawn: ENOENT");
+  });
+
+  // Fail-closed: diff-tree failure for any OID throws
+  it("diff-tree failure for any oid throws (fail-closed: partial evidence not trusted)", async () => {
+    const { spawnFn } = makeFakeSpawnFn([
+      { stdout: "", exitCode: 0 }, // git status: clean
+      { stdout: "abc123\ndef456\n", exitCode: 0 }, // rev-list: two unpushed commits
+      { stdout: "src/ok.ts\n", exitCode: 0 }, // diff-tree for abc123: succeeds
+      { stdout: "", exitCode: 1 }, // diff-tree for def456: failure
+    ]);
+    await expect(collectPublishablePaths(spawnFn, "/fake/cwd")).rejects.toThrow(
+      /diff-tree failed/,
+    );
   });
 });

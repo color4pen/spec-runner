@@ -2559,6 +2559,69 @@ describe("ClaudeCodeRunner outputVerification follow-up loop", () => {
     expect(capturedPrompts[2]).toBe("repair: complete remaining tasks");
   });
 
+  it("buildPrompt returns null → adapter skips repair turn and breaks loop (exactly-one-follow-up invariant)", async () => {
+    let callCount = 0;
+    let buildPromptCallCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      yield {
+        type: "result" as const,
+        subtype: "success" as const,
+        result: "done",
+        duration_ms: 10,
+        duration_api_ms: 10,
+        is_error: false,
+        num_turns: 1,
+        stop_reason: "end_turn",
+        total_cost_usd: 0,
+        usage: { input_tokens: 10, output_tokens: 5, cache_creation_input_tokens: 0, cache_read_input_tokens: 0, server_tool_use_input_tokens: 0 },
+        modelUsage: {},
+        permission_denials: [],
+        uuid: "test-uuid",
+        session_id: "sess-null-prompt",
+      } as unknown;
+    } as QueryFn;
+
+    const violations = [
+      { kind: "unpushable-path" as const, path: "", policy: "follow-up" as const, detail: [".github/workflows/ci.yml"] },
+    ];
+    const outputVerification = {
+      // Persistent violation — never resolves
+      detect: vi.fn().mockResolvedValue({ violations }),
+      maxAttempts: 2,
+      // buildPrompt returns null on every call (simulating attempt >= 2 filter for unpushable-path)
+      buildPrompt: vi.fn().mockImplementation(() => {
+        buildPromptCallCount++;
+        return null;
+      }),
+    };
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx: AgentRunContext = {
+      step: makeAgentStep({ name: "implementer" }),
+      state: makeJobState("tc-null-prompt"),
+      branch: "feat/test",
+      slug: "test-slug",
+      cwd: tempDir,
+      input: { requestContent: "content" },
+      session: {},
+      policy: { outputVerification },
+      config: makeConfig(),
+      emit: vi.fn(),
+    };
+
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // Only 1 main work turn — no repair turn because buildPrompt returned null
+    expect(callCount).toBe(1);
+    expect(result.followUpAttempts).toBe(0);
+    // detect() was called once (attempt=1), buildPrompt was called once and returned null → loop breaks
+    expect(outputVerification.detect).toHaveBeenCalledTimes(1);
+    expect(buildPromptCallCount).toBe(1);
+  });
+
   it("violations が 1 回の repair で解消 → ループ早期終了 (queryFn 2 回、followUpAttempts 1)", async () => {
     let callCount = 0;
     let detectCallCount = 0;

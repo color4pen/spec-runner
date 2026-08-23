@@ -150,6 +150,11 @@ export async function buildStepContext(
           const effectiveViolations = attempt > 1
             ? violations.filter((v) => v.kind !== "unpushable-path")
             : violations;
+          // When filtering leaves no violations (e.g., only unpushable-path remains at
+          // attempt >= 2), return null to signal the adapter that no repair turn should
+          // be sent. This prevents a generic/empty prompt from being sent as a second
+          // follow-up, preserving the exactly-one-follow-up invariant for unpushable-path.
+          if (effectiveViolations.length === 0) return null;
           return buildOutputFollowUpPrompt(effectiveViolations);
         },
       };

@@ -1464,6 +1464,10 @@ export class ClaudeCodeRunner implements AgentRunner {
           if (followUpViolations.length === 0) break;
 
           const repairPrompt = outputVerif.buildPrompt(followUpViolations, attempt);
+          // null: all violations were filtered out for this attempt (e.g., only
+          // unpushable-path at attempt >= 2). Skip the repair turn to enforce the
+          // exactly-one-follow-up invariant — a generic/empty prompt must not be sent.
+          if (repairPrompt === null) break;
           const repairOptions: Record<string, unknown> = {
             ...queryOptions,
             resume: extractedSessionId,

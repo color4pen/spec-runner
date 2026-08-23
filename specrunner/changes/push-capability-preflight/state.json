@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T12:14:30.056Z",
+  "updatedAt": "2026-08-23T12:19:49.360Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/push-capability-preflight-e57e9dd3",
-  "error": {
-    "code": "CUSTOM_REVIEWERS_RETRIES_EXHAUSTED",
-    "message": "custom reviewers did not approve after 2 iterations",
-    "hint": "Review the latest reviewer results and address findings manually. (iteration 003)"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -204,22 +200,22 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "custom reviewers did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
       "text": "operator 裁定 (issue #1061、cross-boundary-invariants escalation への対応)。以下 3 点を修正すること。canon (design.md D6 / Open Questions、tasks.md T-08、test-cases.md TC-033/TC-034) は operator が裁定内容へ更新済みなので、それに従うこと。\n\nF1 — src/core/step/executor.ts / src/errors.ts: matchedPaths を typed property で運ぶ。現在 executor.ts の parseUnpushablePathsFromError がエラーメッセージを regex (/protected path\\(s\\): (.+?)\\. Environment/) でパースして blocked paths を復元している。これを廃止し、unpushablePathBlockedError が生成するエラーオブジェクトに matchedPaths: string[] を property として保持させ、executor はその property を直接読んで makeUnpushablePathHalt に渡す。表示文言を内部プロトコルにしない (文言変更で paths が黙って [] になる結合、および ', ' を含むパスの誤分割を排除)。factory → executor 分岐 → halt reason に matchedPaths が現れる round-trip の unit test を追加する。\n\nF2 — src/core/step/commit-push.ts: commitScopedPaths (round artifacts のコミット経路) にも Layer 2 backstop を追加する。commitAndPush と同じ検査: deps.pushCapability?.patterns が非空のときのみ collectPublishablePaths → matchUnpushablePaths を実行し、一致があれば unpushablePathBlockedError を throw する (stage も commit も push も行わない)。patterns が空/undefined なら git コマンドを一切実行せず素通りする。検査は staging より前に置く。テストを追加する。\n\nF3 — src/core/step/step-context-builder.ts: スカラー maxAttempts=1 をやめる。hasUnpushablePath ? 1 : OUTPUT_FOLLOWUP_MAX_ATTEMPTS は、unpushable-path contract が Actions 上の全 implementer run で無条件付与されるため、同一 step の tasks-complete の修復機会まで 2→1 に減らす退行。汎用の per-contract budget 機構は追加せず、既存の buildPrompt(violations, attempt) / repair loop の範囲で、unpushable-path への follow-up だけちょうど 1 回に制限し、tasks-complete は従来どおり最大 2 回を維持する最小実装にする。更新済み TC-033 (unpushable-path は 1 回、同一 step の tasks-complete は 2 回維持) と TC-034 (unpushable-path なしの契約集合は挙動完全一致) をテストで満たすこと。\n\n完了後 typecheck / lint / 関連テストが green であることを確認すること。",
       "step": "code-fixer",
       "recordedAt": "2026-08-23T11:46:48.541Z"
+    },
+    {
+      "text": "operator 裁定 (issue #1061、cross-boundary-invariants iteration 2 の escalation への対応)。前回修正のうち F1 (typed matchedPaths) は解消済みと判定された。今回は以下 2 点の実装バグを修正すること。canon (TC-033 / D6 / T-08) は既に正しい要件を記述しているため canon 変更は不要。\n\nN1 — src/core/step/step-context-builder.ts (line ~149): attempt の基数ずれを修正する。adapter (src/adapter/claude-code/agent-runner.ts:1455) の follow-up loop は for (let attempt = 1; attempt <= maxAttempts; attempt++) の 1 始まりで buildPrompt(violations, attempt) を呼ぶ。現在の attempt > 0 フィルタは初回呼び出し (attempt=1) から unpushable-path 違反を除外してしまい、unpushable-path の修復プロンプトが一度も送られない (TC-033 の「ちょうど 1 回」が 0 回になる)。フィルタ条件を 1 始まりに合わせること: attempt <= 1 では全違反を表示し、attempt >= 2 で unpushable-path を除外する。「Attempt 0: show all violations」という誤った前提のコメントも訂正する。テスト: adapter の 1 始まり契約を固定する — buildPrompt(violations, 1) の結果に unpushable-path 違反が含まれ、buildPrompt(violations, 2) では除外され tasks-complete は残ること。\n\nN2 — src/core/step/commit-push.ts (commitScopedPaths, line ~1004-1018): Layer 2 backstop の検査対象を stagePaths のみから publish range 全体へ広げる。git push は branch 上の全未 push commit を公開するため、stagePaths だけの検査では過去の未 push commit が workflow ファイルを変更していた場合に素通りして remote rejection に到達する。commitAndPush と同じく collectPublishablePaths を用いて未 push range の paths を列挙し、それと stagePaths を合わせた集合に matchUnpushablePaths を適用して、一致があれば unpushablePathBlockedError を throw する (stage / commit / push は行わない)。「stagePaths を直接検査するのは collectPublishablePaths と等価」というコメントは誤りなので削除する。pushCapability が無い / patterns が空の場合に git コマンドを一切実行しない性質は維持すること。テスト: stagePaths が安全でも既存未 push commit に protected path が含まれる場合に UNPUSHABLE_PATH_BLOCKED を throw すること、および patterns 空で git 呼び出しゼロのまま素通りすること。\n\n完了後 typecheck / lint / 関連テストが green であることを確認すること。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-23T12:19:49.078Z"
     }
   ],
   "_journal": {
-    "historyCount": 69,
+    "historyCount": 71,
     "stepCounts": {
       "request-review": 1,
       "design": 1,

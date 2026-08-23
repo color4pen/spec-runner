@@ -154,6 +154,10 @@ export interface OutputVerificationPolicy {
   /**
    * Build the repair prompt from the current violations and attempt number.
    * Pure function — delegates to buildOutputFollowUpPrompt internally.
+   *
+   * Returns null when all violations are filtered out for this attempt (e.g.,
+   * only unpushable-path violations remain at attempt >= 2). Adapters must
+   * treat null as a signal to skip the repair turn and break the loop.
    */
-  buildPrompt: (violations: OutputViolation[], attempt: number) => string;
+  buildPrompt: (violations: OutputViolation[], attempt: number) => string | null;
 }
