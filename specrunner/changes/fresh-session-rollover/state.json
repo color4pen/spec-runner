@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-23T01:07:44.775Z",
+  "updatedAt": "2026-08-23T01:18:52.863Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -81,7 +81,9 @@
     "c56ee09fa633bf767991208c8736902ce7805d44",
     "92333abdc2e58f746df2e840ce2ddeb0f97439f9",
     "c5e620a099b837ef4d4a29c451cab60a6f79731b",
-    "381b4198a9b66abea73bc8e0d22b83bc4f9676b2"
+    "381b4198a9b66abea73bc8e0d22b83bc4f9676b2",
+    "0e399dbeb3249cfc2686be103c233776bb46997c",
+    "889083b88c2b73d22c32fd97bc70f17e733f118c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -193,6 +195,28 @@
     ],
     "regression-gate": [
       "src/adapter/claude-code/agent-runner.ts"
+    ],
+    "conformance": [
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/rollover-prompt.ts",
+      "src/core/port/agent-runner.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/config/schema/types.ts",
+      "src/config/schema/resolution.ts",
+      "src/config/schema/validation.ts",
+      "src/kernel/event-types.ts",
+      "src/core/event/types.ts",
+      "src/logger/pipeline-logger.ts",
+      "src/cli/progress.ts",
+      "docs/configuration.md",
+      "src/config/schema.ts",
+      "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
+      "tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts",
+      "tests/unit/core/step/commit-orchestrator-rollover.test.ts",
+      "tests/unit/adapter/claude-code/rollover-prompt.test.ts",
+      "src/config/__tests__/context-rollover-config.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -236,7 +260,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 78,
+    "historyCount": 87,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -245,13 +269,14 @@
       "spec-fixer": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 2,
       "code-fixer": 3,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
       "custom-reviewers": 3,
-      "regression-gate": 2
+      "regression-gate": 2,
+      "conformance": 1
     }
   }
 }

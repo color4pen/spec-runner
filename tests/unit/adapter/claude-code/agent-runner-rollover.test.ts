@@ -994,7 +994,7 @@ describe("TC-036: throw 経路での exhaustion が rollover ループへ正し�
     let callCount = 0;
     const emit = vi.fn();
 
-    const queryFn: QueryFn = async function* (params: { prompt: string; options?: Record<string, unknown> }) {
+    const queryFn: QueryFn = async function* (_params: { prompt: string; options?: Record<string, unknown> }) {
       callCount++;
       if (callCount === 1) {
         throw new Error("Prompt is too long for this model's context window");
@@ -1115,10 +1115,7 @@ describe("TC-037: throw 経路での exhaustion が budget 枯渇時に CONTEXT_
   });
 
   it("sessionRollovers has 1 entry after throw-path rollover + budget exhausted", async () => {
-    let callCount = 0;
-
     const queryFn: QueryFn = async function* () {
-      callCount++;
       throw new Error("Prompt is too long for this model's context window");
     } as unknown as QueryFn;
 
