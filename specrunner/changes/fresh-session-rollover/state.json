@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-23T01:35:46.534Z",
+  "updatedAt": "2026-08-23T01:49:59.656Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -86,7 +86,9 @@
     "889083b88c2b73d22c32fd97bc70f17e733f118c",
     "c64f7a6b6cc3898942962018ede0f989c62124ed",
     "ec82f283d43a673f1c11df6c10bbd2b29bddbc64",
-    "58b03af6ba472829c44610e27654efa65207aa7e"
+    "58b03af6ba472829c44610e27654efa65207aa7e",
+    "480830d66c626470077b9049990062e0a8e3aab3",
+    "4c34b7773ce22be65765550ee089513623c7671e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -159,10 +161,17 @@
       "src/config/__tests__/context-rollover-config.test.ts"
     ],
     "code-fixer": [
-      "src/core/step/step-halt.ts",
-      "src/core/step/executor.ts",
-      "tests/unit/core/step/commit-orchestrator-rollover.test.ts",
-      "src/core/port/output-contract.ts"
+      "src/logger/pipeline-logger.ts",
+      "tests/unit/logger/verbose-log.test.ts",
+      "src/core/event/event-bus.ts",
+      "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
+      "src/adapter/claude-code/touched-files-recorder.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/claude-code/__tests__/touched-files-recorder.test.ts",
+      "src/adapter/claude-code/message-types.ts",
+      "tests/unit/cli/cancel.test.ts",
+      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
+      "tests/unit/logger/pipeline-logger-rollover.test.ts"
     ],
     "regression-gate": [
       "src/adapter/claude-code/agent-runner.ts"
@@ -194,7 +203,7 @@
     {
       "name": "cross-boundary-invariants",
       "status": "approved",
-      "approvedAtCommit": "eb9da8160c05aed8849c3e4620e40f852f7c9be4",
+      "approvedAtCommit": "480830d66c626470077b9049990062e0a8e3aab3",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -210,7 +219,7 @@
     {
       "name": "scale-tolerance",
       "status": "approved",
-      "approvedAtCommit": "eb9da8160c05aed8849c3e4620e40f852f7c9be4",
+      "approvedAtCommit": "480830d66c626470077b9049990062e0a8e3aab3",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
@@ -231,7 +240,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 100,
+    "historyCount": 109,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -242,10 +251,10 @@
       "bite-evidence": 1,
       "verification": 3,
       "code-review": 3,
-      "code-fixer": 3,
-      "cross-boundary-invariants": 3,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
-      "custom-reviewers": 3,
+      "custom-reviewers": 4,
       "regression-gate": 2,
       "conformance": 1
     }
