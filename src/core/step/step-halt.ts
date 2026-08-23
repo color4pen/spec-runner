@@ -412,6 +412,78 @@ export function makeCommitFailHalt(
 }
 
 // ---------------------------------------------------------------------------
+// Factory: unpushable-path halt (awaiting-resume — post-follow-up violation persists)
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a StepHalt for the unpushable-path output contract violation path.
+ * Produces an awaiting-resume halt so the job is escalated to the linked issue and remains resumable.
+ * Creates a synthetic Error for attachStateAndRethrow.
+ *
+ * The halt reason names the matching paths and states the environment constraint.
+ *
+ * history: `{step}-unpushable-path-blocked` / error / message
+ *
+ * @param matchedPaths       Paths that matched the unpushable pattern.
+ * @param capabilitySource   Human-readable environment constraint description.
+ * @param stepName           Name of the step during which the violation was detected.
+ * @param slug               Job slug for the resume command hint message.
+ * @param recordOpts         Forwarded to recordFailedStepResult.
+ * @param contextMetrics     Active context metrics observed during the agent invocation.
+ * @param sessionRollovers   Per-rollover observation records.
+ */
+export function makeUnpushablePathHalt(
+  matchedPaths: string[],
+  capabilitySource: string,
+  stepName: string,
+  slug: string,
+  recordOpts?: Omit<StepResultInput, "verdict" | "findingsPath" | "error">,
+  contextMetrics?: AgentContextMetrics,
+  sessionRollovers?: AgentSessionRollover[],
+): StepHalt & { kind: "awaiting-resume" } {
+  const pathList = matchedPaths.map((p) => `  - ${p}`).join("\n");
+  const error: ErrorInfo = {
+    code: "UNPUSHABLE_PATH_BLOCKED",
+    message:
+      `Step '${stepName}' cannot push changes to protected path(s): ${matchedPaths.join(", ")}. ` +
+      `Environment constraint: ${capabilitySource}`,
+    hint:
+      `The current environment's token cannot push to the following paths:\n${pathList}\n` +
+      `Constraint: ${capabilitySource}\n` +
+      `Your changes remain uncommitted in the worktree.\n` +
+      `Remove the changes to these paths or resolve the requirement without modifying them, ` +
+      `then run 'specrunner job resume ${slug}' to continue.`,
+  };
+  const thrownErr = Object.assign(
+    new Error(error.message),
+    { code: "UNPUSHABLE_PATH_BLOCKED", hint: error.hint },
+  );
+  return {
+    kind: "awaiting-resume",
+    error,
+    thrownErr,
+    resumePoint: {
+      step: toStepName(stepName),
+      reason: `unpushable path constraint: ${matchedPaths.join(", ")}`,
+      iterationsExhausted: 0,
+    },
+    interruption: {
+      type: "interruption",
+      reason: "failure",
+      errorCode: "UNPUSHABLE_PATH_BLOCKED",
+    },
+    recordOpts,
+    history: {
+      step: `${stepName}-unpushable-path-blocked`,
+      status: "error",
+      message: `${stepName}: unpushable path blocked — ${matchedPaths.join(", ")}`,
+    },
+    ...(contextMetrics !== undefined ? { contextMetrics } : {}),
+    ...(sessionRollovers && sessionRollovers.length > 0 ? { sessionRollovers } : {}),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Factory: input-missing halt (new — validateRequiredInputs failure)
 // ---------------------------------------------------------------------------
 

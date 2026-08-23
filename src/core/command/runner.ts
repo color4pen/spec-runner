@@ -49,6 +49,7 @@ import { evaluateIssueFidelityGate } from "../gate/issue-fidelity-gate.js";
 import { notifyJobTerminal } from "../notify/issue-notifier.js";
 import type { IssueFidelityComparator } from "../port/issue-fidelity-comparator.js";
 import { emitForegroundNotice } from "./operational-guidance.js";
+import { detectPushCapability } from "../../git/push-capability.js";
 
 // ---------------------------------------------------------------------------
 // PrepareResult
@@ -238,6 +239,10 @@ export abstract class CommandRunner {
         } catch {
           // Swallow any unexpected error — pipeline must not be blocked
         }
+
+        // Step 3c: detect push capability (once per run — not per-step).
+        // detectPushCapability is a pure function; no I/O, no side effects.
+        deps.pushCapability = detectPushCapability(process.env as Record<string, string | undefined>, deps.githubToken ?? undefined);
 
         handle = this.runtime.registerCleanup(jobState.jobId, startStep);
       } catch (err) {

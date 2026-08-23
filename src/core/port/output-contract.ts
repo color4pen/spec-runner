@@ -25,8 +25,13 @@
  *                      Test execution is NOT performed — red tests (implementation absent)
  *                      are accepted. Used by verification's test-coverage phase to verify
  *                      that each must TC was materialized into test code.
+ * - "unpushable-path": checked by the runtime against the publishable path set (git worktree
+ *                      changes + unpushed commits). A violation means the step would publish
+ *                      a path that the current environment's token cannot push.
+ *                      Used with policy "follow-up". detail[] contains the matching paths.
+ *                      Managed runtime skips this kind (no local git access).
  */
-export type OutputContractKind = "produced" | "tasks-complete" | "content-format" | "test-coverage";
+export type OutputContractKind = "produced" | "tasks-complete" | "content-format" | "test-coverage" | "unpushable-path";
 
 /**
  * A single declarative format check for a "content-format" contract.
@@ -81,6 +86,13 @@ export interface OutputContract {
    * Ignored for other kinds.
    */
   checks?: ContentFormatCheck[];
+  /**
+   * Glob patterns for kind "unpushable-path".
+   * Each pattern is matched against the publishable path set (worktree changes + unpushed commits).
+   * A violation is reported when any publishable path matches any pattern.
+   * Ignored for other kinds.
+   */
+  patterns?: string[];
 }
 
 /**
@@ -95,11 +107,12 @@ export interface OutputViolation {
   policy: OutputPolicy;
   /**
    * Additional detail:
-   * - "produced":       always []
-   * - "tasks-complete": list of incomplete task labels extracted from the file
-   * - "content-format": list of failed check labels (checks whose pattern did not match)
-   * - "test-coverage":  list of missing/assertionless TC IDs (union of missingTcIds and
-   *                     assertionlessTcIds); see `coverage` for the categorized breakdown
+   * - "produced":         always []
+   * - "tasks-complete":   list of incomplete task labels extracted from the file
+   * - "content-format":   list of failed check labels (checks whose pattern did not match)
+   * - "test-coverage":    list of missing/assertionless TC IDs (union of missingTcIds and
+   *                       assertionlessTcIds); see `coverage` for the categorized breakdown
+   * - "unpushable-path":  list of publishable paths that match the declared patterns
    */
   detail: string[];
   /**
@@ -141,6 +154,10 @@ export interface OutputVerificationPolicy {
   /**
    * Build the repair prompt from the current violations and attempt number.
    * Pure function — delegates to buildOutputFollowUpPrompt internally.
+   *
+   * Returns null when all violations are filtered out for this attempt (e.g.,
+   * only unpushable-path violations remain at attempt >= 2). Adapters must
+   * treat null as a signal to skip the repair turn and break the loop.
    */
-  buildPrompt: (violations: OutputViolation[], attempt: number) => string;
+  buildPrompt: (violations: OutputViolation[], attempt: number) => string | null;
 }

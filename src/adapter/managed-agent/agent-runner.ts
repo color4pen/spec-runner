@@ -289,6 +289,8 @@ export class ManagedAgentRunner implements AgentRunner {
         if (followUpViolations.length === 0) break;
 
         const repairPrompt = outputVerif.buildPrompt(followUpViolations, attempt);
+        // null: all violations were filtered out for this attempt. Skip repair turn.
+        if (repairPrompt === null) break;
         try {
           await this.executeFollowUpTurn(sessionId, ctx.step, repairPrompt, effectiveTimeoutMs);
         } catch {
@@ -554,6 +556,8 @@ export class ManagedAgentRunner implements AgentRunner {
         if (followUpViolations.length === 0) break;
 
         const repairPrompt = outputVerif.buildPrompt(followUpViolations, attempt);
+        // null: all violations were filtered out for this attempt. Skip repair turn.
+        if (repairPrompt === null) break;
         try {
           await this.executeFollowUpTurn(sessionId, ctx.step, repairPrompt, effectiveTimeoutMs);
         } catch {

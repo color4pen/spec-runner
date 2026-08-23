@@ -130,10 +130,33 @@ export async function buildStepContext(
     if (followUpContracts.length > 0) {
       const strategy = deps.runtimeStrategy;
       const branch = state.branch ?? null;
+      // maxAttempts stays at the default OUTPUT_FOLLOWUP_MAX_ATTEMPTS (2) for ALL contracts,
+      // including unpushable-path. This preserves the maximum 2-attempt repair window for
+      // tasks-complete violations even when an unpushable-path contract is also present.
+      //
+      // The one-follow-up limit for unpushable-path is enforced in buildPrompt: on attempt >= 1,
+      // unpushable-path violations are filtered out of the prompt. Tasks-complete violations
+      // continue to appear on both attempt 0 and attempt 1 (up to 2 repair opportunities).
       outputVerification = {
         detect: () => strategy.validateStepOutputs(followUpContracts, cwd, branch),
         maxAttempts: OUTPUT_FOLLOWUP_MAX_ATTEMPTS,
-        buildPrompt: (violations, _attempt) => buildOutputFollowUpPrompt(violations),
+        buildPrompt: (violations, attempt) => {
+          // All adapters use 1-based attempt numbering (loop starts at attempt=1).
+          // Attempt 1: show all violations (including unpushable-path) — first and only
+          // follow-up for unpushable-path.
+          // Attempt >= 2: filter unpushable-path violations out of the prompt so the agent
+          // only sees remaining tasks-complete / other contract violations. This limits
+          // unpushable-path to exactly 1 follow-up while tasks-complete retains up to 2.
+          const effectiveViolations = attempt > 1
+            ? violations.filter((v) => v.kind !== "unpushable-path")
+            : violations;
+          // When filtering leaves no violations (e.g., only unpushable-path remains at
+          // attempt >= 2), return null to signal the adapter that no repair turn should
+          // be sent. This prevents a generic/empty prompt from being sent as a second
+          // follow-up, preserving the exactly-one-follow-up invariant for unpushable-path.
+          if (effectiveViolations.length === 0) return null;
+          return buildOutputFollowUpPrompt(effectiveViolations);
+        },
       };
     }
   }

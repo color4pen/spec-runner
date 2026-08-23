@@ -15,9 +15,12 @@ import {
   stagingLimitExceededError,
   stagedBytesLimitExceededError,
   egressUnknownCommitError,
+  unpushablePathBlockedError,
   SpecRunnerError,
   ERROR_CODES,
 } from "../../errors.js";
+import { collectPublishablePaths, matchUnpushablePaths } from "../../git/push-capability.js";
+import type { PushCapability } from "../../git/push-capability.js";
 import {
   resolveStagingExcludePatterns,
   resolveMaxStagedFiles,
@@ -508,6 +511,27 @@ export async function commitAndPush(
     }
   }
 
+  // ── Layer 2 backstop: unpushable-path check ──────────────────────────────────
+  // Runs after the mixed reset (post-reset worktree reflects actual agent output)
+  // and before any staging. When push capability declares patterns, compute the
+  // publishable path set and reject if any path matches a declared pattern.
+  // Guard: skip entirely when pushCapability is absent or has no patterns.
+  if (deps.pushCapability && deps.pushCapability.patterns.length > 0) {
+    // Adapt the git-exec.ts SpawnFn (ChildProcess) to the spawn.ts async SpawnFn
+    // expected by collectPublishablePaths.
+    const gitPublishSpawn: PipelineSpawnFn = (cmd, args, opts) =>
+      runSubprocess(infra.spawnFn, cmd, args, { cwd: opts.cwd });
+    const publishablePaths = await collectPublishablePaths(gitPublishSpawn, cwd);
+    const matchedPaths = matchUnpushablePaths(publishablePaths, deps.pushCapability);
+    if (matchedPaths.length > 0) {
+      throw unpushablePathBlockedError(
+        matchedPaths,
+        deps.pushCapability.patterns,
+        deps.pushCapability.source,
+      );
+    }
+  }
+
   if (mode === "scoped") {
     // ── Scoped synthesis mode ─────────────────────────────────────────────────
     const writes = step.writes?.(state, deps) ?? [];
@@ -973,8 +997,30 @@ export async function commitScopedPaths(
   commitMessage: string,
   infra: CommitPushInfra,
   egress?: { synthesizedCommits: readonly string[] },
+  pushCapability?: PushCapability | null,
 ): Promise<void> {
   if (stagePaths.length === 0) return;
+
+  // ── Layer 2 backstop: unpushable-path check ──────────────────────────────────
+  // Runs before any staging, commit, or push. Uses collectPublishablePaths to
+  // enumerate the full set of paths a push would publish — including any previous
+  // unpushed commits on the branch — not just the stagePaths for this call.
+  // Guard: skip entirely when pushCapability is absent or has no patterns.
+  if (pushCapability && pushCapability.patterns.length > 0) {
+    // Adapt the git-exec.ts SpawnFn (ChildProcess) to the spawn.ts async SpawnFn
+    // expected by collectPublishablePaths.
+    const gitPublishSpawn: PipelineSpawnFn = (cmd, args, opts) =>
+      runSubprocess(infra.spawnFn, cmd, args, { cwd: opts.cwd });
+    const publishablePaths = await collectPublishablePaths(gitPublishSpawn, cwd);
+    const matchedPaths = matchUnpushablePaths(publishablePaths, pushCapability);
+    if (matchedPaths.length > 0) {
+      throw unpushablePathBlockedError(
+        matchedPaths,
+        pushCapability.patterns,
+        pushCapability.source,
+      );
+    }
+  }
 
   // Stage only the declared paths (pathspec-limited; never `git add -A` without pathspec).
   // Failure (spawn error or exit≠0) throws typed error → halt path.

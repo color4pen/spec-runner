@@ -13,6 +13,7 @@ import { readSourceRevision } from "../../git/source-revision.js";
 import { nextIteration } from "./io-iteration.js";
 import { STEP_NAMES } from "./step-names.js";
 import { REQUEST_REVIEW_REPORT_TOOL, toCustomToolSpec } from "./report-tool.js";
+import { renderPushCapabilityNotice } from "../../git/push-capability.js";
 
 const REQUEST_REVIEW_AGENT_MODEL = "claude-sonnet-5";
 
@@ -95,7 +96,7 @@ export const RequestReviewStep: AgentStep = {
   buildMessage(state: JobState, deps: StepDeps): string {
     const iteration = nextIteration(state, STEP_NAMES.REQUEST_REVIEW);
     const findingsPath = requestReviewResultPath(deps.slug, iteration);
-    return buildRequestReviewInitialMessage({
+    const base = buildRequestReviewInitialMessage({
       slug: deps.slug,
       requestType: state.request.type,
       branch: state.branch ?? undefined,
@@ -107,6 +108,9 @@ export const RequestReviewStep: AgentStep = {
         : undefined,
       sourceRevision: deps.dynamicContext?.sourceRevision,
     });
+    // Append capability notice when push capability is declared.
+    // request-review is pre-implementation, so predictedTouchedFiles is not passed.
+    return base + renderPushCapabilityNotice(deps.pushCapability ?? null);
   },
 
   resultFilePath(state: JobState, deps: StepDeps): string {

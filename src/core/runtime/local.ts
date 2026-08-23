@@ -64,6 +64,7 @@ import { WorkspaceMaterializer, type MaterializerHost } from "./workspace-materi
 import type { WorktreeMaterializationPlan } from "./workspace-materializer.js";
 import { appendSynthesizedCommit } from "../../state/schema/operations.js";
 import { describeGitFetchFailure } from "./git-fetch-error.js";
+import { collectPublishablePaths, matchUnpushablePaths } from "../../git/push-capability.js";
 
 /** Bound for hub.drain() in the signal handler — keeps signal cleanup bounded. */
 const ABORT_DRAIN_BOUND_MS = 2000;
@@ -930,10 +931,10 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   ): Promise<void> {
     const infra = commitPushInfra as CommitPushInfra;
     const egress = egressParams as
-      | { synthesizedCommits: readonly string[] }
+      | { synthesizedCommits: readonly string[]; pushCapability?: import("../../git/push-capability.js").PushCapability | null }
       | undefined;
     const commitMessage = `${coordinatorName}: ${slug}`;
-    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egress);
+    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egress, egress?.pushCapability ?? null);
   }
 
   /**
@@ -1605,6 +1606,22 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
           });
         }
         // status === "skipped" | "passed" → no violation
+      } else if (contract.kind === "unpushable-path") {
+        // Skip if no patterns declared (guard: should not happen, but defensive)
+        const contractPatterns: string[] = contract.patterns ?? [];
+        if (contractPatterns.length === 0) continue;
+
+        // Enumerate the publishable path set and match against declared patterns.
+        const publishablePaths = await collectPublishablePaths(this.spawnFn, cwd);
+        const matchedPaths = matchUnpushablePaths(publishablePaths, { patterns: contractPatterns, source: "contract" });
+        if (matchedPaths.length > 0) {
+          violations.push({
+            kind: contract.kind,
+            path: contract.path,
+            policy: contract.policy,
+            detail: matchedPaths,
+          });
+        }
       }
     }
     return { violations };

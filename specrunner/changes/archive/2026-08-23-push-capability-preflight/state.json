@@ -1,0 +1,278 @@
+{
+  "version": 2,
+  "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
+  "createdAt": "2026-08-23T09:12:19.977Z",
+  "updatedAt": "2026-08-23T13:29:42.836Z",
+  "request": {
+    "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
+    "type": "new-feature",
+    "baseBranch": "main"
+  },
+  "repository": {
+    "owner": "color4pen",
+    "name": "spec-runner"
+  },
+  "step": "pr-create",
+  "status": "awaiting-archive",
+  "branch": "feat/push-capability-preflight-e57e9dd3",
+  "error": null,
+  "pipelineId": "standard",
+  "profile": {
+    "id": "standard",
+    "schemaVersion": 1,
+    "budget": {},
+    "assurance": {
+      "testDerivation": "frozen",
+      "biteEvidence": "required",
+      "specReview": "required"
+    },
+    "policyDigest": "sha256:5051d71394c2f1522ccb3b0fd60de008b17e10e2ac1930597961e995a5eb1d1d"
+  },
+  "reviewers": [
+    {
+      "name": "cross-boundary-invariants",
+      "maxIterations": 2,
+      "purpose": "diff が**変更していない**コードの暗黙の前提（不変条件）を、新しい挙動が黙って破っていないかを検出する。実装そのものは正しくテストも green のまま、既存機構との相互作用にだけ欠陥が宿るクラスのバグを対象とする。",
+      "criteria": "- diff が新しい遷移・経路・呼び出し順を導入した場合: その経路を通ったとき、**触っていない側のコード**が置いている前提（「この step には必ず X から入る」「このカウンタは Y のときだけリセットされる」「この配列は宣言順で一意」）は保たれるか\n- 既存コードのコメントに書かれた前提・条件の列挙が、diff の後も網羅的か（コメントが「A, B, C の場合」と言うとき、diff が D を作っていないか）\n- 一対一を前提にした逆引き・lookup（`.find()`、Map の単一値）に、diff が多対一・一対多を持ち込んでいないか\n- 状態のリセット・初期化の条件: diff が「初期化条件を満たさずに新しい文脈へ入る」経路を作っていないか\n- 既存テストが green であることをもって安全と判断していないか: 新経路の組み合わせ（2 つ以上の機能が連続して動くシナリオ）をテストが踏んでいるか",
+      "judgment": "- **needs-fix**: 変更していないコードの不変条件を新経路が破る具体的なシナリオを、手順（step 1 → step 2 → …）として再構成できる場合。findings にはそのシナリオを再現手順として書く\n- **approved**: 新経路をすべて列挙し、各経路で隣接機構の前提が保たれることを確認できた場合\n- 前提が破れるかどうかがコードから判定できず、設計文書にも記載がない場合は escalation（推測で needs-fix を出さない）",
+      "freeText": "## 補足\n\nこのレンズの作業は diff を読むことではなく、**diff の周囲を歩くこと**。変更された関数の呼び出し元・呼び出し先で、変更されていないのに意味が変わったものを探す。怪しい不変条件を見つけたら、それを破る具体的な実行列を構成してみる — 構成できなければ findings にしない。「〜の可能性がある」ではなく「この手順で破れる」だけを報告する。",
+      "paths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ]
+    },
+    {
+      "name": "scale-tolerance",
+      "maxIterations": 2,
+      "purpose": "時間とともに件数が単調増加する対象（archive・sidecar・issue/PR・コメント・journal）に対して、走査・ロード・API 呼び出しのコストが比例して成長するコードを、merge 前に検出する。",
+      "criteria": "- ディレクトリ走査（readdir / glob）の追加・変更: 走査対象の件数は何に比例して増えるか。フィルタはロードの前か後か（表示しないものをロードしてから捨てていないか）\n- 呼び出し経路の頻度: その走査・API 呼び出しは手動コマンドか、定期実行（inbox tick / exit-guard / polling ループ）か。定期経路に成長依存のコストを足していないか\n- GitHub API の一覧系呼び出し: ページングの有無。件数増加時の故障モードは「遅延」か「silent truncation（1 ページ目しか見ない見落とし）」か「rate limit 枯渇」か\n- 並列 fan-out（Promise.all）の多重度: 何の件数に比例して同時呼び出しが増えるか\n- 新しく増え続けるファイル・ディレクトリを作る場合: 誰がいつ削除するか（retention / cleanup の経路が存在するか）",
+      "judgment": "- **needs-fix**: 定期実行経路（tick・exit・polling）に、単調増加する件数へ比例するコストを新規に追加している。または一覧系 API でページング欠落により件数増で見落としが発生する\n- **needs-fix**: 増え続ける成果物を新設しながら削除・retention の経路がない\n- **approved**: 成長依存のコストが手動コマンドに限定され、かつ走査前フィルタで必要分しか読まない。または成長軸に触れない変更\n- 判断に必要な実測（現在の件数・増加ペース）が不明で、設計の意図も読み取れない場合のみ escalation",
+      "freeText": "## 補足\n\n走査の追加が即 needs-fix ではない。問うべきは「この走査のコストは何に比例し、その比例は誰が・いつ払うか」。手動コマンドが archive 全件を読むのは許容（ユーザーが明示的に要求した瞬間のみ）、tick が毎 5 分読むのは不可、が基準線。ロードと表示の分離（必要時オプトイン）が定石の修正形。",
+      "paths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ]
+    }
+  ],
+  "issueNumber": 1061,
+  "inboxOrigin": true,
+  "synthesizedCommits": [
+    "acc0a05a38e6f14814d2a67658998e042f50a17b",
+    "10337ee84ce0199b57dc79900c9a5faa93343671",
+    "afd6163343adabd4d1825890a3aabdd41de4c718",
+    "154eb2a468da862f4865a5ac190774d10368bba8",
+    "c994ff98b556ac261fcb378540e13703d9acc9d8",
+    "7671a519884e39caa56487aa72325811b8aff22c",
+    "5a8afa55738f3ef21616f497a8424da42a905111",
+    "3cfdd05c05a38ea6953dfcbb646202d1be313c8f",
+    "b6d72cad121586014c5f6ea5937410c21fe58ee4",
+    "c0a584f940e14a8a91e99fb6c639b6206a589bf0",
+    "e1bcf3c2871032ad4108cb3440aba39cdf0bd636",
+    "782310fc60a0df48b6a8deade82ee2e21b9323bb",
+    "9d81c63be06f066182104f4c36ef3b05548958c0",
+    "b9a5d8f4b308fda25b4d834a820f3268f5db7ad5",
+    "1cf80a97d6a3cfae29845257c632acee2c15ed4c",
+    "3bac7fb051a1898a2a9fa31a3b5e7d05f2759c3f",
+    "fc51859bd811ce174e1f22f4116f7e87294a2b4c",
+    "61cf01e9093be94d1dc5b0d0bd10f6e9cb915e75",
+    "705ed733bfe73d80301bf1bd6d4d068fb8d42147",
+    "b0f89e26dea09763c8f1bc72bc36778f874eeed0",
+    "5583a00e1fcdef6f7b8bb66dd3464808ba505ae6",
+    "217937872b1d8df6959235c2f9fbf8e600b87733",
+    "f602f72c7ef79b940cc8d5e67907fd7d83722006",
+    "5d140bbe1031834469becf7b5a7c963ef21e8938",
+    "c4deb0631b2c1b2494f1eadcb308533c1ac540c0",
+    "e62f6d133172e8a030d9a3c28ed0288cdeaf489c"
+  ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/port/agent-runner.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/port/output-contract.ts",
+      "src/state/schema.ts",
+      "src/prompts/request-review-system.ts",
+      "src/state/schema/types.ts",
+      "src/adapter/shared/touched-files-bundle.ts",
+      "src/adapter/claude-code",
+      "src/adapter/claude-code/touched-files-recorder.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/git/transport-auth.ts",
+      "src/adapter/claude-code/agent-runner.ts"
+    ],
+    "design": [
+      "src/core/port/agent-runner.ts",
+      "src/core/port/output-contract.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/output-verify.ts",
+      "src/git/transport-auth.ts",
+      "src/core/credentials/github.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/step/step-halt.ts",
+      "src/core/port/step-context.ts"
+    ],
+    "test-case-gen": [
+      "src/core/port/agent-runner.ts",
+      "src/core/port/output-contract.ts"
+    ],
+    "spec-review": [
+      "src/core/port/agent-runner.ts",
+      "src/core/port/output-contract.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/port/step-context.ts",
+      "src/git/transport-auth.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/credentials/github.ts",
+      "src/core/step/output-verify.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/util/glob-match.ts",
+      "src/errors.ts",
+      "src/core/command/runner.ts",
+      "src/core/step/step-context-builder.ts"
+    ],
+    "spec-fixer": [
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/output-verify.ts",
+      "src/core/step/implementer.ts",
+      "src/core/port/output-contract.ts"
+    ],
+    "implementer": [
+      "src/core/command/runner.ts",
+      "tests/unit/git/push-capability.test.ts",
+      "tests/unit/step/unpushable-path-escalation.test.ts"
+    ],
+    "code-review": [
+      "src/git/push-capability.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/port/output-contract.ts",
+      "src/core/step/step-halt.ts",
+      "src/errors.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/implementer.ts",
+      "tests/unit/git/push-capability.test.ts",
+      "tests/unit/step/unpushable-path-escalation.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/output-verify.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/command/runner.ts",
+      "src/core/step/request-review.ts",
+      "src/core/port/step-context.ts",
+      "tests/unit/step/unpushable-path-contract.test.ts",
+      "tests/unit/step/push-capability-notice.test.ts",
+      "tests/unit/runtime/unpushable-path-validate.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/pipeline/parallel-review-round.ts",
+      "tests/unit/pipeline/pipeline-sole-committer-round-guard.test.ts",
+      "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
+    ],
+    "regression-gate": [
+      "tests/unit/step/unpushable-path-contract.test.ts"
+    ],
+    "conformance": [
+      "src/git/push-capability.ts",
+      "src/core/port/output-contract.ts",
+      "src/core/port/step-context.ts",
+      "src/core/step/commit-push.ts",
+      "src/errors.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/implementer.ts",
+      "src/core/step/output-verify.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "src/core/command/runner.ts",
+      "src/core/step/request-review.ts",
+      "tests/unit/step/push-capability-notice.test.ts",
+      "src/adapter/shared/touched-files-bundle.ts",
+      "tests/unit/step/unpushable-path-contract.test.ts",
+      "src/core/step/step-context-builder.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/step/__tests__/commit-scoped-paths.test.ts"
+    ]
+  },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "217937872b1d8df6959235c2f9fbf8e600b87733",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/push-capability-preflight/design.md:sha256:88757e1a2f4c8c56c751a211ab4127a098cb333fc45299c57e57c7f28eff0877|specrunner/changes/push-capability-preflight/request.md:sha256:7bb118be461e4b655821453f410286f66ebc290570e3a5c4132ccb0bbfe6e31e|specrunner/changes/push-capability-preflight/spec.md:sha256:097769a4f2792ffcabfcc067dce43855b3ac4a05afbc7b976ba36587ef53915a|specrunner/changes/push-capability-preflight/tasks.md:sha256:46c0a16fa4115ef285795c491111c3819b11de2bf908684e43aaaca897c6ce9e|specrunner/changes/push-capability-preflight/test-cases.md:sha256:eb2d049c6288e9c5ce15b6869d194fd1ee7cb896dfdddba07919ec10fd1e3a38"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": null,
+  "mainCheckoutDrift": null,
+  "operatorAdjudications": [
+    {
+      "text": "operator 裁定 (issue #1061、cross-boundary-invariants escalation への対応)。以下 3 点を修正すること。canon (design.md D6 / Open Questions、tasks.md T-08、test-cases.md TC-033/TC-034) は operator が裁定内容へ更新済みなので、それに従うこと。\n\nF1 — src/core/step/executor.ts / src/errors.ts: matchedPaths を typed property で運ぶ。現在 executor.ts の parseUnpushablePathsFromError がエラーメッセージを regex (/protected path\\(s\\): (.+?)\\. Environment/) でパースして blocked paths を復元している。これを廃止し、unpushablePathBlockedError が生成するエラーオブジェクトに matchedPaths: string[] を property として保持させ、executor はその property を直接読んで makeUnpushablePathHalt に渡す。表示文言を内部プロトコルにしない (文言変更で paths が黙って [] になる結合、および ', ' を含むパスの誤分割を排除)。factory → executor 分岐 → halt reason に matchedPaths が現れる round-trip の unit test を追加する。\n\nF2 — src/core/step/commit-push.ts: commitScopedPaths (round artifacts のコミット経路) にも Layer 2 backstop を追加する。commitAndPush と同じ検査: deps.pushCapability?.patterns が非空のときのみ collectPublishablePaths → matchUnpushablePaths を実行し、一致があれば unpushablePathBlockedError を throw する (stage も commit も push も行わない)。patterns が空/undefined なら git コマンドを一切実行せず素通りする。検査は staging より前に置く。テストを追加する。\n\nF3 — src/core/step/step-context-builder.ts: スカラー maxAttempts=1 をやめる。hasUnpushablePath ? 1 : OUTPUT_FOLLOWUP_MAX_ATTEMPTS は、unpushable-path contract が Actions 上の全 implementer run で無条件付与されるため、同一 step の tasks-complete の修復機会まで 2→1 に減らす退行。汎用の per-contract budget 機構は追加せず、既存の buildPrompt(violations, attempt) / repair loop の範囲で、unpushable-path への follow-up だけちょうど 1 回に制限し、tasks-complete は従来どおり最大 2 回を維持する最小実装にする。更新済み TC-033 (unpushable-path は 1 回、同一 step の tasks-complete は 2 回維持) と TC-034 (unpushable-path なしの契約集合は挙動完全一致) をテストで満たすこと。\n\n完了後 typecheck / lint / 関連テストが green であることを確認すること。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-23T11:46:48.541Z"
+    },
+    {
+      "text": "operator 裁定 (issue #1061、cross-boundary-invariants iteration 2 の escalation への対応)。前回修正のうち F1 (typed matchedPaths) は解消済みと判定された。今回は以下 2 点の実装バグを修正すること。canon (TC-033 / D6 / T-08) は既に正しい要件を記述しているため canon 変更は不要。\n\nN1 — src/core/step/step-context-builder.ts (line ~149): attempt の基数ずれを修正する。adapter (src/adapter/claude-code/agent-runner.ts:1455) の follow-up loop は for (let attempt = 1; attempt <= maxAttempts; attempt++) の 1 始まりで buildPrompt(violations, attempt) を呼ぶ。現在の attempt > 0 フィルタは初回呼び出し (attempt=1) から unpushable-path 違反を除外してしまい、unpushable-path の修復プロンプトが一度も送られない (TC-033 の「ちょうど 1 回」が 0 回になる)。フィルタ条件を 1 始まりに合わせること: attempt <= 1 では全違反を表示し、attempt >= 2 で unpushable-path を除外する。「Attempt 0: show all violations」という誤った前提のコメントも訂正する。テスト: adapter の 1 始まり契約を固定する — buildPrompt(violations, 1) の結果に unpushable-path 違反が含まれ、buildPrompt(violations, 2) では除外され tasks-complete は残ること。\n\nN2 — src/core/step/commit-push.ts (commitScopedPaths, line ~1004-1018): Layer 2 backstop の検査対象を stagePaths のみから publish range 全体へ広げる。git push は branch 上の全未 push commit を公開するため、stagePaths だけの検査では過去の未 push commit が workflow ファイルを変更していた場合に素通りして remote rejection に到達する。commitAndPush と同じく collectPublishablePaths を用いて未 push range の paths を列挙し、それと stagePaths を合わせた集合に matchUnpushablePaths を適用して、一致があれば unpushablePathBlockedError を throw する (stage / commit / push は行わない)。「stagePaths を直接検査するのは collectPublishablePaths と等価」というコメントは誤りなので削除する。pushCapability が無い / patterns が空の場合に git コマンドを一切実行しない性質は維持すること。テスト: stagePaths が安全でも既存未 push commit に protected path が含まれる場合に UNPUSHABLE_PATH_BLOCKED を throw すること、および patterns 空で git 呼び出しゼロのまま素通りすること。\n\n完了後 typecheck / lint / 関連テストが green であることを確認すること。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-23T12:19:49.078Z"
+    },
+    {
+      "text": "operator 裁定 (issue #1061、cross-boundary-invariants iteration 5 の残存 finding 1 件への対応)。canon 変更は不要。\n\n対象 — src/core/pipeline/parallel-review-round.ts (line ~455): commit 前後の HEAD 比較が事前観測の null を通常値として扱っている。captureHeadSha は port 契約上一時失敗で null を返し得る。現在の判定 headAfterCommit !== null && headAfterCommit !== headBeforeCommit は、事前観測が null の場合に、Layer 2 backstop が commit 前に throw して HEAD が変わっていなくても「新 commit あり」と誤判定し、既存の未 push HEAD の OID を roundCommitOid / synthesizedCommits 台帳に追記してしまう (coordinator が作っていない commit を egress checker が承認する台帳汚染)。\n\n修正内容: commit が作られたと推論するのは両観測がともに非 null かつ異なる場合のみとする。事前観測 (headBeforeCommit) が null の場合は roundCommitOid / didCommit を立てず、synthesizedCommits への追記も行わず、evidence-unavailable (HEAD の事前観測が得られず round commit の有無を判定できない) を理由に既存の escalation 経路へ倒す。テスト追加: 事前観測 null + commitRoundArtifacts が throw (backstop 拒否) のとき、既存 HEAD の OID が synthesizedCommits に追記されないこと、および両観測非 null で異なる場合の既存挙動 (正常な round commit 記録) が維持されること。\n\n完了後 typecheck / lint / 関連テストが green であることを確認すること。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-23T12:56:00.331Z"
+    }
+  ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1078",
+    "number": 1078,
+    "createdAt": "2026-08-23T13:29:42.245Z"
+  },
+  "_journal": {
+    "historyCount": 116,
+    "stepCounts": {
+      "request-review": 1,
+      "design": 1,
+      "test-case-gen": 1,
+      "spec-review": 1,
+      "spec-fixer": 1,
+      "implementer": 2,
+      "bite-evidence": 1,
+      "verification": 3,
+      "code-review": 1,
+      "code-fixer": 6,
+      "cross-boundary-invariants": 6,
+      "scale-tolerance": 1,
+      "custom-reviewers": 6,
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "requestHash": "sha256:7bb118be461e4b655821453f410286f66ebc290570e3a5c4132ccb0bbfe6e31e",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/core/port/agent-runner.ts: AgentRunPolicy.outputVerification (line 93-99)",
+    "src/adapter/claude-code/agent-runner.ts: outputVerification repair loop (line 1450-1494) with detect() → violations → buildPrompt → resume:extractedSessionId",
+    "src/core/step/commit-push.ts: commitAndPush function (line 481)",
+    "src/core/step/commit-push.ts: pushOnly function (line 1020)",
+    "src/state/schema/types.ts: touchedFiles?: Record<string, string[]> (line 587)",
+    ".github/workflows/specrunner-dispatch.yml: permissions block (contents:write, pull-requests:write, issues:write) — no workflows scope",
+    ".github/workflows/specrunner-dispatch.yml: GITHUB_TOKEN used for push (line 156)",
+    "src/git/transport-auth.ts: per-invocation transport auth via TRANSPORT_SUBCOMMANDS set and wrapTransportSpawn"
+  ],
+  "sourceRevision": "5415c614ba43efaff2ad4e31961a892dd8e155c3"
+}

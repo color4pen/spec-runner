@@ -179,6 +179,12 @@ export const ERROR_CODES = {
    * (no match, multiple matches, or field mismatch in 4-point identity check).
    */
   ARCHIVE_FROM_ISSUE_UNCONFIRMED: "ARCHIVE_FROM_ISSUE_UNCONFIRMED",
+  /**
+   * Layer 2 backstop: commitAndPush detected a publishable path matching a
+   * declared unpushable pattern. Staging, commit, and push are NOT attempted.
+   * The pipeline converts this into an awaiting-resume halt.
+   */
+  UNPUSHABLE_PATH_BLOCKED: "UNPUSHABLE_PATH_BLOCKED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -659,6 +665,61 @@ export function archiveFromIssueUnconfirmedError(detail: string): SpecRunnerErro
     ERROR_CODES.ARCHIVE_FROM_ISSUE_UNCONFIRMED,
     `Use 'specrunner job attach --branch <branch>' then 'specrunner job archive <slug> --with-merge' for manual recovery.`,
     `Cannot confirm target PR/branch identity: ${detail}`,
+  );
+}
+
+/**
+ * Typed error subclass for UNPUSHABLE_PATH_BLOCKED.
+ *
+ * Carries `matchedPaths` as a first-class typed property so consumers (executor.ts)
+ * can read the blocked path list directly without parsing the message string.
+ * This eliminates the fragile string-coupling between the error factory and any
+ * downstream parser (the previous `parseUnpushablePathsFromError` approach).
+ *
+ * The pipeline converts this into an awaiting-resume halt (escalation path).
+ */
+export class UnpushablePathBlockedError extends SpecRunnerError {
+  /** Publishable paths that matched the declared unpushable pattern(s). */
+  public readonly matchedPaths: string[];
+
+  constructor(
+    hint: string,
+    message: string,
+    matchedPaths: string[],
+  ) {
+    super(ERROR_CODES.UNPUSHABLE_PATH_BLOCKED, hint, message);
+    this.name = "UnpushablePathBlockedError";
+    this.matchedPaths = matchedPaths;
+  }
+}
+
+/**
+ * Error thrown by the Layer 2 backstop in commitAndPush / commitScopedPaths when a
+ * publishable path matches a declared unpushable pattern. Raised before any staging,
+ * commit, or push.
+ *
+ * Returns an UnpushablePathBlockedError so consumers can read `matchedPaths` as a
+ * typed property without parsing the error message string.
+ *
+ * @param paths     Publishable paths that matched the declared pattern(s).
+ * @param patterns  The declared unpushable patterns.
+ * @param source    Human-readable environment constraint description.
+ */
+export function unpushablePathBlockedError(
+  paths: string[],
+  patterns: string[],
+  source: string,
+): UnpushablePathBlockedError {
+  const pathList = paths.map((p) => `  - ${p}`).join("\n");
+  const patternList = patterns.join(", ");
+  return new UnpushablePathBlockedError(
+    `The current environment's token cannot push to the matched paths.\n` +
+    `Matched paths:\n${pathList}\n` +
+    `Declared unpushable patterns: ${patternList}\n` +
+    `Environment constraint: ${source}`,
+    `commitAndPush blocked: publishable path(s) match unpushable pattern(s). ` +
+    `protected path(s): ${paths.join(", ")}. Environment constraint: ${source}`,
+    paths,
   );
 }
 
