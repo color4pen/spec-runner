@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-23T00:55:11.919Z",
+  "updatedAt": "2026-08-23T00:59:13.869Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -78,7 +78,8 @@
     "f32099c897cdefb09a89026fd13cbd90b56f696f",
     "5eb07261aeeff3440c2ae4340e4cb6565ef3cb12",
     "eb9da8160c05aed8849c3e4620e40f852f7c9be4",
-    "c56ee09fa633bf767991208c8736902ce7805d44"
+    "c56ee09fa633bf767991208c8736902ce7805d44",
+    "92333abdc2e58f746df2e840ce2ddeb0f97439f9"
   ],
   "touchedFiles": {
     "request-review": [
@@ -187,6 +188,12 @@
       "src/adapter/shared/session-log-writer.ts",
       "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
       "tests/unit/core/step/commit-orchestrator-rollover.test.ts"
+    ],
+    "regression-gate": [
+      "src/core/step/executor.ts",
+      "src/core/step/step-halt.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "tests/unit/core/step/commit-orchestrator-rollover.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -230,7 +237,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 65,
+    "historyCount": 69,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -244,7 +251,8 @@
       "code-fixer": 2,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
-      "custom-reviewers": 3
+      "custom-reviewers": 3,
+      "regression-gate": 1
     }
   }
 }

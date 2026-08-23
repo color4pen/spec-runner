@@ -401,7 +401,8 @@ export class StepExecutor {
         if (drift.drifted) {
           // agent-context-observability: forward contextMetrics from the successful runner result
           // so commitHalt can persist them even though the halt is due to a post-success drift guard.
-          const halt = makeDriftHalt(drift, step.name, deps.slug, { startedAt }, runResult.contextMetrics);
+          // fresh-session-rollover: also forward sessionRollovers so D7 contextOnly entries are persisted.
+          const halt = makeDriftHalt(drift, step.name, deps.slug, { startedAt }, runResult.contextMetrics, runResult.sessionRollovers);
           return { kind: "halt", halt };
         }
       }
@@ -421,7 +422,8 @@ export class StepExecutor {
           const allViolations = [...haltViolations, ...followUp];
           // agent-context-observability: forward contextMetrics from the successful runner result
           // so commitHalt can persist them even though the halt is due to a post-success gate.
-          const halt = makeOutputGateHalt(allViolations, step.name, state.branch ?? null, { startedAt }, runResult.contextMetrics);
+          // fresh-session-rollover: also forward sessionRollovers so D7 contextOnly entries are persisted.
+          const halt = makeOutputGateHalt(allViolations, step.name, state.branch ?? null, { startedAt }, runResult.contextMetrics, runResult.sessionRollovers);
           return { kind: "halt", halt };
         }
       }
@@ -459,11 +461,13 @@ export class StepExecutor {
       if (finalizeError !== undefined) {
         // agent-context-observability: forward contextMetrics from the successful runner result
         // so commitHalt can persist them even though the halt is due to a post-success commit failure.
+        // fresh-session-rollover: also forward sessionRollovers so D7 contextOnly entries are persisted.
         const halt = makeCommitFailHalt(
           finalizeError as Error & { code?: string; hint?: string },
           step.name,
           { startedAt },
           runResult.contextMetrics,
+          runResult.sessionRollovers,
         );
         return { kind: "halt", halt };
       }

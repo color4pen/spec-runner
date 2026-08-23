@@ -18,7 +18,7 @@ import type { JobState } from "../../../../src/state/schema.js";
 import type { PipelineDeps } from "../../../../src/core/types.js";
 import type { StepCompletion } from "../../../../src/core/step/step-completion.js";
 import type { StepExecutionResult } from "../../../../src/core/step/commit-orchestrator.js";
-import { makeNonSuccessHalt, makeTimeoutHalt } from "../../../../src/core/step/step-halt.js";
+import { makeNonSuccessHalt, makeTimeoutHalt, makeDriftHalt, makeOutputGateHalt, makeCommitFailHalt } from "../../../../src/core/step/step-halt.js";
 import type { AgentContextMetrics } from "../../../../src/kernel/context-metrics.js";
 import type { AgentSessionRollover } from "../../../../src/core/port/agent-runner.js";
 import type { Verdict } from "../../../../src/state/schema.js";
@@ -796,6 +796,118 @@ describe("makeNonSuccessHalt / makeTimeoutHalt が sessionRollovers を StepHalt
       "implementer",
       {},
     );
+
+    expect(halt.sessionRollovers).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(halt, "sessionRollovers")).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-06 type-level: makeDriftHalt / makeOutputGateHalt / makeCommitFailHalt が sessionRollovers を転記する
+// ---------------------------------------------------------------------------
+
+describe("makeDriftHalt / makeOutputGateHalt / makeCommitFailHalt が sessionRollovers を StepHalt へ転記する", () => {
+  it("makeDriftHalt: sessionRollovers を含む → halt.sessionRollovers に転記される", () => {
+    const rolloverContextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      peakActiveContextTokens: 195000,
+      exhaustionAtTokens: 195000,
+    };
+    const sessionRollovers: AgentSessionRollover[] = [
+      makeRollover(1, rolloverContextMetrics),
+    ];
+
+    const drift = {
+      drifted: true,
+      changes: [{ path: "src/foo.ts", kind: "modified" as const }],
+    };
+
+    const halt = makeDriftHalt(drift, "implementer", "test-slug", { startedAt: new Date().toISOString() }, undefined, sessionRollovers);
+
+    expect(halt.sessionRollovers).toBeDefined();
+    expect(halt.sessionRollovers).toHaveLength(1);
+    expect(halt.sessionRollovers![0]!.attempt).toBe(1);
+    expect(halt.sessionRollovers![0]!.reason).toBe("context-exhaustion");
+    expect(halt.sessionRollovers![0]!.contextMetrics!.exhaustionAtTokens).toBe(195000);
+  });
+
+  it("makeDriftHalt: sessionRollovers 不在 → halt.sessionRollovers が undefined", () => {
+    const drift = {
+      drifted: true,
+      changes: [{ path: "src/foo.ts", kind: "modified" as const }],
+    };
+
+    const halt = makeDriftHalt(drift, "implementer", "test-slug", undefined, undefined, undefined);
+
+    expect(halt.sessionRollovers).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(halt, "sessionRollovers")).toBe(false);
+  });
+
+  it("makeDriftHalt: sessionRollovers 空配列 → halt.sessionRollovers が undefined (omit empty array)", () => {
+    const drift = {
+      drifted: true,
+      changes: [{ path: "src/bar.ts", kind: "created" as const }],
+    };
+
+    const halt = makeDriftHalt(drift, "implementer", "test-slug", undefined, undefined, []);
+
+    expect(halt.sessionRollovers).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(halt, "sessionRollovers")).toBe(false);
+  });
+
+  it("makeOutputGateHalt: sessionRollovers を含む → halt.sessionRollovers に転記される", () => {
+    const rolloverContextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      peakActiveContextTokens: 196000,
+      exhaustionAtTokens: 196000,
+    };
+    const sessionRollovers: AgentSessionRollover[] = [
+      makeRollover(1, rolloverContextMetrics),
+    ];
+
+    const violations = [{ kind: "produced" as const, path: "specrunner/changes/test/result.md", policy: "halt" as const, detail: [] }];
+
+    const halt = makeOutputGateHalt(violations, "implementer", "feat/test", { startedAt: new Date().toISOString() }, undefined, sessionRollovers);
+
+    expect(halt.sessionRollovers).toBeDefined();
+    expect(halt.sessionRollovers).toHaveLength(1);
+    expect(halt.sessionRollovers![0]!.attempt).toBe(1);
+    expect(halt.sessionRollovers![0]!.reason).toBe("context-exhaustion");
+  });
+
+  it("makeOutputGateHalt: sessionRollovers 不在 → halt.sessionRollovers が undefined", () => {
+    const violations = [{ kind: "produced" as const, path: "specrunner/changes/test/result.md", policy: "halt" as const, detail: [] }];
+
+    const halt = makeOutputGateHalt(violations, "implementer", null, undefined, undefined, undefined);
+
+    expect(halt.sessionRollovers).toBeUndefined();
+    expect(Object.prototype.hasOwnProperty.call(halt, "sessionRollovers")).toBe(false);
+  });
+
+  it("makeCommitFailHalt: sessionRollovers を含む → halt.sessionRollovers に転記される", () => {
+    const rolloverContextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      peakActiveContextTokens: 197000,
+      exhaustionAtTokens: 197000,
+    };
+    const sessionRollovers: AgentSessionRollover[] = [
+      makeRollover(1, rolloverContextMetrics),
+    ];
+
+    const err = Object.assign(new Error("git push failed"), { code: "COMMIT_AND_PUSH_FAILED" });
+
+    const halt = makeCommitFailHalt(err, "implementer", { startedAt: new Date().toISOString() }, undefined, sessionRollovers);
+
+    expect(halt.sessionRollovers).toBeDefined();
+    expect(halt.sessionRollovers).toHaveLength(1);
+    expect(halt.sessionRollovers![0]!.attempt).toBe(1);
+    expect(halt.sessionRollovers![0]!.reason).toBe("context-exhaustion");
+  });
+
+  it("makeCommitFailHalt: sessionRollovers 不在 → halt.sessionRollovers が undefined", () => {
+    const err = Object.assign(new Error("git push failed"), { code: "COMMIT_AND_PUSH_FAILED" });
+
+    const halt = makeCommitFailHalt(err, "implementer", undefined, undefined, undefined);
 
     expect(halt.sessionRollovers).toBeUndefined();
     expect(Object.prototype.hasOwnProperty.call(halt, "sessionRollovers")).toBe(false);
