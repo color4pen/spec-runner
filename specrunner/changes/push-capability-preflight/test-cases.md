@@ -264,7 +264,7 @@ Result section MUST appear at the very end as a YAML code block:
 **Source**: tasks.md > T-05 Acceptance Criteria (`buildOutputFollowUpPrompt` が `unpushable-path` 違反に対し、一致パスを列挙した専用セクションを出力する)
 
 **GIVEN** an `OutputViolation` of kind `"unpushable-path"` with `detail: [".github/workflows/ci.yml"]`
-**WHEN** `buildOutputFollowUpPrompt([violation], attempt)` is called
+**WHEN** `buildOutputFollowUpPrompt([violation])` is called
 **THEN** the returned string contains `.github/workflows/ci.yml`
 **And** the string instructs the agent to either remove the change or satisfy the requirement without modifying that path
 

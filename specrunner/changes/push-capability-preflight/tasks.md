@@ -166,6 +166,14 @@
       拡張し、follow-up 対象契約に `unpushable-path` が含まれる場合の上限を 1 とする)
 - [ ] 既定値 `OUTPUT_FOLLOWUP_MAX_ATTEMPTS = 2` は変更しない。他 kind の挙動を変えないこと
 - [ ] 上限を 1 にする根拠 (要件が「ちょうど 1 回」と規定している) を TSDoc に残す
+- [ ] TSDoc コメントに次のトレードオフを明記する:
+      `maxAttempts` は step 全体の follow-up 回数上限を単一値で管理するため、
+      同一 step に `tasks-complete` など他の follow-up contracts が混在する場合、
+      それらの contracts も 1 回に制限される（通常は 2 回）。
+      `unpushable-path` が含まれるケースではこれは意図した動作であり、
+      仕様上 unpushable-path 検出後の多重リトライは不要と判断している。
+      混在ケース（例: tasks-complete + unpushable-path が同一 step に存在）での
+      tasks-complete の試行数が暗黙的に 1 に制限される点は TC-034 の保証対象外である。
 
 **Acceptance Criteria**:
 - `tests/unit/step/unpushable-path-contract.test.ts` が以下を検証して green:
