@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T12:33:22.613Z",
+  "updatedAt": "2026-08-23T12:42:54.329Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -13,9 +13,13 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/push-capability-preflight-e57e9dd3",
-  "error": null,
+  "error": {
+    "code": "CUSTOM_REVIEWERS_RETRIES_EXHAUSTED",
+    "message": "custom reviewers did not approve after 2 iterations",
+    "hint": "Review the latest reviewer results and address findings manually. (iteration 005)"
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -82,7 +86,9 @@
     "3bac7fb051a1898a2a9fa31a3b5e7d05f2759c3f",
     "fc51859bd811ce174e1f22f4116f7e87294a2b4c",
     "61cf01e9093be94d1dc5b0d0bd10f6e9cb915e75",
-    "705ed733bfe73d80301bf1bd6d4d068fb8d42147"
+    "705ed733bfe73d80301bf1bd6d4d068fb8d42147",
+    "b0f89e26dea09763c8f1bc72bc36778f874eeed0",
+    "5583a00e1fcdef6f7b8bb66dd3464808ba505ae6"
   ],
   "touchedFiles": {
     "request-review": [
@@ -162,19 +168,12 @@
       "tests/unit/runtime/unpushable-path-validate.test.ts"
     ],
     "code-fixer": [
-      "src/core/step/step-context-builder.ts",
       "src/git/push-capability.ts",
-      "src/core/step/commit-push.ts",
-      "src/adapter/claude-code/agent-runner.ts",
-      "src/core/step/output-verify.ts",
+      "src/core/pipeline/parallel-review-round.ts",
+      "src/core/step/commit-orchestrator.ts",
+      "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts",
       "tests/unit/git/push-capability.test.ts",
-      "tests/unit/step/unpushable-path-contract.test.ts",
-      "src/core/step/__tests__/commit-scoped-paths.test.ts",
-      "src/core/runtime/local.ts",
-      "src/adapter/managed-agent/agent-runner.ts",
-      "src/adapter/codex/agent-runner.ts",
-      "tests/unit/adapter/claude-code/agent-runner.test.ts",
-      "src/core/port/output-contract.ts"
+      "tests/unit/step/unpushable-path-escalation.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -206,7 +205,12 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": null,
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "custom reviewers did not approve after 2 iterations",
+    "iterationsExhausted": 2,
+    "exhaustionPhase": "review-after-final-fix"
+  },
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -221,7 +225,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 79,
+    "historyCount": 86,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -232,10 +236,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 4,
-      "cross-boundary-invariants": 4,
+      "code-fixer": 5,
+      "cross-boundary-invariants": 5,
       "scale-tolerance": 1,
-      "custom-reviewers": 4
+      "custom-reviewers": 5
     }
   }
 }
