@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-22T23:56:30.505Z",
+  "updatedAt": "2026-08-22T23:57:40.331Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -72,7 +72,8 @@
     "42120783df0680e00c1239827a0e28189ed380ed",
     "a9f1a2c928b65458a3fecca5539033b2f9a625a0",
     "7218de6a3bd5ad0da9b2c7524c28cdd78af72958",
-    "55b49ec12d15a6ef7f188265776f49c0d87755a6"
+    "55b49ec12d15a6ef7f188265776f49c0d87755a6",
+    "e1c8fc45ad8ebc10313cd7b5d4cf5965dee6ade5"
   ],
   "touchedFiles": {
     "request-review": [
@@ -176,10 +177,14 @@
       "src/cli/progress.ts",
       "src/config/schema/validation.ts",
       "src/core/step/executor.ts"
+    ],
+    "code-fixer": [
+      "src/core/step/executor.ts",
+      "src/core/port/agent-runner.ts"
     ]
   },
   "_journal": {
-    "historyCount": 35,
+    "historyCount": 39,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -189,7 +194,8 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1
     }
   }
 }
