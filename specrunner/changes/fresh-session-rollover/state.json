@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-23T01:55:33.211Z",
+  "updatedAt": "2026-08-23T02:02:13.908Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -89,7 +89,8 @@
     "58b03af6ba472829c44610e27654efa65207aa7e",
     "480830d66c626470077b9049990062e0a8e3aab3",
     "4c34b7773ce22be65765550ee089513623c7671e",
-    "349c31c31fa9fbfc1b6519570787e66b56e99afb"
+    "349c31c31fa9fbfc1b6519570787e66b56e99afb",
+    "ac8cf405b4054496cbef95646877f7fb495753b3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -162,17 +163,10 @@
       "src/config/__tests__/context-rollover-config.test.ts"
     ],
     "code-fixer": [
-      "src/logger/pipeline-logger.ts",
-      "tests/unit/logger/verbose-log.test.ts",
-      "src/core/event/event-bus.ts",
-      "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
-      "src/adapter/claude-code/touched-files-recorder.ts",
-      "src/adapter/claude-code/agent-runner.ts",
-      "src/adapter/claude-code/__tests__/touched-files-recorder.test.ts",
-      "src/adapter/claude-code/message-types.ts",
-      "tests/unit/cli/cancel.test.ts",
-      "tests/core/pipeline/pipeline.approved-not-overturned-by-fixer-budget.test.ts",
-      "tests/unit/logger/pipeline-logger-rollover.test.ts"
+      "src/core/step/commit-orchestrator.ts",
+      "tests/unit/core/step/commit-orchestrator-rollover.test.ts",
+      "src/core/step/step-halt.ts",
+      "src/state/schema/types.ts"
     ],
     "regression-gate": [
       "src/core/step/commit-orchestrator.ts",
@@ -242,7 +236,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 113,
+    "historyCount": 117,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -253,7 +247,7 @@
       "bite-evidence": 1,
       "verification": 3,
       "code-review": 3,
-      "code-fixer": 4,
+      "code-fixer": 5,
       "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
       "custom-reviewers": 4,
