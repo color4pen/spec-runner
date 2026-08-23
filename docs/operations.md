@@ -109,7 +109,7 @@ tick 内の起動は逐次（1 つの tick プロセスが pipeline を完走ま
 | job 非実行中のスリープ | tick が飛ぶだけ。影響なし |
 | セッション実行中のスリープ・回線断 | transient エラーとして上限つき自動リトライ。上限超過で escalation 通知 → `/resume` |
 | 実行プロセスの死（kill・クラッシュ） | 次の tick が孤児を検出し自動 resume。進捗のない再起動が続く場合は上限後に escalation |
-| agent context 枯渇（local runtime） | fresh session で自動継続（最大 `contextRollover.maxRollovers` 回）。予算超過時は `CONTEXT_WINDOW_EXHAUSTED` halt → `awaiting-resume`。request を分割して再試行するか、`maxRollovers` を増やす |
+| agent context 枯渇（local runtime） | `implementer` step のみ fresh session で自動継続（最大 `contextRollover.maxRollovers` 回）。予算超過時は `CONTEXT_WINDOW_EXHAUSTED` halt → `awaiting-resume`。implementer 以外の step は rollover せず単一 session のまま同 halt になる。request を分割して再試行するか、`maxRollovers` を増やす |
 
 ### halt → resume の回復契約
 

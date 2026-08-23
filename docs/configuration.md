@@ -503,7 +503,9 @@ Applied to local runtime runners only; ignored by managed runtime.
 
 ## Context rollover
 
-When the claude-code adapter detects that the agent's context window is exhausted, it can automatically start a fresh session in the same worktree and continue from where the previous session left off. The fresh session is given a continuation prompt that instructs it to inspect existing changes via `git diff` and `tasks.md` before resuming.
+When the claude-code adapter detects that the agent's context window is exhausted during the **`implementer` step**, it can automatically start a fresh session in the same worktree and continue from where the previous session left off. The fresh session is given a continuation prompt that instructs it to inspect existing changes via `git diff` and `tasks.md` before resuming.
+
+Rollover applies to the `implementer` step only — the continuation prompt is implementer-specific. All other agent steps run a single session regardless of this setting and halt with `CONTEXT_WINDOW_EXHAUSTED` when their context is exhausted.
 
 ```jsonc
 {
@@ -517,8 +519,8 @@ When the claude-code adapter detects that the agent's context window is exhauste
 |---|---|---|
 | `contextRollover.maxRollovers` | `1` | Maximum number of fresh-session rollovers. `0` = disable rollover |
 
-Applied to local runtime (claude-code adapter) only; ignored by managed and Codex runtimes.
+Applied to the `implementer` step on the local runtime (claude-code adapter) only; ignored by other steps and by managed and Codex runtimes.
 
 When all rollover attempts are exhausted and the context is still full, the step halts with `CONTEXT_WINDOW_EXHAUSTED`. Consider splitting the request into smaller tasks if this occurs repeatedly.
 
-Rollover sessions are recorded in `usage.json` as `contextOnly: true` entries (no cost data) alongside the final session's normal entry. Each rollover also emits a `step:rollover` event that appears in the pipeline log and progress display.
+Rollover sessions are recorded in `usage.json` alongside the final session's normal entry. A discarded session whose usage was captured (and folded into the final entry's totals) is written as a `contextOnly: true` observation entry, which cost aggregation skips. A discarded session whose usage could **not** be captured (e.g. the SDK threw instead of returning a result) is written as `modelUsage: null` **without** `contextOnly` — the existing "usage unavailable" representation — so the attestation reports that step's cost as unknown instead of a definite-looking undercount. Each rollover also emits a `step:rollover` event that appears in the pipeline log and progress display.
