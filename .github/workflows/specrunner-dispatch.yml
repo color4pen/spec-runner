@@ -151,6 +151,23 @@ jobs:
           timeout 120 "$bin" -p "reply with exactly: SMOKE_OK" 2>claude-stderr.txt || echo "smoke exit=$?"
           echo "--- stderr ---"; tail -c 4000 claude-stderr.txt || true
 
+      - name: Restore Codex auth
+        # cross-boundary-invariants (gpt-5.6-sol / openai provider) 用。
+        # Codex SDK は OPENAI_API_KEY 未設定時に ~/.codex/auth.json の ChatGPT 認証へ
+        # fallback する。credential 内容は絶対にログ出力しない。
+        env:
+          CODEX_AUTH_JSON: ${{ secrets.CODEX_AUTH_JSON }}
+        run: |
+          if [ -z "$CODEX_AUTH_JSON" ]; then
+            echo "::error::CODEX_AUTH_JSON secret が未設定"
+            exit 1
+          fi
+          mkdir -p ~/.codex
+          printf '%s' "$CODEX_AUTH_JSON" > ~/.codex/auth.json
+          chmod 600 ~/.codex/auth.json
+          # 認証確認（status はログイン方式のみ出力し credential は含まない）
+          ./node_modules/.bin/codex login status
+
       - name: Run pipeline
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -159,8 +176,6 @@ jobs:
           # SDK 側の debug log（SpecRunner の plumbing に依存しない証拠経路）
           CLAUDE_CODE_DEBUG_LOGS_DIR: ${{ github.workspace }}/.claude-debug
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # cross-boundary-invariants は gpt-5.6-sol (openai provider) で実行される
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ISSUE: ${{ inputs.issue }}
           ACTION: ${{ inputs.action }}
           FROM: ${{ inputs.from }}
