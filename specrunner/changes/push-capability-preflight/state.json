@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T09:12:22.356Z",
+  "updatedAt": "2026-08-23T09:17:46.569Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/push-capability-preflight-e57e9dd3",
   "error": null,
@@ -64,10 +64,29 @@
   "issueNumber": 1061,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "acc0a05a38e6f14814d2a67658998e042f50a17b"
+    "acc0a05a38e6f14814d2a67658998e042f50a17b",
+    "10337ee84ce0199b57dc79900c9a5faa93343671"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/port/agent-runner.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/port/output-contract.ts",
+      "src/state/schema.ts",
+      "src/prompts/request-review-system.ts",
+      "src/state/schema/types.ts",
+      "src/adapter/shared/touched-files-bundle.ts",
+      "src/adapter/claude-code",
+      "src/adapter/claude-code/touched-files-recorder.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/git/transport-auth.ts",
+      "src/adapter/claude-code/agent-runner.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
