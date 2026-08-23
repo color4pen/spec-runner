@@ -265,19 +265,47 @@ const workflowCapability: PushCapability = {
 const WORKFLOW_PATH = ".github/workflows/ci.yml";
 const NON_WORKFLOW_PATH = "specrunner/changes/my-feature/result-001.md";
 
+// ---------------------------------------------------------------------------
+// Mock helpers for collectPublishablePaths git responses
+// ---------------------------------------------------------------------------
+
+/**
+ * Build a git status --porcelain=v1 -z output line for a single path.
+ * collectPublishablePaths splits on "\0" and slices the first 3 chars (XY<SP>).
+ */
+function statusLine(path: string): string {
+  return `M  ${path}\0`;
+}
+
+/**
+ * Standard git mock responses for collectPublishablePaths when a single path
+ * is visible in the working tree (no unpushed commits):
+ *   1. git status → returns the given path
+ *   2. git rev-list → empty (no unpushed commits → no diff-tree calls)
+ */
+function backstopGitResponses(path: string): Array<{ exitCode: number; stdout?: string }> {
+  return [
+    { exitCode: 0, stdout: statusLine(path) }, // git status --porcelain -z
+    { exitCode: 0, stdout: "" },               // git rev-list HEAD --not --remotes=origin (empty)
+  ];
+}
+
 describe("commitScopedPaths — F2 Layer 2 backstop: unpushable-path check", () => {
-  // Branch 7: stagePaths match unpushable pattern → throws before any git calls
-  it("throws UNPUSHABLE_PATH_BLOCKED when a stagePath matches the declared pattern", async () => {
-    const { fn, calls } = makeGitSpawnFn([]);
+  // Branch 7: publishable paths include an unpushable pattern → throws before staging
+  it("throws UNPUSHABLE_PATH_BLOCKED when a publishable path matches the declared pattern", async () => {
+    const { fn, calls } = makeGitSpawnFn(backstopGitResponses(WORKFLOW_PATH));
     await expect(
       commitScopedPaths([WORKFLOW_PATH], CWD, BRANCH, COMMIT_MSG, makeInfra(fn), undefined, workflowCapability),
     ).rejects.toMatchObject({ code: ERROR_CODES.UNPUSHABLE_PATH_BLOCKED });
-    // No git calls should be made (backstop fires before staging)
-    expect(calls).toHaveLength(0);
+    // collectPublishablePaths makes status + rev-list calls; staging is never reached
+    const subcommands = calls.map((c) => c[0]);
+    expect(subcommands).toContain("status");
+    expect(subcommands).toContain("rev-list");
+    expect(subcommands).not.toContain("add");
   });
 
   it("thrown error is an UnpushablePathBlockedError instance with matchedPaths", async () => {
-    const { fn } = makeGitSpawnFn([]);
+    const { fn } = makeGitSpawnFn(backstopGitResponses(WORKFLOW_PATH));
     let thrown: unknown;
     try {
       await commitScopedPaths([WORKFLOW_PATH], CWD, BRANCH, COMMIT_MSG, makeInfra(fn), undefined, workflowCapability);
@@ -291,7 +319,7 @@ describe("commitScopedPaths — F2 Layer 2 backstop: unpushable-path check", () 
   });
 
   it("no add, commit, or push git calls when backstop fires", async () => {
-    const { fn, calls } = makeGitSpawnFn([]);
+    const { fn, calls } = makeGitSpawnFn(backstopGitResponses(WORKFLOW_PATH));
     try {
       await commitScopedPaths([WORKFLOW_PATH], CWD, BRANCH, COMMIT_MSG, makeInfra(fn), undefined, workflowCapability);
     } catch {
@@ -304,7 +332,11 @@ describe("commitScopedPaths — F2 Layer 2 backstop: unpushable-path check", () 
   });
 
   it("backstop fires even when other non-matching paths are also in stagePaths", async () => {
-    const { fn } = makeGitSpawnFn([]);
+    // status reveals the workflow file alongside other paths
+    const { fn } = makeGitSpawnFn([
+      { exitCode: 0, stdout: statusLine(NON_WORKFLOW_PATH) + statusLine(WORKFLOW_PATH) },
+      { exitCode: 0, stdout: "" }, // rev-list
+    ]);
     await expect(
       commitScopedPaths(
         [NON_WORKFLOW_PATH, WORKFLOW_PATH],
@@ -313,11 +345,25 @@ describe("commitScopedPaths — F2 Layer 2 backstop: unpushable-path check", () 
     ).rejects.toMatchObject({ code: ERROR_CODES.UNPUSHABLE_PATH_BLOCKED });
   });
 
+  it("previous unpushed commit touching a workflow file triggers backstop even when stagePaths are safe", async () => {
+    // Simulate: prior unpushed commit touched a workflow file (rev-list + diff-tree path)
+    const { fn } = makeGitSpawnFn([
+      { exitCode: 0, stdout: "" },                                // git status (no worktree changes)
+      { exitCode: 0, stdout: "abc123\n" },                        // git rev-list: one unpushed commit
+      { exitCode: 0, stdout: ".github/workflows/ci.yml\n" },     // git diff-tree for abc123
+    ]);
+    await expect(
+      commitScopedPaths([PATH_A], CWD, BRANCH, COMMIT_MSG, makeInfra(fn), undefined, workflowCapability),
+    ).rejects.toMatchObject({ code: ERROR_CODES.UNPUSHABLE_PATH_BLOCKED });
+  });
+
   // Branch 8: non-matching paths → normal flow (backstop not triggered)
   it("non-matching paths pass through the backstop and proceed normally", async () => {
     const { fn, calls } = makeGitSpawnFn([
-      { exitCode: 0 }, // git add succeeds
-      { exitCode: 0 }, // git diff --cached --quiet: no changes
+      { exitCode: 0, stdout: statusLine(NON_WORKFLOW_PATH) }, // git status: only safe paths
+      { exitCode: 0, stdout: "" },                            // git rev-list: no unpushed commits
+      { exitCode: 0 },                                        // git add succeeds
+      { exitCode: 0 },                                        // git diff --cached --quiet: no changes
     ]);
     await commitScopedPaths([NON_WORKFLOW_PATH], CWD, BRANCH, COMMIT_MSG, makeInfra(fn), undefined, workflowCapability);
     // add and diff should have been called (normal flow past backstop)
@@ -336,6 +382,8 @@ describe("commitScopedPaths — F2 Layer 2 backstop: unpushable-path check", () 
     await commitScopedPaths([WORKFLOW_PATH], CWD, BRANCH, COMMIT_MSG, makeInfra(fn), undefined, null);
     const subcommands = calls.map((c) => c[0]);
     expect(subcommands).toContain("add");
+    // collectPublishablePaths NOT called when pushCapability is null
+    expect(subcommands).not.toContain("status");
   });
 
   it("empty patterns → backstop skipped (pattern list empty guard)", async () => {
@@ -345,8 +393,9 @@ describe("commitScopedPaths — F2 Layer 2 backstop: unpushable-path check", () 
     ]);
     const emptyCapability: PushCapability = { patterns: [], source: "none" };
     await commitScopedPaths([WORKFLOW_PATH], CWD, BRANCH, COMMIT_MSG, makeInfra(fn), undefined, emptyCapability);
-    // Backstop skipped when patterns is empty
+    // Backstop skipped when patterns is empty — no status or rev-list calls
     const subcommands = calls.map((c) => c[0]);
     expect(subcommands).toContain("add");
+    expect(subcommands).not.toContain("status");
   });
 });

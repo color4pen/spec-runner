@@ -141,12 +141,13 @@ export async function buildStepContext(
         detect: () => strategy.validateStepOutputs(followUpContracts, cwd, branch),
         maxAttempts: OUTPUT_FOLLOWUP_MAX_ATTEMPTS,
         buildPrompt: (violations, attempt) => {
-          // Attempt 0: show all violations (including unpushable-path) — first and only
+          // All adapters use 1-based attempt numbering (loop starts at attempt=1).
+          // Attempt 1: show all violations (including unpushable-path) — first and only
           // follow-up for unpushable-path.
-          // Attempt >= 1: filter unpushable-path violations out of the prompt so the agent
+          // Attempt >= 2: filter unpushable-path violations out of the prompt so the agent
           // only sees remaining tasks-complete / other contract violations. This limits
           // unpushable-path to exactly 1 follow-up while tasks-complete retains up to 2.
-          const effectiveViolations = attempt > 0
+          const effectiveViolations = attempt > 1
             ? violations.filter((v) => v.kind !== "unpushable-path")
             : violations;
           return buildOutputFollowUpPrompt(effectiveViolations);
