@@ -175,8 +175,10 @@ D4 のヘルパを呼べる)。`ManagedRuntime.validateStepOutputs` では `test
 
 ### D6: Layer 1 の follow-up は「ちょうど 1 回」に制限する
 
-この contract に対する検出は `maxAttempts` を 1 として扱う。既定の
-`OUTPUT_FOLLOWUP_MAX_ATTEMPTS = 2` をそのまま使わない。
+`unpushable-path` contract に対する自己修正機会を 1 回に制限する。制限はこの
+contract のみに適用し、同一 step に混在する他の follow-up contracts
+(例: `tasks-complete`) は既定の `OUTPUT_FOLLOWUP_MAX_ATTEMPTS = 2` を維持する。
+step 全体の attempt 上限を単一値で 1 に落とす実装は採らない。
 
 - **Rationale**: リクエストが「同一 implementer にちょうど 1 回 follow-up」と明記している。
   また、この違反はモデルの不注意ではなく「要件そのものがワークフロー変更を要求している」
@@ -294,9 +296,13 @@ Layer 2 は git subprocess を一切呼ばずに即 return する。
   マージする形で無改造に近い追加ができる。
 - Layer 1 contract を code-fixer / build-fixer / spec-fixer にも付けるか。実運用で
   implementer 以外が workflows を触る頻度が判明してから判断する。
-- 並列レビュー round の成果物コミット経路 (`commitRoundArtifacts` 系) が
-  `commitAndPush` を共有していない場合、そこにも Layer 2 相当が要るか。実装時に呼び出し
-  グラフを確認し、共有していなければ同じヘルパを差す。
+- ~~並列レビュー round の成果物コミット経路 (`commitRoundArtifacts` 系) が
+  `commitAndPush` を共有していない場合、そこにも Layer 2 相当が要るか。~~
+  **解決済み (operator 裁定)**: 呼び出しグラフ確認の結果 `commitScopedPaths` は
+  `commitAndPush` を共有していない。Layer 2 は「commit / push 直前の決定的 backstop」
+  なので、`commitScopedPaths` にも同じ検査 (`collectPublishablePaths` →
+  `matchUnpushablePaths`、patterns 空なら素通り) を差し、宣言済み unpushable path は
+  publish 経路によらず remote へ投げない。
 - escalation 後の再開フロー: operator が worktree の違反変更を捨てて再開したいとき、
   `resume --from-issue` で自然に続行できるか。既存の resume point 意味論の範囲で足りる
   想定だが、実装時に手動で 1 度確認しておきたい。

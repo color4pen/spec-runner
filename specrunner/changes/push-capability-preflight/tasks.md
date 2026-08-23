@@ -37,8 +37,9 @@
 - [x] `src/git/push-capability.ts` に
       `collectPublishablePaths(spawnFn, cwd): Promise<string[]>` を追加する
       (spawn の型は既存の `src/util/git-exec.ts` の `SpawnFn` を再利用する)
-- [x] worktree 側: `git status --porcelain --untracked-files=all` を実行し、パス部分を抽出する。
-      rename 表記 (`R  old -> new`) は old / new の両方を含める
+- [x] worktree 側: `git status --porcelain -z --no-renames --untracked-files=all` を実行し、
+      パス部分を抽出する。`--no-renames` により rename は `D old` + `A new` の 2 エントリと
+      して現れるため、old / new の両パスが結果に含まれる
 - [x] コミット側: `git rev-list HEAD --not --remotes=origin` で未 push の OID を列挙し、
       各 OID に対し `git diff-tree --no-commit-id --name-only -r <oid>` を実行してパスを収集する
 - [x] 2 つの集合の **和** を重複なし・ソート済みで返す
@@ -54,7 +55,7 @@
   - 未 push コミットが追加し次のコミットが削除したパスが、worktree がクリーンでも結果に含まれる
   - `rev-list` が空 + worktree クリーン → 空配列
   - untracked ファイルが `--untracked-files=all` 経由で含まれる
-  - rename 表記から old / new 両方が抽出される
+  - rename (`--no-renames` により `D old` + `A new` の 2 エントリ) から old / new 両方が抽出される
 - 呼び出される git コマンドが上記の 3 種類のみであることを spawn 呼び出し履歴で確認する
 
 ## T-03: `pushCapability` を `StepContext` に載せ、per-run で 1 回だけ解決する
@@ -159,28 +160,26 @@
   - `branch` が undefined の状態でも `unpushable-path` の違反が出ない
 - 既存の ManagedRuntime 出力検証テストが無改変で green
 
-## T-08: follow-up 回数を 1 回に制限する
+## T-08: `unpushable-path` の follow-up 回数を 1 回に制限する (他 contract は変えない)
 
-- [x] `unpushable-path` contract に対する follow-up 上限が 1 になるようにする
-      (`src/core/step/step-context-builder.ts` の `outputVerification.maxAttempts` 決定ロジックを
-      拡張し、follow-up 対象契約に `unpushable-path` が含まれる場合の上限を 1 とする)
-- [x] 既定値 `OUTPUT_FOLLOWUP_MAX_ATTEMPTS = 2` は変更しない。他 kind の挙動を変えないこと
-- [x] 上限を 1 にする根拠 (要件が「ちょうど 1 回」と規定している) を TSDoc に残す
-- [x] TSDoc コメントに次のトレードオフを明記する:
-      `maxAttempts` は step 全体の follow-up 回数上限を単一値で管理するため、
-      同一 step に `tasks-complete` など他の follow-up contracts が混在する場合、
-      それらの contracts も 1 回に制限される（通常は 2 回）。
-      `unpushable-path` が含まれるケースではこれは意図した動作であり、
-      仕様上 unpushable-path 検出後の多重リトライは不要と判断している。
-      混在ケース（例: tasks-complete + unpushable-path が同一 step に存在）での
-      tasks-complete の試行数が暗黙的に 1 に制限される点は TC-034 の保証対象外である。
+- [x] `unpushable-path` contract に対する自己修正機会 (follow-up) がちょうど 1 回になるようにする
+- [x] 制限は `unpushable-path` contract のみに適用する。同一 step に混在する他の
+      follow-up contracts (例: `tasks-complete`) の試行数は従来どおり
+      `OUTPUT_FOLLOWUP_MAX_ATTEMPTS = 2` を維持する。
+      step 全体の `maxAttempts` を単一値で 1 に落とす実装は採らない
+      (Actions 上の全 implementer run で `tasks-complete` の修復機会が 2→1 に退行するため)
+- [x] 汎用の per-contract budget 機構は追加しない。既存の
+      `buildPrompt(violations, attempt)` / repair loop の範囲で成立する最小実装とする
+- [x] 既定値 `OUTPUT_FOLLOWUP_MAX_ATTEMPTS = 2` は変更しない
+- [x] `unpushable-path` を 1 回にする根拠 (要件が「ちょうど 1 回」と規定している) を TSDoc に残す
 
 **Acceptance Criteria**:
 - `tests/unit/step/unpushable-path-contract.test.ts` が以下を検証して green:
-  - 違反が follow-up 後も解消しないケースで、adapter の repair ループが送る follow-up が
+  - `unpushable-path` 違反が follow-up 後も解消しないケースで、当該違反への follow-up が
     ちょうど 1 回 (2 回目が送られない)
   - 違反が follow-up 後に解消するケースで、follow-up が 1 回送られ、その後 halt しない
-- `unpushable-path` を含まない契約集合では `maxAttempts` が従来どおり 2
+  - `tasks-complete` のみの違反では follow-up が従来どおり最大 2 回送られる
+- `unpushable-path` を含まない契約集合では挙動が従来と完全一致
 
 ## T-09: `awaiting-resume` escalation halt factory の追加と executor 側の分岐
 

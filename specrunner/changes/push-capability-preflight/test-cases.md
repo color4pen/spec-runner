@@ -17,7 +17,7 @@ GIVEN/WHEN/THEN structure (mixed format — depends on TC type):
     **WHEN** <action>
     **THEN** <expected result>
   gate TC:
-    GWT は記述しない。充足を担う verification phase 名（または verification.commands の command 名）を本文に記録する。
+    GWT は記述しない。充足を担う verification phase 名(または verification.commands の command 名)を本文に記録する。
 
 Summary section MUST appear immediately after the title with ALL 4 items:
   ## Summary
@@ -168,13 +168,13 @@ Result section MUST appear at the very end as a YAML code block:
 **WHEN** `collectPublishablePaths(spawnFn, cwd)` is called
 **THEN** `.github/workflows/new.yml` appears in the returned path set
 
-### TC-026: Rename notation extracts both old and new paths
+### TC-026: Rename yields both old and new paths (as D + A entries under --no-renames)
 
 **Category**: unit
 **Priority**: could
-**Source**: tasks.md > T-02 Acceptance Criteria (rename 表記から old / new 両方が抽出される)
+**Source**: tasks.md > T-02 Acceptance Criteria (rename から old / new 両方が抽出される)
 
-**GIVEN** `git status --porcelain` output includes `R  old-name.ts -> new-name.ts`
+**GIVEN** the implementation runs `git status --porcelain -z --no-renames`, so a rename appears as two entries `D  old-name.ts` and `A  new-name.ts`
 **WHEN** `collectPublishablePaths(spawnFn, cwd)` parses the status output
 **THEN** the path set includes both `old-name.ts` and `new-name.ts`
 
@@ -186,7 +186,7 @@ Result section MUST appear at the very end as a YAML code block:
 
 **GIVEN** a worktree with one modified file and one unpushed commit
 **WHEN** `collectPublishablePaths(spawnFn, cwd)` runs to completion
-**THEN** the spawn call history contains exactly: `git status --porcelain --untracked-files=all`, `git rev-list HEAD --not --remotes=origin`, and `git diff-tree --no-commit-id --name-only -r <oid>`; no other git commands appear
+**THEN** the spawn call history contains exactly: `git status --porcelain -z --no-renames --untracked-files=all`, `git rev-list HEAD --not --remotes=origin`, and `git diff-tree --no-commit-id --name-only -r <oid>`; no other git commands appear
 
 ---
 
@@ -308,28 +308,29 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
-## Follow-up Limit: maxAttempts=1 (T-08)
+## Follow-up Limit: unpushable-path = exactly one (T-08)
 
-### TC-033: unpushable-path contract sets maxAttempts to 1
+### TC-033: unpushable-path follow-up is limited to exactly one attempt
 
 **Category**: unit
 **Priority**: must
-**Source**: tasks.md > T-08 Acceptance Criteria (unpushable-path を含む場合の上限が 1)
+**Source**: tasks.md > T-08 Acceptance Criteria (unpushable-path への follow-up がちょうど 1 回)
 
 **GIVEN** the implementer step has an `unpushable-path` contract in its follow-up contract list
-**WHEN** `buildStepContext` / `stepContextBuilder` resolves `outputVerification.maxAttempts`
-**THEN** the resolved value is `1`
-**And** the repair loop sends at most one follow-up turn for this contract
+**And** the violation persists after one follow-up turn
+**WHEN** the repair loop processes the `unpushable-path` violation
+**THEN** at most one follow-up turn is sent for this contract (no second attempt)
+**And** other follow-up contracts in the same step (e.g. `tasks-complete`) retain their default limit of `OUTPUT_FOLLOWUP_MAX_ATTEMPTS = 2`
 
-### TC-034: Contracts without unpushable-path retain the default maxAttempts of 2
+### TC-034: Contracts without unpushable-path retain the default behavior
 
 **Category**: unit
 **Priority**: should
-**Source**: tasks.md > T-08 Acceptance Criteria (`unpushable-path` を含まない契約集合では `maxAttempts` が従来どおり 2)
+**Source**: tasks.md > T-08 Acceptance Criteria (`unpushable-path` を含まない契約集合では挙動が従来と完全一致)
 
 **GIVEN** the implementer step has follow-up contracts that do NOT include `unpushable-path`
-**WHEN** `buildStepContext` resolves `outputVerification.maxAttempts`
-**THEN** the resolved value is `2` (the existing `OUTPUT_FOLLOWUP_MAX_ATTEMPTS` default)
+**WHEN** the repair loop resolves the follow-up attempt limit
+**THEN** follow-ups behave exactly as before this change (up to `OUTPUT_FOLLOWUP_MAX_ATTEMPTS = 2` attempts)
 
 ---
 
