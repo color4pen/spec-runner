@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-23T00:39:33.024Z",
+  "updatedAt": "2026-08-23T00:55:11.919Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -76,7 +76,9 @@
     "e1c8fc45ad8ebc10313cd7b5d4cf5965dee6ade5",
     "86f67de2dc23681481c07cea279adfb46a2bed10",
     "f32099c897cdefb09a89026fd13cbd90b56f696f",
-    "5eb07261aeeff3440c2ae4340e4cb6565ef3cb12"
+    "5eb07261aeeff3440c2ae4340e4cb6565ef3cb12",
+    "eb9da8160c05aed8849c3e4620e40f852f7c9be4",
+    "c56ee09fa633bf767991208c8736902ce7805d44"
   ],
   "touchedFiles": {
     "request-review": [
@@ -181,15 +183,17 @@
       "src/adapter/claude-code/context-observer.ts"
     ],
     "code-fixer": [
-      "src/core/step/executor.ts",
-      "src/core/port/agent-runner.ts"
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/shared/session-log-writer.ts",
+      "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
+      "tests/unit/core/step/commit-orchestrator-rollover.test.ts"
     ]
   },
   "reviewerStatuses": [
     {
       "name": "cross-boundary-invariants",
-      "status": "pending",
-      "approvedAtCommit": null,
+      "status": "approved",
+      "approvedAtCommit": "eb9da8160c05aed8849c3e4620e40f852f7c9be4",
       "activationPaths": [
         "src/core/pipeline/**",
         "src/core/step/**",
@@ -199,12 +203,13 @@
         "src/core/runtime/**",
         "src/core/verification/**"
       ],
-      "invalidatedByCommit": null
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/fresh-session-rollover/design.md:sha256:c4eb15decb5277f3a163ca4bdd8425fa8a03e77b11409eb870b6b795ef492656|specrunner/changes/fresh-session-rollover/request.md:sha256:8f8c68345f440ef9049b875dac42ab7b28050eb905c861dc569e291db881b2d6|specrunner/changes/fresh-session-rollover/spec.md:sha256:0abe09db6fe4a661a7348fd57d17a423f21e759664d3b5d936d41267cd63ca63|specrunner/changes/fresh-session-rollover/tasks.md:sha256:d942da5ad15207d5bdae166614cdbeac1338db5983e51d01df96d7c9b3f670b3|specrunner/changes/fresh-session-rollover/test-cases.md:sha256:9d0ac8cb8fb4cfb974bd1252792fd12baa95a87979f961b7844d939f70057d86"
     },
     {
       "name": "scale-tolerance",
       "status": "approved",
-      "approvedAtCommit": "bcc27d8b729e6f495d336c570fbd6b9648bf8646",
+      "approvedAtCommit": "eb9da8160c05aed8849c3e4620e40f852f7c9be4",
       "activationPaths": [
         "src/store/**",
         "src/adapter/github/**",
@@ -225,7 +230,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 56,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -236,10 +241,10 @@
       "bite-evidence": 1,
       "verification": 1,
       "code-review": 2,
-      "code-fixer": 1,
-      "cross-boundary-invariants": 2,
+      "code-fixer": 2,
+      "cross-boundary-invariants": 3,
       "scale-tolerance": 1,
-      "custom-reviewers": 2
+      "custom-reviewers": 3
     }
   }
 }
