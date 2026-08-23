@@ -26,6 +26,9 @@
         "bug-fix": { "model": "claude-sonnet-4-6" },
         "refactoring": { "model": "claude-sonnet-4-6" }
       }
+    },
+    "cross-boundary-invariants": {
+      "model": "gpt-5.6-sol"
     }
   },
   "archive": {

@@ -23,6 +23,7 @@
  * - postWorkPrompts turns do NOT receive outputSchema (tool detection is main-work-turn only).
  */
 import * as fs from "node:fs/promises";
+import * as os from "node:os";
 import * as path from "node:path";
 import { object, toJSONSchema } from "zod/v4-mini";
 import { buildAdditionalInstructions, buildResumeSection } from "../shared/prompt-builder.js";
@@ -280,6 +281,53 @@ export function buildDefaultCodexFactory(
     });
 }
 
+/**
+ * Scoped ChatGPT credential for one Codex run.
+ * codexHome is a fresh temporary directory containing only auth.json (0600).
+ */
+export interface ScopedCodexAuth {
+  codexHome: string;
+  cleanup: () => Promise<void>;
+}
+
+/**
+ * Materialize CODEX_AUTH_JSON into a temporary CODEX_HOME for the duration of a
+ * single Codex run (credential-containment: the auth file must not exist outside
+ * the Codex execution scope — non-Codex steps run with no credential file on disk).
+ *
+ * - authJson absent/empty → null (no ChatGPT auth configured).
+ * - openaiApiKey set → null (explicit API-key auth takes precedence; no file needed).
+ * - Otherwise: creates mkdtemp dir (0700) + auth.json (0600). Caller MUST invoke
+ *   cleanup() in a finally block; cleanup is idempotent (force remove).
+ * - If writing auth.json fails after mkdtemp, the temp dir is removed before the
+ *   error propagates — a failed materialization never leaves files behind.
+ *
+ * The raw CODEX_AUTH_JSON env value itself is in SECRET_DENYLIST, so stripSecrets
+ * removes it from every subprocess env — the credential reaches the codex binary
+ * only as this scoped file via CODEX_HOME.
+ */
+export async function materializeScopedCodexAuth(
+  authJson: string | undefined,
+  openaiApiKey: string | undefined,
+  deps: { _writeFileFn?: typeof fs.writeFile } = {},
+): Promise<ScopedCodexAuth | null> {
+  if (authJson === undefined || authJson === "" || openaiApiKey !== undefined) return null;
+  const writeFileFn = deps._writeFileFn ?? fs.writeFile;
+  const codexHome = await fs.mkdtemp(path.join(os.tmpdir(), "specrunner-codex-"));
+  try {
+    await writeFileFn(path.join(codexHome, "auth.json"), authJson, { mode: 0o600 });
+  } catch (err) {
+    await fs.rm(codexHome, { recursive: true, force: true });
+    throw err;
+  }
+  return {
+    codexHome,
+    cleanup: async () => {
+      await fs.rm(codexHome, { recursive: true, force: true });
+    },
+  };
+}
+
 export class CodexAgentRunner implements AgentRunner {
   private readonly injectedCodexFactory?: () => CodexInstance;
   private readonly loadSdkFn: CodexSdkLoader;
@@ -295,7 +343,13 @@ export class CodexAgentRunner implements AgentRunner {
     const sdk = this.injectedCodexFactory ? null : await this.loadSdkFn();
     const strippedEnv = stripSecrets(process.env as Record<string, string | undefined>) as Record<string, string>;
     const openaiApiKey = (process.env as Record<string, string | undefined>)["OPENAI_API_KEY"];
+    const codexAuthJson = (process.env as Record<string, string | undefined>)["CODEX_AUTH_JSON"];
     const codexFactory = this.injectedCodexFactory ?? buildDefaultCodexFactory(sdk!, strippedEnv, openaiApiKey);
+    // Scoped ChatGPT auth. Materialized inside the try below, immediately before
+    // codexFactory() — no await sits between materialization and the try/finally
+    // that guarantees cleanup, so no credential file can survive an exception on
+    // any path (prompt building, Codex execution, timeout, error).
+    let scopedAuth: ScopedCodexAuth | null = null;
     const cwd = ctx.cwd;
     const step = ctx.step;
     const state = ctx.state;
@@ -514,6 +568,12 @@ export class CodexAgentRunner implements AgentRunner {
     };
 
     try {
+      // Materialize scoped ChatGPT auth immediately before Codex construction —
+      // the finally below removes it on every exit path.
+      scopedAuth = await materializeScopedCodexAuth(codexAuthJson, openaiApiKey);
+      if (scopedAuth !== null) {
+        strippedEnv["CODEX_HOME"] = scopedAuth.codexHome;
+      }
       const codex = codexFactory();
 
       const startFreshThread = (): CodexThread => codex.startThread({
@@ -814,6 +874,7 @@ export class CodexAgentRunner implements AgentRunner {
     } finally {
       if (timeoutId !== undefined) clearTimeout(timeoutId);
       watchdog.clear();
+      if (scopedAuth !== null) await scopedAuth.cleanup();
     }
   }
 }
