@@ -239,6 +239,16 @@ export interface AgentSessionRollover {
    * Absent when the observer collected no observable data for that session.
    */
   contextMetrics?: AgentContextMetrics;
+  /**
+   * True when the discarded session's modelUsage could NOT be captured (throw-path
+   * rollover, or an exhaustion result carrying no usage). CommitOrchestrator then
+   * writes this session's usage.json entry WITHOUT the contextOnly marker
+   * (unmarked modelUsage: null = "usage unavailable"), so attestation reports the
+   * step's cost as unknown instead of silently under-counting a definite total.
+   * Absent when the discarded session's usage was accumulated into the final
+   * AgentRunResult.modelUsage (result-path rollover with usage present).
+   */
+  usageUnavailable?: true;
 }
 
 /**

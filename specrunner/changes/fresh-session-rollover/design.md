@@ -108,7 +108,7 @@ fresh session へ送る prompt は `baseFullPrompt`（step の task message + ar
 
 ### D7: context metrics は session 単位で分離し、rollover 観測は別チャネルで残す
 
-`ContextObserver` を `run()` に1つではなく **session ごと** に持つ（rollover 時に新しい observer へ差し替える）。最終 `AgentRunResult.contextMetrics` は最終 session の observer snapshot。捨てた session の snapshot は `markExhaustion()` 適用後に `AgentRunResult.sessionRollovers[]`（新規 optional field）へ積み、あわせて `step:rollover` domain event を emit する。`StepExecutor` はこの配列を success 結果 / `StepHalt` に素通しし、`CommitOrchestrator` が各要素を `usage.json` の `contextOnly: true` エントリとして append する。
+`ContextObserver` を `run()` に1つではなく **session ごと** に持つ（rollover 時に新しい observer へ差し替える）。最終 `AgentRunResult.contextMetrics` は最終 session の observer snapshot。捨てた session の snapshot は `markExhaustion()` 適用後に `AgentRunResult.sessionRollovers[]`（新規 optional field）へ積み、あわせて `step:rollover` domain event を emit する。`StepExecutor` はこの配列を success 結果 / `StepHalt` に素通しし、`CommitOrchestrator` が各要素を `usage.json` へ append する。破棄 session の usage が最終 result に合算済みの要素は `contextOnly: true`（純粋な context 観測）として、usage を取得できなかった要素（`usageUnavailable: true` — throw 経路、または usage を持たない exhaustion result）は marker なしの `modelUsage: null`（既存の「usage 取得不能」表現）として書き分ける。後者により attestation は当該 step のコストを unknown とし、走った session のコストを黙って除外した確定値を見せない（#1070 D7 の判別子の意味を維持）。
 
 - Rationale: 「複数 session の context metrics を1つに合成しない」が受け入れ条件。peak / `exhaustionAtTokens` は invocation 単位の意味論（`kernel/context-metrics.ts` の doc）を持つため、session をまたいで max を取ると意味が壊れる。捨てた session の `exhaustionAtTokens` は #1070 が貯めようとしている実測そのもので、rollover が成功すると usage.json から消えてしまうため、`contextOnly` エントリという **既存の永続化形式** に載せて残す（新しい観測機構は作らない）。event は実行中の可視化と log 保全、usage entry は post-mortem 用の durable な記録という役割分担。
 - Alternatives considered:
@@ -137,7 +137,9 @@ follow-up 系 turn（report_result retry / postWorkPrompts / outputVerification 
 - [provider の文言変更で `isContextExhaustionError()` が false を返す（fail-closed の false negative）] → Mitigation: rollover しない = 従来どおりの halt に degrade するだけ。allowlist の更新点が1箇所（context-observer.ts）に閉じているため追随コストが低い。
 - [rollover が「request が大きすぎる」問題を隠蔽する] → Mitigation: rollover 発生は `step:rollover` event と usage.json の `contextOnly` エントリとして必ず残る。budget 超過時は `CONTEXT_WINDOW_EXHAUSTED` の typed halt になり、hint で request 分割を促す。
 - [rollover budget を超えた halt では、未 commit の worktree 成果が依然として失われる] → Trade-off: checkpoint commit は明示的にスコープ外。本変更は「1回の rollover で救える範囲を救う」ことに限定し、成果保全の恒久策は別 issue に委ねる。
-- [複数 session ぶんの usage.json エントリが増える] → Mitigation: 追加分は `contextOnly: true` で、attestation / コスト集計は既に `contextOnly` エントリを skip する（`src/core/attestation/build-attestation.ts` 147）。集計結果は不変。
+- [複数 session ぶんの usage.json エントリが増える] → Mitigation: usage 合算済みの追加分は `contextOnly: true` で、attestation / コスト集計は既に `contextOnly` エントリを skip する（`src/core/attestation/build-attestation.ts` 147）。集計結果は不変。usage 取得不能な rollover 分のみ意図的に unmarked `modelUsage: null` とし、step コストを unknown に倒す（過少計上を確定値に見せない）。
+- [rollover の適用範囲] → rollover は `implementer` step 限定（`ClaudeCodeRunner.run()` 内で step 名により budget を 0 に落とす）。rollover continuation prompt は implementer 専用の tasks.md 継続指示であり、reviewer 等へ広げるには role 中立な continuation contract の設計が先。
+- [exhaustion throw と resume→fresh fallback の優先順位] → `runMainWorkTurn` の catch は exhaustion throw を fallback で消費せず re-throw し、rollover ループの catch に到達させる。`markExhaustion()` へは分類に使った cause チェーン連結テキストを渡す（outer message のみでは再分類が失敗し `exhaustionAtTokens` が欠落する）。
 - [step timeout 未設定（default null）の環境では rollover により総実時間が伸びる] → Mitigation: 回数上限のみで bound（D4）。timeout 設定時は timer を共有するため従来の上限が維持される（D6）。
 
 ## Open Questions

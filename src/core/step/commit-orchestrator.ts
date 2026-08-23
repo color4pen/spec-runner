@@ -263,21 +263,25 @@ export class CommitOrchestrator {
     const { verdict, persistToolResult } = completion;
 
     // usage (appendInvocation — best-effort)
-    // fresh-session-rollover: append rollover contextOnly entries BEFORE the main success entry.
-    // Each rollover entry has modelUsage: null and contextOnly: true (aggregation skips them).
+    // fresh-session-rollover: append rollover entries BEFORE the main success entry.
+    // A rollover whose discarded usage was accumulated into the final result is a pure
+    // context observation (contextOnly: true — aggregation skips it). A rollover whose
+    // usage could not be captured (usageUnavailable) is written as an unmarked
+    // modelUsage: null = "usage unavailable", so attestation reports the step cost as
+    // unknown instead of a definite-looking undercount.
     if (sessionRollovers && sessionRollovers.length > 0 && deps.cwd && deps.slug) {
       const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
       for (const rollover of sessionRollovers) {
-        if (rollover.contextMetrics === undefined) continue;
+        if (rollover.contextMetrics === undefined && rollover.usageUnavailable !== true) continue;
         try {
           await appendInvocation(usageAbsPath, {
             command: "job",
             timestamp: completedAt,
             modelUsage: null,
-            contextOnly: true,
+            ...(rollover.usageUnavailable === true ? {} : { contextOnly: true as const }),
             jobId: state.jobId,
             stepName: step.name,
-            contextMetrics: rollover.contextMetrics,
+            ...(rollover.contextMetrics !== undefined ? { contextMetrics: rollover.contextMetrics } : {}),
           });
         } catch {
           // Best-effort: rollover usage append failure must not block step completion
@@ -582,22 +586,23 @@ export class CommitOrchestrator {
 
     await store.persist(s);
 
-    // fresh-session-rollover: best-effort persist of rollover contextOnly entries on halt path.
-    // Append one entry per rollover session that observed context metrics, BEFORE the main entry.
+    // fresh-session-rollover: best-effort persist of rollover entries on halt path.
+    // Append one entry per rollover session BEFORE the main entry. usageUnavailable
+    // rollovers are written as unmarked "usage unavailable" nulls (see commitSuccess).
     if (halt.sessionRollovers && halt.sessionRollovers.length > 0 && deps?.cwd && deps?.slug) {
       const timestamp = halt.recordOpts?.completedAt ?? new Date().toISOString();
       const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
       for (const rollover of halt.sessionRollovers) {
-        if (rollover.contextMetrics === undefined) continue;
+        if (rollover.contextMetrics === undefined && rollover.usageUnavailable !== true) continue;
         try {
           await appendInvocation(usageAbsPath, {
             command: "job",
             timestamp,
             modelUsage: null,
-            contextOnly: true,
+            ...(rollover.usageUnavailable === true ? {} : { contextOnly: true as const }),
             jobId: state.jobId,
             stepName: step.name,
-            contextMetrics: rollover.contextMetrics,
+            ...(rollover.contextMetrics !== undefined ? { contextMetrics: rollover.contextMetrics } : {}),
           });
         } catch {
           // Best-effort: never interfere with halt FSM transition or rethrow
@@ -790,16 +795,16 @@ export class CommitOrchestrator {
         const timestamp = halt.recordOpts?.completedAt ?? new Date().toISOString();
         const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
         for (const rollover of halt.sessionRollovers) {
-          if (rollover.contextMetrics === undefined) continue;
+          if (rollover.contextMetrics === undefined && rollover.usageUnavailable !== true) continue;
           try {
             await appendInvocation(usageAbsPath, {
               command: "job",
               timestamp,
               modelUsage: null,
-              contextOnly: true,
+              ...(rollover.usageUnavailable === true ? {} : { contextOnly: true as const }),
               jobId: state.jobId,
               stepName: step.name,
-              contextMetrics: rollover.contextMetrics,
+              ...(rollover.contextMetrics !== undefined ? { contextMetrics: rollover.contextMetrics } : {}),
             });
           } catch {
             // Best-effort: never interfere with parallel round commit result

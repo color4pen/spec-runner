@@ -28,7 +28,9 @@ import {
   ClaudeCodeRunner,
   CONTEXT_WINDOW_EXHAUSTED_CODE,
 } from "../../../../src/adapter/claude-code/agent-runner.js";
-import type { QueryFn } from "../../../../src/adapter/claude-code/agent-runner.js";
+import type { QueryFn, CreateMcpServerFn } from "../../../../src/adapter/claude-code/agent-runner.js";
+import type { ReportToolSpec } from "../../../../src/core/port/report-result.js";
+import { parseBaseReportInput } from "../../../../src/core/port/report-result.js";
 import type { AgentRunContext, AgentRunResult } from "../../../../src/core/port/agent-runner.js";
 import type { JobState } from "../../../../src/state/schema.js";
 import type { AgentStep } from "../../../../src/core/step/types.js";
@@ -399,6 +401,47 @@ describe("TC-005: 枯渇した session の report tool result は fresh session 
     // toolResult must be null since no report_result tool was called
     expect(result.toolResult).toBeNull();
     void capturedToolResult; // suppress unused var warning
+  });
+
+  it("1 回目 session で捕捉した report tool result が rollover で破棄され、2 回目未報告なら toolResult は null", async () => {
+    // Capture the report_result handler registered via createSdkMcpServer.
+    let handler: ((args: unknown) => Promise<unknown>) | null = null;
+    const mcpFn = ((opts: unknown) => {
+      const o = opts as { name: string; tools: Array<{ name: string; handler: (args: unknown) => Promise<unknown> }> };
+      if (o.tools.length > 0) handler = o.tools[0]!.handler;
+      return { type: "sdk" as const, name: o.name, instance: {} as unknown };
+    }) as unknown as CreateMcpServerFn;
+
+    const reportTool: ReportToolSpec = {
+      name: "report_result",
+      description: "Report completion of this step.",
+      zodSchema: {},
+      parseInput: parseBaseReportInput,
+    };
+
+    let callCount = 0;
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        // 1st session actually reports (stale result), THEN exhausts.
+        await handler!({ ok: false, summary: "stale report from exhausted session" });
+        yield makeExhaustionResult("sess-1");
+      } else {
+        // 2nd session and any follow-up turns never call the tool.
+        yield makeSuccessResult(`sess-${callCount}`);
+      }
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn, _createMcpServerFn: mcpFn });
+    const ctx = makeCtx(tempDir, {
+      policy: { reportTool },
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(callCount).toBeGreaterThanOrEqual(2);
+    // The stale ok:false report from the exhausted session must NOT survive the rollover.
+    expect(result.toolResult).toBeNull();
   });
 });
 
@@ -1267,5 +1310,179 @@ describe("TC-027: rollover 後も 1 回目セッションの touchedFileMessages
     expect(result.touchedFiles).toContain("src/session2-file.ts");
     // contextMetrics reflects only the 2nd session (not the 1st session's 180000)
     expect(result.contextMetrics?.peakActiveContextTokens).toBe(50000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-038: resumeSessionId があっても throw 型 exhaustion は rollover に到達する
+// (#1076 F1: resume→fresh fallback が exhaustion throw を消費してはならない)
+// ---------------------------------------------------------------------------
+
+describe("TC-038: resumeSessionId があっても throw 型 exhaustion は rollover に到達する", () => {
+  it("resume 中の exhaustion throw → resume fallback ではなく rollover が発動し success になる", async () => {
+    let callCount = 0;
+    const promptsReceived: string[] = [];
+    const optionsReceived: Array<Record<string, unknown>> = [];
+
+    const queryFn: QueryFn = async function* (params: { prompt: string; options?: Record<string, unknown> }) {
+      callCount++;
+      promptsReceived.push(params.prompt);
+      optionsReceived.push(params.options ?? {});
+      if (callCount === 1) {
+        throw new Error("Claude Code SDK query failed", {
+          cause: new Error("Prompt is too long for this model's context window"),
+        });
+      }
+      yield makeSuccessResult("sess-after-rollover");
+    } as unknown as QueryFn;
+
+    const emit = vi.fn();
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      session: { resumeSessionId: "sess-resume-target" },
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+      emit,
+    });
+    const result = await runner.run(ctx);
+
+    // Rollover path (not resume fallback): exactly 2 queries, rollover event emitted,
+    // rollover record present, and the 2nd prompt carries the rollover continuation.
+    expect(callCount).toBe(2);
+    expect(result.completionReason).toBe("success");
+    expect(emit).toHaveBeenCalledWith("step:rollover", expect.objectContaining({ attempt: 1 }));
+    expect(result.sessionRollovers).toHaveLength(1);
+    expect(promptsReceived[1]).toContain("rollover-context");
+    // Fresh session must not resume the exhausted session.
+    expect(optionsReceived[1]).not.toHaveProperty("resume");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-039: implementer 以外の step では rollover しない (#1076 F2: #1058 スコープ)
+// ---------------------------------------------------------------------------
+
+describe("TC-039: implementer 以外の step では rollover しない", () => {
+  it("code-review step の exhaustion result は rollover せず CONTEXT_WINDOW_EXHAUSTED を返す", async () => {
+    let callCount = 0;
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      yield makeExhaustionResult("sess-review");
+    } as unknown as QueryFn;
+
+    const emit = vi.fn();
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      step: makeAgentStep({ name: "code-review" }),
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+      emit,
+    });
+    const result = await runner.run(ctx);
+
+    expect(callCount).toBe(1);
+    expect(result.completionReason).toBe("error");
+    expect((result.error as Error & { code?: string })?.code).toBe(CONTEXT_WINDOW_EXHAUSTED_CODE);
+    expect(emit).not.toHaveBeenCalledWith("step:rollover", expect.anything());
+    expect(result.sessionRollovers).toBeUndefined();
+  });
+
+  it("implementer step は同一 config で rollover する (対照)", async () => {
+    let callCount = 0;
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        yield makeExhaustionResult("sess-1");
+      } else {
+        yield makeSuccessResult("sess-2");
+      }
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(callCount).toBe(2);
+    expect(result.completionReason).toBe("success");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-040: cause chain 判定の throw 型 rollover でも exhaustionAtTokens が記録される
+// (#1076 F3: markExhaustion には分類に使った cause chain text を渡す)
+// ---------------------------------------------------------------------------
+
+describe("TC-040: cause chain 判定の throw 型 rollover でも exhaustionAtTokens が記録される", () => {
+  it("outer message が非 exhaustion でも sessionRollovers[0].contextMetrics.exhaustionAtTokens が入る", async () => {
+    let callCount = 0;
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        // Observe usage first so the observer has a lastActiveContextTokens value.
+        yield makeAssistantMessage(150000);
+        throw new Error("query failed", {
+          cause: new Error("Prompt is too long for this model's context window"),
+        });
+      }
+      yield makeSuccessResult("sess-2");
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.sessionRollovers).toHaveLength(1);
+    const rollover = result.sessionRollovers![0]!;
+    expect(rollover.contextMetrics?.exhaustionAtTokens).toBe(150000);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-041: usage を取得できない rollover は usageUnavailable が立つ (#1076 F4)
+// ---------------------------------------------------------------------------
+
+describe("TC-041: usage を取得できない rollover は usageUnavailable が立つ", () => {
+  it("throw 型 rollover → usageUnavailable: true", async () => {
+    let callCount = 0;
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        throw new Error("Prompt is too long for this model's context window");
+      }
+      yield makeSuccessResult("sess-2");
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.sessionRollovers![0]!.usageUnavailable).toBe(true);
+  });
+
+  it("result 型 rollover (modelUsage あり) → usageUnavailable は付かない", async () => {
+    let callCount = 0;
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        yield makeExhaustionResult("sess-1"); // carries modelUsage
+      } else {
+        yield makeSuccessResult("sess-2");
+      }
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.sessionRollovers![0]!.usageUnavailable).toBeUndefined();
   });
 });

@@ -50,10 +50,10 @@ Result section MUST appear at the very end as a YAML code block:
 
 ## Summary
 
-- **Total**: 35 cases
-- **Automated** (unit/integration): 33
+- **Total**: 42 cases
+- **Automated** (unit/integration): 40
 - **Manual**: 0
-- **Priority**: must: 27, should: 7, could: 1
+- **Priority**: must: 34, should: 7, could: 1
 
 ---
 
@@ -435,6 +435,82 @@ Result section MUST appear at the very end as a YAML code block:
 **THEN** `AgentRunResult.error.code` は `"CONTEXT_WINDOW_EXHAUSTED"` である
 **AND** `AgentRunResult.error.message` に元の throw message（例: `"Claude Code SDK query failed"`）が含まれる（現行どおり保全）
 **AND** `AgentRunResult.error` の `cause` チェーンに元の cause が保持されている（message の劣化なし）
+
+---
+
+## PR #1076 レビュー指摘対応 (operator-apply)
+
+### TC-036: throw 経路での exhaustion が rollover ループへ正しくルーティングされ成功する
+
+**Category**: unit
+**Priority**: must
+**Source**: PR #1076 escalation 裁定 (throw 経路 rollover)
+
+**GIVEN** rollover budget が 1 で、1 回目の query が exhaustion 文字列を cause に持つ Error を throw し、2 回目が success result を返す
+**WHEN** `ClaudeCodeRunner.run()` が完了する
+**THEN** query は 2 回呼ばれ `completionReason` は `"success"`、`sessionRollovers` は 1 件である
+
+### TC-037: throw 経路での exhaustion が budget 枯渇時に CONTEXT_WINDOW_EXHAUSTED を返す
+
+**Category**: unit
+**Priority**: must
+**Source**: PR #1076 escalation 裁定 (throw 経路 rollover)
+
+**GIVEN** rollover budget を使い切った状態でさらに exhaustion throw が発生する
+**WHEN** `ClaudeCodeRunner.run()` が完了する
+**THEN** `AgentRunResult.error.code` は `"CONTEXT_WINDOW_EXHAUSTED"` で、元 throw が `cause` に保全される
+
+### TC-038: resumeSessionId があっても throw 型 exhaustion は rollover に到達する
+
+**Category**: unit
+**Priority**: must
+**Source**: PR #1076 review F1
+
+**GIVEN** `ctx.session.resumeSessionId` が設定され、1 回目の query が exhaustion 文字列を cause に持つ Error を throw する
+**WHEN** `ClaudeCodeRunner.run()` が完了する
+**THEN** resume→fresh fallback ではなく rollover が発動し（`step:rollover` emit、`sessionRollovers` 1 件）、2 回目の query options に `resume` が無い
+
+### TC-039: implementer 以外の step では rollover しない
+
+**Category**: unit
+**Priority**: must
+**Source**: PR #1076 review F2
+
+**GIVEN** step 名 `code-review` と `contextRollover: { maxRollovers: 1 }` の config で query が exhaustion の error result を返す
+**WHEN** `ClaudeCodeRunner.run()` が完了する
+**THEN** query は 1 回のみ、`step:rollover` は emit されず、`error.code` は `"CONTEXT_WINDOW_EXHAUSTED"` である
+
+### TC-040: cause chain 判定の throw 型 rollover でも exhaustionAtTokens が記録される
+
+**Category**: unit
+**Priority**: must
+**Source**: PR #1076 review F3
+
+**GIVEN** 1 回目の session が usage 付き assistant message（active context 150000）を観測後、outer message 非 exhaustion / cause のみ exhaustion の Error を throw する
+**WHEN** rollover が発動して success する
+**THEN** `sessionRollovers[0].contextMetrics.exhaustionAtTokens` が 150000 である
+
+### TC-041: usage を取得できない rollover は usageUnavailable が立つ
+
+**Category**: unit
+**Priority**: must
+**Source**: PR #1076 review F4
+
+**GIVEN** throw 型 rollover（usage 取得不能）と、modelUsage 付き exhaustion result による result 型 rollover
+**WHEN** それぞれ `ClaudeCodeRunner.run()` が完了する
+**THEN** 前者の rollover 記録は `usageUnavailable: true` を持ち、後者は持たない
+
+### TC-042: usageUnavailable rollover は unmarked "usage unavailable" entry として記録される
+
+**Category**: unit
+**Priority**: must
+**Source**: PR #1076 review F4
+
+**GIVEN** `usageUnavailable: true` の rollover を含む success 結果
+**WHEN** `CommitOrchestrator` が当該 step の成功を commit する
+**THEN** rollover 分エントリは `modelUsage: null` かつ `contextOnly` を持たず（contextMetrics 無しでも skip されず）追記される
+
+（TC-005 は「1 回目 session が実際に report tool を呼んでから枯渇する」ケースを追加して強化済み — 捕捉済み report result の破棄を実挙動で検証する）
 
 ---
 

@@ -848,7 +848,12 @@ export class ClaudeCodeRunner implements AgentRunner {
     // Resolve transient retry config (T-04).
     const { maxRetries, baseDelayMs } = resolveTransientRetryConfig(ctx.config);
     // Resolve context rollover config (fresh-session-rollover T-04).
-    const { maxRollovers } = resolveContextRolloverConfig(ctx.config);
+    // #1058 scope: rollover applies to the implementer step only — the rollover
+    // continuation prompt is implementer-specific (tasks.md 継続指示). Other agent
+    // steps keep maxRollovers = 0: single session, typed exhaustion halt on exhaustion.
+    // Widening to other roles requires a role-neutral continuation contract first.
+    const { maxRollovers: configuredMaxRollovers } = resolveContextRolloverConfig(ctx.config);
+    const maxRollovers = step.name === "implementer" ? configuredMaxRollovers : 0;
     // Tracks the number of transient retries actually taken in this run().
     let transientRetryAttempts = 0;
     // Tracks whether the resume→new-session fallback has already been attempted.
@@ -891,6 +896,17 @@ export class ClaudeCodeRunner implements AgentRunner {
         // Do not apply resume fallback when the abort controller has fired —
         // that path is handled by the outer catch as a timeout.
         if (abortController.signal.aborted) {
+          throw innerErr;
+        }
+        // fresh-session-rollover: a context-exhaustion throw must reach the rollover
+        // loop's catch. The resume→fresh fallback must never consume it — doing so
+        // would bypass the rollover budget, step:rollover, sessionRollovers, and the
+        // observer / captured-tool-result reset, and would retry the same oversized
+        // prompt in a fresh session without the rollover continuation contract.
+        const innerCauseText = collectCauseText(
+          innerErr instanceof Error ? innerErr : new Error(String(innerErr)),
+        );
+        if (innerCauseText && isContextExhaustionError(innerCauseText)) {
           throw innerErr;
         }
         // Transient error result throws should propagate directly to
@@ -1037,8 +1053,11 @@ export class ClaudeCodeRunner implements AgentRunner {
 
             if (throwIterIsExhaustion) {
               // Context exhaustion delivered as a throw — route through rollover logic.
+              // markExhaustion must receive the same text the classification ran on
+              // (cause-chain text): passing only the outer error's message would fail
+              // internal re-classification and drop exhaustionAtTokens.
               const errMsg = iterErr instanceof Error ? iterErr.message : String(iterErr);
-              contextObserver.markExhaustion(errMsg);
+              contextObserver.markExhaustion(causeText);
 
               const rolloverOrdinal = rolloverAttempt + 1; // 1-based
 
@@ -1048,13 +1067,16 @@ export class ClaudeCodeRunner implements AgentRunner {
                 const capturedSessionId = extractedSessionId;
                 const sessionSnapshot = contextObserver.snapshot();
 
-                // Record the discarded session's observation (no modelUsage in throw path).
+                // Record the discarded session's observation. The throw path carries no
+                // modelUsage — mark it so the entry is persisted as "usage unavailable"
+                // (unmarked null) rather than a pure context observation.
                 sessionRollovers.push({
                   attempt: rolloverOrdinal,
                   reason: "context-exhaustion",
                   ...(capturedSessionId !== undefined ? { sessionId: capturedSessionId } : {}),
                   errorMessage: truncateText(errMsg),
                   ...(sessionSnapshot !== undefined ? { contextMetrics: sessionSnapshot } : {}),
+                  usageUnavailable: true,
                 });
 
                 // 2. Reset session state for fresh session.
@@ -1145,7 +1167,12 @@ export class ClaudeCodeRunner implements AgentRunner {
               const capturedSessionId = extractedSessionId;
               const sessionSnapshot = contextObserver.snapshot();
 
-              // Record the discarded session's observation.
+              // Record the discarded session's observation. When the exhaustion result
+              // carries no usage, mark usageUnavailable so the entry is persisted as
+              // "usage unavailable" (unmarked null) rather than a pure context observation.
+              const discardedUsage = (errorResult as Record<string, unknown>)["modelUsage"];
+              const hasDiscardedUsage =
+                !!discardedUsage && typeof discardedUsage === "object" && Object.keys(discardedUsage as object).length > 0;
               const errorMsg = truncateText(errorJoined);
               sessionRollovers.push({
                 attempt: rolloverOrdinal,
@@ -1153,11 +1180,11 @@ export class ClaudeCodeRunner implements AgentRunner {
                 ...(capturedSessionId !== undefined ? { sessionId: capturedSessionId } : {}),
                 errorMessage: errorMsg,
                 ...(sessionSnapshot !== undefined ? { contextMetrics: sessionSnapshot } : {}),
+                ...(hasDiscardedUsage ? {} : { usageUnavailable: true as const }),
               });
 
               // Accumulate discarded session's modelUsage if present.
-              const discardedUsage = (errorResult as Record<string, unknown>)["modelUsage"];
-              if (discardedUsage && typeof discardedUsage === "object" && Object.keys(discardedUsage as object).length > 0) {
+              if (hasDiscardedUsage) {
                 const summed: Record<string, ModelUsage> = { ...(extractedModelUsage ?? {}) };
                 for (const [mdl, usage] of Object.entries(discardedUsage as Record<string, ModelUsage>)) {
                   const prev = summed[mdl];

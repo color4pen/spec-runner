@@ -1161,3 +1161,96 @@ describe("TC-033: commitRound halt メンバーが sessionRollovers の contextO
     expect(store.persist).toHaveBeenCalledTimes(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-042: usageUnavailable rollover は unmarked "usage unavailable" entry になる (#1076 F4)
+// ---------------------------------------------------------------------------
+
+describe("TC-042: usageUnavailable rollover は unmarked null entry として記録される", () => {
+  it("usageUnavailable: true + contextMetrics あり → contextOnly なしの modelUsage: null entry", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("implementer");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const rolloverContextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      model: "claude-sonnet-4-5",
+      contextWindowTokens: 200000,
+      peakActiveContextTokens: 195000,
+      exhaustionAtTokens: 195000,
+    };
+
+    const sessionRollovers: AgentSessionRollover[] = [
+      { ...makeRollover(1, rolloverContextMetrics), usageUnavailable: true },
+    ];
+
+    const result = makeSuccessResult({ sessionRollovers });
+
+    await orchestrator.commitSuccess(step, state, deps, result);
+
+    const usageFile = await readUsageFile(usagePath);
+    const rolloverInv = usageFile.commandInvocations[0]!;
+    // Unmarked null = "usage unavailable" → attestation leaves the step cost unknown.
+    expect(rolloverInv.modelUsage).toBeNull();
+    expect(rolloverInv.contextOnly).toBeUndefined();
+    expect(rolloverInv.contextMetrics).toBeDefined();
+  });
+
+  it("usageUnavailable: true + contextMetrics なし → skip されず unmarked null entry が残る", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("implementer");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const sessionRollovers: AgentSessionRollover[] = [
+      { ...makeRollover(1), usageUnavailable: true },
+    ];
+
+    const result = makeSuccessResult({ sessionRollovers });
+
+    await orchestrator.commitSuccess(step, state, deps, result);
+
+    const usageFile = await readUsageFile(usagePath);
+    const rolloverInv = usageFile.commandInvocations[0]!;
+    expect(rolloverInv.modelUsage).toBeNull();
+    expect(rolloverInv.contextOnly).toBeUndefined();
+    expect(rolloverInv.contextMetrics).toBeUndefined();
+  });
+
+  it("usageUnavailable なし (usage 合算済み rollover) は従来どおり contextOnly entry", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("implementer");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const rolloverContextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      model: "claude-sonnet-4-5",
+      contextWindowTokens: 200000,
+      peakActiveContextTokens: 190000,
+    };
+
+    const sessionRollovers: AgentSessionRollover[] = [
+      makeRollover(1, rolloverContextMetrics),
+    ];
+
+    const result = makeSuccessResult({ sessionRollovers });
+
+    await orchestrator.commitSuccess(step, state, deps, result);
+
+    const usageFile = await readUsageFile(usagePath);
+    const rolloverInv = usageFile.commandInvocations[0]!;
+    expect(rolloverInv.modelUsage).toBeNull();
+    expect(rolloverInv.contextOnly).toBe(true);
+  });
+});

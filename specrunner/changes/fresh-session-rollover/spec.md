@@ -24,6 +24,8 @@ Claude Code adapter は、main work の SDK error result（`subtype !== "success
 
 SDK が result event ではなく例外を throw する経路でも、adapter は同じ `isContextExhaustionError()` による判定を行わなければならない（MUST）。判定対象のテキストは throw された Error の `message` と、`cause` チェーンを辿って得られる message の全体とする（SHALL）。
 
+exhaustion と判定される throw は、既存の resume→fresh session fallback に消費されてはならず（MUST NOT）、rollover 判定（budget・observation 記録・continuation prompt）へ到達しなければならない（MUST）。`ContextObserver.markExhaustion()` へは、判定に使用したテキスト（cause チェーンを連結したもの）を渡さなければならない（MUST）— outer Error の `message` だけを渡すと内部再分類が失敗し `exhaustionAtTokens` が欠落する。
+
 #### Scenario: ラップされた cause に exhaustion 文字列がある
 
 **Given** claude-code runner の main work query が `new Error("query failed", { cause: new Error("Prompt is too long") })` を throw する
@@ -31,6 +33,22 @@ SDK が result event ではなく例外を throw する経路でも、adapter �
 **When** `ClaudeCodeRunner.run()` が完了する
 **Then** `AgentRunResult.completionReason` は `"error"` である
 **And** `AgentRunResult.error.code` は `"CONTEXT_WINDOW_EXHAUSTED"` である
+
+#### Scenario: resume 中の exhaustion throw は resume fallback ではなく rollover に到達する
+
+**Given** `ctx.session.resumeSessionId` が設定されている
+**And** rollover budget が 1 である
+**And** main work query の 1 回目が exhaustion 文字列を cause に持つ Error を throw し、2 回目が success result を返す
+**When** `ClaudeCodeRunner.run()` が完了する
+**Then** `step:rollover` event が emit され `sessionRollovers` が 1 件記録される
+**And** 2 回目の query options に `resume` キーが存在しない
+
+#### Scenario: cause chain 判定の throw でも exhaustionAtTokens が記録される
+
+**Given** rollover budget が 1 である
+**And** 1 回目の session が usage 付き assistant message を観測した後、outer message が非 exhaustion で cause のみ exhaustion 文字列を持つ Error を throw する
+**When** rollover が発動して最終的に success する
+**Then** `sessionRollovers[0].contextMetrics.exhaustionAtTokens` に枯渇時点の active context 値が記録されている
 
 ### Requirement: context exhaustion 時に同一 worktree で fresh session を開始する
 
@@ -78,6 +96,18 @@ rollover を経て main work が success した場合、`AgentRunResult.completi
 **When** `StepExecutor` が当該 agent step を実行する
 **Then** step の結果は success として記録される
 **And** `finalizeStepArtifacts` は 1 回だけ呼ばれる
+
+### Requirement: rollover は implementer step に限定される
+
+fresh session rollover は step 名が `implementer` の agent step でのみ発動しなければならない（MUST）。他の agent step では設定値に関わらず rollover budget を 0 として扱い、context exhaustion は単一 session の typed halt（`CONTEXT_WINDOW_EXHAUSTED`）になる（MUST）。rollover continuation prompt は implementer 専用（tasks.md 継続指示）であり、他 role へ広げる場合は role 中立な continuation contract の設計を先に行う（#1058 スコープ外）。
+
+#### Scenario: implementer 以外の step は rollover しない
+
+**Given** step 名が `code-review` の agent step と `contextRollover: { maxRollovers: 1 }` の config
+**And** main work query が exhaustion の error result を返す
+**When** `ClaudeCodeRunner.run()` が完了する
+**Then** query は 1 回しか呼ばれず `step:rollover` event は emit されない
+**And** `AgentRunResult.error.code` は `"CONTEXT_WINDOW_EXHAUSTED"` である
 
 ### Requirement: rollover 回数は bounded で、超過時は typed halt になる
 
@@ -155,6 +185,14 @@ rollover が発生した `run()` において、`AgentRunResult.contextMetrics` 
 **Given** agent step の実行結果が context metrics 付きの `sessionRollovers` を 1 件含む
 **When** `CommitOrchestrator` が当該 step の成功を commit する
 **Then** `usage.json` に `contextOnly: true` かつ当該 rollover の context metrics を持つエントリが追記される
+
+#### Scenario: usage を取得できなかった rollover は「usage 不明」として残る
+
+破棄した session の `modelUsage` を取得できなかった rollover（throw 経路、または usage を持たない exhaustion result）は `usageUnavailable: true` として記録され（MUST）、`CommitOrchestrator` はそのエントリを `contextOnly` marker なしの `modelUsage: null`（= 既存の「usage 取得不能」表現）として `usage.json` に追記しなければならない（MUST）。これにより attestation は当該 step のコストを unknown として扱い、実際に走った session のコストを黙って除外した確定値を見せない。
+
+**Given** throw 経路の rollover 1 件（`usageUnavailable: true`）を含む success 結果
+**When** `CommitOrchestrator` が当該 step の成功を commit する
+**Then** `usage.json` の rollover 分エントリは `modelUsage: null` かつ `contextOnly` を持たない
 
 ### Requirement: rollover 上限は config で解決される
 
