@@ -427,7 +427,11 @@ export class ParallelReviewRound {
                 deps.slug,
                 infra,
                 // D4 backstop: pass egress params so LocalRuntime can verify publish range.
-                { synthesizedCommits: state.synthesizedCommits ?? [] },
+                // Also forward pushCapability for the Layer 2 backstop in commitScopedPaths.
+                {
+                  synthesizedCommits: state.synthesizedCommits ?? [],
+                  pushCapability: deps.pushCapability ?? null,
+                },
               );
             } catch (err) {
               commitArtifactError = err;

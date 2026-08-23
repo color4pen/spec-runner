@@ -130,14 +130,27 @@ export async function buildStepContext(
     if (followUpContracts.length > 0) {
       const strategy = deps.runtimeStrategy;
       const branch = state.branch ?? null;
-      // Use maxAttempts = 1 when unpushable-path is in the follow-up contracts:
-      // exactly one follow-up is sent for this contract (spec §4).
-      const hasUnpushablePath = followUpContracts.some((c) => c.kind === "unpushable-path");
-      const maxAttempts = hasUnpushablePath ? 1 : OUTPUT_FOLLOWUP_MAX_ATTEMPTS;
+      // maxAttempts stays at the default OUTPUT_FOLLOWUP_MAX_ATTEMPTS (2) for ALL contracts,
+      // including unpushable-path. This preserves the maximum 2-attempt repair window for
+      // tasks-complete violations even when an unpushable-path contract is also present.
+      //
+      // The one-follow-up limit for unpushable-path is enforced in buildPrompt: on attempt >= 1,
+      // unpushable-path violations are filtered out of the prompt. Tasks-complete violations
+      // continue to appear on both attempt 0 and attempt 1 (up to 2 repair opportunities).
       outputVerification = {
         detect: () => strategy.validateStepOutputs(followUpContracts, cwd, branch),
-        maxAttempts,
-        buildPrompt: (violations, _attempt) => buildOutputFollowUpPrompt(violations),
+        maxAttempts: OUTPUT_FOLLOWUP_MAX_ATTEMPTS,
+        buildPrompt: (violations, attempt) => {
+          // Attempt 0: show all violations (including unpushable-path) — first and only
+          // follow-up for unpushable-path.
+          // Attempt >= 1: filter unpushable-path violations out of the prompt so the agent
+          // only sees remaining tasks-complete / other contract violations. This limits
+          // unpushable-path to exactly 1 follow-up while tasks-complete retains up to 2.
+          const effectiveViolations = attempt > 0
+            ? violations.filter((v) => v.kind !== "unpushable-path")
+            : violations;
+          return buildOutputFollowUpPrompt(effectiveViolations);
+        },
       };
     }
   }

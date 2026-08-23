@@ -20,6 +20,7 @@ import {
   ERROR_CODES,
 } from "../../errors.js";
 import { collectPublishablePaths, matchUnpushablePaths } from "../../git/push-capability.js";
+import type { PushCapability } from "../../git/push-capability.js";
 import {
   resolveStagingExcludePatterns,
   resolveMaxStagedFiles,
@@ -996,8 +997,25 @@ export async function commitScopedPaths(
   commitMessage: string,
   infra: CommitPushInfra,
   egress?: { synthesizedCommits: readonly string[] },
+  pushCapability?: PushCapability | null,
 ): Promise<void> {
   if (stagePaths.length === 0) return;
+
+  // ── Layer 2 backstop: unpushable-path check ──────────────────────────────────
+  // Runs before any staging, commit, or push. `stagePaths` are exactly the paths
+  // this function will commit and push, so checking them directly against the
+  // declared patterns is equivalent to collectPublishablePaths for this call site.
+  // Guard: skip entirely when pushCapability is absent or has no patterns.
+  if (pushCapability && pushCapability.patterns.length > 0) {
+    const matchedPaths = matchUnpushablePaths(stagePaths, pushCapability);
+    if (matchedPaths.length > 0) {
+      throw unpushablePathBlockedError(
+        matchedPaths,
+        pushCapability.patterns,
+        pushCapability.source,
+      );
+    }
+  }
 
   // Stage only the declared paths (pathspec-limited; never `git add -A` without pathspec).
   // Failure (spawn error or exit≠0) throws typed error → halt path.

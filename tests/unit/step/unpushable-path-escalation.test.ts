@@ -39,7 +39,7 @@ import type { RuntimeStrategy } from "../../../src/core/port/runtime-strategy.js
 import type { OutputCheckResult, OutputContract } from "../../../src/core/port/output-contract.js";
 import type { SpawnFn } from "../../../src/util/git-exec.js";
 import type { SpawnFn as PipelineSpawnFn } from "../../../src/util/spawn.js";
-import { ERROR_CODES } from "../../../src/errors.js";
+import { ERROR_CODES, UnpushablePathBlockedError, unpushablePathBlockedError } from "../../../src/errors.js";
 import { commitAndPush } from "../../../src/core/step/commit-push.js";
 import type { CommitPushInfra } from "../../../src/core/step/commit-push.js";
 import { makeUnpushablePathHalt } from "../../../src/core/step/step-halt.js";
@@ -736,5 +736,140 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
     // to the guarded path. The key is: no UNPUSHABLE_PATH_BLOCKED throw.
     const codeThrown = calls.length; // just verifies spawn was used normally
     expect(typeof codeThrown).toBe("number"); // always true — confirms normal flow
+  });
+});
+
+// ---------------------------------------------------------------------------
+// F1 round-trip: UnpushablePathBlockedError.matchedPaths typed property
+//
+// Verifies that the error factory embeds matchedPaths as a typed property so
+// executor.ts can read it directly without regex-parsing the message string.
+// ---------------------------------------------------------------------------
+
+describe("F1 round-trip: unpushablePathBlockedError → UnpushablePathBlockedError.matchedPaths", () => {
+  it("factory returns an UnpushablePathBlockedError instance", () => {
+    const err = unpushablePathBlockedError(
+      [".github/workflows/ci.yml"],
+      [WORKFLOWS_PATTERN],
+      "GitHub Actions installation token",
+    );
+    expect(err).toBeInstanceOf(UnpushablePathBlockedError);
+  });
+
+  it("matchedPaths property carries the exact paths passed to the factory", () => {
+    const paths = [".github/workflows/ci.yml", ".github/workflows/deploy.yml"];
+    const err = unpushablePathBlockedError(
+      paths,
+      [WORKFLOWS_PATTERN],
+      "GitHub Actions installation token",
+    );
+    expect(err.matchedPaths).toEqual(paths);
+  });
+
+  it("matchedPaths is the typed array, not derived from regex-parsing message", () => {
+    // Paths containing ', ' (comma-space) would be mis-split by the old regex approach.
+    const pathWithCommaSpace = "src/files, and-more/test.yml";
+    const err = unpushablePathBlockedError(
+      [pathWithCommaSpace, ".github/workflows/ci.yml"],
+      [WORKFLOWS_PATTERN],
+      "constraint",
+    );
+    // matchedPaths should carry both paths verbatim (no comma-splitting)
+    expect(err.matchedPaths).toHaveLength(2);
+    expect(err.matchedPaths[0]).toBe(pathWithCommaSpace);
+    expect(err.matchedPaths[1]).toBe(".github/workflows/ci.yml");
+  });
+
+  it("error code is UNPUSHABLE_PATH_BLOCKED", () => {
+    const err = unpushablePathBlockedError(
+      [".github/workflows/ci.yml"],
+      [WORKFLOWS_PATTERN],
+      "constraint",
+    );
+    expect(err.code).toBe(ERROR_CODES.UNPUSHABLE_PATH_BLOCKED);
+  });
+
+  it("instanceof check works for executor's UNPUSHABLE_PATH_BLOCKED branch", () => {
+    // Simulates what executor.ts does: check instanceof before reading matchedPaths
+    const err = unpushablePathBlockedError(
+      [".github/workflows/ci.yml"],
+      [WORKFLOWS_PATTERN],
+      "constraint",
+    );
+    const asUnknown: unknown = err;
+    if (asUnknown instanceof UnpushablePathBlockedError) {
+      // This is the executor's code path — matchedPaths is directly accessible
+      expect(asUnknown.matchedPaths).toEqual([".github/workflows/ci.yml"]);
+    } else {
+      throw new Error("Expected instanceof UnpushablePathBlockedError");
+    }
+  });
+
+  it("executor receives matchedPaths directly (finalizeErr instanceof UnpushablePathBlockedError)", async () => {
+    // Simulate executor's finalizeError handler: if the Layer 2 backstop throws,
+    // executor reads finalizeErr.matchedPaths directly (no regex parse).
+    const spawnFn: SpawnFn = (_bin: string, args: string[], _opts: SpawnOptions): ChildProcess => {
+      const subCmd = args[0] ?? "";
+      const proc = new EventEmitter();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const procAny = proc as any;
+      procAny.stdout = new EventEmitter();
+      procAny.stderr = new EventEmitter();
+      procAny.stdin = { write: () => true, end: () => {} };
+      let stdout = "";
+      // Layer 2 backstop runs collectPublishablePaths (status + rev-list):
+      if (subCmd === "status") stdout = "M  .github/workflows/ci.yml\0";
+      else if (subCmd === "rev-parse" && args.includes("HEAD")) stdout = "abc123";
+      setImmediate(() => {
+        if (stdout) procAny.stdout.emit("data", Buffer.from(stdout));
+        proc.emit("close", 0);
+      });
+      return proc as unknown as ChildProcess;
+    };
+
+    const infra: CommitPushInfra = {
+      spawnFn,
+      sleepFn: async () => {},
+      events: new EventBus(),
+    };
+    const step = {
+      kind: "agent" as const,
+      name: "implementer",
+      agent: { name: "specrunner-implementer", role: "implementer", model: "claude-sonnet-4-5", system: "implement", tools: [] },
+      toolHandlers: undefined,
+      buildMessage: () => "implement",
+      resultFilePath: () => null,
+      parseResult: () => ({ verdict: null, findingsPath: null }),
+    };
+    const state: JobState = {
+      version: 1, jobId: "f1-roundtrip", createdAt: "", updatedAt: "",
+      request: { path: "/req.md", title: "T", type: "feature" },
+      repository: { owner: "o", name: "r" },
+      session: null, step: "implementer", status: "running",
+      branch: "feat/test-slug", history: [], error: null, steps: {},
+    };
+    const noopSpawn = async () => ({ exitCode: 0, stdout: "", stderr: "" });
+    const deps = {
+      config: { version: 1, agents: {}, runtime: "local" },
+      request: { type: "feature", title: "Test", slug: "test-slug", baseBranch: "main", content: "content", adr: false },
+      slug: "test-slug",
+      cwd: tempDir,
+      spawn: noopSpawn,
+      pushCapability: declaringCapability,
+    } as unknown as import("../../../src/core/types.js").PipelineDeps;
+
+    let thrownErr: unknown;
+    try {
+      await commitAndPush(step as import("../../../src/core/step/types.js").AgentStep, state, deps, null, infra);
+    } catch (err) {
+      thrownErr = err;
+    }
+
+    // The error thrown by Layer 2 backstop should be an UnpushablePathBlockedError
+    // with matchedPaths directly set (no regex involved)
+    expect(thrownErr).toBeInstanceOf(UnpushablePathBlockedError);
+    if (thrownErr instanceof UnpushablePathBlockedError) {
+      expect(thrownErr.matchedPaths).toContain(".github/workflows/ci.yml");
+    }
   });
 });

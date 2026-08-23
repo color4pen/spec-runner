@@ -931,10 +931,10 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
   ): Promise<void> {
     const infra = commitPushInfra as CommitPushInfra;
     const egress = egressParams as
-      | { synthesizedCommits: readonly string[] }
+      | { synthesizedCommits: readonly string[]; pushCapability?: import("../../git/push-capability.js").PushCapability | null }
       | undefined;
     const commitMessage = `${coordinatorName}: ${slug}`;
-    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egress);
+    await commitScopedPaths(stagePaths, cwd, branch, commitMessage, infra, egress, egress?.pushCapability ?? null);
   }
 
   /**

@@ -669,10 +669,37 @@ export function archiveFromIssueUnconfirmedError(detail: string): SpecRunnerErro
 }
 
 /**
- * Error thrown by the Layer 2 backstop in commitAndPush when a publishable path
- * matches a declared unpushable pattern. Raised before any staging, commit, or push.
+ * Typed error subclass for UNPUSHABLE_PATH_BLOCKED.
+ *
+ * Carries `matchedPaths` as a first-class typed property so consumers (executor.ts)
+ * can read the blocked path list directly without parsing the message string.
+ * This eliminates the fragile string-coupling between the error factory and any
+ * downstream parser (the previous `parseUnpushablePathsFromError` approach).
  *
  * The pipeline converts this into an awaiting-resume halt (escalation path).
+ */
+export class UnpushablePathBlockedError extends SpecRunnerError {
+  /** Publishable paths that matched the declared unpushable pattern(s). */
+  public readonly matchedPaths: string[];
+
+  constructor(
+    hint: string,
+    message: string,
+    matchedPaths: string[],
+  ) {
+    super(ERROR_CODES.UNPUSHABLE_PATH_BLOCKED, hint, message);
+    this.name = "UnpushablePathBlockedError";
+    this.matchedPaths = matchedPaths;
+  }
+}
+
+/**
+ * Error thrown by the Layer 2 backstop in commitAndPush / commitScopedPaths when a
+ * publishable path matches a declared unpushable pattern. Raised before any staging,
+ * commit, or push.
+ *
+ * Returns an UnpushablePathBlockedError so consumers can read `matchedPaths` as a
+ * typed property without parsing the error message string.
  *
  * @param paths     Publishable paths that matched the declared pattern(s).
  * @param patterns  The declared unpushable patterns.
@@ -682,33 +709,18 @@ export function unpushablePathBlockedError(
   paths: string[],
   patterns: string[],
   source: string,
-): SpecRunnerError {
+): UnpushablePathBlockedError {
   const pathList = paths.map((p) => `  - ${p}`).join("\n");
   const patternList = patterns.join(", ");
-  return new SpecRunnerError(
-    ERROR_CODES.UNPUSHABLE_PATH_BLOCKED,
+  return new UnpushablePathBlockedError(
     `The current environment's token cannot push to the matched paths.\n` +
     `Matched paths:\n${pathList}\n` +
     `Declared unpushable patterns: ${patternList}\n` +
     `Environment constraint: ${source}`,
     `commitAndPush blocked: publishable path(s) match unpushable pattern(s). ` +
     `protected path(s): ${paths.join(", ")}. Environment constraint: ${source}`,
+    paths,
   );
-}
-
-/**
- * Parse the protected path list out of an UNPUSHABLE_PATH_BLOCKED error message.
- *
- * Co-located with unpushablePathBlockedError so the parser stays in sync with the
- * message format. Returns an empty array when the message cannot be parsed (fail-open).
- *
- * The hint field format is:
- *   "commitAndPush blocked: ... protected path(s): <p1, p2>. Environment constraint: <source>"
- */
-export function parseUnpushablePathsFromError(err: { message: string }): string[] {
-  const match = /protected path\(s\): (.+?)\. Environment/.exec(err.message);
-  if (!match) return [];
-  return match[1]!.split(", ").map((p) => p.trim()).filter(Boolean);
 }
 
 export function writeScopeViolationError(

@@ -242,7 +242,7 @@ function makePipelineDeps(
   } as unknown as PipelineDeps;
 }
 
-describe("TC-033 & TC-034: maxAttempts in outputVerification policy", () => {
+describe("TC-033 & TC-034: maxAttempts and per-attempt filtering in outputVerification policy", () => {
   const fakeFsAdapter = {
     async readFile(_path: string, _enc: string): Promise<string> {
       throw Object.assign(new Error("ENOENT"), { code: "ENOENT" });
@@ -252,8 +252,23 @@ describe("TC-033 & TC-034: maxAttempts in outputVerification policy", () => {
     },
   };
 
-  // TC-033: unpushable-path contract → maxAttempts=1
-  it("TC-033: maxAttempts=1 when unpushable-path is in follow-up contracts", async () => {
+  const unpushableViolation: import("../../../src/core/port/output-contract.js").OutputViolation = {
+    kind: "unpushable-path",
+    path: "",
+    policy: "follow-up",
+    detail: [".github/workflows/ci.yml"],
+  };
+
+  const tasksViolation: import("../../../src/core/port/output-contract.js").OutputViolation = {
+    kind: "tasks-complete",
+    path: "specrunner/changes/test-slug/tasks.md",
+    policy: "follow-up",
+    detail: ["Implement feature"],
+  };
+
+  // TC-033: unpushable-path contract → maxAttempts stays at default (2), but buildPrompt
+  // filters unpushable-path violations on attempt >= 1 (exactly 1 follow-up for unpushable-path).
+  it("TC-033: maxAttempts=2 (default) even when unpushable-path is in follow-up contracts", async () => {
     const state = makeState();
     const deps = makePipelineDeps({
       pushCapability: declaringCapability,
@@ -269,10 +284,73 @@ describe("TC-033 & TC-034: maxAttempts in outputVerification policy", () => {
     );
 
     expect(ctx.policy.outputVerification).toBeDefined();
-    expect(ctx.policy.outputVerification!.maxAttempts).toBe(1);
+    // maxAttempts stays at the default so tasks-complete retains 2 repair opportunities.
+    expect(ctx.policy.outputVerification!.maxAttempts).toBe(OUTPUT_FOLLOWUP_MAX_ATTEMPTS);
+    expect(ctx.policy.outputVerification!.maxAttempts).toBe(2);
   });
 
-  // TC-034: no unpushable-path → maxAttempts=2 (default)
+  it("TC-033: buildPrompt at attempt=0 includes unpushable-path violations", async () => {
+    const state = makeState();
+    const deps = makePipelineDeps({ pushCapability: declaringCapability });
+
+    const ctx = await buildStepContext(
+      ImplementerStep,
+      state,
+      deps,
+      "/fake/cwd",
+      () => {},
+      fakeFsAdapter,
+    );
+
+    const prompt = ctx.policy.outputVerification!.buildPrompt([unpushableViolation, tasksViolation], 0);
+    // On attempt 0, both violations appear in the prompt
+    expect(prompt).toContain("Unpushable path");
+    expect(prompt).toContain(".github/workflows/ci.yml");
+    expect(prompt).toContain("Incomplete tasks");
+  });
+
+  it("TC-033: buildPrompt at attempt=1 excludes unpushable-path violations (exactly 1 follow-up for unpushable-path)", async () => {
+    const state = makeState();
+    const deps = makePipelineDeps({ pushCapability: declaringCapability });
+
+    const ctx = await buildStepContext(
+      ImplementerStep,
+      state,
+      deps,
+      "/fake/cwd",
+      () => {},
+      fakeFsAdapter,
+    );
+
+    const prompt = ctx.policy.outputVerification!.buildPrompt([unpushableViolation, tasksViolation], 1);
+    // On attempt >= 1, unpushable-path is filtered — tasks-complete still appears (up to 2 repair attempts).
+    expect(prompt).not.toContain("Unpushable path");
+    expect(prompt).not.toContain(".github/workflows/ci.yml");
+    expect(prompt).toContain("Incomplete tasks");
+  });
+
+  it("TC-033: tasks-complete violation appears in both attempt=0 and attempt=1 prompts (2 repair opportunities)", async () => {
+    const state = makeState();
+    const deps = makePipelineDeps({ pushCapability: declaringCapability });
+
+    const ctx = await buildStepContext(
+      ImplementerStep,
+      state,
+      deps,
+      "/fake/cwd",
+      () => {},
+      fakeFsAdapter,
+    );
+
+    const prompt0 = ctx.policy.outputVerification!.buildPrompt([tasksViolation], 0);
+    const prompt1 = ctx.policy.outputVerification!.buildPrompt([tasksViolation], 1);
+
+    // tasks-complete appears in both prompts — maximum 2 repair attempts maintained
+    expect(prompt0).toContain("Incomplete tasks");
+    expect(prompt1).toContain("Incomplete tasks");
+  });
+
+  // TC-034: no unpushable-path → maxAttempts=2 (default), behavior unchanged
   it("TC-034: maxAttempts=2 (default) when no unpushable-path in contracts", async () => {
     const state = makeState();
     const deps = makePipelineDeps({
@@ -292,6 +370,20 @@ describe("TC-033 & TC-034: maxAttempts in outputVerification policy", () => {
     // Should use the default OUTPUT_FOLLOWUP_MAX_ATTEMPTS
     expect(ctx.policy.outputVerification!.maxAttempts).toBe(OUTPUT_FOLLOWUP_MAX_ATTEMPTS);
     expect(ctx.policy.outputVerification!.maxAttempts).toBe(2);
+  });
+
+  it("TC-034: buildPrompt behavior is identical with and without unpushable-path contract for tasks-complete", async () => {
+    const state = makeState();
+    const depsWithCapability = makePipelineDeps({ pushCapability: declaringCapability });
+    const depsWithout = makePipelineDeps({ pushCapability: null });
+
+    const ctxWith = await buildStepContext(ImplementerStep, state, depsWithCapability, "/fake/cwd", () => {}, fakeFsAdapter);
+    const ctxWithout = await buildStepContext(ImplementerStep, state, depsWithout, "/fake/cwd", () => {}, fakeFsAdapter);
+
+    // For tasks-complete violations at attempt=1, both contexts should produce identical prompts
+    const promptWith = ctxWith.policy.outputVerification!.buildPrompt([tasksViolation], 1);
+    const promptWithout = ctxWithout.policy.outputVerification!.buildPrompt([tasksViolation], 1);
+    expect(promptWith).toBe(promptWithout);
   });
 
   // TC-011: Follow-up resolves the violation — outputVerification detect returns empty
@@ -320,8 +412,8 @@ describe("TC-033 & TC-034: maxAttempts in outputVerification policy", () => {
     expect(result.violations).toHaveLength(0);
   });
 
-  // TC-012: At most one follow-up is sent (maxAttempts=1)
-  it("TC-012: maxAttempts=1 ensures at most one follow-up attempt for unpushable-path", async () => {
+  // TC-012: Unpushable-path appears in prompt only on attempt 0 (exactly 1 follow-up)
+  it("TC-012: unpushable-path violation appears in buildPrompt at attempt=0 but not attempt=1", async () => {
     const state = makeState();
     const deps = makePipelineDeps({ pushCapability: declaringCapability });
 
@@ -334,9 +426,32 @@ describe("TC-033 & TC-034: maxAttempts in outputVerification policy", () => {
       fakeFsAdapter,
     );
 
-    // With maxAttempts=1, the repair loop will send exactly one follow-up then halt
-    expect(ctx.policy.outputVerification!.maxAttempts).toBe(1);
-    // Verify the constant is different from the default (2)
-    expect(ctx.policy.outputVerification!.maxAttempts).toBeLessThan(OUTPUT_FOLLOWUP_MAX_ATTEMPTS);
+    // Attempt 0: unpushable-path included — this is the one and only follow-up for it
+    const prompt0 = ctx.policy.outputVerification!.buildPrompt([unpushableViolation], 0);
+    expect(prompt0).toContain("Unpushable path");
+    expect(prompt0).toContain(".github/workflows/ci.yml");
+
+    // Attempt 1: unpushable-path filtered — no further follow-up for this constraint
+    const prompt1 = ctx.policy.outputVerification!.buildPrompt([unpushableViolation], 1);
+    expect(prompt1).not.toContain("Unpushable path");
+    expect(prompt1).not.toContain(".github/workflows/ci.yml");
+  });
+
+  it("TC-012: maxAttempts=2 (not 1) so tasks-complete can use both attempts while unpushable-path is prompt-limited", async () => {
+    const state = makeState();
+    const deps = makePipelineDeps({ pushCapability: declaringCapability });
+
+    const ctx = await buildStepContext(
+      ImplementerStep,
+      state,
+      deps,
+      "/fake/cwd",
+      () => {},
+      fakeFsAdapter,
+    );
+
+    // maxAttempts is now 2 (not 1): the repair loop can run twice for tasks-complete
+    expect(ctx.policy.outputVerification!.maxAttempts).toBe(OUTPUT_FOLLOWUP_MAX_ATTEMPTS);
+    expect(ctx.policy.outputVerification!.maxAttempts).toBe(2);
   });
 });

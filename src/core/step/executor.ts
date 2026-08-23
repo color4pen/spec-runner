@@ -39,7 +39,7 @@ import {
   CommitOrchestrator,
   type StepExecutionResult,
 } from "./commit-orchestrator.js";
-import { parseUnpushablePathsFromError } from "../../errors.js";
+import { UnpushablePathBlockedError } from "../../errors.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -486,10 +486,10 @@ export class StepExecutor {
         // UNPUSHABLE_PATH_BLOCKED: Layer 2 backstop raised this — convert to awaiting-resume
         // instead of the default failed halt. This allows the job to remain resumable after
         // the operator resolves the path constraint.
-        if (finalizeErr.code === "UNPUSHABLE_PATH_BLOCKED") {
+        if (finalizeErr instanceof UnpushablePathBlockedError) {
           const capabilitySource = deps.pushCapability?.source ?? "environment push constraint";
-          // Delegate message parsing to errors.ts (co-located with the error factory).
-          const matchedPaths = parseUnpushablePathsFromError(finalizeErr);
+          // Read matchedPaths directly from the typed error property — no regex parsing.
+          const matchedPaths = finalizeErr.matchedPaths;
           const halt = makeUnpushablePathHalt(
             matchedPaths,
             capabilitySource,
