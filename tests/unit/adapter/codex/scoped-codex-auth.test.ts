@@ -65,6 +65,20 @@ describe("materializeScopedCodexAuth", () => {
     // Second cleanup must not throw (force remove)
     await scoped!.cleanup();
   });
+
+  it("(d) writeFile failure after mkdtemp removes the temp dir before propagating", async () => {
+    const before = new Set(await fs.readdir(os.tmpdir()));
+    await expect(
+      materializeScopedCodexAuth(AUTH_JSON, undefined, {
+        _writeFileFn: async () => {
+          throw new Error("disk full");
+        },
+      }),
+    ).rejects.toThrow("disk full");
+    const after = await fs.readdir(os.tmpdir());
+    const leaked = after.filter((name) => name.startsWith("specrunner-codex-") && !before.has(name));
+    expect(leaked).toEqual([]);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -191,6 +205,33 @@ describe("(e) CodexAgentRunner.run() scoped-auth wiring", () => {
     expect(authExistedDuringRun).toBe(true);
     // Cleanup: the scoped CODEX_HOME must be gone after run() returns
     expect(existsSync(capturedOpts!.env!["CODEX_HOME"]!)).toBe(false);
+  });
+
+  it("exception during Codex execution still removes the scoped CODEX_HOME (finally path)", async () => {
+    let capturedOpts: { env?: Record<string, string>; apiKey?: string } | undefined;
+    class ThrowingCodex {
+      constructor(opts?: { env?: Record<string, string>; apiKey?: string }) {
+        capturedOpts = opts;
+      }
+      startThread(): CodexThread {
+        throw new Error("codex spawn failed");
+      }
+      resumeThread(): CodexThread {
+        throw new Error("codex spawn failed");
+      }
+    }
+
+    const runner = new CodexAgentRunner({
+      _loadSdkFn: async () => ({ Codex: ThrowingCodex as unknown as new (opts?: { env?: Record<string, string>; apiKey?: string }) => CodexInstance }),
+      _sleepFn: async () => {},
+    });
+
+    const result = await runner.run(makeCtx(tempDir));
+
+    expect(result.completionReason).toBe("error");
+    const codexHome = capturedOpts?.env?.["CODEX_HOME"];
+    expect(codexHome).toBeDefined();
+    expect(existsSync(codexHome!)).toBe(false);
   });
 
   it("with OPENAI_API_KEY set, no CODEX_HOME is injected and apiKey is forwarded", async () => {
