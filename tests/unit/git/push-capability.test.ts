@@ -58,7 +58,8 @@ describe("detectPushCapability", () => {
     };
     const token = "ghs_abc123";
     const result = detectPushCapability(env, token);
-    expect(result).toBeNull();
+    expect(result.patterns).toHaveLength(0);
+    expect(result.source).toBe("none");
   });
 
   // TC-003: Local run (no GITHUB_ACTIONS) → declares nothing
@@ -69,7 +70,8 @@ describe("detectPushCapability", () => {
     };
     const token = "ghs_abc123";
     const result = detectPushCapability(env, token);
-    expect(result).toBeNull();
+    expect(result.patterns).toHaveLength(0);
+    expect(result.source).toBe("none");
   });
 
   // TC-004: Actions with non-installation token (ghp_ prefix) → declares nothing
@@ -80,7 +82,8 @@ describe("detectPushCapability", () => {
     };
     const token = "ghp_notAnInstallationToken";
     const result = detectPushCapability(env, token);
-    expect(result).toBeNull();
+    expect(result.patterns).toHaveLength(0);
+    expect(result.source).toBe("none");
   });
 
   // TC-020: Undefined token input produces no declaration
@@ -90,7 +93,8 @@ describe("detectPushCapability", () => {
       // GH_TOKEN not set
     };
     const result = detectPushCapability(env, undefined);
-    expect(result).toBeNull();
+    expect(result.patterns).toHaveLength(0);
+    expect(result.source).toBe("none");
   });
 
   it("empty string GH_TOKEN still counts as unset (no GH_TOKEN override)", () => {
@@ -100,8 +104,7 @@ describe("detectPushCapability", () => {
     };
     const result = detectPushCapability(env, "ghs_xxx");
     // GH_TOKEN empty string → same as not set → installation token path
-    expect(result).not.toBeNull();
-    expect(result!.patterns).toContain(WORKFLOWS_PATTERN);
+    expect(result.patterns).toContain(WORKFLOWS_PATTERN);
   });
 
   it("GITHUB_ACTIONS=false does not trigger detection", () => {
@@ -109,16 +112,16 @@ describe("detectPushCapability", () => {
       GITHUB_ACTIONS: "false",
     };
     const result = detectPushCapability(env, "ghs_abc");
-    expect(result).toBeNull();
+    expect(result.patterns).toHaveLength(0);
+    expect(result.source).toBe("none");
   });
 
   it("returned PushCapability has no token field — only patterns and source", () => {
     const env: Record<string, string | undefined> = { GITHUB_ACTIONS: "true" };
     const result = detectPushCapability(env, "ghs_abc123");
     // TC-029: PushCapability must NOT have a token field
-    expect(result).not.toBeNull();
-    expect(Object.keys(result!)).not.toContain("token");
-    expect(Object.keys(result!).sort()).toEqual(["patterns", "source"]);
+    expect(Object.keys(result)).not.toContain("token");
+    expect(Object.keys(result).sort()).toEqual(["patterns", "source"]);
   });
 });
 
@@ -127,24 +130,24 @@ describe("detectPushCapability", () => {
 // ---------------------------------------------------------------------------
 
 describe("matchUnpushablePaths", () => {
-  // TC-021: Empty patterns returns empty (equivalent to undefined capability)
-  it("TC-021: empty patterns returns empty array", () => {
+  // TC-021: Undefined capability returns empty (equivalent to undeclared environment)
+  it("TC-021: undefined capability returns empty array", () => {
     const paths = [".github/workflows/ci.yml", "src/foo.ts"];
-    const result = matchUnpushablePaths(paths, []);
+    const result = matchUnpushablePaths(paths, undefined);
     expect(result).toEqual([]);
   });
 
-  // TC-022: Empty patterns list (from capability with patterns: []) returns empty
-  it("TC-022: empty patterns list returns empty regardless of paths", () => {
+  // TC-022: Capability with empty patterns list returns empty
+  it("TC-022: capability with empty patterns returns empty regardless of paths", () => {
     const paths = [".github/workflows/ci.yml"];
-    const result = matchUnpushablePaths(paths, []);
+    const result = matchUnpushablePaths(paths, { patterns: [], source: "none" });
     expect(result).toEqual([]);
   });
 
   // TC-023: Correctly matches and excludes paths
   it("TC-023: matches .github/workflows/ci.yml but not src/foo.ts", () => {
     const paths = [".github/workflows/ci.yml", "src/foo.ts"];
-    const result = matchUnpushablePaths(paths, [WORKFLOWS_PATTERN]);
+    const result = matchUnpushablePaths(paths, { patterns: [WORKFLOWS_PATTERN], source: "test" });
     expect(result).toContain(".github/workflows/ci.yml");
     expect(result).not.toContain("src/foo.ts");
   });
@@ -156,7 +159,7 @@ describe("matchUnpushablePaths", () => {
       ".github/other/config.yml",
       "src/index.ts",
     ];
-    const result = matchUnpushablePaths(paths, [WORKFLOWS_PATTERN]);
+    const result = matchUnpushablePaths(paths, { patterns: [WORKFLOWS_PATTERN], source: "test" });
     expect(result).toContain(".github/workflows/ci.yml");
     expect(result).toContain(".github/workflows/deploy.yaml");
     expect(result).not.toContain(".github/other/config.yml");
@@ -164,7 +167,7 @@ describe("matchUnpushablePaths", () => {
   });
 
   it("empty paths returns empty regardless of patterns", () => {
-    const result = matchUnpushablePaths([], [WORKFLOWS_PATTERN]);
+    const result = matchUnpushablePaths([], { patterns: [WORKFLOWS_PATTERN], source: "test" });
     expect(result).toEqual([]);
   });
 });

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T10:48:29.261Z",
+  "updatedAt": "2026-08-23T10:55:32.845Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/push-capability-preflight-e57e9dd3",
   "error": null,
@@ -73,7 +73,8 @@
     "5a8afa55738f3ef21616f497a8424da42a905111",
     "3cfdd05c05a38ea6953dfcbb646202d1be313c8f",
     "b6d72cad121586014c5f6ea5937410c21fe58ee4",
-    "c0a584f940e14a8a91e99fb6c639b6206a589bf0"
+    "c0a584f940e14a8a91e99fb6c639b6206a589bf0",
+    "e1bcf3c2871032ad4108cb3440aba39cdf0bd636"
   ],
   "touchedFiles": {
     "request-review": [
@@ -130,10 +131,31 @@
       "src/core/command/runner.ts",
       "tests/unit/git/push-capability.test.ts",
       "tests/unit/step/unpushable-path-escalation.test.ts"
+    ],
+    "code-review": [
+      "src/git/push-capability.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/port/output-contract.ts",
+      "src/core/step/step-halt.ts",
+      "src/errors.ts",
+      "src/core/step/executor.ts",
+      "src/core/step/implementer.ts",
+      "tests/unit/git/push-capability.test.ts",
+      "tests/unit/step/unpushable-path-escalation.test.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/output-verify.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/command/runner.ts",
+      "src/core/step/request-review.ts",
+      "src/core/port/step-context.ts",
+      "tests/unit/step/unpushable-path-contract.test.ts",
+      "tests/unit/step/push-capability-notice.test.ts",
+      "tests/unit/runtime/unpushable-path-validate.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 43,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -142,7 +164,8 @@
       "spec-fixer": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 2
+      "verification": 2,
+      "code-review": 1
     }
   }
 }

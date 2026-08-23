@@ -450,6 +450,7 @@ export function makeUnpushablePathHalt(
     hint:
       `The current environment's token cannot push to the following paths:\n${pathList}\n` +
       `Constraint: ${capabilitySource}\n` +
+      `Your changes remain uncommitted in the worktree.\n` +
       `Remove the changes to these paths or resolve the requirement without modifying them, ` +
       `then run 'specrunner job resume ${slug}' to continue.`,
   };

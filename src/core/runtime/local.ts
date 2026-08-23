@@ -1608,12 +1608,12 @@ export class LocalRuntime implements RealRuntimeStrategy, MaterializerHost {
         // status === "skipped" | "passed" → no violation
       } else if (contract.kind === "unpushable-path") {
         // Skip if no patterns declared (guard: should not happen, but defensive)
-        const patterns: string[] = contract.patterns ?? [];
-        if (patterns.length === 0) continue;
+        const contractPatterns: string[] = contract.patterns ?? [];
+        if (contractPatterns.length === 0) continue;
 
         // Enumerate the publishable path set and match against declared patterns.
         const publishablePaths = await collectPublishablePaths(this.spawnFn, cwd);
-        const matchedPaths = matchUnpushablePaths(publishablePaths, patterns);
+        const matchedPaths = matchUnpushablePaths(publishablePaths, { patterns: contractPatterns, source: "contract" });
         if (matchedPaths.length > 0) {
           violations.push({
             kind: contract.kind,

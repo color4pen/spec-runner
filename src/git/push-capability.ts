@@ -50,23 +50,23 @@ export interface PushCapability {
  *   - env.GH_TOKEN is unset or empty
  *   - resolvedToken starts with the installation token prefix "ghs_"
  *
- * Returns null (undeclared) in every other case.
+ * Returns { patterns: [], source: "none" } (undeclared) in every other case.
  *
  * Pure function — no I/O.
  */
 export function detectPushCapability(
   env: Record<string, string | undefined>,
   resolvedToken: string | undefined,
-): PushCapability | null {
+): PushCapability {
   // Condition 1: must be running in GitHub Actions
-  if (env["GITHUB_ACTIONS"] !== "true") return null;
+  if (env["GITHUB_ACTIONS"] !== "true") return { patterns: [], source: "none" };
 
   // Condition 2: GH_TOKEN must be unset or empty
   const ghToken = env["GH_TOKEN"] ?? "";
-  if (ghToken.length > 0) return null;
+  if (ghToken.length > 0) return { patterns: [], source: "none" };
 
   // Condition 3: resolved token must begin with the installation token prefix
-  if (!resolvedToken || !resolvedToken.startsWith(INSTALLATION_TOKEN_PREFIX)) return null;
+  if (!resolvedToken || !resolvedToken.startsWith(INSTALLATION_TOKEN_PREFIX)) return { patterns: [], source: "none" };
 
   return {
     patterns: [WORKFLOWS_PATTERN],
@@ -79,16 +79,17 @@ export function detectPushCapability(
 // ---------------------------------------------------------------------------
 
 /**
- * Return the subset of publishablePaths that match any of the declared patterns.
+ * Return the subset of paths that match any of the declared patterns from the capability.
  *
  * Pure function — no I/O.
  */
 export function matchUnpushablePaths(
-  publishablePaths: string[],
-  patterns: string[],
+  paths: string[],
+  capability: PushCapability | undefined,
 ): string[] {
-  if (patterns.length === 0 || publishablePaths.length === 0) return [];
-  return publishablePaths.filter((p) =>
+  const patterns = capability?.patterns ?? [];
+  if (patterns.length === 0 || paths.length === 0) return [];
+  return paths.filter((p) =>
     patterns.some((pattern) => matchesGlob(p, pattern)),
   );
 }
@@ -176,7 +177,7 @@ export async function collectPublishablePaths(
     // Best-effort; fall through
   }
 
-  return Array.from(paths);
+  return Array.from(paths).sort();
 }
 
 // ---------------------------------------------------------------------------
@@ -214,7 +215,7 @@ export function renderPushCapabilityNotice(
 
   // Advance warning for predicted matches
   if (predictedTouchedFiles && predictedTouchedFiles.length > 0) {
-    const matchedFiles = matchUnpushablePaths(predictedTouchedFiles, pushCapability.patterns);
+    const matchedFiles = matchUnpushablePaths(predictedTouchedFiles, pushCapability);
     if (matchedFiles.length > 0) {
       lines.push("");
       lines.push("**Advance warning**: the following predicted files match the unpushable pattern:");

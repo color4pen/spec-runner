@@ -428,6 +428,18 @@ describe("TC-036: makeUnpushablePathHalt reason contains required elements", () 
     expect(halt.error.hint).toContain("resume");
   });
 
+  it("TC-036: halt hint states that changes remain uncommitted in the worktree", () => {
+    const halt = makeUnpushablePathHalt(
+      [".github/workflows/ci.yml"],
+      declaringCapability.source,
+      "implementer",
+      "test-slug",
+    );
+    // D8 item 3: hint must include a statement that changes remain uncommitted in the worktree
+    expect(halt.error.hint).toContain("uncommitted");
+    expect(halt.error.hint).toContain("worktree");
+  });
+
   it("TC-036: halt is awaiting-resume kind", () => {
     const halt = makeUnpushablePathHalt(
       [".github/workflows/ci.yml"],

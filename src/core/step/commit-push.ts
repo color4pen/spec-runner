@@ -521,7 +521,7 @@ export async function commitAndPush(
     const gitPublishSpawn: PipelineSpawnFn = (cmd, args, opts) =>
       runSubprocess(infra.spawnFn, cmd, args, { cwd: opts.cwd });
     const publishablePaths = await collectPublishablePaths(gitPublishSpawn, cwd);
-    const matchedPaths = matchUnpushablePaths(publishablePaths, deps.pushCapability.patterns);
+    const matchedPaths = matchUnpushablePaths(publishablePaths, deps.pushCapability);
     if (matchedPaths.length > 0) {
       throw unpushablePathBlockedError(
         matchedPaths,

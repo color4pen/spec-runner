@@ -250,7 +250,8 @@ export function buildOutputFollowUpPrompt(violations: OutputViolation[]): string
     lines.push("");
     lines.push(
       "Please either remove the changes to those paths, or satisfy the requirement " +
-      "without modifying the declared unpushable paths.",
+      "without modifying the declared unpushable paths. " +
+      "If you cannot avoid modifying those paths to fulfill the requirement, state that clearly and stop your work.",
     );
     lines.push("");
   }
