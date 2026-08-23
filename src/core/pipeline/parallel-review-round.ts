@@ -449,25 +449,50 @@ export class ParallelReviewRound {
             // Only record if HEAD advanced (a local commit was created). When HEAD did not
             // change (e.g., UNPUSHABLE_PATH_BLOCKED threw before any git add/commit),
             // roundCommitOid stays null — the pre-existing HEAD must not enter the ledger.
+            //
+            // Both HEAD observations must be non-null before inferring advancement (D4-hardening).
+            // If headBeforeCommit is null (pre-capture unavailable), the comparison
+            // headAfterCommit !== headBeforeCommit would be vacuously true (someOID !== null),
+            // incorrectly treating an unchanged existing HEAD as a newly created commit and
+            // corrupting the egress authorization ledger with a pre-existing OID.
             const headAfterCommit = deps.runtimeStrategy
               ? ((await deps.runtimeStrategy.captureHeadSha(cwd)) ?? null)
               : null;
-            if (headAfterCommit !== null && headAfterCommit !== headBeforeCommit) {
+            const headAdvanced =
+              headBeforeCommit !== null &&
+              headAfterCommit !== null &&
+              headAfterCommit !== headBeforeCommit;
+            if (headAdvanced) {
               roundCommitOid = headAfterCommit;
             }
             if (commitArtifactError !== null) {
               // Error after or before commit — record as escalation.
-              // The hint is tailored: when HEAD changed, a local commit exists; when HEAD
-              // did not change, the error fired before any commit (e.g., backstop rejection).
+              // The hint is tailored based on the evidence available.
               aggregateVerdictResult = "escalation";
               inspectionEscalated = true;
-              const didCommit = headAfterCommit !== null && headAfterCommit !== headBeforeCommit;
               roundError = roundError ?? {
                 code: "ROUND_COMMIT_PUSH_FAILED",
                 message: `Round artifact commit/push failed: ${commitArtifactError instanceof Error ? commitArtifactError.message : String(commitArtifactError)}`,
-                hint: didCommit
-                  ? "The round commit was created locally but push failed. Resolve the push issue and resume — the commit OID has been recorded in synthesizedCommits to prevent egress deadlock."
-                  : "The round commit was rejected before being created (e.g., unpushable-path backstop). No local commit was made; resume will retry the round.",
+                hint:
+                  headBeforeCommit === null
+                    ? "HEAD pre-observation was unavailable (captureHeadSha returned null before commitRoundArtifacts). Cannot determine whether a commit was created. Resume will retry the round."
+                    : headAdvanced
+                      ? "The round commit was created locally but push failed. Resolve the push issue and resume — the commit OID has been recorded in synthesizedCommits to prevent egress deadlock."
+                      : "The round commit was rejected before being created (e.g., unpushable-path backstop). No local commit was made; resume will retry the round.",
+              };
+            } else if (headBeforeCommit === null) {
+              // Pre-commit HEAD capture was unavailable, but commitRoundArtifacts completed
+              // without error. We cannot verify whether HEAD changed or record a reliable OID.
+              // Escalate as evidence-unavailable to force a retry rather than risk a silent
+              // ledger gap (a commit created without an OID in synthesizedCommits could later
+              // surface as EGRESS_UNKNOWN_COMMIT deadlock on resume).
+              aggregateVerdictResult = "escalation";
+              inspectionEscalated = true;
+              roundError = roundError ?? {
+                code: "ROUND_COMMIT_PUSH_FAILED",
+                message:
+                  "HEAD pre-observation was unavailable before commitRoundArtifacts; cannot confirm round commit OID.",
+                hint: "The pre-commit HEAD capture returned null (evidence unavailable). Cannot determine whether a commit was created or record its OID in synthesizedCommits. Resume will retry the round.",
               };
             }
           }

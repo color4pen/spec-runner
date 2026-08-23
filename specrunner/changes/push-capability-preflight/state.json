@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T12:42:54.329Z",
+  "updatedAt": "2026-08-23T12:56:00.551Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -13,13 +13,9 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "awaiting-resume",
+  "status": "running",
   "branch": "feat/push-capability-preflight-e57e9dd3",
-  "error": {
-    "code": "CUSTOM_REVIEWERS_RETRIES_EXHAUSTED",
-    "message": "custom reviewers did not approve after 2 iterations",
-    "hint": "Review the latest reviewer results and address findings manually. (iteration 005)"
-  },
+  "error": null,
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -205,12 +201,7 @@
       "invalidatedByCommit": null
     }
   ],
-  "resumePoint": {
-    "step": "code-fixer",
-    "reason": "custom reviewers did not approve after 2 iterations",
-    "iterationsExhausted": 2,
-    "exhaustionPhase": "review-after-final-fix"
-  },
+  "resumePoint": null,
   "mainCheckoutDrift": null,
   "operatorAdjudications": [
     {
@@ -222,10 +213,15 @@
       "text": "operator 裁定 (issue #1061、cross-boundary-invariants iteration 2 の escalation への対応)。前回修正のうち F1 (typed matchedPaths) は解消済みと判定された。今回は以下 2 点の実装バグを修正すること。canon (TC-033 / D6 / T-08) は既に正しい要件を記述しているため canon 変更は不要。\n\nN1 — src/core/step/step-context-builder.ts (line ~149): attempt の基数ずれを修正する。adapter (src/adapter/claude-code/agent-runner.ts:1455) の follow-up loop は for (let attempt = 1; attempt <= maxAttempts; attempt++) の 1 始まりで buildPrompt(violations, attempt) を呼ぶ。現在の attempt > 0 フィルタは初回呼び出し (attempt=1) から unpushable-path 違反を除外してしまい、unpushable-path の修復プロンプトが一度も送られない (TC-033 の「ちょうど 1 回」が 0 回になる)。フィルタ条件を 1 始まりに合わせること: attempt <= 1 では全違反を表示し、attempt >= 2 で unpushable-path を除外する。「Attempt 0: show all violations」という誤った前提のコメントも訂正する。テスト: adapter の 1 始まり契約を固定する — buildPrompt(violations, 1) の結果に unpushable-path 違反が含まれ、buildPrompt(violations, 2) では除外され tasks-complete は残ること。\n\nN2 — src/core/step/commit-push.ts (commitScopedPaths, line ~1004-1018): Layer 2 backstop の検査対象を stagePaths のみから publish range 全体へ広げる。git push は branch 上の全未 push commit を公開するため、stagePaths だけの検査では過去の未 push commit が workflow ファイルを変更していた場合に素通りして remote rejection に到達する。commitAndPush と同じく collectPublishablePaths を用いて未 push range の paths を列挙し、それと stagePaths を合わせた集合に matchUnpushablePaths を適用して、一致があれば unpushablePathBlockedError を throw する (stage / commit / push は行わない)。「stagePaths を直接検査するのは collectPublishablePaths と等価」というコメントは誤りなので削除する。pushCapability が無い / patterns が空の場合に git コマンドを一切実行しない性質は維持すること。テスト: stagePaths が安全でも既存未 push commit に protected path が含まれる場合に UNPUSHABLE_PATH_BLOCKED を throw すること、および patterns 空で git 呼び出しゼロのまま素通りすること。\n\n完了後 typecheck / lint / 関連テストが green であることを確認すること。",
       "step": "code-fixer",
       "recordedAt": "2026-08-23T12:19:49.078Z"
+    },
+    {
+      "text": "operator 裁定 (issue #1061、cross-boundary-invariants iteration 5 の残存 finding 1 件への対応)。canon 変更は不要。\n\n対象 — src/core/pipeline/parallel-review-round.ts (line ~455): commit 前後の HEAD 比較が事前観測の null を通常値として扱っている。captureHeadSha は port 契約上一時失敗で null を返し得る。現在の判定 headAfterCommit !== null && headAfterCommit !== headBeforeCommit は、事前観測が null の場合に、Layer 2 backstop が commit 前に throw して HEAD が変わっていなくても「新 commit あり」と誤判定し、既存の未 push HEAD の OID を roundCommitOid / synthesizedCommits 台帳に追記してしまう (coordinator が作っていない commit を egress checker が承認する台帳汚染)。\n\n修正内容: commit が作られたと推論するのは両観測がともに非 null かつ異なる場合のみとする。事前観測 (headBeforeCommit) が null の場合は roundCommitOid / didCommit を立てず、synthesizedCommits への追記も行わず、evidence-unavailable (HEAD の事前観測が得られず round commit の有無を判定できない) を理由に既存の escalation 経路へ倒す。テスト追加: 事前観測 null + commitRoundArtifacts が throw (backstop 拒否) のとき、既存 HEAD の OID が synthesizedCommits に追記されないこと、および両観測非 null で異なる場合の既存挙動 (正常な round commit 記録) が維持されること。\n\n完了後 typecheck / lint / 関連テストが green であることを確認すること。",
+      "step": "code-fixer",
+      "recordedAt": "2026-08-23T12:56:00.331Z"
     }
   ],
   "_journal": {
-    "historyCount": 86,
+    "historyCount": 88,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
