@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T13:04:08.134Z",
+  "updatedAt": "2026-08-23T13:08:30.310Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/push-capability-preflight-e57e9dd3",
   "error": null,
@@ -86,7 +86,8 @@
     "b0f89e26dea09763c8f1bc72bc36778f874eeed0",
     "5583a00e1fcdef6f7b8bb66dd3464808ba505ae6",
     "217937872b1d8df6959235c2f9fbf8e600b87733",
-    "f602f72c7ef79b940cc8d5e67907fd7d83722006"
+    "f602f72c7ef79b940cc8d5e67907fd7d83722006",
+    "5d140bbe1031834469becf7b5a7c963ef21e8938"
   ],
   "touchedFiles": {
     "request-review": [
@@ -169,6 +170,9 @@
       "src/core/pipeline/parallel-review-round.ts",
       "tests/unit/pipeline/pipeline-sole-committer-round-guard.test.ts",
       "src/core/pipeline/__tests__/parallel-review-round-git-effects.test.ts"
+    ],
+    "regression-gate": [
+      "tests/unit/step/unpushable-path-contract.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -221,7 +225,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 97,
+    "historyCount": 102,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -235,7 +239,8 @@
       "code-fixer": 6,
       "cross-boundary-invariants": 6,
       "scale-tolerance": 1,
-      "custom-reviewers": 6
+      "custom-reviewers": 6,
+      "regression-gate": 1
     }
   }
 }
