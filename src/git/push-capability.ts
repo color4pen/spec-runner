@@ -109,8 +109,10 @@ export function matchUnpushablePaths(
  * A path contributed by any single unpushed commit is included even when a
  * later commit reverts it.
  *
- * Failure semantics:
- *   - git status failure: fail-open (worktree changes still caught by commit step).
+ * Failure semantics — all three git commands are fail-closed:
+ *   - git status failure: throws — a failing status command cannot prove the
+ *     worktree is clean; an uncommitted workflow change would be silently missed,
+ *     then staged, committed, and pushed through the Layer 2 check undetected.
  *   - git rev-list failure: throws — cannot enumerate unpushed commits; callers
  *     must halt rather than proceed with incomplete path information.
  *   - git diff-tree failure for any OID: throws — partial evidence cannot be
@@ -123,25 +125,25 @@ export async function collectPublishablePaths(
   const paths = new Set<string>();
 
   // (a) Worktree changes: modified + untracked files.
-  // Fail-open: a status failure does not prevent unpushed-commit enumeration,
-  // and staged/committed worktree changes will be caught by the commit step.
-  try {
-    const statusResult = await spawnFn(
-      "git",
-      ["status", "--porcelain", "-z", "--no-renames", "--untracked-files=all"],
-      { cwd },
+  // Fail-closed: a failed status cannot be treated as proof that the worktree is
+  // clean. If the agent touched a workflow file that git status cannot enumerate,
+  // Layer 2 would stage, commit, and push it undetected.
+  const statusResult = await spawnFn(
+    "git",
+    ["status", "--porcelain", "-z", "--no-renames", "--untracked-files=all"],
+    { cwd },
+  );
+  if (statusResult.exitCode !== 0) {
+    throw new Error(
+      `collectPublishablePaths: git status failed (exit ${statusResult.exitCode}) — cannot enumerate worktree changes`,
     );
-    if (statusResult.exitCode === 0) {
-      const parts = statusResult.stdout.split("\0").filter((p) => p.length > 0);
-      for (const part of parts) {
-        // Format: XY<SP>path — 2-char status + space + path
-        if (part.length < 4) continue;
-        const filePath = part.slice(3);
-        if (filePath) paths.add(filePath);
-      }
-    }
-  } catch {
-    // Best-effort for worktree changes; fall through to unpushed-commit enumeration
+  }
+  const parts = statusResult.stdout.split("\0").filter((p) => p.length > 0);
+  for (const part of parts) {
+    // Format: XY<SP>path — 2-char status + space + path
+    if (part.length < 4) continue;
+    const filePath = part.slice(3);
+    if (filePath) paths.add(filePath);
   }
 
   // (b) Unpushed commits: all commits reachable from HEAD not on any origin ref.

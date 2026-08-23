@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T12:19:49.360Z",
+  "updatedAt": "2026-08-23T12:33:22.613Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -80,7 +80,9 @@
     "b9a5d8f4b308fda25b4d834a820f3268f5db7ad5",
     "1cf80a97d6a3cfae29845257c632acee2c15ed4c",
     "3bac7fb051a1898a2a9fa31a3b5e7d05f2759c3f",
-    "fc51859bd811ce174e1f22f4116f7e87294a2b4c"
+    "fc51859bd811ce174e1f22f4116f7e87294a2b4c",
+    "61cf01e9093be94d1dc5b0d0bd10f6e9cb915e75",
+    "705ed733bfe73d80301bf1bd6d4d068fb8d42147"
   ],
   "touchedFiles": {
     "request-review": [
@@ -161,14 +163,18 @@
     ],
     "code-fixer": [
       "src/core/step/step-context-builder.ts",
+      "src/git/push-capability.ts",
       "src/core/step/commit-push.ts",
       "src/adapter/claude-code/agent-runner.ts",
+      "src/core/step/output-verify.ts",
+      "tests/unit/git/push-capability.test.ts",
+      "tests/unit/step/unpushable-path-contract.test.ts",
+      "src/core/step/__tests__/commit-scoped-paths.test.ts",
+      "src/core/runtime/local.ts",
       "src/adapter/managed-agent/agent-runner.ts",
       "src/adapter/codex/agent-runner.ts",
-      "src/core/step/__tests__/commit-scoped-paths.test.ts",
-      "tests/unit/step/unpushable-path-contract.test.ts",
-      "src/git/push-capability.ts",
-      "src/util/git-exec.ts"
+      "tests/unit/adapter/claude-code/agent-runner.test.ts",
+      "src/core/port/output-contract.ts"
     ]
   },
   "reviewerStatuses": [
@@ -215,7 +221,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 71,
+    "historyCount": 79,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -226,10 +232,10 @@
       "bite-evidence": 1,
       "verification": 2,
       "code-review": 1,
-      "code-fixer": 3,
-      "cross-boundary-invariants": 3,
+      "code-fixer": 4,
+      "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
-      "custom-reviewers": 3
+      "custom-reviewers": 4
     }
   }
 }

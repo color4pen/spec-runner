@@ -612,13 +612,34 @@ describe("ParallelReviewRound git effects — inspection escalation keeps member
 // created), the commit OID must still be appended to synthesizedCommits so that
 // egress checks on the next resume do not see EGRESS_UNKNOWN_COMMIT deadlock.
 // The round records ROUND_COMMIT_PUSH_FAILED escalation and does NOT re-throw.
+//
+// HEAD-change semantics: the coordinator captures HEAD before and after
+// commitRoundArtifacts. A changed HEAD means a local commit was created (push may
+// have failed after the commit). An unchanged HEAD means the error fired before
+// any commit (e.g., UNPUSHABLE_PATH_BLOCKED). Only a changed HEAD enters the ledger.
 
 describe("ParallelReviewRound git effects — push failure after commit → OID in synthesizedCommits", () => {
+  const BASELINE_OID = "baseline-oid-before-commit";
   const PUSH_FAIL_OID = "push-fail-commit-oid-abc123";
 
   function makeRuntimeStrategyWithPushFailure() {
+    // captureHeadSha: returns BASELINE_OID on the first two calls (invalidation + headSha capture),
+    // then PUSH_FAIL_OID once the commit has been created locally (HEAD advanced after commit).
+    // The round calls captureHeadSha in this order:
+    //   1. baselineCommit capture (step 2, before fan-out)
+    //   2. HEAD guard check after fan-out (step 5b) — returns BASELINE_OID (no self-commit)
+    //   3. headSha for verdicts (step 6) — returns BASELINE_OID
+    //   4. headBeforeCommit capture (new, before commitRoundArtifacts)
+    //   5. headAfterCommit capture (new, after commitRoundArtifacts / push failure)
+    // We simulate HEAD advancing at call 5 (commit was created before push failed).
+    let captureCount = 0;
     return {
-      captureHeadSha: vi.fn(async () => PUSH_FAIL_OID),
+      captureHeadSha: vi.fn(async () => {
+        captureCount++;
+        // Calls 1-4: baseline / fan-out guard / verdict / pre-commit = BASELINE_OID
+        // Call 5: after commit (HEAD advanced due to local commit) = PUSH_FAIL_OID
+        return captureCount >= 5 ? PUSH_FAIL_OID : BASELINE_OID;
+      }),
       listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [] })),
       finalizeStepArtifacts: vi.fn(async () => {}),
       validateStepInputs: vi.fn(async () => {}),
@@ -679,6 +700,94 @@ describe("ParallelReviewRound git effects — push failure after commit → OID 
     }));
 
     // synthesizedCommits must contain the OID captured after the failed push
+    // (HEAD changed from BASELINE_OID to PUSH_FAIL_OID, so commit was made locally)
     expect(result.state.synthesizedCommits).toContain(PUSH_FAIL_OID);
+    // The pre-commit baseline OID must NOT be in the ledger
+    expect(result.state.synthesizedCommits).not.toContain(BASELINE_OID);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Scenario 10: commitRoundArtifacts pre-commit failure (UNPUSHABLE_PATH_BLOCKED)
+// → HEAD unchanged → pre-existing HEAD NOT recorded in synthesizedCommits
+// ---------------------------------------------------------------------------
+// Regression guard: when commitRoundArtifacts throws before creating any local
+// commit (e.g., Layer 2 backstop fires before git add/commit), HEAD does not
+// advance. Recording the pre-existing HEAD as a synthesized commit would corrupt
+// the egress authorization ledger. The round must leave synthesizedCommits unchanged.
+
+describe("ParallelReviewRound git effects — pre-commit backstop rejection → HEAD unchanged → not recorded", () => {
+  const BASELINE_OID = "baseline-oid-before-backstop";
+
+  function makeRuntimeStrategyWithBackstopRejection() {
+    // captureHeadSha always returns BASELINE_OID — HEAD never changes because
+    // UNPUSHABLE_PATH_BLOCKED fires before any git add/commit.
+    return {
+      captureHeadSha: vi.fn(async () => BASELINE_OID),
+      listChangedFiles: vi.fn(async () => ({ kind: "success" as const, files: [] })),
+      finalizeStepArtifacts: vi.fn(async () => {}),
+      validateStepInputs: vi.fn(async () => {}),
+      validateStepOutputs: vi.fn(async () => ({ violations: [] })),
+      listWorktreeChanges: vi.fn(async (_cwd: string) => ({
+        kind: "success" as const,
+        paths: [DECLARED_A],
+      })),
+      // Throws UNPUSHABLE_PATH_BLOCKED — no commit was created
+      commitRoundArtifacts: vi.fn(async () => {
+        throw Object.assign(
+          new Error("Unpushable path blocked: .github/workflows/ci.yml matches .github/workflows/**"),
+          { code: "UNPUSHABLE_PATH_BLOCKED" },
+        );
+      }),
+    };
+  }
+
+  it("round does NOT throw when backstop rejects before commit", async () => {
+    const runtimeStrategy = makeRuntimeStrategyWithBackstopRejection();
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    await expect(
+      round.run(COORDINATOR, makeState(), makeDeps({ runtimeStrategy: runtimeStrategy as never })),
+    ).resolves.toBeDefined();
+  });
+
+  it("backstop rejection: outcome is escalation with ROUND_COMMIT_PUSH_FAILED", async () => {
+    const runtimeStrategy = makeRuntimeStrategyWithBackstopRejection();
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    expect(result.outcome).toBe("escalation");
+    expect(result.state.error?.code).toBe("ROUND_COMMIT_PUSH_FAILED");
+  });
+
+  it("backstop rejection: pre-existing HEAD is NOT recorded in synthesizedCommits (ledger integrity)", async () => {
+    const runtimeStrategy = makeRuntimeStrategyWithBackstopRejection();
+    const steps = new Map<string, Step>([
+      [MEMBER_A, makeStepWithWrites(MEMBER_A, [DECLARED_A])],
+      [MEMBER_B, makeStepWithWrites(MEMBER_B, [DECLARED_B])],
+    ]);
+    const { executor } = makeFakeExecutor();
+    const round = makeRound(executor, steps);
+
+    const result = await round.run(COORDINATOR, makeState(), makeDeps({
+      runtimeStrategy: runtimeStrategy as never,
+    }));
+
+    // synthesizedCommits must NOT contain the pre-existing HEAD — no commit was created.
+    // Recording it would falsely authorize the pre-existing commits for future egress checks.
+    expect(result.state.synthesizedCommits ?? []).not.toContain(BASELINE_OID);
   });
 });

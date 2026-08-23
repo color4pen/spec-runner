@@ -417,6 +417,15 @@ export class ParallelReviewRound {
             // Wrap in try-catch: if push fails AFTER the commit is created, HEAD has already
             // advanced. We capture the OID regardless so synthesizedCommits stays consistent
             // on resume and EGRESS_UNKNOWN_COMMIT deadlock is prevented. (regression-gate finding)
+            //
+            // HEAD-change detection (T-08 invariant):
+            // Capture HEAD before the call. After any error, compare: if HEAD hasn't changed,
+            // commitRoundArtifacts threw before creating a local commit (e.g., UNPUSHABLE_PATH_BLOCKED
+            // fires before git add/commit). Recording pre-existing HEAD as a synthesized commit
+            // would corrupt the egress ledger. Only record the OID when HEAD actually advanced.
+            const headBeforeCommit = deps.runtimeStrategy
+              ? ((await deps.runtimeStrategy.captureHeadSha(cwd)) ?? null)
+              : null;
             let commitArtifactError: unknown = null;
             try {
               await deps.runtimeStrategy.commitRoundArtifacts?.(
@@ -437,19 +446,28 @@ export class ParallelReviewRound {
               commitArtifactError = err;
             }
             // Capture round commit OID for synthesizedCommits ledger (T-08, D4).
-            // Captured even on push failure: commit may already exist locally.
-            roundCommitOid = deps.runtimeStrategy
+            // Only record if HEAD advanced (a local commit was created). When HEAD did not
+            // change (e.g., UNPUSHABLE_PATH_BLOCKED threw before any git add/commit),
+            // roundCommitOid stays null — the pre-existing HEAD must not enter the ledger.
+            const headAfterCommit = deps.runtimeStrategy
               ? ((await deps.runtimeStrategy.captureHeadSha(cwd)) ?? null)
               : null;
+            if (headAfterCommit !== null && headAfterCommit !== headBeforeCommit) {
+              roundCommitOid = headAfterCommit;
+            }
             if (commitArtifactError !== null) {
-              // Push failed (or commit failed) — record as escalation so commitRound still
-              // persists the OID, preventing EGRESS_UNKNOWN_COMMIT on the next resume attempt.
+              // Error after or before commit — record as escalation.
+              // The hint is tailored: when HEAD changed, a local commit exists; when HEAD
+              // did not change, the error fired before any commit (e.g., backstop rejection).
               aggregateVerdictResult = "escalation";
               inspectionEscalated = true;
+              const didCommit = headAfterCommit !== null && headAfterCommit !== headBeforeCommit;
               roundError = roundError ?? {
                 code: "ROUND_COMMIT_PUSH_FAILED",
-                message: `Round artifact push failed: ${commitArtifactError instanceof Error ? commitArtifactError.message : String(commitArtifactError)}`,
-                hint: "The round commit was created locally but push failed. Resolve the push issue and resume — the commit OID has been recorded in synthesizedCommits to prevent egress deadlock.",
+                message: `Round artifact commit/push failed: ${commitArtifactError instanceof Error ? commitArtifactError.message : String(commitArtifactError)}`,
+                hint: didCommit
+                  ? "The round commit was created locally but push failed. Resolve the push issue and resume — the commit OID has been recorded in synthesizedCommits to prevent egress deadlock."
+                  : "The round commit was rejected before being created (e.g., unpushable-path backstop). No local commit was made; resume will retry the round.",
               };
             }
           }

@@ -338,16 +338,22 @@ describe("collectPublishablePaths", () => {
     expect(result).toContain("src/foo.ts");
   });
 
-  it("git status failure is fail-open: still enumerates unpushed commits", async () => {
+  // Fail-closed: git status failure throws (cannot prove worktree is clean)
+  it("git status failure throws (fail-closed: cannot prove worktree is safe)", async () => {
     const { spawnFn } = makeFakeSpawnFn([
-      { stdout: "", exitCode: 1 }, // status failure (fail-open)
-      { stdout: "abc123\n", exitCode: 0 }, // rev-list: one unpushed commit
-      { stdout: "src/foo.ts\n", exitCode: 0 }, // diff-tree: path from commit
+      { stdout: "", exitCode: 1 }, // status failure
     ]);
-    // Should not throw — status failure is fail-open
-    const result = await collectPublishablePaths(spawnFn, "/fake/cwd");
-    // Unpushed commit paths are still included even though status failed
-    expect(result).toContain("src/foo.ts");
+    await expect(collectPublishablePaths(spawnFn, "/fake/cwd")).rejects.toThrow(
+      /status failed/,
+    );
+  });
+
+  it("git status spawn failure throws (fail-closed)", async () => {
+    const spawnFn: SpawnFn = async (_cmd, args) => {
+      if (args.includes("status")) throw new Error("spawn: git not found");
+      return { exitCode: 0, stdout: "", stderr: "" };
+    };
+    await expect(collectPublishablePaths(spawnFn, "/fake/cwd")).rejects.toThrow("spawn: git not found");
   });
 
   // Fail-closed: rev-list failure throws
