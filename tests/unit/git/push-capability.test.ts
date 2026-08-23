@@ -30,7 +30,6 @@ import {
   WORKFLOWS_PATTERN,
   INSTALLATION_TOKEN_PREFIX,
 } from "../../../src/git/push-capability.js";
-import type { PushCapability } from "../../../src/git/push-capability.js";
 import type { SpawnFn } from "../../../src/util/spawn.js";
 
 // ---------------------------------------------------------------------------

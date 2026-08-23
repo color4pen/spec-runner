@@ -666,7 +666,7 @@ describe("TC-037 / TC-015 / TC-016: commitAndPush Layer 2 backstop", () => {
   // TC-018 (layer 2 view): non-matching paths allow normal commit/push flow
   it("TC-018: non-matching path allows commit/push to proceed (no backstop throw)", async () => {
     // Worktree has only src/foo.ts — does not match .github/workflows/**
-    const { spawnFn, calls } = makeGitSpawn("M  src/foo.ts\0");
+    const { spawnFn } = makeGitSpawn("M  src/foo.ts\0");
     const infra = makeInfra(spawnFn);
     const step = makeMinimalStep();
     const state: JobState = {

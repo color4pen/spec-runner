@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T09:49:20.777Z",
+  "updatedAt": "2026-08-23T10:42:02.277Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -69,7 +69,9 @@
     "afd6163343adabd4d1825890a3aabdd41de4c718",
     "154eb2a468da862f4865a5ac190774d10368bba8",
     "c994ff98b556ac261fcb378540e13703d9acc9d8",
-    "7671a519884e39caa56487aa72325811b8aff22c"
+    "7671a519884e39caa56487aa72325811b8aff22c",
+    "5a8afa55738f3ef21616f497a8424da42a905111",
+    "3cfdd05c05a38ea6953dfcbb646202d1be313c8f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -121,16 +123,56 @@
       "src/core/step/output-verify.ts",
       "src/core/step/implementer.ts",
       "src/core/port/output-contract.ts"
+    ],
+    "implementer": [
+      "src/core/port/agent-runner.ts",
+      "src/core/port/output-contract.ts",
+      "src/core/port/step-context.ts",
+      "src/core/step/commit-push.ts",
+      "src/errors.ts",
+      "src/core/step/step-halt.ts",
+      "src/core/step/output-verify.ts",
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/implementer.ts",
+      "src/util/glob-match.ts",
+      "src/core/command/runner.ts",
+      "src/git/transport-auth.ts",
+      "src/core/step/executor.ts",
+      "src/core/types.ts",
+      "src/core/runtime/local.ts",
+      "src/core/runtime/managed.ts",
+      "tests/unit/architecture/core-invariants.test.ts",
+      "src/util/git-exec.ts",
+      "src/core/credentials/github.ts",
+      "src/core/step/request-review.ts",
+      "tests/unit/architecture/arch-allowlist.ts",
+      "src/git/push-capability.ts",
+      "tests/unit/git/git-spawn-env.test.ts",
+      "tests/unit/runtime/validate-step-outputs.test.ts",
+      "tests/unit/step/executor-output-gate.test.ts",
+      "test-cases.md",
+      "tasks.md",
+      "tests/unit/step/implementer.test.ts",
+      "tests/unit/step/commit-and-push.test.ts",
+      "tests/unit/step/output-verify.test.ts",
+      "tests/unit/git/push-capability.test.ts",
+      "tests/unit/step/push-capability-notice.test.ts",
+      "tests/unit/step/unpushable-path-contract.test.ts",
+      "tests/unit/runtime/unpushable-path-validate.test.ts",
+      "tests/unit/step/unpushable-path-escalation.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 30,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }

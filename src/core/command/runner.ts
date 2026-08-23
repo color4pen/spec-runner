@@ -242,7 +242,6 @@ export abstract class CommandRunner {
 
         // Step 3c: detect push capability (once per run — not per-step).
         // detectPushCapability is a pure function; no I/O, no side effects.
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         deps.pushCapability = detectPushCapability(process.env as Record<string, string | undefined>, deps.githubToken ?? undefined);
 
         handle = this.runtime.registerCleanup(jobState.jobId, startStep);
