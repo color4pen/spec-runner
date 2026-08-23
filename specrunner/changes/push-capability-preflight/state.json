@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T10:55:32.845Z",
+  "updatedAt": "2026-08-23T11:15:14.056Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-fixer",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/push-capability-preflight-e57e9dd3",
   "error": null,
   "pipelineId": "standard",
@@ -74,7 +74,9 @@
     "3cfdd05c05a38ea6953dfcbb646202d1be313c8f",
     "b6d72cad121586014c5f6ea5937410c21fe58ee4",
     "c0a584f940e14a8a91e99fb6c639b6206a589bf0",
-    "e1bcf3c2871032ad4108cb3440aba39cdf0bd636"
+    "e1bcf3c2871032ad4108cb3440aba39cdf0bd636",
+    "782310fc60a0df48b6a8deade82ee2e21b9323bb",
+    "9d81c63be06f066182104f4c36ef3b05548958c0"
   ],
   "touchedFiles": {
     "request-review": [
@@ -152,10 +154,58 @@
       "tests/unit/step/unpushable-path-contract.test.ts",
       "tests/unit/step/push-capability-notice.test.ts",
       "tests/unit/runtime/unpushable-path-validate.test.ts"
+    ],
+    "code-fixer": [
+      "src/core/step/step-halt.ts",
+      "src/core/step/output-verify.ts",
+      "src/git/push-capability.ts",
+      "tests/unit/step/unpushable-path-escalation.test.ts",
+      "tests/unit/git/push-capability.test.ts",
+      "src/core/runtime/local.ts",
+      "src/core/step/commit-push.ts",
+      "src/core/port/step-context.ts",
+      "src/core/command/runner.ts",
+      "src/core/types.ts",
+      "tests/unit/step/unpushable-path-contract.test.ts",
+      "tests/unit/step/push-capability-notice.test.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 43,
+    "historyCount": 52,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -165,7 +215,11 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 2,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
