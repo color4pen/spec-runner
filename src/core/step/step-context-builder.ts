@@ -130,9 +130,13 @@ export async function buildStepContext(
     if (followUpContracts.length > 0) {
       const strategy = deps.runtimeStrategy;
       const branch = state.branch ?? null;
+      // Use maxAttempts = 1 when unpushable-path is in the follow-up contracts:
+      // exactly one follow-up is sent for this contract (spec §4).
+      const hasUnpushablePath = followUpContracts.some((c) => c.kind === "unpushable-path");
+      const maxAttempts = hasUnpushablePath ? 1 : OUTPUT_FOLLOWUP_MAX_ATTEMPTS;
       outputVerification = {
         detect: () => strategy.validateStepOutputs(followUpContracts, cwd, branch),
-        maxAttempts: OUTPUT_FOLLOWUP_MAX_ATTEMPTS,
+        maxAttempts,
         buildPrompt: (violations, _attempt) => buildOutputFollowUpPrompt(violations),
       };
     }

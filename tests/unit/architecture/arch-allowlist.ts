@@ -153,6 +153,17 @@ export const ARCH_ALLOWLIST: AllowlistEntry[] = [
       "subprocess or external SDK — the env object is consumed locally within the call.",
   },
   {
+    file: "src/core/command/runner.ts",
+    pattern: "detectPushCapability(process.env",
+    invariant: "B-6",
+    tracking: "B6-runner-push-capability-detect",
+    comment:
+      "detectPushCapability is a pure function that reads GITHUB_ACTIONS and GH_TOKEN from " +
+      "process.env to determine whether the current environment has push constraints. " +
+      "process.env is not forwarded to any subprocess or external SDK — the env object " +
+      "is consumed locally within the pure detection function.",
+  },
+  {
     file: "src/util/env-filter.ts",
     pattern: "SPECRUNNER_DEBUG",
     invariant: "B-6",

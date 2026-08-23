@@ -440,6 +440,12 @@ export class ManagedRuntime implements RealRuntimeStrategy {
 
     const violations: import("../port/output-contract.js").OutputViolation[] = [];
     for (const contract of contracts) {
+      // unpushable-path: managed runtime has no local git access — skip without violation.
+      // Must come before the !branch early continue so it is never treated as a violation.
+      if (contract.kind === "unpushable-path") {
+        continue;
+      }
+
       if (!branch) {
         // No branch available — cannot verify remote content
         violations.push({ kind: contract.kind, path: contract.path, policy: contract.policy, detail: [] });

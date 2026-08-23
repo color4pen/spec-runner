@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "e57e9dd3-433f-4ed7-8603-5aba1dec0345",
   "createdAt": "2026-08-23T09:12:19.977Z",
-  "updatedAt": "2026-08-23T09:47:22.301Z",
+  "updatedAt": "2026-08-23T09:49:20.777Z",
   "request": {
     "title": "push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/push-capability-preflight-e57e9dd3",
   "error": null,
@@ -68,7 +68,8 @@
     "10337ee84ce0199b57dc79900c9a5faa93343671",
     "afd6163343adabd4d1825890a3aabdd41de4c718",
     "154eb2a468da862f4865a5ac190774d10368bba8",
-    "c994ff98b556ac261fcb378540e13703d9acc9d8"
+    "c994ff98b556ac261fcb378540e13703d9acc9d8",
+    "7671a519884e39caa56487aa72325811b8aff22c"
   ],
   "touchedFiles": {
     "request-review": [
@@ -114,15 +115,22 @@
       "src/errors.ts",
       "src/core/command/runner.ts",
       "src/core/step/step-context-builder.ts"
+    ],
+    "spec-fixer": [
+      "src/core/step/step-context-builder.ts",
+      "src/core/step/output-verify.ts",
+      "src/core/step/implementer.ts",
+      "src/core/port/output-contract.ts"
     ]
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 19,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }

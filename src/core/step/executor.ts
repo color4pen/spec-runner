@@ -31,6 +31,7 @@ import {
   makeCommitFailHalt,
   makeInputMissingHalt,
   makeCliStepFailHalt,
+  makeUnpushablePathHalt,
 } from "./step-halt.js";
 import type { StepHalt } from "./step-halt.js";
 import { deriveStepCompletion } from "./step-completion.js";
@@ -38,6 +39,7 @@ import {
   CommitOrchestrator,
   type StepExecutionResult,
 } from "./commit-orchestrator.js";
+import { parseUnpushablePathsFromError } from "../../errors.js";
 
 /**
  * StepExecutor encapsulates the I/O lifecycle for any Step.
@@ -420,6 +422,26 @@ export class StepExecutor {
 
         if (haltViolations.length > 0 || followUp.length > 0) {
           const allViolations = [...haltViolations, ...followUp];
+
+          // Route unpushable-path violations to awaiting-resume halt (escalation path).
+          // The violation persisted after the follow-up — escalate instead of fail-closed.
+          const unpushableViolations = allViolations.filter((v) => v.kind === "unpushable-path");
+          if (unpushableViolations.length > 0) {
+            const matchedPaths = unpushableViolations.flatMap((v) => v.detail);
+            const capabilitySource = deps.pushCapability?.source ?? "environment push constraint";
+            // agent-context-observability: forward context metrics from the successful runner.
+            const halt = makeUnpushablePathHalt(
+              matchedPaths,
+              capabilitySource,
+              step.name,
+              deps.slug,
+              { startedAt },
+              runResult.contextMetrics,
+              runResult.sessionRollovers,
+            );
+            return { kind: "halt", halt };
+          }
+
           // agent-context-observability: forward contextMetrics from the successful runner result
           // so commitHalt can persist them even though the halt is due to a post-success gate.
           // fresh-session-rollover: also forward sessionRollovers so D7 contextOnly entries are persisted.
@@ -459,11 +481,32 @@ export class StepExecutor {
       await myFinalize;
 
       if (finalizeError !== undefined) {
+        const finalizeErr = finalizeError as Error & { code?: string; hint?: string };
+
+        // UNPUSHABLE_PATH_BLOCKED: Layer 2 backstop raised this — convert to awaiting-resume
+        // instead of the default failed halt. This allows the job to remain resumable after
+        // the operator resolves the path constraint.
+        if (finalizeErr.code === "UNPUSHABLE_PATH_BLOCKED") {
+          const capabilitySource = deps.pushCapability?.source ?? "environment push constraint";
+          // Delegate message parsing to errors.ts (co-located with the error factory).
+          const matchedPaths = parseUnpushablePathsFromError(finalizeErr);
+          const halt = makeUnpushablePathHalt(
+            matchedPaths,
+            capabilitySource,
+            step.name,
+            deps.slug,
+            { startedAt },
+            runResult.contextMetrics,
+            runResult.sessionRollovers,
+          );
+          return { kind: "halt", halt };
+        }
+
         // agent-context-observability: forward contextMetrics from the successful runner result
         // so commitHalt can persist them even though the halt is due to a post-success commit failure.
         // fresh-session-rollover: also forward sessionRollovers so D7 contextOnly entries are persisted.
         const halt = makeCommitFailHalt(
-          finalizeError as Error & { code?: string; hint?: string },
+          finalizeErr,
           step.name,
           { startedAt },
           runResult.contextMetrics,

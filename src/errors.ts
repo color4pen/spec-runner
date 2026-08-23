@@ -179,6 +179,12 @@ export const ERROR_CODES = {
    * (no match, multiple matches, or field mismatch in 4-point identity check).
    */
   ARCHIVE_FROM_ISSUE_UNCONFIRMED: "ARCHIVE_FROM_ISSUE_UNCONFIRMED",
+  /**
+   * Layer 2 backstop: commitAndPush detected a publishable path matching a
+   * declared unpushable pattern. Staging, commit, and push are NOT attempted.
+   * The pipeline converts this into an awaiting-resume halt.
+   */
+  UNPUSHABLE_PATH_BLOCKED: "UNPUSHABLE_PATH_BLOCKED",
 } as const;
 
 export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
@@ -660,6 +666,49 @@ export function archiveFromIssueUnconfirmedError(detail: string): SpecRunnerErro
     `Use 'specrunner job attach --branch <branch>' then 'specrunner job archive <slug> --with-merge' for manual recovery.`,
     `Cannot confirm target PR/branch identity: ${detail}`,
   );
+}
+
+/**
+ * Error thrown by the Layer 2 backstop in commitAndPush when a publishable path
+ * matches a declared unpushable pattern. Raised before any staging, commit, or push.
+ *
+ * The pipeline converts this into an awaiting-resume halt (escalation path).
+ *
+ * @param paths     Publishable paths that matched the declared pattern(s).
+ * @param patterns  The declared unpushable patterns.
+ * @param source    Human-readable environment constraint description.
+ */
+export function unpushablePathBlockedError(
+  paths: string[],
+  patterns: string[],
+  source: string,
+): SpecRunnerError {
+  const pathList = paths.map((p) => `  - ${p}`).join("\n");
+  const patternList = patterns.join(", ");
+  return new SpecRunnerError(
+    ERROR_CODES.UNPUSHABLE_PATH_BLOCKED,
+    `The current environment's token cannot push to the matched paths.\n` +
+    `Matched paths:\n${pathList}\n` +
+    `Declared unpushable patterns: ${patternList}\n` +
+    `Environment constraint: ${source}`,
+    `commitAndPush blocked: publishable path(s) match unpushable pattern(s). ` +
+    `protected path(s): ${paths.join(", ")}. Environment constraint: ${source}`,
+  );
+}
+
+/**
+ * Parse the protected path list out of an UNPUSHABLE_PATH_BLOCKED error message.
+ *
+ * Co-located with unpushablePathBlockedError so the parser stays in sync with the
+ * message format. Returns an empty array when the message cannot be parsed (fail-open).
+ *
+ * The hint field format is:
+ *   "commitAndPush blocked: ... protected path(s): <p1, p2>. Environment constraint: <source>"
+ */
+export function parseUnpushablePathsFromError(err: { message: string }): string[] {
+  const match = /protected path\(s\): (.+?)\. Environment/.exec(err.message);
+  if (!match) return [];
+  return match[1]!.split(", ").map((p) => p.trim()).filter(Boolean);
 }
 
 export function writeScopeViolationError(

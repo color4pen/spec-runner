@@ -141,6 +141,7 @@ export function buildOutputFollowUpPrompt(violations: OutputViolation[]): string
   const producedViolations = violations.filter((v) => v.kind === "produced");
   const contentFormatViolations = violations.filter((v) => v.kind === "content-format");
   const testCoverageViolations = violations.filter((v) => v.kind === "test-coverage");
+  const unpushablePathViolations = violations.filter((v) => v.kind === "unpushable-path");
 
   if (tasksViolations.length > 0) {
     lines.push("## Incomplete tasks (tasks.md)");
@@ -229,6 +230,29 @@ export function buildOutputFollowUpPrompt(violations: OutputViolation[]): string
       lines.push(`(see ${p} for uncovered must TCs)`);
       lines.push("");
     }
+  }
+
+  if (unpushablePathViolations.length > 0) {
+    lines.push("## Unpushable path constraint");
+    lines.push("");
+    lines.push(
+      "The current environment cannot push changes to certain paths. " +
+      "The following paths in your changes match a declared unpushable pattern:",
+    );
+    lines.push("");
+    for (const v of unpushablePathViolations) {
+      if (v.detail.length > 0) {
+        for (const matchedPath of v.detail) {
+          lines.push(`- \`${matchedPath}\``);
+        }
+      }
+    }
+    lines.push("");
+    lines.push(
+      "Please either remove the changes to those paths, or satisfy the requirement " +
+      "without modifying the declared unpushable paths.",
+    );
+    lines.push("");
   }
 
   lines.push("After completing the work, commit and push your changes.");

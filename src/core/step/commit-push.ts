@@ -15,9 +15,11 @@ import {
   stagingLimitExceededError,
   stagedBytesLimitExceededError,
   egressUnknownCommitError,
+  unpushablePathBlockedError,
   SpecRunnerError,
   ERROR_CODES,
 } from "../../errors.js";
+import { collectPublishablePaths, matchUnpushablePaths } from "../../git/push-capability.js";
 import {
   resolveStagingExcludePatterns,
   resolveMaxStagedFiles,
@@ -505,6 +507,27 @@ export async function commitAndPush(
     const resetResult = await gitExecResult(infra.spawnFn, cwd, ["reset", "--mixed", headBeforeStep]);
     if (!resetResult.ok || resetResult.exitCode !== 0) {
       throw commitEffectFailedError(step.name, branch, "stage", "git reset --mixed failed");
+    }
+  }
+
+  // ── Layer 2 backstop: unpushable-path check ──────────────────────────────────
+  // Runs after the mixed reset (post-reset worktree reflects actual agent output)
+  // and before any staging. When push capability declares patterns, compute the
+  // publishable path set and reject if any path matches a declared pattern.
+  // Guard: skip entirely when pushCapability is absent or has no patterns.
+  if (deps.pushCapability && deps.pushCapability.patterns.length > 0) {
+    // Adapt the git-exec.ts SpawnFn (ChildProcess) to the spawn.ts async SpawnFn
+    // expected by collectPublishablePaths.
+    const gitPublishSpawn: PipelineSpawnFn = (cmd, args, opts) =>
+      runSubprocess(infra.spawnFn, cmd, args, { cwd: opts.cwd });
+    const publishablePaths = await collectPublishablePaths(gitPublishSpawn, cwd);
+    const matchedPaths = matchUnpushablePaths(publishablePaths, deps.pushCapability.patterns);
+    if (matchedPaths.length > 0) {
+      throw unpushablePathBlockedError(
+        matchedPaths,
+        deps.pushCapability.patterns,
+        deps.pushCapability.source,
+      );
     }
   }
 

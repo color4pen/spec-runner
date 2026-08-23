@@ -17,6 +17,7 @@ import { getConformanceFixContext, buildFindingsBlock, getPreviousSessionId } fr
 import { latestIteration } from "./io-iteration.js";
 import { verificationFailedLast } from "../pipeline/reverification.js";
 import { extractVerificationFailures } from "../verification/parse-result.js";
+import { renderPushCapabilityNotice } from "../../git/push-capability.js";
 
 const IMPLEMENTER_AGENT_MODEL = "claude-sonnet-5";
 
@@ -256,17 +257,31 @@ export const ImplementerStep: AgentStep = {
   },
 
   outputContracts(_state: JobState, deps: StepDeps): OutputContract[] {
-    return [
+    const contracts: OutputContract[] = [
       {
         kind: "tasks-complete",
         path: `${changeFolderPath(deps.slug)}/tasks.md`,
         policy: "follow-up",
       },
     ];
+    // When push capability declares patterns, add an unpushable-path contract.
+    // The runtime checks the publishable path set against the declared patterns.
+    if (deps.pushCapability && deps.pushCapability.patterns.length > 0) {
+      contracts.push({
+        kind: "unpushable-path",
+        path: "", // sentinel — path is not used for unpushable-path contracts
+        policy: "follow-up",
+        patterns: deps.pushCapability.patterns,
+      });
+    }
+    return contracts;
   },
 
   buildMessage(state: JobState, deps: StepDeps): string {
     if (!state.branch) throw branchNotSetError(STEP_NAMES.IMPLEMENTER);
+
+    // Capability notice: appended to all message variants when push capability is declared.
+    const capabilityNotice = renderPushCapabilityNotice(deps.pushCapability ?? null);
 
     // Recovery re-entry: verification failed → implementer fixes (no mechanical-fix constraint).
     // build-fixer 廃止後、verification 失敗は implementer 自身が paired fixer として直す。
@@ -280,7 +295,7 @@ export const ImplementerStep: AgentStep = {
           verificationContent: deps.dynamicContext?.verificationContent,
           requestContent: deps.request.content,
           dynamicContext: deps.dynamicContext,
-        });
+        }) + capabilityNotice;
       }
       // Fresh fallback (no previous session): full initial message (branch context +
       // tasks/spec guidance) with the verification-failure section appended (D3).
@@ -291,13 +306,13 @@ export const ImplementerStep: AgentStep = {
         dynamicContext: deps.dynamicContext,
       });
       const failureSection = buildFailureSection(deps.dynamicContext?.verificationContent);
-      if (failureSection === "") return baseMessage;
+      if (failureSection === "") return baseMessage + capabilityNotice;
       const insertBefore = "</user-request>";
       const idx = baseMessage.lastIndexOf(insertBefore);
       if (idx !== -1) {
-        return `${baseMessage.slice(0, idx)}${failureSection}\n${baseMessage.slice(idx)}`;
+        return `${baseMessage.slice(0, idx)}${failureSection}\n${baseMessage.slice(idx)}` + capabilityNotice;
       }
-      return `${baseMessage}\n${failureSection}`;
+      return `${baseMessage}\n${failureSection}` + capabilityNotice;
     }
 
     // Conformance-triggered entry: append conformance non-conformities section
@@ -314,10 +329,10 @@ export const ImplementerStep: AgentStep = {
       const insertBefore = "</user-request>";
       const idx = baseMessage.lastIndexOf(insertBefore);
       if (idx !== -1) {
-        return `${baseMessage.slice(0, idx)}\n## Conformance non-conformities (must resolve)\n\n${findingsBlock}\n${baseMessage.slice(idx)}`;
+        return `${baseMessage.slice(0, idx)}\n## Conformance non-conformities (must resolve)\n\n${findingsBlock}\n${baseMessage.slice(idx)}` + capabilityNotice;
       }
       // Fallback: just append
-      return `${baseMessage}\n\n## Conformance non-conformities (must resolve)\n\n${findingsBlock}`;
+      return `${baseMessage}\n\n## Conformance non-conformities (must resolve)\n\n${findingsBlock}` + capabilityNotice;
     }
 
     return buildImplementerInitialMessage({
@@ -326,7 +341,7 @@ export const ImplementerStep: AgentStep = {
       requestContent: deps.request.content,
       dynamicContext: deps.dynamicContext,
       placement: deps.config.tests?.placement,
-    });
+    }) + capabilityNotice;
   },
 
   resultFilePath(_state: JobState, _deps: StepDeps): string | null {
