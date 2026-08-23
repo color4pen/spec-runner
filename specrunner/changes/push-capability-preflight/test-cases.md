@@ -17,7 +17,7 @@ GIVEN/WHEN/THEN structure (mixed format — depends on TC type):
     **WHEN** <action>
     **THEN** <expected result>
   gate TC:
-    GWT は記述しない。充足を担う verification phase 名(または verification.commands の command 名)を本文に記録する。
+    GWT は記述しない。充足を担う verification phase 名（または verification.commands の command 名）を本文に記録する。
 
 Summary section MUST appear immediately after the title with ALL 4 items:
   ## Summary
