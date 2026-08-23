@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-23T01:25:47.702Z",
+  "updatedAt": "2026-08-23T01:35:46.534Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -85,7 +85,8 @@
     "0e399dbeb3249cfc2686be103c233776bb46997c",
     "889083b88c2b73d22c32fd97bc70f17e733f118c",
     "c64f7a6b6cc3898942962018ede0f989c62124ed",
-    "ec82f283d43a673f1c11df6c10bbd2b29bddbc64"
+    "ec82f283d43a673f1c11df6c10bbd2b29bddbc64",
+    "58b03af6ba472829c44610e27654efa65207aa7e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -142,18 +143,20 @@
       "src/adapter/claude-code/rollover-prompt.ts",
       "src/core/port/agent-runner.ts",
       "src/core/step/step-halt.ts",
-      "src/core/step/commit-orchestrator.ts",
       "src/core/step/executor.ts",
       "src/config/schema/types.ts",
       "src/config/schema/resolution.ts",
       "src/config/schema/validation.ts",
+      "src/core/step/commit-orchestrator.ts",
       "src/kernel/event-types.ts",
+      "src/core/event/types.ts",
+      "src/logger/pipeline-logger.ts",
+      "src/cli/progress.ts",
       "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
-      "tests/unit/adapter/claude-code/rollover-prompt.test.ts",
       "tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts",
-      "tests/unit/core/step/commit-orchestrator-rollover.test.ts",
-      "src/config/__tests__/context-rollover-config.test.ts",
-      "src/adapter/claude-code/context-observer.ts"
+      "tests/unit/adapter/claude-code/rollover-prompt.test.ts",
+      "src/core/attestation/render-comment.ts",
+      "src/config/__tests__/context-rollover-config.test.ts"
     ],
     "code-fixer": [
       "src/core/step/step-halt.ts",
@@ -228,7 +231,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 96,
+    "historyCount": 100,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -238,7 +241,7 @@
       "implementer": 2,
       "bite-evidence": 1,
       "verification": 3,
-      "code-review": 2,
+      "code-review": 3,
       "code-fixer": 3,
       "cross-boundary-invariants": 3,
       "scale-tolerance": 1,

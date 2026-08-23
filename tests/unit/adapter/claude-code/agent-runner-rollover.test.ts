@@ -16,6 +16,7 @@
  * TC-026: 捨てた session の modelUsage は最終 AgentRunResult の modelUsage に加算される
  * TC-028: rollover が発生しない場合 sessionRollovers は undefined である
  * TC-035: throw 経路で exhaustion と判定された場合 error.message と cause チェーンが保全される
+ * TC-027: rollover 後も 1 回目セッションの touchedFileMessages が保持され最終 touchedFiles に含まれる
  * TC-036: throw 経路での exhaustion が rollover ループへ正しくルーティングされ成功する
  * TC-037: throw 経路での exhaustion が budget 枯渇時に CONTEXT_WINDOW_EXHAUSTED を返す
  */
@@ -185,6 +186,27 @@ function makeErrorResult(errors = ["something unexpected went wrong"]) {
     duration_ms: 100,
     duration_api_ms: 80,
     total_cost_usd: 0.001,
+  } as unknown;
+}
+
+/**
+ * Build an assistant message with a Write tool_use block for the given file path.
+ * Used by TC-027 to verify touchedFileMessages accumulation across rollover sessions.
+ * The `message.content` structure matches what extractTouchedFilesFromMessages expects.
+ */
+function makeAssistantMessageWithFileWrite(filePath: string) {
+  return {
+    type: "assistant" as const,
+    message: {
+      content: [
+        {
+          type: "tool_use",
+          id: "test-tool-id",
+          name: "Write",
+          input: { file_path: filePath },
+        },
+      ],
+    },
   } as unknown;
 }
 
@@ -1150,5 +1172,100 @@ describe("TC-037: throw 経路での exhaustion が budget 枯渇時に CONTEXT_
     expect((result.error as Error & { code?: string })?.code).toBe("CLAUDE_CODE_QUERY_FAILED");
     expect(callCount).toBe(1); // no rollover
     expect(result.sessionRollovers).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// TC-027: rollover 後も 1 回目セッションの touchedFileMessages が保持される
+// ---------------------------------------------------------------------------
+
+describe("TC-027: rollover 後も 1 回目セッションの touchedFileMessages が保持され最終 touchedFiles に含まれる", () => {
+  it("files touched in session 1 (before exhaustion) appear in touchedFiles after rollover + success", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        // Session 1: write a file, then context exhaustion
+        yield makeAssistantMessageWithFileWrite("src/session1-only-file.ts");
+        yield makeExhaustionResult("sess-1");
+      } else {
+        // Session 2: write a different file, then success
+        yield makeAssistantMessageWithFileWrite("src/session2-only-file.ts");
+        yield makeSuccessResult("sess-2");
+      }
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // touchedFiles must include files from BOTH sessions
+    expect(result.touchedFiles).toBeDefined();
+    expect(result.touchedFiles).toContain("src/session1-only-file.ts"); // from 1st session (before rollover)
+    expect(result.touchedFiles).toContain("src/session2-only-file.ts"); // from 2nd session (after rollover)
+  });
+
+  it("files touched in multiple rollover sessions all appear in the final touchedFiles", async () => {
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        yield makeAssistantMessageWithFileWrite("src/rollover1-file.ts");
+        yield makeExhaustionResult("sess-1");
+      } else if (callCount === 2) {
+        yield makeAssistantMessageWithFileWrite("src/rollover2-file.ts");
+        yield makeExhaustionResult("sess-2");
+      } else {
+        yield makeAssistantMessageWithFileWrite("src/final-file.ts");
+        yield makeSuccessResult("sess-3");
+      }
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 2 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    expect(result.touchedFiles).toContain("src/rollover1-file.ts"); // session 1
+    expect(result.touchedFiles).toContain("src/rollover2-file.ts"); // session 2
+    expect(result.touchedFiles).toContain("src/final-file.ts");     // session 3
+  });
+
+  it("session 1 touchedFileMessages do NOT leak into session 2 contextMetrics (isolation)", async () => {
+    // Complementary test: touchedFiles accumulates, but contextMetrics resets per session.
+    let callCount = 0;
+
+    const queryFn: QueryFn = async function* () {
+      callCount++;
+      if (callCount === 1) {
+        yield makeAssistantMessage(180000); // high tokens in session 1
+        yield makeAssistantMessageWithFileWrite("src/session1-file.ts");
+        yield makeExhaustionResult("sess-1");
+      } else {
+        yield makeAssistantMessage(50000);  // lower tokens in session 2
+        yield makeAssistantMessageWithFileWrite("src/session2-file.ts");
+        yield makeSuccessResult("sess-2");
+      }
+    } as unknown as QueryFn;
+
+    const runner = new ClaudeCodeRunner({ cwd: tempDir, _queryFn: queryFn });
+    const ctx = makeCtx(tempDir, {
+      config: makeConfig({ contextRollover: { maxRollovers: 1 } }),
+    });
+    const result = await runner.run(ctx);
+
+    expect(result.completionReason).toBe("success");
+    // touchedFiles accumulates across both sessions
+    expect(result.touchedFiles).toContain("src/session1-file.ts");
+    expect(result.touchedFiles).toContain("src/session2-file.ts");
+    // contextMetrics reflects only the 2nd session (not the 1st session's 180000)
+    expect(result.contextMetrics?.peakActiveContextTokens).toBe(50000);
   });
 });
