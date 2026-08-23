@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-23T02:06:23.051Z",
+  "updatedAt": "2026-08-23T02:23:35.070Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
   "pipelineId": "standard",
@@ -91,7 +91,9 @@
     "4c34b7773ce22be65765550ee089513623c7671e",
     "349c31c31fa9fbfc1b6519570787e66b56e99afb",
     "ac8cf405b4054496cbef95646877f7fb495753b3",
-    "ee9d18946b28d1d32265305d9e014c0a524acaba"
+    "ee9d18946b28d1d32265305d9e014c0a524acaba",
+    "6b86ac9be6c348bcb54a104f0f6c31d5e4ab9eb7",
+    "fc56a57d1523081ad7ecfb2a936fe019da558cdb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -185,17 +187,17 @@
       "src/config/schema/types.ts",
       "src/config/schema/resolution.ts",
       "src/config/schema/validation.ts",
-      "src/kernel/event-types.ts",
       "src/core/event/types.ts",
+      "src/kernel/event-types.ts",
       "src/logger/pipeline-logger.ts",
       "src/cli/progress.ts",
-      "docs/configuration.md",
-      "src/config/schema.ts",
       "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
       "tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts",
-      "tests/unit/core/step/commit-orchestrator-rollover.test.ts",
       "tests/unit/adapter/claude-code/rollover-prompt.test.ts",
-      "src/config/__tests__/context-rollover-config.test.ts"
+      "src/config/__tests__/context-rollover-config.test.ts",
+      "tests/unit/core/step/commit-orchestrator-rollover.test.ts",
+      "tests/unit/logger/pipeline-logger-rollover.test.ts",
+      "src/adapter/claude-code/__tests__/agent-runner-transient-retry.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -238,8 +240,13 @@
       "recordedAt": "2026-08-23T00:34:11.980Z"
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1076",
+    "number": 1076,
+    "createdAt": "2026-08-23T02:23:33.679Z"
+  },
   "_journal": {
-    "historyCount": 122,
+    "historyCount": 136,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -248,14 +255,16 @@
       "spec-fixer": 1,
       "implementer": 2,
       "bite-evidence": 1,
-      "verification": 3,
+      "verification": 4,
       "code-review": 3,
       "code-fixer": 5,
       "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
       "custom-reviewers": 4,
       "regression-gate": 4,
-      "conformance": 1
+      "conformance": 2,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
