@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-22T23:57:40.331Z",
+  "updatedAt": "2026-08-23T00:20:37.953Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -13,7 +13,7 @@
     "name": "spec-runner"
   },
   "step": "code-review",
-  "status": "running",
+  "status": "awaiting-resume",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
   "pipelineId": "standard",
@@ -73,7 +73,9 @@
     "a9f1a2c928b65458a3fecca5539033b2f9a625a0",
     "7218de6a3bd5ad0da9b2c7524c28cdd78af72958",
     "55b49ec12d15a6ef7f188265776f49c0d87755a6",
-    "e1c8fc45ad8ebc10313cd7b5d4cf5965dee6ade5"
+    "e1c8fc45ad8ebc10313cd7b5d4cf5965dee6ade5",
+    "86f67de2dc23681481c07cea279adfb46a2bed10",
+    "f32099c897cdefb09a89026fd13cbd90b56f696f"
   ],
   "touchedFiles": {
     "request-review": [
@@ -165,26 +167,60 @@
       "src/core/port/agent-runner.ts",
       "src/core/step/step-halt.ts",
       "src/core/step/commit-orchestrator.ts",
+      "src/core/step/executor.ts",
       "src/config/schema/types.ts",
       "src/config/schema/resolution.ts",
+      "src/config/schema/validation.ts",
+      "src/kernel/event-types.ts",
       "tests/unit/adapter/claude-code/agent-runner-rollover.test.ts",
       "tests/unit/adapter/claude-code/rollover-prompt.test.ts",
-      "src/config/__tests__/context-rollover-config.test.ts",
-      "tests/unit/core/step/commit-orchestrator-rollover.test.ts",
       "tests/unit/adapter/claude-code/agent-runner-executor-integration.test.ts",
-      "src/kernel/event-types.ts",
-      "src/core/event/types.ts",
-      "src/cli/progress.ts",
-      "src/config/schema/validation.ts",
-      "src/core/step/executor.ts"
+      "tests/unit/core/step/commit-orchestrator-rollover.test.ts",
+      "src/config/__tests__/context-rollover-config.test.ts",
+      "src/adapter/claude-code/context-observer.ts"
     ],
     "code-fixer": [
       "src/core/step/executor.ts",
       "src/core/port/agent-runner.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "pending",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "approved",
+      "approvedAtCommit": "86f67de2dc23681481c07cea279adfb46a2bed10",
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/fresh-session-rollover/design.md:sha256:c4eb15decb5277f3a163ca4bdd8425fa8a03e77b11409eb870b6b795ef492656|specrunner/changes/fresh-session-rollover/request.md:sha256:8f8c68345f440ef9049b875dac42ab7b28050eb905c861dc569e291db881b2d6|specrunner/changes/fresh-session-rollover/spec.md:sha256:0abe09db6fe4a661a7348fd57d17a423f21e759664d3b5d936d41267cd63ca63|specrunner/changes/fresh-session-rollover/tasks.md:sha256:d942da5ad15207d5bdae166614cdbeac1338db5983e51d01df96d7c9b3f670b3|specrunner/changes/fresh-session-rollover/test-cases.md:sha256:9d0ac8cb8fb4cfb974bd1252792fd12baa95a87979f961b7844d939f70057d86"
+    }
+  ],
+  "resumePoint": {
+    "step": "custom-reviewers",
+    "reason": "custom-reviewers escalated",
+    "iterationsExhausted": 1
+  },
   "_journal": {
-    "historyCount": 39,
+    "historyCount": 49,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -194,8 +230,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1,
-      "code-fixer": 1
+      "code-review": 2,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
