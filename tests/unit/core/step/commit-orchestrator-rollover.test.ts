@@ -913,3 +913,251 @@ describe("makeDriftHalt / makeOutputGateHalt / makeCommitFailHalt が sessionRol
     expect(Object.prototype.hasOwnProperty.call(halt, "sessionRollovers")).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// TC-033: commitRound halt メンバーが sessionRollovers の contextOnly エントリを usage.json に書く (D7)
+// ---------------------------------------------------------------------------
+
+describe("TC-033: commitRound halt メンバーが sessionRollovers の contextOnly エントリを usage.json に書く", () => {
+  it("halt メンバーに sessionRollovers がある場合 → rollover contextOnly エントリが usage.json に追記される", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("spec-review");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const rolloverContextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      model: "claude-sonnet-4-5",
+      contextWindowTokens: 200000,
+      peakActiveContextTokens: 196000,
+      exhaustionAtTokens: 196000,
+    };
+
+    const sessionRollovers: AgentSessionRollover[] = [
+      makeRollover(1, rolloverContextMetrics),
+    ];
+
+    const halt = makeNonSuccessHalt(
+      {
+        error: Object.assign(new Error("Prompt is too long (budget exhausted)"), { code: "CONTEXT_WINDOW_EXHAUSTED" }),
+        sessionRollovers,
+      },
+      "spec-review",
+      { completedAt: "2026-01-01T00:10:00.000Z" },
+    );
+
+    const haltResult: StepExecutionResult = { kind: "halt", halt };
+
+    const coordinatorRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: { verdict: null, findingsPath: null, error: null },
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:10:00.000Z",
+    };
+
+    await orchestrator.commitRound({
+      coordinatorName: "reviewer-coordinator",
+      base: state,
+      deps,
+      members: [{ step, startedAt: "2026-01-01T00:00:00.000Z", result: haltResult }],
+      reviewerStatuses: [],
+      coordinatorRun,
+      roundError: null,
+    });
+
+    const { readUsageFile } = await import("../../../../src/core/usage/store.js");
+    const usageFile = await readUsageFile(usagePath);
+
+    // D7: rollover must always leave a contextOnly entry in usage.json
+    const rolloverLines = usageFile.commandInvocations.filter((inv) => inv.contextOnly === true);
+    expect(rolloverLines).toHaveLength(1);
+    expect(rolloverLines[0]!.modelUsage).toBeNull();
+    expect(rolloverLines[0]!.contextOnly).toBe(true);
+    expect(rolloverLines[0]!.contextMetrics).toBeDefined();
+    expect(rolloverLines[0]!.contextMetrics!.peakActiveContextTokens).toBe(196000);
+    expect(rolloverLines[0]!.contextMetrics!.exhaustionAtTokens).toBe(196000);
+    expect(rolloverLines[0]!.stepName).toBe("spec-review");
+    expect(rolloverLines[0]!.jobId).toBe(TEST_JOB_ID);
+  });
+
+  it("halt メンバーに sessionRollovers がない場合 → rollover contextOnly エントリなし (従来の動作を変えない)", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("spec-review");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const halt = makeNonSuccessHalt(
+      {
+        error: Object.assign(new Error("Agent step failed"), { code: "AGENT_STEP_FAILED" }),
+        // no sessionRollovers
+      },
+      "spec-review",
+      {},
+    );
+
+    const haltResult: StepExecutionResult = { kind: "halt", halt };
+
+    const coordinatorRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: { verdict: null, findingsPath: null, error: null },
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:05:00.000Z",
+    };
+
+    await orchestrator.commitRound({
+      coordinatorName: "reviewer-coordinator",
+      base: state,
+      deps,
+      members: [{ step, startedAt: "2026-01-01T00:00:00.000Z", result: haltResult }],
+      reviewerStatuses: [],
+      coordinatorRun,
+      roundError: null,
+    });
+
+    const { readUsageFile } = await import("../../../../src/core/usage/store.js");
+
+    let usageInvocations: unknown[] = [];
+    try {
+      const usageFile = await readUsageFile(usagePath);
+      usageInvocations = usageFile.commandInvocations;
+    } catch {
+      // No usage.json created — acceptable when no contextOnly writes occur
+    }
+
+    // No contextOnly entries should be written (no sessionRollovers)
+    const rolloverLines = usageInvocations.filter(
+      (inv) => (inv as Record<string, unknown>)["contextOnly"] === true,
+    );
+    expect(rolloverLines).toHaveLength(0);
+  });
+
+  it("2 つの halt メンバーがそれぞれ sessionRollovers を持つ場合 → 各 rollover ごとに contextOnly エントリが書かれる", async () => {
+    const usagePath = await setupUsageDir();
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step1 = makeStep("spec-review");
+    const step2 = makeStep("judge");
+    const state = makeState();
+    const deps = makeDeps({ storeFactory: makeStoreFactory(store) });
+
+    const rollover1Metrics: AgentContextMetrics = {
+      provider: "claude-code",
+      peakActiveContextTokens: 195000,
+      exhaustionAtTokens: 195000,
+    };
+    const rollover2Metrics: AgentContextMetrics = {
+      provider: "claude-code",
+      peakActiveContextTokens: 193000,
+      exhaustionAtTokens: 193000,
+    };
+
+    const halt1 = makeNonSuccessHalt(
+      {
+        error: Object.assign(new Error("Prompt is too long"), { code: "CONTEXT_WINDOW_EXHAUSTED" }),
+        sessionRollovers: [makeRollover(1, rollover1Metrics)],
+      },
+      "spec-review",
+      { completedAt: "2026-01-01T00:08:00.000Z" },
+    );
+    const halt2 = makeNonSuccessHalt(
+      {
+        error: Object.assign(new Error("Prompt is too long"), { code: "CONTEXT_WINDOW_EXHAUSTED" }),
+        sessionRollovers: [makeRollover(1, rollover2Metrics)],
+      },
+      "judge",
+      { completedAt: "2026-01-01T00:09:00.000Z" },
+    );
+
+    const coordinatorRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: { verdict: null, findingsPath: null, error: null },
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:10:00.000Z",
+    };
+
+    await orchestrator.commitRound({
+      coordinatorName: "reviewer-coordinator",
+      base: state,
+      deps,
+      members: [
+        { step: step1, startedAt: "2026-01-01T00:00:00.000Z", result: { kind: "halt", halt: halt1 } },
+        { step: step2, startedAt: "2026-01-01T00:00:00.000Z", result: { kind: "halt", halt: halt2 } },
+      ],
+      reviewerStatuses: [],
+      coordinatorRun,
+      roundError: null,
+    });
+
+    const { readUsageFile } = await import("../../../../src/core/usage/store.js");
+    const usageFile = await readUsageFile(usagePath);
+
+    const rolloverLines = usageFile.commandInvocations.filter((inv) => inv.contextOnly === true);
+    // 2 rollover entries: one from spec-review halt, one from judge halt
+    expect(rolloverLines).toHaveLength(2);
+    expect(rolloverLines[0]!.stepName).toBe("spec-review");
+    expect(rolloverLines[0]!.contextMetrics!.peakActiveContextTokens).toBe(195000);
+    expect(rolloverLines[1]!.stepName).toBe("judge");
+    expect(rolloverLines[1]!.contextMetrics!.peakActiveContextTokens).toBe(193000);
+  });
+
+  it("rollover contextOnly 書き込みの I/O 失敗は commitRound の成功を妨げない (best-effort)", async () => {
+    const store = makeStoreMock();
+    const events = new EventBus();
+    const orchestrator = new CommitOrchestrator(makeStoreFactory(store), events);
+    const step = makeStep("spec-review");
+    const state = makeState();
+
+    // Non-existent cwd → appendInvocation will fail
+    const nonExistentDir = path.join(tempDir, "does-not-exist");
+    const deps = makeDeps({ cwd: nonExistentDir });
+
+    const rolloverContextMetrics: AgentContextMetrics = {
+      provider: "claude-code",
+      peakActiveContextTokens: 196000,
+      exhaustionAtTokens: 196000,
+    };
+
+    const halt = makeNonSuccessHalt(
+      {
+        error: Object.assign(new Error("Prompt is too long (budget exhausted)"), { code: "CONTEXT_WINDOW_EXHAUSTED" }),
+        sessionRollovers: [makeRollover(1, rolloverContextMetrics)],
+      },
+      "spec-review",
+      {},
+    );
+
+    const coordinatorRun = {
+      attempt: 1,
+      sessionId: null,
+      outcome: { verdict: null, findingsPath: null, error: null },
+      startedAt: "2026-01-01T00:00:00.000Z",
+      endedAt: "2026-01-01T00:05:00.000Z",
+    };
+
+    // commitRound should NOT throw even though appendInvocation will fail
+    await expect(
+      orchestrator.commitRound({
+        coordinatorName: "reviewer-coordinator",
+        base: state,
+        deps,
+        members: [{ step, startedAt: "2026-01-01T00:00:00.000Z", result: { kind: "halt", halt } }],
+        reviewerStatuses: [],
+        coordinatorRun,
+        roundError: null,
+      }),
+    ).resolves.not.toThrow();
+
+    // store.persist was still called (state was committed)
+    expect(store.persist).toHaveBeenCalledTimes(1);
+  });
+});

@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "99eec99c-1272-40c3-8803-09fc4372f4de",
   "createdAt": "2026-08-22T22:28:04.854Z",
-  "updatedAt": "2026-08-23T01:49:59.656Z",
+  "updatedAt": "2026-08-23T01:55:33.211Z",
   "request": {
     "title": "implementer のコンテキスト枯渇で途中成果が全損する — fresh session rollover がない",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "code-fixer",
   "status": "running",
   "branch": "feat/fresh-session-rollover-99eec99c",
   "error": null,
@@ -88,7 +88,8 @@
     "ec82f283d43a673f1c11df6c10bbd2b29bddbc64",
     "58b03af6ba472829c44610e27654efa65207aa7e",
     "480830d66c626470077b9049990062e0a8e3aab3",
-    "4c34b7773ce22be65765550ee089513623c7671e"
+    "4c34b7773ce22be65765550ee089513623c7671e",
+    "349c31c31fa9fbfc1b6519570787e66b56e99afb"
   ],
   "touchedFiles": {
     "request-review": [
@@ -174,7 +175,8 @@
       "tests/unit/logger/pipeline-logger-rollover.test.ts"
     ],
     "regression-gate": [
-      "src/adapter/claude-code/agent-runner.ts"
+      "src/core/step/commit-orchestrator.ts",
+      "tests/unit/logger/pipeline-logger-rollover.test.ts"
     ],
     "conformance": [
       "src/adapter/claude-code/agent-runner.ts",
@@ -240,7 +242,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 109,
+    "historyCount": 113,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -255,7 +257,7 @@
       "cross-boundary-invariants": 4,
       "scale-tolerance": 1,
       "custom-reviewers": 4,
-      "regression-gate": 2,
+      "regression-gate": 3,
       "conformance": 1
     }
   }

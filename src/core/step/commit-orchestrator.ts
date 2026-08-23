@@ -684,6 +684,8 @@ export class CommitOrchestrator {
     // Track success member entries for best-effort post-persist work
     const successEntries: Array<{ step: Step; result: StepExecutionResult & { kind: "success" }; preWriteIo: IoRef[]; preReadIo: IoRef[] }> = [];
     const skippedEntries: Array<{ step: Step; result: StepExecutionResult & { kind: "skipped" } }> = [];
+    // Track halt member entries for best-effort post-persist rollover contextOnly writes (D7).
+    const haltEntries: Array<{ step: Step; halt: StepHalt }> = [];
 
     // --- 1. Fold members in-memory (no store calls) ---
     let state = base;
@@ -738,6 +740,9 @@ export class CommitOrchestrator {
             ...result.halt.history,
           });
         }
+
+        // Track for best-effort post-persist rollover contextOnly writes (D7 invariant).
+        haltEntries.push({ step, halt: result.halt });
       }
     }
 
@@ -775,6 +780,32 @@ export class CommitOrchestrator {
         step: step.name,
         outcome: { verdict: "skipped", toolResult: null, followUpAttempts: 0 },
       });
+    }
+
+    // fresh-session-rollover: best-effort persist of rollover contextOnly entries for halt members.
+    // D7 invariant: "rollover 発生は usage.json の contextOnly エントリとして必ず残る"
+    // Mirrors the pattern from commitHalt (lines 585-606). Failures are silently swallowed.
+    for (const { step, halt } of haltEntries) {
+      if (halt.sessionRollovers && halt.sessionRollovers.length > 0 && deps?.cwd && deps?.slug) {
+        const timestamp = halt.recordOpts?.completedAt ?? new Date().toISOString();
+        const usageAbsPath = path.join(deps.cwd, usageJsonPath(deps.slug));
+        for (const rollover of halt.sessionRollovers) {
+          if (rollover.contextMetrics === undefined) continue;
+          try {
+            await appendInvocation(usageAbsPath, {
+              command: "job",
+              timestamp,
+              modelUsage: null,
+              contextOnly: true,
+              jobId: state.jobId,
+              stepName: step.name,
+              contextMetrics: rollover.contextMetrics,
+            });
+          } catch {
+            // Best-effort: never interfere with parallel round commit result
+          }
+        }
+      }
     }
 
     return state;
