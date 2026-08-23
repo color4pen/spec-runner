@@ -1,4 +1,5 @@
 name: SpecRunner Dispatch
+run-name: "${{ inputs.action }} #${{ inputs.issue }}"
 
 # Actions 画面から issue 番号だけで pipeline を起動 / 再開 / 取り込みする手動発火。
 # issue 本文の取得・slug 抽出・draft 実体化・branch 特定はすべて CLI の issue-target 層が担い、
