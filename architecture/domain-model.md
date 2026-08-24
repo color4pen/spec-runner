@@ -31,7 +31,7 @@ interface StepOutcome { verdict: Verdict | string | null; findingsPath: string |
   verificationPhases?: VerificationPhaseOutcome[] }
 ```
 - **不変条件**: `attempt` は 1-origin 連番。`events.jsonl`（append-only journal）の record。`commitOid` は捕捉点が非対称 — 逐次 agent step は per-node finalize（pipeline 合成 commit）後の HEAD ／ CLI step は entry 時 HEAD（その step が評価した revision。bite-evidence gate と conformance の「検証済み revision」判定が依存）。並列 round の member は per-member `commitOid` を持たない（round の git 副作用は coordinator 所有 — B-15）。`verificationPhases` は verification step の phase 別結果（`passed` / `failed` / `skipped` ＋ exitCode）を構造化記録し、上書きで失敗原因が消える経路を塞ぐ。
-- **truth の所在**: 成果物の中身は実ファイル（worktree / git）が正典 ―― `fileContent` は Aggregate に持たない。cost は `StepRun.modelUsage` に記録される（journal record には書かれない ＝ state.json 面のみ）。`changes/<slug>/usage.json`（`usageStore` が書く・`JobStateStore` 経由でない）は state から**導出**した集計に、SDK 実測の invocation メトリクス（turn 数 / 所要時間 / 実測コスト）を加えた Aggregate 外の記録面。
+- **truth の所在**: 成果物の中身は実ファイル（worktree / git）が正典 ―― `fileContent` は Aggregate に持たない。cost は `StepRun.modelUsage` に記録される（journal record には書かれない ＝ state.json 面のみ）。`changes/<slug>/usage.json`（`usageStore` が書く・`JobStateStore` 経由でない）は state から**導出**した集計に、SDK 実測の invocation メトリクス（turn 数 / 所要時間 / 実測コスト）と context 観測面（`contextMetrics?: AgentContextMetrics` — provider / context window / active context / compaction 観測値）を加えた Aggregate 外の記録面。`contextOnly?: true` の entry は contextMetrics の永続化だけを目的とする記録で、cost / turn の集計からは除外される（その `modelUsage: null` を「usage 取得不能」と解釈しない）。
 - → `src/state/schema/types.ts`（正確なフィールドはコードが正典）
 
 ---

@@ -82,7 +82,7 @@ interface AgentDefinition { readonly name: string; readonly role: AgentStepName;
 
 ### EventBus（Domain Event）
 - **責務**: pipeline / step のイベントを型付き payload（`EventPayloadMap`）で発行。subscriber が集計・ログ・進捗表示。
-- **実イベント（`DomainEvent` union = 16種）**: `pipeline:start|complete|fail|iteration:start|iteration:verdict|iteration:exhausted|summary|cli-step|fixer:budget-skipped` ／ `step:start|complete|error|progress|retry` ／ `verdict:parsed` ／ `commit:push`
+- **実イベント（`DomainEvent` union = 17種）**: `pipeline:start|complete|fail|iteration:start|iteration:verdict|iteration:exhausted|summary|cli-step|fixer:budget-skipped` ／ `step:start|complete|error|progress|retry|rollover` ／ `verdict:parsed` ／ `commit:push`
 - → `src/kernel/event-types.ts`（`DomainEvent` 正典）／ `src/core/event/types.ts`（`EventPayloadMap`）
 
 ### ArchiveOrchestrator — archive（client-closed な最終片づけ）編成
