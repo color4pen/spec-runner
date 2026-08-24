@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.5.0](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.12...specrunner-v0.5.0) (2026-08-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* dispatch の canon_patch 入力を廃止し operator-apply 直接 push に一本化する ([#1071](https://github.com/color4pen/spec-runner/issues/1071))
+
+### Features
+
+* Actions dispatch に archive を追加し、merge 後の head branch 削除に耐える ([#1062](https://github.com/color4pen/spec-runner/issues/1062)) ([1430a2c](https://github.com/color4pen/spec-runner/commit/1430a2ca06cf0f7d905bbfa194318088ded56d0f))
+* agent session の active context / compaction を計測可能にする ([#1070](https://github.com/color4pen/spec-runner/issues/1070)) ([129a035](https://github.com/color4pen/spec-runner/commit/129a035ae6a68845cd0fa66b3bbabae390caec57))
+* dispatch の canon_patch 入力を廃止し operator-apply 直接 push に一本化する ([#1071](https://github.com/color4pen/spec-runner/issues/1071)) ([d054da9](https://github.com/color4pen/spec-runner/commit/d054da97fda9f513cce7afefbcabd51dee400ab0))
+* halt checkpoint を未 push 作業 commit から分離して publish する ([#1065](https://github.com/color4pen/spec-runner/issues/1065)) ([0d2378f](https://github.com/color4pen/spec-runner/commit/0d2378f2376f22d8ce0ff727515e84de8a13b073))
+* implementer のコンテキスト枯渇に fresh session rollover で自動継続する ([#1076](https://github.com/color4pen/spec-runner/issues/1076)) ([5415c61](https://github.com/color4pen/spec-runner/commit/5415c614ba43efaff2ad4e31961a892dd8e155c3))
+* plain archive の状態遷移を merge 境界に合わせる ([#1051](https://github.com/color4pen/spec-runner/issues/1051)) ([82ac65f](https://github.com/color4pen/spec-runner/commit/82ac65f88c9d9a1d0bbf76aa135181506ee5f4f4))
+* push 能力の宣言に基づき push 不能な変更を実 diff で検出し、agent の自己修正を経て escalation する ([#1078](https://github.com/color4pen/spec-runner/issues/1078)) ([ed5a89f](https://github.com/color4pen/spec-runner/commit/ed5a89f9420e797a4a262f55b68817c2fb2759a6))
+* SpecRunner Attestation コメントの初期表示を折りたたむ ([#1074](https://github.com/color4pen/spec-runner/issues/1074)) ([5777b24](https://github.com/color4pen/spec-runner/commit/5777b24d03ffeb1c7131855a26965d717bc3746b)), closes [#1073](https://github.com/color4pen/spec-runner/issues/1073)
+
 ## [0.4.12](https://github.com/color4pen/spec-runner/compare/specrunner-v0.4.11...specrunner-v0.4.12) (2026-08-21)
 
 
