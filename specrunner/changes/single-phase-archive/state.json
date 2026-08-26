@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "36cad676-27b7-4325-bee1-f1d9bf50b9e4",
   "createdAt": "2026-08-26T21:57:31.637Z",
-  "updatedAt": "2026-08-26T23:29:49.405Z",
+  "updatedAt": "2026-08-26T23:38:51.360Z",
   "request": {
     "title": "archive を 1 回で完結させ、merge 後の再 archive 契約を撤回する",
     "type": "spec-change",
@@ -12,10 +12,14 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-review",
-  "status": "running",
+  "step": "code-fixer",
+  "status": "awaiting-resume",
   "branch": "change/single-phase-archive-36cad676",
-  "error": null,
+  "error": {
+    "code": "UNPUSHABLE_PATH_BLOCKED",
+    "message": "Step 'code-fixer' cannot push changes to protected path(s): .github/workflows/specrunner-dispatch.yml. Environment constraint: GitHub Actions installation token (ghs_) cannot push to .github/workflows/**",
+    "hint": "The current environment's token cannot push to the following paths:\n  - .github/workflows/specrunner-dispatch.yml\nConstraint: GitHub Actions installation token (ghs_) cannot push to .github/workflows/**\nYour changes remain uncommitted in the worktree.\nRemove the changes to these paths or resolve the requirement without modifying them, then run 'specrunner job resume single-phase-archive' to continue."
+  },
   "pipelineId": "standard",
   "profile": {
     "id": "standard",
@@ -71,7 +75,8 @@
     "da26454d468c98d6251641e08e53277481f0fbc3",
     "2ff834787d1a5d1b5f7968fd914d9618df5034f0",
     "68f6b34f374e1a6dea2c5cf4831d4438c87632e3",
-    "550f80cb98290d316e30bb2fd5aaf6b022aae4cb"
+    "550f80cb98290d316e30bb2fd5aaf6b022aae4cb",
+    "629a265d680a425818c4be1df5daff1c640b93e3"
   ],
   "touchedFiles": {
     "request-review": [
@@ -154,10 +159,29 @@
       "tests/unit/cli/archive-plain-merge-detection.test.ts",
       "tests/unit/cli/ps-pr-hint.test.ts",
       "src/core/archive/__tests__/orchestrator.test.ts"
+    ],
+    "code-review": [
+      "src/core/archive/plain-archive.ts",
+      "src/core/archive/cleanup.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/core/archive/merge-completion.ts",
+      "src/cli/archive.ts",
+      "src/core/job-list/operations-view.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/__tests__/plain-archive.test.ts",
+      "tests/unit/core/archive/archive-cleanup.test.ts",
+      "tests/unit/cli/archive-plain-merge-detection.test.ts",
+      "tests/unit/core/job-list/operations-view.test.ts",
+      "src/core/archive/job-context.ts"
     ]
   },
+  "resumePoint": {
+    "step": "code-fixer",
+    "reason": "unpushable path constraint: .github/workflows/specrunner-dispatch.yml",
+    "iterationsExhausted": 0
+  },
   "_journal": {
-    "historyCount": 31,
+    "historyCount": 37,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -166,7 +190,9 @@
       "spec-fixer": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1
+      "verification": 1,
+      "code-review": 1,
+      "code-fixer": 1
     }
   }
 }
