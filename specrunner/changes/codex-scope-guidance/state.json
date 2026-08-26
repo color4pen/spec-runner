@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7377ae6d-6bd8-41b1-a129-d42063b689cc",
   "createdAt": "2026-08-26T11:34:24.815Z",
-  "updatedAt": "2026-08-26T12:26:21.841Z",
+  "updatedAt": "2026-08-26T12:35:38.640Z",
   "request": {
     "title": "Codex provider 実行時に speculative な edge case を blocking finding へ昇格しすぎない guidance を注入する",
     "type": "new-feature",
@@ -12,8 +12,8 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "conformance",
-  "status": "running",
+  "step": "pr-create",
+  "status": "awaiting-archive",
   "branch": "feat/codex-scope-guidance-7377ae6d",
   "error": null,
   "pipelineId": "standard",
@@ -75,7 +75,9 @@
     "551d30a312b92e9992471a531c3388afab795b6a",
     "95a1bebe3b7b4759c501ba42e53db04f67447acc",
     "d372c15dc45b695aa18512e446d9daf83bd67d75",
-    "2c4f776a5e26e730ffd96d56fcc891c4fdc248d1"
+    "2c4f776a5e26e730ffd96d56fcc891c4fdc248d1",
+    "68855a20f638080788333ea06935c3ce11d898e2",
+    "cfae94bb00d74c123c6c28cd3477e92180c5ff97"
   ],
   "touchedFiles": {
     "request-review": [
@@ -156,6 +158,15 @@
     "regression-gate": [
       "tests/adapter/codex/scope-guidance-provider-isolation.test.ts",
       "src/adapter/codex/scope-guidance.ts"
+    ],
+    "conformance": [
+      "src/adapter/codex/scope-guidance.ts",
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/codex/__tests__/scope-guidance-injection.test.ts",
+      "tests/adapter/codex/scope-guidance-provider-isolation.test.ts",
+      "src/adapter/codex/__tests__/resume-prompt-injection.test.ts",
+      "src/adapter/codex/__tests__/artifact-bundle-injection.test.ts",
+      "src/adapter/codex/__tests__/prompt-rules-injection.test.ts"
     ]
   },
   "reviewerStatuses": [
@@ -188,8 +199,13 @@
       "invalidatedByCommit": null
     }
   ],
+  "pullRequest": {
+    "url": "https://github.com/color4pen/spec-runner/pull/1084",
+    "number": 1084,
+    "createdAt": "2026-08-26T12:35:37.672Z"
+  },
   "_journal": {
-    "historyCount": 51,
+    "historyCount": 65,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -198,13 +214,16 @@
       "spec-fixer": 1,
       "implementer": 1,
       "bite-evidence": 1,
-      "verification": 1,
+      "verification": 2,
       "code-review": 1,
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
       "custom-reviewers": 1,
-      "regression-gate": 1
+      "regression-gate": 1,
+      "conformance": 1,
+      "adr-gen": 1,
+      "pr-create": 1
     }
   }
 }
