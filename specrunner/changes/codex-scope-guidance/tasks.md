@@ -80,11 +80,13 @@ SpecRunner execution guidance:
 
 - [ ] `tests/adapter/codex/scope-guidance-provider-isolation.test.ts` を新規作成する（既存の grep 型 guard test、例: `tests/dead-guidance.test.ts` の走査ヘルパ様式を踏襲）
 - [ ] test: `src/` 配下の非テスト `.ts` ファイルを再帰走査し、`src/adapter/codex/` 配下以外のファイルが `CODEX_SCOPE_GUIDANCE` / `scope-guidance` / guidance 見出し行 `SpecRunner execution guidance:` のいずれも含まないことを検証する（違反時は file:line を列挙して失敗させる）
+- [ ] test (TC-012): `src/adapter/codex/scope-guidance.ts` ファイルを読み込み、`import ` / `import(` / `require(` のいずれの文字列も含まないことをファイル走査で検証する（違反時はマッチした行番号と内容を列挙して失敗させる）。これにより「pure constant module with no imports」不変条件を automated assertion で固定する
 - [ ] test: `buildAdditionalInstructions` / `buildResumeSection`（`src/adapter/shared/prompt-builder.ts`）の戻り値に guidance が含まれないことを、代表的な ctx で検証する
 - [ ] test: 新規 provider config protocol が生えていないことの固定として、`src/core/port/agent-runner.ts` の policy 型に guidance / provider 関連フィールドが追加されていないことをソース走査で確認する（`scope-guidance` / `providerGuidance` の文字列不在で足りる）
 
 **Acceptance Criteria**:
 - guard test が green で、`src/adapter/claude-code/agent-runner.ts` に guidance 文字列を仮に足すと赤くなる性質を持つ
+- TC-012 の import 不在アサーションが green で、`scope-guidance.ts` に `import` 行を仮に追加すると赤くなる性質を持つ
 - guard test が実 SDK・network・実 job state に依存しない
 - `bun run test` 全体が green
 

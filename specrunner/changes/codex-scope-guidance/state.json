@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7377ae6d-6bd8-41b1-a129-d42063b689cc",
   "createdAt": "2026-08-26T11:34:24.815Z",
-  "updatedAt": "2026-08-26T11:48:42.796Z",
+  "updatedAt": "2026-08-26T11:55:16.353Z",
   "request": {
     "title": "Codex provider 実行時に speculative な edge case を blocking finding へ昇格しすぎない guidance を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-review",
+  "step": "spec-fixer",
   "status": "running",
   "branch": "feat/codex-scope-guidance-7377ae6d",
   "error": null,
@@ -67,7 +67,8 @@
     "c1d48a485fed96e5e55e64859559ab7dae93a22b",
     "094924e1a50b62c4f067d212e534144dc42cb3c0",
     "8b9614f41c0e0e7f10a0a7e61e31712e06892303",
-    "74b43e2d27b06a14214d567197ec12cbf1b405d0"
+    "74b43e2d27b06a14214d567197ec12cbf1b405d0",
+    "2dd16f9363e488100d504cce8439bd6689c99b27"
   ],
   "touchedFiles": {
     "request-review": [
@@ -99,14 +100,28 @@
       "src/adapter/codex/__tests__/prompt-rules-injection.test.ts",
       "src/adapter/codex/__tests__/resume-prompt-injection.test.ts",
       "src/adapter/codex/__tests__/artifact-bundle-injection.test.ts"
+    ],
+    "spec-review": [
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/codex/completion-report-prompt.ts",
+      "src/adapter/codex/__tests__/resume-prompt-injection.test.ts",
+      "src/adapter/codex/__tests__/artifact-bundle-injection.test.ts",
+      "src/adapter/codex/__tests__/prompt-rules-injection.test.ts",
+      "src/adapter/shared/prompt-builder.ts",
+      "src/adapter/codex/__tests__/touched-files-injection.test.ts",
+      "tests/dead-guidance.test.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/codex/__tests__/completion-contract-injection.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 12,
+    "historyCount": 16,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
-      "test-case-gen": 1
+      "test-case-gen": 1,
+      "spec-review": 1
     }
   }
 }
