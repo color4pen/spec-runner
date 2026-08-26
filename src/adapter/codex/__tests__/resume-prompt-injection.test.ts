@@ -4,6 +4,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { CodexAgentRunner } from "../agent-runner.js";
 import type { CodexInstance, CodexThread } from "../agent-runner.js";
+import { CODEX_SCOPE_GUIDANCE } from "../scope-guidance.js";
 import type { AgentRunContext } from "../../../core/port/agent-runner.js";
 import type { AgentStep } from "../../../core/step/types.js";
 import type { SpecRunnerConfig } from "../../../config/schema.js";
@@ -148,6 +149,8 @@ describe("CodexAgentRunner resumePrompt injection", () => {
   });
 
   // TC-015: byte-identical when no artifacts — testCwd is a fresh mkdtemp dir, so artifactBundle == ""
+  // guidance section is part of the spec and always present; it is included in the baseline.
+  // All other sections must remain absent: this assertion continues to use strict toBe equality.
   it("leaves the main turn prompt byte-identical when resumePrompt is unset", async () => {
     const { thread, calls } = makeCapturingMockThread(["approved"]);
     const runner = new CodexAgentRunner({
@@ -160,7 +163,8 @@ describe("CodexAgentRunner resumePrompt injection", () => {
 
     const additionalInstructions = buildAdditionalInstructions(ctx);
     expect(calls.length).toBeGreaterThanOrEqual(1);
-    expect(calls[0]!.prompt).toBe(`${baseMessage}\n\n${additionalInstructions}`);
+    // guidance section is always appended (Codex-only, design D1/D3); baseline updated accordingly.
+    expect(calls[0]!.prompt).toBe(`${baseMessage}\n\n${additionalInstructions}\n\n${CODEX_SCOPE_GUIDANCE}`);
     expect(calls[0]!.prompt).not.toContain("<resume-context>");
   });
 });

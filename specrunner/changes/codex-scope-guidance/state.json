@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7377ae6d-6bd8-41b1-a129-d42063b689cc",
   "createdAt": "2026-08-26T11:34:24.815Z",
-  "updatedAt": "2026-08-26T11:55:16.353Z",
+  "updatedAt": "2026-08-26T11:56:34.998Z",
   "request": {
     "title": "Codex provider 実行時に speculative な edge case を blocking finding へ昇格しすぎない guidance を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "spec-fixer",
+  "step": "implementer",
   "status": "running",
   "branch": "feat/codex-scope-guidance-7377ae6d",
   "error": null,
@@ -68,7 +68,8 @@
     "094924e1a50b62c4f067d212e534144dc42cb3c0",
     "8b9614f41c0e0e7f10a0a7e61e31712e06892303",
     "74b43e2d27b06a14214d567197ec12cbf1b405d0",
-    "2dd16f9363e488100d504cce8439bd6689c99b27"
+    "2dd16f9363e488100d504cce8439bd6689c99b27",
+    "f7525f90546d6e4add7086fcb7e3c6e96491bab2"
   ],
   "touchedFiles": {
     "request-review": [
@@ -113,15 +114,19 @@
       "src/adapter/claude-code/agent-runner.ts",
       "src/core/port/agent-runner.ts",
       "src/adapter/codex/__tests__/completion-contract-injection.test.ts"
+    ],
+    "spec-fixer": [
+      "tests/dead-guidance.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 16,
+    "historyCount": 19,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
-      "spec-review": 1
+      "spec-review": 1,
+      "spec-fixer": 1
     }
   }
 }

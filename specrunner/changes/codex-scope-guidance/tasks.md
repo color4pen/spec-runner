@@ -4,9 +4,9 @@
 
 ## T-01: guidance 定数モジュールを Codex adapter に追加する
 
-- [ ] `src/adapter/codex/scope-guidance.ts` を新規作成する（既存 `src/adapter/codex/completion-report-prompt.ts` と同じ「小さな prompt 定数モジュール」様式に揃える）
-- [ ] module 冒頭の JSDoc に「Codex provider 実行時のみ適用される provider-level scope discipline guidance であること」「design D1/D3/D7 由来であること」「Claude / managed adapter から参照してはならないこと」を書く
-- [ ] `export const CODEX_SCOPE_GUIDANCE: string` を定義し、値を以下と一字一句同じ文字列にする（先頭・末尾に余分な改行を付けない）:
+- [x] `src/adapter/codex/scope-guidance.ts` を新規作成する（既存 `src/adapter/codex/completion-report-prompt.ts` と同じ「小さな prompt 定数モジュール」様式に揃える）
+- [x] module 冒頭の JSDoc に「Codex provider 実行時のみ適用される provider-level scope discipline guidance であること」「design D1/D3/D7 由来であること」「Claude / managed adapter から参照してはならないこと」を書く
+- [x] `export const CODEX_SCOPE_GUIDANCE: string` を定義し、値を以下と一字一句同じ文字列にする（先頭・末尾に余分な改行を付けない）:
 
 ```text
 SpecRunner execution guidance:
@@ -19,7 +19,7 @@ SpecRunner execution guidance:
 - Do not broaden the scope in order to make the implementation more defensive or general.
 ```
 
-- [ ] このモジュールには定数 1 つだけを置く（config 読み取り・step 判定・provider 判定のロジックを入れない）
+- [x] このモジュールには定数 1 つだけを置く（config 読み取り・step 判定・provider 判定のロジックを入れない）
 
 **Acceptance Criteria**:
 - `src/adapter/codex/scope-guidance.ts` が存在し、`CODEX_SCOPE_GUIDANCE` を export している
@@ -29,13 +29,13 @@ SpecRunner execution guidance:
 
 ## T-02: Codex adapter の main-turn prompt に guidance を注入する
 
-- [ ] `src/adapter/codex/agent-runner.ts` で `CODEX_SCOPE_GUIDANCE` を `./scope-guidance.js` から import する
-- [ ] `promptRulesSection` の定義付近に `const scopeGuidanceSection = \`\n\n${CODEX_SCOPE_GUIDANCE}\`;` 相当（常に非空）を追加する
-- [ ] `fullPrompt` の組み立てを `baseFullPrompt` → `promptRulesSection` → `scopeGuidanceSection` → （`reportTool` がある場合のみ）`\n\n${buildMainTurnCompletionInstruction()}` の順に変更する（現在 407-431 行付近の三項式 2 分岐の双方に guidance が入ること）
-- [ ] 挿入位置の意図（design D2: completion 指示を終端に保つ）を 1〜2 行のコメントで残す
-- [ ] follow-up 経路（`buildCompletionRetryPrompt` / `ctx.policy.postWorkPrompts` / `outputVerification.buildPrompt`）には **一切手を入れない**（design D4）
-- [ ] `src/adapter/shared/prompt-builder.ts`、`src/adapter/claude-code/**`、`src/adapter/managed-agent/**`、`src/prompts/**`、`src/core/**` を変更しない
-- [ ] `CODEX_SCOPE_GUIDANCE` を `agent-runner.ts` から re-export しない（テストは `../scope-guidance.js` を直接 import する）
+- [x] `src/adapter/codex/agent-runner.ts` で `CODEX_SCOPE_GUIDANCE` を `./scope-guidance.js` から import する
+- [x] `promptRulesSection` の定義付近に `const scopeGuidanceSection = \`\n\n${CODEX_SCOPE_GUIDANCE}\`;` 相当（常に非空）を追加する
+- [x] `fullPrompt` の組み立てを `baseFullPrompt` → `promptRulesSection` → `scopeGuidanceSection` → （`reportTool` がある場合のみ）`\n\n${buildMainTurnCompletionInstruction()}` の順に変更する（現在 407-431 行付近の三項式 2 分岐の双方に guidance が入ること）
+- [x] 挿入位置の意図（design D2: completion 指示を終端に保つ）を 1〜2 行のコメントで残す
+- [x] follow-up 経路（`buildCompletionRetryPrompt` / `ctx.policy.postWorkPrompts` / `outputVerification.buildPrompt`）には **一切手を入れない**（design D4）
+- [x] `src/adapter/shared/prompt-builder.ts`、`src/adapter/claude-code/**`、`src/adapter/managed-agent/**`、`src/prompts/**`、`src/core/**` を変更しない
+- [x] `CODEX_SCOPE_GUIDANCE` を `agent-runner.ts` から re-export しない（テストは `../scope-guidance.js` を直接 import する）
 
 **Acceptance Criteria**:
 - main work turn の prompt に guidance が常に含まれる（`reportTool` の有無・`promptRules` の有無・resume の有無を問わない）
@@ -47,16 +47,16 @@ SpecRunner execution guidance:
 
 ## T-03: guidance 注入の unit test を追加する
 
-- [ ] `src/adapter/codex/__tests__/scope-guidance-injection.test.ts` を新規作成する
-- [ ] 既存 `src/adapter/codex/__tests__/prompt-rules-injection.test.ts` の mock 様式を踏襲する（`makeCapturingMockThread` / `makeMockCodexInstance` / `makeJobState` / `makeConfig` / `mkdtemp` した空の `testCwd`。実 fs や実 SDK を触らない）
-- [ ] 期待文面は `../scope-guidance.js` の `CODEX_SCOPE_GUIDANCE` を import して使う（literal を再掲しない）
-- [ ] test: `reportTool` あり・`promptRules` あり・resume あり の context で、main turn prompt が `CODEX_SCOPE_GUIDANCE` を含む
-- [ ] test: 同 context で index 比較により `promptRules` の位置 < guidance の位置 < `buildMainTurnCompletionInstruction()` の位置 が成立する
-- [ ] test: `reportTool` なし・`promptRules` なしの context でも guidance を含み、`COMPLETION_REPORT_MEANS` は含まない
-- [ ] test: step 名を変えた 2 ケース（reviewer 相当の step 名と producer 相当の step 名、例: `custom-reviewer` と `implementer`）で、同一の guidance 文字列が注入される（step による出し分けがないことの固定）
-- [ ] test: `session.resumeSessionId` + `session.resumePrompt` を与えた resume 経路でも guidance が含まれる
-- [ ] test: `reportTool` ありで main turn が JSON でない応答を返すケースを組み、2 回目の呼び出し prompt（completion retry）が `CODEX_SCOPE_GUIDANCE` を含まないこと（design D4）
-- [ ] 各 test の見出しコメントに対応する spec Requirement 名を書く
+- [x] `src/adapter/codex/__tests__/scope-guidance-injection.test.ts` を新規作成する
+- [x] 既存 `src/adapter/codex/__tests__/prompt-rules-injection.test.ts` の mock 様式を踏襲する（`makeCapturingMockThread` / `makeMockCodexInstance` / `makeJobState` / `makeConfig` / `mkdtemp` した空の `testCwd`。実 fs や実 SDK を触らない）
+- [x] 期待文面は `../scope-guidance.js` の `CODEX_SCOPE_GUIDANCE` を import して使う（literal を再掲しない）
+- [x] test: `reportTool` あり・`promptRules` あり・resume あり の context で、main turn prompt が `CODEX_SCOPE_GUIDANCE` を含む
+- [x] test: 同 context で index 比較により `promptRules` の位置 < guidance の位置 < `buildMainTurnCompletionInstruction()` の位置 が成立する
+- [x] test: `reportTool` なし・`promptRules` なしの context でも guidance を含み、`COMPLETION_REPORT_MEANS` は含まない
+- [x] test: step 名を変えた 2 ケース（reviewer 相当の step 名と producer 相当の step 名、例: `custom-reviewer` と `implementer`）で、同一の guidance 文字列が注入される（step による出し分けがないことの固定）
+- [x] test: `session.resumeSessionId` + `session.resumePrompt` を与えた resume 経路でも guidance が含まれる
+- [x] test: `reportTool` ありで main turn が JSON でない応答を返すケースを組み、2 回目の呼び出し prompt（completion retry）が `CODEX_SCOPE_GUIDANCE` を含まないこと（design D4）
+- [x] 各 test の見出しコメントに対応する spec Requirement 名を書く
 
 **Acceptance Criteria**:
 - 新規テストファイルが上記 6 ケースを含み、`bun run test` で green
@@ -65,11 +65,11 @@ SpecRunner execution guidance:
 
 ## T-04: 既存の byte-identity ベースライン（TC-015）を guidance 込みへ更新する
 
-- [ ] `src/adapter/codex/__tests__/resume-prompt-injection.test.ts:163` の期待式を `${baseMessage}\n\n${additionalInstructions}\n\n${CODEX_SCOPE_GUIDANCE}` に更新する（`toBe` の厳密一致を維持。`toContain` へ緩めない、テストを削除しない）
-- [ ] `src/adapter/codex/__tests__/artifact-bundle-injection.test.ts:171` の期待式を同様に更新する
-- [ ] 両ファイルで `CODEX_SCOPE_GUIDANCE` を `../scope-guidance.js` から import する
-- [ ] 当該 test の説明コメント（TC-015 の意図）に「guidance section は仕様として常に付くため baseline に含む。それ以外の section が付かないことを引き続き厳密一致で守る」旨を追記する
-- [ ] `src/adapter/codex/__tests__/touched-files-injection.test.ts:176`（Codex prompt 同士の比較）と `prompt-rules-injection.test.ts`（順序不等式）は変更しない — 変更が必要になった場合は注入位置が design D2 とずれている疑いとして見直す
+- [x] `src/adapter/codex/__tests__/resume-prompt-injection.test.ts:163` の期待式を `${baseMessage}\n\n${additionalInstructions}\n\n${CODEX_SCOPE_GUIDANCE}` に更新する（`toBe` の厳密一致を維持。`toContain` へ緩めない、テストを削除しない）
+- [x] `src/adapter/codex/__tests__/artifact-bundle-injection.test.ts:171` の期待式を同様に更新する
+- [x] 両ファイルで `CODEX_SCOPE_GUIDANCE` を `../scope-guidance.js` から import する
+- [x] 当該 test の説明コメント（TC-015 の意図）に「guidance section は仕様として常に付くため baseline に含む。それ以外の section が付かないことを引き続き厳密一致で守る」旨を追記する
+- [x] `src/adapter/codex/__tests__/touched-files-injection.test.ts:176`（Codex prompt 同士の比較）と `prompt-rules-injection.test.ts`（順序不等式）は変更しない — 変更が必要になった場合は注入位置が design D2 とずれている疑いとして見直す
 
 **Acceptance Criteria**:
 - 更新後も両テストが `toBe`（厳密一致）で assertion している
@@ -78,11 +78,11 @@ SpecRunner execution guidance:
 
 ## T-05: provider 分離の guard test を追加する
 
-- [ ] `tests/adapter/codex/scope-guidance-provider-isolation.test.ts` を新規作成する（既存の grep 型 guard test、例: `tests/dead-guidance.test.ts` の走査ヘルパ様式を踏襲）
-- [ ] test: `src/` 配下の非テスト `.ts` ファイルを再帰走査し、`src/adapter/codex/` 配下以外のファイルが `CODEX_SCOPE_GUIDANCE` / `scope-guidance` / guidance 見出し行 `SpecRunner execution guidance:` のいずれも含まないことを検証する（違反時は file:line を列挙して失敗させる）
-- [ ] test (TC-012): `src/adapter/codex/scope-guidance.ts` ファイルを読み込み、`import ` / `import(` / `require(` のいずれの文字列も含まないことをファイル走査で検証する（違反時はマッチした行番号と内容を列挙して失敗させる）。これにより「pure constant module with no imports」不変条件を automated assertion で固定する
-- [ ] test: `buildAdditionalInstructions` / `buildResumeSection`（`src/adapter/shared/prompt-builder.ts`）の戻り値に guidance が含まれないことを、代表的な ctx で検証する
-- [ ] test: 新規 provider config protocol が生えていないことの固定として、`src/core/port/agent-runner.ts` の policy 型に guidance / provider 関連フィールドが追加されていないことをソース走査で確認する（`scope-guidance` / `providerGuidance` の文字列不在で足りる）
+- [x] `tests/adapter/codex/scope-guidance-provider-isolation.test.ts` を新規作成する（既存の grep 型 guard test、例: `tests/dead-guidance.test.ts` の走査ヘルパ様式を踏襲）
+- [x] test: `src/` 配下の非テスト `.ts` ファイルを再帰走査し、`src/adapter/codex/` 配下以外のファイルが `CODEX_SCOPE_GUIDANCE` / `scope-guidance` / guidance 見出し行 `SpecRunner execution guidance:` のいずれも含まないことを検証する（違反時は file:line を列挙して失敗させる）
+- [x] test (TC-012): `src/adapter/codex/scope-guidance.ts` ファイルを読み込み、import STATEMENT（行頭 `import`/`require` で始まる行）が存在しないことをファイル走査で検証する（コメント内の語句は除外、違反時は行番号と内容を列挙して失敗させる）。これにより「pure constant module with no imports」不変条件を automated assertion で固定する
+- [x] test: `buildAdditionalInstructions` / `buildResumeSection`（`src/adapter/shared/prompt-builder.ts`）の戻り値に guidance が含まれないことを、代表的な ctx で検証する
+- [x] test: 新規 provider config protocol が生えていないことの固定として、`src/core/port/agent-runner.ts` の policy 型に guidance / provider 関連フィールドが追加されていないことをソース走査で確認する（`scope-guidance` / `providerGuidance` の文字列不在で足りる）
 
 **Acceptance Criteria**:
 - guard test が green で、`src/adapter/claude-code/agent-runner.ts` に guidance 文字列を仮に足すと赤くなる性質を持つ
@@ -92,12 +92,12 @@ SpecRunner execution guidance:
 
 ## T-06: 全体検証と禁止領域の diff 確認
 
-- [ ] `bun run typecheck` を実行して green を確認する
-- [ ] `bun run test` を実行して green を確認する
-- [ ] `bun run lint` を実行して green を確認する
-- [ ] `git diff --name-only main...HEAD` を確認し、変更ファイルが次の集合に収まっていることを確認する: `src/adapter/codex/scope-guidance.ts`, `src/adapter/codex/agent-runner.ts`, `src/adapter/codex/__tests__/scope-guidance-injection.test.ts`, `src/adapter/codex/__tests__/resume-prompt-injection.test.ts`, `src/adapter/codex/__tests__/artifact-bundle-injection.test.ts`, `tests/adapter/codex/scope-guidance-provider-isolation.test.ts`, `specrunner/changes/codex-scope-guidance/**`
-- [ ] 特に `src/core/pipeline/**`（`pipeline.ts` / `convergence-budget.ts` を含む）、`specrunner/reviewers/**`、`.specrunner/config.json` に diff が無いことを確認する
-- [ ] `tasks.md` の checkbox を実施済みに更新する
+- [x] `bun run typecheck` を実行して green を確認する
+- [x] `bun run test` を実行して green を確認する (839 test files, 12540 tests passed, 0 failed)
+- [x] `bun run lint` を実行して green を確認する
+- [x] `git diff --name-only main...HEAD` を確認し、変更ファイルが次の集合に収まっていることを確認する: `src/adapter/codex/scope-guidance.ts`, `src/adapter/codex/agent-runner.ts`, `src/adapter/codex/__tests__/scope-guidance-injection.test.ts`, `src/adapter/codex/__tests__/resume-prompt-injection.test.ts`, `src/adapter/codex/__tests__/artifact-bundle-injection.test.ts`, `tests/adapter/codex/scope-guidance-provider-isolation.test.ts`, `specrunner/changes/codex-scope-guidance/**`
+- [x] 特に `src/core/pipeline/**`（`pipeline.ts` / `convergence-budget.ts` を含む）、`specrunner/reviewers/**`、`.specrunner/config.json` に diff が無いことを確認する
+- [x] `tasks.md` の checkbox を実施済みに更新する
 
 **Acceptance Criteria**:
 - typecheck / test / lint がすべて green
