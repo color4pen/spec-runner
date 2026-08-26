@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "36cad676-27b7-4325-bee1-f1d9bf50b9e4",
   "createdAt": "2026-08-26T21:57:31.637Z",
-  "updatedAt": "2026-08-26T22:01:43.649Z",
+  "updatedAt": "2026-08-26T22:18:26.834Z",
   "request": {
     "title": "archive を 1 回で完結させ、merge 後の再 archive 契約を撤回する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "change/single-phase-archive-36cad676",
   "error": null,
@@ -65,7 +65,8 @@
   "inboxOrigin": true,
   "synthesizedCommits": [
     "a221641dd380378d48d0049ec0c152d87cb9e761",
-    "43763fe620ddeec0ab6503d538271ca85d6208ff"
+    "43763fe620ddeec0ab6503d538271ca85d6208ff",
+    "ecb97f4c4fd3b974ac0e66875ce4f8bc3801a68e"
   ],
   "touchedFiles": {
     "request-review": [
@@ -78,12 +79,27 @@
       "src/core/archive/merge-then-archive.ts",
       "src/core/archive/job-context.ts",
       "src/core/issue-target/archive.ts"
+    ],
+    "design": [
+      "src/core/archive/plain-archive.ts",
+      "src/core/archive/merge-completion.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/core/archive/job-context.ts",
+      "src/core/archive/post-merge-cleanup.ts",
+      "src/core/archive/merge-then-archive.ts",
+      "src/core/issue-target/archive.ts",
+      "src/cli/archive.ts",
+      "src/cli/archive-from-issue.ts",
+      "src/core/finish/job-state-update.ts",
+      "specrunner/adr/2026-08-21-archive-state-after-merge.md",
+      "src/core/finish/resolve-canonical-state-dir.ts"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
