@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7377ae6d-6bd8-41b1-a129-d42063b689cc",
   "createdAt": "2026-08-26T11:34:24.815Z",
-  "updatedAt": "2026-08-26T11:56:34.998Z",
+  "updatedAt": "2026-08-26T12:13:47.810Z",
   "request": {
     "title": "Codex provider 実行時に speculative な edge case を blocking finding へ昇格しすぎない guidance を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "implementer",
+  "step": "code-review",
   "status": "running",
   "branch": "feat/codex-scope-guidance-7377ae6d",
   "error": null,
@@ -69,7 +69,9 @@
     "8b9614f41c0e0e7f10a0a7e61e31712e06892303",
     "74b43e2d27b06a14214d567197ec12cbf1b405d0",
     "2dd16f9363e488100d504cce8439bd6689c99b27",
-    "f7525f90546d6e4add7086fcb7e3c6e96491bab2"
+    "f7525f90546d6e4add7086fcb7e3c6e96491bab2",
+    "64a65af1a665d3b86cf37d1fa70a6aaba8bedbea",
+    "f6d16996c049b303cd5c343ff06d95d91820355b"
   ],
   "touchedFiles": {
     "request-review": [
@@ -117,16 +119,35 @@
     ],
     "spec-fixer": [
       "tests/dead-guidance.test.ts"
+    ],
+    "implementer": [
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/codex/completion-report-prompt.ts",
+      "src/adapter/codex/__tests__/prompt-rules-injection.test.ts",
+      "src/adapter/codex/__tests__/resume-prompt-injection.test.ts",
+      "src/adapter/codex/__tests__/artifact-bundle-injection.test.ts",
+      "tests/dead-guidance.test.ts",
+      "src/adapter/shared/prompt-builder.ts",
+      "src/core/port/agent-runner.ts",
+      "src/adapter/codex/__tests__/touched-files-injection.test.ts",
+      "src/core/port/report-result.ts",
+      "tests/adapter/codex/agent-runner.test.ts",
+      "src/adapter/codex/scope-guidance.ts",
+      "src/adapter/codex/__tests__/scope-guidance-injection.test.ts",
+      "tests/adapter/codex/scope-guidance-provider-isolation.test.ts"
     ]
   },
   "_journal": {
-    "historyCount": 19,
+    "historyCount": 31,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
       "test-case-gen": 1,
       "spec-review": 1,
-      "spec-fixer": 1
+      "spec-fixer": 1,
+      "implementer": 1,
+      "bite-evidence": 1,
+      "verification": 1
     }
   }
 }
