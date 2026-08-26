@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "36cad676-27b7-4325-bee1-f1d9bf50b9e4",
   "createdAt": "2026-08-26T21:57:31.637Z",
-  "updatedAt": "2026-08-26T22:18:26.834Z",
+  "updatedAt": "2026-08-26T22:22:57.024Z",
   "request": {
     "title": "archive を 1 回で完結させ、merge 後の再 archive 契約を撤回する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "test-case-gen",
+  "step": "spec-review",
   "status": "running",
   "branch": "change/single-phase-archive-36cad676",
   "error": null,
@@ -66,7 +66,8 @@
   "synthesizedCommits": [
     "a221641dd380378d48d0049ec0c152d87cb9e761",
     "43763fe620ddeec0ab6503d538271ca85d6208ff",
-    "ecb97f4c4fd3b974ac0e66875ce4f8bc3801a68e"
+    "ecb97f4c4fd3b974ac0e66875ce4f8bc3801a68e",
+    "8696d390e738398f264a1bd64fa159f655ce8323"
   ],
   "touchedFiles": {
     "request-review": [
@@ -93,13 +94,19 @@
       "src/core/finish/job-state-update.ts",
       "specrunner/adr/2026-08-21-archive-state-after-merge.md",
       "src/core/finish/resolve-canonical-state-dir.ts"
+    ],
+    "test-case-gen": [
+      "src/core/archive/plain-archive.ts",
+      "src/core/archive/__tests__/plain-archive.test.ts",
+      "src/core/archive/orchestrator.ts"
     ]
   },
   "_journal": {
-    "historyCount": 8,
+    "historyCount": 12,
     "stepCounts": {
       "request-review": 1,
-      "design": 1
+      "design": 1,
+      "test-case-gen": 1
     }
   }
 }
