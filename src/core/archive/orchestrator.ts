@@ -5,7 +5,7 @@
  * Design invariant: does NOT checkout / commit / push to base branch.
  * Records the archive commit on the feature branch and pushes to remote feature branch.
  * Post-merge cleanup (worktree teardown + branch delete) is handled separately by
- * runPostMergeCleanup, which runs only after a successful PR merge.
+ * runArchiveCleanup, which is called by plain-archive and --with-merge after transitioning to archived.
  *
  * Phase 0: pre-flight (job state load + finishable gate + terminal status check)
  * Phase 1: resolve recordDir → checkout feature branch (no-worktree only) →
@@ -102,7 +102,7 @@ export async function resolveWorktreePathForArchive(
  * Returns exit code to caller (CLI entry does process.exit()).
  *
  * This function does NOT perform worktree teardown or branch deletion.
- * Post-merge cleanup is handled by runPostMergeCleanup (called by --with-merge path).
+ * Cleanup (worktree teardown + branch delete) is handled by runArchiveCleanup (called by plain-archive or --with-merge).
  */
 export async function runArchiveOrchestrator(
   input: ArchiveInput,
@@ -236,11 +236,12 @@ export async function runArchiveOrchestrator(
     if (!archiveResult.ok) {
       return { exitCode: 1, escalation: archiveResult.escalation };
     }
-    if (!archiveResult.skipped) stdoutWrite(archiveResult.message);
+    const mvSkipped = archiveResult.skipped;
+    if (!mvSkipped) stdoutWrite(archiveResult.message);
 
     // Status transition (awaiting-archive → archived) is NOT performed here.
-    // It is the caller's responsibility to call markJobArchived after the PR is merged,
-    // via completeAfterMerge (runPlainArchive) or performPostMergeTransition (--with-merge).
+    // It is the caller's responsibility to call markJobArchived after a successful push,
+    // via runPlainArchive (plain archive) or completeAfterMerge (--with-merge).
 
     // Delete draft from repo root (cwd) for this slug — best-effort, archive continues on failure.
     // Handles both flat format (drafts/<slug>.md) and directory format (drafts/<slug>/).
@@ -316,7 +317,8 @@ export async function runArchiveOrchestrator(
     if (!commitResult.ok) {
       return { exitCode: 1, escalation: commitResult.escalation };
     }
-    if (!commitResult.skipped) stdoutWrite(commitResult.message);
+    const commitSkipped = commitResult.skipped;
+    if (!commitSkipped) stdoutWrite(commitResult.message);
 
     // Push archive commit to remote feature branch (not base)
     if (!branch) {
@@ -331,19 +333,52 @@ export async function runArchiveOrchestrator(
       };
     }
 
-    const pushResult = await spawn("git", ["push", "origin", branch], { cwd: recordDir });
-    if (pushResult.exitCode !== 0) {
-      return {
-        exitCode: 1,
-        escalation: formatEscalation({
-          failedStep: "Phase 1 (git push origin <feature-branch>)",
-          detectedState: `git push origin ${branch} failed (exit ${pushResult.exitCode}): ${pushResult.stderr.trim()}`,
-          recommendedAction: `Check network/auth and re-run: specrunner job archive ${slug}`,
-          resumeCommand: `specrunner job archive ${slug}`,
-        }),
-      };
+    // Idempotent push guard: when both mv and commit were skipped (no new content was
+    // recorded), the local HEAD may already match the remote. Check whether the remote
+    // branch exists before attempting the push.
+    // - Remote branch absent  → skip push (warning only, exit 0)
+    // - Remote branch present → push; if push fails → warning only (exit 0, not escalation)
+    // - New content recorded  → push; if push fails → escalation (exit 1) as before
+    // - ls-remote failure     → fail-open: proceed with push attempt
+    const recordedSomething = !mvSkipped || !commitSkipped;
+
+    if (!recordedSomething) {
+      const lsRemoteResult = await spawn(
+        "git",
+        ["ls-remote", "--heads", "origin", branch],
+        { cwd: recordDir },
+      );
+      if (lsRemoteResult.exitCode === 0 && lsRemoteResult.stdout.trim() === "") {
+        // Remote branch does not exist — nothing to push
+        stderrWrite(`Warning: archive already recorded but remote branch '${branch}' no longer exists. Skipping push.`);
+        const headShaResult2 = await spawn("git", ["rev-parse", "HEAD"], { cwd: recordDir });
+        return { exitCode: 0, headSha: headShaResult2.exitCode === 0 ? (headShaResult2.stdout.trim() || undefined) : undefined };
+      }
+
+      // Remote branch exists (or ls-remote failed — fail-open) → try push, but treat
+      // failure as a warning rather than an escalation (idempotent re-run scenario).
+      const idempotentPushResult = await spawn("git", ["push", "origin", branch], { cwd: recordDir });
+      if (idempotentPushResult.exitCode !== 0) {
+        stderrWrite(`Warning: git push origin ${branch} failed (exit ${idempotentPushResult.exitCode}): ${idempotentPushResult.stderr.trim()}. Archive commit was already recorded; continuing.`);
+      } else {
+        stdoutWrite(`Pushed archive commit to origin/${branch}.`);
+      }
+    } else {
+      // New content was recorded — push failure is a hard error
+      const pushResult = await spawn("git", ["push", "origin", branch], { cwd: recordDir });
+      if (pushResult.exitCode !== 0) {
+        return {
+          exitCode: 1,
+          escalation: formatEscalation({
+            failedStep: "Phase 1 (git push origin <feature-branch>)",
+            detectedState: `git push origin ${branch} failed (exit ${pushResult.exitCode}): ${pushResult.stderr.trim()}`,
+            recommendedAction: `Check network/auth and re-run: specrunner job archive ${slug}`,
+            resumeCommand: `specrunner job archive ${slug}`,
+          }),
+        };
+      }
+      stdoutWrite(`Pushed archive commit to origin/${branch}.`);
     }
-    stdoutWrite(`Pushed archive commit to origin/${branch}.`);
 
     // Capture HEAD SHA so the --with-merge path can wait for CI on the correct commit
     let headSha: string | undefined;

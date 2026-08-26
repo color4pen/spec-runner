@@ -4,9 +4,9 @@
  * Orchestrator records on the feature branch only; cleanup is post-merge.
  *
  * T-01: flat and directory draft deleted from repo root (cwd) on archive
- * T-02: liveness.json is NOT unlinked by orchestrator (moved to runPostMergeCleanup)
- * T-03: managed marker.json is NOT unlinked by orchestrator (moved to runPostMergeCleanup)
- * T-04: localSidecarDir is NOT removed by orchestrator (moved to runPostMergeCleanup)
+ * T-02: liveness.json is NOT unlinked by orchestrator (handled by runArchiveCleanup)
+ * T-03: managed marker.json is NOT unlinked by orchestrator (handled by runArchiveCleanup)
+ * T-04: localSidecarDir is NOT removed by orchestrator (handled by runArchiveCleanup)
  * T-05: branch deletion (branch -D / push --delete) NOT called by orchestrator
  * T-06: draft rm failure does not fail archive (best-effort)
  * T-07: draft rm EACCES emits a Warning via stderrWrite (best-effort)
@@ -152,7 +152,7 @@ describe("archive orchestrator — side-effect boundaries (archive-on-branch-fir
     expect(rmCalls).toContain(dirPath);
   });
 
-  it("T-02: liveness.json is NOT unlinked by orchestrator (moved to runPostMergeCleanup)", async () => {
+  it("T-02: liveness.json is NOT unlinked by orchestrator (handled by runArchiveCleanup)", async () => {
     const mockFs = makeFs();
 
     const result = await runArchiveOrchestrator({
@@ -169,7 +169,7 @@ describe("archive orchestrator — side-effect boundaries (archive-on-branch-fir
     expect(unlinkCalls).not.toContain(livenessPath);
   });
 
-  it("T-03: managed marker.json is NOT unlinked by orchestrator (moved to runPostMergeCleanup)", async () => {
+  it("T-03: managed marker.json is NOT unlinked by orchestrator (handled by runArchiveCleanup)", async () => {
     const mockFs = makeFs();
 
     const result = await runArchiveOrchestrator({
@@ -186,7 +186,7 @@ describe("archive orchestrator — side-effect boundaries (archive-on-branch-fir
     expect(unlinkCalls).not.toContain(markerPath);
   });
 
-  it("T-04: localSidecarDir is NOT removed by orchestrator (moved to runPostMergeCleanup)", async () => {
+  it("T-04: localSidecarDir is NOT removed by orchestrator (handled by runArchiveCleanup)", async () => {
     const mockFs = makeFs();
 
     const result = await runArchiveOrchestrator({

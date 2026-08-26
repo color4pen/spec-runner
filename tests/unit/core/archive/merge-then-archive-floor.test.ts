@@ -31,8 +31,8 @@ vi.mock("../../../../src/core/finish/job-state-update.js", () => ({
   markJobArchived: vi.fn().mockResolvedValue(undefined),
 }));
 
-vi.mock("../../../../src/core/archive/post-merge-cleanup.js", () => ({
-  runPostMergeCleanup: vi.fn().mockResolvedValue(undefined),
+vi.mock("../../../../src/core/archive/cleanup.js", () => ({
+  runArchiveCleanup: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ---------------------------------------------------------------------------
@@ -175,8 +175,8 @@ describe("TC-010: sub-floor profile が protected path を touch するとき me
       headSha: "archive-sha-floor-001",
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       // PR changes a file that matches the protected path pattern
@@ -202,7 +202,7 @@ describe("TC-010: sub-floor profile が protected path を touch するとき me
 
     expect(result.exitCode).toBe(1);
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 
   it("escalation message is present in result", async () => {
@@ -271,8 +271,8 @@ describe("TC-011 / TC-002: profile 欠落（legacy）job は宣言最強プロ�
       headSha: "archive-sha-floor-001",
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       // PR touches a protected path
@@ -304,7 +304,7 @@ describe("TC-011 / TC-002: profile 欠落（legacy）job は宣言最強プロ�
     // Achieved provenance is absent → exitCode 1.
     expect(result.exitCode).toBe(1);
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 });
 
@@ -325,8 +325,8 @@ describe("TC-012: protected path を touch しない変更は floor 未満でも
       headSha: "archive-sha-floor-001",
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       // PR only touches non-protected paths
@@ -354,7 +354,7 @@ describe("TC-012: protected path を touch しない変更は floor 未満でも
 
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.mergePullRequest).toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
   });
 });
 
@@ -376,8 +376,8 @@ describe("TC-013: minimumAssurance 未設定の config では gate が何もし�
       headSha: "archive-sha-floor-001",
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       // listPullRequestFiles should NOT be called when minimumAssurance is absent
@@ -405,7 +405,7 @@ describe("TC-013: minimumAssurance 未設定の config では gate が何もし�
 
     expect(result).toMatchObject({ exitCode: 0 });
     expect(client.mergePullRequest).toHaveBeenCalled();
-    expect(runPostMergeCleanup).toHaveBeenCalled();
+    expect(runArchiveCleanup).toHaveBeenCalled();
   });
 
   it("empty minimumAssurance protectedPaths → gate is no-op", async () => {
@@ -420,8 +420,8 @@ describe("TC-013: minimumAssurance 未設定の config では gate が何もし�
       headSha: "archive-sha-floor-001",
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       getCheckStatus: vi.fn().mockResolvedValue(SUCCESS_ROLLUP),
@@ -464,8 +464,8 @@ describe("TC-014: changed-file list が truncated のとき fail-closed で停�
       headSha: "archive-sha-floor-001",
     });
 
-    const { runPostMergeCleanup } = await import("../../../../src/core/archive/post-merge-cleanup.js");
-    (runPostMergeCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
+    const { runArchiveCleanup } = await import("../../../../src/core/archive/cleanup.js");
+    (runArchiveCleanup as ReturnType<typeof vi.fn>).mockResolvedValue(undefined);
 
     const client = makeGitHubClient({
       // truncated: true → cannot determine if protected path is touched
@@ -491,7 +491,7 @@ describe("TC-014: changed-file list が truncated のとき fail-closed で停�
 
     expect(result.exitCode).toBe(1);
     expect(client.mergePullRequest).not.toHaveBeenCalled();
-    expect(runPostMergeCleanup).not.toHaveBeenCalled();
+    expect(runArchiveCleanup).not.toHaveBeenCalled();
   });
 
   it("truncated file list → escalation message present", async () => {

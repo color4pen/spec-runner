@@ -17,8 +17,8 @@
  * TC-018: deriveEscalationSourceStep returns null for empty/undefined steps
  * TC-019: deriveNextAction returns resume for failed and terminated
  * TC-020: deriveNextAction returns null for archived and canceled
- * TC-021: deriveNextAction returns null for awaiting-archive when PR not merged
- * TC-022: deriveNextAction returns null for awaiting-archive when prMerged null
+ * TC-021: deriveNextAction returns job archive for awaiting-archive when prMerged false (TC-031 in single-phase spec)
+ * TC-022: deriveNextAction returns job archive for awaiting-archive when prMerged null (TC-030 in single-phase spec)
  * TC-023: buildOperationsView produces categories in fixed order
  * TC-024: buildOperationsView orders jobs within category by createdAt descending
  * TC-025: buildOperationsView sets escalationStep only for awaiting-resume jobs
@@ -339,19 +339,19 @@ describe("TC-008: merged awaiting-archive → job archive <slug>", () => {
   });
 });
 
-describe("TC-021: awaiting-archive when PR not merged → null", () => {
-  it("returns null when prMerged is false", () => {
+describe("TC-021: awaiting-archive when prMerged false → job archive <slug>", () => {
+  it("returns archive command when prMerged is false (single-phase: archive before merge)", () => {
     expect(
       deriveNextAction({ status: "awaiting-archive", isStale: false, prMerged: false, slug: "my-task" }),
-    ).toBeNull();
+    ).toBe("job archive my-task");
   });
 });
 
-describe("TC-022: awaiting-archive when prMerged null → null", () => {
-  it("returns null when prMerged is null", () => {
+describe("TC-022: awaiting-archive when prMerged null → job archive <slug>", () => {
+  it("returns archive command when prMerged is null (single-phase: archive unconditionally)", () => {
     expect(
       deriveNextAction({ status: "awaiting-archive", isStale: false, prMerged: null, slug: "my-task" }),
-    ).toBeNull();
+    ).toBe("job archive my-task");
   });
 });
 
@@ -631,7 +631,7 @@ describe("TC-028: formatOperationsViewHuman renders PR merged annotation and arc
     };
 
     const view: OperationsView = {
-      categories: [{ category: "awaiting-archive", label: "merge・archive 待ち", jobs: [row] }],
+      categories: [{ category: "awaiting-archive", label: "archive・merge 待ち", jobs: [row] }],
     };
 
     const output = formatOperationsViewHuman(view, { isTty: true, nowMs: FIXED_NOW });

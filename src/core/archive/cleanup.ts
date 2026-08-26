@@ -1,10 +1,12 @@
 /**
- * Post-merge cleanup for `job archive --with-merge`.
+ * Archive cleanup: worktree teardown, branch deletion, and sidecar removal.
  *
- * Runs ONLY after a successful PR merge. Cleans up worktree, feature branch, and sidecars.
- * Does NOT write job status — base working tree is never dirtied.
+ * Common cleanup for archive operations. Remote branch deletion is opt-out via
+ * `deleteRemoteBranch` — plain archive keeps the remote branch alive (PR still OPEN),
+ * while `--with-merge` deletes it after merging.
  *
  * Design: best-effort and idempotent. Missing worktree / branch / sidecar → no-op.
+ * Does NOT write job status or touch base branch.
  */
 import * as nodePath from "node:path";
 import type { SpawnFn } from "../../util/spawn.js";
@@ -15,7 +17,7 @@ import { livenessJsonPath, managedMarkerPath, localSidecarDir } from "../../util
 import { isRemoteRefNotFound } from "../../util/git-push.js";
 import { stderrWrite, logResult } from "../../logger/stdout.js";
 
-export interface PostMergeCleanupInput {
+export interface ArchiveCleanupInput {
   /** Slug of the archived job. */
   slug: string;
   /** Main repo root (cwd). Must not be inside a worktree. */
@@ -32,19 +34,29 @@ export interface PostMergeCleanupInput {
   fs: FinishFs;
   /** Injectable WorktreeManager for testing. */
   worktreeManagerFn?: () => WorktreeManager;
+  /**
+   * Whether to delete the remote feature branch.
+   * Defaults to `true` (delete remote branch — used by the --with-merge path).
+   * Set to `false` for plain archive (PR still OPEN; remote branch must survive for the PR).
+   */
+  deleteRemoteBranch?: boolean;
 }
 
 /**
- * Run post-merge cleanup: remove worktree, delete feature branch, clean up sidecars.
+ * Run archive cleanup: remove worktree, delete feature branch, clean up sidecars.
  *
  * Best-effort: logs warnings on failure, does not throw.
  * Does NOT write job status or touch base branch.
+ *
+ * When `deleteRemoteBranch === false`, the remote branch is preserved and an advisory
+ * is printed to stdout instructing the operator how to restore it if needed.
  */
-export async function runPostMergeCleanup(
-  input: PostMergeCleanupInput,
+export async function runArchiveCleanup(
+  input: ArchiveCleanupInput,
   stdoutWrite: (msg: string) => void = logResult,
 ): Promise<void> {
   const { slug, cwd, branch, worktreePath, noWorktree, baseBranch, spawn, fs, worktreeManagerFn } = input;
+  const deleteRemoteBranch = input.deleteRemoteBranch !== false; // default true
 
   stdoutWrite(
     noWorktree
@@ -108,9 +120,17 @@ export async function runPostMergeCleanup(
     if (localDelResult.exitCode !== 0) {
       stderrWrite(`Warning: failed to delete local branch ${branch}.`);
     }
-    const remoteDelResult = await spawn("git", ["push", "origin", "--delete", branch], { cwd });
-    if (remoteDelResult.exitCode !== 0 && !isRemoteRefNotFound(remoteDelResult.stderr)) {
-      stderrWrite(`Warning: failed to delete remote branch ${branch}.`);
+
+    if (deleteRemoteBranch) {
+      const remoteDelResult = await spawn("git", ["push", "origin", "--delete", branch], { cwd });
+      if (remoteDelResult.exitCode !== 0 && !isRemoteRefNotFound(remoteDelResult.stderr)) {
+        stderrWrite(`Warning: failed to delete remote branch ${branch}.`);
+      }
+    } else {
+      stdoutWrite(
+        `Remote branch '${branch}' was kept (PR is still open). ` +
+        `If you need to restore it locally: git fetch origin ${branch}`,
+      );
     }
   }
 }

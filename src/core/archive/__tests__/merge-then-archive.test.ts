@@ -1,18 +1,18 @@
 /**
  * Tests for merge-then-archive orchestrator.
  *
- * T-01 (TC-004): archiveRecorded+MERGED job runs runPostMergeCleanup and returns exitCode 0
+ * T-01 (TC-004): archiveRecorded+MERGED job runs runArchiveCleanup and returns exitCode 0
  * T-02 (TC-002): archiveRecorded+unmerged job is resolved and does not return "No job found"
  * TC-001: runArchiveOrchestrator is called with deferArchivedTransition: true (status stays awaiting-archive)
  * TC-004: archiveRecorded + MERGED → markJobArchived + cleanup (crash resume)
  * TC-005: !archiveRecorded + MERGED → order error escalation; no cleanup, no markJobArchived
- * TC-006: fresh merge success → markJobArchived called before runPostMergeCleanup
+ * TC-006: fresh merge success → markJobArchived called before runArchiveCleanup
  * TC-014: merge-during-wait → markJobArchived called before cleanup (integrity check not invoked)
  * TC-015: merge escalation → markJobArchived NOT called, cleanup NOT called
  * TC-016: markJobArchived throws → warning emitted, cleanup still runs
  * T-PMI-01: postMergeVerify set + integrity fail → exit code 1 escalation;
- *            runPostMergeCleanup NOT called; escalation reports merge as MERGED
- * T-PMI-02: postMergeVerify set + integrity pass → runPostMergeCleanup called; exit code 0
+ *            runArchiveCleanup NOT called; escalation reports merge as MERGED
+ * T-PMI-02: postMergeVerify set + integrity pass → runArchiveCleanup called; exit code 0
  * T-PMI-03: postMergeVerify unset/empty → integrity module not invoked; existing flow unchanged
  * T-PMI-04 (TC-004): archiveRecorded+MERGED resume path does not invoke integrity check
  * TC-015 (old): merge-during-wait path with postMergeVerify set → integrity check not invoked
@@ -40,8 +40,8 @@ vi.mock("../orchestrator.js", () => ({
   resolveWorktreePathForArchive: vi.fn().mockResolvedValue(null),
 }));
 
-vi.mock("../post-merge-cleanup.js", () => ({
-  runPostMergeCleanup: vi.fn().mockResolvedValue(undefined),
+vi.mock("../cleanup.js", () => ({
+  runArchiveCleanup: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../post-merge-integrity.js", () => ({
@@ -61,7 +61,7 @@ vi.mock("../../finish/job-state-update.js", () => ({
 import { runMergeThenArchive } from "../merge-then-archive.js";
 import { JobStateStore } from "../../../store/job-state-store.js";
 import { runArchiveOrchestrator } from "../orchestrator.js";
-import { runPostMergeCleanup } from "../post-merge-cleanup.js";
+import { runArchiveCleanup } from "../cleanup.js";
 import { runPostMergeIntegrityCheck } from "../post-merge-integrity.js";
 import { stderrWrite } from "../../../logger/stdout.js";
 import { markJobArchived } from "../../finish/job-state-update.js";
@@ -181,7 +181,7 @@ describe("merge-then-archive — archive-recorded job resume paths", () => {
     vi.clearAllMocks();
     // Default: archive-recorded (sourceChangeDir in archive/) with awaiting-archive status
     vi.mocked(JobStateStore.listWithSourceDirs).mockResolvedValue(makeArchiveEntries());
-    vi.mocked(runPostMergeCleanup).mockResolvedValue(undefined);
+    vi.mocked(runArchiveCleanup).mockResolvedValue(undefined);
   });
 
   /**
@@ -189,7 +189,7 @@ describe("merge-then-archive — archive-recorded job resume paths", () => {
    * The change folder is already in archive/ (archiveRecorded = true).
    * PR is already MERGED. This is the crash-resume path (e.g. crash after merge, before cleanup).
    */
-  it("T-01: archiveRecorded+MERGED job runs markJobArchived + runPostMergeCleanup and returns exitCode 0", async () => {
+  it("T-01: archiveRecorded+MERGED job runs markJobArchived + runArchiveCleanup and returns exitCode 0", async () => {
     const githubClient = makeGithubClient({
       getPullRequest: vi.fn().mockResolvedValue({ state: "MERGED" }),
     });
@@ -207,8 +207,8 @@ describe("merge-then-archive — archive-recorded job resume paths", () => {
 
     expect(result.exitCode).toBe(0);
 
-    // runPostMergeCleanup must have been called (cleanup path)
-    expect(vi.mocked(runPostMergeCleanup)).toHaveBeenCalled();
+    // runArchiveCleanup must have been called (cleanup path)
+    expect(vi.mocked(runArchiveCleanup)).toHaveBeenCalled();
 
     // markJobArchived must have been called (post-merge transition)
     expect(vi.mocked(markJobArchived)).toHaveBeenCalledWith(FAKE_SLUG, FAKE_CWD);
@@ -262,7 +262,7 @@ describe("merge-then-archive — archive-recorded job resume paths", () => {
 describe("merge-then-archive — archiveRecorded vs !archiveRecorded signal (TC-004, TC-005)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(runPostMergeCleanup).mockResolvedValue(undefined);
+    vi.mocked(runArchiveCleanup).mockResolvedValue(undefined);
   });
 
   /**
@@ -288,7 +288,7 @@ describe("merge-then-archive — archiveRecorded vs !archiveRecorded signal (TC-
 
     expect(result.exitCode).toBe(0);
     expect(vi.mocked(markJobArchived)).toHaveBeenCalledWith(FAKE_SLUG, FAKE_CWD);
-    expect(vi.mocked(runPostMergeCleanup)).toHaveBeenCalled();
+    expect(vi.mocked(runArchiveCleanup)).toHaveBeenCalled();
     // Integrity check must NOT have been invoked (crash-resume, not fresh-merge path)
     expect(vi.mocked(runPostMergeIntegrityCheck)).not.toHaveBeenCalled();
     // runArchiveOrchestrator must NOT have been called
@@ -318,7 +318,7 @@ describe("merge-then-archive — archiveRecorded vs !archiveRecorded signal (TC-
     expect(result.exitCode).toBe(1);
     expect("escalation" in result && (result as { escalation: string }).escalation).toMatch(/merged before archive/i);
     expect(vi.mocked(markJobArchived)).not.toHaveBeenCalled();
-    expect(vi.mocked(runPostMergeCleanup)).not.toHaveBeenCalled();
+    expect(vi.mocked(runArchiveCleanup)).not.toHaveBeenCalled();
   });
 });
 
@@ -332,7 +332,7 @@ describe("merge-then-archive — post-merge transition (TC-001, TC-006, TC-014, 
     // Default: active (non-archived) entry
     vi.mocked(JobStateStore.listWithSourceDirs).mockResolvedValue(makeActiveEntries());
     vi.mocked(runArchiveOrchestrator).mockResolvedValue({ exitCode: 0, headSha: "abc1234" });
-    vi.mocked(runPostMergeCleanup).mockResolvedValue(undefined);
+    vi.mocked(runArchiveCleanup).mockResolvedValue(undefined);
     vi.mocked(runPostMergeIntegrityCheck).mockResolvedValue({ ok: true });
     vi.mocked(markJobArchived).mockResolvedValue(undefined as unknown as JobState);
   });
@@ -375,9 +375,9 @@ describe("merge-then-archive — post-merge transition (TC-001, TC-006, TC-014, 
   });
 
   /**
-   * TC-006: fresh merge success → markJobArchived called before runPostMergeCleanup.
+   * TC-006: fresh merge success → markJobArchived called before runArchiveCleanup.
    */
-  it("TC-006: fresh merge success → markJobArchived called before runPostMergeCleanup", async () => {
+  it("TC-006: fresh merge success → markJobArchived called before runArchiveCleanup", async () => {
     const githubClient = makeGithubClient({
       getPullRequest: vi.fn().mockResolvedValue({
         state: "OPEN",
@@ -394,8 +394,8 @@ describe("merge-then-archive — post-merge transition (TC-001, TC-006, TC-014, 
       callOrder.push("markJobArchived");
       return undefined as unknown as JobState;
     });
-    vi.mocked(runPostMergeCleanup).mockImplementation(async () => {
-      callOrder.push("runPostMergeCleanup");
+    vi.mocked(runArchiveCleanup).mockImplementation(async () => {
+      callOrder.push("runArchiveCleanup");
     });
 
     const result = await runMergeThenArchive(
@@ -414,7 +414,7 @@ describe("merge-then-archive — post-merge transition (TC-001, TC-006, TC-014, 
     );
 
     expect(result.exitCode).toBe(0);
-    expect(callOrder).toEqual(["markJobArchived", "runPostMergeCleanup"]);
+    expect(callOrder).toEqual(["markJobArchived", "runArchiveCleanup"]);
   });
 
   /**
@@ -432,8 +432,8 @@ describe("merge-then-archive — post-merge transition (TC-001, TC-006, TC-014, 
       callOrder.push("markJobArchived");
       return undefined as unknown as JobState;
     });
-    vi.mocked(runPostMergeCleanup).mockImplementation(async () => {
-      callOrder.push("runPostMergeCleanup");
+    vi.mocked(runArchiveCleanup).mockImplementation(async () => {
+      callOrder.push("runArchiveCleanup");
     });
 
     const result = await runMergeThenArchive(
@@ -453,7 +453,7 @@ describe("merge-then-archive — post-merge transition (TC-001, TC-006, TC-014, 
     );
 
     expect(result.exitCode).toBe(0);
-    expect(callOrder).toEqual(["markJobArchived", "runPostMergeCleanup"]);
+    expect(callOrder).toEqual(["markJobArchived", "runArchiveCleanup"]);
     // Integrity check must NOT be invoked on the merge-during-wait path
     expect(vi.mocked(runPostMergeIntegrityCheck)).not.toHaveBeenCalled();
   });
@@ -490,7 +490,7 @@ describe("merge-then-archive — post-merge transition (TC-001, TC-006, TC-014, 
 
     expect(result.exitCode).toBe(1);
     expect(vi.mocked(markJobArchived)).not.toHaveBeenCalled();
-    expect(vi.mocked(runPostMergeCleanup)).not.toHaveBeenCalled();
+    expect(vi.mocked(runArchiveCleanup)).not.toHaveBeenCalled();
   });
 
   /**
@@ -531,7 +531,7 @@ describe("merge-then-archive — post-merge transition (TC-001, TC-006, TC-014, 
     const warnCalls = vi.mocked(stderrWrite).mock.calls.map(([m]) => m as string);
     expect(warnCalls.some((m) => m.includes("Warning") && m.toLowerCase().includes("archived"))).toBe(true);
     // Cleanup still runs
-    expect(vi.mocked(runPostMergeCleanup)).toHaveBeenCalled();
+    expect(vi.mocked(runArchiveCleanup)).toHaveBeenCalled();
   });
 });
 
@@ -567,7 +567,7 @@ describe("merge-then-archive — post-merge integrity check wiring", () => {
     // Default: active (non-archived) entry with awaiting-archive status
     vi.mocked(JobStateStore.listWithSourceDirs).mockResolvedValue(makeActiveEntries());
     vi.mocked(runArchiveOrchestrator).mockResolvedValue({ exitCode: 0, headSha: "abc1234" });
-    vi.mocked(runPostMergeCleanup).mockResolvedValue(undefined);
+    vi.mocked(runArchiveCleanup).mockResolvedValue(undefined);
     vi.mocked(runPostMergeIntegrityCheck).mockResolvedValue({ ok: true });
   });
 
@@ -602,14 +602,14 @@ describe("merge-then-archive — post-merge integrity check wiring", () => {
     // Escalation is surfaced
     expect("escalation" in result && result.escalation).toBe(FAKE_ESCALATION);
     // Post-merge cleanup must NOT have been called on integrity failure
-    expect(vi.mocked(runPostMergeCleanup)).not.toHaveBeenCalled();
+    expect(vi.mocked(runArchiveCleanup)).not.toHaveBeenCalled();
     // Integrity check WAS called
     expect(vi.mocked(runPostMergeIntegrityCheck)).toHaveBeenCalledWith(
       expect.objectContaining({ commands: ["bun install --frozen-lockfile"], prNumber: FAKE_PR_NUMBER }),
     );
   });
 
-  it("T-PMI-02: postMergeVerify set + integrity pass → runPostMergeCleanup called; exit code 0", async () => {
+  it("T-PMI-02: postMergeVerify set + integrity pass → runArchiveCleanup called; exit code 0", async () => {
     vi.mocked(runPostMergeIntegrityCheck).mockResolvedValue({ ok: true });
 
     const result = await runMergeThenArchive(
@@ -632,7 +632,7 @@ describe("merge-then-archive — post-merge integrity check wiring", () => {
     // Integrity check was invoked
     expect(vi.mocked(runPostMergeIntegrityCheck)).toHaveBeenCalled();
     // Cleanup was invoked
-    expect(vi.mocked(runPostMergeCleanup)).toHaveBeenCalled();
+    expect(vi.mocked(runArchiveCleanup)).toHaveBeenCalled();
   });
 
   it("T-PMI-03: postMergeVerify unset → integrity module not invoked; existing flow unchanged", async () => {
@@ -656,7 +656,7 @@ describe("merge-then-archive — post-merge integrity check wiring", () => {
     // Integrity module NOT invoked
     expect(vi.mocked(runPostMergeIntegrityCheck)).not.toHaveBeenCalled();
     // Cleanup still runs
-    expect(vi.mocked(runPostMergeCleanup)).toHaveBeenCalled();
+    expect(vi.mocked(runArchiveCleanup)).toHaveBeenCalled();
   });
 
   it("T-PMI-03b: postMergeVerify empty array → integrity module not invoked; existing flow unchanged", async () => {
@@ -678,7 +678,7 @@ describe("merge-then-archive — post-merge integrity check wiring", () => {
 
     expect(result.exitCode).toBe(0);
     expect(vi.mocked(runPostMergeIntegrityCheck)).not.toHaveBeenCalled();
-    expect(vi.mocked(runPostMergeCleanup)).toHaveBeenCalled();
+    expect(vi.mocked(runArchiveCleanup)).toHaveBeenCalled();
   });
 
   it("TC-015-dup: merge-during-wait path with postMergeVerify set → integrity check not invoked", async () => {
@@ -710,7 +710,7 @@ describe("merge-then-archive — post-merge integrity check wiring", () => {
     // so the post-merge integrity check must NOT be invoked.
     expect(vi.mocked(runPostMergeIntegrityCheck)).not.toHaveBeenCalled();
     // Cleanup still runs on the merge-during-wait path.
-    expect(vi.mocked(runPostMergeCleanup)).toHaveBeenCalled();
+    expect(vi.mocked(runArchiveCleanup)).toHaveBeenCalled();
   });
 
   /**
@@ -742,7 +742,7 @@ describe("merge-then-archive — post-merge integrity check wiring", () => {
     // Integrity check must NOT have been invoked on the resume path
     expect(vi.mocked(runPostMergeIntegrityCheck)).not.toHaveBeenCalled();
     // Cleanup runs (resume path)
-    expect(vi.mocked(runPostMergeCleanup)).toHaveBeenCalled();
+    expect(vi.mocked(runArchiveCleanup)).toHaveBeenCalled();
     // markJobArchived must have been called (post-merge transition on resume path)
     expect(vi.mocked(markJobArchived)).toHaveBeenCalledWith(FAKE_SLUG, FAKE_CWD);
   });
@@ -790,7 +790,7 @@ describe("merge-then-archive — blocked-grace wait loop", () => {
     vi.clearAllMocks();
     vi.mocked(JobStateStore.listWithSourceDirs).mockResolvedValue(makeActiveEntries());
     vi.mocked(runArchiveOrchestrator).mockResolvedValue({ exitCode: 0, headSha: "abc1234" });
-    vi.mocked(runPostMergeCleanup).mockResolvedValue(undefined);
+    vi.mocked(runArchiveCleanup).mockResolvedValue(undefined);
     vi.mocked(runPostMergeIntegrityCheck).mockResolvedValue({ ok: true });
   });
 
@@ -1117,7 +1117,7 @@ describe("merge-then-archive — structural CI detection", () => {
     vi.mocked(JobStateStore.listWithSourceDirs).mockResolvedValue(makeActiveEntries());
     // Default: runArchiveOrchestrator returns exitCode 0 with a defined archiveSha
     vi.mocked(runArchiveOrchestrator).mockResolvedValue({ exitCode: 0, headSha: ARCHIVE_SHA });
-    vi.mocked(runPostMergeCleanup).mockResolvedValue(undefined);
+    vi.mocked(runArchiveCleanup).mockResolvedValue(undefined);
     vi.mocked(markJobArchived).mockResolvedValue(undefined as unknown as JobState);
   });
 
@@ -1486,7 +1486,7 @@ describe("merge-then-archive — structural CI detection", () => {
   // ─── TC-019 ────────────────────────────────────────────────────────────────
   it(
     "TC-019: CI-present timeout → mergePullRequest not called, " +
-    "runPostMergeCleanup not called, markJobArchived not called",
+    "runArchiveCleanup not called, markJobArchived not called",
     async () => {
       const spawnFn = makeCiSpawn({
         lsTreeStdout: PUSH_WORKFLOW_LS_TREE,
@@ -1518,7 +1518,7 @@ describe("merge-then-archive — structural CI detection", () => {
       expect(result.exitCode).toBe(1);
       // None of these side-effects must occur on the CI-present timeout path
       expect(vi.mocked(githubClient.mergePullRequest)).not.toHaveBeenCalled();
-      expect(vi.mocked(runPostMergeCleanup)).not.toHaveBeenCalled();
+      expect(vi.mocked(runArchiveCleanup)).not.toHaveBeenCalled();
       expect(vi.mocked(markJobArchived)).not.toHaveBeenCalled();
     },
   );
