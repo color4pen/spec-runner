@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7377ae6d-6bd8-41b1-a129-d42063b689cc",
   "createdAt": "2026-08-26T11:34:24.815Z",
-  "updatedAt": "2026-08-26T11:34:27.544Z",
+  "updatedAt": "2026-08-26T11:38:16.480Z",
   "request": {
     "title": "Codex provider 実行時に speculative な edge case を blocking finding へ昇格しすぎない guidance を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "feat/codex-scope-guidance-7377ae6d",
   "error": null,
@@ -64,10 +64,30 @@
   "issueNumber": 1079,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "c1d48a485fed96e5e55e64859559ab7dae93a22b"
+    "c1d48a485fed96e5e55e64859559ab7dae93a22b",
+    "094924e1a50b62c4f067d212e534144dc42cb3c0"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/shared/prompt-builder.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/codex/__tests__/prompt-rules-injection.test.ts",
+      "src/adapter/managed-agent/__tests__/prompt-rules-injection.test.ts",
+      "src/core/pipeline/convergence-budget.ts",
+      "src/adapter/codex/__tests__/artifact-bundle-injection.test.ts",
+      "src/adapter/codex/__tests__/resume-prompt-injection.test.ts",
+      "src/adapter/codex/__tests__/touched-files-injection.test.ts",
+      "src/adapter/codex/__tests__/completion-contract-injection.test.ts",
+      "specrunner/reviewers/cross-boundary-invariants.md",
+      "src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts",
+      "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
