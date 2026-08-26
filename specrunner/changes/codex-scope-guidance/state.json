@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7377ae6d-6bd8-41b1-a129-d42063b689cc",
   "createdAt": "2026-08-26T11:34:24.815Z",
-  "updatedAt": "2026-08-26T12:25:10.098Z",
+  "updatedAt": "2026-08-26T12:26:21.841Z",
   "request": {
     "title": "Codex provider 実行時に speculative な edge case を blocking finding へ昇格しすぎない guidance を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "regression-gate",
+  "step": "conformance",
   "status": "running",
   "branch": "feat/codex-scope-guidance-7377ae6d",
   "error": null,
@@ -74,7 +74,8 @@
     "f6d16996c049b303cd5c343ff06d95d91820355b",
     "551d30a312b92e9992471a531c3388afab795b6a",
     "95a1bebe3b7b4759c501ba42e53db04f67447acc",
-    "d372c15dc45b695aa18512e446d9daf83bd67d75"
+    "d372c15dc45b695aa18512e446d9daf83bd67d75",
+    "2c4f776a5e26e730ffd96d56fcc891c4fdc248d1"
   ],
   "touchedFiles": {
     "request-review": [
@@ -151,6 +152,10 @@
       "src/adapter/codex/scope-guidance.ts",
       "tests/adapter/codex/scope-guidance-provider-isolation.test.ts",
       "src/adapter/codex/__tests__/scope-guidance-injection.test.ts"
+    ],
+    "regression-gate": [
+      "tests/adapter/codex/scope-guidance-provider-isolation.test.ts",
+      "src/adapter/codex/scope-guidance.ts"
     ]
   },
   "reviewerStatuses": [
@@ -184,7 +189,7 @@
     }
   ],
   "_journal": {
-    "historyCount": 46,
+    "historyCount": 51,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -198,7 +203,8 @@
       "code-fixer": 1,
       "cross-boundary-invariants": 1,
       "scale-tolerance": 1,
-      "custom-reviewers": 1
+      "custom-reviewers": 1,
+      "regression-gate": 1
     }
   }
 }
