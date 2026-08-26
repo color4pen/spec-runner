@@ -1,0 +1,17 @@
+{
+  "requestHash": "sha256:f38729e9e4528594212ff2e1875debbf9cadcc42d919f1487f0b83d806713d45",
+  "codeAssertionsVerified": true,
+  "verifiedAssertions": [
+    "src/adapter/codex/agent-runner.ts: exists; fullPrompt construction at lines 407-431",
+    "src/adapter/shared/prompt-builder.ts: buildAdditionalInstructions and buildResumeSection are shared between Claude Code and Codex adapters",
+    "src/adapter/claude-code/agent-runner.ts: imports buildAdditionalInstructions from shared/prompt-builder.ts; independent from Codex adapter",
+    "src/core/pipeline/convergence-budget.ts: exists; pipeline iteration tracking; no adapter dependency",
+    "src/core/pipeline/pipeline.ts: maxIterations resolved from PipelineParams; not touched by adapter changes",
+    "specrunner/reviewers/cross-boundary-invariants.md: exists; maxIterations: 2 in frontmatter",
+    "specrunner/reviewers/scale-tolerance.md: exists",
+    "src/adapter/codex/__tests__/resume-prompt-injection.test.ts: TC-015 byte-identical assertion at line 163",
+    "src/adapter/codex/__tests__/artifact-bundle-injection.test.ts: TC-015 byte-identical assertion at line 171",
+    "src/adapter/codex/__tests__/prompt-rules-injection.test.ts: TC-018 verifies promptRules injection ordering in Codex adapter"
+  ],
+  "sourceRevision": "3e5527c991119a6a20349ccce5872adcd1723f39"
+}

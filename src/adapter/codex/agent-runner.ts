@@ -31,6 +31,7 @@ import { buildArtifactBundle } from "../shared/artifact-bundle.js";
 import { buildTouchedFilesSection } from "../shared/touched-files-bundle.js";
 import { buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
 export { COMPLETION_REPORT_MEANS, buildMainTurnCompletionInstruction, buildCompletionRetryPrompt } from "./completion-report-prompt.js";
+import { CODEX_SCOPE_GUIDANCE } from "./scope-guidance.js";
 import { shouldRunFollowUp, mergeFollowUpResult } from "../shared/follow-up.js";
 import { SessionLogWriter } from "../shared/session-log-writer.js";
 import { isTransientAgentError } from "../shared/transient-error.js";
@@ -424,11 +425,16 @@ export class CodexAgentRunner implements AgentRunner {
       ? `\n\n${ctx.policy.promptRules}`
       : "";
 
+    // D2 (design.md): scope discipline guidance is placed after project rules and before the
+    // completion report instruction, so the completion directive remains the final directive.
+    // Applied unconditionally to all Codex steps (see scope-guidance.ts, design D1/D3/D7).
+    const scopeGuidanceSection = `\n\n${CODEX_SCOPE_GUIDANCE}`;
+
     // Inject completion-report instruction into the main work turn when reportTool is set.
     // The means clause is a single source (buildMainTurnCompletionInstruction) shared with retry prompts.
     const fullPrompt = reportTool
-      ? `${baseFullPrompt}${promptRulesSection}\n\n${buildMainTurnCompletionInstruction()}`
-      : `${baseFullPrompt}${promptRulesSection}`;
+      ? `${baseFullPrompt}${promptRulesSection}${scopeGuidanceSection}\n\n${buildMainTurnCompletionInstruction()}`
+      : `${baseFullPrompt}${promptRulesSection}${scopeGuidanceSection}`;
 
     // Resolve transient retry config
     const { maxRetries, baseDelayMs } = resolveTransientRetryConfig(ctx.config);

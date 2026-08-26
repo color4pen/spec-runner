@@ -10,6 +10,7 @@ import * as path from "node:path";
 import * as os from "node:os";
 import { CodexAgentRunner } from "../agent-runner.js";
 import type { CodexInstance, CodexThread } from "../agent-runner.js";
+import { CODEX_SCOPE_GUIDANCE } from "../scope-guidance.js";
 import type { AgentRunContext } from "../../../core/port/agent-runner.js";
 import type { AgentStep } from "../../../core/step/types.js";
 import type { SpecRunnerConfig } from "../../../config/schema.js";
@@ -154,8 +155,10 @@ describe("TC-012: codex adapter — prompt includes bundled-change-artifacts whe
 // Note: the existing resume-prompt-injection.test.ts "byte-identical" case also covers TC-015.
 // ─────────────────────────────────────────────────────────────────────────────
 describe("TC-015: codex — no artifacts → baseFullPrompt is byte-identical to pre-injection formula", () => {
-  it("prompt equals baseMessage + additionalInstructions when change folder is absent", async () => {
+  it("prompt equals baseMessage + additionalInstructions + guidance when change folder is absent", async () => {
     // tempDir has no specrunner/changes/<slug>/ → buildArtifactBundle returns ""
+    // guidance section is part of the spec and always present; it is included in the baseline.
+    // All other sections must remain absent: this assertion uses strict toBe equality.
     const { thread, calls } = makeCapturingMockThread(["approved"]);
     const runner = new CodexAgentRunner({
       _codexFactory: () => makeMockCodexInstance(thread),
@@ -167,8 +170,9 @@ describe("TC-015: codex — no artifacts → baseFullPrompt is byte-identical to
 
     const additionalInstructions = buildAdditionalInstructions(ctx);
     expect(calls.length).toBeGreaterThanOrEqual(1);
-    // No reportTool → fullPrompt == baseFullPrompt; no artifacts → artifactSection == ""
-    expect(calls[0]!.prompt).toBe(`${BASE_MESSAGE}\n\n${additionalInstructions}`);
+    // No reportTool → fullPrompt == baseFullPrompt + scopeGuidanceSection; no artifacts → artifactSection == ""
+    // guidance section is always appended (Codex-only, design D1/D3); baseline updated accordingly.
+    expect(calls[0]!.prompt).toBe(`${BASE_MESSAGE}\n\n${additionalInstructions}\n\n${CODEX_SCOPE_GUIDANCE}`);
     expect(calls[0]!.prompt).not.toContain("<bundled-change-artifacts>");
   });
 });
