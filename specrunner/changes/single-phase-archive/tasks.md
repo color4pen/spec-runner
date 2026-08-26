@@ -107,6 +107,7 @@ T-09 は最終検証で、他タスク完了後に実施する。
 
 - [ ] `src/core/job-list/operations-view.ts` の `deriveNextAction` の `case "awaiting-archive"` を、`prMerged` の値に依らず `job archive ${slug}` を返すよう変更する
 - [ ] 同関数の JSDoc にある status → next action 対応表を更新する
+- [ ] `CATEGORY_META` の `"awaiting-archive"` エントリのラベルを `"merge・archive 待ち"` から `"archive・merge 待ち"` に変更する（操作順 archive → merge を反映する。次アクション判定の変更と一致させる）
 - [ ] `buildStatusCell` の `"awaiting-archive (PR merged)"` 表示は変更しない（表示上の事実であり、次アクション判定とは独立）
 - [ ] `tests/unit/core/job-list/operations-view.test.ts` の該当ケースを更新する。`prMerged: false` / `prMerged: null` で `null` を期待していたケースを `job archive <slug>` 期待に変更し、`prMerged: true` のケースは既存の期待値のまま残す
 
@@ -114,6 +115,7 @@ T-09 は最終検証で、他タスク完了後に実施する。
 - `awaiting-archive` かつ `prMerged: false` の row の次アクションが `job archive <slug>`
 - `awaiting-archive` かつ `prMerged: null` の row の次アクションが `job archive <slug>`
 - `awaiting-archive` かつ `prMerged: true` の row の次アクションが従来どおり `job archive <slug>`
+- `CATEGORY_META` の `"awaiting-archive"` エントリのラベルが `"archive・merge 待ち"` である
 - `operations-view.test.ts` が green
 
 ## T-07: workflow_dispatch の archive 案内から 2 相記述を除去する（D8-1）
@@ -155,6 +157,21 @@ T-09 は最終検証で、他タスク完了後に実施する。
 - `src/core/archive/__tests__/plain-archive.test.ts` に 2 相契約（再実行前提・`awaiting-archive` 据え置き）を期待するアサーションが 1 つも残っていない
 - spec.md の全 Scenario に対応するテストが存在する
 - archive 関連の全ユニットテストが green
+
+## T-09-pre: 新 ADR で旧 ADR を明示的に amend する
+
+本変更は `specrunner/adr/2026-08-21-archive-state-after-merge.md`（ステータス: accepted）が採択した
+2 相契約（plain archive は merge 後に `archived` に遷移する）を全面撤回する。
+adr-gen が自動生成する新 ADR には、以下の amend 宣言を含めること。
+
+- [ ] 新 ADR のヘッダに `Amends: [ADR-20260821-archive-state-after-merge](2026-08-21-archive-state-after-merge.md)` を追記する
+- [ ] `2026-08-21-archive-state-after-merge.md` のステータスを `accepted` から `superseded by <新 ADR のリンク>` に更新する
+- [ ] 新 ADR の「コンテキスト」または「関連」節に旧 ADR を明示的に参照し、何を撤回するかを記述する（D3「merge 後の terminal transition を plain 経路の判定条件から除去」、D2「GitHub PR state 依存」が全面撤回の対象）
+
+**Acceptance Criteria**:
+- 新 ADR が旧 ADR を `Amends:` セクションで参照している
+- `2026-08-21-archive-state-after-merge.md` のステータスが `superseded` になっている
+- リポジトリ内に矛盾する `accepted` 状態の ADR が並存しない
 
 ## T-09: 全体検証
 

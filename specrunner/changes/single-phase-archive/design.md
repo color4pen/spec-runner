@@ -278,6 +278,9 @@ post-merge 処理を 3 箇所にインライン複製する退行を避ける。
    既に 1 回しか呼んでおらず、単相化は CLI 側の契約変更で達成される。
 2. **`deriveNextAction`**（`src/core/job-list/operations-view.ts` L228）:
    `awaiting-archive` の次アクションを `prMerged` に依存させず、常に `job archive <slug>` を返す。
+   `CATEGORY_META` の `"awaiting-archive"` エントリのラベルを `"merge・archive 待ち"` から
+   `"archive・merge 待ち"` に変更する — 操作順が archive → merge であることを反映し、
+   旧操作順（merge → archive）を示唆するラベルを是正する。
    `buildStatusCell`（L333）の `awaiting-archive (PR merged)` 注記は **維持する** —
    これは GitHub 側の事実の表示であり、次アクションの条件ではない。
 3. **完了通知 / 完了時ヒント**: `buildCompletionComment`（`src/core/notify/issue-notifier.ts` L236-239）と

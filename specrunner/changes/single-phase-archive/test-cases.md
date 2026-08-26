@@ -50,14 +50,14 @@ Result section MUST appear at the very end as a YAML code block:
 
 ## Summary
 
-- **Total**: 41 cases
-- **Automated** (unit/integration + gate): 40
+- **Total**: 43 cases
+- **Automated** (unit/integration + gate): 42
 - **Manual**: 1
-- **Priority**: must: 30, should: 11, could: 0
+- **Priority**: must: 31, should: 12, could: 0
 
 ---
 
-## TC 一覧（Scenario 由来: TC-001〜TC-017 / 非 Scenario 由来: TC-018〜TC-041）
+## TC 一覧（Scenario 由来: TC-001〜TC-017, TC-043 / 非 Scenario 由来: TC-018〜TC-042）
 
 ---
 
@@ -478,15 +478,35 @@ Result section MUST appear at the very end as a YAML code block:
 
 ---
 
+### TC-042: Path B — noWorktree===true + local branch 不在 → best-effort archived + cleanup + exit 0
+
+**Category**: unit
+**Priority**: should
+**Source**: design.md > D5 Path B / tasks.md > T-03
+
+**GIVEN** job が `awaiting-archive` かつ `archiveRecorded === true`（change folder が archive/ 配下に存在）。`noWorktree === true`（`--no-worktree` モード）であり、`git rev-parse --verify --quiet refs/heads/<branch>` が非 0 を返す（local feature branch が存在しない）。  
+**WHEN** `runPlainArchive` を実行する  
+**THEN** `runArchiveOrchestrator` は呼ばれない（Path B 経路）。`markJobArchived` が best-effort で試行される（失敗しても warning に留める）。`runArchiveCleanup` が `deleteRemoteBranch: false` で実行される。exit code は 0。
+
+---
+
+### TC-043: --from-issue invocation completes in one run
+
+**Category**: unit
+**Priority**: must
+**Source**: spec.md > Requirement: plain archive shall complete the whole archive operation in a single run > Scenario: --from-issue invocation completes in one run
+
+---
+
 ## Result
 
 ```yaml
 result: completed
-total: 41
-automated: 40
+total: 43
+automated: 42
 manual: 1
-must: 30
-should: 11
+must: 31
+should: 12
 could: 0
 blocked_reasons: []
 ```

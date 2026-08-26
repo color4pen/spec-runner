@@ -4,11 +4,14 @@
 
 ### Requirement: plain archive shall complete the whole archive operation in a single run
 
-Plain `job archive` (without `--with-merge`) SHALL, in one execution, record the archive
-(move the change folder to the archive location, commit it, and push it to the feature
-branch), transition the job from `awaiting-archive` to `archived`, and run local cleanup
-(worktree teardown, liveness / managed marker / sidecar removal, local feature branch
-deletion). The operation MUST NOT require, expect, or instruct a second invocation.
+Plain `job archive <slug>` and `job archive --from-issue <issue>` (both without
+`--with-merge`) SHALL, in one execution, record the archive (move the change folder to the
+archive location, commit it, and push it to the feature branch), transition the job from
+`awaiting-archive` to `archived`, and run local cleanup (worktree teardown, liveness /
+managed marker / sidecar removal, local feature branch deletion). The operation MUST NOT
+require, expect, or instruct a second invocation. `--from-issue` resolves the slug from the
+issue number and ultimately calls the same `runPlainArchive` function, so the single-run
+guarantee applies equally to both invocation forms.
 
 #### Scenario: awaiting-archive job with an OPEN PR completes in one run
 
@@ -25,6 +28,14 @@ exits with code 0
 **When** plain archive records the archive successfully
 **Then** the stdout output contains no instruction to re-run `job archive` after the PR is
 merged, and contains no statement that the job remains in `awaiting-archive`
+
+#### Scenario: --from-issue invocation completes in one run
+
+**Given** a job in status `awaiting-archive` with a recorded pull-request number
+**When** the operator runs `specrunner job archive --from-issue <issue>` once
+**Then** the slug is resolved from the issue number, `runPlainArchive` is called exactly
+once, the archive completes (folder move, commit/push, `archived` transition, cleanup), and
+the command exits with code 0 — identical behaviour to `specrunner job archive <slug>`
 
 #### Scenario: no further SpecRunner command is needed after the PR is merged
 
