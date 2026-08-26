@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7377ae6d-6bd8-41b1-a129-d42063b689cc",
   "createdAt": "2026-08-26T11:34:24.815Z",
-  "updatedAt": "2026-08-26T12:20:22.908Z",
+  "updatedAt": "2026-08-26T12:25:10.098Z",
   "request": {
     "title": "Codex provider 実行時に speculative な edge case を blocking finding へ昇格しすぎない guidance を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "code-fixer",
+  "step": "regression-gate",
   "status": "running",
   "branch": "feat/codex-scope-guidance-7377ae6d",
   "error": null,
@@ -72,7 +72,9 @@
     "f7525f90546d6e4add7086fcb7e3c6e96491bab2",
     "64a65af1a665d3b86cf37d1fa70a6aaba8bedbea",
     "f6d16996c049b303cd5c343ff06d95d91820355b",
-    "551d30a312b92e9992471a531c3388afab795b6a"
+    "551d30a312b92e9992471a531c3388afab795b6a",
+    "95a1bebe3b7b4759c501ba42e53db04f67447acc",
+    "d372c15dc45b695aa18512e446d9daf83bd67d75"
   ],
   "touchedFiles": {
     "request-review": [
@@ -144,10 +146,45 @@
       "tests/adapter/codex/scope-guidance-provider-isolation.test.ts",
       "src/adapter/codex/__tests__/resume-prompt-injection.test.ts",
       "src/adapter/codex/__tests__/artifact-bundle-injection.test.ts"
+    ],
+    "code-fixer": [
+      "src/adapter/codex/scope-guidance.ts",
+      "tests/adapter/codex/scope-guidance-provider-isolation.test.ts",
+      "src/adapter/codex/__tests__/scope-guidance-injection.test.ts"
     ]
   },
+  "reviewerStatuses": [
+    {
+      "name": "cross-boundary-invariants",
+      "status": "approved",
+      "approvedAtCommit": "95a1bebe3b7b4759c501ba42e53db04f67447acc",
+      "activationPaths": [
+        "src/core/pipeline/**",
+        "src/core/step/**",
+        "src/state/**",
+        "src/store/**",
+        "src/adapter/**",
+        "src/core/runtime/**",
+        "src/core/verification/**"
+      ],
+      "invalidatedByCommit": null,
+      "canonHash": "specrunner/changes/codex-scope-guidance/design.md:sha256:3a4eb702168479bc96795434c03f9c58e248f62d6a9fa82caeb7628213df2cfa|specrunner/changes/codex-scope-guidance/request.md:sha256:f38729e9e4528594212ff2e1875debbf9cadcc42d919f1487f0b83d806713d45|specrunner/changes/codex-scope-guidance/spec.md:sha256:578f068e7a7ebc65875c73b72c7f1caf967740f1f747a0ba414d0a84d17efb1e|specrunner/changes/codex-scope-guidance/tasks.md:sha256:853c479437e87bd6b4146b440cdec7b1172501a5ee886486eaab67ab51b99a66|specrunner/changes/codex-scope-guidance/test-cases.md:sha256:adb5359ccc45427f9ca8aa4f6260c8e561e4f0d05ed2a916902d04f04e1039f8"
+    },
+    {
+      "name": "scale-tolerance",
+      "status": "skipped",
+      "approvedAtCommit": null,
+      "activationPaths": [
+        "src/store/**",
+        "src/adapter/github/**",
+        "src/core/inbox/**",
+        "src/logger/**"
+      ],
+      "invalidatedByCommit": null
+    }
+  ],
   "_journal": {
-    "historyCount": 35,
+    "historyCount": 46,
     "stepCounts": {
       "request-review": 1,
       "design": 1,
@@ -157,7 +194,11 @@
       "implementer": 1,
       "bite-evidence": 1,
       "verification": 1,
-      "code-review": 1
+      "code-review": 1,
+      "code-fixer": 1,
+      "cross-boundary-invariants": 1,
+      "scale-tolerance": 1,
+      "custom-reviewers": 1
     }
   }
 }
