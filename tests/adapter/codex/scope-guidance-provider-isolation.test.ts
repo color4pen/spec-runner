@@ -196,44 +196,24 @@ describe("TC-009: shared prompt builder output contains no guidance", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TC-013: CODEX_SCOPE_GUIDANCE constant value matches spec.md exactly
+// TC-013: CODEX_SCOPE_GUIDANCE constant value matches the canonical text exactly
 // Source: tasks.md > T-01 Acceptance Criteria
-// Satisfies the "must" requirement that the exported constant equals the
-// canonical guidance text in spec.md character-for-character.
-// Does not re-state the literal in the test (TC-010): the expected value is
-// extracted from spec.md at runtime and compared via strict equality.
+// The canonical text is frozen here verbatim (originally specified in the
+// change's spec.md). It is NOT read from the change folder at runtime: the
+// archive step moves specrunner/changes/<slug>/ under changes/archive/, so a
+// runtime path into the live change folder breaks after archive.
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("TC-013: CODEX_SCOPE_GUIDANCE value matches canonical spec text exactly", () => {
-  it("character-for-character equality with the guidance block extracted from spec.md", async () => {
-    // spec.md is the normative source of truth for the guidance text
-    const specPath = path.resolve(
-      __dirname,
-      "../../../specrunner/changes/codex-scope-guidance/spec.md",
-    );
-    const specContent = await fs.readFile(specPath, "utf-8");
+  it("character-for-character equality with the frozen canonical guidance text", () => {
+    const canonicalText = `SpecRunner execution guidance:
 
-    // Extract the canonical guidance block from the first ```text … ``` fence.
-    // The block is introduced by "The guidance text SHALL be exactly:" and contains
-    // the header line + blank line + six bullet lines — no leading or trailing newlines.
-    const openFence = "```text\n";
-    const afterOpen = specContent.split(openFence);
-    if (afterOpen.length < 2 || !afterOpen[1]) {
-      throw new Error("Could not locate ```text opening fence in spec.md");
-    }
-    const closeFence = "\n```";
-    const blockParts = afterOpen[1].split(closeFence);
-    if (blockParts.length < 2 || blockParts[0] === undefined) {
-      throw new Error("Could not locate closing ``` fence in spec.md");
-    }
-    const canonicalText = blockParts[0];
-
-    // Sanity check: the extracted block must start with the expected header line
-    if (!canonicalText.startsWith("SpecRunner execution guidance:")) {
-      throw new Error(
-        `Extracted block does not start with expected header. Got:\n${canonicalText.slice(0, 100)}`,
-      );
-    }
+- Do not invent requirements beyond the supplied request/spec/reviewer criteria.
+- Prioritize issues that materially affect correctness or normal supported execution.
+- Do not promote merely theoretical, extremely unlikely, or speculative edge cases to blocking findings.
+- A finding must explain the concrete user/runtime impact that justifies changing the implementation.
+- If an issue is technically possible but does not justify blocking completion, report it as an observation or omit it.
+- Do not broaden the scope in order to make the implementation more defensive or general.`;
 
     // Character-for-character equality — no paraphrasing, no omission, no extra whitespace
     expect(CODEX_SCOPE_GUIDANCE).toBe(canonicalText);
