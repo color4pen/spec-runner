@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "36cad676-27b7-4325-bee1-f1d9bf50b9e4",
   "createdAt": "2026-08-26T21:57:31.637Z",
-  "updatedAt": "2026-08-26T21:57:34.388Z",
+  "updatedAt": "2026-08-26T22:01:43.649Z",
   "request": {
     "title": "archive を 1 回で完結させ、merge 後の再 archive 契約を撤回する",
     "type": "spec-change",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "request-review",
+  "step": "design",
   "status": "running",
   "branch": "change/single-phase-archive-36cad676",
   "error": null,
@@ -64,10 +64,26 @@
   "issueNumber": 1083,
   "inboxOrigin": true,
   "synthesizedCommits": [
-    "a221641dd380378d48d0049ec0c152d87cb9e761"
+    "a221641dd380378d48d0049ec0c152d87cb9e761",
+    "43763fe620ddeec0ab6503d538271ca85d6208ff"
   ],
+  "touchedFiles": {
+    "request-review": [
+      "src/core/archive/plain-archive.ts",
+      "src/core/archive/merge-completion.ts",
+      "src/core/archive/orchestrator.ts",
+      "src/core/archive/post-merge-cleanup.ts",
+      "src/core/archive/__tests__/plain-archive.test.ts",
+      ".github/workflows/specrunner-dispatch.yml",
+      "src/core/archive/merge-then-archive.ts",
+      "src/core/archive/job-context.ts",
+      "src/core/issue-target/archive.ts"
+    ]
+  },
   "_journal": {
-    "historyCount": 2,
-    "stepCounts": {}
+    "historyCount": 5,
+    "stepCounts": {
+      "request-review": 1
+    }
   }
 }
