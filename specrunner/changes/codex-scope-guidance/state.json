@@ -2,7 +2,7 @@
   "version": 2,
   "jobId": "7377ae6d-6bd8-41b1-a129-d42063b689cc",
   "createdAt": "2026-08-26T11:34:24.815Z",
-  "updatedAt": "2026-08-26T11:38:16.480Z",
+  "updatedAt": "2026-08-26T11:45:32.982Z",
   "request": {
     "title": "Codex provider 実行時に speculative な edge case を blocking finding へ昇格しすぎない guidance を注入する",
     "type": "new-feature",
@@ -12,7 +12,7 @@
     "owner": "color4pen",
     "name": "spec-runner"
   },
-  "step": "design",
+  "step": "test-case-gen",
   "status": "running",
   "branch": "feat/codex-scope-guidance-7377ae6d",
   "error": null,
@@ -65,7 +65,8 @@
   "inboxOrigin": true,
   "synthesizedCommits": [
     "c1d48a485fed96e5e55e64859559ab7dae93a22b",
-    "094924e1a50b62c4f067d212e534144dc42cb3c0"
+    "094924e1a50b62c4f067d212e534144dc42cb3c0",
+    "8b9614f41c0e0e7f10a0a7e61e31712e06892303"
   ],
   "touchedFiles": {
     "request-review": [
@@ -82,12 +83,23 @@
       "specrunner/reviewers/cross-boundary-invariants.md",
       "src/adapter/claude-code/__tests__/prompt-rules-injection.test.ts",
       "src/prompts/__tests__/prompt-skeleton-drift-guard.test.ts"
+    ],
+    "design": [
+      "src/adapter/codex/agent-runner.ts",
+      "src/adapter/shared/prompt-builder.ts",
+      "src/adapter/codex/__tests__/prompt-rules-injection.test.ts",
+      "src/adapter/codex/__tests__/resume-prompt-injection.test.ts",
+      "src/adapter/dispatching/agent-runner.ts",
+      "src/adapter/claude-code/agent-runner.ts",
+      "src/adapter/codex/completion-report-prompt.ts",
+      "specrunner/rules/implementer/01-coding-rules.md"
     ]
   },
   "_journal": {
-    "historyCount": 5,
+    "historyCount": 8,
     "stepCounts": {
-      "request-review": 1
+      "request-review": 1,
+      "design": 1
     }
   }
 }
