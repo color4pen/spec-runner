@@ -2,15 +2,18 @@
  * TC-008: Guidance not referenced outside the Codex adapter
  * TC-009: Shared prompt builder output is unchanged
  * TC-012: scope-guidance.ts is a pure constant module with no imports
+ * TC-013: CODEX_SCOPE_GUIDANCE constant value matches spec.md exactly
  * TC-016: Core policy type has no new provider-related fields
  *
  * Provider isolation guard tests — verify that the Codex scope guidance is confined
  * to src/adapter/codex/ and does not leak into shared, Claude, managed, or core sources.
+ * Also verifies that CODEX_SCOPE_GUIDANCE equals the canonical text in spec.md.
  * Follows the grep-type guard test pattern established by tests/dead-guidance.test.ts.
  */
 import { describe, it, expect } from "vitest";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
+import { CODEX_SCOPE_GUIDANCE } from "../../../src/adapter/codex/scope-guidance.js";
 import { buildAdditionalInstructions, buildResumeSection } from "../../../src/adapter/shared/prompt-builder.js";
 import type { AgentRunContext } from "../../../src/core/port/agent-runner.js";
 import type { AgentStep } from "../../../src/core/step/types.js";
@@ -189,6 +192,51 @@ describe("TC-009: shared prompt builder output contains no guidance", () => {
     for (const marker of FORBIDDEN_MARKERS) {
       expect(result).not.toContain(marker);
     }
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TC-013: CODEX_SCOPE_GUIDANCE constant value matches spec.md exactly
+// Source: tasks.md > T-01 Acceptance Criteria
+// Satisfies the "must" requirement that the exported constant equals the
+// canonical guidance text in spec.md character-for-character.
+// Does not re-state the literal in the test (TC-010): the expected value is
+// extracted from spec.md at runtime and compared via strict equality.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("TC-013: CODEX_SCOPE_GUIDANCE value matches canonical spec text exactly", () => {
+  it("character-for-character equality with the guidance block extracted from spec.md", async () => {
+    // spec.md is the normative source of truth for the guidance text
+    const specPath = path.resolve(
+      __dirname,
+      "../../../specrunner/changes/codex-scope-guidance/spec.md",
+    );
+    const specContent = await fs.readFile(specPath, "utf-8");
+
+    // Extract the canonical guidance block from the first ```text … ``` fence.
+    // The block is introduced by "The guidance text SHALL be exactly:" and contains
+    // the header line + blank line + six bullet lines — no leading or trailing newlines.
+    const openFence = "```text\n";
+    const afterOpen = specContent.split(openFence);
+    if (afterOpen.length < 2 || !afterOpen[1]) {
+      throw new Error("Could not locate ```text opening fence in spec.md");
+    }
+    const closeFence = "\n```";
+    const blockParts = afterOpen[1].split(closeFence);
+    if (blockParts.length < 2 || blockParts[0] === undefined) {
+      throw new Error("Could not locate closing ``` fence in spec.md");
+    }
+    const canonicalText = blockParts[0];
+
+    // Sanity check: the extracted block must start with the expected header line
+    if (!canonicalText.startsWith("SpecRunner execution guidance:")) {
+      throw new Error(
+        `Extracted block does not start with expected header. Got:\n${canonicalText.slice(0, 100)}`,
+      );
+    }
+
+    // Character-for-character equality — no paraphrasing, no omission, no extra whitespace
+    expect(CODEX_SCOPE_GUIDANCE).toBe(canonicalText);
   });
 });
 
